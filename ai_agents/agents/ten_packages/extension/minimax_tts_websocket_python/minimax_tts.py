@@ -86,8 +86,6 @@ class MinimaxTTSWebsocket:
         self, text: str
     ) -> AsyncIterator[tuple[bytes | None, int | None]]:
         """Generate TTS audio for the given text, returns (audio_data, event_status)"""
-        if not text or text.strip() == "":
-            return
 
         self._is_cancelled = False
         try:
@@ -308,6 +306,7 @@ class MinimaxTTSWebsocket:
                         self.ten_env.log_warn(
                             f"tts response no audio data, full response: {tts_response}"
                         )
+                    yield None, EVENT_TTSResponse
                     break  # No more audio data, end this request
 
                 # Check for cancellation signal

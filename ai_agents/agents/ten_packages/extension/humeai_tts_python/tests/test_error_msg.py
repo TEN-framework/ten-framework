@@ -127,6 +127,7 @@ class ExtensionTesterInvalidApiKey(ExtensionTester):
         tts_input = TTSTextInput(
             request_id="test-request-invalid-key",
             text="This text will trigger API key validation.",
+            text_input_end=True,
         )
         data = Data.create("tts_text_input")
         data.set_property_from_json(None, tts_input.model_dump_json())

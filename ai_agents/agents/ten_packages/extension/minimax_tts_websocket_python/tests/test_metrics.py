@@ -46,6 +46,7 @@ class ExtensionTesterMetrics(ExtensionTester):
         tts_input = TTSTextInput(
             request_id="tts_request_for_metrics",
             text="hello, this is a metrics test.",
+            text_input_end=True,
         )
         data = Data.create("tts_text_input")
         data.set_property_from_json(None, tts_input.model_dump_json())

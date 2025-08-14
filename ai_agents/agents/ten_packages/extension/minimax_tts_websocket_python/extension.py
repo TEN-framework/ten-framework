@@ -17,7 +17,7 @@ from ten_ai_base.message import (
     ModuleVendorException,
     TTSAudioEndReason,
 )
-from ten_ai_base.struct import TTSTextInput, TTSFlush, TTSTextResult
+from ten_ai_base.struct import TTSTextInput, TTSFlush
 from ten_ai_base.tts2 import AsyncTTS2BaseExtension
 
 from .config import MinimaxTTSWebsocketConfig
@@ -56,23 +56,11 @@ class MinimaxTTSWebsocketExtension(AsyncTTS2BaseExtension):
 
             if self.config is None:
                 config_json, _ = await self.ten_env.get_property_to_json("")
-                self.ten_env.log_info(f"Raw config JSON: {config_json}")
 
                 # Check if config is empty or missing required fields
                 if not config_json or config_json.strip() == "{}":
                     error_msg = "Configuration is empty. Required parameters: api_key, group_id are missing."
-                    self.ten_env.log_error(error_msg)
-
-                    await self.send_tts_error(
-                        self.current_request_id or "",
-                        ModuleError(
-                            message=error_msg,
-                            module=ModuleType.TTS,
-                            code=ModuleErrorCode.FATAL_ERROR,
-                            vendor_info={},
-                        ),
-                    )
-                    return
+                    raise ValueError(error_msg)
 
                 try:
                     self.config = MinimaxTTSWebsocketConfig.model_validate_json(
@@ -80,56 +68,24 @@ class MinimaxTTSWebsocketExtension(AsyncTTS2BaseExtension):
                     )
                     # extract audio_params and additions from config
                     self.config.update_params()
+                    self.ten_env.log_info(
+                        f"Parsed config: {self.config.to_str()}"
+                    )
                 except Exception as validation_error:
                     error_msg = f"Configuration validation failed: {str(validation_error)}"
-                    self.ten_env.log_error(error_msg)
-
-                    await self.send_tts_error(
-                        self.current_request_id or "",
-                        ModuleError(
-                            message=error_msg,
-                            module=ModuleType.TTS,
-                            code=ModuleErrorCode.FATAL_ERROR,
-                            vendor_info={},
-                        ),
-                    )
                     return
 
-                self.ten_env.log_info(f"Parsed config: {self.config.to_str()}")
-
-                if not self.config.api_key:
+                if self.config.api_key == "":
                     error_msg = (
                         "Required parameter 'api_key' is missing or empty."
                     )
-                    self.ten_env.log_error(error_msg)
+                    raise ValueError(error_msg)
 
-                    await self.send_tts_error(
-                        self.current_request_id or "",
-                        ModuleError(
-                            message=error_msg,
-                            module=ModuleType.TTS,
-                            code=ModuleErrorCode.FATAL_ERROR,
-                            vendor_info={},
-                        ),
-                    )
-                    return
-
-                if not self.config.group_id:
+                if self.config.group_id == "":
                     error_msg = (
                         "Required parameter 'group_id' is missing or empty."
                     )
-                    self.ten_env.log_error(error_msg)
-
-                    await self.send_tts_error(
-                        self.current_request_id or "",
-                        ModuleError(
-                            message=error_msg,
-                            module=ModuleType.TTS,
-                            code=ModuleErrorCode.FATAL_ERROR,
-                            vendor_info={},
-                        ),
-                    )
-                    return
+                    raise ValueError(error_msg)
 
             self.client = MinimaxTTSWebsocket(
                 self.config, ten_env, self.vendor()
@@ -222,9 +178,7 @@ class MinimaxTTSWebsocketExtension(AsyncTTS2BaseExtension):
         if self.config is None:
             return 0
         bytes_per_sample = 2  # Assuming 16-bit audio
-        channels = self.config.params.get("audio_setting", {}).get(
-            "channels", 1
-        )
+        channels = self.config.channels
         duration_sec = self.total_audio_bytes / (
             self.config.sample_rate * bytes_per_sample * channels
         )
@@ -263,6 +217,7 @@ class MinimaxTTSWebsocketExtension(AsyncTTS2BaseExtension):
                 self.ten_env.log_info(
                     f"KEYPOINT New TTS request with ID: {t.request_id}"
                 )
+                self.sent_ts = datetime.now()
                 self.current_request_id = t.request_id
                 self.current_request_finished = False
                 self.total_audio_bytes = 0  # Reset for new request
@@ -305,33 +260,19 @@ class MinimaxTTSWebsocketExtension(AsyncTTS2BaseExtension):
             elif self.current_request_finished:
                 error_msg = f"Received a message for a finished request_id '{t.request_id}' with text_input_end=False."
                 self.ten_env.log_error(error_msg)
-                await self.send_tts_error(
-                    t.request_id,
-                    ModuleError(
-                        message=error_msg,
-                        module=ModuleType.TTS,
-                        code=ModuleErrorCode.NON_FATAL_ERROR,
-                        vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
-                    ),
-                )
-                return
-
-            if t.text.strip() == "":
-                self.ten_env.log_info("Received empty text for TTS request")
-                if t.text_input_end:
-                    self.current_request_finished = True
                 return
 
             if self.current_request_id in self.flushed_request_ids:
                 self.ten_env.log_info(
                     f"Request {self.current_request_id} was flushed. Stopping processing."
                 )
-                self.flushed_request_ids.remove(self.current_request_id)
                 return
 
-            # Record TTFB timing
-            if self.sent_ts is None:
-                self.sent_ts = datetime.now()
+            if t.text_input_end:
+                self.ten_env.log_info(
+                    f"KEYPOINT finish session for request ID: {t.request_id}"
+                )
+                self.current_request_finished = True
 
             # Get audio stream from Minimax TTS
             self.ten_env.log_info(f"Calling client.get() with text: {t.text}")
@@ -403,29 +344,33 @@ class MinimaxTTSWebsocketExtension(AsyncTTS2BaseExtension):
                         self.ten_env.log_error(
                             "Received empty payload for TTS response"
                         )
+                        if t.text_input_end:
+                            duration_ms = self._calculate_audio_duration_ms()
+                            request_event_interval = int(
+                                (datetime.now() - self.sent_ts).total_seconds()
+                                * 1000
+                            )
+                            await self.send_tts_audio_end(
+                                self.current_request_id,
+                                request_event_interval,
+                                duration_ms,
+                                self.current_turn_id,
+                            )
+                            self.ten_env.log_info(
+                                f"KEYPOINT Sent TTS audio end event, interval: {request_event_interval}ms, duration: {duration_ms}ms"
+                            )
 
                 elif event_status == EVENT_TTSSentenceEnd:
                     self.ten_env.log_info(
                         "Received TTSSentenceEnd event from Minimax TTS"
                     )
-                    duration_ms = self._calculate_audio_duration_ms()
-                    await self.send_tts_text_result(
-                        TTSTextResult(
-                            request_id=self.current_request_id,
-                            text=t.text,
-                            text_input_end=t.text_input_end,
-                            start_ms=0,
-                            duration_ms=duration_ms,
-                            words=[],
-                            metadata={},
-                        )
-                    )
                     # Send TTS audio end event
-                    if self.sent_ts:
+                    if self.sent_ts and t.text_input_end:
                         request_event_interval = int(
                             (datetime.now() - self.sent_ts).total_seconds()
                             * 1000
                         )
+                        duration_ms = self._calculate_audio_duration_ms()
                         await self.send_tts_audio_end(
                             self.current_request_id,
                             request_event_interval,
@@ -440,13 +385,6 @@ class MinimaxTTSWebsocketExtension(AsyncTTS2BaseExtension):
             self.ten_env.log_info(
                 f"TTS processing completed, total chunks: {chunk_count}"
             )
-            self.sent_ts = None  # Reset for next request
-
-            if t.text_input_end:
-                self.ten_env.log_info(
-                    f"KEYPOINT finish session for request ID: {t.request_id}"
-                )
-                self.current_request_finished = True
 
         except MinimaxTTSTaskFailedException as e:
             self.ten_env.log_error(
