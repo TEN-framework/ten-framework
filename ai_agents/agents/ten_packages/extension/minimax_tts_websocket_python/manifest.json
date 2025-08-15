@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "minimax_tts_websocket_python",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "dependencies": [
     {
       "type": "system",
@@ -21,7 +21,8 @@
       "**.tent",
       "**.py",
       "README.md",
-      "tests/**"
+      "tests/**",
+      "requirements.txt"
     ]
   },
   "api": {

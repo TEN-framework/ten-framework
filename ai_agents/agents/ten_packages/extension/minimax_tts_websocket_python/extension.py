@@ -44,8 +44,6 @@ class MinimaxTTSWebsocketExtension(AsyncTTS2BaseExtension):
         self.current_request_finished: bool = False
         self.total_audio_bytes: int = 0
         self.first_chunk: bool = False
-        self.finished_request_ids: set[str] = set()
-        self.flushed_request_ids: set[str] = set()
         self.recorder_map: dict[str, PCMWriter] = (
             {}
         )  # Store PCMWriter instances for different request_ids
@@ -118,15 +116,11 @@ class MinimaxTTSWebsocketExtension(AsyncTTS2BaseExtension):
             flush_id, _ = data.get_property_string("flush_id")
             if flush_id:
                 ten_env.log_info(f"Received flush request for ID: {flush_id}")
-                self.flushed_request_ids.add(flush_id)
-
-                if (
-                    self.current_request_id
-                    and self.current_request_id == flush_id
-                ):
+                if self.current_request_id:
                     ten_env.log_info(
                         f"Current request {self.current_request_id} is being flushed. Sending INTERRUPTED."
                     )
+                    await self.client.cancel()
                     if self.sent_ts:
                         request_event_interval = int(
                             (datetime.now() - self.sent_ts).total_seconds()
@@ -260,14 +254,8 @@ class MinimaxTTSWebsocketExtension(AsyncTTS2BaseExtension):
                             f"Created PCMWriter for request_id: {t.request_id}, file: {dump_file_path}"
                         )
             elif self.current_request_finished:
-                error_msg = f"Received a message for a finished request_id '{t.request_id}' with text_input_end=False."
+                error_msg = f"Received a message for a finished request_id '{t.request_id}' skip processing."
                 self.ten_env.log_error(error_msg)
-                return
-
-            if self.current_request_id in self.flushed_request_ids:
-                self.ten_env.log_info(
-                    f"Request {self.current_request_id} was flushed. Stopping processing."
-                )
                 return
 
             if t.text_input_end:
@@ -285,13 +273,6 @@ class MinimaxTTSWebsocketExtension(AsyncTTS2BaseExtension):
             )
             chunk_count = 0
             async for audio_chunk, event_status in data:
-                if self.current_request_id in self.flushed_request_ids:
-                    self.ten_env.log_info(
-                        f"Request {self.current_request_id} was flushed. Stopping processing."
-                    )
-                    self.flushed_request_ids.remove(self.current_request_id)
-                    break
-
                 self.ten_env.log_info(f"Received event_status: {event_status}")
                 if event_status == EVENT_TTSResponse:
                     if audio_chunk is not None and len(audio_chunk) > 0:
