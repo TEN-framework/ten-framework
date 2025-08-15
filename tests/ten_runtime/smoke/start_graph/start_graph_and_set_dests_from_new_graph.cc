@@ -89,7 +89,7 @@ class test_extension_1 : public ten::extension_t {
                      "should not happen.");
 
           // Get the graph ID of the newly created graph.
-          auto new_graph_id = cmd_result->get_property_string("detail");
+          auto new_graph_id = cmd_result->get_property_string("graph_id");
 
           // Send a 'set_original_graph_info' command to the specified extension
           // in the newly created graph.

@@ -6,6 +6,7 @@
 //
 #include "include_internal/ten_runtime/engine/msg_interface/timer.h"
 
+#include "include_internal/ten_runtime/common/constant_str.h"
 #include "include_internal/ten_runtime/engine/engine.h"
 #include "include_internal/ten_runtime/engine/msg_interface/common.h"
 #include "include_internal/ten_runtime/msg/cmd_base/cmd/timeout/cmd.h"
@@ -66,6 +67,7 @@ void ten_engine_handle_cmd_timer(ten_engine_t *self, ten_shared_ptr_t *cmd,
 
       // Return a cmd result for the timer cancel command this time.
       ten_engine_create_cmd_result_and_dispatch(self, cmd, TEN_STATUS_CODE_OK,
+                                                TEN_STR_DETAIL,
                                                 "Operation is success.");
     } else {
       TEN_ASSERT(
@@ -91,10 +93,11 @@ void ten_engine_handle_cmd_timer(ten_engine_t *self, ten_shared_ptr_t *cmd,
       ten_timer_enable(timer);
 
       ten_engine_create_cmd_result_and_dispatch(self, cmd, TEN_STATUS_CODE_OK,
+                                                TEN_STR_DETAIL,
                                                 "Operation is success.");
     } else {
       ten_engine_create_cmd_result_and_dispatch(
-          self, cmd, TEN_STATUS_CODE_ERROR,
+          self, cmd, TEN_STATUS_CODE_ERROR, TEN_STR_DETAIL,
           "Failed to cancel an un-existed timer.");
     }
   }

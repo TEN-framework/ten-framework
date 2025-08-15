@@ -28,7 +28,7 @@ class test_extension_1 : public ten::extension_t {
           auto status_code = cmd_result->get_status_code();
           ASSERT_EQ(status_code, TEN_STATUS_CODE_OK);
 
-          auto graph_id = cmd_result->get_property_string("detail");
+          auto graph_id = cmd_result->get_property_string("graph_id");
 
           auto hello_world_cmd = ten::cmd_t::create("hello_world");
           hello_world_cmd->set_dests({{"msgpack://127.0.0.1:8001/",

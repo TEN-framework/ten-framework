@@ -24,7 +24,8 @@ class test_predefined_graph : public ten::extension_t {
     ten_env.send_cmd(
         std::move(start_graph_cmd),
         [](ten::ten_env_t &ten_env,
-           std::unique_ptr<ten::cmd_result_t> cmd_result, ten::error_t *err) {
+           std::unique_ptr<ten::cmd_result_t> cmd_result,
+           ten::error_t * /* err */) {
           auto status_code = cmd_result->get_status_code();
           ASSERT_EQ(status_code, TEN_STATUS_CODE_ERROR);
 
