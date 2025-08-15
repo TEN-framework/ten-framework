@@ -1,64 +1,64 @@
 {
-  "type": "extension",
-  "name": "speechmatics_asr_python",
-  "version": "0.1.1",
-  "dependencies": [
-    {
-      "type": "system",
-      "name": "ten_runtime_python",
-      "version": "0.10"
-    },
-    {
-      "type": "system",
-      "name": "ten_ai_base",
-      "version": "0.6"
-    }
-  ],
-  "api": {
-    "interface": [
-      {
-        "import_uri": "../../system/ten_ai_base/api/asr-interface.json"
-      }
-    ],
-    "property": {
-      "properties": {
-        "key": {
-          "type": "string"
+    "type": "extension",
+    "name": "speechmatics_asr_python",
+    "version": "0.1.1",
+    "dependencies": [
+        {
+            "type": "system",
+            "name": "ten_runtime_python",
+            "version": "0.10"
         },
-        "sample_rate": {
-          "type": "int64"
-        },
-        "language": {
-          "type": "string"
-        },
-        "chunk_ms": {
-          "type": "int64"
-        },
-        "uri": {
-          "type": "string"
-        },
-        "max_delay": {
-          "type": "float64"
-        },
-        "max_delay_mode": {
-          "type": "string"
-        },
-        "encoding": {
-          "type": "string"
-        },
-        "enable_partials": {
-          "type": "bool"
-        },
-        "enable_word_final_mode": {
-          "type": "bool"
-        },
-        "dump": {
-          "type": "bool"
-        },
-        "dump_path": {
-          "type": "string"
+        {
+            "type": "system",
+            "name": "ten_ai_base",
+            "version": "0.6"
         }
-      }
+    ],
+    "api": {
+        "interface": [
+            {
+                "import_uri": "../../system/ten_ai_base/api/asr-interface.json"
+            }
+        ],
+        "property": {
+            "properties": {
+                "key": {
+                    "type": "string"
+                },
+                "sample_rate": {
+                    "type": "int64"
+                },
+                "language": {
+                    "type": "string"
+                },
+                "chunk_ms": {
+                    "type": "int64"
+                },
+                "uri": {
+                    "type": "string"
+                },
+                "max_delay": {
+                    "type": "float64"
+                },
+                "max_delay_mode": {
+                    "type": "string"
+                },
+                "encoding": {
+                    "type": "string"
+                },
+                "enable_partials": {
+                    "type": "bool"
+                },
+                "enable_word_final_mode": {
+                    "type": "bool"
+                },
+                "dump": {
+                    "type": "bool"
+                },
+                "dump_path": {
+                    "type": "string"
+                }
+            }
+        }
     }
-  }
 }
