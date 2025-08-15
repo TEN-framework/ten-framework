@@ -16,6 +16,3 @@ ten_go_error_t ten_go_cmd_create_stop_graph_cmd(uintptr_t *bridge);
 ten_go_error_t ten_go_cmd_stop_graph_set_graph_id(uintptr_t bridge_addr,
                                                   const void *graph_id,
                                                   int graph_id_len);
-
-ten_go_error_t ten_go_cmd_stop_graph_get_graph_id(uintptr_t bridge_addr,
-                                                  char **graph_id);
