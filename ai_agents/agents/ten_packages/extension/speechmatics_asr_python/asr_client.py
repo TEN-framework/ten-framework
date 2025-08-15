@@ -5,7 +5,6 @@
 #
 
 import asyncio
-import os
 from typing import Awaitable, Callable, List, Optional, Coroutine
 import speechmatics.models
 import speechmatics.client
@@ -28,7 +27,7 @@ from .word import (
 )
 from .timeline import AudioTimeline
 from .language_utils import get_speechmatics_language
-from .dumper import Dumper
+
 
 
 async def run_asr_client(client: "SpeechmaticsASRClient"):
@@ -66,26 +65,15 @@ class SpeechmaticsASRClient:
         # Cache the words for sentence final mode
         self.cache_words = []  # type: List[SpeechmaticsASRWord]
 
-        if self.config.dump:
-            dump_file_path = os.path.join(
-                self.config.dump_path, "speechmatics_asr_in.pcm"
-            )
-            self.audio_dumper = Dumper(dump_file_path)
-
         self.audio_settings: speechmatics.models.AudioSettings | None = None
         self.transcription_config: (
             speechmatics.models.TranscriptionConfig | None
         ) = None
         self.client: speechmatics.client.WebsocketClient | None = None
-        self.on_asr_result: Optional[
-            Callable[[ASRResult], Coroutine[object, object, None]]
-        ] = None
-        self.on_error: Optional[
-            Callable[
-                [ModuleError, Optional[ModuleErrorVendorInfo]],
-                Awaitable[None],
-            ]
-        ] = None
+        self.on_asr_open: Optional[Callable[[], Coroutine[object, object, None]]] = None
+        self.on_asr_result: Optional[Callable[[ASRResult], Coroutine[object, object, None]]] = None
+        self.on_asr_error: Optional[Callable[[ModuleError, Optional[ModuleErrorVendorInfo]],Awaitable[None],]] = None
+        self.on_asr_close: Optional[Callable[[], Coroutine[object, object, None]]] = None
 
     async def start(self) -> None:
         """Initialize and start the recognition session"""
@@ -173,9 +161,6 @@ class SpeechmaticsASRClient:
         self.client_needs_stopping = False
         self.client_running_task = asyncio.create_task(self._client_run())
 
-        if self.config.dump:
-            await self.audio_dumper.start()
-
     async def recv_audio_frame(
         self, frame: AudioFrame, session_id: str | None
     ) -> None:
@@ -188,8 +173,6 @@ class SpeechmaticsASRClient:
 
         try:
             await self.audio_queue.put(frame_buf)
-            if self.config.dump:
-                await self.audio_dumper.push_bytes(bytes(frame_buf))
         except Exception as e:
             self.ten_env.log_error(f"Error sending audio frame: {e}")
             error = ModuleError(
@@ -214,8 +197,6 @@ class SpeechmaticsASRClient:
 
         self.client_running_task = None
 
-        if self.config.dump:
-            await self.audio_dumper.stop()
 
     async def _client_run(self):
         self.ten_env.log_info("SpeechmaticsASRClient run start")
@@ -273,6 +254,8 @@ class SpeechmaticsASRClient:
             self.timeline.get_total_user_audio_duration()
         )
         self.timeline.reset()
+        if self.on_asr_open:
+            asyncio.create_task(self.on_asr_open())
 
     def _handle_partial_transcript(self, msg):
         try:
@@ -424,6 +407,8 @@ class SpeechmaticsASRClient:
 
     def _handle_end_transcript(self, msg):
         self.ten_env.log_info(f"_handle_end_transcript, msg: {msg}")
+        if self.on_asr_close:
+            asyncio.create_task(self.on_asr_close())
 
     def _handle_info(self, msg):
         self.ten_env.log_info(f"_handle_info, msg: {msg}")
@@ -451,6 +436,8 @@ class SpeechmaticsASRClient:
 
     def _handle_audio_event_ended(self, msg):
         self.ten_env.log_info(f"_handle_audio_event_ended, msg: {msg}")
+        if self.on_asr_close:
+            asyncio.create_task(self.on_asr_close())
 
     def get_words(self, words: List[SpeechmaticsASRWord]) -> List[Word]:
         """
@@ -476,7 +463,10 @@ class SpeechmaticsASRClient:
         """
         Emit an error message to the extension.
         """
-        if callable(self.on_error):
-            await self.on_error(
+        if callable(self.on_asr_error):
+            await self.on_asr_error(
                 error, vendor_info
             )  # pylint: disable=not-callable
+
+    def is_connected(self) -> bool:
+        return getattr(self.client, "session_running", False)

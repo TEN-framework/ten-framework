@@ -7,20 +7,20 @@
 
 class AudioTimeline:
     def __init__(self):
-        # 存储时间线事件列表，每个事件为(类型,持续时间)的元组
+        # Store timeline events list, each event is a tuple of (type, duration)
         self.timeline = []
 
     def add_user_audio(self, duration_ms: int):
-        """添加用户音频
+        """Add user audio
 
         Args:
-            duration_ms: 音频持续时间(毫秒)
+            duration_ms: Audio duration (milliseconds)
         """
         if duration_ms <= 0:
             return
 
         if self.timeline and self.timeline[-1][0] == "user_audio":
-            # 合并相邻的用户音频事件
+            # Merge adjacent user audio events
             self.timeline[-1] = (
                 "user_audio",
                 self.timeline[-1][1] + duration_ms,
@@ -29,16 +29,16 @@ class AudioTimeline:
             self.timeline.append(("user_audio", duration_ms))
 
     def add_silence_audio(self, duration_ms: int):
-        """添加静音包
+        """Add silence audio
 
         Args:
-            duration_ms: 静音持续时间(毫秒)
+            duration_ms: Silence duration (milliseconds)
         """
         if duration_ms <= 0:
             return
 
         if self.timeline and self.timeline[-1][0] == "silence_audio":
-            # 合并相邻的静音事件
+            # Merge adjacent silence events
             self.timeline[-1] = (
                 "silence_audio",
                 self.timeline[-1][1] + duration_ms,
