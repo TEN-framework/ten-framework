@@ -162,6 +162,10 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
                 await self._send_session_overlap_error(t.request_id, session_id)
                 return
             
+            # Simple fix: Clear all active sessions for new requests to prevent overlap issues
+            if text_input_end:
+                self.active_sessions.clear()
+                self.ten_env.log_debug(f"Cleared all active sessions for new request {t.request_id}")
             # Track this session if it's a new request
             if session_id and text_input_end:
                 self.active_sessions[session_id] = t.request_id
@@ -279,6 +283,9 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
             if self.ten_env:
                 self.ten_env.log_info(f"Completed audio streaming for request {request_id}: {chunk_count} chunks, {total_audio_bytes} bytes")
             
+            # Clean up session tracking for completed request
+            self._cleanup_session_for_request(request_id)
+            
             # Record successful operation
             self._record_success()
             
@@ -286,8 +293,13 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
             # Send error messages for actual error conditions that tests expect
             if self.ten_env:
                 self.ten_env.log_error(f"Error streaming audio for request {request_id}: {str(e)}")
+            
+            # Clean up session tracking for failed request
                 import traceback
                 self.ten_env.log_error(f"Traceback: {traceback.format_exc()}")
+            
+            # Clean up session tracking for failed request
+            self._cleanup_session_for_request(request_id)
             
             self._record_failure()
             
