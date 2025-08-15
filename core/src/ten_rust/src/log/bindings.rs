@@ -178,9 +178,13 @@ pub extern "C" fn ten_rust_log(
         Err(_) => return,
     };
 
-    let category_str = match unsafe { CStr::from_ptr(category) }.to_str() {
-        Ok(s) => s,
-        Err(_) => return,
+    let category_str = if category.is_null() {
+        ""
+    } else {
+        match unsafe { CStr::from_ptr(category) }.to_str() {
+            Ok(s) => s,
+            Err(_) => return,
+        }
     };
 
     crate::log::ten_log(

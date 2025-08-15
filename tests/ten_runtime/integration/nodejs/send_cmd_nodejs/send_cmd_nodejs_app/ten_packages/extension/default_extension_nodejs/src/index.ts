@@ -67,7 +67,7 @@ class DefaultExtension extends Extension {
     tenEnv.log(LogLevel.DEBUG, "DefaultExtension onCmd");
 
     const cmdName = cmd.getName();
-    tenEnv.log(LogLevel.VERBOSE, "cmdName:" + cmdName);
+    tenEnv.log(LogLevel.INFO, "cmdName:" + cmdName);
 
     const testCmd = Cmd.Create("test");
     const [result, _] = await tenEnv.sendCmd(testCmd);

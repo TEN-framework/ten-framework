@@ -602,7 +602,7 @@ class ten_env_t {
   void log(TEN_LOG_LEVEL level, const char *func_name, const char *file_name,
            size_t line_no, const char *msg) {
     TEN_ASSERT(c_ten_env, "Should not happen.");
-    ten_env_log(c_ten_env, level, func_name, file_name, line_no, msg);
+    ten_env_log(c_ten_env, level, func_name, file_name, line_no, msg, nullptr);
   }
 
  private:

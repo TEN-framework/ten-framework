@@ -155,7 +155,8 @@ const char *filename(const char *path, size_t path_len, size_t *filename_len) {
 static void ten_log_log_from_va_list(ten_log_t *self, TEN_LOG_LEVEL level,
                                      const char *func_name,
                                      const char *file_name, size_t line_no,
-                                     const char *fmt, va_list ap) {
+                                     const char *category, const char *fmt,
+                                     va_list ap) {
   TEN_ASSERT(self, "Invalid argument.");
   TEN_ASSERT(ten_log_check_integrity(self), "Invalid argument.");
 
@@ -167,14 +168,15 @@ static void ten_log_log_from_va_list(ten_log_t *self, TEN_LOG_LEVEL level,
   ten_string_init_from_va_list(&msg, fmt, ap);
 
   ten_log_log(self, level, func_name, file_name, line_no,
-              ten_string_get_raw_str(&msg));
+              ten_string_get_raw_str(&msg), category);
 
   ten_string_deinit(&msg);
 }
 
 void ten_log_log_formatted(ten_log_t *self, TEN_LOG_LEVEL level,
                            const char *func_name, const char *file_name,
-                           size_t line_no, const char *fmt, ...) {
+                           size_t line_no, const char *category,
+                           const char *fmt, ...) {
   TEN_ASSERT(self, "Invalid argument.");
   TEN_ASSERT(ten_log_check_integrity(self), "Invalid argument.");
 
@@ -185,19 +187,21 @@ void ten_log_log_formatted(ten_log_t *self, TEN_LOG_LEVEL level,
   va_list ap;
   va_start(ap, fmt);
 
-  ten_log_log_from_va_list(self, level, func_name, file_name, line_no, fmt, ap);
+  ten_log_log_from_va_list(self, level, func_name, file_name, line_no, category,
+                           fmt, ap);
 
   va_end(ap);
 }
 
 void ten_log_log(ten_log_t *self, TEN_LOG_LEVEL level, const char *func_name,
-                 const char *file_name, size_t line_no, const char *msg) {
+                 const char *file_name, size_t line_no, const char *msg,
+                 const char *category) {
   TEN_ASSERT(self, "Invalid argument.");
   TEN_ASSERT(ten_log_check_integrity(self), "Invalid argument.");
 
   if (self->advanced_impl.impl) {
-    self->advanced_impl.impl(self, level, "", func_name, file_name, line_no,
-                             msg);
+    self->advanced_impl.impl(self, level, category, func_name, file_name,
+                             line_no, msg);
     return;
   }
 

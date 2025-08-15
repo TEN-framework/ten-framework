@@ -14,7 +14,7 @@
 static void ten_env_log_internal(ten_env_t *self, TEN_LOG_LEVEL level,
                                  const char *func_name, const char *file_name,
                                  size_t line_no, const char *msg,
-                                 bool check_thread) {
+                                 const char *category, bool check_thread) {
   TEN_ASSERT(self && ten_env_check_integrity(self, check_thread),
              "Should not happen.");
 
@@ -24,7 +24,7 @@ static void ten_env_log_internal(ten_env_t *self, TEN_LOG_LEVEL level,
       ten_env_get_attached_instance_name(self, check_thread), msg);
 
   ten_log_log(&ten_global_log, level, func_name, file_name, line_no,
-              ten_string_get_raw_str(&final_msg));
+              ten_string_get_raw_str(&final_msg), category);
 
   ten_string_deinit(&final_msg);
 }
@@ -37,17 +37,20 @@ static void ten_env_log_internal(ten_env_t *self, TEN_LOG_LEVEL level,
 void ten_env_log_without_check_thread(ten_env_t *self, TEN_LOG_LEVEL level,
                                       const char *func_name,
                                       const char *file_name, size_t line_no,
-                                      const char *msg) {
-  ten_env_log_internal(self, level, func_name, file_name, line_no, msg, false);
+                                      const char *msg, const char *category) {
+  ten_env_log_internal(self, level, func_name, file_name, line_no, msg,
+                       category, false);
 }
 
 void ten_env_log(ten_env_t *self, TEN_LOG_LEVEL level, const char *func_name,
-                 const char *file_name, size_t line_no, const char *msg) {
+                 const char *file_name, size_t line_no, const char *msg,
+                 const char *category) {
   if (ten_env_is_closed(self)) {
     return;
   }
 
-  ten_env_log_internal(self, level, func_name, file_name, line_no, msg, true);
+  ten_env_log_internal(self, level, func_name, file_name, line_no, msg,
+                       category, true);
 }
 
 static void ten_env_log_with_size_formatted_internal(

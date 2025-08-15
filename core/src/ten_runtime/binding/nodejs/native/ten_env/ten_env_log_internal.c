@@ -55,7 +55,7 @@ static void ten_env_proxy_notify_log(ten_env_t *ten_env, void *user_data) {
 
   ten_env_log(ten_env, ctx->level, ten_string_get_raw_str(&ctx->func_name),
               ten_string_get_raw_str(&ctx->file_name), ctx->line_no,
-              ten_string_get_raw_str(&ctx->msg));
+              ten_string_get_raw_str(&ctx->msg), NULL);
 
   ten_event_set(ctx->completed);
 }
