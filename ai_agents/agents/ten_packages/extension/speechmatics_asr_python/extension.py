@@ -3,9 +3,7 @@ import os
 from typing import Optional
 
 from typing_extensions import override
-from .const import (
-    DUMP_FILE_NAME
-)
+from .const import DUMP_FILE_NAME
 from ten_ai_base.asr import (
     ASRBufferConfig,
     ASRBufferConfigModeKeep,
