@@ -4,8 +4,7 @@ from typing import Optional
 
 from typing_extensions import override
 from .const import (
-    DUMP_FILE_NAME,
-    MODULE_NAME_ASR,
+    DUMP_FILE_NAME
 )
 from ten_ai_base.asr import (
     ASRBufferConfig,
@@ -13,7 +12,12 @@ from ten_ai_base.asr import (
     ASRResult,
     AsyncASRBaseExtension,
 )
-from ten_ai_base.message import ModuleError, ModuleErrorVendorInfo, ModuleErrorCode
+from ten_ai_base.message import (
+    ModuleError,
+    ModuleErrorVendorInfo,
+    ModuleErrorCode,
+    ModuleType,
+)
 from ten_runtime import (
     AsyncTenEnv,
     AudioFrame,
@@ -23,6 +27,7 @@ from ten_ai_base.dumper import Dumper
 from .reconnect_manager import ReconnectManager
 from .config import SpeechmaticsASRConfig
 from .asr_client import SpeechmaticsASRClient
+
 
 class SpeechmaticsASRExtension(AsyncASRBaseExtension):
     """Speechmatics ASR Extension"""
@@ -72,7 +77,9 @@ class SpeechmaticsASRExtension(AsyncASRBaseExtension):
                 f"Speechmatics ASR config: {self.config.to_json(sensitive_handling=True)}"
             )
             if self.config.dump:
-                dump_file_path = os.path.join(self.config.dump_path, DUMP_FILE_NAME)
+                dump_file_path = os.path.join(
+                    self.config.dump_path, DUMP_FILE_NAME
+                )
                 self.audio_dumper = Dumper(dump_file_path)
 
         except Exception as e:
@@ -80,7 +87,7 @@ class SpeechmaticsASRExtension(AsyncASRBaseExtension):
             self.config = SpeechmaticsASRConfig.model_validate_json("{}")
             await self.send_asr_error(
                 ModuleError(
-                    module=MODULE_NAME_ASR,
+                    module=ModuleType.ASR,
                     code=ModuleErrorCode.FATAL_ERROR.value,
                     message=str(e),
                 ),
@@ -99,7 +106,7 @@ class SpeechmaticsASRExtension(AsyncASRBaseExtension):
                 self.ten_env.log_error(error_msg)
                 await self.send_asr_error(
                     ModuleError(
-                        module=MODULE_NAME_ASR,
+                        module=ModuleType.ASR,
                         code=ModuleErrorCode.FATAL_ERROR.value,
                         message=error_msg,
                     ),
@@ -112,19 +119,24 @@ class SpeechmaticsASRExtension(AsyncASRBaseExtension):
             if self.audio_dumper:
                 await self.audio_dumper.start()
 
-            self.client = SpeechmaticsASRClient(self.config, self.ten_env)
+            self.client = SpeechmaticsASRClient(
+                self.config,
+                self.ten_env,
+                self.audio_timeline,
+            )
             self.client.on_asr_open = self.on_asr_open
             self.client.on_asr_close = self.on_asr_close
             self.client.on_asr_result = self.on_asr_result
             self.client.on_asr_error = self.on_asr_error
             return await self.client.start()
 
-
         except Exception as e:
-            self.ten_env.log_error(f"Failed to start Speechmatics ASR connection: {e}")
+            self.ten_env.log_error(
+                f"Failed to start Speechmatics ASR connection: {e}"
+            )
             await self.send_asr_error(
                 ModuleError(
-                    module=MODULE_NAME_ASR,
+                    module=ModuleType.ASR,
                     code=ModuleErrorCode.NON_FATAL_ERROR.value,
                     message=str(e),
                 ),
@@ -161,13 +173,15 @@ class SpeechmaticsASRExtension(AsyncASRBaseExtension):
         self, error_msg: str, error_code: Optional[int] = None
     ) -> None:
         """Handle error callback"""
-        self.ten_env.log_error(f"Speechmatics ASR error: {error_msg} code: {error_code}")
+        self.ten_env.log_error(
+            f"Speechmatics ASR error: {error_msg} code: {error_code}"
+        )
         await self._handle_reconnect()
 
         # Send error information
         await self.send_asr_error(
             ModuleError(
-                module=MODULE_NAME_ASR,
+                module=ModuleType.ASR,
                 code=ModuleErrorCode.NON_FATAL_ERROR.value,
                 message=error_msg,
             ),
@@ -214,7 +228,6 @@ class SpeechmaticsASRExtension(AsyncASRBaseExtension):
         """Process ASR recognition result"""
         assert self.config is not None
 
-
         asr_result = ASRResult(
             text=text,
             final=final,
@@ -234,14 +247,18 @@ class SpeechmaticsASRExtension(AsyncASRBaseExtension):
         if self.client:
             self.is_finalize_disconnect = True
             await self.client.internal_drain_disconnect()
-            self.ten_env.log_debug("Speechmatics ASR finalize disconnect completed")
+            self.ten_env.log_debug(
+                "Speechmatics ASR finalize disconnect completed"
+            )
 
     async def _handle_finalize_mute_pkg(self):
         """Handle mute package mode finalization"""
         if self.client:
             self.is_finalize_disconnect = True
             await self.client.internal_drain_mute_pkg()
-            self.ten_env.log_debug("Speechmatics ASR finalize mute pkg completed")
+            self.ten_env.log_debug(
+                "Speechmatics ASR finalize mute pkg completed"
+            )
 
     async def _handle_reconnect(self):
         """Handle reconnection"""
@@ -254,7 +271,7 @@ class SpeechmaticsASRExtension(AsyncASRBaseExtension):
             self.ten_env.log_warn("No more reconnection attempts allowed")
             await self.send_asr_error(
                 ModuleError(
-                    module=MODULE_NAME_ASR,
+                    module=ModuleType.ASR,
                     code=ModuleErrorCode.NON_FATAL_ERROR.value,
                     message="No more reconnection attempts allowed",
                 )
@@ -263,14 +280,19 @@ class SpeechmaticsASRExtension(AsyncASRBaseExtension):
 
         # Attempt reconnection
         success = await self.reconnect_manager.handle_reconnect(
-            connection_func=self.start_connection, error_handler=self.send_asr_error
+            connection_func=self.start_connection,
+            error_handler=self.send_asr_error,
         )
 
         if success:
-            self.ten_env.log_debug("Reconnection attempt initiated successfully")
+            self.ten_env.log_debug(
+                "Reconnection attempt initiated successfully"
+            )
         else:
             info = self.reconnect_manager.get_attempts_info()
-            self.ten_env.log_debug(f"Reconnection attempt failed. Status: {info}")
+            self.ten_env.log_debug(
+                f"Reconnection attempt failed. Status: {info}"
+            )
 
     async def _finalize_end(self) -> None:
         """Handle finalization end logic"""
@@ -294,7 +316,9 @@ class SpeechmaticsASRExtension(AsyncASRBaseExtension):
             self.ten_env.log_info("Speechmatics ASR connection stopped")
 
         except Exception as e:
-            self.ten_env.log_error(f"Error stopping Speechmatics ASR connection: {e}")
+            self.ten_env.log_error(
+                f"Error stopping Speechmatics ASR connection: {e}"
+            )
 
     @override
     def is_connected(self) -> bool:
@@ -319,7 +343,9 @@ class SpeechmaticsASRExtension(AsyncASRBaseExtension):
         return self.config.sample_rate
 
     @override
-    async def send_audio(self, frame: AudioFrame, _session_id: Optional[str]) -> bool:
+    async def send_audio(
+        self, frame: AudioFrame, _session_id: Optional[str]
+    ) -> bool:
         """Send audio data"""
         assert self.config is not None
 
@@ -343,6 +369,8 @@ class SpeechmaticsASRExtension(AsyncASRBaseExtension):
             return True
 
         except Exception as e:
-            self.ten_env.log_error(f"Error sending audio to Speechmatics ASR: {e}")
+            self.ten_env.log_error(
+                f"Error sending audio to Speechmatics ASR: {e}"
+            )
             frame.unlock_buf(buf)
             return False

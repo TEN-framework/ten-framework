@@ -1,7 +1,6 @@
 import asyncio
 from typing import Callable, Awaitable, Optional
-from ten_ai_base.message import ModuleError, ModuleErrorCode
-from .const import MODULE_NAME_ASR
+from ten_ai_base.message import ModuleError, ModuleErrorCode, ModuleType
 
 
 class ReconnectManager:
@@ -55,7 +54,9 @@ class ReconnectManager:
     async def handle_reconnect(
         self,
         connection_func: Callable[[], Awaitable[None]],
-        error_handler: Optional[Callable[[ModuleError], Awaitable[None]]] = None,
+        error_handler: Optional[
+            Callable[[ModuleError], Awaitable[None]]
+        ] = None,
     ) -> bool:
         """
         Handle a single reconnection attempt with backoff delay.
@@ -76,7 +77,7 @@ class ReconnectManager:
             if error_handler:
                 await error_handler(
                     ModuleError(
-                        module=MODULE_NAME_ASR,
+                        module=ModuleType.ASR,
                         code=ModuleErrorCode.FATAL_ERROR.value,
                         message=f"Failed to reconnect after {self.max_attempts} attempts",
                     )
@@ -118,7 +119,7 @@ class ReconnectManager:
                 if error_handler:
                     await error_handler(
                         ModuleError(
-                            module=MODULE_NAME_ASR,
+                            module=ModuleType.ASR,
                             code=ModuleErrorCode.FATAL_ERROR.value,
                             message=f"All reconnection attempts failed. Last error: {str(e)}",
                         )
