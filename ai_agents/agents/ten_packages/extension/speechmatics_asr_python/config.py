@@ -19,8 +19,8 @@ class SpeechmaticsASRConfig(BaseModel):
     language: str = "en-US"
     sample_rate: int = 16000
     uri: str = "wss://eu2.rt.speechmatics.com/v2"
-    max_delay_mode: str = "flexible"  # "flexible" or "fixed"
-    max_delay: float = 2.0  # 0.7 - 4.0
+    max_delay_mode: str = "fixed"  # "flexible" or "fixed"
+    max_delay: float = 0.7  # 0.7 - 4.0
     encoding: str = "pcm_s16le"
     enable_partials: bool = True
     operating_point: str = "enhanced"
@@ -49,7 +49,6 @@ class SpeechmaticsASRConfig(BaseModel):
 
     def is_black_list_params(self, key: str) -> bool:
         return key in self.black_list_params
-
 
     def update(self, params: Dict[str, Any]) -> None:
         """Update configuration with additional parameters."""

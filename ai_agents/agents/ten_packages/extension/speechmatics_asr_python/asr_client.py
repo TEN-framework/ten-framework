@@ -25,9 +25,8 @@ from .word import (
     get_sentence_duration_ms,
     get_sentence_start_ms,
 )
-from .timeline import AudioTimeline
+from ten_ai_base.timeline import AudioTimeline
 from .language_utils import get_speechmatics_language
-
 
 
 async def run_asr_client(client: "SpeechmaticsASRClient"):
@@ -47,12 +46,13 @@ class SpeechmaticsASRClient:
         self,
         config: SpeechmaticsASRConfig,
         ten_env: AsyncTenEnv,
+        timeline: AudioTimeline,
     ):
         self.config = config
         self.ten_env = ten_env
         self.task = None
         self.audio_queue = asyncio.Queue()
-        self.timeline = AudioTimeline()
+        self.timeline = timeline
         self.audio_stream = AudioStream(
             self.audio_queue, self.config, self.timeline, ten_env
         )
@@ -70,10 +70,21 @@ class SpeechmaticsASRClient:
             speechmatics.models.TranscriptionConfig | None
         ) = None
         self.client: speechmatics.client.WebsocketClient | None = None
-        self.on_asr_open: Optional[Callable[[], Coroutine[object, object, None]]] = None
-        self.on_asr_result: Optional[Callable[[ASRResult], Coroutine[object, object, None]]] = None
-        self.on_asr_error: Optional[Callable[[ModuleError, Optional[ModuleErrorVendorInfo]],Awaitable[None],]] = None
-        self.on_asr_close: Optional[Callable[[], Coroutine[object, object, None]]] = None
+        self.on_asr_open: Optional[
+            Callable[[], Coroutine[object, object, None]]
+        ] = None
+        self.on_asr_result: Optional[
+            Callable[[ASRResult], Coroutine[object, object, None]]
+        ] = None
+        self.on_asr_error: Optional[
+            Callable[
+                [ModuleError, Optional[ModuleErrorVendorInfo]],
+                Awaitable[None],
+            ]
+        ] = None
+        self.on_asr_close: Optional[
+            Callable[[], Coroutine[object, object, None]]
+        ] = None
 
     async def start(self) -> None:
         """Initialize and start the recognition session"""
@@ -196,7 +207,6 @@ class SpeechmaticsASRClient:
             await self.client_running_task
 
         self.client_running_task = None
-
 
     async def _client_run(self):
         self.ten_env.log_info("SpeechmaticsASRClient run start")
