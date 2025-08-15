@@ -7,7 +7,7 @@
 
 package ten_runtime
 
-// #include "cmd.h"
+// #include "cmd_start_graph.h"
 import "C"
 
 import (
