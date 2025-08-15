@@ -40,7 +40,7 @@ class test_extension_1 : public ten::extension_t {
                std::unique_ptr<ten::cmd_result_t> cmd_result,
                ten::error_t * /* err */) {
           // result for the 'start_graph' command
-          auto graph_id = cmd_result->get_property_string("detail");
+          auto graph_id = cmd_result->get_property_string("graph_id");
 
           // Shut down the graph; otherwise, the app won't be able to close
           // because there is still a running engine/graph.

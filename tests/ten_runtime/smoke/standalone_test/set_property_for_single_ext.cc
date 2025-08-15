@@ -6,7 +6,6 @@
 //
 #include "gtest/gtest.h"
 #include "include_internal/ten_runtime/binding/cpp/ten.h"
-#include "nlohmann/json_fwd.hpp"
 #include "ten_runtime/binding/cpp/detail/extension.h"
 #include "ten_runtime/common/status_code.h"
 #include "ten_utils/lang/cpp/lib/value.h"
@@ -48,16 +47,16 @@ class extension_tester_1 : public ten::extension_tester_t {
     // Send the first command to the extension.
     auto new_cmd = ten::cmd_t::create("hello_world");
 
-    ten_env.send_cmd(
-        std::move(new_cmd),
-        [](ten::ten_env_tester_t &ten_env,
-           std::unique_ptr<ten::cmd_result_t> result, ten::error_t *err) {
-          if (result->get_status_code() == TEN_STATUS_CODE_OK) {
-            auto detail = result->get_property_string("detail");
-            EXPECT_EQ(detail, "nice to meet you");
-            ten_env.stop_test();
-          }
-        });
+    ten_env.send_cmd(std::move(new_cmd),
+                     [](ten::ten_env_tester_t &ten_env,
+                        std::unique_ptr<ten::cmd_result_t> result,
+                        ten::error_t * /* err */) {
+                       if (result->get_status_code() == TEN_STATUS_CODE_OK) {
+                         auto detail = result->get_property_string("detail");
+                         EXPECT_EQ(detail, "nice to meet you");
+                         ten_env.stop_test();
+                       }
+                     });
 
     ten_env.on_start_done();
   }

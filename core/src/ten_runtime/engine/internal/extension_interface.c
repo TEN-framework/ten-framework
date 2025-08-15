@@ -157,14 +157,16 @@ static void ten_engine_check_if_all_extension_threads_are_ready(
                ten_app_get_uri(self->app));
 
       ten_string_t *graph_id = &self->graph_id;
+      TEN_ASSERT(graph_id, "Should not happen.");
+      TEN_ASSERT(ten_string_check_integrity(graph_id), "Should not happen.");
+      TEN_ASSERT(!ten_string_is_empty(graph_id), "Should not happen.");
 
-      const char *body_str =
-          ten_string_is_empty(graph_id) ? "" : ten_string_get_raw_str(graph_id);
+      const char *graph_id_str = ten_string_get_raw_str(graph_id);
 
       cmd_result = ten_cmd_result_create_from_cmd(TEN_STATUS_CODE_OK,
                                                   original_start_graph_cmd);
-      ten_msg_set_property(cmd_result, TEN_STR_DETAIL,
-                           ten_value_create_string(body_str), NULL);
+      ten_msg_set_property(cmd_result, TEN_STR_GRAPH_ID,
+                           ten_value_create_string(graph_id_str), NULL);
 
       // Mark the engine that it could start to handle messages.
       self->is_ready_to_handle_msg = true;
