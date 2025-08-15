@@ -284,7 +284,6 @@ class FlowingSpeechSynthesizer:
         else:
             autho = urllib.quote(signature)
         requrl += "&Signature=%s" % autho
-        print(requrl)
 
         self.ws = websocket.WebSocketApp(
             requrl,

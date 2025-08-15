@@ -1,2 +1,2 @@
-google-cloud-texttospeech
-pydantic
+google-cloud-texttospeech==2.27.0
+pydantic>=2

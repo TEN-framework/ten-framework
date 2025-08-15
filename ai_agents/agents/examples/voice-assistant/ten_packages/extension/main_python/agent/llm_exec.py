@@ -24,6 +24,7 @@ from ten_ai_base.struct import (
 from ten_ai_base.types import LLMToolMetadata, LLMToolResult
 from ..helper import _send_cmd, _send_cmd_ex
 from ten_runtime import AsyncTenEnv, Loc, StatusCode
+import uuid
 
 
 class LLMExec:
@@ -51,6 +52,7 @@ class LLMExec:
             asyncio.Lock()
         )  # Lock to ensure thread-safe access
         self.contexts: list[LLMMessage] = []
+        self.current_request_id: Optional[str] = None
 
     async def queue_input(self, item: str) -> None:
         await self.input_queue.put(item)
@@ -61,6 +63,12 @@ class LLMExec:
         This is useful for ensuring that all pending inputs are handled before stopping.
         """
         await self.input_queue.flush()
+        if self.current_request_id:
+            request_id = self.current_request_id
+            self.current_request_id = None
+            await _send_cmd(
+                self.ten_env, "abort", "llm", {"request_id": request_id}
+            )
         if self.current_task:
             self.current_task.cancel()
 
@@ -135,7 +143,10 @@ class LLMExec:
     ) -> None:
         messages = self.contexts.copy()
         messages.append(new_message)
+        request_id = str(uuid.uuid4())
+        self.current_request_id = request_id
         llm_input = LLMRequest(
+            request_id=request_id,
             messages=messages,
             model="qwen-max",
             streaming=True,

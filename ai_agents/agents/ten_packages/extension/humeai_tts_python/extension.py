@@ -41,7 +41,6 @@ class HumeaiTTSExtension(AsyncTTS2BaseExtension):
         self.total_audio_bytes: int = 0
         self.first_chunk: bool = False
         self.current_request_finished: bool = False
-        self.flushed_request_ids: set[str] = set()
         self.recorder_map: dict[str, PCMWriter] = (
             {}
         )  # Store PCMWriter instances for different request_ids
@@ -124,15 +123,12 @@ class HumeaiTTSExtension(AsyncTTS2BaseExtension):
             flush_id, _ = data.get_property_string("flush_id")
             if flush_id:
                 ten_env.log_info(f"Received flush request for ID: {flush_id}")
-                self.flushed_request_ids.add(flush_id)
 
-                if (
-                    self.current_request_id
-                    and self.current_request_id == flush_id
-                ):
+                if self.current_request_id:
                     ten_env.log_info(
                         f"Current request {self.current_request_id} is being flushed. Sending INTERRUPTED."
                     )
+                    await self.client.cancel()
                     if self.sent_ts:
                         request_event_interval = int(
                             (datetime.now() - self.sent_ts).total_seconds()
@@ -201,12 +197,6 @@ class HumeaiTTSExtension(AsyncTTS2BaseExtension):
                 return
 
             async for audio_chunk, event in self.client.get(t.text):
-                if self.current_request_id in self.flushed_request_ids:
-                    self.ten_env.log_info(
-                        f"Request {self.current_request_id} was flushed. Stopping processing."
-                    )
-                    break
-
                 if event == EVENT_TTS_RESPONSE and audio_chunk:
                     self.total_audio_bytes += len(audio_chunk)
 
