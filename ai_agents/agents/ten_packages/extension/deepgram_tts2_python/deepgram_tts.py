@@ -70,6 +70,7 @@ class StreamingTTSRequest:
         self.request_id = request_id
         self.text_chunks = []
         self.is_complete = False
+        self.is_finalized = False  # Track if streaming chunks have been sent
         self.audio_started = False
         self.start_time = time.time()
         self.first_audio_time = None
@@ -498,10 +499,13 @@ class DeepgramTTS:
     async def add_text_chunk(self, request_id: str, text: str, is_end: bool = False) -> None:
         """Add a text chunk to a streaming request"""
         if request_id not in self.active_requests:
-            # Create new streaming request
-            self.active_requests[request_id] = StreamingTTSRequest(request_id)
+            # Create new streaming request with audio queue
+            request = StreamingTTSRequest(request_id)
+            # Set up audio queue immediately for streaming chunks
+            request.audio_queue = asyncio.Queue()
+            self.active_requests[request_id] = request
             if self.ten_env:
-                self.ten_env.log_info(f"Created new streaming request: {request_id}")
+                self.ten_env.log_info(f"Created new streaming request with audio queue: {request_id}")
         
         request = self.active_requests[request_id]
         request.add_text_chunk(text, is_end)
@@ -509,10 +513,109 @@ class DeepgramTTS:
         if self.ten_env:
             self.ten_env.log_info(f"Added text chunk to {request_id}: '{text[:30]}...' (is_end: {is_end})")
         
-        # If this is the end, start processing the complete request
+        # Process each chunk immediately for real-time streaming
+        if text.strip():  # Process any chunk with actual content
+            await self._process_streaming_chunk(request, text, is_end)
+        
+        # If this is the end, finalize the request
         if is_end:
-            await self._process_complete_request(request)
+            await self._finalize_streaming_request(request)
     
+    async def _process_streaming_chunk(self, request: StreamingTTSRequest, text: str, is_final: bool = False) -> None:
+        """Process a streaming chunk immediately for real-time audio"""
+        try:
+            if self.ten_env:
+                self.ten_env.log_info(f"Processing streaming chunk for {request.request_id}: '{text[:30]}...' (is_final: {is_final})")
+            
+            # Ensure connection
+            if not await self._ensure_connection():
+                raise Exception("Failed to establish WebSocket connection")
+            
+            # Send this chunk to Deepgram and handle audio response
+            await self._send_and_stream_chunk(request.request_id, text, is_final)
+            
+            # Wait briefly for audio response and stream it
+            await self._stream_chunk_audio(request)
+            
+        except Exception as e:
+            if self.ten_env:
+                self.ten_env.log_error(f"Error processing streaming chunk {request.request_id}: {str(e)}")
+            raise
+
+    async def _stream_chunk_audio(self, request: StreamingTTSRequest) -> None:
+        """Stream audio for a single chunk"""
+        try:
+            # Wait for audio chunks for a short time (non-blocking)
+            timeout = 2.0  # 2 second timeout for chunk audio
+            start_time = time.time()
+            
+            while (time.time() - start_time) < timeout:
+                try:
+                    # Try to get audio chunk with short timeout
+                    audio_chunk = await asyncio.wait_for(
+                        request.audio_queue.get(), 
+                        timeout=0.1
+                    )
+                    
+                    if audio_chunk is None:
+                        # End of audio for this chunk
+                        break
+                        
+                    if len(audio_chunk) > 0:
+                        # Send audio data immediately
+                        if hasattr(self, 'extension_ref') and self.extension_ref:
+                            await self.extension_ref.send_tts_audio_data(audio_chunk)
+                        if self.ten_env:
+                            self.ten_env.log_info(f"Streamed {len(audio_chunk)} bytes for chunk {request.request_id}")
+                            
+                except asyncio.TimeoutError:
+                    # No audio available yet, continue waiting
+                    continue
+                    
+        except Exception as e:
+            if self.ten_env:
+                self.ten_env.log_error(f"Error streaming chunk audio: {str(e)}")
+
+    async def _send_and_stream_chunk(self, request_id: str, text: str, is_final: bool = False) -> None:
+        """Send chunk to Deepgram and immediately start streaming the audio response"""
+        try:
+            # Send text message for this chunk
+            text_message = {
+                "type": "Speak",
+                "text": text
+            }
+            await self.websocket.send(json.dumps(text_message))
+            if self.ten_env:
+                self.ten_env.log_info(f"Sent streaming chunk to Deepgram for request {request_id}: '{text[:30]}...'")
+            
+            # Send flush immediately to get audio for this chunk
+            flush_message = {
+                "type": "Flush"
+            }
+            await self.websocket.send(json.dumps(flush_message))
+            if self.ten_env:
+                self.ten_env.log_info(f"Sent flush for chunk {request_id} to get immediate audio")
+            
+        except Exception as e:
+            if self.ten_env:
+                self.ten_env.log_error(f"Error sending streaming chunk to Deepgram: {str(e)}")
+            raise
+
+    async def _finalize_streaming_request(self, request: StreamingTTSRequest) -> None:
+        """Finalize a streaming request"""
+        try:
+            if self.ten_env:
+                self.ten_env.log_info(f"Finalizing streaming request {request.request_id}")
+            
+            # Mark the request as finalized - the extension will handle cleanup
+            request.is_finalized = True
+            
+            # Don't delete the request here - let _start_streaming_audio handle it
+                
+        except Exception as e:
+            if self.ten_env:
+                self.ten_env.log_error(f"Error finalizing streaming request {request.request_id}: {str(e)}")
+
     async def _process_complete_request(self, request: StreamingTTSRequest) -> None:
         """Process a complete streaming request"""
         try:
@@ -566,9 +669,12 @@ class DeepgramTTS:
         request = self.active_requests[request_id]
         
         try:
-            # Create a queue for this request to receive audio chunks
-            audio_queue = asyncio.Queue()
-            request.audio_queue = audio_queue
+            # Use existing audio queue or create one if needed
+            if not request.audio_queue:
+                audio_queue = asyncio.Queue()
+                request.audio_queue = audio_queue
+            else:
+                audio_queue = request.audio_queue
             
             # Stream audio chunks as they arrive from WebSocket message handler
             chunk_count = 0

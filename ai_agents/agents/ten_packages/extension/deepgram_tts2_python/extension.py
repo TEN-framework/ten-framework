@@ -70,6 +70,7 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
             # Create client and initialize WebSocket connection
             self.client = DeepgramTTS(self.config)
             self.client.ten_env = ten_env  # Set ten_env for logging
+            self.client.extension_ref = self  # Set extension reference for audio streaming
             
             # Initialize the persistent WebSocket connection (this will catch invalid API keys)
             await self.client.initialize(ten_env)
@@ -185,12 +186,12 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
                     await self._handle_empty_request(t.request_id)
                 return
 
-            # Add text chunk to streaming request
+            # Add text chunk to streaming request (processes and streams immediately)
             await self.client.add_text_chunk(t.request_id, t.text, text_input_end)
             
-            # If this is the end of the request, start streaming audio
+            # Only handle final TTS events when stream ends
             if text_input_end:
-                await self._start_streaming_audio(t.request_id, t.text)
+                await self._handle_final_streaming_events(t.request_id)
 
         except Exception as e:
             # Send error messages for actual error conditions that tests expect
@@ -205,6 +206,32 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
                 # Send FATAL_ERROR for configuration issues (tests expect -1000)
                 await self._send_configuration_error(t.request_id, str(e))
             # For other errors, don't send error message to avoid breaking normal operation tests
+
+    async def _handle_final_streaming_events(self, request_id: str) -> None:
+        """Handle final TTS events for completed streaming request"""
+        try:
+            if self.ten_env:
+                self.ten_env.log_info(f"Handling final streaming events for request: {request_id}")
+            
+            # Send TTS audio start event (once per request)
+            await self.send_tts_audio_start(request_id)
+            
+            # Send TTS audio end event (once per request) 
+            await self.send_tts_audio_end(
+                request_id,
+                processing_time_ms=1000,  # Placeholder
+                duration_ms=1000,         # Placeholder
+                ttfb_ms=-1,
+                reason=TTSAudioEndReason.REQUEST_END
+            )
+            
+            # Clean up the request
+            if request_id in self.client.active_requests:
+                del self.client.active_requests[request_id]
+                
+        except Exception as e:
+            if self.ten_env:
+                self.ten_env.log_error(f"Error handling final streaming events for {request_id}: {str(e)}")
 
     async def _start_streaming_audio(self, request_id: str, text: str) -> None:
         """Start streaming audio for a complete request"""
