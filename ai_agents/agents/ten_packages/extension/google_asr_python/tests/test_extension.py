@@ -46,53 +46,35 @@ def test_initialization_and_connection():
     Tests the basic initialization and connection flow by mocking the GoogleASRClient.
     """
 
-    captured_on_result_callback = None
-    main_loop = asyncio.get_event_loop()
+    def fake_init(config, ten_env, on_result_callback, on_error_callback):
+        mock_instance = MagicMock()
+        mock_instance._on_result_callback = on_result_callback
 
-    def trigger_final_response():
-        """
-        Runs in a thread, sends a result back to the main event loop.
-        """
-        if not captured_on_result_callback:
-            return
+        async def fake_start():
+            await asyncio.sleep(0)
+            final_result = ASRResult(
+                final=True,
+                text="hello world",
+                words=[],
+                start_ms=0,
+                duration_ms=1000,
+                confidence=0.9,
+                language="en-US",
+            )
+            await mock_instance._on_result_callback(final_result)
 
-        final_result = ASRResult(
-            is_final=True,
-            text="hello world",
-            words=[],
-            confidence=0.9,
-            language="en-US",
-        )
+        mock_instance.start = fake_start
+        mock_instance.stop = AsyncMock()
+        mock_instance.send_audio = AsyncMock()
+        mock_instance.finalize = AsyncMock()
+        return mock_instance
 
-        asyncio.run_coroutine_threadsafe(
-            captured_on_result_callback(final_result), loop=main_loop
-        )
+    MockGoogleASRClient = MagicMock(side_effect=fake_init)
 
-    # This is now a synchronous function, just like in the Azure example
-    def fake_start():
-        threading.Timer(0.5, trigger_final_response).start()
-
-    def fake_init(
-        self,
-        config,
-        ten_env,
-        on_result_callback: callable,
-        on_error_callback: callable,
+    with patch(
+        "ten_packages.extension.google_asr_python.extension.GoogleASRClient",
+        MockGoogleASRClient,
     ):
-        nonlocal captured_on_result_callback
-        captured_on_result_callback = on_result_callback
-
-        # Assign the synchronous fake_start directly to the start method.
-        # The 'await' in the extension will handle the None return value correctly.
-        self.start = fake_start
-        self.stop = AsyncMock()
-        self.send_audio = AsyncMock()
-        self.finalize = AsyncMock()
-
-    MockGoogleASRClient = MagicMock()
-    MockGoogleASRClient.side_effect = fake_init
-
-    with patch("extension.GoogleASRClient", MockGoogleASRClient):
         property_json = {
             "params": {
                 "project_id": "fake-project-id",

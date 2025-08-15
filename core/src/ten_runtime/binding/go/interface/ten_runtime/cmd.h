@@ -50,11 +50,6 @@ ten_go_error_t ten_go_cmd_result_is_final(uintptr_t bridge_addr,
 ten_go_error_t ten_go_cmd_result_is_completed(uintptr_t bridge_addr,
                                               bool *is_completed);
 
-ten_go_handle_t ten_go_cmd_result_get_detail(uintptr_t bridge_addr);
-
-ten_go_error_t ten_go_cmd_result_get_detail_json_and_size(
-    uintptr_t bridge_addr, uintptr_t *json_str_len, const char **json_str);
-
 ten_go_error_t ten_go_cmd_create_start_graph_cmd(uintptr_t *bridge);
 
 ten_go_error_t ten_go_cmd_start_graph_set_predefined_graph_name(

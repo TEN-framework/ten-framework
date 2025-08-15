@@ -9,7 +9,7 @@ import asyncio
 import uuid
 from typing import Callable
 from unittest.mock import MagicMock, patch, AsyncMock
-from openai_asr_client import (
+from ten_packages.extension.openai_asr_python.openai_asr_client import (
     AsyncOpenAIAsrListener,
     Session,
     TranscriptionParam,
@@ -17,7 +17,7 @@ from openai_asr_client import (
     TranscriptionResultCompleted,
     TranscriptionResultDelta,
 )
-from openai_asr_client.schemas import (
+from ten_packages.extension.openai_asr_python.openai_asr_client.schemas import (
     SessionTurnDetection,
     SessionInputAudioTranscription,
     SessionInputAudioNoiseReduction,

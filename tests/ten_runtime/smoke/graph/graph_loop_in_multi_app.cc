@@ -265,7 +265,7 @@ TEST(ExtensionTest, GraphLoopInMultiApp) {  // NOLINT
 
     if (cmd_result) {
       ten_test::check_status_code(cmd_result, TEN_STATUS_CODE_OK);
-      graph_id = cmd_result->get_property_string("detail");
+      graph_id = cmd_result->get_property_string("graph_id");
       break;
     } else {
       delete client;

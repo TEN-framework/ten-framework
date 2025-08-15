@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import Mock, patch
 import asyncio
-from polly_tts import PollyTTS, PollyTTSParams
+from ten_packages.extension.polly_tts.polly_tts import PollyTTS, PollyTTSParams
 
 
 def create_mock_audio_stream(audio_data, chunk_size=320):

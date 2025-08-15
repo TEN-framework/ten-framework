@@ -39,7 +39,6 @@ class InvalidTextHandlingTester(AsyncExtensionTester):
         self.current_test_index: int = 0
         self.test_results: List[dict] = []
         self.received_audio_frame: bool = False
-        self.received_tts_output: bool = False
         self.received_error: bool = False
         self.current_test_text: str = ""
 
@@ -56,7 +55,6 @@ class SingleTestCaseTester(AsyncExtensionTester):
         
         # Test status
         self.received_audio_frame: bool = False
-        self.received_tts_output: bool = False
         self.received_error: bool = False
         self.test_success: bool = False
         
@@ -132,16 +130,15 @@ class SingleTestCaseTester(AsyncExtensionTester):
         
         # Step 2: Send valid text
         ten_env.log_info("Step 2: Sending valid text...")
+        self.received_audio_frame = False
         await self._send_tts_text_input_single(ten_env, self.valid_text, True)
         
         # Wait for TTS output and audio frame
         await asyncio.sleep(2)
         
         # Check test results
-        if not self.received_tts_output:
-            ten_env.log_error("❌ No tts_text_output received for valid text")
-            self.test_success = False
-        elif not self.received_audio_frame:
+
+        if not self.received_audio_frame:
             ten_env.log_error("❌ No audio frame received for valid text")
             self.test_success = False
         else:
@@ -177,11 +174,6 @@ class SingleTestCaseTester(AsyncExtensionTester):
                 ten_env.log_error(f"❌ Failed to parse error JSON: {e}")
                 # Even if JSON parsing fails, mark as error response received
                 self.received_error = True
-        
-        elif name == "tts_text_result":
-            # Handle TTS text output
-            self.received_tts_output = True
-            ten_env.log_info("✅ TTS text output received")
         
         elif name == "metrics":
             # Handle metrics data

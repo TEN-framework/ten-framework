@@ -129,11 +129,9 @@ class XfyunWSRecognition:
         self._message_task = None
 
     def _log_debug(self, message):
-        """Unified logging method, use ten_env.log_debug if available, otherwise use print"""
+        """Unified logging method, use ten_env.log_debug if available"""
         if self.ten_env:
             self.ten_env.log_debug(message)
-        else:
-            print(message)
 
     def _create_url(self):
         """Generate WebSocket connection URL"""

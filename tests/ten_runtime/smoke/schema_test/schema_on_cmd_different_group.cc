@@ -30,17 +30,17 @@ class test_extension_1 : public ten::extension_t {
       rc = cmd->set_property("bar", 1232);
       ASSERT_EQ(rc, true);
 
-      rc = ten_env.send_cmd(
-          std::move(cmd),
-          [](ten::ten_env_t &ten_env,
-             std::unique_ptr<ten::cmd_result_t> cmd_result, ten::error_t *err) {
-            auto status = cmd_result->get_status_code();
-            ASSERT_EQ(status, TEN_STATUS_CODE_ERROR);
+      rc = ten_env.send_cmd(std::move(cmd),
+                            [](ten::ten_env_t &ten_env,
+                               std::unique_ptr<ten::cmd_result_t> cmd_result,
+                               ten::error_t * /* err */) {
+                              auto status = cmd_result->get_status_code();
+                              ASSERT_EQ(status, TEN_STATUS_CODE_ERROR);
 
-            auto detail = cmd_result->get_property_string("detail");
+                              cmd_result->get_property_string("detail");
 
-            ten_env.return_result(std::move(cmd_result));
-          });
+                              ten_env.return_result(std::move(cmd_result));
+                            });
       ASSERT_EQ(rc, true);
 
       return;

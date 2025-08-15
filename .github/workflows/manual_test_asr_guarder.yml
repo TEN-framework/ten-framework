@@ -32,12 +32,6 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/ten-framework/ten_agent_build:0.6.15
-
-    env:
-      # Import all secrets as environment variables for dynamic access
-      # Users need to create GitHub Secrets with the same names as their env_vars keys
-      _ALL_SECRETS: ${{ toJSON(secrets) }}
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -58,13 +52,12 @@ jobs:
 
       - name: Parse and set custom environment variables
         shell: bash
+        env:
+          ENV_INPUT: ${{ github.event.inputs.env_vars }}
         run: |
           echo "Setting up custom environment variables from GitHub Secrets..."
-
-          # Get the input and process semicolon-separated variable keys
-          ENV_INPUT="${{ github.event.inputs.env_vars }}"
-
           echo "Custom environment variables:"
+
           if [ -n "$ENV_INPUT" ]; then
             # Split by semicolon and process each variable key
             IFS=';' read -ra ENV_ARRAY <<< "$ENV_INPUT"
@@ -79,14 +72,10 @@ jobs:
 
               # Check if it is a valid variable name (only letters, numbers, underscore, starting with letter or underscore)
               if echo "$env_key" | grep -q '^[A-Za-z_][A-Za-z0-9_]*$'; then
-                # Extract the secret value from the JSON using jq
-                secret_value=$(echo "$_ALL_SECRETS" | jq -r --arg key "$env_key" '.[$key] // empty')
-
-                if [ -n "$secret_value" ] && [ "$secret_value" != "null" ]; then
-                  # Set environment variable
-                  echo "${env_key}=${secret_value}" >> $GITHUB_ENV
-                  echo "  ✅ ${env_key}=*** (value loaded from GitHub Secrets)"
-                else
+                # Use GitHub's secure way to access secrets
+                echo "${env_key}=${{ secrets[format('{0}', env_key)] }}" >> $GITHUB_ENV
+                echo "  ✅ ${env_key}=*** (value loaded from GitHub Secrets)"
+                if [ -z "${{ secrets[format('{0}', env_key)] }}" ]; then
                   echo "  ❌ ${env_key}: GitHub Secret not found or empty"
                   echo "  ℹ️  Please create a GitHub Secret named '${env_key}' in the repository settings"
                 fi

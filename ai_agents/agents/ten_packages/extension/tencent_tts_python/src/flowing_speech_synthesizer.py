@@ -119,7 +119,6 @@ class FlowingSpeechSynthesizer:
         for key in sort_dict:
             sign_str = sign_str + key + "=" + str(params[key]) + "&"
         sign_str = sign_str[:-1]
-        print(sign_str)
         if is_python3():
             secret_key = self.credential.secret_key.encode("utf-8")
             sign_str = sign_str.encode("utf-8")

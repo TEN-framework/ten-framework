@@ -84,6 +84,12 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         required=True,
         help="path to the config directory",
     )
+    parser.addoption(
+        "--enable_sample_rate",
+        action="store",
+        default="True",
+        help="enable sample rate comparison (True/False)",
+    )
 
 
 @pytest.fixture
@@ -94,3 +100,9 @@ def extension_name(request: pytest.FixtureRequest) -> Any | Notset:
 @pytest.fixture
 def config_dir(request: pytest.FixtureRequest) -> Any | Notset:
     return request.config.getoption("--config_dir")
+
+
+@pytest.fixture
+def enable_sample_rate(request: pytest.FixtureRequest) -> bool:
+    enable_str = request.config.getoption("--enable_sample_rate")
+    return enable_str.lower() == "true"

@@ -49,6 +49,11 @@ class ExtensionTesterErrorDebug(ExtensionTester):
     def on_data(self, ten_env: TenEnvTester, data) -> None:
         name = data.get_name()
         if name == "error":
+            if self.error_received:
+                ten_env.log_info(
+                    f"Error already received, ignoring further errors."
+                )
+                return
             json_str, _ = data.get_property_to_json("")
             error_data = json.loads(json_str) if json_str else {}
             self.error_details = error_data

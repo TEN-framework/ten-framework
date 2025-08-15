@@ -53,9 +53,9 @@ class test_extension_1 : public ten::extension_t {
       trigger = true;
 
       ten_env.send_cmd(
-          std::move(cmd),
-          [](ten::ten_env_t &ten_env,
-             std::unique_ptr<ten::cmd_result_t> cmd_result, ten::error_t *err) {
+          std::move(cmd), [](ten::ten_env_t &ten_env,
+                             std::unique_ptr<ten::cmd_result_t> cmd_result,
+                             ten::error_t * /* err */) {
             if (cmd_result->get_property_string("detail") ==
                 "hello world, too") {
               cmd_result->set_property("detail", "hello world 1, too");

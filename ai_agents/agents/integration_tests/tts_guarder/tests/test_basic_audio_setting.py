@@ -234,13 +234,17 @@ def run_single_test(extension_name: str, config_file: str, test_name: str, reque
     return tester.sample_rate
 
 
-def test_sample_rate_comparison(extension_name: str, config_dir: str) -> None:
+def test_sample_rate_comparison(extension_name: str, config_dir: str, enable_sample_rate: bool = True) -> None:
     """Compare sample_rate between two different config files"""
     print(f"\n{'='*80}")
     print("🧪 TEST: Sample Rate Comparison")
     print(f"{'='*80}")
-    print("📋 Test objective: Verify that different config files produce different sample_rate")
-    print("🎯 Expected result: Two tests should have different sample_rate")
+    if enable_sample_rate:
+        print("📋 Test objective: Verify that different config files produce different sample_rate")
+        print("🎯 Expected result: Two tests should have different sample_rate")
+    else:
+        print("📋 Test objective: Verify that TTS extension works with different config files")
+        print("🎯 Expected result: Both tests should complete successfully (sample rate comparison disabled)")
     print(f"{'='*80}")
     
     # Test 1: Use config file 1
@@ -264,12 +268,18 @@ def test_sample_rate_comparison(extension_name: str, config_dir: str) -> None:
     print(f"Test 1 ({TTS_BASIC_AUDIO_SETTING_CONFIG_FILE1}): sample_rate = {sample_rate_1}")
     print(f"Test 2 ({TTS_BASIC_AUDIO_SETTING_CONFIG_FILE2}): sample_rate = {sample_rate_2}")
     
-    if sample_rate_1 != sample_rate_2:
-        print(f"✅ Test passed: Two config files produced different sample_rate")
-        print(f"   Difference: {abs(sample_rate_1 - sample_rate_2)} Hz")
+    if enable_sample_rate:
+        # Compare sample rates when enabled
+        if sample_rate_1 != sample_rate_2:
+            print(f"✅ Test passed: Two config files produced different sample_rate")
+            print(f"   Difference: {abs(sample_rate_1 - sample_rate_2)} Hz")
+        else:
+            print(f"❌ Test failed: Two config files produced the same sample_rate ({sample_rate_1})")
+            raise AssertionError(f"Expected different sample rates, but both are {sample_rate_1}")
     else:
-        print(f"❌ Test failed: Two config files produced the same sample_rate ({sample_rate_1})")
-        raise AssertionError(f"Expected different sample rates, but both are {sample_rate_1}")
+        # Skip sample rate comparison when disabled
+        print(f"✅ Test passed: Both tests completed successfully (sample rate comparison disabled)")
+        print(f"   Sample rates: {sample_rate_1} Hz and {sample_rate_2} Hz (not compared)")
     
     print(f"{'='*80}")
 

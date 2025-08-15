@@ -137,7 +137,7 @@ TEST(AudioFrameTest, Basic) {  // NOLINT
       client->send_cmd_and_recv_result(std::move(start_graph_cmd));
   ten_test::check_status_code(cmd_result, TEN_STATUS_CODE_OK);
 
-  auto graph_id = cmd_result->get_property_string("detail");
+  auto graph_id = cmd_result->get_property_string("graph_id");
 
   // Send a user-defined 'hello world' command.
   auto hello_world_cmd = ten::cmd_t::create("hello_world");

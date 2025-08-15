@@ -633,11 +633,12 @@ void ten_engine_route_msg_to_remote(ten_engine_t *self, ten_shared_ptr_t *msg) {
   // ready to transfer messages.
 
   if (!success) {
-    // If the message is a cmd, we should create a cmdResult to notify the
+    // If the message is a cmd, we should create a cmd_result to notify the
     // sender that the cmd is not successfully sent.
     if (ten_msg_is_cmd(msg)) {
       ten_engine_create_cmd_result_and_dispatch(
-          self, msg, TEN_STATUS_CODE_ERROR, ten_error_message(&err));
+          self, msg, TEN_STATUS_CODE_ERROR, TEN_STR_DETAIL,
+          ten_error_message(&err));
     }
   }
 

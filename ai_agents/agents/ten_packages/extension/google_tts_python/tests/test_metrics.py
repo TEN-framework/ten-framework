@@ -69,7 +69,7 @@ class ExtensionTesterMetrics(ExtensionTester):
             ten_env.stop_test()
 
 
-@patch("google_tts_python.google_tts.GoogleTTS")
+@patch("google_tts_python.extension.GoogleTTS")
 def test_ttfb_metrics(MockGoogleTTS):
     """Test that the extension sends TTFB metrics correctly."""
     # Mock the GoogleTTS class
@@ -96,16 +96,7 @@ def test_ttfb_metrics(MockGoogleTTS):
     mock_client_instance.credentials = None
     mock_client_instance.config.language_code = "en-US"
     mock_client_instance.config.get_ssml_gender = AsyncMock(return_value=1)
-    mock_client_instance._initialize_client = AsyncMock()
-
-    # Set up required attributes
-    mock_client_instance.client = AsyncMock()
-    mock_client_instance.config = AsyncMock()
-    mock_client_instance.ten_env = AsyncMock()
-    mock_client_instance._is_cancelled = False
-    mock_client_instance.credentials = None
-    mock_client_instance.config.language_code = "en-US"
-    mock_client_instance.config.get_ssml_gender = AsyncMock(return_value=1)
+    # Mock the _initialize_client method to avoid actual initialization
     mock_client_instance._initialize_client = AsyncMock()
 
     # Create and run the tester
@@ -137,7 +128,7 @@ def test_ttfb_metrics(MockGoogleTTS):
     ), f"TTFB value should be < 10000ms, got {tester.ttfb_value}"
 
 
-@patch("google_tts_python.google_tts.GoogleTTS")
+@patch("google_tts_python.extension.GoogleTTS")
 def test_audio_timing_metrics(MockGoogleTTS):
     """Test that the extension sends audio timing metrics correctly."""
     # Mock the GoogleTTS class
@@ -164,29 +155,10 @@ def test_audio_timing_metrics(MockGoogleTTS):
     mock_client_instance.credentials = None
     mock_client_instance.config.language_code = "en-US"
     mock_client_instance.config.get_ssml_gender = AsyncMock(return_value=1)
+    # Mock the _initialize_client method to avoid actual initialization
     mock_client_instance._initialize_client = AsyncMock()
 
     # Create and run the tester
-
-    # Set up required attributes
-    mock_client_instance.client = AsyncMock()
-    mock_client_instance.config = AsyncMock()
-    mock_client_instance.ten_env = AsyncMock()
-    mock_client_instance._is_cancelled = False
-    mock_client_instance.credentials = None
-    mock_client_instance.config.language_code = "en-US"
-    mock_client_instance.config.get_ssml_gender = AsyncMock(return_value=1)
-    mock_client_instance._initialize_client = AsyncMock()
-
-    # Set up required attributes
-    mock_client_instance.client = AsyncMock()
-    mock_client_instance.config = AsyncMock()
-    mock_client_instance.ten_env = AsyncMock()
-    mock_client_instance._is_cancelled = False
-    mock_client_instance.credentials = None
-    mock_client_instance.config.language_code = "en-US"
-    mock_client_instance.config.get_ssml_gender = AsyncMock(return_value=1)
-    mock_client_instance._initialize_client = AsyncMock()
     tester = ExtensionTesterMetrics()
 
     # Set up configuration
@@ -205,7 +177,7 @@ def test_audio_timing_metrics(MockGoogleTTS):
     assert tester.audio_end_received, "Audio end event was not received"
 
 
-@patch("google_tts_python.google_tts.GoogleTTS")
+@patch("google_tts_python.extension.GoogleTTS")
 def test_metrics_with_long_text(MockGoogleTTS):
     """Test that the extension sends metrics correctly with long text."""
     # Mock the GoogleTTS class
@@ -233,6 +205,7 @@ def test_metrics_with_long_text(MockGoogleTTS):
     mock_client_instance.credentials = None
     mock_client_instance.config.language_code = "en-US"
     mock_client_instance.config.get_ssml_gender = AsyncMock(return_value=1)
+    # Mock the _initialize_client method to avoid actual initialization
     mock_client_instance._initialize_client = AsyncMock()
 
     # Create and run the tester
@@ -261,7 +234,7 @@ def test_metrics_with_long_text(MockGoogleTTS):
     ), f"TTFB value should be > 0, got {tester.ttfb_value}"
 
 
-@patch("google_tts_python.google_tts.GoogleTTS")
+@patch("google_tts_python.extension.GoogleTTS")
 def test_metrics_with_fast_response(MockGoogleTTS):
     """Test that the extension sends metrics correctly with fast response."""
     # Mock the GoogleTTS class
@@ -288,6 +261,7 @@ def test_metrics_with_fast_response(MockGoogleTTS):
     mock_client_instance.credentials = None
     mock_client_instance.config.language_code = "en-US"
     mock_client_instance.config.get_ssml_gender = AsyncMock(return_value=1)
+    # Mock the _initialize_client method to avoid actual initialization
     mock_client_instance._initialize_client = AsyncMock()
 
     # Create and run the tester
@@ -319,7 +293,7 @@ def test_metrics_with_fast_response(MockGoogleTTS):
     ), f"TTFB value should be < 1000ms for fast response, got {tester.ttfb_value}"
 
 
-@patch("google_tts_python.google_tts.GoogleTTS")
+@patch("google_tts_python.extension.GoogleTTS")
 def test_metrics_with_flush(MockGoogleTTS):
     """Test that the extension handles metrics correctly when flush occurs."""
     # Mock the GoogleTTS class
@@ -346,6 +320,7 @@ def test_metrics_with_flush(MockGoogleTTS):
     mock_client_instance.credentials = None
     mock_client_instance.config.language_code = "en-US"
     mock_client_instance.config.get_ssml_gender = AsyncMock(return_value=1)
+    # Mock the _initialize_client method to avoid actual initialization
     mock_client_instance._initialize_client = AsyncMock()
 
     # Create and run the tester

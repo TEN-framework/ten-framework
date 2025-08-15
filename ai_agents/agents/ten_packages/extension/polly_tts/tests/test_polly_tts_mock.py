@@ -288,7 +288,7 @@ def test_polly_tts_network_timeout_mock(mock_boto_client, mock_boto_session):
 
 def test_polly_tts_params_validation():
     """test polly tts params validation"""
-    from polly_tts import PollyTTSParams
+    from ten_packages.extension.polly_tts.polly_tts import PollyTTSParams
 
     # test valid params
     valid_params = PollyTTSParams(
