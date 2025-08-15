@@ -3,13 +3,7 @@ import os
 from typing import Optional
 
 from typing_extensions import override
-<<<<<<< HEAD
 from .const import DUMP_FILE_NAME
-=======
-from .const import (
-    DUMP_FILE_NAME
-)
->>>>>>> c9654c543 (fix： timeline)
 from ten_ai_base.asr import (
     ASRBufferConfig,
     ASRBufferConfigModeKeep,
