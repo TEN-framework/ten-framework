@@ -98,7 +98,7 @@ class test_extension : public ten::extension_t {
               env.send_cmd(std::move(close_app));
             } else {
               std::cout << "Failed to start graph: "
-                        << cmd_result->get_property_string("graph_id") << "\n";
+                        << cmd_result->get_property_string("detail") << "\n";
 
               // NOLINTNEXTLINE(concurrency-mt-unsafe)
               std::exit(EXIT_FAILURE);
