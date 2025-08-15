@@ -56,7 +56,7 @@ static void ten_env_proxy_notify_log(ten_env_t *ten_env, void *user_data) {
   TEN_ASSERT(ctx, "Should not happen.");
 
   ten_env_log(ten_env, ctx->level, ctx->func_name, ctx->file_name, ctx->line_no,
-              ctx->msg, NULL);
+              ctx->msg, NULL, NULL);
 
   ten_event_set(ctx->completed);
 }
@@ -129,7 +129,7 @@ PyObject *ten_py_ten_env_log(PyObject *self, PyObject *args) {
 
     ten_env_log_without_check_thread(py_ten_env->c_ten_env, ctx->level,
                                      ctx->func_name, ctx->file_name,
-                                     ctx->line_no, ctx->msg, NULL);
+                                     ctx->line_no, ctx->msg, NULL, NULL);
   }
 
   ten_error_deinit(&err);

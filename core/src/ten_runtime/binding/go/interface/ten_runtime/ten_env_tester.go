@@ -43,7 +43,7 @@ type TenEnvTester interface {
 	LogInfo(msg string) error
 	LogWarn(msg string) error
 	LogError(msg string) error
-	Log(level LogLevel, msg string) error
+	Log(level LogLevel, msg string, category *string, fields *Value) error
 }
 
 var (
@@ -309,26 +309,26 @@ func (p *tenEnvTester) stopTest(testResult *TenError) error {
 }
 
 func (p *tenEnvTester) LogDebug(msg string) error {
-	return p.logInternal(LogLevelDebug, msg, 2)
+	return p.logInternal(LogLevelDebug, msg, nil, nil, 2)
 }
 
 func (p *tenEnvTester) LogInfo(msg string) error {
-	return p.logInternal(LogLevelInfo, msg, 2)
+	return p.logInternal(LogLevelInfo, msg, nil, nil, 2)
 }
 
 func (p *tenEnvTester) LogWarn(msg string) error {
-	return p.logInternal(LogLevelWarn, msg, 2)
+	return p.logInternal(LogLevelWarn, msg, nil, nil, 2)
 }
 
 func (p *tenEnvTester) LogError(msg string) error {
-	return p.logInternal(LogLevelError, msg, 2)
+	return p.logInternal(LogLevelError, msg, nil, nil, 2)
 }
 
-func (p *tenEnvTester) Log(level LogLevel, msg string) error {
-	return p.logInternal(level, msg, 2)
+func (p *tenEnvTester) Log(level LogLevel, msg string, category *string, fields *Value) error {
+	return p.logInternal(level, msg, category, fields, 2)
 }
 
-func (p *tenEnvTester) logInternal(level LogLevel, msg string, skip int) error {
+func (p *tenEnvTester) logInternal(level LogLevel, msg string, category *string, fields *Value, skip int) error {
 	// Get caller info.
 	pc, fileName, lineNo, ok := runtime.Caller(skip)
 	funcName := "unknown"

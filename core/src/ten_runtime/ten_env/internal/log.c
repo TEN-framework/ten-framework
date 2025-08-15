@@ -10,11 +10,14 @@
 #include "include_internal/ten_utils/log/log.h"
 #include "ten_runtime/ten_env/ten_env.h"
 #include "ten_utils/lib/string.h"
+#include "ten_utils/macro/mark.h"
 
 static void ten_env_log_internal(ten_env_t *self, TEN_LOG_LEVEL level,
                                  const char *func_name, const char *file_name,
                                  size_t line_no, const char *msg,
-                                 const char *category, bool check_thread) {
+                                 const char *category,
+                                 TEN_UNUSED ten_value_t *fields,
+                                 bool check_thread) {
   TEN_ASSERT(self && ten_env_check_integrity(self, check_thread),
              "Should not happen.");
 
@@ -37,20 +40,21 @@ static void ten_env_log_internal(ten_env_t *self, TEN_LOG_LEVEL level,
 void ten_env_log_without_check_thread(ten_env_t *self, TEN_LOG_LEVEL level,
                                       const char *func_name,
                                       const char *file_name, size_t line_no,
-                                      const char *msg, const char *category) {
+                                      const char *msg, const char *category,
+                                      ten_value_t *fields) {
   ten_env_log_internal(self, level, func_name, file_name, line_no, msg,
-                       category, false);
+                       category, fields, false);
 }
 
 void ten_env_log(ten_env_t *self, TEN_LOG_LEVEL level, const char *func_name,
                  const char *file_name, size_t line_no, const char *msg,
-                 const char *category) {
+                 const char *category, ten_value_t *fields) {
   if (ten_env_is_closed(self)) {
     return;
   }
 
   ten_env_log_internal(self, level, func_name, file_name, line_no, msg,
-                       category, true);
+                       category, fields, true);
 }
 
 static void ten_env_log_with_size_formatted_internal(

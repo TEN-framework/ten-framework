@@ -11,8 +11,9 @@
 #include "ten_utils/log/log.h"
 
 typedef struct ten_env_t ten_env_t;
+typedef struct ten_value_t ten_value_t;
 
 TEN_RUNTIME_API void ten_env_log(ten_env_t *self, TEN_LOG_LEVEL level,
                                  const char *func_name, const char *file_name,
                                  size_t line_no, const char *msg,
-                                 const char *category);
+                                 const char *category, ten_value_t *fields);

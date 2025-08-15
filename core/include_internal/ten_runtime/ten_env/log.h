@@ -41,6 +41,7 @@
   } while (0)
 
 typedef struct ten_env_t ten_env_t;
+typedef struct ten_value_t ten_value_t;
 
 TEN_RUNTIME_API void ten_env_log_with_size_formatted_without_check_thread(
     ten_env_t *self, TEN_LOG_LEVEL level, const char *func_name,
@@ -59,4 +60,4 @@ TEN_RUNTIME_PRIVATE_API void ten_env_log_formatted(
 TEN_RUNTIME_API void ten_env_log_without_check_thread(
     ten_env_t *self, TEN_LOG_LEVEL level, const char *func_name,
     const char *file_name, size_t line_no, const char *msg,
-    const char *category);
+    const char *category, ten_value_t *fields);

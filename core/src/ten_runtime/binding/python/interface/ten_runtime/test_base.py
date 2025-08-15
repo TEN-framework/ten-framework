@@ -10,6 +10,7 @@ from libten_runtime_python import (
 )
 from .log_level import LogLevel
 from .error import TenError
+from .value import Value
 
 
 class TenEnvTesterBase:
@@ -24,23 +25,42 @@ class TenEnvTesterBase:
     def stop_test(self, error: TenError | None = None) -> TenError | None:
         return self._internal.stop_test(error)
 
-    def log_debug(self, msg: str) -> TenError | None:
-        return self._log_internal(LogLevel.DEBUG, msg, 2)
+    def log_debug(
+        self, msg: str, category: str | None, fields: Value | None
+    ) -> TenError | None:
+        return self._log_internal(LogLevel.DEBUG, msg, category, fields, 2)
 
-    def log_info(self, msg: str) -> TenError | None:
-        return self._log_internal(LogLevel.INFO, msg, 2)
+    def log_info(
+        self, msg: str, category: str | None, fields: Value | None
+    ) -> TenError | None:
+        return self._log_internal(LogLevel.INFO, msg, category, fields, 2)
 
-    def log_warn(self, msg: str) -> TenError | None:
-        return self._log_internal(LogLevel.WARN, msg, 2)
+    def log_warn(
+        self, msg: str, category: str | None, fields: Value | None
+    ) -> TenError | None:
+        return self._log_internal(LogLevel.WARN, msg, category, fields, 2)
 
-    def log_error(self, msg: str) -> TenError | None:
-        return self._log_internal(LogLevel.ERROR, msg, 2)
+    def log_error(
+        self, msg: str, category: str | None, fields: Value | None
+    ) -> TenError | None:
+        return self._log_internal(LogLevel.ERROR, msg, category, fields, 2)
 
-    def log(self, level: LogLevel, msg: str) -> TenError | None:
-        return self._log_internal(level, msg, 2)
+    def log(
+        self,
+        level: LogLevel,
+        msg: str,
+        category: str | None = None,
+        fields: Value | None = None,
+    ) -> TenError | None:
+        return self._log_internal(level, msg, category, fields, 2)
 
     def _log_internal(
-        self, level: LogLevel, msg: str, skip: int
+        self,
+        level: LogLevel,
+        msg: str,
+        category: str | None,
+        fields: Value | None,
+        skip: int,
     ) -> TenError | None:
         # Get the current frame.
         frame = inspect.currentframe()

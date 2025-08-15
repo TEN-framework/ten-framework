@@ -12,6 +12,7 @@ import { Data } from "./data.js";
 import ten_addon from "./ten_addon.js";
 import { LogLevel } from "./log_level.js";
 import { TenError } from "./error.js";
+import { Value } from "./value.js";
 
 export class TenEnv {
   async sendCmd(
@@ -243,27 +244,27 @@ export class TenEnv {
     });
   }
 
-  logDebug(message: string): TenError | undefined {
-    return this.log_internal(LogLevel.DEBUG, message);
+  logDebug(message: string, category: string | undefined, fields: Value | undefined): TenError | undefined {
+    return this.log_internal(LogLevel.DEBUG, message, category, fields);
   }
 
-  logInfo(message: string): TenError | undefined {
-    return this.log_internal(LogLevel.INFO, message);
+  logInfo(message: string, category: string | undefined, fields: Value | undefined): TenError | undefined {
+    return this.log_internal(LogLevel.INFO, message, category, fields);
   }
 
-  logWarn(message: string): TenError | undefined {
-    return this.log_internal(LogLevel.WARN, message);
+  logWarn(message: string, category: string | undefined, fields: Value | undefined): TenError | undefined {
+    return this.log_internal(LogLevel.WARN, message, category, fields);
   }
 
-  logError(message: string): TenError | undefined {
-    return this.log_internal(LogLevel.ERROR, message);
+  logError(message: string, category: string | undefined, fields: Value | undefined): TenError | undefined {
+    return this.log_internal(LogLevel.ERROR, message, category, fields);
   }
 
-  log(level: LogLevel, message: string): TenError | undefined {
-    return this.log_internal(level, message);
+  log(level: LogLevel, message: string, category: string | undefined, fields: Value | undefined): TenError | undefined {
+    return this.log_internal(level, message, category, fields);
   }
 
-  private log_internal(level: number, message: string): TenError | undefined {
+  private log_internal(level: number, message: string, category: string | undefined, fields: Value | undefined): TenError | undefined {
     const _prepareStackTrace = Error.prepareStackTrace;
     Error.prepareStackTrace = (_, stack): NodeJS.CallSite[] => stack;
     const stack_ = new Error().stack as unknown as NodeJS.CallSite[];

@@ -50,7 +50,7 @@ type TenEnv interface {
 	LogInfo(msg string) error
 	LogWarn(msg string) error
 	LogError(msg string) error
-	Log(level LogLevel, msg string) error
+	Log(level LogLevel, msg string, category *string, fields *Value) error
 }
 
 // Making a compile-time assertion which indicates that if 'ten' type doesn't
@@ -286,7 +286,7 @@ func (p *tenEnv) SendAudioFrame(
 }
 
 func (p *tenEnv) OnConfigureDone() error {
-	p.Log(LogLevelDebug, "OnConfigureDone")
+	p.LogDebug("OnConfigureDone")
 
 	C.ten_go_ten_env_on_configure_done(p.cPtr)
 
@@ -344,26 +344,26 @@ func (p *tenEnv) String() string {
 }
 
 func (p *tenEnv) LogDebug(msg string) error {
-	return p.logInternal(LogLevelDebug, msg, 2)
+	return p.logInternal(LogLevelDebug, msg, nil, nil, 2)
 }
 
 func (p *tenEnv) LogInfo(msg string) error {
-	return p.logInternal(LogLevelInfo, msg, 2)
+	return p.logInternal(LogLevelInfo, msg, nil, nil, 2)
 }
 
 func (p *tenEnv) LogWarn(msg string) error {
-	return p.logInternal(LogLevelWarn, msg, 2)
+	return p.logInternal(LogLevelWarn, msg, nil, nil, 2)
 }
 
 func (p *tenEnv) LogError(msg string) error {
-	return p.logInternal(LogLevelError, msg, 2)
+	return p.logInternal(LogLevelError, msg, nil, nil, 2)
 }
 
-func (p *tenEnv) Log(level LogLevel, msg string) error {
-	return p.logInternal(level, msg, 2)
+func (p *tenEnv) Log(level LogLevel, msg string, category *string, fields *Value) error {
+	return p.logInternal(level, msg, category, fields, 2)
 }
 
-func (p *tenEnv) logInternal(level LogLevel, msg string, skip int) error {
+func (p *tenEnv) logInternal(level LogLevel, msg string, category *string, fields *Value, skip int) error {
 	// Get caller info.
 	pc, fileName, lineNo, ok := runtime.Caller(skip)
 	funcName := "unknown"
