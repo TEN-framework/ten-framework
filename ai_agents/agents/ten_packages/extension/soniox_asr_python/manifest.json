@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "soniox_asr_python",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "dependencies": [
     {
       "type": "system",
@@ -18,10 +18,10 @@
     "include": [
       "manifest.json",
       "property.json",
-      "tests/**",
+      "**.py",
       "requirements.txt",
-      ".vscode/**",
-      "**/*.py"
+      "docs/**",
+      "*.md"
     ]
   },
   "api": {},

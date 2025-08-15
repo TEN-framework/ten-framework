@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "gladia_asr_python",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "dependencies": [
     {
       "type": "system",
@@ -33,5 +33,14 @@
         }
       }
     }
+  },
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "**.py",
+      "requirements.txt",
+      "docs/**"
+    ]
   }
 }

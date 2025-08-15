@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "bytedance_asr",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "dependencies": [
     {
       "type": "system",
@@ -36,5 +36,14 @@
         }
       }
     }
+  },
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "**.py",
+      "requirements.txt",
+      "docs/**"
+    ]
   }
 }
