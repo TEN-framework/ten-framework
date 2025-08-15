@@ -157,7 +157,8 @@ impl Property {
     ///
     /// This method ensures that the property configuration is valid and
     /// complete.
-    pub fn validate_and_complete(&mut self) -> Result<()> {
+    /// TODO
+    pub fn validate_and_complete(&mut self) -> Result<()> {w
         Ok(())
     }
 
@@ -174,6 +175,47 @@ impl Property {
         fs::write(property_file_path, new_property_str)?;
 
         Ok(())
+    }
+
+    ///Convert Property.ten to a complete JSON map, including all graph
+    /// information
+    pub fn property_ten_to_json_map(
+        &self,
+        graphs_cache: &HashMap<Uuid, GraphInfo>,
+    ) -> Result<serde_json::Map<String, serde_json::Value>> {
+        let mut json_map: serde_json::Map<String, serde_json::Value> =
+            serde_json::Map::new();
+
+        if let Some(ten_in_property) = &self.ten {
+            //handle uri field
+            if let Some(uri) = &ten_in_property.uri {
+                json_map
+                    .insert("uri".to_string(), serde_json::to_value(uri.clone())?);
+            }
+
+            //handle predefined_graphs field
+            let mut graphs_array = Vec::new();
+            if let Some(graph_uuids) = &ten_in_property.predefined_graphs {
+                for uuid in graph_uuids {
+                    if let Some(graph_info) = graphs_cache.get(&uuid){
+                        graphs_array.push(serde_json::to_value(graph_info.clone())?);
+                    }
+                }
+            }
+            json_map.insert(TEN_STR_PREDEFINED_GRAPHS.to_string(),
+                serde_json::to_value(graphs_array)?,
+            );
+
+            //handle other fields
+            // for (key, value) in self.ten.iter() {
+            //     if key == "uri" || key == "predefined_graphs" {
+            //         continue;
+            //     }
+            //     json_map.insert(key.clone(), value.clone());
+            // }
+        }
+
+        Ok(json_map)
     }
 }
 

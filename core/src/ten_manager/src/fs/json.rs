@@ -77,7 +77,11 @@ pub fn write_manifest_json_file(
 }
 
 /// Patch the property.json file with the given property.
-fn patch_property_json_file(base_dir: &str, property: &Property) -> Result<()> {
+pub fn patch_property_json_file(
+    base_dir: &str,
+    property: &Property,
+    graphs_cache: &HashMap<Uuid, GraphInfo>,
+) -> Result<()> {
     //read from property.json
     let mut whole_property_json = serde_json::Value::Object(
         read_json_file_to_map(
@@ -92,9 +96,9 @@ fn patch_property_json_file(base_dir: &str, property: &Property) -> Result<()> {
     let old_ten_json: serde_json::Value =
         whole_property_json.get(&ten_field_str).cloned().unwrap_or(Value::Null);
 
-    let new_ten_json: serde_json::Value =
-        serde_json::to_value(&property.ten)
-            .context("Failed to convert property.ten to JSON value")?;
+    let new_ten_json: serde_json::Value = property
+        .property_ten_to_json_map(graphs_cache)
+        .context("Failed to convert property.ten to JSON value")?;
 
     let patch = json_patch::diff(&old_ten_json, &new_ten_json);
 

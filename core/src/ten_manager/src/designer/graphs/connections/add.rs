@@ -35,6 +35,8 @@ use crate::graph::{
     update_graph_connections_in_property_all_fields,
 };
 
+use crate::fs::json::patch_property_json_file;
+
 #[derive(Serialize, Deserialize)]
 pub struct AddGraphConnectionRequestPayload {
     pub graph_id: Uuid,
@@ -164,14 +166,11 @@ pub async fn add_graph_connection_endpoint(
             let connections_to_add =
                 vec![create_graph_connection(&request_payload)];
 
-            // Update the property_all_fields map and write to property.json.
-            if let Err(e) = update_graph_connections_in_property_all_fields(
+            // Update property.json file.
+            if let Err(e) = patch_property_json_file(
                 &pkg_info.url,
-                &mut property.all_fields,
-                graph_info.name.as_ref().unwrap(),
-                Some(&connections_to_add),
-                None,
-                None,
+                &property,
+                &graphs_cache,
             ) {
                 eprintln!("Warning: Failed to update property.json file: {e}");
             }
