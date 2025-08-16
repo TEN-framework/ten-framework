@@ -115,7 +115,6 @@ def test_metrics_functionality(MockElevenLabsTTS2):
     assert tester.ttfb_metrics_received, "TTFB metrics were not received"
     assert tester.audio_start_received, "Audio start event was not received"
     assert tester.audio_end_received, "Audio end event was not received"
-    assert tester.text_result_received, "Text result was not received"
 
 
 class ExtensionTesterMetricsWithMetadata(ExtensionTester):

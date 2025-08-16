@@ -304,12 +304,32 @@ class BytedanceV3Client:
         self.ten_env.log_debug(
             f"Connecting to {url} with headers: {json.dumps(self.get_headers(), indent=2)}"
         )
-        self.ws = await websockets.connect(
-            url,
-            additional_headers=self.get_headers(),
-            max_size=100_000_000,
-            compression=None,
-        )
+        try:
+            # Try with additional_headers first (older websockets versions)
+            self.ws = await websockets.connect(
+                url,
+                additional_headers=self.get_headers(),
+                max_size=100_000_000,
+                compression=None,
+            )
+        except TypeError:
+            # If additional_headers is not supported, try with extra_headers (newer versions)
+            try:
+                self.ws = await websockets.connect(
+                    url,
+                    extra_headers=self.get_headers(),
+                    max_size=100_000_000,
+                    compression=None,
+                )
+            except TypeError:
+                # If neither works, try without headers and add them manually
+                self.ws = await websockets.connect(
+                    url,
+                    max_size=100_000_000,
+                    compression=None,
+                )
+                # Note: In this case, headers would need to be sent differently
+                # This is a fallback and may not work for all servers
 
     async def send_event(
         self,

@@ -19,7 +19,6 @@ class GoogleTTS:
         self.config = config
         self.ten_env = ten_env
         self.client = None
-        self._is_cancelled = False
         self._initialize_client()
         self.credentials = None
 
@@ -88,7 +87,6 @@ class GoogleTTS:
 
     async def get(self, text: str) -> AsyncIterator[tuple[bytes | None, int]]:
         """Generate TTS audio for the given text"""
-        self._is_cancelled = False
 
         self.ten_env.log_debug(f"Generating TTS for text: '{text[:50]}...'")
 
@@ -127,22 +125,12 @@ class GoogleTTS:
                     sample_rate_hertz=self.config.sample_rate,
                 )
 
-                # Check for cancellation before making the request
-                if self._is_cancelled:
-                    yield None, EVENT_TTS_FLUSH
-                    return
-
                 # Perform the text-to-speech request
                 response = self.client.synthesize_speech(
                     input=synthesis_input,
                     voice=voice,
                     audio_config=audio_config,
                 )
-
-                # Check for cancellation after getting response
-                if self._is_cancelled:
-                    yield None, EVENT_TTS_FLUSH
-                    return
 
                 # The response's audio_content is binary
                 audio_content = response.audio_content
@@ -212,13 +200,13 @@ class GoogleTTS:
                         yield error_message.encode("utf-8"), EVENT_TTS_ERROR
                     return
 
-    async def cancel(self):
-        """Cancel the current TTS operation"""
-        self.ten_env.log_debug("GoogleTTS: cancel() called.")
-        self._is_cancelled = True
-
     def clean(self):
         """Clean up resources"""
         self.ten_env.log_debug("GoogleTTS: clean() called.")
         if self.client:
             self.client = None
+
+    def reset(self):
+        """Reset the client"""
+        self.client = None
+        self._initialize_client()
