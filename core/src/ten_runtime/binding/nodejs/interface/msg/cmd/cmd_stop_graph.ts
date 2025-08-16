@@ -17,6 +17,13 @@ export class StopGraphCmd extends Cmd {
   static Create(): StopGraphCmd {
     return new StopGraphCmd();
   }
+
+  /**
+   * Set the graph ID for this stop graph command.
+   */
+  setGraphId(graphId: string): void {
+    ten_addon.ten_nodejs_cmd_stop_graph_set_graph_id(this, graphId);
+  }
 }
 
 ten_addon.ten_nodejs_cmd_stop_graph_register_class(StopGraphCmd);

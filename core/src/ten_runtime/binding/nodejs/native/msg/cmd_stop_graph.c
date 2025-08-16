@@ -5,8 +5,10 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 #include "include_internal/ten_runtime/binding/nodejs/common/common.h"
+#include "include_internal/ten_runtime/binding/nodejs/error/error.h"
 #include "include_internal/ten_runtime/binding/nodejs/msg/cmd.h"
 #include "js_native_api.h"
+#include "ten_runtime/common/error_code.h"
 #include "ten_runtime/msg/cmd/stop_graph/cmd.h"
 #include "ten_utils/macro/mark.h"
 #include "ten_utils/macro/memory.h"
@@ -91,10 +93,58 @@ static napi_value ten_nodejs_cmd_stop_graph_create(napi_env env,
   return js_undefined(env);
 }
 
+static napi_value ten_nodejs_cmd_stop_graph_set_graph_id(
+    napi_env env, napi_callback_info info) {
+  const size_t argc = 2;
+  napi_value args[argc];  // this, graph_id
+  if (!ten_nodejs_get_js_func_args(env, info, args, argc)) {
+    napi_fatal_error(NULL, NAPI_AUTO_LENGTH,
+                     "Incorrect number of parameters passed.",
+                     NAPI_AUTO_LENGTH);
+    TEN_ASSERT(0, "Should not happen.");
+    return js_undefined(env);
+  }
+
+  ten_nodejs_cmd_t *cmd_bridge = NULL;
+  napi_status status = napi_unwrap(env, args[0], (void **)&cmd_bridge);
+  RETURN_UNDEFINED_IF_NAPI_FAIL(status == napi_ok && cmd_bridge != NULL,
+                                "Failed to get cmd bridge: %d", status);
+  TEN_ASSERT(cmd_bridge, "Should not happen.");
+
+  ten_string_t graph_id;
+  TEN_STRING_INIT(graph_id);
+
+  bool rc = ten_nodejs_get_str_from_js(env, args[1], &graph_id);
+  RETURN_UNDEFINED_IF_NAPI_FAIL(rc, "Failed to get graph ID", NULL);
+
+  bool result = ten_cmd_stop_graph_set_graph_id(
+      cmd_bridge->msg.msg, ten_string_get_raw_str(&graph_id));
+
+  ten_string_deinit(&graph_id);
+
+  // Note: ten_cmd_stop_graph_set_graph_id doesn't take an error parameter,
+  // so we don't need to handle errors here. If it fails, we just return
+  // undefined.
+  if (!result) {
+    // Create a generic error for consistency
+    ten_error_t err;
+    TEN_ERROR_INIT(err);
+    ten_error_set(&err, TEN_ERROR_CODE_GENERIC, "Failed to set graph ID");
+
+    napi_value js_error = ten_nodejs_error_wrap(env, &err);
+    ten_error_deinit(&err);
+
+    return js_error ? js_error : js_undefined(env);
+  }
+
+  return js_undefined(env);
+}
+
 napi_value ten_nodejs_cmd_stop_graph_module_init(napi_env env,
                                                  napi_value exports) {
   EXPORT_FUNC(env, exports, ten_nodejs_cmd_stop_graph_register_class);
   EXPORT_FUNC(env, exports, ten_nodejs_cmd_stop_graph_create);
+  EXPORT_FUNC(env, exports, ten_nodejs_cmd_stop_graph_set_graph_id);
 
   return exports;
 }

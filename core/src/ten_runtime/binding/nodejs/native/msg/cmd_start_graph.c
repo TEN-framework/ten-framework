@@ -5,6 +5,7 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 #include "include_internal/ten_runtime/binding/nodejs/common/common.h"
+#include "include_internal/ten_runtime/binding/nodejs/error/error.h"
 #include "include_internal/ten_runtime/binding/nodejs/msg/cmd.h"
 #include "js_native_api.h"
 #include "ten_runtime/msg/cmd/start_graph/cmd.h"
@@ -91,10 +92,101 @@ static napi_value ten_nodejs_cmd_start_graph_create(napi_env env,
   return js_undefined(env);
 }
 
+static napi_value ten_nodejs_cmd_start_graph_set_predefined_graph_name(
+    napi_env env, napi_callback_info info) {
+  const size_t argc = 2;
+  napi_value args[argc];  // this, predefined_graph_name
+  if (!ten_nodejs_get_js_func_args(env, info, args, argc)) {
+    napi_fatal_error(NULL, NAPI_AUTO_LENGTH,
+                     "Incorrect number of parameters passed.",
+                     NAPI_AUTO_LENGTH);
+    TEN_ASSERT(0, "Should not happen.");
+    return js_undefined(env);
+  }
+
+  ten_nodejs_cmd_t *cmd_bridge = NULL;
+  napi_status status = napi_unwrap(env, args[0], (void **)&cmd_bridge);
+  RETURN_UNDEFINED_IF_NAPI_FAIL(status == napi_ok && cmd_bridge != NULL,
+                                "Failed to get cmd bridge: %d", status);
+  TEN_ASSERT(cmd_bridge, "Should not happen.");
+
+  ten_string_t predefined_graph_name;
+  TEN_STRING_INIT(predefined_graph_name);
+
+  bool rc = ten_nodejs_get_str_from_js(env, args[1], &predefined_graph_name);
+  RETURN_UNDEFINED_IF_NAPI_FAIL(rc, "Failed to get predefined graph name",
+                                NULL);
+
+  ten_error_t err;
+  TEN_ERROR_INIT(err);
+
+  bool result = ten_cmd_start_graph_set_predefined_graph_name(
+      cmd_bridge->msg.msg, ten_string_get_raw_str(&predefined_graph_name),
+      &err);
+
+  ten_string_deinit(&predefined_graph_name);
+
+  napi_value js_error = NULL;
+  if (!result) {
+    js_error = ten_nodejs_error_wrap(env, &err);
+    ASSERT_IF_NAPI_FAIL(js_error, "Failed to create JS error", NULL);
+  }
+
+  ten_error_deinit(&err);
+
+  return js_error ? js_error : js_undefined(env);
+}
+
+static napi_value ten_nodejs_cmd_start_graph_set_graph_from_json_str(
+    napi_env env, napi_callback_info info) {
+  const size_t argc = 2;
+  napi_value args[argc];  // this, json_str
+  if (!ten_nodejs_get_js_func_args(env, info, args, argc)) {
+    napi_fatal_error(NULL, NAPI_AUTO_LENGTH,
+                     "Incorrect number of parameters passed.",
+                     NAPI_AUTO_LENGTH);
+    TEN_ASSERT(0, "Should not happen.");
+    return js_undefined(env);
+  }
+
+  ten_nodejs_cmd_t *cmd_bridge = NULL;
+  napi_status status = napi_unwrap(env, args[0], (void **)&cmd_bridge);
+  RETURN_UNDEFINED_IF_NAPI_FAIL(status == napi_ok && cmd_bridge != NULL,
+                                "Failed to get cmd bridge: %d", status);
+  TEN_ASSERT(cmd_bridge, "Should not happen.");
+
+  ten_string_t json_str;
+  TEN_STRING_INIT(json_str);
+
+  bool rc = ten_nodejs_get_str_from_js(env, args[1], &json_str);
+  RETURN_UNDEFINED_IF_NAPI_FAIL(rc, "Failed to get JSON string", NULL);
+
+  ten_error_t err;
+  TEN_ERROR_INIT(err);
+
+  bool result = ten_cmd_start_graph_set_graph_from_json_str(
+      cmd_bridge->msg.msg, ten_string_get_raw_str(&json_str), &err);
+
+  ten_string_deinit(&json_str);
+
+  napi_value js_error = NULL;
+  if (!result) {
+    js_error = ten_nodejs_error_wrap(env, &err);
+    ASSERT_IF_NAPI_FAIL(js_error, "Failed to create JS error", NULL);
+  }
+
+  ten_error_deinit(&err);
+
+  return js_error ? js_error : js_undefined(env);
+}
+
 napi_value ten_nodejs_cmd_start_graph_module_init(napi_env env,
                                                   napi_value exports) {
   EXPORT_FUNC(env, exports, ten_nodejs_cmd_start_graph_register_class);
   EXPORT_FUNC(env, exports, ten_nodejs_cmd_start_graph_create);
+  EXPORT_FUNC(env, exports,
+              ten_nodejs_cmd_start_graph_set_predefined_graph_name);
+  EXPORT_FUNC(env, exports, ten_nodejs_cmd_start_graph_set_graph_from_json_str);
 
   return exports;
 }
