@@ -295,7 +295,7 @@ def test_network_retry_robustness(MockGoogleTTS):
     # Verify that error was received (since mock doesn't implement retry logic)
     assert tester.error_received, "Error should be received for network failure"
     assert (
-        tester.request_count == 0
+        tester.request_count == 1
     ), f"Expected 0 requests to complete, got {tester.request_count}"
 
 

@@ -14,7 +14,7 @@ from ten_ai_base.message import (
     ModuleType,
     TTSAudioEndReason,
 )
-from ten_ai_base.struct import TTSTextInput, TTSTextResult
+from ten_ai_base.struct import TTSTextInput
 from ten_ai_base.tts2 import AsyncTTS2BaseExtension
 
 from .config import GoogleTTSConfig
@@ -42,7 +42,6 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
         self.recorder_map: dict[str, PCMWriter] = (
             {}
         )  # Store PCMWriter instances for different request_ids
-        self.flush_request_ids: set[str] = set()  # Track flushed request IDs
         self.completed_request_ids: set[str] = (
             set()
         )  # Track completed request IDs
@@ -120,7 +119,6 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
 
         # Clear all maps and sets
         self.recorder_map.clear()
-        self.flush_request_ids.clear()
         self.completed_request_ids.clear()
 
         ten_env.log_info("GoogleTTS extension on_stop completed")
@@ -163,20 +161,12 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
         if name == "tts_flush":
             ten_env.log_info(f"Received tts_flush data: {name}")
 
-            # Get flush_id and record to flush_request_ids
-            flush_id, _ = data.get_property_string("flush_id")
-            if flush_id:
-                self.flush_request_ids.add(flush_id)
-                ten_env.log_info(
-                    f"Added request_id {flush_id} to flush_request_ids set"
-                )
-
             try:
-                await self.client.cancel()
+                await self.client.reset()
             except Exception as e:
                 ten_env.log_error(f"Error in handle_flush: {e}")
                 await self.send_tts_error(
-                    flush_id,
+                    self.current_request_id,
                     ModuleError(
                         message=str(e),
                         module=ModuleType.TTS,
@@ -184,42 +174,37 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                         vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
                     ),
                 )
-                return
 
-            # Update request_id
-            self.completed_request_ids.add(flush_id)
-            self.ten_env.log_info(f"add completed request_id to: {flush_id}")
-
-            # Send audio_end
-            request_event_interval = 0
-            if self.sent_ts is not None:
-                request_event_interval = int(
-                    (datetime.now() - self.sent_ts).total_seconds() * 1000
-                )
-            await self.send_tts_audio_end(
-                flush_id,
-                request_event_interval,
-                self._calculate_audio_duration_ms(),
-                self.current_turn_id,
-                TTSAudioEndReason.INTERRUPTED,
-            )
-            ten_env.log_info(
-                f"Sent tts_audio_end with INTERRUPTED reason for request_id: {flush_id}"
-            )
-
+            await self.handle_completed_request(TTSAudioEndReason.INTERRUPTED)
         await super().on_data(ten_env, data)
+
+    async def handle_completed_request(self, reason: TTSAudioEndReason):
+        # update request_id
+        self.completed_request_ids.add(self.current_request_id)
+        self.ten_env.log_info(
+            f"add completed request_id to: {self.current_request_id}"
+        )
+        # send audio_end
+        request_event_interval = 0
+        if self.sent_ts is not None:
+            request_event_interval = int(
+                (datetime.now() - self.sent_ts).total_seconds() * 1000
+            )
+        await self.send_tts_audio_end(
+            self.current_request_id,
+            request_event_interval,
+            self._calculate_audio_duration_ms(),
+            self.current_turn_id,
+            reason,
+        )
+        self.ten_env.log_info(
+            f"Sent tts_audio_end with INTERRUPTED reason for request_id: {self.current_request_id}"
+        )
 
     async def request_tts(self, t: TTSTextInput) -> None:
         try:
             if not self.client or not self.config:
                 raise RuntimeError("Extension is not initialized properly.")
-
-            # Check if request_id is in flush_request_ids
-            if t.request_id in self.flush_request_ids:
-                self.ten_env.log_warn(
-                    f"Request ID {t.request_id} was flushed, ignoring TTS request"
-                )
-                return
 
             # Check if request_id has already been completed
             if (
@@ -275,7 +260,6 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                 self.sent_ts = datetime.now()
                 first_chunk = True
                 cur_duration_bytes = 0
-                start_ms = 0
 
             self.ten_env.log_info(
                 f"Processing TTS request for text: '{t.text[:50]}...'"
@@ -285,15 +269,6 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
             audio_generator = self.client.get(t.text)
             try:
                 async for audio_chunk, event in audio_generator:
-                    # Check if current request_id is in flush_request_ids
-                    if (
-                        self.current_request_id
-                        and self.current_request_id in self.flush_request_ids
-                    ):
-                        self.ten_env.log_info(
-                            f"Request ID {self.current_request_id} was flushed, skipping audio data"
-                        )
-                        break
 
                     if event == EVENT_TTS_RESPONSE and audio_chunk:
                         self.total_audio_bytes += len(audio_chunk)
@@ -305,7 +280,6 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                             and self.current_request_id
                         ):
                             start_datetime = datetime.now()
-                            start_ms = int(start_datetime.timestamp() * 1000)
                             ttfb = int(
                                 (start_datetime - self.sent_ts).total_seconds()
                                 * 1000
@@ -351,7 +325,7 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                                 ),
                             ),
                         )
-                        return
+                        return  # Exit early on error, don't send audio_end
 
                     elif event == EVENT_TTS_ERROR:
                         error_msg = (
@@ -374,7 +348,7 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                         vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
                     ),
                 )
-                return
+
             finally:
                 # Ensure the async generator is properly closed
                 try:
@@ -382,53 +356,13 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                 except Exception as e:
                     self.ten_env.log_warn(f"Error closing audio generator: {e}")
 
-            # Send text result
-            if t.text and self.current_request_id:
-                await self.send_tts_text_result(
-                    TTSTextResult(
-                        request_id=self.current_request_id,
-                        text=t.text,
-                        text_input_end=t.text_input_end,
-                        start_ms=start_ms,
-                        words=[],
-                        duration_ms=int(
-                            float(cur_duration_bytes)
-                            / 2
-                            * 1000
-                            / self.config.sample_rate
-                        ),
-                        metadata={},
-                    )
-                )
-
-            # Handle end of request
+            # Handle end of request (only if no error occurred)
             if t.text_input_end:
                 self.current_request_finished = True
                 # Only send audio_end if not flushed
-                if (
-                    self.current_request_id
-                    and self.current_request_id not in self.flush_request_ids
-                ):
-                    duration_ms = self._calculate_audio_duration_ms()
-                    request_interval = int(
-                        (datetime.now() - self.sent_ts).total_seconds() * 1000
-                    )
-                    await self.send_tts_audio_end(
-                        self.current_request_id,
-                        request_interval,
-                        duration_ms,
-                        self.current_turn_id,
-                    )
-                # Update completed_request_ids if not already added
-                if (
-                    self.current_request_id
-                    and self.current_request_id
-                    not in self.completed_request_ids
-                ):
-                    self.completed_request_ids.add(self.current_request_id)
-                    self.ten_env.log_info(
-                        f"add completed request_id to: {self.current_request_id}"
-                    )
+                await self.handle_completed_request(
+                    TTSAudioEndReason.REQUEST_END
+                )
 
             # Ensure all async operations are completed
             self.ten_env.log_info(

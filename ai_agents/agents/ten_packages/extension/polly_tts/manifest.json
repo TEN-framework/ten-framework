@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "polly_tts",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "dependencies": [
     {
       "type": "system",
@@ -22,7 +22,7 @@
       "**.tent",
       "**.py",
       "README.md",
-      "tests/**"
+      "requirements.txt"
     ]
   },
   "api": {}

@@ -483,8 +483,10 @@ def test_flush_robustness(MockElevenLabsTTS2):
         mock_text_to_speech_ws_streaming
     )
 
-    # Mock the handle_flush method
+    # Mock the handle_flush method and related methods
     mock_client_instance.handle_flush = AsyncMock()
+    mock_client_instance.reconnect_connection = AsyncMock()
+    mock_client_instance._handle_reconnection = AsyncMock()
 
     # Mock the get_synthesized_audio method to return audio data
     audio_data_queue = asyncio.Queue()

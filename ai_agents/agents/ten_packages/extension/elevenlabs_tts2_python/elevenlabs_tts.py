@@ -96,7 +96,7 @@ class ElevenLabsTTS2:
             if self.error_callback:
                 module_error = ModuleError(
                     message=f"Failed to connect to ElevenLabs WebSocket: {str(e)}",
-                    module_name=ModuleType.TTS,
+                    module=ModuleType.TTS,
                     code=ModuleErrorCode.FATAL_ERROR,
                     vendor_info=error_info,
                 )
@@ -156,7 +156,7 @@ class ElevenLabsTTS2:
                         # Send error using callback function
                         module_error = ModuleError(
                             message=data["error"],
-                            module_name=ModuleType.TTS,
+                            module=ModuleType.TTS,
                             code=error_code,
                             vendor_info=error_info,
                         )
@@ -204,7 +204,7 @@ class ElevenLabsTTS2:
 
                 if t.text_input_end:
                     await self.ws.send(json.dumps({"text": ""}))
-                    self.ten_env.log_debug("Sent flush signal to WebSocket")
+                    self.ten_env.log_debug("Sent end signal to WebSocket")
                     return
 
             except websockets.exceptions.ConnectionClosed as e:
@@ -243,7 +243,7 @@ class ElevenLabsTTS2:
             if self.error_callback:
                 module_error = ModuleError(
                     message="Max reconnection attempts reached",
-                    module_name=ModuleType.TTS,
+                    module=ModuleType.TTS,
                     code=ModuleErrorCode.FATAL_ERROR,
                     vendor_info=error_info,
                 )
@@ -313,9 +313,8 @@ class ElevenLabsTTS2:
             self.ten_env.log_error(f"Error getting synthesized audio: {e}")
             raise
 
-    async def handle_flush(self, flush_id: str = None):
+    async def handle_flush(self):
         """Handle flush request"""
-        self.ten_env.log_info(f"Handling flush request for ID: {flush_id}")
 
         try:
             # Clear queue

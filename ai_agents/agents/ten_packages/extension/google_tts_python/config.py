@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, List
 from pydantic import BaseModel, Field
 from google.cloud import texttospeech
 
@@ -28,6 +28,7 @@ class GoogleTTSConfig(BaseModel):
     dump_path: str = "/tmp"
     params: Dict[str, Any] = Field(default_factory=dict)
     sample_rate: int = 24000
+    black_list_keys: List[str] = ["credentials"]
 
     def to_str(self, sensitive_handling: bool = False) -> str:
         if not sensitive_handling:
@@ -44,9 +45,15 @@ class GoogleTTSConfig(BaseModel):
         # self.params is a Dict[str, Any] as defined in the model
         params_dict: Dict[str, Any] = self.params
         # pylint: disable=no-member
+
         for key, value in params_dict.items():
             if hasattr(self, key):
                 setattr(self, key, value)
+
+        # Delete keys after iteration is complete
+        for key in self.black_list_keys:
+            if key in params_dict:
+                del params_dict[key]
 
     def get_ssml_gender(self) -> texttospeech.SsmlVoiceGender:
         """Convert string gender to Google TTS enum"""
