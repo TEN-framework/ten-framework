@@ -111,7 +111,8 @@ static napi_value ten_nodejs_cmd_create(napi_env env, napi_callback_info info) {
 }
 
 napi_value ten_nodejs_cmd_wrap(napi_env env, ten_shared_ptr_t *cmd) {
-  TEN_ASSERT(cmd && ten_msg_check_integrity(cmd), "Should not happen.");
+  TEN_ASSERT(cmd, "Should not happen.");
+  TEN_ASSERT(ten_msg_check_integrity(cmd), "Should not happen.");
 
   ten_nodejs_cmd_t *cmd_bridge = TEN_MALLOC(sizeof(ten_nodejs_cmd_t));
   TEN_ASSERT(cmd_bridge, "Failed to allocate memory.");

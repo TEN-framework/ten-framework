@@ -449,7 +449,8 @@ static void ten_engine_on_graph_remote_connected(ten_remote_t *self,
                      TEN_PROTOCOL_ATTACH_TO_CONNECTION,
              "Should not happen.");
 
-  TEN_ASSERT(cmd && ten_msg_check_integrity(cmd), "Invalid argument.");
+  TEN_ASSERT(cmd, "Invalid argument.");
+  TEN_ASSERT(ten_msg_check_integrity(cmd), "Invalid argument.");
 
   ten_protocol_send_msg(self->connection->protocol, cmd);
 

@@ -42,19 +42,9 @@ def test_cpp_app_python():
     if sys.platform == "win32":
         print("test_cpp_app_python doesn't support win32")
         assert False
-    elif sys.platform == "darwin":
-        # client depends on some libraries in the TEN app.
-        my_env["DYLD_LIBRARY_PATH"] = os.path.join(
-            base_path, "cpp_app_python_app/lib"
-        )
-    else:
+    elif sys.platform == "linux":
         # Test whether the python runtime enables C locale coercion.
         my_env["LC_CTYPE"] = "POSIX"
-
-        # client depends on some libraries in the TEN app.
-        my_env["LD_LIBRARY_PATH"] = os.path.join(
-            base_path, "cpp_app_python_app/lib"
-        )
 
     app_dir_name = "cpp_app_python_app"
     app_root_path = os.path.join(base_path, "cpp_app_python_app")

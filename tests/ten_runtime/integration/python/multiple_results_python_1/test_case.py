@@ -42,16 +42,6 @@ def test_multiple_results_python_1():
     if sys.platform == "win32":
         print("test_multiple_results_python_1 doesn't support win32")
         assert False
-    elif sys.platform == "darwin":
-        # client depends on some libraries in the TEN app.
-        my_env["DYLD_LIBRARY_PATH"] = os.path.join(
-            base_path, "multiple_results_python_1_app/lib"
-        )
-    else:
-        # client depends on some libraries in the TEN app.
-        my_env["LD_LIBRARY_PATH"] = os.path.join(
-            base_path, "multiple_results_python_1_app/lib"
-        )
 
     app_dir_name = "multiple_results_python_1_app"
     app_root_path = os.path.join(base_path, app_dir_name)

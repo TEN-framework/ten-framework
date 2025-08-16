@@ -69,13 +69,19 @@ def test_start_graph_and_set_dests_from_new_graph_go():
         # client depends on some libraries in the TEN app.
         my_env["DYLD_LIBRARY_PATH"] = os.path.join(
             base_path,
-            "start_graph_and_set_dests_from_new_graph_go_app/ten_packages/system/ten_runtime/lib",
+            (
+                "start_graph_and_set_dests_from_new_graph_go_app/"
+                "ten_packages/system/ten_runtime/lib"
+            ),
         )
     else:
         # client depends on some libraries in the TEN app.
         my_env["LD_LIBRARY_PATH"] = os.path.join(
             base_path,
-            "start_graph_and_set_dests_from_new_graph_go_app/ten_packages/system/ten_runtime/lib",
+            (
+                "start_graph_and_set_dests_from_new_graph_go_app/"
+                "ten_packages/system/ten_runtime/lib"
+            ),
         )
 
         if (

@@ -78,13 +78,13 @@ def test_multi_dest_go():
         # client depends on some libraries in the TEN app.
         my_env["DYLD_LIBRARY_PATH"] = os.path.join(
             base_path,
-            ("multi_dest_go_app/ten_packages/" "system/ten_runtime/lib"),
+            "multi_dest_go_app/ten_packages/system/ten_runtime/lib",
         )
     else:
         # client depends on some libraries in the TEN app.
         my_env["LD_LIBRARY_PATH"] = os.path.join(
             base_path,
-            ("multi_dest_go_app/ten_packages/" "system/ten_runtime/lib"),
+            "multi_dest_go_app/ten_packages/system/ten_runtime/lib",
         )
 
         if (
