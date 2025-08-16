@@ -17,10 +17,10 @@
 #include "ten_runtime/binding/cpp/detail/extension.h"  // IWYU pragma: export
 #include "ten_runtime/binding/cpp/detail/extension_impl.h"  // IWYU pragma: export
 #include "ten_runtime/binding/cpp/detail/msg/audio_frame.h"  // IWYU pragma: export
-#include "ten_runtime/binding/cpp/detail/msg/cmd/close_app.h"  // IWYU pragma: export
+#include "ten_runtime/binding/cpp/detail/msg/cmd/close_app_cmd.h"  // IWYU pragma: export
 #include "ten_runtime/binding/cpp/detail/msg/cmd/cmd.h"  // IWYU pragma: export
-#include "ten_runtime/binding/cpp/detail/msg/cmd/start_graph.h"  // IWYU pragma: export
-#include "ten_runtime/binding/cpp/detail/msg/cmd/stop_graph.h"  // IWYU pragma: export
+#include "ten_runtime/binding/cpp/detail/msg/cmd/start_graph_cmd.h"  // IWYU pragma: export
+#include "ten_runtime/binding/cpp/detail/msg/cmd/stop_graph_cmd.h"  // IWYU pragma: export
 #include "ten_runtime/binding/cpp/detail/msg/cmd_result.h"  // IWYU pragma: export
 #include "ten_runtime/binding/cpp/detail/msg/data.h"  // IWYU pragma: export
 #include "ten_runtime/binding/cpp/detail/msg/msg.h"   // IWYU pragma: export

@@ -8,7 +8,7 @@
 
 #include "gtest/gtest.h"
 #include "include_internal/ten_runtime/binding/cpp/ten.h"
-#include "ten_runtime/binding/cpp/detail/msg/cmd/start_graph.h"
+#include "ten_runtime/binding/cpp/detail/msg/cmd/start_graph_cmd.h"
 #include "ten_runtime/msg/cmd/start_graph/cmd.h"
 #include "ten_runtime/ten_env/internal/metadata.h"
 #include "ten_utils/lib/error.h"

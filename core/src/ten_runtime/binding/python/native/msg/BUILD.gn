@@ -11,4 +11,5 @@ ten_runtime_glob("msg") {
     "//core/src/ten_runtime/binding/python/native:ten_runtime_python_config",
   ]
   file_list = all_native_files
+  deps = [ "cmd" ]
 }

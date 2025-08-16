@@ -12,7 +12,7 @@
 #include <thread>
 
 #include "gtest/gtest.h"
-#include "include_internal/ten_runtime/binding/cpp/detail/msg/cmd/timer.h"
+#include "include_internal/ten_runtime/binding/cpp/detail/msg/cmd/timer_cmd.h"
 #include "include_internal/ten_runtime/binding/cpp/ten.h"
 #include "ten_runtime/msg/msg.h"
 #include "ten_utils/lang/cpp/lib/value.h"
@@ -358,7 +358,7 @@ class test_extension_2 : public ten::extension_t {
       cmd_result->set_property("detail", "ok");
       ten_env.return_result(std::move(cmd_result));
 
-      auto timer_cmd = ten::cmd_timer_t::create();
+      auto timer_cmd = ten::timer_cmd_t::create();
       timer_cmd->set_dests({{"", "", nullptr}});
       timer_cmd->set_timer_id(55);
       timer_cmd->set_timeout_us(100);
@@ -367,7 +367,7 @@ class test_extension_2 : public ten::extension_t {
       ten_env.send_cmd(std::move(timer_cmd));
     } else if (ten::msg_internal_accessor_t::get_type(cmd.get()) ==
                    TEN_MSG_TYPE_CMD_TIMEOUT &&
-               static_cast<ten::cmd_timeout_t *>(cmd.get())->get_timer_id() ==
+               static_cast<ten::timeout_cmd_t *>(cmd.get())->get_timer_id() ==
                    55) {
       TEN_ASSERT(timeout_thread == nullptr, "Should not happen.");
 
@@ -516,7 +516,7 @@ TEST(OuterThreadTest, ThirtyTwoThreadsAttemptToSuspend5) {  // NOLINT
   auto *client = new ten::msgpack_tcp_client_t("msgpack://127.0.0.1:8001/");
 
   // Send graph.
-  auto start_graph_cmd = ten::cmd_start_graph_t::create();
+  auto start_graph_cmd = ten::start_graph_cmd_t::create();
   start_graph_cmd->set_graph_from_json(R"({
            "nodes": [{
                "type": "extension",

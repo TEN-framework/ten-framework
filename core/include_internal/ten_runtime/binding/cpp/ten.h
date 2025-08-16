@@ -12,8 +12,8 @@
 #include "include_internal/ten_runtime/addon/extension_group/extension_group.h"  // IWYU pragma: export
 #include "include_internal/ten_runtime/binding/cpp/detail/extension_impl.h"  // IWYU pragma: export
 #include "include_internal/ten_runtime/binding/cpp/detail/msg/cmd/cmd_result_internal_accessor.h"  // IWYU pragma: export
-#include "include_internal/ten_runtime/binding/cpp/detail/msg/cmd/timeout.h"  // IWYU pragma: export
-#include "include_internal/ten_runtime/binding/cpp/detail/msg/cmd/timer.h"  // IWYU pragma: export
+#include "include_internal/ten_runtime/binding/cpp/detail/msg/cmd/timeout_cmd.h"  // IWYU pragma: export
+#include "include_internal/ten_runtime/binding/cpp/detail/msg/cmd/timer_cmd.h"  // IWYU pragma: export
 #include "include_internal/ten_runtime/binding/cpp/detail/msg/msg_internal_accessor.h"  // IWYU pragma: export
 #include "include_internal/ten_runtime/binding/cpp/detail/ten_env_impl.h"  // IWYU pragma: export
 #include "include_internal/ten_runtime/binding/cpp/detail/ten_env_internal_accessor.h"  // IWYU pragma: export
@@ -25,10 +25,10 @@
 #include "ten_runtime/binding/cpp/detail/common.h"     // IWYU pragma: export
 #include "ten_runtime/binding/cpp/detail/extension.h"  // IWYU pragma: export
 #include "ten_runtime/binding/cpp/detail/msg/audio_frame.h"  // IWYU pragma: export
-#include "ten_runtime/binding/cpp/detail/msg/cmd/close_app.h"  // IWYU pragma: export
+#include "ten_runtime/binding/cpp/detail/msg/cmd/close_app_cmd.h"  // IWYU pragma: export
 #include "ten_runtime/binding/cpp/detail/msg/cmd/cmd.h"  // IWYU pragma: export
-#include "ten_runtime/binding/cpp/detail/msg/cmd/start_graph.h"  // IWYU pragma: export
-#include "ten_runtime/binding/cpp/detail/msg/cmd/stop_graph.h"  // IWYU pragma: export
+#include "ten_runtime/binding/cpp/detail/msg/cmd/start_graph_cmd.h"  // IWYU pragma: export
+#include "ten_runtime/binding/cpp/detail/msg/cmd/stop_graph_cmd.h"  // IWYU pragma: export
 #include "ten_runtime/binding/cpp/detail/msg/cmd_result.h"  // IWYU pragma: export
 #include "ten_runtime/binding/cpp/detail/msg/data.h"  // IWYU pragma: export
 #include "ten_runtime/binding/cpp/detail/msg/msg.h"   // IWYU pragma: export

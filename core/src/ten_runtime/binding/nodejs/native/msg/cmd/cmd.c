@@ -4,19 +4,21 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
+#include "include_internal/ten_runtime/binding/nodejs/msg/cmd/cmd.h"
+
 #include "include_internal/ten_runtime/binding/nodejs/common/common.h"
-#include "include_internal/ten_runtime/binding/nodejs/error/error.h"
-#include "include_internal/ten_runtime/binding/nodejs/msg/cmd.h"
+#include "include_internal/ten_runtime/msg/msg.h"
 #include "js_native_api.h"
-#include "ten_runtime/common/error_code.h"
-#include "ten_runtime/msg/cmd/stop_graph/cmd.h"
+#include "ten_runtime/msg/cmd/cmd.h"
+#include "ten_utils/lib/error.h"
+#include "ten_utils/lib/string.h"
 #include "ten_utils/macro/mark.h"
 #include "ten_utils/macro/memory.h"
 
 static napi_ref js_cmd_constructor_ref = NULL;  // NOLINT
 
-static napi_value ten_nodejs_cmd_stop_graph_register_class(
-    napi_env env, napi_callback_info info) {
+static napi_value ten_nodejs_cmd_register_class(napi_env env,
+                                                napi_callback_info info) {
   const size_t argc = 1;
   napi_value args[argc];  // Cmd constructor
   if (!ten_nodejs_get_js_func_args(env, info, args, argc)) {
@@ -58,10 +60,9 @@ static void ten_nodejs_cmd_finalize(napi_env env, void *data,
   ten_nodejs_cmd_destroy(cmd_bridge);
 }
 
-static napi_value ten_nodejs_cmd_stop_graph_create(napi_env env,
-                                                   napi_callback_info info) {
-  const size_t argc = 1;
-  napi_value args[argc];  // this
+static napi_value ten_nodejs_cmd_create(napi_env env, napi_callback_info info) {
+  const size_t argc = 2;
+  napi_value args[argc];  // this, cmd_name
   if (!ten_nodejs_get_js_func_args(env, info, args, argc)) {
     napi_fatal_error(NULL, NAPI_AUTO_LENGTH,
                      "Incorrect number of parameters passed.",
@@ -69,8 +70,24 @@ static napi_value ten_nodejs_cmd_stop_graph_create(napi_env env,
     TEN_ASSERT(0, "Should not happen.");
   }
 
-  ten_shared_ptr_t *c_cmd = ten_cmd_stop_graph_create();
+  ten_string_t cmd_name;
+  TEN_STRING_INIT(cmd_name);
+
+  bool rc = ten_nodejs_get_str_from_js(env, args[1], &cmd_name);
+  if (!rc) {
+    napi_fatal_error(NULL, NAPI_AUTO_LENGTH, "Failed to get cmd_name.",
+                     NAPI_AUTO_LENGTH);
+    TEN_ASSERT(0, "Should not happen.");
+  }
+
+  ten_error_t error;
+  ten_error_init(&error);
+
+  ten_shared_ptr_t *c_cmd =
+      ten_cmd_create(ten_string_get_raw_str(&cmd_name), &error);
   TEN_ASSERT(c_cmd, "Failed to create cmd.");
+
+  ten_string_deinit(&cmd_name);
 
   ten_nodejs_cmd_t *cmd_bridge = TEN_MALLOC(sizeof(ten_nodejs_cmd_t));
   TEN_ASSERT(cmd_bridge, "Failed to allocate memory.");
@@ -93,58 +110,43 @@ static napi_value ten_nodejs_cmd_stop_graph_create(napi_env env,
   return js_undefined(env);
 }
 
-static napi_value ten_nodejs_cmd_stop_graph_set_graph_id(
-    napi_env env, napi_callback_info info) {
-  const size_t argc = 2;
-  napi_value args[argc];  // this, graph_id
-  if (!ten_nodejs_get_js_func_args(env, info, args, argc)) {
-    napi_fatal_error(NULL, NAPI_AUTO_LENGTH,
-                     "Incorrect number of parameters passed.",
-                     NAPI_AUTO_LENGTH);
-    TEN_ASSERT(0, "Should not happen.");
-    return js_undefined(env);
-  }
+napi_value ten_nodejs_cmd_wrap(napi_env env, ten_shared_ptr_t *cmd) {
+  TEN_ASSERT(cmd, "Should not happen.");
+  TEN_ASSERT(ten_msg_check_integrity(cmd), "Should not happen.");
 
-  ten_nodejs_cmd_t *cmd_bridge = NULL;
-  napi_status status = napi_unwrap(env, args[0], (void **)&cmd_bridge);
-  RETURN_UNDEFINED_IF_NAPI_FAIL(status == napi_ok && cmd_bridge != NULL,
-                                "Failed to get cmd bridge: %d", status);
-  TEN_ASSERT(cmd_bridge, "Should not happen.");
+  ten_nodejs_cmd_t *cmd_bridge = TEN_MALLOC(sizeof(ten_nodejs_cmd_t));
+  TEN_ASSERT(cmd_bridge, "Failed to allocate memory.");
 
-  ten_string_t graph_id;
-  TEN_STRING_INIT(graph_id);
+  ten_nodejs_msg_init_from_c_msg(&cmd_bridge->msg, cmd);
 
-  bool rc = ten_nodejs_get_str_from_js(env, args[1], &graph_id);
-  RETURN_UNDEFINED_IF_NAPI_FAIL(rc, "Failed to get graph ID", NULL);
+  napi_value js_msg_name = NULL;
+  napi_value js_create_shell_only_flag = NULL;
 
-  bool result = ten_cmd_stop_graph_set_graph_id(
-      cmd_bridge->msg.msg, ten_string_get_raw_str(&graph_id));
+  const char *msg_name = ten_msg_get_name(cmd);
+  TEN_ASSERT(msg_name, "Should not happen.");
 
-  ten_string_deinit(&graph_id);
+  napi_status status =
+      napi_create_string_utf8(env, msg_name, NAPI_AUTO_LENGTH, &js_msg_name);
+  ASSERT_IF_NAPI_FAIL(status == napi_ok && js_msg_name != NULL,
+                      "Failed to create JS string: %d", status);
 
-  // Note: ten_cmd_stop_graph_set_graph_id doesn't take an error parameter,
-  // so we don't need to handle errors here. If it fails, we just return
-  // undefined.
-  if (!result) {
-    // Create a generic error for consistency
-    ten_error_t err;
-    TEN_ERROR_INIT(err);
-    ten_error_set(&err, TEN_ERROR_CODE_GENERIC, "Failed to set graph ID");
+  status = napi_get_boolean(env, true, &js_create_shell_only_flag);
+  ASSERT_IF_NAPI_FAIL(status == napi_ok && js_create_shell_only_flag != NULL,
+                      "Failed to create JS boolean: %d", status);
 
-    napi_value js_error = ten_nodejs_error_wrap(env, &err);
-    ten_error_deinit(&err);
+  napi_value argv[] = {js_msg_name, js_create_shell_only_flag};
 
-    return js_error ? js_error : js_undefined(env);
-  }
+  napi_value js_cmd = ten_nodejs_create_new_js_object_and_wrap(
+      env, js_cmd_constructor_ref, cmd_bridge, ten_nodejs_cmd_finalize,
+      &cmd_bridge->msg.bridge.js_instance_ref, 2, argv);
+  ASSERT_IF_NAPI_FAIL(js_cmd != NULL, "Failed to create JS Cmd object.");
 
-  return js_undefined(env);
+  return js_cmd;
 }
 
-napi_value ten_nodejs_cmd_stop_graph_module_init(napi_env env,
-                                                 napi_value exports) {
-  EXPORT_FUNC(env, exports, ten_nodejs_cmd_stop_graph_register_class);
-  EXPORT_FUNC(env, exports, ten_nodejs_cmd_stop_graph_create);
-  EXPORT_FUNC(env, exports, ten_nodejs_cmd_stop_graph_set_graph_id);
+napi_value ten_nodejs_cmd_module_init(napi_env env, napi_value exports) {
+  EXPORT_FUNC(env, exports, ten_nodejs_cmd_register_class);
+  EXPORT_FUNC(env, exports, ten_nodejs_cmd_create);
 
   return exports;
 }

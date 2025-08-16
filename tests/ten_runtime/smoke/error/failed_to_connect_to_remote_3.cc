@@ -6,7 +6,7 @@
 //
 #include "gtest/gtest.h"
 #include "include_internal/ten_runtime/binding/cpp/ten.h"
-#include "ten_runtime/binding/cpp/detail/msg/cmd/start_graph.h"
+#include "ten_runtime/binding/cpp/detail/msg/cmd/start_graph_cmd.h"
 #include "ten_runtime/binding/cpp/detail/ten_env.h"
 #include "ten_runtime/common/status_code.h"
 #include "ten_utils/lib/time.h"
@@ -19,7 +19,7 @@ class test_predefined_graph : public ten::extension_t {
   explicit test_predefined_graph(const char *name) : ten::extension_t(name) {}
 
   void on_start(ten::ten_env_t &ten_env) override {
-    auto start_graph_cmd = ten::cmd_start_graph_t::create();
+    auto start_graph_cmd = ten::start_graph_cmd_t::create();
     start_graph_cmd->set_dests({{""}});
     start_graph_cmd->set_predefined_graph_name("graph_1");
     ten_env.send_cmd(
@@ -35,7 +35,7 @@ class test_predefined_graph : public ten::extension_t {
     // Add some random delays to test different timings.
     ten_random_sleep_range_ms(0, 100);
 
-    auto close_app_cmd = ten::cmd_close_app_t::create();
+    auto close_app_cmd = ten::close_app_cmd_t::create();
     close_app_cmd->set_dests({{""}});
     ten_env.send_cmd(std::move(close_app_cmd));
   }

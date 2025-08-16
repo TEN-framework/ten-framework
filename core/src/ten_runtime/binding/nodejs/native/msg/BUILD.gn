@@ -11,4 +11,5 @@ ten_runtime_glob("msg") {
     "//core/src/ten_runtime/binding/nodejs/native:ten_runtime_nodejs_config",
   ]
   file_list = all_native_files
+  deps = [ "cmd" ]
 }

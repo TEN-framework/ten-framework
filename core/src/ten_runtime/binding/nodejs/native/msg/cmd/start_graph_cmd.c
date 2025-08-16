@@ -6,7 +6,7 @@
 //
 #include "include_internal/ten_runtime/binding/nodejs/common/common.h"
 #include "include_internal/ten_runtime/binding/nodejs/error/error.h"
-#include "include_internal/ten_runtime/binding/nodejs/msg/cmd.h"
+#include "include_internal/ten_runtime/binding/nodejs/msg/cmd/cmd.h"
 #include "js_native_api.h"
 #include "ten_runtime/msg/cmd/start_graph/cmd.h"
 #include "ten_utils/macro/mark.h"

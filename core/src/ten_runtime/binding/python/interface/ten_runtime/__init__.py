@@ -22,8 +22,8 @@ from .async_test import AsyncExtensionTester, AsyncTenEnvTester
 from .loc import Loc
 from .msg.cmd.cmd import Cmd
 from .msg.cmd.cmd_result import CmdResult, StatusCode
-from .msg.cmd.cmd_start_graph import StartGraphCmd
-from .msg.cmd.cmd_stop_graph import StopGraphCmd
+from .msg.cmd.start_graph_cmd import StartGraphCmd
+from .msg.cmd.stop_graph_cmd import StopGraphCmd
 from .msg.data import Data
 from .msg.video_frame import VideoFrame, PixelFmt
 from .msg.audio_frame import AudioFrame, AudioFrameDataFmt

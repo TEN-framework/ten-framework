@@ -18,7 +18,7 @@
 #include "ten_runtime/binding/cpp/detail/common.h"
 #include "ten_runtime/binding/cpp/detail/msg/audio_frame.h"
 #include "ten_runtime/binding/cpp/detail/msg/cmd/cmd.h"
-#include "ten_runtime/binding/cpp/detail/msg/cmd/stop_graph.h"
+#include "ten_runtime/binding/cpp/detail/msg/cmd/stop_graph_cmd.h"
 #include "ten_runtime/binding/cpp/detail/msg/data.h"
 #include "ten_runtime/binding/cpp/detail/msg/video_frame.h"
 #include "ten_runtime/binding/cpp/detail/ten_env.h"

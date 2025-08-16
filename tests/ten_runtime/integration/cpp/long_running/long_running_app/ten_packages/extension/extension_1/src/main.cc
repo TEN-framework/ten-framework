@@ -35,7 +35,7 @@ class test_extension : public ten::extension_t {
         auto test_cmd = ten::cmd_t::create("test_cmd_from_1");
         ten_env.send_cmd(std::move(test_cmd));
       } else {
-        auto close_app = ten::cmd_close_app_t::create();
+        auto close_app = ten::close_app_cmd_t::create();
         close_app->set_dests({{""}});
         ten_env.send_cmd(std::move(close_app));
       }

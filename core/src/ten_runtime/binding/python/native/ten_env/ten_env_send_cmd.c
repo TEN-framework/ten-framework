@@ -6,8 +6,8 @@
 //
 #include "include_internal/ten_runtime/binding/python/common/common.h"
 #include "include_internal/ten_runtime/binding/python/common/error.h"
-#include "include_internal/ten_runtime/binding/python/msg/cmd.h"
-#include "include_internal/ten_runtime/binding/python/msg/cmd_result.h"
+#include "include_internal/ten_runtime/binding/python/msg/cmd/cmd.h"
+#include "include_internal/ten_runtime/binding/python/msg/cmd/cmd_result.h"
 #include "include_internal/ten_runtime/binding/python/msg/msg.h"
 #include "include_internal/ten_runtime/binding/python/ten_env/ten_env.h"
 #include "include_internal/ten_runtime/msg/cmd_base/cmd_base.h"

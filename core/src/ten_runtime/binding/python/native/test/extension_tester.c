@@ -11,7 +11,7 @@
 #include "include_internal/ten_runtime/binding/python/common/common.h"
 #include "include_internal/ten_runtime/binding/python/common/error.h"
 #include "include_internal/ten_runtime/binding/python/msg/audio_frame.h"
-#include "include_internal/ten_runtime/binding/python/msg/cmd.h"
+#include "include_internal/ten_runtime/binding/python/msg/cmd/cmd.h"
 #include "include_internal/ten_runtime/binding/python/msg/data.h"
 #include "include_internal/ten_runtime/binding/python/msg/video_frame.h"
 #include "include_internal/ten_runtime/binding/python/test/env_tester.h"
