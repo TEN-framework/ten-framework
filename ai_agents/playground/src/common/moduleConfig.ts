@@ -135,6 +135,11 @@ export const ttsModuleRegistry: Record<string, ModuleRegistry.Module> = {
         type: ModuleRegistry.ModuleType.TTS,
         label: "Minimax TTS",
     },
+    cloudsway_tts_python: {
+        name: "cloudsway_tts_python",
+        type: ModuleRegistry.ModuleType.TTS,
+        label: "Cloudsway TTS",
+    },
     polly_tts: {
         name: "polly_tts",
         type: ModuleRegistry.ModuleType.TTS,
