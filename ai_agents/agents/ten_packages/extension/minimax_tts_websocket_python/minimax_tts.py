@@ -81,6 +81,7 @@ class MinimaxTTSWebsocket:
         self._is_cancelled = True
         if self.ws:
             await self.ws.close()
+            self.ws = None
 
     async def get(
         self, text: str
@@ -341,6 +342,7 @@ class MinimaxTTSWebsocket:
                     self.ten_env.log_error(
                         f"Error processing TTS response: {e}"
                     )
+                self.ws = None
                 raise
 
     async def close(self):
