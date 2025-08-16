@@ -43,8 +43,7 @@ ten_package_test_prepare_app(
     deps = [
       "//core/src/ten_manager",
       "//packages/core_apps/default_app_python:upload_default_app_python_to_server",
-      "//packages/example_extensions/simple_echo_cpp:upload_simple_echo_cpp_to_server",
-      "//packages/example_extensions/simple_http_server_cpp:upload_simple_http_server_cpp_to_server",
+      "//packages/core_protocols/msgpack:upload_protocol_msgpack_to_server",
     ]
   }
 }

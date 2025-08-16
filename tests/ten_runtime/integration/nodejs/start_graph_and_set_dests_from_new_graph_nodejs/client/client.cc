@@ -26,7 +26,7 @@ int main() {
   if (status_code == TEN_STATUS_CODE_OK) {
     auto detail = cmd_result->get_property_string("detail");
     std::cout << "detail: " << detail << '\n';
-    TEN_ASSERT(detail == std::string("{\"id\": 1, \"name\": \"a\"}"),
+    TEN_ASSERT(detail == std::string("{\"id\":1,\"name\":\"a\"}"),
                "Should not happen.");
     std::cout << "Received: " << detail << '\n';
   } else {
