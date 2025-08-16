@@ -8,7 +8,7 @@ import asyncio
 from enum import Enum
 from ten_runtime import AsyncTenEnv
 from .config import SpeechmaticsASRConfig
-from .timeline import AudioTimeline
+from ten_ai_base.timeline import AudioTimeline
 
 
 # Define a enum class for the event type

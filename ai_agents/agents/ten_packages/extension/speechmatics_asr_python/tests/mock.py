@@ -8,7 +8,7 @@ import asyncio
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from ten_ai_base.transcription import UserTranscription
+from ten_ai_base.struct import ASRResult
 
 
 @pytest.fixture(scope="function")
@@ -20,7 +20,7 @@ def patch_speechmatics_ws():
 
         # We mock only the client logic; transcription is now handled by event
         def mock_constructor(config, ten_env):
-            mock_client.on_transcription = None  # Will be set by extension
+            mock_client.on_asr_result = None  # Will be set by extension
             return mock_client
 
         MockClient.side_effect = mock_constructor
@@ -28,9 +28,9 @@ def patch_speechmatics_ws():
         async def mock_start():
             async def delayed_transcription():
                 await asyncio.sleep(1)
-                if mock_client.on_transcription:
-                    await mock_client.on_transcription(
-                        UserTranscription(
+                if mock_client.on_asr_result:
+                    await mock_client.on_asr_result(
+                        ASRResult(
                             text="hello world",
                             final=True,
                             start_ms=0,

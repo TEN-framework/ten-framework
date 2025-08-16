@@ -1,0 +1,10 @@
+{
+  "params": {
+    "api_key": "${env:DEEPGRAM_API_KEY}",
+    "language": "en-US",
+    "hotwords": [
+        "aaa",
+        "bbb"
+    ]
+  }
+}

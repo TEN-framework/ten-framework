@@ -166,10 +166,9 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
   }
 
   private _parseData(data: any): ITextItem | void {
-    let decoder = new TextDecoder('utf-8');
-    let decodedMessage = decoder.decode(data);
+    const ascii = String.fromCharCode(...new Uint8Array(data));
 
-    console.log("[test] textstream raw data", decodedMessage);
+    console.log("[test] textstream raw data", ascii);
 
     // const { stream_id, is_final, text, text_ts, data_type, message_id, part_number, total_parts } = textstream;
 
@@ -181,7 +180,7 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
     //   this._handleCompleteMessage(stream_id, is_final, text, text_ts);
     // }
 
-    this.handleChunk(decodedMessage);
+    this.handleChunk(ascii);
   }
 
 
@@ -227,8 +226,11 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
       // If all parts are received, reconstruct the message
       if (this.messageCache[message_id].length === total_parts) {
         const completeMessage = this.reconstructMessage(this.messageCache[message_id]);
-        const { stream_id, is_final, text, text_ts, data_type } = JSON.parse(atob(completeMessage));
-        const isAgent = Number(stream_id) != Number(this.userId)
+        const { stream_id, is_final, text, text_ts, data_type, role } = JSON.parse(
+          this.base64ToUtf8(completeMessage)
+        );
+        console.log(`[test] message_id: ${message_id} stream_id: ${stream_id}, text: ${text}, data_type: ${data_type}`);
+        const isAgent = role === "assistant"
 
         let textItem: IChatItem = {
           type: isAgent ? EMessageType.AGENT : EMessageType.USER,
@@ -276,6 +278,15 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
 
     // Concatenate all chunks to form the full message
     return chunks.map(chunk => chunk.content).join('');
+  }
+
+  base64ToUtf8(base64: string): string {
+    const binaryString = atob(base64); // Latin-1 形式的二进制字符串
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    return new TextDecoder('utf-8').decode(bytes);
   }
 
   _playAudio(

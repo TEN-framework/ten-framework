@@ -1,0 +1,11 @@
+{
+    "dump": true,
+    "dump_path": "./tests/keep_dump_output/",
+    "params": {
+        "appid": "${env:BYTEDANCE_TTS_APPID}",
+        "token": "${env:BYTEDANCE_TTS_KEY}",
+        "audio_params": {
+            "sample_rate": 16000
+        }
+    }
+}

@@ -1,5 +1,5 @@
 {
-  "_ten": {
+  "ten": {
     "predefined_graphs": [
       {
         "name": "voice_assistant_realtime",
@@ -10,40 +10,37 @@
               "type": "extension",
               "name": "agora_rtc",
               "addon": "agora_rtc",
-              "extension_group": "rtc",
+              "extension_group": "default",
               "property": {
                 "app_id": "${env:AGORA_APP_ID}",
-                "token": "",
+                "app_certificate": "${env:AGORA_APP_CERTIFICATE|}",
                 "channel": "ten_agent_test",
                 "stream_id": 1234,
                 "remote_stream_id": 123,
                 "subscribe_audio": true,
                 "publish_audio": true,
                 "publish_data": true,
-                "subscribe_audio_sample_rate": 24000
+                "enable_agora_asr": false,
+                "agora_asr_vendor_name": "microsoft",
+                "agora_asr_language": "en-US",
+                "agora_asr_vendor_key": "${env:AZURE_STT_KEY|}",
+                "agora_asr_vendor_region": "${env:AZURE_STT_REGION|}",
+                "agora_asr_session_control_file_path": "session_control.conf"
               }
             },
             {
               "type": "extension",
-              "name": "v2v",
-              "addon": "stepfun_v2v_python",
-              "extension_group": "llm",
+              "name": "main_control",
+              "addon": "main_python",
+              "extension_group": "control",
               "property": {
-                "api_key": "${env:STEPFUN_API_KEY}",
-                "temperature": 0.9,
-                "model": "step-1o-audio",
-                "max_tokens": 2048,
-                "voice": "linjiajiejie",
-                "server_vad": true,
-                "dump": true,
-                "max_history": 10,
-                "base_uri": "wss://api.stepfun.com"
+                "greeting": "TEN Agent connected. How can I help you today?"
               }
             },
             {
               "type": "extension",
               "name": "message_collector",
-              "addon": "message_collector",
+              "addon": "message_collector2",
               "extension_group": "transcriber",
               "property": {}
             },
@@ -55,107 +52,110 @@
               "property": {
                 "api_key": "${env:WEATHERAPI_API_KEY|}"
               }
+            },
+            {
+              "type": "extension",
+              "name": "streamid_adapter",
+              "addon": "streamid_adapter",
+              "property": {}
+            },
+            {
+              "type": "extension",
+              "name": "v2v",
+              "addon": "stepfun_mllm_python",
+              "property": {
+                "api_key": "${env:STEPFUN_API_KEY}",
+                "temperature": 0.9,
+                "model": "step-1o-audio",
+                "max_tokens": 2048,
+                "voice": "linjiajiejie",
+                "language": "en",
+                "server_vad": true,
+                "history": 10,
+                "enable_storage": false,
+                "base_url": "wss://api.stepfun.com"
+              }
             }
           ],
           "connections": [
             {
               "extension": "agora_rtc",
-              "cmd": [
-                {
-                  "name": "on_user_joined",
-                  "dest": [
-                    {
-                      "extension": "v2v"
-                    }
-                  ]
-                },
-                {
-                  "name": "on_user_left",
-                  "dest": [
-                    {
-                      "extension": "v2v"
-                    }
-                  ]
-                },
-                {
-                  "name": "on_connection_failure",
-                  "dest": [
-                    {
-                      "extension": "v2v"
-                    }
-                  ]
-                }
-              ],
               "audio_frame": [
                 {
                   "name": "pcm_frame",
                   "dest": [
                     {
-                      "extension": "v2v"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "extension": "v2v",
-              "cmd": [
-                {
-                  "name": "flush",
-                  "dest": [
-                    {
-                      "extension": "agora_rtc"
+                      "extension": "streamid_adapter"
                     }
                   ]
                 },
                 {
-                  "name": "tool_call",
-                  "dest": [
+                  "name": "pcm_frame",
+                  "source": [
                     {
-                      "extension": "weatherapi_tool_python"
+                      "extension": "v2v"
                     }
                   ]
                 }
               ],
               "data": [
                 {
-                  "name": "text_data",
-                  "dest": [
+                  "name": "data",
+                  "source": [
                     {
                       "extension": "message_collector"
                     }
                   ]
                 }
+              ]
+            },
+            {
+              "extension": "main_control",
+              "data": [
+                {
+                  "names": [
+                    "mllm_server_input_transcript",
+                    "mllm_server_output_transcript",
+                    "mllm_server_session_ready",
+                    "mllm_server_interrupted",
+                    "mllm_server_function_call"
+                  ],
+                  "source": [
+                    {
+                      "extension": "v2v"
+                    }
+                  ]
+                }
               ],
+              "cmd": [
+                {
+                  "names": [
+                    "on_user_left",
+                    "on_user_joined"
+                  ],
+                  "source": [
+                    {
+                      "extension": "agora_rtc"
+                    }
+                  ]
+                },
+                {
+                  "names": [
+                    "tool_register"
+                  ],
+                  "source": [
+                    {
+                      "extension": "weatherapi_tool_python"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "streamid_adapter",
               "audio_frame": [
                 {
                   "name": "pcm_frame",
-                  "dest": [
-                    {
-                      "extension": "agora_rtc"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "extension": "message_collector",
-              "data": [
-                {
-                  "name": "data",
-                  "dest": [
-                    {
-                      "extension": "agora_rtc"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "extension": "weatherapi_tool_python",
-              "cmd": [
-                {
-                  "name": "tool_register",
                   "dest": [
                     {
                       "extension": "v2v"

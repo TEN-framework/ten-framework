@@ -40,7 +40,13 @@ def patch_bytedance_ws():
                         [
                             {
                                 "text": "hello world",
-                                "utterances": [{"definite": True}],
+                                "utterances": [
+                                    {
+                                        "definite": True,
+                                        "start_time": 0,
+                                        "end_time": 1705,
+                                    }
+                                ],
                             }
                         ]
                     )

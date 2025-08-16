@@ -1,2 +1,0 @@
-pypdf
-llama-index

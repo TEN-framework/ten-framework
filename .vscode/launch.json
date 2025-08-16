@@ -1001,6 +1001,25 @@
           "value": "-L${workspaceFolder}/ai_agents/agents/ten_packages/system/ten_runtime_go/lib -lten_runtime_go -Wl,-rpath,@loader_path/lib -Wl,-rpath,@loader_path/../lib"
         }
       ]
+    },
+    {
+      "name": "(AI agents) debug asr guarder",
+      "type": "debugpy",
+      "request": "launch",
+      "python": "/usr/bin/python3",
+      "module": "pytest",
+      "args": [
+        "-s",
+        "${workspaceFolder}/ai_agents/agents/integration_tests/asr_guarder/tests/test_basic.py",
+        "--extension_name",
+        "azure_asr_python"
+      ],
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/ai_agents/agents/integration_tests/asr_guarder:${workspaceFolder}/ai_agents/agents/integration_tests/asr_guarder/ten_packages/system/ten_runtime_python/lib:${workspaceFolder}/ai_agents/agents/integration_tests/asr_guarder/ten_packages/system/ten_runtime_python/interface:${workspaceFolder}/ai_agents/agents/integration_tests/asr_guarder/ten_packages/system/ten_ai_base/interface",
+        "TEN_ENABLE_BACKTRACE_DUMP": "true"
+      },
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal"
     }
   ],
   "compounds": [

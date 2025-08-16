@@ -1,2 +1,0 @@
-amazon-transcribe==0.6.2
-pydantic

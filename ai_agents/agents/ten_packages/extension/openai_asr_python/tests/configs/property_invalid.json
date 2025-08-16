@@ -1,0 +1,17 @@
+{
+    "api_key": "xxx",
+    "params": {
+        "input_audio_format": "pcm16",
+        "input_audio_transcription": {
+            "model": "whisper-1",
+            "prompt": "Please transcribe the following audio into text. 输出简体中文。热词：山口茜、戴资颖",
+            "language": "invalid-language"
+        },
+        "turn_detection": {
+            "type": "server_vad",
+            "threshold": 0.5,
+            "prefix_padding_ms": 300,
+            "silence_duration_ms": 500
+        }
+    }
+}

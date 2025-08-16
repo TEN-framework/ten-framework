@@ -1,0 +1,8 @@
+{
+    "params": {
+        "api_key": "invalid",
+        "app_id": "invalid",
+        "api_secret": "invalid",
+        "lang": "en_us"
+    }
+}

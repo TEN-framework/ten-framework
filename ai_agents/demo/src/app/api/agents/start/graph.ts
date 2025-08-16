@@ -99,6 +99,19 @@ export const voiceNameMap: LanguageMap = {
     },
 };
 
+export const convertLanguage = (language: string) => {
+    if (language === "zh-CN") {
+        return "zh";
+    } else if (language === "en-US") {
+        return "en";
+    } else if (language === "ja-JP") {
+        return "ja";
+    } else if (language === "ko-KR") {
+        return "ko";
+    }
+    return "en";
+}
+
 // Get the graph properties based on the graph name, language, and voice type
 // This is the place where you can customize the properties for different graphs to override default property.json
 export const getGraphProperties = (
@@ -135,6 +148,7 @@ export const getGraphProperties = (
     }
 
     let combined_greeting = greeting || localizationOptions["greeting"];
+    let converteLanguage = convertLanguage(language);
 
     if (graphName === "camera_va_openai_azure") {
         return {
@@ -180,9 +194,9 @@ export const getGraphProperties = (
     } else if (graphName === "va_openai_v2v") {
         return {
             "v2v": {
-                "model": "gpt-4o-realtime-preview-2024-12-17",
+                "model": "gpt-4o-realtime-preview",
                 "voice": voiceNameMap[language]["openai"][voiceType],
-                "language": language,
+                "language": converteLanguage,
                 "prompt": prompt,
                 "greeting": combined_greeting,
             }

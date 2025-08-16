@@ -108,20 +108,8 @@ export const GRAPH_OPTIONS: GraphOptionItem[] = [
     value: "va_openai_v2v",
   },
   {
-    label: "Voice Agent OpenAI Realtime + Custom STT/TTS",
-    value: "va_openai_v2v_fish",
-  },
-  {
     label: "Voice Agent Coze Bot + Azure TTS",
     value: "va_coze_azure",
-  },
-  {
-    label: "Voice Story Teller with Image Generator",
-    value: "story_teller_stt_integrated",
-  },
-  {
-    label: "Voice Agent / STT + Nova Multimodal + TTS",
-    value: "va_nova_multimodal_aws",
   },
 ]
 
