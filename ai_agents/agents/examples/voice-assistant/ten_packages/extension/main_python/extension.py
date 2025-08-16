@@ -207,9 +207,9 @@ class MainControlExtension(AsyncExtension):
         await _send_data(
             self.ten_env, "tts_flush", "tts", {"flush_id": str(uuid.uuid4())}
         )
-        await _send_data(
-            self.ten_env, "flush", "message_collector"
+        await _send_data(self.ten_env, "flush", "message_collector")
+        self.ten_env.log_info(
+            "[MainControlExtension] Interrupt signal sent to LLM and TTS"
         )
-        self.ten_env.log_info("[MainControlExtension] Interrupt signal sent to LLM and TTS")
         await _send_cmd(self.ten_env, "flush", "agora_rtc")
         self.ten_env.log_info("[MainControlExtension] Interrupt signal sent")
