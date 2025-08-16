@@ -134,7 +134,8 @@ class SingleTestCaseTester(AsyncExtensionTester):
         await self._send_tts_text_input_single(ten_env, self.valid_text, True)
 
         # Wait for TTS output and audio frame
-        await asyncio.sleep(2)
+        # Due to the tts extension may take over 2 seconds to process the text, we need to wait for a longer time
+        await asyncio.sleep(4)
 
         # Check test results
 
