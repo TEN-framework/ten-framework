@@ -62,7 +62,7 @@ class MessageCollector2Extension(AsyncExtension):
             except Exception as e:
                 ten_env.log_warn(f"on_data new_data error: {e}")
         elif name == DATA_IN_FLUSH:
-            ten_env.log_info(f"Received flush command")
+            ten_env.log_info("Received flush command")
             # Clear the queue
             while not self.queue.empty():
                 await self.queue.get()
