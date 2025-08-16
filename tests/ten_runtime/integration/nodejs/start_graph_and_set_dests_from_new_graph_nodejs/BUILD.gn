@@ -19,32 +19,31 @@ ten_package_test_prepare_app(
     "start_graph_and_set_dests_from_new_graph_nodejs_app/property.json",
     "start_graph_and_set_dests_from_new_graph_nodejs_app/ten_packages/extension/test_extension_1/manifest.json",
     "start_graph_and_set_dests_from_new_graph_nodejs_app/ten_packages/extension/test_extension_1/property.json",
-    "start_graph_and_set_dests_from_new_graph_nodejs_app/ten_packages/extension/test_extension_1/extension.py",
-    "start_graph_and_set_dests_from_new_graph_nodejs_app/ten_packages/extension/test_extension_1/__init__.py",
-    "start_graph_and_set_dests_from_new_graph_nodejs_app/ten_packages/extension/test_extension_1/addon.py",
+    "start_graph_and_set_dests_from_new_graph_nodejs_app/ten_packages/extension/test_extension_1/src/index.ts",
+    "start_graph_and_set_dests_from_new_graph_nodejs_app/ten_packages/extension/test_extension_1/package.json",
+    "start_graph_and_set_dests_from_new_graph_nodejs_app/ten_packages/extension/test_extension_1/tsconfig.json",
     "start_graph_and_set_dests_from_new_graph_nodejs_app/ten_packages/extension/test_extension_2/manifest.json",
     "start_graph_and_set_dests_from_new_graph_nodejs_app/ten_packages/extension/test_extension_2/property.json",
-    "start_graph_and_set_dests_from_new_graph_nodejs_app/ten_packages/extension/test_extension_2/extension.py",
-    "start_graph_and_set_dests_from_new_graph_nodejs_app/ten_packages/extension/test_extension_2/__init__.py",
-    "start_graph_and_set_dests_from_new_graph_nodejs_app/ten_packages/extension/test_extension_2/addon.py",
+    "start_graph_and_set_dests_from_new_graph_nodejs_app/ten_packages/extension/test_extension_2/src/index.ts",
+    "start_graph_and_set_dests_from_new_graph_nodejs_app/ten_packages/extension/test_extension_2/package.json",
+    "start_graph_and_set_dests_from_new_graph_nodejs_app/ten_packages/extension/test_extension_2/tsconfig.json",
     "start_graph_and_set_dests_from_new_graph_nodejs_app/ten_packages/extension/test_extension_3/manifest.json",
     "start_graph_and_set_dests_from_new_graph_nodejs_app/ten_packages/extension/test_extension_3/property.json",
-    "start_graph_and_set_dests_from_new_graph_nodejs_app/ten_packages/extension/test_extension_3/extension.py",
-    "start_graph_and_set_dests_from_new_graph_nodejs_app/ten_packages/extension/test_extension_3/__init__.py",
-    "start_graph_and_set_dests_from_new_graph_nodejs_app/ten_packages/extension/test_extension_3/addon.py",
+    "start_graph_and_set_dests_from_new_graph_nodejs_app/ten_packages/extension/test_extension_3/src/index.ts",
+    "start_graph_and_set_dests_from_new_graph_nodejs_app/ten_packages/extension/test_extension_3/package.json",
+    "start_graph_and_set_dests_from_new_graph_nodejs_app/ten_packages/extension/test_extension_3/tsconfig.json",
     "start_graph_and_set_dests_from_new_graph_nodejs_app/ten_packages/extension/test_extension_4/manifest.json",
     "start_graph_and_set_dests_from_new_graph_nodejs_app/ten_packages/extension/test_extension_4/property.json",
-    "start_graph_and_set_dests_from_new_graph_nodejs_app/ten_packages/extension/test_extension_4/extension.py",
-    "start_graph_and_set_dests_from_new_graph_nodejs_app/ten_packages/extension/test_extension_4/__init__.py",
-    "start_graph_and_set_dests_from_new_graph_nodejs_app/ten_packages/extension/test_extension_4/addon.py",
+    "start_graph_and_set_dests_from_new_graph_nodejs_app/ten_packages/extension/test_extension_4/src/index.ts",
+    "start_graph_and_set_dests_from_new_graph_nodejs_app/ten_packages/extension/test_extension_4/package.json",
+    "start_graph_and_set_dests_from_new_graph_nodejs_app/ten_packages/extension/test_extension_4/tsconfig.json",
   ]
 
   if (ten_enable_ten_manager) {
     deps = [
       "//core/src/ten_manager",
       "//packages/core_apps/default_app_nodejs:upload_default_app_nodejs_to_server",
-      "//packages/example_extensions/simple_echo_cpp:upload_simple_echo_cpp_to_server",
-      "//packages/example_extensions/simple_http_server_cpp:upload_simple_http_server_cpp_to_server",
+      "//packages/core_protocols/msgpack:upload_protocol_msgpack_to_server",
     ]
   }
 }
@@ -97,6 +96,5 @@ group("start_graph_and_set_dests_from_new_graph_nodejs") {
     ":start_graph_and_set_dests_from_new_graph_nodejs_app",
     ":start_graph_and_set_dests_from_new_graph_nodejs_app_client",
     ":start_graph_and_set_dests_from_new_graph_nodejs_test_files",
-    "//tests/ten_runtime/integration/nodejs:copy_pytest_ini_for_ten_runtime_nodejs_integration_test",
   ]
 }

@@ -40,35 +40,10 @@ def test_start_graph_and_set_dests_from_new_graph_nodejs():
         if rc != 0:
             assert False, "Failed to build package."
 
-    tman_install_cmd = [
-        os.path.join(root_dir, "ten_manager/bin/tman"),
-        "--config-file",
-        os.path.join(root_dir, "tests/local_registry/config.json"),
-        "--yes",
-        "install",
-    ]
-
-    tman_install_process = subprocess.Popen(
-        tman_install_cmd,
-        stdout=stdout,
-        stderr=subprocess.STDOUT,
-        env=my_env,
-        cwd=app_root_path,
-    )
-    tman_install_process.wait()
-    return_code = tman_install_process.returncode
-    if return_code != 0:
-        assert False, "Failed to install package."
-
-    bootstrap_cmd = os.path.join(
-        base_path,
-        "start_graph_and_set_dests_from_new_graph_nodejs_app/bin/bootstrap",
-    )
-
-    bootstrap_process = subprocess.Popen(
-        bootstrap_cmd, stdout=stdout, stderr=subprocess.STDOUT, env=my_env
-    )
-    bootstrap_process.wait()
+        # Compile typescript extensions.
+        rc = build_pkg.build_nodejs_extensions(app_root_path)
+        if rc != 0:
+            assert False, "Failed to build TypeScript extensions."
 
     if sys.platform == "linux":
         if build_config_args.enable_sanitizer:
