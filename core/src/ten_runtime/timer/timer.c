@@ -171,7 +171,7 @@ static ten_timer_t *ten_timer_create_internal(ten_runloop_t *runloop) {
   TEN_ASSERT(runloop && ten_runloop_check_integrity(runloop, true),
              "Should not happen.");
 
-  TEN_LOGV("Create a timer");
+  TEN_LOGD("Create a timer");
 
   ten_timer_t *self = (ten_timer_t *)TEN_MALLOC(sizeof(ten_timer_t));
   TEN_ASSERT(self, "Failed to allocate memory.");
@@ -255,7 +255,7 @@ void ten_timer_destroy(ten_timer_t *self) {
                  ten_timer_could_be_close(self),
              "Should not happen.");
 
-  TEN_LOGV("Destroy a timer");
+  TEN_LOGD("Destroy a timer");
 
   ten_sanitizer_thread_check_deinit(&self->thread_check);
   ten_signature_set(&self->signature, 0);
@@ -323,7 +323,7 @@ void ten_timer_stop_async(ten_timer_t *self) {
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_timer_check_integrity(self, true), "Should not happen.");
 
-  TEN_LOGV("Scheduling timer stop operation");
+  TEN_LOGD("Scheduling timer stop operation");
 
   // Post the stop task to the timer's runloop to ensure thread safety
   int rc = ten_runloop_post_task_tail(self->runloop, ten_timer_stop_task, self,
@@ -371,7 +371,7 @@ void ten_timer_close_async(ten_timer_t *self) {
   TEN_ASSERT(ten_timer_check_integrity(self, true), "Should not happen.");
 
   if (ten_atomic_bool_compare_swap(&self->is_closing, 0, 1)) {
-    TEN_LOGV("Try to close a timer");
+    TEN_LOGD("Try to close a timer");
 
     int rc = ten_runloop_post_task_tail(self->runloop, ten_timer_close_task,
                                         self, NULL);

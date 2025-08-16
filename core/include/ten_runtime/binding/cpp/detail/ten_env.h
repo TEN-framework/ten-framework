@@ -574,45 +574,43 @@ class ten_env_t {
     return rc;
   }
 
-#define TEN_ENV_LOG_VERBOSE(ten_env, msg)                                      \
-  do {                                                                         \
-    (ten_env).log(TEN_LOG_LEVEL_VERBOSE, __func__, __FILE__, __LINE__, (msg)); \
-  } while (0)
-
-#define TEN_ENV_LOG_DEBUG(ten_env, msg)                                      \
-  do {                                                                       \
-    (ten_env).log(TEN_LOG_LEVEL_DEBUG, __func__, __FILE__, __LINE__, (msg)); \
-  } while (0)
-
-#define TEN_ENV_LOG_INFO(ten_env, msg)                                      \
+#define TEN_ENV_LOG_DEBUG(ten_env, msg)                                     \
   do {                                                                      \
-    (ten_env).log(TEN_LOG_LEVEL_INFO, __func__, __FILE__, __LINE__, (msg)); \
+    (ten_env).log(TEN_LOG_LEVEL_DEBUG, __func__, __FILE__, __LINE__, (msg), \
+                  (nullptr), (nullptr));                                    \
   } while (0)
 
-#define TEN_ENV_LOG_WARN(ten_env, msg)                                      \
+#define TEN_ENV_LOG_INFO(ten_env, msg)                                     \
+  do {                                                                     \
+    (ten_env).log(TEN_LOG_LEVEL_INFO, __func__, __FILE__, __LINE__, (msg), \
+                  (nullptr), (nullptr));                                   \
+  } while (0)
+
+#define TEN_ENV_LOG_WARN(ten_env, msg)                                     \
+  do {                                                                     \
+    (ten_env).log(TEN_LOG_LEVEL_WARN, __func__, __FILE__, __LINE__, (msg), \
+                  (nullptr), (nullptr));                                   \
+  } while (0)
+
+#define TEN_ENV_LOG_ERROR(ten_env, msg)                                     \
   do {                                                                      \
-    (ten_env).log(TEN_LOG_LEVEL_WARN, __func__, __FILE__, __LINE__, (msg)); \
+    (ten_env).log(TEN_LOG_LEVEL_ERROR, __func__, __FILE__, __LINE__, (msg), \
+                  (nullptr), (nullptr));                                    \
   } while (0)
 
-#define TEN_ENV_LOG_ERROR(ten_env, msg)                                      \
-  do {                                                                       \
-    (ten_env).log(TEN_LOG_LEVEL_ERROR, __func__, __FILE__, __LINE__, (msg)); \
-  } while (0)
-
-#define TEN_ENV_LOG_FATAL(ten_env, msg)                                      \
-  do {                                                                       \
-    (ten_env).log(TEN_LOG_LEVEL_FATAL, __func__, __FILE__, __LINE__, (msg)); \
-  } while (0)
-
-#define TEN_ENV_LOG(ten_env, level, msg)                       \
-  do {                                                         \
-    (ten_env).log(level, __func__, __FILE__, __LINE__, (msg)); \
+#define TEN_ENV_LOG(ten_env, level, msg, category, fields)                \
+  do {                                                                    \
+    (ten_env).log(level, __func__, __FILE__, __LINE__, (msg), (category), \
+                  (fields));                                              \
   } while (0)
 
   void log(TEN_LOG_LEVEL level, const char *func_name, const char *file_name,
-           size_t line_no, const char *msg) {
+           size_t line_no, const char *msg, const char *category,
+           value_t *fields) {
     TEN_ASSERT(c_ten_env, "Should not happen.");
-    ten_env_log(c_ten_env, level, func_name, file_name, line_no, msg);
+
+    ten_env_log(c_ten_env, level, func_name, file_name, line_no, msg, category,
+                fields != nullptr ? fields->get_c_value() : nullptr);
   }
 
  private:

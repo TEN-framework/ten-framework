@@ -53,13 +53,7 @@ func (p *bExtension) OnCmd(
 						panic("Should not happen.")
 					}
 					statusCode, _ := cmdResult.GetStatusCode()
-					tenEnv.Log(
-						ten.LogLevelInfo,
-						"statusCode:"+fmt.Sprintf(
-							"%d",
-							statusCode,
-						)+" detail: "+detail,
-					)
+					tenEnv.LogInfo("statusCode:" + fmt.Sprintf("%d", statusCode) + " detail: " + detail)
 
 					cmdResult2, _ := ten.NewCmdResult(ten.StatusCodeOk, cmd)
 					cmdResult2.SetPropertyString("detail", detail)

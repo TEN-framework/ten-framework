@@ -95,7 +95,7 @@ TEN_CONSTRUCTOR(
       ____ten_addon_graph_failed_to_create_extension__test_extension_register_handler__,
       nullptr, nullptr);
   if (!success) {
-    TEN_LOGF("Failed to register addon: %s",
+    TEN_LOGE("Failed to register addon: %s",
              "graph_failed_to_create_extension__test_extension");
     /* NOLINTNEXTLINE(concurrency-mt-unsafe) */
     exit(EXIT_FAILURE);

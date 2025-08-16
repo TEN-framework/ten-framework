@@ -6,6 +6,7 @@
 //
 #pragma once
 
+#include <functional>
 #include <memory>
 
 #include "ten_runtime/binding/common.h"

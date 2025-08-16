@@ -150,7 +150,7 @@ class test_extension_3 : public ten::extension_t {
     } else {
       auto error_msg = "test_extension_3 received unexpected cmd: " + cmd_name;
 
-      TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_ERROR, error_msg.c_str());
+      TEN_ENV_LOG_ERROR(ten_env, error_msg.c_str());
       TEN_ASSERT(0, "Should not happen.");
     }
   }
@@ -175,7 +175,7 @@ class test_extension_4 : public ten::extension_t {
     } else {
       auto error_msg = "test_extension_4 received unexpected cmd: " + cmd_name;
 
-      TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_ERROR, error_msg.c_str());
+      TEN_ENV_LOG_ERROR(ten_env, error_msg.c_str());
       TEN_ASSERT(0, "Should not happen.");
     }
   }

@@ -65,7 +65,7 @@ static void *ten_app_routine(void *args) {
   ten_app_t *self = (ten_app_t *)args;
   TEN_ASSERT(self, "Invalid argument.");
   if (!self) {
-    TEN_LOGF("Invalid app pointer.");
+    TEN_LOGE("Invalid app pointer.");
     return NULL;
   }
 
@@ -84,7 +84,7 @@ static void *ten_app_routine(void *args) {
   self->loop = ten_runloop_create(NULL);
   TEN_ASSERT(self->loop, "Should not happen.");
   if (!self->loop) {
-    TEN_LOGF("Failed to create runloop.");
+    TEN_LOGE("Failed to create runloop.");
     return NULL;
   }
 

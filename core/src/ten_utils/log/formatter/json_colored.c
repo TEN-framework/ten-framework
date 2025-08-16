@@ -34,10 +34,6 @@ void ten_log_json_colored_formatter(ten_string_t *buf, TEN_LOG_LEVEL level,
   // Determine color based on log level.
   const char *level_color = NULL;
   switch (level) {
-  case TEN_LOG_LEVEL_MANDATORY:
-    level_color = TEN_LOG_COLOR_GOLD;
-    break;
-  case TEN_LOG_LEVEL_FATAL:
   case TEN_LOG_LEVEL_ERROR:
     level_color = TEN_LOG_COLOR_RED;
     break;
@@ -48,7 +44,6 @@ void ten_log_json_colored_formatter(ten_string_t *buf, TEN_LOG_LEVEL level,
     level_color = TEN_LOG_COLOR_GREEN;
     break;
   case TEN_LOG_LEVEL_DEBUG:
-  case TEN_LOG_LEVEL_VERBOSE:
     level_color = TEN_LOG_COLOR_CYAN;
     break;
   default:

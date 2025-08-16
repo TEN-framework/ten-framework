@@ -802,7 +802,7 @@ void ten_extension_on_cmd(ten_extension_t *self, ten_shared_ptr_t *msg) {
   TEN_ASSERT(ten_extension_check_integrity(self, true),
              "Invalid use of extension %p.", self);
 
-  TEN_LOGV("[%s] on_cmd(%s)", ten_extension_get_name(self, true),
+  TEN_LOGD("[%s] on_cmd(%s)", ten_extension_get_name(self, true),
            ten_msg_get_name(msg));
 
   if (self->on_cmd) {
@@ -831,7 +831,7 @@ void ten_extension_on_data(ten_extension_t *self, ten_shared_ptr_t *msg) {
   TEN_ASSERT(ten_extension_check_integrity(self, true),
              "Invalid use of extension %p.", self);
 
-  TEN_LOGV("[%s] on_data(%s)", ten_extension_get_name(self, true),
+  TEN_LOGD("[%s] on_data(%s)", ten_extension_get_name(self, true),
            ten_msg_get_name(msg));
 
   if (self->on_data) {
@@ -857,7 +857,7 @@ void ten_extension_on_video_frame(ten_extension_t *self,
   TEN_ASSERT(ten_extension_check_integrity(self, true),
              "Invalid use of extension %p.", self);
 
-  TEN_LOGV("[%s] on_video_frame(%s)", ten_extension_get_name(self, true),
+  TEN_LOGD("[%s] on_video_frame(%s)", ten_extension_get_name(self, true),
            ten_msg_get_name(msg));
 
   if (self->on_video_frame) {
@@ -883,7 +883,7 @@ void ten_extension_on_audio_frame(ten_extension_t *self,
   TEN_ASSERT(ten_extension_check_integrity(self, true),
              "Invalid use of extension %p.", self);
 
-  TEN_LOGV("[%s] on_audio_frame(%s)", ten_extension_get_name(self, true),
+  TEN_LOGD("[%s] on_audio_frame(%s)", ten_extension_get_name(self, true),
            ten_msg_get_name(msg));
 
   if (self->on_audio_frame) {

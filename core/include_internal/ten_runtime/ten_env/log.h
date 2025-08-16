@@ -10,12 +10,6 @@
 
 #include "ten_utils/log/log.h"
 
-#define TEN_ENV_LOG_VERBOSE_INTERNAL(ten_env, ...)                            \
-  do {                                                                        \
-    ten_env_log_formatted(ten_env, TEN_LOG_LEVEL_VERBOSE, __func__, __FILE__, \
-                          __LINE__, __VA_ARGS__);                             \
-  } while (0)
-
 #define TEN_ENV_LOG_DEBUG_INTERNAL(ten_env, ...)                            \
   do {                                                                      \
     ten_env_log_formatted(ten_env, TEN_LOG_LEVEL_DEBUG, __func__, __FILE__, \
@@ -40,12 +34,6 @@
                           __LINE__, __VA_ARGS__);                           \
   } while (0)
 
-#define TEN_ENV_LOG_FATAL_INTERNAL(ten_env, ...)                            \
-  do {                                                                      \
-    ten_env_log_formatted(ten_env, TEN_LOG_LEVEL_FATAL, __func__, __FILE__, \
-                          __LINE__, __VA_ARGS__);                           \
-  } while (0)
-
 #define TEN_ENV_LOG_INTERNAL(ten_env, level, ...)                       \
   do {                                                                  \
     ten_env_log_formatted(ten_env, level, __func__, __FILE__, __LINE__, \
@@ -53,6 +41,7 @@
   } while (0)
 
 typedef struct ten_env_t ten_env_t;
+typedef struct ten_value_t ten_value_t;
 
 TEN_RUNTIME_API void ten_env_log_with_size_formatted_without_check_thread(
     ten_env_t *self, TEN_LOG_LEVEL level, const char *func_name,
@@ -70,4 +59,5 @@ TEN_RUNTIME_PRIVATE_API void ten_env_log_formatted(
 
 TEN_RUNTIME_API void ten_env_log_without_check_thread(
     ten_env_t *self, TEN_LOG_LEVEL level, const char *func_name,
-    const char *file_name, size_t line_no, const char *msg);
+    const char *file_name, size_t line_no, const char *msg,
+    const char *category, ten_value_t *fields);
