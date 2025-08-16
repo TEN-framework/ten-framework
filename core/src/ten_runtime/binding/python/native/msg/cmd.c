@@ -32,7 +32,8 @@ static ten_py_cmd_t *ten_py_cmd_create_internal(PyTypeObject *py_type) {
 void ten_py_cmd_destroy(PyObject *self) {
   ten_py_cmd_t *py_cmd = (ten_py_cmd_t *)self;
 
-  TEN_ASSERT(py_cmd && ten_py_msg_check_integrity((ten_py_msg_t *)py_cmd),
+  TEN_ASSERT(py_cmd, "Invalid argument.");
+  TEN_ASSERT(ten_py_msg_check_integrity((ten_py_msg_t *)py_cmd),
              "Invalid argument.");
 
   ten_py_msg_destroy_c_msg(&py_cmd->msg);
@@ -40,7 +41,8 @@ void ten_py_cmd_destroy(PyObject *self) {
 }
 
 static ten_py_cmd_t *ten_py_cmd_init(ten_py_cmd_t *py_cmd, const char *name) {
-  TEN_ASSERT(py_cmd && ten_py_msg_check_integrity((ten_py_msg_t *)py_cmd),
+  TEN_ASSERT(py_cmd, "Invalid argument.");
+  TEN_ASSERT(ten_py_msg_check_integrity((ten_py_msg_t *)py_cmd),
              "Invalid argument.");
 
   py_cmd->msg.c_msg = ten_cmd_create(name, NULL);
@@ -59,7 +61,8 @@ PyObject *ten_py_cmd_create(PyTypeObject *type, PyObject *args,
 }
 
 ten_py_cmd_t *ten_py_cmd_wrap(ten_shared_ptr_t *cmd) {
-  TEN_ASSERT(cmd && ten_msg_check_integrity(cmd), "Invalid argument.");
+  TEN_ASSERT(cmd, "Invalid argument.");
+  TEN_ASSERT(ten_msg_check_integrity(cmd), "Invalid argument.");
 
   ten_py_cmd_t *py_cmd = ten_py_cmd_create_internal(NULL);
   py_cmd->msg.c_msg = ten_shared_ptr_clone(cmd);
@@ -73,7 +76,8 @@ void ten_py_cmd_invalidate(ten_py_cmd_t *self) {
 
 PyObject *ten_py_cmd_clone(PyObject *self, TEN_UNUSED PyObject *args) {
   ten_py_cmd_t *py_cmd = (ten_py_cmd_t *)self;
-  TEN_ASSERT(py_cmd && ten_py_msg_check_integrity((ten_py_msg_t *)py_cmd),
+  TEN_ASSERT(py_cmd, "Invalid argument.");
+  TEN_ASSERT(ten_py_msg_check_integrity((ten_py_msg_t *)py_cmd),
              "Invalid argument.");
   TEN_ASSERT(py_cmd->msg.c_msg, "Invalid argument.");
 

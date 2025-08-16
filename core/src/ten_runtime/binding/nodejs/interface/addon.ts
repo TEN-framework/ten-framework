@@ -4,9 +4,9 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import { Extension } from "./extension.js";
+import type { Extension } from "./extension.js";
 import ten_addon from "./ten_addon.js";
-import { TenEnv } from "./ten_env.js";
+import type { TenEnv } from "./ten_env.js";
 
 export abstract class Addon {
   constructor() {
