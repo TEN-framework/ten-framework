@@ -7,10 +7,12 @@
 import("//build/ten_runtime/feature/test.gni")
 import("//build/ten_runtime/ten.gni")
 
-ten_package_test_prepare_app("start_graph_and_set_dests_from_new_graph_go_app") {
+ten_package_test_prepare_app(
+    "start_graph_and_set_dests_from_new_graph_go_app") {
   src_app = "default_app_go"
   src_app_language = "go"
-  generated_app_src_root_dir_name = "start_graph_and_set_dests_from_new_graph_go_app"
+  generated_app_src_root_dir_name =
+      "start_graph_and_set_dests_from_new_graph_go_app"
 
   replace_paths_after_install_app = [
     "start_graph_and_set_dests_from_new_graph_go_app/manifest.json",
@@ -36,7 +38,8 @@ ten_package_test_prepare_app("start_graph_and_set_dests_from_new_graph_go_app") 
   if (ten_enable_go_app_leak_check) {
     replace_paths_after_install_app += [ "start_graph_and_set_dests_from_new_graph_go_app/main_with_leak_check.go=>start_graph_and_set_dests_from_new_graph_go_app/main.go" ]
   } else {
-    replace_paths_after_install_app += [ "start_graph_and_set_dests_from_new_graph_go_app/main.go" ]
+    replace_paths_after_install_app +=
+        [ "start_graph_and_set_dests_from_new_graph_go_app/main.go" ]
   }
 
   if (ten_enable_ten_manager) {
@@ -49,7 +52,8 @@ ten_package_test_prepare_app("start_graph_and_set_dests_from_new_graph_go_app") 
   }
 }
 
-ten_package_test_prepare_client("start_graph_and_set_dests_from_new_graph_go_app_client") {
+ten_package_test_prepare_client(
+    "start_graph_and_set_dests_from_new_graph_go_app_client") {
   sources = [ "client/client.cc" ]
   include_dirs = [
     "//core/src",

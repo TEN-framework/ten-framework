@@ -13,6 +13,7 @@ import (
 
 type testExtension4 struct {
 	ten.DefaultExtension
+
 	originalGraphReceiverExtension string
 	originalGraphID                string
 }

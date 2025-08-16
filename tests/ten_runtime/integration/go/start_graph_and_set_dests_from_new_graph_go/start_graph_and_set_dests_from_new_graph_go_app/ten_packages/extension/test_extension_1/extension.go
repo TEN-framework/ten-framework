@@ -98,8 +98,7 @@ func (ext *testExtension1) OnStart(tenEnv ten.TenEnv) {
 			newGraphID, _ := cmdResult.GetPropertyString("graph_id")
 
 			// Send a 'set_original_graph_info' command to the specified
-			// extension
-			// in the newly created graph
+			// extension in the newly created graph
 			cmdSetOriginalGraphInfo, _ := ten.NewCmd("set_original_graph_info")
 			cmdSetOriginalGraphInfo.SetPropertyString(
 				"original_graph_receiver_extension",
