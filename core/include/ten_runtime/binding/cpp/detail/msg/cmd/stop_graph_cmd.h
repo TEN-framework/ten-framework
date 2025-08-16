@@ -18,34 +18,34 @@ namespace ten {
 
 class extension_t;
 
-class cmd_stop_graph_t : public cmd_t {
+class stop_graph_cmd_t : public cmd_t {
  private:
   friend extension_t;
 
   // Passkey Idiom.
   struct ctor_passkey_t {
    private:
-    friend cmd_stop_graph_t;
+    friend stop_graph_cmd_t;
 
     explicit ctor_passkey_t() = default;
   };
 
-  explicit cmd_stop_graph_t(ten_shared_ptr_t *cmd) : cmd_t(cmd) {}
+  explicit stop_graph_cmd_t(ten_shared_ptr_t *cmd) : cmd_t(cmd) {}
 
  public:
-  static std::unique_ptr<cmd_stop_graph_t> create(error_t *err = nullptr) {
-    return std::make_unique<cmd_stop_graph_t>(ctor_passkey_t());
+  static std::unique_ptr<stop_graph_cmd_t> create(error_t *err = nullptr) {
+    return std::make_unique<stop_graph_cmd_t>(ctor_passkey_t());
   }
 
-  explicit cmd_stop_graph_t(ctor_passkey_t /*unused*/)
+  explicit stop_graph_cmd_t(ctor_passkey_t /*unused*/)
       : cmd_t(ten_cmd_stop_graph_create()) {}
-  ~cmd_stop_graph_t() override = default;
+  ~stop_graph_cmd_t() override = default;
 
   // @{
-  cmd_stop_graph_t(cmd_stop_graph_t &other) = delete;
-  cmd_stop_graph_t(cmd_stop_graph_t &&other) = delete;
-  cmd_stop_graph_t &operator=(const cmd_stop_graph_t &cmd) = delete;
-  cmd_stop_graph_t &operator=(cmd_stop_graph_t &&cmd) = delete;
+  stop_graph_cmd_t(stop_graph_cmd_t &other) = delete;
+  stop_graph_cmd_t(stop_graph_cmd_t &&other) = delete;
+  stop_graph_cmd_t &operator=(const stop_graph_cmd_t &cmd) = delete;
+  stop_graph_cmd_t &operator=(stop_graph_cmd_t &&cmd) = delete;
   // @}
 
   std::string get_graph_id(error_t *err = nullptr) const {

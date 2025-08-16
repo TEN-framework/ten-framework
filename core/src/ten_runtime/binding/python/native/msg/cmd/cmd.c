@@ -4,7 +4,7 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-#include "include_internal/ten_runtime/binding/python/msg/cmd.h"
+#include "include_internal/ten_runtime/binding/python/msg/cmd/cmd.h"
 
 #include "include_internal/ten_runtime/binding/python/common/error.h"
 #include "include_internal/ten_runtime/binding/python/msg/msg.h"

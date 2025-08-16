@@ -109,7 +109,7 @@ TEST(PropertyTest, ConnectCmd) {  // NOLINT
   start_graph_cmd_content_str["nodes"][0]["property"]["test_prop"] =
       CONNECT_CMD_PROP_VAL;
 
-  auto start_graph_cmd = ten::cmd_start_graph_t::create();
+  auto start_graph_cmd = ten::start_graph_cmd_t::create();
   start_graph_cmd->set_graph_from_json(
       start_graph_cmd_content_str.dump().c_str());
 

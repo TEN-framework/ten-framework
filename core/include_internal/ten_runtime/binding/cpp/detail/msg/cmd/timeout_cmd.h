@@ -17,40 +17,40 @@ namespace ten {
 
 class extension_t;
 
-class cmd_timeout_t : public cmd_t {
+class timeout_cmd_t : public cmd_t {
  private:
   friend extension_t;
 
   // Passkey Idiom.
   struct ctor_passkey_t {
    private:
-    friend cmd_timeout_t;
+    friend timeout_cmd_t;
 
     explicit ctor_passkey_t() = default;
   };
 
-  static std::unique_ptr<cmd_timeout_t> create(ten_shared_ptr_t *cmd,
+  static std::unique_ptr<timeout_cmd_t> create(ten_shared_ptr_t *cmd,
                                                error_t *err = nullptr) {
-    return std::make_unique<cmd_timeout_t>(cmd, ctor_passkey_t());
+    return std::make_unique<timeout_cmd_t>(cmd, ctor_passkey_t());
   }
 
-  explicit cmd_timeout_t(ten_shared_ptr_t *cmd) : cmd_t(cmd) {}
+  explicit timeout_cmd_t(ten_shared_ptr_t *cmd) : cmd_t(cmd) {}
 
  public:
-  explicit cmd_timeout_t(ten_shared_ptr_t *cmd, ctor_passkey_t /*unused*/)
+  explicit timeout_cmd_t(ten_shared_ptr_t *cmd, ctor_passkey_t /*unused*/)
       : cmd_t(cmd) {}
-  ~cmd_timeout_t() override = default;
+  ~timeout_cmd_t() override = default;
 
   uint32_t get_timer_id(error_t *err = nullptr) const {
     return ten_cmd_timeout_get_timer_id(c_msg);
   }
 
   // @{
-  cmd_timeout_t() = delete;
-  cmd_timeout_t(cmd_timeout_t &other) = delete;
-  cmd_timeout_t(cmd_timeout_t &&other) = delete;
-  cmd_timeout_t &operator=(const cmd_timeout_t &cmd) = delete;
-  cmd_timeout_t &operator=(cmd_timeout_t &&cmd) = delete;
+  timeout_cmd_t() = delete;
+  timeout_cmd_t(timeout_cmd_t &other) = delete;
+  timeout_cmd_t(timeout_cmd_t &&other) = delete;
+  timeout_cmd_t &operator=(const timeout_cmd_t &cmd) = delete;
+  timeout_cmd_t &operator=(timeout_cmd_t &&cmd) = delete;
   // @}
 };
 

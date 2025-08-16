@@ -10,12 +10,12 @@
 #include <cstddef>
 #include <cstdlib>
 
-#include "include_internal/ten_runtime/binding/cpp/detail/msg/cmd/timeout.h"
-#include "include_internal/ten_runtime/binding/cpp/detail/msg/cmd/timer.h"
+#include "include_internal/ten_runtime/binding/cpp/detail/msg/cmd/timeout_cmd.h"
+#include "include_internal/ten_runtime/binding/cpp/detail/msg/cmd/timer_cmd.h"
 #include "ten_runtime/binding/cpp/detail/extension.h"
-#include "ten_runtime/binding/cpp/detail/msg/cmd/close_app.h"
-#include "ten_runtime/binding/cpp/detail/msg/cmd/start_graph.h"
-#include "ten_runtime/binding/cpp/detail/msg/cmd/stop_graph.h"
+#include "ten_runtime/binding/cpp/detail/msg/cmd/close_app_cmd.h"
+#include "ten_runtime/binding/cpp/detail/msg/cmd/start_graph_cmd.h"
+#include "ten_runtime/binding/cpp/detail/msg/cmd/stop_graph_cmd.h"
 
 namespace ten {
 
@@ -37,23 +37,23 @@ inline void extension_t::proxy_on_cmd_internal(
   cmd_t *cpp_cmd_ptr = nullptr;
   switch (ten_msg_get_type(cmd)) {
   case TEN_MSG_TYPE_CMD_START_GRAPH:
-    cpp_cmd_ptr = new cmd_start_graph_t(cmd);
+    cpp_cmd_ptr = new start_graph_cmd_t(cmd);
     break;
 
   case TEN_MSG_TYPE_CMD_TIMER:
-    cpp_cmd_ptr = new cmd_timer_t(cmd);
+    cpp_cmd_ptr = new timer_cmd_t(cmd);
     break;
 
   case TEN_MSG_TYPE_CMD_TIMEOUT:
-    cpp_cmd_ptr = new cmd_timeout_t(cmd);
+    cpp_cmd_ptr = new timeout_cmd_t(cmd);
     break;
 
   case TEN_MSG_TYPE_CMD_STOP_GRAPH:
-    cpp_cmd_ptr = new cmd_stop_graph_t(cmd);
+    cpp_cmd_ptr = new stop_graph_cmd_t(cmd);
     break;
 
   case TEN_MSG_TYPE_CMD_CLOSE_APP:
-    cpp_cmd_ptr = new cmd_close_app_t(cmd);
+    cpp_cmd_ptr = new close_app_cmd_t(cmd);
     break;
 
   case TEN_MSG_TYPE_CMD:
