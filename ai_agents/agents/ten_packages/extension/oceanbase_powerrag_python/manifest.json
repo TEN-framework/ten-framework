@@ -1,0 +1,49 @@
+{
+  "type": "extension",
+  "name": "oceanbase_powerrag_python",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.10"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "**.tent",
+      "**.py",
+      "README.md",
+      "tests/**"
+    ]
+  },
+  "api": {
+    "property": {
+      "properties": {
+        "user_id": {
+          "type": "string"
+        },
+        "base_url": {
+          "type": "string"
+        },
+        "api_key": {
+          "type": "string"
+        },
+        "ai_database_name": {
+          "type": "string"
+        },
+        "collection_id": {
+          "type": "string"
+        },
+        "greeting": {
+          "type": "string"
+        },
+        "failure_info": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
