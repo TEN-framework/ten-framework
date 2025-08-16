@@ -393,7 +393,8 @@ static ten_listnode_t *ten_path_table_find_path(ten_path_table_t *self,
                                                 ten_shared_ptr_t *cmd) {
   TEN_ASSERT(self && ten_path_table_check_integrity(self, true),
              "Invalid argument.");
-  TEN_ASSERT(cmd && ten_msg_check_integrity(cmd), "Invalid argument.");
+  TEN_ASSERT(cmd, "Invalid argument.");
+  TEN_ASSERT(ten_msg_check_integrity(cmd), "Invalid argument.");
 
   switch (path_type) {
   case TEN_PATH_IN:

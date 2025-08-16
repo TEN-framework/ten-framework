@@ -61,7 +61,8 @@ PyObject *ten_py_cmd_create(PyTypeObject *type, PyObject *args,
 }
 
 ten_py_cmd_t *ten_py_cmd_wrap(ten_shared_ptr_t *cmd) {
-  TEN_ASSERT(cmd && ten_msg_check_integrity(cmd), "Invalid argument.");
+  TEN_ASSERT(cmd, "Invalid argument.");
+  TEN_ASSERT(ten_msg_check_integrity(cmd), "Invalid argument.");
 
   ten_py_cmd_t *py_cmd = ten_py_cmd_create_internal(NULL);
   py_cmd->msg.c_msg = ten_shared_ptr_clone(cmd);
