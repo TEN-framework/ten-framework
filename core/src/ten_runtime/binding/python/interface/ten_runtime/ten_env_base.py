@@ -7,6 +7,7 @@
 import inspect
 
 from libten_runtime_python import _TenEnv  # pyright: ignore[reportPrivateUsage]
+
 from .log_level import LogLevel
 from .error import TenError
 

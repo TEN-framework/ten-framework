@@ -6,9 +6,10 @@
 #
 from enum import IntEnum
 from typing import TypeVar, cast
+
 from libten_runtime_python import (
     _TenError,  # pyright: ignore[reportPrivateUsage]
-    _ten_py_error_register_error_type,  # pyright: ignore[reportPrivateUsage]
+    _ten_py_error_register_type,  # pyright: ignore[reportPrivateUsage]
 )
 
 T = TypeVar("T", bound="TenError")
@@ -56,4 +57,4 @@ class TenError(_TenError):
         return cast(T, cls.__new__(cls, error_code.value, error_message))
 
 
-_ten_py_error_register_error_type(TenError)
+_ten_py_error_register_type(TenError)

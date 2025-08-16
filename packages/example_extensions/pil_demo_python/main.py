@@ -62,6 +62,8 @@ class PilDemoExtension(Extension):
 
 @register_addon_as_extension("pil_demo_python")
 class PilDemoExtensionAddon(Addon):
-    def on_create_instance(self, ten_env: TenEnv, name: str, context) -> None:
+    def on_create_instance(
+        self, ten_env: TenEnv, name: str, context: object
+    ) -> None:
         ten_env.log(LogLevel.DEBUG, "on_create_instance")
         ten_env.on_create_instance_done(PilDemoExtension(name), context)

@@ -8,14 +8,14 @@ import os
 import sys
 from typing import Callable
 
-from .addon import Addon
-
 # Internal APIs from libten_runtime_python - these are private by design and
 # only intended for use within ten-framework's Python binding layer.
 from libten_runtime_python import (
     _ten_py_addon_manager_add_extension_addon,  # pyright: ignore[reportPrivateUsage] # noqa: E501
     _ten_py_addon_manager_register_addon_as_extension,  # pyright: ignore[reportPrivateUsage] # noqa: E501
 )
+
+from .addon import Addon
 
 
 class _AddonManager:

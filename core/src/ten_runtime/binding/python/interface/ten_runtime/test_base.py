@@ -5,9 +5,11 @@
 # Refer to the "LICENSE" file in the root directory for more information.
 #
 import inspect
+
 from libten_runtime_python import (
     _TenEnvTester,  # pyright: ignore[reportPrivateUsage]
 )
+
 from .log_level import LogLevel
 from .error import TenError
 

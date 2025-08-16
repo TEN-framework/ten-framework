@@ -5,25 +5,27 @@
 # Refer to the "LICENSE" file in the root directory for more information.
 #
 from typing import TypeVar, cast
+
 from libten_runtime_python import (
-    _Data,  # pyright: ignore[reportPrivateUsage]
-    _ten_py_data_register_data_type,  # pyright: ignore[reportPrivateUsage]
+    _Cmd,  # pyright: ignore[reportPrivateUsage]
+    _ten_py_cmd_register_type,  # pyright: ignore[reportPrivateUsage]
 )
-from .msg import Msg
 
-T = TypeVar("T", bound="Data")
+from ..msg import Msg
+
+T = TypeVar("T", bound="Cmd")
 
 
-class Data(_Data, Msg):
+class Cmd(_Cmd, Msg):
     def __init__(self, name: str):  # pyright: ignore[reportMissingSuperCall]
-        raise NotImplementedError("Use Data.create instead.")
+        raise NotImplementedError("Use Cmd.create instead.")
 
     @classmethod
     def create(cls: type[T], name: str) -> T:
         return cast(T, cls.__new__(cls, name))
 
-    def clone(self) -> "Data":  # pyright: ignore[reportImplicitOverride]
-        return cast("Data", _Data.clone(self))
+    def clone(self) -> "Cmd":  # pyright: ignore[reportImplicitOverride]
+        return cast("Cmd", _Cmd.clone(self))
 
 
-_ten_py_data_register_data_type(Data)
+_ten_py_cmd_register_type(Cmd)
