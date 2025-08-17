@@ -620,26 +620,6 @@ jobs:
           TEN_ENABLE_BACKTRACE_DUMP: "true"
           GOTRACEBACK: crash
         run: |
-          curl -fsSL https://ollama.com/install.sh | sh
-
-          # Start Ollama service.
-          ollama serve &
-
-          # Wait for Ollama to be fully operational.
-          for i in {1..30}; do
-            if curl -s http://localhost:11434 >/dev/null; then
-              echo "✓ Ollama is running"
-              break
-            fi
-            echo "Waiting for Ollama to start..."
-            sleep 2
-          done
-
-          ollama pull smollm:135m
-
-          # Verify model is pulled correctly.
-          ollama list
-
           df -h .
 
           export PATH=$(pwd)/core/ten_gn:$PATH
@@ -846,6 +826,26 @@ jobs:
           TEN_ENABLE_BACKTRACE_DUMP: "true"
           GOTRACEBACK: crash
         run: |
+          curl -fsSL https://ollama.com/install.sh | sh
+
+          # Start Ollama service.
+          ollama serve &
+
+          # Wait for Ollama to be fully operational.
+          for i in {1..30}; do
+            if curl -s http://localhost:11434 >/dev/null; then
+              echo "✓ Ollama is running"
+              break
+            fi
+            echo "Waiting for Ollama to start..."
+            sleep 2
+          done
+
+          ollama pull smollm:135m
+
+          # Verify model is pulled correctly.
+          ollama list
+
           df -h .
 
           export PATH=$(pwd)/core/ten_gn:$PATH
