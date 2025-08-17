@@ -13,6 +13,7 @@ from ten_runtime import AsyncExtension, Data
 from ten_runtime.async_ten_env import AsyncTenEnv
 
 DATA_IN_MESSAGE = "message"
+DATA_IN_FLUSH = "flush"
 DATA_OUT_MESSAGE = "data"
 
 
@@ -60,6 +61,14 @@ class MessageCollector2Extension(AsyncExtension):
 
             except Exception as e:
                 ten_env.log_warn(f"on_data new_data error: {e}")
+        elif name == DATA_IN_FLUSH:
+            ten_env.log_info("Received flush command")
+            # Clear the queue
+            while not self.queue.empty():
+                await self.queue.get()
+                self.queue.task_done()
+        else:
+            ten_env.log_warn(f"Unknown data name: {name}")
 
     async def _queue_message(self, data: str):
         await self.queue.put(data)

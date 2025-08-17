@@ -20,12 +20,14 @@
   },
   "api": {
     "property": {
-      "properties": {
-      }
+      "properties": {}
     },
     "data_in": [
       {
         "name": "message"
+      },
+      {
+        "name": "flush"
       }
     ],
     "data_out": [

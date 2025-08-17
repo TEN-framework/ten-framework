@@ -45,19 +45,19 @@ class InvalidTextHandlingTester(AsyncExtensionTester):
 
 class SingleTestCaseTester(AsyncExtensionTester):
     """Single test case tester, each test case runs independently"""
-    
+
     def __init__(self, test_index: int, invalid_text: str, valid_text: str, session_id: str):
         super().__init__()
         self.test_index = test_index
         self.invalid_text = invalid_text
         self.valid_text = valid_text
         self.session_id = session_id
-        
+
         # Test status
         self.received_audio_frame: bool = False
         self.received_error: bool = False
         self.test_success: bool = False
-        
+
         print(f"\n{'='*60}")
         print(f"🧪 Running test case {test_index + 1}")
         print(f"Invalid text: '{invalid_text}'")
@@ -69,18 +69,18 @@ class SingleTestCaseTester(AsyncExtensionTester):
     async def _send_tts_text_input_single(self, ten_env: AsyncTenEnvTester, text: str, is_end: bool = False) -> None:
         """Send tts text input to TTS extension for single test case."""
         ten_env.log_info(f"Sending tts text input: '{text}' (length: {len(text)})")
-        
+
         tts_text_input_obj = Data.create("tts_text_input")
         tts_text_input_obj.set_property_string("text", text)
         tts_text_input_obj.set_property_string("request_id", f"test_invalid_request_{self.test_index}")
         tts_text_input_obj.set_property_bool("text_input_end", is_end)
-        
+
         metadata = {
             "session_id": self.session_id,
             "turn_id": self.test_index + 1,
         }
         tts_text_input_obj.set_property_from_json("metadata", json.dumps(metadata))
-        
+
         await ten_env.send_data(tts_text_input_obj)
         ten_env.log_info(f"✅ tts text input sent: '{text}'")
 
@@ -93,26 +93,26 @@ class SingleTestCaseTester(AsyncExtensionTester):
     def _validate_error_response_single(self, ten_env: AsyncTenEnvTester, json_data: dict[str, Any]) -> bool:
         """Validate if error response meets requirements (single test case version)"""
         ten_env.log_info("Validating error response...")
-        
+
         # Check required fields
         required_fields = ["code", "message", "vendor_info"]
         missing_fields = [field for field in required_fields if field not in json_data]
-        
+
         if missing_fields:
             ten_env.log_error(f"Missing required fields in error response: {missing_fields}")
             return False
-        
+
         # Check error code
         if json_data["code"] != 1000:
             ten_env.log_error(f"Expected error code 1000, got {json_data['code']}")
             return False
-        
+
         # Check vendor_info
         vendor_info = json_data.get("vendor_info", {})
         if "vendor" not in vendor_info:
             ten_env.log_error("Missing 'vendor' field in vendor_info")
             return False
-        
+
         ten_env.log_info(f"✅ Error response validation passed: {json_data}")
         return True
 
@@ -120,22 +120,23 @@ class SingleTestCaseTester(AsyncExtensionTester):
     async def on_start(self, ten_env: AsyncTenEnvTester) -> None:
         """Start single test case"""
         ten_env.log_info(f"Starting test case {self.test_index + 1}")
-        
+
         # Step 1: Send invalid text
         ten_env.log_info("Step 1: Sending invalid text...")
         await self._send_tts_text_input_single(ten_env, self.invalid_text, False)
-        
+
         # Wait for error response
         await asyncio.sleep(2)
-        
+
         # Step 2: Send valid text
         ten_env.log_info("Step 2: Sending valid text...")
         self.received_audio_frame = False
         await self._send_tts_text_input_single(ten_env, self.valid_text, True)
-        
+
         # Wait for TTS output and audio frame
-        await asyncio.sleep(2)
-        
+        # Due to the tts extension may take over 2 seconds to process the text, we need to wait for a longer time
+        await asyncio.sleep(4)
+
         # Check test results
 
         if not self.received_audio_frame:
@@ -144,7 +145,7 @@ class SingleTestCaseTester(AsyncExtensionTester):
         else:
             ten_env.log_info("✅ TTS output and audio frame received for valid text")
             self.test_success = True
-        
+
         # Test completed
         ten_env.log_info(f"Test case {self.test_index + 1} completed with success: {self.test_success}")
         ten_env.stop_test()
@@ -154,11 +155,11 @@ class SingleTestCaseTester(AsyncExtensionTester):
         """Handle received data (single test case version)"""
         name: str = data.get_name()
         json_str, metadata = data.get_property_to_json("")
-        
+
         ten_env.log_info(f"Received data: {name}")
         ten_env.log_info(f"JSON: {json_str}")
         ten_env.log_info(f"Metadata: {metadata}")
-        
+
         if name == "error":
             # Handle error response
             try:
@@ -174,11 +175,11 @@ class SingleTestCaseTester(AsyncExtensionTester):
                 ten_env.log_error(f"❌ Failed to parse error JSON: {e}")
                 # Even if JSON parsing fails, mark as error response received
                 self.received_error = True
-        
+
         elif name == "metrics":
             # Handle metrics data
             ten_env.log_info("📊 Metrics received")
-        
+
         elif name == "tts_audio_end":
             # TTS audio ended
             ten_env.log_info("🎵 TTS audio ended")
@@ -191,33 +192,33 @@ class SingleTestCaseTester(AsyncExtensionTester):
 
 def test_invalid_text_handling(extension_name: str, config_dir: str) -> None:
     """Test TTS extension's ability to handle invalid text"""
-    
+
     # Get config file path
     config_file_path = os.path.join(config_dir, "property_basic_audio_setting1.json")
     if not os.path.exists(config_file_path):
         raise FileNotFoundError(f"Config file not found: {config_file_path}")
-    
+
     # Load config file
     with open(config_file_path, "r") as f:
         config: dict[str, Any] = json.load(f)
-    
+
     # Define test cases
     test_cases = [
         # Empty strings and spaces
         {"invalid": "", "valid": "Hello world."},
         {"invalid": " ", "valid": "This is a test."},
         {"invalid": "   ", "valid": "Another test case."},
-        
+
         # Newlines and tabs
         {"invalid": "\n", "valid": "Text with newline test."},
         {"invalid": "\t", "valid": "Text with tab test."},
         {"invalid": "\n\t\n", "valid": "Mixed whitespace test."},
-        
+
         # Emoticons and emojis
         {"invalid": ":-)", "valid": "Smile test."},
         {"invalid": "😊", "valid": "Emoji test."},
         {"invalid": "😀😃😄😁", "valid": "Multiple emoji test."},
-        
+
         # Punctuation marks
         {"invalid": "，", "valid": "Chinese punctuation test."},
         {"invalid": "。", "valid": "Chinese punctuation test."},
@@ -233,19 +234,19 @@ def test_invalid_text_handling(extension_name: str, config_dir: str) -> None:
         {"invalid": "？", "valid": "More Chinese punctuation."},
         {"invalid": "；", "valid": "More Chinese punctuation."},
         {"invalid": "：", "valid": "More Chinese punctuation."},
-        
+
         # Mathematical formulas
         {"invalid": "x = (-b ± √(b² - 4ac)) / 2a", "valid": "Mathematical formula test."},
         {"invalid": "2H₂ + O₂ → 2H₂O", "valid": "Chemical equation test."},
         {"invalid": "H₂O", "valid": "Chemical formula test."},
-        
+
         # Mixed invalid text
         {"invalid": "   \n\t😊，。/(]}x = (-b ± √(b² - 4ac)) / 2a", "valid": "Mixed invalid text test."},
     ]
-    
+
     # Store all test results
     all_test_results = []
-    
+
     print("=" * 80)
     print("🧪 TEST CASE: TTS Invalid Text Handling Test")
     print("=" * 80)
@@ -256,7 +257,7 @@ def test_invalid_text_handling(extension_name: str, config_dir: str) -> None:
     print("   - Test various types of invalid text")
     print("   - Each test case runs independently with fresh extension instance")
     print("=" * 80)
-    
+
     # Create independent testers for each test case
     for i, test_case in enumerate(test_cases):
         print(f"\n{'='*60}")
@@ -264,7 +265,7 @@ def test_invalid_text_handling(extension_name: str, config_dir: str) -> None:
         print(f"Invalid text: '{test_case['invalid']}'")
         print(f"Valid text: '{test_case['valid']}'")
         print(f"{'='*60}")
-        
+
         # Create independent tester
         tester = SingleTestCaseTester(
             test_index=i,
@@ -272,11 +273,11 @@ def test_invalid_text_handling(extension_name: str, config_dir: str) -> None:
             valid_text=test_case["valid"],
             session_id=f"test_invalid_text_session_{i}"
         )
-        
+
         # Set test mode and run
         tester.set_test_mode_single(extension_name, json.dumps(config))
         error = tester.run()
-        
+
         # Record test results
         test_result = {
             "test_index": i,
@@ -286,26 +287,26 @@ def test_invalid_text_handling(extension_name: str, config_dir: str) -> None:
             "error": error
         }
         all_test_results.append(test_result)
-        
+
         if tester.test_success:
             print(f"✅ Test case {i + 1} passed")
         else:
             print(f"❌ Test case {i + 1} failed")
             if error:
                 print(f"   Error: {error}")
-    
+
     # Output test result summary
     print("\n" + "="*80)
     print("📊 TEST RESULTS SUMMARY")
     print("="*80)
-    
+
     passed_tests = sum(1 for result in all_test_results if result["success"])
     total_tests = len(all_test_results)
-    
+
     print(f"Total test cases: {total_tests}")
     print(f"Passed: {passed_tests}")
     print(f"Failed: {total_tests - passed_tests}")
-    
+
     # Check if any test cases failed
     if passed_tests != total_tests:
         print("❌ Some tests failed!")
@@ -319,10 +320,10 @@ def test_invalid_text_handling(extension_name: str, config_dir: str) -> None:
         raise AssertionError(f"Test failed: {total_tests - passed_tests} out of {total_tests} test cases failed")
     else:
         print("🎉 All tests passed!")
-    
+
     print("="*80)
 
 
 if __name__ == "__main__":
     # Example usage
-    test_invalid_text_handling("elevenlabs_tts_python", "./config") 
+    test_invalid_text_handling("elevenlabs_tts_python", "./config")

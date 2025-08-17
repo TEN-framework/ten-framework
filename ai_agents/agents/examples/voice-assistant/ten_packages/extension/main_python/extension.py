@@ -136,6 +136,9 @@ class MainControlExtension(AsyncExtension):
                                     sentence, is_final=False
                                 )
 
+                        self.ten_env.log_info(
+                            f"[MainControlExtension] LLM response: {event.text}, final={event.is_final}"
+                        )
                         await self._send_transcript(
                             role="assistant",
                             text=event.text,
@@ -199,9 +202,14 @@ class MainControlExtension(AsyncExtension):
         """
         Interrupts ongoing LLM and TTS generation. Typically called when user speech is detected.
         """
+        self.sentence_fragment = ""
         await self.agent.flush_llm()
         await _send_data(
             self.ten_env, "tts_flush", "tts", {"flush_id": str(uuid.uuid4())}
+        )
+        await _send_data(self.ten_env, "flush", "message_collector")
+        self.ten_env.log_info(
+            "[MainControlExtension] Interrupt signal sent to LLM and TTS"
         )
         await _send_cmd(self.ten_env, "flush", "agora_rtc")
         self.ten_env.log_info("[MainControlExtension] Interrupt signal sent")
