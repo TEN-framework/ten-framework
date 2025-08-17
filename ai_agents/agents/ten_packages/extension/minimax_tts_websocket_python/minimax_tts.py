@@ -223,6 +223,7 @@ class MinimaxTTSWebsocket:
                     self.ten_env.log_error(
                         f"Error processing TTS response: {e}"
                     )
+                self.ws = None
                 raise
 
     async def _process_websocket(self) -> None:
