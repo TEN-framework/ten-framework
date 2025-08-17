@@ -17,7 +17,7 @@ from ten_ai_base.message import (
     ModuleVendorException,
     TTSAudioEndReason,
 )
-from ten_ai_base.struct import TTSTextInput, TTSFlush
+from ten_ai_base.struct import TTSTextInput
 from ten_ai_base.tts2 import AsyncTTS2BaseExtension
 
 from .config import MinimaxTTSWebsocketConfig
