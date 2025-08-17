@@ -26,7 +26,7 @@ class test_extension : public ten::extension_t {
     if (cmd->get_name() == "hello_world") {
       hello_world_cmd = std::move(cmd);
 
-      auto timer_cmd = ten::cmd_timer_t::create();
+      auto timer_cmd = ten::timer_cmd_t::create();
       timer_cmd->set_dests({{"", "", nullptr}});
       timer_cmd->set_timer_id(55);
       timer_cmd->set_timeout_us(100);
@@ -36,8 +36,8 @@ class test_extension : public ten::extension_t {
       return;
     } else if (ten::msg_internal_accessor_t::get_type(cmd.get()) ==
                    TEN_MSG_TYPE_CMD_TIMEOUT &&
-               std::unique_ptr<ten::cmd_timeout_t>(
-                   static_cast<ten::cmd_timeout_t *>(cmd.release()))
+               std::unique_ptr<ten::timeout_cmd_t>(
+                   static_cast<ten::timeout_cmd_t *>(cmd.release()))
                        ->get_timer_id() == 55) {
       timer_shots_cnt++;
       if (timer_shots_cnt == TIMER_TIMES) {
@@ -95,7 +95,7 @@ TEST(ExtensionTest, TimerTenShot) {
   auto *client = new ten::msgpack_tcp_client_t("msgpack://127.0.0.1:8001/");
 
   // Send graph.
-  auto start_graph_cmd = ten::cmd_start_graph_t::create();
+  auto start_graph_cmd = ten::start_graph_cmd_t::create();
   start_graph_cmd->set_graph_from_json(R"({
            "nodes": [{
                "type": "extension",

@@ -56,7 +56,7 @@ def test_standalone_test_1_go():
 
     # Step 2:
     #
-    # Install all the dependencies of the ollama_python package.
+    # Install all the dependencies.
     tman_install_cmd = [
         os.path.join(root_dir, "ten_manager/bin/tman"),
         "--config-file",

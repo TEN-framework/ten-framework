@@ -4,12 +4,12 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-#include "include_internal/ten_runtime/binding/python/msg/cmd_start_graph.h"
+#include "include_internal/ten_runtime/binding/python/msg/cmd/start_graph_cmd.h"
 
 #include <stdbool.h>
 
 #include "include_internal/ten_runtime/binding/python/common/error.h"
-#include "include_internal/ten_runtime/binding/python/msg/cmd.h"
+#include "include_internal/ten_runtime/binding/python/msg/cmd/cmd.h"
 #include "ten_runtime/msg/cmd/start_graph/cmd.h"
 #include "ten_utils/macro/mark.h"
 

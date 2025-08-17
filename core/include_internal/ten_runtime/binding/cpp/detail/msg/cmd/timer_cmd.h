@@ -17,28 +17,28 @@ namespace ten {
 
 class extension_t;
 
-class cmd_timer_t : public cmd_t {
+class timer_cmd_t : public cmd_t {
  private:
   friend extension_t;
 
   // Passkey Idiom.
   struct ctor_passkey_t {
    private:
-    friend cmd_timer_t;
+    friend timer_cmd_t;
 
     explicit ctor_passkey_t() = default;
   };
 
-  explicit cmd_timer_t(ten_shared_ptr_t *cmd) : cmd_t(cmd) {}
+  explicit timer_cmd_t(ten_shared_ptr_t *cmd) : cmd_t(cmd) {}
 
  public:
-  static std::unique_ptr<cmd_timer_t> create(error_t *err = nullptr) {
-    return std::make_unique<cmd_timer_t>(ctor_passkey_t());
+  static std::unique_ptr<timer_cmd_t> create(error_t *err = nullptr) {
+    return std::make_unique<timer_cmd_t>(ctor_passkey_t());
   }
 
-  explicit cmd_timer_t(ctor_passkey_t /*unused*/)
+  explicit timer_cmd_t(ctor_passkey_t /*unused*/)
       : cmd_t(ten_cmd_timer_create()) {}
-  ~cmd_timer_t() override = default;
+  ~timer_cmd_t() override = default;
 
   bool set_timer_id(uint32_t timer_id) {
     return ten_cmd_timer_set_timer_id(c_msg, timer_id);
@@ -53,10 +53,10 @@ class cmd_timer_t : public cmd_t {
   }
 
   // @{
-  cmd_timer_t(cmd_timer_t &other) = delete;
-  cmd_timer_t(cmd_timer_t &&other) = delete;
-  cmd_timer_t &operator=(const cmd_timer_t &cmd) = delete;
-  cmd_timer_t &operator=(cmd_timer_t &&cmd) = delete;
+  timer_cmd_t(timer_cmd_t &other) = delete;
+  timer_cmd_t(timer_cmd_t &&other) = delete;
+  timer_cmd_t &operator=(const timer_cmd_t &cmd) = delete;
+  timer_cmd_t &operator=(timer_cmd_t &&cmd) = delete;
   // @}
 };
 

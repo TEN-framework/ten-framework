@@ -6,8 +6,8 @@
 //
 #include "include_internal/ten_runtime/binding/nodejs/common/common.h"
 #include "include_internal/ten_runtime/binding/nodejs/error/error.h"
-#include "include_internal/ten_runtime/binding/nodejs/msg/cmd.h"
-#include "include_internal/ten_runtime/binding/nodejs/msg/cmd_result.h"
+#include "include_internal/ten_runtime/binding/nodejs/msg/cmd/cmd.h"
+#include "include_internal/ten_runtime/binding/nodejs/msg/cmd/cmd_result.h"
 #include "include_internal/ten_runtime/binding/nodejs/ten_env/ten_env.h"
 #include "ten_utils/lib/smart_ptr.h"
 #include "ten_utils/macro/check.h"
