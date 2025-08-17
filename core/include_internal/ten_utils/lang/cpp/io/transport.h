@@ -10,10 +10,10 @@
 #include <functional>
 #include <memory>
 
+#include "include_internal/ten_utils/lang/cpp/lib/string.h"
 #include "ten_utils/io/stream.h"
 #include "ten_utils/io/transport.h"
 #include "ten_utils/lang/cpp/io/runloop.h"
-#include "ten_utils/lang/cpp/lib/string.h"
 
 namespace ten {
 
