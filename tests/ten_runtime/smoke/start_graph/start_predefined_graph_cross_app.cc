@@ -6,7 +6,7 @@
 //
 #include "gtest/gtest.h"
 #include "include_internal/ten_runtime/binding/cpp/ten.h"
-#include "ten_runtime/binding/cpp/detail/msg/cmd/start_graph.h"
+#include "ten_runtime/binding/cpp/detail/msg/cmd/start_graph_cmd.h"
 #include "tests/common/client/cpp/msgpack_tcp.h"
 #include "tests/ten_runtime/smoke/util/binding/cpp/check.h"
 
@@ -17,7 +17,7 @@ class test_extension_1 : public ten::extension_t {
   explicit test_extension_1(const char *name) : ten::extension_t(name) {}
 
   void on_start(ten::ten_env_t &ten_env) override {
-    auto start_graph_cmd = ten::cmd_start_graph_t::create();
+    auto start_graph_cmd = ten::start_graph_cmd_t::create();
     start_graph_cmd->set_dests({{""}});
     start_graph_cmd->set_predefined_graph_name("graph_1");
     ten_env.send_cmd(
@@ -47,7 +47,7 @@ class test_extension_1 : public ten::extension_t {
 
                 // Shut down the graph; otherwise, the app won't be able to
                 // close because there is still a running engine/graph.
-                auto stop_graph_cmd = ten::cmd_stop_graph_t::create();
+                auto stop_graph_cmd = ten::stop_graph_cmd_t::create();
                 stop_graph_cmd->set_dests({{""}});
                 stop_graph_cmd->set_graph_id(graph_id.c_str());
 

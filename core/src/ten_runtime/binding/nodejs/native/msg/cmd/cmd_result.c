@@ -4,10 +4,10 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-#include "include_internal/ten_runtime/binding/nodejs/msg/cmd_result.h"
+#include "include_internal/ten_runtime/binding/nodejs/msg/cmd/cmd_result.h"
 
 #include "include_internal/ten_runtime/binding/nodejs/common/common.h"
-#include "include_internal/ten_runtime/binding/nodejs/msg/cmd.h"
+#include "include_internal/ten_runtime/binding/nodejs/msg/cmd/cmd.h"
 #include "include_internal/ten_runtime/msg/msg.h"
 #include "js_native_api.h"
 #include "js_native_api_types.h"

@@ -8,7 +8,7 @@
 
 #include "include_internal/ten_runtime/binding/nodejs/common/common.h"
 #include "include_internal/ten_runtime/binding/nodejs/msg/audio_frame.h"
-#include "include_internal/ten_runtime/binding/nodejs/msg/cmd.h"
+#include "include_internal/ten_runtime/binding/nodejs/msg/cmd/cmd.h"
 #include "include_internal/ten_runtime/binding/nodejs/msg/data.h"
 #include "include_internal/ten_runtime/binding/nodejs/msg/video_frame.h"
 #include "include_internal/ten_runtime/binding/nodejs/ten_env/ten_env.h"
