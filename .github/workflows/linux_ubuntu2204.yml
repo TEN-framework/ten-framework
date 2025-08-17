@@ -635,14 +635,7 @@ jobs:
       matrix:
         compiler: [gcc, clang]
         build_type: [debug, release]
-        arch: [x64, x86]
-        include:
-          - compiler: gcc
-            build_type: debug
-            arch: x86
-        exclude:
-          - compiler: clang
-            arch: x86
+        arch: [x64]
     container:
       image: ghcr.io/ten-framework/ten_building_ubuntu2204
     steps:
@@ -738,14 +731,7 @@ jobs:
       matrix:
         compiler: [gcc, clang]
         build_type: [debug, release]
-        arch: [x64, x86]
-        include:
-          - compiler: gcc
-            build_type: debug
-            arch: x86
-        exclude:
-          - compiler: clang
-            arch: x86
+        arch: [x64]
     container:
       image: ghcr.io/ten-framework/ten_building_ubuntu2204
     steps:
@@ -861,14 +847,7 @@ jobs:
       matrix:
         compiler: [gcc, clang]
         build_type: [debug, release]
-        arch: [x64, x86]
-        include:
-          - compiler: gcc
-            build_type: debug
-            arch: x86
-        exclude:
-          - compiler: clang
-            arch: x86
+        arch: [x64]
     container:
       image: ghcr.io/ten-framework/ten_building_ubuntu2204
     steps:
