@@ -83,7 +83,12 @@ def test_empty_params_fatal_error():
     print("Starting test_empty_params_fatal_error...")
 
     # Empty params configuration
-    empty_params_config = {"params": {}}
+    empty_params_config = {
+        "params": {
+            "key": "",
+            "voice_name": "Female English Actor",
+        }
+    }
 
     tester = ExtensionTesterEmptyParams()
     tester.set_test_mode_single(
@@ -176,9 +181,10 @@ def test_invalid_api_key_error(MockHumeClient):
 
     # Config with invalid API key
     invalid_key_config = {
-        "key": "invalid_api_key_test",
-        "voice_id": "daisy",
-        "params": {},
+        "params": {
+            "key": "invalid_api_key_test",
+            "voice_name": "Female English Actor",
+        },
     }
 
     tester = ExtensionTesterInvalidApiKey()

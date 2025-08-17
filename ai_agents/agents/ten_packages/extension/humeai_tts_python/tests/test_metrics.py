@@ -122,7 +122,12 @@ def test_ttfb_metric_is_sent(MockHumeAiTTS):
 
     # --- Test Setup ---
     # A minimal config is needed for the extension to initialize correctly.
-    metrics_config = {"key": "test_api_key", "voice_id": "daisy", "params": {}}
+    metrics_config = {
+        "params": {
+            "key": "test_api_key",
+            "voice_name": "Female English Actor",
+        }
+    }
     tester = ExtensionTesterMetrics()
     tester.set_test_mode_single("humeai_tts_python", json.dumps(metrics_config))
 

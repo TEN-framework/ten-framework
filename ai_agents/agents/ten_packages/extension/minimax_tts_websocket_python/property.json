@@ -1,1 +1,13 @@
-{}
+{
+    "params": {
+        "api_key": "${env:MINIMAX_TTS_KEY|}",
+        "group_id": "${env:MINIMAX_TTS_GROUPID|}",
+        "model": "speech-02-turbo",
+        "audio_setting": {
+            "sample_rate": 16000
+        },
+        "voice_setting": {
+            "voice_id": "female-shaonv"
+        }
+    }
+}

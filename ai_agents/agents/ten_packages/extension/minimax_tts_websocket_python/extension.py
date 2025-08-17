@@ -90,7 +90,7 @@ class MinimaxTTSWebsocketExtension(AsyncTTS2BaseExtension):
                 self.config, ten_env, self.vendor()
             )
             # Preheat websocket connection
-            await self.client.start()
+            asyncio.create_task(self.client.start())
             ten_env.log_info(
                 "MinimaxTTSWebsocket client initialized and preheated successfully"
             )
@@ -178,10 +178,6 @@ class MinimaxTTSWebsocketExtension(AsyncTTS2BaseExtension):
             self.config.sample_rate * bytes_per_sample * channels
         )
         return int(duration_sec * 1000)
-
-    async def on_flush(self, t: TTSFlush) -> None:
-        # This logic is now handled in on_data to align with the bytedance example
-        pass
 
     async def request_tts(self, t: TTSTextInput) -> None:
         """

@@ -70,7 +70,12 @@ def test_empty_params_fatal_error():
     print("Starting test_empty_params_fatal_error...")
 
     # Empty params configuration
-    empty_params_config = {"params": {}}
+    empty_params_config = {
+        "params": {
+            "api_key": "",
+            "group_id": "",
+        }
+    }
 
     tester = ExtensionTesterEmptyParams()
     tester.set_test_mode_single(
@@ -175,9 +180,11 @@ def test_invalid_params_fatal_error(MockMinimaxTTSWebsocket):
     # Config with valid api_key and group_id so on_init passes and can proceed
     # to the request_tts call where the mock will be triggered.
     invalid_params_config = {
-        "api_key": "valid_key_for_test",
-        "group_id": "valid_group_for_test",
-        "params": {"voice_id": "any_voice_id_will_be_mocked"},
+        "params": {
+            "api_key": "valid_key_for_test",
+            "group_id": "valid_group_for_test",
+            "voice_id": "any_voice_id_will_be_mocked",
+        }
     }
 
     tester = ExtensionTesterInvalidParams()

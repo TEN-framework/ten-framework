@@ -127,7 +127,12 @@ def test_reconnect_after_connection_drop(MockMinimaxTTSWebsocket):
     mock_instance.get.side_effect = mock_get_stateful
 
     # --- Test Setup ---
-    config = {"api_key": "a_valid_key", "group_id": "a_valid_group"}
+    config = {
+        "params": {
+            "api_key": "a_valid_key",
+            "group_id": "a_valid_group",
+        }
+    }
     tester = ExtensionTesterRobustness()
     tester.set_test_mode_single(
         "minimax_tts_websocket_python", json.dumps(config)

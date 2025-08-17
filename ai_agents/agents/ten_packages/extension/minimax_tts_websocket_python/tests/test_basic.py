@@ -143,8 +143,10 @@ def test_dump_functionality(MockMinimaxTTSWebsocket):
     tester = ExtensionTesterDump()
 
     dump_config = {
-        "api_key": "valid_key_for_test",
-        "group_id": "valid_group_for_test",
+        "params": {
+            "api_key": "valid_key_for_test",
+            "group_id": "valid_group_for_test",
+        },
         "dump": True,
         "dump_path": DUMP_PATH,
     }

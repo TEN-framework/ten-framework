@@ -113,13 +113,12 @@ def test_params_passthrough(MockHumeAiTTS):
     # Define a configuration with custom parameters inside 'params'.
     # These are the parameters we expect to be "passed through".
     passthrough_params = {
+        "key": "test_api_key",
+        "voice_name": "Female English Actor",
         "speed": 1.5,
         "trailing_silence": 0.8,
-        "custom_param": "test_value",
     }
     passthrough_config = {
-        "key": "test_api_key",
-        "voice_id": "daisy",
         "params": passthrough_params,
     }
 

@@ -154,11 +154,16 @@ def test_dump_functionality(MockHumeClient):
     tester = ExtensionTesterDump()
 
     dump_config = {
-        "key": "test_api_key",
-        "voice_id": "daisy",
+        "params": {
+            "key": "test_api_key",
+            "voice_name": "Female English Actor",
+            "provider": "HUME_AI",
+            "speed": 1.0,
+            "trailing_silence": 0.0,
+            "request_timeout_seconds": 10,
+        },
         "dump": True,
         "dump_path": DUMP_PATH,
-        "params": {},
     }
 
     tester.set_test_mode_single("humeai_tts_python", json.dumps(dump_config))
@@ -453,7 +458,12 @@ def test_flush_logic(MockHumeAiTTS):
 
     mock_instance.get.side_effect = mock_get_long_audio_stream
 
-    config = {"key": "test_api_key", "voice_id": "daisy"}
+    config = {
+        "params": {
+            "key": "test_api_key",
+            "voice_name": "Female English Actor",
+        },
+    }
     tester = ExtensionTesterFlush()
     tester.set_test_mode_single("humeai_tts_python", json.dumps(config))
 

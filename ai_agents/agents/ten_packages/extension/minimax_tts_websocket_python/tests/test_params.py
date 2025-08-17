@@ -79,20 +79,25 @@ def test_params_passthrough(MockMinimaxTTSWebsocket):
     # --- Test Setup ---
     # Define a configuration with custom, arbitrary parameters inside 'params'.
     # These are the parameters we expect to be "passed through".
+    real_params = {
+        "api_key": "a_valid_key",
+        "group_id": "a_valid_group",
+        "model": "tts_v2",
+        "audio_setting": {"format": "pcm", "sample_rate": 16000, "channels": 1},
+        "voice_setting": {"voice_id": "male-qn-qingse"},
+    }
     passthrough_params = {
         "model": "tts_v2",
         "audio_setting": {"format": "pcm", "sample_rate": 16000, "channels": 1},
         "voice_setting": {"voice_id": "male-qn-qingse"},
     }
-    passthrough_config = {
-        "api_key": "a_valid_key",
-        "group_id": "a_valid_group",
-        "params": passthrough_params,
+    real_config = {
+        "params": real_params,
     }
 
     tester = ExtensionTesterForPassthrough()
     tester.set_test_mode_single(
-        "minimax_tts_websocket_python", json.dumps(passthrough_config)
+        "minimax_tts_websocket_python", json.dumps(real_config)
     )
 
     print("Running passthrough test...")

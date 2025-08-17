@@ -111,8 +111,10 @@ def test_ttfb_metric_is_sent(MockMinimaxTTSWebsocket):
     # --- Test Setup ---
     # A minimal config is needed for the extension to initialize correctly.
     metrics_config = {
-        "api_key": "a_valid_key",
-        "group_id": "a_valid_group",
+        "params": {
+            "api_key": "a_valid_key",
+            "group_id": "a_valid_group",
+        },
     }
     tester = ExtensionTesterMetrics()
     tester.set_test_mode_single(
