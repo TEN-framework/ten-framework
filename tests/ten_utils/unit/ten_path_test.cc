@@ -6,7 +6,7 @@
 //
 #include "common/test_utils.h"
 #include "gtest/gtest.h"
-#include "ten_utils/lang/cpp/lib/string.h"
+#include "include_internal/ten_utils/lang/cpp/lib/string.h"
 #include "ten_utils/lib/path.h"
 #include "ten_utils/lib/string.h"
 
