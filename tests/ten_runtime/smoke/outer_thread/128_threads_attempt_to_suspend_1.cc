@@ -394,7 +394,8 @@ class test_extension_1 : public ten::extension_t {
       (ten_env).log(TEN_LOG_LEVEL_INFO, __func__, __FILE__, __LINE__,          \
                     (std::string("notify outer thread ") + std::to_string(X) + \
                      " to stop")                                               \
-                        .c_str());                                             \
+                        .c_str(),                                              \
+                    nullptr, nullptr);                                         \
       std::unique_lock<std::mutex> lock(outer_thread_##X##_cv_lock);           \
       outer_thread_##X##_towards_to_close = true;                              \
     }                                                                          \
@@ -533,13 +534,14 @@ class test_extension_1 : public ten::extension_t {
     NOTIFY_OUTER_THREAD_TO_STOP(128);
 #endif
 
-#define RECLAIM_OUTER_THREAD(X)                                              \
-  do {                                                                       \
-    (ten_env).log(                                                           \
-        TEN_LOG_LEVEL_INFO, __func__, __FILE__, __LINE__,                    \
-        (std::string("Reclaim outer thread ") + std::to_string(X)).c_str()); \
-    outer_thread##X->join();                                                 \
-    delete outer_thread##X;                                                  \
+#define RECLAIM_OUTER_THREAD(X)                                             \
+  do {                                                                      \
+    (ten_env).log(                                                          \
+        TEN_LOG_LEVEL_INFO, __func__, __FILE__, __LINE__,                   \
+        (std::string("Reclaim outer thread ") + std::to_string(X)).c_str(), \
+        nullptr, nullptr);                                                  \
+    outer_thread##X->join();                                                \
+    delete outer_thread##X;                                                 \
   } while (0)
 
     RECLAIM_OUTER_THREAD(1);
