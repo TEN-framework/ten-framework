@@ -348,6 +348,13 @@ func (p *tenEnvTester) logInternal(level LogLevel, msg string, category *string,
 		lineNo = 0
 	}
 
+	var cCategory unsafe.Pointer
+	var cCategoryLen int = 0
+	if category != nil {
+		cCategory = unsafe.Pointer(unsafe.StringData(*category))
+		cCategoryLen = len(*category)
+	}
+
 	cStatus := C.ten_go_ten_env_tester_log(
 		p.cPtr,
 		C.int(level),
@@ -358,6 +365,8 @@ func (p *tenEnvTester) logInternal(level LogLevel, msg string, category *string,
 		C.int(lineNo),
 		unsafe.Pointer(unsafe.StringData(msg)),
 		C.int(len(msg)),
+		cCategory,
+		C.int(cCategoryLen),
 	)
 
 	return withCGoError(&cStatus)

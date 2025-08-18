@@ -244,23 +244,23 @@ export class TenEnv {
     });
   }
 
-  logDebug(message: string, category: string | undefined, fields: Value | undefined): TenError | undefined {
+  logDebug(message: string, category: string | undefined = undefined, fields: Value | undefined = undefined): TenError | undefined {
     return this.log_internal(LogLevel.DEBUG, message, category, fields);
   }
 
-  logInfo(message: string, category: string | undefined, fields: Value | undefined): TenError | undefined {
+  logInfo(message: string, category: string | undefined = undefined, fields: Value | undefined = undefined): TenError | undefined {
     return this.log_internal(LogLevel.INFO, message, category, fields);
   }
 
-  logWarn(message: string, category: string | undefined, fields: Value | undefined): TenError | undefined {
+  logWarn(message: string, category: string | undefined = undefined, fields: Value | undefined = undefined): TenError | undefined {
     return this.log_internal(LogLevel.WARN, message, category, fields);
   }
 
-  logError(message: string, category: string | undefined, fields: Value | undefined): TenError | undefined {
+  logError(message: string, category: string | undefined = undefined, fields: Value | undefined = undefined): TenError | undefined {
     return this.log_internal(LogLevel.ERROR, message, category, fields);
   }
 
-  log(level: LogLevel, message: string, category: string | undefined, fields: Value | undefined): TenError | undefined {
+  log(level: LogLevel, message: string, category: string | undefined = undefined, fields: Value | undefined = undefined): TenError | undefined {
     return this.log_internal(level, message, category, fields);
   }
 
@@ -285,6 +285,7 @@ export class TenEnv {
       callerFunction,
       callerFile,
       callerLine,
+      category,
       message,
     );
   }

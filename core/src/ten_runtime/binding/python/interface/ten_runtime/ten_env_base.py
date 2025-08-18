@@ -77,7 +77,12 @@ class TenEnvBase:
                     line_no = frame.f_lineno
 
                     return self._internal.log(
-                        level, func_name, file_name, line_no, msg
+                        level,
+                        func_name,
+                        file_name,
+                        line_no,
+                        category,
+                        msg,
                     )
             finally:
                 # A defensive programming practice to ensure immediate cleanup
@@ -85,4 +90,4 @@ class TenEnvBase:
                 del frame
 
         # Fallback in case of failure to get caller information.
-        return self._internal.log(level, None, None, 0, msg)
+        return self._internal.log(level, None, None, 0, category, msg)

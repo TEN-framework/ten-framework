@@ -17,6 +17,7 @@
 #define TEN_LOG_SIGNATURE 0xC0EE0CE92149D61AU
 
 typedef struct ten_string_t ten_string_t;
+typedef struct ten_value_t ten_value_t;
 
 TEN_UTILS_PRIVATE_API bool ten_log_check_integrity(ten_log_t *self);
 
@@ -44,14 +45,13 @@ TEN_UTILS_PRIVATE_API const char *filename(const char *path, size_t path_len,
 TEN_UTILS_API void ten_log_log(ten_log_t *self, TEN_LOG_LEVEL level,
                                const char *func_name, const char *file_name,
                                size_t line_no, const char *msg,
-                               const char *category);
+                               const char *category, ten_value_t *fields);
 
-TEN_UTILS_API void ten_log_log_with_size(ten_log_t *self, TEN_LOG_LEVEL level,
-                                         const char *func_name,
-                                         size_t func_name_len,
-                                         const char *file_name,
-                                         size_t file_name_len, size_t line_no,
-                                         const char *msg, size_t msg_len);
+TEN_UTILS_API void ten_log_log_with_size(
+    ten_log_t *self, TEN_LOG_LEVEL level, const char *func_name,
+    size_t func_name_len, const char *file_name, size_t file_name_len,
+    size_t line_no, const char *msg, size_t msg_len, const char *category,
+    size_t category_len, ten_value_t *fields);
 
 TEN_UTILS_API void ten_log_global_init(void);
 
