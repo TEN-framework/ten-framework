@@ -1,4 +1,4 @@
-# cartesia_tts2
+# openai_tts2_python
 
 <!-- brief introduction for the extension -->
 

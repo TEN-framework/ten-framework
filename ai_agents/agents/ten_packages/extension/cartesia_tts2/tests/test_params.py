@@ -71,62 +71,49 @@ def test_params_passthrough(MockCartesiaTTSClient):
     # --- Test Setup ---
     # Define a configuration with custom parameters inside 'params'.
     # These are the parameters we expect to be "passed through".
-    passthrough_params = {
-        "api_key": "test_api_key",
-        "model_id": "sonic-2",
-        "voice": {
-            "mode": "id",
-            "id": "a0e99841-438c-4a64-b679-ae501e7d6091",
-        },
+    real_params = {
+        "api_key": "a_test_api_key",
+        "output_format": {"container": "raw", "sample_rate": 44100},
     }
-    passthrough_config = {
-        "dump": False,
-        "dump_path": "./dump/",
-        "params": passthrough_params,
+
+    real_config = {
+        "params": real_params,
+    }
+
+    passthrough_params = {
+        "model_id": "sonic-2",
+        "voice": {"mode": "id", "id": "a0e99841-438c-4a64-b679-ae501e7d6091"},
+        "output_format": {
+            "container": "raw",
+            "sample_rate": 44100,
+            "encoding": "pcm_s16le",
+        },
+        "language": "en",
     }
 
     tester = ExtensionTesterForPassthrough()
-    tester.set_test_mode_single("cartesia_tts2", json.dumps(passthrough_config))
+    tester.set_test_mode_single("cartesia_tts2", json.dumps(real_config))
 
     print("Running passthrough test...")
     tester.run()
     print("Passthrough test completed.")
 
     # --- Assertions ---
-    # Check that the Cartesia client was instantiated exactly once.
+    # Check that the CartesiaTTS client was instantiated exactly once.
     MockCartesiaTTSClient.assert_called_once()
 
     # Get the arguments that the mock was called with.
     # The constructor is called with keyword arguments like config=...
     # so we inspect the keyword arguments dictionary.
-    call_args, call_kwargs = MockCartesiaTTSClient.call_args
+    _, call_kwargs = MockCartesiaTTSClient.call_args
     called_config = call_kwargs["config"]
 
-    # Verify that the configuration object contains our expected parameters
-    # Note: Cartesia uses update_params() to merge params into the config
-    assert hasattr(
-        called_config, "api_key"
-    ), "Config should have api_key parameter"
+    # Verify that the 'params' dictionary in the config object passed to the
+    # client constructor is identical to the one we defined in our test config.
+    print(f"called_config: {called_config.params}")
     assert (
-        called_config.api_key == "test_api_key"
-    ), f"Expected api_key to be test_api_key, but got {called_config.api_key}"
-
-    config_params = called_config.params
-
-    assert "model_id" in config_params, "Config should have model parameter"
-    assert (
-        config_params["model_id"] == "sonic-2"
-    ), f"Expected model_id to be sonic-2, but got {config_params['model_id']}"
-
-    assert "voice" in config_params, "Config should have voice parameter"
-    assert (
-        config_params["voice"]["mode"] == "id"
-    ), f"Expected voice mode to be id, but got {config_params['voice']['mode']}"
-    assert (
-        config_params["voice"]["id"] == "a0e99841-438c-4a64-b679-ae501e7d6091"
-    ), f"Expected voice id to be a0e99841-438c-4a64-b679-ae501e7d6091, but got {config_params['voice']['id']}"
+        called_config.params == passthrough_params
+    ), f"Expected params to be {passthrough_params}, but got {called_config.params}"
 
     print("✅ Params passthrough test passed successfully.")
-    print(
-        f"✅ Verified config api_key: {called_config.api_key}, model_id: {config_params['model_id']}, voice: {config_params['voice']}"
-    )
+    print(f"✅ Verified params: {called_config.params}")

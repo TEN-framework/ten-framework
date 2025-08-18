@@ -70,22 +70,27 @@ def test_params_passthrough(MockFishAudioTTSClient):
     # --- Test Setup ---
     # Define a configuration with custom parameters inside 'params'.
     # These are the parameters we expect to be "passed through".
-    passthrough_params = {
-        "api_key": "test_api_key",
+    real_params = {
+        "api_key": "a_test_api_key",
         "reference_id": "728f6ff2240d49308e8137ffe66008e2",
-        "top_p": 0.7,
-        "sample_rate": 16000,
-        "temperature": 0.7,
+        "sample_rate": 24000,
     }
-    passthrough_config = {
-        "dump": False,
-        "dump_path": "./dump/",
-        "params": passthrough_params,
+
+    real_config = {
+        "params": real_params,
+    }
+
+    passthrough_params = {
+        "reference_id": "728f6ff2240d49308e8137ffe66008e2",
+        "sample_rate": 24000,
+        "top_p": 0.7,
+        "temperature": 0.7,
+        "format": "pcm",
     }
 
     tester = ExtensionTesterForPassthrough()
     tester.set_test_mode_single(
-        "fish_audio_tts_python", json.dumps(passthrough_config)
+        "fish_audio_tts_python", json.dumps(real_config)
     )
 
     print("Running passthrough test...")
@@ -99,47 +104,15 @@ def test_params_passthrough(MockFishAudioTTSClient):
     # Get the arguments that the mock was called with.
     # The constructor is called with keyword arguments like config=...
     # so we inspect the keyword arguments dictionary.
-    call_args, call_kwargs = MockFishAudioTTSClient.call_args
+    _, call_kwargs = MockFishAudioTTSClient.call_args
     called_config = call_kwargs["config"]
 
-    # Verify that the configuration object contains our expected parameters
-    # Note: FishAudioTTS uses update_params() to merge params into the config
-    assert hasattr(
-        called_config, "api_key"
-    ), "Config should have api_key parameter"
+    # Verify that the 'params' dictionary in the config object passed to the
+    # client constructor is identical to the one we defined in our test config.
+    print(f"called_config: {called_config.params}")
     assert (
-        called_config.api_key == "test_api_key"
-    ), f"Expected api_key to be test_api_key, but got {called_config.api_key}"
-
-    config_params = called_config.params
-
-    assert (
-        "reference_id" in config_params
-    ), "Config should have reference_id parameter"
-    assert (
-        config_params["reference_id"] == "728f6ff2240d49308e8137ffe66008e2"
-    ), f"Expected reference_id to be 728f6ff2240d49308e8137ffe66008e2, but got {config_params['reference_id']}"
-
-    assert "top_p" in config_params, "Config should have top_p parameter"
-    assert (
-        config_params["top_p"] == 0.7
-    ), f"Expected top_p to be 0.7, but got {config_params['top_p']}"
-
-    assert (
-        "sample_rate" in config_params
-    ), "Config should have sample_rate parameter"
-    assert (
-        config_params["sample_rate"] == 16000
-    ), f"Expected sample_rate to be 16000, but got {config_params['sample_rate']}"
-
-    assert (
-        "temperature" in config_params
-    ), "Config should have temperature parameter"
-    assert (
-        config_params["temperature"] == 0.7
-    ), f"Expected temperature to be 0.7, but got {config_params['temperature']}"
+        called_config.params == passthrough_params
+    ), f"Expected params to be {passthrough_params}, but got {called_config.params}"
 
     print("✅ Params passthrough test passed successfully.")
-    print(
-        f"✅ Verified config api_key: {called_config.api_key}, reference_id: {config_params['reference_id']}, top_p: {config_params['top_p']}, sample_rate: {config_params['sample_rate']}, temperature: {config_params['temperature']}"
-    )
+    print(f"✅ Verified params: {called_config.params}")

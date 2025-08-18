@@ -195,7 +195,7 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
                     if t.request_id not in self.recorder_map:
                         dump_file_path = os.path.join(
                             self.config.dump_path,
-                            f"minimax_dump_{t.request_id}.pcm",
+                            f"fish_audio_dump_{t.request_id}.pcm",
                         )
                         self.recorder_map[t.request_id] = PCMWriter(
                             dump_file_path
@@ -287,7 +287,7 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
                             )
                 elif event == EVENT_TTS_END:
                     self.ten_env.log_info(
-                        "Received TTS_END event from Cartesia TTS"
+                        "Received TTS_END event from Fish Audio TTS"
                     )
                     # Send TTS audio end event
                     if self.sent_ts and t.text_input_end:
