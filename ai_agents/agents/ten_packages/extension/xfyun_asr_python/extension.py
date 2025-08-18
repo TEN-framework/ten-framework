@@ -359,11 +359,11 @@ class XfyunASRExtension(AsyncASRBaseExtension):
 
             # Handle sentence final result
             if result_data.get("sub_end") is True:
-                is_final = False
+                is_final = True
                 self.ten_env.log_debug(
                     f"Xfyun ASR sub sentence end: {result_to_send}"
                 )
-                # self.wpgs_buffer.clear()
+                self.wpgs_buffer.clear()
 
             if status == 2:
                 is_final = True
