@@ -545,8 +545,15 @@ class DeepgramTTS:
     async def _stream_chunk_audio(self, request: StreamingTTSRequest) -> None:
         """Stream audio for a single chunk"""
         try:
-            # Wait for audio chunks for a short time (non-blocking)
-            timeout = 2.0  # 2 second timeout for chunk audio
+            # Determine timeout based on text length (longer text needs more time)
+            text_length = len(request.get_combined_text())
+            # Estimate: ~150 words per minute, ~5 chars per word = ~12.5 chars per second
+            estimated_duration = max(text_length / 12.5, 2.0)  # At least 2 seconds
+            timeout = min(estimated_duration * 2, 15.0)  # Max 15 seconds, double the estimate
+            
+            if self.ten_env:
+                self.ten_env.log_info(f"Streaming audio for {text_length} chars, timeout: {timeout:.1f}s")
+            
             start_time = time.time()
             
             while (time.time() - start_time) < timeout:
@@ -559,6 +566,8 @@ class DeepgramTTS:
                     
                     if audio_chunk is None:
                         # End of audio for this chunk
+                        if self.ten_env:
+                            self.ten_env.log_info(f"Audio stream ended for chunk {request.request_id}")
                         break
                         
                     if len(audio_chunk) > 0:
@@ -571,6 +580,10 @@ class DeepgramTTS:
                 except asyncio.TimeoutError:
                     # No audio available yet, continue waiting
                     continue
+            
+            elapsed_time = time.time() - start_time
+            if self.ten_env:
+                self.ten_env.log_info(f"Audio streaming completed for {request.request_id} in {elapsed_time:.1f}s")
                     
         except Exception as e:
             if self.ten_env:
