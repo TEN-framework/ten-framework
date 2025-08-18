@@ -192,6 +192,27 @@ mod tests {
             "Failed to add initial connection"
         );
 
+        if add_resp.status().is_success() {
+            println!(
+                "添加带初始 msg_conversion 的连接成功，状态码：{}",
+                add_resp.status()
+            );
+        } else {
+            println!("添加连接失败，状态码：{}", add_resp.status());
+        }
+        // 读取 property.json 并打印内容
+        let property_path =
+            std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
+        let property_content = std::fs::read_to_string(&property_path).unwrap();
+        println!("当前 property.json 内容：\n{}", property_content);
+
+        // 检查是否包含 test_cmd_for_update
+        if property_content.contains("test_cmd_for_update") {
+            println!("property.json 中已包含 test_cmd_for_update 这条命令。");
+        } else {
+            println!("property.json 中未找到 test_cmd_for_update 这条命令！");
+        }
+
         // Create updated message conversion rules.
         let updated_msg_conversion = MsgAndResultConversion {
             msg: Some(MsgConversion {

@@ -23,6 +23,8 @@ use ten_rust::{
     pkg_info::message::MsgType,
 };
 
+use crate::fs::json::patch_property_json_file;
+
 use crate::{
     designer::{
         response::{ApiResponse, ErrorResponse, Status},
@@ -127,87 +129,30 @@ async fn update_graph_info(
 }
 
 fn update_property_all_fields(
-    graph_info: &mut GraphInfo,
-    request_payload: &web::Json<
+    _request_payload: &web::Json<
         UpdateGraphConnectionMsgConversionRequestPayload,
     >,
     pkgs_cache: &mut HashMap<String, PkgsInfoInApp>,
+    graphs_cache: &HashMap<Uuid, GraphInfo>,
+    old_graphs_cache: &HashMap<Uuid, GraphInfo>,
 ) -> Result<()> {
+    let graph_info = graphs_cache.get(&_request_payload.graph_id).unwrap();
+
     if let Ok(Some(pkg_info)) =
         belonging_pkg_info_find_by_graph_info_mut(pkgs_cache, graph_info)
     {
-        // Check if the property exists.
         if let Some(property) = &mut pkg_info.property {
-            // Create a GraphConnection with the message conversion to
-            // update.
-            let mut connection = GraphConnection {
-                loc: GraphLoc {
-                    app: request_payload.src_app.clone(),
-                    extension: Some(request_payload.src_extension.clone()),
-                    subgraph: None,
-                    selector: None,
-                },
-                cmd: None,
-                data: None,
-                audio_frame: None,
-                video_frame: None,
-            };
-
-            // Create the destination.
-            let destination = GraphDestination {
-                loc: GraphLoc {
-                    app: request_payload.dest_app.clone(),
-                    extension: Some(request_payload.dest_extension.clone()),
-                    subgraph: None,
-                    selector: None,
-                },
-                msg_conversion: request_payload.msg_conversion.clone(),
-            };
-
-            // Create the message flow.
-            let message_flow = GraphMessageFlow::new(
-                request_payload.msg_name.clone(),
-                vec![destination],
-                vec![],
-            );
-
-            // Set the appropriate message type field.
-            match request_payload.msg_type {
-                MsgType::Cmd => {
-                    connection.cmd = Some(vec![message_flow]);
-                }
-                MsgType::Data => {
-                    connection.data = Some(vec![message_flow]);
-                }
-                MsgType::AudioFrame => {
-                    connection.audio_frame = Some(vec![message_flow]);
-                }
-                MsgType::VideoFrame => {
-                    connection.video_frame = Some(vec![message_flow]);
-                }
-            }
-
-            // Update the connection with the new message conversion.
-            let connections_to_modify = vec![connection];
-
-            // Update the property.json file.
-            if let Err(e) = update_graph_connections_in_property_all_fields(
+            // 只负责写回 property.json，所有结构变更已在 graph_info.graph 完成
+            // 这里假设 patch_property_json_file 已经引入并可用
+            // 你需要根据实际情况传递 graphs_cache，如果需要
+            patch_property_json_file(
                 &pkg_info.url,
-                &mut property.all_fields,
-                graph_info.name.as_ref().unwrap(),
-                None,
-                None,
-                Some(&connections_to_modify),
-            ) {
-                // Return error if failed to update.
-                return Err(anyhow::anyhow!(
-                    "Failed to update message conversion: {}",
-                    e
-                ));
-            }
+                &property,
+                &graphs_cache,
+                &old_graphs_cache,
+            )?;
         }
     }
-
     Ok(())
 }
 
@@ -219,6 +164,7 @@ pub async fn update_graph_connection_msg_conversion_endpoint(
 ) -> Result<impl Responder, actix_web::Error> {
     let mut pkgs_cache = state.pkgs_cache.write().await;
     let mut graphs_cache = state.graphs_cache.write().await;
+    let old_graphs_cache = graphs_cache.clone();
 
     // Get the specified graph from graphs_cache.
     let graph_info = match graphs_cache_find_by_id_mut(
@@ -271,9 +217,10 @@ pub async fn update_graph_connection_msg_conversion_endpoint(
     }
 
     if let Err(e) = update_property_all_fields(
-        graph_info,
         &request_payload,
         &mut pkgs_cache,
+        &graphs_cache,
+        &old_graphs_cache,
     ) {
         let error_response = ErrorResponse {
             status: Status::Fail,
