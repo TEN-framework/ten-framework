@@ -40,7 +40,7 @@ class TestExtension1 extends Extension {
     const startGraphCmd = StartGraphCmd.Create();
 
     // Set destination to current app (empty string)
-    startGraphCmd.setDests([{ appUri: "", graphId: "", extensionName: "" }]);
+    startGraphCmd.setDests([{ appUri: "" }]);
 
     // Define the new graph JSON
     const graphJSON = {
