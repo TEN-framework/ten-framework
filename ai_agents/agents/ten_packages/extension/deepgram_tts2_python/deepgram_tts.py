@@ -417,6 +417,23 @@ class DeepgramTTS:
                         await latest_request.audio_queue.put(None)  # Signal completion
                 if self.ten_env:
                     self.ten_env.log_info("Audio stream flushed - request complete")
+            elif message_type == "Cleared":
+                # Handle Clear response - immediate interrupt completed
+                if self.ten_env:
+                    self.ten_env.log_info("KEYPOINT: Received Cleared confirmation from Deepgram")
+                
+                # Clear all active requests and their audio queues
+                for request_id, request in list(self.active_requests.items()):
+                    if request.audio_queue:
+                        await request.audio_queue.put(None)  # Signal immediate end
+                    if self.ten_env:
+                        self.ten_env.log_info(f"KEYPOINT: Cleared request {request_id}")
+                
+                # Clear the active requests dict
+                self.active_requests.clear()
+                
+                if self.ten_env:
+                    self.ten_env.log_info("KEYPOINT: All requests cleared after Deepgram Clear")
             elif message_type == "Error":
                 error_msg = data.get("error", "Unknown error")
                 if self.ten_env:

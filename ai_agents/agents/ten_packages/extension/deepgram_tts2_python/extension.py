@@ -4,6 +4,7 @@
 # See the LICENSE file for more information.
 #
 import asyncio
+import json
 import traceback
 import os
 import time
@@ -25,11 +26,6 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
         self.client = None
         # TODO: Fix ten_env initialization - should be set in on_init
         self.ten_env = None  # Initialize ten_env
-
-        # Flush handling state
-        self.flush_requested = False
-        self.pending_flush_data = None
-        self.pending_flush_ten_env = None
         
         # Circuit breaker for connection resilience
         self.circuit_breaker = {
@@ -296,7 +292,7 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
             duration_ms = self._calculate_audio_duration_ms(total_audio_bytes)
             processing_time_ms = int((time.time() - streaming_request.start_time) * 1000) if streaming_request else 0
             
-            reason = TTSAudioEndReason.INTERRUPTED if self.flush_requested else TTSAudioEndReason.REQUEST_END
+            reason = TTSAudioEndReason.REQUEST_END
             
             # Send TTS text result for successful processing
             from ten_ai_base.struct import TTSTextResult
@@ -316,19 +312,6 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
                 -1,
                 reason
             )
-            
-            # Don't clean up session immediately - keep it active for overlap detection
-            # Session will be cleaned up when a new session starts or on explicit cleanup
-            
-            # If flush was requested, send tts_flush_end after tts_audio_end
-            if self.flush_requested and self.pending_flush_data:
-                if self.ten_env:
-                    self.ten_env.log_info("KEYPOINT: Sending tts_flush_end after tts_audio_end")
-                await super().on_data(self.pending_flush_ten_env, self.pending_flush_data)
-                # Reset flush state
-                self.flush_requested = False
-                self.pending_flush_data = None
-                self.pending_flush_ten_env = None
             
             if self.ten_env:
                 self.ten_env.log_info(f"Completed audio streaming for request {request_id}: {chunk_count} chunks, {total_audio_bytes} bytes")
@@ -540,18 +523,24 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
         return 2
 
     async def on_data(self, ten_env: AsyncTenEnv, data):
-        """Override on_data to handle flush properly"""
+        """Override on_data to handle flush with immediate interrupt"""
         try:
             self.ten_env.log_info(f"KEYPOINT: on_data called with data_name: {data.get_name()}")
             data_name = data.get_name()
 
             if data_name == "tts_flush":
-                # Set flush flag and store flush data for later processing
-                self.flush_requested = True
-                self.pending_flush_data = data
-                self.pending_flush_ten_env = ten_env
-                self.ten_env.log_info("KEYPOINT: Flush requested - will send tts_flush_end after tts_audio_end")
-                # Do NOT call base class yet - we will call it after tts_audio_end
+                # ✅ STANDARDS COMPLIANT: Immediate interrupt using Deepgram Clear
+                flush_start_time = time.time()
+                self.ten_env.log_info("KEYPOINT: Flush requested - sending immediate Clear to Deepgram")
+                
+                # Send Clear message to Deepgram for immediate interrupt
+                await self._send_clear_to_deepgram()
+                
+                # Send tts_flush_end immediately (standards compliant)
+                await super().on_data(ten_env, data)
+                
+                flush_duration_ms = (time.time() - flush_start_time) * 1000
+                self.ten_env.log_info(f"KEYPOINT: Flush completed in {flush_duration_ms:.1f}ms")
                 return
             else:
                 # Let parent class handle other data
@@ -559,6 +548,32 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
 
         except Exception as e:
             self.ten_env.log_error(f"Error handling data: {str(e)}")
+
+    async def _send_clear_to_deepgram(self) -> None:
+        """Send Clear message to Deepgram for immediate interrupt"""
+        try:
+            clear_start_time = time.time()
+            
+            # Clear all pending requests locally
+            if self.client and hasattr(self.client, 'active_requests'):
+                pending_count = len(self.client.active_requests)
+                # Don't delete requests yet - let Clear response handle cleanup
+                self.ten_env.log_info(f"KEYPOINT: Found {pending_count} active requests to interrupt")
+            
+            # Send Clear message to Deepgram WebSocket
+            if self.client and hasattr(self.client, 'websocket') and self.client.websocket:
+                clear_message = {
+                    "type": "Clear"
+                }
+                await self.client.websocket.send(json.dumps(clear_message))
+                
+                clear_duration_ms = (time.time() - clear_start_time) * 1000
+                self.ten_env.log_info(f"KEYPOINT: Sent Clear message to Deepgram in {clear_duration_ms:.1f}ms")
+            else:
+                self.ten_env.log_warn("KEYPOINT: No active WebSocket connection to send Clear message")
+                
+        except Exception as e:
+            self.ten_env.log_error(f"Error sending Clear message to Deepgram: {str(e)}")
 
     def _calculate_audio_duration_ms(self, total_audio_bytes: int) -> int:
         """Calculate audio duration in milliseconds based on bytes"""
