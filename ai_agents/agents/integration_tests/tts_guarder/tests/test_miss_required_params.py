@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python3
 #
 # This file is part of TEN Framework, an open source project.
@@ -20,7 +19,7 @@ import json
 import asyncio
 import os
 
-TTS_MISS_REQUIRED_PARAMS_CONFIG_FILE="property_miss_required.json"
+TTS_MISS_REQUIRED_PARAMS_CONFIG_FILE = "property_miss_required.json"
 
 
 class MissRequiredParamsTester(AsyncExtensionTester):
@@ -34,9 +33,7 @@ class MissRequiredParamsTester(AsyncExtensionTester):
         print("=" * 80)
         print("🧪 TEST CASE: Miss Required Params TTS Test")
         print("=" * 80)
-        print(
-            "📋 Test Description: Validate TTS result miss required params"
-        )
+        print("📋 Test Description: Validate TTS result miss required params")
         print("🎯 Test Objectives:")
         print("   - Verify required params are not missing")
         print("   - Test will receive error message with FATAL ERROR")
@@ -56,9 +53,7 @@ class MissRequiredParamsTester(AsyncExtensionTester):
 
         # Create Data object for tts_finalize
         finalize_data_obj = Data.create("tts_finalize")
-        finalize_data_obj.set_property_from_json(
-            None, json.dumps(finalize_data)
-        )
+        finalize_data_obj.set_property_from_json(None, json.dumps(finalize_data))
 
         # Send the finalize signal
         await ten_env.send_data(finalize_data_obj)
@@ -77,9 +72,7 @@ class MissRequiredParamsTester(AsyncExtensionTester):
     ) -> None:
         ten_env.log_info(f"Stopping test with error message: {error_message}")
         """Stop test with error message."""
-        ten_env.stop_test(
-            TenError.create(TenErrorCode.ErrorCodeGeneric, error_message)
-        )
+        ten_env.stop_test(TenError.create(TenErrorCode.ErrorCodeGeneric, error_message))
 
     def _log_tts_result_structure(
         self,
@@ -108,9 +101,7 @@ class MissRequiredParamsTester(AsyncExtensionTester):
             "duration_ms",
             "language",
         ]
-        missing_fields = [
-            field for field in required_fields if field not in json_data
-        ]
+        missing_fields = [field for field in required_fields if field not in json_data]
 
         if missing_fields:
             self._stop_test_with_error(
@@ -129,12 +120,15 @@ class MissRequiredParamsTester(AsyncExtensionTester):
             ten_env.log_info(f"Received error data: {json_str}")
             code, _ = data.get_property_int("code")
             if code == -1000:
-                ten_env.log_info("✅ TTS miss required params test passed with final result")
+                ten_env.log_info(
+                    "✅ TTS miss required params test passed with final result"
+                )
                 ten_env.stop_test()
             else:
-                self._stop_test_with_error(ten_env, f"Received wrong error code: {code}")
+                self._stop_test_with_error(
+                    ten_env, f"Received wrong error code: {code}"
+                )
             return
-
 
     @override
     async def on_stop(self, ten_env: AsyncTenEnvTester) -> None:
@@ -144,6 +138,7 @@ class MissRequiredParamsTester(AsyncExtensionTester):
 
 def test_miss_required_params(extension_name: str, config_dir: str) -> None:
     """Verify TTS result miss required params."""
+
     # Get config file path
     config_file_path = os.path.join(config_dir, TTS_MISS_REQUIRED_PARAMS_CONFIG_FILE)
     if not os.path.exists(config_file_path):
@@ -155,6 +150,18 @@ def test_miss_required_params(extension_name: str, config_dir: str) -> None:
 
     # Expected test results
 
+    # Log test configuration
+    print(f"Using test configuration: {config}")
+    # Get config file path
+    config_file_path = os.path.join(config_dir, TTS_MISS_REQUIRED_PARAMS_CONFIG_FILE)
+    if not os.path.exists(config_file_path):
+        raise FileNotFoundError(f"Config file not found: {config_file_path}")
+
+    # Load config file
+    with open(config_file_path, "r") as f:
+        config: dict[str, Any] = json.load(f)
+
+    # Expected test results
 
     # Log test configuration
     print(f"Using test configuration: {config}")
