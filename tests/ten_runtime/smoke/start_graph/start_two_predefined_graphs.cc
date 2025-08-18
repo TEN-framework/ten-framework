@@ -8,7 +8,7 @@
 
 #include "gtest/gtest.h"
 #include "include_internal/ten_runtime/binding/cpp/ten.h"
-#include "ten_runtime/binding/cpp/detail/msg/cmd/start_graph.h"
+#include "ten_runtime/binding/cpp/detail/msg/cmd/start_graph_cmd.h"
 #include "tests/common/client/cpp/msgpack_tcp.h"
 #include "tests/ten_runtime/smoke/util/binding/cpp/check.h"
 
@@ -21,7 +21,7 @@ class test_extension_1 : public ten::extension_t {
   static void start_graph_and_greet(
       const std::string &graph_name, ten::ten_env_t &ten_env,
       const std::function<void(ten::ten_env_t &, const std::string &)> &cb) {
-    auto start_graph_cmd = ten::cmd_start_graph_t::create();
+    auto start_graph_cmd = ten::start_graph_cmd_t::create();
     start_graph_cmd->set_dests({{""}});
     start_graph_cmd->set_predefined_graph_name(graph_name.c_str());
 
@@ -80,7 +80,7 @@ class test_extension_1 : public ten::extension_t {
 
       // Shut down the graph 1; otherwise, the app won't be able to close
       // because there is still a running engine/graph.
-      auto stop_graph_1_cmd = ten::cmd_stop_graph_t::create();
+      auto stop_graph_1_cmd = ten::stop_graph_cmd_t::create();
       stop_graph_1_cmd->set_dests({{""}});
       stop_graph_1_cmd->set_graph_id(graph_id_1.c_str());
 
@@ -91,7 +91,7 @@ class test_extension_1 : public ten::extension_t {
               ten::error_t * /* err */) {
             // Shut down the graph 2; otherwise, the app won't be able to close
             // because there is still a running engine/graph.
-            auto stop_graph_2_cmd = ten::cmd_stop_graph_t::create();
+            auto stop_graph_2_cmd = ten::stop_graph_cmd_t::create();
             stop_graph_2_cmd->set_dests({{""}});
             stop_graph_2_cmd->set_graph_id(graph_id_2.c_str());
 

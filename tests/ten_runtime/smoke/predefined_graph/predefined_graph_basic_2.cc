@@ -6,7 +6,7 @@
 //
 #include "gtest/gtest.h"
 #include "include_internal/ten_runtime/binding/cpp/ten.h"
-#include "ten_runtime/binding/cpp/detail/msg/cmd/stop_graph.h"
+#include "ten_runtime/binding/cpp/detail/msg/cmd/stop_graph_cmd.h"
 #include "tests/common/client/cpp/msgpack_tcp.h"
 #include "tests/ten_runtime/smoke/util/binding/cpp/check.h"
 
@@ -31,7 +31,7 @@ class test_predefined_graph : public ten::extension_t {
   explicit test_predefined_graph(const char *name) : ten::extension_t(name) {}
 
   void on_start(ten::ten_env_t &ten_env) override {
-    auto start_graph_cmd = ten::cmd_start_graph_t::create();
+    auto start_graph_cmd = ten::start_graph_cmd_t::create();
     start_graph_cmd->set_dests(
         {{"msgpack://127.0.0.1:8001/", nullptr, nullptr}});
     start_graph_cmd->set_graph_from_json(R"({
@@ -65,7 +65,7 @@ class test_predefined_graph : public ten::extension_t {
                   if (cmd_result->get_status_code() == TEN_STATUS_CODE_OK) {
                     // Shut down the graph; otherwise, the app won't be able to
                     // close because there is still a running engine/graph.
-                    auto stop_graph_cmd = ten::cmd_stop_graph_t::create();
+                    auto stop_graph_cmd = ten::stop_graph_cmd_t::create();
                     stop_graph_cmd->set_dests({{""}});
                     stop_graph_cmd->set_graph_id(graph_id.c_str());
 

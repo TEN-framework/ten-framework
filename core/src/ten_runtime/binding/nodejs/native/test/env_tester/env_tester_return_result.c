@@ -8,7 +8,7 @@
 #include "include_internal/ten_runtime/binding/nodejs/common/common.h"
 #include "include_internal/ten_runtime/binding/nodejs/common/tsfn.h"
 #include "include_internal/ten_runtime/binding/nodejs/error/error.h"
-#include "include_internal/ten_runtime/binding/nodejs/msg/cmd_result.h"
+#include "include_internal/ten_runtime/binding/nodejs/msg/cmd/cmd_result.h"
 #include "include_internal/ten_runtime/binding/nodejs/test/env_tester.h"
 #include "ten_runtime/common/error_code.h"
 #include "ten_runtime/test/env_tester.h"

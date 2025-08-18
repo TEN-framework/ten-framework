@@ -11,8 +11,10 @@
 #include "include_internal/ten_runtime/binding/python/common/error.h"
 #include "include_internal/ten_runtime/binding/python/extension/extension.h"
 #include "include_internal/ten_runtime/binding/python/msg/audio_frame.h"
-#include "include_internal/ten_runtime/binding/python/msg/cmd.h"
-#include "include_internal/ten_runtime/binding/python/msg/cmd_result.h"
+#include "include_internal/ten_runtime/binding/python/msg/cmd/cmd.h"
+#include "include_internal/ten_runtime/binding/python/msg/cmd/cmd_result.h"
+#include "include_internal/ten_runtime/binding/python/msg/cmd/start_graph_cmd.h"
+#include "include_internal/ten_runtime/binding/python/msg/cmd/stop_graph_cmd.h"
 #include "include_internal/ten_runtime/binding/python/msg/data.h"
 #include "include_internal/ten_runtime/binding/python/msg/msg.h"
 #include "include_internal/ten_runtime/binding/python/msg/video_frame.h"
@@ -40,40 +42,48 @@ static PyModuleDef *ten_py_runtime_module(void) {
       {"_ten_py_addon_manager_register_addon_as_extension",
        ten_py_addon_manager_register_addon_as_extension, METH_VARARGS,
        "Register an addon as an extension"},
+
       {"_ten_py_addon_manager_add_extension_addon",
        ten_py_addon_manager_add_extension_addon, METH_VARARGS,
        "Add an addon to the addon manager"},
 
-      {"_ten_py_msg_register_msg_type", ten_py_msg_register_msg_type,
-       METH_VARARGS, "Register the Python Msg class for later tp_alloc use"},
+      {"_ten_py_msg_register_type", ten_py_msg_register_msg_type, METH_VARARGS,
+       "Register the Python Msg class for later tp_alloc use"},
 
-      {"_ten_py_cmd_register_cmd_type", ten_py_cmd_register_cmd_type,
-       METH_VARARGS, "Register the Python Cmd class for later tp_alloc use"},
+      {"_ten_py_cmd_register_type", ten_py_cmd_register_cmd_type, METH_VARARGS,
+       "Register the Python Cmd class for later tp_alloc use"},
 
-      {"_ten_py_cmd_result_register_cmd_result_type",
+      {"_ten_py_cmd_result_register_type",
        ten_py_cmd_result_register_cmd_result_type, METH_VARARGS,
        "Register the Python CmdResult class for later tp_alloc use"},
 
-      {"_ten_py_data_register_data_type", ten_py_data_register_data_type,
+      {"_ten_py_cmd_start_graph_register_type",
+       ten_py_cmd_start_graph_register_type, METH_VARARGS,
+       "Register the Python StartGraphCmd class for later tp_alloc use"},
+
+      {"_ten_py_cmd_stop_graph_register_type",
+       ten_py_cmd_stop_graph_register_type, METH_VARARGS,
+       "Register the Python StopGraphCmd class for later tp_alloc use"},
+
+      {"_ten_py_data_register_type", ten_py_data_register_data_type,
        METH_VARARGS, "Register the Python Data class for later tp_alloc use"},
 
-      {"_ten_py_video_frame_register_video_frame_type",
+      {"_ten_py_video_frame_register_type",
        ten_py_video_frame_register_video_frame_type, METH_VARARGS,
        "Register the Python VideoFrame class for later tp_alloc use"},
 
-      {"_ten_py_audio_frame_register_audio_frame_type",
+      {"_ten_py_audio_frame_register_type",
        ten_py_audio_frame_register_audio_frame_type, METH_VARARGS,
        "Register the Python AudioFrame class for later tp_alloc use"},
 
-      {"_ten_py_ten_env_register_ten_env_type",
-       ten_py_ten_env_register_ten_env_type, METH_VARARGS,
-       "Register the Python TenEnv class for later tp_alloc use"},
+      {"_ten_py_ten_env_register_type", ten_py_ten_env_register_ten_env_type,
+       METH_VARARGS, "Register the Python TenEnv class for later tp_alloc use"},
 
-      {"_ten_py_ten_env_tester_register_ten_env_tester_type",
+      {"_ten_py_ten_env_tester_register_type",
        ten_py_ten_env_tester_register_ten_env_tester_type, METH_VARARGS,
        "Register the Python TenEnvTester class for later tp_alloc use"},
 
-      {"_ten_py_error_register_error_type", ten_py_error_register_error_type,
+      {"_ten_py_error_register_type", ten_py_error_register_error_type,
        METH_VARARGS, "Register the Python Error class for later tp_alloc use"},
 
       {NULL, NULL, 0, NULL}};
@@ -131,6 +141,16 @@ PyMODINIT_FUNC PyInit_libten_runtime_python(void) {
   }
 
   if (!ten_py_cmd_result_init_for_module(module)) {
+    Py_DECREF(module);
+    return NULL;
+  }
+
+  if (!ten_py_cmd_start_graph_init_for_module(module)) {
+    Py_DECREF(module);
+    return NULL;
+  }
+
+  if (!ten_py_cmd_stop_graph_init_for_module(module)) {
     Py_DECREF(module);
     return NULL;
   }

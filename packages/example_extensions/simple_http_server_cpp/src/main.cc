@@ -602,7 +602,7 @@ void send_ten_msg_with_req_body(
             // Should be a TEN internal command.
 
             if (cmd_json["ten"]["type"] == "close_app") {
-              cmd = ten::cmd_close_app_t::create();
+              cmd = ten::close_app_cmd_t::create();
 
               // Set the destination of the command to the localhost.
               cmd->set_dests({{""}});
