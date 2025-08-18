@@ -143,15 +143,22 @@ pub extern "C" fn ten_rust_log_reopen_all(
 pub extern "C" fn ten_rust_log(
     config: *const AdvancedLogConfig,
     category: *const c_char,
+    category_len: usize,
     pid: i64,
     tid: i64,
     level: i32,
     func_name: *const c_char,
+    func_name_len: usize,
     file_name: *const c_char,
+    file_name_len: usize,
     line_no: u32,
     msg: *const c_char,
+    msg_len: usize,
 ) {
     if config.is_null()
+        || func_name_len == 0
+        || file_name_len == 0
+        || msg_len == 0
         || func_name.is_null()
         || file_name.is_null()
         || msg.is_null()
@@ -178,7 +185,7 @@ pub extern "C" fn ten_rust_log(
         Err(_) => return,
     };
 
-    let category_str = if category.is_null() {
+    let category_str = if category_len == 0 || category.is_null() {
         ""
     } else {
         match unsafe { CStr::from_ptr(category) }.to_str() {
