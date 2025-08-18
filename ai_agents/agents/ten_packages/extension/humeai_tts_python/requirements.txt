@@ -1,2 +1,2 @@
-hume
+hume==0.9.1
 pydantic

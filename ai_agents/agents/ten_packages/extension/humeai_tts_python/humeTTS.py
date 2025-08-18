@@ -34,7 +34,7 @@ class HumeAiTTS:
     async def get(self, text: str) -> AsyncIterator[tuple[bytes | None, int]]:
         self._is_cancelled = False
 
-        self.ten_env.log_debug(
+        self.ten_env.log_info(
             f"KEYPOINT generate_TTS for '{text}' "
             f"with generation_id {self.generation_id}"
         )

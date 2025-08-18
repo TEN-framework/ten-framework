@@ -37,10 +37,14 @@ class MinimaxTTSWebsocket:
         config: MinimaxTTSWebsocketConfig,
         ten_env: AsyncTenEnv | None = None,
         vendor: str = "minimax",
+        error_callback=None,
     ):
         self.config = config
         self.ten_env = ten_env
         self.vendor = vendor
+        self.error_callback = (
+            error_callback  # Callback for sending errors to extension
+        )
 
         self.stopping: bool = False
         self.discarding: bool = False
@@ -358,28 +362,42 @@ class MinimaxTTSWebsocket:
                     self.ten_env.log_warn(
                         f"session_id: {session_id}, websocket ConnectionClosedError: {e}"
                     )
+                await self._send_websocket_error(
+                    "WebSocket connection closed unexpectedly", str(e)
+                )
             except websockets.exceptions.ConnectionClosedOK as e:
                 if self.ten_env:
                     self.ten_env.log_warn(
                         f"session_id: {session_id}, websocket ConnectionClosedOK: {e}"
                     )
+                # ConnectionClosedOK is normal, don't send error
             except websockets.exceptions.InvalidHandshake as e:
                 if self.ten_env:
                     self.ten_env.log_warn(
                         f"session_id: {session_id}, websocket InvalidHandshake: {e}"
                     )
+                # Check if it's a fatal HTTP 200 rejection
+                await self._send_websocket_error(
+                    "WebSocket handshake failed", str(e), is_fatal=True
+                )
                 await asyncio.sleep(1)  # Wait before reconnect
             except websockets.exceptions.WebSocketException as e:
                 if self.ten_env:
                     self.ten_env.log_warn(
                         f"session_id: {session_id}, websocket exception: {e}"
                     )
+                await self._send_websocket_error(
+                    "WebSocket protocol error", str(e)
+                )
                 await asyncio.sleep(1)  # Wait before reconnect
             except Exception as e:
                 if self.ten_env:
                     self.ten_env.log_warn(
                         f"session_id: {session_id}, unexpected exception: {e}"
                     )
+                await self._send_websocket_error(
+                    "Unexpected WebSocket error", str(e)
+                )
                 await asyncio.sleep(1)  # Wait before reconnect
             finally:
                 self.ws = None
@@ -393,6 +411,17 @@ class MinimaxTTSWebsocket:
         self.stopped_event.set()
         if self.ten_env:
             self.ten_env.log_debug("WebSocket processor exited")
+
+    async def _send_websocket_error(
+        self, message: str, detail: str, is_fatal: bool = False
+    ) -> None:
+        """Send WebSocket error through callback to extension"""
+        if self.error_callback:
+            try:
+                await self.error_callback(message, detail, is_fatal)
+            except Exception as e:
+                if self.ten_env:
+                    self.ten_env.log_error(f"Error calling error callback: {e}")
 
     def _create_start_task_msg(self) -> dict:
         """Create task start message"""

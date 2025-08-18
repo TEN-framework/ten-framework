@@ -17,7 +17,6 @@ def mask_sensitive_data(
 
 class HumeAiTTSConfig(BaseModel):
     key: str = ""
-    adjust_volume: int = 1000
     dump: bool = False
     dump_path: str = "/tmp"
     generation_id: str | None = None

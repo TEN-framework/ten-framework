@@ -87,7 +87,10 @@ class MinimaxTTSWebsocketExtension(AsyncTTS2BaseExtension):
                     raise ValueError(error_msg)
 
             self.client = MinimaxTTSWebsocket(
-                self.config, ten_env, self.vendor()
+                self.config,
+                ten_env,
+                self.vendor(),
+                self._websocket_error_callback,
             )
             # Preheat websocket connection
             asyncio.create_task(self.client.start())
@@ -169,6 +172,30 @@ class MinimaxTTSWebsocketExtension(AsyncTTS2BaseExtension):
     def synthesize_audio_sample_rate(self) -> int:
         return self.config.sample_rate
 
+    async def _websocket_error_callback(
+        self, message: str, detail: str, is_fatal: bool = False
+    ) -> None:
+        """Callback for handling WebSocket errors from minimax_tts"""
+        error_code = (
+            ModuleErrorCode.FATAL_ERROR
+            if is_fatal
+            else ModuleErrorCode.NON_FATAL_ERROR
+        )
+
+        await self.send_tts_error(
+            self.current_request_id,
+            ModuleError(
+                message=f"{message}: {detail}",
+                module=ModuleType.TTS,
+                code=error_code,
+                vendor_info=ModuleErrorVendorInfo(
+                    vendor=self.vendor(),
+                    code="WEBSOCKET_ERROR",
+                    message=detail,
+                ),
+            ),
+        )
+
     def _calculate_audio_duration_ms(self) -> int:
         if self.config is None:
             return 0
@@ -195,7 +222,10 @@ class MinimaxTTSWebsocketExtension(AsyncTTS2BaseExtension):
                     "TTS client is not initialized, attempting to reconnect..."
                 )
                 self.client = MinimaxTTSWebsocket(
-                    self.config, self.ten_env, self.vendor()
+                    self.config,
+                    self.ten_env,
+                    self.vendor(),
+                    self._websocket_error_callback,
                 )
                 await self.client.start()
                 self.ten_env.log_info("TTS client reconnected successfully.")
