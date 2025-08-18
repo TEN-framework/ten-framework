@@ -12,6 +12,10 @@ EVENT_TTS_INVALID_KEY_ERROR = 4
 EVENT_TTS_FLUSH = 5
 
 
+BYTES_PER_SAMPLE = 2
+NUMBER_OF_CHANNELS = 1
+
+
 class OpenaiTTSClient:
     def __init__(
         self,
@@ -48,6 +52,7 @@ class OpenaiTTSClient:
             async with self.client.audio.speech.with_streaming_response.create(
                 input=text, **self.config.params
             ) as response:
+                cache_audio_bytes = bytearray()
                 async for chunk in response.iter_bytes():
                     if self._is_cancelled:
                         self.ten_env.log_info(
@@ -59,9 +64,25 @@ class OpenaiTTSClient:
                     self.ten_env.log_info(
                         f"OpenaiTTS: sending EVENT_TTS_RESPONSE, length: {len(chunk)}"
                     )
-                    yield chunk, EVENT_TTS_RESPONSE
+                    if len(cache_audio_bytes) > 0:
+                        chunk = cache_audio_bytes + chunk
+                        cache_audio_bytes = bytearray()
 
-                    # Only send EVENT_TTS_END if not cancelled (flush event already sent)
+                    left_size = len(chunk) % (
+                        BYTES_PER_SAMPLE * NUMBER_OF_CHANNELS
+                    )
+
+                    if left_size > 0:
+                        self.ten_env.log_debug(
+                            f"left_size: {left_size}, chunk: {len(chunk)}"
+                        )
+                        cache_audio_bytes = chunk[-left_size:]
+                        chunk = chunk[:-left_size]
+
+                    if len(chunk) > 0:
+                        yield bytes(chunk), EVENT_TTS_RESPONSE
+                    else:
+                        yield None, EVENT_TTS_END
 
             if not self._is_cancelled:
                 self.ten_env.log_info("OpenaiTTS: sending EVENT_TTS_END")

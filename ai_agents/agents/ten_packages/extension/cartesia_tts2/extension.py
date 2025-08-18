@@ -62,10 +62,15 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
             if not self.config.api_key:
                 raise ValueError("API key is required")
 
-            self.client = CartesiaTTSClient(config=self.config, ten_env=ten_env)
-            await self.client.start()
+            self.client = CartesiaTTSClient(
+                config=self.config,
+                ten_env=ten_env,
+                send_fatal_tts_error=self.send_fatal_tts_error,
+                send_non_fatal_tts_error=self.send_non_fatal_tts_error,
+            )
+            asyncio.create_task(self.client.start())
             ten_env.log_info(
-                "CartesiaTTSWebsocket client initialized and preheated successfully"
+                "CartesiaTTSWebsocket client initialized successfully"
             )
         except Exception as e:
             ten_env.log_error(f"on_init failed: {traceback.format_exc()}")
@@ -156,8 +161,10 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                 self.client = CartesiaTTSClient(
                     config=self.config,
                     ten_env=self.ten_env,
+                    send_fatal_tts_error=self.send_fatal_tts_error,
+                    send_non_fatal_tts_error=self.send_non_fatal_tts_error,
                 )
-                await self.client.start()
+                asyncio.create_task(self.client.start())
                 self.ten_env.log_info("TTS client reconnected successfully.")
 
             self.ten_env.log_info(
@@ -200,7 +207,7 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                     if t.request_id not in self.recorder_map:
                         dump_file_path = os.path.join(
                             self.config.dump_path,
-                            f"minimax_dump_{t.request_id}.pcm",
+                            f"cartesia_dump_{t.request_id}.pcm",
                         )
                         self.recorder_map[t.request_id] = PCMWriter(
                             dump_file_path
@@ -379,6 +386,28 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                 self.ten_env.log_info(
                     "Client connection dropped, instance destroyed. Will attempt to reconnect on next request."
                 )
+
+    async def send_fatal_tts_error(self, error_message: str) -> None:
+        await self.send_tts_error(
+            self.current_request_id or "",
+            ModuleError(
+                message=error_message,
+                module=ModuleType.TTS,
+                code=ModuleErrorCode.FATAL_ERROR,
+                vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
+            ),
+        )
+
+    async def send_non_fatal_tts_error(self, error_message: str) -> None:
+        await self.send_tts_error(
+            self.current_request_id or "",
+            ModuleError(
+                message=error_message,
+                module=ModuleType.TTS,
+                code=ModuleErrorCode.NON_FATAL_ERROR,
+                vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
+            ),
+        )
 
     def _calculate_audio_duration_ms(self) -> int:
         if self.config is None:

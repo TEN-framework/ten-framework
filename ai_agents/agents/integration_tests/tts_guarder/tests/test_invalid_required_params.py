@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python3
 #
 # This file is part of TEN Framework, an open source project.
@@ -20,7 +19,7 @@ import json
 import asyncio
 import os
 
-TTS_INVALID_PARAMS_CONFIG_FILE="property_invalid.json"
+TTS_INVALID_PARAMS_CONFIG_FILE = "property_invalid.json"
 
 
 class InvalidRequiredParamsTester(AsyncExtensionTester):
@@ -34,9 +33,7 @@ class InvalidRequiredParamsTester(AsyncExtensionTester):
         print("=" * 80)
         print("🧪 TEST CASE: Invalid Required Params TTS Test")
         print("=" * 80)
-        print(
-            "📋 Test Description: Validate TTS result invalid required params"
-        )
+        print("📋 Test Description: Validate TTS result invalid required params")
         print("🎯 Test Objectives:")
         print("   - Verify required params are invalid")
         print("   - Test will receive error message with FATAL ERROR")
@@ -56,9 +53,7 @@ class InvalidRequiredParamsTester(AsyncExtensionTester):
 
         # Create Data object for tts_finalize
         finalize_data_obj = Data.create("tts_finalize")
-        finalize_data_obj.set_property_from_json(
-            None, json.dumps(finalize_data)
-        )
+        finalize_data_obj.set_property_from_json(None, json.dumps(finalize_data))
 
         # Send the finalize signal
         await ten_env.send_data(finalize_data_obj)
@@ -71,15 +66,27 @@ class InvalidRequiredParamsTester(AsyncExtensionTester):
     async def on_start(self, ten_env: AsyncTenEnvTester) -> None:
         """Start the TTS invalid required params test."""
         ten_env.log_info("Starting TTS invalid required params test")
+        text = "Hello, world!"
+        request_id = 1
+        ten_env.log_info(f"Sending tts text input: {text}")
+        tts_text_input_obj = Data.create("tts_text_input")
+        tts_text_input_obj.set_property_string("text", text)
+        tts_text_input_obj.set_property_string("request_id", str(request_id))
+        tts_text_input_obj.set_property_bool("text_input_end", True)
+        metadata = {
+            "session_id": self.session_id,
+            "turn_id": 1,
+        }
+        tts_text_input_obj.set_property_from_json("metadata", json.dumps(metadata))
+        await ten_env.send_data(tts_text_input_obj)
+        ten_env.log_info(f"✅ tts text input sent: {text}")
 
     def _stop_test_with_error(
         self, ten_env: AsyncTenEnvTester, error_message: str
     ) -> None:
         ten_env.log_info(f"Stopping test with error message: {error_message}")
         """Stop test with error message."""
-        ten_env.stop_test(
-            TenError.create(TenErrorCode.ErrorCodeGeneric, error_message)
-        )
+        ten_env.stop_test(TenError.create(TenErrorCode.ErrorCodeGeneric, error_message))
 
     def _log_tts_result_structure(
         self,
@@ -108,9 +115,7 @@ class InvalidRequiredParamsTester(AsyncExtensionTester):
             "duration_ms",
             "language",
         ]
-        missing_fields = [
-            field for field in required_fields if field not in json_data
-        ]
+        missing_fields = [field for field in required_fields if field not in json_data]
 
         if missing_fields:
             self._stop_test_with_error(
@@ -129,12 +134,15 @@ class InvalidRequiredParamsTester(AsyncExtensionTester):
             ten_env.log_info(f"Received error data: {json_str}")
             code, _ = data.get_property_int("code")
             if code == -1000:
-                ten_env.log_info("✅ TTS invalid required params test passed with final result")
+                ten_env.log_info(
+                    "✅ TTS invalid required params test passed with final result"
+                )
                 ten_env.stop_test()
             else:
-                self._stop_test_with_error(ten_env, f"Received wrong error code: {code}")
+                self._stop_test_with_error(
+                    ten_env, f"Received wrong error code: {code}"
+                )
             return
-
 
     @override
     async def on_stop(self, ten_env: AsyncTenEnvTester) -> None:
@@ -144,7 +152,6 @@ class InvalidRequiredParamsTester(AsyncExtensionTester):
 
 def test_invalid_required_params(extension_name: str, config_dir: str) -> None:
     """Verify TTS result invalid required params."""
-
 
     # Get config file path
     config_file_path = os.path.join(config_dir, TTS_INVALID_PARAMS_CONFIG_FILE)
@@ -157,10 +164,8 @@ def test_invalid_required_params(extension_name: str, config_dir: str) -> None:
 
     # Expected test results
 
-
     # Log test configuration
     print(f"Using test configuration: {config}")
-
 
     # Create and run tester
     tester = InvalidRequiredParamsTester(

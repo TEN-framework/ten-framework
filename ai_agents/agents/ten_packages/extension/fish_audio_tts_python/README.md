@@ -1,4 +1,4 @@
-# humeai_tts_python
+# fish_audio_tts_python
 
 <!-- brief introduction for the extension -->
 

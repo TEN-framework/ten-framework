@@ -1,3 +1,5 @@
+import asyncio
+from collections.abc import Callable
 from time import time
 from typing import AsyncGenerator, AsyncIterator
 import uuid
@@ -31,12 +33,16 @@ class CartesiaTTSClient:
         self,
         config: CartesiaTTSConfig,
         ten_env: AsyncTenEnv,
+        send_fatal_tts_error: Callable[[str], asyncio.Future] | None = None,
+        send_non_fatal_tts_error: Callable[[str], asyncio.Future] | None = None,
     ):
         self.config = config
         self.ten_env: AsyncTenEnv = ten_env
         self._is_cancelled = False
         self.client = AsyncCartesia(api_key=self.config.api_key)
         self.ws: AsyncTtsWebsocket | None = None
+        self.send_fatal_tts_error = send_fatal_tts_error
+        self.send_non_fatal_tts_error = send_non_fatal_tts_error
 
     async def start(self) -> None:
         """Preheating: establish websocket connection during initialization"""
@@ -58,13 +64,20 @@ class CartesiaTTSClient:
         except Exception as e:
             error_message = str(e)
             if "401" in error_message and "Unauthorized" in error_message:
-                raise CartesiaTTSConnectionException(
-                    status_code=401, body=error_message
-                ) from e
+                if self.send_fatal_tts_error:
+                    await self.send_fatal_tts_error(error_message=error_message)
+                else:
+                    raise CartesiaTTSConnectionException(
+                        status_code=401, body=error_message
+                    ) from e
             else:
                 self.ten_env.log_error(
                     f"Cartesia TTS preheat failed,unexpected error: {e}"
                 )
+                if self.send_non_fatal_tts_error:
+                    await self.send_non_fatal_tts_error(
+                        error_message=error_message
+                    )
                 raise
 
     async def stop(self):
@@ -95,7 +108,6 @@ class CartesiaTTSClient:
         self._is_cancelled = False
         try:
             await self._ensure_connection()
-
             # Send TTS request and yield audio chunks with event status
             async for audio_chunk, event_status in self._process_single_tts(
                 text

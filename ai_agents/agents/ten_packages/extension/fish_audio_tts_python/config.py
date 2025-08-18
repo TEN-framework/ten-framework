@@ -29,6 +29,8 @@ class FishAudioTTSConfig(BaseModel):
 
         if "sample_rate" in self.params:
             self.sample_rate = int(self.params["sample_rate"])
+        else:
+            self.params["sample_rate"] = self.sample_rate
 
         if "format" not in self.params:
             self.params["format"] = "pcm"

@@ -70,23 +70,25 @@ def test_params_passthrough(MockOpenaiTTSClient):
     # --- Test Setup ---
     # Define a configuration with custom parameters inside 'params'.
     # These are the parameters we expect to be "passed through".
+    real_params = {
+        "api_key": "a_test_api_key",
+        "model": "gpt-4o-mini-tts",
+    }
+
+    real_config = {
+        "params": real_params,
+    }
+
     passthrough_params = {
-        "api_key": "test_api_key",
         "model": "gpt-4o-mini-tts",
         "voice": "coral",
-        "instructions": "",
         "speed": 1.0,
-    }
-    passthrough_config = {
-        "dump": False,
-        "dump_path": "./dump/",
-        "params": passthrough_params,
+        "instructions": "",
+        "response_format": "pcm",
     }
 
     tester = ExtensionTesterForPassthrough()
-    tester.set_test_mode_single(
-        "openai_tts2_python", json.dumps(passthrough_config)
-    )
+    tester.set_test_mode_single("openai_tts2_python", json.dumps(real_config))
 
     print("Running passthrough test...")
     tester.run()
@@ -99,31 +101,15 @@ def test_params_passthrough(MockOpenaiTTSClient):
     # Get the arguments that the mock was called with.
     # The constructor is called with keyword arguments like config=...
     # so we inspect the keyword arguments dictionary.
-    call_args, call_kwargs = MockOpenaiTTSClient.call_args
+    _, call_kwargs = MockOpenaiTTSClient.call_args
     called_config = call_kwargs["config"]
 
-    # Verify that the configuration object contains our expected parameters
-    # Note: OpenaiTTS uses update_params() to merge params into the config
-    assert hasattr(
-        called_config, "api_key"
-    ), "Config should have api_key parameter"
+    # Verify that the 'params' dictionary in the config object passed to the
+    # client constructor is identical to the one we defined in our test config.
+    print(f"called_config: {called_config.params}")
     assert (
-        called_config.api_key == "test_api_key"
-    ), f"Expected api_key to be test_api_key, but got {called_config.api_key}"
-
-    config_params = called_config.params
-
-    assert "model" in config_params, "Config should have model parameter"
-    assert (
-        config_params["model"] == "gpt-4o-mini-tts"
-    ), f"Expected model to be gpt-4o-mini-tts, but got {config_params['model']}"
-
-    assert "voice" in config_params, "Config should have voice parameter"
-    assert (
-        config_params["voice"] == "coral"
-    ), f"Expected voice to be coral, but got {config_params['voice']}"
+        called_config.params == passthrough_params
+    ), f"Expected params to be {passthrough_params}, but got {called_config.params}"
 
     print("✅ Params passthrough test passed successfully.")
-    print(
-        f"✅ Verified config api_key: {called_config.api_key}, model: {config_params['model']}, voice: {config_params['voice']}"
-    )
+    print(f"✅ Verified params: {called_config.params}")
