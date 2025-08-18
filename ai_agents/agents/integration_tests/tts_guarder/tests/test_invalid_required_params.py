@@ -166,8 +166,7 @@ def test_invalid_required_params(extension_name: str, config_dir: str) -> None:
     tester = InvalidRequiredParamsTester(
         session_id="test_invalid_required_params_session_123",
     )
-    config = {}
-    config["params"] = {}
+
     tester.set_test_mode_single(extension_name, json.dumps(config))
     error = tester.run()
 

@@ -43,6 +43,7 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
         self.last_completed_request_id: str | None = None
         self.completed_request_ids: set[str] = set()
         self.read_audio_data_task: asyncio.Task = None
+        self.init_complete: asyncio.Event = asyncio.Event()
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         try:
@@ -51,8 +52,12 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
 
             if self.config is None:
                 config_json, _ = await self.ten_env.get_property_to_json("")
+                self.ten_env.log_debug(f"Raw config JSON: {config_json}")
                 self.config = ElevenLabsTTS2Config.model_validate_json(
                     config_json
+                )
+                self.ten_env.log_debug(
+                    f"Config params before update: {self.config.params}"
                 )
                 self.config.update_params()
                 self.ten_env.log_info(
@@ -78,12 +83,24 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                     self.on_stop(self.ten_env)
 
             self.client = ElevenLabsTTS2(self.config, ten_env, error_callback)
+            ten_env.log_debug("Created ElevenLabsTTS2 client")
             await self.client.start_connection()
+            ten_env.log_debug("Started ElevenLabsTTS2 connection")
             self.read_audio_data_task = asyncio.create_task(
                 self.read_audio_data()
             )
+            ten_env.log_debug("Created read_audio_data task")
+
+            # Mark initialization as complete
+            self.init_complete.set()
+            ten_env.log_debug("Initialization completed")
         except Exception as e:
             ten_env.log_error(f"on_init failed: {traceback.format_exc()}")
+            # Even if initialization fails, we should set the event to prevent infinite waiting
+            self.init_complete.set()
+            ten_env.log_debug(
+                "Initialization failed but event set to prevent blocking"
+            )
             await self.send_tts_error(
                 "",  # No request_id available during on_init
                 ModuleError(
@@ -109,6 +126,8 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                 await self.client.close_connection()
             except Exception as e:
                 ten_env.log_error(f"Error closing WebSocket connection: {e}")
+            finally:
+                self.client = None
 
         # close all PCMWriter
         for request_id, recorder in self.recorder_map.items():
@@ -122,6 +141,8 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                     f"Error flushing PCMWriter for request_id {request_id}: {e}"
                 )
 
+        # Reset initialization event
+        self.init_complete.clear()
         await super().on_stop(ten_env)
         ten_env.log_debug("on_stop")
 
@@ -223,7 +244,110 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                             f"Created PCMWriter for request_id: {t.request_id}, file: {dump_file_path}"
                         )
 
-            self.client.text_input_queue.put_nowait(t)
+            # Wait for initialization to complete with timeout
+            self.ten_env.log_debug(
+                f"Init complete status: {self.init_complete.is_set()}"
+            )
+            if not self.init_complete.is_set():
+                self.ten_env.log_debug(
+                    "Waiting for initialization to complete..."
+                )
+                try:
+                    await asyncio.wait_for(
+                        self.init_complete.wait(), timeout=10.0
+                    )  # 10 second timeout
+                    self.ten_env.log_debug(
+                        "Initialization completed, proceeding with TTS request"
+                    )
+                except asyncio.TimeoutError:
+                    self.ten_env.log_error(
+                        "Initialization timeout, cannot process TTS request"
+                    )
+                    await self.send_tts_error(
+                        t.request_id,
+                        ModuleError(
+                            message="TTS initialization timeout",
+                            module=ModuleType.TTS,
+                            code=ModuleErrorCode.FATAL_ERROR,
+                            vendor_info={"vendor": "elevenlabs"},
+                        ),
+                    )
+                    return
+            else:
+                self.ten_env.log_debug(
+                    "Initialization already completed, proceeding with TTS request"
+                )
+
+            if self.client is None:
+                self.ten_env.log_error(
+                    "Client is not initialized, cannot process TTS request"
+                )
+                await self.send_tts_error(
+                    t.request_id,
+                    ModuleError(
+                        message="TTS client is not initialized",
+                        module=ModuleType.TTS,
+                        code=ModuleErrorCode.FATAL_ERROR,
+                        vendor_info={"vendor": "elevenlabs"},
+                    ),
+                )
+                return
+
+            # Check if connection is healthy and tasks are running
+            if not self.client.is_connection_healthy():
+                self.ten_env.log_info(
+                    f"Connection not healthy, reconnecting for request: {t.request_id}"
+                )
+                await self.client.start_connection()
+            else:
+                # Check if text_to_speech_ws_streaming task is still running
+                if (
+                    self.client.ws_send_task is None
+                    or self.client.ws_send_task.done()
+                    or self.client.ws_send_task.cancelled()
+                ):
+                    self.ten_env.log_info(
+                        f"Restarting text_to_speech_ws_streaming task for request: {t.request_id}"
+                    )
+                    self.client.ws_send_task = asyncio.create_task(
+                        self.client.text_to_speech_ws_streaming()
+                    )
+
+                # Check if ws_recv_loop task is still running
+                if (
+                    self.client.ws_recv_task is None
+                    or self.client.ws_recv_task.done()
+                    or self.client.ws_recv_task.cancelled()
+                ):
+                    self.ten_env.log_info(
+                        f"Restarting ws_recv_loop task for request: {t.request_id}"
+                    )
+                    self.client.ws_recv_task = asyncio.create_task(
+                        self.client.ws_recv_loop()
+                    )
+
+            self.ten_env.log_debug(
+                f"Putting TTS request into queue: {t.request_id}"
+            )
+            try:
+                self.client.text_input_queue.put_nowait(t)
+                self.ten_env.log_debug(
+                    f"Successfully put TTS request into queue: {t.request_id}"
+                )
+            except asyncio.QueueFull:
+                self.ten_env.log_error(
+                    f"Queue is full, cannot process TTS request: {t.request_id}"
+                )
+                await self.send_tts_error(
+                    t.request_id,
+                    ModuleError(
+                        message="TTS queue is full",
+                        module=ModuleType.TTS,
+                        code=ModuleErrorCode.NON_FATAL_ERROR,
+                        vendor_info={"vendor": "elevenlabs"},
+                    ),
+                )
+                return
 
         except ModuleVendorException as e:
             self.ten_env.log_error(
@@ -258,6 +382,48 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
         if name == "tts_flush":
             ten_env.log_info(f"Received tts_flush data: {name}")
 
+            # Wait for initialization to complete with timeout
+            if not self.init_complete.is_set():
+                ten_env.log_debug(
+                    "Waiting for initialization to complete before handling flush..."
+                )
+                try:
+                    await asyncio.wait_for(
+                        self.init_complete.wait(), timeout=30.0
+                    )  # 30 second timeout
+                    ten_env.log_debug(
+                        "Initialization completed, proceeding with flush"
+                    )
+                except asyncio.TimeoutError:
+                    ten_env.log_error(
+                        "Initialization timeout, cannot handle flush"
+                    )
+                    await self.send_tts_error(
+                        self.current_request_id,
+                        ModuleError(
+                            message="TTS initialization timeout",
+                            module=ModuleType.TTS,
+                            code=ModuleErrorCode.FATAL_ERROR,
+                            vendor_info={"vendor": "elevenlabs"},
+                        ),
+                    )
+                    return
+
+            if self.client is None:
+                ten_env.log_error(
+                    "Client is not initialized, cannot handle flush"
+                )
+                await self.send_tts_error(
+                    self.current_request_id,
+                    ModuleError(
+                        message="TTS client is not initialized",
+                        module=ModuleType.TTS,
+                        code=ModuleErrorCode.FATAL_ERROR,
+                        vendor_info={"vendor": "elevenlabs"},
+                    ),
+                )
+                return
+
             try:
                 await self.client.handle_flush()
                 await self.handle_completed_request(
@@ -283,6 +449,23 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
         self.ten_env.log_info(
             f"add completed request_id to: {self.current_request_id}"
         )
+
+        # Flush PCMWriter for the completed request
+        if (
+            self.config.dump
+            and self.current_request_id
+            and self.current_request_id in self.recorder_map
+        ):
+            try:
+                await self.recorder_map[self.current_request_id].flush()
+                self.ten_env.log_info(
+                    f"Flushed PCMWriter for completed request_id: {self.current_request_id}"
+                )
+            except Exception as e:
+                self.ten_env.log_error(
+                    f"Error flushing PCMWriter for completed request_id {self.current_request_id}: {e}"
+                )
+
         # send audio_end
         request_event_interval = 0
         if self.request_start_ts is not None:
@@ -297,7 +480,7 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
             reason,
         )
         self.ten_env.log_info(
-            f"Sent tts_audio_end with INTERRUPTED reason for request_id: {self.current_request_id}"
+            f"Sent tts_audio_end with {reason.name} reason for request_id: {self.current_request_id}"
         )
 
     def calculate_audio_duration(
@@ -326,8 +509,14 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
     async def read_audio_data(self):
         try:
             while True:
+                self.ten_env.log_debug(
+                    f"read_audio_data: waiting for audio data, current_request_id: {self.current_request_id}"
+                )
                 result = await self.client.get_synthesized_audio()
                 audio_data, isFinal, _ = result
+                self.ten_env.log_debug(
+                    f"read_audio_data: received audio data, isFinal: {isFinal}, data_size: {len(audio_data) if audio_data else 0}"
+                )
 
                 # new request_id, send TTSAudioStart event and TTFB metrics
                 if (
@@ -363,6 +552,9 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                         await self.recorder_map[self.current_request_id].write(
                             audio_data
                         )
+                        self.ten_env.log_debug(
+                            f"Wrote {len(audio_data)} bytes to PCMWriter for request_id: {self.current_request_id}"
+                        )
                     cur_duration = self.calculate_audio_duration(
                         len(audio_data),
                         self.synthesize_audio_sample_rate(),
@@ -379,7 +571,11 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                     await self.handle_completed_request(
                         TTSAudioEndReason.REQUEST_END
                     )
-                    await self.client.start_connection()
+                    # Don't reset current_request_id here, let the next request set it
+                    # Reset only timing-related variables
+                    self.request_start_ts = None
+                    self.request_ttfb = None
+                    self.request_total_audio_duration = None
         except asyncio.CancelledError:
             self.ten_env.log_info("read_audio_data task cancelled")
             raise

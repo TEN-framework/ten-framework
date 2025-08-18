@@ -27,7 +27,7 @@ class ElevenLabsTTS2Config(BaseModel):
     style: float = 0.0
     voice_id: str = "pNInz6obpgDQGcFmaJgB"
     dump: bool = False
-    dump_path: str = "./dump/"
+    dump_path: str = "./"
     params: Dict[str, Any] = {}
     black_list_keys: List[str] = ["api_key"]
 

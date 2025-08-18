@@ -202,11 +202,14 @@ class GoogleTTS:
 
     def clean(self):
         """Clean up resources"""
-        self.ten_env.log_debug("GoogleTTS: clean() called.")
+        self.ten_env.log_info("GoogleTTS: clean() called.")
         if self.client:
             self.client = None
+            self.ten_env.log_info("Google TTS client cleaned")
 
-    def reset(self):
+    async def reset(self):
         """Reset the client"""
+        self.ten_env.log_info("Resetting Google TTS client")
         self.client = None
         self._initialize_client()
+        self.ten_env.log_info("Google TTS client reset completed")

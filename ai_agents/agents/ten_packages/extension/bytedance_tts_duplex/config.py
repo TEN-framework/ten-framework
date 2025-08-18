@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from pydantic import BaseModel, Field
 
@@ -29,8 +29,8 @@ def mask_sensitive_data(
 
 
 class BytedanceTTSDuplexConfig(BaseModel):
-    appid: str
-    token: str
+    appid: str = ""
+    token: str = ""
 
     # Refer to: https://www.volcengine.com/docs/6561/1257544.
     speaker: str = "zh_female_shuangkuaisisi_moon_bigtts"
@@ -40,6 +40,7 @@ class BytedanceTTSDuplexConfig(BaseModel):
     dump_path: str = "/tmp"
     params: Dict[str, Any] = Field(default_factory=dict)
     enable_words: bool = False
+    black_list_keys: List[str] = ["appid", "token"]
 
     def update_params(self) -> None:
         ##### get value from params #####
@@ -67,6 +68,11 @@ class BytedanceTTSDuplexConfig(BaseModel):
         if "audio_params" not in self.params:
             self.params["audio_params"] = {}
         self.params["audio_params"]["format"] = "pcm"
+
+        ##### remove sensitive keys from params #####
+        for key in self.black_list_keys:
+            if key in self.params:
+                del self.params[key]
 
     def to_str(self) -> str:
         """

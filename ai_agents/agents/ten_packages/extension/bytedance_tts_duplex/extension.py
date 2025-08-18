@@ -72,12 +72,20 @@ class BytedanceTTSDuplexExtension(AsyncTTS2BaseExtension):
                 self.config.update_params()
 
                 if not self.config.appid:
-                    self.ten_env.log_error("get property appid")
-                    raise ValueError("appid is required")
+                    self.ten_env.log_error(
+                        "Configuration is empty. Required parameter 'appid' is missing."
+                    )
+                    raise ValueError(
+                        "Configuration is empty. Required parameter 'appid' is missing."
+                    )
 
                 if not self.config.token:
-                    self.ten_env.log_error("get property token")
-                    raise ValueError("token is required")
+                    self.ten_env.log_error(
+                        "Configuration is empty. Required parameter 'token' is missing."
+                    )
+                    raise ValueError(
+                        "Configuration is empty. Required parameter 'token' is missing."
+                    )
 
             await self._start_connection()
             self.msg_polling_task = asyncio.create_task(self._loop())

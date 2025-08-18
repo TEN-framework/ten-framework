@@ -118,10 +118,23 @@ def test_params_passthrough(MockBytedanceV3Client):
     called_config = call_args[0]
 
     # Verify that the 'params' dictionary in the config object passed to the
-    # client constructor is identical to the one we defined in our test config.
+    # client constructor contains our test params
+    # Note: The actual params will also contain fields from property.json, but we only verify our test params
+    for key, value in passthrough_params.items():
+        assert (
+            key in called_config.params
+        ), f"Expected key '{key}' not found in params"
+        assert (
+            called_config.params[key] == value
+        ), f"Expected {key}={value}, got {called_config.params[key]}"
+
+    # Check that audio_params has the required format
     assert (
-        called_config.params == passthrough_params
-    ), f"Expected params to be {passthrough_params}, but got {called_config.params}"
+        "audio_params" in called_config.params
+    ), "Expected audio_params in params"
+    assert (
+        called_config.params["audio_params"]["format"] == "pcm"
+    ), "Expected audio_params.format to be 'pcm'"
 
     print("✅ Params passthrough test passed successfully.")
     print(f"✅ Verified params: {called_config.params}")

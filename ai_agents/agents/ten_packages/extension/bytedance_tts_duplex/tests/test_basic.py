@@ -319,7 +319,7 @@ def test_text_input_end_logic(MockBytedanceV3Client):
     MockBytedanceV3Client.side_effect = mock_client_init
 
     # --- Test Setup ---
-    config = {"appid": "a_valid_appid", "token": "a_valid_token"}
+    config = {"params": {"appid": "a_valid_appid", "token": "a_valid_token"}}
     tester = ExtensionTesterTextInputEnd()
     tester.set_test_mode_single("bytedance_tts_duplex", json.dumps(config))
 

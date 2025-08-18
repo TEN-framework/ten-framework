@@ -20,7 +20,7 @@ import json
 import asyncio
 import os
 
-
+TTS_MISS_REQUIRED_PARAMS_CONFIG_FILE="property_miss_required.json"
 
 
 class MissRequiredParamsTester(AsyncExtensionTester):
@@ -144,12 +144,26 @@ class MissRequiredParamsTester(AsyncExtensionTester):
 
 def test_miss_required_params(extension_name: str, config_dir: str) -> None:
     """Verify TTS result miss required params."""
+    # Get config file path
+    config_file_path = os.path.join(config_dir, TTS_MISS_REQUIRED_PARAMS_CONFIG_FILE)
+    if not os.path.exists(config_file_path):
+        raise FileNotFoundError(f"Config file not found: {config_file_path}")
+
+    # Load config file
+    with open(config_file_path, "r") as f:
+        config: dict[str, Any] = json.load(f)
+
+    # Expected test results
+
+
+    # Log test configuration
+    print(f"Using test configuration: {config}")
 
     # Create and run tester
     tester = MissRequiredParamsTester(
         session_id="test_miss_required_params_session_123",
     )
-    config = {}
+
     tester.set_test_mode_single(extension_name, json.dumps(config))
     error = tester.run()
 
