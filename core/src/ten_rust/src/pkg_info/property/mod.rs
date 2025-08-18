@@ -158,7 +158,7 @@ impl Property {
     /// This method ensures that the property configuration is valid and
     /// complete.
     /// TODO
-    pub fn validate_and_complete(&mut self) -> Result<()> {w
+    pub fn validate_and_complete(&mut self) -> Result<()> {
         Ok(())
     }
 
@@ -189,20 +189,24 @@ impl Property {
         if let Some(ten_in_property) = &self.ten {
             //handle uri field
             if let Some(uri) = &ten_in_property.uri {
-                json_map
-                    .insert("uri".to_string(), serde_json::to_value(uri.clone())?);
+                json_map.insert(
+                    "uri".to_string(),
+                    serde_json::to_value(uri.clone())?,
+                );
             }
 
             //handle predefined_graphs field
             let mut graphs_array = Vec::new();
             if let Some(graph_uuids) = &ten_in_property.predefined_graphs {
                 for uuid in graph_uuids {
-                    if let Some(graph_info) = graphs_cache.get(&uuid){
-                        graphs_array.push(serde_json::to_value(graph_info.clone())?);
+                    if let Some(graph_info) = graphs_cache.get(&uuid) {
+                        graphs_array
+                            .push(serde_json::to_value(graph_info.clone())?);
                     }
                 }
             }
-            json_map.insert(TEN_STR_PREDEFINED_GRAPHS.to_string(),
+            json_map.insert(
+                TEN_STR_PREDEFINED_GRAPHS.to_string(),
                 serde_json::to_value(graphs_array)?,
             );
 

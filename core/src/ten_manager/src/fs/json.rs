@@ -16,6 +16,11 @@ use ten_rust::pkg_info::property::Property;
 
 use crate::constants::BUF_WRITER_BUF_SIZE;
 
+use std::collections::HashMap;
+use ten_rust::_0_8_compatible::get_ten_field_string;
+use ten_rust::graph::graph_info::GraphInfo;
+use uuid::Uuid;
+
 /// Read json file from disk
 fn read_json_file_to_map(
     path: &str,
@@ -81,30 +86,44 @@ pub fn patch_property_json_file(
     base_dir: &str,
     property: &Property,
     graphs_cache: &HashMap<Uuid, GraphInfo>,
+    old_graphs_cache: &HashMap<Uuid, GraphInfo>,
 ) -> Result<()> {
-    //read from property.json
+    // generate patch from the difference between
+    // before and after the update of property.ten
+    let ten_field_str = get_ten_field_string();
+
+    let old_ten_json = serde_json::to_value(
+        property
+            .property_ten_to_json_map(old_graphs_cache)
+            .context("Failed to convert property.ten to JSON map")?,
+    )?;
+
+    let new_ten_json = serde_json::to_value(
+        property
+            .property_ten_to_json_map(graphs_cache)
+            .context("Failed to convert property.ten to JSON map")?,
+    )?;
+
+    let patch = json_patch::diff(&old_ten_json, &new_ten_json);
+
+    //apply patch to property.json, only "ten" field is updated
+    //(there could be other fields added by user at the top level )
     let mut whole_property_json = serde_json::Value::Object(
+        //read from property.json
         read_json_file_to_map(
             Path::new(base_dir).join(PROPERTY_JSON_FILENAME).to_str().unwrap(),
         )
         .context("Failed to read property.json file")?,
     );
-    // generate patch from the difference between
-    // "ten" field in property.json and
-    // property.ten data structure
-    let ten_field_str = get_ten_field_string();
-    let old_ten_json: serde_json::Value =
-        whole_property_json.get(&ten_field_str).cloned().unwrap_or(Value::Null);
 
-    let new_ten_json: serde_json::Value = property
-        .property_ten_to_json_map(graphs_cache)
-        .context("Failed to convert property.ten to JSON value")?;
+    let mut ten_in_property_json = whole_property_json
+        .get(&ten_field_str)
+        .cloned()
+        .unwrap_or(serde_json::Value::Null);
 
-    let patch = json_patch::diff(&old_ten_json, &new_ten_json);
+    json_patch::patch(&mut ten_in_property_json, &patch)?;
 
-    //apply patch to property.json, so that only "ten" field is updated
-    //(there could be other fields added by user at the top level )
-    json_patch::patch(&mut whole_property_json, &patch)?;
+    whole_property_json[ten_field_str] = ten_in_property_json;
 
     let whole_property_json_map: serde_json::Map<String, serde_json::Value> =
         serde_json::from_value(whole_property_json)

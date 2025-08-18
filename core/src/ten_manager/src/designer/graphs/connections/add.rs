@@ -117,6 +117,7 @@ pub async fn add_graph_connection_endpoint(
 ) -> Result<impl Responder, actix_web::Error> {
     let mut pkgs_cache = state.pkgs_cache.write().await;
     let mut graphs_cache = state.graphs_cache.write().await;
+    let old_graphs_cache = graphs_cache.clone();
 
     // Get the specified graph from graphs_cache.
     let graph_info = match graphs_cache_find_by_id_mut(
@@ -171,6 +172,7 @@ pub async fn add_graph_connection_endpoint(
                 &pkg_info.url,
                 &property,
                 &graphs_cache,
+                &old_graphs_cache,
             ) {
                 eprintln!("Warning: Failed to update property.json file: {e}");
             }
