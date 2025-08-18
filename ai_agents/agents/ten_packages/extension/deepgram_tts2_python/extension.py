@@ -3,6 +3,7 @@
 # Licensed under the Apache License, Version 2.0.
 # See the LICENSE file for more information.
 #
+import asyncio
 import traceback
 import os
 import time
@@ -43,7 +44,7 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
         self.active_sessions: Dict[str, str] = {}  # session_id -> request_id
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
-        """Initialize the extension with lazy connection"""
+        """Initialize the extension with non-blocking connection pre-warming"""
         try:
             await super().on_init(ten_env)
             self.ten_env = ten_env  # Store ten_env for later use
@@ -58,8 +59,6 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
             
             ten_env.log_info(f"DEBUG: Received config - api_key: [{self.config.api_key}], type: {type(self.config.api_key)}")
 
-
-
             if not self.config.api_key:
                 # Send fatal error using TTS2 base class method
                 await self._send_initialization_error("Deepgram API key is required")
@@ -67,15 +66,16 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
 
             ten_env.log_info(f"Initializing Deepgram TTS with model: {self.config.model}, voice: {self.config.voice}")
             
-            # Create client and initialize WebSocket connection
+            # Create client 
             self.client = DeepgramTTS(self.config)
             self.client.ten_env = ten_env  # Set ten_env for logging
             self.client.extension_ref = self  # Set extension reference for audio streaming
             
-            # Initialize the persistent WebSocket connection (this will catch invalid API keys)
-            await self.client.initialize(ten_env)
+            # ✅ STANDARDS COMPLIANT: Start connection pre-warming without await
+            # This starts the connection process immediately but doesn't block on_init
+            self.connection_task = asyncio.create_task(self._initialize_connection(ten_env))
             
-            ten_env.log_info(f"DeepgramTTS extension initialized successfully with WebSocket connection, client: {self.client}")
+            ten_env.log_info("DeepgramTTS extension initialized - connection pre-warming started")
 
         except Exception as e:
             ten_env.log_error(f"Failed to initialize Deepgram TTS: {str(e)}")
@@ -84,10 +84,33 @@ class DeepgramTTSExtension(AsyncTTS2BaseExtension):
             # Send fatal error for any other initialization failures
             await self._send_initialization_error(f"Failed to initialize Deepgram TTS: {str(e)}")
 
+    async def _initialize_connection(self, ten_env: AsyncTenEnv) -> None:
+        """Initialize the WebSocket connection (called as background task)"""
+        try:
+            ten_env.log_info("KEYPOINT: Starting connection pre-warming")
+            await self.client.initialize(ten_env)
+            ten_env.log_info("KEYPOINT: Connection pre-warming completed successfully")
+        except Exception as e:
+            ten_env.log_error(f"KEYPOINT: Connection pre-warming failed: {str(e)}")
+            # Store the error to be handled in on_start
+            self.connection_error = e
+
     async def on_start(self, ten_env: AsyncTenEnv) -> None:
-        """Start the extension - only call parent on_start"""
+        """Start the extension - wait for connection to be ready"""
         try:
             ten_env.log_info("DeepgramTTS extension on_start called")
+            
+            # ✅ STANDARDS COMPLIANT: Wait for connection pre-warming to complete
+            if hasattr(self, 'connection_task'):
+                ten_env.log_info("KEYPOINT: Waiting for connection pre-warming to complete")
+                await self.connection_task
+                
+                # Check if connection failed during pre-warming
+                if hasattr(self, 'connection_error'):
+                    raise self.connection_error
+                    
+                ten_env.log_info("KEYPOINT: Connection pre-warming completed, connection ready")
+            
             await super().on_start(ten_env)
             ten_env.log_info("DeepgramTTS extension started successfully")
 
