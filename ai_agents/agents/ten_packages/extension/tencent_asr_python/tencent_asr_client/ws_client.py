@@ -184,8 +184,10 @@ class WebSocketClient(ABC):
                         return_when=asyncio.FIRST_COMPLETED,
                     )
 
-                    for task in pending:
-                        task.cancel()
+                    if keep_alive_task in pending:
+                        keep_alive_task.cancel()
+                    if sender_task in pending:
+                        sender_task.cancel()
                     with suppress(asyncio.CancelledError):
                         await asyncio.gather(*pending)
                     await self.on_disconnect()
