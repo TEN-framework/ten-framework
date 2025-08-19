@@ -128,7 +128,7 @@ async fn update_graph_info(
     }
 }
 
-fn update_property_all_fields(
+fn update_property_json_file(
     _request_payload: &web::Json<
         UpdateGraphConnectionMsgConversionRequestPayload,
     >,
@@ -142,14 +142,11 @@ fn update_property_all_fields(
         belonging_pkg_info_find_by_graph_info_mut(pkgs_cache, graph_info)
     {
         if let Some(property) = &mut pkg_info.property {
-            // 只负责写回 property.json，所有结构变更已在 graph_info.graph 完成
-            // 这里假设 patch_property_json_file 已经引入并可用
-            // 你需要根据实际情况传递 graphs_cache，如果需要
             patch_property_json_file(
                 &pkg_info.url,
-                &property,
-                &graphs_cache,
-                &old_graphs_cache,
+                property,
+                graphs_cache,
+                old_graphs_cache,
             )?;
         }
     }
@@ -216,7 +213,7 @@ pub async fn update_graph_connection_msg_conversion_endpoint(
         return Ok(HttpResponse::BadRequest().json(error_response));
     }
 
-    if let Err(e) = update_property_all_fields(
+    if let Err(e) = update_property_json_file(
         &request_payload,
         &mut pkgs_cache,
         &graphs_cache,

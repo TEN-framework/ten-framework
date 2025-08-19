@@ -162,15 +162,10 @@ pub async fn add_graph_connection_endpoint(
     {
         // Update property.json file with the updated graph.
         if let Some(property) = &mut pkg_info.property {
-            // Create a new connection object, and update only with the new
-            // connection.
-            let connections_to_add =
-                vec![create_graph_connection(&request_payload)];
-
             // Update property.json file.
             if let Err(e) = patch_property_json_file(
                 &pkg_info.url,
-                &property,
+                property,
                 &graphs_cache,
                 &old_graphs_cache,
             ) {
