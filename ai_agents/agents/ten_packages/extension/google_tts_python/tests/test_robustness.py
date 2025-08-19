@@ -76,9 +76,13 @@ class ExtensionTesterRobustness(ExtensionTester):
                 ten_env.log_info("ten_env.stop_test() called successfully")
             elif self.error_received:
                 # If we received an error, stop the test after processing tts_audio_end
-                ten_env.log_info("Error was received, stopping test after tts_audio_end.")
+                ten_env.log_info(
+                    "Error was received, stopping test after tts_audio_end."
+                )
                 ten_env.stop_test()
-                ten_env.log_info("ten_env.stop_test() called successfully after error")
+                ten_env.log_info(
+                    "ten_env.stop_test() called successfully after error"
+                )
             else:
                 # Send next request
                 next_request_id = f"tts_request_{self.request_count + 1}"
