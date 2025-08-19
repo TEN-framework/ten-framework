@@ -259,9 +259,10 @@ def test_network_retry_robustness(MockGoogleTTS):
         call_count += 1
 
         # Always fail with network error
-        yield "503 failed to connect to all addresses".encode(
-            "utf-8"
-        ), 3  # EVENT_TTS_ERROR
+        error_data = "503 failed to connect to all addresses".encode("utf-8")
+        yield error_data, 3  # EVENT_TTS_ERROR
+        # Also yield the end signal to ensure proper completion
+        yield None, 2  # EVENT_TTS_REQUEST_END
         return
 
     mock_client_instance.get = mock_get
@@ -294,10 +295,10 @@ def test_network_retry_robustness(MockGoogleTTS):
 
     # Verify that error was received (since mock doesn't implement retry logic)
     assert tester.error_received, "Error should be received for network failure"
-    time.sleep(1)
+    # Since we now yield both error and end signal, we should get exactly 1 request count
     assert (
         tester.request_count == 1
-    ), f"Expected 1 requests to complete, got {tester.request_count}"
+    ), f"Expected 1 request to complete, got {tester.request_count}"
 
 
 @patch("google_tts_python.extension.GoogleTTS")
