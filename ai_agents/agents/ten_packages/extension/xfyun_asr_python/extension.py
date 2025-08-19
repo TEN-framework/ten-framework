@@ -415,7 +415,6 @@ class XfyunASRExtension(AsyncASRBaseExtension):
                     "Cannot handle ASR result: config is None"
                 )
 
-            # Wait for the websocket close to affect wer timeout.
             if status == 2:
                 if self.recognition:
                     await self.recognition.close()
