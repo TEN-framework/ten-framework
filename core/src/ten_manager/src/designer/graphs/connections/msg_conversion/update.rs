@@ -132,14 +132,14 @@ fn update_property_json_file(
     _request_payload: &web::Json<
         UpdateGraphConnectionMsgConversionRequestPayload,
     >,
-    pkgs_cache: &mut HashMap<String, PkgsInfoInApp>,
+    pkgs_cache: &HashMap<String, PkgsInfoInApp>,
     graphs_cache: &HashMap<Uuid, GraphInfo>,
     old_graphs_cache: &HashMap<Uuid, GraphInfo>,
 ) -> Result<()> {
     let graph_info = graphs_cache.get(&_request_payload.graph_id).unwrap();
 
     if let Ok(Some(pkg_info)) =
-        belonging_pkg_info_find_by_graph_info_mut(pkgs_cache, graph_info)
+        belonging_pkg_info_find_by_graph_info(pkgs_cache, graph_info)
     {
         if let Some(property) = &mut pkg_info.property {
             patch_property_json_file(
@@ -159,7 +159,7 @@ pub async fn update_graph_connection_msg_conversion_endpoint(
     >,
     state: web::Data<Arc<DesignerState>>,
 ) -> Result<impl Responder, actix_web::Error> {
-    let mut pkgs_cache = state.pkgs_cache.write().await;
+    let pkgs_cache = state.pkgs_cache.read().await;
     let mut graphs_cache = state.graphs_cache.write().await;
     let old_graphs_cache = graphs_cache.clone();
 
@@ -215,7 +215,7 @@ pub async fn update_graph_connection_msg_conversion_endpoint(
 
     if let Err(e) = update_property_json_file(
         &request_payload,
-        &mut pkgs_cache,
+        &pkgs_cache,
         &graphs_cache,
         &old_graphs_cache,
     ) {
