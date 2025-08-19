@@ -1,6 +1,6 @@
 import asyncio
 import json
-from typing import AsyncGenerator, Tuple
+from typing import Tuple
 import uuid
 
 import time
@@ -19,6 +19,9 @@ from ten_runtime import AsyncTenEnv
 
 # https://www.volcengine.com/docs/6561/1329505#%E7%A4%BA%E4%BE%8Bsamples
 
+# Connection-related constants
+MAX_RETRY_TIMES_FOR_TRANSPORT = 5
+ERR_WS_CONNECTION = 0
 
 PROTOCOL_VERSION = 0b0001
 DEFAULT_HEADER_SIZE = 0b0001
@@ -57,7 +60,7 @@ EVENT_ConnectionFinished = 52  # connection finished
 EVENT_StartSession = 100
 
 EVENT_FinishSession = 102
-# 下行Session事件
+# Downstream Session events
 EVENT_SessionStarted = 150
 EVENT_SessionFinished = 152
 
@@ -134,7 +137,7 @@ class Optional:
             option_bytes.extend(session_id_bytes)
         if self.sequence is not None:
             option_bytes.extend(self.sequence.to_bytes(4, "big", signed=False))
-        return option_bytes
+        return bytes(option_bytes)
 
 
 class Response:
@@ -236,7 +239,7 @@ def read_res_payload(res: bytes, offset: int):
     return payload, offset
 
 
-class BytedanceV3Client:
+class BytedanceV3Synthesizer:
     def __init__(
         self,
         config: BytedanceTTSDuplexConfig,
@@ -256,6 +259,26 @@ class BytedanceV3Client:
         self.response_msgs: asyncio.Queue[Tuple[int, bytes]] | None = (
             response_msgs
         )
+
+        # Connection management related
+        self._session_closing = False
+        self._connect_exp_cnt = 0
+        self.websocket_task = None
+        self.channel_tasks = []
+        self._session_started = False
+
+        # Queue for pending text to be sent
+        self.text_queue = asyncio.Queue()
+
+        # Mechanism for waiting for specific events
+        self._connection_event = asyncio.Event()
+        self._session_event = asyncio.Event()
+        self._connection_success = False
+        self._session_success = False
+        self._receive_ready_event = asyncio.Event()
+
+        # Start websocket connection monitoring
+        self.websocket_task = asyncio.create_task(self._process_websocket())
 
     def gen_log_id(self) -> str:
         ts = int(time.time() * 1000)
@@ -299,106 +322,194 @@ class BytedanceV3Client:
         self.ten_env.log_info(f"Payload JSON: {json_str}")
         return str.encode(json_str)
 
-    async def connect(self):
-        url = self.config.api_url
-        self.ten_env.log_debug(
-            f"Connecting to {url} with headers: {json.dumps(self.get_headers(), indent=2)}"
+    def _process_ws_exception(self, exp) -> None | Exception:
+        """Handle websocket connection exceptions and decide whether to reconnect"""
+        self.ten_env.log_warn(
+            f"Websocket internal error during connecting: {exp}."
         )
+        self._connect_exp_cnt += 1
+        if self._connect_exp_cnt > MAX_RETRY_TIMES_FOR_TRANSPORT:
+            self.ten_env.log_error(
+                f"Max retries ({MAX_RETRY_TIMES_FOR_TRANSPORT}) exceeded: {str(exp)}"
+            )
+            return exp
+        return None  # Return None to continue reconnection
+
+    async def _process_websocket(self) -> None:
+        """Main websocket connection monitoring and reconnection logic"""
         try:
-            # Try with additional_headers first (older websockets versions)
-            self.ws = await websockets.connect(
-                url,
+            self.ten_env.log_info("Starting websocket connection process")
+            # Use websockets.connect's automatic reconnection mechanism
+            async for ws in websockets.connect(
+                uri=self.config.api_url,
                 additional_headers=self.get_headers(),
                 max_size=100_000_000,
                 compression=None,
-            )
-        except TypeError:
-            # If additional_headers is not supported, try with extra_headers (newer versions)
-            try:
-                self.ws = await websockets.connect(
-                    url,
-                    extra_headers=self.get_headers(),
-                    max_size=100_000_000,
-                    compression=None,
-                )
-            except TypeError:
-                # If neither works, try without headers and add them manually
-                self.ws = await websockets.connect(
-                    url,
-                    max_size=100_000_000,
-                    compression=None,
-                )
-                # Note: In this case, headers would need to be sent differently
-                # This is a fallback and may not work for all servers
+                process_exception=self._process_ws_exception,
+            ):
+                self.ws = ws
+                try:
+                    self.ten_env.log_info("Websocket connected successfully")
+                    if self._session_closing:
+                        self.ten_env.log_info("Session is closing, break.")
+                        return
 
-    async def send_event(
-        self,
-        header: bytes,
-        optional: bytes | None = None,
-        payload: bytes = None,
-    ):
-        if self.ws is not None:
-            if self.ws.state != State.OPEN:
-                self.ten_env.log_warn(
-                    "WebSocket is not open, cannot send event"
-                )
-            else:
-                full_client_request = bytearray(header)
-                if optional is not None:
-                    full_client_request.extend(optional)
-                if payload is not None:
-                    payload_size = len(payload).to_bytes(4, "big", signed=False)
-                    full_client_request.extend(payload_size)
-                    full_client_request.extend(payload)
-                await self.ws.send(bytes(full_client_request))
+                    # Start send and receive tasks
+                    self.channel_tasks = [
+                        asyncio.create_task(self._send_loop(ws)),
+                        asyncio.create_task(self._receive_loop(ws)),
+                    ]
 
-    async def start_connection(self):
-        header = Header(
-            message_type=FULL_CLIENT_REQUEST,
-            message_type_specific_flags=MsgTypeFlagWithEvent,
-            serial_method=JSON,
-        ).as_bytes()
-        optional = Optional(event=EVENT_Start_Connection).as_bytes()
-        payload = b"{}"
-        await self.send_event(header, optional, payload)
-        res = self.parse_server_message(await self.ws.recv())
-        self._print_response(res, "start_connection")
-        if res.event != EVENT_ConnectionStarted:
-            raise ModuleVendorException(
-                ModuleErrorVendorInfo(
-                    vendor=self.vendor,
-                    code=str(res.event),
-                    message=f"Start connection failed with event: {res.event}",
-                )
-            )
+                    # Wait for receive loop to be ready before establishing connection
+                    await self._receive_ready_event.wait()
+                    await self.start_connection()
 
-    async def start_session(self):
-        header = Header(
-            message_type=FULL_CLIENT_REQUEST,
-            message_type_specific_flags=MsgTypeFlagWithEvent,
-            serial_method=JSON,
-        ).as_bytes()
-        optional = Optional(
-            event=EVENT_StartSession, sessionId=self.session_id
-        ).as_bytes()
-        payload = self.get_payload_bytes(
-            event=EVENT_StartSession, speaker=self.speaker
+                    await self._await_channel_tasks()
+
+                except websockets.ConnectionClosed as e:
+                    self.ten_env.log_info(f"Websocket connection closed: {e}.")
+                    if not self._session_closing:
+                        self.ten_env.log_info(
+                            "Websocket connection closed, will reconnect."
+                        )
+
+                        # Cancel all channel tasks
+                        for task in self.channel_tasks:
+                            task.cancel()
+                        await self._await_channel_tasks()
+
+                        # Reset all event states
+                        self._receive_ready_event.clear()
+                        self._connection_event.clear()
+                        self._session_event.clear()
+                        self._connection_success = False
+                        self._session_success = False
+                        self._session_started = False
+
+                        # Reset connection exception counter
+                        self._connect_exp_cnt = 0
+                        continue
+
+        except Exception as e:
+            self.ten_env.log_error(f"Exception in websocket process: {e}")
+        finally:
+            if self.ws:
+                await self.ws.close()
+            self.ten_env.log_info("Websocket connection process ended.")
+
+    async def _await_channel_tasks(self) -> None:
+        """Wait for channel tasks to complete"""
+        if not self.channel_tasks:
+            return
+
+        (done, pending) = await asyncio.wait(
+            self.channel_tasks,
+            return_when=asyncio.FIRST_EXCEPTION,
         )
-        await self.send_event(header, optional, payload)
-        res = self.parse_server_message(await self.ws.recv())
-        self._print_response(res, "start_session")
-        if res.event != EVENT_SessionStarted:
-            raise ModuleVendorException(
-                ModuleErrorVendorInfo(
-                    vendor=self.vendor,
-                    code=str(res.event),
-                    message=f"Start session failed with event: {res.event}",
-                )
-            )
+        self.ten_env.log_info("Channel tasks finished.")
 
-        asyncio.create_task(self.recv_loop())
+        self.channel_tasks.clear()
+
+        # Cancel remaining tasks
+        for task in pending:
+            task.cancel()
+
+        # Check for exceptions
+        for task in done:
+            exp = task.exception()
+            if exp and not isinstance(exp, asyncio.CancelledError):
+                raise exp
+
+    async def _establish_connection_and_session(self):
+        """Establish connection and session"""
+        await self.start_connection()
+        await self.start_session()
+
+    async def _send_loop(self, ws: WebSocketClientProtocol) -> None:
+        """Text sending loop"""
+        try:
+            while not self._session_closing:
+                # Get text to send from queue
+                text_data = await self.text_queue.get()
+                if text_data is None:  # End signal
+                    break
+
+                # Establish session before sending first text (if not already established)
+                if not self._session_started:
+                    await self.start_session()
+                    self._session_started = True
+
+                await self._send_text_internal(ws, text_data)
+        except Exception as e:
+            self.ten_env.log_error(f"Exception in send_loop: {e}")
+            raise e
+
+    async def _receive_loop(self, ws: WebSocketClientProtocol) -> None:
+        """Message receiving loop"""
+        try:
+            # Mark receive loop as ready
+            self._receive_ready_event.set()
+
+            async for message in ws:
+                if self._session_closing:
+                    self.ten_env.log_warn(
+                        "Session is closing, break receive loop."
+                    )
+                    break
+
+                try:
+                    server_response = self.handle_server_message(message)
+                    if server_response:
+                        await self._handle_server_response(server_response)
+                except Exception as e:
+                    self.ten_env.log_error(
+                        f"Error handling server message: {e}"
+                    )
+
+        except asyncio.CancelledError:
+            self.ten_env.log_debug("Receive loop cancelled")
+            raise
+        except Exception as e:
+            self.ten_env.log_error(f"Exception in receive_loop: {e}")
+            raise e
+
+    async def _handle_server_response(self, message: ServerResponse):
+        """Handle server responses"""
+        if message.event == EVENT_ConnectionStarted:
+            self._connection_success = True
+            self._connection_event.set()
+        elif message.event == EVENT_ConnectionFailed:
+            self._connection_success = False
+            self._connection_event.set()
+        elif message.event == EVENT_SessionStarted:
+            self._session_success = True
+            self._session_event.set()
+        elif message.event == EVENT_SessionFailed:
+            self._session_success = False
+            self._session_event.set()
+        elif message.event == EVENT_TTSResponse:
+            if message.payload and self.response_msgs is not None:
+                await self.response_msgs.put((message.event, message.payload))
+            else:
+                self.ten_env.log_error(
+                    "Received empty payload for TTS response"
+                )
+        elif message.event == EVENT_TTSSentenceEnd:
+            if self.response_msgs is not None:
+                await self.response_msgs.put((message.event, b""))
+        elif message.event == EVENT_SessionFinished:
+            if self.response_msgs is not None:
+                await self.response_msgs.put((message.event, b""))
 
     async def send_text(self, text: str):
+        """Send text (external interface)"""
+        await self.text_queue.put(text)
+
+    async def _send_text_internal(self, ws: WebSocketClientProtocol, text: str):
+        """Internal text sending implementation"""
+        self.ten_env.log_info(
+            f"KEYPOINT hugo Sending text to Bytedance: {text}"
+        )
         header = Header(
             message_type=FULL_CLIENT_REQUEST,
             message_type_specific_flags=MsgTypeFlagWithEvent,
@@ -410,7 +521,101 @@ class BytedanceV3Client:
         payload = self.get_payload_bytes(
             event=EVENT_TaskRequest, text=text, speaker=self.speaker
         )
-        await self.send_event(header, optional, payload)
+        await self.send_event(ws, header, optional, payload)
+
+    async def send_event(
+        self,
+        ws: WebSocketClientProtocol,
+        header: bytes,
+        optional: bytes | None = None,
+        payload: bytes = None,
+    ):
+        if ws is not None:
+            if ws.state != State.OPEN:
+                self.ten_env.log_warn(
+                    "WebSocket is not open, cannot send event"
+                )
+            else:
+                full_client_request = bytearray(header)
+                if optional is not None:
+                    full_client_request.extend(optional)
+                if payload is not None:
+                    payload_size = len(payload).to_bytes(4, "big", signed=False)
+                    full_client_request.extend(payload_size)
+                    full_client_request.extend(payload)
+                await ws.send(bytes(full_client_request))
+
+    async def start_connection(self):
+        # Reset connection event
+        self._connection_event.clear()
+        self._connection_success = False
+
+        header = Header(
+            message_type=FULL_CLIENT_REQUEST,
+            message_type_specific_flags=MsgTypeFlagWithEvent,
+            serial_method=JSON,
+        ).as_bytes()
+        optional = Optional(event=EVENT_Start_Connection).as_bytes()
+        payload = b"{}"
+        await self.send_event(self.ws, header, optional, payload)
+
+        # Wait for connection response
+        try:
+            await asyncio.wait_for(self._connection_event.wait(), timeout=10.0)
+            if not self._connection_success:
+                raise ModuleVendorException(
+                    ModuleErrorVendorInfo(
+                        vendor=self.vendor,
+                        code="CONNECTION_FAILED",
+                        message="Start connection failed",
+                    )
+                )
+        except asyncio.TimeoutError as exc:
+            raise ModuleVendorException(
+                ModuleErrorVendorInfo(
+                    vendor=self.vendor,
+                    code="TIMEOUT",
+                    message="Start connection timeout",
+                )
+            ) from exc
+
+    async def start_session(self):
+        # Reset session event
+        self._session_event.clear()
+        self._session_success = False
+
+        header = Header(
+            message_type=FULL_CLIENT_REQUEST,
+            message_type_specific_flags=MsgTypeFlagWithEvent,
+            serial_method=JSON,
+        ).as_bytes()
+        optional = Optional(
+            event=EVENT_StartSession, sessionId=self.session_id
+        ).as_bytes()
+        payload = self.get_payload_bytes(
+            event=EVENT_StartSession, speaker=self.speaker
+        )
+        await self.send_event(self.ws, header, optional, payload)
+
+        # Wait for session response
+        try:
+            await asyncio.wait_for(self._session_event.wait(), timeout=10.0)
+            if not self._session_success:
+                raise ModuleVendorException(
+                    ModuleErrorVendorInfo(
+                        vendor=self.vendor,
+                        code="SESSION_FAILED",
+                        message="Start session failed",
+                    )
+                )
+        except asyncio.TimeoutError as exc:
+            raise ModuleVendorException(
+                ModuleErrorVendorInfo(
+                    vendor=self.vendor,
+                    code="TIMEOUT",
+                    message="Start session timeout",
+                )
+            ) from exc
 
     async def finish_session(self):
         header = Header(
@@ -421,7 +626,9 @@ class BytedanceV3Client:
         optional = Optional(
             event=EVENT_FinishSession, sessionId=self.session_id
         ).as_bytes()
-        await self.send_event(header, optional, b"{}")
+        await self.send_event(self.ws, header, optional, b"{}")
+        # Reset session state, next text sending will re-establish session
+        self._session_started = False
 
     async def finish_connection(self):
         header = Header(
@@ -430,49 +637,14 @@ class BytedanceV3Client:
             serial_method=JSON,
         ).as_bytes()
         optional = Optional(event=EVENT_FinishConnection).as_bytes()
-        await self.send_event(header, optional, b"{}")
-
-    async def listen(self) -> AsyncGenerator[ServerResponse, None]:
-        assert self.ws is not None
-        try:
-            async for msg in self.ws:
-                yield self.handle_server_message(msg)
-        except asyncio.CancelledError:
-            self.ten_env.log_info("Receive messages task cancelled")
-
-    async def recv_loop(self):
-        async for message in self.listen():
-            self._print_response(message, "recv_loop")
-            if message.event != EVENT_TTSResponse:
-                self.ten_env.log_info(f"KEYPOINT Received message: {message}")
-            if message.event == EVENT_TTSResponse:
-                if message.payload and self.response_msgs is not None:
-                    await self.response_msgs.put(
-                        (message.event, message.payload)
-                    )
-                else:
-                    self.ten_env.log_error(
-                        "Received empty payload for TTS response"
-                    )
-            elif message.event == EVENT_TTSSentenceEnd:
-                if self.response_msgs is not None:
-                    await self.response_msgs.put((message.event, None))
-            elif message.event == EVENT_SessionFinished:
-                if self.response_msgs is not None:
-                    await self.response_msgs.put((message.event, None))
-            elif message.event in [
-                EVENT_ConnectionFinished,
-                EVENT_SessionFailed,
-            ]:
-                continue
-            else:
-                continue
+        await self.send_event(self.ws, header, optional, b"{}")
 
     def handle_server_message(self, message: str) -> ServerResponse:
         try:
             return self.parse_server_message(message)
         except Exception as e:
-            self.ten_env.log_info(f"Error handling message {e}")
+            self.ten_env.log_error(f"Error handling message {e}")
+            return None
 
     def parse_server_message(self, res) -> ServerResponse:
         try:
@@ -491,11 +663,27 @@ class BytedanceV3Client:
                     optional=response.optional.__dict__,
                 )
             elif response.header.message_type == ERROR_INFORMATION:
+                # Try to parse error payload
+                error_message = "Unknown error"
+                if response.payload:
+                    try:
+                        error_message = response.payload.decode("utf-8")
+                        self.ten_env.log_error(
+                            f"KEYPOINT decoded error payload: {error_message}"
+                        )
+                    except Exception as e:
+                        self.ten_env.log_error(
+                            f"Failed to decode error payload: {e}"
+                        )
+                        error_message = (
+                            f"Binary payload (length: {len(response.payload)})"
+                        )
+
                 raise ModuleVendorException(
                     ModuleErrorVendorInfo(
                         vendor=self.vendor,
-                        code=response.optional.event,
-                        message=response.payload_json or "Unknown error",
+                        code=str(response.optional.errorCode),
+                        message=error_message,
                     )
                 )
             else:
@@ -514,9 +702,184 @@ class BytedanceV3Client:
         )
         self.ten_env.log_debug(f"[{tag}] Payload JSON: {res.payload_json}")
 
+    def cancel(self) -> None:
+        """Cancel current connection, used for flush scenarios"""
+        self.ten_env.log_info("Cancelling the request.")
+
+        # The websocket connection might be not established yet, if so, using
+        # this flag to close the connection directly.
+        self._session_closing = True
+
+        # Note that the websocket connection might not be established yet
+        # (i.e., self.channel_tasks is empty).
+        for task in self.channel_tasks:
+            task.cancel()
+
+        # Clear all queues to prevent old data from being processed
+        self._clear_queues()
+
+        # We do not wait the websocket_task to be completed, as the duration
+        # of closing the websocket might be more than 10 seconds by default.
+        #
+        # After the sender/receiver tasks are completed, `self._process_websocket()`
+        # should be quit soon, and then `close()` will be called on the
+        # websocket connection at exit of function. So the websocket connection
+        # will be closed eventually.
+
+    def _clear_queues(self) -> None:
+        """Clear all queues to prevent old data from being processed"""
+        # Clear text queue
+        while not self.text_queue.empty():
+            try:
+                self.text_queue.get_nowait()
+            except asyncio.QueueEmpty:
+                break
+
+        # Clear response messages queue
+        if self.response_msgs:
+            while not self.response_msgs.empty():
+                try:
+                    self.response_msgs.get_nowait()
+                except asyncio.QueueEmpty:
+                    break
+
+        self.ten_env.log_info("All queues cleared during cancel")
+
     async def close(self):
-        # Close the websocket connection if it exists
+        self.ten_env.log_info("Closing BytedanceV3Synthesizer")
+
+        # Set closing flag
+        self._session_closing = True
+
+        # Send end signal to text queue
+        await self.text_queue.put(None)
+
+        # Cancel websocket task
+        if self.websocket_task:
+            self.websocket_task.cancel()
+            try:
+                await self.websocket_task
+            except asyncio.CancelledError:
+                pass
+
+        # Close websocket connection
         if self.ws:
             await self.ws.close()
             self.ws = None
         self.response_msgs = None
+
+
+class BytedanceV3Client:
+    def __init__(
+        self,
+        config: BytedanceTTSDuplexConfig,
+        ten_env: AsyncTenEnv,
+        vendor: str,
+        response_msgs: asyncio.Queue[Tuple[int, bytes]],
+    ):
+        self.config = config
+        self.ten_env = ten_env
+        self.vendor = vendor
+        self.response_msgs = response_msgs
+
+        # Current active synthesizer
+        self.synthesizer: BytedanceV3Synthesizer = self._create_synthesizer()
+
+        # List of synthesizers to be cleaned up
+        self.cancelled_synthesizers = []
+
+        # Cleanup task
+        self.cleanup_task = asyncio.create_task(
+            self._cleanup_cancelled_synthesizers()
+        )
+
+    def _create_synthesizer(self) -> BytedanceV3Synthesizer:
+        """Create new synthesizer instance"""
+        return BytedanceV3Synthesizer(
+            self.config, self.ten_env, self.vendor, self.response_msgs
+        )
+
+    async def _cleanup_cancelled_synthesizers(self) -> None:
+        """Periodically clean up completed cancelled synthesizers"""
+        while True:
+            try:
+                for synthesizer in self.cancelled_synthesizers[:]:
+                    if (
+                        synthesizer.websocket_task
+                        and synthesizer.websocket_task.done()
+                    ):
+                        self.ten_env.log_info(
+                            f"Cleaning up cancelled synthesizer {id(synthesizer)}"
+                        )
+                        self.cancelled_synthesizers.remove(synthesizer)
+
+                await asyncio.sleep(5.0)  # Check every 5 seconds
+            except Exception as e:
+                self.ten_env.log_error(f"Error in cleanup task: {e}")
+                await asyncio.sleep(5.0)
+
+    def cancel(self) -> None:
+        """Cancel current synthesizer and create new synthesizer"""
+        self.ten_env.log_info(
+            "Cancelling current synthesizer and creating new one"
+        )
+
+        # Clear response messages queue to prevent old data from being processed
+        if self.response_msgs:
+            while not self.response_msgs.empty():
+                try:
+                    self.response_msgs.get_nowait()
+                except asyncio.QueueEmpty:
+                    break
+            self.ten_env.log_info(
+                "Response messages queue cleared during cancel"
+            )
+
+        # Move current synthesizer to cleanup list
+        if self.synthesizer:
+            self.cancelled_synthesizers.append(self.synthesizer)
+            self.synthesizer.cancel()
+
+        # Create new synthesizer
+        self.synthesizer = self._create_synthesizer()
+        self.ten_env.log_info("New synthesizer created successfully")
+
+    async def send_text(self, text: str):
+        """Send text"""
+        await self.synthesizer.send_text(text)
+
+    async def finish_session(self):
+        """Finish session"""
+        await self.synthesizer.finish_session()
+
+    async def finish_connection(self):
+        """Finish connection"""
+        await self.synthesizer.finish_connection()
+
+    async def close(self):
+        """Close client"""
+        self.ten_env.log_info("Closing BytedanceV3Client")
+
+        # Cancel cleanup task
+        if self.cleanup_task:
+            self.cleanup_task.cancel()
+            try:
+                await self.cleanup_task
+            except asyncio.CancelledError:
+                pass
+
+        # Close current synthesizer
+        if self.synthesizer:
+            await self.synthesizer.close()
+
+        # Close all cancelled synthesizers
+        for synthesizer in self.cancelled_synthesizers:
+            try:
+                await synthesizer.close()
+            except Exception as e:
+                self.ten_env.log_error(
+                    f"Error closing cancelled synthesizer: {e}"
+                )
+
+        self.cancelled_synthesizers.clear()
+        self.ten_env.log_info("BytedanceV3Client closed")
