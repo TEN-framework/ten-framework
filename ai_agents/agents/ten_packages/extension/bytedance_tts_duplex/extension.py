@@ -319,6 +319,7 @@ class BytedanceTTSDuplexExtension(AsyncTTS2BaseExtension):
 
                 # 会话结束后，连接会自动重连准备下一轮
                 await self.client.finish_connection()
+
         except ModuleVendorException as e:
             self.ten_env.log_error(
                 f"ModuleVendorException in request_tts: {traceback.format_exc()}. text: {t.text}"

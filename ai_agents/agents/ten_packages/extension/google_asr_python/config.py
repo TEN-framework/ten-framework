@@ -68,6 +68,9 @@ class GoogleASRConfig(BaseModel):
     # Timeout settings
     recognition_timeout: int = 60  # Recognition timeout in seconds
     connection_timeout: int = 30  # Connection timeout in seconds
+    stream_max_duration: int = (
+        270  # Max stream duration in seconds (Google default is 300s, we use 270s to be safe)
+    )
 
     # Retry settings
     max_retry_attempts: int = 3  # Maximum retry attempts on failure

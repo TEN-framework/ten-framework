@@ -293,38 +293,12 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                 )
                 return
 
-            # Check if connection is healthy and tasks are running
+            # Check if connection is healthy
             if not self.client.is_connection_healthy():
                 self.ten_env.log_info(
-                    f"Connection not healthy, reconnecting for request: {t.request_id}"
+                    f"Connection not healthy, starting connection for request: {t.request_id}"
                 )
                 await self.client.start_connection()
-            else:
-                # Check if text_to_speech_ws_streaming task is still running
-                if (
-                    self.client.ws_send_task is None
-                    or self.client.ws_send_task.done()
-                    or self.client.ws_send_task.cancelled()
-                ):
-                    self.ten_env.log_info(
-                        f"Restarting text_to_speech_ws_streaming task for request: {t.request_id}"
-                    )
-                    self.client.ws_send_task = asyncio.create_task(
-                        self.client.text_to_speech_ws_streaming()
-                    )
-
-                # Check if ws_recv_loop task is still running
-                if (
-                    self.client.ws_recv_task is None
-                    or self.client.ws_recv_task.done()
-                    or self.client.ws_recv_task.cancelled()
-                ):
-                    self.ten_env.log_info(
-                        f"Restarting ws_recv_loop task for request: {t.request_id}"
-                    )
-                    self.client.ws_recv_task = asyncio.create_task(
-                        self.client.ws_recv_loop()
-                    )
 
             self.ten_env.log_debug(
                 f"Putting TTS request into queue: {t.request_id}"
