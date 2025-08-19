@@ -30,10 +30,7 @@ use crate::{
     pkg_info::belonging_pkg_info_find_by_graph_info_mut,
 };
 
-use crate::graph::{
-    graphs_cache_find_by_id_mut,
-    update_graph_connections_in_property_all_fields,
-};
+use crate::graph::graphs_cache_find_by_id_mut;
 
 use crate::fs::json::patch_property_json_file;
 
