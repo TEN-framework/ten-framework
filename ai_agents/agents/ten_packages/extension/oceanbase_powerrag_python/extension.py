@@ -217,6 +217,13 @@ class OceanBasePowerRAGExtension(AsyncLLMBaseExtension):
         if not input_messages:
             ten_env.log_warn("No message in data")
 
+        # Send fixed response first
+        self.send_text_output(
+            ten_env,
+            sentence="PowerRAG is processing your request, please wait...",
+            end_of_segment=True,
+        )
+
         total_output = ""
         sentence_fragment = ""
 
