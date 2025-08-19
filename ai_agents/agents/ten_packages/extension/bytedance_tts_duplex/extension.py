@@ -53,6 +53,7 @@ class BytedanceTTSDuplexExtension(AsyncTTS2BaseExtension):
         self.last_completed_request_id: str | None = (
             None  # 最新完成的 request_id
         )
+        self.is_reconnecting = False
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         try:
@@ -223,6 +224,7 @@ class BytedanceTTSDuplexExtension(AsyncTTS2BaseExtension):
             self.ten_env.log_info(
                 f"KEYPOINT Connecting to service for request ID: {self.current_request_id}"
             )
+
             await self.client.connect()
             await self.client.start_connection()
             await self.client.start_session()
@@ -247,8 +249,18 @@ class BytedanceTTSDuplexExtension(AsyncTTS2BaseExtension):
         Reconnect to the TTS service.
         This method is called when the connection is lost or needs to be re-established.
         """
-        await self._stop_connection()
-        await self._start_connection()
+        if self.is_reconnecting:
+            self.ten_env.log_warn("Reconnection already in progress, skipping.")
+            return
+
+        self.is_reconnecting = True
+        try:
+            await self._stop_connection()
+            await self._start_connection()
+        except Exception as e:
+            self.ten_env.log_error(f"Error during reconnection: {e}")
+        finally:
+            self.is_reconnecting = False
 
     def vendor(self) -> str:
         return "bytedance"
@@ -348,11 +360,7 @@ class BytedanceTTSDuplexExtension(AsyncTTS2BaseExtension):
 
                 # close connection after session is finished
                 await self.client.finish_connection()
-                await self.client.close()
-                self.client = None
-
-                # restart connection to prepare for the next request
-                await self._start_connection()
+                await self._reconnect()
         except ModuleVendorException as e:
             self.ten_env.log_error(
                 f"ModuleVendorException in request_tts: {traceback.format_exc()}. text: {t.text}"
