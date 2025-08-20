@@ -130,7 +130,7 @@ TEST(ExtensionTest, EngineLongRunningMode) {  // NOLINT
     client = new ten::msgpack_tcp_client_t("msgpack://127.0.0.1:8001/");
 
     // Send graph.
-    auto start_graph_cmd = ten::cmd_start_graph_t::create();
+    auto start_graph_cmd = ten::start_graph_cmd_t::create();
     start_graph_cmd->set_long_running_mode(true);
     start_graph_cmd->set_graph_from_json(
         R"({
@@ -165,7 +165,7 @@ TEST(ExtensionTest, EngineLongRunningMode) {  // NOLINT
 
     if (cmd_result) {
       ten_test::check_status_code(cmd_result, TEN_STATUS_CODE_OK);
-      graph_id = cmd_result->get_property_string("detail");
+      graph_id = cmd_result->get_property_string("graph_id");
 
       break;
     } else {

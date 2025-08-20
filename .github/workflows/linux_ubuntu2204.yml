@@ -88,7 +88,7 @@ jobs:
             export PATH=$PATH:$(go env GOPATH)/bin
             go1.24.3 download
             go1.24.3 version
-            rustup default nightly
+            rustup default nightly-2025-08-10
           fi
 
           df -h .
@@ -419,7 +419,7 @@ jobs:
 
           df -h .
 
-  test-integration:
+  test-integration-ten-manager:
     needs: build
     runs-on: ubuntu-latest
     strategy:
@@ -525,7 +525,285 @@ jobs:
 
           df -h .
 
-      - name: Run tests (ten_runtime integration tests)
+  test-integration-cpp:
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        compiler: [gcc, clang]
+        build_type: [debug, release]
+        arch: [x64, x86]
+        include:
+          - compiler: gcc
+            build_type: debug
+            arch: x86
+        exclude:
+          - compiler: clang
+            arch: x86
+    container:
+      image: ghcr.io/ten-framework/ten_building_ubuntu2204
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+
+      - name: Trust working directory
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
+      - name: Initialize and update submodules except portal/
+        run: |
+          # Retrieve all submodule paths, excluding `portal/`.
+          submodules=$(git config --file .gitmodules --get-regexp path | awk '$2 != "portal" { print $2 }')
+
+          git submodule init
+
+          for submodule in $submodules; do
+            echo "Initializing submodule: $submodule"
+            git submodule update --init --recursive --depth 1 "$submodule"
+          done
+
+      - name: Download build artifacts (tar archive)
+        uses: actions/download-artifact@v4
+        with:
+          name: tests-artifacts-${{ matrix.compiler }}-${{ matrix.build_type }}-${{ matrix.arch }}
+          path: out/linux/${{ matrix.arch }}
+
+      - name: Extract tests artifacts preserving permissions
+        run: |
+          tar -xzf out/linux/${{ matrix.arch }}/tests-artifacts.tar.gz
+
+      - name: View folder structure content
+        run: |
+          df -h .
+          tree -I ".*|*.h|*.hpp|*.py" out/linux/${{ matrix.arch }}
+
+      - name: Set ulimit and sysctl
+        run: |
+          # Because there are concurrent test cases which involves many
+          # concurrent socket connections, we need to enlarge the maximum number
+          # of the opened file descriptor.
+          ulimit -n 102400
+
+          # Because there are concurrent test cases (in 'smoke' and
+          # 'integration') which will create many concurrent connections
+          # simutaneously, we increase the TCP listening backlog value to 8192.
+          sysctl -w net.core.somaxconn=8192
+        shell: bash
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Update tman config.json
+        if: matrix.arch == 'x64'
+        run: |
+          CONFIG_FILE="out/linux/${{ matrix.arch }}/tests/local_registry/config.json"
+          echo "Before update:"
+          cat $CONFIG_FILE
+          sed -i "s|\(file://\)[^\"]*\(out\/linux\/${{ matrix.arch }}\/tests\/local_registry\)|\1${GITHUB_WORKSPACE}/\2|" $CONFIG_FILE
+          echo "After update:"
+          cat $CONFIG_FILE
+
+      - name: Install Python dependencies via script
+        run: |
+          python .github/tools/setup_pytest_dependencies.py
+
+          df -h .
+
+      - name: Run tests (ten_runtime C++ integration tests)
+        if: matrix.arch == 'x64'
+        env:
+          ASAN_OPTIONS: detect_leaks=1:detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
+          MALLOC_CHECK_: 3
+          TEN_ENABLE_MEMORY_TRACKING: "true"
+          TEN_ENABLE_BACKTRACE_DUMP: "true"
+          GOTRACEBACK: crash
+        run: |
+          df -h .
+
+          export PATH=$(pwd)/core/ten_gn:$PATH
+          cd out/linux/${{ matrix.arch }}/
+          pytest -s tests/ten_runtime/integration/cpp/
+
+          df -h .
+
+  test-integration-go:
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        compiler: [gcc, clang]
+        build_type: [debug, release]
+        arch: [x64]
+    container:
+      image: ghcr.io/ten-framework/ten_building_ubuntu2204
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+
+      - name: Trust working directory
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
+      - name: Initialize and update submodules except portal/
+        run: |
+          # Retrieve all submodule paths, excluding `portal/`.
+          submodules=$(git config --file .gitmodules --get-regexp path | awk '$2 != "portal" { print $2 }')
+
+          git submodule init
+
+          for submodule in $submodules; do
+            echo "Initializing submodule: $submodule"
+            git submodule update --init --recursive --depth 1 "$submodule"
+          done
+
+      - name: Download build artifacts (tar archive)
+        uses: actions/download-artifact@v4
+        with:
+          name: tests-artifacts-${{ matrix.compiler }}-${{ matrix.build_type }}-${{ matrix.arch }}
+          path: out/linux/${{ matrix.arch }}
+
+      - name: Extract tests artifacts preserving permissions
+        run: |
+          tar -xzf out/linux/${{ matrix.arch }}/tests-artifacts.tar.gz
+
+      - name: View folder structure content
+        run: |
+          df -h .
+          tree -I ".*|*.h|*.hpp|*.py" out/linux/${{ matrix.arch }}
+
+      - name: Set ulimit and sysctl
+        run: |
+          # Because there are concurrent test cases which involves many
+          # concurrent socket connections, we need to enlarge the maximum number
+          # of the opened file descriptor.
+          ulimit -n 102400
+
+          # Because there are concurrent test cases (in 'smoke' and
+          # 'integration') which will create many concurrent connections
+          # simutaneously, we increase the TCP listening backlog value to 8192.
+          sysctl -w net.core.somaxconn=8192
+        shell: bash
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Update tman config.json
+        if: matrix.arch == 'x64'
+        run: |
+          CONFIG_FILE="out/linux/${{ matrix.arch }}/tests/local_registry/config.json"
+          echo "Before update:"
+          cat $CONFIG_FILE
+          sed -i "s|\(file://\)[^\"]*\(out\/linux\/${{ matrix.arch }}\/tests\/local_registry\)|\1${GITHUB_WORKSPACE}/\2|" $CONFIG_FILE
+          echo "After update:"
+          cat $CONFIG_FILE
+
+      - name: Install Python dependencies via script
+        run: |
+          python .github/tools/setup_pytest_dependencies.py
+
+          df -h .
+
+      - name: Run tests (ten_runtime Go integration tests)
+        if: matrix.arch == 'x64'
+        env:
+          ASAN_OPTIONS: detect_leaks=1:detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
+          MALLOC_CHECK_: 3
+          TEN_ENABLE_MEMORY_TRACKING: "true"
+          TEN_ENABLE_BACKTRACE_DUMP: "true"
+          GOTRACEBACK: crash
+        run: |
+          df -h .
+
+          export PATH=$(pwd)/core/ten_gn:$PATH
+          cd out/linux/${{ matrix.arch }}/
+          pytest -s tests/ten_runtime/integration/go/
+
+          df -h .
+
+  test-integration-python:
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        compiler: [gcc, clang]
+        build_type: [debug, release]
+        arch: [x64]
+    container:
+      image: ghcr.io/ten-framework/ten_building_ubuntu2204
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+
+      - name: Trust working directory
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
+      - name: Initialize and update submodules except portal/
+        run: |
+          # Retrieve all submodule paths, excluding `portal/`.
+          submodules=$(git config --file .gitmodules --get-regexp path | awk '$2 != "portal" { print $2 }')
+
+          git submodule init
+
+          for submodule in $submodules; do
+            echo "Initializing submodule: $submodule"
+            git submodule update --init --recursive --depth 1 "$submodule"
+          done
+
+      - name: Download build artifacts (tar archive)
+        uses: actions/download-artifact@v4
+        with:
+          name: tests-artifacts-${{ matrix.compiler }}-${{ matrix.build_type }}-${{ matrix.arch }}
+          path: out/linux/${{ matrix.arch }}
+
+      - name: Extract tests artifacts preserving permissions
+        run: |
+          tar -xzf out/linux/${{ matrix.arch }}/tests-artifacts.tar.gz
+
+      - name: View folder structure content
+        run: |
+          df -h .
+          tree -I ".*|*.h|*.hpp|*.py" out/linux/${{ matrix.arch }}
+
+      - name: Set ulimit and sysctl
+        run: |
+          # Because there are concurrent test cases which involves many
+          # concurrent socket connections, we need to enlarge the maximum number
+          # of the opened file descriptor.
+          ulimit -n 102400
+
+          # Because there are concurrent test cases (in 'smoke' and
+          # 'integration') which will create many concurrent connections
+          # simutaneously, we increase the TCP listening backlog value to 8192.
+          sysctl -w net.core.somaxconn=8192
+        shell: bash
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Update tman config.json
+        if: matrix.arch == 'x64'
+        run: |
+          CONFIG_FILE="out/linux/${{ matrix.arch }}/tests/local_registry/config.json"
+          echo "Before update:"
+          cat $CONFIG_FILE
+          sed -i "s|\(file://\)[^\"]*\(out\/linux\/${{ matrix.arch }}\/tests\/local_registry\)|\1${GITHUB_WORKSPACE}/\2|" $CONFIG_FILE
+          echo "After update:"
+          cat $CONFIG_FILE
+
+      - name: Install Python dependencies via script
+        run: |
+          python .github/tools/setup_pytest_dependencies.py
+
+          df -h .
+
+      - name: Run tests (ten_runtime Python integration tests)
         if: matrix.arch == 'x64'
         env:
           ASAN_OPTIONS: detect_leaks=1:detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
@@ -558,6 +836,102 @@ jobs:
 
           export PATH=$(pwd)/core/ten_gn:$PATH
           cd out/linux/${{ matrix.arch }}/
-          pytest -s tests/ten_runtime/integration/
+          pytest -s tests/ten_runtime/integration/python/
+
+          df -h .
+
+  test-integration-nodejs:
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        compiler: [gcc, clang]
+        build_type: [debug, release]
+        arch: [x64]
+    container:
+      image: ghcr.io/ten-framework/ten_building_ubuntu2204
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+
+      - name: Trust working directory
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
+      - name: Initialize and update submodules except portal/
+        run: |
+          # Retrieve all submodule paths, excluding `portal/`.
+          submodules=$(git config --file .gitmodules --get-regexp path | awk '$2 != "portal" { print $2 }')
+
+          git submodule init
+
+          for submodule in $submodules; do
+            echo "Initializing submodule: $submodule"
+            git submodule update --init --recursive --depth 1 "$submodule"
+          done
+
+      - name: Download build artifacts (tar archive)
+        uses: actions/download-artifact@v4
+        with:
+          name: tests-artifacts-${{ matrix.compiler }}-${{ matrix.build_type }}-${{ matrix.arch }}
+          path: out/linux/${{ matrix.arch }}
+
+      - name: Extract tests artifacts preserving permissions
+        run: |
+          tar -xzf out/linux/${{ matrix.arch }}/tests-artifacts.tar.gz
+
+      - name: View folder structure content
+        run: |
+          df -h .
+          tree -I ".*|*.h|*.hpp|*.py" out/linux/${{ matrix.arch }}
+
+      - name: Set ulimit and sysctl
+        run: |
+          # Because there are concurrent test cases which involves many
+          # concurrent socket connections, we need to enlarge the maximum number
+          # of the opened file descriptor.
+          ulimit -n 102400
+
+          # Because there are concurrent test cases (in 'smoke' and
+          # 'integration') which will create many concurrent connections
+          # simutaneously, we increase the TCP listening backlog value to 8192.
+          sysctl -w net.core.somaxconn=8192
+        shell: bash
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Update tman config.json
+        if: matrix.arch == 'x64'
+        run: |
+          CONFIG_FILE="out/linux/${{ matrix.arch }}/tests/local_registry/config.json"
+          echo "Before update:"
+          cat $CONFIG_FILE
+          sed -i "s|\(file://\)[^\"]*\(out\/linux\/${{ matrix.arch }}\/tests\/local_registry\)|\1${GITHUB_WORKSPACE}/\2|" $CONFIG_FILE
+          echo "After update:"
+          cat $CONFIG_FILE
+
+      - name: Install Python dependencies via script
+        run: |
+          python .github/tools/setup_pytest_dependencies.py
+
+          df -h .
+
+      - name: Run tests (ten_runtime Nodejs integration tests)
+        if: matrix.arch == 'x64'
+        env:
+          ASAN_OPTIONS: detect_leaks=1:detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
+          MALLOC_CHECK_: 3
+          TEN_ENABLE_MEMORY_TRACKING: "true"
+          TEN_ENABLE_BACKTRACE_DUMP: "true"
+          GOTRACEBACK: crash
+        run: |
+          df -h .
+
+          export PATH=$(pwd)/core/ten_gn:$PATH
+          cd out/linux/${{ matrix.arch }}/
+          pytest -s tests/ten_runtime/integration/nodejs/
 
           df -h .

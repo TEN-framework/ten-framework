@@ -75,13 +75,8 @@ class value_t {
   // @{
   // Create a TEN value of 'ptr' type for all types of C++ pointers.
   template <typename V>
-  explicit value_t(V *value) {
-    if (value == nullptr) {
-      c_value_ = ten_value_create_invalid();
-    } else {
-      c_value_ = ten_value_create_ptr(value, nullptr, nullptr, nullptr);
-    }
-  }
+  explicit value_t(V *value)
+      : c_value_(ten_value_create_ptr(value, nullptr, nullptr, nullptr)) {}
   // @}
 
   template <typename T>

@@ -146,7 +146,7 @@ void *client_thread_main(TEN_UNUSED void *args) {
     client = new ten::msgpack_tcp_client_t("msgpack://127.0.0.1:8001/");
 
     // Send graph.
-    auto start_graph_cmd = ten::cmd_start_graph_t::create();
+    auto start_graph_cmd = ten::start_graph_cmd_t::create();
     start_graph_cmd->set_graph_from_json(R"({
            "nodes": [{
                  "type": "extension",

@@ -1235,6 +1235,9 @@ static bool ten_raw_msg_set_property(ten_msg_t *self, const char *path,
   if (!path || !strlen(path)) {
     // If the path is empty, clear and set all properties.
     ten_value_deinit(&self->properties);
+
+    TEN_ASSERT(ten_value_is_object(value), "Should not happen.");
+
     bool result = ten_value_init_object_with_move(&self->properties,
                                                   ten_value_peek_object(value));
     if (result) {
@@ -1262,7 +1265,7 @@ static bool ten_raw_msg_set_property(ten_msg_t *self, const char *path,
     case TEN_VALUE_PATH_ITEM_TYPE_OBJECT_ITEM: {
       if ((item_iter.index == 0) &&
           !strcmp(TEN_STR_TEN, ten_string_get_raw_str(&item->obj_item_str))) {
-        // It is the 'ten::' namespace.
+        // It is the 'ten:' namespace.
         in_ten_namespace = true;
 
         // Remove the 'ten' namespace path part.

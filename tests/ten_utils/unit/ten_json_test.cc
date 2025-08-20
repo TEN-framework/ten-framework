@@ -7,6 +7,7 @@
 #include <cstring>
 
 #include "gtest/gtest.h"
+#include "include_internal/ten_utils/lib/json.h"
 #include "ten_utils/lib/json.h"
 #include "ten_utils/macro/memory.h"
 

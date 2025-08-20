@@ -40,7 +40,8 @@ bool ten_value_check_integrity(ten_value_t *self) {
 
 static bool ten_value_copy_int8(ten_value_t *dest, ten_value_t *src,
                                 TEN_UNUSED ten_error_t *err) {
-  TEN_ASSERT(dest && src, "Invalid argument.");
+  TEN_ASSERT(dest, "Invalid argument.");
+  TEN_ASSERT(src, "Invalid argument.");
   TEN_ASSERT(src->type == TEN_TYPE_INT8, "Invalid argument.");
 
   dest->content.int8 = src->content.int8;
@@ -76,7 +77,8 @@ bool ten_value_init_int8(ten_value_t *self, int8_t value) {
 
 static bool ten_value_copy_int16(ten_value_t *dest, ten_value_t *src,
                                  TEN_UNUSED ten_error_t *err) {
-  TEN_ASSERT(dest && src, "Invalid argument.");
+  TEN_ASSERT(dest, "Invalid argument.");
+  TEN_ASSERT(src, "Invalid argument.");
   TEN_ASSERT(src->type == TEN_TYPE_INT16, "Invalid argument.");
 
   dest->content.int16 = src->content.int16;
@@ -101,7 +103,8 @@ bool ten_value_init_int16(ten_value_t *self, int16_t value) {
 
 static bool ten_value_copy_int32(ten_value_t *dest, ten_value_t *src,
                                  TEN_UNUSED ten_error_t *err) {
-  TEN_ASSERT(dest && src, "Invalid argument.");
+  TEN_ASSERT(dest, "Invalid argument.");
+  TEN_ASSERT(src, "Invalid argument.");
   TEN_ASSERT(src->type == TEN_TYPE_INT32, "Invalid argument.");
 
   dest->content.int32 = src->content.int32;
@@ -126,7 +129,8 @@ bool ten_value_init_int32(ten_value_t *self, int32_t value) {
 
 static bool ten_value_copy_int64(ten_value_t *dest, ten_value_t *src,
                                  TEN_UNUSED ten_error_t *err) {
-  TEN_ASSERT(dest && src, "Invalid argument.");
+  TEN_ASSERT(dest, "Invalid argument.");
+  TEN_ASSERT(src, "Invalid argument.");
   TEN_ASSERT(src->type == TEN_TYPE_INT64, "Invalid argument.");
 
   dest->content.int64 = src->content.int64;
@@ -151,7 +155,8 @@ bool ten_value_init_int64(ten_value_t *self, int64_t value) {
 
 static bool ten_value_copy_uint8(ten_value_t *dest, ten_value_t *src,
                                  TEN_UNUSED ten_error_t *err) {
-  TEN_ASSERT(dest && src, "Invalid argument.");
+  TEN_ASSERT(dest, "Invalid argument.");
+  TEN_ASSERT(src, "Invalid argument.");
   TEN_ASSERT(src->type == TEN_TYPE_UINT8, "Invalid argument.");
 
   dest->content.uint8 = src->content.uint8;
@@ -176,7 +181,8 @@ bool ten_value_init_uint8(ten_value_t *self, uint8_t value) {
 
 static bool ten_value_copy_uint16(ten_value_t *dest, ten_value_t *src,
                                   TEN_UNUSED ten_error_t *err) {
-  TEN_ASSERT(dest && src, "Invalid argument.");
+  TEN_ASSERT(dest, "Invalid argument.");
+  TEN_ASSERT(src, "Invalid argument.");
   TEN_ASSERT(src->type == TEN_TYPE_UINT16, "Invalid argument.");
 
   dest->content.uint16 = src->content.uint16;
@@ -201,7 +207,8 @@ bool ten_value_init_uint16(ten_value_t *self, uint16_t value) {
 
 static bool ten_value_copy_uint32(ten_value_t *dest, ten_value_t *src,
                                   TEN_UNUSED ten_error_t *err) {
-  TEN_ASSERT(dest && src, "Invalid argument.");
+  TEN_ASSERT(dest, "Invalid argument.");
+  TEN_ASSERT(src, "Invalid argument.");
   TEN_ASSERT(src->type == TEN_TYPE_UINT32, "Invalid argument.");
 
   dest->content.uint32 = src->content.uint32;
@@ -226,7 +233,8 @@ bool ten_value_init_uint32(ten_value_t *self, uint32_t value) {
 
 static bool ten_value_copy_uint64(ten_value_t *dest, ten_value_t *src,
                                   TEN_UNUSED ten_error_t *err) {
-  TEN_ASSERT(dest && src, "Invalid argument.");
+  TEN_ASSERT(dest, "Invalid argument.");
+  TEN_ASSERT(src, "Invalid argument.");
   TEN_ASSERT(src->type == TEN_TYPE_UINT64, "Invalid argument.");
 
   dest->content.uint64 = src->content.uint64;
@@ -251,7 +259,8 @@ bool ten_value_init_uint64(ten_value_t *self, uint64_t value) {
 
 static bool ten_value_copy_float32(ten_value_t *dest, ten_value_t *src,
                                    TEN_UNUSED ten_error_t *err) {
-  TEN_ASSERT(dest && src, "Invalid argument.");
+  TEN_ASSERT(dest, "Invalid argument.");
+  TEN_ASSERT(src, "Invalid argument.");
   TEN_ASSERT(src->type == TEN_TYPE_FLOAT32, "Invalid argument.");
 
   dest->content.float32 = src->content.float32;
@@ -276,7 +285,8 @@ bool ten_value_init_float32(ten_value_t *self, float value) {
 
 static bool ten_value_copy_float64(ten_value_t *dest, ten_value_t *src,
                                    TEN_UNUSED ten_error_t *err) {
-  TEN_ASSERT(dest && src, "Invalid argument.");
+  TEN_ASSERT(dest, "Invalid argument.");
+  TEN_ASSERT(src, "Invalid argument.");
   TEN_ASSERT(src->type == TEN_TYPE_FLOAT64, "Invalid argument.");
 
   dest->content.float64 = src->content.float64;
@@ -311,7 +321,8 @@ bool ten_value_init_null(ten_value_t *self) {
 
 static bool ten_value_copy_bool(ten_value_t *dest, ten_value_t *src,
                                 TEN_UNUSED ten_error_t *err) {
-  TEN_ASSERT(dest && src, "Invalid argument.");
+  TEN_ASSERT(dest, "Invalid argument.");
+  TEN_ASSERT(src, "Invalid argument.");
   TEN_ASSERT(src->type == TEN_TYPE_BOOL, "Invalid argument.");
 
   dest->content.boolean = src->content.boolean;
@@ -336,7 +347,8 @@ bool ten_value_init_bool(ten_value_t *self, bool value) {
 
 static bool ten_value_copy_construct_string(ten_value_t *dest, ten_value_t *src,
                                             TEN_UNUSED ten_error_t *err) {
-  TEN_ASSERT(dest && src, "Invalid argument.");
+  TEN_ASSERT(dest, "Invalid argument.");
+  TEN_ASSERT(src, "Invalid argument.");
   TEN_ASSERT(ten_value_is_string(src), "Invalid argument.");
 
   ten_string_init_from_string(&dest->content.string, &src->content.string);
@@ -399,7 +411,8 @@ bool ten_value_init_string_with_size(ten_value_t *self, const char *str,
 
 static bool ten_value_copy_array(ten_value_t *dest, ten_value_t *src,
                                  TEN_UNUSED ten_error_t *err) {
-  TEN_ASSERT(dest && src, "Invalid argument.");
+  TEN_ASSERT(dest, "Invalid argument.");
+  TEN_ASSERT(src, "Invalid argument.");
   TEN_ASSERT(src->type == TEN_TYPE_ARRAY, "Invalid argument.");
 
   ten_list_init(&dest->content.array);
@@ -445,7 +458,8 @@ bool ten_value_init_array_with_move(ten_value_t *self, ten_list_t *value) {
 
 static bool ten_value_copy_ptr_default(ten_value_t *dest, ten_value_t *src,
                                        TEN_UNUSED ten_error_t *err) {
-  TEN_ASSERT(dest && src, "Invalid argument.");
+  TEN_ASSERT(dest, "Invalid argument.");
+  TEN_ASSERT(src, "Invalid argument.");
   TEN_ASSERT(src->type == TEN_TYPE_PTR, "Invalid argument.");
 
   dest->content.ptr = src->content.ptr;
@@ -479,7 +493,8 @@ static void ten_value_init_ptr(ten_value_t *self, void *ptr,
 
 static bool ten_value_copy_buf(ten_value_t *dest, ten_value_t *src,
                                TEN_UNUSED ten_error_t *err) {
-  TEN_ASSERT(dest && src, "Invalid argument.");
+  TEN_ASSERT(dest, "Invalid argument.");
+  TEN_ASSERT(src, "Invalid argument.");
   TEN_ASSERT(src->type == TEN_TYPE_BUF, "Invalid argument.");
 
   ten_buf_t *src_buf = &src->content.buf;
@@ -538,7 +553,8 @@ static void ten_value_init_buf_with_move(ten_value_t *self, ten_buf_t buf) {
 
 static bool ten_value_copy_object(ten_value_t *dest, ten_value_t *src,
                                   TEN_UNUSED ten_error_t *err) {
-  TEN_ASSERT(dest && src, "Invalid argument.");
+  TEN_ASSERT(dest, "Invalid argument.");
+  TEN_ASSERT(src, "Invalid argument.");
   TEN_ASSERT(src->type == TEN_TYPE_OBJECT, "Invalid argument.");
 
   ten_list_init(&dest->content.object);
@@ -574,6 +590,7 @@ bool ten_value_init_object_with_move(ten_value_t *self, ten_list_t *value) {
   self->type = TEN_TYPE_OBJECT;
   ten_list_init(&self->content.object);
   if (value) {
+    TEN_ASSERT(ten_list_check_integrity(value), "Invalid argument.");
     ten_list_swap(&self->content.object, value);
   }
 
@@ -758,7 +775,8 @@ ten_value_t *ten_value_create_vstring(const char *fmt, ...) {
 }
 
 void ten_value_set_name(ten_value_t *self, const char *fmt, ...) {
-  TEN_ASSERT(self && fmt, "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(fmt, "Invalid argument.");
 
   if (self->name) {
     ten_string_destroy(self->name);
@@ -786,8 +804,10 @@ ten_value_t *ten_value_create_buf_with_move(ten_buf_t buf) {
 }
 
 bool ten_value_copy(ten_value_t *src, ten_value_t *dest) {
-  TEN_ASSERT(src && ten_value_check_integrity(src), "Invalid argument.");
-  TEN_ASSERT(dest && ten_value_check_integrity(dest), "Invalid argument.");
+  TEN_ASSERT(src, "Invalid argument.");
+  TEN_ASSERT(ten_value_check_integrity(src), "Invalid argument.");
+  TEN_ASSERT(dest, "Invalid argument.");
+  TEN_ASSERT(ten_value_check_integrity(dest), "Invalid argument.");
 
   dest->type = src->type;
 
@@ -807,7 +827,8 @@ bool ten_value_copy(ten_value_t *src, ten_value_t *dest) {
 }
 
 ten_value_t *ten_value_clone(ten_value_t *src) {
-  TEN_ASSERT(src && ten_value_check_integrity(src), "Invalid argument.");
+  TEN_ASSERT(src, "Invalid argument.");
+  TEN_ASSERT(ten_value_check_integrity(src), "Invalid argument.");
 
   ten_value_t *self = ten_value_create();
 
@@ -860,7 +881,8 @@ bool ten_value_is_valid(ten_value_t *self) {
 bool ten_value_is_equal(ten_value_t *self, ten_value_t *target) {
   TEN_ASSERT(self, "Invalid argument.");
   TEN_ASSERT(ten_value_check_integrity(self), "Invalid argument.");
-  TEN_ASSERT(target && ten_value_check_integrity(target), "Invalid argument.");
+  TEN_ASSERT(target, "Invalid argument.");
+  TEN_ASSERT(ten_value_check_integrity(target), "Invalid argument.");
 
   if (self->type != target->type) {
     return false;
@@ -880,8 +902,8 @@ bool ten_value_is_equal(ten_value_t *self, ten_value_t *target) {
 
     ten_list_foreach (&self->content.object, iter_self) {
       ten_value_kv_t *kv_self = ten_ptr_listnode_get(iter_self.node);
-      TEN_ASSERT(kv_self && ten_value_kv_check_integrity(kv_self),
-                 "Invalid argument.");
+      TEN_ASSERT(kv_self, "Invalid argument.");
+      TEN_ASSERT(ten_value_kv_check_integrity(kv_self), "Invalid argument.");
 
       // Peek the corresponding value in the target object.
       ten_value_t *kv_target =

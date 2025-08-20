@@ -4,13 +4,13 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import * as path from "path";
 import * as fs from "fs";
-
-import { Addon } from "./addon.js";
-import ten_addon from "./ten_addon.js";
+import * as path from "path";
 import { dirname } from "path";
 import { fileURLToPath } from "url";
+
+import type { Addon } from "./addon.js";
+import ten_addon from "./ten_addon.js";
 
 type Ctor<T> = {
   new (): T;

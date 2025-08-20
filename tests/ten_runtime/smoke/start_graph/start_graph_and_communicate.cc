@@ -6,7 +6,7 @@
 //
 #include "gtest/gtest.h"
 #include "include_internal/ten_runtime/binding/cpp/ten.h"
-#include "ten_runtime/binding/cpp/detail/msg/cmd/stop_graph.h"
+#include "ten_runtime/binding/cpp/detail/msg/cmd/stop_graph_cmd.h"
 #include "tests/common/client/cpp/msgpack_tcp.h"
 #include "tests/ten_runtime/smoke/util/binding/cpp/check.h"
 
@@ -17,7 +17,7 @@ class test_extension_1 : public ten::extension_t {
   explicit test_extension_1(const char *name) : ten::extension_t(name) {}
 
   void on_start(ten::ten_env_t &ten_env) override {
-    auto start_graph_cmd = ten::cmd_start_graph_t::create();
+    auto start_graph_cmd = ten::start_graph_cmd_t::create();
     start_graph_cmd->set_dests({{""}});
     start_graph_cmd->set_graph_from_json(R"({
       "nodes": [{
@@ -36,7 +36,7 @@ class test_extension_1 : public ten::extension_t {
                std::unique_ptr<ten::cmd_result_t> cmd_result,
                ten::error_t * /* err */) {
           // The graph_id is in the response of the 'start_graph' command.
-          auto graph_id = cmd_result->get_property_string("detail");
+          auto graph_id = cmd_result->get_property_string("graph_id");
 
           auto hello_world_cmd = ten::cmd_t::create("hello_world");
           hello_world_cmd->set_dests({{"msgpack://127.0.0.1:8001/",
@@ -49,7 +49,7 @@ class test_extension_1 : public ten::extension_t {
                   ten::error_t * /* err */) {
                 // Shut down the graph; otherwise, the app won't be able to
                 // close because there is still a running engine/graph.
-                auto stop_graph_cmd = ten::cmd_stop_graph_t::create();
+                auto stop_graph_cmd = ten::stop_graph_cmd_t::create();
 
                 // stop_graph command should be sent to the app.
                 stop_graph_cmd->set_dests({{""}});
@@ -63,7 +63,7 @@ class test_extension_1 : public ten::extension_t {
                            std::unique_ptr<ten::cmd_result_t> /* cmd_result */,
                            ten::error_t * /* err */) {
                       // Received the response from test_extension_2.
-                      received_hello_world_resp = true;
+                      start_and_stop_graph_is_completed = true;
 
                       if (test_cmd != nullptr) {
                         // Send the response to the client.
@@ -86,7 +86,7 @@ class test_extension_1 : public ten::extension_t {
   void on_cmd(ten::ten_env_t &ten_env,
               std::unique_ptr<ten::cmd_t> cmd) override {
     if (cmd->get_name() == "test") {
-      if (received_hello_world_resp) {
+      if (start_and_stop_graph_is_completed) {
         // Send the response to the client.
         auto cmd_result = ten::cmd_result_t::create(TEN_STATUS_CODE_OK, *cmd);
 
@@ -105,7 +105,7 @@ class test_extension_1 : public ten::extension_t {
   }
 
  private:
-  bool received_hello_world_resp{};
+  bool start_and_stop_graph_is_completed{};
   std::unique_ptr<ten::cmd_t> test_cmd;
 };
 

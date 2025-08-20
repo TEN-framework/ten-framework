@@ -101,7 +101,7 @@ class test_extension_2 : public ten::extension_t {
         std::move(cmd),
         [this](ten::ten_env_t &ten_env,
                std::unique_ptr<ten::cmd_result_t> cmd_result,
-               ten::error_t *err) {
+               ten::error_t * /* err */) {
           auto name = cmd_result->get_property_string("detail");
           greeting_ += name;
 
@@ -157,7 +157,7 @@ TEST(BasicTest, ExtensionsInitDependency) {  // NOLINT
   auto *client = new ten::msgpack_tcp_client_t("msgpack://127.0.0.1:8001/");
 
   // Send graph.
-  auto start_graph_cmd = ten::cmd_start_graph_t::create();
+  auto start_graph_cmd = ten::start_graph_cmd_t::create();
   start_graph_cmd->set_graph_from_json(R"({
            "nodes": [{
                "type": "extension",

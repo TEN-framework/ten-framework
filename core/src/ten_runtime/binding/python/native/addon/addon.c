@@ -187,7 +187,7 @@ static void ten_py_addon_destroy(PyObject *self) {
 
 PyTypeObject *ten_py_addon_py_type(void) {
   static PyMethodDef addon_methods[] = {
-      {"on_create_instance", not_implemented_base_on_create_instance,
+      {"on_create_instance_internal", not_implemented_base_on_create_instance,
        METH_VARARGS, "Override to create your own instance."},
       {NULL, NULL, 0, NULL},
   };

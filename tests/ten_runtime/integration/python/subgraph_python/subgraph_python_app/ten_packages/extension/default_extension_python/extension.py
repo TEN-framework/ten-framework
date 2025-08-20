@@ -4,8 +4,15 @@
 # Licensed under the Apache License, Version 2.0, with certain conditions.
 # Refer to the "LICENSE" file in the root directory for more information.
 #
-from ten_runtime import AsyncExtension, AsyncTenEnv, Data, Cmd, LogLevel
-from ten_runtime.cmd_result import CmdResult, StatusCode
+from ten_runtime import (
+    AsyncExtension,
+    AsyncTenEnv,
+    Data,
+    Cmd,
+    LogLevel,
+    CmdResult,
+    StatusCode,
+)
 
 
 class FunctionEntryExtension(AsyncExtension):

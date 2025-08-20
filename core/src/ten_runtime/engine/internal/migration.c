@@ -92,7 +92,8 @@ static void ten_engine_on_connection_cleaned_task(void *self_, void *arg) {
   TEN_ASSERT(user_data, "Invalid argument.");
 
   ten_shared_ptr_t *cmd = user_data->cmd;
-  TEN_ASSERT(cmd && ten_msg_check_integrity(cmd), "Invalid argument.");
+  TEN_ASSERT(cmd, "Invalid argument.");
+  TEN_ASSERT(ten_msg_check_integrity(cmd), "Invalid argument.");
 
   ten_connection_t *connection = user_data->connection;
   TEN_ASSERT(connection, "Invalid argument.");
@@ -114,7 +115,8 @@ void ten_engine_on_connection_cleaned_async(ten_engine_t *self,
       "This function is intended to be called outside of the engine thread.");
   TEN_ASSERT(connection && ten_connection_check_integrity(connection, true),
              "Access across threads.");
-  TEN_ASSERT(cmd && ten_msg_check_integrity(cmd), "Invalid argument.");
+  TEN_ASSERT(cmd, "Invalid argument.");
+  TEN_ASSERT(ten_msg_check_integrity(cmd), "Invalid argument.");
 
   ten_engine_migration_user_data_t *user_data =
       ten_engine_migration_user_data_create(connection, cmd);

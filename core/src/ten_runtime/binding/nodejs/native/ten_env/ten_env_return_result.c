@@ -6,7 +6,7 @@
 //
 #include "include_internal/ten_runtime/binding/nodejs/common/common.h"
 #include "include_internal/ten_runtime/binding/nodejs/error/error.h"
-#include "include_internal/ten_runtime/binding/nodejs/msg/cmd_result.h"
+#include "include_internal/ten_runtime/binding/nodejs/msg/cmd/cmd_result.h"
 #include "include_internal/ten_runtime/binding/nodejs/ten_env/ten_env.h"
 #include "ten_runtime/ten_env/internal/return.h"
 #include "ten_utils/lib/error.h"

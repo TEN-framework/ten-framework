@@ -9,16 +9,16 @@ from typing import Callable
 from libten_runtime_python import (
     _Extension,  # pyright: ignore[reportPrivateUsage]
     _TenEnv,  # pyright: ignore[reportPrivateUsage]
-    _ten_py_ten_env_register_ten_env_type,  # pyright: ignore[reportPrivateUsage] # noqa: E501
+    _ten_py_ten_env_register_type,  # pyright: ignore[reportPrivateUsage] # noqa: E501
 )
 
 from .error import TenError
-from .cmd_result import CmdResult
-from .cmd import Cmd
-from .video_frame import VideoFrame
-from .audio_frame import AudioFrame
-from .data import Data
 from .ten_env_base import TenEnvBase
+from .msg.cmd.cmd import Cmd
+from .msg.cmd.cmd_result import CmdResult
+from .msg.data import Data
+from .msg.video_frame import VideoFrame
+from .msg.audio_frame import AudioFrame
 
 
 ResultHandler = Callable[["TenEnv", CmdResult | None, TenError | None], None]
@@ -139,4 +139,4 @@ class TenEnv(TenEnvBase):
         return self._internal.init_property_from_json(json_str)
 
 
-_ten_py_ten_env_register_ten_env_type(TenEnv)
+_ten_py_ten_env_register_type(TenEnv)
