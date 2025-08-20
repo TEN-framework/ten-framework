@@ -42,7 +42,8 @@ tasks:
       - ln -sf {{.USER_WORKING_DIR}}/{{.AGENT}}/manifest.json ./agents/
       - ln -sf {{.USER_WORKING_DIR}}/{{.AGENT}}/property.json ./agents/
       - find "{{.USER_WORKING_DIR}}/{{.AGENT}}/ten_packages/extension" -mindepth 1 -maxdepth 1 -type d -exec ln -sf -t ./agents/ten_packages/extension {} +
-      - task: build
+      - task: build-agent-deps
+      - task: build-server
 
   run-server:
     desc: run backend http server
@@ -61,12 +62,19 @@ tasks:
       - task: run-server
       - task: run-gd-server
 
-  build-agent:
+  build-agent-deps:
     desc: build agent
     dir: ./agents
     internal: true
     cmds:
       - ./scripts/install_deps_and_build.sh linux x64 && mv bin/main bin/worker
+
+  build-agent:
+    desc: build agent
+    dir: ./agents
+    internal: true
+    cmds:
+      - ./scripts/build.sh ten_packages/extension
 
   build-server:
     desc: build server
@@ -79,7 +87,7 @@ tasks:
     dir: ./agents
     internal: true
     cmds:
-      - rm -rf manifest.json property.json manifest-lock.json bin/main bin/worker out .release ten_packages/system ten_packages/system/agora_rtc_sdk ten_packages/system/azure_speech_sdk ten_packages/system/nlohmann_json ten_packages/extension/agora_rtc ten_packages/extension/agora_rtm ten_packages/extension/agora_sess_ctrl ten_packages/extension/azure_tts ten_packages/addon_loader ten_packages/extension/main_python ten_packages/extension/main_cascade_python ten_packages/extension/main_realtime_python
+      - rm -rf manifest.json property.json manifest-lock.json bin/main bin/worker out .release ten_packages/system ten_packages/system/agora_rtc_sdk ten_packages/system/azure_speech_sdk ten_packages/system/nlohmann_json ten_packages/extension/agora_rtc ten_packages/extension/agora_rtm ten_packages/extension/agora_sess_ctrl ten_packages/extension/azure_tts ten_packages/addon_loader ten_packages/extension/main_python ten_packages/extension/main_cascade_python ten_packages/extension/main_realtime_python ten_packages/extension/main_nodejs
       - find . -type d -name .pytest_cache -exec rm -rf {} \; || true
       - find . -type d -name __pycache__ -exec rm -rf {} \; || true
       - find . -type d -name .ten -exec rm -rf {} \; || true
