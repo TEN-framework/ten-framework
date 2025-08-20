@@ -19,9 +19,9 @@ class AliyunASRBigmodelConfig(BaseModel):
     heartbeat: bool = False
     max_sentence_silence: int = 200  # 200ms~6000ms，def 800ms。
     mute_pkg_duration_ms: int = (
-        2000  # must be greater than max_sentence_silence
+        1000  # must be greater than max_sentence_silence
     )
-    finalize_mode: str = "disconnect"  # "disconnect" or "mute_pkg"
+    finalize_mode: str = "mute_pkg"  # "disconnect" or "mute_pkg"
     vocabulary_id: str = ""
     vocabulary_prefix: str = "prefix"
     vocabulary_target_model: str = "paraformer-realtime-v2"
