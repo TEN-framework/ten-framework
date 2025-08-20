@@ -223,6 +223,22 @@ TEST(AdvancedLogTest, LogAdvancedFileReopen) {  // NOLINT
   if (total_found != g_log_count) {
     std::cout << "Expected " << g_log_count << " messages, but found "
               << total_found << '\n';
+
+    std::cout << "\nlog file content:\n";
+    log_file.clear();
+    log_file.seekg(0);
+    std::string content;
+    while (std::getline(log_file, content)) {
+      std::cout << content << '\n';
+    }
+
+    std::cout << "\nmissing message numbers:\n";
+    for (int i = 0; i < g_log_count; ++i) {
+      if (!found[i]) {
+        std::cout << "log message " << (i + 1) << '\n';
+      }
+    }
+
     FAIL();
   }
 #endif
