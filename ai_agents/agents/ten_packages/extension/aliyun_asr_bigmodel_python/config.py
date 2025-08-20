@@ -18,7 +18,7 @@ class AliyunASRBigmodelConfig(BaseModel):
     inverse_text_normalization_enabled: bool = True
     heartbeat: bool = False
     max_sentence_silence: int = 200  # 200ms~6000ms，def 800ms。
-    finalize_mode: str = "disconnect"  # "disconnect" or "mute_pkg"
+    finalize_mode: str = "mute_pkg"  # "disconnect" or "mute_pkg"
     vocabulary_id: str = ""
     vocabulary_prefix: str = "prefix"
     vocabulary_target_model: str = "paraformer-realtime-v2"

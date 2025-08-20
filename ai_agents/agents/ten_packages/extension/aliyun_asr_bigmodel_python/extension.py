@@ -373,19 +373,22 @@ class AliyunASRBigmodelExtension(AsyncASRBaseExtension):
     async def _handle_finalize_disconnect(self):
         """Handle disconnect mode finalization"""
         if self.recognition:
-            self.is_finalize_disconnect = True
-            self.recognition.stop()
-            self.ten_env.log_debug("Aliyun ASR finalize disconnect completed")
+            if self.is_connected():
+                self.is_finalize_disconnect = True
+                self.recognition.stop()
+                self.ten_env.log_debug("Aliyun ASR finalize disconnect completed")
 
     async def _handle_finalize_mute_pkg(self):
         """Handle mute package mode finalization"""
         # Send silence package
         if self.recognition and self.config:
-            silence_duration = self.config.mute_pkg_duration_ms / 1000.0
+            # Add 100ms to the mute package duration to ensure the silence is long enough
+            mute_pkg_duration_ms = self.config.mute_pkg_duration_ms + 100
+            silence_duration = mute_pkg_duration_ms / 1000.0
             silence_samples = int(self.config.sample_rate * silence_duration)
             silence_data = b"\x00" * (silence_samples * 2)  # 16-bit samples
             self.audio_timeline.add_silence_audio(
-                self.config.mute_pkg_duration_ms
+                mute_pkg_duration_ms
             )
             self.recognition.send_audio_frame(silence_data)
             self.ten_env.log_debug("Aliyun ASR finalize mute package sent")
