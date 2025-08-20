@@ -32,7 +32,7 @@ SPEECHMATICS_LANGUAGE_MAP = {
     "es": "es-ES",
     "ar": "ar-AE",
     "hi": "hi-IN",
-};
+}
 
 
 # def get_speechmatics_language(language: str) -> str:
