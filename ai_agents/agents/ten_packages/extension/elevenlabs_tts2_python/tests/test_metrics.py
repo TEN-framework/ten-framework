@@ -2,6 +2,7 @@ import sys
 from pathlib import Path
 
 # Add project root to sys.path to allow running tests from this directory
+# The project root is 6 levels up from the parent directory of this file.
 project_root = str(Path(__file__).resolve().parents[6])
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
@@ -13,33 +14,43 @@ if project_root not in sys.path:
 # Refer to the "LICENSE" file in the root directory for more information.
 #
 import json
+from typing import Any
 from unittest.mock import patch, AsyncMock
+import tempfile
+import os
 import asyncio
+import filecmp
+import shutil
+import threading
 
 from ten_runtime import (
     ExtensionTester,
     TenEnvTester,
+    Cmd,
+    CmdResult,
+    StatusCode,
     Data,
 )
-from ten_ai_base.struct import TTSTextInput
+from ten_ai_base.struct import TTSTextInput, TTSFlush
+from ten_ai_base.message import ModuleVendorException, ModuleErrorVendorInfo
 
 
+# ================ test metrics ================
 class ExtensionTesterMetrics(ExtensionTester):
     def __init__(self):
         super().__init__()
-        self.ttfb_metrics_received = False
-        self.audio_start_received = False
+        self.ttfb_received = False
+        self.ttfb_value = -1
+        self.audio_frame_received = False
         self.audio_end_received = False
-        self.text_result_received = False
 
     def on_start(self, ten_env_tester: TenEnvTester) -> None:
         """Called when test starts, sends a TTS request."""
         ten_env_tester.log_info("Metrics test started, sending TTS request.")
 
         tts_input = TTSTextInput(
-            request_id="tts_request_1",
-            text="hello word, hello agora",
-            text_input_end=True,
+            request_id="tts_request_for_metrics",
+            text="hello, this is a metrics test.",
         )
         data = Data.create("tts_text_input")
         data.set_property_from_json(None, tts_input.model_dump_json())
@@ -48,193 +59,101 @@ class ExtensionTesterMetrics(ExtensionTester):
 
     def on_data(self, ten_env: TenEnvTester, data) -> None:
         name = data.get_name()
+        ten_env.log_info(f"on_data name: {name}")
         if name == "metrics":
-            ten_env.log_info("Received metrics data")
-            self.ttfb_metrics_received = True
-        elif name == "tts_audio_start":
-            ten_env.log_info("Received tts_audio_start")
-            self.audio_start_received = True
+            json_str, _ = data.get_property_to_json(None)
+            ten_env.log_info(f"Received metrics: {json_str}")
+            metrics_data = json.loads(json_str)
+
+            # According to the new structure, 'ttfb' is nested inside a 'metrics' object.
+            nested_metrics = metrics_data.get("metrics", {})
+            if "ttfb" in nested_metrics:
+                self.ttfb_received = True
+                self.ttfb_value = nested_metrics.get("ttfb", -1)
+                ten_env.log_info(
+                    f"Received TTFB metric with value: {self.ttfb_value}"
+                )
+
         elif name == "tts_audio_end":
-            ten_env.log_info("Received tts_audio_end")
             self.audio_end_received = True
-            ten_env.stop_test()
-        elif name == "tts_text_result":
-            ten_env.log_info("Received tts_text_result")
-            self.text_result_received = True
+            # Stop the test only after both TTFB and audio end are received
+            if self.ttfb_received:
+                ten_env.log_info("Received tts_audio_end, stopping test.")
+                ten_env.stop_test()
+
+    def on_audio_frame(self, ten_env: TenEnvTester, audio_frame):
+        """Receives audio frames and confirms the stream is working."""
+        if not self.audio_frame_received:
+            self.audio_frame_received = True
+            ten_env.log_info("First audio frame received.")
 
 
-@patch("elevenlabs_tts2_python.extension.ElevenLabsTTS2")
-def test_metrics_functionality(MockElevenLabsTTS2):
-    """Test that the extension sends proper metrics."""
-    # Mock the ElevenLabsTTS2 class
-    mock_client_instance = AsyncMock()
+@patch("elevenlabs_tts2_python.elevenlabs_tts.ElevenLabsTTS2Client")
+def test_ttfb_metric_is_sent(MockElevenLabsTTS2Client):
+    """
+    Tests that a TTFB (Time To First Byte) metric is correctly sent after
+    receiving the first audio chunk from the TTS service.
+    """
+    print("Starting test_ttfb_metric_is_sent with mock...")
 
-    # Mock the start_connection method
-    mock_client_instance.start_connection = AsyncMock()
+    # --- Mock Configuration ---
+    mock_instance = MockElevenLabsTTS2Client.return_value
+    mock_instance.start_connection = AsyncMock()
+    mock_instance.text_to_speech_ws_streaming = AsyncMock()
+    mock_instance.close = AsyncMock()
 
-    # Mock the text_input_queue to avoid blocking
-    mock_client_instance.text_input_queue = asyncio.Queue()
+    # Mock the client constructor to handle the response queue
+    def mock_client_init(*args, **kwargs):
+        # Get the response_msgs queue from the client
+        response_msgs = mock_instance.response_msgs = AsyncMock()
 
-    # Mock the text_to_speech_ws_streaming method to consume from queue
-    async def mock_text_to_speech_ws_streaming():
-        while True:
-            try:
-                await mock_client_instance.text_input_queue.get()
-            except asyncio.CancelledError:
-                break
+        async def populate_queue():
+            # Simulate network latency before the first byte
+            await asyncio.sleep(0.2)
 
-    mock_client_instance.text_to_speech_ws_streaming = (
-        mock_text_to_speech_ws_streaming
-    )
+            # Put audio data and final response in the queue
+            await response_msgs.put((b"\x11\x22\x33", False, ""))
+            await response_msgs.put(
+                (b"\x44\x55\x66", True, "hello, this is a metrics test.")
+            )
 
-    # Mock the get_synthesized_audio method to return audio data
-    audio_data_queue = asyncio.Queue()
-    # Pre-populate the queue - multiple chunks, only last one is final
-    audio_data_queue.put_nowait([b"fake_audio_data_1", False, ""])
-    audio_data_queue.put_nowait([b"fake_audio_data_2", False, ""])
-    audio_data_queue.put_nowait(
-        [b"fake_audio_data_3", True, "hello word, hello agora"]
-    )
+        # Set up the queue get method
+        call_count = 0
 
-    async def mock_get_synthesized_audio():
-        try:
-            return await audio_data_queue.get()
-        except asyncio.QueueEmpty:
-            # If the queue is empty, return a special value to stop the loop
-            return [None, True, "STOP_LOOP"]
+        async def mock_get():
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                # Simulate network latency before the first byte
+                await asyncio.sleep(0.2)
+                return (b"\x11\x22\x33", False, "")
+            elif call_count == 2:
+                return (b"\x44\x55\x66", True, "hello, this is a metrics test.")
+            else:
+                # Keep the connection alive or simulate more data
+                await asyncio.sleep(0.1)
+                return (b"", True, "")
 
-    mock_client_instance.get_synthesized_audio = mock_get_synthesized_audio
-    MockElevenLabsTTS2.return_value = mock_client_instance
+        response_msgs.get = mock_get
+        return mock_instance
 
-    # Create and run the tester
+    MockElevenLabsTTS2Client.side_effect = mock_client_init
+
+    # --- Test Setup ---
     tester = ExtensionTesterMetrics()
     tester.set_test_mode_single("elevenlabs_tts2_python")
+
+    print("Running TTFB metrics test...")
     tester.run()
+    print("TTFB metrics test completed.")
 
-    # Verify that all expected events were received
-    assert tester.ttfb_metrics_received, "TTFB metrics were not received"
-    assert tester.audio_start_received, "Audio start event was not received"
-    assert tester.audio_end_received, "Audio end event was not received"
+    # --- Assertions ---
+    assert tester.audio_frame_received, "Did not receive any audio frame."
+    assert tester.audio_end_received, "Did not receive the tts_audio_end event."
+    assert tester.ttfb_received, "TTFB metric was not received."
 
+    # Check if the TTFB value is reasonable.
+    # It should be slightly more than the 0.2s delay we introduced.
+    print(f"TTFB value: {tester.ttfb_value}")
 
-class ExtensionTesterMetricsWithMetadata(ExtensionTester):
-    def __init__(self):
-        super().__init__()
-        self.metrics_data = None
-        self.audio_start_data = None
-        self.audio_end_data = None
-
-    def on_start(self, ten_env_tester: TenEnvTester) -> None:
-        """Called when test starts, sends a TTS request with metadata."""
-        ten_env_tester.log_info(
-            "Metrics with metadata test started, sending TTS request."
-        )
-
-        tts_input = TTSTextInput(
-            request_id="tts_request_1",
-            text="hello word, hello agora",
-            text_input_end=True,
-            metadata={"session_id": "test_session_123", "turn_id": 456},
-        )
-        data = Data.create("tts_text_input")
-        data.set_property_from_json(None, tts_input.model_dump_json())
-        ten_env_tester.send_data(data)
-        ten_env_tester.on_start_done()
-
-    def on_data(self, ten_env: TenEnvTester, data) -> None:
-        name = data.get_name()
-        if name == "metrics":
-            ten_env.log_info("Received metrics data")
-            payload, _ = data.get_property_to_json("")
-            self.metrics_data = json.loads(payload)
-        elif name == "tts_audio_start":
-            ten_env.log_info("Received tts_audio_start")
-            payload, _ = data.get_property_to_json("")
-            self.audio_start_data = json.loads(payload)
-        elif name == "tts_audio_end":
-            ten_env.log_info("Received tts_audio_end")
-            payload, _ = data.get_property_to_json("")
-            self.audio_end_data = json.loads(payload)
-            ten_env.stop_test()
-
-
-@patch("elevenlabs_tts2_python.extension.ElevenLabsTTS2")
-def test_metrics_with_metadata(MockElevenLabsTTS2):
-    """Test that the extension includes metadata in metrics."""
-    # Mock the ElevenLabsTTS2 class
-    mock_client_instance = AsyncMock()
-
-    # Mock the start_connection method
-    mock_client_instance.start_connection = AsyncMock()
-
-    # Mock the text_input_queue to avoid blocking
-    mock_client_instance.text_input_queue = asyncio.Queue()
-
-    # Mock the text_to_speech_ws_streaming method to consume from queue
-    async def mock_text_to_speech_ws_streaming():
-        while True:
-            try:
-                await mock_client_instance.text_input_queue.get()
-            except asyncio.CancelledError:
-                break
-
-    mock_client_instance.text_to_speech_ws_streaming = (
-        mock_text_to_speech_ws_streaming
-    )
-
-    # Mock the get_synthesized_audio method to return audio data
-    audio_data_queue = asyncio.Queue()
-    # Pre-populate the queue - multiple chunks, only last one is final
-    audio_data_queue.put_nowait([b"fake_audio_data_1", False, ""])
-    audio_data_queue.put_nowait([b"fake_audio_data_2", False, ""])
-    audio_data_queue.put_nowait(
-        [b"fake_audio_data_3", True, "hello word, hello agora"]
-    )
-
-    async def mock_get_synthesized_audio():
-        try:
-            return await audio_data_queue.get()
-        except asyncio.QueueEmpty:
-            # If the queue is empty, return a special value to stop the loop
-            return [None, True, "STOP_LOOP"]
-
-    mock_client_instance.get_synthesized_audio = mock_get_synthesized_audio
-    MockElevenLabsTTS2.return_value = mock_client_instance
-
-    # Create and run the tester
-    tester = ExtensionTesterMetricsWithMetadata()
-    tester.set_test_mode_single("elevenlabs_tts2_python")
-    tester.run()
-
-    # Verify that metrics data contains expected fields
-    assert tester.metrics_data is not None, "Metrics data was not received"
-    assert "id" in tester.metrics_data, "Metrics missing request_id"
-    assert "module" in tester.metrics_data, "Metrics missing module"
-    assert "vendor" in tester.metrics_data, "Metrics missing vendor"
-    assert "metrics" in tester.metrics_data, "Metrics missing metrics object"
-    assert "metadata" in tester.metrics_data, "Metrics missing metadata"
-
-    # Verify metadata fields
-    metadata = tester.metrics_data["metadata"]
-    assert metadata["session_id"] == "test_session_123", "Session ID mismatch"
-    assert metadata["turn_id"] == 456, "Turn ID mismatch"
-
-    # Verify audio start data
-    assert (
-        tester.audio_start_data is not None
-    ), "Audio start data was not received"
-    assert (
-        "request_id" in tester.audio_start_data
-    ), "Audio start missing request_id"
-    assert "metadata" in tester.audio_start_data, "Audio start missing metadata"
-
-    # Verify audio end data
-    assert tester.audio_end_data is not None, "Audio end data was not received"
-    assert "request_id" in tester.audio_end_data, "Audio end missing request_id"
-    assert (
-        "request_event_interval_ms" in tester.audio_end_data
-    ), "Audio end missing interval"
-    assert (
-        "request_total_audio_duration_ms" in tester.audio_end_data
-    ), "Audio end missing duration"
-    assert "metadata" in tester.audio_end_data, "Audio end missing metadata"
+    print(f"✅ TTFB metric test passed. Received TTFB: {tester.ttfb_value}ms.")

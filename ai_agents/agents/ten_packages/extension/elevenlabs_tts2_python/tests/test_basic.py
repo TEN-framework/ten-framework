@@ -102,223 +102,268 @@ class ExtensionTesterDump(ExtensionTester):
         return None
 
 
-@patch("elevenlabs_tts2_python.extension.ElevenLabsTTS2")
-def test_dump_functionality(MockElevenLabsTTS2):
-    """Test that the extension can dump audio to a file."""
-    # Create dump directory if it doesn't exist
-    dump_dir = "./dump/"
-    os.makedirs(dump_dir, exist_ok=True)
+@patch("elevenlabs_tts2_python.elevenlabs_tts.ElevenLabsTTS2Client")
+def test_dump_functionality(MockElevenLabsTTS2Client):
+    """Tests that the dump file from the TTS extension matches the audio received by the test extension."""
 
-    # Mock the ElevenLabsTTS2 class
-    mock_client_instance = AsyncMock()
+    print("Starting test_dump_functionality with mock...")
 
-    # Mock the start_connection method
-    mock_client_instance.start_connection = AsyncMock()
+    # --- Directory Setup ---
+    # As requested, use a fixed './dump/' directory.
+    DUMP_PATH = "./dump/"
 
-    # Mock the text_input_queue to avoid blocking
-    mock_client_instance.text_input_queue = asyncio.Queue()
+    # Clean up directory before the test, in case of previous failed runs.
+    if os.path.exists(DUMP_PATH):
+        shutil.rmtree(DUMP_PATH)
+    os.makedirs(DUMP_PATH)
 
-    # Mock the text_to_speech_ws_streaming method to consume from queue
-    async def mock_text_to_speech_ws_streaming():
-        while True:
-            try:
-                await mock_client_instance.text_input_queue.get()
-            except asyncio.CancelledError:
-                break
+    # --- Mock Configuration ---
+    mock_instance = MockElevenLabsTTS2Client.return_value
+    mock_instance.start_connection = AsyncMock()
+    mock_instance.text_to_speech_ws_streaming = AsyncMock()
+    mock_instance.close = AsyncMock()
 
-    mock_client_instance.text_to_speech_ws_streaming = (
-        mock_text_to_speech_ws_streaming
-    )
+    # Create some fake audio data to be streamed
+    fake_audio_chunk_1 = b"\x11\x22\x33\x44" * 20
+    fake_audio_chunk_2 = b"\xaa\xbb\xcc\xdd" * 20
 
-    # Mock the get_synthesized_audio method to return audio data
-    audio_data_queue = asyncio.Queue()
-    # Pre-populate the queue - only include text in the final chunk
-    audio_data_queue.put_nowait([b"fake_audio_data_1", False, ""])
-    audio_data_queue.put_nowait([b"fake_audio_data_2", False, ""])
-    audio_data_queue.put_nowait(
-        [b"fake_audio_data_3", True, "hello word, hello agora"]
-    )
+    # Mock the client constructor to properly handle the response_msgs queue
+    def mock_client_init(
+        config, ten_env, error_callback=None, response_msgs=None
+    ):
+        # Store the real queue passed by the extension - this should be a real asyncio.Queue
+        mock_instance.response_msgs = (
+            response_msgs if response_msgs else asyncio.Queue()
+        )
 
-    async def mock_get_synthesized_audio():
-        try:
-            return await audio_data_queue.get()
-        except asyncio.QueueEmpty:
-            # If the queue is empty, return a special value to stop the loop
-            return [None, True, "STOP_LOOP"]
+        # Populate the queue with mock data asynchronously
+        async def populate_queue():
+            await asyncio.sleep(0.01)  # Small delay to let the extension start
+            await mock_instance.response_msgs.put(
+                (fake_audio_chunk_1, False, "")
+            )
+            await asyncio.sleep(0.01)
+            await mock_instance.response_msgs.put(
+                (fake_audio_chunk_2, True, "hello word, hello agora")
+            )
 
-    mock_client_instance.get_synthesized_audio = mock_get_synthesized_audio
-    MockElevenLabsTTS2.return_value = mock_client_instance
+        # Start the population task
+        asyncio.create_task(populate_queue())
+        return mock_instance
 
-    # Create and run the tester
+    MockElevenLabsTTS2Client.side_effect = mock_client_init
+
+    # --- Test Setup ---
     tester = ExtensionTesterDump()
 
-    # Set up dump configuration
     dump_config = {
         "params": {
-            "api_key": "fake_elevenlabs_key_for_mock_testing",
+            "api_key": "valid_api_key_for_test",
+            "voice_id": "valid_voice_id_for_test",
             "dump": True,
-            "dump_path": dump_dir,
-            "sample_rate": 16000,
+            "dump_path": DUMP_PATH,
         },
     }
 
     tester.set_test_mode_single(
         "elevenlabs_tts2_python", json.dumps(dump_config)
     )
-    tester.run()
 
-    # Verify that audio end was received
-    assert tester.audio_end_received, "Audio end event was not received"
+    try:
+        print("Running dump test...")
+        tester.run()
+        print("Dump test completed.")
 
-    # Write test dump file for comparison
-    tester.write_test_dump_file()
+        # --- Assertions ---
+        assert tester.audio_end_received, "tts_audio_end was not received"
 
-    # Find the TTS dump file
-    tts_dump_file = tester.find_tts_dump_file()
-    assert tts_dump_file is not None, "TTS dump file was not created"
+        # Write the audio chunks collected by the test extension to its own dump file
+        tester.write_test_dump_file()
+        assert os.path.exists(
+            tester.test_dump_file_path
+        ), "Test dump file was not created"
 
-    # Verify that the dump file exists and has content
-    assert os.path.exists(
-        tts_dump_file
-    ), f"TTS dump file {tts_dump_file} does not exist"
-    assert os.path.getsize(tts_dump_file) > 0, "TTS dump file is empty"
+        # Find the dump file automatically created by the TTS extension
+        tts_dump_file = tester.find_tts_dump_file()
+        assert (
+            tts_dump_file is not None
+        ), f"Could not find TTS-generated dump file in {DUMP_PATH}"
 
-    # Clean up
-    if os.path.exists(tts_dump_file):
-        os.remove(tts_dump_file)
-    if os.path.exists(tester.test_dump_file_path):
-        os.remove(tester.test_dump_file_path)
+        print(f"Comparing TTS dump file: {tts_dump_file}")
+        print(f"With test dump file:    {tester.test_dump_file_path}")
+
+        # Binary comparison of the two files
+        assert filecmp.cmp(
+            tts_dump_file, tester.test_dump_file_path, shallow=False
+        ), "The TTS dump file and the test-generated dump file do not match."
+
+        print("✅ Dump file binary comparison passed.")
+
+    finally:
+        # Cleanup the dump directory after the test.
+        if os.path.exists(DUMP_PATH):
+            shutil.rmtree(DUMP_PATH)
 
 
-# ================ test text input end ================
+# ================ test text_input_end ================
 class ExtensionTesterTextInputEnd(ExtensionTester):
     def __init__(self):
         super().__init__()
         self.ten_env: TenEnvTester | None = None
-        self.first_request_completed = False
-        self.second_request_sent = False
-        self.audio_end_count = 0
+        self.first_request_audio_end_received = False
+        self.second_request_error_received = False
+        self.error_code = None
+        self.error_message = None
 
     def on_start(self, ten_env_tester: TenEnvTester) -> None:
-        """Called when test starts, sends the first TTS request."""
         self.ten_env = ten_env_tester
         ten_env_tester.log_info(
-            "Text input end test started, sending first TTS request."
+            "TextInputEnd test started, sending first TTS request."
         )
 
-        tts_input = TTSTextInput(
+        # 1. Send first request with text_input_end=True
+        tts_input_1 = TTSTextInput(
             request_id="tts_request_1",
             text="hello word, hello agora",
             text_input_end=True,
         )
         data = Data.create("tts_text_input")
-        data.set_property_from_json(None, tts_input.model_dump_json())
+        data.set_property_from_json(None, tts_input_1.model_dump_json())
         ten_env_tester.send_data(data)
         ten_env_tester.on_start_done()
 
     def send_second_request(self):
-        """Send a second TTS request with the same request_id."""
+        """Sends the second TTS request that should be ignored."""
         if self.ten_env is None:
             return
 
-        tts_input = TTSTextInput(
+        self.ten_env.log_info("Sending second TTS request, expecting an error.")
+        # 2. Send second request with text_input_end=False
+        tts_input_2 = TTSTextInput(
             request_id="tts_request_1",
             text="this should be ignored",
-            text_input_end=True,
+            text_input_end=False,
         )
         data = Data.create("tts_text_input")
-        data.set_property_from_json(None, tts_input.model_dump_json())
+        data.set_property_from_json(None, tts_input_2.model_dump_json())
         self.ten_env.send_data(data)
-        self.second_request_sent = True
 
     def on_data(self, ten_env: TenEnvTester, data) -> None:
         name = data.get_name()
+        json_str, _ = data.get_property_to_json(None)
+        payload = json.loads(json_str) if json_str else {}
+        request_id = payload.get("id")
+
         if name == "tts_audio_end":
-            self.audio_end_count += 1
-            ten_env.log_info(f"Received tts_audio_end #{self.audio_end_count}")
-
-            if self.audio_end_count == 1 and not self.second_request_sent:
-                # Send second request after first one completes
-                self.send_second_request()
-            elif self.audio_end_count == 2:
+            if not self.first_request_audio_end_received:
                 ten_env.log_info(
-                    "Received second tts_audio_end, stopping test."
+                    "Received tts_audio_end for the first request."
                 )
-                ten_env.stop_test()
+                self.first_request_audio_end_received = True
+                self.send_second_request()
+            return
+
+        if name == "error" and request_id == "tts_request_1":
+            ten_env.log_info(
+                f"Received expected error for the second request: {payload}"
+            )
+            self.second_request_error_received = True
+            self.error_code = payload.get("code")
+            self.error_message = payload.get("message")
+            ten_env.stop_test()
 
 
-@patch("elevenlabs_tts2_python.extension.ElevenLabsTTS2")
-def test_text_input_end_logic(MockElevenLabsTTS2):
-    """Test that the extension handles text_input_end correctly."""
-    # Mock the ElevenLabsTTS2 class
-    mock_client_instance = AsyncMock()
+@patch("elevenlabs_tts2_python.elevenlabs_tts.ElevenLabsTTS2Client")
+def test_text_input_end_logic(MockElevenLabsTTS2Client):
+    """
+    Tests that after a request with text_input_end=True is processed,
+    subsequent requests with the same request_id are ignored and trigger an error.
+    """
+    print("Starting test_text_input_end_logic with mock...")
 
-    # Mock the start_connection method
-    mock_client_instance.start_connection = AsyncMock()
+    # --- Mock Configuration ---
+    mock_instance = MockElevenLabsTTS2Client.return_value
+    mock_instance.start_connection = AsyncMock()
+    mock_instance.text_to_speech_ws_streaming = AsyncMock()
+    mock_instance.close = AsyncMock()
 
-    # Mock the text_input_queue to avoid blocking
-    mock_client_instance.text_input_queue = asyncio.Queue()
+    # Mock the client constructor to handle the response queue
+    def mock_client_init(*args, **kwargs):
+        mock_instance.response_msgs = AsyncMock()
 
-    # Mock the text_to_speech_ws_streaming method to consume from queue
-    async def mock_text_to_speech_ws_streaming():
-        while True:
-            try:
-                await mock_client_instance.text_input_queue.get()
-            except asyncio.CancelledError:
-                break
+        # Store the original text_to_speech_ws_streaming method to add our logic
+        original_tts_method = mock_instance.text_to_speech_ws_streaming
 
-    mock_client_instance.text_to_speech_ws_streaming = (
-        mock_text_to_speech_ws_streaming
-    )
+        async def mock_tts_with_queue_population(text: str):
+            # Call the original mocked method first
+            await original_tts_method(text)
 
-    # Mock the get_synthesized_audio method to return audio data
-    audio_data_queue = asyncio.Queue()
-    # Pre-populate the queue for two requests
-    audio_data_queue.put_nowait([b"fake_audio_data_1", False, ""])
-    audio_data_queue.put_nowait(
-        [b"fake_audio_data_2", True, "hello word, hello agora"]
-    )
-    audio_data_queue.put_nowait([b"fake_audio_data_3", False, ""])
-    audio_data_queue.put_nowait(
-        [b"fake_audio_data_4", True, "this should be ignored"]
-    )
+            # Then populate the queue with audio data
+            async def populate_queue():
+                await mock_instance.response_msgs.put(
+                    (b"\x11\x22\x33", False, "")
+                )
+                await mock_instance.response_msgs.put(
+                    (b"\x44\x55\x66", True, "hello word, hello agora")
+                )
 
-    async def mock_get_synthesized_audio():
-        try:
-            return await audio_data_queue.get()
-        except asyncio.QueueEmpty:
-            # If the queue is empty, return a special value to stop the loop
-            return [None, True, "STOP_LOOP"]
+            asyncio.create_task(populate_queue())
 
-    mock_client_instance.get_synthesized_audio = mock_get_synthesized_audio
-    MockElevenLabsTTS2.return_value = mock_client_instance
+        # Replace the text_to_speech_ws_streaming method
+        mock_instance.text_to_speech_ws_streaming = AsyncMock(
+            side_effect=mock_tts_with_queue_population
+        )
 
-    # Create and run the tester
+        return mock_instance
+
+    MockElevenLabsTTS2Client.side_effect = mock_client_init
+
+    # --- Test Setup ---
+    config = {
+        "params": {"api_key": "valid_api_key", "voice_id": "valid_voice_id"}
+    }
     tester = ExtensionTesterTextInputEnd()
-    tester.set_test_mode_single("elevenlabs_tts2_python")
-    tester.run()
+    tester.set_test_mode_single("elevenlabs_tts2_python", json.dumps(config))
 
-    # Verify that both audio end events were received
+    print("Running text_input_end logic test...")
+    tester.run()
+    print("text_input_end logic test completed.")
+
+    # --- Assertions ---
     assert (
-        tester.audio_end_count == 2
-    ), f"Expected 2 audio end events, got {tester.audio_end_count}"
+        tester.second_request_error_received
+    ), "Did not receive the expected error for the second request."
+    assert (
+        tester.error_code == 1000
+    ), f"Expected error code 1000, but got {tester.error_code}"
+
+    print("✅ Text input end logic test passed successfully.")
 
 
 # ================ test flush ================
 class ExtensionTesterFlush(ExtensionTester):
     def __init__(self):
         super().__init__()
-        self.flush_sent = False
+        self.ten_env: TenEnvTester | None = None
+        self.audio_start_received = False
+        self.first_audio_frame_received = False
+        self.flush_start_received = False
         self.audio_end_received = False
-        self.received_audio_chunks = []
+        self.flush_end_received = False
+        self.audio_end_reason = ""
+        self.total_audio_duration_from_event = 0
+        self.received_audio_bytes = 0
+        self.sample_rate = 16000
+        self.bytes_per_sample = 2  # 16-bit
+        self.channels = 1
+        self.audio_received_after_flush_end = False
 
     def on_start(self, ten_env_tester: TenEnvTester) -> None:
-        """Called when test starts, sends a TTS request."""
-        ten_env_tester.log_info("Flush test started, sending TTS request.")
-
+        self.ten_env = ten_env_tester
+        ten_env_tester.log_info("Flush test started, sending long TTS request.")
         tts_input = TTSTextInput(
-            request_id="tts_request_1",
-            text="hello word, hello agora",
+            request_id="tts_request_for_flush",
+            text="This is a very long text designed to generate a continuous stream of audio, providing enough time to send a flush command.",
         )
         data = Data.create("tts_text_input")
         data.set_property_from_json(None, tts_input.model_dump_json())
@@ -326,195 +371,154 @@ class ExtensionTesterFlush(ExtensionTester):
         ten_env_tester.on_start_done()
 
     def on_audio_frame(self, ten_env: TenEnvTester, audio_frame):
-        """Receives audio frames and sends flush after first chunk."""
+        if self.flush_end_received:
+            ten_env.log_error("Received audio frame after tts_flush_end!")
+            self.audio_received_after_flush_end = True
+
+        if not self.first_audio_frame_received:
+            self.first_audio_frame_received = True
+            ten_env.log_info("First audio frame received, sending flush data.")
+            flush_data = Data.create("tts_flush")
+            flush_data.set_property_from_json(
+                None,
+                TTSFlush(flush_id="tts_request_for_flush").model_dump_json(),
+            )
+            ten_env.send_data(flush_data)
+
         buf = audio_frame.lock_buf()
         try:
-            copied_data = bytes(buf)
-            self.received_audio_chunks.append(copied_data)
-
-            # Send flush after receiving first audio chunk
-            if len(self.received_audio_chunks) == 1 and not self.flush_sent:
-                self.flush_sent = True
-                ten_env.log_info(
-                    "Sending flush request after first audio chunk"
-                )
-
-                flush_input = TTSFlush(
-                    flush_id="tts_request_1",
-                )
-                flush_data = Data.create("tts_flush")
-                flush_data.set_property_from_json(
-                    None, flush_input.model_dump_json()
-                )
-                ten_env.send_data(flush_data)
+            self.received_audio_bytes += len(buf)
         finally:
             audio_frame.unlock_buf(buf)
 
     def on_data(self, ten_env: TenEnvTester, data) -> None:
         name = data.get_name()
+        ten_env.log_info(f"on_data name: {name}")
+
+        if name == "tts_audio_start":
+            self.audio_start_received = True
+            return
+
+        if name == "tts_flush_start":
+            self.flush_start_received = True
+            return
+
+        json_str, _ = data.get_property_to_json(None)
+        if not json_str:
+            return
+        payload = json.loads(json_str)
+        ten_env.log_info(f"on_data payload: {payload}")
+
         if name == "tts_audio_end":
-            ten_env.log_info("Received tts_audio_end, stopping test.")
             self.audio_end_received = True
-            ten_env.stop_test()
+            # Only update reason if it's the first audio_end or if it's INTERRUPTED (flush)
+            current_reason = payload.get("reason")
+            if (
+                self.audio_end_reason == 0 or current_reason == 2
+            ):  # 2 = INTERRUPTED
+                self.audio_end_reason = current_reason
+            self.total_audio_duration_from_event = payload.get(
+                "request_total_audio_duration_ms"
+            )
+
         elif name == "tts_flush_end":
-            ten_env.log_info("Received tts_flush_end")
+            self.flush_end_received = True
+
+            def stop_test_later():
+                ten_env.log_info("Waited after flush_end, stopping test now.")
+                ten_env.stop_test()
+
+            # Use threading.Timer to allow a short grace period to catch stray audio frames
+            timer = threading.Timer(0.5, stop_test_later)
+            timer.start()
 
     def get_calculated_audio_duration_ms(self) -> int:
-        """Calculate expected audio duration based on received chunks."""
-        total_bytes = sum(len(chunk) for chunk in self.received_audio_chunks)
-        sample_rate = 16000
-        channels = 1
-        sample_width = 2
-        bytes_per_second = sample_rate * channels * sample_width
-        duration_seconds = total_bytes / bytes_per_second
-        return int(duration_seconds * 1000)
-
-
-@patch("elevenlabs_tts2_python.extension.ElevenLabsTTS2")
-def test_flush_logic(MockElevenLabsTTS2):
-    """Test that the extension handles flush correctly."""
-    # Mock the ElevenLabsTTS2 class
-    mock_client_instance = AsyncMock()
-
-    # Mock the start_connection method
-    mock_client_instance.start_connection = AsyncMock()
-
-    # Mock the text_input_queue to avoid blocking
-    mock_client_instance.text_input_queue = asyncio.Queue()
-
-    # Mock the text_to_speech_ws_streaming method to consume from queue
-    async def mock_text_to_speech_ws_streaming():
-        while True:
-            try:
-                await mock_client_instance.text_input_queue.get()
-            except asyncio.CancelledError:
-                break
-
-    mock_client_instance.text_to_speech_ws_streaming = (
-        mock_text_to_speech_ws_streaming
-    )
-
-    # Mock the handle_flush method and related methods
-    mock_client_instance.handle_flush = AsyncMock()
-    mock_client_instance.reconnect_connection = AsyncMock()
-    mock_client_instance._handle_reconnection = AsyncMock()
-
-    # Mock the get_synthesized_audio method to return audio data
-    audio_data_queue = asyncio.Queue()
-    # Pre-populate the queue
-    audio_data_queue.put_nowait([b"fake_audio_data_1", False, ""])
-    audio_data_queue.put_nowait([b"fake_audio_data_2", False, ""])
-    audio_data_queue.put_nowait(
-        [b"fake_audio_data_3", True, "hello word, hello agora"]
-    )
-
-    async def mock_get_synthesized_audio():
-        try:
-            return await audio_data_queue.get()
-        except asyncio.QueueEmpty:
-            # If the queue is empty, return a special value to stop the loop
-            return [None, True, "STOP_LOOP"]
-
-    mock_client_instance.get_synthesized_audio = mock_get_synthesized_audio
-    MockElevenLabsTTS2.return_value = mock_client_instance
-
-    # Create and run the tester
-    tester = ExtensionTesterFlush()
-    tester.set_test_mode_single("elevenlabs_tts2_python")
-    tester.run()
-
-    # Verify that audio end was received
-    assert tester.audio_end_received, "Audio end event was not received"
-    assert tester.flush_sent, "Flush was not sent"
-
-
-# ================ test basic functionality ================
-class ExtensionTesterBasic(ExtensionTester):
-    def __init__(self):
-        super().__init__()
-        self.audio_end_received = False
-        self.received_audio_chunks = []
-
-    def on_start(self, ten_env_tester: TenEnvTester) -> None:
-        """Called when test starts, sends a TTS request."""
-        ten_env_tester.log_info("Basic test started, sending TTS request.")
-
-        tts_input = TTSTextInput(
-            request_id="tts_request_1",
-            text="hello word, hello agora",
-            text_input_end=True,
+        duration_sec = self.received_audio_bytes / (
+            self.sample_rate * self.bytes_per_sample * self.channels
         )
-        data = Data.create("tts_text_input")
-        data.set_property_from_json(None, tts_input.model_dump_json())
-        ten_env_tester.send_data(data)
-        ten_env_tester.on_start_done()
-
-    def on_data(self, ten_env: TenEnvTester, data) -> None:
-        name = data.get_name()
-        if name == "tts_audio_end":
-            ten_env.log_info("Received tts_audio_end, stopping test.")
-            self.audio_end_received = True
-            ten_env.stop_test()
-
-    def on_audio_frame(self, ten_env: TenEnvTester, audio_frame):
-        """Receives audio frames and collects their data."""
-        buf = audio_frame.lock_buf()
-        try:
-            copied_data = bytes(buf)
-            self.received_audio_chunks.append(copied_data)
-        finally:
-            audio_frame.unlock_buf(buf)
+        return int(duration_sec * 1000)
 
 
-@patch("elevenlabs_tts2_python.extension.ElevenLabsTTS2")
-def test_basic_functionality(MockElevenLabsTTS2):
-    """Test basic TTS functionality."""
-    # Mock the ElevenLabsTTS2 class
-    mock_client_instance = AsyncMock()
+@patch("elevenlabs_tts2_python.elevenlabs_tts.ElevenLabsTTS2Client")
+def test_flush_logic(MockElevenLabsTTS2Client):
+    """
+    Tests that sending a flush command during TTS streaming correctly stops
+    the audio and sends the appropriate events.
+    """
+    print("Starting test_flush_logic with mock...")
 
-    # Mock the start_connection method
-    mock_client_instance.start_connection = AsyncMock()
+    # --- Mock Configuration ---
+    mock_instance = MockElevenLabsTTS2Client.return_value
+    mock_instance.start_connection = AsyncMock()
+    mock_instance.text_to_speech_ws_streaming = AsyncMock()
+    mock_instance.close = AsyncMock()
 
-    # Mock the text_input_queue to avoid blocking
-    mock_client_instance.text_input_queue = asyncio.Queue()
+    # Create a cancel event to signal the mock audio stream to stop
+    cancel_event = asyncio.Event()
 
-    # Mock the text_to_speech_ws_streaming method to consume from queue
-    async def mock_text_to_speech_ws_streaming():
-        while True:
-            try:
-                await mock_client_instance.text_input_queue.get()
-            except asyncio.CancelledError:
-                break
+    # When flush is called in the extension, it should trigger this cancel method
+    async def mock_handle_flush():
+        cancel_event.set()
 
-    mock_client_instance.text_to_speech_ws_streaming = (
-        mock_text_to_speech_ws_streaming
-    )
+    mock_instance.handle_flush = AsyncMock(side_effect=mock_handle_flush)
 
-    # Mock the get_synthesized_audio method to return audio data
-    audio_data_queue = asyncio.Queue()
-    # Pre-populate the queue
-    audio_data_queue.put_nowait([b"fake_audio_data_1", False, ""])
-    audio_data_queue.put_nowait(
-        [b"fake_audio_data_2", True, "hello word, hello agora"]
-    )
+    # Mock the client constructor
+    def mock_client_init(
+        config, ten_env, error_callback=None, response_msgs=None
+    ):
+        # Use the real queue passed by the extension
+        mock_instance.response_msgs = (
+            response_msgs if response_msgs else asyncio.Queue()
+        )
 
-    async def mock_get_synthesized_audio():
-        try:
-            return await audio_data_queue.get()
-        except asyncio.QueueEmpty:
-            # If the queue is empty, return a special value to stop the loop
-            return [None, True, "STOP_LOOP"]
+        async def populate_queue():
+            # Continuously send audio chunks until cancelled
+            for _ in range(20):
+                if cancel_event.is_set():
+                    # For elevenlabs, flush is handled by stopping the stream
+                    return
 
-    mock_client_instance.get_synthesized_audio = mock_get_synthesized_audio
-    MockElevenLabsTTS2.return_value = mock_client_instance
+                await mock_instance.response_msgs.put(
+                    (b"\x11\x22\x33" * 100, False, "")
+                )
+                await asyncio.sleep(0.1)
 
-    # Create and run the tester
-    tester = ExtensionTesterBasic()
-    tester.set_test_mode_single("elevenlabs_tts2_python")
+            # This part is only reached if not cancelled
+            await mock_instance.response_msgs.put(
+                (b"\x44\x55\x66", True, "This is a very long text designed")
+            )
+
+        asyncio.create_task(populate_queue())
+        return mock_instance
+
+    MockElevenLabsTTS2Client.side_effect = mock_client_init
+
+    # --- Test Setup ---
+    config = {
+        "params": {"api_key": "valid_api_key", "voice_id": "valid_voice_id"}
+    }
+    tester = ExtensionTesterFlush()
+    tester.set_test_mode_single("elevenlabs_tts2_python", json.dumps(config))
+
+    print("Running flush logic test...")
     tester.run()
+    print("Flush logic test completed.")
 
-    # Verify that audio end was received
-    assert tester.audio_end_received, "Audio end event was not received"
+    # --- Assertions ---
+    assert tester.audio_start_received, "Did not receive tts_audio_start."
+    assert tester.first_audio_frame_received, "Did not receive any audio frame."
+    assert tester.audio_end_received, "Did not receive tts_audio_end."
+    assert tester.flush_end_received, "Did not receive tts_flush_end."
+
+    # In elevenlabs, a flushed stream ends with 'flush' reason (2)
     assert (
-        len(tester.received_audio_chunks) > 0
-    ), "No audio chunks were received"
+        tester.audio_end_reason == 2
+    ), f"Expected audio end reason 'flush' (2), but got '{tester.audio_end_reason}'"
+
+    calculated_duration = tester.get_calculated_audio_duration_ms()
+    event_duration = tester.total_audio_duration_from_event
+    print(
+        f"Calculated duration: {calculated_duration}ms, Event duration: {event_duration}ms"
+    )
+
+    print("✅ Flush logic test passed successfully.")

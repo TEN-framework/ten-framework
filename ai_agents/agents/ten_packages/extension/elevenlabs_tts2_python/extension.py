@@ -7,6 +7,7 @@ import asyncio
 from datetime import datetime
 import os
 import traceback
+from typing import Tuple
 
 from ten_ai_base.helper import PCMWriter
 from ten_ai_base.message import (
@@ -18,7 +19,7 @@ from ten_ai_base.message import (
 )
 from ten_ai_base.struct import TTSTextInput
 from ten_ai_base.tts2 import AsyncTTS2BaseExtension
-from .elevenlabs_tts import ElevenLabsTTS2, ElevenLabsTTS2Config
+from .elevenlabs_tts import ElevenLabsTTS2Client, ElevenLabsTTS2Config
 from ten_runtime import (
     AsyncTenEnv,
     Data,
@@ -29,7 +30,7 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
     def __init__(self, name: str) -> None:
         super().__init__(name)
         self.config: ElevenLabsTTS2Config = None
-        self.client: ElevenLabsTTS2 = None
+        self.client: ElevenLabsTTS2Client = None
         self.current_request_id: str = None
         self.current_turn_id: int = -1
         self.stop_event: asyncio.Event = None
@@ -37,12 +38,13 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
         self.request_start_ts: datetime | None = None
         self.request_ttfb: int | None = None
         self.request_total_audio_duration: int | None = None
+        self.response_msgs = asyncio.Queue[Tuple[bytes, bool, str]]()
         self.recorder_map: dict[str, PCMWriter] = (
             {}
         )  # store different request id pcmwriter
         self.last_completed_request_id: str | None = None
         self.completed_request_ids: set[str] = set()
-        self.read_audio_data_task: asyncio.Task = None
+        self.msg_polling_task: asyncio.Task = None
         self.init_complete: asyncio.Event = asyncio.Event()
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
@@ -79,17 +81,14 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                     self.ten_env.log_error(
                         f"Fatal error occurred: {error.message}"
                     )
-                    await self.client.close_connection()
+                    await self.client.close()
                     self.on_stop(self.ten_env)
 
-            self.client = ElevenLabsTTS2(self.config, ten_env, error_callback)
-            ten_env.log_debug("Created ElevenLabsTTS2 client")
-            await self.client.start_connection()
-            ten_env.log_debug("Started ElevenLabsTTS2 connection")
-            self.read_audio_data_task = asyncio.create_task(
-                self.read_audio_data()
+            # Create client (connection management will be handled automatically)
+            self.client = ElevenLabsTTS2Client(
+                self.config, ten_env, error_callback, self.response_msgs
             )
-            ten_env.log_debug("Created read_audio_data task")
+            self.msg_polling_task = asyncio.create_task(self._loop())
 
             # Mark initialization as complete
             self.init_complete.set()
@@ -112,22 +111,12 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
             )
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
-        # Cancel audio data reading task
-        if self.read_audio_data_task and not self.read_audio_data_task.done():
-            self.read_audio_data_task.cancel()
-            try:
-                await self.read_audio_data_task
-            except asyncio.CancelledError:
-                pass
-
-        # Close WebSocket connection
+        # Close client connection
         if self.client:
-            try:
-                await self.client.close_connection()
-            except Exception as e:
-                ten_env.log_error(f"Error closing WebSocket connection: {e}")
-            finally:
-                self.client = None
+            await self.client.close()
+
+        if self.msg_polling_task:
+            self.msg_polling_task.cancel()
 
         # close all PCMWriter
         for request_id, recorder in self.recorder_map.items():
@@ -162,6 +151,83 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
     def synthesize_audio_sample_width(self) -> int:
         return 2
 
+    async def _loop(self) -> None:
+        """Message polling loop"""
+        while True:
+            try:
+                audio_data, isFinal, _ = await self.client.response_msgs.get()
+
+                if audio_data is not None:
+                    self.ten_env.log_info(
+                        f"KEYPOINT Received audio data for request ID: {self.current_request_id}, audio_data_len: {len(audio_data)}"
+                    )
+
+                    # new request_id, send TTSAudioStart event and TTFB metrics
+                    if (
+                        self.current_request_id
+                        and self.request_start_ts is not None
+                        and self.request_ttfb is None
+                    ):
+                        self.ten_env.log_info(
+                            f"KEYPOINT Sent TTSAudioStart for request ID: {self.current_request_id}"
+                        )
+                        await self.send_tts_audio_start(self.current_request_id)
+                        elapsed_time = int(
+                            (
+                                datetime.now() - self.request_start_ts
+                            ).total_seconds()
+                            * 1000
+                        )
+                        if self.current_request_id:
+                            await self.send_tts_ttfb_metrics(
+                                self.current_request_id,
+                                elapsed_time,
+                                self.current_turn_id,
+                            )
+                        self.request_ttfb = elapsed_time
+                        self.ten_env.log_info(
+                            f"KEYPOINT Sent TTFB metrics for request ID: {self.current_request_id}, elapsed time: {elapsed_time}ms"
+                        )
+
+                    if (
+                        self.config.dump
+                        and self.current_request_id
+                        and self.current_request_id in self.recorder_map
+                    ):
+                        await self.recorder_map[self.current_request_id].write(
+                            audio_data
+                        )
+                        self.ten_env.log_debug(
+                            f"Wrote {len(audio_data)} bytes to PCMWriter for request_id: {self.current_request_id}"
+                        )
+
+                    cur_duration = self.calculate_audio_duration(
+                        len(audio_data),
+                        self.synthesize_audio_sample_rate(),
+                        self.synthesize_audio_channels(),
+                        self.synthesize_audio_sample_width(),
+                    )
+                    if self.request_total_audio_duration is None:
+                        self.request_total_audio_duration = cur_duration
+                    else:
+                        self.request_total_audio_duration += cur_duration
+                    await self.send_tts_audio_data(audio_data)
+
+                if isFinal and self.current_request_id:
+                    await self.handle_completed_request(
+                        TTSAudioEndReason.REQUEST_END
+                    )
+                    # Don't reset current_request_id here, let the next request set it
+                    # Reset only timing-related variables
+                    self.request_start_ts = None
+                    self.request_ttfb = None
+                    self.request_total_audio_duration = None
+
+            except Exception:
+                self.ten_env.log_error(
+                    f"Error in _loop: {traceback.format_exc()}"
+                )
+
     async def request_tts(self, t: TTSTextInput) -> None:
         """
         Override this method to handle TTS requests.
@@ -195,6 +261,7 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                         TTSAudioEndReason.REQUEST_END
                     )
                     return
+
             # new request id
             if (
                 self.current_request_id is None
@@ -293,35 +360,8 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                 )
                 return
 
-            # Check if connection is healthy
-            if not self.client.is_connection_healthy():
-                self.ten_env.log_info(
-                    f"Connection not healthy, starting connection for request: {t.request_id}"
-                )
-                await self.client.start_connection()
-
-            self.ten_env.log_debug(
-                f"Putting TTS request into queue: {t.request_id}"
-            )
-            try:
-                self.client.text_input_queue.put_nowait(t)
-                self.ten_env.log_debug(
-                    f"Successfully put TTS request into queue: {t.request_id}"
-                )
-            except asyncio.QueueFull:
-                self.ten_env.log_error(
-                    f"Queue is full, cannot process TTS request: {t.request_id}"
-                )
-                await self.send_tts_error(
-                    t.request_id,
-                    ModuleError(
-                        message="TTS queue is full",
-                        module=ModuleType.TTS,
-                        code=ModuleErrorCode.NON_FATAL_ERROR,
-                        vendor_info={"vendor": "elevenlabs"},
-                    ),
-                )
-                return
+            # Send text to client
+            await self.client.send_text(t)
 
         except ModuleVendorException as e:
             self.ten_env.log_error(
@@ -399,7 +439,8 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                 return
 
             try:
-                await self.client.handle_flush()
+                # Cancel current connection (maintain original flush disconnect behavior)
+                self.client.cancel()
                 await self.handle_completed_request(
                     TTSAudioEndReason.INTERRUPTED
                 )
@@ -446,10 +487,16 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
             request_event_interval = int(
                 (datetime.now() - self.request_start_ts).total_seconds() * 1000
             )
+        # Ensure request_total_audio_duration is not None
+        duration_ms = (
+            self.request_total_audio_duration
+            if self.request_total_audio_duration is not None
+            else 0
+        )
         await self.send_tts_audio_end(
             self.current_request_id,
             request_event_interval,
-            self.request_total_audio_duration,
+            duration_ms,
             self.current_turn_id,
             reason,
         )
@@ -479,81 +526,3 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
         bytes_per_second = sample_rate * channels * sample_width
         duration_seconds = bytes_length / bytes_per_second
         return int(duration_seconds * 1000)
-
-    async def read_audio_data(self):
-        try:
-            while True:
-                self.ten_env.log_debug(
-                    f"read_audio_data: waiting for audio data, current_request_id: {self.current_request_id}"
-                )
-                result = await self.client.get_synthesized_audio()
-                audio_data, isFinal, _ = result
-                self.ten_env.log_debug(
-                    f"read_audio_data: received audio data, isFinal: {isFinal}, data_size: {len(audio_data) if audio_data else 0}"
-                )
-
-                # new request_id, send TTSAudioStart event and TTFB metrics
-                if (
-                    self.current_request_id
-                    and self.request_start_ts is not None
-                    and self.request_ttfb is None
-                ):
-                    self.ten_env.log_info(
-                        f"KEYPOINT Sent TTSAudioStart for request ID: {self.current_request_id}"
-                    )
-                    await self.send_tts_audio_start(self.current_request_id)
-                    elapsed_time = int(
-                        (datetime.now() - self.request_start_ts).total_seconds()
-                        * 1000
-                    )
-                    if self.current_request_id:
-                        await self.send_tts_ttfb_metrics(
-                            self.current_request_id,
-                            elapsed_time,
-                            self.current_turn_id,
-                        )
-                    self.request_ttfb = elapsed_time
-                    self.ten_env.log_info(
-                        f"KEYPOINT Sent TTFB metrics for request ID: {self.current_request_id}, elapsed time: {elapsed_time}ms"
-                    )
-                cur_duration = 0
-                if audio_data is not None:
-                    if (
-                        self.config.dump
-                        and self.current_request_id
-                        and self.current_request_id in self.recorder_map
-                    ):
-                        await self.recorder_map[self.current_request_id].write(
-                            audio_data
-                        )
-                        self.ten_env.log_debug(
-                            f"Wrote {len(audio_data)} bytes to PCMWriter for request_id: {self.current_request_id}"
-                        )
-                    cur_duration = self.calculate_audio_duration(
-                        len(audio_data),
-                        self.synthesize_audio_sample_rate(),
-                        self.synthesize_audio_channels(),
-                        self.synthesize_audio_sample_width(),
-                    )
-                    if self.request_total_audio_duration is None:
-                        self.request_total_audio_duration = cur_duration
-                    else:
-                        self.request_total_audio_duration += cur_duration
-                    await self.send_tts_audio_data(audio_data)
-
-                if isFinal and self.current_request_id:
-                    await self.handle_completed_request(
-                        TTSAudioEndReason.REQUEST_END
-                    )
-                    # Don't reset current_request_id here, let the next request set it
-                    # Reset only timing-related variables
-                    self.request_start_ts = None
-                    self.request_ttfb = None
-                    self.request_total_audio_duration = None
-        except asyncio.CancelledError:
-            self.ten_env.log_info("read_audio_data task cancelled")
-            raise
-        except Exception:
-            self.ten_env.log_error(
-                f"Error in read_audio_data: {traceback.format_exc()}"
-            )
