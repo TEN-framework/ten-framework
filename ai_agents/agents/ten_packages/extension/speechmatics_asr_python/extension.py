@@ -25,6 +25,7 @@ from ten_ai_base.dumper import Dumper
 from .reconnect_manager import ReconnectManager
 from .config import SpeechmaticsASRConfig
 from .asr_client import SpeechmaticsASRClient
+from .language_utils import normalized_language
 
 
 class SpeechmaticsASRExtension(AsyncASRBaseExtension):
@@ -164,7 +165,7 @@ class SpeechmaticsASRExtension(AsyncASRBaseExtension):
             final=message_data.final,
             start_ms=message_data.start_ms,
             duration_ms=message_data.duration_ms,
-            language=message_data.language,
+            language=normalized_language(message_data.language),
         )
 
     async def on_asr_error(

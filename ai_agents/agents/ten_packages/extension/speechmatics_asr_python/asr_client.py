@@ -26,7 +26,7 @@ from .word import (
     get_sentence_start_ms,
 )
 from ten_ai_base.timeline import AudioTimeline
-from .language_utils import get_speechmatics_language
+# from .language_utils import get_speechmatics_language
 
 
 async def run_asr_client(client: "SpeechmaticsASRClient"):
@@ -112,7 +112,7 @@ class SpeechmaticsASRClient:
                     self.ten_env.log_warn("invalid hotword format: " + hw)
         self.transcription_config = speechmatics.models.TranscriptionConfig(
             enable_partials=self.config.enable_partials,
-            language=get_speechmatics_language(self.config.language),
+            language=self.config.language,
             max_delay=self.config.max_delay,
             max_delay_mode=self.config.max_delay_mode,
             additional_vocab=additional_vocab,
