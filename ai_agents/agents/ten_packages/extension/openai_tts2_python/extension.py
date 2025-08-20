@@ -196,7 +196,7 @@ class OpenaiTTSExtension(AsyncTTS2BaseExtension):
                     if t.request_id not in self.recorder_map:
                         dump_file_path = os.path.join(
                             self.config.dump_path,
-                            f"minimax_dump_{t.request_id}.pcm",
+                            f"openai_dump_{t.request_id}.pcm",
                         )
                         self.recorder_map[t.request_id] = PCMWriter(
                             dump_file_path
