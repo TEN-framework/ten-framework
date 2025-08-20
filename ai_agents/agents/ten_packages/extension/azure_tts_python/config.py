@@ -12,5 +12,7 @@ class AzureTTSConfig(BaseModel):
         description="Azure TTS dump path",
     )
     pre_connect: bool = Field(default=True, description="Azure TTS pre connect")
-    chunk_size: int = Field(default=3200, description="Azure TTS chunk size in bytes")
+    chunk_size: int = Field(
+        default=3200, description="Azure TTS chunk size in bytes"
+    )
     params: AzureTTSParams = Field(..., description="Azure TTS params")

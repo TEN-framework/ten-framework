@@ -48,9 +48,7 @@ class AzureTTSExtension(AsyncTTS2BaseExtension):
         await super().on_init(ten_env)
         config_json, _ = await ten_env.get_property_to_json()
         try:
-            ten_env.log_info(
-                f"KEYPOINT tts config_json: {config_json}"
-            )
+            ten_env.log_info(f"KEYPOINT tts config_json: {config_json}")
             self.config = AzureTTSConfig.model_validate_json(config_json)
             ten_env.log_info(
                 f"KEYPOINT tts vendor_config: {self.config.model_dump_json()}"
@@ -59,11 +57,13 @@ class AzureTTSExtension(AsyncTTS2BaseExtension):
             if self.config.dump:
                 self.audio_dumper = {}
 
-            self.client = AzureTTS(self.config.params, chunk_size=self.config.chunk_size)
-            await self.client.start_connection(pre_connect=self.config.pre_connect)
-            ten_env.log_info(
-                "KEYPOINT tts connect successfully"
+            self.client = AzureTTS(
+                self.config.params, chunk_size=self.config.chunk_size
             )
+            await self.client.start_connection(
+                pre_connect=self.config.pre_connect
+            )
+            ten_env.log_info("KEYPOINT tts connect successfully")
         except Exception as e:
             ten_env.log_error(f"KEYPOINT tts on_init error: {e}")
             self.config = None
@@ -102,7 +102,10 @@ class AzureTTSExtension(AsyncTTS2BaseExtension):
                 ten_env.log_info(
                     f"KEYPOINT tts Added request_id {flush_id} to flush_request_ids set"
                 )
-            if self.request_start_ts is not None and self.current_request_id is not None:
+            if (
+                self.request_start_ts is not None
+                and self.current_request_id is not None
+            ):
                 request_event_interval = int(
                     (time.time() - self.request_start_ts) * 1000
                 )
@@ -131,15 +134,13 @@ class AzureTTSExtension(AsyncTTS2BaseExtension):
             self.ten_env.log_info(
                 f"KEYPOINT ttsSynthesizing audio for request ID: {request_id}, text: {text}"
             )
-            async for chunk in await self.client.synthesize_with_retry(text, max_retries=5, retry_delay=1.0):
+            async for chunk in await self.client.synthesize_with_retry(
+                text, max_retries=5, retry_delay=1.0
+            ):
                 if not first_chunk:
                     first_chunk = True
-                    await self.send_tts_audio_start(
-                        request_id, turn_id
-                    )
-                    elapsed_time = int(
-                        (time.time() - request_start_ts) * 1000
-                    )
+                    await self.send_tts_audio_start(request_id, turn_id)
+                    elapsed_time = int((time.time() - request_start_ts) * 1000)
                     await self.send_tts_ttfb_metrics(
                         request_id, elapsed_time, turn_id
                     )
@@ -267,20 +268,32 @@ class AzureTTSExtension(AsyncTTS2BaseExtension):
         # asyncio.create_task(self._async_synthesize(t))
         await self._async_synthesize(t)
 
-
     def synthesize_audio_sample_rate(self) -> int:
         assert self.config is not None
-        if self.config.params.output_format == speechsdk.SpeechSynthesisOutputFormat.Raw8Khz16BitMonoPcm:
+        if (
+            self.config.params.output_format
+            == speechsdk.SpeechSynthesisOutputFormat.Raw8Khz16BitMonoPcm
+        ):
             return 8000
-        elif self.config.params.output_format == speechsdk.SpeechSynthesisOutputFormat.Raw16Khz16BitMonoPcm:
+        elif (
+            self.config.params.output_format
+            == speechsdk.SpeechSynthesisOutputFormat.Raw16Khz16BitMonoPcm
+        ):
             return 16000
-        elif self.config.params.output_format == speechsdk.SpeechSynthesisOutputFormat.Raw24Khz16BitMonoPcm:
+        elif (
+            self.config.params.output_format
+            == speechsdk.SpeechSynthesisOutputFormat.Raw24Khz16BitMonoPcm
+        ):
             return 24000
-        elif self.config.params.output_format == speechsdk.SpeechSynthesisOutputFormat.Raw48Khz16BitMonoPcm:
+        elif (
+            self.config.params.output_format
+            == speechsdk.SpeechSynthesisOutputFormat.Raw48Khz16BitMonoPcm
+        ):
             return 48000
         else:
-            raise ValueError(f"Unsupported output format: {self.config.params.output_format}")
-
+            raise ValueError(
+                f"Unsupported output format: {self.config.params.output_format}"
+            )
 
     def _calculate_audio_duration(
         self,

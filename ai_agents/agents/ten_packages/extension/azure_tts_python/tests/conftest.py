@@ -10,6 +10,7 @@ from ten_runtime import (
     TenEnv,
 )
 
+
 class FakeApp(App):
     def __init__(self):
         super().__init__()

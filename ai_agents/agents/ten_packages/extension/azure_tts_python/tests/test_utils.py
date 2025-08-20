@@ -8,14 +8,14 @@ class TestEncryptingSerializer(unittest.TestCase):
 
     def test_encrypting_serializer_with_string(self):
         """Test encrypting serializer with string values"""
+
         class TestModel(BaseModel):
             secret_field: str
             public_field: str
-            _encrypt_fields = encrypting_serializer('secret_field')
+            _encrypt_fields = encrypting_serializer("secret_field")
 
         model = TestModel(
-            secret_field="my_secret_value",
-            public_field="public_value"
+            secret_field="my_secret_value", public_field="public_value"
         )
 
         json_output = model.model_dump_json()
@@ -30,16 +30,19 @@ class TestEncryptingSerializer(unittest.TestCase):
 
     def test_encrypting_serializer_with_multiple_fields(self):
         """Test encrypting serializer with multiple fields"""
+
         class TestModel(BaseModel):
             secret_field1: str
             secret_field2: str
             public_field: str
-            _encrypt_fields = encrypting_serializer('secret_field1', 'secret_field2')
+            _encrypt_fields = encrypting_serializer(
+                "secret_field1", "secret_field2"
+            )
 
         model = TestModel(
             secret_field1="first_secret",
             secret_field2="second_secret",
-            public_field="public_value"
+            public_field="public_value",
         )
 
         json_output = model.model_dump_json()
@@ -52,9 +55,10 @@ class TestEncryptingSerializer(unittest.TestCase):
 
     def test_encrypting_serializer_with_none_value(self):
         """Test encrypting serializer with None values"""
+
         class TestModel(BaseModel):
             secret_field: str | None
-            _encrypt_fields = encrypting_serializer('secret_field')
+            _encrypt_fields = encrypting_serializer("secret_field")
 
         model = TestModel(secret_field=None)
 
@@ -65,9 +69,10 @@ class TestEncryptingSerializer(unittest.TestCase):
 
     def test_encrypting_serializer_with_empty_string(self):
         """Test encrypting serializer with empty string"""
+
         class TestModel(BaseModel):
             secret_field: str
-            _encrypt_fields = encrypting_serializer('secret_field')
+            _encrypt_fields = encrypting_serializer("secret_field")
 
         model = TestModel(secret_field="")
 
@@ -78,9 +83,10 @@ class TestEncryptingSerializer(unittest.TestCase):
 
     def test_encrypting_serializer_with_short_string(self):
         """Test encrypting serializer with short string (less than 10 characters)"""
+
         class TestModel(BaseModel):
             secret_field: str
-            _encrypt_fields = encrypting_serializer('secret_field')
+            _encrypt_fields = encrypting_serializer("secret_field")
 
         model = TestModel(secret_field="short")
 
@@ -91,11 +97,14 @@ class TestEncryptingSerializer(unittest.TestCase):
 
     def test_encrypting_serializer_with_long_string(self):
         """Test encrypting serializer with long string (more than 25 characters)"""
+
         class TestModel(BaseModel):
             secret_field: str
-            _encrypt_fields = encrypting_serializer('secret_field')
+            _encrypt_fields = encrypting_serializer("secret_field")
 
-        model = TestModel(secret_field="very_long_secret_value_that_exceeds_normal_length")
+        model = TestModel(
+            secret_field="very_long_secret_value_that_exceeds_normal_length"
+        )
 
         json_output = model.model_dump_json()
 
@@ -104,12 +113,17 @@ class TestEncryptingSerializer(unittest.TestCase):
 
     def test_encrypting_serializer_encryption_pattern(self):
         """Test the encryption pattern follows the expected format"""
+
         class TestModel(BaseModel):
             secret_field: str
-            _encrypt_fields = encrypting_serializer('secret_field')
+            _encrypt_fields = encrypting_serializer("secret_field")
 
         test_cases = [
-            "hello", "helloword", "helloworldtest", "verylongstringvalue", "extremelylongstringvalue",
+            "hello",
+            "helloword",
+            "helloworldtest",
+            "verylongstringvalue",
+            "extremelylongstringvalue",
         ]
 
         for input_str in test_cases:
@@ -120,15 +134,15 @@ class TestEncryptingSerializer(unittest.TestCase):
 
     def test_encrypting_serializer_preserves_original_data(self):
         """Test that encrypting serializer preserves original data in model_dump"""
+
         class TestModel(BaseModel):
             secret_field: str
             public_field: str
-            _encrypt_fields = encrypting_serializer('secret_field')
+            _encrypt_fields = encrypting_serializer("secret_field")
 
         original_secret = "my_secret_value"
         model = TestModel(
-            secret_field=original_secret,
-            public_field="public_value"
+            secret_field=original_secret, public_field="public_value"
         )
 
         # Check that model_dump preserves original values

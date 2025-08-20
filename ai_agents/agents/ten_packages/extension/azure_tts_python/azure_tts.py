@@ -113,7 +113,9 @@ class AzureTTS:
             assert isinstance(
                 params.output_format, speechsdk.SpeechSynthesisOutputFormat
             )
-            self.speech_config.set_speech_synthesis_output_format(params.output_format)
+            self.speech_config.set_speech_synthesis_output_format(
+                params.output_format
+            )
             for k, v in params.propertys:
                 assert isinstance(k, speechsdk.PropertyId)
                 self.speech_config.set_property(k, v)
@@ -125,7 +127,9 @@ class AzureTTS:
         if not hasattr(asyncio, "to_thread"):
             self.thread_pool = ThreadPoolExecutor(max_workers=1)
 
-    def sync_start_connection(self, pre_connect: bool = True, timeout: float = 30.0):
+    def sync_start_connection(
+        self, pre_connect: bool = True, timeout: float = 30.0
+    ):
         """
         start the connection to the speech service, and pre connect to the speech service if needed
         fully sync, will block the current thread
@@ -142,7 +146,9 @@ class AzureTTS:
         # pre connect to the speech service, may be take some time
         if pre_connect:
             try:
-                _result = self.speech_synthesizer.start_speaking_text_async("").get()
+                _result = self.speech_synthesizer.start_speaking_text_async(
+                    ""
+                ).get()
                 _stream = speechsdk.AudioDataStream(_result)
 
                 start_time = time.time()
@@ -155,9 +161,13 @@ class AzureTTS:
                         )
                     time.sleep(0.1)
                     if timeout > 0 and time.time() - start_time > timeout:
-                        raise TimeoutError("connect to the speech service timeout")
+                        raise TimeoutError(
+                            "connect to the speech service timeout"
+                        )
             except Exception as e:
-                logging.error(f"error when pre connecting to the speech service: {e}")
+                logging.error(
+                    f"error when pre connecting to the speech service: {e}"
+                )
                 # clean up the connection
                 self.sync_stop_connection()
 
@@ -189,7 +199,9 @@ class AzureTTS:
 
         # synthesize the text
         assert self.speech_synthesizer is not None
-        speech_synthesis_result = self.speech_synthesizer.start_speaking_text(text)
+        speech_synthesis_result = self.speech_synthesizer.start_speaking_text(
+            text
+        )
         stream = speechsdk.AudioDataStream(speech_synthesis_result)
 
         while True:
@@ -208,7 +220,9 @@ class AzureTTS:
 
         # synthesize the text
         assert self.speech_synthesizer is not None
-        speech_synthesis_result = self.speech_synthesizer.start_speaking_ssml(ssml)
+        speech_synthesis_result = self.speech_synthesizer.start_speaking_ssml(
+            ssml
+        )
         stream = speechsdk.AudioDataStream(speech_synthesis_result)
 
         while True:
@@ -255,7 +269,9 @@ class AzureTTS:
                 assert self.thread_pool is not None
                 loop = asyncio.get_event_loop()
                 result = await asyncio.wait_for(
-                    loop.run_in_executor(self.thread_pool, sync_func, *args, **kwargs),
+                    loop.run_in_executor(
+                        self.thread_pool, sync_func, *args, **kwargs
+                    ),
                     timeout=timeout,
                 )
             return result
@@ -269,20 +285,20 @@ class AzureTTS:
         return self._async_iter_from_sync(it)
 
     async def synthesize_ssml(self, *args, **kwargs) -> AsyncIterator[bytes]:
-        it = await self._wrap_sync_func(self.sync_synthesize_ssml, timeout=None)(
-            *args, **kwargs
-        )
+        it = await self._wrap_sync_func(
+            self.sync_synthesize_ssml, timeout=None
+        )(*args, **kwargs)
         return self._async_iter_from_sync(it)
 
     async def start_connection(self, *args, **kwargs):
-        return await self._wrap_sync_func(self.sync_start_connection, timeout=30.0)(
-            *args, **kwargs
-        )
+        return await self._wrap_sync_func(
+            self.sync_start_connection, timeout=30.0
+        )(*args, **kwargs)
 
     async def stop_connection(self, *args, **kwargs):
-        return await self._wrap_sync_func(self.sync_stop_connection, timeout=30.0)(
-            *args, **kwargs
-        )
+        return await self._wrap_sync_func(
+            self.sync_stop_connection, timeout=30.0
+        )(*args, **kwargs)
 
     def _wrap_retry(self, max_retries: int = 3, retry_delay: float = 1.0):
         """
@@ -299,7 +315,9 @@ class AzureTTS:
                     try:
                         return await func(*args, **kwargs)
                     except Exception as e:
-                        logging.error(f"error when calling {func.__name__}: {e}")
+                        logging.error(
+                            f"error when calling {func.__name__}: {e}"
+                        )
                         await self.stop_connection()
                         await asyncio.sleep(current_retry_delay)
                         current_retry_delay *= 2
@@ -315,14 +333,16 @@ class AzureTTS:
     async def synthesize_with_retry(
         self, text: str, max_retries: int = 3, retry_delay: float = 1.0
     ) -> AsyncIterator[bytes]:
-        return await self._wrap_retry(max_retries, retry_delay)(self.synthesize)(text)
+        return await self._wrap_retry(max_retries, retry_delay)(
+            self.synthesize
+        )(text)
 
     async def synthesize_ssml_with_retry(
         self, ssml: str, max_retries: int = 3, retry_delay: float = 1.0
     ) -> AsyncIterator[bytes]:
-        return await self._wrap_retry(max_retries, retry_delay)(self.synthesize_ssml)(
-            ssml
-        )
+        return await self._wrap_retry(max_retries, retry_delay)(
+            self.synthesize_ssml
+        )(ssml)
 
     def __del__(self):
         self.sync_stop_connection()

@@ -99,8 +99,9 @@ class MockAzureTTSExtensionTester(AsyncExtensionTester):
 def test_azure_tts_extension_success():
     """test azure tts extension success"""
     # directly mock AzureTTS class
-    with patch("ten_packages.extension.azure_tts_python.extension.AzureTTS") as mock_azure_tts_class:
-
+    with patch(
+        "ten_packages.extension.azure_tts_python.extension.AzureTTS"
+    ) as mock_azure_tts_class:
         # create mock instance
         mock_azure_tts_instance = MagicMock()
         mock_azure_tts_class.return_value = mock_azure_tts_instance
@@ -111,7 +112,11 @@ def test_azure_tts_extension_success():
 
         async def mock_synthesize(text):
             # mock audio data stream
-            audio_chunks = [b"mock_audio_chunk_1", b"mock_audio_chunk_2", b"mock_audio_chunk_3"]
+            audio_chunks = [
+                b"mock_audio_chunk_1",
+                b"mock_audio_chunk_2",
+                b"mock_audio_chunk_3",
+            ]
             for chunk in audio_chunks:
                 yield chunk
 
@@ -141,7 +146,9 @@ def test_azure_tts_extension_success():
         }
 
         tester = MockAzureTTSExtensionTester()
-        tester.set_test_mode_single("azure_tts_python", json.dumps(property_json))
+        tester.set_test_mode_single(
+            "azure_tts_python", json.dumps(property_json)
+        )
         tester.max_wait_time = 30
         err = tester.run()
 
@@ -150,4 +157,6 @@ def test_azure_tts_extension_success():
         # mock_azure_tts_instance.start_connection.assert_called_once()
 
         # simple assert - as long as no exception is thrown, it is considered successful
-        assert err is None, f"test_azure_tts_extension_success err: {err.error_message() if err else 'None'}"
+        assert (
+            err is None
+        ), f"test_azure_tts_extension_success err: {err.error_message() if err else 'None'}"
