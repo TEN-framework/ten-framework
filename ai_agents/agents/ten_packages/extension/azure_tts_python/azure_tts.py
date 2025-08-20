@@ -37,7 +37,7 @@ class AzureTTSParams(BaseModel):
 
     @field_validator("output_format", mode="before")
     def validate_output_format(
-        cls, value: str | speechsdk.SpeechSynthesisOutputFormat | int
+        self, value: str | speechsdk.SpeechSynthesisOutputFormat | int
     ) -> speechsdk.SpeechSynthesisOutputFormat:
         if isinstance(value, speechsdk.SpeechSynthesisOutputFormat):
             return value
@@ -52,7 +52,7 @@ class AzureTTSParams(BaseModel):
 
     @field_validator("propertys", mode="before")
     def validate_propertys(
-        cls, value: list[tuple[speechsdk.PropertyId | str | int, str]]
+        self, value: list[tuple[speechsdk.PropertyId | str | int, str]]
     ) -> list[tuple[speechsdk.PropertyId, str]]:
         propertys = []
         for k, v in value:
@@ -120,7 +120,7 @@ class AzureTTS:
         except Exception as e:
             raise RuntimeError(
                 f"error when initializing AzureTTS with params: {params.model_dump_json()}\nerror: {e}"
-            )
+            ) from e
 
         if not hasattr(asyncio, "to_thread"):
             self.thread_pool = ThreadPoolExecutor(max_workers=1)
@@ -330,7 +330,6 @@ class AzureTTS:
 
 if __name__ == "__main__":
     import os
-    import asyncio
 
     params = AzureTTSParams(
         subscription=os.getenv("AZURE_TTS_API_KEY", ""),

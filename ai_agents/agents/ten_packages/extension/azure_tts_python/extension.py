@@ -121,7 +121,6 @@ class AzureTTSExtension(AsyncTTS2BaseExtension):
         request_id = text_input.request_id
         turn_id = text_input.metadata.get("turn_id", -1)
         text_input_end = text_input.text_input_end
-        metadata = text_input.metadata
 
         first_chunk = False
         self.request_total_audio_duration = 0
