@@ -1,0 +1,31 @@
+{
+  "type": "extension",
+  "name": "soniox_asr_python",
+  "version": "0.1.2",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.10"
+    },
+    {
+      "type": "system",
+      "name": "ten_ai_base",
+      "version": "0.6"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "**.py",
+      "requirements.txt",
+      "docs/**",
+      "*.md"
+    ]
+  },
+  "api": {},
+  "scripts": {
+    "test": "tests/bin/start"
+  }
+}

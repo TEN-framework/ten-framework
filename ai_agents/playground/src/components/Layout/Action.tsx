@@ -13,14 +13,11 @@ import {
   MOBILE_ACTIVE_TAB_MAP,
   EMobileActiveTab,
   isEditModeOn,
-  useGraphs,
 } from "@/common";
 import { toast } from "sonner";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import { RemotePropertyCfgSheet } from "@/components/Chat/ChatCfgPropertySelect";
 import { RemoteGraphSelect } from "@/components/Chat/ChatCfgGraphSelect";
-import { RemoteModuleCfgSheet } from "@/components/Chat/ChatCfgModuleSelect";
 import { TrulienceCfgSheet } from "../Chat/ChatCfgTrulienceSetting";
 
 let intervalId: NodeJS.Timeout | null = null;
@@ -161,8 +158,8 @@ export default function Action(props: { className?: string }) {
             {isEditModeOn && (
               <>
                 <TrulienceCfgSheet />
-                <RemoteModuleCfgSheet />
-                <RemotePropertyCfgSheet />
+                {/* <RemoteModuleCfgSheet /> */}
+                {/* <RemotePropertyCfgSheet /> */}
               </>
             )}
 

@@ -3,32 +3,18 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import {
-  RemotePropertyCfgSheet,
-} from "@/components/Chat/ChatCfgPropertySelect";
-import PdfSelect from "@/components/Chat/PdfSelect";
-import {
-  genRandomChatList,
   useAppDispatch,
   useAutoScroll,
-  LANGUAGE_OPTIONS,
   useAppSelector,
-  GRAPH_OPTIONS,
-  isRagGraph,
-  isEditModeOn,
 } from "@/common";
 import {
-  setRtmConnected,
   addChatItem,
-  setSelectedGraphId,
-  setLanguage,
 } from "@/store/reducers/global";
 import MessageList from "@/components/Chat/MessageList";
 import { Button } from "@/components/ui/button";
 import { Send } from "lucide-react";
 import { rtmManager } from "@/manager/rtm";
 import { type IRTMTextItem, EMessageDataType, EMessageType, ERTMTextType } from "@/types";
-import { RemoteGraphSelect } from "@/components/Chat/ChatCfgGraphSelect";
-import { RemoteModuleCfgSheet } from "@/components/Chat/ChatCfgModuleSelect";
 
 export default function ChatCard(props: { className?: string }) {
   const { className } = props;
