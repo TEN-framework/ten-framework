@@ -67,12 +67,14 @@ pub async fn parse_property_from_str(
 ) -> Result<Property> {
     ten_validate_property_json_string(s)?;
 
-    let mut property: Property = serde_json::from_str(s)?;
+    let temp_all_fields: Map<String, Value> = serde_json::from_str(s)?;
+    let mut property: Property =
+        Property { ten: None, all_fields: temp_all_fields.clone() };
 
     let ten_field_str = get_ten_field_string();
 
     // Extract ten field from all_fields if it exists.
-    if let Some(ten_value) = property.all_fields.get(&ten_field_str) {
+    if let Some(ten_value) = temp_all_fields.get(&ten_field_str) {
         // Process the ten field manually instead of using
         // serde_json::from_value directly. Create a TenInProperty with empty
         // predefined_graphs.
