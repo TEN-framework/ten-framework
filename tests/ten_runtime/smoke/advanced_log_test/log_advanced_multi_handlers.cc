@@ -150,6 +150,4 @@ TEST(AdvancedLogTest, LogAdvancedMultiHandlers) {  // NOLINT
   // Check the log file exists.
   std::ifstream log_file("advanced_log_file_multi_handlers.log");
   EXPECT_TRUE(log_file.good());
-
-  ten_log_global_deinit_advanced_log();
 }

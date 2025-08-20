@@ -49,8 +49,26 @@ class test_app : public ten::app_t {
         // clang-format off
         R"({
              "ten": {
-               "log": {
-                 "level": 2
+               "advanced_log": {
+                 "handlers": [
+                   {
+                     "matchers": [
+                       {
+                         "level": "debug"
+                       }
+                     ],
+                     "formatter": {
+                       "type": "plain",
+                       "colored": true
+                     },
+                     "emitter": {
+                       "type": "console",
+                       "config": {
+                         "stream": "stdout"
+                       }
+                     }
+                   }
+                 ]
                },
                "predefined_graphs": [{
                  "name": "default",

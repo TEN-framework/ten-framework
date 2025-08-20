@@ -103,8 +103,26 @@ class test_app_1 : public ten::app_t {
         R"({
              "ten": {
                "uri": "msgpack://127.0.0.1:8001/",
-               "log": {
-                 "level": 2
+               "advanced_log": {
+                 "handlers": [
+                   {
+                     "matchers": [
+                       {
+                         "level": "debug"
+                       }
+                     ],
+                     "formatter": {
+                       "type": "plain",
+                       "colored": true
+                     },
+                     "emitter": {
+                       "type": "console",
+                       "config": {
+                         "stream": "stdout"
+                       }
+                     }
+                   }
+                 ]
                }
              }
            })",
@@ -124,9 +142,27 @@ class test_app_2 : public ten::app_t {
                  R"({
                       "ten": {
                         "uri": "msgpack://127.0.0.1:8002/",
-                        "log": {
-                          "level": 2
-                        }
+                        "advanced_log": {
+                           "handlers": [
+                             {
+                               "matchers": [
+                                 {
+                                   "level": "debug"
+                                 }
+                               ],
+                               "formatter": {
+                                 "type": "plain",
+                                 "colored": true
+                               },
+                               "emitter": {
+                                 "type": "console",
+                                 "config": {
+                                   "stream": "stdout"
+                                 }
+                               }
+                             }
+                           ]
+                         }
                       }
                     })"
         // clang-format on

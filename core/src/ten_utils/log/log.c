@@ -286,9 +286,13 @@ void ten_log_set_advanced_impl_with_config(
   TEN_ASSERT(self, "Invalid argument.");
   TEN_ASSERT(ten_log_check_integrity(self), "Invalid argument.");
 
-  TEN_ASSERT(self->advanced_impl.impl == NULL, "Invalid argument.");
-  TEN_ASSERT(self->advanced_impl.on_deinit == NULL, "Invalid argument.");
-  TEN_ASSERT(self->advanced_impl.config == NULL, "Invalid argument.");
+  if (!self->advanced_impl.is_reloadable) {
+    TEN_ASSERT(self->advanced_impl.impl == NULL, "Invalid argument.");
+    TEN_ASSERT(self->advanced_impl.on_deinit == NULL, "Invalid argument.");
+    TEN_ASSERT(self->advanced_impl.config == NULL, "Invalid argument.");
+  } else {
+    ten_log_advanced_impl_deinit(&self->advanced_impl);
+  }
 
   self->advanced_impl.impl = impl;
   self->advanced_impl.on_deinit = on_deinit;

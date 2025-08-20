@@ -213,8 +213,6 @@ TEST(AdvancedLogTest, LogAdvancedFileReopen2) {  // NOLINT
 
   ten_thread_join(app_thread, -1);
 
-  ten_log_global_deinit_advanced_log();
-
 #ifndef _WIN32
   // Verify three files exist.
   {

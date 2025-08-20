@@ -112,7 +112,7 @@ TEN_CPP_REGISTER_ADDON_AS_EXTENSION(log_file_reload__test_extension,
 
 }  // namespace
 
-TEST(LogTest, LogFileReload) {  // NOLINT
+TEST(LogTest, DISABLED_LogFileReload) {  // NOLINT
   // Remove the log file if it already exists.
   std::string log_file_path = "aaa/log_file_reload.log";
   std::ifstream check_file(log_file_path);

@@ -128,6 +128,4 @@ TEST(AdvancedLogTest, LogAdvancedStdout) {  // NOLINT
   delete client;
 
   ten_thread_join(app_thread, -1);
-
-  ten_log_global_deinit_advanced_log();
 }
