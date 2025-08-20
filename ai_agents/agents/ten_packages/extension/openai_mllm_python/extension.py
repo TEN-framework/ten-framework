@@ -115,8 +115,6 @@ class OpenAIRealtime2Extension(AsyncMLLMBaseExtension):
         ten_env.log_debug("on_init")
         self.ten_env = ten_env
 
-        self.loop = asyncio.get_event_loop()
-
         properties, _ = await ten_env.get_property_to_json(None)
         self.config = OpenAIRealtimeConfig.model_validate_json(properties)
         ten_env.log_info(f"config: {self.config}")
@@ -422,7 +420,7 @@ class OpenAIRealtime2Extension(AsyncMLLMBaseExtension):
                             name = message.name
                             arguments = message.arguments
                             self.ten_env.log_info(f"need to call func {name}")
-                            self.loop.create_task(
+                            asyncio.create_task(
                                 self._handle_tool_call(
                                     tool_call_id, name, arguments
                                 )
@@ -450,13 +448,14 @@ class OpenAIRealtime2Extension(AsyncMLLMBaseExtension):
 
     async def stop_connection(self) -> None:
         self.connected = False
-        await self.conn.close()
+        if self.conn is not None:
+            await self.conn.close()
 
     async def _handle_reconnect(self) -> None:
         """Handle reconnection logic with exponential backoff strategy."""
         await self.stop_connection()
         if not self.stopped:
-            await self.loop.sleep(1)  # Initial delay before reconnecting
+            await asyncio.sleep(1)  # Initial delay before reconnecting
             await self.start_connection()
 
     def is_connected(self) -> bool:
