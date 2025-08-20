@@ -53,6 +53,7 @@ class BytedanceTTSDuplexExtension(AsyncTTS2BaseExtension):
         self.last_completed_request_id: str | None = (
             None  # 最新完成的 request_id
         )
+        self.is_reconnecting = False
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         try:
@@ -87,7 +88,10 @@ class BytedanceTTSDuplexExtension(AsyncTTS2BaseExtension):
                         "Configuration is empty. Required parameter 'token' is missing."
                     )
 
-            await self._start_connection()
+            # Create client (connection management will be handled automatically)
+            self.client = BytedanceV3Client(
+                self.config, self.ten_env, self.vendor(), self.response_msgs
+            )
             self.msg_polling_task = asyncio.create_task(self._loop())
         except Exception as e:
             ten_env.log_error(f"on_start failed: {traceback.format_exc()}")
@@ -102,7 +106,10 @@ class BytedanceTTSDuplexExtension(AsyncTTS2BaseExtension):
             )
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
-        await self._stop_connection()
+        # 关闭客户端连接
+        if self.client:
+            await self.client.close()
+
         if self.msg_polling_task:
             self.msg_polling_task.cancel()
 
@@ -125,6 +132,12 @@ class BytedanceTTSDuplexExtension(AsyncTTS2BaseExtension):
         await super().on_deinit(ten_env)
         ten_env.log_debug("on_deinit")
 
+    def vendor(self) -> str:
+        return "bytedance"
+
+    def synthesize_audio_sample_rate(self) -> int:
+        return self.config.sample_rate
+
     async def _loop(self) -> None:
         while True:
             try:
@@ -132,6 +145,9 @@ class BytedanceTTSDuplexExtension(AsyncTTS2BaseExtension):
 
                 if event == EVENT_TTSResponse:
                     if audio_data is not None:
+                        self.ten_env.log_info(
+                            f"KEYPOINT Received audio data for request ID: {self.current_request_id}, audio_data_len: {len(audio_data)}"
+                        )
 
                         if (
                             self.config.dump
@@ -210,51 +226,6 @@ class BytedanceTTSDuplexExtension(AsyncTTS2BaseExtension):
                 self.ten_env.log_error(
                     f"Error in _loop: {traceback.format_exc()}"
                 )
-
-    async def _start_connection(self) -> None:
-        """
-        Prepare the connection to the TTS service.
-        This method is called before sending any TTS requests.
-        """
-        if self.client is None:
-            self.client = BytedanceV3Client(
-                self.config, self.ten_env, self.vendor(), self.response_msgs
-            )
-            self.ten_env.log_info(
-                f"KEYPOINT Connecting to service for request ID: {self.current_request_id}"
-            )
-            await self.client.connect()
-            await self.client.start_connection()
-            await self.client.start_session()
-
-    async def _stop_connection(self) -> None:
-        try:
-            if self.client:
-                await self.client.finish_session()
-                await self.client.finish_connection()
-                await self.client.close()
-        except Exception:
-            self.ten_env.log_warn(
-                f"Error during cleanup: {traceback.format_exc()}"
-            )
-        if self.stop_event:
-            self.stop_event.set()
-            self.stop_event = None
-        self.client = None
-
-    async def _reconnect(self) -> None:
-        """
-        Reconnect to the TTS service.
-        This method is called when the connection is lost or needs to be re-established.
-        """
-        await self._stop_connection()
-        await self._start_connection()
-
-    def vendor(self) -> str:
-        return "bytedance"
-
-    def synthesize_audio_sample_rate(self) -> int:
-        return self.config.sample_rate
 
     async def request_tts(self, t: TTSTextInput) -> None:
         """
@@ -346,13 +317,9 @@ class BytedanceTTSDuplexExtension(AsyncTTS2BaseExtension):
                 self.stop_event = asyncio.Event()
                 await self.stop_event.wait()
 
-                # close connection after session is finished
+                # 会话结束后，连接会自动重连准备下一轮
                 await self.client.finish_connection()
-                await self.client.close()
-                self.client = None
 
-                # restart connection to prepare for the next request
-                await self._start_connection()
         except ModuleVendorException as e:
             self.ten_env.log_error(
                 f"ModuleVendorException in request_tts: {traceback.format_exc()}. text: {t.text}"
@@ -366,7 +333,6 @@ class BytedanceTTSDuplexExtension(AsyncTTS2BaseExtension):
                     vendor_info=e.error,
                 ),
             )
-            await self._reconnect()
         except Exception as e:
             self.ten_env.log_error(
                 f"Error in request_tts: {traceback.format_exc()}. text: {t.text}"
@@ -380,12 +346,19 @@ class BytedanceTTSDuplexExtension(AsyncTTS2BaseExtension):
                     vendor_info={},
                 ),
             )
-            await self._reconnect()
 
     async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
         name = data.get_name()
         if name == "tts_flush":
-            await self._reconnect()
+            # Cancel current connection (maintain original flush disconnect behavior)
+            if self.client:
+                self.client.cancel()
+
+            # If there's a waiting stop_event, set it to release request_tts waiting
+            if self.stop_event:
+                self.stop_event.set()
+                self.stop_event = None
+
             ten_env.log_info(f"Received tts_flush data: {name}")
 
             request_event_interval = int(

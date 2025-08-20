@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "openai_asr_python",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "display_name": {
     "locales": {
       "en-US": {

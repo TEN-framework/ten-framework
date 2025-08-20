@@ -41,6 +41,8 @@ class GoogleASRClient:
         self._stop_event = asyncio.Event()
         self.is_finalizing = False
         self._has_sent_final_result = False
+        self._stream_start_time: float = 0.0
+        self._restarting: bool = False
 
     def _normalize_language_code(self, code: str | None) -> str:
         """Normalize provider language codes to framework-expected ones.
@@ -186,6 +188,9 @@ class GoogleASRClient:
     async def stop(self) -> None:
         """Stops the recognition stream and cleans up resources."""
         self.ten_env.log_info("Stopping Google ASR client...")
+        self._restarting = (
+            False  # Ensure we don't restart after an explicit stop
+        )
         if self._recognition_task and not self._recognition_task.done():
             self._stop_event.set()
             # Drain the queue to unblock the generator
@@ -262,80 +267,83 @@ class GoogleASRClient:
             await self.on_error_callback(500, str(e))
 
     async def _run_recognition(self) -> None:
-        """Run the streaming recognition loop with retry logic."""
-        retry_count = 0
-        while (
-            not self._stop_event.is_set()
-            and retry_count < self.config.max_retry_attempts
-        ):
-            try:
-                if not self.speech_client:
-                    raise ConnectionError(
-                        "Google Speech client is not initialized."
-                    )
-                requests = self._audio_generator()
-                self.ten_env.log_info("Starting streaming recognition...")
+        """Run the streaming recognition loop with retry and restart logic."""
+        while not self._stop_event.is_set():
+            retry_count = 0
+            self._restarting = False
+            self._stream_start_time = asyncio.get_event_loop().time()
+
+            while (
+                not self._stop_event.is_set()
+                and not self._restarting
+                and retry_count < self.config.max_retry_attempts
+            ):
                 try:
+                    if not self.speech_client:
+                        raise ConnectionError(
+                            "Google Speech client is not initialized."
+                        )
+
+                    requests = self._audio_generator()
+                    self.ten_env.log_info("Starting streaming recognition...")
+
                     responses = await self.speech_client.streaming_recognize(
                         requests=requests
                     )
-                    if getattr(self.config, "enable_detailed_logging", False):
-                        self.ten_env.log_debug(
-                            "Got streaming response iterator"
-                        )
-                        self.ten_env.log_debug(f"Responses: {responses}")
 
                     async for response in responses:
-                        if self._stop_event.is_set():
+                        if self._stop_event.is_set() or self._restarting:
                             break
-                        if getattr(
-                            self.config, "enable_detailed_logging", False
-                        ):
-                            self.ten_env.log_debug(
-                                f"Received response: {response}"
+
+                        elapsed_time = (
+                            asyncio.get_event_loop().time()
+                            - self._stream_start_time
+                        )
+                        if elapsed_time > self.config.stream_max_duration:
+                            self.ten_env.log_warn(
+                                f"Stream duration limit ({self.config.stream_max_duration}s) reached. Restarting stream."
                             )
+                            self._restarting = True
+                            break
+
                         await self._process_response(response)
-                except grpc.RpcError as e:
-                    # Simplify: rely only on stringified error
+
+                    if not self._restarting:
+                        # If the loop finishes without exceptions, reset retry count
+                        retry_count = 0
+
+                except (gcp_exceptions.GoogleAPICallError, grpc.RpcError) as e:
                     error_code = 500
                     error_message = str(e)
-                    self.ten_env.log_error(
-                        f"gRPC error in streaming_recognize ({error_code}): {error_message}"
-                    )
                     await self.on_error_callback(error_code, error_message)
+
+                    if self._is_retryable_error(e):
+                        retry_count += 1
+                        self.ten_env.log_warn(
+                            f"Retryable error encountered. Attempt {retry_count}/{self.config.max_retry_attempts}. Retrying in {self.config.retry_delay}s..."
+                        )
+                        await asyncio.sleep(self.config.retry_delay)
+                    else:
+                        self.ten_env.log_error(
+                            "Non-retryable error encountered. Stopping recognition."
+                        )
+                        self._stop_event.set()  # Stop on non-retryable error
+                        break
                 except Exception as e:
-                    self.ten_env.log_error(f"Error in streaming_recognize: {e}")
-                    await self.on_error_callback(500, str(e))
-
-                # If the loop finishes without exceptions, reset retry count
-                retry_count = 0
-                if self.is_finalizing:
-                    break  # Clean exit after finalize
-
-            except (gcp_exceptions.GoogleAPICallError, grpc.RpcError) as e:
-                # Simplify: use only stringified error
-                error_code = 500
-                error_message = str(e)
-
-                await self.on_error_callback(error_code, error_message)
-
-                if self._is_retryable_error(e):
-                    retry_count += 1
-                    self.ten_env.log_warn(
-                        f"Retryable error encountered. Attempt {retry_count}/{self.config.max_retry_attempts}. Retrying in {self.config.retry_delay}s..."
-                    )
-                    await asyncio.sleep(self.config.retry_delay)
-                else:
                     self.ten_env.log_error(
-                        "Non-retryable error encountered. Stopping recognition."
+                        f"Unexpected error in recognition loop: {e}"
                     )
-                    break  # Non-retryable error
+                    await self.on_error_callback(500, str(e))
+                    self._stop_event.set()  # Stop on other unexpected errors
+                    break
 
-            except Exception as e:
-                self.ten_env.log_error(
-                    f"Unexpected error in recognition loop: {e}"
-                )
-                await self.on_error_callback(500, str(e))
+            if self.is_finalizing and not self._restarting:
+                break
+
+            if self._restarting:
+                self.ten_env.log_info("Restarting recognition stream...")
+                await asyncio.sleep(1)  # Brief pause before restarting
+            else:
                 break
 
     async def _process_response(

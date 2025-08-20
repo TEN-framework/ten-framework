@@ -1,7 +1,7 @@
 {
     "params": {
         "key": "${env:SPEECHMATICS_API_KEY}",
-        "language": "en-US",
+        "language": "en",
         "sample_rate": 16000
     }
 }

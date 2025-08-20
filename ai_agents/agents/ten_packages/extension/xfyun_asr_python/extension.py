@@ -388,8 +388,6 @@ class XfyunASRExtension(AsyncASRBaseExtension):
                     else duration_ms
                 )
                 self.wpgs_buffer.clear()
-                if self.recognition:
-                    await self.recognition.close()
 
             self.ten_env.log_debug(
                 f"Xfyun ASR result: {result_to_send}, status: {status}"
@@ -416,6 +414,10 @@ class XfyunASRExtension(AsyncASRBaseExtension):
                 self.ten_env.log_error(
                     "Cannot handle ASR result: config is None"
                 )
+
+            if status == 2:
+                if self.recognition:
+                    await self.recognition.close()
 
         except Exception as e:
             self.ten_env.log_error(f"Error processing Xfyun ASR result: {e}")

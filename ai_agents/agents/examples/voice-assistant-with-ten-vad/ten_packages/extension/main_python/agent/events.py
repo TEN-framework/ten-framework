@@ -38,16 +38,20 @@ class ToolRegisterEvent(AgentEventBase):
     tool: LLMToolMetadata
     source: str
 
+
 class VadStartOfSentenceEvent(AgentEventBase):
     """Event triggered at the start of a sentence."""
 
     type: Literal["cmd"] = "cmd"
     name: Literal["start_of_sentence"] = "start_of_sentence"
 
+
 class VadEndOfSentenceEvent(AgentEventBase):
     """Event triggered at the end of a sentence."""
+
     type: Literal["cmd"] = "cmd"
     name: Literal["end_of_sentence"] = "end_of_sentence"
+
 
 # ==== DATA Events ====
 

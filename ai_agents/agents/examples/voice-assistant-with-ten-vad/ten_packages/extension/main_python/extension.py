@@ -111,7 +111,9 @@ class MainControlExtension(AsyncExtension):
 
     @agent_event_handler(VadStartOfSentenceEvent)
     async def _on_vad_start_of_sentence(self, event: VadStartOfSentenceEvent):
-        self.ten_env.log_info("[MainControlExtension] Start of sentence detected")
+        self.ten_env.log_info(
+            "[MainControlExtension] Start of sentence detected"
+        )
         await self._interrupt()
 
     async def on_start(self, ten_env: AsyncTenEnv):

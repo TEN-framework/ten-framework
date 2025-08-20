@@ -1,34 +1,51 @@
+import asyncio
 import pytest
-from unittest.mock import MagicMock, AsyncMock
+from unittest.mock import MagicMock, AsyncMock, patch
+from ten_ai_base.struct import ASRResult
 
 
-@pytest.fixture
-def patch_google_asr():
+@pytest.fixture(scope="function")
+def patch_google_asr_client():
+    """Patch GoogleASRClient used by the extension to a fake async client.
+
+    The fake client immediately emits a final ASRResult after start() to
+    drive the extension/tester flow without real network calls.
     """
-    Pytest fixture to patch the Google Cloud Speech client.
-    This fixture mocks the SpeechAsyncClient to prevent actual network calls
-    and allow simulating responses from the Google ASR service.
-    """
 
-    # Mock the SpeechAsyncClient instance that will be created
-    recognizer_instance = MagicMock()
+    patch_target = (
+        "ten_packages.extension.google_asr_python.extension.GoogleASRClient"
+    )
 
-    # Mock the main client class
-    speech_client_mock = MagicMock()
-    speech_client_mock.return_value = recognizer_instance
+    def _fake_ctor(config, ten_env, on_result_callback, on_error_callback):
+        class _FakeClient:
+            async def start(self):
+                print("[mock] GoogleASRClient.start called")
 
-    # Since SpeechAsyncClient is used with 'from google.cloud import speech_v2 as speech',
-    # we need to patch 'speech.SpeechAsyncClient'.
-    # However, for simplicity and to avoid complex patching issues with namespaces,
-    # we will inject this mock manually in the test.
-    # This fixture will provide the necessary mocked objects.
+                async def _emit_result_later():
+                    # Give tester's audio sender time and avoid blocking start()
+                    await asyncio.sleep(1.0)
+                    result = ASRResult(
+                        final=True,
+                        text="hello world",
+                        words=[],
+                        confidence=0.95,
+                        language="en-US",
+                        start_ms=0,
+                        duration_ms=500,
+                    )
+                    print("[mock] emitting final asr_result")
+                    await on_result_callback(result)
 
-    # We will also mock the from_service_account_file class method
-    from_service_account_mock = MagicMock()
-    from_service_account_mock.return_value = recognizer_instance
+                asyncio.create_task(_emit_result_later())
+                print("[mock] start returning immediately")
+                return None
 
-    return {
-        "client_class": speech_client_mock,
-        "recognizer_instance": recognizer_instance,
-        "from_service_account_file": from_service_account_mock,
-    }
+            stop = AsyncMock()
+            send_audio = AsyncMock()
+            finalize = AsyncMock()
+
+        return _FakeClient()
+
+    with patch(patch_target) as MockClient:
+        MockClient.side_effect = _fake_ctor
+        yield MockClient
