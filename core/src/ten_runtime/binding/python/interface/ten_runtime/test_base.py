@@ -28,22 +28,22 @@ class TenEnvTesterBase:
         return self._internal.stop_test(error)
 
     def log_debug(
-        self, msg: str, category: str | None, fields: Value | None
+        self, msg: str, category: str | None = None, fields: Value | None = None
     ) -> TenError | None:
         return self._log_internal(LogLevel.DEBUG, msg, category, fields, 2)
 
     def log_info(
-        self, msg: str, category: str | None, fields: Value | None
+        self, msg: str, category: str | None = None, fields: Value | None = None
     ) -> TenError | None:
         return self._log_internal(LogLevel.INFO, msg, category, fields, 2)
 
     def log_warn(
-        self, msg: str, category: str | None, fields: Value | None
+        self, msg: str, category: str | None = None, fields: Value | None = None
     ) -> TenError | None:
         return self._log_internal(LogLevel.WARN, msg, category, fields, 2)
 
     def log_error(
-        self, msg: str, category: str | None, fields: Value | None
+        self, msg: str, category: str | None = None, fields: Value | None = None
     ) -> TenError | None:
         return self._log_internal(LogLevel.ERROR, msg, category, fields, 2)
 

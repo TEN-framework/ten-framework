@@ -55,7 +55,7 @@ class DefaultExtension extends Extension {
     assert(value2 === 2, "value2 incorrect");
   }
 
-  async onStart(_tenEnv: TenEnv): Promise<void> {
+  async onStart(tenEnv: TenEnv): Promise<void> {
     tenEnv.logInfo("DefaultExtension onStart");
 
     const testData = Data.Create("testData");
