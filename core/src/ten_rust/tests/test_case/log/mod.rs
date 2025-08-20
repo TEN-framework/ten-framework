@@ -1071,7 +1071,7 @@ mod tests {
 
         let handler = AdvancedLogHandler {
             matchers: vec![AdvancedLogMatcher {
-                level: AdvancedLogLevel::Info,
+                level: AdvancedLogLevelFilter::Info,
                 category: None,
             }],
             formatter: AdvancedLogFormatter {
@@ -1169,7 +1169,7 @@ mod tests {
 
         let handler = AdvancedLogHandler {
             matchers: vec![AdvancedLogMatcher {
-                level: AdvancedLogLevel::Info,
+                level: AdvancedLogLevelFilter::Info,
                 category: None,
             }],
             formatter: AdvancedLogFormatter {
@@ -1435,28 +1435,8 @@ mod tests {
         ten_configure_log_reloadable(&config).unwrap();
 
         // These should all be dropped due to global OFF
-        ten_log(
-            &config,
-            "auth",
-            1,
-            1,
-            LogLevel::Info,
-            "f",
-            "f.rs",
-            1,
-            "aaa",
-        );
-        ten_log(
-            &config,
-            "auth",
-            1,
-            1,
-            LogLevel::Warn,
-            "f",
-            "f.rs",
-            2,
-            "bbb",
-        );
+        ten_log(&config, "auth", 1, 1, LogLevel::Info, "f", "f.rs", 1, "aaa");
+        ten_log(&config, "auth", 1, 1, LogLevel::Warn, "f", "f.rs", 2, "bbb");
         ten_log(
             &config,
             "database",
@@ -1468,17 +1448,7 @@ mod tests {
             3,
             "ccc",
         );
-        ten_log(
-            &config,
-            "",
-            1,
-            1,
-            LogLevel::Error,
-            "f",
-            "f.rs",
-            3,
-            "ddd",
-        );
+        ten_log(&config, "", 1, 1, LogLevel::Error, "f", "f.rs", 3, "ddd");
 
         // Force flush logs (drop workers)
         ten_configure_log_reloadable(&AdvancedLogConfig::new(vec![])).unwrap();
