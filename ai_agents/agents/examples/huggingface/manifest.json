@@ -48,5 +48,8 @@
       "name": "message_collector",
       "version": "=0.1.0"
     }
-  ]
+  ],
+    "scripts": {
+    "start": "bin/start"
+  }
 }
