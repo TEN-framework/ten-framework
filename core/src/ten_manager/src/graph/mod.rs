@@ -16,7 +16,6 @@ use ten_rust::_0_8_compatible::get_ten_field_string;
 use ten_rust::graph::{GraphExposedMessage, GraphExposedProperty};
 use uuid::Uuid;
 
-pub use connections::update_graph_connections_in_property_all_fields;
 pub use nodes::update_graph_node_all_fields;
 
 use crate::fs::json::write_property_json_file;
