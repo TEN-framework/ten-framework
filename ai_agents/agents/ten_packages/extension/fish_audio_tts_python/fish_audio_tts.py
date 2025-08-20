@@ -35,17 +35,20 @@ class FishAudioTTSClient:
         )
 
         start_time = time.time()
+
         try:
-            async for chunk in self.client.tts(
+            gen = self.client.tts(
                 request=tts_request,
                 text_stream=self._text_stream(text),
-            ):
+            )
+            async for chunk in gen:
                 if self._is_cancelled:
                     self.ten_env.log_info(
                         "Cancellation flag detected, sending flush event and stopping TTS stream."
                     )
                     yield None, EVENT_TTS_FLUSH
-                    break
+                    await gen.aclose()
+                    return
 
                 self.ten_env.log_info(
                     f"FishAudioTTS: sending EVENT_TTS_RESPONSE, length: {len(chunk)}"
@@ -72,6 +75,8 @@ class FishAudioTTSClient:
                 yield error_message.encode("utf-8"), EVENT_TTS_INVALID_KEY_ERROR
             else:
                 yield error_message.encode("utf-8"), EVENT_TTS_ERROR
+        finally:
+            await gen.aclose()
 
     def cancel(self):
         self.ten_env.log_debug("FishAudioTTS: cancel() called.")

@@ -31,12 +31,12 @@
             {
               "type": "extension",
               "name": "stt",
-              "addon": "azure_asr_python",
+              "addon": "deepgram_asr_python",
               "extension_group": "stt",
               "property": {
                 "params": {
-                  "key": "${env:AZURE_STT_KEY}",
-                  "region": "${env:AZURE_STT_REGION}"
+                  "api_key": "${env:DEEPGRAM_API_KEY}",
+                  "language": "en-US"
                 }
               }
             },

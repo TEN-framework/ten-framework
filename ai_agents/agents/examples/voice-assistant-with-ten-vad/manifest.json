@@ -22,11 +22,6 @@
       "type": "system",
       "name": "ten_ai_base",
       "version": "0.6"
-    },
-    {
-      "type": "extension",
-      "name": "azure_tts",
-      "version": "=0.9.0-rc1"
     }
   ],
   "scripts": {
