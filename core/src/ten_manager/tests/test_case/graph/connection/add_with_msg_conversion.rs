@@ -8,21 +8,13 @@
 mod tests {
     use std::collections::HashMap;
 
-    use anyhow::Result;
-    use serde_json::Value;
-    use tempfile::TempDir;
-
     use ten_manager::constants::TEST_DIR;
     use ten_manager::graph::connections::add::graph_add_connection;
-    use ten_rust::graph::connection::{
-        GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow,
-    };
     use ten_rust::graph::msg_conversion::{
         MsgAndResultConversion, MsgConversion, MsgConversionMode,
         MsgConversionRule, MsgConversionRules, MsgConversionType,
     };
     use ten_rust::graph::Graph;
-    use ten_rust::pkg_info::constants::PROPERTY_JSON_FILENAME;
     use ten_rust::pkg_info::message::MsgType;
 
     use crate::test_case::common::mock::inject_all_standard_pkgs_for_mock;

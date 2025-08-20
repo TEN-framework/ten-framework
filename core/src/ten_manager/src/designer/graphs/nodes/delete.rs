@@ -21,7 +21,7 @@ use crate::{
     graph::graphs_cache_find_by_id_mut,
 };
 
-use super::{update_graph_node_in_property_all_fields, GraphNodeUpdateAction};
+use super::update_graph_node_in_property_all_fields;
 
 #[derive(Serialize, Deserialize)]
 pub struct DeleteGraphNodeRequestPayload {
@@ -161,8 +161,9 @@ pub async fn delete_graph_node_endpoint(
     state: web::Data<Arc<DesignerState>>,
 ) -> Result<impl Responder, actix_web::Error> {
     // Get a write lock on the state since we need to modify the graph.
-    let mut pkgs_cache = state.pkgs_cache.write().await;
+    let pkgs_cache = state.pkgs_cache.write().await;
     let mut graphs_cache = state.graphs_cache.write().await;
+    let old_graphs_cache = graphs_cache.clone();
 
     // Get the specified graph from graphs_cache.
     let graph_info = match graphs_cache_find_by_id_mut(
@@ -200,14 +201,10 @@ pub async fn delete_graph_node_endpoint(
 
     // Try to update property.json file if possible.
     if let Err(e) = update_graph_node_in_property_all_fields(
-        &mut pkgs_cache,
-        graph_info,
-        &request_payload.name,
-        &request_payload.addon,
-        &request_payload.extension_group,
-        &request_payload.app,
-        &None,
-        GraphNodeUpdateAction::Delete,
+        &request_payload.graph_id,
+        &pkgs_cache,
+        &graphs_cache,
+        &old_graphs_cache,
     ) {
         let error_response = ErrorResponse {
             status: Status::Fail,
