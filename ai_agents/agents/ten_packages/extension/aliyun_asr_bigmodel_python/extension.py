@@ -270,7 +270,6 @@ class AliyunASRBigmodelExtension(AsyncASRBaseExtension):
                 and "text" in sentence
                 and sentence["text"]
             ):
-                print(sentence)
                 text = sentence["text"]
                 is_final = RecognitionResult.is_sentence_end(sentence)
 
@@ -384,8 +383,7 @@ class AliyunASRBigmodelExtension(AsyncASRBaseExtension):
         """Handle mute package mode finalization"""
         # Send silence package
         if self.recognition and self.config:
-            # Add 100ms to the mute package duration to ensure the silence is long enough
-            mute_pkg_duration_ms = self.config.mute_pkg_duration_ms + 100
+            mute_pkg_duration_ms = self.config.mute_pkg_duration_ms
             silence_duration = mute_pkg_duration_ms / 1000.0
             silence_samples = int(self.config.sample_rate * silence_duration)
             silence_data = b"\x00" * (silence_samples * 2)  # 16-bit samples

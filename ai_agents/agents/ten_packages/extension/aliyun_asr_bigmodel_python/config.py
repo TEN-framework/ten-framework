@@ -18,14 +18,14 @@ class AliyunASRBigmodelConfig(BaseModel):
     inverse_text_normalization_enabled: bool = True
     heartbeat: bool = False
     max_sentence_silence: int = 200  # 200ms~6000ms，def 800ms。
-    finalize_mode: str = "mute_pkg"  # "disconnect" or "mute_pkg"
+    mute_pkg_duration_ms: int = (
+        2000  # must be greater than max_sentence_silence
+    )
+    finalize_mode: str = "disconnect"  # "disconnect" or "mute_pkg"
     vocabulary_id: str = ""
     vocabulary_prefix: str = "prefix"
     vocabulary_target_model: str = "paraformer-realtime-v2"
     vocabulary_list: List[Dict[str, Any]] = []
-    mute_pkg_duration_ms: int = (
-        1000  # must be greater than max_sentence_silence
-    )
     dump: bool = False
     dump_path: str = "/tmp"
     params: Dict[str, Any] = Field(default_factory=dict)

@@ -34,6 +34,12 @@
                 "finalize_mode": {
                     "type": "string"
                 },
+                "mute_pkg_duration_ms": {
+                    "type": "int64"
+                },
+                "max_sentence_silence": {
+                    "type": "int64"
+                },
                 "language": {
                     "type": "string"
                 },
