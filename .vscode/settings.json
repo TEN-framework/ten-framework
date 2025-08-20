@@ -29,8 +29,8 @@
   ],
   "cursorpyright.analysis.extraPaths": [
     "./core/src/ten_runtime/binding/python/interface",
-    "./tests/ten_runtime/integration",
     "./core/ten_gn/.gnfiles",
+    "./tests/ten_runtime/integration"
   ],
   "cursorpyright.analysis.typeCheckingMode": "recommended",
   "debug.allowBreakpointsEverywhere": true,

@@ -155,7 +155,7 @@ TEST(GraphTest, GroupNodeMissing2Apps) {  // NOLINT
 
       // Send graph.
 
-      auto start_graph_cmd = ten::cmd_start_graph_t::create();
+      auto start_graph_cmd = ten::start_graph_cmd_t::create();
       start_graph_cmd->set_graph_from_json(R"({
            "nodes": [{
                    "type": "extension",

@@ -617,10 +617,13 @@ void ten_app_push_to_in_msgs_queue(ten_app_t *self, ten_shared_ptr_t *msg) {
   TEN_ASSERT(ten_app_check_integrity(self, false), "Should not happen.");
 
   TEN_ASSERT(msg, "Invalid argument.");
-  TEN_ASSERT(ten_msg_is_cmd_and_result(msg), "Invalid argument.");
-  TEN_ASSERT(!ten_cmd_base_cmd_id_is_empty(msg), "Invalid argument.");
+  TEN_ASSERT(ten_msg_check_integrity(msg), "Invalid argument.");
   TEN_ASSERT(ten_msg_get_src_app_uri(msg), "Invalid argument.");
   TEN_ASSERT((ten_msg_get_dest_cnt(msg) == 1), "Invalid argument.");
+
+  if (ten_msg_is_cmd_and_result(msg)) {
+    TEN_ASSERT(!ten_cmd_base_cmd_id_is_empty(msg), "Invalid argument.");
+  }
 
   TEN_UNUSED bool rc = ten_mutex_lock(self->in_msgs_lock);
   TEN_ASSERT(!rc, "Failed to lock.");

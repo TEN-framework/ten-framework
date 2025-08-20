@@ -137,14 +137,14 @@
       "request": "launch",
       "program": "${workspaceFolder}/out/linux/x64/tests/standalone/ten_runtime_smoke_test",
       "args": [
-        "--gtest_filter=GraphSyntaxSugarTest.GraphWithNamesField"
+        "--gtest_filter=PredefinedGraphTest.PredefinedGraphBasic2"
       ],
       "cwd": "${workspaceFolder}/out/linux/x64/tests/standalone/",
       "env": {
         "LD_LIBRARY_PATH": "${workspaceFolder}/out/linux/x64/tests/standalone/",
         "ASAN_OPTIONS": "abort_on_error=1",
         "TEN_ENABLE_MEMORY_TRACKING": "true"
-      },
+      }
     },
     {
       "name": "ten_runtime_smoke_test testing (cppdbg, attach)",

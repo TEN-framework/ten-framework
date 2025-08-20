@@ -13,5 +13,7 @@ from .extension import SimpleEchoExtension
 
 @register_addon_as_extension("simple_echo_python")
 class SimpleEchoExtensionAddon(Addon):
-    def on_create_instance(self, ten_env: TenEnv, name: str, context) -> None:
+    def on_create_instance(
+        self, ten_env: TenEnv, name: str, context: object
+    ) -> None:
         ten_env.on_create_instance_done(SimpleEchoExtension(name), context)

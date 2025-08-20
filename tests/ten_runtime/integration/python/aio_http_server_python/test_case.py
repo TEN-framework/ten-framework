@@ -42,16 +42,6 @@ def test_aio_http_server_python():
     if sys.platform == "win32":
         print("test_aio_http_server_python doesn't support win32")
         assert False
-    elif sys.platform == "darwin":
-        # client depends on some libraries in the TEN app.
-        my_env["DYLD_LIBRARY_PATH"] = os.path.join(
-            base_path, "aio_http_server_python_app/lib"
-        )
-    else:
-        # client depends on some libraries in the TEN app.
-        my_env["LD_LIBRARY_PATH"] = os.path.join(
-            base_path, "aio_http_server_python_app/lib"
-        )
 
     app_dir_name = "aio_http_server_python_app"
     app_root_path = os.path.join(base_path, app_dir_name)
@@ -124,7 +114,9 @@ def test_aio_http_server_python():
             if os.path.exists(libasan_path):
                 print("Using AddressSanitizer library.")
                 my_env["LD_PRELOAD"] = libasan_path
-                my_env["LSAN_OPTIONS"] = f"suppressions={lsan_suppressions_path}"
+                my_env["LSAN_OPTIONS"] = (
+                    f"suppressions={lsan_suppressions_path}"
+                )
 
     server_cmd = os.path.join(base_path, "aio_http_server_python_app/bin/start")
 

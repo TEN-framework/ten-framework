@@ -4,18 +4,18 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-
 import { TenError, TenErrorCode } from "./error.js";
 
 export enum ValueType {
   INVALID = 0,
-  BOOLEAN = 1,
-  NUMBER = 2,
-  STRING = 3,
-  BYTES = 4,
-  ARRAY = 5,
-  OBJECT = 6,
-  JSON_STRING = 7,
+  NULL = 1,
+  BOOLEAN = 2,
+  NUMBER = 3,
+  STRING = 4,
+  BYTES = 5,
+  ARRAY = 6,
+  OBJECT = 7,
+  JSON_STRING = 8,
 }
 
 type ValueDataType =

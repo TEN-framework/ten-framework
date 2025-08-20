@@ -30,17 +30,17 @@ class test_extension_1 : public ten::extension_t {
       rc = cmd->set_property("bar", 1232);
       ASSERT_EQ(rc, true);
 
-      rc = ten_env.send_cmd(
-          std::move(cmd),
-          [](ten::ten_env_t &ten_env,
-             std::unique_ptr<ten::cmd_result_t> cmd_result, ten::error_t *err) {
-            auto status = cmd_result->get_status_code();
-            ASSERT_EQ(status, TEN_STATUS_CODE_ERROR);
+      rc = ten_env.send_cmd(std::move(cmd),
+                            [](ten::ten_env_t &ten_env,
+                               std::unique_ptr<ten::cmd_result_t> cmd_result,
+                               ten::error_t * /* err */) {
+                              auto status = cmd_result->get_status_code();
+                              ASSERT_EQ(status, TEN_STATUS_CODE_ERROR);
 
-            auto detail = cmd_result->get_property_string("detail");
+                              cmd_result->get_property_string("detail");
 
-            ten_env.return_result(std::move(cmd_result));
-          });
+                              ten_env.return_result(std::move(cmd_result));
+                            });
       ASSERT_EQ(rc, true);
 
       return;
@@ -149,7 +149,7 @@ TEST(SchemaTest, OnCmdDifferentGroup) {  // NOLINT
   auto *client = new ten::msgpack_tcp_client_t("msgpack://127.0.0.1:8001/");
 
   // Send graph.
-  auto start_graph_cmd = ten::cmd_start_graph_t::create();
+  auto start_graph_cmd = ten::start_graph_cmd_t::create();
   start_graph_cmd->set_graph_from_json(R"({
            "nodes": [{
                 "type": "extension",

@@ -8,7 +8,7 @@
 #include <string>
 
 #include "gtest/gtest.h"
-#include "include_internal/ten_runtime/binding/cpp/detail/msg/cmd/timer.h"
+#include "include_internal/ten_runtime/binding/cpp/detail/msg/cmd/timer_cmd.h"
 #include "include_internal/ten_runtime/binding/cpp/ten.h"
 #include "ten_utils/lib/thread.h"
 #include "tests/common/client/cpp/msgpack_tcp.h"
@@ -28,7 +28,7 @@ class test_extension : public ten::extension_t {
       hello_world_cmd = std::move(cmd);
 
       // Start a timer.
-      std::unique_ptr<ten::cmd_timer_t> timer_cmd = ten::cmd_timer_t::create();
+      std::unique_ptr<ten::timer_cmd_t> timer_cmd = ten::timer_cmd_t::create();
       timer_cmd->set_dests({{"", "", nullptr}});
       timer_cmd->set_timer_id(55);
       timer_cmd->set_timeout_us(100);
@@ -38,8 +38,8 @@ class test_extension : public ten::extension_t {
       EXPECT_EQ(success, true);
     } else if (ten::msg_internal_accessor_t::get_type(cmd.get()) ==
                    TEN_MSG_TYPE_CMD_TIMEOUT &&
-               std::unique_ptr<ten::cmd_timeout_t>(
-                   static_cast<ten::cmd_timeout_t *>(cmd.release()))
+               std::unique_ptr<ten::timeout_cmd_t>(
+                   static_cast<ten::timeout_cmd_t *>(cmd.release()))
                        ->get_timer_id() == 55) {
       auto cmd_result =
           ten::cmd_result_t::create(TEN_STATUS_CODE_OK, *hello_world_cmd);
@@ -88,7 +88,7 @@ TEST(MsgTest, Msg3) {
   auto *client = new ten::msgpack_tcp_client_t("msgpack://127.0.0.1:8001/");
 
   // Send graph.
-  auto start_graph_cmd = ten::cmd_start_graph_t::create();
+  auto start_graph_cmd = ten::start_graph_cmd_t::create();
   start_graph_cmd->set_graph_from_json(R"({
            "nodes": [{
                "type": "extension",

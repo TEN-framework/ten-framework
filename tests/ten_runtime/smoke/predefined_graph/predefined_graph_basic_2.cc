@@ -6,7 +6,7 @@
 //
 #include "gtest/gtest.h"
 #include "include_internal/ten_runtime/binding/cpp/ten.h"
-#include "ten_runtime/binding/cpp/detail/msg/cmd/stop_graph.h"
+#include "ten_runtime/binding/cpp/detail/msg/cmd/stop_graph_cmd.h"
 #include "tests/common/client/cpp/msgpack_tcp.h"
 #include "tests/ten_runtime/smoke/util/binding/cpp/check.h"
 
@@ -31,7 +31,7 @@ class test_predefined_graph : public ten::extension_t {
   explicit test_predefined_graph(const char *name) : ten::extension_t(name) {}
 
   void on_start(ten::ten_env_t &ten_env) override {
-    auto start_graph_cmd = ten::cmd_start_graph_t::create();
+    auto start_graph_cmd = ten::start_graph_cmd_t::create();
     start_graph_cmd->set_dests(
         {{"msgpack://127.0.0.1:8001/", nullptr, nullptr}});
     start_graph_cmd->set_graph_from_json(R"({
@@ -48,36 +48,32 @@ class test_predefined_graph : public ten::extension_t {
     ten_env.send_cmd(
         std::move(start_graph_cmd),
         [&](ten::ten_env_t &ten_env,
-            std::unique_ptr<ten::cmd_result_t> cmd_result, ten::error_t *err) {
-          nlohmann::json json =
-              nlohmann::json::parse(cmd_result->get_property_to_json());
+            std::unique_ptr<ten::cmd_result_t> cmd_result,
+            ten::error_t * /* err */) {
           if (cmd_result->get_status_code() == TEN_STATUS_CODE_OK) {
-            auto graph_id = cmd_result->get_property_string("detail");
+            auto graph_id = cmd_result->get_property_string("graph_id");
 
             auto hello_world_cmd = ten::cmd_t::create("hello_world");
             hello_world_cmd->set_dests(
-                {{"msgpack://127.0.0.1:8001/",
-                  json["detail"].get<std::string>().c_str(),
+                {{"msgpack://127.0.0.1:8001/", graph_id.c_str(),
                   "normal_extension"}});
             ten_env.send_cmd(
                 std::move(hello_world_cmd),
                 [&, graph_id](ten::ten_env_t &ten_env,
                               std::unique_ptr<ten::cmd_result_t> cmd_result,
-                              ten::error_t *err) {
-                  nlohmann::json json =
-                      nlohmann::json::parse(cmd_result->get_property_to_json());
+                              ten::error_t * /* err */) {
                   if (cmd_result->get_status_code() == TEN_STATUS_CODE_OK) {
                     // Shut down the graph; otherwise, the app won't be able to
                     // close because there is still a running engine/graph.
-                    auto stop_graph_cmd = ten::cmd_stop_graph_t::create();
+                    auto stop_graph_cmd = ten::stop_graph_cmd_t::create();
                     stop_graph_cmd->set_dests({{""}});
                     stop_graph_cmd->set_graph_id(graph_id.c_str());
 
                     ten_env.send_cmd(
                         std::move(stop_graph_cmd),
                         [&](ten::ten_env_t &ten_env,
-                            std::unique_ptr<ten::cmd_result_t> cmd_result,
-                            ten::error_t *err) {
+                            std::unique_ptr<ten::cmd_result_t> /* cmd_result */,
+                            ten::error_t * /* err */) {
                           normal_extension_is_ready = true;
 
                           if (command_1 != nullptr) {

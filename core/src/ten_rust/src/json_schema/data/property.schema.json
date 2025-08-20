@@ -1,6 +1,52 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$defs": {
+    "encryptionConfiguration": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "algorithm": {
+          "type": "string",
+          "enum": [
+            "AES-CTR"
+          ]
+        },
+        "params": {
+          "if": {
+            "properties": {
+              "algorithm": {
+                "const": "AES-CTR"
+              }
+            },
+            "required": [
+              "algorithm"
+            ]
+          },
+          "then": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "key",
+              "nonce"
+            ],
+            "properties": {
+              "key": {
+                "type": "string"
+              },
+              "nonce": {
+                "type": "string"
+              }
+            }
+          },
+          "else": {
+            "type": "object"
+          }
+        }
+      }
+    },
     "logLevels": {
       "type": "integer",
       "format": "int8",
@@ -721,50 +767,7 @@
               "$ref": "#/$defs/notEmptyString"
             },
             "encryption": {
-              "type": "object",
-              "additionalProperties": false,
-              "properties": {
-                "enabled": {
-                  "type": "boolean"
-                },
-                "algorithm": {
-                  "type": "string",
-                  "enum": [
-                    "AES-CTR"
-                  ]
-                },
-                "params": {
-                  "if": {
-                    "properties": {
-                      "algorithm": {
-                        "const": "AES-CTR"
-                      }
-                    },
-                    "required": [
-                      "algorithm"
-                    ]
-                  },
-                  "then": {
-                    "type": "object",
-                    "additionalProperties": false,
-                    "required": [
-                      "key",
-                      "nonce"
-                    ],
-                    "properties": {
-                      "key": {
-                        "type": "string"
-                      },
-                      "nonce": {
-                        "type": "string"
-                      }
-                    }
-                  },
-                  "else": {
-                    "type": "object"
-                  }
-                }
-              }
+              "$ref": "#/$defs/encryptionConfiguration"
             }
           }
         },
@@ -1186,6 +1189,9 @@
                       "stdout",
                       "stderr"
                     ]
+                  },
+                  "encryption": {
+                    "$ref": "#/$defs/encryptionConfiguration"
                   }
                 }
               }
@@ -1211,6 +1217,9 @@
                   "path": {
                     "type": "string",
                     "minLength": 1
+                  },
+                  "encryption": {
+                    "$ref": "#/$defs/encryptionConfiguration"
                   }
                 }
               }

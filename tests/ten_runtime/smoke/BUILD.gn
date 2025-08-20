@@ -35,7 +35,6 @@ ten_executable("ten_runtime_smoke_test") {
     "audio_frame_test",
     "basic",
     "close_app",
-    "cmd_conversion",
     "cmd_result_test",
     "command",
     "concurrent",
@@ -52,6 +51,7 @@ ten_executable("ten_runtime_smoke_test") {
     "graph_test",
     "lock",
     "log_test",
+    "msg_conversion",
     "msg_property",
     "msg_test",
     "multi_dest",
@@ -74,6 +74,7 @@ ten_executable("ten_runtime_smoke_test") {
     "ten_env_call_timing",
     "ten_proxy",
     "timer",
+    "value",
     "video_frame_test",
   ]
 

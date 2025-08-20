@@ -14,13 +14,14 @@ from typing import final
 from libten_runtime_python import (
     _Extension,  # pyright: ignore[reportPrivateUsage]
 )
+
 from .log_level import LogLevel
-from .video_frame import VideoFrame
-from .audio_frame import AudioFrame
 from .ten_env import TenEnv
-from .cmd import Cmd
-from .data import Data
 from .async_ten_env import AsyncTenEnv
+from .msg.cmd.cmd import Cmd
+from .msg.data import Data
+from .msg.video_frame import VideoFrame
+from .msg.audio_frame import AudioFrame
 
 
 class AsyncExtension(_Extension):

@@ -61,7 +61,8 @@ ten_list_t *ten_list_create(void) {
 }
 
 void ten_list_destroy(ten_list_t *self) {
-  TEN_ASSERT(self && ten_list_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_list_check_integrity(self), "Invalid argument.");
   ten_list_clear(self);
   TEN_FREE(self);
 }
@@ -76,7 +77,8 @@ void ten_list_init(ten_list_t *self) {
 }
 
 void ten_list_clear(ten_list_t *self) {
-  TEN_ASSERT(self && ten_list_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_list_check_integrity(self), "Invalid argument.");
 
   ten_list_foreach (self, iter) {
     ten_listnode_destroy(iter.node);
@@ -88,7 +90,8 @@ void ten_list_clear(ten_list_t *self) {
 }
 
 void ten_list_reset(ten_list_t *self) {
-  TEN_ASSERT(self && ten_list_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_list_check_integrity(self), "Invalid argument.");
 
   self->size = 0;
   self->front = NULL;
@@ -96,19 +99,22 @@ void ten_list_reset(ten_list_t *self) {
 }
 
 bool ten_list_is_empty(ten_list_t *self) {
-  TEN_ASSERT(self && ten_list_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_list_check_integrity(self), "Invalid argument.");
   return !ten_list_size(self);
 }
 
 size_t ten_list_size(ten_list_t *self) {
-  TEN_ASSERT(self && ten_list_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_list_check_integrity(self), "Invalid argument.");
   return self->size;
 }
 
 void ten_list_swap(ten_list_t *self, ten_list_t *target) {
-  TEN_ASSERT(self && target && ten_list_check_integrity(self) &&
-                 ten_list_check_integrity(target),
-             "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(target, "Invalid argument.");
+  TEN_ASSERT(ten_list_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(ten_list_check_integrity(target), "Invalid argument.");
 
   ten_listnode_t *self_front = self->front;
   ten_listnode_t *self_back = self->back;
@@ -124,9 +130,10 @@ void ten_list_swap(ten_list_t *self, ten_list_t *target) {
 }
 
 void ten_list_concat(ten_list_t *self, ten_list_t *target) {
-  TEN_ASSERT(self && target && ten_list_check_integrity(self) &&
-                 ten_list_check_integrity(target),
-             "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(target, "Invalid argument.");
+  TEN_ASSERT(ten_list_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(ten_list_check_integrity(target), "Invalid argument.");
 
   if (ten_list_size(target) == 0) {
     return;
@@ -210,7 +217,8 @@ ten_listnode_t *ten_list_front(ten_list_t *self) {
 }
 
 ten_listnode_t *ten_list_back(ten_list_t *self) {
-  TEN_ASSERT(self && ten_list_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_list_check_integrity(self), "Invalid argument.");
   return self->back;
 }
 
@@ -249,7 +257,8 @@ void ten_list_push_back(ten_list_t *self, ten_listnode_t *node) {
 }
 
 ten_listnode_t *ten_list_pop_front(ten_list_t *self) {
-  TEN_ASSERT(self && ten_list_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_list_check_integrity(self), "Invalid argument.");
 
   if (ten_list_is_empty(self)) {
     return NULL;
@@ -270,14 +279,16 @@ ten_listnode_t *ten_list_pop_front(ten_list_t *self) {
 }
 
 void ten_list_remove_front(ten_list_t *self) {
-  TEN_ASSERT(self && ten_list_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_list_check_integrity(self), "Invalid argument.");
 
   ten_listnode_t *node = ten_list_pop_front(self);
   ten_listnode_destroy(node);
 }
 
 ten_listnode_t *ten_list_pop_back(ten_list_t *self) {
-  TEN_ASSERT(self && ten_list_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_list_check_integrity(self), "Invalid argument.");
 
   if (ten_list_is_empty(self)) {
     return NULL;
@@ -336,7 +347,8 @@ bool ten_list_push_back_in_order(ten_list_t *self, ten_listnode_t *node,
 }
 
 ten_list_iterator_t ten_list_begin(ten_list_t *self) {
-  TEN_ASSERT(self && ten_list_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_list_check_integrity(self), "Invalid argument.");
 
   return (ten_list_iterator_t){
       NULL,
@@ -347,7 +359,8 @@ ten_list_iterator_t ten_list_begin(ten_list_t *self) {
 }
 
 ten_list_iterator_t ten_list_end(ten_list_t *self) {
-  TEN_ASSERT(self && ten_list_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_list_check_integrity(self), "Invalid argument.");
 
   if (ten_list_size(self)) {
     return (ten_list_iterator_t){

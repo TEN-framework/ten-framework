@@ -227,7 +227,8 @@ ten_value_t *ten_value_peek_from_path(ten_value_t *base, const char *path,
 
       ten_list_foreach (&base->content.object, object_iter) {
         ten_value_kv_t *kv = ten_ptr_listnode_get(object_iter.node);
-        TEN_ASSERT(kv && ten_value_kv_check_integrity(kv), "Invalid argument.");
+        TEN_ASSERT(kv, "Invalid argument.");
+        TEN_ASSERT(ten_value_kv_check_integrity(kv), "Invalid argument.");
 
         if (ten_string_is_equal(&kv->key, &item->obj_item_str)) {
           if (item_iter.next) {
@@ -311,16 +312,22 @@ bool ten_value_set_from_path_list_with_move(ten_value_t *base,
 
       bool found = false;
 
+      // Find the object item.
       ten_list_foreach (&base->content.object, object_iter) {
         ten_value_kv_t *kv = ten_ptr_listnode_get(object_iter.node);
-        TEN_ASSERT(kv && ten_value_kv_check_integrity(kv), "Invalid argument.");
+        TEN_ASSERT(kv, "Invalid argument.");
+        TEN_ASSERT(ten_value_kv_check_integrity(kv), "Invalid argument.");
 
         if (ten_string_is_equal(&kv->key, &item->obj_item_str)) {
           found = true;
 
           if (item_iter.next == NULL) {
+            if (kv->value) {
+              // If the original value is not NULL, destroy it.
+              // Override the original value.
+              ten_value_destroy(kv->value);
+            }
             // Override the original value.
-            ten_value_destroy(kv->value);
             kv->value = value;
           } else {
             ten_value_path_item_t *next_item =

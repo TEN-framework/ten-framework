@@ -12,7 +12,8 @@
 #include "ten_utils/value/value_is.h"
 #include "ten_utils/value/value_kv.h"
 
-bool ten_value_object_merge_with_move(ten_value_t *dest, ten_value_t *src) {
+static bool ten_value_object_merge_with_move(ten_value_t *dest,
+                                             ten_value_t *src) {
   if (!dest || !src) {
     TEN_ASSERT(0, "Invalid argument.");
     return false;
@@ -28,21 +29,26 @@ bool ten_value_object_merge_with_move(ten_value_t *dest, ten_value_t *src) {
     ten_list_detach_node(&src->content.object, src_iter.node);
 
     ten_value_kv_t *src_item = ten_ptr_listnode_get(src_iter.node);
-    TEN_ASSERT(src_item && ten_value_kv_check_integrity(src_item),
-               "Should not happen.");
+    TEN_ASSERT(src_item, "Should not happen.");
+    TEN_ASSERT(ten_value_kv_check_integrity(src_item), "Should not happen.");
 
     bool found = false;
 
     ten_value_object_foreach(dest, dest_iter) {
       ten_value_kv_t *dest_item = ten_ptr_listnode_get(dest_iter.node);
-      TEN_ASSERT(dest_item && ten_value_kv_check_integrity(dest_item),
-                 "Should not happen.");
+      TEN_ASSERT(dest_item, "Should not happen.");
+      TEN_ASSERT(ten_value_kv_check_integrity(dest_item), "Should not happen.");
 
       if (ten_string_is_equal(&src_item->key, &dest_item->key)) {
         if (ten_value_is_object(src_item->value) &&
             ten_value_is_object(dest_item->value)) {
-          ten_value_object_merge_with_move(dest_item->value, src_item->value);
+          // Merge the object with the source object.
+          if (!ten_value_object_merge_with_move(dest_item->value,
+                                                src_item->value)) {
+            return false;
+          }
         } else {
+          // Otherwise, reset the destination value to the source value.
           ten_value_kv_reset_to_value(dest_item, src_item->value);
           src_item->value = NULL;
         }
@@ -52,9 +58,10 @@ bool ten_value_object_merge_with_move(ten_value_t *dest, ten_value_t *src) {
     }
 
     if (found) {
+      // Destroy the source listnode to prevent memory leak.
       ten_listnode_destroy(src_iter.node);
     } else {
-      // Move the src_item to dest.
+      // Move the source item to the destination.
       ten_list_push_back(&dest->content.object, src_iter.node);
     }
   }
@@ -79,16 +86,16 @@ bool ten_value_object_merge_with_clone(ten_value_t *dest, ten_value_t *src) {
   // Iterate over the source object.
   ten_value_object_foreach(src, src_iter) {
     ten_value_kv_t *src_item = ten_ptr_listnode_get(src_iter.node);
-    TEN_ASSERT(src_item && ten_value_kv_check_integrity(src_item),
-               "Should not happen.");
+    TEN_ASSERT(src_item, "Should not happen.");
+    TEN_ASSERT(ten_value_kv_check_integrity(src_item), "Should not happen.");
 
     bool found = false;
 
     // Iterate over the destination object to find a matching key.
     ten_value_object_foreach(dest, dest_iter) {
       ten_value_kv_t *dest_item = ten_ptr_listnode_get(dest_iter.node);
-      TEN_ASSERT(dest_item && ten_value_kv_check_integrity(dest_item),
-                 "Should not happen.");
+      TEN_ASSERT(dest_item, "Should not happen.");
+      TEN_ASSERT(ten_value_kv_check_integrity(dest_item), "Should not happen.");
 
       if (ten_string_is_equal(&src_item->key, &dest_item->key)) {
         found = true;
@@ -146,14 +153,19 @@ bool ten_value_object_merge_with_json(ten_value_t *dest, ten_json_t *src) {
 
     ten_value_object_foreach(dest, dest_iter) {
       ten_value_kv_t *dest_item = ten_ptr_listnode_get(dest_iter.node);
-      TEN_ASSERT(dest_item && ten_value_kv_check_integrity(dest_item),
-                 "Should not happen.");
+      TEN_ASSERT(dest_item, "Should not happen.");
+      TEN_ASSERT(ten_value_kv_check_integrity(dest_item), "Should not happen.");
 
       if (ten_string_is_equal_c_str(&dest_item->key, key)) {
         if (ten_json_is_object(prop_json) &&
             ten_value_is_object(dest_item->value)) {
-          ten_value_object_merge_with_json(dest_item->value, prop_json);
+          // Merge the object with the JSON.
+          if (!ten_value_object_merge_with_json(dest_item->value, prop_json)) {
+            return false;
+          }
         } else {
+          // Otherwise, clone the source value and replace the destination
+          // value.
           ten_value_t *src_value = ten_value_from_json(prop_json);
           TEN_ASSERT(src_value, "Should not happen.");
 
@@ -165,7 +177,7 @@ bool ten_value_object_merge_with_json(ten_value_t *dest, ten_json_t *src) {
     }
 
     if (!found) {
-      // Clone the src_item to dest.
+      // Clone the source item and add it to the destination.
       ten_value_kv_t *src_kv =
           ten_value_kv_create(key, ten_value_from_json(prop_json));
       TEN_ASSERT(src_kv, "Should not happen.");

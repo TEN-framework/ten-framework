@@ -316,7 +316,8 @@ task run
  1. Open [localhost:49483](http://localhost:49483).
  2. Right click to load the corresponding graph (e.g., Voice Assistant).
  3. Enter API keys and set preferences for each extension.
- 4. Right click and select `Run` to start the agent.
+ 4. Right click and Select 'Manage Apps' to open the Apps Manager.
+ 5. Click the ▶ to run App.
 
 <div align="right">
 
