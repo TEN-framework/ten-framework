@@ -1057,6 +1057,209 @@ mod tests {
 
     #[test]
     #[serial]
+    fn test_file_reopen_with_frequent_logging() {
+        use std::sync::atomic::{AtomicBool, Ordering};
+        use std::sync::Arc;
+        use tempfile::tempdir;
+
+        ten_configure_log_reloadable(&AdvancedLogConfig::new(vec![])).unwrap();
+
+        let dir = tempdir().expect("create temp dir");
+        let log_path = dir.path().join("frequent_test.log");
+        let log_path_str = log_path.to_str().unwrap().to_string();
+
+        let handler = AdvancedLogHandler {
+            matchers: vec![AdvancedLogMatcher {
+                level: AdvancedLogLevel::Info,
+                category: None,
+            }],
+            formatter: AdvancedLogFormatter {
+                formatter_type: FormatterType::Plain,
+                colored: Some(false),
+            },
+            emitter: AdvancedLogEmitter::File(FileEmitterConfig {
+                path: log_path_str.clone(),
+                encryption: None,
+            }),
+        };
+
+        let config =
+            Arc::new(std::sync::Mutex::new(AdvancedLogConfig::new(vec![
+                handler.clone(),
+            ])));
+
+        ten_configure_log_reloadable(&config.lock().unwrap()).unwrap();
+
+        let should_stop = Arc::new(AtomicBool::new(false));
+        let should_stop_clone = should_stop.clone();
+        let config_clone = config.clone();
+
+        let logging_thread = thread::spawn(move || {
+            let mut counter = 0;
+            while !should_stop_clone.load(Ordering::Relaxed) {
+                ten_log(
+                    &config_clone.lock().unwrap(),
+                    "test_frequent",
+                    1,
+                    1,
+                    LogLevel::Info,
+                    "test_fn",
+                    "test.rs",
+                    1,
+                    &format!("log message {counter}"),
+                );
+                counter += 1;
+                thread::sleep(Duration::from_micros(100));
+            }
+            counter
+        });
+
+        for _ in 0..5 {
+            thread::sleep(Duration::from_millis(100));
+            let mut guard = config.lock().unwrap();
+            ten_rust::log::ten_log_reopen_all(&mut guard, true);
+        }
+
+        should_stop.store(true, Ordering::Relaxed);
+        let total_logs = logging_thread.join().unwrap();
+
+        ten_configure_log_reloadable(&AdvancedLogConfig::new(vec![])).unwrap();
+
+        let content = read_with_backoff(log_path.to_str().unwrap(), 0)
+            .expect("read log file");
+
+        println!("Log content:\n{content}");
+        println!("Total logs written: {total_logs}");
+
+        let mut found_logs = 0;
+        for line in content.lines() {
+            if line.contains("log message") {
+                found_logs += 1;
+            }
+        }
+
+        assert_eq!(
+            found_logs, total_logs,
+            "Some logs were lost during the reopen process"
+        );
+    }
+
+    #[test]
+    #[serial]
+    fn test_file_reopen_with_rename_and_frequent_logging() {
+        use std::sync::atomic::{AtomicBool, Ordering};
+        use std::sync::Arc;
+        use tempfile::tempdir;
+
+        ten_configure_log_reloadable(&AdvancedLogConfig::new(vec![])).unwrap();
+
+        let dir = tempdir().expect("create temp dir");
+        let original_path = dir.path().join("rename_test.log");
+        let rotated_paths: Vec<String> = (0..3)
+            .map(|i| {
+                dir.path()
+                    .join(format!("rename_test.log.{i}"))
+                    .to_str()
+                    .unwrap()
+                    .to_string()
+            })
+            .collect();
+        let original_path_str = original_path.to_str().unwrap().to_string();
+
+        let handler = AdvancedLogHandler {
+            matchers: vec![AdvancedLogMatcher {
+                level: AdvancedLogLevel::Info,
+                category: None,
+            }],
+            formatter: AdvancedLogFormatter {
+                formatter_type: FormatterType::Plain,
+                colored: Some(false),
+            },
+            emitter: AdvancedLogEmitter::File(FileEmitterConfig {
+                path: original_path_str.clone(),
+                encryption: None,
+            }),
+        };
+
+        let config =
+            Arc::new(std::sync::Mutex::new(AdvancedLogConfig::new(vec![
+                handler.clone(),
+            ])));
+
+        ten_configure_log_reloadable(&config.lock().unwrap()).unwrap();
+
+        let should_stop = Arc::new(AtomicBool::new(false));
+        let should_stop_clone = should_stop.clone();
+        let config_clone = config.clone();
+
+        let logging_thread = thread::spawn(move || {
+            let mut counter = 0;
+            while !should_stop_clone.load(Ordering::Relaxed) {
+                ten_log(
+                    &config_clone.lock().unwrap(),
+                    "test_rename",
+                    1,
+                    1,
+                    LogLevel::Info,
+                    "test_fn",
+                    "test.rs",
+                    1,
+                    &format!("log message {counter}"),
+                );
+                counter += 1;
+                thread::sleep(Duration::from_micros(100));
+            }
+            counter
+        });
+
+        for rotated_path in &rotated_paths {
+            thread::sleep(Duration::from_millis(100));
+
+            std::fs::rename(&original_path, rotated_path)
+                .expect("rename log file");
+
+            let mut guard = config.lock().unwrap();
+            ten_rust::log::ten_log_reopen_all(&mut guard, true);
+
+            thread::sleep(Duration::from_millis(50));
+        }
+
+        should_stop.store(true, Ordering::Relaxed);
+        let total_logs = logging_thread.join().unwrap();
+
+        ten_configure_log_reloadable(&AdvancedLogConfig::new(vec![])).unwrap();
+
+        let mut all_content = String::new();
+
+        for rotated_path in &rotated_paths {
+            let content = read_with_backoff(rotated_path, 0)
+                .expect("read rotated log file");
+            all_content.push_str(&content);
+        }
+
+        let final_content =
+            read_with_backoff(original_path.to_str().unwrap(), 0)
+                .expect("read current log file");
+        all_content.push_str(&final_content);
+
+        println!("Combined log content:\n{all_content}");
+        println!("Total logs written: {total_logs}");
+
+        let mut found_logs = 0;
+        for line in all_content.lines() {
+            if line.contains("log message") {
+                found_logs += 1;
+            }
+        }
+
+        assert_eq!(
+            found_logs, total_logs,
+            "Some logs were lost during the rename and reopen process"
+        );
+    }
+
+    #[test]
+    #[serial]
     fn test_actual_logging_output() {
         let config = AdvancedLogConfig::new(vec![AdvancedLogHandler {
             matchers: vec![AdvancedLogMatcher {
