@@ -67,7 +67,7 @@ jobs:
       - name: Install tools and dependencies
         run: |
           brew install llvm
-          rustup default nightly-2025-05-07
+          rustup default nightly-2025-08-10
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2
@@ -197,7 +197,7 @@ jobs:
       - name: Install tools and dependencies
         run: |
           brew install llvm
-          rustup default nightly-2025-05-07
+          rustup default nightly-2025-08-10
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2
@@ -299,7 +299,7 @@ jobs:
 
           df -h .
 
-  test-integration:
+  test-integration-ten-manager:
     needs: build
     runs-on: macos-latest
     strategy:
@@ -352,7 +352,7 @@ jobs:
       - name: Install tools and dependencies
         run: |
           brew install llvm
-          rustup default nightly-2025-05-07
+          rustup default nightly-2025-08-10
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2
@@ -391,7 +391,88 @@ jobs:
           pytest -s tests/ten_manager/
           df -h .
 
-      - name: Run tests (ten_runtime integration tests)
+  test-integration-cpp:
+    needs: build
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        build_type: [debug, release]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+
+      - name: Trust working directory
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
+      - name: Initialize and update submodules except portal/
+        run: |
+          # Retrieve all submodule paths, excluding `portal/`.
+          submodules=$(git config --file .gitmodules --get-regexp path | awk '$2 != "portal" { print $2 }')
+          git submodule init
+          for submodule in $submodules; do
+            echo "Initializing submodule: $submodule"
+            git submodule update --init --recursive --depth 1 "$submodule"
+          done
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "stable"
+          cache: false
+
+      - name: Set ulimit and sysctl
+        run: |
+          # Because there are concurrent test cases which involves many
+          # concurrent socket connections, we need to enlarge the maximum number
+          # of the opened file descriptor.
+          ulimit -n 102400
+          # Because there are concurrent test cases which will create many
+          # concurrent connections simutaneously, we increase the TCP listening
+          # backlog value to 8192.
+          sudo sysctl -w kern.ipc.somaxconn=8192
+        shell: bash
+
+      - name: Install tools and dependencies
+        run: |
+          brew install llvm
+          rustup default nightly-2025-08-10
+
+          brew install tree
+          pip3 install --use-pep517 python-dotenv jinja2
+          go install golang.org/dl/go1.24.3@latest && go1.24.3 download
+          go env -w GOFLAGS="-buildvcs=false"
+          cargo install --force cbindgen
+
+      - name: Download build artifacts (tar archive)
+        uses: actions/download-artifact@v4
+        with:
+          name: tests-artifacts-${{ matrix.build_type }}
+          path: out/mac/arm64
+
+      - name: Extract tests artifacts preserving permissions
+        run: |
+          tar -xzf out/mac/arm64/tests-artifacts.tar.gz
+
+      - name: View folder structure content
+        run: |
+          df -h .
+          tree -I ".*|*.h|*.hpp|*.py" out/mac/arm64
+
+      - name: Install Python dependencies via script
+        run: |
+          python .github/tools/setup_pytest_dependencies.py
+          df -h .
+
+      - name: Run tests (ten_runtime C++ integration tests)
         env:
           ASAN_OPTIONS: detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
           MALLOC_CHECK_: 3
@@ -404,7 +485,207 @@ jobs:
           fi
           export PATH=$(pwd)/core/ten_gn:$PATH
           cd out/mac/arm64/
-          pytest -s tests/ten_runtime/integration/
+          pytest -s tests/ten_runtime/integration/cpp/
+          df -h .
+      #   continue-on-error: true
+      # - name: Setup tmate session
+      #   uses: mxschmitt/action-tmate@v3
+
+  test-integration-go:
+    needs: build
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        build_type: [debug, release]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+
+      - name: Trust working directory
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
+      - name: Initialize and update submodules except portal/
+        run: |
+          # Retrieve all submodule paths, excluding `portal/`.
+          submodules=$(git config --file .gitmodules --get-regexp path | awk '$2 != "portal" { print $2 }')
+          git submodule init
+          for submodule in $submodules; do
+            echo "Initializing submodule: $submodule"
+            git submodule update --init --recursive --depth 1 "$submodule"
+          done
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "stable"
+          cache: false
+
+      - name: Set ulimit and sysctl
+        run: |
+          # Because there are concurrent test cases which involves many
+          # concurrent socket connections, we need to enlarge the maximum number
+          # of the opened file descriptor.
+          ulimit -n 102400
+          # Because there are concurrent test cases which will create many
+          # concurrent connections simutaneously, we increase the TCP listening
+          # backlog value to 8192.
+          sudo sysctl -w kern.ipc.somaxconn=8192
+        shell: bash
+
+      - name: Install tools and dependencies
+        run: |
+          brew install llvm
+          rustup default nightly-2025-08-10
+
+          brew install tree
+          pip3 install --use-pep517 python-dotenv jinja2
+          go install golang.org/dl/go1.24.3@latest && go1.24.3 download
+          go env -w GOFLAGS="-buildvcs=false"
+          cargo install --force cbindgen
+
+      - name: Download build artifacts (tar archive)
+        uses: actions/download-artifact@v4
+        with:
+          name: tests-artifacts-${{ matrix.build_type }}
+          path: out/mac/arm64
+
+      - name: Extract tests artifacts preserving permissions
+        run: |
+          tar -xzf out/mac/arm64/tests-artifacts.tar.gz
+
+      - name: View folder structure content
+        run: |
+          df -h .
+          tree -I ".*|*.h|*.hpp|*.py" out/mac/arm64
+
+      - name: Install Python dependencies via script
+        run: |
+          python .github/tools/setup_pytest_dependencies.py
+          df -h .
+
+      - name: Run tests (ten_runtime Go integration tests)
+        env:
+          ASAN_OPTIONS: detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
+          MALLOC_CHECK_: 3
+          TEN_ENABLE_MEMORY_TRACKING: "true"
+          TEN_ENABLE_BACKTRACE_DUMP: "true"
+          GOTRACEBACK: crash
+        run: |
+          if [ ${{ matrix.build_type }} == "debug" ]; then
+            export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
+          fi
+          export PATH=$(pwd)/core/ten_gn:$PATH
+          cd out/mac/arm64/
+          pytest -s tests/ten_runtime/integration/go/
+          df -h .
+      #   continue-on-error: true
+      # - name: Setup tmate session
+      #   uses: mxschmitt/action-tmate@v3
+
+  test-integration-python:
+    needs: build
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        build_type: [release]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+
+      - name: Trust working directory
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
+      - name: Initialize and update submodules except portal/
+        run: |
+          # Retrieve all submodule paths, excluding `portal/`.
+          submodules=$(git config --file .gitmodules --get-regexp path | awk '$2 != "portal" { print $2 }')
+          git submodule init
+          for submodule in $submodules; do
+            echo "Initializing submodule: $submodule"
+            git submodule update --init --recursive --depth 1 "$submodule"
+          done
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "stable"
+          cache: false
+
+      - name: Set ulimit and sysctl
+        run: |
+          # Because there are concurrent test cases which involves many
+          # concurrent socket connections, we need to enlarge the maximum number
+          # of the opened file descriptor.
+          ulimit -n 102400
+          # Because there are concurrent test cases which will create many
+          # concurrent connections simutaneously, we increase the TCP listening
+          # backlog value to 8192.
+          sudo sysctl -w kern.ipc.somaxconn=8192
+        shell: bash
+
+      - name: Install tools and dependencies
+        run: |
+          brew install llvm
+          rustup default nightly-2025-08-10
+
+          brew install tree
+          pip3 install --use-pep517 python-dotenv jinja2
+          go install golang.org/dl/go1.24.3@latest && go1.24.3 download
+          go env -w GOFLAGS="-buildvcs=false"
+          cargo install --force cbindgen
+
+      - name: Download build artifacts (tar archive)
+        uses: actions/download-artifact@v4
+        with:
+          name: tests-artifacts-${{ matrix.build_type }}
+          path: out/mac/arm64
+
+      - name: Extract tests artifacts preserving permissions
+        run: |
+          tar -xzf out/mac/arm64/tests-artifacts.tar.gz
+
+      - name: View folder structure content
+        run: |
+          df -h .
+          tree -I ".*|*.h|*.hpp|*.py" out/mac/arm64
+
+      - name: Install Python dependencies via script
+        run: |
+          python .github/tools/setup_pytest_dependencies.py
+          df -h .
+
+      - name: Run tests (ten_runtime Python integration tests)
+        env:
+          ASAN_OPTIONS: detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
+          MALLOC_CHECK_: 3
+          TEN_ENABLE_MEMORY_TRACKING: "true"
+          TEN_ENABLE_BACKTRACE_DUMP: "true"
+          GOTRACEBACK: crash
+        run: |
+          if [ ${{ matrix.build_type }} == "debug" ]; then
+            export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
+          fi
+          export PATH=$(pwd)/core/ten_gn:$PATH
+          cd out/mac/arm64/
+          pytest -s tests/ten_runtime/integration/python/
           df -h .
       #   continue-on-error: true
       # - name: Setup tmate session

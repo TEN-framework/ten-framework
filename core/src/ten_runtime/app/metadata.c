@@ -286,7 +286,8 @@ bool ten_app_init_advanced_log(ten_app_t *self, ten_value_t *value) {
   }
 
   ten_log_global_set_advanced_impl_with_config(
-      ten_log_rust_log_func, ten_log_rust_config_deinit, log_config);
+      ten_log_rust_log_func, ten_log_rust_config_deinit,
+      ten_log_rust_config_reopen_all, log_config);
 
   return true;
 #endif

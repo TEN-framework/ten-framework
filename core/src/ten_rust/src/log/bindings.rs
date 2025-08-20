@@ -9,7 +9,7 @@ use std::{
     os::raw::c_char,
 };
 
-use crate::log::{ten_configure_log, AdvancedLogConfig};
+use crate::log::{ten_configure_log, ten_log_reopen_all, AdvancedLogConfig};
 
 /// Configure the log.
 ///
@@ -88,6 +88,12 @@ pub extern "C" fn ten_rust_configure_log(
     err_msg: *mut *mut c_char,
 ) -> bool {
     if config.is_null() {
+        if !err_msg.is_null() {
+            let err_msg_c_str = CString::new("Log config is null").unwrap();
+            unsafe {
+                *err_msg = err_msg_c_str.into_raw();
+            }
+        }
         return false;
     }
 
@@ -106,6 +112,30 @@ pub extern "C" fn ten_rust_configure_log(
     });
 
     result
+}
+
+#[no_mangle]
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
+pub extern "C" fn ten_rust_log_reopen_all(
+    config: *mut AdvancedLogConfig,
+    reloadable: bool,
+    err_msg: *mut *mut c_char,
+) -> bool {
+    if config.is_null() {
+        if !err_msg.is_null() {
+            let err_msg_c_str = CString::new("Log config is null").unwrap();
+            unsafe {
+                *err_msg = err_msg_c_str.into_raw();
+            }
+        }
+        return false;
+    }
+
+    let config = unsafe { &mut *config };
+
+    ten_log_reopen_all(config, reloadable);
+
+    true
 }
 
 #[no_mangle]

@@ -8,9 +8,6 @@
 #include <cstdlib>
 #include <iostream>
 
-#include "ten_runtime/binding/cpp/detail/msg/cmd/close_app.h"
-#include "ten_runtime/binding/cpp/detail/msg/cmd/start_graph.h"
-#include "ten_runtime/binding/cpp/detail/ten_env.h"
 #include "ten_runtime/binding/cpp/ten.h"
 
 namespace {
@@ -29,7 +26,7 @@ class test_extension : public ten::extension_t {
   void send_invalid_graph(ten::ten_env_t &ten_env) {
     ten::error_t err;
 
-    auto start_graph_cmd = ten::cmd_start_graph_t::create();
+    auto start_graph_cmd = ten::start_graph_cmd_t::create();
     start_graph_cmd->set_dests({{""}});
     bool result = start_graph_cmd->set_graph_from_json(R"({
             "nodes": [
@@ -74,7 +71,7 @@ class test_extension : public ten::extension_t {
 
       send_invalid_graph(ten_env);
 
-      auto start_graph_cmd = ten::cmd_start_graph_t::create();
+      auto start_graph_cmd = ten::start_graph_cmd_t::create();
       start_graph_cmd->set_dests({{""}});
       start_graph_cmd->set_graph_from_json(R"({
             "nodes": [
@@ -93,7 +90,7 @@ class test_extension : public ten::extension_t {
              ten::error_t * /*error*/) {
             // The graph check should be passed.
             if (cmd_result->get_status_code() == TEN_STATUS_CODE_OK) {
-              auto close_app = ten::cmd_close_app_t::create();
+              auto close_app = ten::close_app_cmd_t::create();
               close_app->set_dests({{""}});
               env.send_cmd(std::move(close_app));
             } else {

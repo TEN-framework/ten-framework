@@ -449,7 +449,8 @@ static void ten_engine_on_graph_remote_connected(ten_remote_t *self,
                      TEN_PROTOCOL_ATTACH_TO_CONNECTION,
              "Should not happen.");
 
-  TEN_ASSERT(cmd && ten_msg_check_integrity(cmd), "Invalid argument.");
+  TEN_ASSERT(cmd, "Invalid argument.");
+  TEN_ASSERT(ten_msg_check_integrity(cmd), "Invalid argument.");
 
   ten_protocol_send_msg(self->connection->protocol, cmd);
 
@@ -633,11 +634,12 @@ void ten_engine_route_msg_to_remote(ten_engine_t *self, ten_shared_ptr_t *msg) {
   // ready to transfer messages.
 
   if (!success) {
-    // If the message is a cmd, we should create a cmdResult to notify the
+    // If the message is a cmd, we should create a cmd_result to notify the
     // sender that the cmd is not successfully sent.
     if (ten_msg_is_cmd(msg)) {
       ten_engine_create_cmd_result_and_dispatch(
-          self, msg, TEN_STATUS_CODE_ERROR, ten_error_message(&err));
+          self, msg, TEN_STATUS_CODE_ERROR, TEN_STR_DETAIL,
+          ten_error_message(&err));
     }
   }
 

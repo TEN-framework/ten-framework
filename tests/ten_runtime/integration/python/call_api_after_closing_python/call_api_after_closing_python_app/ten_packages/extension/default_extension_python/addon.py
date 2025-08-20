@@ -31,7 +31,9 @@ class DefaultExtensionAddon(Addon):
         else:
             assert False
 
-    def on_create_instance(self, ten_env: TenEnv, name: str, context) -> None:
+    def on_create_instance(
+        self, ten_env: TenEnv, name: str, context: object
+    ) -> None:
         ten_env.log(LogLevel.INFO, "on_create_instance" + name)
 
         # Create a new thread to call the on_create_instance_done function.

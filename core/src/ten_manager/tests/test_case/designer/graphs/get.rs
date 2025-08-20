@@ -648,7 +648,7 @@ mod tests {
             )
             .await;
             if inject_ret.is_err() {
-                println!("inject_ret: {:?}", inject_ret);
+                println!("inject_ret: {inject_ret:?}");
             }
             assert!(inject_ret.is_ok());
         }

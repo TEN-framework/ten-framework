@@ -4,14 +4,14 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import { AudioFrame } from "./audio_frame.js";
-import { VideoFrame } from "./video_frame.js";
-import { Cmd } from "./cmd.js";
-import { CmdResult } from "./cmd_result.js";
-import { Data } from "./data.js";
+import type { AudioFrame } from "./msg/audio_frame.js";
+import type { VideoFrame } from "./msg/video_frame.js";
+import type { Cmd } from "./msg/cmd/cmd.js";
+import type { CmdResult } from "./msg/cmd/cmd_result.js";
+import type { Data } from "./msg/data.js";
+import type { TenError } from "./error.js";
 import ten_addon from "./ten_addon.js";
 import { LogLevel } from "./log_level.js";
-import { TenError } from "./error.js";
 
 export class TenEnv {
   async sendCmd(

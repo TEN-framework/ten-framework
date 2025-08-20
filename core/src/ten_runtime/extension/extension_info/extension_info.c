@@ -270,8 +270,8 @@ static ten_shared_ptr_t *ten_extension_info_clone_except_dest(
   TEN_ASSERT(new_dest, "Should not happen.");
 
   ten_extension_info_t *new_extension_info = ten_shared_ptr_get_data(new_dest);
-  TEN_ASSERT(new_extension_info &&
-                 ten_extension_info_check_integrity(new_extension_info, true),
+  TEN_ASSERT(new_extension_info, "Should not happen.");
+  TEN_ASSERT(ten_extension_info_check_integrity(new_extension_info, true),
              "Should not happen.");
 
   ten_value_object_merge_with_clone(new_extension_info->property,

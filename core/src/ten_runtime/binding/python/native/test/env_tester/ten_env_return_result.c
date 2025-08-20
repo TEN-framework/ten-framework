@@ -6,7 +6,7 @@
 //
 #include "include_internal/ten_runtime/binding/python/common/common.h"
 #include "include_internal/ten_runtime/binding/python/common/error.h"
-#include "include_internal/ten_runtime/binding/python/msg/cmd_result.h"
+#include "include_internal/ten_runtime/binding/python/msg/cmd/cmd_result.h"
 #include "include_internal/ten_runtime/binding/python/msg/msg.h"
 #include "include_internal/ten_runtime/binding/python/test/env_tester.h"
 #include "ten_runtime/common/error_code.h"
