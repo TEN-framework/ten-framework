@@ -16,14 +16,15 @@ class ValueType(IntEnum):
     """Enum representing the different types a Value can hold."""
 
     INVALID = 0
-    BOOL = 1
-    INT = 2
-    FLOAT = 3
-    STRING = 4
-    BYTES = 5
-    ARRAY = 6
-    OBJECT = 7
-    JSON_STRING = 8
+    NULL = 1
+    BOOL = 2
+    INT = 3
+    FLOAT = 4
+    STRING = 5
+    BYTES = 6
+    ARRAY = 7
+    OBJECT = 8
+    JSON_STRING = 9
 
 
 ValueDataType: TypeAlias = (

@@ -16,6 +16,9 @@ const (
 	// In theory, users should not see this value, so it is not exported
 	valueTypeInvalid ValueType = iota
 
+	// ValueTypeNull - Null
+	ValueTypeNull
+
 	// ValueTypeBool - Boolean
 	ValueTypeBool
 
