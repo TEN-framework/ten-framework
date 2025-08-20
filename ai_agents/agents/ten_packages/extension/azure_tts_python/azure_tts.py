@@ -36,8 +36,9 @@ class AzureTTSParams(BaseModel):
     )
 
     @field_validator("output_format", mode="before")
+    @classmethod
     def validate_output_format(
-        self, value: str | speechsdk.SpeechSynthesisOutputFormat | int
+        cls, value: str | speechsdk.SpeechSynthesisOutputFormat | int
     ) -> speechsdk.SpeechSynthesisOutputFormat:
         if isinstance(value, speechsdk.SpeechSynthesisOutputFormat):
             return value
@@ -51,8 +52,9 @@ class AzureTTSParams(BaseModel):
         raise ValueError(f"Invalid output format: {value}")
 
     @field_validator("propertys", mode="before")
+    @classmethod
     def validate_propertys(
-        self, value: list[tuple[speechsdk.PropertyId | str | int, str]]
+        cls, value: list[tuple[speechsdk.PropertyId | str | int, str]]
     ) -> list[tuple[speechsdk.PropertyId, str]]:
         propertys = []
         for k, v in value:
