@@ -362,7 +362,7 @@ pub fn get_nodes_in_graph<'a>(
 }
 
 #[allow(clippy::too_many_arguments)]
-pub fn update_graph_node_in_property_all_fields(
+pub fn update_graph_node_in_property_json_file(
     graph_id: &Uuid,
     pkgs_cache: &HashMap<String, PkgsInfoInApp>,
     graphs_cache: &HashMap<Uuid, GraphInfo>,

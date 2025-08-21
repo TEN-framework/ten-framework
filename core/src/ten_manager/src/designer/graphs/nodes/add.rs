@@ -25,7 +25,7 @@ use crate::{
     },
 };
 
-use super::update_graph_node_in_property_all_fields;
+use super::update_graph_node_in_property_json_file;
 
 #[derive(Serialize, Deserialize)]
 pub struct AddGraphNodeRequestPayload {
@@ -103,7 +103,7 @@ pub async fn add_graph_node_endpoint(
         return Ok(HttpResponse::BadRequest().json(error_response));
     }
 
-    if let Err(e) = update_graph_node_in_property_all_fields(
+    if let Err(e) = update_graph_node_in_property_json_file(
         &request_payload.graph_id,
         &pkgs_cache,
         &graphs_cache,
