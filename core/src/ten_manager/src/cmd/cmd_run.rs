@@ -44,6 +44,7 @@ pub fn create_sub_cmd(_args_cfg: &crate::cmd_line::ArgsCfg) -> Command {
                 .help("Additional arguments to pass to the script")
                 .last(true)
                 .allow_hyphen_values(true)
+                .action(clap::ArgAction::Append)
                 .required(false),
         )
 }

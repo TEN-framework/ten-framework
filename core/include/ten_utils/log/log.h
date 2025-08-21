@@ -96,6 +96,9 @@ typedef void (*ten_log_advanced_log_func_t)(ten_log_t *self,
                                             const char *file_name,
                                             size_t line_no, const char *msg);
 
+typedef void (*ten_log_advanced_log_reopen_all_func_t)(ten_log_t *self,
+                                                       void *config);
+
 typedef void (*ten_log_advanced_log_config_on_deinit_func_t)(void *config);
 
 typedef struct ten_log_output_t {
@@ -122,6 +125,7 @@ typedef struct ten_log_formatter_t {
 typedef struct ten_log_advanced_impl_t {
   ten_log_advanced_log_func_t impl;
   ten_log_advanced_log_config_on_deinit_func_t on_deinit;
+  ten_log_advanced_log_reopen_all_func_t reopen_all;
 
   // The reloadable feature is for internal use only and is used in smoke tests
   bool is_reloadable;

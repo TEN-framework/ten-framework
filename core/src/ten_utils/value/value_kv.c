@@ -149,7 +149,8 @@ ten_value_kv_t *ten_value_kv_from_json(const char *key, ten_json_t *json) {
   TEN_ASSERT(json, "Invalid argument.");
 
   ten_value_kv_t *kv = ten_value_kv_create_empty(key);
-  TEN_ASSERT(kv && ten_value_kv_check_integrity(kv), "Invalid argument.");
+  TEN_ASSERT(kv, "Invalid argument.");
+  TEN_ASSERT(ten_value_kv_check_integrity(kv), "Invalid argument.");
 
   kv->value = ten_value_from_json(json);
   TEN_ASSERT(kv->value && ten_value_check_integrity(kv->value),

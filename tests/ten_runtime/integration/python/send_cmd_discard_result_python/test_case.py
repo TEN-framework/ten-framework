@@ -42,16 +42,7 @@ def test_send_cmd_discard_result_python():
     if sys.platform == "win32":
         print("test_send_cmd_discard_result_python doesn't support win32")
         assert False
-    elif sys.platform == "darwin":
-        # client depends on some libraries in the TEN app.
-        my_env["DYLD_LIBRARY_PATH"] = os.path.join(
-            base_path, "send_cmd_discard_result_python_app/lib"
-        )
-    else:
-        # client depends on some libraries in the TEN app.
-        my_env["LD_LIBRARY_PATH"] = os.path.join(
-            base_path, "send_cmd_discard_result_python_app/lib"
-        )
+
     app_dir_name = "send_cmd_discard_result_python_app"
     app_root_path = os.path.join(base_path, app_dir_name)
     app_language = "python"

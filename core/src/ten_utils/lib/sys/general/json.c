@@ -8,6 +8,7 @@
 
 #include <stdbool.h>
 
+#include "include_internal/ten_utils/lib/json.h"
 #include "ten_runtime/common/error_code.h"
 #include "ten_utils/lib/error.h"
 #include "ten_utils/lib/signature.h"
@@ -41,7 +42,8 @@ void ten_json_init(ten_json_t *self, void *ctx, bool owned_ctx) {
 }
 
 bool ten_json_init_object(ten_json_t *self) {
-  TEN_ASSERT(self && ten_json_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_json_check_integrity(self), "Invalid argument.");
   TEN_ASSERT(self->ctx, "Invalid argument.");
   TEN_ASSERT(!self->json, "Invalid argument.");
 
@@ -52,7 +54,8 @@ bool ten_json_init_object(ten_json_t *self) {
 }
 
 bool ten_json_init_array(ten_json_t *self) {
-  TEN_ASSERT(self && ten_json_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_json_check_integrity(self), "Invalid argument.");
   TEN_ASSERT(self->ctx, "Invalid argument.");
   TEN_ASSERT(!self->json, "Invalid argument.");
 
@@ -63,7 +66,8 @@ bool ten_json_init_array(ten_json_t *self) {
 }
 
 bool ten_json_init_string(ten_json_t *self, const char *value) {
-  TEN_ASSERT(self && ten_json_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_json_check_integrity(self), "Invalid argument.");
   TEN_ASSERT(self->ctx, "Invalid argument.");
   TEN_ASSERT(!self->json, "Invalid argument.");
 
@@ -74,7 +78,8 @@ bool ten_json_init_string(ten_json_t *self, const char *value) {
 }
 
 bool ten_json_init_integer(ten_json_t *self, int64_t value) {
-  TEN_ASSERT(self && ten_json_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_json_check_integrity(self), "Invalid argument.");
   TEN_ASSERT(self->ctx, "Invalid argument.");
   TEN_ASSERT(!self->json, "Invalid argument.");
 
@@ -85,7 +90,8 @@ bool ten_json_init_integer(ten_json_t *self, int64_t value) {
 }
 
 bool ten_json_init_real(ten_json_t *self, double value) {
-  TEN_ASSERT(self && ten_json_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_json_check_integrity(self), "Invalid argument.");
   TEN_ASSERT(self->ctx, "Invalid argument.");
   TEN_ASSERT(!self->json, "Invalid argument.");
 
@@ -96,7 +102,8 @@ bool ten_json_init_real(ten_json_t *self, double value) {
 }
 
 bool ten_json_init_boolean(ten_json_t *self, bool value) {
-  TEN_ASSERT(self && ten_json_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_json_check_integrity(self), "Invalid argument.");
   TEN_ASSERT(self->ctx, "Invalid argument.");
   TEN_ASSERT(!self->json, "Invalid argument.");
 
@@ -107,7 +114,8 @@ bool ten_json_init_boolean(ten_json_t *self, bool value) {
 }
 
 bool ten_json_init_null(ten_json_t *self) {
-  TEN_ASSERT(self && ten_json_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_json_check_integrity(self), "Invalid argument.");
   TEN_ASSERT(self->ctx, "Invalid argument.");
   TEN_ASSERT(!self->json, "Invalid argument.");
 
@@ -127,7 +135,8 @@ ten_json_t *ten_json_create(void *ctx, bool owned_ctx) {
 }
 
 void ten_json_deinit(ten_json_t *self) {
-  TEN_ASSERT(self && ten_json_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_json_check_integrity(self), "Invalid argument.");
 
   if (self->owned_ctx && self->ctx) {
     yyjson_mut_doc_free(self->ctx);
@@ -139,7 +148,8 @@ void ten_json_deinit(ten_json_t *self) {
 }
 
 void ten_json_destroy(ten_json_t *self) {
-  TEN_ASSERT(self && ten_json_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_json_check_integrity(self), "Invalid argument.");
 
   ten_json_deinit(self);
 
@@ -147,7 +157,8 @@ void ten_json_destroy(ten_json_t *self) {
 }
 
 TEN_TYPE ten_json_get_type(ten_json_t *self) {
-  TEN_ASSERT(self && ten_json_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_json_check_integrity(self), "Invalid argument.");
 
   switch (yyjson_mut_get_type((yyjson_mut_val *)self->json)) {
   case YYJSON_TYPE_OBJ:
@@ -175,7 +186,8 @@ TEN_TYPE ten_json_get_type(ten_json_t *self) {
 }
 
 const char *ten_json_object_peek_string(ten_json_t *self, const char *key) {
-  TEN_ASSERT(self && ten_json_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_json_check_integrity(self), "Invalid argument.");
   TEN_ASSERT(key, "Invalid argument.");
 
   ten_json_t result = TEN_JSON_INIT_VAL(self->ctx, false);
@@ -194,7 +206,8 @@ const char *ten_json_object_peek_string(ten_json_t *self, const char *key) {
 
 static bool ten_json_object_peek_object(ten_json_t *self, const char *key,
                                         ten_json_t *object) {
-  TEN_ASSERT(self && ten_json_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_json_check_integrity(self), "Invalid argument.");
   TEN_ASSERT(key, "Invalid argument.");
   TEN_ASSERT(object && ten_json_check_integrity(object), "Invalid argument.");
 
@@ -212,7 +225,8 @@ static bool ten_json_object_peek_object(ten_json_t *self, const char *key,
 
 static bool ten_json_object_peek_array(ten_json_t *self, const char *key,
                                        ten_json_t *item) {
-  TEN_ASSERT(self && ten_json_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_json_check_integrity(self), "Invalid argument.");
   TEN_ASSERT(key, "Invalid argument.");
   TEN_ASSERT(item && ten_json_check_integrity(item), "Invalid argument.");
 
@@ -229,7 +243,8 @@ static bool ten_json_object_peek_array(ten_json_t *self, const char *key,
 }
 
 static bool ten_json_object_del(ten_json_t *self, const char *key) {
-  TEN_ASSERT(self && ten_json_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_json_check_integrity(self), "Invalid argument.");
   TEN_ASSERT(key, "Invalid argument.");
 
   if (ten_json_object_peek(self, key, NULL)) {
@@ -241,7 +256,8 @@ static bool ten_json_object_del(ten_json_t *self, const char *key) {
 
 bool ten_json_object_peek_or_create_object(ten_json_t *self, const char *key,
                                            ten_json_t *object) {
-  TEN_ASSERT(self && ten_json_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_json_check_integrity(self), "Invalid argument.");
   TEN_ASSERT(key, "Invalid argument.");
   TEN_ASSERT(object && ten_json_check_integrity(object), "Invalid argument.");
 
@@ -268,9 +284,11 @@ bool ten_json_object_peek_or_create_object(ten_json_t *self, const char *key,
 }
 
 bool ten_json_object_set(ten_json_t *self, const char *key, ten_json_t *value) {
-  TEN_ASSERT(self && ten_json_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_json_check_integrity(self), "Invalid argument.");
   TEN_ASSERT(key, "Invalid argument.");
-  TEN_ASSERT(value && ten_json_check_integrity(value), "Invalid argument.");
+  TEN_ASSERT(value, "Invalid argument.");
+  TEN_ASSERT(ten_json_check_integrity(value), "Invalid argument.");
 
   if (ten_json_object_peek(self, key, NULL)) {
     TEN_ASSERT(0, "Should not happen.");
@@ -288,7 +306,8 @@ bool ten_json_object_set(ten_json_t *self, const char *key, ten_json_t *value) {
 }
 
 bool ten_json_object_set_int(ten_json_t *self, const char *key, int64_t value) {
-  TEN_ASSERT(self && ten_json_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_json_check_integrity(self), "Invalid argument.");
   TEN_ASSERT(key, "Invalid argument.");
 
   if (ten_json_object_peek(self, key, NULL)) {
@@ -310,7 +329,8 @@ bool ten_json_object_set_int(ten_json_t *self, const char *key, int64_t value) {
 }
 
 bool ten_json_object_set_real(ten_json_t *self, const char *key, double value) {
-  TEN_ASSERT(self && ten_json_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_json_check_integrity(self), "Invalid argument.");
   TEN_ASSERT(key, "Invalid argument.");
 
   if (ten_json_object_peek(self, key, NULL)) {
@@ -332,7 +352,8 @@ bool ten_json_object_set_real(ten_json_t *self, const char *key, double value) {
 
 bool ten_json_object_set_string(ten_json_t *self, const char *key,
                                 const char *value) {
-  TEN_ASSERT(self && ten_json_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_json_check_integrity(self), "Invalid argument.");
   TEN_ASSERT(key, "Invalid argument.");
   TEN_ASSERT(value, "Invalid argument.");
 
@@ -354,7 +375,8 @@ bool ten_json_object_set_string(ten_json_t *self, const char *key,
 }
 
 bool ten_json_object_set_bool(ten_json_t *self, const char *key, bool value) {
-  TEN_ASSERT(self && ten_json_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_json_check_integrity(self), "Invalid argument.");
   TEN_ASSERT(key, "Invalid argument.");
   TEN_ASSERT(value, "Invalid argument.");
 
@@ -377,7 +399,8 @@ bool ten_json_object_set_bool(ten_json_t *self, const char *key, bool value) {
 
 bool ten_json_object_peek(ten_json_t *self, const char *key,
                           ten_json_t *value) {
-  TEN_ASSERT(self && ten_json_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_json_check_integrity(self), "Invalid argument.");
   TEN_ASSERT(key, "Invalid argument.");
   if (value) {
     TEN_ASSERT(ten_json_check_integrity(value), "Invalid argument.");
@@ -401,7 +424,8 @@ bool ten_json_object_peek(ten_json_t *self, const char *key,
 
 bool ten_json_object_peek_or_create_array(ten_json_t *self, const char *key,
                                           ten_json_t *array) {
-  TEN_ASSERT(self && ten_json_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_json_check_integrity(self), "Invalid argument.");
   TEN_ASSERT(key, "Invalid argument.");
   TEN_ASSERT(array && ten_json_check_integrity(array), "Invalid argument.");
 
@@ -441,7 +465,8 @@ static_assert(sizeof(yyjson_mut_obj_iter) < sizeof(ten_json_iter_t),
               "ten_json_iter_t is too small.");
 
 bool ten_json_object_iter_init(ten_json_t *self, ten_json_iter_t *iter) {
-  TEN_ASSERT(self && ten_json_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_json_check_integrity(self), "Invalid argument.");
   TEN_ASSERT(iter, "Invalid argument.");
 
   bool success =
@@ -483,7 +508,8 @@ bool ten_json_object_iter_peek_value(ten_json_t *key, ten_json_t *value) {
 }
 
 bool ten_json_array_append(ten_json_t *self, ten_json_t *item) {
-  TEN_ASSERT(self && ten_json_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_json_check_integrity(self), "Invalid argument.");
   TEN_ASSERT(item && ten_json_check_integrity(item), "Invalid argument.");
 
   bool success = yyjson_mut_arr_append(self->json, item->json);
@@ -495,13 +521,15 @@ bool ten_json_array_append(ten_json_t *self, ten_json_t *item) {
 }
 
 size_t ten_json_array_get_size(ten_json_t *self) {
-  TEN_ASSERT(self && ten_json_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_json_check_integrity(self), "Invalid argument.");
   return yyjson_mut_arr_size((yyjson_mut_val *)self->json);
 }
 
 bool ten_json_array_peek_item(ten_json_t *self, size_t index,
                               ten_json_t *item) {
-  TEN_ASSERT(self && ten_json_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_json_check_integrity(self), "Invalid argument.");
   TEN_ASSERT(item && ten_json_check_integrity(item), "Invalid argument.");
 
   yyjson_mut_val *item_json = yyjson_mut_arr_get(self->json, index);
@@ -516,7 +544,8 @@ bool ten_json_array_peek_item(ten_json_t *self, size_t index,
 
 const char *ten_json_to_string(ten_json_t *self, const char *key,
                                bool *must_free) {
-  TEN_ASSERT(self && ten_json_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_json_check_integrity(self), "Invalid argument.");
   TEN_ASSERT(must_free, "Invalid argument.");
 
   *must_free = false;
@@ -601,62 +630,74 @@ done:
 }
 
 bool ten_json_is_object(ten_json_t *self) {
-  TEN_ASSERT(self && ten_json_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_json_check_integrity(self), "Invalid argument.");
   return yyjson_mut_is_obj((yyjson_mut_val *)self->json);
 }
 
 bool ten_json_is_array(ten_json_t *self) {
-  TEN_ASSERT(self && ten_json_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_json_check_integrity(self), "Invalid argument.");
   return yyjson_mut_is_arr((yyjson_mut_val *)self->json);
 }
 
 bool ten_json_is_string(ten_json_t *self) {
-  TEN_ASSERT(self && ten_json_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_json_check_integrity(self), "Invalid argument.");
   return yyjson_mut_is_str((yyjson_mut_val *)self->json);
 }
 
 bool ten_json_is_integer(ten_json_t *self) {
-  TEN_ASSERT(self && ten_json_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_json_check_integrity(self), "Invalid argument.");
   return yyjson_mut_is_int((yyjson_mut_val *)self->json);
 }
 
 bool ten_json_is_boolean(ten_json_t *self) {
-  TEN_ASSERT(self && ten_json_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_json_check_integrity(self), "Invalid argument.");
   return yyjson_mut_is_bool((yyjson_mut_val *)self->json);
 }
 
 bool ten_json_is_real(ten_json_t *self) {
-  TEN_ASSERT(self && ten_json_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_json_check_integrity(self), "Invalid argument.");
   return yyjson_mut_is_real((yyjson_mut_val *)self->json);
 }
 
 bool ten_json_is_null(ten_json_t *self) {
-  TEN_ASSERT(self && ten_json_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_json_check_integrity(self), "Invalid argument.");
   return yyjson_mut_is_null((yyjson_mut_val *)self->json);
 }
 
 bool ten_json_is_true(ten_json_t *self) {
-  TEN_ASSERT(self && ten_json_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_json_check_integrity(self), "Invalid argument.");
   return yyjson_mut_is_true((yyjson_mut_val *)self->json);
 }
 
 const char *ten_json_peek_string_value(ten_json_t *self) {
-  TEN_ASSERT(self && ten_json_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_json_check_integrity(self), "Invalid argument.");
   return yyjson_mut_get_str((yyjson_mut_val *)self->json);
 }
 
 int64_t ten_json_get_integer_value(ten_json_t *self) {
-  TEN_ASSERT(self && ten_json_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_json_check_integrity(self), "Invalid argument.");
   return yyjson_mut_get_sint((yyjson_mut_val *)self->json);
 }
 
 bool ten_json_get_boolean_value(ten_json_t *self) {
-  TEN_ASSERT(self && ten_json_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_json_check_integrity(self), "Invalid argument.");
   return yyjson_mut_get_bool((yyjson_mut_val *)self->json);
 }
 
 double ten_json_get_real_value(ten_json_t *self) {
-  TEN_ASSERT(self && ten_json_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_json_check_integrity(self), "Invalid argument.");
   return yyjson_mut_get_real((yyjson_mut_val *)self->json);
 }
 

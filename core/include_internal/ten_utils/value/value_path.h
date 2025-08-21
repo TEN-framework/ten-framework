@@ -46,3 +46,23 @@ TEN_UTILS_API bool ten_value_set_from_path_str_with_move(ten_value_t *base,
                                                          const char *path,
                                                          ten_value_t *value,
                                                          ten_error_t *err);
+
+/**
+ * @brief Unset (remove) a value at the specified path.
+ * @param base The base value to start from.
+ * @param path The path to the value to unset (e.g., "obj:key1[0]:key2").
+ * @param err Error object to set if operation fails.
+ * @return true if the value was found and removed, false otherwise.
+ */
+TEN_UTILS_API bool ten_value_unset_from_path(ten_value_t *base,
+                                             const char *path,
+                                             ten_error_t *err);
+
+/**
+ * @brief Unset (remove) a key from the object.
+ * @param self The object value.
+ * @param key The key to unset.
+ * @return true if the key was found and removed, false if the key was not
+ * found.
+ */
+TEN_UTILS_API bool ten_value_object_unset(ten_value_t *self, const char *key);

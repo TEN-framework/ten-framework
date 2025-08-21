@@ -42,16 +42,6 @@ def test_send_recv_image_python():
     if sys.platform == "win32":
         print("test_send_recv_image_python doesn't support win32")
         assert False
-    elif sys.platform == "darwin":
-        # client depends on some libraries in the TEN app.
-        my_env["DYLD_LIBRARY_PATH"] = os.path.join(
-            base_path, "send_recv_image_python_app/lib"
-        )
-    else:
-        # client depends on some libraries in the TEN app.
-        my_env["LD_LIBRARY_PATH"] = os.path.join(
-            base_path, "send_recv_image_python_app/lib"
-        )
 
     app_dir_name = "send_recv_image_python_app"
     app_root_path = os.path.join(base_path, app_dir_name)
