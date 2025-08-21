@@ -270,7 +270,6 @@ const TabLoadedApps = (props: { className?: string }) => {
               </TableRow>
             )}
             {!isLoading &&
-              loadedApps?.app_info?.length &&
               loadedApps?.app_info?.map((app, index) => (
                 <AppRow key={`app-row-${app.base_dir}`} app={app} idx={index} />
               ))}

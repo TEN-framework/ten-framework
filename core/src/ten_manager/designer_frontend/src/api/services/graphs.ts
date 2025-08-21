@@ -30,7 +30,7 @@ export const retrieveGraphConnections = async (graphId: string) => {
   const data = template.responseSchema.parse(res).data;
 
   // Find the graph with matching graph_id and return its connections
-  const targetGraph = data.find(graph => graph.graph_id === graphId);
+  const targetGraph = data.find((graph) => graph.graph_id === graphId);
   return targetGraph?.graph.connections || [];
 };
 
@@ -42,7 +42,7 @@ export const retrieveGraphs = async () => {
   const res = await req;
   const data = template.responseSchema.parse(res).data;
 
-  return data.map(graph => ({
+  return data.map((graph) => ({
     ...graph,
   }));
 };
