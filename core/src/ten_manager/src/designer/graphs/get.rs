@@ -11,7 +11,12 @@ use std::sync::Arc;
 use actix_web::{web, HttpResponse, Responder};
 use futures::future::try_join_all;
 use serde::{Deserialize, Serialize};
+
 use ten_rust::base_dir_pkg_info::PkgsInfoInApp;
+use ten_rust::graph::{
+    connection::GraphConnection, graph_info::GraphInfo, node::GraphNode, Graph,
+    GraphExposedMessage, GraphExposedProperty,
+};
 use ten_rust::pkg_info::get_pkg_info_for_extension_addon;
 
 use crate::designer::common::{
@@ -27,10 +32,6 @@ use crate::designer::{
     },
     response::{ApiResponse, Status},
     DesignerState,
-};
-use ten_rust::graph::{
-    connection::GraphConnection, graph_info::GraphInfo, node::GraphNode, Graph,
-    GraphExposedMessage, GraphExposedProperty,
 };
 
 #[derive(Serialize, Deserialize)]

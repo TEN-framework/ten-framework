@@ -4,11 +4,11 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-use actix_web::http::StatusCode;
-use actix_web::ResponseError;
+use std::fmt;
+
+use actix_web::{HttpResponse, ResponseError};
 use anyhow::{Error, Result};
 use serde::{Deserialize, Serialize};
-use std::fmt;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum Status {
@@ -64,38 +64,6 @@ pub struct ErrorResponse {
     pub error: Option<InnerError>,
 }
 
-impl fmt::Display for ErrorResponse {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match &self.error {
-            Some(inner_error) => write!(
-                f,
-                "{}: {} ({})",
-                inner_error.error_type, self.message, inner_error.message
-            ),
-            None => write!(f, "{}", self.message),
-        }
-    }
-}
-
-impl ResponseError for ErrorResponse {
-    fn status_code(&self) -> StatusCode {
-        match &self.error {
-            Some(inner_error) => match inner_error.code.as_deref() {
-                Some("404") => StatusCode::NOT_FOUND,
-                Some("400") => StatusCode::BAD_REQUEST,
-                Some("403") => StatusCode::FORBIDDEN,
-                Some("401") => StatusCode::UNAUTHORIZED,
-                _ => StatusCode::INTERNAL_SERVER_ERROR,
-            },
-            None => StatusCode::INTERNAL_SERVER_ERROR,
-        }
-    }
-
-    fn error_response(&self) -> actix_web::HttpResponse {
-        actix_web::HttpResponse::build(self.status_code()).json(self)
-    }
-}
-
 #[derive(Serialize, Deserialize, Debug)]
 pub struct InnerError {
     #[serde(rename = "type")]
@@ -127,5 +95,23 @@ impl ErrorResponse {
         }
 
         this
+    }
+}
+
+impl fmt::Display for ErrorResponse {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.message)
+    }
+}
+
+impl ResponseError for ErrorResponse {
+    fn error_response(&self) -> HttpResponse {
+        let error_response = ErrorResponse {
+            status: Status::Fail,
+            message: self.to_string(),
+            error: None,
+        };
+
+        HttpResponse::BadRequest().json(error_response)
     }
 }
