@@ -9,6 +9,7 @@
 #include "include_internal/ten_runtime/binding/nodejs/msg/cmd/cmd.h"
 #include "include_internal/ten_runtime/binding/nodejs/msg/cmd/cmd_result.h"
 #include "include_internal/ten_runtime/binding/nodejs/ten_env/ten_env.h"
+#include "ten_runtime/msg/cmd_result/cmd_result.h"
 #include "ten_utils/lib/smart_ptr.h"
 #include "ten_utils/macro/check.h"
 #include "ten_utils/macro/mark.h"
@@ -17,6 +18,7 @@
 typedef struct ten_env_notify_send_cmd_ctx_t {
   ten_shared_ptr_t *c_cmd;
   ten_nodejs_tsfn_t *js_cb;
+  bool is_ex;
 } ten_env_notify_send_cmd_ctx_t;
 
 typedef struct ten_nodejs_send_cmd_callback_call_ctx_t {
@@ -26,13 +28,14 @@ typedef struct ten_nodejs_send_cmd_callback_call_ctx_t {
 } ten_nodejs_send_cmd_callback_call_ctx_t;
 
 static ten_env_notify_send_cmd_ctx_t *ten_env_notify_send_cmd_ctx_create(
-    ten_shared_ptr_t *c_cmd, ten_nodejs_tsfn_t *js_cb) {
+    ten_shared_ptr_t *c_cmd, ten_nodejs_tsfn_t *js_cb, bool is_ex) {
   ten_env_notify_send_cmd_ctx_t *ctx =
       TEN_MALLOC(sizeof(ten_env_notify_send_cmd_ctx_t));
   TEN_ASSERT(ctx, "Failed to allocate memory.");
 
   ctx->c_cmd = c_cmd;
   ctx->js_cb = js_cb;
+  ctx->is_ex = is_ex;
 
   return ctx;
 }
@@ -110,7 +113,9 @@ static void tsfn_proxy_send_cmd_callback(napi_env env, napi_value js_cb,
       napi_call_function(env, js_undefined(env), js_cb, 2, argv, NULL);
   ASSERT_IF_NAPI_FAIL(status == napi_ok, "Failed to call JS callback", NULL);
 
-  ten_nodejs_tsfn_release(ctx->js_cb);
+  if (ctx->error || ten_cmd_result_is_completed(ctx->c_cmd_result, NULL)) {
+    ten_nodejs_tsfn_release(ctx->js_cb);
+  }
 
   ten_nodejs_send_cmd_callback_call_ctx_destroy(ctx);
 }
@@ -147,7 +152,9 @@ static void proxy_send_cmd_callback(ten_env_t *ten_env,
   bool rc = ten_nodejs_tsfn_invoke(ctx->js_cb, call_info);
   TEN_ASSERT(rc, "Should not happen.");
 
-  ten_env_notify_send_cmd_ctx_destroy(ctx);
+  if (err || ten_cmd_result_is_completed(c_cmd_result, NULL)) {
+    ten_env_notify_send_cmd_ctx_destroy(ctx);
+  }
 }
 
 static void ten_env_proxy_notify_send_cmd(ten_env_t *ten_env, void *user_data) {
@@ -161,8 +168,13 @@ static void ten_env_proxy_notify_send_cmd(ten_env_t *ten_env, void *user_data) {
   ten_error_t err;
   TEN_ERROR_INIT(err);
 
+  ten_env_send_cmd_options_t options = TEN_ENV_SEND_CMD_OPTIONS_INIT_VAL;
+  if (ctx->is_ex) {
+    options.enable_multiple_results = true;
+  }
+
   bool rc = ten_env_send_cmd(ten_env, ctx->c_cmd, proxy_send_cmd_callback, ctx,
-                             NULL, &err);
+                             &options, &err);
   if (!rc) {
     proxy_send_cmd_callback(ten_env, NULL, ctx, &err);
   }
@@ -171,8 +183,8 @@ static void ten_env_proxy_notify_send_cmd(ten_env_t *ten_env, void *user_data) {
 }
 
 napi_value ten_nodejs_ten_env_send_cmd(napi_env env, napi_callback_info info) {
-  const size_t argc = 3;
-  napi_value args[argc];  // this, cmd, callback
+  const size_t argc = 4;
+  napi_value args[argc];  // this, cmd, callback, is_ex
   if (!ten_nodejs_get_js_func_args(env, info, args, argc)) {
     napi_fatal_error(NULL, NAPI_AUTO_LENGTH,
                      "Incorrect number of parameters passed.",
@@ -215,12 +227,16 @@ napi_value ten_nodejs_ten_env_send_cmd(napi_env env, napi_callback_info info) {
                              tsfn_proxy_send_cmd_callback);
   RETURN_UNDEFINED_IF_NAPI_FAIL(cb_tsfn, "Failed to create TSFN");
 
+  bool is_ex = false;
+  status = napi_get_value_bool(env, args[3], &is_ex);
+  RETURN_UNDEFINED_IF_NAPI_FAIL(status == napi_ok, "Failed to get is_ex");
+
   ten_error_t err;
   TEN_ERROR_INIT(err);
 
   ten_env_notify_send_cmd_ctx_t *notify_info =
       ten_env_notify_send_cmd_ctx_create(
-          ten_shared_ptr_clone(cmd_bridge->msg.msg), cb_tsfn);
+          ten_shared_ptr_clone(cmd_bridge->msg.msg), cb_tsfn, is_ex);
   TEN_ASSERT(notify_info, "Failed to create notify info.");
 
   bool rc = ten_env_proxy_notify(ten_env_bridge->c_ten_env_proxy,
