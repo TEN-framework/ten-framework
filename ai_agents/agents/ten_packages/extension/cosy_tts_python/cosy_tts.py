@@ -1,10 +1,7 @@
 import asyncio
-from dataclasses import dataclass
+from collections.abc import AsyncIterator
+from datetime import datetime
 
-from websocket import WebSocketConnectionClosedException
-
-from ten_runtime.async_ten_env import AsyncTenEnv
-from ten_ai_base.config import BaseConfig
 import dashscope
 from dashscope.audio.tts_v2 import (
     SpeechSynthesizer,
@@ -12,103 +9,293 @@ from dashscope.audio.tts_v2 import (
     ResultCallback,
 )
 
+from .config import CosyTTSConfig
+from ten_runtime.async_ten_env import AsyncTenEnv
 
-@dataclass
-class CosyTTSConfig(BaseConfig):
-    api_key: str = ""
-    voice: str = "longxiaochun"
-    model: str = "cosyvoice-v1"
-    sample_rate: int = 16000
+
+MESSAGE_TYPE_PCM = 1
+MESSAGE_TYPE_CMD_COMPLETE = 2
+MESSAGE_TYPE_CMD_ERROR = 3
+
+ERROR_CODE_TTS_FAILED = -1
+
+# Audio format mapping constants
+AUDIO_FORMAT_MAPPING = {
+    8000: AudioFormat.PCM_8000HZ_MONO_16BIT,
+    16000: AudioFormat.PCM_16000HZ_MONO_16BIT,
+    22050: AudioFormat.PCM_22050HZ_MONO_16BIT,
+    24000: AudioFormat.PCM_24000HZ_MONO_16BIT,
+    44100: AudioFormat.PCM_44100HZ_MONO_16BIT,
+    48000: AudioFormat.PCM_48000HZ_MONO_16BIT,
+}
+DEFAULT_AUDIO_FORMAT = AudioFormat.PCM_16000HZ_MONO_16BIT
+
+
+class CosyTTSTaskFailedException(Exception):
+    """Exception raised when Cosy TTS task fails"""
+
+    error_code: int
+    error_msg: str
+
+    def __init__(self, error_code: int, error_msg: str):
+        self.error_code = error_code
+        self.error_msg = error_msg
+        super().__init__(f"TTS task failed: {error_msg} (code: {error_code})")
 
 
 class AsyncIteratorCallback(ResultCallback):
-    def __init__(self, ten_env: AsyncTenEnv, queue: asyncio.Queue) -> None:
-        self.closed = False
+    """Callback class for handling TTS synthesis results asynchronously."""
+
+    def __init__(
+        self,
+        ten_env: AsyncTenEnv,
+        queue: asyncio.Queue[tuple[bool, int, str | bytes | None]],
+    ) -> None:
         self.ten_env = ten_env
-        self.loop = asyncio.get_event_loop()
-        self.queue = queue
+
+        self._closed = False
+        self._loop = asyncio.get_event_loop()
+        self._queue = queue
 
     def close(self):
-        self.closed = True
+        """Close the callback."""
+        self._closed = True
 
     def on_open(self):
-        self.ten_env.log_info("websocket is open.")
+        """Called when WebSocket connection opens."""
+        self.ten_env.log_info("WebSocket connection opened for TTS synthesis.")
 
     def on_complete(self):
-        self.ten_env.log_info("speech synthesis task complete successfully.")
+        """Called when TTS synthesis completes successfully."""
+        self.ten_env.log_info("TTS synthesis task completed successfully.")
+
+        # Send completion signal
+        asyncio.run_coroutine_threadsafe(
+            self._queue.put((True, MESSAGE_TYPE_CMD_COMPLETE, None)), self._loop
+        )
 
     def on_error(self, message: str):
-        self.ten_env.log_error(f"speech synthesis task failed, {message}")
+        """Called when TTS synthesis encounters an error."""
+        self.ten_env.log_error(f"TTS synthesis task failed: {message}")
+
+        # Send error signal
+        asyncio.run_coroutine_threadsafe(
+            self._queue.put((True, MESSAGE_TYPE_CMD_ERROR, message)), self._loop
+        )
 
     def on_close(self):
-        self.ten_env.log_info("websocket is closed.")
+        """Called when WebSocket connection closes."""
+        self.ten_env.log_info("WebSocket connection closed.")
         self.close()
 
     def on_event(self, message: str) -> None:
-        self.ten_env.log_debug(f"received event: {message}")
+        """Called when receiving events from TTS service."""
+        self.ten_env.log_debug(f"Received TTS event: {message}")
 
     def on_data(self, data: bytes) -> None:
-        if self.closed:
+        """Called when receiving audio data from TTS service."""
+        if self._closed:
             self.ten_env.log_warn(
-                f"received data: {len(data)} bytes but connection was closed"
+                f"Received {len(data)} bytes but connection was closed"
             )
             return
-        self.ten_env.log_debug(f"received data: {len(data)} bytes")
-        asyncio.run_coroutine_threadsafe(self.queue.put(data), self.loop)
 
-
-class CosyTTS:
-    def __init__(self, config: CosyTTSConfig) -> None:
-        self.config = config
-        self.synthesizer = None  # Initially no synthesizer
-        self.queue = asyncio.Queue()
-        dashscope.api_key = config.api_key
-
-    def _create_synthesizer(
-        self, ten_env: AsyncTenEnv, callback: AsyncIteratorCallback
-    ):
-        if self.synthesizer:
-            self.synthesizer = None
-
-        ten_env.log_info("Creating new synthesizer")
-        self.synthesizer = SpeechSynthesizer(
-            model=self.config.model,
-            voice=self.config.voice,
-            format=AudioFormat.PCM_16000HZ_MONO_16BIT,
-            callback=callback,
+        self.ten_env.log_debug(f"Received audio data: {len(data)} bytes")
+        # Send audio data to queue
+        asyncio.run_coroutine_threadsafe(
+            self._queue.put((False, MESSAGE_TYPE_PCM, data)), self._loop
         )
 
-    async def get_audio_bytes(self) -> bytes:
-        return await self.queue.get()
 
-    def text_to_speech_stream(
-        self, ten_env: AsyncTenEnv, text: str, end_of_segment: bool
-    ) -> None:
-        try:
-            callback = AsyncIteratorCallback(ten_env, self.queue)
+class CosyTTSClient:
+    """Client for Cosy TTS service using dashscope."""
 
-            if not self.synthesizer or end_of_segment:
-                self._create_synthesizer(ten_env, callback)
+    def __init__(
+        self,
+        config: CosyTTSConfig,
+        ten_env: AsyncTenEnv,
+        vendor: str,
+    ):
+        # Configuration and environment
+        self.config = config
+        self.ten_env = ten_env
+        self.vendor = vendor
 
-            self.synthesizer.streaming_call(text)
+        # Session management
+        self.stopping: bool = False
+        self.turn_id: int = 0
 
-            if end_of_segment:
-                ten_env.log_info("Streaming complete")
-                self.synthesizer.streaming_complete()
-                self.synthesizer = None
-        except WebSocketConnectionClosedException as e:
-            ten_env.log_error(f"WebSocket connection closed, {e}")
-            self.synthesizer = None
-        except Exception as e:
-            ten_env.log_error(f"Error streaming text, {e}")
-            self.synthesizer = None
+        # TTS synthesizer
+        self._callback: AsyncIteratorCallback | None = None
+        self.synthesizer: SpeechSynthesizer | None = None
 
-    def cancel(self, ten_env: AsyncTenEnv) -> None:
+        # Communication queue for audio data
+        self._receive_queue: (
+            asyncio.Queue[tuple[bool, int, str | bytes | None]] | None
+        ) = None
+
+        # Set dashscope API key
+        dashscope.api_key = config.api_key
+
+    async def start(self) -> None:
+        """Start the TTS client and initialize components."""
+        # Initialize audio data queue
+        self._receive_queue = asyncio.Queue()
+        self._callback = AsyncIteratorCallback(
+            self.ten_env, self._receive_queue
+        )
+
+        # Create synthesizer with configuration
+        self.synthesizer = SpeechSynthesizer(
+            callback=self._callback,
+            format=self._get_audio_format(),
+            model=self.config.model,
+            voice=self.config.voice,
+        )
+
+        # Pre-connection to ensure service is accessible
+        self.ten_env.log_info("Pre-connection TTS service connection...")
+        # Start a test synthesis
+        self.synthesizer.streaming_call("")
+        self.ten_env.log_info("Cosy TTS client started successfully")
+
+    async def cancel(self) -> None:
+        """
+        Cancel current TTS operation.
+        """
         if self.synthesizer:
             try:
                 self.synthesizer.streaming_cancel()
-            except WebSocketConnectionClosedException as e:
-                ten_env.log_error(f"WebSocket connection closed, {e}")
+                self.ten_env.log_info("TTS operation cancelled")
             except Exception as e:
-                ten_env.log_error(f"Error cancelling streaming, {e}")
+                self.ten_env.log_error(f"Error cancelling TTS: {e}")
+
+            # Clean up synthesizer
             self.synthesizer = None
+
+    async def stop(self) -> None:
+        """
+        Close the TTS client and cleanup resources.
+        """
+        self.stopping = True
+        # Cancel any ongoing synthesis
+        await self.cancel()
+        self.ten_env.log_info(
+            f"Cosy TTS client closed successfully, stopping: {self.stopping}"
+        )
+
+    async def complete(self) -> None:
+        """
+        Complete current TTS operation.
+        """
+        if self.synthesizer:
+            try:
+                self.synthesizer.streaming_complete()
+                self.ten_env.log_info("TTS operation completed")
+            except Exception as e:
+                self.ten_env.log_error(f"Error completing TTS: {e}")
+
+            # Clean up synthesizer
+            self.synthesizer = None
+
+    async def synthesize_audio(
+        self, text: str, text_input_end: bool
+    ) -> AsyncIterator[tuple[bool, int, str | bytes | None]]:
+        """Convert text to speech audio stream using Cosy TTS service."""
+        start_time = datetime.now()
+
+        try:
+            self.ten_env.log_info(f"Starting TTS synthesis, text: {text}")
+
+            # Start synthesizer if not initialized
+            if self.synthesizer is None:
+                await self.start()
+
+            # Start streaming TTS synthesis
+            self.synthesizer.streaming_call(text)
+
+            # Complete streaming
+            if text_input_end:
+                await self.complete()
+
+            # Process audio chunks from queue
+            while not self.stopping:
+                try:
+                    if self._receive_queue is None:
+                        self.ten_env.log_error(
+                            "TTS receive queue is not initialized"
+                        )
+                        break
+
+                    done, message_type, data = await asyncio.wait_for(
+                        self._receive_queue.get(), timeout=5
+                    )
+
+                    # Yield the data
+                    yield (done, message_type, data)
+
+                    # If done, break the loop
+                    if done:
+                        self.ten_env.log_info(
+                            f"TTS synthesis completed: duration={self._duration_in_ms_since(start_time)}ms"
+                        )
+                        break
+
+                except asyncio.TimeoutError:
+                    self.ten_env.log_warn(
+                        f"Timeout waiting for TTS audio data, stopping: {self.stopping}"
+                    )
+                    # Force exit the loop when timeout occurs to prevent infinite loop
+                    break
+
+            self.ten_env.log_info(
+                f"TTS synthesis completed: duration={self._duration_in_ms_since(start_time)}ms"
+            )
+
+        except Exception as e:
+            self.ten_env.log_error(f"TTS synthesis failed: {e}")
+            raise CosyTTSTaskFailedException(
+                error_code=ERROR_CODE_TTS_FAILED,
+                error_msg=str(e),
+            ) from e
+
+    def _duration_in_ms(self, start: datetime, end: datetime) -> int:
+        """
+        Calculate duration between two timestamps in milliseconds.
+
+        Args:
+            start: Start timestamp
+            end: End timestamp
+
+        Returns:
+            Duration in milliseconds
+        """
+        return int((end - start).total_seconds() * 1000)
+
+    def _duration_in_ms_since(self, start: datetime) -> int:
+        """
+        Calculate duration from a timestamp to now in milliseconds.
+
+        Args:
+            start: Start timestamp
+
+        Returns:
+            Duration in milliseconds from start to now
+        """
+        return self._duration_in_ms(start, datetime.now())
+
+    def _get_audio_format(self) -> AudioFormat:
+        """
+        Automatically generate AudioFormat based on configuration.
+
+        Returns:
+            AudioFormat: The appropriate audio format for the configuration
+        """
+        if self.config.sample_rate in AUDIO_FORMAT_MAPPING:
+            return AUDIO_FORMAT_MAPPING[self.config.sample_rate]
+
+        # Fallback to default format if configuration not supported
+        self.ten_env.log_warn(
+            f"Unsupported audio format: {self.config.sample_rate}Hz, using default format: PCM_16000HZ_MONO_16BIT"
+        )
+        return DEFAULT_AUDIO_FORMAT

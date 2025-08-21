@@ -1,14 +1,18 @@
 from typing import Any, Dict, List
+from typing_extensions import override
 from pydantic import BaseModel
-from ten_ai_base.asr import AsyncASRBaseExtension
-from ten_ai_base.message import ErrorMessage, ErrorMessageVendorInfo, ModuleType
-from ten_ai_base.transcription import UserTranscription
+from ten_ai_base.asr import ASRResult, AsyncASRBaseExtension
+import nls
+import nls.token
+from ten_ai_base.message import (
+    ModuleError,
+    ModuleErrorCode,
+    ModuleErrorVendorInfo,
+    ModuleType,
+)
 from ten_runtime import (
     AsyncTenEnv,
-    Cmd,
     AudioFrame,
-    StatusCode,
-    CmdResult,
 )
 
 import asyncio
@@ -38,15 +42,59 @@ class AliyunASRExtension(AsyncASRBaseExtension):
 
         self.connected = False
         self.client = None
-        self.config: AliyunASRConfig = None
+        self.config: AliyunASRConfig | None = None
+        self.loop: asyncio.AbstractEventLoop | None = None
 
-    async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
-        cmd_json = cmd.to_json()
-        ten_env.log_info(f"on_cmd json: {cmd_json}")
+    def vendor(self) -> str:
+        return "aliyun"
 
-        cmd_result = CmdResult.create(StatusCode.OK, cmd)
-        cmd_result.set_property_string("detail", "success")
-        await ten_env.return_result(cmd_result)
+    @override
+    async def on_init(self, ten_env: AsyncTenEnv) -> None:
+        await super().on_init(ten_env)
+
+        self.loop = asyncio.get_event_loop()
+
+        config_json, _ = await ten_env.get_property_to_json("")
+
+        try:
+            self.config = AliyunASRConfig.model_validate_json(config_json)
+
+            if not self.config.appkey:
+                await self.send_asr_error(
+                    ModuleError(
+                        module=ModuleType.ASR,
+                        code=ModuleErrorCode.FATAL_ERROR.value,
+                        message="appkey is required",
+                    )
+                )
+
+            if not self.config.akid:
+                await self.send_asr_error(
+                    ModuleError(
+                        module=ModuleType.ASR,
+                        code=ModuleErrorCode.FATAL_ERROR.value,
+                        message="akid is required",
+                    )
+                )
+
+            if not self.config.aksecret:
+                await self.send_asr_error(
+                    ModuleError(
+                        module=ModuleType.ASR,
+                        code=ModuleErrorCode.FATAL_ERROR.value,
+                        message="aksecret is required",
+                    )
+                )
+
+        except Exception as e:
+            self.ten_env.log_error(f"Error parsing config: {e}")
+            await self.send_asr_error(
+                ModuleError(
+                    module=ModuleType.ASR,
+                    code=ModuleErrorCode.FATAL_ERROR.value,
+                    message=str(e),
+                )
+            )
 
     async def _handle_reconnect(self):
         await asyncio.sleep(0.2)
@@ -92,7 +140,7 @@ class AliyunASRExtension(AsyncASRBaseExtension):
                 f"aliyun_asr got sentence: [{sentence}], is_final: {is_final}"
             )
 
-            transcription = UserTranscription(
+            asr_result = ASRResult(
                 text=sentence,
                 final=is_final,
                 start_ms=-1,
@@ -101,28 +149,24 @@ class AliyunASRExtension(AsyncASRBaseExtension):
                 words=[],
             )
 
-            self.loop.create_task(
-                self.send_asr_transcription(transcription=transcription)
-            )
+            assert self.loop is not None
+            self.loop.create_task(self.send_asr_result(asr_result))
         except Exception as e:
             self.ten_env.log_error(f"Error processing message: {e}")
 
     def _on_error(self, message, *_):
         self.ten_env.log_error(f"aliyun_asr event callback on_error: {message}")
 
-        error_message = ErrorMessage(
-            code=-1,
-            message=message,
-            turn_id=0,
-            module=ModuleType.STT,
-        )
-
         asyncio.create_task(
             self.send_asr_error(
-                error_message,
-                ErrorMessageVendorInfo(
-                    vendor="aliyun",
-                    code=-1,
+                ModuleError(
+                    module=ModuleType.ASR,
+                    code=ModuleErrorCode.NON_FATAL_ERROR.value,
+                    message=message,
+                ),
+                ModuleErrorVendorInfo(
+                    vendor=self.vendor(),
+                    code="1",
                     message=message,
                 ),
             )
@@ -130,48 +174,10 @@ class AliyunASRExtension(AsyncASRBaseExtension):
 
     async def start_connection(self) -> None:
         self.ten_env.log_info("start and listen aliyun")
-
-        if self.config is None:
-            config_json, _ = await self.ten_env.get_property_to_json("")
-            self.config = AliyunASRConfig.model_validate_json(config_json)
-            self.ten_env.log_debug(f"config: {self.config}")
-
-            if not self.config.appkey:
-                error_message = ErrorMessage(
-                    code=-1,
-                    message="appkey is required",
-                    turn_id=0,
-                    module=ModuleType.STT,
-                )
-                await self.send_asr_error(error_message, None)
-                raise ValueError("appkey is required")
-
-            if not self.config.akid:
-                error_message = ErrorMessage(
-                    code=-1,
-                    message="akid is required",
-                    turn_id=0,
-                    module=ModuleType.STT,
-                )
-                await self.send_asr_error(error_message, None)
-                raise ValueError("akid is required")
-
-            if not self.config.aksecret:
-                error_message = ErrorMessage(
-                    code=-1,
-                    message="aksecret is required",
-                    turn_id=0,
-                    module=ModuleType.STT,
-                )
-                await self.send_asr_error(error_message, None)
-                raise ValueError("aksecret is required")
+        assert self.config is not None
 
         try:
-
             await self.stop_connection()
-
-            import nls
-            import nls.token
 
             token = nls.token.getToken(self.config.akid, self.config.aksecret)
             self.client = nls.NlsSpeechTranscriber(
@@ -199,13 +205,13 @@ class AliyunASRExtension(AsyncASRBaseExtension):
             self.ten_env.log_info("successfully connected to aliyun asr")
         except Exception as e:
             self.ten_env.log_error(f"Error starting aliyun connection: {e}")
-            error_message = ErrorMessage(
-                code=1,
-                message=str(e),
-                turn_id=0,
-                module=ModuleType.STT,
+            await self.send_asr_error(
+                ModuleError(
+                    module=ModuleType.ASR,
+                    code=ModuleErrorCode.FATAL_ERROR.value,
+                    message=str(e),
+                )
             )
-            await self.send_asr_error(error_message, None)
             await self._handle_reconnect()
 
     async def stop_connection(self) -> None:
@@ -224,6 +230,11 @@ class AliyunASRExtension(AsyncASRBaseExtension):
     async def send_audio(
         self, frame: AudioFrame, session_id: str | None
     ) -> bool:
+        self.session_id = session_id
+
+        if self.client is None:
+            return False
+
         self.client.send_audio(frame.get_buf())
         return True
 

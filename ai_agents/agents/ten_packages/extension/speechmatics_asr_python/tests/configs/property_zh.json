@@ -1,0 +1,7 @@
+{
+    "params": {
+        "key": "${env:SPEECHMATICS_API_KEY}",
+        "language": "cmn",
+        "sample_rate": 16000
+    }
+}
