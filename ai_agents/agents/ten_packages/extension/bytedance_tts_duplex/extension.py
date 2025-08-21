@@ -47,12 +47,8 @@ class BytedanceTTSDuplexExtension(AsyncTTS2BaseExtension):
         self.request_ttfb: int | None = None
         self.request_total_audio_duration: int | None = None
         self.response_msgs = asyncio.Queue[Tuple[int, bytes]]()
-        self.recorder_map: dict[str, PCMWriter] = (
-            {}
-        )  # 存储不同 request_id 对应的 PCMWriter
-        self.last_completed_request_id: str | None = (
-            None  # 最新完成的 request_id
-        )
+        self.recorder_map: dict[str, PCMWriter] = {}
+        self.last_completed_request_id: str | None = None
         self.is_reconnecting = False
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
@@ -106,14 +102,14 @@ class BytedanceTTSDuplexExtension(AsyncTTS2BaseExtension):
             )
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
-        # 关闭客户端连接
+        # close the client connection
         if self.client:
             await self.client.close()
 
         if self.msg_polling_task:
             self.msg_polling_task.cancel()
 
-        # 关闭所有 PCMWriter
+        # close all PCMWriter
         for request_id, recorder in self.recorder_map.items():
             try:
                 await recorder.flush()
@@ -237,22 +233,13 @@ class BytedanceTTSDuplexExtension(AsyncTTS2BaseExtension):
                 f"KEYPOINT Requesting TTS for text: {t.text}, text_input_end: {t.text_input_end} request ID: {t.request_id}"
             )
 
-            # 检查是否已经收到过这个 request_id 的 text_input_end=true
+            # check if the request_id has already been completed
             if (
                 self.last_completed_request_id
                 and t.request_id == self.last_completed_request_id
             ):
                 error_msg = f"Request ID {t.request_id} has already been completed (last completed: {self.last_completed_request_id})"
-                self.ten_env.log_warn(error_msg)
-                await self.send_tts_error(
-                    t.request_id,
-                    ModuleError(
-                        message=error_msg,
-                        module=ModuleType.TTS,
-                        code=ModuleErrorCode.NON_FATAL_ERROR,
-                        vendor_info=None,
-                    ),
-                )
+                self.ten_env.log_error(error_msg)
                 return
             if t.request_id != self.current_request_id:
                 self.ten_env.log_info(
@@ -266,9 +253,7 @@ class BytedanceTTSDuplexExtension(AsyncTTS2BaseExtension):
                 self.request_ttfb = None
                 self.request_total_audio_duration = 0
 
-                # 为新 request_id 创建新的 PCMWriter，并清理旧的
                 if self.config.dump:
-                    # 清理旧的 PCMWriter（除了当前新的 request_id）
                     old_request_ids = [
                         rid
                         for rid in self.recorder_map.keys()
@@ -286,7 +271,6 @@ class BytedanceTTSDuplexExtension(AsyncTTS2BaseExtension):
                                 f"Error cleaning up PCMWriter for request_id {old_rid}: {e}"
                             )
 
-                    # 创建新的 PCMWriter
                     if t.request_id not in self.recorder_map:
                         dump_file_path = os.path.join(
                             self.config.dump_path,
@@ -306,7 +290,7 @@ class BytedanceTTSDuplexExtension(AsyncTTS2BaseExtension):
                     f"KEYPOINT finish session for request ID: {t.request_id}"
                 )
 
-                # 更新最新完成的 request_id
+                # update the latest completed request_id
                 self.last_completed_request_id = t.request_id
                 self.ten_env.log_info(
                     f"Updated last completed request_id to: {t.request_id}"
@@ -317,7 +301,7 @@ class BytedanceTTSDuplexExtension(AsyncTTS2BaseExtension):
                 self.stop_event = asyncio.Event()
                 await self.stop_event.wait()
 
-                # 会话结束后，连接会自动重连准备下一轮
+                # session finished, connection will be re-established for next request
                 await self.client.finish_connection()
 
         except ModuleVendorException as e:
