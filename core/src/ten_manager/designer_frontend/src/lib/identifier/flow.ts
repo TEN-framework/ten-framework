@@ -5,6 +5,8 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 
+/** biome-ignore-all lint/suspicious/noExplicitAny: <ignore> */
+
 import type { ECustomNodeType } from "@/types/flow";
 import type { EConnectionType } from "@/types/graphs";
 

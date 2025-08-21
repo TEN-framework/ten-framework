@@ -41,6 +41,7 @@ const TerminalWidget = forwardRef<unknown, ITerminalWidgetProps>(
       rows: number;
     }>({ cols: 80, rows: 24 });
 
+    // biome-ignore lint/correctness/useExhaustiveDependencies: <ignore>
     useEffect(() => {
       if (!terminalRef.current) {
         return;
@@ -149,8 +150,8 @@ const TerminalWidget = forwardRef<unknown, ITerminalWidgetProps>(
               onClose?.();
               return;
             }
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
           } catch (e) {
+            console.error(e);
             // It's not a JSON message, write it to the terminal UI directly.
           }
 

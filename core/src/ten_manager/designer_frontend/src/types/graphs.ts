@@ -141,7 +141,7 @@ export const UpdateNodePropertyPayloadSchema = z.object({
   app: z.string().optional(),
   property: stringToJSONSchema
     .pipe(z.record(z.string(), z.unknown()))
-    .default("{}"),
+    .default({}),
 });
 
 export const GraphUiNodeGeometrySchema = z.object({

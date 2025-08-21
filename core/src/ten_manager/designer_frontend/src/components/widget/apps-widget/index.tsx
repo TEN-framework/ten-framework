@@ -115,6 +115,7 @@ export const AppTemplateWidget = (props: {
     }
   };
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <ignore>
   React.useEffect(() => {
     const fetchTemplatePkgs = async () => {
       const key = `${form.watch("pkg_type")}-${form.watch("language")}`;

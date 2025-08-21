@@ -14,8 +14,8 @@ export const TEN_AGENT_URL = "https://agent.theten.ai/";
 /** @deprecated */
 export const TEN_AGENT_GITHUB_URL =
   "https://github.com/TEN-framework/TEN-Agent";
-export const TEN_FRAMEWORK_DESIGNER_FEEDBACK_ISSUE_URL =
-  TEN_FRAMEWORK_ISSUES_URL + "/new?template=designer_feedback_fe.yml";
+// eslint-disable-next-line max-len
+export const TEN_FRAMEWORK_DESIGNER_FEEDBACK_ISSUE_URL = `${TEN_FRAMEWORK_ISSUES_URL}/new?template=designer_feedback_fe.yml`;
 
 export const TEN_DEFAULT_APP_RUN_SCRIPT = "start";
 

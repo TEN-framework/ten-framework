@@ -47,12 +47,13 @@ export default function AudioVisualizer(props: AudioVisualizerProps) {
     >
       {summedFrequencies.map((frequency, index) => {
         const style = {
-          height:
-            minBarHeight + frequency * (maxBarHeight - minBarHeight) + "px",
-          borderRadius: borderRadius + "px",
-          width: barWidth + "px",
+          // eslint-disable-next-line max-len
+          height: `${minBarHeight + frequency * (maxBarHeight - minBarHeight)}px`,
+          borderRadius: `${borderRadius}px`,
+          width: `${barWidth}px`,
         };
 
+        // biome-ignore lint/suspicious/noArrayIndexKey: <ignore>
         return <span key={index} className="bg-foreground" style={style} />;
       })}
     </div>

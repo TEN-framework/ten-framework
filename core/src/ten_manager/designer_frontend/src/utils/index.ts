@@ -13,8 +13,8 @@ import { z } from "zod";
 export const stringToJSONSchema = z.string().transform((str, ctx) => {
   try {
     return JSON.parse(str);
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  } catch (e) {
+  } catch (e: unknown) {
+    console.error("Invalid JSON string:", e, str);
     ctx.addIssue({ code: "custom", message: "Invalid JSON" });
     return z.NEVER;
   }
