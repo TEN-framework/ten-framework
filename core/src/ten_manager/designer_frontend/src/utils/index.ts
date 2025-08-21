@@ -11,20 +11,20 @@ import { z } from "zod";
 //   z.object({ id: z.string(), redirect_uri: z.string() })
 // )
 export const stringToJSONSchema = z.string().transform((str, ctx) => {
-	try {
-		return JSON.parse(str);
-		// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	} catch (e) {
-		ctx.addIssue({ code: "custom", message: "Invalid JSON" });
-		return z.NEVER;
-	}
+  try {
+    return JSON.parse(str);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (e) {
+    ctx.addIssue({ code: "custom", message: "Invalid JSON" });
+    return z.NEVER;
+  }
 });
 
 export const getCurrentWindowSize = () => {
-	if (typeof window !== "undefined") {
-		return {
-			width: window.innerWidth,
-			height: window.innerHeight,
-		};
-	}
+  if (typeof window !== "undefined") {
+    return {
+      width: window.innerWidth,
+      height: window.innerHeight,
+    };
+  }
 };
