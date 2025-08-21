@@ -1,0 +1,93 @@
+{
+  "type": "extension",
+  "name": "openai_asr_python",
+  "version": "0.1.3",
+  "display_name": {
+    "locales": {
+      "en-US": {
+        "content": "OpenAI ASR Python Extension"
+      },
+      "zh-CN": {
+        "content": "OpenAI ASR Python 扩展"
+      },
+      "zh-TW": {
+        "content": "OpenAI ASR Python 擴充"
+      },
+      "ja-JP": {
+        "content": "OpenAI ASR Python 拡張"
+      },
+      "ko-KR": {
+        "content": "OpenAI ASR Python 확장"
+      }
+    }
+  },
+  "description": {
+    "locales": {
+      "en-US": {
+        "content": "OpenAI ASR Python Extension"
+      },
+      "zh-CN": {
+        "content": "使用 Python 语言编写的 OpenAI ASR 扩展"
+      },
+      "zh-TW": {
+        "content": "使用 Python 語言編寫的 OpenAI ASR 擴充"
+      },
+      "ja-JP": {
+        "content": "Pythonで書かれた OpenAI ASR 拡張"
+      },
+      "ko-KR": {
+        "content": "Python으로 작성된 OpenAI ASR 확장"
+      }
+    }
+  },
+  "readme": {
+    "locales": {
+      "en-US": {
+        "import_uri": "docs/README.en-US.md"
+      },
+      "zh-CN": {
+        "import_uri": "docs/README.zh-CN.md"
+      },
+      "zh-TW": {
+        "import_uri": "docs/README.zh-TW.md"
+      },
+      "ja-JP": {
+        "import_uri": "docs/README.ja-JP.md"
+      },
+      "ko-KR": {
+        "import_uri": "docs/README.ko-KR.md"
+      }
+    }
+  },
+  "tags": [
+    "python",
+    "openai",
+    "asr"
+  ],
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.10"
+    },
+    {
+      "type": "system",
+      "name": "ten_ai_base",
+      "version": "0.6"
+    }
+  ],
+  "api": {},
+  "scripts": {
+    "test": "tests/bin/start"
+  },
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "**.py",
+      "openai_asr_client/**.py",
+      "requirements.txt",
+      "docs/**"
+    ]
+  }
+}

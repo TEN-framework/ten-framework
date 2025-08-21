@@ -11,10 +11,10 @@ from libten_runtime_python import (
     _Extension,  # pyright: ignore[reportPrivateUsage]
 )
 
-from .msg.data import Data
-from .msg.cmd.cmd import Cmd
-from .msg.video_frame import VideoFrame
-from .msg.audio_frame import AudioFrame
+from .data import Data
+from .cmd import Cmd
+from .video_frame import VideoFrame
+from .audio_frame import AudioFrame
 from .ten_env import TenEnv
 
 

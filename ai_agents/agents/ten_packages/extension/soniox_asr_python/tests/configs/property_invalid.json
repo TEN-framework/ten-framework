@@ -1,0 +1,11 @@
+{
+    "params": {
+        "api_key": "invalid",
+        "url": "invalid-url",
+        "model": "invalid-model",
+        "language_hints": ["invalid-language"],
+        "sample_rate": -1,
+        "dump": "invalid-boolean",
+        "dump_path": ""
+    }
+}

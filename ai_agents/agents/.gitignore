@@ -5,6 +5,9 @@ ten_packages/extension/azure_tts
 ten_packages/extension/agora_sess_ctrl
 ten_packages/extension/agora_rtm
 ten_packages/extension/http_server_python
+ten_packages/extension/main_python
+ten_packages/extension/main_cascade_python
+ten_packages/extension/main_realtime_python
 ten_packages/system/agora_rtc_sdk
 ten_packages/system/azure_speech_sdk
 ten_packages/system/nlohmann_json
@@ -16,7 +19,7 @@ agoradns.dat
 agorareport.dat
 agorartmreport.dat
 agora_cache.db
-bin/man
+bin/main
 bin/worker
 /BUILD.gn
 .cache/
