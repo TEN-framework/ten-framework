@@ -49,6 +49,10 @@ pub struct Property {
     /// This includes the "ten" field if it exists in property.json.
     #[serde(flatten)]
     pub all_fields: Map<String, Value>,
+    // Other fields from property.json,aside from "ten" field, stored with
+    // order preserved.
+    //#[serde(flatten)]
+    //pub other_fields: Map<String, Value>,
 }
 
 /// Implements the `FromStr` trait for `Property` to enable parsing from a

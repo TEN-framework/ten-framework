@@ -75,20 +75,17 @@ pub async fn get_extension_property_endpoint(
         }
     };
 
+    let graphs_cache = state.graphs_cache.read().await;
+    let property = extension_pkg_info.property.as_ref().and_then(|property| {
+        //if ten is none, return none
+        property.ten.as_ref()?;
+        property.property_ten_to_json_map(&graphs_cache).ok()
+    });
+
     // Success case.
     let response = ApiResponse {
         status: Status::Ok,
-        data: GetExtensionPropertyResponseData {
-            property: extension_pkg_info.property.as_ref().and_then(
-                |property| {
-                    if property.all_fields.is_empty() {
-                        None
-                    } else {
-                        Some(property.all_fields.clone())
-                    }
-                },
-            ),
-        },
+        data: GetExtensionPropertyResponseData { property },
         meta: None,
     };
 
