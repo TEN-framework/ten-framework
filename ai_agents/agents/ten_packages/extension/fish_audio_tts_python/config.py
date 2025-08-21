@@ -1,4 +1,5 @@
 from typing import Any, Dict
+from fish_audio_sdk.apis import Backends
 from pydantic import BaseModel, Field
 
 
@@ -20,6 +21,7 @@ class FishAudioTTSConfig(BaseModel):
     sample_rate: int = 16000
     dump: bool = False
     dump_path: str = "/tmp"
+    backend: Backends = "speech-1.5"
     params: Dict[str, Any] = Field(default_factory=dict)
 
     def update_params(self) -> None:
@@ -46,6 +48,10 @@ class FishAudioTTSConfig(BaseModel):
 
         if "chunk_length" in self.params:
             del self.params["chunk_length"]
+
+        if "backend" in self.params:
+            self.backend = self.params["backend"]
+            del self.params["backend"]
 
         if "text" in self.params:
             del self.params["text"]

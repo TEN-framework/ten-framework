@@ -11,7 +11,7 @@ from libten_runtime_python import (
     _ten_py_cmd_register_type,  # pyright: ignore[reportPrivateUsage]
 )
 
-from ..msg import Msg
+from .msg import Msg
 
 T = TypeVar("T", bound="Cmd")
 
