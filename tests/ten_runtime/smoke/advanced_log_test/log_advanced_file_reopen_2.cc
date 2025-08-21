@@ -36,6 +36,9 @@ class test_extension : public ten::extension_t {
         ten_env_proxy->notify([](ten::ten_env_t &ten_env) {
           auto log_msg =
               std::string("log message ") + std::to_string(++g_log_count);
+#if !defined(OS_WINDOWS)
+          (void)dprintf(STDERR_FILENO, "log_msg: %s\n", log_msg.c_str());
+#endif
           TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_INFO, log_msg.c_str());
         });
       }
