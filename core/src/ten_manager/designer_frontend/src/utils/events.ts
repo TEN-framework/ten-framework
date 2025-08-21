@@ -56,8 +56,11 @@ export class EventPubSub {
     EEventName,
     Array<{ id: string; callback: (data: unknown) => void }>
   >;
+  nextId: number;
+
   private constructor() {
     this.subscribers = new Map();
+    this.nextId = 0;
   }
 
   public static getInstance(): EventPubSub {
