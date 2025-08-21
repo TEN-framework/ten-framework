@@ -79,11 +79,13 @@ export const GraphSelector = (props: { className?: string }) => {
     }
     const nextDisplayedNodes = nodes.filter((node) =>
       selectedGraphs.some(
-        (graph) => graph.graph_id === node.data.graph.graph_id)
+        (graph) => graph.graph_id === node.data.graph.graph_id
+      )
     );
     const nextDisplayedEdges = edges.filter((edge) =>
       selectedGraphs.some(
-        (graph) => graph.graph_id === edge.data?.graph.graph_id)
+        (graph) => graph.graph_id === edge.data?.graph.graph_id
+      )
     );
     setDisplayedNodes(nextDisplayedNodes);
     setDisplayedEdges(nextDisplayedEdges);
@@ -227,7 +229,8 @@ const GraphList = (props: { graphs: IGraph[] }) => {
                   id={`graph-selector-${graph.graph_id}`}
                   disabled={isLoading}
                   checked={selectedGraphs?.some(
-                    (g) => g.graph_id === graph.graph_id)}
+                    (g) => g.graph_id === graph.graph_id
+                  )}
                   onCheckedChange={(checked) => {
                     if (checked) {
                       appendSelectedGraphs([graph]);

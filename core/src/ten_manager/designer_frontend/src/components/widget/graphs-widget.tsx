@@ -324,7 +324,8 @@ export const GraphAddNodeWidget = (props: {
                         graphs?.map((graph) => (
                           <SelectItem
                             key={graph.graph_id}
-                            value={graph.graph_id}>
+                            value={graph.graph_id}
+                          >
                             {graph.name}
                           </SelectItem>
                         ))
@@ -828,7 +829,8 @@ export const GraphConnectionCreationWidget = (props: {
                         graphs?.map((graph) => (
                           <SelectItem
                             key={graph.graph_id}
-                            value={graph.graph_id}>
+                            value={graph.graph_id}
+                          >
                             {graph.name}
                           </SelectItem>
                         ))
