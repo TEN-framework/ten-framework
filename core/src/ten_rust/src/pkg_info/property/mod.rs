@@ -205,7 +205,7 @@ impl Property {
             let mut graphs_array = Vec::new();
             if let Some(graph_uuids) = &ten_in_property.predefined_graphs {
                 for uuid in graph_uuids {
-                    if let Some(graph_info) = graphs_cache.get(&uuid) {
+                    if let Some(graph_info) = graphs_cache.get(uuid) {
                         graphs_array
                             .push(serde_json::to_value(graph_info.clone())?);
                     }
