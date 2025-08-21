@@ -88,6 +88,7 @@ const GraphAddNodePropertyField = (props: {
     return !isLoading && propertySchemaEntries.length === 0;
   }, [isLoading, propertySchemaEntries.length]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <ignore>
   React.useEffect(() => {
     const init = async () => {
       try {
@@ -678,6 +679,7 @@ export const GraphConnectionCreationWidget = (props: {
     );
   }, [nodes, src_node, dest_node?.data.name]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <ignore>
   React.useEffect(() => {
     const direction = src_node?.data.name ? "out" : "in";
     if (extSchema) {
@@ -696,6 +698,7 @@ export const GraphConnectionCreationWidget = (props: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [extSchema, form.watch("msg_type"), src_node?.data.name]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <ignore>
   React.useEffect(() => {
     if (graphError) {
       toast.error(t("popup.graph.graphError"), {

@@ -23,6 +23,7 @@ export const GraphPopupTitle = (props: {
   const { type, node } = props;
   const { t } = useTranslation();
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <ignore>
   const titleMemo = React.useMemo(() => {
     switch (type) {
       case EGraphActions.ADD_NODE:

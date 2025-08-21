@@ -35,6 +35,7 @@ export const CustomNodeConnPopupTitle = (props: {
   const { source, target } = props;
   const { t } = useTranslation();
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <ignore>
   const titleMemo = React.useMemo(() => {
     if (source && !target) {
       return t("popup.customNodeConn.srcTitle", { source });

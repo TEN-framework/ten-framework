@@ -167,6 +167,7 @@ export const ContextItem = (props: IContextMenuItem) => {
               )}
             >
               {props.items.map((item, index) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: <ignore>
                 <ContextItem key={index} {...item} />
               ))}
             </div>
@@ -198,6 +199,7 @@ const ContextMenuContainer: React.FC<ContextMenuProps> = ({
       }}
     >
       {items.map((item, index) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: <ignore>
         <ContextItem key={index} {...item} />
       ))}
     </div>

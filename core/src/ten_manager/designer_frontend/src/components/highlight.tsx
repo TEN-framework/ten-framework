@@ -5,6 +5,8 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 
+/** biome-ignore-all lint/suspicious/noArrayIndexKey: <ignore> */
+
 export const HighlightText = (props: {
   children: React.ReactNode | string;
   highlight?: string;
@@ -27,7 +29,10 @@ export const HighlightText = (props: {
     <span className={className}>
       {parts.map((part, index) =>
         part.toLowerCase() === highlight.toLowerCase() ? (
-          <mark key={index} className="bg-yellow-200 dark:bg-yellow-900">
+          <mark
+            key={`highlight-${part}-${index}`}
+            className="bg-yellow-200 dark:bg-yellow-900"
+          >
             {part}
           </mark>
         ) : (

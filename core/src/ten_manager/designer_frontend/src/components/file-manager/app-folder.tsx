@@ -232,6 +232,7 @@ export function FileManager(props: {
     return filteredData;
   }, [data, selectedPath]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <ignore>
   React.useEffect(() => {
     if (colsEndEleRef.current) {
       colsEndEleRef.current.scrollIntoView({ behavior: "smooth" });
@@ -300,7 +301,7 @@ export function FileManager(props: {
             : colsMemo.slice(inputPathDepth > 0 ? inputPathDepth : 0)
           )?.map((item, idx) => (
             <FileManagerColumn
-              key={idx}
+              key={`col-${item.length > 0 ? item[0]?.path || idx : idx}`}
               className="border-gray-300 border-r"
               style={{ width: colWidth }}
               isLoading={isLoading && idx === colsMemo.length - 1}
@@ -370,6 +371,7 @@ export const AppFileManager = (props: {
     setFmItems([]);
   };
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <ignore>
   React.useEffect(() => {
     if (error) {
       // toast.error(t("popup.default.errorGetBaseDir"));
@@ -379,6 +381,7 @@ export const AppFileManager = (props: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [error]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <ignore>
   React.useEffect(() => {
     if (!data?.entries) {
       return;
@@ -420,10 +423,8 @@ export const AppFileManager = (props: {
             onClick={() => handleSave(folderPath)}
             disabled={isSaveLoading || !folderPath.trim()}
           >
-            <>
-              {isSaveLoading && <SpinnerLoading className="mr-2 h-4 w-4" />}
-              {t("action.ok")}
-            </>
+            {isSaveLoading && <SpinnerLoading className="mr-2 h-4 w-4" />}
+            {t("action.ok")}
           </Button>
         )}
       </div>

@@ -76,8 +76,7 @@ export const ENDPOINT_STORAGE = {
       requestSchema: z.object({
         key: z.string(),
       }),
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      responseSchema: genResSchema<{ value?: any }>(
+      responseSchema: genResSchema<{ value?: unknown }>(
         z.object({
           value: z.any(),
         })
