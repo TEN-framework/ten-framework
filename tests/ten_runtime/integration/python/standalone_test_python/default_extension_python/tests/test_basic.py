@@ -16,8 +16,8 @@ from ten_runtime import (
     StatusCode,
     TenError,
     LogLevel,
+    TenErrorCode
 )
-from ten_runtime.error import TenErrorCode
 
 
 class ExtensionTesterBasic(ExtensionTester):
