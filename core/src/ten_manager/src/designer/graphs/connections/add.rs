@@ -11,13 +11,7 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
 use ten_rust::{
-    graph::{
-        connection::{
-            GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow,
-        },
-        msg_conversion::MsgAndResultConversion,
-    },
-    pkg_info::message::MsgType,
+    graph::msg_conversion::MsgAndResultConversion, pkg_info::message::MsgType,
 };
 use uuid::Uuid;
 
@@ -51,61 +45,6 @@ pub struct AddGraphConnectionRequestPayload {
 #[derive(Serialize, Deserialize)]
 pub struct AddGraphConnectionResponsePayload {
     pub success: bool,
-}
-
-/// Create a new GraphConnection from request params.
-fn create_graph_connection(
-    request_payload: &AddGraphConnectionRequestPayload,
-) -> GraphConnection {
-    // Create destination object
-    let destination = GraphDestination {
-        loc: GraphLoc {
-            app: request_payload.dest_app.clone(),
-            extension: Some(request_payload.dest_extension.clone()),
-            subgraph: None,
-            selector: None,
-        },
-        msg_conversion: request_payload.msg_conversion.clone(),
-    };
-
-    // Create message flow
-    let message_flow = GraphMessageFlow::new(
-        request_payload.msg_name.clone(),
-        vec![destination],
-        vec![],
-    );
-
-    // Create connection
-    let mut connection = GraphConnection {
-        loc: GraphLoc {
-            app: request_payload.src_app.clone(),
-            extension: Some(request_payload.src_extension.clone()),
-            subgraph: None,
-            selector: None,
-        },
-        cmd: None,
-        data: None,
-        audio_frame: None,
-        video_frame: None,
-    };
-
-    // Add the message flow to the appropriate field.
-    match request_payload.msg_type {
-        MsgType::Cmd => {
-            connection.cmd = Some(vec![message_flow]);
-        }
-        MsgType::Data => {
-            connection.data = Some(vec![message_flow]);
-        }
-        MsgType::AudioFrame => {
-            connection.audio_frame = Some(vec![message_flow]);
-        }
-        MsgType::VideoFrame => {
-            connection.video_frame = Some(vec![message_flow]);
-        }
-    }
-
-    connection
 }
 
 pub async fn add_graph_connection_endpoint(

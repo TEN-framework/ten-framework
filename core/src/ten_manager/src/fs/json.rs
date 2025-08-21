@@ -50,7 +50,6 @@ fn write_json_map_to_file(
     let mut buf_writer =
         BufWriter::with_capacity(BUF_WRITER_BUF_SIZE, property_file);
 
-    // Serialize the property_all_fields map directly to preserve field order.
     serde_json::to_writer_pretty(&mut buf_writer, json)
         .context("Failed to write to property.json file")?;
 
