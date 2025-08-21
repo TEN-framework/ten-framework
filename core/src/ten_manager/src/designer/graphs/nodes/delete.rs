@@ -21,7 +21,7 @@ use crate::{
     graph::graphs_cache_find_by_id_mut,
 };
 
-use super::update_graph_node_in_property_all_fields;
+use super::update_graph_node_in_property_json_file;
 
 #[derive(Serialize, Deserialize)]
 pub struct DeleteGraphNodeRequestPayload {
@@ -200,7 +200,7 @@ pub async fn delete_graph_node_endpoint(
     }
 
     // Try to update property.json file if possible.
-    if let Err(e) = update_graph_node_in_property_all_fields(
+    if let Err(e) = update_graph_node_in_property_json_file(
         &request_payload.graph_id,
         &pkgs_cache,
         &graphs_cache,

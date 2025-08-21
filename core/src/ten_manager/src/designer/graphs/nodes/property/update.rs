@@ -15,7 +15,7 @@ use ten_rust::graph::{graph_info::GraphInfo, node::GraphNode};
 
 use crate::{
     designer::{
-        graphs::nodes::update_graph_node_in_property_all_fields,
+        graphs::nodes::update_graph_node_in_property_json_file,
         response::{ApiResponse, ErrorResponse, Status},
         DesignerState,
     },
@@ -129,7 +129,7 @@ pub async fn update_graph_node_property_endpoint(
         return Ok(HttpResponse::BadRequest().json(error_response));
     }
 
-    if let Err(e) = update_graph_node_in_property_all_fields(
+    if let Err(e) = update_graph_node_in_property_json_file(
         &request_payload.graph_id,
         &pkgs_cache,
         &graphs_cache,

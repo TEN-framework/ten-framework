@@ -12,7 +12,7 @@ use serde::{Deserialize, Serialize};
 use ten_rust::graph::node::GraphNode;
 use uuid::Uuid;
 
-use crate::designer::graphs::nodes::update_graph_node_in_property_all_fields;
+use crate::designer::graphs::nodes::update_graph_node_in_property_json_file;
 use crate::designer::{
     response::{ApiResponse, ErrorResponse, Status},
     DesignerState,
@@ -126,7 +126,7 @@ pub async fn replace_graph_node_endpoint(
     }
 
     // Update property.json file with the updated graph node.
-    if let Err(e) = update_graph_node_in_property_all_fields(
+    if let Err(e) = update_graph_node_in_property_json_file(
         &request_payload.graph_id,
         &pkgs_cache,
         &graphs_cache,
