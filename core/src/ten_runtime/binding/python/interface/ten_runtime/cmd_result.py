@@ -13,7 +13,7 @@ from libten_runtime_python import (
     _ten_py_cmd_result_register_type,  # pyright: ignore[reportPrivateUsage] # noqa: E501
 )
 
-from ..msg import Msg
+from .msg import Msg
 from .cmd import Cmd
 
 T = TypeVar("T", bound="CmdResult")
