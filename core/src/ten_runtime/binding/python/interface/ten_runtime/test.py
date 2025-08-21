@@ -14,11 +14,11 @@ from libten_runtime_python import (
 
 from .test_base import TenEnvTesterBase
 from .error import TenError
-from .msg.cmd.cmd import Cmd
-from .msg.cmd.cmd_result import CmdResult
-from .msg.data import Data
-from .msg.audio_frame import AudioFrame
-from .msg.video_frame import VideoFrame
+from .cmd import Cmd
+from .cmd_result import CmdResult
+from .data import Data
+from .audio_frame import AudioFrame
+from .video_frame import VideoFrame
 
 
 ResultHandler = Callable[
