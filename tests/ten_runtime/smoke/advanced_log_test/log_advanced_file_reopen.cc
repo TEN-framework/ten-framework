@@ -33,12 +33,15 @@ class test_extension : public ten::extension_t {
     log_thread_ = std::thread([this, ten_env_proxy]() {
       while (!stop_log_.load()) {
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
-
-        auto log_msg =
-            std::string("log message ") + std::to_string(++g_log_count);
-
-        ten_env_proxy->notify([log_msg](ten::ten_env_t &ten_env) {
-          TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_INFO, log_msg.c_str());
+        ten_env_proxy->notify([](ten::ten_env_t &ten_env) {
+          for (int i = 0; i < 10; ++i) {
+            auto log_msg =
+                std::string("log message ") + std::to_string(++g_log_count);
+#if !defined(OS_WINDOWS)
+            (void)dprintf(STDERR_FILENO, "log_msg: %s\n", log_msg.c_str());
+#endif
+            TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_INFO, log_msg.c_str());
+          }
         });
       }
 
