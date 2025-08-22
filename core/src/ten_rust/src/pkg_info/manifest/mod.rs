@@ -277,7 +277,65 @@ impl Manifest {
 
     /// Async serialization method that resolves LocaleContent fields
     pub async fn serialize_with_resolved_content(&self) -> Result<String> {
-        let mut serialized_fields = self.all_fields.clone();
+        let mut serialized_fields = Map::new();
+
+        // break type_and_name into type and name
+        serialized_fields.insert(
+            "type".to_string(),
+            serde_json::to_value(self.type_and_name.pkg_type)?,
+        );
+        serialized_fields.insert(
+            "name".to_string(),
+            serde_json::to_value(&self.type_and_name.name)?,
+        );
+
+        // other simple fields
+        serialized_fields.insert(
+            "version".to_string(),
+            serde_json::to_value(&self.version)?
+        );
+        if let Some(dependencies) = &self.dependencies {
+            serialized_fields.insert(
+                "dependencies".to_string(),
+                serde_json::to_value(dependencies)?
+            );
+        }
+        if let Some(dev_dependencies) = &self.dev_dependencies {
+            serialized_fields.insert(
+                "dev_dependencies".to_string(),
+                serde_json::to_value(dev_dependencies)?
+            );
+        }
+        if let Some(tags) = &self.tags {
+            serialized_fields.insert(
+                "tags".to_string(),
+                serde_json::to_value(tags)?
+            );
+        }
+        if let Some(supports) = &self.supports {
+            serialized_fields.insert(
+                "supports".to_string(),
+                serde_json::to_value(supports)?
+            );
+        }
+        if let Some(api) = &self.api {
+            serialized_fields.insert(
+                "api".to_string(),
+                serde_json::to_value(api)?
+            );
+        }
+        if let Some(package) = &self.package {
+            serialized_fields.insert(
+                "package".to_string(),
+                serde_json::to_value(package)?
+            );
+        }
+        if let Some(scripts) = &self.scripts {
+            serialized_fields.insert(
+                "scripts".to_string(),
+                serde_json::to_value(scripts)?
+            );
+        }
 
         // Resolve description field
         if let Some(description) = &self.description {

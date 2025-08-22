@@ -33,7 +33,7 @@ use crate::{
     manifest_lock::{parse_manifest_lock_in_folder, write_pkg_lockfile, ManifestLock},
     output::TmanOutput,
     package_file::unpackage::extract_and_process_tpkg_file,
-    pkg_info::manifest::to_file::update_manifest_all_fields,
+    pkg_info::manifest::to_file::patch_manifest_json_file,
     solver::solver_result::filter_solver_results_by_type_and_name,
 };
 use installed_paths::save_installed_paths;
@@ -183,11 +183,7 @@ pub async fn install_pkg_info(
 async fn update_package_manifest(
     base_pkg_info: &mut PkgInfo,
     added_dependency: &PkgInfo,
-    // If `Some(...)` is passed in, it indicates `local_path` mode.
-    local_path_if_any: Option<String>,
 ) -> Result<()> {
-    let mut is_present = false;
-    let mut deps_to_remove = Vec::new();
     let mut updated_dependencies = Vec::new();
 
     // Process the struct field dependencies first as a cache.
@@ -202,14 +198,7 @@ async fn update_package_manifest(
 
                     if manifest_dependency_type_and_name == PkgTypeAndName::from(added_dependency) {
                         if !added_dependency.is_local_dependency {
-                            is_present = true;
                             updated_dependencies.push(dep.clone());
-                        } else {
-                            // The `manifest.json` specifies a registry
-                            // dependency, but a local dependency is being
-                            // added. Therefore, remove the original
-                            // dependency item from `manifest.json`.
-                            deps_to_remove.push(dep.clone());
                         }
                     } else {
                         updated_dependencies.push(dep.clone());
@@ -248,20 +237,7 @@ async fn update_package_manifest(
                             if path == added_dependency.local_dependency_path.as_ref().unwrap() {
                                 is_present = true;
                                 updated_dependencies.push(dep.clone());
-                            } else {
-                                // The `manifest.json` specifies a local
-                                // dependency, but a different local
-                                // dependency is being added. Therefore,
-                                // remove the original dependency item from
-                                // `manifest.json`.
-                                deps_to_remove.push(dep.clone());
                             }
-                        } else {
-                            // The `manifest.json` specifies a local
-                            // dependency, but a registry dependency is
-                            // being added. Therefore, remove the original
-                            // dependency item from `manifest.json`.
-                            deps_to_remove.push(dep.clone());
                         }
                     } else {
                         updated_dependencies.push(dep.clone());
@@ -271,42 +247,13 @@ async fn update_package_manifest(
         }
     }
 
-    // If the added dependency does not exist in the `manifest.json`, add
-    // it.
-    let deps_to_add_option = if !is_present {
-        // If `local_path_if_any` has a value, create a local dependency.
-        if let Some(local_path) = &local_path_if_any {
-            let local_dep = ManifestDependency::LocalDependency {
-                path: local_path.clone(),
-                base_dir: Some("".to_string()),
-            };
-            updated_dependencies.push(local_dep.clone());
-            Some(vec![local_dep])
-        } else {
-            let registry_dep = ManifestDependency::from(added_dependency);
-            updated_dependencies.push(registry_dep.clone());
-            Some(vec![registry_dep])
-        }
-    } else {
-        None
-    };
-
     // Update the dependencies field in the manifest struct.
     base_pkg_info.manifest.dependencies = Some(updated_dependencies);
 
-    // Use the deps_to_remove for update_manifest_all_fields.
-    let deps_to_remove_option = if !deps_to_remove.is_empty() {
-        Some(&deps_to_remove)
-    } else {
-        None
-    };
-
-    update_manifest_all_fields(
+    patch_manifest_json_file(
         &base_pkg_info.url,
-        &mut base_pkg_info.manifest.all_fields,
-        deps_to_add_option.as_ref(),
-        deps_to_remove_option,
-    )?;
+        &base_pkg_info.manifest,
+    ).await?;
 
     Ok(())
 }
@@ -347,8 +294,6 @@ pub async fn write_installing_pkg_into_manifest_file(
     solver_results: &[PkgInfo],
     pkg_type: &PkgType,
     pkg_name: &String,
-    // If `Some(...)` is passed in, it indicates `local_path` mode.
-    local_path_if_any: Option<String>,
 ) -> Result<()> {
     let suitable_pkgs = filter_solver_results_by_type_and_name(
         solver_results,
@@ -369,7 +314,8 @@ pub async fn write_installing_pkg_into_manifest_file(
         ));
     }
 
-    update_package_manifest(pkg_info, suitable_pkgs[0], local_path_if_any).await?;
+    update_package_manifest(pkg_info, suitable_pkgs[0])
+        .await?;
 
     Ok(())
 }
