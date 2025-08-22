@@ -14,10 +14,19 @@ tasks:
     cmds:
       - ./agents/scripts/pylint.sh
 
+  lint-extension:
+    desc: lint a single python extension under agents/ten_packages/extension
+    vars:
+      EXTENSION: '{{.EXTENSION| default "azure_asr_python"}}'
+    env:
+      PYTHONPATH: "./agents/ten_packages/system/ten_runtime_python/lib:./agents/ten_packages/system/ten_runtime_python/interface:./agents/ten_packages/system/ten_ai_base/interface"
+    cmds:
+      - ./agents/scripts/pylint.sh {{.EXTENSION}}
+
   install-tools:
     desc: install tools
     cmds:
-      - pip install pylint
+      - pip install pylint pylint-exit
 
   build:
     desc: build
@@ -26,12 +35,13 @@ tasks:
       - task: build-server
 
   use:
-    desc: use agent, default 'agents/examples/default'
+    desc: use agent, default 'agents/examples/voice-assistant'
     vars:
-      AGENT: '{{.AGENT| default "agents/examples/default"}}'
+      AGENT: '{{.AGENT| default "agents/examples/voice-assistant"}}'
     cmds:
       - ln -sf {{.USER_WORKING_DIR}}/{{.AGENT}}/manifest.json ./agents/
       - ln -sf {{.USER_WORKING_DIR}}/{{.AGENT}}/property.json ./agents/
+      - find "{{.USER_WORKING_DIR}}/{{.AGENT}}/ten_packages/extension" -mindepth 1 -maxdepth 1 -type d -exec ln -sf -t ./agents/ten_packages/extension {} +
       - task: build
 
   run-server:
@@ -69,7 +79,7 @@ tasks:
     dir: ./agents
     internal: true
     cmds:
-      - rm -rf manifest.json property.json manifest-lock.json bin/main bin/worker out .release ten_packages/system ten_packages/system/agora_rtc_sdk ten_packages/system/azure_speech_sdk ten_packages/system/nlohmann_json ten_packages/extension/agora_rtc ten_packages/extension/agora_rtm ten_packages/extension/agora_sess_ctrl ten_packages/extension/azure_tts ten_packages/addon_loader
+      - rm -rf manifest.json property.json manifest-lock.json bin/main bin/worker out .release ten_packages/system ten_packages/system/agora_rtc_sdk ten_packages/system/azure_speech_sdk ten_packages/system/nlohmann_json ten_packages/extension/agora_rtc ten_packages/extension/agora_rtm ten_packages/extension/agora_sess_ctrl ten_packages/extension/azure_tts ten_packages/addon_loader ten_packages/extension/main_python ten_packages/extension/main_cascade_python ten_packages/extension/main_realtime_python
       - find . -type d -name .pytest_cache -exec rm -rf {} \; || true
       - find . -type d -name __pycache__ -exec rm -rf {} \; || true
       - find . -type d -name .ten -exec rm -rf {} \; || true
@@ -81,6 +91,19 @@ tasks:
     internal: true
     cmds:
       - rm -rf bin
+
+  tts-guarder-test:
+    desc: run tests for tts guarder
+    vars:
+      EXTENSION: '{{.EXTENSION| default "bytedance_tts_duplex"}}'
+      CONFIG_DIR: '{{.CONFIG_DIR| default "tests/configs"}}'
+    env:
+      EXT_NAME: '{{.EXTENSION}}'
+      TEN_ENABLE_BACKTRACE_DUMP: "true"
+    dotenv: [".env"]
+    cmds:
+      - cd agents/integration_tests/tts_guarder && sed "s/{{`{{extension_name}}`}}/$EXT_NAME/g" manifest-tmpl.json > manifest.json
+      - cd agents/integration_tests/tts_guarder && ./scripts/install_deps_and_build.sh linux x64 && ./tests/bin/start --extension_name {{.EXTENSION}} --config_dir {{.USER_WORKING_DIR}}/agents/ten_packages/extension/{{.EXTENSION}}/{{.CONFIG_DIR}} {{ .CLI_ARGS }}
 
   test:
     desc: run tests
@@ -119,16 +142,47 @@ tasks:
     cmds:
       - cd {{.EXTENSION}} && tman -y install --standalone && ./tests/bin/start {{ .CLI_ARGS }}
 
+  test-extension-no-install:
+    desc: run standalone testing of one single extension
+    vars:
+      EXTENSION: '{{.EXTENSION| default "agents/ten_packages/extension/elevenlabs_tts_python"}}'
+    env:
+      PYTHONPATH: "{{.USER_WORKING_DIR}}:{{.USER_WORKING_DIR}}/agents/ten_packages/system/ten_runtime_python/lib:{{.USER_WORKING_DIR}}/agents/ten_packages/system/ten_runtime_python/interface:{{.USER_WORKING_DIR}}/agents/ten_packages/system/ten_ai_base/interface"
+    dotenv: [".env"]
+    cmds:
+      - cd {{.EXTENSION}} && ./tests/bin/start {{ .CLI_ARGS }}
+
+  asr-guarder-test:
+    desc: run tests for asr guarder
+    vars:
+      EXTENSION: '{{.EXTENSION| default "azure_asr_python"}}'
+      CONFIG_DIR: '{{.CONFIG_DIR| default "tests/configs"}}'
+    env:
+      EXT_NAME: '{{.EXTENSION}}'
+      TEN_ENABLE_BACKTRACE_DUMP: "true"
+    dotenv: [".env"]
+    cmds:
+      - cd agents/integration_tests/asr_guarder && sed "s/{{`{{extension_name}}`}}/$EXT_NAME/g" manifest-tmpl.json > manifest.json
+      - cd agents/integration_tests/asr_guarder && ./scripts/install_deps_and_build.sh linux x64 && ./tests/bin/start --extension_name {{.EXTENSION}} --config_dir {{.USER_WORKING_DIR}}/agents/ten_packages/extension/{{.EXTENSION}}/{{.CONFIG_DIR}} {{ .CLI_ARGS }}
+
   format:
     desc: format code
     cmds:
       - task: black-format
+      - task: black-format2
 
   black-format:
     desc: format python code with black
     internal: true
     cmds:
       - black --exclude "third_party/|agents/ten_packages/extension/http_server_python/|agents/ten_packages/system/ten_ai_base/interface/ten_ai_base/|.ten/" --line-length 80 agents/ten_packages/extension {{ .CLI_ARGS }}
+
+
+  black-format2:
+    desc: format python code with black
+    internal: true
+    cmds:
+      - black --exclude "third_party/|agents/ten_packages/extension/http_server_python/|agents/ten_packages/system/ten_ai_base/interface/ten_ai_base/|.ten/" --line-length 80 agents/examples {{ .CLI_ARGS }}
 
   check:
     desc: check code

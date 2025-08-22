@@ -1,0 +1,10 @@
+{
+    "params": {
+        "key": "${env:HUMEAI_TTS_KEY|}",
+        "voice_name": "Female English Actor",
+        "provider": "HUME_AI",
+        "speed": 1.0,
+        "trailing_silence": 0.0,
+        "request_timeout_seconds": 10
+    }
+}

@@ -1,0 +1,77 @@
+{
+  "type": "extension",
+  "name": "elevenlabs_tts2_python",
+  "version": "0.1.4",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.10"
+    },
+    {
+      "type": "system",
+      "name": "ten_ai_base",
+      "version": "0.6"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "BUILD.gn",
+      "**.tent",
+      "**.py",
+      "README.md",
+      "requirements.txt"
+    ]
+  },
+  "api": {
+      "interface": [
+        {
+          "import_uri": "../../system/ten_ai_base/api/tts-interface.json"
+        }
+      ],
+    "property": {
+      "properties": {
+        "params": {
+          "type": "object",
+          "properties": {    
+            "api_key": {
+              "type": "string"
+            },
+            "model_id": {
+              "type": "string"
+            },
+            "request_timeout_seconds": {
+              "type": "int64"
+            },
+            "similarity_boost": {
+              "type": "float64"
+            },
+            "speaker_boost": {
+              "type": "bool"
+            },
+            "stability": {
+              "type": "float64"
+            },
+            "style": {
+              "type": "float64"
+            },
+            "optimize_streaming_latency": {
+              "type": "int64"
+            },
+            "voice_id": {
+              "type": "string"
+            }
+          }
+        },
+        "dump": {
+          "type": "bool"
+        },
+        "dump_path": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

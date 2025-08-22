@@ -4,14 +4,27 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
+use std::collections::HashMap;
 use std::path::Path;
 use std::sync::Arc;
 
 use actix_web::{web, HttpResponse, Responder};
+use futures::future::try_join_all;
 use serde::{Deserialize, Serialize};
 
-use crate::designer::graphs::nodes::DesignerGraphNode;
+use ten_rust::base_dir_pkg_info::PkgsInfoInApp;
+use ten_rust::graph::{
+    connection::GraphConnection, graph_info::GraphInfo, node::GraphNode, Graph,
+    GraphExposedMessage, GraphExposedProperty,
+};
+use ten_rust::pkg_info::get_pkg_info_for_extension_addon;
+
+use crate::designer::common::{
+    get_designer_api_msg_from_pkg, get_designer_api_property_from_pkg,
+};
+use crate::designer::graphs::nodes::{DesignerApi, DesignerGraphNode};
 use crate::designer::graphs::DesignerGraphInfo;
+use crate::designer::response::ErrorResponse;
 use crate::designer::{
     graphs::{
         DesignerGraph, DesignerGraphExposedMessage,
@@ -19,10 +32,6 @@ use crate::designer::{
     },
     response::{ApiResponse, Status},
     DesignerState,
-};
-use ten_rust::graph::{
-    connection::GraphConnection, graph_info::GraphInfo, node::GraphNode, Graph,
-    GraphExposedMessage, GraphExposedProperty,
 };
 
 #[derive(Serialize, Deserialize)]
@@ -118,10 +127,11 @@ fn create_designer_graph(
 
 /// Extracts a DesignerGraph from GraphInfo, preferring pre_flatten data if
 /// available, otherwise falling back to the main graph data.
-fn extract_designer_graph_from_graph_info(
+async fn extract_designer_graph_from_graph_info(
     graph_info: &GraphInfo,
-) -> DesignerGraph {
-    let designer_graph = graph_info
+    pkgs_cache: &HashMap<String, PkgsInfoInApp>,
+) -> Result<DesignerGraph, ErrorResponse> {
+    let mut designer_graph = graph_info
         .graph
         .graph
         .pre_flatten
@@ -144,25 +154,129 @@ fn extract_designer_graph_from_graph_info(
         });
 
     // Resolve subgraph imports
-    resolve_subgraph_imports(designer_graph, &graph_info.app_base_dir)
+    designer_graph =
+        resolve_subgraph_imports(designer_graph, &graph_info.app_base_dir);
+
+    // Update the api and installation status of the nodes
+    for node in &mut designer_graph.nodes {
+        if let DesignerGraphNode::Extension { content } = node {
+            let pkg_info = get_pkg_info_for_extension_addon(
+                pkgs_cache,
+                &graph_info.app_base_dir,
+                &content.app,
+                &content.addon,
+            );
+
+            if let Some(pkg_info) = pkg_info {
+                let manifest_api = pkg_info.manifest.get_flattened_api().await;
+                if manifest_api.is_err() {
+                    let error_response = ErrorResponse::from_error(
+                        &manifest_api.err().unwrap(),
+                        "Failed to flatten API for extension",
+                    );
+                    return Err(error_response);
+                }
+
+                let manifest_api = manifest_api.unwrap();
+                if let Some(api) = manifest_api {
+                    content.api = Some(DesignerApi {
+                        property: api
+                            .property
+                            .as_ref()
+                            .filter(|p| !p.is_empty())
+                            .map(|p| {
+                                get_designer_api_property_from_pkg(p.clone())
+                            }),
+
+                        cmd_in: api
+                            .cmd_in
+                            .as_ref()
+                            .filter(|c| !c.is_empty())
+                            .map(|c| get_designer_api_msg_from_pkg(c.clone())),
+
+                        cmd_out: api
+                            .cmd_out
+                            .as_ref()
+                            .filter(|c| !c.is_empty())
+                            .map(|c| get_designer_api_msg_from_pkg(c.clone())),
+
+                        data_in: api
+                            .data_in
+                            .as_ref()
+                            .filter(|d| !d.is_empty())
+                            .map(|d| get_designer_api_msg_from_pkg(d.clone())),
+
+                        data_out: api
+                            .data_out
+                            .as_ref()
+                            .filter(|d| !d.is_empty())
+                            .map(|d| get_designer_api_msg_from_pkg(d.clone())),
+
+                        audio_frame_in: api
+                            .audio_frame_in
+                            .as_ref()
+                            .filter(|d| !d.is_empty())
+                            .map(|d| get_designer_api_msg_from_pkg(d.clone())),
+
+                        audio_frame_out: api
+                            .audio_frame_out
+                            .as_ref()
+                            .filter(|d| !d.is_empty())
+                            .map(|d| get_designer_api_msg_from_pkg(d.clone())),
+
+                        video_frame_in: api
+                            .video_frame_in
+                            .as_ref()
+                            .filter(|d| !d.is_empty())
+                            .map(|d| get_designer_api_msg_from_pkg(d.clone())),
+
+                        video_frame_out: api
+                            .video_frame_out
+                            .as_ref()
+                            .filter(|d| !d.is_empty())
+                            .map(|d| get_designer_api_msg_from_pkg(d.clone())),
+                    });
+                }
+
+                content.is_installed = true;
+            }
+        }
+    }
+
+    Ok(designer_graph)
 }
 
 pub async fn get_graphs_endpoint(
     _request_payload: web::Json<GetGraphsRequestPayload>,
     state: web::Data<Arc<DesignerState>>,
 ) -> Result<impl Responder, actix_web::Error> {
+    let pkgs_cache = state.pkgs_cache.read().await;
     let graphs_cache = state.graphs_cache.read().await;
 
-    let graphs: Vec<DesignerGraphInfo> = graphs_cache
+    let pkgs_cache_clone = pkgs_cache.clone();
+    let graph_futures: Vec<_> = graphs_cache
         .iter()
-        .map(|(uuid, graph_info)| DesignerGraphInfo {
-            graph_id: *uuid,
-            name: graph_info.name.clone(),
-            auto_start: graph_info.auto_start,
-            base_dir: graph_info.app_base_dir.clone(),
-            graph: extract_designer_graph_from_graph_info(graph_info),
+        .map(|(uuid, graph_info)| {
+            let pkgs_cache_inner = pkgs_cache_clone.clone();
+            async move {
+                let graph_result = extract_designer_graph_from_graph_info(
+                    graph_info,
+                    &pkgs_cache_inner,
+                )
+                .await?;
+
+                Ok::<_, actix_web::Error>(DesignerGraphInfo {
+                    graph_id: *uuid,
+                    name: graph_info.name.clone(),
+                    auto_start: graph_info.auto_start,
+                    base_dir: graph_info.app_base_dir.clone(),
+                    graph: graph_result,
+                })
+            }
         })
         .collect();
+
+    let graphs = try_join_all(graph_futures).await?;
 
     let response = ApiResponse { status: Status::Ok, data: graphs, meta: None };
 
