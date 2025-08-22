@@ -19,7 +19,7 @@ class SpeechmaticsASRConfig(BaseModel):
     language: str = "en-US"
     sample_rate: int = 16000
     uri: str = "wss://eu2.rt.speechmatics.com/v2"
-    max_delay_mode: str = "fixed"  # "flexible" or "fixed"
+    max_delay_mode: str = "flexible"  # "flexible" or "fixed"
     max_delay: float = 0.7  # 0.7 - 4.0
     encoding: str = "pcm_s16le"
     enable_partials: bool = True
