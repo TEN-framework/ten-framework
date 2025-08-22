@@ -45,6 +45,40 @@ export function parseSentences(
     return [sentences, remain];
 }
 
+// A minimal awaitable queue with optional abort support
+export class AsyncQueue<T> {
+    private items: T[] = [];
+    private takers: Array<(v: T) => void> = [];
+
+    enqueue(item: T) {
+        const taker = this.takers.shift();
+        taker ? taker(item) : this.items.push(item);
+    }
+
+    clear() { this.items.length = 0; }
+    get length() { return this.items.length; }
+
+    async dequeue(signal?: AbortSignal): Promise<T> {
+        if (this.items.length) return this.items.shift()!;
+        return new Promise<T>((resolve, reject) => {
+            const onAbort = () => {
+                cleanup();
+                // DOMException is standard for AbortError; OK to use Error if preferred.
+                reject(new DOMException('Aborted', 'AbortError'));
+            };
+            const taker = (v: T) => { cleanup(); resolve(v); };
+            const cleanup = () => signal?.removeEventListener('abort', onAbort);
+
+            this.takers.push(taker);
+            if (signal) {
+                if (signal.aborted) return onAbort();
+                signal.addEventListener('abort', onAbort, { once: true });
+            }
+        });
+    }
+}
+
+
 /**
  * Send a command with optional payload.
  * Shortcut for intra-graph communication.

@@ -19,6 +19,7 @@ import {
     ASRResultEvent,
     LLMResponseEvent,
 } from "./events.js";
+import { AsyncQueue } from "../helper.js";
 // import { LLMExec } from "./llm_exec.js";
 
 // Types for handler registration
@@ -30,94 +31,96 @@ export class Agent {
 
     private callbacks: Map<Function, EventHandler<any>[]> = new Map();
 
-    // Queues
-    private asrQueue: ASRResultEvent[] = [];
-    private llmQueue: LLMResponseEvent[] = [];
+    // Awaitable queues
+    private asrQueue = new AsyncQueue<ASRResultEvent>();
+    private llmQueue = new AsyncQueue<LLMResponseEvent>();
 
-    // Consumer loops
-    private asrConsumer?: Promise<void>;
-    private llmConsumer?: Promise<void>;
+    // Drain state
+    private drainingASR = false;
+    private drainingLLM = false;
+
+    // LLM task tracking / cancellation
     private llmActiveTask?: Promise<void>;
-
-    // public llmExec: LLMExec;
+    private llmAbort = new AbortController();
 
     constructor(tenEnv: TenEnv) {
         this.tenEnv = tenEnv;
-
-        // this.llmExec = new LLMExec(tenEnv);
-        // this.llmExec.onResponse = this._onLLMResponse.bind(this);
-        // this.llmExec.onReasoningResponse = this._onLLMReasoningResponse.bind(this);
-
-        this.asrConsumer = this.consumeASR();
-        this.llmConsumer = this.consumeLLM();
     }
 
     // === Register handlers ===
-    on<T extends AgentEvent>(
-        eventClass: new (...args: any[]) => T,
-        handler?: EventHandler<T>
-    ): any {
-        const decorator = (fn: EventHandler<T>) => {
+    on<T extends AgentEvent>(eventClass: new (...args: any[]) => T, handler?: EventHandler<T>) {
+        const register = (fn: EventHandler<T>) => {
             const list = this.callbacks.get(eventClass) || [];
             list.push(fn);
             this.callbacks.set(eventClass, list);
             return fn;
         };
-
-        if (handler) {
-            return decorator(handler);
-        }
-        return decorator;
+        return handler ? register(handler) : register;
     }
 
     private async dispatch(event: AgentEvent) {
         for (const [etype, handlers] of this.callbacks.entries()) {
             if (event instanceof (etype as any)) {
                 for (const h of handlers) {
-                    try {
-                        await h(event);
-                    } catch (err) {
-                        this.tenEnv.logError(`Handler error for ${etype}: ${err}`);
-                    }
+                    try { await h(event); }
+                    catch (err) { this.tenEnv.logError(`Handler error for ${etype}: ${err}`); }
                 }
             }
         }
     }
 
-    // === Consumers ===
-    private async consumeASR() {
-        while (!this.stopped) {
-            const event = this.asrQueue.shift();
-            if (event) await this.dispatch(event);
-            else await new Promise((r) => setTimeout(r, 5));
-        }
+    // === Drainers (scheduled; no polling) ===
+    private scheduleASRDrain() {
+        if (this.drainingASR || this.stopped) return;
+        this.drainingASR = true;
+        queueMicrotask(async () => {
+            try {
+                // drain everything currently enqueued; new arrivals will schedule another drain
+                while (this.asrQueue.length > 0 && !this.stopped) {
+                    const evt = await this.asrQueue.dequeue();
+                    await this.dispatch(evt);
+                }
+            } finally {
+                this.drainingASR = false;
+                // If something slipped in after we checked length, schedule again.
+                if (this.asrQueue.length > 0 && !this.stopped) this.scheduleASRDrain();
+            }
+        });
     }
 
-    private async consumeLLM() {
-        while (!this.stopped) {
-            const event = this.llmQueue.shift();
-            if (event) {
-                this.llmActiveTask = this.dispatch(event);
-                try {
-                    await this.llmActiveTask;
-                } catch {
-                    this.tenEnv.logInfo("[Agent] Active LLM task cancelled");
-                } finally {
-                    this.llmActiveTask = undefined;
+    private scheduleLLMDrain() {
+        if (this.drainingLLM || this.stopped) return;
+        this.drainingLLM = true;
+        queueMicrotask(async () => {
+            try {
+                // Strictly serialize LLM events
+                while (this.llmQueue.length > 0 && !this.stopped) {
+                    const evt = await this.llmQueue.dequeue(this.llmAbort.signal);
+                    this.llmActiveTask = this.dispatch(evt);
+                    try { await this.llmActiveTask; }
+                    catch (e) {
+                        // Abort is expected during flush() or stop()
+                        if ((e as any)?.name !== 'AbortError') {
+                            this.tenEnv.logError(`[Agent] LLM task failed: ${e}`);
+                        }
+                    } finally { this.llmActiveTask = undefined; }
                 }
-            } else {
-                await new Promise((r) => setTimeout(r, 5));
+            } finally {
+                this.drainingLLM = false;
+                if (this.llmQueue.length > 0 && !this.stopped) this.scheduleLLMDrain();
             }
-        }
+        });
     }
 
     // === Emit events ===
-    private async emitASR(event: ASRResultEvent) {
-        this.asrQueue.push(event);
+    private emitASR(event: ASRResultEvent) {
+        this.asrQueue.enqueue(event);
+        this.scheduleASRDrain();
     }
 
-    private async emitLLM(event: LLMResponseEvent) {
-        this.llmQueue.push(event);
+    private emitLLM(event: LLMResponseEvent) {
+        this.llmQueue.enqueue(event);
+        this.scheduleLLMDrain();
     }
 
     private async emitDirect(event: AgentEvent) {
@@ -133,16 +136,10 @@ export class Agent {
             } else if (name === "on_user_left") {
                 await this.emitDirect(new UserLeftEvent());
             } else if (name === "tool_register") {
-                // const [toolJson, err] = cmd.getPropertyToJson("tool");
-                // if (err) throw new Error(`Invalid tool metadata: ${err}`);
-                // const tool = LLMToolMetadata.model_validate_json(toolJson);
-                // await this.emitDirect(
-                //     new ToolRegisterEvent({ tool, source: cmd.getSource().extensionName })
-                // );
+                // parse & emit your ToolRegisterEvent here if needed
             } else {
                 this.tenEnv.logWarn(`Unhandled cmd: ${name}`);
             }
-
             await this.tenEnv.returnResult(CmdResult.Create(StatusCode.OK, cmd));
         } catch (e) {
             this.tenEnv.logError(`onCmd error: ${e}`);
@@ -155,13 +152,7 @@ export class Agent {
             if (data.getName() === "asr_result") {
                 const [asrJson] = data.getPropertyToJson("");
                 const asr = JSON.parse(asrJson);
-                await this.emitASR(
-                    new ASRResultEvent(
-                        asr.text || "",
-                        asr.final || false,
-                        asr.metadata || {}
-                    )
-                );
+                this.emitASR(new ASRResultEvent(asr.text || "", asr.final || false, asr.metadata || {}));
             } else {
                 this.tenEnv.logWarn(`Unhandled data: ${data.getName()}`);
             }
@@ -170,52 +161,27 @@ export class Agent {
         }
     }
 
-    // === LLM Callbacks ===
-    private async _onLLMResponse(
-        _tenEnv: TenEnv,
-        delta: string,
-        text: string,
-        isFinal: boolean
-    ) {
-        await this.emitLLM(new LLMResponseEvent(
-            text, isFinal, delta, "message"
-        ))
+    // === LLM callbacks ===
+    private _onLLMResponse(_tenEnv: TenEnv, delta: string, text: string, isFinal: boolean) {
+        this.emitLLM(new LLMResponseEvent(text, isFinal, delta, "message"));
     }
 
-    private async _onLLMReasoningResponse(
-        _tenEnv: TenEnv,
-        delta: string,
-        text: string,
-        isFinal: boolean
-    ) {
-        await this.emitLLM(new LLMResponseEvent(
-            text, isFinal, delta, "reasoning"
-        ));
+    private _onLLMReasoningResponse(_tenEnv: TenEnv, delta: string, text: string, isFinal: boolean) {
+        this.emitLLM(new LLMResponseEvent(text, isFinal, delta, "reasoning"));
     }
 
-    // === LLM control ===
-    // async registerLLMTool(tool: LLMToolMetadata, source: string) {
-    //     await this.llmExec.registerTool(tool, source);
-    // }
-
-    // async queueLLMInput(text: string) {
-    //     await this.llmExec.queueInput(text);
-    // }
-
-    // async flushLLM() {
-    //     await this.llmExec.flush();
-
-    //     this.llmQueue.length = 0;
-
-    //     if (this.llmActiveTask) {
-    //         // cancel simulation: ignore resolution
-    //         this.llmActiveTask = undefined;
-    //     }
-    // }
+    // === Optional: targeted LLM flush / cancel ===
+    // You can wire this to a request_id filter if needed:
+    flushLLM() {
+        // Cancel any pending dequeue + active LLM task
+        this.llmAbort.abort();
+        this.llmAbort = new AbortController();   // new token for future dequeues
+        this.llmQueue.clear();                   // drop queued partials
+        // Note: active handler should respect AbortSignal if it does I/O
+    }
 
     async stop() {
         this.stopped = true;
-        // await this.llmExec.stop();
-        // await this.flushLLM();
+        this.flushLLM();
     }
 }
