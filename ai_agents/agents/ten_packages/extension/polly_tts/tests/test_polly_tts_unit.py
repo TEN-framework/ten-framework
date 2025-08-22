@@ -130,14 +130,20 @@ class TestPollyTTS(unittest.TestCase):
         mock_session.return_value = mock_session_instance
         mock_session_instance.client.return_value = mock_polly
 
-        polly_tts = PollyTTS(self.params)
+        polly_tts = PollyTTS(
+            self.params,
+            timeout=10.0,
+            max_retries=2,
+            retry_delay=0.5,
+            chunk_interval_ms=100,
+        )
 
         self.assertEqual(polly_tts.params, self.params)
-        self.assertEqual(polly_tts.frame_size, 320)  # 16000 * 1 * 2 / 100
+        self.assertEqual(polly_tts.frame_size, 100 * 16000 * 1 * 2 / 1000)
         self.assertFalse(polly_tts._closed)
-        self.assertEqual(polly_tts.timeout, 30.0)
-        self.assertEqual(polly_tts.max_retries, 3)
-        self.assertEqual(polly_tts.retry_delay, 1.0)
+        self.assertEqual(polly_tts.timeout, 10.0)
+        self.assertEqual(polly_tts.max_retries, 2)
+        self.assertEqual(polly_tts.retry_delay, 0.5)
 
     def test_context_manager(self):
         """test context manager"""
