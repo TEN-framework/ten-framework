@@ -28,7 +28,7 @@ import {
 } from "@/api/services/graphs";
 import { useCompatibleMessages } from "@/api/services/messages";
 import { SpinnerLoading } from "@/components/status/loading";
-import { AutoForm } from "@/components/ui/autoform";
+import { AutoFormDynamicFields } from "@/components/ui/autoform/auto-form-dynamic-fields";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
@@ -51,8 +51,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-// eslint-disable-next-line max-len
-import { convertExtensionPropertySchema2ZodSchema } from "@/components/widget/utils";
+import {
+  convertExtensionPropertySchema2ZodSchema,
+  type TExtPropertySchema,
+} from "@/components/widget/utils";
 import { resetNodesAndEdgesByGraphs } from "@/flow/graph";
 import { cn } from "@/lib/utils";
 import { useDialogStore, useFlowStore } from "@/store";
@@ -139,8 +141,8 @@ const GraphAddNodePropertyField = (props: {
       title: t("popup.graph.property"),
       content: (
         <>
-          <AutoForm
-            onSubmit={async (data) => {
+          <AutoFormDynamicFields
+            onSubmit={async (data: Record<string, unknown>) => {
               onChange?.(data);
               removeDialog(dialogId);
             }}
@@ -163,7 +165,7 @@ const GraphAddNodePropertyField = (props: {
               </Button>
               <Button type="submit">{t("action.confirm")}</Button>
             </div>
-          </AutoForm>
+          </AutoFormDynamicFields>
         </>
       ),
     });
@@ -448,6 +450,8 @@ export const GraphUpdateNodePropertyWidget = (props: {
   const [propertySchemaEntries, setPropertySchemaEntries] = React.useState<
     [string, z.ZodType][]
   >([]);
+  const [originalSchema, setOriginalSchema] =
+    React.useState<TExtPropertySchema>({});
 
   const { t } = useTranslation();
 
@@ -463,9 +467,13 @@ export const GraphUpdateNodePropertyWidget = (props: {
           appBaseDir: base_dir ?? "",
           addonName: typeof node.data.addon === "string" ? node.data.addon : "",
         });
-        const propertySchemaEntries = convertExtensionPropertySchema2ZodSchema(
-          schema.property?.properties ?? {}
-        );
+
+        // Store original schema for dynamic fields
+        const originalSchemaProps = schema.property?.properties ?? {};
+        setOriginalSchema(originalSchemaProps);
+
+        const propertySchemaEntries =
+          convertExtensionPropertySchema2ZodSchema(originalSchemaProps);
         setPropertySchemaEntries(propertySchemaEntries);
       } catch (error) {
         console.error(error);
@@ -479,17 +487,20 @@ export const GraphUpdateNodePropertyWidget = (props: {
   }, [base_dir, node.data.addon]);
 
   return (
-    <>
+    <div className="h-full overflow-y-auto">
       {isSchemaLoading && !propertySchemaEntries && (
         <SpinnerLoading className="size-4" />
       )}
       {propertySchemaEntries?.length > 0 ? (
-        <AutoForm
+        <AutoFormDynamicFields
           values={node?.data.property || {}}
           schema={
             new ZodProvider(z.object(Object.fromEntries(propertySchemaEntries)))
           }
-          onSubmit={async (data) => {
+          originalSchema={originalSchema}
+          allowDynamicFields={true}
+          dynamicFieldsTitle="Node Properties"
+          onSubmit={async (data: Record<string, unknown>) => {
             setIsSubmitting(true);
             try {
               const nodeData = UpdateNodePropertyPayloadSchema.parse({
@@ -537,7 +548,7 @@ export const GraphUpdateNodePropertyWidget = (props: {
           {t("popup.graph.noPropertySchema")}
         </div>
       )}
-    </>
+    </div>
   );
 };
 
