@@ -9,8 +9,8 @@ from libten_runtime_python import (
     _ten_py_msg_register_type,  # pyright: ignore[reportPrivateUsage]
 )
 
-from ..error import TenError
-from ..loc import Loc
+from .error import TenError
+from .loc import Loc
 
 
 class Msg(_Msg):

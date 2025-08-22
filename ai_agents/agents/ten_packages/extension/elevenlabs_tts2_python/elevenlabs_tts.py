@@ -52,8 +52,8 @@ class ElevenLabsTTS2Synthesizer:
         self._connection_success = False
         self._receive_ready_event = asyncio.Event()
 
-        # Start websocket connection monitoring (only if not in test mode)
-        self.websocket_task = None
+        # Start websocket connection monitoring
+        self.websocket_task = asyncio.create_task(self._process_websocket())
 
     def _process_ws_exception(self, exp) -> None | Exception:
         """Handle websocket connection exceptions and decide whether to reconnect"""
@@ -166,6 +166,7 @@ class ElevenLabsTTS2Synthesizer:
                     }
                 )
             )
+            self.ten_env.log_info(" websocket connection established")
 
             while not self._session_closing:
                 # Get text to send from queue
@@ -179,6 +180,11 @@ class ElevenLabsTTS2Synthesizer:
                         "No new text input, sending space text to keep alive."
                     )
                     text_data = {"text": " ", "flush": True}
+                if text_data is None:
+                    self.ten_env.log_debug(
+                        "Received None from queue, ending send loop"
+                    )
+                    continue
 
                 if text_data.text.strip() != "":
                     await ws.send(
@@ -188,10 +194,11 @@ class ElevenLabsTTS2Synthesizer:
                         f"Sent text to WebSocket: {text_data.text[:50]}..."
                     )
 
-                if text_data.text_input_end:
+                if text_data.text_input_end == True:
                     await ws.send(json.dumps({"text": ""}))
                     self.ten_env.log_debug("Sent end signal to WebSocket")
                     return
+            self.ten_env.log_info("websocket connection closed")
 
         except asyncio.CancelledError:
             self.ten_env.log_info("send_loop task cancelled")
@@ -302,6 +309,10 @@ class ElevenLabsTTS2Synthesizer:
         # The websocket connection might be not established yet, if so, using
         # this flag to close the connection directly.
         self._session_closing = True
+
+        # Cancel websocket task
+        if self.websocket_task:
+            self.websocket_task.cancel()
 
         # Note that the websocket connection might not be established yet
         # (i.e., self.channel_tasks is empty).
