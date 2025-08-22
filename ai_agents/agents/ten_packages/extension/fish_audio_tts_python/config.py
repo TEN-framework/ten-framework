@@ -63,6 +63,7 @@ class FishAudioTTSConfig(BaseModel):
         return (
             f"FishAudioTTSConfig(api_key={mask_sensitive_data(self.api_key)}, "
             f"sample_rate={self.sample_rate}, "
+            f"backend={self.backend}, "
             f"dump={self.dump}, "
             f"dump_path={self.dump_path}, "
             f"params={self.params}, "
