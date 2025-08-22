@@ -149,8 +149,7 @@ export class LLMExec {
         };
 
         // If your runtime expects a JSON string, stringify here
-        const inputJson = JSON.stringify(llmInput);
-        const stream = sendCmdEx(this.env, "chat_completion", "llm", inputJson);
+        const stream = sendCmdEx(this.env, "chat_completion", "llm", llmInput);
 
         await this._queueContext(newMessage);
 
@@ -160,7 +159,7 @@ export class LLMExec {
                 this.env.logInfo("LLMExec: abort signal observed; breaking stream loop");
                 break;
             }
-            if (!cmdResult || cmdResult.isFinal()) continue;
+            if (!cmdResult) continue;
 
             if (cmdResult.getStatusCode() === StatusCode.OK) {
                 const [responseJson] = cmdResult.getPropertyToJson("");

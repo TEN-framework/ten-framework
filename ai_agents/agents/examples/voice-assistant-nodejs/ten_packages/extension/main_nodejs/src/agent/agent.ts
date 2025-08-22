@@ -20,7 +20,7 @@ import {
     LLMResponseEvent,
 } from "./events.js";
 import { AsyncQueue } from "../helper.js";
-// import { LLMExec } from "./llm_exec.js";
+import { LLMExec } from "./llm_exec.js";
 
 // Types for handler registration
 type EventHandler<T extends AgentEvent> = (event: T) => Promise<void>;
@@ -42,9 +42,15 @@ export class Agent {
     // LLM task tracking / cancellation
     private llmActiveTask?: Promise<void>;
     private llmAbort = new AbortController();
+    private llmExec: LLMExec;
 
     constructor(tenEnv: TenEnv) {
         this.tenEnv = tenEnv;
+        this.llmExec = new LLMExec(
+            tenEnv,
+        );
+        this.llmExec.onResponse = this._onLLMResponse.bind(this);
+        this.llmExec.onReasoningResponse = this._onLLMReasoningResponse.bind(this);
     }
 
     // === Register handlers ===
@@ -161,12 +167,17 @@ export class Agent {
         }
     }
 
+    queueLLMInput(input: string) {
+        this.llmExec.queueInput(input);
+    }
+
     // === LLM callbacks ===
-    private _onLLMResponse(_tenEnv: TenEnv, delta: string, text: string, isFinal: boolean) {
+    private async _onLLMResponse(_tenEnv: TenEnv, delta: string, text: string, isFinal: boolean) {
+        this.tenEnv.logInfo(`LLM response: ${text}, isFinal: ${isFinal}, delta: ${delta}`);
         this.emitLLM(new LLMResponseEvent(text, isFinal, delta, "message"));
     }
 
-    private _onLLMReasoningResponse(_tenEnv: TenEnv, delta: string, text: string, isFinal: boolean) {
+    private async _onLLMReasoningResponse(_tenEnv: TenEnv, delta: string, text: string, isFinal: boolean) {
         this.emitLLM(new LLMResponseEvent(text, isFinal, delta, "reasoning"));
     }
 

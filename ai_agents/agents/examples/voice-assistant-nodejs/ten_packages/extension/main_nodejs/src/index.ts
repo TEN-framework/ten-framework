@@ -14,8 +14,8 @@ import {
   Data,
 } from "ten-runtime-nodejs";
 import { Agent } from "./agent/agent.js";
-import { ASRResultEvent, UserJoinedEvent, UserLeftEvent } from "./agent/events.js";
-import { sendData } from "./helper.js";
+import { ASRResultEvent, LLMResponseEvent, UserJoinedEvent, UserLeftEvent } from "./agent/events.js";
+import { parseSentences, sendData } from "./helper.js";
 import z from "zod";
 
 const MainControlConfig = z.object({
@@ -31,6 +31,7 @@ class MainControlExtension extends Extension {
   joinedUserCount: number = 0;
   session_id: string = "0";
   turn_id: number = 0;
+  sentenceFragment: string = "";
 
   async onConfigure(_tenEnv: TenEnv): Promise<void> {
     console.log("MainControlExtension onConfigure");
@@ -81,13 +82,34 @@ class MainControlExtension extends Extension {
       // await this._interrupt();
       // }
 
-      // if (event.final) {
-      //   this.turn_id += 1;
-      //   await this.agent.queueLLMInput(event.text);
-      // }
+      if (event.final) {
+        this.turn_id += 1;
+        await this.agent.queueLLMInput(event.text);
+      }
 
       await this._send_transcript("user", event.text, event.final, stream_id);
 
+    });
+
+    this.agent.on(LLMResponseEvent, async (event) => {
+      if (!event) return;
+      if (!event.is_final && event.kind === "message") {
+        const [sentences, remainText] = parseSentences(this.sentenceFragment, event.text)
+        this.sentenceFragment = remainText;
+        for (const sentence of sentences) {
+          await this._send_to_tts(sentence, false);
+        }
+      }
+
+      const dataType = event.kind === "message" ? "text" : "reasoning";
+
+      await this._send_transcript(
+        "assistant",
+        event.text,
+        event.is_final,
+        100,
+        dataType
+      );
     });
   }
 
