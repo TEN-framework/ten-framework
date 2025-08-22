@@ -86,10 +86,13 @@ class PollyTTS:
         timeout: float = 30.0,
         max_retries: int = 3,
         retry_delay: float = 1.0,
+        chunk_interval_ms: int = 50,
     ) -> None:
         self.params = params
-        # calculate frame size in 1/100 seconds
-        self.frame_size = int(int(params.sample_rate) * 1 * 2 / 100)
+        # calculate frame size with chunk interval
+        self.frame_size = int(
+            int(params.sample_rate) * 1 * 2 * chunk_interval_ms / 1000
+        )
 
         self.thread_pool = ThreadPoolExecutor(max_workers=thread_pool_size)
         self._closed = False
