@@ -17,6 +17,10 @@
     "rootDir": "interface",
     "strict": true,
     "forceConsistentCasingInFileNames": true,
+    "lib": [
+      "esnext",
+      "esnext.asynciterable"
+    ]
   },
   "exclude": [
     "node_modules"
