@@ -173,21 +173,31 @@ TEST(AdvancedLogTest, LogAdvancedFileReopen) {  // NOLINT
   // Wait for 3 seconds.
   std::this_thread::sleep_for(std::chrono::seconds(3));
 
-  // Send a signal to reload the log file.
-  auto rc = raise(SIGHUP);
-  ASSERT_EQ(rc, 0);
+  {
+    // Send a signal to reload the log file.
+    auto rc = raise(SIGHUP);
+    ASSERT_EQ(rc, 0);
+  }
 
   // Wait for another 3 seconds.
   std::this_thread::sleep_for(std::chrono::seconds(3));
 
-  // Send a signal to reload the log file.
-  rc = raise(SIGHUP);
-  ASSERT_EQ(rc, 0);
+  {
+    // Send a signal to reload the log file.
+    auto rc = raise(SIGHUP);
+    ASSERT_EQ(rc, 0);
+  }
 #endif
 
   delete client;
 
   ten_thread_join(app_thread, -1);
+
+#ifndef _WIN32
+  // Send a signal to flush the log file.
+  auto rc = raise(SIGHUP);
+  ASSERT_EQ(rc, 0);
+#endif
 
 #ifndef _WIN32
   // Check the log file content.

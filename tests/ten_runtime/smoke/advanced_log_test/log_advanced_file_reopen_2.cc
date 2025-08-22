@@ -209,6 +209,14 @@ TEST(AdvancedLogTest, LogAdvancedFileReopen2) {  // NOLINT
   std::this_thread::sleep_for(std::chrono::seconds(3));
 #endif
 
+#ifndef _WIN32
+  {
+    // Send a signal to flush the log file.
+    auto rc = raise(SIGUSR1);
+    ASSERT_EQ(rc, 0);
+  }
+#endif
+
   delete client;
 
   ten_thread_join(app_thread, -1);
