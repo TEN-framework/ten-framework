@@ -38,7 +38,7 @@ class DefaultExtension extends Extension {
     tenEnv.logInfo("DefaultExtension onInit");
 
     const [propertyJson, err] = await tenEnv.getPropertyToJson("");
-    assert(err == undefined, "err is not undefined");
+    assert(err === undefined, "err is not undefined");
 
     // convert propertyJson to object
     const property = JSON.parse(propertyJson);
@@ -56,17 +56,17 @@ class DefaultExtension extends Extension {
       const cmd = Cmd.Create("test");
 
       for await (const [result, error] of tenEnv.sendCmdEx(cmd)) {
-        assert(error == undefined, "error is not undefined");
+        assert(error === undefined, "error is not undefined");
         assert(result !== undefined, "result is undefined");
 
         const [detail, err] = result!.getPropertyString("detail");
-        assert(err == undefined, "err is not undefined");
+        assert(err === undefined, "err is not undefined");
 
-        tenEnv.logInfo("detail:" + detail);
+        tenEnv.logInfo(`detail:${detail}`);
         this.recv_result_count++;
       }
 
-      tenEnv.logInfo("recv_result_count:" + this.recv_result_count);
+      tenEnv.logInfo(`recv_result_count:${this.recv_result_count}`);
 
       // close_app
       const closeAppCmd = Cmd.Create("ten:close_app");
@@ -83,14 +83,17 @@ class DefaultExtension extends Extension {
     tenEnv.logInfo("DefaultExtension onDeinit");
 
     if (this.send_cmd_on_start) {
-      tenEnv.logInfo("recv_result_count is not 10, recv_result_count:" + this.recv_result_count);
-      assert(this.recv_result_count == 10, "recv_result_count is not 10");
+      tenEnv.logInfo(
+        "recv_result_count is not 10, recv_result_count:" +
+          this.recv_result_count,
+      );
+      assert(this.recv_result_count === 10, "recv_result_count is not 10");
     }
   }
 
   async onCmd(tenEnv: TenEnv, cmd: Cmd): Promise<void> {
     const cmdName = cmd.getName();
-    tenEnv.logInfo("cmdName:" + cmdName);
+    tenEnv.logInfo(`cmdName:${cmdName}`);
 
     if (cmdName === "test") {
       // Streaming return result
@@ -99,8 +102,8 @@ class DefaultExtension extends Extension {
         await new Promise((resolve) => setTimeout(resolve, 200));
 
         const cmdResult = CmdResult.Create(StatusCode.OK, cmd);
-        cmdResult.setPropertyString("detail", "nbnb " + i);
-        if (i != 9) {
+        cmdResult.setPropertyString("detail", `nbnb ${i}`);
+        if (i !== 9) {
           cmdResult.setFinal(false);
         } else {
           cmdResult.setFinal(true);
