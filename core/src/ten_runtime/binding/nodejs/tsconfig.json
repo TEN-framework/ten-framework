@@ -3,7 +3,10 @@
     "allowJs": false,
     "composite": true,
     "module": "NodeNext",
-    "target": "es6",
+    "target": "ES2023",
+    "lib": [
+      "ES2023"
+    ],
     "moduleResolution": "nodenext",
     "outDir": "build",
     "removeComments": false,
@@ -17,10 +20,6 @@
     "rootDir": "interface",
     "strict": true,
     "forceConsistentCasingInFileNames": true,
-    "lib": [
-      "esnext",
-      "esnext.asynciterable"
-    ]
   },
   "exclude": [
     "node_modules"
