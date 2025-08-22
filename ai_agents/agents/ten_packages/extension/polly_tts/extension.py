@@ -57,7 +57,13 @@ class PollyTTSExtension(AsyncTTS2BaseExtension):
             if self.config.dump:
                 self.audio_dumper = {}
 
-            self.client = PollyTTS(self.config.params)
+            self.client = PollyTTS(
+                self.config.params,
+                timeout=self.config.timeout,
+                max_retries=self.config.max_retries,
+                retry_delay=self.config.retry_delay,
+                chunk_interval_ms=self.config.chunk_interval_ms,
+            )
         except Exception as e:
             ten_env.log_error(f"invalid property: {e}")
             self.config = None
