@@ -111,6 +111,7 @@ class SpeechmaticsASRClient:
                     additional_vocab.append({"content": tokens[0]})
                 else:
                     self.ten_env.log_warn("invalid hotword format: " + hw)
+
         self.transcription_config = speechmatics.models.TranscriptionConfig(
             enable_partials=self.config.enable_partials,
             language=self.config.language,
@@ -199,7 +200,38 @@ class SpeechmaticsASRClient:
         self.client_needs_stopping = True
 
         if self.client is not None:
-            self.client.stop()
+            try:
+                # Synchronously call stop() and then wait for the connection to close
+                self.client.stop()
+
+                # Wait for WebSocket connection to fully close
+                max_wait_time = 5.0  # Maximum wait time of 5 seconds
+                start_time = asyncio.get_event_loop().time()
+
+                self.ten_env.log_debug(
+                    f"Waiting for client connection to close (max {max_wait_time}s)"
+                )
+
+                while (
+                    asyncio.get_event_loop().time() - start_time
+                ) < max_wait_time:
+                    # Check if the connection is actually closed
+                    if not self.is_connected():
+                        break
+                    await asyncio.sleep(0.1)
+
+                elapsed = asyncio.get_event_loop().time() - start_time
+                self.ten_env.log_debug(
+                    f"Client connection closed after {elapsed:.2f}s"
+                )
+
+                # Force cleanup of references
+                self.client = None
+
+            except Exception as e:
+                self.ten_env.log_error(f"Error during client stop: {e}")
+                # Clean up references even if there's an error
+                self.client = None
 
         await self.audio_queue.put(AudioStreamEventType.FLUSH)
         await self.audio_queue.put(AudioStreamEventType.CLOSE)
@@ -447,8 +479,6 @@ class SpeechmaticsASRClient:
 
     def _handle_audio_event_ended(self, msg):
         self.ten_env.log_info(f"_handle_audio_event_ended, msg: {msg}")
-        if self.on_asr_close:
-            asyncio.create_task(self.on_asr_close())
 
     def get_words(self, words: List[SpeechmaticsASRWord]) -> List[Word]:
         """
@@ -480,4 +510,43 @@ class SpeechmaticsASRClient:
             )  # pylint: disable=not-callable
 
     def is_connected(self) -> bool:
-        return getattr(self.client, "session_running", False)
+        if self.client is None:
+            return False
+
+        # Check the internal state of the speechmatics client
+        try:
+            # Check multiple status indicators according to the speechmatics-python library
+            session_running = getattr(self.client, "session_running", False)
+
+            # If the client is stopping, consider it as not connected
+            if self.client_needs_stopping:
+                return False
+
+            return session_running
+        except Exception as e:
+            # If an exception occurs while checking the status, consider it as not connected
+            self.ten_env.log_debug(f"Error checking connection status: {e}")
+            return False
+
+    def get_connection_info(self) -> dict:
+        """Get detailed connection information for debugging"""
+        info = {
+            "client_exists": self.client is not None,
+            "client_needs_stopping": self.client_needs_stopping,
+            "session_id": self.session_id,
+            "audio_queue_size": self.audio_queue.qsize(),
+            "running_task_exists": self.client_running_task is not None,
+            "is_connected": self.is_connected(),
+        }
+
+        if self.client:
+            info.update(
+                {
+                    "session_running": getattr(
+                        self.client, "session_running", False
+                    ),
+                    "client_type": type(self.client).__name__,
+                }
+            )
+
+        return info
