@@ -1,6 +1,7 @@
 from datetime import datetime
 import os
 from typing import Optional
+import asyncio
 
 from typing_extensions import override
 from .const import DUMP_FILE_NAME
@@ -37,7 +38,6 @@ class SpeechmaticsASRExtension(AsyncASRBaseExtension):
         self.audio_dumper: Optional[Dumper] = None
         self.sent_user_audio_duration_ms_before_last_reset: int = 0
         self.last_finalize_timestamp: int = 0
-        self.is_finalize_disconnect: bool = False
 
         self.client: SpeechmaticsASRClient | None = None
         self.config: SpeechmaticsASRConfig | None = None
@@ -118,15 +118,16 @@ class SpeechmaticsASRExtension(AsyncASRBaseExtension):
             if self.audio_dumper:
                 await self.audio_dumper.start()
 
-            self.client = SpeechmaticsASRClient(
-                self.config,
-                self.ten_env,
-                self.audio_timeline,
-            )
-            self.client.on_asr_open = self.on_asr_open
-            self.client.on_asr_close = self.on_asr_close
-            self.client.on_asr_result = self.on_asr_result
-            self.client.on_asr_error = self.on_asr_error
+            if self.client is None:
+                self.client = SpeechmaticsASRClient(
+                    self.config,
+                    self.ten_env,
+                    self.audio_timeline,
+                )
+                self.client.on_asr_open = self.on_asr_open
+                self.client.on_asr_close = self.on_asr_close
+                self.client.on_asr_result = self.on_asr_result
+                self.client.on_asr_error = self.on_asr_error
             return await self.client.start()
 
         except Exception as e:
@@ -196,11 +197,11 @@ class SpeechmaticsASRExtension(AsyncASRBaseExtension):
         self.ten_env.log_debug("Speechmatics ASR connection closed")
         self.connected = False
 
-        if self.is_finalize_disconnect:
-            self.ten_env.log_warn(
-                "Speechmatics ASR connection closed unexpectedly. Reconnecting..."
-            )
-            await self._handle_reconnect()
+        if self.client:
+            await self.client.stop()
+            self.client = None
+
+        await self._handle_reconnect()
 
     @override
     async def finalize(self, _session_id: Optional[str]) -> None:
@@ -244,7 +245,6 @@ class SpeechmaticsASRExtension(AsyncASRBaseExtension):
     async def _handle_finalize_disconnect(self):
         """Handle disconnect mode finalization"""
         if self.client:
-            self.is_finalize_disconnect = True
             await self.client.internal_drain_disconnect()
             self.ten_env.log_debug(
                 "Speechmatics ASR finalize disconnect completed"
@@ -253,14 +253,13 @@ class SpeechmaticsASRExtension(AsyncASRBaseExtension):
     async def _handle_finalize_mute_pkg(self):
         """Handle mute package mode finalization"""
         if self.client:
-            self.is_finalize_disconnect = True
             await self.client.internal_drain_mute_pkg()
             self.ten_env.log_debug(
                 "Speechmatics ASR finalize mute pkg completed"
             )
 
     async def _handle_reconnect(self):
-        """Handle reconnection"""
+        """Handle reconnection with proper cleanup"""
         if not self.reconnect_manager:
             self.ten_env.log_error("ReconnectManager not initialized")
             return
@@ -276,6 +275,15 @@ class SpeechmaticsASRExtension(AsyncASRBaseExtension):
                 )
             )
             return
+
+        # Ensure old connection is fully cleaned up
+        if self.client:
+            self.ten_env.log_info(
+                "Ensuring old connection is fully cleaned up before reconnect"
+            )
+            await self.stop_connection()
+            # Wait additional time to ensure resource release and avoid concurrent sessions
+            self.ten_env.log_debug("Waiting additional 1s for resource cleanup")
 
         # Attempt reconnection
         success = await self.reconnect_manager.handle_reconnect(
@@ -305,19 +313,32 @@ class SpeechmaticsASRExtension(AsyncASRBaseExtension):
             await self.send_asr_finalize_end()
 
     async def stop_connection(self) -> None:
-        """Stop ASR connection"""
+        """Stop ASR connection with enhanced cleanup"""
         try:
             if self.client:
+                self.ten_env.log_info("Stopping Speechmatics ASR connection")
+
+                # Stop the client and wait for completion
                 await self.client.stop()
+
+                # Wait a short time to ensure cleanup is complete
+                await asyncio.sleep(0.1)
+
+                # Clean up references
                 self.client = None
 
+            # Reset all related states
             self.connected = False
+
             self.ten_env.log_info("Speechmatics ASR connection stopped")
 
         except Exception as e:
             self.ten_env.log_error(
                 f"Error stopping Speechmatics ASR connection: {e}"
             )
+            # Clean up references and states even if there's an error
+            self.client = None
+            self.connected = False
 
     @override
     def is_connected(self) -> bool:
@@ -326,7 +347,6 @@ class SpeechmaticsASRExtension(AsyncASRBaseExtension):
             self.connected
             and self.client is not None
             and self.client.is_connected()
-            and not self.is_finalize_disconnect
         )
         return is_connected
 
