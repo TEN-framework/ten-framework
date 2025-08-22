@@ -108,7 +108,7 @@
   "rust-analyzer.rustfmt.extraArgs": [
     "+nightly",
     "--config",
-    "max_width=80,wrap_comments=true,wrap_comments=true,use_small_heuristics=Max,format_strings=true,style_edition=2021"
+    "max_width=80,wrap_comments=true,use_small_heuristics=Max,format_strings=true,style_edition=2021"
   ],
   "rust-analyzer.showUnlinkedFileNotification": false,
   "search.exclude": {
