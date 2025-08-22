@@ -449,7 +449,12 @@ class XfyunASRExtension(AsyncASRBaseExtension):
 
         # Clear WPGS status variables
         self.wpgs_buffer.clear()
-        await self._handle_reconnect()
+
+        if not self.stopped:
+            self.ten_env.log_warn(
+                "Xfyun ASR connection closed unexpectedly. Reconnecting..."
+            )
+            await self._handle_reconnect()
 
     @override
     async def finalize(self, _session_id: str | None) -> None:
