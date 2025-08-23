@@ -174,11 +174,11 @@ export class Agent {
     // === LLM callbacks ===
     private async _onLLMResponse(_tenEnv: TenEnv, delta: string, text: string, isFinal: boolean) {
         this.tenEnv.logInfo(`LLM response: ${text}, isFinal: ${isFinal}, delta: ${delta}`);
-        this.emitLLM(new LLMResponseEvent(text, isFinal, delta, "message"));
+        this.emitLLM(new LLMResponseEvent(delta, text, isFinal, "message"));
     }
 
     private async _onLLMReasoningResponse(_tenEnv: TenEnv, delta: string, text: string, isFinal: boolean) {
-        this.emitLLM(new LLMResponseEvent(text, isFinal, delta, "reasoning"));
+        this.emitLLM(new LLMResponseEvent(delta, text, isFinal, "reasoning"));
     }
 
     // === Optional: targeted LLM flush / cancel ===

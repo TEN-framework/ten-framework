@@ -94,7 +94,7 @@ class MainControlExtension extends Extension {
     this.agent.on(LLMResponseEvent, async (event) => {
       if (!event) return;
       if (!event.is_final && event.kind === "message") {
-        const [sentences, remainText] = parseSentences(this.sentenceFragment, event.text)
+        const [sentences, remainText] = parseSentences(this.sentenceFragment, event.delta)
         this.sentenceFragment = remainText;
         for (const sentence of sentences) {
           await this._send_to_tts(sentence, false);
@@ -105,7 +105,7 @@ class MainControlExtension extends Extension {
 
       await this._send_transcript(
         "assistant",
-        event.text,
+        event.content,
         event.is_final,
         100,
         dataType

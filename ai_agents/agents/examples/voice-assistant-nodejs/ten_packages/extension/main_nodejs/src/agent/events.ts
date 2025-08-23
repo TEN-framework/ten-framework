@@ -50,12 +50,16 @@ export class ASRResultEvent extends AgentEventBase {
 
 export class LLMResponseEvent extends AgentEventBase {
     constructor(
-        public text: string,
+        public delta: string,
+        public content: string,
         public is_final: boolean,
-        public delta?: string,
         public kind: "message" | "reasoning" = "message"
     ) {
         super("data", "llm_response");
+        this.content = content
+        this.delta = delta
+        this.is_final = is_final
+
     }
 }
 

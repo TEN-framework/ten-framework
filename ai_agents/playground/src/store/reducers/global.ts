@@ -174,7 +174,7 @@ export const globalSlice = createSlice({
     },
     setGraph: (state, action: PayloadAction<Graph>) => {
       let graphMap = JSON.parse(JSON.stringify(state.graphMap));
-      graphMap[action.payload.uuid] = action.payload;
+      graphMap[action.payload.graph_id] = action.payload;
       state.graphMap = graphMap;
     },
     setAddonModules: (state, action: PayloadAction<Record<string, any>[]>) => {
@@ -235,7 +235,7 @@ export const updateGraph = createAsyncThunk(
     { dispatch, rejectWithValue }
   ) => {
     try {
-      await apiUpdateGraph(graph.uuid, updates);
+      await apiUpdateGraph(graph.graph_id, updates);
       // await apiSaveProperty();
       const updatedGraph = await apiFetchGraphDetails(graph);
       dispatch(setGraph(updatedGraph));

@@ -10,9 +10,7 @@ import {
     Data,
     // Loc,
     TenError,
-    StatusCode,
 } from "ten-runtime-nodejs";
-import { LLMResponseMessageDeltaSchema, LLMResponseMessageDoneSchema } from "./agent/struct.js";
 
 /**
  * Check if a character is punctuation (Chinese and English).
@@ -126,40 +124,40 @@ export async function* sendCmdEx(
         cmd.setPropertyFromJson("", JSON.stringify(payload));
     }
 
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate async delay
+    // await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate async delay
 
-    // for await (const [cmdResult, tenError] of tenEnv.sendCmdEx(cmd)) {
-    //     if (cmdResult) {
-    //         tenEnv.logDebug(`sendCmdEx: cmd_result ${cmdResult}`);
-    //     }
-    //     yield [cmdResult, tenError];
-    // }
-    const cmdResult1 = CmdResult.Create(StatusCode.OK, cmd);
-    const LLMResponse = LLMResponseMessageDeltaSchema.parse({
-        response_id: "12345",
-        cerated_at: new Date().toISOString(),
-        role: "assistant",
-        delta: "Hey, how can i help you?",
-        content: "Hey, how can i help you?",
-        type: "message_content_delta",
-    });
-    cmdResult1.setPropertyFromJson("", JSON.stringify(LLMResponse));
-    yield [cmdResult1, undefined];
+    for await (const [cmdResult, tenError] of tenEnv.sendCmdEx(cmd)) {
+        if (cmdResult) {
+            tenEnv.logDebug(`sendCmdEx: cmd_result ${cmdResult}`);
+        }
+        yield [cmdResult, tenError];
+    }
+    // const cmdResult1 = CmdResult.Create(StatusCode.OK, cmd);
+    // const LLMResponse = LLMResponseMessageDeltaSchema.parse({
+    //     response_id: "12345",
+    //     cerated_at: new Date().toISOString(),
+    //     role: "assistant",
+    //     delta: "Hey, how can i help you?",
+    //     content: "Hey, how can i help you?",
+    //     type: "message_content_delta",
+    // });
+    // cmdResult1.setPropertyFromJson("", JSON.stringify(LLMResponse));
+    // yield [cmdResult1, undefined];
 
 
-    await new Promise(resolve => setTimeout(resolve, 100)); // Simulate async delay
+    // await new Promise(resolve => setTimeout(resolve, 100)); // Simulate async delay
 
-    const cmdResult2 = CmdResult.Create(StatusCode.OK, cmd);
-    const LLMResponse2 = LLMResponseMessageDoneSchema.parse({
-        response_id: "12345",
-        cerated_at: new Date().toISOString(),
-        role: "assistant",
-        content: "Hey, how can i help you?",
-        type: "message_content_done",
-    });
-    cmdResult2.setPropertyFromJson("", JSON.stringify(LLMResponse2));
-    cmdResult2.setFinal(true);
-    yield [cmdResult2, undefined];
+    // const cmdResult2 = CmdResult.Create(StatusCode.OK, cmd);
+    // const LLMResponse2 = LLMResponseMessageDoneSchema.parse({
+    //     response_id: "12345",
+    //     cerated_at: new Date().toISOString(),
+    //     role: "assistant",
+    //     content: "Hey, how can i help you?",
+    //     type: "message_content_done",
+    // });
+    // cmdResult2.setPropertyFromJson("", JSON.stringify(LLMResponse2));
+    // cmdResult2.setFinal(true);
+    // yield [cmdResult2, undefined];
 }
 
 /**
