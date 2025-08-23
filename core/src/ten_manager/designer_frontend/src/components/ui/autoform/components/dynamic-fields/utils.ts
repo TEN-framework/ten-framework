@@ -262,7 +262,8 @@ export const convertExtensionPropertySchema2ZodSchemaWithDynamicFields = (
             ...property.properties,
             ...fieldsForThisObject.reduce((acc, field) => {
               // For dynamic fields, we need special handling
-              // Don't use regular TPropertyDefinition, but mark as dynamic field directly
+              // Don't use regular TPropertyDefinition, but mark as dynamic
+              // field directly
               acc[field.key] = {
                 type: field.type,
                 default: field.value,
