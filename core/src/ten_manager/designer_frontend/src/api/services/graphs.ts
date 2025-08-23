@@ -16,6 +16,7 @@ import type {
   DeleteConnectionPayloadSchema,
   DeleteNodePayloadSchema,
   GraphUiNodeGeometrySchema,
+  IGraph,
   SetGraphUiPayloadSchema,
   UpdateNodePropertyPayloadSchema,
 } from "@/types/graphs";
@@ -39,9 +40,20 @@ export const retrieveGraphs = async () => {
     body: {},
   });
   const res = await req;
-  const data = template.responseSchema.parse(res).data;
 
-  return data;
+  const resp = await template.responseSchema.parseAsync(res);
+
+  // todo: selector&subgraph
+  const filtered = resp.data.map((item) => ({
+    ...item,
+    graph: {
+      ...item.graph,
+      nodes:
+        item.graph.nodes?.filter((node) => node.type === "extension") || [],
+    },
+  })) as IGraph[];
+
+  return filtered;
 };
 
 export const useGraphs = () => {

@@ -11,6 +11,9 @@ import { genResSchema } from "@/api/endpoints/utils";
 import {
   AddConnectionPayloadSchema,
   AddNodePayloadSchema,
+  BackendNodeExtension,
+  BackendNodeSelector,
+  BackendNodeSubGraph,
   DeleteConnectionPayloadSchema,
   DeleteNodePayloadSchema,
   GraphUiNodeGeometrySchema,
@@ -94,15 +97,11 @@ export const ENDPOINT_GRAPHS = {
             base_dir: z.string().nullable(),
             graph: z.object({
               nodes: z.array(
-                z.object({
-                  addon: z.string(),
-                  name: z.string(),
-                  extension_group: z.string().optional(),
-                  app: z.string().optional(),
-                  property: z.unknown().optional(),
-                  api: z.unknown().optional(),
-                  is_installed: z.boolean(),
-                })
+                z.union([
+                  BackendNodeExtension,
+                  BackendNodeSelector,
+                  BackendNodeSubGraph,
+                ])
               ),
               connections: z.array(z.unknown()),
               exposed_messages: z.array(z.unknown()),

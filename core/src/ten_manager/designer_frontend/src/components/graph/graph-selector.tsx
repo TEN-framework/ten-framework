@@ -91,9 +91,12 @@ export const GraphSelector = (props: { className?: string }) => {
     setDisplayedEdges(nextDisplayedEdges);
   }, [nodes, edges, selectedGraphs, setDisplayedEdges, setDisplayedNodes]);
 
-  if (!graphs) {
-    return null;
-  }
+  React.useEffect(() => {
+    if (isGraphError) {
+      console.error("Error loading graphs:", isGraphError);
+      toast.error("Error loading graphs");
+    }
+  }, [isGraphError]);
 
   return (
     <Card
@@ -117,7 +120,7 @@ export const GraphSelector = (props: { className?: string }) => {
               ? "Error loading graphs"
               : t("graph.selected-sum-count", {
                   count: selectedGraphs?.length || 0,
-                  sum: graphs.length,
+                  sum: graphs?.length,
                 })}
         </CardDescription>
         <CardAction className="flex justify-end">
@@ -151,7 +154,7 @@ export const GraphSelector = (props: { className?: string }) => {
           }
         )}
       >
-        <GraphList graphs={graphs} />
+        {graphs && <GraphList graphs={graphs} />}
       </CardContent>
     </Card>
   );
