@@ -12,9 +12,7 @@ use serde::{Deserialize, Serialize};
 use ten_rust::graph::node::GraphNode;
 use uuid::Uuid;
 
-use crate::designer::graphs::nodes::{
-    update_graph_node_in_property_all_fields, GraphNodeUpdateAction,
-};
+use crate::designer::graphs::nodes::update_graph_node_in_property_json_file;
 use crate::designer::{
     response::{ApiResponse, ErrorResponse, Status},
     DesignerState,
@@ -43,8 +41,9 @@ pub async fn replace_graph_node_endpoint(
     state: web::Data<Arc<DesignerState>>,
 ) -> Result<impl Responder, actix_web::Error> {
     // Get a write lock on the state since we need to modify the graph.
-    let mut pkgs_cache = state.pkgs_cache.write().await;
+    let pkgs_cache = state.pkgs_cache.read().await;
     let mut graphs_cache = state.graphs_cache.write().await;
+    let old_graphs_cache = graphs_cache.clone();
 
     // Get the specified graph from graphs_cache.
     let graph_info = match graphs_cache_find_by_id_mut(
@@ -107,10 +106,6 @@ pub async fn replace_graph_node_endpoint(
 
     // Replace the addon and property of the graph node.
     let graph_node = graph_node.unwrap();
-    let extension_group = match graph_node {
-        GraphNode::Extension { content } => content.extension_group.clone(),
-        _ => None,
-    };
     if let GraphNode::Extension { content } = graph_node {
         content.addon = request_payload.addon.clone();
         content.property = request_payload.property.clone();
@@ -131,15 +126,11 @@ pub async fn replace_graph_node_endpoint(
     }
 
     // Update property.json file with the updated graph node.
-    if let Err(e) = update_graph_node_in_property_all_fields(
-        &mut pkgs_cache,
-        graph_info,
-        &request_payload.name,
-        &request_payload.addon,
-        &extension_group,
-        &request_payload.app,
-        &request_payload.property,
-        GraphNodeUpdateAction::Update,
+    if let Err(e) = update_graph_node_in_property_json_file(
+        &request_payload.graph_id,
+        &pkgs_cache,
+        &graphs_cache,
+        &old_graphs_cache,
     ) {
         let error_response = ErrorResponse {
             status: Status::Fail,

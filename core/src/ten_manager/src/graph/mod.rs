@@ -12,16 +12,13 @@ pub mod nodes;
 use std::collections::HashMap;
 
 use anyhow::{anyhow, Result};
-use ten_rust::_0_8_compatible::get_ten_field_string;
 use ten_rust::graph::{GraphExposedMessage, GraphExposedProperty};
 use uuid::Uuid;
 
-pub use connections::update_graph_connections_in_property_all_fields;
-pub use nodes::update_graph_node_all_fields;
-
-use crate::fs::json::write_property_json_file;
+use crate::fs::json::patch_property_json_file;
 use ten_rust::graph::graph_info::GraphInfo;
 use ten_rust::graph::{connection::GraphConnection, node::GraphNode, Graph};
+use ten_rust::pkg_info::property::Property;
 
 pub fn graphs_cache_find_by_name<'a>(
     graphs_cache: &'a HashMap<Uuid, GraphInfo>,
@@ -159,119 +156,17 @@ pub fn update_graph_endpoint(
     }
 }
 
-#[allow(clippy::too_many_arguments)]
-pub fn update_graph_all_fields(
+pub fn update_graph_in_property_json_file(
     pkg_url: &str,
-    property_all_fields: &mut serde_json::Map<String, serde_json::Value>,
-    graph_name: &str,
-    nodes: &[GraphNode],
-    connections: &[GraphConnection],
-    exposed_messages: &[GraphExposedMessage],
-    exposed_properties: &[GraphExposedProperty],
-    auto_start: Option<bool>,
+    property: &Property,
+    graphs_cache: &HashMap<Uuid, GraphInfo>,
+    old_graphs_cache: &HashMap<Uuid, GraphInfo>,
 ) -> Result<()> {
-    // Get ten object if it exists.
-    let ten_field_str = get_ten_field_string();
-
-    let ten_obj = match property_all_fields.get_mut(&ten_field_str) {
-        Some(serde_json::Value::Object(obj)) => obj,
-        _ => return write_property_json_file(pkg_url, property_all_fields),
-    };
-
-    // Get predefined_graphs array if it exists.
-    let predefined_graphs = match ten_obj.get_mut("predefined_graphs") {
-        Some(serde_json::Value::Array(graphs)) => graphs,
-        _ => return write_property_json_file(pkg_url, property_all_fields),
-    };
-
-    // Find and update the target graph.
-    for graph_value in predefined_graphs.iter_mut() {
-        // Skip non-object graph values.
-        let graph_obj = match graph_value {
-            serde_json::Value::Object(obj) => obj,
-            _ => continue,
-        };
-
-        // Get the graph name.
-        let name = match graph_obj.get("name") {
-            Some(serde_json::Value::String(name_str)) => name_str,
-            _ => continue,
-        };
-
-        // Skip graphs that don't match our target name.
-        if name != graph_name {
-            continue;
-        }
-
-        // Found the matching graph, get or create the graph field.
-        let graph_content_obj = match graph_obj.get_mut("graph") {
-            Some(serde_json::Value::Object(graph_content)) => graph_content,
-            Some(_) => {
-                // graph field exists but is not an object, skip this graph
-                continue;
-            }
-            None => {
-                // Create graph field if it doesn't exist
-                graph_obj.insert(
-                    "graph".to_string(),
-                    serde_json::Value::Object(serde_json::Map::new()),
-                );
-                match graph_obj.get_mut("graph") {
-                    Some(serde_json::Value::Object(graph_content)) => {
-                        graph_content
-                    }
-                    _ => continue, // This should not happen
-                }
-            }
-        };
-
-        // Update nodes.
-        let nodes_value = serde_json::to_value(nodes)?;
-        graph_content_obj.insert("nodes".to_string(), nodes_value);
-
-        // Update connections or remove if empty.
-        if connections.is_empty() {
-            graph_content_obj.remove("connections");
-        } else {
-            let connections_value = serde_json::to_value(connections)?;
-            graph_content_obj
-                .insert("connections".to_string(), connections_value);
-        }
-
-        // Update exposed_messages or remove if empty.
-        if exposed_messages.is_empty() {
-            graph_content_obj.remove("exposed_messages");
-        } else {
-            let exposed_messages_value =
-                serde_json::to_value(exposed_messages)?;
-            graph_content_obj
-                .insert("exposed_messages".to_string(), exposed_messages_value);
-        }
-
-        // Update exposed_properties or remove if empty.
-        if exposed_properties.is_empty() {
-            graph_content_obj.remove("exposed_properties");
-        } else {
-            let exposed_properties_value =
-                serde_json::to_value(exposed_properties)?;
-            graph_content_obj.insert(
-                "exposed_properties".to_string(),
-                exposed_properties_value,
-            );
-        }
-
-        // Update auto_start if provided.
-        if let Some(auto_start_value) = auto_start {
-            graph_obj.insert(
-                "auto_start".to_string(),
-                serde_json::Value::Bool(auto_start_value),
-            );
-        }
-
-        // We've found and updated the graph, no need to continue.
-        break;
-    }
-
-    // Write the updated property back to the file.
-    write_property_json_file(pkg_url, property_all_fields)
+    patch_property_json_file(
+        pkg_url,
+        property,
+        graphs_cache,
+        old_graphs_cache,
+    )?;
+    Ok(())
 }
