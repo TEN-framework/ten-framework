@@ -23,6 +23,7 @@ export const NumberField: React.FC<AutoFormFieldProps> = ({
     <Input
       id={id}
       type="number"
+      step="any"
       className={error ? "border-destructive" : ""}
       {...props}
     />
