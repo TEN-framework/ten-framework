@@ -9,30 +9,21 @@ use std::sync::Arc;
 use actix_web::{web, HttpResponse, Responder};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 use ten_rust::{
-    graph::{
-        connection::{
-            GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow,
-        },
-        msg_conversion::MsgAndResultConversion,
-    },
-    pkg_info::message::MsgType,
+    graph::msg_conversion::MsgAndResultConversion, pkg_info::message::MsgType,
 };
-use uuid::Uuid;
 
 use crate::{
     designer::{
         response::{ApiResponse, ErrorResponse, Status},
         DesignerState,
     },
+    fs::json::patch_property_json_file,
     graph::connections::add::graph_add_connection,
+    graph::graphs_cache_find_by_id_mut,
     pkg_info::belonging_pkg_info_find_by_graph_info_mut,
-};
-
-use crate::graph::{
-    graphs_cache_find_by_id_mut,
-    update_graph_connections_in_property_all_fields,
 };
 
 #[derive(Serialize, Deserialize)]
@@ -54,67 +45,13 @@ pub struct AddGraphConnectionResponsePayload {
     pub success: bool,
 }
 
-/// Create a new GraphConnection from request params.
-fn create_graph_connection(
-    request_payload: &AddGraphConnectionRequestPayload,
-) -> GraphConnection {
-    // Create destination object
-    let destination = GraphDestination {
-        loc: GraphLoc {
-            app: request_payload.dest_app.clone(),
-            extension: Some(request_payload.dest_extension.clone()),
-            subgraph: None,
-            selector: None,
-        },
-        msg_conversion: request_payload.msg_conversion.clone(),
-    };
-
-    // Create message flow
-    let message_flow = GraphMessageFlow::new(
-        request_payload.msg_name.clone(),
-        vec![destination],
-        vec![],
-    );
-
-    // Create connection
-    let mut connection = GraphConnection {
-        loc: GraphLoc {
-            app: request_payload.src_app.clone(),
-            extension: Some(request_payload.src_extension.clone()),
-            subgraph: None,
-            selector: None,
-        },
-        cmd: None,
-        data: None,
-        audio_frame: None,
-        video_frame: None,
-    };
-
-    // Add the message flow to the appropriate field.
-    match request_payload.msg_type {
-        MsgType::Cmd => {
-            connection.cmd = Some(vec![message_flow]);
-        }
-        MsgType::Data => {
-            connection.data = Some(vec![message_flow]);
-        }
-        MsgType::AudioFrame => {
-            connection.audio_frame = Some(vec![message_flow]);
-        }
-        MsgType::VideoFrame => {
-            connection.video_frame = Some(vec![message_flow]);
-        }
-    }
-
-    connection
-}
-
 pub async fn add_graph_connection_endpoint(
     request_payload: web::Json<AddGraphConnectionRequestPayload>,
     state: web::Data<Arc<DesignerState>>,
 ) -> Result<impl Responder, actix_web::Error> {
     let mut pkgs_cache = state.pkgs_cache.write().await;
     let mut graphs_cache = state.graphs_cache.write().await;
+    let old_graphs_cache = graphs_cache.clone();
 
     // Get the specified graph from graphs_cache.
     let graph_info = match graphs_cache_find_by_id_mut(
@@ -159,19 +96,12 @@ pub async fn add_graph_connection_endpoint(
     {
         // Update property.json file with the updated graph.
         if let Some(property) = &mut pkg_info.property {
-            // Create a new connection object, and update only with the new
-            // connection.
-            let connections_to_add =
-                vec![create_graph_connection(&request_payload)];
-
-            // Update the property_all_fields map and write to property.json.
-            if let Err(e) = update_graph_connections_in_property_all_fields(
+            // Update property.json file.
+            if let Err(e) = patch_property_json_file(
                 &pkg_info.url,
-                &mut property.all_fields,
-                graph_info.name.as_ref().unwrap(),
-                Some(&connections_to_add),
-                None,
-                None,
+                property,
+                &graphs_cache,
+                &old_graphs_cache,
             ) {
                 eprintln!("Warning: Failed to update property.json file: {e}");
             }

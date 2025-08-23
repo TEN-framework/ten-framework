@@ -7,7 +7,3 @@
 mod add;
 mod delete;
 mod delete_validation;
-mod modify_property;
-mod remove_all_connections;
-mod remove_connection_dest;
-mod update_and_preserve_order;
