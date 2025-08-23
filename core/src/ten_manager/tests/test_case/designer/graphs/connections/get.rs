@@ -120,7 +120,8 @@ mod tests {
                 selector: None,
             },
             cmd: Some(vec![DesignerGraphMessageFlow {
-                name: "hello_world".to_string(),
+                name: Some("hello_world".to_string()),
+                names: None,
                 dest: vec![DesignerGraphDestination {
                     loc: DesignerGraphLoc {
                         app: None,
@@ -275,7 +276,8 @@ mod tests {
                 selector: None,
             },
             cmd: Some(vec![DesignerGraphMessageFlow {
-                name: "hello_world".to_string(),
+                name: Some("hello_world".to_string()),
+                names: None,
                 dest: vec![DesignerGraphDestination {
                     loc: DesignerGraphLoc {
                         app: None,
@@ -288,7 +290,8 @@ mod tests {
                 source: vec![],
             }]),
             data: Some(vec![DesignerGraphMessageFlow {
-                name: "data".to_string(),
+                name: Some("data".to_string()),
+                names: None,
                 dest: vec![DesignerGraphDestination {
                     loc: DesignerGraphLoc {
                         app: None,
@@ -301,7 +304,8 @@ mod tests {
                 source: vec![],
             }]),
             audio_frame: Some(vec![DesignerGraphMessageFlow {
-                name: "pcm".to_string(),
+                name: Some("pcm".to_string()),
+                names: None,
                 dest: vec![DesignerGraphDestination {
                     loc: DesignerGraphLoc {
                         app: None,
@@ -314,7 +318,8 @@ mod tests {
                 source: vec![],
             }]),
             video_frame: Some(vec![DesignerGraphMessageFlow {
-                name: "image".to_string(),
+                name: Some("image".to_string()),
+                names: None,
                 dest: vec![DesignerGraphDestination {
                     loc: DesignerGraphLoc {
                         app: None,
