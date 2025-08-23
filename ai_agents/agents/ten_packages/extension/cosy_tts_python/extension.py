@@ -44,8 +44,6 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
         self.current_request_id: str | None = None
         # Turn ID for conversation tracking
         self.current_turn_id: int = -1
-        # Set of request ids that have been flushed
-        self.flushed_request_ids: set[str] = set()
         # Extension name for logging and identification
         self.name: str = name
         # Store PCMWriter instances for different request_ids
@@ -110,27 +108,16 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
         ten_env.log_info(f"on_data: {data_name}")
 
         if data.get_name() == DATA_FLUSH:
-            flush_id, _ = data.get_property_string("flush_id")
-            if flush_id:
-                ten_env.log_info(f"Received flush request for ID: {flush_id}")
-                self.flushed_request_ids.add(flush_id)
-
-                if (
-                    self.current_request_id
-                    and self.current_request_id == flush_id
-                ):
-                    ten_env.log_info(
-                        f"Current request {self.current_request_id} is being flushed. Sending INTERRUPTED."
-                    )
-
-                    if self.request_start_ts:
-                        await self._handle_tts_audio_end(
-                            None, TTSAudioEndReason.INTERRUPTED
-                        )
-                        self.current_request_finished = True
-
             # Flush the current request
+            ten_env.log_info(
+                f"Received flush request, current_request_id: {self.current_request_id}"
+            )
             await self._flush()
+            if self.request_start_ts:
+                await self._handle_tts_audio_end(
+                    None, TTSAudioEndReason.INTERRUPTED
+                )
+                self.current_request_finished = True
 
         await super().on_data(ten_env, data)
 
@@ -164,12 +151,6 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
             elif self.current_request_finished:
                 error_msg = f"Received a message for a finished request_id '{t.request_id}' with text_input_end=False."
                 self.ten_env.log_error(error_msg)
-                await self._send_tts_error(
-                    error_msg,
-                    vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
-                    code=ModuleErrorCode.NON_FATAL_ERROR.value,
-                    request_id=t.request_id,
-                )
                 return
 
             # Check if text is empty
@@ -180,13 +161,7 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
                 if t.text_input_end:
                     self.current_request_finished = True
                     await self._handle_tts_audio_end(t)
-
-            # Check if request is flushed
-            if self.current_request_id in self.flushed_request_ids:
-                self.ten_env.log_info(
-                    f"Request {self.current_request_id} was flushed. Stopping processing."
-                )
-                return
+                    return
 
             # Record TTFB timing
             if self.request_start_ts is None:
@@ -207,13 +182,6 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
 
             async for [done, message_type, message] in data:
                 # Check if request is flushed
-                if self.current_request_id in self.flushed_request_ids:
-                    self.ten_env.log_info(
-                        f"Request {self.current_request_id} was flushed. Stopping processing."
-                    )
-                    self.flushed_request_ids.remove(self.current_request_id)
-                    break
-
                 self.ten_env.log_info(
                     f"Received done: {done}, message_type: {message_type}, current_request_id: {self.current_request_id}, current_turn_id: {self.current_turn_id}"
                 )
