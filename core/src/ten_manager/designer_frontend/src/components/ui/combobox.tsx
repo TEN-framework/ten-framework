@@ -64,10 +64,10 @@ function CommandAddItem({
   const { t } = useTranslation();
 
   return (
-    <div
-      tabIndex={0}
+    <button
+      type="button"
       onClick={onCreate}
-      onKeyDown={(event: React.KeyboardEvent<HTMLDivElement>) => {
+      onKeyDown={(event: React.KeyboardEvent<HTMLButtonElement>) => {
         if (event.key === "Enter") {
           onCreate();
         }
@@ -81,7 +81,7 @@ function CommandAddItem({
       {t("components.combobox.create", {
         query,
       })}
-    </div>
+    </button>
   );
 }
 

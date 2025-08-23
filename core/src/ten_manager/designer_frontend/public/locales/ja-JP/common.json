@@ -380,5 +380,27 @@
       "change-auto-start-success": "自動開始設定の更新に成功しました",
       "change-auto-start-failed": "自動開始設定の更新に失敗しました"
     }
+  },
+  "ui": {
+    "autoForm": {
+      "rootLevel": "ルートレベル",
+      "addDynamicField": "動的フィールドを追加",
+      "location": "場所",
+      "selectLocation": "場所を選択",
+      "fieldName": "フィールド名",
+      "enterFieldName": "フィールド名を入力（例：dump_size、model_name）",
+      "fieldType": "フィールドタイプ",
+      "string": "文字列",
+      "number": "数値",
+      "object": "オブジェクト（JSON）",
+      "defaultValue": "デフォルト値",
+      "enterDefaultValue": "デフォルト値を入力",
+      "addField": "フィールドを追加",
+      "dynamicFields": "動的フィールド",
+      "path": "パス",
+      "root": "ルート",
+      "type": "タイプ",
+      "noDynamicFields": "動的フィールドはまだ定義されていません。上記で最初のフィールドを追加してください。"
+    }
   }
 }

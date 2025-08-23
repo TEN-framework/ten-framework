@@ -15,7 +15,6 @@ import {
   type IWidget,
   type TWidgetCustomAction,
 } from "@/types/widgets";
-import { getZodDefaults } from "@/utils";
 import { dispatchBringToFront } from "@/utils/events";
 
 export const useWidgetStore = create<{
@@ -194,7 +193,8 @@ export const useWidgetStore = create<{
             history: (() => {
               const maxLength =
                 options?.maxLength ||
-                getZodDefaults(PREFERENCES_SCHEMA_LOG).logviewer_line_size;
+                PREFERENCES_SCHEMA_LOG._zod.def.shape.logviewer_line_size.def
+                  .defaultValue;
               const newHistory = options?.override
                 ? history
                 : [...(state.logViewerHistory[id]?.history || []), ...history];
@@ -202,7 +202,8 @@ export const useWidgetStore = create<{
             })(),
             maxLength:
               options?.maxLength ||
-              getZodDefaults(PREFERENCES_SCHEMA_LOG).logviewer_line_size,
+              PREFERENCES_SCHEMA_LOG._zod.def.shape.logviewer_line_size.def
+                .defaultValue,
           },
         },
       })),

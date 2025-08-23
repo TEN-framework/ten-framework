@@ -60,7 +60,7 @@ export const updatePreferencesLogViewerLines = async (size: number) => {
   return template.responseSchema.parse(res).data;
 };
 
-export const getStorageValueByKey = async (
+export const getStorageValueByKey = async <T>(
   queryKey?: string,
   options?: {
     storageType?: "in-memory" | "persistent";
@@ -75,7 +75,7 @@ export const getStorageValueByKey = async (
     body: { key },
   });
   const res = await req;
-  return template.responseSchema.parse(res).data.value;
+  return template.responseSchema.parse(res).data.value as T;
 };
 
 export const setStorageValueByKey = async (
@@ -147,9 +147,9 @@ export const addRecentRunApp = async (app: IRunAppParams) => {
     stderr_is_log,
     run_with_agent,
   } = app;
-  const data = await getStorageValueByKey();
+  const data = (await getStorageValueByKey()) as unknown;
   await setStorageValueByKey(undefined, {
-    ...data,
+    ...(data || {}),
     recent_run_apps: [
       {
         base_dir: base_dir,
@@ -158,7 +158,8 @@ export const addRecentRunApp = async (app: IRunAppParams) => {
         stderr_is_log: stderr_is_log,
         run_with_agent: run_with_agent,
       },
-      ...(data?.recent_run_apps || []),
+      ...((data as { recent_run_apps: IRunAppParams[] })?.recent_run_apps ||
+        []),
     ].slice(0, 3), // keep only the first 3
   });
 };
@@ -166,7 +167,8 @@ export const addRecentRunApp = async (app: IRunAppParams) => {
 export const postSetGraphNodeGeometry = async (
   data: z.infer<typeof SetGraphUiPayloadSchema>
 ) => {
-  const originalData = await getStorageValueByKey("graph_ui");
+  const originalData =
+    await getStorageValueByKey<Record<string, unknown>>("graph_ui");
   const updatedData = {
     ...originalData,
     [data.graph_id]: data,
@@ -177,6 +179,15 @@ export const postSetGraphNodeGeometry = async (
 export const postGetGraphNodeGeometry = async (
   graphId: string
 ): Promise<z.infer<typeof GraphUiNodeGeometrySchema>[]> => {
-  const data = await getStorageValueByKey("graph_ui");
-  return data?.[graphId]?.graph_geometry?.nodes_geometry || [];
+  const data = await getStorageValueByKey<Record<string, unknown>>("graph_ui");
+  return (
+    (
+      data?.[graphId] as {
+        graph_id: string;
+        graph_geometry?: {
+          nodes_geometry?: z.infer<typeof GraphUiNodeGeometrySchema>[];
+        };
+      }
+    )?.graph_geometry?.nodes_geometry || []
+  );
 };

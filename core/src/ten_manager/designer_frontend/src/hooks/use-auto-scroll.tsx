@@ -23,6 +23,7 @@ export const useAutoScroll = <T extends HTMLElement>(
     });
   };
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <ignore>
   React.useEffect(() => {
     if (!ref.current) {
       return;

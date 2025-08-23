@@ -149,6 +149,10 @@ export const AppRunPopupContent = (props: { widget: IDefaultWidget }) => {
   const [runWithAgent, setRunWithAgent] = React.useState<boolean>(false);
 
   const handleRun = async () => {
+    if (!baseDir || !selectedScript) {
+      return;
+    }
+
     removeWidget(widget.widget_id);
 
     const newAppStartWidgetId = EWidgetIdentifier.APP_RUN + Date.now();

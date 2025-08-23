@@ -31,7 +31,7 @@ export const AboutWidgetContent = (_props: { widget: IWidget }) => {
         )}
       >
         <Trans
-          components={[<PoweredByTenFramework />]}
+          components={[<PoweredByTenFramework key="tenframework" />]}
           t={t}
           i18nKey="header.poweredByTenFramework"
         />

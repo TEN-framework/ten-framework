@@ -89,6 +89,7 @@ export function Version() {
                   i18nKey="header.newVersionAvailableDescription"
                   components={[
                     <TooltipContentLink
+                      key="release-link"
                       href={TEN_FRAMEWORK_RELEASE_URL}
                     ></TooltipContentLink>,
                   ]}
@@ -106,7 +107,10 @@ export function Version() {
                   t={t}
                   i18nKey="header.currentIsLatestDescription"
                   components={[
-                    <TooltipContentLink href={TEN_FRAMEWORK_RELEASE_URL} />,
+                    <TooltipContentLink
+                      key="release-link"
+                      href={TEN_FRAMEWORK_RELEASE_URL}
+                    />,
                   ]}
                 />
               </p>

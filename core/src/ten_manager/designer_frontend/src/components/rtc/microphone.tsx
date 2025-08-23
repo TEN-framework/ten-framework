@@ -30,14 +30,12 @@ export default function MicrophoneBlock(props: {
       onIconClick={onClickMute}
       select={<MicrophoneSelect audioTrack={audioTrack} />}
       audioTrack={audioTrack}
-    >
-      <></>
-    </MicrophoneDeviceWrapper>
+    ></MicrophoneDeviceWrapper>
   );
 }
 
 export function MicrophoneDeviceWrapper(props: {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   Icon: (
     props: React.SVGProps<SVGSVGElement> & { active?: boolean }
   ) => React.ReactNode;
