@@ -183,7 +183,9 @@ export class Agent {
 
     // === Optional: targeted LLM flush / cancel ===
     // You can wire this to a request_id filter if needed:
-    flushLLM() {
+    async flushLLM() {
+        await this.llmExec.flush();
+
         // Cancel any pending dequeue + active LLM task
         this.llmAbort.abort();
         this.llmAbort = new AbortController();   // new token for future dequeues

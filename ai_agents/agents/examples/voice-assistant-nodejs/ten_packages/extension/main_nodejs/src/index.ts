@@ -15,7 +15,7 @@ import {
 } from "ten-runtime-nodejs";
 import { Agent } from "./agent/agent.js";
 import { ASRResultEvent, LLMResponseEvent, UserJoinedEvent, UserLeftEvent } from "./agent/events.js";
-import { parseSentences, sendData } from "./helper.js";
+import { parseSentences, sendCmd, sendData } from "./helper.js";
 import z from "zod";
 
 const MainControlConfig = z.object({
@@ -78,9 +78,9 @@ class MainControlExtension extends Extension {
 
       if (!event.text) return;
 
-      // if (event.final || event.text.length > 2) {
-      // await this._interrupt();
-      // }
+      if (event.final || event.text.length > 2) {
+        await this._interrupt();
+      }
 
       if (event.final) {
         this.turn_id += 1;
@@ -189,6 +189,17 @@ class MainControlExtension extends Extension {
     this.tenEnv.logInfo(
       `[MainControlExtension] Sent to TTS: is_final=${is_final}, text=${text}`,
     );
+  }
+
+  private async _interrupt(): Promise<void> {
+    /**
+     * Interrupts the current LLM processing.
+     */
+    this.sentenceFragment = "";
+    await this.agent.flushLLM();
+    await sendData(this.tenEnv, "tts_flush", "tts", { flush_id: String(Date.now()) });
+    await sendCmd(this.tenEnv, "flush", "agora_rtc");
+    this.tenEnv.logInfo(`[MainControlExtension] Sent interrupt to LLM`);
   }
 
   _current_metadata(): Record<string, any> {
