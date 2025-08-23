@@ -8,15 +8,41 @@ import { z } from "zod";
 
 import { stringToJSONSchema } from "@/utils";
 
+/** @deprecated */
 export interface IBackendNode {
   addon: string;
   name: string;
   extension_group?: string;
   app?: string;
-  property?: Record<string, unknown>;
+  property?: Record<string, unknown> | null;
   api?: unknown;
   is_installed: boolean;
+  type: "extension";
 }
+
+export const BackendNodeExtension = z.object({
+  addon: z.string(),
+  name: z.string(),
+  extension_group: z.string().optional(),
+  app: z.string().optional(),
+  property: z.object(z.unknown()).optional(),
+  api: z.unknown().optional(),
+  is_installed: z.boolean(),
+  type: z.literal("extension"),
+});
+export type BackendNodeExtension = z.infer<typeof BackendNodeExtension>;
+
+export const BackendNodeSelector = z.object({
+  name: z.string(),
+  type: z.literal("selector"),
+  filter: z.any().optional(), // todo: selector&subgraph
+});
+export type BackendNodeSelector = z.infer<typeof BackendNodeSelector>;
+
+export const BackendNodeSubGraph = z.looseObject({
+  type: z.literal("subgraph"),
+}); // todo: selector&subgraph
+export type BackendNodeSubGraph = z.infer<typeof BackendNodeSubGraph>;
 
 export enum EConnectionType {
   CMD = "cmd",
@@ -80,7 +106,9 @@ export interface IGraph {
   auto_start?: boolean;
   base_dir?: string;
   graph: {
-    nodes: IBackendNode[];
+    // eslint-disable-next-line max-len
+    // nodes: (BackendNodeExtension | BackendNodeSelector | BackendNodeSubGraph)[];
+    nodes: BackendNodeExtension[]; // todo: selector&subgraph
     connections: IBackendConnection[];
     exposed_messages: Array<{
       type: string;
