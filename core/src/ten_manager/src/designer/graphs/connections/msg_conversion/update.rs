@@ -17,13 +17,12 @@ use ten_rust::{
     pkg_info::message::MsgType,
 };
 
-use crate::fs::json::patch_property_json_file;
-
 use crate::{
     designer::{
         response::{ApiResponse, ErrorResponse, Status},
         DesignerState,
     },
+    fs::json::patch_property_json_file,
     graph::{
         connections::validate::{
             validate_connection_schema, MsgConversionValidateInfo,

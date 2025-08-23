@@ -9,19 +9,19 @@ use std::sync::Arc;
 use actix_web::{web, HttpResponse, Responder};
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
-use crate::fs::json::patch_property_json_file;
 use ten_rust::{
     graph::{connection::GraphConnection, connection::GraphMessageFlow, Graph},
     pkg_info::message::MsgType,
 };
-use uuid::Uuid;
 
 use crate::{
     designer::{
         response::{ApiResponse, ErrorResponse, Status},
         DesignerState,
     },
+    fs::json::patch_property_json_file,
     graph::graphs_cache_find_by_id_mut,
     pkg_info::belonging_pkg_info_find_by_graph_info,
 };
@@ -194,7 +194,7 @@ pub async fn delete_graph_connection_endpoint(
     {
         // Update property.json file to remove the connection.
         if let Some(property) = &pkg_info.property {
-            // update property.json
+            // Update property.json file.
             if let Err(e) = patch_property_json_file(
                 &pkg_info.url,
                 property,

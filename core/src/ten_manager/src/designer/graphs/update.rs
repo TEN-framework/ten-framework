@@ -77,7 +77,7 @@ pub async fn update_graph_endpoint(
         .map(|node_update| node_update.to_graph_node())
         .collect();
 
-    //update graph info
+    // update graph info
     let graph_info = {
         let mut graphs_cache = state.graphs_cache.write().await;
 
@@ -121,7 +121,7 @@ pub async fn update_graph_endpoint(
         graph_info.clone()
     };
 
-    //update property.json file
+    // update property.json file
     let pkg_info =
         match belonging_pkg_info_find_by_graph_info(&pkgs_cache, &graph_info) {
             Ok(Some(pkg_info)) => pkg_info,

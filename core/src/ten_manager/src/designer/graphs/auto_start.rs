@@ -37,7 +37,7 @@ pub async fn update_graph_auto_start_endpoint(
     let pkgs_cache = state.pkgs_cache.read().await;
     let old_graphs_cache = state.graphs_cache.read().await.clone();
 
-    //update graph info
+    // update graph info
     let graph_info = {
         let mut graphs_cache = state.graphs_cache.write().await;
 
@@ -65,7 +65,7 @@ pub async fn update_graph_auto_start_endpoint(
         graph_info.clone()
     };
 
-    //update property.json file
+    // update property.json file
     let new_graphs_cache = state.graphs_cache.read().await;
     if let Ok(Some(pkg_info)) =
         belonging_pkg_info_find_by_graph_info(&pkgs_cache, &graph_info)

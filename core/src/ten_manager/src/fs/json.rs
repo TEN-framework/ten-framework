@@ -103,10 +103,10 @@ pub fn patch_property_json_file(
 
     let patch = json_patch::diff(&old_ten_json, &new_ten_json);
 
-    //apply patch to property.json, only "ten" field is updated
-    //(there could be other fields added by user at the top level )
+    // apply patch to property.json, only "ten" field is updated (there could be
+    // other fields added by user at the top level)
     let mut whole_property_json = serde_json::Value::Object(
-        //read from property.json
+        // read from property.json
         read_json_file_to_map(
             Path::new(base_dir).join(PROPERTY_JSON_FILENAME).to_str().unwrap(),
         )
@@ -127,5 +127,6 @@ pub fn patch_property_json_file(
             .context("Failed to convert JSON value to map")?;
 
     write_property_json_file(base_dir, &whole_property_json_map)?;
+
     Ok(())
 }

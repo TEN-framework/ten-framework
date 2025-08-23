@@ -54,6 +54,7 @@ pub async fn add_graph_node_endpoint(
     let pkgs_cache = state.pkgs_cache.read().await;
     let mut graphs_cache = state.graphs_cache.write().await;
     let old_graphs_cache = graphs_cache.clone();
+
     // Get the specified graph from graphs_cache.
     let graph_info = match graphs_cache_find_by_id_mut(
         &mut graphs_cache,
