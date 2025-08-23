@@ -10,7 +10,6 @@ import type { z } from "zod";
 import { ENDPOINT_GRAPH_UI, ENDPOINT_GRAPHS } from "@/api/endpoints";
 import { ENDPOINT_METHOD } from "@/api/endpoints/constant";
 import { getTanstackQueryClient, makeAPIRequest } from "@/api/services/utils";
-
 import type {
   AddConnectionPayloadSchema,
   AddNodePayloadSchema,
@@ -42,9 +41,7 @@ export const retrieveGraphs = async () => {
   const res = await req;
   const data = template.responseSchema.parse(res).data;
 
-  return data.map((graph) => ({
-    ...graph,
-  }));
+  return data;
 };
 
 export const useGraphs = () => {

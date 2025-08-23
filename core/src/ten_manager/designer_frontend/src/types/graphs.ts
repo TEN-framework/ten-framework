@@ -30,13 +30,21 @@ export interface IBackendConnection {
   extension: string;
   [EConnectionType.CMD]?: {
     name: string;
-    dest: {
+    source?: {
+      app?: string;
+      extension: string;
+    }[];
+    dest?: {
       app?: string;
       extension: string;
     }[];
   }[];
   [EConnectionType.DATA]?: {
     name: string;
+    source?: {
+      app?: string;
+      extension: string;
+    }[];
     dest: {
       app?: string;
       extension: string;
@@ -44,6 +52,10 @@ export interface IBackendConnection {
   }[];
   [EConnectionType.AUDIO_FRAME]?: {
     name: string;
+    source?: {
+      app?: string;
+      extension: string;
+    }[];
     dest: {
       app?: string;
       extension: string;
@@ -51,6 +63,10 @@ export interface IBackendConnection {
   }[];
   [EConnectionType.VIDEO_FRAME]?: {
     name: string;
+    source?: {
+      app?: string;
+      extension: string;
+    }[];
     dest: {
       app?: string;
       extension: string;

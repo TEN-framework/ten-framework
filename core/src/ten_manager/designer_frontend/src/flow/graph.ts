@@ -192,7 +192,7 @@ export const generateRawEdges = (
       }
       connection[connectionType].forEach((connectionItem) => {
         const name = connectionItem.name;
-        const dest = connectionItem.dest;
+        const dest = connectionItem?.dest || [];
         dest.forEach((connectionItemDest) => {
           const targetExtension = connectionItemDest.extension;
           const targetApp = connectionItemDest.app;
