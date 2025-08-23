@@ -209,6 +209,16 @@ export function AutoFormDynamicFields<T extends Record<string, unknown>>({
             ...formComponents,
           }}
         />
+        <div className="mt-4">
+          <details className="group">
+            <summary className="cursor-pointer font-medium text-muted-foreground text-sm hover:text-foreground">
+              View Form Values (JSON)
+            </summary>
+            <pre className="mt-2 max-h-64 overflow-auto rounded-md bg-muted p-3 text-xs">
+              {JSON.stringify(props.values || {}, null, 2)}
+            </pre>
+          </details>
+        </div>
       </TabsContent>
 
       <TabsContent value="dynamic" className="mt-0">
