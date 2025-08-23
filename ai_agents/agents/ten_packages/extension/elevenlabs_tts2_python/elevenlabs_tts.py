@@ -73,10 +73,8 @@ class ElevenLabsTTS2Synthesizer:
             # Use websockets.connect's automatic reconnection mechanism
             async for ws in websockets.connect(
                 uri=self.uri,
-                ping_interval=20,
-                ping_timeout=10,
-                close_timeout=10,
                 process_exception=self._process_ws_exception,
+                max_size=1024 * 1024 * 16,
             ):
                 self.ws = ws
                 try:
