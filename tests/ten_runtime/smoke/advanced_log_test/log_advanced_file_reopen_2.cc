@@ -218,6 +218,9 @@ TEST(AdvancedLogTest, LogAdvancedFileReopen2) {  // NOLINT
 
   ten_log_global_deinit_advanced_log();
 
+  // Wait a bit more to write into the final active file.
+  std::this_thread::sleep_for(std::chrono::seconds(3));
+
 #ifndef _WIN32
   // Verify three files exist.
   {
