@@ -379,5 +379,27 @@
     "disable-auto-start": "Disable Auto Start",
     "change-auto-start-success": "Successfully updated auto start setting",
     "change-auto-start-failed": "Failed to update auto start setting"
+  },
+  "ui": {
+    "autoForm": {
+      "rootLevel": "Root Level",
+      "addDynamicField": "Add Dynamic Field",
+      "location": "Location",
+      "selectLocation": "Select Location",
+      "fieldName": "Field Name",
+      "enterFieldName": "Enter field name (e.g., dump_size, model_name)",
+      "fieldType": "Field Type",
+      "string": "String",
+      "number": "Number",
+      "object": "Object (JSON)",
+      "defaultValue": "Default Value",
+      "enterDefaultValue": "Enter default value",
+      "addField": "Add Field",
+      "dynamicFields": "Dynamic Fields",
+      "path": "Path",
+      "root": "Root",
+      "type": "Type",
+      "noDynamicFields": "No dynamic fields defined yet. Add your first field above."
+    }
   }
 }

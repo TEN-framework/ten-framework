@@ -425,7 +425,7 @@ mod tests {
         assert_eq!(cmd_list.len(), 1);
 
         let cmd = &cmd_list[0];
-        assert_eq!(cmd.name, "hello_world");
+        assert_eq!(cmd.name, Some("hello_world".to_string()));
 
         // Verify the source is properly set
         let sources = &cmd.source;
@@ -570,7 +570,7 @@ mod tests {
         assert_eq!(cmd_list.len(), 1);
 
         let cmd = &cmd_list[0];
-        assert_eq!(cmd.name, "multi_source_cmd");
+        assert_eq!(cmd.name, Some("multi_source_cmd".to_string()));
 
         // Verify multiple sources are properly set
         let sources = &cmd.source;
@@ -775,7 +775,10 @@ mod tests {
         let connection = &connections[0];
         assert_eq!(connection.loc.extension, Some("addon_a".to_string()));
         assert_eq!(connection.cmd.as_ref().unwrap().len(), 1);
-        assert_eq!(connection.cmd.as_ref().unwrap()[0].name, "C");
+        assert_eq!(
+            connection.cmd.as_ref().unwrap()[0].name,
+            Some("C".to_string())
+        );
         assert_eq!(connection.cmd.as_ref().unwrap()[0].dest.len(), 1);
         assert_eq!(
             connection.cmd.as_ref().unwrap()[0].dest[0].loc.extension,

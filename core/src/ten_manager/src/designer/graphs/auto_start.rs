@@ -15,8 +15,8 @@ use crate::{
         response::{ApiResponse, ErrorResponse, Status},
         DesignerState,
     },
-    graph::{graphs_cache_find_by_id_mut, update_graph_all_fields},
-    pkg_info::belonging_pkg_info_find_by_graph_info_mut,
+    graph::{graphs_cache_find_by_id_mut, update_graph_in_property_json_file},
+    pkg_info::belonging_pkg_info_find_by_graph_info,
 };
 
 #[derive(Serialize, Deserialize)]
@@ -34,50 +34,50 @@ pub async fn update_graph_auto_start_endpoint(
     request_payload: web::Json<UpdateGraphAutoStartRequestPayload>,
     state: web::Data<Arc<DesignerState>>,
 ) -> Result<impl Responder, actix_web::Error> {
-    let mut pkgs_cache = state.pkgs_cache.write().await;
-    let mut graphs_cache = state.graphs_cache.write().await;
+    let pkgs_cache = state.pkgs_cache.read().await;
+    let old_graphs_cache = state.graphs_cache.read().await.clone();
 
-    let graph_info = match graphs_cache_find_by_id_mut(
-        &mut graphs_cache,
-        &request_payload.graph_id,
-    ) {
-        Some(graph_info) => graph_info,
-        None => {
-            let error_response = ErrorResponse {
-                status: Status::Fail,
-                message: format!(
-                    "Graph with ID {} not found",
-                    request_payload.graph_id
-                ),
-                error: None,
-            };
-            return Ok(HttpResponse::BadRequest().json(error_response));
-        }
+    // update graph info
+    let graph_info = {
+        let mut graphs_cache = state.graphs_cache.write().await;
+
+        let graph_info = match graphs_cache_find_by_id_mut(
+            &mut graphs_cache,
+            &request_payload.graph_id,
+        ) {
+            Some(graph_info) => graph_info,
+            None => {
+                let error_response = ErrorResponse {
+                    status: Status::Fail,
+                    message: format!(
+                        "Graph with ID {} not found",
+                        request_payload.graph_id
+                    ),
+                    error: None,
+                };
+                return Ok(HttpResponse::BadRequest().json(error_response));
+            }
+        };
+
+        // Update the auto_start field
+        graph_info.auto_start = Some(request_payload.auto_start);
+
+        graph_info.clone()
     };
 
-    // Update the auto_start field
-    graph_info.auto_start = Some(request_payload.auto_start);
-
-    // Try to update property.json file with the auto_start change
+    // update property.json file
+    let new_graphs_cache = state.graphs_cache.read().await;
     if let Ok(Some(pkg_info)) =
-        belonging_pkg_info_find_by_graph_info_mut(&mut pkgs_cache, graph_info)
+        belonging_pkg_info_find_by_graph_info(&pkgs_cache, &graph_info)
     {
-        if let (Some(app_base_dir), Some(property), Some(graph_name)) =
-            (&graph_info.app_base_dir, &mut pkg_info.property, &graph_info.name)
+        if let (Some(app_base_dir), Some(property)) =
+            (&graph_info.app_base_dir, &pkg_info.property)
         {
-            if let Err(e) = update_graph_all_fields(
+            if let Err(e) = update_graph_in_property_json_file(
                 app_base_dir,
-                &mut property.all_fields,
-                graph_name,
-                graph_info.graph.nodes(),
-                graph_info.graph.connections().as_ref().unwrap_or(&vec![]),
-                graph_info.graph.exposed_messages().as_ref().unwrap_or(&vec![]),
-                graph_info
-                    .graph
-                    .exposed_properties()
-                    .as_ref()
-                    .unwrap_or(&vec![]),
-                Some(request_payload.auto_start),
+                property,
+                &new_graphs_cache,
+                &old_graphs_cache,
             ) {
                 eprintln!("Warning: Failed to update property.json file: {e}");
             }

@@ -18,10 +18,10 @@ from libten_runtime_python import (
 from .log_level import LogLevel
 from .ten_env import TenEnv
 from .async_ten_env import AsyncTenEnv
-from .msg.cmd.cmd import Cmd
-from .msg.data import Data
-from .msg.video_frame import VideoFrame
-from .msg.audio_frame import AudioFrame
+from .cmd import Cmd
+from .data import Data
+from .video_frame import VideoFrame
+from .audio_frame import AudioFrame
 
 
 class AsyncExtension(_Extension):

@@ -5,72 +5,24 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 
-import { buildZodFieldConfig } from "@autoform/react";
-import { z } from "zod";
-import type { FieldTypes } from "@/components/ui/autoform/auto-form";
+// Import shared utilities from dynamic-fields
+import {
+  addDynamicFieldToPath,
+  convertDynamicFieldValue,
+  convertExtensionPropertySchema2ZodSchema,
+  convertExtensionPropertySchema2ZodSchemaWithDynamicFields,
+  createDynamicFieldZodSchema,
+  type TExtPropertySchema,
+  type TPropertyDefinition,
+} from "@/components/ui/autoform/components/dynamic-fields/utils";
 
-export type TExtPropertySchema = Record<string, Record<"type", string>>;
+export type { TExtPropertySchema, TPropertyDefinition };
 
-// const fieldConfig = buildZodFieldConfig<
-//   // You should provide the "FieldTypes" type from the UI library you use
-//   FieldTypes,
-//   {
-//     isImportant?: boolean; // You can add custom props here
-//   }
-// >();
-const fieldConfig = buildZodFieldConfig<FieldTypes>();
-
-export const convertExtensionPropertySchema2ZodSchema = (
-  input: TExtPropertySchema
-) => {
-  const schemaEntries: [string, z.ZodType][] = Object.entries(input).map(
-    ([key, value]) => {
-      const { type } = value;
-      let zodType;
-
-      switch (type) {
-        case "int64":
-        case "int32":
-        case "uint32":
-          zodType = z.coerce
-            .number()
-            .superRefine(
-              fieldConfig({
-                inputProps: {
-                  type: "number",
-                  step: 1,
-                },
-              })
-            )
-            .optional();
-          break;
-        case "float64":
-        case "float32":
-          zodType = z.coerce
-            .number()
-            .superRefine(
-              fieldConfig({
-                inputProps: {
-                  type: "number",
-                  step: 0.1,
-                },
-              })
-            )
-            .optional();
-          break;
-        case "bool":
-          zodType = z.boolean().optional();
-          break;
-        case "string":
-          zodType = z.string().optional();
-          break;
-        default:
-          zodType = z.any().optional();
-      }
-
-      return [key, zodType];
-    }
-  );
-
-  return schemaEntries;
+// Re-export utilities for backward compatibility
+export {
+  convertDynamicFieldValue,
+  createDynamicFieldZodSchema,
+  convertExtensionPropertySchema2ZodSchema,
+  convertExtensionPropertySchema2ZodSchemaWithDynamicFields,
+  addDynamicFieldToPath,
 };

@@ -14,8 +14,8 @@ from ten_runtime import (
     AsyncExtensionTester,
     AsyncTenEnvTester,
     LogLevel,
+    TenError, TenErrorCode
 )
-from ten_runtime.error import TenError, TenErrorCode
 
 
 class AsyncExtensionTesterBasic(AsyncExtensionTester):

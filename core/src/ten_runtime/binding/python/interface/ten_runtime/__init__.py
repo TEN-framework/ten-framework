@@ -20,13 +20,13 @@ from .value import Value, ValueType
 from .test import ExtensionTester, TenEnvTester
 from .async_test import AsyncExtensionTester, AsyncTenEnvTester
 from .loc import Loc
-from .msg.cmd.cmd import Cmd
-from .msg.cmd.cmd_result import CmdResult, StatusCode
-from .msg.cmd.start_graph_cmd import StartGraphCmd
-from .msg.cmd.stop_graph_cmd import StopGraphCmd
-from .msg.data import Data
-from .msg.video_frame import VideoFrame, PixelFmt
-from .msg.audio_frame import AudioFrame, AudioFrameDataFmt
+from .cmd import Cmd
+from .cmd_result import CmdResult, StatusCode
+from .start_graph_cmd import StartGraphCmd
+from .stop_graph_cmd import StopGraphCmd
+from .data import Data
+from .video_frame import VideoFrame, PixelFmt
+from .audio_frame import AudioFrame, AudioFrameDataFmt
 
 # Specify what should be imported when a user imports * from the
 # ten_runtime_python package.

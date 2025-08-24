@@ -11,6 +11,10 @@
 #include "ten_runtime/ten_env/ten_env.h"
 #include "ten_utils/lib/string.h"
 
+#if !defined(OS_WINDOWS)
+#include <unistd.h>
+#endif
+
 static void ten_env_log_internal(ten_env_t *self, TEN_LOG_LEVEL level,
                                  const char *func_name, const char *file_name,
                                  size_t line_no, const char *msg,
@@ -48,6 +52,9 @@ void ten_env_log(ten_env_t *self, TEN_LOG_LEVEL level, const char *func_name,
                  const char *file_name, size_t line_no, const char *msg,
                  const char *category, ten_value_t *fields) {
   if (ten_env_is_closed(self)) {
+#if !defined(OS_WINDOWS)
+    (void)dprintf(STDERR_FILENO, "ten_env_log failed due to closed: %s\n", msg);
+#endif
     return;
   }
 

@@ -37,51 +37,49 @@ function GlobalDialog(props: { dialog: IDialog }) {
   const { t } = useTranslation();
 
   return (
-    <>
-      <Dialog open={true}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{dialog.title}</DialogTitle>
-            {dialog?.subTitle && (
-              <DialogDescription>{dialog.subTitle}</DialogDescription>
-            )}
-          </DialogHeader>
-          <div className="max-h-[80dvh] overflow-y-auto px-0.5">
-            {dialog.content}
-          </div>
-          {(dialog.onCancel || dialog.onConfirm) && (
-            <DialogFooter>
-              {dialog.onCancel && (
-                <Button
-                  variant="secondary"
-                  onClick={async () => {
-                    await dialog.onCancel?.();
-                    await dialog.postCancel?.();
-                  }}
-                  disabled={isLoading}
-                >
-                  {dialog.cancelLabel || t("action.cancel")}
-                </Button>
-              )}
-              {dialog.onConfirm && (
-                <Button
-                  variant={dialog.variant || "default"}
-                  disabled={isLoading}
-                  onClick={async () => {
-                    setIsLoading(true);
-                    await dialog.onConfirm?.();
-                    await dialog.postConfirm?.();
-                    setIsLoading(false);
-                  }}
-                >
-                  {isLoading && <SpinnerLoading className="h-4 w-4" />}
-                  {dialog.confirmLabel || t("action.confirm")}
-                </Button>
-              )}
-            </DialogFooter>
+    <Dialog open={true}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{dialog.title}</DialogTitle>
+          {dialog?.subTitle && (
+            <DialogDescription>{dialog.subTitle}</DialogDescription>
           )}
-        </DialogContent>
-      </Dialog>
-    </>
+        </DialogHeader>
+        <div className="max-h-[80dvh] overflow-y-auto px-0.5">
+          {dialog.content}
+        </div>
+        {(dialog.onCancel || dialog.onConfirm) && (
+          <DialogFooter>
+            {dialog.onCancel && (
+              <Button
+                variant="secondary"
+                onClick={async () => {
+                  await dialog.onCancel?.();
+                  await dialog.postCancel?.();
+                }}
+                disabled={isLoading}
+              >
+                {dialog.cancelLabel || t("action.cancel")}
+              </Button>
+            )}
+            {dialog.onConfirm && (
+              <Button
+                variant={dialog.variant || "default"}
+                disabled={isLoading}
+                onClick={async () => {
+                  setIsLoading(true);
+                  await dialog.onConfirm?.();
+                  await dialog.postConfirm?.();
+                  setIsLoading(false);
+                }}
+              >
+                {isLoading && <SpinnerLoading className="h-4 w-4" />}
+                {dialog.confirmLabel || t("action.confirm")}
+              </Button>
+            )}
+          </DialogFooter>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }

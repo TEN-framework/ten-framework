@@ -5,6 +5,8 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 
+/** biome-ignore-all lint/correctness/noUnusedVariables: <ignore> */
+
 import type { AutoFormFieldProps } from "@autoform/react";
 import type React from "react";
 import { Input } from "@/components/ui/input";
@@ -21,6 +23,7 @@ export const NumberField: React.FC<AutoFormFieldProps> = ({
     <Input
       id={id}
       type="number"
+      step="any"
       className={error ? "border-destructive" : ""}
       {...props}
     />

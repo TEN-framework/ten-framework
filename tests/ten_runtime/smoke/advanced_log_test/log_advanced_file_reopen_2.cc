@@ -33,12 +33,15 @@ class test_extension : public ten::extension_t {
     log_thread_ = std::thread([this, ten_env_proxy]() {
       while (!stop_log_.load()) {
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
-
-        auto log_msg =
-            std::string("log message ") + std::to_string(++g_log_count);
-
-        ten_env_proxy->notify([log_msg](ten::ten_env_t &ten_env) {
-          TEN_ENV_LOG_INFO(ten_env, log_msg.c_str());
+        ten_env_proxy->notify([](ten::ten_env_t &ten_env) {
+          for (int i = 0; i < 10; ++i) {
+            auto log_msg =
+                std::string("log message ") + std::to_string(++g_log_count);
+#if !defined(OS_WINDOWS)
+            (void)dprintf(STDERR_FILENO, "log_msg: %s\n", log_msg.c_str());
+#endif
+            TEN_ENV_LOG_INFO(ten_env, log_msg.c_str());
+          }
         });
       }
 
@@ -209,17 +212,17 @@ TEST(AdvancedLogTest, LogAdvancedFileReopen2) {  // NOLINT
   std::this_thread::sleep_for(std::chrono::seconds(3));
 #endif
 
-#ifndef _WIN32
-  {
-    // Send a signal to flush the log file.
-    auto rc = raise(SIGUSR1);
-    ASSERT_EQ(rc, 0);
-  }
-#endif
-
   delete client;
 
   ten_thread_join(app_thread, -1);
+
+#ifndef _WIN32
+  {
+    // Send a signal to flush the log file.
+    auto rc = raise(SIGHUP);
+    ASSERT_EQ(rc, 0);
+  }
+#endif
 
 #ifndef _WIN32
   // Verify three files exist.

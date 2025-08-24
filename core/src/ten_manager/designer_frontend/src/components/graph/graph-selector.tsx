@@ -79,19 +79,24 @@ export const GraphSelector = (props: { className?: string }) => {
     }
     const nextDisplayedNodes = nodes.filter((node) =>
       selectedGraphs.some(
-        (graph) => graph.graph_id === node.data.graph.graph_id)
+        (graph) => graph.graph_id === node.data.graph.graph_id
+      )
     );
     const nextDisplayedEdges = edges.filter((edge) =>
       selectedGraphs.some(
-        (graph) => graph.graph_id === edge.data?.graph.graph_id)
+        (graph) => graph.graph_id === edge.data?.graph.graph_id
+      )
     );
     setDisplayedNodes(nextDisplayedNodes);
     setDisplayedEdges(nextDisplayedEdges);
   }, [nodes, edges, selectedGraphs, setDisplayedEdges, setDisplayedNodes]);
 
-  if (!graphs) {
-    return null;
-  }
+  React.useEffect(() => {
+    if (isGraphError) {
+      console.error("Error loading graphs:", isGraphError);
+      toast.error("Error loading graphs");
+    }
+  }, [isGraphError]);
 
   return (
     <Card
@@ -115,7 +120,7 @@ export const GraphSelector = (props: { className?: string }) => {
               ? "Error loading graphs"
               : t("graph.selected-sum-count", {
                   count: selectedGraphs?.length || 0,
-                  sum: graphs.length,
+                  sum: graphs?.length,
                 })}
         </CardDescription>
         <CardAction className="flex justify-end">
@@ -149,7 +154,7 @@ export const GraphSelector = (props: { className?: string }) => {
           }
         )}
       >
-        <GraphList graphs={graphs} />
+        {graphs && <GraphList graphs={graphs} />}
       </CardContent>
     </Card>
   );
@@ -227,7 +232,8 @@ const GraphList = (props: { graphs: IGraph[] }) => {
                   id={`graph-selector-${graph.graph_id}`}
                   disabled={isLoading}
                   checked={selectedGraphs?.some(
-                    (g) => g.graph_id === graph.graph_id)}
+                    (g) => g.graph_id === graph.graph_id
+                  )}
                   onCheckedChange={(checked) => {
                     if (checked) {
                       appendSelectedGraphs([graph]);
