@@ -216,10 +216,13 @@ TEST(AdvancedLogTest, LogAdvancedFileReopen2) {  // NOLINT
 
   ten_thread_join(app_thread, -1);
 
-  ten_log_global_deinit_advanced_log();
+#ifndef _WIN32
+  // Send a signal to flush the log file.
+  auto rc = raise(SIGHUP);
+  ASSERT_EQ(rc, 0);
+#endif
 
-  // Wait a bit more to write into the final active file.
-  std::this_thread::sleep_for(std::chrono::seconds(3));
+  ten_log_global_deinit_advanced_log();
 
 #ifndef _WIN32
   // Verify three files exist.
