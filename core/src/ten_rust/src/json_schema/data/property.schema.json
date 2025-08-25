@@ -756,7 +756,7 @@
           "$ref": "#/$defs/notEmptyString"
         },
         // @}
-        "log": {
+        "deprecated_log": {
           "type": "object",
           "additionalProperties": false,
           "properties": {
