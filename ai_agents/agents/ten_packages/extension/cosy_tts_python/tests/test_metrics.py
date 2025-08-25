@@ -83,21 +83,21 @@ def test_ttfb_metric_is_sent(MockCosyTTSClient):
 
     # --- Mock Configuration ---
     mock_instance = MockCosyTTSClient.return_value
-    mock_instance.start = AsyncMock()
-    mock_instance.stop = AsyncMock()
+    mock_instance.synthesize_audio = AsyncMock()
 
-    # This async generator simulates the TTS client's get() method with a delay
-    # to produce a measurable TTFB.
-    async def mock_synthesize_audio_with_delay(text: str, text_input_end: bool):
-        # Simulate network latency or processing time before the first byte
+    # Create a mock that simulates the delay *before* returning the first audio chunk
+    async def get_audio_data_with_delay():
         await asyncio.sleep(0.2)
-        yield (False, MESSAGE_TYPE_PCM, b"\x11\x22\x33")
-        # Simulate the end of the stream
-        yield (True, MESSAGE_TYPE_CMD_COMPLETE, None)
+        return (False, MESSAGE_TYPE_PCM, b"\x11\x22\x33")
 
-    mock_instance.synthesize_audio.side_effect = (
-        mock_synthesize_audio_with_delay
-    )
+    # This async function will wrap the tuple to make it awaitable
+    async def get_end_signal():
+        return (True, MESSAGE_TYPE_CMD_COMPLETE, None)
+
+    mock_instance.get_audio_data.side_effect = [
+        get_audio_data_with_delay(),
+        get_end_signal(),
+    ]
 
     # --- Test Setup ---
     # A minimal config is needed for the extension to initialize correctly.

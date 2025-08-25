@@ -1,0 +1,29 @@
+{
+  "type": "extension",
+  "name": "groq_tts_python",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.10"
+    },
+    {
+      "type": "system",
+      "name": "ten_ai_base",
+      "version": "0.6"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "BUILD.gn",
+      "**.tent",
+      "**.py",
+      "README.md",
+      "requirements.txt"
+    ]
+  },
+  "api": {}
+}
