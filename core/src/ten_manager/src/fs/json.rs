@@ -103,8 +103,6 @@ pub fn patch_property_json_file(
             .context("Failed to convert property.ten to JSON map")?,
     )?;
 
-    let patch = json_patch::diff(&old_ten_json, &new_ten_json);
-
     //apply patch to property.json, only "ten" field is updated
     //(there could be other fields added by user at the top level )
     let mut whole_property_json = serde_json::Value::Object(
@@ -120,7 +118,7 @@ pub fn patch_property_json_file(
         .cloned()
         .unwrap_or(serde_json::Value::Null);
 
-    json_patch::patch(&mut ten_in_property_json, &patch)?;
+    patch_json(&old_ten_json, &new_ten_json, &mut ten_in_property_json)?;
 
     whole_property_json[ten_field_str] = ten_in_property_json;
 
@@ -129,5 +127,16 @@ pub fn patch_property_json_file(
             .context("Failed to convert JSON value to map")?;
 
     write_property_json_file(base_dir, &whole_property_json_map)?;
+    Ok(())
+}
+
+/// Patch the json using the difference between the given old and new json.
+pub fn patch_json(
+    old_json: &serde_json::Value,
+    new_json: &serde_json::Value,
+    json_to_patch: & mut serde_json::Value,
+) -> Result<()> {
+    let patch = json_patch::diff(old_json, new_json);
+    json_patch::patch(json_to_patch, &patch)?;
     Ok(())
 }
