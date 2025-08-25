@@ -21,9 +21,7 @@ typedef struct ten_value_t ten_value_t;
 
 TEN_UTILS_PRIVATE_API bool ten_log_check_integrity(ten_log_t *self);
 
-TEN_UTILS_API void ten_log_init(ten_log_t *self);
-
-TEN_UTILS_PRIVATE_API ten_log_t *ten_log_create(void);
+TEN_UTILS_API void ten_log_init(ten_log_t *self, bool enable_advanced_log);
 
 TEN_UTILS_API void ten_log_deinit(ten_log_t *self);
 
@@ -53,7 +51,7 @@ TEN_UTILS_API void ten_log_log_with_size(
     size_t line_no, const char *msg, size_t msg_len, const char *category,
     size_t category_len, ten_value_t *fields);
 
-TEN_UTILS_API void ten_log_global_init(void);
+TEN_UTILS_API void ten_log_global_init(bool enable_advanced_log);
 
 TEN_UTILS_API void ten_log_global_deinit(void);
 

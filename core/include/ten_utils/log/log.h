@@ -133,6 +133,7 @@ typedef struct ten_log_t {
   ten_log_encryption_t encryption;
 
   ten_log_advanced_impl_t advanced_impl;
+  bool enable_advanced_log;
 } ten_log_t;
 
 TEN_UTILS_API ten_log_t ten_global_log;

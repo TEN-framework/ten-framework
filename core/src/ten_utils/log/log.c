@@ -27,14 +27,10 @@ bool ten_log_check_integrity(ten_log_t *self) {
     return false;
   }
 
-  if (self->output_level == TEN_LOG_LEVEL_INVALID) {
-    return false;
-  }
-
   return true;
 }
 
-void ten_log_init(ten_log_t *self) {
+void ten_log_init(ten_log_t *self, bool enable_advanced_log) {
   TEN_ASSERT(self, "Invalid argument.");
 
   ten_signature_set(&self->signature, TEN_LOG_SIGNATURE);
@@ -44,15 +40,8 @@ void ten_log_init(ten_log_t *self) {
   ten_log_set_output_to_stderr(self);
   ten_log_encryption_init(&self->encryption);
   ten_log_advanced_impl_init(&self->advanced_impl);
-}
 
-ten_log_t *ten_log_create(void) {
-  ten_log_t *log = TEN_MALLOC(sizeof(ten_log_t));
-  TEN_ASSERT(log, "Failed to allocate memory.");
-
-  ten_log_init(log);
-
-  return log;
+  self->enable_advanced_log = enable_advanced_log;
 }
 
 void ten_log_deinit(ten_log_t *self) {
@@ -214,14 +203,13 @@ void ten_log_log_with_size(ten_log_t *self, TEN_LOG_LEVEL level,
   TEN_ASSERT(self, "Invalid argument.");
   TEN_ASSERT(ten_log_check_integrity(self), "Invalid argument.");
 
-  if (self->advanced_impl.impl) {
-    self->advanced_impl.impl(self, level, category, category_len, func_name,
-                             func_name_len, file_name, file_name_len, line_no,
-                             msg, msg_len, fields);
-    return;
-  }
+  if (self->enable_advanced_log) {
+    if (self->advanced_impl.impl) {
+      self->advanced_impl.impl(self, level, category, category_len, func_name,
+                               func_name_len, file_name, file_name_len, line_no,
+                               msg, msg_len, fields);
+    }
 
-  if (level < self->output_level) {
     return;
   }
 
