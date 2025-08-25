@@ -124,6 +124,8 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
             )
             await self._flush()
             self.current_request_finished = True
+            if self.request_start_ts:
+                await self._handle_tts_audio_end(TTSAudioEndReason.INTERRUPTED)
 
         await super().on_data(ten_env, data)
 
