@@ -13,7 +13,7 @@ use serde::de::DeserializeOwned;
 
 use ten_rust::pkg_info::manifest::Manifest;
 
-use crate::fs::json::write_manifest_json_file;
+use crate::fs::json::{patch_json, write_manifest_json_file};
 use ten_rust::pkg_info::constants::MANIFEST_JSON_FILENAME;
 
 /// Load a JSON file into a deserializable object.
@@ -38,9 +38,9 @@ pub async fn patch_manifest_json_file(
         Path::new(pkg_url).join(MANIFEST_JSON_FILENAME).as_path())?;
     let old_manifest_str = old_manifest.serialize_with_resolved_content().await?;
     let old_manifest_json = serde_json::from_str(&old_manifest_str)?;
-
-    let patch = json_patch::diff(&old_manifest_json, &new_manifest_json);
     let mut manifest_json = serde_json::from_str(&old_manifest_str)?;
-    json_patch::patch(&mut manifest_json, &patch)?;
-    write_manifest_json_file(pkg_url, manifest_json.as_object().unwrap())
+
+    patch_json(&old_manifest_json, &new_manifest_json, &mut manifest_json)?;
+    write_manifest_json_file(pkg_url, manifest_json.as_object().unwrap())?;
+    Ok(())
 }
