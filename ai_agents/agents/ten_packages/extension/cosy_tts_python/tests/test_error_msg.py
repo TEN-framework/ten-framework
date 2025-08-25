@@ -6,6 +6,7 @@
 #
 import json
 from unittest.mock import patch, AsyncMock
+import asyncio
 
 from ten_runtime import (
     ExtensionTester,
@@ -154,8 +155,16 @@ def test_invalid_params_fatal_error(MockCosyTTSClient):
         "websocket connection could not established within 5s. "
         "Please check your network connection, firewall settings, or server status."
     )
-    # get_audio_data won't be called if synthesize_audio fails, but we mock it for completeness.
-    mock_instance.get_audio_data = AsyncMock()
+    # Since synthesize_audio will fail, the background audio consumer loop
+    # will call get_audio_data but there's no active stream. The correct
+    # behavior is to block. We simulate this by having the mock await a
+    # future that never completes. The test will finish, and the background
+    # task will be cancelled during teardown.
+
+    async def block_forever():
+        await asyncio.Future()
+
+    mock_instance.get_audio_data.side_effect = block_forever
 
     # --- Test Setup ---
     # Config with api_key so on_init passes and can proceed

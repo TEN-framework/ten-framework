@@ -4,6 +4,7 @@
 # Licensed under the Apache License, Version 2.0, with certain conditions.
 # Refer to the "LICENSE" file in the root directory for more information.
 #
+from typing import Optional
 from unittest.mock import patch, AsyncMock
 import asyncio
 import filecmp
@@ -80,7 +81,7 @@ class ExtensionTesterDump(ExtensionTester):
             for chunk in self.received_audio_chunks:
                 f.write(chunk)
 
-    def find_tts_dump_file(self) -> str | None:
+    def find_tts_dump_file(self) -> Optional[str]:
         """Find the dump file created by the TTS extension in the fixed dump directory."""
         if not os.path.exists(self.dump_dir):
             return None
@@ -109,21 +110,55 @@ def test_dump_functionality(MockCosyTTSClient):
 
     # --- Mock Configuration ---
     mock_instance = MockCosyTTSClient.return_value
-    # The client is now stateless, so start/stop are not needed.
-    # We mock the methods that are actually called by the extension.
-    mock_instance.synthesize_audio = AsyncMock()
 
-    # Create some fake audio data to be streamed
-    fake_audio_chunk_1 = b"\x11\x22\x33\x44" * 20
-    fake_audio_chunk_2 = b"\xaa\xbb\xcc\xdd" * 20
+    # We use a stateful mock to coordinate between synthesize_audio and
+    # get_audio_data, preventing a race condition where audio chunks are
+    # delivered before the extension has processed the request_id.
+    class DumpStreamer:
+        class Session:
+            def __init__(self):
+                fake_audio_chunk_1 = b"\x11\x22\x33\x44" * 20
+                fake_audio_chunk_2 = b"\xaa\xbb\xcc\xdd" * 20
+                self._audio_stream = iter(
+                    [
+                        (False, MESSAGE_TYPE_PCM, fake_audio_chunk_1),
+                        (False, MESSAGE_TYPE_PCM, fake_audio_chunk_2),
+                        (True, MESSAGE_TYPE_CMD_COMPLETE, None),
+                    ]
+                )
 
-    # This list simulates the data stream that the consumer loop will get from the queue.
-    audio_stream = [
-        (False, MESSAGE_TYPE_PCM, fake_audio_chunk_1),
-        (False, MESSAGE_TYPE_PCM, fake_audio_chunk_2),
-        (True, MESSAGE_TYPE_CMD_COMPLETE, None),  # End of stream
-    ]
-    mock_instance.get_audio_data = AsyncMock(side_effect=audio_stream)
+            async def get_audio_data(self):
+                try:
+                    return next(self._audio_stream)
+                except StopIteration:
+                    # Fallback if called after stream is exhausted
+                    return (True, MESSAGE_TYPE_CMD_COMPLETE, "End of stream")
+
+        def __init__(self):
+            self.session: Optional[DumpStreamer.Session] = None
+            self._new_session_event = asyncio.Event()
+
+        def synthesize_audio(self, text: str, text_input_end: bool):
+            self.session = DumpStreamer.Session()
+            self._new_session_event.set()
+
+        async def get_audio_data(self):
+            if not self.session:
+                await self._new_session_event.wait()
+
+            assert self.session is not None
+
+            done, msg_type, data = await self.session.get_audio_data()
+
+            if done:
+                self.session = None
+                self._new_session_event.clear()
+
+            return done, msg_type, data
+
+    streamer = DumpStreamer()
+    mock_instance.synthesize_audio.side_effect = streamer.synthesize_audio
+    mock_instance.get_audio_data.side_effect = streamer.get_audio_data
 
     # --- Test Setup ---
     tester = ExtensionTesterDump()
@@ -181,7 +216,7 @@ def test_dump_functionality(MockCosyTTSClient):
 class ExtensionTesterFlush(ExtensionTester):
     def __init__(self):
         super().__init__()
-        self.ten_env: TenEnvTester | None = None
+        self.ten_env: Optional[TenEnvTester] = None
         self.audio_start_received = False
         self.first_audio_frame_received = False
         self.flush_start_received = False
@@ -281,36 +316,78 @@ def test_flush_logic(MockCosyTTSClient):
     print("Starting test_flush_logic with mock...")
 
     mock_instance = MockCosyTTSClient.return_value
-    mock_instance.synthesize_audio = AsyncMock()
 
     # This stateful class simulates an audio stream that can be cancelled.
+    # It uses a simple flag and pre-generated stream to make the behavior
+    # deterministic and easy to reason about.
     class Streamer:
+        class Session:
+            def __init__(self):
+                self._cancelled = False
+                # Pre-generate a stream of 20 audio chunks plus a final completion message.
+                audio_chunks = [
+                    (False, MESSAGE_TYPE_PCM, b"\x11\x22\x33" * 100)
+                ] * 20
+                audio_chunks.append(
+                    (True, MESSAGE_TYPE_CMD_COMPLETE, None)  # Natural end
+                )
+                self._stream = iter(audio_chunks)
+
+            async def get_audio_data(self):
+                # If cancelled before the call, immediately return the final state.
+                if self._cancelled:
+                    return (True, MESSAGE_TYPE_CMD_COMPLETE, "Cancelled")
+
+                # Simulate the network delay of receiving the next chunk.
+                await asyncio.sleep(0.1)
+
+                # Re-check after the delay. This ensures that if cancel() was called
+                # during the sleep, we still return the final cancelled state and
+                # never return an audio frame post-cancellation.
+                if self._cancelled:
+                    return (True, MESSAGE_TYPE_CMD_COMPLETE, "Cancelled")
+
+                # If not cancelled, return the next item from the stream.
+                return next(self._stream)
+
+            def cancel(self):
+                self._cancelled = True
+
         def __init__(self):
-            # An event to signal cancellation.
-            self._cancel_event = asyncio.Event()
-            self._chunk_count = 0
+            self.session: Optional[Streamer.Session] = None
+            # Event to signal that a new synthesis session has started.
+            self._new_session_event = asyncio.Event()
+
+        def synthesize_audio(self, text: str, text_input_end: bool):
+            # This mock simulates creating a new synthesis task/session.
+            self.session = Streamer.Session()
+            # Signal to any waiting consumer that data is ready to be fetched.
+            self._new_session_event.set()
 
         async def get_audio_data(self):
-            # If cancelled or the stream ends naturally, return a completion message.
-            if self._cancel_event.is_set() or self._chunk_count >= 20:
-                reason = "Cancelled" if self._cancel_event.is_set() else None
-                return (True, MESSAGE_TYPE_CMD_COMPLETE, reason)
+            # If there's no active session, wait until a new one is created.
+            if not self.session:
+                await self._new_session_event.wait()
 
-            try:
-                # Wait for 0.1s. If cancel() is called, this wait is interrupted.
-                await asyncio.wait_for(self._cancel_event.wait(), timeout=0.1)
-                # The event was set, so it's cancelled.
-                return (True, MESSAGE_TYPE_CMD_COMPLETE, "Cancelled")
-            except asyncio.TimeoutError:
-                # The wait timed out, which is the normal case for producing audio.
-                self._chunk_count += 1
-                return (False, MESSAGE_TYPE_PCM, b"\x11\x22\x33" * 100)
+            # After waiting, the session should be available.
+            assert self.session is not None
 
-        async def cancel(self):
-            # This method will be called by the extension's _flush logic.
-            self._cancel_event.set()
+            # A session is active, so get its data.
+            done, msg_type, data = await self.session.get_audio_data()
+
+            # If the session is now finished, reset for the next request.
+            if done:
+                self.session = None
+                self._new_session_event.clear()
+
+            return (done, msg_type, data)
+
+        def cancel(self):
+            if self.session:
+                self.session.cancel()
 
     streamer = Streamer()
+    mock_instance.synthesize_audio.side_effect = streamer.synthesize_audio
     mock_instance.get_audio_data.side_effect = streamer.get_audio_data
     mock_instance.cancel.side_effect = streamer.cancel
 

@@ -4,7 +4,8 @@
 # Licensed under the Apache License, Version 2.0, with certain conditions.
 # Refer to the "LICENSE" file in the root directory for more information.
 #
-from typing import Any
+import asyncio
+from typing import Any, Optional
 from unittest.mock import patch, AsyncMock
 import json
 
@@ -14,19 +15,16 @@ from ten_runtime import (
     ExtensionTester,
     TenEnvTester,
 )
-from ..cosy_tts import (
-    MESSAGE_TYPE_PCM,
-    MESSAGE_TYPE_CMD_COMPLETE,
-)
+from ..cosy_tts import MESSAGE_TYPE_CMD_COMPLETE
 
 
 # ================ test reconnect after connection drop(robustness) ================
 class ExtensionTesterRobustness(ExtensionTester):
     def __init__(self):
         super().__init__()
-        self.first_request_error: dict[str, Any] | None = None
+        self.first_request_error: Optional[dict[str, Any]] = None
         self.second_request_successful = False
-        self.ten_env: TenEnvTester | None = None
+        self.ten_env: Optional[TenEnvTester] = None
 
     def on_start(self, ten_env_tester: TenEnvTester) -> None:
         """Called when test starts, sends the first TTS request."""
@@ -102,26 +100,60 @@ def test_reconnect_after_connection_drop(MockCosyTTSClient):
     # Add mocks for start/stop to align with extension.py's on_init/on_stop calls
     mock_instance.start = AsyncMock()
     mock_instance.stop = AsyncMock()
-    mock_instance.synthesize_audio = AsyncMock()
 
-    # Create a stateful mock for get_audio_data
-    class StatefulAudioStream:
-        def __init__(self):
-            self.call_count = 0
+    # This mock now manages session state to correctly simulate a failure
+    # on the first attempt and success on the second, without causing loops.
+    class RobustnessStreamer:
+        class Session:
+            def __init__(self, should_fail: bool):
+                self.should_fail = should_fail
 
-        async def get_data(self):
-            self.call_count += 1
-            if self.call_count == 1:
-                # On the first call, simulate a connection drop
-                raise ConnectionRefusedError(
-                    "Simulated connection drop from test"
-                )
-            else:
-                # On subsequent calls, simulate a successful audio stream
+            async def get_audio_data(self):
+                if self.should_fail:
+                    raise ConnectionRefusedError(
+                        "Simulated connection drop from test"
+                    )
+                # On the second request, simulate a successful audio stream
+                # that completes immediately.
                 return (True, MESSAGE_TYPE_CMD_COMPLETE, None)
 
-    stateful_stream = StatefulAudioStream()
-    mock_instance.get_audio_data.side_effect = stateful_stream.get_data
+        def __init__(self):
+            self.session_count = 0
+            self.session: Optional[RobustnessStreamer.Session] = None
+            self._new_session_event = asyncio.Event()
+
+        def synthesize_audio(self, text: str, text_input_end: bool):
+            self.session_count += 1
+            should_fail = self.session_count == 1
+            self.session = RobustnessStreamer.Session(should_fail)
+            self._new_session_event.set()
+
+        async def get_audio_data(self):
+            if not self.session:
+                await self._new_session_event.wait()
+
+            assert self.session is not None
+
+            try:
+                # Delegate to the current session.
+                done, msg_type, data = await self.session.get_audio_data()
+            except ConnectionRefusedError as e:
+                # After a failure, reset the state to allow the next session
+                # to be waited for correctly.
+                self.session = None
+                self._new_session_event.clear()
+                raise e
+
+            # If the session is finished, reset for the next request.
+            if done:
+                self.session = None
+                self._new_session_event.clear()
+
+            return (done, msg_type, data)
+
+    streamer = RobustnessStreamer()
+    mock_instance.synthesize_audio.side_effect = streamer.synthesize_audio
+    mock_instance.get_audio_data.side_effect = streamer.get_audio_data
 
     # --- Test Setup ---
     config = {

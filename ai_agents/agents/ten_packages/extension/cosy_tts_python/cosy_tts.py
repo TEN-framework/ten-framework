@@ -130,20 +130,15 @@ class CosyTTSClient:
         self.synthesizer: SpeechSynthesizer | None = None
 
         # Communication queue for audio data
-        self._receive_queue: (
-            asyncio.Queue[tuple[bool, int, str | bytes | None]] | None
-        ) = None
+        self._receive_queue: asyncio.Queue[
+            tuple[bool, int, str | bytes | None]
+        ] = asyncio.Queue()
 
         # Set dashscope API key
         dashscope.api_key = config.api_key
 
-    async def start(self) -> None:
+    def start(self) -> None:
         """Start the TTS client and initialize components."""
-        # Initialize audio data queue
-        self._receive_queue = asyncio.Queue()
-        self._callback = AsyncIteratorCallback(
-            self.ten_env, self._receive_queue
-        )
 
         # Create synthesizer with configuration
         self.synthesizer = SpeechSynthesizer(
@@ -153,13 +148,9 @@ class CosyTTSClient:
             voice=self.config.voice,
         )
 
-        # Pre-connection to ensure service is accessible
-        self.ten_env.log_info("Pre-connection TTS service connection...")
-        # Start a test synthesis
-        self.synthesizer.streaming_call("")
         self.ten_env.log_info("Cosy TTS client started successfully")
 
-    async def cancel(self) -> None:
+    def cancel(self) -> None:
         """
         Cancel current TTS operation.
         """
@@ -173,44 +164,13 @@ class CosyTTSClient:
             # Clean up synthesizer
             self.synthesizer = None
 
-        # Clean up callback and queue state to prevent stale data issues
-        if self._callback:
-            self._callback.close()
-            self._callback = None
-
-        # Clear the queue to prevent stale data and signal consumer to stop
-        if self._receive_queue:
-            # Clear any remaining items in the queue
-            while not self._receive_queue.empty():
-                try:
-                    self._receive_queue.get_nowait()
-                except asyncio.QueueEmpty:
-                    break
-            # Signal the consumer that this session is cancelled
-            await self._receive_queue.put(
-                (True, MESSAGE_TYPE_CMD_CANCEL, "Operation cancelled")
-            )
-
-        self.ten_env.log_info("TTS client state cleaned up after cancel")
-
-    async def stop(self) -> None:
-        """
-        Close the TTS client and cleanup resources.
-        """
-        self.stopping = True
-        # Cancel any ongoing synthesis
-        await self.cancel()
-        self.ten_env.log_info(
-            f"Cosy TTS client closed successfully, stopping: {self.stopping}"
-        )
-
-    async def complete(self) -> None:
+    def complete(self) -> None:
         """
         Complete current TTS operation.
         """
         if self.synthesizer:
             try:
-                self.synthesizer.async_streaming_complete()
+                self.synthesizer.streaming_complete()
                 self.ten_env.log_info("TTS operation completed")
             except Exception as e:
                 self.ten_env.log_error(f"Error completing TTS: {e}")
@@ -218,7 +178,7 @@ class CosyTTSClient:
             # Clean up synthesizer
             self.synthesizer = None
 
-    async def synthesize_audio(self, text: str, text_input_end: bool):
+    def synthesize_audio(self, text: str, text_input_end: bool):
         """
         Start audio synthesis for the given text.
         This method only initiates synthesis and returns immediately.
@@ -228,20 +188,24 @@ class CosyTTSClient:
             f"Starting TTS synthesis, text: {text}, input_end: {text_input_end}"
         )
 
+        # Initialize audio data queue
+        self._callback = AsyncIteratorCallback(
+            self.ten_env, self._receive_queue
+        )
+
         # Start synthesizer if not initialized
         if self.synthesizer is None:
             self.ten_env.log_info(
                 "Synthesizer is not initialized, starting new one."
             )
-            await self.start()
+            self.start()
 
         # Start streaming TTS synthesis
-        assert self.synthesizer is not None
         self.synthesizer.streaming_call(text)
 
         # Complete streaming if this is the end
         if text_input_end:
-            await self.complete()
+            self.complete()
 
         self.ten_env.log_info(f"TTS synthesis initiated for text: {text}")
 
@@ -249,10 +213,8 @@ class CosyTTSClient:
         """
         Get audio data from the queue. This is a separate method that can be called
         independently to consume audio data.
-        Returns: (done, message_type, data) or None if queue is not initialized
+        Returns: (done, message_type, data)
         """
-        if self._receive_queue is None:
-            return None
         return await self._receive_queue.get()
 
     def _duration_in_ms(self, start: datetime, end: datetime) -> int:
