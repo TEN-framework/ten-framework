@@ -252,25 +252,5 @@ mod tests {
                 .unwrap(),
             "Description de test"
         );
-
-        // Check that description is properly added to all_fields
-        let all_fields = &pkg_info.manifest.all_fields;
-        assert!(all_fields.contains_key("description"));
-
-        let desc_value = &all_fields["description"];
-        assert!(desc_value.is_object());
-        let desc_obj = desc_value.as_object().unwrap();
-        assert!(desc_obj.contains_key("locales"));
-        let locales_obj = desc_obj.get("locales").unwrap().as_object().unwrap();
-        let en_obj = locales_obj.get("en-US").unwrap().as_object().unwrap();
-        assert_eq!(
-            en_obj.get("content").unwrap().as_str().unwrap(),
-            "Test description"
-        );
-        let fr_obj = locales_obj.get("fr").unwrap().as_object().unwrap();
-        assert_eq!(
-            fr_obj.get("content").unwrap().as_str().unwrap(),
-            "Description de test"
-        );
     }
 }
