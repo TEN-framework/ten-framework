@@ -161,6 +161,8 @@ export const LogViewerScriptSchemaMap = {
     type: z.literal(ELogViewerScriptType.RUN_SCRIPT),
     base_dir: z.string().default(""),
     name: z.string().default(""),
+    stdout_is_log: z.boolean().default(true),
+    stderr_is_log: z.boolean().default(true),
   }),
   [ELogViewerScriptType.INSTALL_ALL]: z.object({
     type: z.literal(ELogViewerScriptType.INSTALL_ALL),
@@ -170,7 +172,7 @@ export const LogViewerScriptSchemaMap = {
   [ELogViewerScriptType.INSTALL]: z.object({
     type: z.literal(ELogViewerScriptType.INSTALL),
     base_dir: z.string().default(""),
-    name: z.string().default(""),
+    name: z.string().default("").optional(),
     pkg_type: z.string().default(""),
     pkg_name: z.string().default(""),
     pkg_version: z.string().default(""),

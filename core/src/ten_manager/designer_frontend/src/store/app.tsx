@@ -91,7 +91,8 @@ export const useAppStore = create<IAppStore>()(
         const existing = state.selectedGraphs || [];
         const graphIdsToRemove = new Set(graph.map((g) => g.graph_id));
         const newGraphs = existing.filter(
-          (g) => !graphIdsToRemove.has(g.graph_id));
+          (g) => !graphIdsToRemove.has(g.graph_id)
+        );
         return {
           selectedGraphs: newGraphs,
         };

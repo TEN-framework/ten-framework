@@ -20,12 +20,11 @@ use super::{
     pkg_type::PkgType,
 };
 use crate::{
-    _0_8_compatible::get_ten_field_string, json_schema,
-    utils::fs::read_file_to_string,
-};
-use crate::{
     graph::{graph_info::GraphInfo, is_app_default_loc_or_none},
+    json_schema,
     json_schema::ten_validate_property_json_string,
+    pkg_info::constants::TEN_FIELD_IN_PROPERTY,
+    utils::fs::read_file_to_string,
 };
 
 /// Represents the property configuration of a TEN package.
@@ -45,8 +44,8 @@ pub struct Property {
     #[serde(skip)]
     pub ten: Option<TenInProperty>,
 
-    // Other fields from property.json, stored with order preserved.
-    /// This excludes the "ten" field if it exists in property.json.
+    // Other fields from property.json, stored with order preserved. This
+    // excludes the "ten" field if it exists in property.json.
     #[serde(flatten)]
     pub other_fields: Option<Map<String, Value>>,
 }
@@ -70,7 +69,7 @@ pub async fn parse_property_from_str(
     ten_validate_property_json_string(s)?;
     let temp_all_fields: Map<String, Value> = serde_json::from_str(s)?;
 
-    let ten_field_str = get_ten_field_string();
+    let ten_field_str = TEN_FIELD_IN_PROPERTY.to_string();
 
     // Extract ten field from temp_all_fields if it exists.
     if let Some(ten_value) = temp_all_fields.get(&ten_field_str) {
@@ -126,7 +125,7 @@ pub async fn parse_property_from_str(
         property.ten = Some(ten_in_property);
     }
 
-    //Extract other fields from temp_all_fields
+    // Extract other fields from temp_all_fields.
     let mut other_fields_map = Map::new();
 
     for (key, value) in temp_all_fields {
@@ -210,8 +209,8 @@ impl Property {
         Ok(())
     }
 
-    ///Convert Property.ten to a complete JSON map, including all graph
-    /// information
+    /// Convert Property.ten to a complete JSON map, including all graph
+    /// information.
     pub fn property_ten_to_json_map(
         &self,
         graphs_cache: &HashMap<Uuid, GraphInfo>,
@@ -220,7 +219,7 @@ impl Property {
             serde_json::Map::new();
 
         if let Some(ten_in_property) = &self.ten {
-            //handle uri field
+            // Handle uri field.
             if let Some(uri) = &ten_in_property.uri {
                 json_map.insert(
                     "uri".to_string(),
@@ -228,7 +227,7 @@ impl Property {
                 );
             }
 
-            //handle predefined_graphs field
+            // Handle predefined_graphs field.
             let mut graphs_array = Vec::new();
             if let Some(graph_uuids) = &ten_in_property.predefined_graphs {
                 for uuid in graph_uuids {
@@ -248,7 +247,7 @@ impl Property {
     }
 
     /// Convert Property to a complete JSON map, including the "ten" field and
-    /// other fields
+    /// other fields.
     pub fn property_to_json_map(
         &self,
         graphs_cache: &HashMap<Uuid, GraphInfo>,
@@ -265,7 +264,7 @@ impl Property {
         if self.ten.is_some() {
             let ten_json_map = self.property_ten_to_json_map(graphs_cache)?;
             json_map.insert(
-                get_ten_field_string(),
+                TEN_FIELD_IN_PROPERTY.to_string(),
                 serde_json::to_value(ten_json_map)?,
             );
         }

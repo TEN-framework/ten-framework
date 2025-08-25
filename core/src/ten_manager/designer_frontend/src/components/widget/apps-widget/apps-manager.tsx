@@ -5,6 +5,8 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 
+/** biome-ignore-all lint/suspicious/noExplicitAny: <ignore> */
+
 import { t } from "i18next";
 import {
   BrushCleaningIcon,
@@ -270,7 +272,6 @@ const TabLoadedApps = (props: { className?: string }) => {
               </TableRow>
             )}
             {!isLoading &&
-              loadedApps?.app_info?.length &&
               loadedApps?.app_info?.map((app, index) => (
                 <AppRow key={`app-row-${app.base_dir}`} app={app} idx={index} />
               ))}

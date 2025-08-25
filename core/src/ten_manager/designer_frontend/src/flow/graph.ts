@@ -8,9 +8,7 @@ import { MarkerType } from "@xyflow/react";
 import dagre from "dagre";
 
 import { retrieveAddons } from "@/api/services/addons";
-import {
-  retrieveGraphConnections,
-} from "@/api/services/graphs";
+import { retrieveGraphConnections } from "@/api/services/graphs";
 import {
   postGetGraphNodeGeometry,
   postSetGraphNodeGeometry,
@@ -194,7 +192,7 @@ export const generateRawEdges = (
       }
       connection[connectionType].forEach((connectionItem) => {
         const name = connectionItem.name;
-        const dest = connectionItem.dest;
+        const dest = connectionItem?.dest || [];
         dest.forEach((connectionItemDest) => {
           const targetExtension = connectionItemDest.extension;
           const targetApp = connectionItemDest.app;
@@ -545,7 +543,7 @@ export const syncGraphNodeGeometry = async (
 export const resetNodesAndEdgesByGraphs = async (graphs: IGraph[]) => {
   const backendNodes = graphs.map((graph) => ({
     graph: graph,
-    nodes: graph.graph?.nodes || []
+    nodes: graph.graph?.nodes || [],
   }));
   const backendConnections = await Promise.all(
     graphs.map(async (graph) => {

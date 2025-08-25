@@ -77,7 +77,6 @@ class AliyunASRBigmodelExtension(AsyncASRBaseExtension):
         self.audio_dumper: Dumper | None = None
         self.sent_user_audio_duration_ms_before_last_reset: int = 0
         self.last_finalize_timestamp: int = 0
-        self.is_finalize_disconnect: bool = False
         # Vocabulary service
         self.service: VocabularyService = VocabularyService()
 
@@ -213,7 +212,6 @@ class AliyunASRBigmodelExtension(AsyncASRBaseExtension):
         """Handle callback when connection is established"""
         self.ten_env.log_info("Aliyun ASR connection opened")
         self.connected = True
-
         # Reset timeline and audio duration
         self.sent_user_audio_duration_ms_before_last_reset += (
             self.audio_timeline.get_total_user_audio_duration()
@@ -222,23 +220,11 @@ class AliyunASRBigmodelExtension(AsyncASRBaseExtension):
 
     async def on_asr_complete(self) -> None:
         """Handle callback when recognition is completed"""
-
-        if self.is_finalize_disconnect:
-            self.is_finalize_disconnect = False
-            if self.recognition:
-                self.recognition.start()
-
         self.ten_env.log_info("Aliyun ASR recognition completed")
 
     async def on_asr_error(self, result: RecognitionResult) -> None:
         """Handle error callback"""
         self.ten_env.log_error(f"Aliyun ASR error: {result.message}")
-
-        if self.is_finalize_disconnect:
-            self.is_finalize_disconnect = False
-            if self.recognition:
-                self.recognition.start()
-
         # Send error information
         await self.send_asr_error(
             ModuleError(
@@ -373,10 +359,13 @@ class AliyunASRBigmodelExtension(AsyncASRBaseExtension):
         """Handle disconnect mode finalization"""
         if self.recognition:
             if self.is_connected():
-                self.is_finalize_disconnect = True
                 self.recognition.stop()
                 self.ten_env.log_debug(
                     "Aliyun ASR finalize disconnect completed"
+                )
+            else:
+                self.ten_env.log_debug(
+                    "Aliyun ASR finalize disconnect completed, but not connected"
                 )
 
     async def _handle_finalize_mute_pkg(self):
@@ -453,11 +442,7 @@ class AliyunASRBigmodelExtension(AsyncASRBaseExtension):
     @override
     def is_connected(self) -> bool:
         """Check connection status"""
-        is_connected = (
-            self.connected
-            and self.recognition is not None
-            and not self.is_finalize_disconnect
-        )
+        is_connected = self.connected and self.recognition is not None
         # self.ten_env.log_debug(f"Aliyun ASR is_connected: {is_connected}")
         return is_connected
 

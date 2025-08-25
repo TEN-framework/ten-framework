@@ -9,13 +9,13 @@ use std::sync::Arc;
 use actix_web::{web, HttpResponse, Responder};
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 use crate::fs::json::patch_property_json_file;
 use ten_rust::{
     graph::{connection::GraphConnection, connection::GraphMessageFlow, Graph},
     pkg_info::message::MsgType,
 };
-use uuid::Uuid;
 
 use crate::{
     designer::{
@@ -150,7 +150,9 @@ pub async fn delete_graph_connection_endpoint(
 ) -> Result<impl Responder, actix_web::Error> {
     // Get a write lock on the state since we need to modify the graph.
     let pkgs_cache = state.pkgs_cache.read().await;
+    let pkgs_cache = state.pkgs_cache.read().await;
     let mut graphs_cache = state.graphs_cache.write().await;
+    let old_graphs_cache = graphs_cache.clone();
     let old_graphs_cache = graphs_cache.clone();
 
     // Get the specified graph from graphs_cache.

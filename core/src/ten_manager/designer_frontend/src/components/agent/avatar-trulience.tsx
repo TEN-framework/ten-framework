@@ -98,10 +98,11 @@ export default function Avatar({ audioTrack }: AvatarProps) {
   return (
     <div
       className={cn("relative h-full w-full overflow-hidden rounded-lg", {
-        ["absolute top-0 left-0 h-screen w-screen rounded-none"]: fullscreen,
+        "absolute top-0 left-0 h-screen w-screen rounded-none": fullscreen,
       })}
     >
       <button
+        type="button"
         className={cn(
           "absolute top-2 right-2 z-10",
           "rounded-lg bg-black/50 p-2",

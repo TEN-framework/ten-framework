@@ -4,21 +4,20 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
+use std::collections::HashMap;
+use std::io::{BufReader, BufWriter, Write};
 use std::{fs::OpenOptions, path::Path};
 
 use anyhow::{Context, Result};
-use std::io::{BufReader, BufWriter, Write};
-use ten_rust::pkg_info::constants::{
-    MANIFEST_JSON_FILENAME, PROPERTY_JSON_FILENAME,
-};
 
+use ten_rust::pkg_info::constants::{
+    MANIFEST_JSON_FILENAME, PROPERTY_JSON_FILENAME, TEN_FIELD_IN_PROPERTY,
+};
+use ten_rust::graph::graph_info::GraphInfo;
 use ten_rust::pkg_info::property::Property;
 
 use crate::constants::BUF_WRITER_BUF_SIZE;
 
-use std::collections::HashMap;
-use ten_rust::_0_8_compatible::get_ten_field_string;
-use ten_rust::graph::graph_info::GraphInfo;
 use uuid::Uuid;
 
 /// Read json file from disk
@@ -87,9 +86,9 @@ pub fn patch_property_json_file(
     graphs_cache: &HashMap<Uuid, GraphInfo>,
     old_graphs_cache: &HashMap<Uuid, GraphInfo>,
 ) -> Result<()> {
-    // generate patch from the difference between
-    // before and after the update of property.ten
-    let ten_field_str = get_ten_field_string();
+    // generate patch from the difference between before and after the update of
+    // property.ten
+    let ten_field_str = TEN_FIELD_IN_PROPERTY.to_string();
 
     let old_ten_json = serde_json::to_value(
         property

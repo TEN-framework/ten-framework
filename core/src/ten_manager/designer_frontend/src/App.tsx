@@ -109,7 +109,7 @@ const Main = () => {
     const init = async () => {
       if (!isPersistentSchemaInited) {
         try {
-          const remoteCfg = await getStorageValueByKey();
+          const remoteCfg = await getStorageValueByKey<{ version?: string }>();
           if (remoteCfg?.version === PERSISTENT_DEFAULTS.version) {
             // If the schema is already initialized,
             // we can skip the initialization.

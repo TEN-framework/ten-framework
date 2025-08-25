@@ -37,6 +37,7 @@ export function LogViewerBackstageWidget(props: ILogViewerWidget) {
   const wsRef = React.useRef<WebSocket | null>(null);
   const hasConnectedRef = React.useRef(false);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <ignore>
   React.useEffect(() => {
     if (!wsUrl || !scriptType || !script) {
       return;
@@ -98,9 +99,8 @@ export function LogViewerBackstageWidget(props: ILogViewerWidget) {
             { line: `Unknown message: ${JSON.stringify(msg)}`, type: msg.type },
           ]);
         }
-
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (err) {
+        console.error("[LogViewerWidget] Error parsing message:", err);
         // If it's not JSON, output it directly as text.
         appendLogsById(id, [
           { line: event.data, type: EWSMessageType.NORMAL_LINE },
@@ -155,6 +155,7 @@ export function LogViewerFrontStageWidget(props: {
             (viewer) => viewer.history || []
           );
           return [
+            // biome-ignore lint/performance/noAccumulatingSpread: <ignore>
             ...acc,
             ...allLogs.filter((log) => log.metadata?.extension === ext),
           ];
@@ -257,14 +258,14 @@ const parseLogLine = (
   const { line: str } = logItem;
   if (!str) {
     return {
-      id: string2uuid(new Date().getTime().toString()),
+      id: string2uuid(Date.now().toString()),
       message: "",
       raw: logItem,
     };
   }
   const regex = /^(\w+)@([^:]+):(\d+)\s+\[([^\]]+)\]\s+(.+)$/;
   const match = str.match(regex);
-  const randomId = string2uuid(str + new Date().getTime());
+  const randomId = string2uuid(str + Date.now());
   if (!match) {
     return {
       id: randomId,
@@ -358,6 +359,7 @@ const VirtualListItem = (props: {
 
   const rowRef = React.useRef<HTMLDivElement>(null);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <ignore>
   React.useEffect(() => {
     if (rowRef.current) {
       setSize(index, rowRef.current.getBoundingClientRect().height);
@@ -420,6 +422,7 @@ function LogViewerLogItemList(props: {
   //   listRef.current?.scrollToItem(filteredLogs.length - 1);
   // }, []);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <ignore>
   React.useEffect(() => {
     setTimeout(() => {
       listRef.current?.scrollToItem(filteredLogs.length - 1, "end");

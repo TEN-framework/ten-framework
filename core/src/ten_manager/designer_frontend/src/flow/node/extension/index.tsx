@@ -165,6 +165,7 @@ const ExtensionNodeHeader = (props: {
       className={cn(
         "rounded-t-md rounded-b-md px-4 py-2",
         "flex items-center gap-2",
+        "w-full",
         className
       )}
     >
@@ -190,7 +191,7 @@ const ExtensionNodeHeader = (props: {
       />
 
       {/* Content */}
-      <div className="flex flex-col">
+      <div className="flex flex-1 flex-col truncate">
         <span
           className={cn("font-medium text-foreground text-sm", {
             "text-foreground/50": !isInstalled,
@@ -206,6 +207,7 @@ const ExtensionNodeHeader = (props: {
           {data.addon}
         </span>
       </div>
+
       {/* Actions */}
       <div className="ml-auto flex items-center gap-1">
         {/* Expand button */}

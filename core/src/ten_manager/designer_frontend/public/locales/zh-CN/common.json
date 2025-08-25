@@ -380,5 +380,27 @@
       "change-auto-start-success": "自动启动设置更新成功",
       "change-auto-start-failed": "自动启动设置更新失败"
     }
+  },
+  "ui": {
+    "autoForm": {
+      "rootLevel": "根级别",
+      "addDynamicField": "添加动态字段",
+      "location": "位置",
+      "selectLocation": "选择位置",
+      "fieldName": "字段名称",
+      "enterFieldName": "输入字段名称（例如：dump_size、model_name）",
+      "fieldType": "字段类型",
+      "string": "字符串",
+      "number": "数字",
+      "object": "对象 (JSON)",
+      "defaultValue": "默认值",
+      "enterDefaultValue": "输入默认值",
+      "addField": "添加字段",
+      "dynamicFields": "动态字段",
+      "path": "路径",
+      "root": "根",
+      "type": "类型",
+      "noDynamicFields": "尚未定义动态字段。请在上方添加您的第一个字段。"
+    }
   }
 }

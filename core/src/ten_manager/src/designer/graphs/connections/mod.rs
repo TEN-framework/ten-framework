@@ -52,11 +52,20 @@ impl Default for DesignerGraphLoc {
 
 impl From<DesignerGraphMessageFlow> for GraphMessageFlow {
     fn from(designer_msg_flow: DesignerGraphMessageFlow) -> Self {
-        GraphMessageFlow::new(
-            designer_msg_flow.name,
-            designer_msg_flow.dest.into_iter().map(|d| d.into()).collect(),
-            designer_msg_flow.source.into_iter().map(|s| s.into()).collect(),
-        )
+        GraphMessageFlow {
+            name: designer_msg_flow.name,
+            names: designer_msg_flow.names,
+            dest: designer_msg_flow
+                .dest
+                .into_iter()
+                .map(|d| d.into())
+                .collect(),
+            source: designer_msg_flow
+                .source
+                .into_iter()
+                .map(|s| s.into())
+                .collect(),
+        }
     }
 }
 
@@ -89,7 +98,11 @@ impl From<DesignerGraphSource> for GraphSource {
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct DesignerGraphMessageFlow {
-    pub name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub names: Option<Vec<String>>,
 
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub dest: Vec<DesignerGraphDestination>,
@@ -101,10 +114,8 @@ pub struct DesignerGraphMessageFlow {
 impl From<GraphMessageFlow> for DesignerGraphMessageFlow {
     fn from(msg_flow: GraphMessageFlow) -> Self {
         DesignerGraphMessageFlow {
-            name: msg_flow.name.expect(
-                "name field should be Some when converting to \
-                 DesignerMessageFlow",
-            ),
+            name: msg_flow.name,
+            names: msg_flow.names,
             dest: get_designer_destination_from_property(msg_flow.dest),
             source: get_designer_source_from_property(msg_flow.source),
         }

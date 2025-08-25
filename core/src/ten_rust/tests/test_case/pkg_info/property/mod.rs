@@ -47,7 +47,9 @@ mod tests {
 
         assert_eq!(ten_in_property.uri.unwrap(), "http://example.com");
         assert!(graphs_cache.is_empty());
-        assert!(property.other_fields.is_none()); // Should not contain other fields.
+
+        // Should not contain other fields.
+        assert!(property.other_fields.is_none());
     }
 
     #[tokio::test]

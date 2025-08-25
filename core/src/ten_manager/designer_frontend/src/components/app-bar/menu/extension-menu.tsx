@@ -67,7 +67,7 @@ export const ExtensionMenu = (props: {
     appendWidget({
       container_id: CONTAINER_DEFAULT_ID,
       group_id: GROUP_DOC_REF_ID,
-      widget_id: DOC_REF_WIDGET_ID + "-" + EDocLinkKey.Extension,
+      widget_id: `${DOC_REF_WIDGET_ID}-${EDocLinkKey.Extension}`,
 
       category: EWidgetCategory.Default,
       display_type: EWidgetDisplayType.Popup,
