@@ -142,19 +142,98 @@ pub struct Manifest {
     pub package: Option<PackageConfig>,
     pub scripts: Option<HashMap<String, String>>,
 
-    /// All fields from manifest.json, stored with order preserved.
-    pub all_fields: Map<String, Value>,
-
     /// The flattened API.
     pub flattened_api: Arc<tokio::sync::RwLock<Option<ManifestApi>>>,
 }
 
+/// Serialize the Manifest to a JSON string, but not resolve the content of the LocaleContent fields.
+/// Use `serialize_with_resolved_content` if you want to resolve description, display_name, and readme fields.
 impl Serialize for Manifest {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
     {
-        self.all_fields.serialize(serializer)
+        use serde_json::Map;
+        let mut map = Map::new();
+
+        // Serialize type and name
+        map.insert(
+            "type".to_string(),
+            serde_json::to_value(self.type_and_name.pkg_type).map_err(serde::ser::Error::custom)?
+        );
+        map.insert(
+            "name".to_string(),
+            serde_json::to_value(&self.type_and_name.name).map_err(serde::ser::Error::custom)?
+        );
+        // Serialize version
+        map.insert(
+            "version".to_string(),
+            serde_json::to_value(&self.version).map_err(serde::ser::Error::custom)?
+        );
+        // Option fields
+        if let Some(ref dependencies) = self.dependencies {
+            map.insert(
+                "dependencies".to_string(),
+                serde_json::to_value(dependencies).map_err(serde::ser::Error::custom)?
+            );
+        }
+        if let Some(ref dev_dependencies) = self.dev_dependencies {
+            map.insert(
+                "dev_dependencies".to_string(),
+                serde_json::to_value(dev_dependencies).map_err(serde::ser::Error::custom)?
+            );
+        }
+        if let Some(ref tags) = self.tags {
+            map.insert(
+                "tags".to_string(),
+                serde_json::to_value(tags).map_err(serde::ser::Error::custom)?
+            );
+        }
+        if let Some(ref supports) = self.supports {
+            map.insert(
+                "supports".to_string(),
+                serde_json::to_value(supports).map_err(serde::ser::Error::custom)?
+            );
+        }
+        if let Some(ref api) = self.api {
+            map.insert(
+                "api".to_string(),
+                serde_json::to_value(api).map_err(serde::ser::Error::custom)?
+            );
+        }
+        if let Some(ref package) = self.package {
+            map.insert(
+                "package".to_string(),
+                serde_json::to_value(package).map_err(serde::ser::Error::custom)?
+            );
+        }
+        if let Some(ref scripts) = self.scripts {
+            map.insert(
+                "scripts".to_string(),
+                serde_json::to_value(scripts).map_err(serde::ser::Error::custom)?
+            );
+        }
+        // The following fields may contain async content (e.g., import_uri),
+        // but here we only serialize their in-memory structure.
+        if let Some(ref description) = self.description {
+            map.insert(
+                "description".to_string(),
+                serde_json::to_value(description).map_err(serde::ser::Error::custom)?
+            );
+        }
+        if let Some(ref display_name) = self.display_name {
+            map.insert(
+                "display_name".to_string(),
+                serde_json::to_value(display_name).map_err(serde::ser::Error::custom)?
+            );
+        }
+        if let Some(ref readme) = self.readme {
+            map.insert(
+                "readme".to_string(),
+                serde_json::to_value(readme).map_err(serde::ser::Error::custom)?
+            );
+        }
+        map.serialize(serializer)
     }
 }
 
@@ -163,35 +242,35 @@ impl<'de> Deserialize<'de> for Manifest {
     where
         D: serde::Deserializer<'de>,
     {
-        let all_fields = Map::deserialize(deserializer)?;
+        let temp_all_fields = Map::deserialize(deserializer)?;
 
-        // Now extract the fields from all_fields.
-        let type_and_name = extract_type_and_name(&all_fields)
+        // Now extract the fields from temp_all_fields.
+        let type_and_name = extract_type_and_name(&temp_all_fields)
             .map_err(serde::de::Error::custom)?;
         let version =
-            extract_version(&all_fields).map_err(serde::de::Error::custom)?;
+            extract_version(&temp_all_fields).map_err(serde::de::Error::custom)?;
 
-        let description = extract_description(&all_fields)
+        let description = extract_description(&temp_all_fields)
             .map_err(serde::de::Error::custom)?;
-        let display_name = extract_display_name(&all_fields)
+        let display_name = extract_display_name(&temp_all_fields)
             .map_err(serde::de::Error::custom)?;
         let readme =
-            extract_readme(&all_fields).map_err(serde::de::Error::custom)?;
+            extract_readme(&temp_all_fields).map_err(serde::de::Error::custom)?;
 
-        let dependencies = extract_dependencies(&all_fields)
+        let dependencies = extract_dependencies(&temp_all_fields)
             .map_err(serde::de::Error::custom)?;
-        let dev_dependencies = extract_dev_dependencies(&all_fields)
+        let dev_dependencies = extract_dev_dependencies(&temp_all_fields)
             .map_err(serde::de::Error::custom)?;
 
         let tags =
-            extract_tags(&all_fields).map_err(serde::de::Error::custom)?;
+            extract_tags(&temp_all_fields).map_err(serde::de::Error::custom)?;
         let supports =
-            extract_supports(&all_fields).map_err(serde::de::Error::custom)?;
-        let api = extract_api(&all_fields).map_err(serde::de::Error::custom)?;
+            extract_supports(&temp_all_fields).map_err(serde::de::Error::custom)?;
+        let api = extract_api(&temp_all_fields).map_err(serde::de::Error::custom)?;
         let package =
-            extract_package(&all_fields).map_err(serde::de::Error::custom)?;
+            extract_package(&temp_all_fields).map_err(serde::de::Error::custom)?;
         let scripts =
-            extract_scripts(&all_fields).map_err(serde::de::Error::custom)?;
+            extract_scripts(&temp_all_fields).map_err(serde::de::Error::custom)?;
 
         Ok(Manifest {
             type_and_name,
@@ -206,7 +285,6 @@ impl<'de> Deserialize<'de> for Manifest {
             api,
             package,
             scripts,
-            all_fields,
             flattened_api: Arc::new(tokio::sync::RwLock::new(None)),
         })
     }
@@ -214,13 +292,6 @@ impl<'de> Deserialize<'de> for Manifest {
 
 impl Default for Manifest {
     fn default() -> Self {
-        let mut all_fields = Map::new();
-        all_fields
-            .insert("type".to_string(), Value::String("invalid".to_string()));
-        all_fields.insert("name".to_string(), Value::String(String::new()));
-        all_fields
-            .insert("version".to_string(), Value::String("0.0.0".to_string()));
-
         Self {
             type_and_name: PkgTypeAndName {
                 pkg_type: PkgType::Invalid,
@@ -237,7 +308,6 @@ impl Default for Manifest {
             api: None,
             package: None,
             scripts: None,
-            all_fields,
             flattened_api: Arc::new(tokio::sync::RwLock::new(None)),
         }
     }
@@ -248,26 +318,26 @@ impl Manifest {
         ten_validate_manifest_json_string(s)?;
 
         let value: serde_json::Value = serde_json::from_str(s)?;
-        let all_fields = match value {
+        let temp_all_fields = match value {
             Value::Object(map) => map,
             _ => return Err(anyhow!("Expected JSON object")),
         };
 
         // Extract key fields into the struct fields for easier access.
-        let type_and_name = extract_type_and_name(&all_fields)?;
-        let version = extract_version(&all_fields)?;
+        let type_and_name = extract_type_and_name(&temp_all_fields)?;
+        let version = extract_version(&temp_all_fields)?;
 
-        let description = extract_description(&all_fields)?;
-        let display_name = extract_display_name(&all_fields)?;
-        let readme = extract_readme(&all_fields)?;
-        let dependencies = extract_dependencies(&all_fields)?;
-        let dev_dependencies = extract_dev_dependencies(&all_fields)?;
+        let description = extract_description(&temp_all_fields)?;
+        let display_name = extract_display_name(&temp_all_fields)?;
+        let readme = extract_readme(&temp_all_fields)?;
+        let dependencies = extract_dependencies(&temp_all_fields)?;
+        let dev_dependencies = extract_dev_dependencies(&temp_all_fields)?;
 
-        let tags = extract_tags(&all_fields)?;
-        let supports = extract_supports(&all_fields)?;
-        let api = extract_api(&all_fields)?;
-        let package = extract_package(&all_fields)?;
-        let scripts = extract_scripts(&all_fields)?;
+        let tags = extract_tags(&temp_all_fields)?;
+        let supports = extract_supports(&temp_all_fields)?;
+        let api = extract_api(&temp_all_fields)?;
+        let package = extract_package(&temp_all_fields)?;
+        let scripts = extract_scripts(&temp_all_fields)?;
 
         // Create manifest with all fields.
         let manifest = Manifest {
@@ -283,7 +353,6 @@ impl Manifest {
             api,
             package,
             scripts,
-            all_fields,
             flattened_api: Arc::new(tokio::sync::RwLock::new(None)),
         };
 
@@ -727,7 +796,7 @@ fn extract_tags(map: &Map<String, Value>) -> Result<Option<Vec<String>>> {
 
 impl fmt::Display for Manifest {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match serde_json::to_string_pretty(&self.all_fields) {
+        match serde_json::to_string_pretty(&self) {
             Ok(json_str) => write!(f, "{json_str}"),
             Err(_) => write!(f, "Failed to serialize manifest"),
         }
