@@ -37,6 +37,11 @@ class BytedanceASRConfig(BaseModel):
     dump: bool = False
     dump_path: str = "."
 
+    # VAD configuration
+    vad_signal: bool = True
+    start_silence_time: int = 5000
+    vad_silence_time: int = 800
+
     def is_black_list_params(self, key: str) -> bool:
         """Check if a parameter key is in the blacklist."""
         return key in self.black_list_params

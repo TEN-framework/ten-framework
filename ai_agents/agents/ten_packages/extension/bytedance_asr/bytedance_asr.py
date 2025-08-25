@@ -183,6 +183,11 @@ class AsrWsClient:
         self.auth_method = kwargs.get("auth_method", "token")
         self.mp3_seg_size = int(kwargs.get("mp3_seg_size", 10000))
 
+        # Add missing VAD-related attributes
+        self.vad_signal = kwargs.get("vad_signal", True)
+        self.start_silence_time = kwargs.get("start_silence_time", 500)
+        self.vad_silence_time = kwargs.get("vad_silence_time", 800)
+
         self.websocket = None
         self.handle_received_message = kwargs.get(
             "handle_received_message", self.default_handler
@@ -563,6 +568,9 @@ class AsrWsClient:
                 "show_utterances": self.show_utterances,
                 "result_type": self.result_type,
                 "sequence": 1,
+                "vad_signal": self.vad_signal,
+                "start_silence_time": self.start_silence_time,
+                "vad_silence_time": self.vad_silence_time,
             },
             "audio": {
                 "format": self.format,
