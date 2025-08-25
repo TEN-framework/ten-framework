@@ -79,6 +79,9 @@ core/src/ten_runtime/binding/nodejs/build
 # Clangd index file
 .clangd/
 
+# Claude Code
+.claude
+
 # Rust generated files
 core/src/ten_manager/target/
 core/src/ten_rust/target/
