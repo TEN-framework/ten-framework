@@ -26,7 +26,7 @@ from .cosy_tts import (
     MESSAGE_TYPE_PCM,
     MESSAGE_TYPE_CMD_ERROR,
     MESSAGE_TYPE_CMD_CANCEL,
-    CosyTTSClient
+    CosyTTSClient,
 )
 
 
