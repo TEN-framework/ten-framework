@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "azure_asr_python",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "dependencies": [
     {
       "type": "system",
@@ -22,20 +22,19 @@
     ],
     "property": {
       "properties": {
-        "api_key": {
-          "type": "string"
-        },
-        "region": {
-          "type": "string"
-        },
-        "model": {
-          "type": "string"
-        },
-        "language": {
-          "type": "string"
-        },
-        "sample_rate": {
-          "type": "int64"
+        "params": {
+          "type": "object",
+          "properties": {
+            "key": {
+              "type": "string"
+            },
+            "region": {
+              "type": "string"
+            },
+            "language": {
+              "type": "string"
+            }
+          }
         }
       }
     }
