@@ -31,15 +31,12 @@ static void test_app_on_configure(TEN_UNUSED ten_app_t *app,
     TEN_ASSERT(rc, "Should not happen.");
   } else {
     // The default property.json content of the test app.
-    rc = ten_env_init_property_from_json(ten_env,
-                                         "{\
-                                               \"ten\": {\
-                                                 \"log\": {\
-                                                   \"level\": 2\
-                                                 }\
-                                               }\
-                                             }",
-                                         NULL);
+    rc = ten_env_init_property_from_json(
+        ten_env,
+        "{\"ten\":{\"log\":{\"handlers\":[{\"matchers\":[{\"level\":\"info\"}],"
+        "\"formatter\":{\"type\":\"plain\",\"colored\":true},\"emitter\":{"
+        "\"type\":\"console\",\"config\":{\"stream\":\"stdout\"}}}]}}}",
+        NULL);
     TEN_ASSERT(rc, "Should not happen.");
   }
 
