@@ -11,9 +11,6 @@ import { genResSchema } from "@/api/endpoints/utils";
 import {
   AddConnectionPayloadSchema,
   AddNodePayloadSchema,
-  BackendNodeExtension,
-  BackendNodeSelector,
-  BackendNodeSubGraph,
   DeleteConnectionPayloadSchema,
   DeleteNodePayloadSchema,
   GraphUiNodeGeometrySchema,
