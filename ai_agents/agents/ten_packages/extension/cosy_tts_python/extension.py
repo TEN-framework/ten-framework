@@ -17,7 +17,7 @@ from ten_ai_base.message import (
     ModuleVendorException,
     TTSAudioEndReason,
 )
-from ten_ai_base.struct import TTSTextInput, TTSTextResult
+from ten_ai_base.struct import TTSTextInput
 from ten_ai_base.tts2 import AsyncTTS2BaseExtension, DATA_FLUSH
 from ten_runtime import AsyncTenEnv
 
@@ -25,6 +25,8 @@ from .config import CosyTTSConfig
 from .cosy_tts import (
     ERROR_CODE_TTS_FAILED,
     MESSAGE_TYPE_PCM,
+    MESSAGE_TYPE_CMD_ERROR,
+    MESSAGE_TYPE_CMD_CANCEL,
     CosyTTSClient,
     CosyTTSTaskFailedException,
 )
@@ -59,6 +61,9 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
         # Total audio bytes received for current request
         self.total_audio_bytes: int = 0
 
+        # Audio consumer task for processing audio data
+        self._audio_consumer_task: asyncio.Task | None = None
+
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         try:
             await super().on_init(ten_env)
@@ -90,8 +95,16 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
         if self.client:
-            await self.client.stop()
+            # The new client is stateless, no stop method needed.
             self.client = None
+
+        # Cancel audio consumer task if running
+        if self._audio_consumer_task and not self._audio_consumer_task.done():
+            self._audio_consumer_task.cancel()
+            try:
+                await self._audio_consumer_task
+            except asyncio.CancelledError:
+                pass
 
         # Clean up all PCMWriters
         await self._cleanup_all_pcm_writers()
@@ -114,9 +127,7 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
             )
             await self._flush()
             if self.request_start_ts:
-                await self._handle_tts_audio_end(
-                    None, TTSAudioEndReason.INTERRUPTED
-                )
+                await self._handle_tts_audio_end(TTSAudioEndReason.INTERRUPTED)
                 self.current_request_finished = True
 
         await super().on_data(ten_env, data)
@@ -135,7 +146,7 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
                 self.ten_env.log_info(
                     f"KEYPOINT New TTS request with ID: {t.request_id}"
                 )
-
+                self.client.synthesizer = None
                 self.current_request_id = t.request_id
                 self.current_request_finished = False
                 self.total_audio_bytes = 0  # Reset for new request
@@ -158,9 +169,10 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
                 self.ten_env.log_info(
                     f"Received empty text for TTS request, text_input_end: {t.text_input_end}"
                 )
-                if t.text_input_end:
+                if t.text_input_end and not self.current_request_finished:
+                    await self.client.complete()
                     self.current_request_finished = True
-                    await self._handle_tts_audio_end(t)
+                    await self._handle_tts_audio_end()
                     return
 
             # Record TTFB timing
@@ -172,63 +184,21 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
                 f"Calling client.synthesize_audio() with text: {t.text}, current_request_id: {self.current_request_id}, current_turn_id: {self.current_turn_id}"
             )
 
-            # synthesize_audio returns an AsyncIterator, so we can use async for directly
-            data = self.client.synthesize_audio(t.text, t.text_input_end)
-            self.ten_env.log_info(f"Got data generator: {data}")
+            # Start audio synthesis (returns immediately)
+            await self.client.synthesize_audio(t.text, t.text_input_end)
 
-            # Process audio chunks
-            chunk_count = 0
-            first_chunk = True
-
-            async for [done, message_type, message] in data:
-                # Check if request is flushed
-                self.ten_env.log_info(
-                    f"Received done: {done}, message_type: {message_type}, current_request_id: {self.current_request_id}, current_turn_id: {self.current_turn_id}"
+            # Start audio consumer task if not already running
+            if (
+                self._audio_consumer_task is None
+                or self._audio_consumer_task.done()
+            ):
+                self._audio_consumer_task = asyncio.create_task(
+                    self._consume_audio_data()
                 )
-
-                # Process PCM audio chunks
-                if message_type == MESSAGE_TYPE_PCM:
-                    audio_chunk = message
-
-                    if (
-                        audio_chunk is not None
-                        and len(audio_chunk) > 0
-                        and isinstance(audio_chunk, bytes)
-                    ):
-                        chunk_count += 1
-                        self.total_audio_bytes += len(audio_chunk)
-                        self.ten_env.log_info(
-                            f"[tts] Received audio chunk #{chunk_count}, size: {len(audio_chunk)} bytes, current_request_id: {self.current_request_id}, current_turn_id: {self.current_turn_id}"
-                        )
-
-                        # Send TTS audio start on first chunk
-                        if first_chunk:
-                            await self._handle_first_audio_chunk()
-                            first_chunk = False
-
-                        # Write to dump file if enabled
-                        await self._write_audio_to_dump_file(audio_chunk)
-
-                        # Send audio data
-                        await self.send_tts_audio_data(audio_chunk)
-                    else:
-                        self.ten_env.log_info(
-                            f"Received empty or invalid payload for TTS response, current_request_id: {self.current_request_id}, current_turn_id: {self.current_turn_id}"
-                        )
-
-                # Handle TTS audio end
-                if done:
-                    self.ten_env.log_info(
-                        f"All pcm received done, current_request_id: {self.current_request_id}, current_turn_id: {self.current_turn_id}"
-                    )
-                    await self._handle_tts_audio_end(t)
-                    break
-
-            self.ten_env.log_info(
-                f"TTS processing completed, total chunks: {chunk_count}, current_request_id: {self.current_request_id}, current_turn_id: {self.current_turn_id}"
-            )
-            # Reset for next request
-            self.request_start_ts = None
+            else:
+                self.ten_env.log_info(
+                    "Audio consumer task is still running, not creating new one"
+                )
 
             # Handle text input end
             if t.text_input_end:
@@ -269,6 +239,113 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
             self.ten_env.log_error(
                 f"Error in request_tts: {traceback.format_exc()}. text: {t.text}, current_request_id: {self.current_request_id}, current_turn_id: {self.current_turn_id}"
             )
+            await self._send_tts_error(
+                str(e),
+                code=ModuleErrorCode.FATAL_ERROR.value,
+                vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
+            )
+
+    async def _consume_audio_data(self) -> None:
+        """
+        Independent audio data consumer loop.
+        This runs in the background and processes audio data from the client.
+        """
+        chunk_count = 0
+        first_chunk = True
+
+        try:
+            self.ten_env.log_info("Starting audio consumer loop")
+
+            while True:  # Loop until we get a done signal or error
+                try:
+                    self.ten_env.log_info(
+                        "Waiting for audio data from client..."
+                    )
+                    # Get audio data from client
+                    result = await self.client.get_audio_data()
+                    if result is None:
+                        self.ten_env.log_warn(
+                            "Audio data queue not initialized"
+                        )
+                        break
+
+                    done, message_type, data = result
+
+                    self.ten_env.log_info(
+                        f"Received done: {done}, message_type: {message_type}, current_request_id: {self.current_request_id}, current_turn_id: {self.current_turn_id}"
+                    )
+
+                    # Process PCM audio chunks
+                    if message_type == MESSAGE_TYPE_PCM:
+                        audio_chunk = data
+
+                        if (
+                            audio_chunk is not None
+                            and len(audio_chunk) > 0
+                            and isinstance(audio_chunk, bytes)
+                        ):
+                            chunk_count += 1
+                            self.total_audio_bytes += len(audio_chunk)
+                            self.ten_env.log_info(
+                                f"[tts] Received audio chunk #{chunk_count}, size: {len(audio_chunk)} bytes, current_request_id: {self.current_request_id}, current_turn_id: {self.current_turn_id}"
+                            )
+
+                            # Send TTS audio start on first chunk
+                            if first_chunk:
+                                await self._handle_first_audio_chunk()
+                                first_chunk = False
+
+                            # Write to dump file if enabled
+                            await self._write_audio_to_dump_file(audio_chunk)
+
+                            # Send audio data
+                            await self.send_tts_audio_data(audio_chunk)
+                        else:
+                            self.ten_env.log_info(
+                                f"Received empty or invalid payload for TTS response, current_request_id: {self.current_request_id}, current_turn_id: {self.current_turn_id}"
+                            )
+                    elif message_type == MESSAGE_TYPE_CMD_ERROR:
+                        self.ten_env.log_error(
+                            f"Received error message from client: {data}"
+                        )
+                    elif message_type == MESSAGE_TYPE_CMD_CANCEL:
+                        self.ten_env.log_info(
+                            f"Received cancel message from client: {data}"
+                        )
+                        break
+
+                    # Handle TTS audio end - this is when we should stop
+                    if done:
+                        self.ten_env.log_info(
+                            f"All pcm received done, current_request_id: {self.current_request_id}, current_turn_id: {self.current_turn_id}"
+                        )
+                        await self._handle_tts_audio_end()
+                        self.ten_env.log_info(
+                            "Audio consumer loop exiting due to done signal"
+                        )
+                        break  # Exit the loop when we get the done signal
+
+                except Exception as e:
+                    self.ten_env.log_error(f"Error in audio consumer loop: {e}")
+                    self.ten_env.log_error(
+                        "Audio consumer loop breaking due to exception"
+                    )
+                    # Send an error message to notify the system of the failure
+                    await self._send_tts_error(
+                        str(e),
+                        code=ModuleErrorCode.NON_FATAL_ERROR.value,
+                        vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
+                    )
+                    break
+
+            self.ten_env.log_info(
+                f"Audio consumer completed, total chunks: {chunk_count}, current_request_id: {self.current_request_id}, current_turn_id: {self.current_turn_id}"
+            )
+            # Reset for next request
+            self.request_start_ts = None
+
+        except Exception as e:
+            self.ten_env.log_error(f"Fatal error in audio consumer: {e}")
             await self._send_tts_error(
                 str(e),
                 code=ModuleErrorCode.NON_FATAL_ERROR.value,
@@ -397,7 +474,6 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
 
     async def _handle_tts_audio_end(
         self,
-        t: TTSTextInput | None,
         reason: TTSAudioEndReason = TTSAudioEndReason.REQUEST_END,
     ) -> None:
         """
@@ -418,20 +494,6 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
             request_event_interval = int(
                 (datetime.now() - self.request_start_ts).total_seconds() * 1000
             )
-
-            if t is not None:
-                # Send TTS text result
-                await self.send_tts_text_result(
-                    TTSTextResult(
-                        request_id=self.current_request_id,
-                        text=t.text,
-                        text_result_end=t.text_input_end,
-                        start_ms=0,
-                        duration_ms=self.request_total_audio_duration_ms,
-                        words=[],
-                        metadata={},
-                    )
-                )
 
             # Send TTS audio end event
             await self.send_tts_audio_end(

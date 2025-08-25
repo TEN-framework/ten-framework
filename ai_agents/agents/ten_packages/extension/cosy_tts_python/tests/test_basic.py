@@ -11,6 +11,7 @@ import json
 import os
 import shutil
 import threading
+import time
 
 from ten_runtime import (
     ExtensionTester,
@@ -108,22 +109,21 @@ def test_dump_functionality(MockCosyTTSClient):
 
     # --- Mock Configuration ---
     mock_instance = MockCosyTTSClient.return_value
-    mock_instance.start = AsyncMock()
-    mock_instance.stop = AsyncMock()
+    # The client is now stateless, so start/stop are not needed.
+    # We mock the methods that are actually called by the extension.
+    mock_instance.synthesize_audio = AsyncMock()
 
     # Create some fake audio data to be streamed
     fake_audio_chunk_1 = b"\x11\x22\x33\x44" * 20
     fake_audio_chunk_2 = b"\xaa\xbb\xcc\xdd" * 20
 
-    # This async generator simulates the TTS client's synthesize_audio method
-    async def mock_synthesize_audio(text: str, text_input_end: bool):
-        yield (False, MESSAGE_TYPE_PCM, fake_audio_chunk_1)
-        await asyncio.sleep(0.01)
-        yield (False, MESSAGE_TYPE_PCM, fake_audio_chunk_2)
-        await asyncio.sleep(0.01)
-        yield (True, MESSAGE_TYPE_CMD_COMPLETE, None)  # End of stream
-
-    mock_instance.synthesize_audio.side_effect = mock_synthesize_audio
+    # This list simulates the data stream that the consumer loop will get from the queue.
+    audio_stream = [
+        (False, MESSAGE_TYPE_PCM, fake_audio_chunk_1),
+        (False, MESSAGE_TYPE_PCM, fake_audio_chunk_2),
+        (True, MESSAGE_TYPE_CMD_COMPLETE, None),  # End of stream
+    ]
+    mock_instance.get_audio_data = AsyncMock(side_effect=audio_stream)
 
     # --- Test Setup ---
     tester = ExtensionTesterDump()
@@ -281,22 +281,38 @@ def test_flush_logic(MockCosyTTSClient):
     print("Starting test_flush_logic with mock...")
 
     mock_instance = MockCosyTTSClient.return_value
-    mock_instance.start = AsyncMock()
-    mock_instance.stop = AsyncMock()
-    mock_instance.cancel = AsyncMock()
+    mock_instance.synthesize_audio = AsyncMock()
 
-    async def mock_synthesize_audio(text: str, text_input_end: bool):
-        for _ in range(20):
-            if mock_instance.cancel.called:
-                print("Mock detected cancel call, stopping stream.")
-                yield (True, MESSAGE_TYPE_CMD_COMPLETE, None)  # End of stream
-                return  # Stop the generator immediately
-            yield (False, MESSAGE_TYPE_PCM, b"\x11\x22\x33" * 100)
-            await asyncio.sleep(0.1)
-        # This part is only reached if not cancelled
-        yield (True, MESSAGE_TYPE_CMD_COMPLETE, None)  # End of stream
+    # This stateful class simulates an audio stream that can be cancelled.
+    class Streamer:
+        def __init__(self):
+            # An event to signal cancellation.
+            self._cancel_event = asyncio.Event()
+            self._chunk_count = 0
 
-    mock_instance.synthesize_audio.side_effect = mock_synthesize_audio
+        async def get_audio_data(self):
+            # If cancelled or the stream ends naturally, return a completion message.
+            if self._cancel_event.is_set() or self._chunk_count >= 20:
+                reason = "Cancelled" if self._cancel_event.is_set() else None
+                return (True, MESSAGE_TYPE_CMD_COMPLETE, reason)
+
+            try:
+                # Wait for 0.1s. If cancel() is called, this wait is interrupted.
+                await asyncio.wait_for(self._cancel_event.wait(), timeout=0.1)
+                # The event was set, so it's cancelled.
+                return (True, MESSAGE_TYPE_CMD_COMPLETE, "Cancelled")
+            except asyncio.TimeoutError:
+                # The wait timed out, which is the normal case for producing audio.
+                self._chunk_count += 1
+                return (False, MESSAGE_TYPE_PCM, b"\x11\x22\x33" * 100)
+
+        async def cancel(self):
+            # This method will be called by the extension's _flush logic.
+            self._cancel_event.set()
+
+    streamer = Streamer()
+    mock_instance.get_audio_data.side_effect = streamer.get_audio_data
+    mock_instance.cancel.side_effect = streamer.cancel
 
     config = {
         "params": {

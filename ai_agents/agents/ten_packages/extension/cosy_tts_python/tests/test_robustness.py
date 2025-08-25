@@ -64,6 +64,9 @@ class ExtensionTesterRobustness(ExtensionTester):
     def on_data(self, ten_env: TenEnvTester, data) -> None:
         name = data.get_name()
         json_str, _ = data.get_property_to_json(None)
+        if not json_str:
+            # Not all events have a JSON payload (e.g., tts_audio_start)
+            return
         payload = json.loads(json_str)
 
         if name == "error" and payload.get("id") == "tts_request_to_fail":
@@ -74,8 +77,10 @@ class ExtensionTesterRobustness(ExtensionTester):
             # After receiving the error for the first request, immediately send the second one.
             self.send_second_request()
 
-        # Use a separate 'if' to ensure this check happens independently of the error check.
-        if payload.get("id") == "tts_request_to_succeed":
+        elif (
+            name == "tts_audio_end"
+            and payload.get("request_id") == "tts_request_to_succeed"
+        ):
             ten_env.log_info(
                 "Received tts_audio_end for the second request. Test successful."
             )
@@ -92,29 +97,31 @@ def test_reconnect_after_connection_drop(MockCosyTTSClient):
     """
     print("Starting test_reconnect_after_connection_drop with mock...")
 
-    # --- Mock State ---
-    # Use a simple counter to track how many times get() is called
-    get_call_count = 0
-
     # --- Mock Configuration ---
     mock_instance = MockCosyTTSClient.return_value
+    # Add mocks for start/stop to align with extension.py's on_init/on_stop calls
     mock_instance.start = AsyncMock()
     mock_instance.stop = AsyncMock()
+    mock_instance.synthesize_audio = AsyncMock()
 
-    # This async generator simulates different behaviors on subsequent calls
-    async def mock_synthesize_audio_stateful(text: str, text_input_end: bool):
-        nonlocal get_call_count
-        get_call_count += 1
+    # Create a stateful mock for get_audio_data
+    class StatefulAudioStream:
+        def __init__(self):
+            self.call_count = 0
 
-        if get_call_count == 1:
-            # On the first call, simulate a connection drop
-            raise ConnectionRefusedError("Simulated connection drop from test")
-        else:
-            # On the second call, simulate a successful audio stream
-            yield (False, MESSAGE_TYPE_PCM, b"\x44\x55\x66")
-            yield (True, MESSAGE_TYPE_CMD_COMPLETE, None)
+        async def get_data(self):
+            self.call_count += 1
+            if self.call_count == 1:
+                # On the first call, simulate a connection drop
+                raise ConnectionRefusedError(
+                    "Simulated connection drop from test"
+                )
+            else:
+                # On subsequent calls, simulate a successful audio stream
+                return (True, MESSAGE_TYPE_CMD_COMPLETE, None)
 
-    mock_instance.synthesize_audio.side_effect = mock_synthesize_audio_stateful
+    stateful_stream = StatefulAudioStream()
+    mock_instance.get_audio_data.side_effect = stateful_stream.get_data
 
     # --- Test Setup ---
     config = {

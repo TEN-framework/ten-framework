@@ -16,6 +16,7 @@ from ten_ai_base.struct import TTSTextInput
 from ..cosy_tts import (
     CosyTTSTaskFailedException,
     ERROR_CODE_TTS_FAILED,
+    MESSAGE_TYPE_CMD_COMPLETE,
 )
 
 
@@ -144,22 +145,17 @@ def test_invalid_params_fatal_error(MockCosyTTSClient):
 
     # --- Mock Configuration ---
     mock_instance = MockCosyTTSClient.return_value
-    # Mock the async methods called on the client instance
+    # Add mocks for start/stop to align with extension.py's on_init/on_stop calls
     mock_instance.start = AsyncMock()
     mock_instance.stop = AsyncMock()
 
-    # Define an async generator that raises the exception we want to test
-    async def mock_synthesize_audio_error(text: str, text_input_end: bool):
-        # This should be an async generator, but we want to test error handling
-        # So we'll yield one item then raise the exception
-        yield (False, 0, b"")  # Yield one item first
-        raise CosyTTSTaskFailedException(
-            error_msg="speech synthesizer has not been started",
-            error_code=ERROR_CODE_TTS_FAILED,
-        )
-
-    # When extension calls self.client.synthesize_audio(), it will receive our faulty generator
-    mock_instance.synthesize_audio.side_effect = mock_synthesize_audio_error
+    # Simulate the TimeoutError during the streaming call as per the real traceback
+    mock_instance.synthesize_audio.side_effect = TimeoutError(
+        "websocket connection could not established within 5s. "
+        "Please check your network connection, firewall settings, or server status."
+    )
+    # get_audio_data won't be called if synthesize_audio fails, but we mock it for completeness.
+    mock_instance.get_audio_data = AsyncMock()
 
     # --- Test Setup ---
     # Config with api_key so on_init passes and can proceed
