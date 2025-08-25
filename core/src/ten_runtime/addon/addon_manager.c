@@ -68,7 +68,7 @@ bool ten_addon_manager_add_addon(ten_addon_manager_t *self,
 
   TEN_ADDON_TYPE addon_type = ten_addon_type_from_string(addon_type_str);
   if (addon_type == TEN_ADDON_TYPE_INVALID) {
-    TEN_LOGF("Invalid addon type: %s", addon_type_str);
+    TEN_LOGE("Invalid addon type: %s", addon_type_str);
     if (error) {
       ten_error_set(error, TEN_ERROR_CODE_INVALID_ARGUMENT,
                     "Invalid addon type: %s", addon_type_str);

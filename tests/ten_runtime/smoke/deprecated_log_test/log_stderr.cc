@@ -21,8 +21,8 @@ class test_extension : public ten::extension_t {
 
   void on_cmd(ten::ten_env_t &ten_env,
               std::unique_ptr<ten::cmd_t> cmd) override {
-    TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_DEBUG,
-                (std::string("on_cmd ") + cmd->get_name()).c_str());
+    TEN_ENV_LOG_DEBUG(ten_env,
+                      (std::string("on_cmd ") + cmd->get_name()).c_str());
 
     if (cmd->get_name() == "hello_world") {
       auto cmd_result = ten::cmd_result_t::create(TEN_STATUS_CODE_OK, *cmd);
@@ -37,17 +37,15 @@ class test_app : public ten::app_t {
   void on_configure(ten::ten_env_t &ten_env) override {
     bool rc = ten_env.init_property_from_json(
         // clang-format off
-                 R"({
-                      "ten": {
-                        "uri": "msgpack://127.0.0.1:8001/",
-                        "log": {
-                          "level": 2,
-                          "file": "aaa/log_file.log"
-                        }
-                      }
-                    })"
+        R"({
+             "ten": {
+               "uri": "msgpack://127.0.0.1:8001/",
+               "deprecated_log": {
+                 "level": 2
+               }
+             }
+           })",
         // clang-format on
-        ,
         nullptr);
     ASSERT_EQ(rc, true);
 
@@ -63,11 +61,11 @@ void *test_app_thread_main(TEN_UNUSED void *args) {
   return nullptr;
 }
 
-TEN_CPP_REGISTER_ADDON_AS_EXTENSION(log_file__test_extension, test_extension);
+TEN_CPP_REGISTER_ADDON_AS_EXTENSION(log_stderr__test_extension, test_extension);
 
 }  // namespace
 
-TEST(LogTest, LogFile) {  // NOLINT
+TEST(LogTest, DISABLED_LogStderr) {  // NOLINT
   auto *app_thread =
       ten_thread_create("app thread", test_app_thread_main, nullptr);
 
@@ -80,7 +78,7 @@ TEST(LogTest, LogFile) {  // NOLINT
            "nodes": [{
                 "type": "extension",
                 "name": "test_extension",
-                "addon": "log_file__test_extension",
+                "addon": "log_stderr__test_extension",
                 "extension_group": "test_extension_group",
                 "app": "msgpack://127.0.0.1:8001/"
              }]

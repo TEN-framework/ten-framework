@@ -29,8 +29,8 @@ class test_extension_1 : public ten::extension_t {
                                  ten::error_t *err) {
             ++received_result_cnt;
 
-            TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_INFO,
-                        std::to_string(received_result_cnt).c_str());
+            TEN_ENV_LOG_INFO(ten_env,
+                             std::to_string(received_result_cnt).c_str());
 
             if (cmd_result->is_completed()) {
               TEN_ASSERT(received_result_cnt == 1, "Should not happen.");
@@ -83,7 +83,25 @@ class test_app : public ten::app_t {
              "ten": {
                "uri": "msgpack://127.0.0.1:8001/",
                "log": {
-                 "level": 2
+                 "handlers": [
+                   {
+                     "matchers": [
+                       {
+                         "level": "debug"
+                       }
+                     ],
+                     "formatter": {
+                       "type": "plain",
+                       "colored": true
+                     },
+                     "emitter": {
+                       "type": "console",
+                       "config": {
+                         "stream": "stdout"
+                       }
+                     }
+                   }
+                 ]
                }
              }
            })",

@@ -20,8 +20,8 @@ class FakeApp extends App {
     });
   }
 
-  async onInit(_tenEnv: TenEnv): Promise<void> {
-    console.log("Default App onInit");
+  async onInit(tenEnv: TenEnv): Promise<void> {
+    tenEnv.logInfo("Default App onInit");
     if (this.resolveInit) {
       this.resolveInit();
     }

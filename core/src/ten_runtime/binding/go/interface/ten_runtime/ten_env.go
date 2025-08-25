@@ -46,13 +46,11 @@ type TenEnv interface {
 	iProperty
 	InitPropertyFromJSONBytes(value []byte) error
 
-	LogVerbose(msg string) error
 	LogDebug(msg string) error
 	LogInfo(msg string) error
 	LogWarn(msg string) error
 	LogError(msg string) error
-	LogFatal(msg string) error
-	Log(level LogLevel, msg string) error
+	Log(level LogLevel, msg string, category *string, fields *Value) error
 }
 
 // Making a compile-time assertion which indicates that if 'ten' type doesn't
@@ -288,7 +286,7 @@ func (p *tenEnv) SendAudioFrame(
 }
 
 func (p *tenEnv) OnConfigureDone() error {
-	p.Log(LogLevelDebug, "OnConfigureDone")
+	p.LogDebug("OnConfigureDone")
 
 	C.ten_go_ten_env_on_configure_done(p.cPtr)
 
@@ -345,35 +343,27 @@ func (p *tenEnv) String() string {
 	return C.GoString(cString)
 }
 
-func (p *tenEnv) LogVerbose(msg string) error {
-	return p.logInternal(LogLevelVerbose, msg, 2)
-}
-
 func (p *tenEnv) LogDebug(msg string) error {
-	return p.logInternal(LogLevelDebug, msg, 2)
+	return p.logInternal(LogLevelDebug, msg, nil, nil, 2)
 }
 
 func (p *tenEnv) LogInfo(msg string) error {
-	return p.logInternal(LogLevelInfo, msg, 2)
+	return p.logInternal(LogLevelInfo, msg, nil, nil, 2)
 }
 
 func (p *tenEnv) LogWarn(msg string) error {
-	return p.logInternal(LogLevelWarn, msg, 2)
+	return p.logInternal(LogLevelWarn, msg, nil, nil, 2)
 }
 
 func (p *tenEnv) LogError(msg string) error {
-	return p.logInternal(LogLevelError, msg, 2)
+	return p.logInternal(LogLevelError, msg, nil, nil, 2)
 }
 
-func (p *tenEnv) LogFatal(msg string) error {
-	return p.logInternal(LogLevelFatal, msg, 2)
+func (p *tenEnv) Log(level LogLevel, msg string, category *string, fields *Value) error {
+	return p.logInternal(level, msg, category, fields, 2)
 }
 
-func (p *tenEnv) Log(level LogLevel, msg string) error {
-	return p.logInternal(level, msg, 2)
-}
-
-func (p *tenEnv) logInternal(level LogLevel, msg string, skip int) error {
+func (p *tenEnv) logInternal(level LogLevel, msg string, category *string, fields *Value, skip int) error {
 	// Get caller info.
 	pc, fileName, lineNo, ok := runtime.Caller(skip)
 	funcName := "unknown"
@@ -393,6 +383,13 @@ func (p *tenEnv) logInternal(level LogLevel, msg string, skip int) error {
 		lineNo = 0
 	}
 
+	var cCategory unsafe.Pointer
+	var cCategoryLen int = 0
+	if category != nil {
+		cCategory = unsafe.Pointer(unsafe.StringData(*category))
+		cCategoryLen = len(*category)
+	}
+
 	cStatus := C.ten_go_ten_env_log(
 		p.cPtr,
 		C.int(level),
@@ -403,6 +400,8 @@ func (p *tenEnv) logInternal(level LogLevel, msg string, skip int) error {
 		C.int(lineNo),
 		unsafe.Pointer(unsafe.StringData(msg)),
 		C.int(len(msg)),
+		cCategory,
+		C.int(cCategoryLen),
 	)
 
 	return withCGoError(&cStatus)

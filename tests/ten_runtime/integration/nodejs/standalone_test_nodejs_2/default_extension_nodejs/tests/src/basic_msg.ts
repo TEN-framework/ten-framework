@@ -26,7 +26,7 @@ export class CmdTester extends ExtensionTester {
 
   async onCmd(tenEnvTester: TenEnvTester, cmd: Cmd) {
     const cmdName = cmd.getName();
-    console.log("CmdTester onCmd: " + cmdName);
+    tenEnvTester.logInfo("CmdTester onCmd: " + cmdName);
 
     if (cmdName === "pong") {
       tenEnvTester.log(LogLevel.INFO, "pong cmd received");
@@ -57,7 +57,7 @@ export class DataTester extends ExtensionTester {
 
   async onData(tenEnvTester: TenEnvTester, data: Data) {
     const dataName = data.getName();
-    console.log("DataTester onData: " + dataName);
+    tenEnvTester.logInfo("DataTester onData: " + dataName);
 
     if (dataName === "pong") {
       tenEnvTester.log(LogLevel.INFO, "pong data received");
@@ -85,7 +85,7 @@ export class VideoFrameTester extends ExtensionTester {
 
   async onVideoFrame(tenEnvTester: TenEnvTester, videoFrame: VideoFrame) {
     const videoFrameName = videoFrame.getName();
-    console.log("VideoFrameTester onVideoFrame: " + videoFrameName);
+    tenEnvTester.logInfo("VideoFrameTester onVideoFrame: " + videoFrameName);
 
     if (videoFrameName === "pong") {
       tenEnvTester.log(LogLevel.INFO, "pong video frame received");
@@ -113,7 +113,7 @@ export class AudioFrameTester extends ExtensionTester {
 
   async onAudioFrame(tenEnvTester: TenEnvTester, audioFrame: AudioFrame) {
     const audioFrameName = audioFrame.getName();
-    console.log("AudioFrameTester onAudioFrame: " + audioFrameName);
+    tenEnvTester.logInfo("AudioFrameTester onAudioFrame: " + audioFrameName);
 
     if (audioFrameName === "pong") {
       tenEnvTester.log(LogLevel.INFO, "pong audio frame received");

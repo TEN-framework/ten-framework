@@ -34,7 +34,7 @@ type PredefinedProperty struct {
 }
 
 func (ext *baseExtension) OnInit(tenEnv ten.TenEnv) {
-	tenEnv.Log(ten.LogLevelDebug, "OnInit")
+	tenEnv.LogDebug("OnInit")
 
 	if prop, err := tenEnv.GetPropertyString("env_not_set_has_default"); err != nil &&
 		prop != "" {
@@ -47,7 +47,7 @@ func (ext *baseExtension) OnInit(tenEnv ten.TenEnv) {
 	}
 
 	// Print the json bytes.
-	tenEnv.Log(ten.LogLevelInfo, "propJsonBytes: " + string(propJsonBytes))
+	tenEnv.LogInfo("propJsonBytes: " + string(propJsonBytes))
 
 	// Parse the json bytes to a map.
 	var predefinedProperty PredefinedProperty
@@ -118,7 +118,7 @@ func (ext *baseExtension) OnInit(tenEnv ten.TenEnv) {
 }
 
 func (ext *baseExtension) OnStop(tenEnv ten.TenEnv) {
-	tenEnv.Log(ten.LogLevelDebug, "OnStop")
+	tenEnv.LogDebug("OnStop")
 
 	tenEnv.OnStopDone()
 }

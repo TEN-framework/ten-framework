@@ -25,12 +25,12 @@ class HttpServerExtension extends Extension {
   }
 
   async onConfigure(tenEnv: TenEnv): Promise<void> {
-    console.log("HttpServerExtension onConfigure");
+    tenEnv.logInfo("HttpServerExtension onConfigure");
   }
 
   async onInit(tenEnv: TenEnv): Promise<void> {
     this.tenEnv = tenEnv;
-    console.log("HttpServerExtension onInit");
+    tenEnv.logInfo("HttpServerExtension onInit");
   }
 
   async handler(
@@ -118,7 +118,7 @@ class HttpServerExtension extends Extension {
   }
 
   async onStart(tenEnv: TenEnv): Promise<void> {
-    console.log("HttpServerExtension onStart");
+    tenEnv.logInfo("HttpServerExtension onStart");
 
     const hostname = "127.0.0.1";
     let [port, err] = await tenEnv.getPropertyNumber("server_port");
@@ -131,14 +131,14 @@ class HttpServerExtension extends Extension {
     const server = http.createServer(this.handler.bind(this));
 
     server.listen(port, () => {
-      console.log("Server running at http://" + hostname + ":" + port + "/");
+      tenEnv.logInfo("Server running at http://" + hostname + ":" + port + "/");
     });
 
     this.httpServer = server;
   }
 
-  async onStop(_tenEnv: TenEnv): Promise<void> {
-    console.log("HttpServerExtension onStop");
+  async onStop(tenEnv: TenEnv): Promise<void> {
+    tenEnv.logInfo("HttpServerExtension onStop");
 
     await new Promise<void>((resolve, reject) => {
       this.httpServer!.close((err: any) => {
@@ -151,9 +151,9 @@ class HttpServerExtension extends Extension {
     });
   }
 
-  async onDeinit(_tenEnv: TenEnv): Promise<void> {
+  async onDeinit(tenEnv: TenEnv): Promise<void> {
     this.tenEnv = undefined;
-    console.log("HttpServerExtension onDeinit");
+    tenEnv.logInfo("HttpServerExtension onDeinit");
   }
 }
 

@@ -11,21 +11,15 @@ package ten_runtime
 type LogLevel int32
 
 const (
-	// LogLevelVerbose is the verbose log level.
-	LogLevelVerbose = 1
-
 	// LogLevelDebug is the debug log level.
-	LogLevelDebug = 2
+	LogLevelDebug = 1
 
 	// LogLevelInfo is the info log level.
-	LogLevelInfo = 3
+	LogLevelInfo = 2
 
 	// LogLevelWarn is the warn log level.
-	LogLevelWarn = 4
+	LogLevelWarn = 3
 
 	// LogLevelError is the error log level.
-	LogLevelError = 5
-
-	// LogLevelFatal is the fatal log level.
-	LogLevelFatal = 6
+	LogLevelError = 4
 )

@@ -37,7 +37,7 @@ class test_extension_1 : public ten::extension_t {
       ASSERT_EQ(rc, false);
       ASSERT_EQ(err.is_success(), false);
 
-      TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_ERROR, err.error_message());
+      TEN_ENV_LOG_ERROR(ten_env, err.error_message());
 
       auto audio_frame = ten::audio_frame_t::create("audio_frame");
       rc = ten_env.send_audio_frame(std::move(audio_frame));
@@ -76,7 +76,25 @@ class test_app : public ten::app_t {
              "ten": {
                "uri": "msgpack://127.0.0.1:8001/",
                "log": {
-                 "level": 2
+                 "handlers": [
+                   {
+                     "matchers": [
+                       {
+                         "level": "debug"
+                       }
+                     ],
+                     "formatter": {
+                       "type": "plain",
+                       "colored": true
+                     },
+                     "emitter": {
+                       "type": "console",
+                       "config": {
+                         "stream": "stdout"
+                       }
+                     }
+                   }
+                 ]
                }
              }
            })",

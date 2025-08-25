@@ -192,7 +192,7 @@ void ten_env_close(ten_env_t *self) {
              ten_string_get_raw_str(&self->attached_target.extension->name));
     break;
   case TEN_ENV_ATTACH_TO_ADDON:
-    TEN_LOGV("[%s] Close ten of addon",
+    TEN_LOGD("[%s] Close ten of addon",
              ten_string_get_raw_str(&self->attached_target.addon_host->name));
     break;
   default:

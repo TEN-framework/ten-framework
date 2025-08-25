@@ -16,7 +16,7 @@ type baseExtension struct {
 }
 
 func (ext *baseExtension) OnStart(tenEnv ten.TenEnv) {
-	tenEnv.Log(ten.LogLevelDebug, "OnStart")
+	tenEnv.LogDebug("OnStart")
 
 	if prop, err := tenEnv.GetPropertyString("env_not_set_has_default"); err != nil &&
 		prop != "" {
@@ -27,7 +27,7 @@ func (ext *baseExtension) OnStart(tenEnv ten.TenEnv) {
 }
 
 func (ext *baseExtension) OnStop(tenEnv ten.TenEnv) {
-	tenEnv.Log(ten.LogLevelDebug, "OnStop")
+	tenEnv.LogDebug("OnStop")
 
 	tenEnv.OnStopDone()
 }

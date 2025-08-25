@@ -27,16 +27,16 @@ class DefaultExtension extends Extension {
     super(name);
   }
 
-  async onConfigure(_tenEnv: TenEnv): Promise<void> {
-    console.log("DefaultExtension onConfigure");
+  async onConfigure(tenEnv: TenEnv): Promise<void> {
+    tenEnv.logInfo("DefaultExtension onConfigure");
   }
 
-  async onInit(_tenEnv: TenEnv): Promise<void> {
-    console.log("DefaultExtension onInit");
+  async onInit(tenEnv: TenEnv): Promise<void> {
+    tenEnv.logInfo("DefaultExtension onInit");
   }
 
-  async onStart(_tenEnv: TenEnv): Promise<void> {
-    console.log("DefaultExtension onStart");
+  async onStart(tenEnv: TenEnv): Promise<void> {
+    tenEnv.logInfo("DefaultExtension onStart");
 
     const testData = Data.Create("testData");
     testData.allocBuf(10);
@@ -55,19 +55,19 @@ class DefaultExtension extends Extension {
     assert(copiedView[2] === 3, "copiedView[2] incorrect");
   }
 
-  async onStop(_tenEnv: TenEnv): Promise<void> {
-    console.log("DefaultExtension onStop");
+  async onStop(tenEnv: TenEnv): Promise<void> {
+    tenEnv.logInfo("DefaultExtension onStop");
   }
 
-  async onDeinit(_tenEnv: TenEnv): Promise<void> {
-    console.log("DefaultExtension onDeinit");
+  async onDeinit(tenEnv: TenEnv): Promise<void> {
+    tenEnv.logInfo("DefaultExtension onDeinit");
   }
 
   async onCmd(tenEnv: TenEnv, cmd: Cmd): Promise<void> {
-    tenEnv.log(LogLevel.DEBUG, "DefaultExtension onCmd");
+    tenEnv.logInfo("DefaultExtension onCmd");
 
     const cmdName = cmd.getName();
-    tenEnv.log(LogLevel.VERBOSE, "cmdName:" + cmdName);
+    tenEnv.logInfo("cmdName:" + cmdName);
 
     const testCmd = Cmd.Create("test");
 
@@ -92,10 +92,7 @@ class DefaultExtension extends Extension {
     const [result, _] = await tenEnv.sendCmd(testCmd);
     assert(result !== undefined, "result is undefined");
 
-    tenEnv.log(
-      LogLevel.INFO,
-      "received result detail:" + result?.getPropertyToJson("detail"),
-    );
+    tenEnv.logInfo("received result detail:" + result?.getPropertyToJson("detail"));
 
     const cmdResult = CmdResult.Create(StatusCode.OK, cmd);
     cmdResult.setPropertyFromJson(
@@ -104,7 +101,7 @@ class DefaultExtension extends Extension {
     );
 
     const [detailJson, err] = cmdResult.getPropertyToJson("detail");
-    tenEnv.log(LogLevel.INFO, "detailJson:" + detailJson);
+    tenEnv.logInfo("detailJson:" + detailJson);
 
     tenEnv.returnResult(cmdResult);
   }

@@ -172,7 +172,25 @@ fn create_property_json(app_dir: &Path, log_file_path: &Path) {
         r#"{{
             "ten": {{
                 "log": {{
-                    "file": "{}"
+                    "handlers": [
+                        {{
+                            "matchers": [
+                                {{
+                                    "level": "info"
+                                }}
+                            ],
+                            "formatter": {{
+                                "type": "json",
+                                "colored": false
+                            }},
+                            "emitter": {{
+                                "type": "file",
+                                "config": {{
+                                    "path": "{}"
+                                }}
+                            }}
+                        }}
+                    ]
                 }}
             }}
         }}"#,

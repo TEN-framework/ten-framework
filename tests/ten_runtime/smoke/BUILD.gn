@@ -39,6 +39,7 @@ ten_executable("ten_runtime_smoke_test") {
     "command",
     "concurrent",
     "data_test",
+    "deprecated_log_test",
     "dest",
     "engine",
     "error",
@@ -50,7 +51,6 @@ ten_executable("ten_runtime_smoke_test") {
     "graph_name",
     "graph_test",
     "lock",
-    "log_test",
     "msg_conversion",
     "msg_property",
     "msg_test",
@@ -80,9 +80,9 @@ ten_executable("ten_runtime_smoke_test") {
 
   if (ten_enable_ten_rust && ten_enable_ten_rust_apis) {
     deps += [
-      "advanced_log_test",
       "graph_check",
       "graph_syntax_sugar",
+      "log_test",
       "schema_test",
     ]
   }

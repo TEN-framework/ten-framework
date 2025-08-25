@@ -19,7 +19,7 @@ type serverExtension struct {
 }
 
 func (ext *serverExtension) OnConfigure(tenEnv ten.TenEnv) {
-	tenEnv.Log(ten.LogLevelDebug, "OnConfigure")
+	tenEnv.LogDebug("OnConfigure")
 
 	ext.registerCount = 0
 	ext.isStopping = false
@@ -59,7 +59,7 @@ func (ext *serverExtension) OnStop(tenEnv ten.TenEnv) {
 		return
 	}
 
-	tenEnv.Log(ten.LogLevelInfo, "server extension is stopped")
+	tenEnv.LogInfo("server extension is stopped")
 }
 
 type clientExtension struct {
@@ -67,7 +67,7 @@ type clientExtension struct {
 }
 
 func (ext *clientExtension) OnStart(tenEnv ten.TenEnv) {
-	tenEnv.Log(ten.LogLevelDebug, "OnStart")
+	tenEnv.LogDebug("OnStart")
 
 	cmd, _ := ten.NewCmd("register")
 	tenEnv.SendCmd(
@@ -102,7 +102,7 @@ func (ext *clientExtension) OnCmd(tenEnv ten.TenEnv, cmd ten.Cmd) {
 }
 
 func (ext *clientExtension) OnDeinit(tenEnv ten.TenEnv) {
-	tenEnv.Log(ten.LogLevelDebug, "OnDeinit")
+	tenEnv.LogDebug("OnDeinit")
 
 	cmd, _ := ten.NewCmd("unregister")
 	tenEnv.SendCmd(

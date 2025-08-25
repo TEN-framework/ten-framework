@@ -31,11 +31,7 @@ func (p *bExtension) OnCmd(
 ) {
 	go func() {
 		cmdName, _ := cmd.GetName()
-		tenEnv.Log(
-			ten.LogLevelInfo,
-			"receive command: "+
-				cmdName,
-		)
+		tenEnv.LogInfo("receive command: " + cmdName)
 		if cmdName == "start" {
 			tenEnv.SendCmd(cmd, func(r ten.TenEnv, cs ten.CmdResult, e error) {
 				r.ReturnResult(cs, nil)
@@ -45,7 +41,7 @@ func (p *bExtension) OnCmd(
 				r.ReturnResult(cs, nil)
 
 				close(p.stopChan)
-				tenEnv.Log(ten.LogLevelInfo, "Stop command is processed.")
+				tenEnv.LogInfo("Stop command is processed.")
 			})
 		} else {
 			cmdResult, _ := ten.NewCmdResult(ten.StatusCodeError, cmd)
@@ -57,15 +53,12 @@ func (p *bExtension) OnCmd(
 
 func (p *bExtension) OnStop(tenEnv ten.TenEnv) {
 	go func() {
-		tenEnv.Log(ten.LogLevelDebug, "OnStop")
+		tenEnv.LogDebug("OnStop")
 
 		// Wait until the stop command is received and processed.
 		<-p.stopChan
 
-		tenEnv.Log(
-			ten.LogLevelInfo,
-			"Stop command processed. Now calling OnStopDone.",
-		)
+		tenEnv.LogInfo("Stop command processed. Now calling OnStopDone.")
 		tenEnv.OnStopDone()
 	}()
 }
