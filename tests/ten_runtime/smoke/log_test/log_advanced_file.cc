@@ -51,7 +51,7 @@ class test_app : public ten::app_t {
         R"({
              "ten": {
                "uri": "msgpack://127.0.0.1:8001/",
-               "advanced_log": {
+               "log": {
                  "handlers": [
                    {
                      "matchers": [
@@ -66,24 +66,7 @@ class test_app : public ten::app_t {
                      "emitter": {
                        "type": "file",
                        "config": {
-                         "path": "advanced_log_file_multi_handlers.log"
-                       }
-                     }
-                   },
-                   {
-                     "matchers": [
-                       {
-                         "level": "info"
-                       }
-                     ],
-                     "formatter": {
-                       "type": "plain",
-                       "colored": true
-                     },
-                     "emitter": {
-                       "type": "console",
-                       "config": {
-                         "stream": "stdout"
+                         "path": "advanced_log_file.log"
                        }
                      }
                    }
@@ -108,12 +91,12 @@ void *test_app_thread_main(TEN_UNUSED void *args) {
   return nullptr;
 }
 
-TEN_CPP_REGISTER_ADDON_AS_EXTENSION(log_advanced_multi_handlers__test_extension,
+TEN_CPP_REGISTER_ADDON_AS_EXTENSION(log_advanced_file__test_extension,
                                     test_extension);
 
 }  // namespace
 
-TEST(AdvancedLogTest, LogAdvancedMultiHandlers) {  // NOLINT
+TEST(AdvancedLogTest, LogAdvancedFile) {  // NOLINT
   auto *app_thread =
       ten_thread_create("app thread", test_app_thread_main, nullptr);
 
@@ -126,7 +109,7 @@ TEST(AdvancedLogTest, LogAdvancedMultiHandlers) {  // NOLINT
            "nodes": [{
                 "type": "extension",
                 "name": "test_extension",
-                "addon": "log_advanced_multi_handlers__test_extension",
+                "addon": "log_advanced_file__test_extension",
                 "extension_group": "test_extension_group",
                 "app": "msgpack://127.0.0.1:8001/"
              }]
@@ -148,6 +131,6 @@ TEST(AdvancedLogTest, LogAdvancedMultiHandlers) {  // NOLINT
   ten_thread_join(app_thread, -1);
 
   // Check the log file exists.
-  std::ifstream log_file("advanced_log_file_multi_handlers.log");
+  std::ifstream log_file("advanced_log_file.log");
   EXPECT_TRUE(log_file.good());
 }

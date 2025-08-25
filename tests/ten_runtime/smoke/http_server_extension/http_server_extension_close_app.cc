@@ -55,7 +55,7 @@ class test_app : public ten::app_t {
         // clang-format off
                  R"({
                       "ten": {
-                        "advanced_log": {
+                        "log": {
                           "handlers": [
                             {
                               "matchers": [

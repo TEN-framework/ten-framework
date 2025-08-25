@@ -1036,7 +1036,7 @@
             }
           }
         },
-        "advanced_log": {
+        "log": {
           "$ref": "#/$defs/advancedLogConfiguration"
         }
       }

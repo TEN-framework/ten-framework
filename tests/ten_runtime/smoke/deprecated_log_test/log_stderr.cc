@@ -40,7 +40,7 @@ class test_app : public ten::app_t {
         R"({
              "ten": {
                "uri": "msgpack://127.0.0.1:8001/",
-               "log": {
+               "deprecated_log": {
                  "level": 2
                }
              }

@@ -72,7 +72,7 @@ class test_app_1 : public ten::app_t {
         R"({
              "ten": {
                "uri": "msgpack://127.0.0.1:8001/",
-               "advanced_log": {
+               "log": {
                  "handlers": [
                    {
                      "matchers": [
@@ -111,7 +111,7 @@ class test_app_2 : public ten::app_t {
                  R"({
                       "ten": {
                         "uri": "msgpack://127.0.0.1:8002/",
-                        "advanced_log": {
+                        "log": {
                           "handlers": [
                             {
                               "matchers": [

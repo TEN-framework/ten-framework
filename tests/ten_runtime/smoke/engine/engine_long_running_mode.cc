@@ -52,7 +52,7 @@ class test_app_a : public ten::app_t {
                         "uri": "msgpack://127.0.0.1:8001/",
                         "one_event_loop_per_engine": true,
                         "long_running_mode": true,
-                        "advanced_log": {
+                        "log": {
                           "handlers": [
                             {
                               "matchers": [
@@ -107,7 +107,7 @@ class test_app_b : public ten::app_t {
                       "ten": {
                         "uri": "msgpack://127.0.0.1:8002/",
                         "long_running_mode": true,
-                        "advanced_log": {
+                        "log": {
                           "handlers": [
                             {
                               "matchers": [

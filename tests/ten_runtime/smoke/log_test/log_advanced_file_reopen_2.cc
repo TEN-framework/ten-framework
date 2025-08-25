@@ -87,7 +87,7 @@ class test_app : public ten::app_t {
                  R"({
                       "ten": {
                         "uri": "msgpack://127.0.0.1:8001/",
-                        "advanced_log": {
+                        "log": {
                           "handlers": [
                             {
                               "matchers": [
@@ -102,7 +102,7 @@ class test_app : public ten::app_t {
                               "emitter": {
                                 "type": "file",
                                 "config": {
-                                  "path": "aaa/log_advanced_file_reopen.log"
+                                  "path": "aaa/log_advanced_file_reopen_2.log"
                                 }
                               }
                             }
@@ -127,19 +127,24 @@ void *test_app_thread_main(TEN_UNUSED void *args) {
   return nullptr;
 }
 
-TEN_CPP_REGISTER_ADDON_AS_EXTENSION(log_advanced_file_reopen__test_extension,
+TEN_CPP_REGISTER_ADDON_AS_EXTENSION(log_advanced_file_reopen_2__test_extension,
                                     test_extension);
 
 }  // namespace
 
-TEST(AdvancedLogTest, LogAdvancedFileReopen) {  // NOLINT
-  // Remove the log file if it already exists.
-  std::string log_file_path = "aaa/log_advanced_file_reopen.log";
-  std::ifstream check_file(log_file_path);
-  if (check_file.good()) {
-    check_file.close();
-    ASSERT_EQ(std::remove(log_file_path.c_str()), 0)
-        << "Failed to remove existing log file";
+TEST(AdvancedLogTest, LogAdvancedFileReopen2) {  // NOLINT
+  // Prepare log file paths.
+  const std::string base_path = "aaa/log_advanced_file_reopen_2.log";
+  const std::string rotated1_path = base_path + ".1";
+  const std::string rotated2_path = base_path + ".2";
+
+  // Cleanup any existing files from a previous run.
+  for (const auto &path : {base_path, rotated1_path, rotated2_path}) {
+    std::ifstream f(path);
+    if (f.good()) {
+      f.close();
+      ASSERT_EQ(std::remove(path.c_str()), 0) << "Failed to remove: " << path;
+    }
   }
 
   auto *app_thread =
@@ -154,7 +159,7 @@ TEST(AdvancedLogTest, LogAdvancedFileReopen) {  // NOLINT
            "nodes": [{
                 "type": "extension",
                 "name": "test_extension",
-                "addon": "log_advanced_file_reopen__test_extension",
+                "addon": "log_advanced_file_reopen_2__test_extension",
                 "extension_group": "test_extension_group",
                 "app": "msgpack://127.0.0.1:8001/"
              }]
@@ -173,23 +178,38 @@ TEST(AdvancedLogTest, LogAdvancedFileReopen) {  // NOLINT
 
   // On Unix-like systems, we can use the SIGHUP signal to reload the log file.
 #ifndef _WIN32
-  // Wait for 3 seconds.
+  // Wait to accumulate some logs.
   std::this_thread::sleep_for(std::chrono::seconds(3));
 
+  // Rename current active log file before first SIGHUP.
   {
-    // Send a signal to reload the log file.
+    ASSERT_EQ(std::rename(base_path.c_str(), rotated1_path.c_str()), 0)
+        << "Failed to rename to " << rotated1_path;
+  }
+
+  // First SIGHUP: logger should reopen to base_path.
+  {
     auto rc = raise(SIGHUP);
     ASSERT_EQ(rc, 0);
   }
 
-  // Wait for another 3 seconds.
+  // Wait and generate more logs.
   std::this_thread::sleep_for(std::chrono::seconds(3));
 
+  // Rename current active log file again before second SIGHUP.
   {
-    // Send a signal to reload the log file.
+    ASSERT_EQ(std::rename(base_path.c_str(), rotated2_path.c_str()), 0)
+        << "Failed to rename to " << rotated2_path;
+  }
+
+  // Second SIGHUP: logger should reopen to base_path again.
+  {
     auto rc = raise(SIGHUP);
     ASSERT_EQ(rc, 0);
   }
+
+  // Wait a bit more to write into the final active file.
+  std::this_thread::sleep_for(std::chrono::seconds(3));
 #endif
 
   delete client;
@@ -197,36 +217,48 @@ TEST(AdvancedLogTest, LogAdvancedFileReopen) {  // NOLINT
   ten_thread_join(app_thread, -1);
 
 #ifndef _WIN32
-  // Send a signal to flush the log file.
-  auto rc = raise(SIGHUP);
-  ASSERT_EQ(rc, 0);
+  {
+    // Send a signal to flush the log file.
+    auto rc = raise(SIGHUP);
+    ASSERT_EQ(rc, 0);
+  }
 #endif
 
 #ifndef _WIN32
-  // Check the log file content.
-  std::ifstream log_file("aaa/log_advanced_file_reopen.log");
-  EXPECT_TRUE(log_file.good());
+  // Verify three files exist.
+  {
+    std::ifstream f1(rotated1_path);
+    std::ifstream f2(rotated2_path);
+    std::ifstream f3(base_path);
+    EXPECT_TRUE(f1.good());
+    EXPECT_TRUE(f2.good());
+    EXPECT_TRUE(f3.good());
+  }
 
-  // Make sure the log content contains "log message 1" to "log message
-  // {g_log_count}". Make sure that no logs are lost.
+  // Validate no log loss across concatenated contents of the three files.
+  std::vector<std::string> paths = {rotated1_path, rotated2_path, base_path};
   std::string line;
   std::vector<bool> found(g_log_count, false);
   int total_found = 0;
 
-  while (std::getline(log_file, line)) {
-    size_t pos = line.find("log message ");
-    if (pos != std::string::npos) {
-      int msg_num = 0;
-      try {
-        msg_num = std::stoi(line.substr(pos + 12));
-        if (msg_num > 0 && msg_num <= g_log_count) {
-          if (!found[msg_num - 1]) {
-            found[msg_num - 1] = true;
-            total_found++;
+  for (const auto &path : paths) {
+    std::ifstream lf(path);
+    ASSERT_TRUE(lf.good()) << "Cannot open file: " << path;
+    while (std::getline(lf, line)) {
+      size_t pos = line.find("log message ");
+      if (pos != std::string::npos) {
+        int msg_num = 0;
+        try {
+          msg_num = std::stoi(line.substr(pos + 12));
+          if (msg_num > 0 && msg_num <= g_log_count) {
+            if (!found[msg_num - 1]) {
+              found[msg_num - 1] = true;
+              total_found++;
+            }
           }
+        } catch (const std::exception &e) {
+          continue;
         }
-      } catch (const std::exception &e) {
-        continue;
       }
     }
   }
@@ -235,15 +267,18 @@ TEST(AdvancedLogTest, LogAdvancedFileReopen) {  // NOLINT
     std::cout << "Expected " << g_log_count << " messages, but found "
               << total_found << '\n';
 
-    std::cout << "\nlog file content:\n";
-    log_file.clear();
-    log_file.seekg(0);
-    std::string content;
-    while (std::getline(log_file, content)) {
-      std::cout << content << '\n';
+    // Print all log file content.
+    for (const auto &path : paths) {
+      std::ifstream f(path);
+      std::string content;
+      std::cout << "log file content: " << path << '\n';
+      while (std::getline(f, content)) {
+        std::cout << content << '\n';
+      }
     }
 
-    std::cout << "\nmissing message numbers:\n";
+    // Print missing message numbers.
+    std::cout << "missing message numbers:\n";
     for (int i = 0; i < g_log_count; ++i) {
       if (!found[i]) {
         std::cout << "log message " << (i + 1) << '\n';

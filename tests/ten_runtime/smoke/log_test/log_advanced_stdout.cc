@@ -4,7 +4,6 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-#include <fstream>
 #include <nlohmann/json.hpp>
 #include <string>
 
@@ -51,7 +50,7 @@ class test_app : public ten::app_t {
         R"({
              "ten": {
                "uri": "msgpack://127.0.0.1:8001/",
-               "advanced_log": {
+               "log": {
                  "handlers": [
                    {
                      "matchers": [
@@ -60,21 +59,13 @@ class test_app : public ten::app_t {
                        }
                      ],
                      "formatter": {
-                       "type": "json",
-                       "colored": false
+                       "type": "plain",
+                       "colored": true
                      },
                      "emitter": {
-                       "type": "file",
+                       "type": "console",
                        "config": {
-                         "path": "advanced_log_encryption_file.log",
-                         "encryption": {
-                           "enabled": true,
-                           "algorithm": "AES-CTR",
-                           "params": {
-                             "key": "0123456789012345",
-                             "nonce": "0123456789012345"
-                           }
-                         }
+                         "stream": "stdout"
                        }
                      }
                    }
@@ -99,12 +90,12 @@ void *test_app_thread_main(TEN_UNUSED void *args) {
   return nullptr;
 }
 
-TEN_CPP_REGISTER_ADDON_AS_EXTENSION(log_advanced_encryption__test_extension,
+TEN_CPP_REGISTER_ADDON_AS_EXTENSION(log_advanced_stdout__test_extension,
                                     test_extension);
 
 }  // namespace
 
-TEST(AdvancedLogTest, LogAdvancedEncryption) {  // NOLINT
+TEST(AdvancedLogTest, LogAdvancedStdout) {  // NOLINT
   auto *app_thread =
       ten_thread_create("app thread", test_app_thread_main, nullptr);
 
@@ -117,7 +108,7 @@ TEST(AdvancedLogTest, LogAdvancedEncryption) {  // NOLINT
            "nodes": [{
                 "type": "extension",
                 "name": "test_extension",
-                "addon": "log_advanced_encryption__test_extension",
+                "addon": "log_advanced_stdout__test_extension",
                 "extension_group": "test_extension_group",
                 "app": "msgpack://127.0.0.1:8001/"
              }]
@@ -137,8 +128,4 @@ TEST(AdvancedLogTest, LogAdvancedEncryption) {  // NOLINT
   delete client;
 
   ten_thread_join(app_thread, -1);
-
-  // Check the log file exists.
-  std::ifstream log_file("advanced_log_encryption_file.log");
-  EXPECT_TRUE(log_file.good());
 }

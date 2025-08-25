@@ -1,6 +1,6 @@
 {
   "ten": {
-    "advanced_log": {
+    "log": {
       "handlers": [
         {
           "matchers": [

@@ -153,10 +153,26 @@ mod tests {
                 property_json_str: r#"
                 {
                   "ten": {
-                    "log_level": 2,
                     "log": {
-                      "level": 2,
-                      "file": "api.log"
+                      "handlers": [
+                        {
+                          "matchers": [
+                            {
+                              "level": "info"
+                            }
+                          ],
+                          "formatter": {
+                            "type": "json",
+                            "colored": false
+                          },
+                          "emitter": {
+                            "type": "file",
+                            "config": {
+                              "path": "api.log"
+                            }
+                          }
+                        }
+                      ]
                     }
                   },
                   "a": 1,

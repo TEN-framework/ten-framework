@@ -4,6 +4,7 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
+#include <fstream>
 #include <nlohmann/json.hpp>
 #include <string>
 
@@ -19,6 +20,11 @@ class test_extension : public ten::extension_t {
  public:
   explicit test_extension(const char *name) : ten::extension_t(name) {}
 
+  void on_init(ten::ten_env_t &ten_env) override {
+    TEN_ENV_LOG_INFO(ten_env, "check log encryption on_init");
+    ten_env.on_init_done();
+  }
+
   void on_cmd(ten::ten_env_t &ten_env,
               std::unique_ptr<ten::cmd_t> cmd) override {
     TEN_ENV_LOG_DEBUG(ten_env,
@@ -30,6 +36,11 @@ class test_extension : public ten::extension_t {
       ten_env.return_result(std::move(cmd_result));
     }
   }
+
+  void on_deinit(ten::ten_env_t &ten_env) override {
+    TEN_ENV_LOG_INFO(ten_env, "check log encryption on_deinit");
+    ten_env.on_deinit_done();
+  }
 };
 
 class test_app : public ten::app_t {
@@ -37,15 +48,23 @@ class test_app : public ten::app_t {
   void on_configure(ten::ten_env_t &ten_env) override {
     bool rc = ten_env.init_property_from_json(
         // clang-format off
-                 R"({
-                      "ten": {
-                        "uri": "msgpack://127.0.0.1:8001/",
-                        "log": {
-                          "level": 2,
-                          "file": "aaa/log_file.log"
-                        }
-                      }
-                    })"
+        R"({
+             "ten": {
+               "uri": "msgpack://127.0.0.1:8001/",
+               "deprecated_log": {
+                   "level": 2,
+                   "file": "log_file.log",
+                   "encryption": {
+                     "enabled": true,
+                     "algorithm": "AES-CTR",
+                     "params": {
+                       "key": "0123456789012345",
+                       "nonce": "0123456789012345"
+                     }
+                   }
+               }
+             }
+           })"
         // clang-format on
         ,
         nullptr);
@@ -63,11 +82,12 @@ void *test_app_thread_main(TEN_UNUSED void *args) {
   return nullptr;
 }
 
-TEN_CPP_REGISTER_ADDON_AS_EXTENSION(log_file__test_extension, test_extension);
+TEN_CPP_REGISTER_ADDON_AS_EXTENSION(log_encryption__test_extension,
+                                    test_extension);
 
 }  // namespace
 
-TEST(LogTest, DISABLED_LogFile) {  // NOLINT
+TEST(LogTest, DISABLED_LogEncryption) {  // NOLINT
   auto *app_thread =
       ten_thread_create("app thread", test_app_thread_main, nullptr);
 
@@ -80,7 +100,7 @@ TEST(LogTest, DISABLED_LogFile) {  // NOLINT
            "nodes": [{
                 "type": "extension",
                 "name": "test_extension",
-                "addon": "log_file__test_extension",
+                "addon": "log_encryption__test_extension",
                 "extension_group": "test_extension_group",
                 "app": "msgpack://127.0.0.1:8001/"
              }]
@@ -100,4 +120,15 @@ TEST(LogTest, DISABLED_LogFile) {  // NOLINT
   delete client;
 
   ten_thread_join(app_thread, -1);
+
+  // Check the log file exists.
+  std::ifstream log_file("log_file.log");
+  EXPECT_TRUE(log_file.good());
+
+  // We need to call this encryption deinit function separately here to disable
+  // the encryption settings. Otherwise, the logs for subsequent test cases will
+  // be encrypted, making them unreadable and difficult to debug. In the normal
+  // operation of the TEN app, this function is already called, so there is no
+  // need for special handling like in this case.
+  ten_log_global_deinit_encryption();
 }
