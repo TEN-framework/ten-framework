@@ -1,0 +1,4 @@
+typing-extensions
+pydantic>=2.0.0
+groq>=0.31.0
+socksio
