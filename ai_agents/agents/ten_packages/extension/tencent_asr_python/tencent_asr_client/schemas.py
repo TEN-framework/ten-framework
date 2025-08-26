@@ -10,9 +10,15 @@ The schemas are used to validate the data received from the Tencent ASR WebSocke
 ref: https://cloud.tencent.com/document/product/1093/48982
 """
 
-from typing import Generic, TypeVar, Any
+from typing import Generic, TypeVar, Any, Callable
 from enum import IntEnum
-from pydantic import BaseModel, Field, ConfigDict, field_validator
+from pydantic import (
+    BaseModel,
+    Field,
+    ConfigDict,
+    field_validator,
+    field_serializer,
+)
 import urllib.parse
 import random
 import time
@@ -21,6 +27,51 @@ import hashlib
 import base64
 import uuid
 from .log import get_logger
+
+
+def encrypting_serializer(*fields: str) -> Callable:
+    """
+    A factory function that creates a Pydantic serializer for specified fields
+    that encrypts them when serializing to JSON.
+
+    Args:
+        *fields: Field names that need encryption applied.
+
+    Returns:
+        A configured Pydantic field_serializer object.
+
+    Example:
+        class MyModel(BaseModel):
+            secret_field: str
+            another_secret_field: str
+            _encrypt_fields = encrypting_serializer('secret_field', 'another_secret_field')
+
+        model = MyModel(secret_field="my_secret_value", another_secret_field="another_secret_value")
+        print(model.model_dump_json())  # Outputs encrypted JSON
+    """
+
+    def _encrypt(key: object) -> str:
+        if hasattr(key, "__str__"):
+            key = str(key)
+        else:
+            key = ""
+
+        step = int(len(key) / 5)
+        if step > 5:
+            step = 5
+        if step == 0:
+            step = 1
+
+        prefix = key[:step]
+        suffix = key[-step:]
+
+        return f"{prefix}***{suffix}"
+
+    # field_serializer() returns a decorator that we can call directly
+    # and pass our generic encryption function as a parameter.
+    # `when_used='json'` ensures it only takes effect when calling model_dump_json().
+    return field_serializer(*fields, when_used="json")(_encrypt)
+
 
 ResultType = TypeVar("ResultType")
 
@@ -33,7 +84,7 @@ class ResponseData(BaseModel, Generic[ResultType]):
     voice_id: str | None = None
     message_id: str | None = None
     result: ResultType | None = None
-    final: bool | None = None
+    final: bool | int | None = None
 
     model_config = ConfigDict(extra="allow")
 
@@ -111,10 +162,19 @@ class RequestParams(BaseModel):
         description="Tencent ASR WebSocket API endpoint",
         default="asr.cloud.tencent.com/asr/v2",
     )
+    appid: str = Field(
+        description="Tencent Cloud registered account app ID",
+        min_length=1,
+    )
+    secretkey: str = Field(
+        description="Tencent Cloud registered account secret key",
+        min_length=1,
+    )
 
     # Required parameters
     secretid: str = Field(
-        description="Tencent Cloud registered account secret ID"
+        description="Tencent Cloud registered account secret ID",
+        min_length=1,
     )
     timestamp: int = Field(
         description="Current UNIX timestamp in seconds",
@@ -195,7 +255,7 @@ class RequestParams(BaseModel):
     )
     input_sample_rate: int | None = Field(
         default=None,
-        description="Input sample rate, only supports 8000 for PCM format",
+        description="Input sample rate.",
     )
     emotion_recognition: int | None = Field(
         default=None,
@@ -204,6 +264,8 @@ class RequestParams(BaseModel):
     replace_text_id: str | None = Field(
         default=None, description="Replace vocabulary table ID"
     )
+
+    _encrypt_fields = encrypting_serializer("appid", "secretkey", "secretid")
 
     @field_validator("hotword_list", mode="after")
     @classmethod
@@ -225,21 +287,21 @@ class RequestParams(BaseModel):
         # update timestamp and expired
         self.timestamp = int(time.time())
         self.expired = self.timestamp + 24 * 60 * 60
-        query = self.model_dump(exclude_none=True, exclude={"endpoint"})
-
-        logger = get_logger()
-        logger.debug(f"query params: {query}")
+        query = self.model_dump(
+            exclude_none=True, exclude={"endpoint", "appid", "secretkey"}
+        )
         return query
 
-    def query_params(self, app_id: str, secret_key: str) -> str:
+    def query_params(self) -> str:
         endpoint = str(self.endpoint).removeprefix("wss://").removesuffix("/")
-        endpoint = f"{endpoint}/{app_id}"
+        endpoint = f"{endpoint}/{self.appid}"
         query_dict = self._query_params_without_signature()
         query_dict = dict(sorted(query_dict.items(), key=lambda d: d[0]))
         query = urllib.parse.urlencode(query_dict)
         signstr = f"{endpoint}?{query}"
+        secretkey = str(self.secretkey).encode("utf-8")
         hmacstr = hmac.new(
-            secret_key.encode("utf-8"), signstr.encode("utf-8"), hashlib.sha1
+            secretkey, signstr.encode("utf-8"), hashlib.sha1
         ).digest()
         signature = base64.b64encode(hmacstr).decode("utf-8")
         query_dict["signature"] = signature
@@ -249,11 +311,9 @@ class RequestParams(BaseModel):
 
         return urllib.parse.urlencode(query_dict)
 
-    def uri(self, app_id: str, secret_key: str) -> str:
+    def uri(self) -> str:
         endpoint = str(self.endpoint).removeprefix("wss://").removesuffix("/")
-        full_url = (
-            f"wss://{endpoint}/{app_id}?{self.query_params(app_id, secret_key)}"
-        )
+        full_url = f"wss://{endpoint}/{self.appid}?{self.query_params()}"
 
         logger = get_logger()
         logger.debug(f"uri: {full_url}")
