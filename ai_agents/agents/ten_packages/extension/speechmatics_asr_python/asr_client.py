@@ -6,8 +6,8 @@
 
 import asyncio
 from typing import Awaitable, Callable, List, Optional, Coroutine
-import speechmatics.models
-import speechmatics.client
+import speechmatics
+
 from ten_ai_base.message import (
     ModuleError,
     ModuleErrorCode,

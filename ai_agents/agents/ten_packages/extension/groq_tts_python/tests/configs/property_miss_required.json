@@ -1,0 +1,6 @@
+{
+    "params": {
+        "voice": "Arista-PlayAI",
+        "sample_rate": 16000
+    }
+}

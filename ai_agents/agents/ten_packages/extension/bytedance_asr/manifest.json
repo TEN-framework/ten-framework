@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "bytedance_asr",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "dependencies": [
     {
       "type": "system",
@@ -22,17 +22,22 @@
     ],
     "property": {
       "properties": {
-        "appid": {
-          "type": "string"
-        },
-        "token": {
-          "type": "string"
-        },
-        "api_url": {
-          "type": "string"
-        },
-        "cluster": {
-          "type": "string"
+        "params": {
+          "type": "object",
+          "properties": {
+            "appid": {
+              "type": "string"
+            },
+            "token": {
+              "type": "string"
+            },
+            "language": {
+              "type": "string"
+            },
+            "cluster": {
+              "type": "string"
+            }
+          }
         }
       }
     }

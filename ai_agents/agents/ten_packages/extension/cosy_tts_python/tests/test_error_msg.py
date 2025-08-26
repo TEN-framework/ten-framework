@@ -6,6 +6,7 @@
 #
 import json
 from unittest.mock import patch, AsyncMock
+import asyncio
 
 from ten_runtime import (
     ExtensionTester,
@@ -16,6 +17,7 @@ from ten_ai_base.struct import TTSTextInput
 from ..cosy_tts import (
     CosyTTSTaskFailedException,
     ERROR_CODE_TTS_FAILED,
+    MESSAGE_TYPE_CMD_COMPLETE,
 )
 
 
@@ -144,22 +146,25 @@ def test_invalid_params_fatal_error(MockCosyTTSClient):
 
     # --- Mock Configuration ---
     mock_instance = MockCosyTTSClient.return_value
-    # Mock the async methods called on the client instance
+    # Add mocks for start/stop to align with extension.py's on_init/on_stop calls
     mock_instance.start = AsyncMock()
     mock_instance.stop = AsyncMock()
 
-    # Define an async generator that raises the exception we want to test
-    async def mock_synthesize_audio_error(text: str, text_input_end: bool):
-        # This should be an async generator, but we want to test error handling
-        # So we'll yield one item then raise the exception
-        yield (False, 0, b"")  # Yield one item first
-        raise CosyTTSTaskFailedException(
-            error_msg="speech synthesizer has not been started",
-            error_code=ERROR_CODE_TTS_FAILED,
-        )
+    # Simulate the TimeoutError during the streaming call as per the real traceback
+    mock_instance.synthesize_audio.side_effect = TimeoutError(
+        "websocket connection could not established within 5s. "
+        "Please check your network connection, firewall settings, or server status."
+    )
+    # Since synthesize_audio will fail, the background audio consumer loop
+    # will call get_audio_data but there's no active stream. The correct
+    # behavior is to block. We simulate this by having the mock await a
+    # future that never completes. The test will finish, and the background
+    # task will be cancelled during teardown.
 
-    # When extension calls self.client.synthesize_audio(), it will receive our faulty generator
-    mock_instance.synthesize_audio.side_effect = mock_synthesize_audio_error
+    async def block_forever():
+        await asyncio.Future()
+
+    mock_instance.get_audio_data.side_effect = block_forever
 
     # --- Test Setup ---
     # Config with api_key so on_init passes and can proceed
