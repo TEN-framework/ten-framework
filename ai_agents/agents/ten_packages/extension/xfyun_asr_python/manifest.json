@@ -43,15 +43,15 @@
                     }
                 }
             }
-        },
-        "package": {
-            "include": [
-                "manifest.json",
-                "property.json",
-                "**.py",
-                "requirements.txt",
-                "docs/**"
-            ]
         }
+    },
+    "package": {
+        "include": [
+            "manifest.json",
+            "property.json",
+            "**.py",
+            "requirements.txt",
+            "docs/**"
+        ]
     }
 }
