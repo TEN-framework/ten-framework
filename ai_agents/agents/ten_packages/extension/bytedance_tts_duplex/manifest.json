@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "bytedance_tts_duplex",
-  "version": "0.1.5",
+  "version": "0.1.7",
   "dependencies": [
     {
       "type": "system",
@@ -35,19 +35,13 @@
         "params": {
           "type": "object",
           "properties": {
-            "appid": {
+            "app_id": {
               "type": "string"
             },
             "token": {
               "type": "string"
             },
             "speaker": {
-              "type": "string"
-            },
-            "sample_rate": {
-              "type": "int64"
-            },
-            "api_url": {
               "type": "string"
             }
           }
