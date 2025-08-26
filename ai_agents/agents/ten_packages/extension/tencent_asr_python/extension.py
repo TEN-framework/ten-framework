@@ -29,7 +29,7 @@ from .tencent_asr_client import (
     ResponseData,
     RecoginizeResult,
 )
-from .config import TencentASRConfig
+from .config import TencentASRConfig, RequestParams
 from ten_ai_base.dumper import Dumper
 
 
@@ -39,6 +39,7 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
         self.client: TencentAsrClient | None = None
         self.listener: AsyncTencentAsrListener | None = None
         self.config: TencentASRConfig | None = None
+        self.request_params: RequestParams | None = None
         self.sent_user_audio_duration_ms_before_last_reset: int = 0
         self.last_finalize_timestamp: int = 0
         self.audio_dumper: Dumper | None = None
@@ -54,8 +55,12 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
         dump_file_path = None
         try:
             self.config = TencentASRConfig.model_validate_json(config_json)
+            self.request_params = self.config.params.to_request_params()
             ten_env.log_info(
-                f"KEYPOINT vendor_config: {self.config.model_dump_json()}"
+                f"KEYPOINT extension_config: {self.config.model_dump_json()}"
+            )
+            ten_env.log_info(
+                f"KEYPOINT vendor_config: {self.request_params.model_dump_json()}"
             )
 
             if self.config.dump:
@@ -82,14 +87,13 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
             log_path = None
             if dump_file_path is not None:
                 log_path = str(dump_file_path.parent)
+            assert self.request_params is not None
             self.client = TencentAsrClient(
-                app_id=self.config.app_id,
-                secret_key=self.config.secret_key,
-                params=self.config.params,
-                keep_alive_interval=self.config.keep_alive_interval,
+                params=self.request_params,
+                keep_alive_interval=self.config.params.keep_alive_interval,
                 keep_alive_data=b"",
                 listener=self,
-                log_level=self.config.log_level,
+                log_level=self.config.params.log_level,
                 log_path=log_path,
             )
             ten_env.log_info("Tencent ASR client started")
@@ -126,9 +130,10 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
 
     @override
     def input_audio_sample_rate(self) -> int:
+        assert self.request_params is not None
         if self.config is None:
             return 16000
-        sample_rate = self.config.params.input_sample_rate
+        sample_rate = self.request_params.input_sample_rate
         if sample_rate is None:
             return 16000
         return sample_rate
@@ -168,20 +173,22 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
             f"KEYPOINT finalize start at {self.last_finalize_timestamp}]"
         )
         if (
-            self.config.finalize_mode
-            == TencentASRConfig.FinalizeMode.DISCONNECT
+            self.config.params.finalize_mode
+            == self.config.params.FinalizeMode.DISCONNECT
         ):
             await self.client.send_end_of_stream()
         elif (
-            self.config.finalize_mode
-            == TencentASRConfig.FinalizeMode.VENDOR_DEFINED
+            self.config.params.finalize_mode
+            == self.config.params.FinalizeMode.VENDOR_DEFINED
         ):
             await self.client.send_end_of_stream()
         elif (
-            self.config.finalize_mode == TencentASRConfig.FinalizeMode.MUTE_PKG
+            self.config.params.finalize_mode
+            == self.config.params.FinalizeMode.MUTE_PKG
         ):
+            assert self.config.params.mute_pkg_duration_ms is not None
             empty_audio_bytes_len = int(
-                self.config.mute_pkg_duration_ms
+                self.config.params.mute_pkg_duration_ms
                 * self.input_audio_sample_rate()
                 / 1000
                 * 2
@@ -189,11 +196,11 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
             frame = bytearray(empty_audio_bytes_len)
             await self.client.send_pcm_data(bytes(frame))
             self.audio_timeline.add_silence_audio(
-                self.config.mute_pkg_duration_ms
+                self.config.params.mute_pkg_duration_ms
             )
         else:
             _ = self.ten_env.log_error(
-                f"Unknown finalize mode: {self.config.finalize_mode}"
+                f"Unknown finalize mode: {self.config.params.finalize_mode}"
             )
 
     # tencent asr client event handler
@@ -246,8 +253,8 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
         )
 
     def _get_language(self) -> str:
-        assert self.config is not None
-        model_type = self.config.params.engine_model_type
+        assert self.request_params is not None
+        model_type = self.request_params.engine_model_type
         language = model_type.lstrip("16k_")
 
         language_to_iso_639_1 = {
