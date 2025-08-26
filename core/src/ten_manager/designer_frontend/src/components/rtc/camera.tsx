@@ -21,7 +21,6 @@ import {
 import * as React from "react";
 import { DeviceSelect } from "@/components/rtc/device";
 import { Button } from "@/components/ui/button";
-import { SelectItem } from "@/components/ui/select";
 import { VideoSourceType } from "@/types/rtc";
 
 export function VideoDeviceWrapper(props: {

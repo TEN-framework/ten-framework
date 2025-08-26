@@ -1,0 +1,10 @@
+{
+    "type": "app",
+    "name": "tts_guarder",
+    "version": "0.1.0",
+    "dependencies": [
+      {
+        "path": "../../ten_packages/extension/{{extension_name}}"
+      }
+    ]
+  }

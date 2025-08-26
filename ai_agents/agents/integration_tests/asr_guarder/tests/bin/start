@@ -1,0 +1,11 @@
+#!/bin/bash
+
+set -e
+
+cd "$(dirname "${BASH_SOURCE[0]}")/../.."
+
+export PYTHONPATH=.:ten_packages/system/ten_runtime_python/lib:ten_packages/system/ten_runtime_python/interface:ten_packages/system/ten_ai_base/interface:ten_packages/extension:$PYTHONPATH
+
+# Skip long duration tests by default
+echo "Running tests (excluding long duration tests)..."
+pytest -s tests/ -k "not test_long_duration_stream" "$@"

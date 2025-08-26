@@ -5,6 +5,8 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 
+/** biome-ignore-all lint/suspicious/noExplicitAny: <ignore> */
+
 import Editor from "@monaco-editor/react";
 import type { editor as MonacoEditor } from "monaco-editor";
 import React, {
@@ -55,6 +57,7 @@ const EditorWidget = React.forwardRef<IEditorWidgetRef, EditorWidgetProps>(
     ) as IEditorWidget;
 
     // Fetch the specified file content from the backend.
+    // biome-ignore lint/correctness/useExhaustiveDependencies: <ignore>
     useEffect(() => {
       const fetchFileContent = async () => {
         try {
@@ -139,99 +142,97 @@ const EditorWidget = React.forwardRef<IEditorWidgetRef, EditorWidgetProps>(
     }));
 
     return (
-      <>
-        <div className="box-border flex h-full w-full flex-col p-0">
-          <Editor
-            theme={theme === "dark" ? "vs-dark" : "vs-light"}
-            height="100%"
-            defaultLanguage="json"
-            value={fileContent}
-            options={{
-              readOnly: false,
-              automaticLayout: true,
-            }}
-            onChange={(value) => {
-              setFileContent(value || "");
-              isEditingRef.current = true;
-              if (targetWidget && !targetWidget?.metadata?.isContentChanged) {
-                updateEditorStatus(id, true);
-              }
-            }}
-            onMount={(editor) => {
-              editorRef.current = editor;
-              // --- set context menu actions ---
-              // reference: https://github.com/microsoft/monaco-editor/issues/1280#issuecomment-2420136963
-              const keepIds = [
-                "editor.action.clipboardCopyAction",
-                "editor.action.clipboardCutAction",
-                "editor.action.clipboardPasteAction",
-                "editor.action.formatDocument",
-                "vs.editor.ICodeEditor:1:save-file",
-                "vs.actions.separator",
-              ];
-              const contextmenu = editor.getContribution(
-                "editor.contrib.contextmenu"
+      <div className="box-border flex h-full w-full flex-col p-0">
+        <Editor
+          theme={theme === "dark" ? "vs-dark" : "vs-light"}
+          height="100%"
+          defaultLanguage="json"
+          value={fileContent}
+          options={{
+            readOnly: false,
+            automaticLayout: true,
+          }}
+          onChange={(value) => {
+            setFileContent(value || "");
+            isEditingRef.current = true;
+            if (targetWidget && !targetWidget?.metadata?.isContentChanged) {
+              updateEditorStatus(id, true);
+            }
+          }}
+          onMount={(editor) => {
+            editorRef.current = editor;
+            // --- set context menu actions ---
+            // reference: https://github.com/microsoft/monaco-editor/issues/1280#issuecomment-2420136963
+            const keepIds = [
+              "editor.action.clipboardCopyAction",
+              "editor.action.clipboardCutAction",
+              "editor.action.clipboardPasteAction",
+              "editor.action.formatDocument",
+              "vs.editor.ICodeEditor:1:save-file",
+              "vs.actions.separator",
+            ];
+            const contextmenu = editor.getContribution(
+              "editor.contrib.contextmenu"
+            );
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const realMethod = (contextmenu as any)._getMenuActions;
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (contextmenu as any)._getMenuActions = (...args: any[]) => {
+              const items = realMethod.apply(contextmenu, args);
+              const filteredItems = items.filter((item: { id: string }) =>
+                keepIds.includes(item.id)
               );
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              const realMethod = (contextmenu as any)._getMenuActions;
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              (contextmenu as any)._getMenuActions = (...args: any[]) => {
-                const items = realMethod.apply(contextmenu, args);
-                const filteredItems = items.filter((item: { id: string }) =>
-                  keepIds.includes(item.id)
-                );
-                // Remove separator if it's the last item
-                if (
-                  filteredItems.length > 0 &&
-                  filteredItems[filteredItems.length - 1].id ===
-                    "vs.actions.separator"
-                ) {
-                  filteredItems.pop();
-                }
-                return filteredItems;
-              };
+              // Remove separator if it's the last item
+              if (
+                filteredItems.length > 0 &&
+                filteredItems[filteredItems.length - 1].id ===
+                  "vs.actions.separator"
+              ) {
+                filteredItems.pop();
+              }
+              return filteredItems;
+            };
 
-              // --- set keyboard focus to the editor ---
-              editor.focus();
+            // --- set keyboard focus to the editor ---
+            editor.focus();
 
-              // --- add save-file action ---
-              editor.addAction({
-                id: "save-file",
-                label: "Save",
-                contextMenuGroupId: "navigation",
-                contextMenuOrder: 1.5,
-                run: async (ed) => {
-                  // When the user clicks this menu item, first display a
-                  // confirmation popup.
-                  //   handleActionWithOptionalConfirm(
-                  //     () => {
-                  //       // Confirm before saving.
-                  //       const currentContent = ed.getValue();
-                  //       setFileContent(currentContent);
-                  //       saveFile(currentContent);
-                  //     },
-                  //     true // Display a confirmation popup.
-                  //   );
-                  appendDialog({
-                    id: `confirm-dialog-${id}`,
-                    title: t("action.confirm"),
-                    content: t("popup.editor.confirmSaveFile"),
-                    onConfirm: async () => {
-                      const currentContent = ed.getValue();
-                      setFileContent(currentContent);
-                      await saveFile(currentContent);
-                      removeDialog(`confirm-dialog-${id}`);
-                    },
-                    onCancel: async () => {
-                      removeDialog(`confirm-dialog-${id}`);
-                    },
-                  });
-                },
-              });
-            }}
-          />
-        </div>
-      </>
+            // --- add save-file action ---
+            editor.addAction({
+              id: "save-file",
+              label: "Save",
+              contextMenuGroupId: "navigation",
+              contextMenuOrder: 1.5,
+              run: async (ed) => {
+                // When the user clicks this menu item, first display a
+                // confirmation popup.
+                //   handleActionWithOptionalConfirm(
+                //     () => {
+                //       // Confirm before saving.
+                //       const currentContent = ed.getValue();
+                //       setFileContent(currentContent);
+                //       saveFile(currentContent);
+                //     },
+                //     true // Display a confirmation popup.
+                //   );
+                appendDialog({
+                  id: `confirm-dialog-${id}`,
+                  title: t("action.confirm"),
+                  content: t("popup.editor.confirmSaveFile"),
+                  onConfirm: async () => {
+                    const currentContent = ed.getValue();
+                    setFileContent(currentContent);
+                    await saveFile(currentContent);
+                    removeDialog(`confirm-dialog-${id}`);
+                  },
+                  onCancel: async () => {
+                    removeDialog(`confirm-dialog-${id}`);
+                  },
+                });
+              },
+            });
+          }}
+        />
+      </div>
     );
   }
 );

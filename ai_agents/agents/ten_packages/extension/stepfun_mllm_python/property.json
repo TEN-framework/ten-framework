@@ -1,0 +1,12 @@
+{
+    "api_key": "${env:STEPFUN_API_KEY}",
+    "temperature": 0.9,
+    "model": "step-1o-audio",
+    "max_tokens": 2048,
+    "voice": "linjiajiejie",
+    "language": "en",
+    "server_vad": true,
+    "history": 10,
+    "enable_storage": false,
+    "base_url": "wss://api.stepfun.com"
+}

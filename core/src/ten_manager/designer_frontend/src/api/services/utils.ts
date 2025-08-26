@@ -117,11 +117,7 @@ export const parseReq = <T extends ENDPOINT_METHOD>(
   });
 };
 
-export class APIError extends Error {
-  constructor(message: string) {
-    super(message);
-  }
-}
+export class APIError extends Error {}
 
 export const parseResponseError = async (res: Response) => {
   try {
@@ -205,7 +201,7 @@ export const localeStringToEnum = (locale?: string) => {
       return EPreferencesLocale.ZH_TW;
     case "ja-JP":
       return EPreferencesLocale.JA_JP;
-    case "en-US":
+    // case "en-US":
     default:
       return EPreferencesLocale.EN_US;
   }

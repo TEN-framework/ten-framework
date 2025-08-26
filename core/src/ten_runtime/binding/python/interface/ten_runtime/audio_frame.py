@@ -6,10 +6,12 @@
 #
 from enum import IntEnum
 from typing import TypeVar, cast
+
 from libten_runtime_python import (
     _AudioFrame,  # pyright: ignore[reportPrivateUsage]
-    _ten_py_audio_frame_register_audio_frame_type,  # pyright: ignore[reportPrivateUsage] # noqa: E501
+    _ten_py_audio_frame_register_type,  # pyright: ignore[reportPrivateUsage] # noqa: E501
 )
+
 from .msg import Msg
 
 T = TypeVar("T", bound="AudioFrame")
@@ -41,4 +43,4 @@ class AudioFrame(_AudioFrame, Msg):
         return cast("AudioFrame", _AudioFrame.clone(self))
 
 
-_ten_py_audio_frame_register_audio_frame_type(AudioFrame)
+_ten_py_audio_frame_register_type(AudioFrame)

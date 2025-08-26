@@ -56,10 +56,11 @@ export class EventPubSub {
     EEventName,
     Array<{ id: string; callback: (data: unknown) => void }>
   >;
-  private nextId: number = 0;
+  nextId: number;
 
   private constructor() {
     this.subscribers = new Map();
+    this.nextId = 0;
   }
 
   public static getInstance(): EventPubSub {
@@ -93,11 +94,13 @@ export class EventPubSub {
     }
 
     const subId = id || this.generateId();
-    const subscribers = this.subscribers.get(eventName)!;
-    subscribers.push({
-      id: subId,
-      callback: callback as (data: unknown) => void,
-    });
+    const subscribers = this.subscribers.get(eventName);
+    if (subscribers) {
+      subscribers.push({
+        id: subId,
+        callback: callback as (data: unknown) => void,
+      });
+    }
 
     return {
       id: subId,

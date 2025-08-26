@@ -97,6 +97,7 @@ core/src/ten_manager/tests/test_data/cmd_builtin_function_install_all/manifest-l
 .cursorrules
 .cursorignore
 .cursorindexingignore
+.cursor/
 
 # ===============================
 # ai_agents

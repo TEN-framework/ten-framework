@@ -34,7 +34,7 @@ class test_extension_1 : public ten::extension_t {
           std::move(cmd),
           [test_string](ten::ten_env_t &ten_env,
                         std::unique_ptr<ten::cmd_result_t> cmd_result,
-                        ten::error_t *err) {
+                        ten::error_t * /* err */) {
             nlohmann::json json =
                 nlohmann::json::parse(cmd_result->get_property_to_json());
 
@@ -46,9 +46,9 @@ class test_extension_1 : public ten::extension_t {
           });
     } else if (cmd->get_name() == "hello_world_2") {
       ten_env.send_cmd(
-          std::move(cmd),
-          [](ten::ten_env_t &ten_env,
-             std::unique_ptr<ten::cmd_result_t> cmd_result, ten::error_t *err) {
+          std::move(cmd), [](ten::ten_env_t &ten_env,
+                             std::unique_ptr<ten::cmd_result_t> cmd_result,
+                             ten::error_t * /* err */) {
             nlohmann::json json =
                 nlohmann::json::parse(cmd_result->get_property_to_json());
             if (json.value("detail", "") == "hello world 2, too") {
@@ -58,9 +58,9 @@ class test_extension_1 : public ten::extension_t {
           });
     } else if (cmd->get_name() == "hello_world_3") {
       ten_env.send_cmd(
-          std::move(cmd),
-          [](ten::ten_env_t &ten_env,
-             std::unique_ptr<ten::cmd_result_t> cmd_result, ten::error_t *err) {
+          std::move(cmd), [](ten::ten_env_t &ten_env,
+                             std::unique_ptr<ten::cmd_result_t> cmd_result,
+                             ten::error_t * /* err */) {
             nlohmann::json json =
                 nlohmann::json::parse(cmd_result->get_property_to_json());
             if (json.value("detail", "") == "hello world 3, too") {
@@ -76,7 +76,7 @@ class test_extension_1 : public ten::extension_t {
           std::move(hello_world_5_cmd),
           [&](ten::ten_env_t &ten_env,
               std::unique_ptr<ten::cmd_result_t> cmd_result,
-              ten::error_t *err) {
+              ten::error_t * /* err */) {
             if (cmd_result->get_property_string("detail") ==
                 "hello world 5, too") {
               auto cmd_result_for_hello_world = ten::cmd_result_t::create(
@@ -95,7 +95,7 @@ class test_extension_1 : public ten::extension_t {
           std::move(hello_world_6_cmd),
           [cmd_shared](ten::ten_env_t &ten_env,
                        std::unique_ptr<ten::cmd_result_t> cmd_result,
-                       ten::error_t *err) {
+                       ten::error_t * /* err */) {
             nlohmann::json json =
                 nlohmann::json::parse(cmd_result->get_property_to_json());
             if (json.value("detail", "") == "hello world 6, too") {
@@ -188,7 +188,7 @@ TEST(ExtensionTest, RespHandlerBasicWaitInOnStart) {  // NOLINT
   auto *client = new ten::msgpack_tcp_client_t("msgpack://127.0.0.1:8001/");
 
   // Send graph.
-  auto start_graph_cmd = ten::cmd_start_graph_t::create();
+  auto start_graph_cmd = ten::start_graph_cmd_t::create();
   start_graph_cmd->set_graph_from_json(R"({
            "nodes": [{
                "type": "extension",

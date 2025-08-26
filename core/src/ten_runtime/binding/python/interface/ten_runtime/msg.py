@@ -6,9 +6,10 @@
 #
 from libten_runtime_python import (
     _Msg,  # pyright: ignore[reportPrivateUsage]
-    _ten_py_msg_register_msg_type,  # pyright: ignore[reportPrivateUsage]
+    _ten_py_msg_register_type,  # pyright: ignore[reportPrivateUsage]
 )
-from ten_runtime.error import TenError
+
+from .error import TenError
 from .loc import Loc
 
 
@@ -32,4 +33,4 @@ class Msg(_Msg):
         )
 
 
-_ten_py_msg_register_msg_type(Msg)
+_ten_py_msg_register_type(Msg)

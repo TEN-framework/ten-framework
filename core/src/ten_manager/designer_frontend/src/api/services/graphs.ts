@@ -10,13 +10,13 @@ import type { z } from "zod";
 import { ENDPOINT_GRAPH_UI, ENDPOINT_GRAPHS } from "@/api/endpoints";
 import { ENDPOINT_METHOD } from "@/api/endpoints/constant";
 import { getTanstackQueryClient, makeAPIRequest } from "@/api/services/utils";
-
 import type {
   AddConnectionPayloadSchema,
   AddNodePayloadSchema,
   DeleteConnectionPayloadSchema,
   DeleteNodePayloadSchema,
   GraphUiNodeGeometrySchema,
+  IGraph,
   SetGraphUiPayloadSchema,
   UpdateNodePropertyPayloadSchema,
 } from "@/types/graphs";
@@ -30,7 +30,7 @@ export const retrieveGraphConnections = async (graphId: string) => {
   const data = template.responseSchema.parse(res).data;
 
   // Find the graph with matching graph_id and return its connections
-  const targetGraph = data.find(graph => graph.graph_id === graphId);
+  const targetGraph = data.find((graph) => graph.graph_id === graphId);
   return targetGraph?.graph.connections || [];
 };
 
@@ -40,11 +40,20 @@ export const retrieveGraphs = async () => {
     body: {},
   });
   const res = await req;
-  const data = template.responseSchema.parse(res).data;
 
-  return data.map(graph => ({
-    ...graph,
-  }));
+  const resp = await template.responseSchema.parseAsync(res);
+
+  // todo: selector&subgraph
+  const filtered = resp.data.map((item) => ({
+    ...item,
+    graph: {
+      ...item.graph,
+      nodes:
+        item.graph.nodes?.filter((node) => node.type === "extension") || [],
+    },
+  })) as IGraph[];
+
+  return filtered;
 };
 
 export const useGraphs = () => {

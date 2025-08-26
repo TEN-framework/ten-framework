@@ -5,10 +5,12 @@
 # Refer to the "LICENSE" file in the root directory for more information.
 #
 from typing import TypeVar, cast
+
 from libten_runtime_python import (
     _Cmd,  # pyright: ignore[reportPrivateUsage]
-    _ten_py_cmd_register_cmd_type,  # pyright: ignore[reportPrivateUsage]
+    _ten_py_cmd_register_type,  # pyright: ignore[reportPrivateUsage]
 )
+
 from .msg import Msg
 
 T = TypeVar("T", bound="Cmd")
@@ -26,4 +28,4 @@ class Cmd(_Cmd, Msg):
         return cast("Cmd", _Cmd.clone(self))
 
 
-_ten_py_cmd_register_cmd_type(Cmd)
+_ten_py_cmd_register_type(Cmd)

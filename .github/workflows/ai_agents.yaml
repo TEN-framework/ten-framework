@@ -2,7 +2,7 @@ name: AI Agents (Build & Test)
 
 on:
   pull_request:
-    branches: ["main","feat/asr_guarder"]
+    branches: ["main"]
     paths-ignore:
       - "core/**"
       - "tests/**"
@@ -35,14 +35,13 @@ jobs:
   ci:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/ten-framework/ten_agent_build:0.6.11
+      image: ghcr.io/ten-framework/ten_agent_build:0.6.15
     strategy:
       matrix:
         agent:
           [
-            agents/examples/default,
-            agents/examples/demo,
-            agents/examples/experimental,
+            agents/examples/voice-assistant,
+            agents/examples/voice-assistant-realtime,
           ]
     steps:
       - uses: actions/checkout@v4

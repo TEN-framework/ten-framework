@@ -47,19 +47,19 @@ static bool ten_engine_close_duplicated_remote_or_upgrade_it_to_normal(
   TEN_ASSERT(ten_remote_check_integrity(weak_remote, true),
              "Invalid use of remote %p.", weak_remote);
 
-  ten_string_t detail_str;
-  TEN_STRING_INIT(detail_str);
+  ten_string_t graph_id_str;
+  TEN_STRING_INIT(graph_id_str);
 
-  ten_value_t *detail_value =
-      ten_msg_peek_property(cmd_result, TEN_STR_DETAIL, NULL);
-  if (!detail_value || !ten_value_is_string(detail_value)) {
+  ten_value_t *graph_id_value =
+      ten_msg_peek_property(cmd_result, TEN_STR_GRAPH_ID, NULL);
+  if (!graph_id_value || !ten_value_is_string(graph_id_value)) {
     TEN_ASSERT(0, "Should not happen.");
   }
 
-  bool rc = ten_value_to_string(detail_value, &detail_str, err);
+  bool rc = ten_value_to_string(graph_id_value, &graph_id_str, err);
   TEN_ASSERT(rc, "Should not happen.");
 
-  if (ten_string_is_equal_c_str(&detail_str, TEN_STR_DUPLICATE)) {
+  if (ten_string_is_equal_c_str(&graph_id_str, TEN_STR_DUPLICATE)) {
     TEN_LOGW("Receives a 'duplicate' result from %s",
              ten_string_get_raw_str(&weak_remote->uri));
 
@@ -77,7 +77,7 @@ static bool ten_engine_close_duplicated_remote_or_upgrade_it_to_normal(
     ten_engine_upgrade_weak_remote_to_normal_remote(self, weak_remote);
   }
 
-  ten_string_deinit(&detail_str);
+  ten_string_deinit(&graph_id_str);
 
   return true;
 }

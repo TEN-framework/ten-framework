@@ -23,6 +23,7 @@ export const GHIcon = (props: React.SVGProps<SVGSVGElement>) => {
       )}
       {...rest}
     >
+      <title className="hidden">GitHub Icon</title>
       <path
         fillRule="evenodd"
         clipRule="evenodd"

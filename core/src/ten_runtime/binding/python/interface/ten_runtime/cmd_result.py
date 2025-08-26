@@ -10,11 +10,11 @@ from enum import IntEnum
 from libten_runtime_python import (
     _CmdResult,  # pyright: ignore[reportPrivateUsage]
     _Cmd,  # pyright: ignore[reportPrivateUsage]
-    _ten_py_cmd_result_register_cmd_result_type,  # pyright: ignore[reportPrivateUsage] # noqa: E501
+    _ten_py_cmd_result_register_type,  # pyright: ignore[reportPrivateUsage] # noqa: E501
 )
 
-from .cmd import Cmd
 from .msg import Msg
+from .cmd import Cmd
 
 T = TypeVar("T", bound="CmdResult")
 
@@ -53,4 +53,4 @@ class CmdResult(_CmdResult, Msg):
         return _CmdResult.set_final(self, is_final)
 
 
-_ten_py_cmd_result_register_cmd_result_type(CmdResult)
+_ten_py_cmd_result_register_type(CmdResult)

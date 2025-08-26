@@ -17,7 +17,7 @@ class test_extension_1 : public ten::extension_t {
   explicit test_extension_1(const char *name) : ten::extension_t(name) {}
 
   void on_start(ten::ten_env_t &ten_env) override {
-    auto start_graph_cmd = ten::cmd_start_graph_t::create();
+    auto start_graph_cmd = ten::start_graph_cmd_t::create();
     start_graph_cmd->set_dests({{""}});
     start_graph_cmd->set_graph_from_json(R"({
       "nodes": [{
@@ -45,7 +45,7 @@ class test_extension_1 : public ten::extension_t {
                        EXPECT_EQ(status_code, TEN_STATUS_CODE_ERROR);
 
                        auto graph_id =
-                           cmd_result->get_property_string("detail");
+                           cmd_result->get_property_string("graph_id");
                        EXPECT_EQ(graph_id, "");
 
                        start_and_stop_graph_is_completed = true;

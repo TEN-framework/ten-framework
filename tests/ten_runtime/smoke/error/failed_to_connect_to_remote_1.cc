@@ -6,7 +6,7 @@
 //
 #include "gtest/gtest.h"
 #include "include_internal/ten_runtime/binding/cpp/ten.h"
-#include "ten_runtime/binding/cpp/detail/msg/cmd/start_graph.h"
+#include "ten_runtime/binding/cpp/detail/msg/cmd/start_graph_cmd.h"
 #include "ten_runtime/common/status_code.h"
 #include "tests/common/client/cpp/msgpack_tcp.h"
 #include "tests/ten_runtime/smoke/util/binding/cpp/check.h"
@@ -18,13 +18,14 @@ class test_predefined_graph : public ten::extension_t {
   explicit test_predefined_graph(const char *name) : ten::extension_t(name) {}
 
   void on_start(ten::ten_env_t &ten_env) override {
-    auto start_graph_cmd = ten::cmd_start_graph_t::create();
+    auto start_graph_cmd = ten::start_graph_cmd_t::create();
     start_graph_cmd->set_dests({{""}});
     start_graph_cmd->set_predefined_graph_name("graph_1");
     ten_env.send_cmd(
         std::move(start_graph_cmd),
         [](ten::ten_env_t &ten_env,
-           std::unique_ptr<ten::cmd_result_t> cmd_result, ten::error_t *err) {
+           std::unique_ptr<ten::cmd_result_t> cmd_result,
+           ten::error_t * /* err */) {
           auto status_code = cmd_result->get_status_code();
           ASSERT_EQ(status_code, TEN_STATUS_CODE_ERROR);
 

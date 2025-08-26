@@ -29,7 +29,7 @@ export default function MessageList(props: {
       className={cn("h-full w-full flex-grow overflow-y-auto px-2", className)}
     >
       {chatItems.length === 0 ? (
-        <div className="flex h-full items-center justify-center ">
+        <div className="flex h-full items-center justify-center">
           <p>{t("components.messageList.noMessages")}</p>
         </div>
       ) : (

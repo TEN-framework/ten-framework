@@ -84,32 +84,30 @@ export const TrulienceConfigWidgetContent = (_props: { widget: IWidget }) => {
 
   return (
     <div className="flex h-full w-full flex-col gap-2 overflow-y-auto">
-      <>
-        <AutoForm
-          onSubmit={async (data) => {
-            setPreferences("trulience", {
-              ...preferences.trulience,
-              ...data,
-            });
-            removeWidget(widget.widget_id);
-          }}
-          defaultValues={{
-            enabled: false,
-            trulienceAvatarId: undefined,
-            trulienceAvatarToken: undefined,
-            trulienceSdkUrl: "https://trulience.com/sdk/trulience.sdk.js",
-            trulienceAnimationURL: "https://trulience.com",
-          }}
-          values={{
+      <AutoForm
+        onSubmit={async (data) => {
+          setPreferences("trulience", {
             ...preferences.trulience,
-          }}
-          schema={new ZodProvider(z.object(Object.fromEntries(schema)))}
-        >
-          <Button type="submit" className="w-full">
-            {t("action.confirm")}
-          </Button>
-        </AutoForm>
-      </>
+            ...data,
+          });
+          removeWidget(widget.widget_id);
+        }}
+        defaultValues={{
+          enabled: false,
+          trulienceAvatarId: undefined,
+          trulienceAvatarToken: undefined,
+          trulienceSdkUrl: "https://trulience.com/sdk/trulience.sdk.js",
+          trulienceAnimationURL: "https://trulience.com",
+        }}
+        values={{
+          ...preferences.trulience,
+        }}
+        schema={new ZodProvider(z.object(Object.fromEntries(schema)))}
+      >
+        <Button type="submit" className="w-full">
+          {t("action.confirm")}
+        </Button>
+      </AutoForm>
     </div>
   );
 };

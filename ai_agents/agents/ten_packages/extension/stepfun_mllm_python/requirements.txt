@@ -1,0 +1,5 @@
+asyncio
+pydantic
+numpy==1.26.4
+pydub==0.25.1
+aiohttp

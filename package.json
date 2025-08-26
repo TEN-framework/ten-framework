@@ -1,6 +1,6 @@
 {
   "devDependencies": {
-    "@biomejs/biome": "2.1.2",
+    "@biomejs/biome": "2.1.4",
     "@types/mocha": "^10.0.10",
     "@types/node": "^22.17.1",
     "eslint": "^9.33.0",

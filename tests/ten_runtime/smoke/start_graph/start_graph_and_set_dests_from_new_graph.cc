@@ -17,7 +17,7 @@ class test_extension_1 : public ten::extension_t {
 
   void on_start(ten::ten_env_t &ten_env) override {
     // Start a new graph.
-    auto start_graph_cmd = ten::cmd_start_graph_t::create();
+    auto start_graph_cmd = ten::start_graph_cmd_t::create();
 
     // The destination of the 'start_graph' command is the current app, using
     // "" to represent current app.
@@ -89,7 +89,7 @@ class test_extension_1 : public ten::extension_t {
                      "should not happen.");
 
           // Get the graph ID of the newly created graph.
-          auto new_graph_id = cmd_result->get_property_string("detail");
+          auto new_graph_id = cmd_result->get_property_string("graph_id");
 
           // Send a 'set_original_graph_info' command to the specified extension
           // in the newly created graph.
@@ -123,7 +123,7 @@ class test_extension_1 : public ten::extension_t {
                         ten::error_t * /* err */) {
                       // Shut down the graph; otherwise, the app won't be able
                       // to close because there is still a running engine/graph.
-                      auto stop_graph_cmd = ten::cmd_stop_graph_t::create();
+                      auto stop_graph_cmd = ten::stop_graph_cmd_t::create();
                       stop_graph_cmd->set_dests({{""}});
                       stop_graph_cmd->set_graph_id(new_graph_id.c_str());
 

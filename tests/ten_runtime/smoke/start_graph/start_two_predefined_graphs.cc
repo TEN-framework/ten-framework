@@ -8,7 +8,7 @@
 
 #include "gtest/gtest.h"
 #include "include_internal/ten_runtime/binding/cpp/ten.h"
-#include "ten_runtime/binding/cpp/detail/msg/cmd/start_graph.h"
+#include "ten_runtime/binding/cpp/detail/msg/cmd/start_graph_cmd.h"
 #include "tests/common/client/cpp/msgpack_tcp.h"
 #include "tests/ten_runtime/smoke/util/binding/cpp/check.h"
 
@@ -19,20 +19,21 @@ class test_extension_1 : public ten::extension_t {
   explicit test_extension_1(const char *name) : ten::extension_t(name) {}
 
   static void start_graph_and_greet(
-      std::string graph_name, ten::ten_env_t &ten_env,
+      const std::string &graph_name, ten::ten_env_t &ten_env,
       const std::function<void(ten::ten_env_t &, const std::string &)> &cb) {
-    auto start_graph_cmd = ten::cmd_start_graph_t::create();
+    auto start_graph_cmd = ten::start_graph_cmd_t::create();
     start_graph_cmd->set_dests({{""}});
     start_graph_cmd->set_predefined_graph_name(graph_name.c_str());
 
     ten_env.send_cmd(
         std::move(start_graph_cmd),
         [cb](ten::ten_env_t &ten_env,
-             std::unique_ptr<ten::cmd_result_t> cmd_result, ten::error_t *err) {
+             std::unique_ptr<ten::cmd_result_t> cmd_result,
+             ten::error_t * /* err */) {
           auto status_code = cmd_result->get_status_code();
           ASSERT_EQ(status_code, TEN_STATUS_CODE_OK);
 
-          auto graph_id = cmd_result->get_property_string("detail");
+          auto graph_id = cmd_result->get_property_string("graph_id");
 
           auto hello_world_cmd = ten::cmd_t::create("hello_world");
           hello_world_cmd->set_dests({{"msgpack://127.0.0.1:8001/",
@@ -42,7 +43,7 @@ class test_extension_1 : public ten::extension_t {
               std::move(hello_world_cmd),
               [cb, graph_id](ten::ten_env_t &ten_env,
                              std::unique_ptr<ten::cmd_result_t> cmd_result,
-                             ten::error_t *err) {
+                             ten::error_t * /* err */) {
                 auto status_code = cmd_result->get_status_code();
                 ASSERT_EQ(status_code, TEN_STATUS_CODE_OK);
 
@@ -79,26 +80,26 @@ class test_extension_1 : public ten::extension_t {
 
       // Shut down the graph 1; otherwise, the app won't be able to close
       // because there is still a running engine/graph.
-      auto stop_graph_1_cmd = ten::cmd_stop_graph_t::create();
+      auto stop_graph_1_cmd = ten::stop_graph_cmd_t::create();
       stop_graph_1_cmd->set_dests({{""}});
       stop_graph_1_cmd->set_graph_id(graph_id_1.c_str());
 
       ten_env.send_cmd(
           std::move(stop_graph_1_cmd),
           [&](ten::ten_env_t &ten_env,
-              std::unique_ptr<ten::cmd_result_t> cmd_result,
-              ten::error_t *err) {
+              std::unique_ptr<ten::cmd_result_t> /* cmd_result */,
+              ten::error_t * /* err */) {
             // Shut down the graph 2; otherwise, the app won't be able to close
             // because there is still a running engine/graph.
-            auto stop_graph_2_cmd = ten::cmd_stop_graph_t::create();
+            auto stop_graph_2_cmd = ten::stop_graph_cmd_t::create();
             stop_graph_2_cmd->set_dests({{""}});
             stop_graph_2_cmd->set_graph_id(graph_id_2.c_str());
 
             ten_env.send_cmd(
                 std::move(stop_graph_2_cmd),
                 [&](ten::ten_env_t &ten_env,
-                    std::unique_ptr<ten::cmd_result_t> cmd_result,
-                    ten::error_t *err) {
+                    std::unique_ptr<ten::cmd_result_t> /* cmd_result */,
+                    ten::error_t * /* err */) {
                   nlohmann::json detail = {{"id", 1}, {"name", "a"}};
 
                   auto final_cmd_result =
