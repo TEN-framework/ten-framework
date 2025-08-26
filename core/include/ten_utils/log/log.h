@@ -126,9 +126,9 @@ typedef struct ten_log_advanced_impl_t {
 typedef struct ten_log_t {
   ten_signature_t signature;
 
+  // Deprecated fields.
   TEN_LOG_LEVEL output_level;
   ten_log_output_t output;
-
   ten_log_formatter_t formatter;
   ten_log_encryption_t encryption;
 

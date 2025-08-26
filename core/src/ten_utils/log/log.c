@@ -149,10 +149,6 @@ static void ten_log_log_from_va_list(ten_log_t *self, TEN_LOG_LEVEL level,
   TEN_ASSERT(self, "Invalid argument.");
   TEN_ASSERT(ten_log_check_integrity(self), "Invalid argument.");
 
-  if (level < self->output_level) {
-    return;
-  }
-
   ten_string_t msg;
   ten_string_init_from_va_list(&msg, fmt, ap);
 
@@ -168,10 +164,6 @@ void ten_log_log_formatted(ten_log_t *self, TEN_LOG_LEVEL level,
                            ten_value_t *fields, const char *fmt, ...) {
   TEN_ASSERT(self, "Invalid argument.");
   TEN_ASSERT(ten_log_check_integrity(self), "Invalid argument.");
-
-  if (level < self->output_level) {
-    return;
-  }
 
   va_list ap;
   va_start(ap, fmt);
@@ -210,6 +202,10 @@ void ten_log_log_with_size(ten_log_t *self, TEN_LOG_LEVEL level,
                                msg, msg_len, fields);
     }
 
+    return;
+  }
+
+  if (level < self->output_level) {
     return;
   }
 
