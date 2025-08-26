@@ -29,6 +29,10 @@ RECONNECTABLE_ERROR_CODES = [
     1003,  # Rate limit exceeded - retry with backoff
     1004,  # Quota exceeded - may reset, retry later
     1005,  # Server busy - temporary issue, retry
+    1010,  # Audio too long - may be temporary, retry may help
+    1011,  # Audio too large - may be temporary, retry may help
+    1012,  # Invalid audio format - may be temporary, retry may help
+    1013,  # Audio silent - may be temporary, retry may help
     1020,  # Recognition wait timeout - temporary issue
     1021,  # Recognition timeout - temporary issue
     1022,  # Recognition error - may be temporary
@@ -40,10 +44,6 @@ RECONNECTABLE_ERROR_CODES = [
 # Fatal error codes that should not trigger reconnection
 FATAL_ERROR_CODES = [
     1001,  # Invalid request params - configuration issue, no point retrying
-    1010,  # Audio too long - content issue, no point retrying
-    1011,  # Audio too large - content issue, no point retrying
-    1012,  # Invalid audio format - format issue, no point retrying
-    1013,  # Audio silent - content issue, no point retrying
 ]
 
 # Default workflow configuration

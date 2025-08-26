@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "tencent_asr_python",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "display_name": {
     "locales": {
       "en-US": {
@@ -76,7 +76,37 @@
       "version": "0.6"
     }
   ],
-  "api": {},
+  "api": {
+    "interface": [
+      {
+        "import_uri": "../../system/ten_ai_base/api/asr-interface.json"
+      }
+    ],
+    "property": {
+      "properties": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "appid": {
+              "type": "string"
+            },
+            "secretid": {
+              "type": "string"
+            },
+            "secretkey": {
+              "type": "string"
+            },
+            "finalize_mode": {
+              "type": "string"
+            },
+            "engine_model_type": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  },
   "scripts": {
     "test": "tests/bin/start"
   },

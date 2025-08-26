@@ -85,8 +85,6 @@ class TencentAsrListener:
 class TencentAsrClient(WebSocketClient):
     def __init__(
         self,
-        app_id: str,
-        secret_key: str,
         params: RequestParams,
         logger: logging.Logger | None = None,
         log_level: str = "INFO",
@@ -104,13 +102,8 @@ class TencentAsrClient(WebSocketClient):
         else:
             self._listener = listener
 
-        if len(app_id) == 0 or len(secret_key) == 0:
-            raise ValueError("app_id and secret_key are required")
-
-        self._app_id = app_id
-        self._secret_key = secret_key
         self._params = params
-        uri = self._params.uri(app_id, secret_key)
+        uri = self._params.uri()
 
         super().__init__(uri, logger=self.logger, **kwargs)
 
@@ -216,7 +209,7 @@ class TencentAsrClient(WebSocketClient):
     @override
     async def on_reconnect(self):
         self.logger.info("🔄 Reconnected to the server.")
-        self._uri = self._params.uri(self._app_id, self._secret_key)
+        self._uri = self._params.uri()
 
     async def send_pcm_data(self, data: bytes):
         assert (
@@ -242,32 +235,37 @@ if __name__ == "__main__":
             / "tests/test_data/16k_en_us_helloworld.pcm",
             "rb",
         ) as f:
+            print("start sending audio data")
             sample_rate = 16000
             total_ms = 10000
-            chunk_time_ms = 10
+            chunk_time_ms = 50
             chunk_size = int(chunk_time_ms * sample_rate / 1000 * 2)
             cnt = 0
             while True:
                 chunk = f.read(chunk_size)
                 if not chunk:
+                    await client.send_end_of_stream()
                     break
                 await client.send_pcm_data(chunk)
                 await asyncio.sleep(chunk_time_ms / 1000)
                 cnt += chunk_time_ms
+                print(f"sent {cnt}ms")
                 if cnt > total_ms:
                     await client.send_end_of_stream()
                     break
 
     async def main():
         params = RequestParams(
+            appid=os.getenv("TENCENT_ASR_APP_ID", ""),
+            secretkey=os.getenv("TENCENT_ASR_SECRET_KEY", ""),
             secretid=os.getenv("TENCENT_ASR_SECRET_ID", ""),
             engine_model_type="16k_en",
             voice_format=RequestParams.VoiceFormat.PCM,
             word_info=2,
+            needvad=1,
+            vad_silence_time=1000,
         )
         client = TencentAsrClient(
-            app_id=os.getenv("TENCENT_ASR_APP_ID", ""),
-            secret_key=os.getenv("TENCENT_ASR_SECRET_KEY", ""),
             params=params,
             log_level="DEBUG",
             auto_reconnect=True,
@@ -275,15 +273,13 @@ if __name__ == "__main__":
         logger = client.logger
 
         try:
-            asyncio.create_task(send_audio_data(client))
-            await client.start()
+            asyncio.create_task(client.start())
+            await send_audio_data(client)
+            await asyncio.sleep(2)
         except KeyboardInterrupt:
             logger.info("Keyboard interrupt received.")
         finally:
             logger.info("Main is shutting down the clientpass")
             await client.stop()
 
-    try:
-        asyncio.run(main())
-    except KeyboardInterrupt:
-        pass
+    asyncio.run(main())

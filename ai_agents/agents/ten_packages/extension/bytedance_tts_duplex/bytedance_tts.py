@@ -248,7 +248,7 @@ class BytedanceV3Synthesizer:
         response_msgs: asyncio.Queue[Tuple[int, bytes]],
     ):
         self.config = config
-        self.app_id = config.appid
+        self.app_id = config.app_id
         self.token = config.token
         self.speaker = config.speaker
         self.session_id = uuid.uuid4().hex
@@ -256,7 +256,7 @@ class BytedanceV3Synthesizer:
         self.stop_event = asyncio.Event()
         self.ten_env: AsyncTenEnv = ten_env
         self.vendor = vendor
-        self.response_msgs: asyncio.Queue[Tuple[int, bytes]] | None = (
+        self.response_msgs: asyncio.Queue[Tuple[int, bytes, bool]] | None = (
             response_msgs
         )
 
@@ -364,7 +364,35 @@ class BytedanceV3Synthesizer:
                     await self._receive_ready_event.wait()
                     await self.start_connection()
 
-                    await self._await_channel_tasks()
+                    if not self.channel_tasks:
+                        return
+
+                    # Wait for the first task to complete (sender or receiver)
+                    (done, pending) = await asyncio.wait(
+                        self.channel_tasks,
+                        return_when=asyncio.FIRST_COMPLETED,
+                    )
+                    self.ten_env.log_info(
+                        "A channel task finished, indicating connection is closing."
+                    )
+
+                    # Cancel any remaining pending tasks
+                    for task in pending:
+                        task.cancel()
+
+                    # Wait for pending tasks to be fully cancelled
+                    if pending:
+                        await asyncio.wait(pending)
+
+                    # Check for exceptions in the completed tasks
+                    for task in done:
+                        exp = task.exception()
+                        if exp and not isinstance(exp, asyncio.CancelledError):
+                            self.ten_env.log_warn(
+                                f"Channel task raised an exception: {exp}"
+                            )
+                            # Re-raise to be caught by the outer exception handlers
+                            raise exp
 
                 except websockets.ConnectionClosed as e:
                     self.ten_env.log_info(f"Websocket connection closed: {e}.")
@@ -373,10 +401,13 @@ class BytedanceV3Synthesizer:
                             "Websocket connection closed, will reconnect."
                         )
 
-                        # Cancel all channel tasks
-                        for task in self.channel_tasks:
-                            task.cancel()
-                        await self._await_channel_tasks()
+                        # Cancel all channel tasks and wait for them to finish
+                        if self.channel_tasks:
+                            for task in self.channel_tasks:
+                                task.cancel()
+                            # Wait for tasks to complete their cancellation
+                            await asyncio.wait(self.channel_tasks)
+                            self.channel_tasks.clear()
 
                         # Reset all event states
                         self._receive_ready_event.clear()
@@ -397,49 +428,38 @@ class BytedanceV3Synthesizer:
                 await self.ws.close()
             self.ten_env.log_info("Websocket connection process ended.")
 
-    async def _await_channel_tasks(self) -> None:
-        """Wait for channel tasks to complete"""
-        if not self.channel_tasks:
-            return
-
-        (done, pending) = await asyncio.wait(
-            self.channel_tasks,
-            return_when=asyncio.FIRST_EXCEPTION,
-        )
-        self.ten_env.log_info("Channel tasks finished.")
-
-        self.channel_tasks.clear()
-
-        # Cancel remaining tasks
-        for task in pending:
-            task.cancel()
-
-        # Check for exceptions
-        for task in done:
-            exp = task.exception()
-            if exp and not isinstance(exp, asyncio.CancelledError):
-                raise exp
-
-    async def _establish_connection_and_session(self):
-        """Establish connection and session"""
-        await self.start_connection()
-        await self.start_session()
-
     async def _send_loop(self, ws: WebSocketClientProtocol) -> None:
         """Text sending loop"""
         try:
             while not self._session_closing:
-                # Get text to send from queue
-                text_data = await self.text_queue.get()
-                if text_data is None:  # End signal
+                # Get command from queue
+                queue_item = await self.text_queue.get()
+                if queue_item is None:  # End signal
                     break
 
-                # Establish session before sending first text (if not already established)
-                if not self._session_started:
-                    await self.start_session()
-                    self._session_started = True
+                # Handle different types of queue items
+                if isinstance(queue_item, tuple):
+                    command_type, data = queue_item
 
-                await self._send_text_internal(ws, text_data)
+                    if command_type == "text":
+                        # Establish session before sending first text (if not already established)
+                        if not self._session_started:
+                            await self.start_session()
+                            self._session_started = True
+
+                        await self._send_text_internal(ws, data)
+
+                    elif command_type == "finish_session":
+                        # Call the actual finish_session implementation
+                        await self._finish_session_internal(ws)
+
+                else:
+                    # Backward compatibility - treat as text
+                    if not self._session_started:
+                        await self.start_session()
+                        self._session_started = True
+                    await self._send_text_internal(ws, queue_item)
+
         except Exception as e:
             self.ten_env.log_error(f"Exception in send_loop: {e}")
             raise e
@@ -484,6 +504,8 @@ class BytedanceV3Synthesizer:
         elif message.event == EVENT_SessionStarted:
             self._session_success = True
             self._session_event.set()
+            self._connection_success = True
+            self._connection_event.set()
         elif message.event == EVENT_SessionFailed:
             self._session_success = False
             self._session_event.set()
@@ -503,13 +525,15 @@ class BytedanceV3Synthesizer:
 
     async def send_text(self, text: str):
         """Send text (external interface)"""
-        await self.text_queue.put(text)
+        await self.text_queue.put(("text", text))
+
+    async def queue_finish_session(self):
+        """Queue finish session command to ensure proper order"""
+        await self.text_queue.put(("finish_session", None))
 
     async def _send_text_internal(self, ws: WebSocketClientProtocol, text: str):
         """Internal text sending implementation"""
-        self.ten_env.log_info(
-            f"KEYPOINT hugo Sending text to Bytedance: {text}"
-        )
+        self.ten_env.log_info(f"KEYPOINT Sending text to Bytedance: {text}")
         header = Header(
             message_type=FULL_CLIENT_REQUEST,
             message_type_specific_flags=MsgTypeFlagWithEvent,
@@ -546,6 +570,7 @@ class BytedanceV3Synthesizer:
                 await ws.send(bytes(full_client_request))
 
     async def start_connection(self):
+        self.ten_env.log_info("KEYPOINT Starting connection")
         # Reset connection event
         self._connection_event.clear()
         self._connection_success = False
@@ -580,6 +605,7 @@ class BytedanceV3Synthesizer:
             ) from exc
 
     async def start_session(self):
+        self.ten_env.log_info("KEYPOINT start session")
         # Reset session event
         self._session_event.clear()
         self._session_success = False
@@ -617,7 +643,9 @@ class BytedanceV3Synthesizer:
                 )
             ) from exc
 
-    async def finish_session(self):
+    async def _finish_session_internal(self, ws: WebSocketClientProtocol):
+        """Internal finish session implementation"""
+        self.ten_env.log_info("KEYPOINT finish session internal")
         header = Header(
             message_type=FULL_CLIENT_REQUEST,
             message_type_specific_flags=MsgTypeFlagWithEvent,
@@ -626,11 +654,17 @@ class BytedanceV3Synthesizer:
         optional = Optional(
             event=EVENT_FinishSession, sessionId=self.session_id
         ).as_bytes()
-        await self.send_event(self.ws, header, optional, b"{}")
+        await self.send_event(ws, header, optional, b"{}")
         # Reset session state, next text sending will re-establish session
         self._session_started = False
+        self.ten_env.log_info("KEYPOINT Session finished successfully")
+
+    async def finish_session(self):
+        """Public finish session method - queues the command for proper ordering"""
+        await self.queue_finish_session()
 
     async def finish_connection(self):
+        self.ten_env.log_info("KEYPOINT finish connection")
         header = Header(
             message_type=FULL_CLIENT_REQUEST,
             message_type_specific_flags=MsgTypeFlagWithEvent,
@@ -843,6 +877,15 @@ class BytedanceV3Client:
         # Create new synthesizer
         self.synthesizer = self._create_synthesizer()
         self.ten_env.log_info("New synthesizer created successfully")
+
+    def reset_synthesizer(self):
+        """Reset synthesizer"""
+        if self.synthesizer:
+            self.cancelled_synthesizers.append(self.synthesizer)
+            self.synthesizer.cancel()
+
+        self.synthesizer = self._create_synthesizer()
+        self.ten_env.log_info("Synthesizer reset successfully")
 
     async def send_text(self, text: str):
         """Send text"""

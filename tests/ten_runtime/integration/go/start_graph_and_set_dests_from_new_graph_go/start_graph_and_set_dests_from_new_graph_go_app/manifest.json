@@ -1,22 +1,22 @@
 {
   "type": "app",
   "name": "default_app_go",
-  "version": "0.10.31",
+  "version": "0.10.35",
   "dependencies": [
     {
       "type": "system",
       "name": "ten_runtime",
-      "version": "0.10.31"
+      "version": "0.10.35"
     },
     {
       "type": "system",
       "name": "ten_runtime_go",
-      "version": "0.10.31"
+      "version": "0.10.35"
     },
     {
       "type": "protocol",
       "name": "msgpack",
-      "version": "0.10.31"
+      "version": "0.10.35"
     },
     {
       "type": "extension",

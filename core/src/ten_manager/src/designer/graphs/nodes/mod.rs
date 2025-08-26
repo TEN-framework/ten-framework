@@ -25,8 +25,8 @@ use ten_rust::pkg_info::manifest::api::{
 use ten_rust::pkg_info::value_type::ValueType;
 
 use crate::designer::graphs::DesignerGraph;
-use crate::graph::update_graph_node_all_fields;
-use crate::pkg_info::belonging_pkg_info_find_by_graph_info_mut;
+use crate::fs::json::patch_property_json_file;
+use crate::pkg_info::belonging_pkg_info_find_by_graph_info;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct DesignerApiProperty {
@@ -361,69 +361,24 @@ pub fn get_nodes_in_graph<'a>(
     }
 }
 
-pub enum GraphNodeUpdateAction {
-    Add,
-    Delete,
-    Update,
-}
-
 #[allow(clippy::too_many_arguments)]
-pub fn update_graph_node_in_property_all_fields(
-    pkgs_cache: &mut HashMap<String, PkgsInfoInApp>,
-    graph_info: &mut GraphInfo,
-    node_name: &str,
-    addon_name: &str,
-    extension_group_name: &Option<String>,
-    app_uri: &Option<String>,
-    property: &Option<serde_json::Value>,
-    action: GraphNodeUpdateAction,
+pub fn update_graph_node_in_property_json_file(
+    graph_id: &Uuid,
+    pkgs_cache: &HashMap<String, PkgsInfoInApp>,
+    graphs_cache: &HashMap<Uuid, GraphInfo>,
+    old_graphs_cache: &HashMap<Uuid, GraphInfo>,
 ) -> Result<()> {
+    let graph_info = graphs_cache.get(graph_id).unwrap();
     if let Ok(Some(pkg_info)) =
-        belonging_pkg_info_find_by_graph_info_mut(pkgs_cache, graph_info)
+        belonging_pkg_info_find_by_graph_info(pkgs_cache, graph_info)
     {
-        // Create the graph node.
-        let new_node = GraphNode::new_extension_node(
-            node_name.to_string(),
-            addon_name.to_string(),
-            extension_group_name.clone(),
-            app_uri.clone(),
-            property.clone(),
-        );
-
         // Update property.json file with the graph node.
-        if let Some(property) = &mut pkg_info.property {
-            // Write the updated property_all_fields map to property.json.
-            let nodes_to_updating = vec![new_node.clone()];
-
-            // Determine which parameter to use based on action.
-            let nodes_to_add = match &action {
-                GraphNodeUpdateAction::Add => {
-                    Some(nodes_to_updating.as_slice())
-                }
-                _ => None,
-            };
-
-            let nodes_to_remove = match &action {
-                GraphNodeUpdateAction::Delete => {
-                    Some(nodes_to_updating.as_slice())
-                }
-                _ => None,
-            };
-
-            let nodes_to_modify_property = match &action {
-                GraphNodeUpdateAction::Update => {
-                    Some(nodes_to_updating.as_slice())
-                }
-                _ => None,
-            };
-
-            if let Err(e) = update_graph_node_all_fields(
+        if let Some(property) = &pkg_info.property {
+            if let Err(e) = patch_property_json_file(
                 &pkg_info.url,
-                &mut property.all_fields,
-                graph_info.name.as_ref().unwrap(),
-                nodes_to_add,
-                nodes_to_remove,
-                nodes_to_modify_property,
+                property,
+                graphs_cache,
+                old_graphs_cache,
             ) {
                 eprintln!("Warning: Failed to update property.json file: {e}");
             }

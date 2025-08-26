@@ -28,6 +28,7 @@ export class TenEnv {
           ) => {
             resolve([cmdResult, error]);
           },
+          false,
         );
 
         if (err) {
@@ -35,6 +36,55 @@ export class TenEnv {
         }
       },
     );
+  }
+
+  async *sendCmdEx(
+    cmd: Cmd,
+  ): AsyncGenerator<
+    [CmdResult | undefined, TenError | undefined],
+    void,
+    unknown
+  > {
+    let resolvePromise:
+      | ((value: [CmdResult | undefined, TenError | undefined]) => void)
+      | undefined;
+    let promise = new Promise<[CmdResult | undefined, TenError | undefined]>(
+      (resolve) => {
+        resolvePromise = resolve;
+      },
+    );
+
+    const err = ten_addon.ten_nodejs_ten_env_send_cmd(
+      this,
+      cmd,
+      async (cmdResult: CmdResult | undefined, error: TenError | undefined) => {
+        resolvePromise?.([cmdResult, error]);
+        promise = new Promise<[CmdResult | undefined, TenError | undefined]>(
+          (resolve) => {
+            resolvePromise = resolve;
+          },
+        );
+      },
+      true, // is_ex = true
+    );
+
+    if (err) {
+      yield [undefined, err];
+      return;
+    }
+
+    while (true) {
+      const [result, error] = await promise;
+      yield [result, error];
+
+      if (error !== undefined) {
+        break;
+      }
+
+      if (result?.isCompleted()) {
+        break;
+      }
+    }
   }
 
   async sendData(data: Data): Promise<TenError | undefined> {

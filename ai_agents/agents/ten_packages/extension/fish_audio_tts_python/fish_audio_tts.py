@@ -40,6 +40,7 @@ class FishAudioTTSClient:
             gen = self.client.tts(
                 request=tts_request,
                 text_stream=self._text_stream(text),
+                backend=self.config.backend,
             )
             async for chunk in gen:
                 if self._is_cancelled:

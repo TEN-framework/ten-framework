@@ -35,6 +35,7 @@ export const LogViewerPopupContent = (props: { widget: ILogViewerWidget }) => {
 
   const { backstageWidgets, appendBackstageWidget } = useWidgetStore();
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <ignore>
   React.useEffect(() => {
     const targetBackstageWidget = backstageWidgets.find(
       (w) => w.widget_id === widget.widget_id

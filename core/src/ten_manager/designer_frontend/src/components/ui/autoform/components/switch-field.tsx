@@ -5,6 +5,8 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 
+/** biome-ignore-all lint/correctness/noUnusedVariables: <ignore> */
+
 import type { AutoFormFieldProps } from "@autoform/react";
 import type React from "react";
 import { useEffect, useState } from "react";

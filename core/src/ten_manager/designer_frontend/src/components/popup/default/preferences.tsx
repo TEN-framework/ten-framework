@@ -5,6 +5,8 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 
+/** biome-ignore-all lint/suspicious/noExplicitAny: <ignore> */
+
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
@@ -132,7 +134,8 @@ export const PreferencesLogTab = (props: {
   const { t } = useTranslation();
   const { preferences, setPreferences } = useAppStore();
   const form = useForm<z.infer<typeof PREFERENCES_SCHEMA_LOG>>({
-    resolver: zodResolver(PREFERENCES_SCHEMA_LOG),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(PREFERENCES_SCHEMA_LOG) as any,
     defaultValues: preferences,
   });
 

@@ -380,5 +380,27 @@
       "change-auto-start-success": "自動啟動設定更新成功",
       "change-auto-start-failed": "自動啟動設定更新失敗"
     }
+  },
+  "ui": {
+    "autoForm": {
+      "rootLevel": "根層級",
+      "addDynamicField": "新增動態欄位",
+      "location": "位置",
+      "selectLocation": "選擇位置",
+      "fieldName": "欄位名稱",
+      "enterFieldName": "輸入欄位名稱（例如：dump_size、model_name）",
+      "fieldType": "欄位類型",
+      "string": "字串",
+      "number": "數字",
+      "object": "物件（JSON）",
+      "defaultValue": "預設值",
+      "enterDefaultValue": "輸入預設值",
+      "addField": "新增欄位",
+      "dynamicFields": "動態欄位",
+      "path": "路徑",
+      "root": "根",
+      "type": "類型",
+      "noDynamicFields": "尚未定義動態欄位。請在上方新增您的第一個欄位。"
+    }
   }
 }

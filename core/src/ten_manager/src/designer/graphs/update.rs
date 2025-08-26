@@ -19,9 +19,9 @@ use crate::{
     },
     graph::{
         graphs_cache_find_by_id_mut, replace_graph_nodes_and_connections,
-        update_graph_all_fields,
+        update_graph_in_property_json_file,
     },
-    pkg_info::belonging_pkg_info_find_by_graph_info_mut,
+    pkg_info::belonging_pkg_info_find_by_graph_info,
 };
 
 #[derive(Serialize, Deserialize)]
@@ -67,8 +67,8 @@ pub async fn update_graph_endpoint(
     request_payload: web::Json<UpdateGraphRequestPayload>,
     state: web::Data<Arc<DesignerState>>,
 ) -> Result<impl Responder, actix_web::Error> {
-    let mut pkgs_cache = state.pkgs_cache.write().await;
-    let mut graphs_cache = state.graphs_cache.write().await;
+    let pkgs_cache = state.pkgs_cache.read().await;
+    let old_graphs_cache = state.graphs_cache.read().await.clone();
 
     // Convert GraphNodeForUpdate to GraphNode
     let graph_nodes: Vec<GraphNode> = request_payload
@@ -77,78 +77,83 @@ pub async fn update_graph_endpoint(
         .map(|node_update| node_update.to_graph_node())
         .collect();
 
-    let graph_info = match graphs_cache_find_by_id_mut(
-        &mut graphs_cache,
-        &request_payload.graph_id,
-    ) {
-        Some(graph_info) => graph_info,
-        None => {
-            let error_response = ErrorResponse {
-                status: Status::Fail,
-                message: format!(
-                    "Graph with ID {} not found",
-                    request_payload.graph_id
-                ),
-                error: None,
-            };
-            return Ok(HttpResponse::BadRequest().json(error_response));
+    // update graph info
+    let graph_info = {
+        let mut graphs_cache = state.graphs_cache.write().await;
+
+        let graph_info = match graphs_cache_find_by_id_mut(
+            &mut graphs_cache,
+            &request_payload.graph_id,
+        ) {
+            Some(graph_info) => graph_info,
+            None => {
+                let error_response = ErrorResponse {
+                    status: Status::Fail,
+                    message: format!(
+                        "Graph with ID {} not found",
+                        request_payload.graph_id
+                    ),
+                    error: None,
+                };
+                return Ok(HttpResponse::BadRequest().json(error_response));
+            }
+        };
+
+        // Access the graph and update it.
+        match replace_graph_nodes_and_connections(
+            graph_info.graph.graph_mut(),
+            &graph_nodes,
+            &request_payload.connections,
+            &request_payload.exposed_messages,
+            &[],
+        ) {
+            Ok(_) => (),
+            Err(err) => {
+                let error_response = ErrorResponse {
+                    status: Status::Fail,
+                    message: err.to_string(),
+                    error: None,
+                };
+                return Ok(HttpResponse::BadRequest().json(error_response));
+            }
         }
+
+        graph_info.clone()
     };
 
-    let pkg_info = match belonging_pkg_info_find_by_graph_info_mut(
-        &mut pkgs_cache,
-        graph_info,
-    ) {
-        Ok(Some(pkg_info)) => pkg_info,
-        Ok(None) => {
-            let error_response = ErrorResponse {
-                status: Status::Fail,
-                message: "App package not found".to_string(),
-                error: None,
-            };
-            return Ok(HttpResponse::BadRequest().json(error_response));
-        }
-        Err(err) => {
-            let error_response = ErrorResponse {
-                status: Status::Fail,
-                message: err.to_string(),
-                error: None,
-            };
-            return Ok(HttpResponse::BadRequest().json(error_response));
-        }
-    };
-
-    // Access the graph and update it.
-    match replace_graph_nodes_and_connections(
-        graph_info.graph.graph_mut(),
-        &graph_nodes,
-        &request_payload.connections,
-        &request_payload.exposed_messages,
-        &[],
-    ) {
-        Ok(_) => (),
-        Err(err) => {
-            let error_response = ErrorResponse {
-                status: Status::Fail,
-                message: err.to_string(),
-                error: None,
-            };
-            return Ok(HttpResponse::BadRequest().json(error_response));
-        }
-    }
+    // update property.json file
+    let pkg_info =
+        match belonging_pkg_info_find_by_graph_info(&pkgs_cache, &graph_info) {
+            Ok(Some(pkg_info)) => pkg_info,
+            Ok(None) => {
+                let error_response = ErrorResponse {
+                    status: Status::Fail,
+                    message: "App package not found".to_string(),
+                    error: None,
+                };
+                return Ok(HttpResponse::BadRequest().json(error_response));
+            }
+            Err(err) => {
+                let error_response = ErrorResponse {
+                    status: Status::Fail,
+                    message: err.to_string(),
+                    error: None,
+                };
+                return Ok(HttpResponse::BadRequest().json(error_response));
+            }
+        };
 
     assert!(graph_info.app_base_dir.is_some());
     assert!(pkg_info.property.is_some());
 
-    match update_graph_all_fields(
-        graph_info.app_base_dir.as_ref().unwrap(),
-        &mut pkg_info.property.as_mut().unwrap().all_fields,
-        graph_info.name.as_ref().unwrap(),
-        &graph_nodes,
-        &request_payload.connections,
-        &request_payload.exposed_messages,
-        &[],
-        request_payload.auto_start,
+    let pkg_url = graph_info.app_base_dir.as_ref().unwrap();
+    let new_graphs_cache = state.graphs_cache.read().await;
+
+    match update_graph_in_property_json_file(
+        pkg_url,
+        pkg_info.property.as_ref().unwrap(),
+        &new_graphs_cache,
+        &old_graphs_cache,
     ) {
         Ok(_) => (),
         Err(err) => {

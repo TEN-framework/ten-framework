@@ -31,7 +31,7 @@
     "./core/src/ten_runtime/binding/python/interface",
     "./core/ten_gn/.gnfiles",
     "./ai_agents/agents/ten_packages/system/ten_ai_base/interface",
-    "./ai_agents/agents/ten_packages/system/ten_ai_base/lib",
+    "./ai_agents/agents/ten_packages/system/ten_ai_base/lib"
   ],
   "cursorpyright.analysis.typeCheckingMode": "recommended",
   "debug.allowBreakpointsEverywhere": true,
@@ -108,7 +108,7 @@
   "rust-analyzer.rustfmt.extraArgs": [
     "+nightly",
     "--config",
-    "max_width=80,wrap_comments=true,wrap_comments=true,use_small_heuristics=Max,format_strings=true,style_edition=2021"
+    "max_width=80,wrap_comments=true,use_small_heuristics=Max,format_strings=true,style_edition=2021"
   ],
   "rust-analyzer.showUnlinkedFileNotification": false,
   "search.exclude": {
@@ -120,6 +120,5 @@
   "[python]": {
     "editor.defaultFormatter": "ms-python.python"
   },
-  "cmake.sourceDirectory": "D:/dev/TEN-Agent/third_party/mbedtls",
   "python.formatting.provider": "black"
 }
