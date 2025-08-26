@@ -207,16 +207,18 @@ where
         write!(writer, "{color}{level_char}{}", self.reset_color())?;
 
         // Category
-        if self.ansi {
-            write!(
-                writer,
-                " {magenta}{}{reset}",
-                target,
-                magenta = CYAN,
-                reset = self.reset_color()
-            )?;
-        } else {
-            write!(writer, " {target}")?;
+        if !target.is_empty() {
+            if self.ansi {
+                write!(
+                    writer,
+                    " {magenta}{}{reset}",
+                    target,
+                    magenta = CYAN,
+                    reset = self.reset_color()
+                )?;
+            } else {
+                write!(writer, " {target}")?;
+            }
         }
 
         // Format function@file:line using extracted fields with colors
