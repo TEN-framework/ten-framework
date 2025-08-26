@@ -97,7 +97,7 @@ export const ENDPOINT_GRAPHS = {
             base_dir: z.string().nullable(),
             graph: z.object({
               nodes: z.array(
-                z.union([
+                z.discriminatedUnion("type", [
                   BackendNodeExtension,
                   BackendNodeSelector,
                   BackendNodeSubGraph,

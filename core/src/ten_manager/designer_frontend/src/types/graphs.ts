@@ -23,9 +23,9 @@ export interface IBackendNode {
 export const BackendNodeExtension = z.object({
   addon: z.string(),
   name: z.string(),
-  extension_group: z.string().optional(),
   app: z.string().optional(),
-  property: z.object(z.unknown()).optional(),
+  extension_group: z.string().optional(),
+  property: z.record(z.string(), z.unknown()).nullish(),
   api: z.unknown().optional(),
   is_installed: z.boolean(),
   type: z.literal("extension"),
