@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "tencent_asr_python",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "display_name": {
     "locales": {
       "en-US": {
@@ -79,6 +79,35 @@
   "api": {},
   "scripts": {
     "test": "tests/bin/start"
+  },
+  "property": {
+    "properties": {
+      "params": {
+        "type": "object",
+        "properties": {
+          "appid": {
+            "type": "string",
+            "description": "Tencent Cloud registered account app ID"
+          },
+          "secretid": {
+            "type": "string",
+            "description": "Tencent Cloud registered account secret ID"
+          },
+          "secretkey": {
+            "type": "string",
+            "description": "Tencent Cloud registered account secret key"
+          },
+          "finalize_mode": {
+            "type": "string",
+            "description": "Tencent ASR finalize mode"
+          },
+          "engine_model_type": {
+            "type": "string",
+            "description": "Tencent ASR engine model type"
+          }
+        }
+      }
+    }
   },
   "package": {
     "include": [

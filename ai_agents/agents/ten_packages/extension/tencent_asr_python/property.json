@@ -1,1 +1,9 @@
-{}
+{
+    "params": {
+        "appid": "${env:TENCENT_ASR_APP_ID|}",
+        "secretkey": "${env:TENCENT_ASR_SECRET_KEY|}",
+        "secretid": "${env:TENCENT_ASR_SECRET_ID|}",
+        "finalize_mode": "vendor_defined",
+        "engine_model_type": "16k_zh"
+    }
+}

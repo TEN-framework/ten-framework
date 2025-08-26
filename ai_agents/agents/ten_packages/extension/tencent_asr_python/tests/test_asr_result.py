@@ -132,15 +132,15 @@ class TencentAsrExtensionTester(AsyncExtensionTester):
 
 def test_asr_result(patch_tencent_asr_client):
     property_json = {
-        "app_id": "fake_app_id",
-        "secret_key": "fake_secret_key",
-        "finalize_mode": "vendor_defined",
-        "log_level": "DEBUG",
         "params": {
             "secretid": "fake_secretid",
             "engine_model_type": "16k_en",
             "voice_format": 1,
             "word_info": 2,
+            "appid": "fake_app_id",
+            "secretkey": "fake_secret_key",
+            "finalize_mode": "vendor_defined",
+            "log_level": "DEBUG",
         },
     }
 
