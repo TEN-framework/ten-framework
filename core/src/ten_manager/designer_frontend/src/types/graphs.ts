@@ -23,10 +23,10 @@ export interface IBackendNode {
 export const BackendNodeExtension = z.object({
   addon: z.string(),
   name: z.string(),
-  app: z.string().optional(),
-  extension_group: z.string().optional(),
+  app: z.string().nullish(),
+  extension_group: z.string().nullish(),
   property: z.record(z.string(), z.unknown()).nullish(),
-  api: z.unknown().optional(),
+  api: z.unknown().nullish(),
   is_installed: z.boolean(),
   type: z.literal("extension"),
 });
@@ -35,7 +35,7 @@ export type BackendNodeExtension = z.infer<typeof BackendNodeExtension>;
 export const BackendNodeSelector = z.object({
   name: z.string(),
   type: z.literal("selector"),
-  filter: z.any().optional(), // todo: selector&subgraph
+  filter: z.any().nullish(), // todo: selector&subgraph
 });
 export type BackendNodeSelector = z.infer<typeof BackendNodeSelector>;
 
@@ -44,6 +44,55 @@ export const BackendNodeSubGraph = z.looseObject({
 }); // todo: selector&subgraph
 export type BackendNodeSubGraph = z.infer<typeof BackendNodeSubGraph>;
 
+export const BackendNode = z.discriminatedUnion("type", [
+  BackendNodeExtension,
+  BackendNodeSelector,
+  BackendNodeSubGraph,
+]);
+export type BackendNode = z.infer<typeof BackendNode>;
+
+export const GraphLoc = z.object({
+  app: z.string().nullish(),
+  extension: z.string().nullish(),
+  subgraph: z.string().nullish(),
+  selector: z.string().nullish(),
+});
+export type GraphLoc = z.infer<typeof GraphLoc>;
+
+export const MsgConversionRule = z.object({
+  path: z.string(),
+  conversion_mode: z.enum(["fixed_value", "from_original"]),
+  original_path: z.string().nullish(),
+  value: z.record(z.string(), z.unknown()).nullish(),
+});
+export type MsgConversionRule = z.infer<typeof MsgConversionRule>;
+
+export const MsgConversion = z.object({
+  conversion_type: z.enum(["per_property"]),
+  rules: z.array(MsgConversionRule),
+});
+export type MsgConversion = z.infer<typeof MsgConversion>;
+
+export const MsgAndResultConversion = z.object({
+  msg: MsgConversion.nullish(),
+  result: MsgConversion.nullish(),
+});
+export type MsgAndResultConversion = z.infer<typeof MsgAndResultConversion>;
+
+export const GraphDestination = z.object({
+  loc: GraphLoc.nullish(),
+  msg_conversion: MsgAndResultConversion.nullish(),
+});
+export type GraphDestination = z.infer<typeof GraphDestination>;
+
+export const GraphMessageFlow = z.object({
+  name: z.string().nullish(),
+  names: z.array(z.string()).nullish(),
+  dest: z.array(GraphDestination).nullish(),
+  source: z.array(GraphDestination).nullish(),
+});
+export type GraphMessageFlow = z.infer<typeof GraphMessageFlow>;
+
 export enum EConnectionType {
   CMD = "cmd",
   DATA = "data",
@@ -51,6 +100,58 @@ export enum EConnectionType {
   VIDEO_FRAME = "video_frame",
 }
 
+export const GraphConnection = z.object({
+  loc: GraphLoc.nullish(),
+  [EConnectionType.CMD]: z.array(GraphMessageFlow).nullish(),
+  [EConnectionType.DATA]: z.array(GraphMessageFlow).nullish(),
+  [EConnectionType.AUDIO_FRAME]: z.array(GraphMessageFlow).nullish(),
+  [EConnectionType.VIDEO_FRAME]: z.array(GraphMessageFlow).nullish(),
+});
+
+export const GraphExposedMessageType = z.enum([
+  "cmd_in",
+  "cmd_out",
+  "data_in",
+  "data_out",
+  "audio_frame_in",
+  "audio_frame_out",
+  "video_frame_in",
+  "video_frame_out",
+]);
+
+export const GraphExposedMessage = z.object({
+  type: GraphExposedMessageType,
+  name: z.string(),
+  extension: z.string().nullish(),
+  subgraph: z.string().nullish(),
+});
+export type GraphExposedMessage = z.infer<typeof GraphExposedMessage>;
+
+export const GraphExposedProperty = z.object({
+  extension: z.string().nullish(),
+  subgraph: z.string().nullish(),
+  name: z.string(),
+});
+export type GraphExposedProperty = z.infer<typeof GraphExposedProperty>;
+
+export const Graph = z.object({
+  nodes: z.array(BackendNode),
+  connections: z.array(GraphConnection),
+  exposed_messages: z.array(GraphExposedMessage),
+  exposed_properties: z.array(GraphExposedProperty),
+});
+export type Graph = z.infer<typeof Graph>;
+
+export const GraphInfo = z.object({
+  graph_id: z.string(),
+  name: z.string().nullish(),
+  auto_start: z.boolean().nullish(),
+  base_dir: z.string().nullish(),
+  graph: Graph,
+});
+export type GraphInfo = z.infer<typeof GraphInfo>;
+
+/** @deprecated */
 export interface IBackendConnection {
   app?: string;
   extension: string;
@@ -100,6 +201,7 @@ export interface IBackendConnection {
   }[];
 }
 
+/** @deprecated */
 export interface IGraph {
   graph_id: string;
   name?: string;
@@ -124,12 +226,14 @@ export interface IGraph {
   };
 }
 
+/** @deprecated */
 export type TConnectionItem = {
   name: string;
   srcApp: string;
   destApp: string;
 };
 
+/** @deprecated */
 export type TConnectionMap = Record<string, Set<TConnectionItem>>;
 
 export enum EGraphActions {
