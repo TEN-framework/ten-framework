@@ -65,6 +65,9 @@ class BytedanceASRExtension(AsyncASRBaseExtension):
         # State tracking for logging
         self._last_logged_state: bool | None = None
 
+        # Session tracking
+        self.session_id: str | None = None
+
     @override
     def vendor(self) -> str:
         """Get the name of the ASR vendor."""
@@ -80,7 +83,9 @@ class BytedanceASRExtension(AsyncASRBaseExtension):
         try:
             self.config = BytedanceASRConfig.model_validate_json(config_json)
             self.config.update(self.config.params)
-            ten_env.log_info("Bytedance ASR config loaded")
+            ten_env.log_info(
+                f"KEYPOINT vendor_config: {self.config.to_json(sensitive_handling=True)}"
+            )
 
             # Set reconnection parameters from config
             self.max_retries = self.config.max_retries
@@ -310,6 +315,9 @@ class BytedanceASRExtension(AsyncASRBaseExtension):
                 token=self.config.token,
                 api_url=self.config.api_url,
                 workflow=self.config.workflow,
+                vad_signal=self.config.vad_signal,
+                start_silence_time=self.config.start_silence_time,
+                vad_silence_time=self.config.vad_silence_time,
                 handle_received_message=on_message,
                 on_finalize_complete=self.on_finalize_complete_callback,
                 on_error=on_error,
