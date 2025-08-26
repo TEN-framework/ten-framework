@@ -76,38 +76,39 @@
       "version": "0.6"
     }
   ],
-  "api": {},
-  "scripts": {
-    "test": "tests/bin/start"
-  },
-  "property": {
-    "properties": {
-      "params": {
-        "type": "object",
-        "properties": {
-          "appid": {
-            "type": "string",
-            "description": "Tencent Cloud registered account app ID"
-          },
-          "secretid": {
-            "type": "string",
-            "description": "Tencent Cloud registered account secret ID"
-          },
-          "secretkey": {
-            "type": "string",
-            "description": "Tencent Cloud registered account secret key"
-          },
-          "finalize_mode": {
-            "type": "string",
-            "description": "Tencent ASR finalize mode"
-          },
-          "engine_model_type": {
-            "type": "string",
-            "description": "Tencent ASR engine model type"
+  "api": {
+    "interface": [
+      {
+        "import_uri": "../../system/ten_ai_base/api/asr-interface.json"
+      }
+    ],
+    "property": {
+      "properties": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "appid": {
+              "type": "string"
+            },
+            "secretid": {
+              "type": "string"
+            },
+            "secretkey": {
+              "type": "string"
+            },
+            "finalize_mode": {
+              "type": "string"
+            },
+            "engine_model_type": {
+              "type": "string"
+            }
           }
         }
       }
     }
+  },
+  "scripts": {
+    "test": "tests/bin/start"
   },
   "package": {
     "include": [
