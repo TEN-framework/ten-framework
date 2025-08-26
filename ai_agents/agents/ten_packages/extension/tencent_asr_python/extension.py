@@ -57,7 +57,10 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
             self.config = TencentASRConfig.model_validate_json(config_json)
             self.request_params = self.config.params.to_request_params()
             ten_env.log_info(
-                f"KEYPOINT vendor_config: {self.config.model_dump_json()}"
+                f"KEYPOINT extension_config: {self.config.model_dump_json()}"
+            )
+            ten_env.log_info(
+                f"KEYPOINT vendor_config: {self.request_params.model_dump_json()}"
             )
 
             if self.config.dump:

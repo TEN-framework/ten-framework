@@ -142,6 +142,7 @@ def test_asr_result(patch_tencent_asr_client):
             "finalize_mode": "mute_pkg",
             "vad_silence_time": 900,
             "log_level": "DEBUG",
+            "max_speak_time": 80000,
         },
     }
 
