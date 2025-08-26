@@ -1,7 +1,7 @@
 {
     "type": "extension",
     "name": "xfyun_asr_bigmodel_python",
-    "version": "0.1.2",
+    "version": "0.1.3",
     "dependencies": [
         {
             "type": "system",
@@ -22,20 +22,25 @@
         ],
         "property": {
             "properties": {
-                "app_id": {
-                    "type": "string"
-                },
-                "api_key": {
-                    "type": "string"
-                },
-                "api_secret": {
-                    "type": "string"
-                },
-                "lang": {
-                    "type": "string"
-                },
-                "sample_rate": {
-                    "type": "int64"
+                "params": {
+                    "type": "object",
+                    "properties": {
+                        "app_id": {
+                            "type": "string"
+                        },
+                        "api_key": {
+                            "type": "string"
+                        },
+                        "api_secret": {
+                            "type": "string"
+                        },
+                        "lang": {
+                            "type": "string"
+                        },
+                        "sample_rate": {
+                            "type": "int64"
+                        }
+                    }
                 }
             }
         }
