@@ -53,11 +53,6 @@ def test_params_passthrough(MockCosyTTSClient):
     """
     print("Starting test_params_passthrough with mock...")
 
-    # --- Mock Configuration ---
-    mock_instance = MockCosyTTSClient.return_value
-    mock_instance.start = AsyncMock()
-    mock_instance.stop = AsyncMock()  # Required for clean shutdown in on_stop
-
     # --- Test Setup ---
     # Define a configuration with custom, arbitrary parameters inside 'params'.
     # These are the parameters we expect to be "passed through".
