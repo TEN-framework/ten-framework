@@ -280,6 +280,7 @@ bool ten_app_init_advanced_log(ten_app_t *self, ten_value_t *value) {
     if (err_msg) {
       TEN_LOGE("Failed to configure log: %s", err_msg);
       ten_rust_free_cstring(err_msg);
+      ten_rust_log_config_destroy(log_config);
     }
 
     return false;

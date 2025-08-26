@@ -296,7 +296,7 @@ static PyTypeObject *ten_py_app_py_type(void) {
 
   static PyMethodDef py_app_type_methods[] = {
       {"run_internal", ten_py_app_run, METH_VARARGS, NULL},
-      {"close", ten_py_app_close, METH_VARARGS, NULL},
+      {"close_internal", ten_py_app_close, METH_VARARGS, NULL},
       {"wait", ten_py_app_wait, METH_VARARGS, NULL},
       {NULL, NULL, 0, NULL},
   };
