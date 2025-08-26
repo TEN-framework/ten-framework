@@ -3,6 +3,7 @@ from typing_extensions import Self
 from enum import Enum
 from pathlib import Path
 from .tencent_asr_client import RequestParams
+from .utils import encrypting_serializer
 
 
 class Params(BaseModel):
@@ -61,6 +62,8 @@ class Params(BaseModel):
         description="VAD silence detection threshold in ms, range 240-2000. default: 1000. needvad=1 is required",
     )
     model_config = ConfigDict(extra="allow", populate_by_name=True)
+
+    _encrypt_fields = encrypting_serializer("appid", "secretkey", "secretid")
 
     @model_validator(mode="after")
     def check_mute_pkg_duration_ms(self) -> Self:

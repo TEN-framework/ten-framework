@@ -139,7 +139,8 @@ def test_asr_result(patch_tencent_asr_client):
             "word_info": 2,
             "appid": "fake_app_id",
             "secretkey": "fake_secret_key",
-            "finalize_mode": "vendor_defined",
+            "finalize_mode": "mute_pkg",
+            "vad_silence_time": 900,
             "log_level": "DEBUG",
         },
     }
