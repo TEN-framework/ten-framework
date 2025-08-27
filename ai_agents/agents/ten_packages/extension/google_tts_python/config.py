@@ -1,6 +1,7 @@
 from typing import Any, Dict, List
 from pydantic import BaseModel, Field
 from google.cloud import texttospeech
+from ten_ai_base import utils
 
 
 def mask_sensitive_data(
@@ -18,16 +19,9 @@ def mask_sensitive_data(
 
 class GoogleTTSConfig(BaseModel):
     credentials: str = ""
-    language_code: str = "en-US"
-    voice_name: str = ""
-    ssml_gender: str = "NEUTRAL"
-    speaking_rate: float = 1.0
-    pitch: float = 0.0
-    volume_gain_db: float = 0.0
     dump: bool = False
     dump_path: str = "/tmp"
     params: Dict[str, Any] = Field(default_factory=dict)
-    sample_rate: int = 24000
     black_list_keys: List[str] = ["credentials"]
 
     def to_str(self, sensitive_handling: bool = False) -> str:
@@ -36,7 +30,7 @@ class GoogleTTSConfig(BaseModel):
 
         config = self.copy(deep=True)
         if config.credentials:
-            config.credentials = mask_sensitive_data(config.credentials)
+            config.credentials = utils.encrypt(config.credentials)
         return f"{config}"
 
     def update_params(self) -> None:
@@ -63,6 +57,8 @@ class GoogleTTSConfig(BaseModel):
             "FEMALE": texttospeech.SsmlVoiceGender.FEMALE,
             "UNSPECIFIED": texttospeech.SsmlVoiceGender.SSML_VOICE_GENDER_UNSPECIFIED,
         }
+        voice_params = self.params.get("VoiceSelectionParams", {})
+        ssml_gender = voice_params.get("ssml_gender", "NEUTRAL")
         return gender_map.get(
-            self.ssml_gender.upper(), texttospeech.SsmlVoiceGender.NEUTRAL
+            ssml_gender.upper(), texttospeech.SsmlVoiceGender.NEUTRAL
         )

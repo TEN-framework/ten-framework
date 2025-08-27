@@ -104,7 +104,7 @@ def test_default_params(MockGoogleTTS):
     # Set up configuration
     config = {
         "params": {
-            "sample_rate": 16000,
+            "AudioConfig": {"sample_rate_hertz": 16000},
             "credentials": "fake_credentials_for_mock_testing",
         },
     }
@@ -140,7 +140,7 @@ def test_custom_params(MockGoogleTTS):
     # Set up custom configuration
     config = {
         "params": {
-            "sample_rate": 16000,
+            "AudioConfig": {"sample_rate_hertz": 16000},
             "credentials": "fake_credentials_for_mock_testing",
         },
     }
@@ -180,7 +180,7 @@ def test_sample_rate_params(MockGoogleTTS):
         # Set up configuration with specific sample rate
         config = {
             "params": {
-                "sample_rate": 16000,
+                "AudioConfig": {"sample_rate_hertz": 16000},
                 "credentials": "fake_credentials_for_mock_testing",
             },
         }
@@ -243,7 +243,7 @@ def test_voice_params(MockGoogleTTS):
         # Set up configuration with specific voice parameters
         config = {
             "params": {
-                "sample_rate": 16000,
+                "AudioConfig": {"sample_rate_hertz": 16000},
                 "credentials": "fake_credentials_for_mock_testing",
             },
         }
@@ -289,7 +289,7 @@ def test_audio_params(MockGoogleTTS):
         # Set up configuration with specific audio parameters
         config = {
             "params": {
-                "sample_rate": 16000,
+                "AudioConfig": {"sample_rate_hertz": 16000},
                 "credentials": "fake_credentials_for_mock_testing",
             },
         }
@@ -314,7 +314,7 @@ def test_missing_credentials(MockGoogleTTS):
 
     # Set up configuration without credentials
     config = {
-        "params": {"audio_params": {"sample_rate": 16000}},
+        "params": {"AudioConfig": {"sample_rate_hertz": 16000}},
     }
 
     # Run the test - should receive error event

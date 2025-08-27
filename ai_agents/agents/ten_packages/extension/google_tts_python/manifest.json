@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "google_tts_python",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "display_name": {
     "locales": {
       "en-US": {
@@ -80,7 +80,7 @@
             "audio_params": {
               "type": "object",
               "properties": {
-                "sample_rate": {
+                "sample_rate_hertz": {
                   "type": "int64"
                 }
               }

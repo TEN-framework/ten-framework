@@ -105,7 +105,7 @@ def test_ttfb_metrics(MockGoogleTTS):
     # Set up configuration
     config = {
         "params": {
-            "sample_rate": 16000,
+            "AudioConfig": {"sample_rate_hertz": 16000},
             "credentials": "fake_credentials_for_mock_testing",
         },
     }
@@ -164,7 +164,7 @@ def test_audio_timing_metrics(MockGoogleTTS):
     # Set up configuration
     config = {
         "params": {
-            "sample_rate": 16000,
+            "AudioConfig": {"sample_rate_hertz": 16000},
             "credentials": "fake_credentials_for_mock_testing",
         },
     }
@@ -214,7 +214,7 @@ def test_metrics_with_long_text(MockGoogleTTS):
     # Set up configuration
     config = {
         "params": {
-            "sample_rate": 16000,
+            "AudioConfig": {"sample_rate_hertz": 16000},
             "credentials": "fake_credentials_for_mock_testing",
         },
     }
@@ -270,7 +270,7 @@ def test_metrics_with_fast_response(MockGoogleTTS):
     # Set up configuration
     config = {
         "params": {
-            "sample_rate": 16000,
+            "AudioConfig": {"sample_rate_hertz": 16000},
             "credentials": "fake_credentials_for_mock_testing",
         },
     }
@@ -329,7 +329,7 @@ def test_metrics_with_flush(MockGoogleTTS):
     # Set up configuration
     config = {
         "params": {
-            "sample_rate": 16000,
+            "AudioConfig": {"sample_rate_hertz": 16000},
             "credentials": "fake_credentials_for_mock_testing",
         },
     }

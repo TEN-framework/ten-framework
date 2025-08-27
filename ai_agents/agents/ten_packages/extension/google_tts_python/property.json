@@ -1,13 +1,14 @@
 {
   "dump": false,
-  "dump_path": "/tmp",
+  "dump_path": "./",
   "params": {
     "credentials": "",
-    "language_code": "en-US",
-    "voice_name": "",
-    "ssml_gender": "NEUTRAL",
-    "speaking_rate": 1.0,
-    "pitch": 0.0,
-    "volume_gain_db": 0.0
+    "VoiceSelectionParams": {
+      "language_code": "en-US",
+      "ssml_gender": "NEUTRAL"
+    },
+    "AudioConfig": {
+      "sample_rate_hertz": 24000
+    }
   }
 }

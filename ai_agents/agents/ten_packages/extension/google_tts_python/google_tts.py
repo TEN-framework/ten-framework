@@ -21,6 +21,7 @@ class GoogleTTS:
         self.client = None
         self._initialize_client()
         self.credentials = None
+        self.send_text_in_connection = False
 
     def _initialize_client(self):
         """Initialize Google TTS client with credentials"""
@@ -66,6 +67,7 @@ class GoogleTTS:
                 self.ten_env.log_info(
                     "Service account credentials created successfully"
                 )
+                self.send_text_in_connection = False
             except Exception as e:
                 self.ten_env.log_error(
                     f"Failed to create service account credentials: {e}"
@@ -84,6 +86,22 @@ class GoogleTTS:
                 f"Failed to initialize Google TTS client: {e}"
             )
             raise
+
+    def _get_ssml_gender_from_params(
+        self, ssml_gender: str = None
+    ) -> texttospeech.SsmlVoiceGender:
+        """Convert string gender from params to Google TTS enum"""
+        gender_map = {
+            "NEUTRAL": texttospeech.SsmlVoiceGender.NEUTRAL,
+            "MALE": texttospeech.SsmlVoiceGender.MALE,
+            "FEMALE": texttospeech.SsmlVoiceGender.FEMALE,
+            "UNSPECIFIED": texttospeech.SsmlVoiceGender.SSML_VOICE_GENDER_UNSPECIFIED,
+        }
+        if ssml_gender is None:
+            ssml_gender = "NEUTRAL"
+        return gender_map.get(
+            ssml_gender.upper(), texttospeech.SsmlVoiceGender.NEUTRAL
+        )
 
     async def get(self, text: str) -> AsyncIterator[tuple[bytes | None, int]]:
         """Generate TTS audio for the given text"""
@@ -106,24 +124,52 @@ class GoogleTTS:
                 # Set the text input to be synthesized
                 synthesis_input = texttospeech.SynthesisInput(text=text)
 
-                # Build the voice request
+                # Build the voice request from VoiceSelectionParams
+                voice_params = self.config.params.get(
+                    "VoiceSelectionParams", {}
+                )
                 voice = texttospeech.VoiceSelectionParams(
-                    language_code=self.config.language_code,
-                    ssml_gender=self.config.get_ssml_gender(),
+                    language_code=voice_params.get("language_code", "en-US"),
+                    ssml_gender=self._get_ssml_gender_from_params(
+                        voice_params.get("ssml_gender")
+                    ),
                 )
 
-                # Add voice name if specified
-                if self.config.voice_name:
-                    voice.name = self.config.voice_name
+                # Add optional voice parameters
+                if voice_params.get("name"):
+                    voice.name = voice_params.get("name")
+                if voice_params.get("custom_voice"):
+                    voice.custom_voice = voice_params.get("custom_voice")
+                if voice_params.get("voice_clone"):
+                    voice.voice_clone = voice_params.get("voice_clone")
 
-                # Select the type of audio file you want returned
+                # Build the audio config from AudioConfig
+                audio_params = self.config.params.get("AudioConfig", {})
                 audio_config = texttospeech.AudioConfig(
                     audio_encoding=texttospeech.AudioEncoding.LINEAR16,  # PCM format
-                    speaking_rate=self.config.speaking_rate,
-                    pitch=self.config.pitch,
-                    volume_gain_db=self.config.volume_gain_db,
-                    sample_rate_hertz=self.config.sample_rate,
                 )
+
+                # Add sample_rate if specified, otherwise use default
+                if audio_params.get("sample_rate_hertz"):
+                    audio_config.sample_rate_hertz = audio_params.get(
+                        "sample_rate_hertz"
+                    )
+
+                # Add optional audio parameters
+                if audio_params.get("speaking_rate") is not None:
+                    audio_config.speaking_rate = audio_params.get(
+                        "speaking_rate"
+                    )
+                if audio_params.get("pitch") is not None:
+                    audio_config.pitch = audio_params.get("pitch")
+                if audio_params.get("volume_gain_db") is not None:
+                    audio_config.volume_gain_db = audio_params.get(
+                        "volume_gain_db"
+                    )
+                if audio_params.get("effects_profile_id"):
+                    audio_config.effects_profile_id = audio_params.get(
+                        "effects_profile_id"
+                    )
 
                 # Perform the text-to-speech request
                 response = self.client.synthesize_speech(
@@ -131,6 +177,7 @@ class GoogleTTS:
                     voice=voice,
                     audio_config=audio_config,
                 )
+                self.send_text_in_connection = True
 
                 # The response's audio_content is binary
                 audio_content = response.audio_content

@@ -63,12 +63,12 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                 )
                 self.config.update_params()
                 self.ten_env.log_info(
-                    f"KEYPOINT config: {self.config.to_str()}"
+                    f"KEYPOINT config: {self.config.to_str(True)}"
                 )
 
-                if not self.config.api_key:
-                    self.ten_env.log_error("get property api_key")
-                    raise ValueError("api_key is required")
+                if not self.config.key:
+                    self.ten_env.log_error("get property key")
+                    raise ValueError("key is required")
 
             # Create error callback function
             async def error_callback(request_id: str, error: ModuleError):
@@ -271,6 +271,19 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                     f"KEYPOINT New TTS request with ID: {t.request_id}"
                 )
                 self.current_request_id = t.request_id
+                if (
+                    self.client
+                    and self.client.synthesizer
+                    and self.client.synthesizer.send_text_in_connection == True
+                ):
+                    self.ten_env.log_info(
+                        "request id is changed, but connection is not reset, reset it now"
+                    )
+                    self.client.cancel()
+                    await self.handle_completed_request(
+                        TTSAudioEndReason.INTERRUPTED
+                    )
+
                 if t.metadata is not None:
                     self.session_id = t.metadata.get("session_id", "")
                     self.current_turn_id = t.metadata.get("turn_id", -1)
