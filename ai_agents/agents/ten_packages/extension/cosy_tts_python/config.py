@@ -1,31 +1,7 @@
 import copy
 from pydantic import BaseModel, Field
 from typing import Any
-
-
-def mask_sensitive_data(
-    s: str, unmasked_start: int = 5, unmasked_end: int = 5, mask_char: str = "*"
-) -> str:
-    """
-    Mask a sensitive string by replacing the middle part with asterisks.
-
-    Parameters:
-        s (str): The input string (e.g., API key).
-        unmasked_start (int): Number of visible characters at the beginning.
-        unmasked_end (int): Number of visible characters at the end.
-        mask_char (str): Character used for masking.
-
-    Returns:
-        str: Masked string, e.g., "abc****xyz"
-    """
-    if not s or len(s) <= unmasked_start + unmasked_end:
-        return mask_char * len(s)
-
-    return (
-        s[:unmasked_start]
-        + mask_char * (len(s) - unmasked_start - unmasked_end)
-        + s[-unmasked_end:]
-    )
+from ten_ai_base import utils
 
 
 class CosyTTSConfig(BaseModel):
@@ -33,9 +9,9 @@ class CosyTTSConfig(BaseModel):
     api_key: str = ""  # Cosy TTS API Key
 
     # TTS specific configs
-    model: str = "cosyvoice-v1"  # Model name
+    model: str = ""  # Model name
+    voice: str = ""  # Voice name
     sample_rate: int = 16000  # Audio sample rate
-    voice: str = "longxiaochun"  # Voice name
 
     # Debug and dump settings
     dump: bool = False
@@ -58,11 +34,9 @@ class CosyTTSConfig(BaseModel):
 
         # Encrypt sensitive fields
         if config.api_key:
-            config.api_key = mask_sensitive_data(config.api_key)
+            config.api_key = utils.encrypt(config.api_key)
         if config.params and "api_key" in config.params:
-            config.params["api_key"] = mask_sensitive_data(
-                config.params["api_key"]
-            )
+            config.params["api_key"] = utils.encrypt(config.params["api_key"])
 
         return f"{config}"
 
@@ -85,6 +59,8 @@ class CosyTTSConfig(BaseModel):
         """Validate required configuration parameters."""
         required_fields = [
             "api_key",
+            "model",
+            "voice",
         ]
 
         for field_name in required_fields:
