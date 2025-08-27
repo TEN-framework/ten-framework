@@ -121,10 +121,6 @@ class CosyTTSClient:
         self.ten_env = ten_env
         self.vendor = vendor
 
-        # Session management
-        self.stopping: bool = False
-        self.turn_id: int = 0
-
         # TTS synthesizer
         self._callback: AsyncIteratorCallback | None = None
         self.synthesizer: SpeechSynthesizer | None = None

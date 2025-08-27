@@ -1,47 +1,30 @@
 from typing import Any, Dict, List
-
 from pydantic import BaseModel, Field
-
-
-def mask_sensitive_data(
-    s: str, unmasked_start: int = 3, unmasked_end: int = 3, mask_char: str = "*"
-) -> str:
-    """
-    Mask a sensitive string by replacing the middle part with asterisks.
-
-    Parameters:
-        s (str): The input string (e.g., API key).
-        unmasked_start (int): Number of visible characters at the beginning.
-        unmasked_end (int): Number of visible characters at the end.
-        mask_char (str): Character used for masking.
-
-    Returns:
-        str: Masked string, e.g., "abc****xyz"
-    """
-    if not s or len(s) <= unmasked_start + unmasked_end:
-        return mask_char * len(s)
-
-    return (
-        s[:unmasked_start]
-        + mask_char * (len(s) - unmasked_start - unmasked_end)
-        + s[-unmasked_end:]
-    )
+from ten_ai_base import utils
 
 
 class MinimaxTTSWebsocketConfig(BaseModel):
-
+    # Minimax TTS credentials
     api_key: str = ""
     group_id: str = ""
+
+    # Minimax TTS specific configs
     url: str = "wss://api.minimaxi.com/ws/v1/t2a_v2"
     sample_rate: int = 16000
-    channels: int = 1
-    dump: bool = False
-    dump_path: str = ""
+    channels: int = 1  # channels
+
+    # Minimax TTS pass through parameters
     params: Dict[str, Any] = Field(default_factory=dict)
-    black_list_params: List[str] = Field(default_factory=list)
+    # Black list parameters, will be removed from params
+    black_list_keys: List[str] = Field(default_factory=list)
+
+    # Debug and dump settings
+    dump: bool = False
+    dump_path: str = "/tmp"
+    enable_words: bool = False
 
     def is_black_list_params(self, key: str) -> bool:
-        return key in self.black_list_params
+        return key in self.black_list_keys
 
     def update_params(self) -> None:
         ##### get value from params #####
@@ -70,18 +53,22 @@ class MinimaxTTSWebsocketConfig(BaseModel):
             self.params["audio_setting"] = {}
         self.params["audio_setting"]["format"] = "pcm"
 
-    def to_str(self) -> str:
-        """
-        Convert the configuration to a string representation, masking sensitive data.
-        """
-        return (
-            f"MinimaxTTSWebsocketConfig(key={mask_sensitive_data(self.api_key)}, "
-            f"group_id={self.group_id}, "
-            f"url={self.url}, "
-            f"sample_rate={self.sample_rate}, "
-            f"channels={self.channels}, "
-            f"dump={self.dump}, "
-            f"dump_path={self.dump_path}, "
-            f"params={self.params}, "
-            f"black_list_params={self.black_list_params})"
-        )
+    def validate_params(self) -> None:
+        """Validate required configuration parameters."""
+        required_fields = ["api_key", "group_id"]
+
+        for field_name in required_fields:
+            value = getattr(self, field_name)
+            if not value or (isinstance(value, str) and value.strip() == ""):
+                raise ValueError(
+                    f"required fields are missing or empty: params.{field_name}"
+                )
+
+    def to_str(self, sensitive_handling: bool = False) -> str:
+        if not sensitive_handling:
+            return f"{self}"
+
+        config = self.copy(deep=True)
+        if config.api_key:
+            config.api_key = utils.encrypt(config.api_key)
+        return f"{config}"

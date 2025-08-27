@@ -55,36 +55,14 @@ class MinimaxTTSWebsocketExtension(AsyncTTS2BaseExtension):
 
             if self.config is None:
                 config_json, _ = await self.ten_env.get_property_to_json("")
-
-                # Check if config is empty or missing required fields
-                if not config_json or config_json.strip() == "{}":
-                    error_msg = "Configuration is empty. Required parameters: api_key, group_id are missing."
-                    raise ValueError(error_msg)
-
-                try:
-                    self.config = MinimaxTTSWebsocketConfig.model_validate_json(
-                        config_json
-                    )
-                    # extract audio_params and additions from config
-                    self.config.update_params()
-                    self.ten_env.log_info(
-                        f"Parsed config: {self.config.to_str()}"
-                    )
-                except Exception as validation_error:
-                    error_msg = f"Configuration validation failed: {str(validation_error)}"
-                    return
-
-                if self.config.api_key == "":
-                    error_msg = (
-                        "Required parameter 'api_key' is missing or empty."
-                    )
-                    raise ValueError(error_msg)
-
-                if self.config.group_id == "":
-                    error_msg = (
-                        "Required parameter 'group_id' is missing or empty."
-                    )
-                    raise ValueError(error_msg)
+                self.config = MinimaxTTSWebsocketConfig.model_validate_json(
+                    config_json
+                )
+                self.config.update_params()
+                self.config.validate_params()
+                self.ten_env.log_info(
+                    f"KEYPOINT config: {self.config.to_str(sensitive_handling=True)}"
+                )
 
             self.client = MinimaxTTSWebsocket(
                 self.config,
@@ -299,14 +277,14 @@ class MinimaxTTSWebsocketExtension(AsyncTTS2BaseExtension):
             )
             chunk_count = 0
             async for audio_chunk, event_status in data:
-                self.ten_env.log_info(f"Received event_status: {event_status}")
+                # self.ten_env.log_info(f"Received event_status: {event_status}")
                 if event_status == EVENT_TTSResponse:
                     if audio_chunk is not None and len(audio_chunk) > 0:
                         chunk_count += 1
                         self.total_audio_bytes += len(audio_chunk)
-                        self.ten_env.log_info(
-                            f"[tts] Received audio chunk #{chunk_count}, size: {len(audio_chunk)} bytes"
-                        )
+                        # self.ten_env.log_info(
+                        #     f"[tts] Received audio chunk #{chunk_count}, size: {len(audio_chunk)} bytes"
+                        # )
 
                         # Send TTS audio start on first chunk
                         if self.first_chunk:
