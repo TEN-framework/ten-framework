@@ -3,20 +3,6 @@ from pydantic import BaseModel, Field
 from google.cloud import texttospeech
 from ten_ai_base import utils
 
-
-def mask_sensitive_data(
-    s: str, unmasked_start: int = 3, unmasked_end: int = 3, mask_char: str = "*"
-) -> str:
-    if not s or len(s) <= unmasked_start + unmasked_end:
-        return mask_char * len(s)
-
-    return (
-        s[:unmasked_start]
-        + mask_char * (len(s) - unmasked_start - unmasked_end)
-        + s[-unmasked_end:]
-    )
-
-
 class GoogleTTSConfig(BaseModel):
     credentials: str = ""
     dump: bool = False
