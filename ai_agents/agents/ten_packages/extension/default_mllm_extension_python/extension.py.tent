@@ -18,24 +18,24 @@ from ten_runtime import (
 
 
 @dataclass
-class {{class_name_prefix}}MConfig(BaseModel):
+class {{class_name_prefix}}Config(BaseModel):
     pass
 
 
-class {{class_name_prefix}}MExtension(AsyncMLLMBaseExtension):
+class {{class_name_prefix}}Extension(AsyncMLLMBaseExtension):
     def __init__(self, name: str):
         super().__init__(name)
-        self.config: {{class_name_prefix}}MConfig | None = None
+        self.config: {{class_name_prefix}}Config | None = None
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         await super().on_init(ten_env)
 
-        ten_env.log_info("{{class_name_prefix}}MExtension on_init")
+        ten_env.log_info("{{class_name_prefix}}Extension on_init")
 
         config_json, _ = await self.ten_env.get_property_to_json("")
 
         try:
-            self.config = {{class_name_prefix}}MConfig.model_validate_json(config_json)
+            self.config = {{class_name_prefix}}Config.model_validate_json(config_json)
         except Exception as e:
             await self._handle_error(e)
 
