@@ -3,6 +3,7 @@ from pydantic import BaseModel, Field
 from google.cloud import texttospeech
 from ten_ai_base import utils
 
+
 class GoogleTTSConfig(BaseModel):
     credentials: str = ""
     dump: bool = False

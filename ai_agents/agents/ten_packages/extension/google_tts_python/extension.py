@@ -260,6 +260,9 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                     self.ten_env.log_info(
                         "Resetting Google TTS client since request id changed and old connection already sent request"
                     )
+                    await self.handle_completed_request(
+                        TTSAudioEndReason.INTERRUPTED
+                    )
                     await self.client.clean()
                     await self.client.reset()
 
