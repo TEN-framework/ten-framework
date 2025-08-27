@@ -16,7 +16,7 @@ from ten import AsyncTenEnv
 class AgoraGenericRecorder:
     SESSION_CACHE_PATH = "/tmp/generic_session_id.txt"
 
-    def __init__(self, app_id: str, app_cert: str, api_key: str, channel_name: str, avatar_uid: int, ten_env: AsyncTenEnv, start_endpoint: str = "https://api.example.com/v1/sessions/start", stop_endpoint: str = "https://api.example.com/v1/sessions/stop"):
+    def __init__(self, app_id: str, app_cert: str, api_key: str, channel_name: str, avatar_uid: int, ten_env: AsyncTenEnv, avatar_id: str, quality: str, version: str, video_encoding: str, enable_string_uid: bool, start_endpoint: str = "https://api.example.com/v1/sessions/start", stop_endpoint: str = "https://api.example.com/v1/sessions/stop"):
         if not app_id or not api_key:
             raise ValueError("AGORA_APP_ID, AGORA_APP_CERT, and API_KEY must be provided.")
 
@@ -26,6 +26,11 @@ class AgoraGenericRecorder:
         self.channel_name = channel_name
         self.uid_avatar = avatar_uid
         self.ten_env = ten_env
+        self.avatar_id = avatar_id
+        self.quality = quality
+        self.version = version
+        self.video_encoding = video_encoding
+        self.enable_string_uid = enable_string_uid
         self.start_endpoint = start_endpoint
         self.stop_endpoint = stop_endpoint
 
@@ -104,19 +109,17 @@ class AgoraGenericRecorder:
 
     async def _create_session(self):
         payload = {
-            "avatar_id": "16cb73e7de08",  # Default avatar ID, can be made configurable
-            "quality": "high",
-            "version": "agora_v1",
-            "video_encoding": "H264",
-            "source": "app",
-            "disable_idle_timeout": False,
+            "avatar_id": self.avatar_id,
+            "quality": self.quality,
+            "version": self.version,
+            "video_encoding": self.video_encoding,
             "agora_settings": {
                 "app_id": self.app_id,
                 "token": self.token_server,
                 "channel": self.channel_name,
                 "uid": str(self.uid_avatar),
-            },
-            "namespace": "demo",
+                "enable_string_uid": self.enable_string_uid
+            }
         }
 
         # Log the request details using existing logging mechanism
@@ -169,16 +172,16 @@ class AgoraGenericRecorder:
                     # Send initial configuration payload with init command
                     initial_payload = {
                         "command": "init",  # Added missing command field as per documentation
-                        "avatar_id": "16cb73e7de08",
-                        "quality": "high",
-                        "version": "v1",
-                        "video_encoding": "H264",
+                        "avatar_id": self.avatar_id,
+                        "quality": self.quality,
+                        "version": self.version,
+                        "video_encoding": self.video_encoding,
                         "agora_settings": {
                             "app_id": self.app_id,
                             "token": self.token_server,
                             "channel": self.channel_name,
                             "uid": str(self.uid_avatar),
-                            "enable_string_uid": False
+                            "enable_string_uid": self.enable_string_uid
                         }
                     }
 
@@ -231,6 +234,29 @@ class AgoraGenericRecorder:
             except Exception as e:
                 print(f"Error in speak_end task: {e}")
                 break
+
+    async def interrupt(self) -> bool:
+        """Send voice_interrupt command to the service."""
+        if self.websocket is None:
+            self.ten_env.log_error("Cannot send interrupt: WebSocket not connected")
+            return False
+
+        # Cancel any pending speak_end timer
+        if self._speak_end_timer_task and not self._speak_end_timer_task.done():
+            self._speak_end_timer_task.cancel()
+            self._speak_end_timer_task = None
+
+        try:
+            interrupt_msg = {
+                "command": "voice_interrupt",
+                "event_id": str(uuid.uuid4())
+            }
+            await self.websocket.send(json.dumps(interrupt_msg))
+            self.ten_env.log_info("Sent voice_interrupt command")
+            return True
+        except Exception as e:
+            self.ten_env.log_error(f"Failed to send voice_interrupt command: {e}")
+            return False
 
     async def send(self, audio_base64: str):
         if self.websocket is None:
