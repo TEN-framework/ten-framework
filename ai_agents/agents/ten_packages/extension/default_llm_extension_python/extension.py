@@ -1,4 +1,4 @@
-from typing import AsyncGenerator, override
+from typing_extensions import AsyncGenerator, override
 
 from dataclasses import dataclass
 
