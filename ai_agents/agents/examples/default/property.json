@@ -12,7 +12,7 @@
             "extension_group": "default",
             "property": {
               "app_id": "${env:AGORA_APP_ID}",
-              "app_certificate": "${env:AGORA_APP_CERTIFICATE|}",
+              "token": "<agora_token>",
               "channel": "ten_agent_test",
               "stream_id": 1234,
               "remote_stream_id": 123,
@@ -275,20 +275,20 @@
             "addon": "agora_rtc",
             "extension_group": "default",
             "property": {
-              "agora_asr_vendor_region": "${env:AZURE_STT_REGION|}",
-              "remote_stream_id": 123,
-              "agora_asr_language": "en-US",
-              "subscribe_audio": true,
-              "app_certificate": "${env:AGORA_APP_CERTIFICATE|}",
-              "publish_audio": false,
-              "stream_id": 1234,
-              "channel": "ten_agent_test",
               "app_id": "${env:AGORA_APP_ID}",
-              "agora_asr_session_control_file_path": "session_control.conf",
+              "token": "<agora_token>",
+              "channel": "ten_agent_test",
+              "stream_id": 1234,
+              "remote_stream_id": 123,
+              "subscribe_audio": true,
+              "publish_audio": true,
               "publish_data": true,
-              "agora_asr_vendor_key": "${env:AZURE_STT_KEY|}",
+              "enable_agora_asr": true,
               "agora_asr_vendor_name": "microsoft",
-              "enable_agora_asr": true
+              "agora_asr_language": "en-US",
+              "agora_asr_vendor_key": "${env:AZURE_STT_KEY|}",
+              "agora_asr_vendor_region": "${env:AZURE_STT_REGION|}",
+              "agora_asr_session_control_file_path": "session_control.conf"
             }
           },
           {
@@ -311,12 +311,14 @@
           {
             "type": "extension",
             "name": "tts",
-            "addon": "azure_tts",
+            "addon": "fish_audio_tts",
             "extension_group": "tts",
             "property": {
-              "azure_subscription_key": "${env:AZURE_TTS_KEY}",
-              "azure_subscription_region": "${env:AZURE_TTS_REGION}",
-              "azure_synthesis_voice_name": "en-US-AndrewMultilingualNeural"
+              "api_key": "${env:FISH_AUDIO_TTS_KEY}",
+              "model_id": "d8639b5cc95548f5afbcfe22d3ba5ce5",
+              "optimize_streaming_latency": true,
+              "request_timeout_seconds": 30,
+              "base_url": "https://api.fish.audio"
             }
           },
           {
@@ -345,15 +347,15 @@
           {
             "type": "extension",
             "name": "avatar",
-            "addon": "heygen_avatar_python",
+            "addon": "generic_video_python",
             "extension_group": "default",
             "property": {
-              "heygen_api_key": "${env:HEYGEN_API_KEY}",
-              "agora_avatar_uid": 12345,
-              "input_audio_sample_rate": 16000,
-              "agora_appcert": "${env:AGORA_APP_CERTIFICATE|}",
               "agora_appid": "${env:AGORA_APP_ID}",
-              "agora_channel_name": "ten_agent_test"
+              "agora_appcert": "${env:AGORA_APP_CERTIFICATE}",
+              "agora_channel_name": "ten_agent_test",
+              "agora_avatar_uid": 12345,
+              "input_audio_sample_rate": 48000,
+              "generic_video_api_key": "${env:GENERIC_VIDEO_API_KEY}"
             }
           }
         ],
@@ -527,7 +529,7 @@
             "extension_group": "rtc",
             "property": {
               "app_id": "${env:AGORA_APP_ID}",
-              "app_certificate": "${env:AGORA_APP_CERTIFICATE|}",
+              "token": "",
               "channel": "ten_agent_test",
               "stream_id": 1234,
               "remote_stream_id": 123,
@@ -701,7 +703,7 @@
             "extension_group": "default",
             "property": {
               "app_id": "${env:AGORA_APP_ID}",
-              "app_certificate": "${env:AGORA_APP_CERTIFICATE|}",
+              "token": "<agora_token>",
               "channel": "ten_agent_test",
               "stream_id": 1234,
               "remote_stream_id": 123,
@@ -962,7 +964,7 @@
             "extension_group": "default",
             "property": {
               "app_id": "${env:AGORA_APP_ID}",
-              "app_certificate": "${env:AGORA_APP_CERTIFICATE|}",
+              "token": "<agora_token>",
               "channel": "ten_agent_test",
               "stream_id": 1234,
               "remote_stream_id": 123,
@@ -1203,7 +1205,7 @@
             "extension_group": "rtc",
             "property": {
               "app_id": "${env:AGORA_APP_ID}",
-              "app_certificate": "${env:AGORA_APP_CERTIFICATE|}",
+              "token": "",
               "channel": "ten_agent_test",
               "stream_id": 1234,
               "remote_stream_id": 123,
