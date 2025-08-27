@@ -49,6 +49,7 @@ class BytedanceTTSDuplexExtension(AsyncTTS2BaseExtension):
         self.response_msgs = asyncio.Queue[Tuple[int, bytes]]()
         self.recorder_map: dict[str, PCMWriter] = {}
         self.last_completed_request_id: str | None = None
+        self.last_completed_has_reset_synthesizer = True
         self.is_reconnecting = False
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
@@ -61,30 +62,15 @@ class BytedanceTTSDuplexExtension(AsyncTTS2BaseExtension):
                 self.config = BytedanceTTSDuplexConfig.model_validate_json(
                     config_json
                 )
-                self.ten_env.log_info(
-                    f"KEYPOINT config: {self.config.to_str()}"
-                )
 
                 # extract audio_params and additions from config
                 self.config.update_params()
+                self.config.validate_params()
 
-                if not self.config.appid:
-                    self.ten_env.log_error(
-                        "Configuration is empty. Required parameter 'appid' is missing."
-                    )
-                    raise ValueError(
-                        "Configuration is empty. Required parameter 'appid' is missing."
-                    )
+            self.ten_env.log_info(
+                f"KEYPOINT config: {self.config.to_str(sensitive_handling=True)}"
+            )
 
-                if not self.config.token:
-                    self.ten_env.log_error(
-                        "Configuration is empty. Required parameter 'token' is missing."
-                    )
-                    raise ValueError(
-                        "Configuration is empty. Required parameter 'token' is missing."
-                    )
-
-            # Create client (connection management will be handled automatically)
             self.client = BytedanceV3Client(
                 self.config, self.ten_env, self.vendor(), self.response_msgs
             )
@@ -233,6 +219,10 @@ class BytedanceTTSDuplexExtension(AsyncTTS2BaseExtension):
                 f"KEYPOINT Requesting TTS for text: {t.text}, text_input_end: {t.text_input_end} request ID: {t.request_id}"
             )
 
+            if self.client is None:
+                self.ten_env.log_error("Client is not initialized")
+                return
+
             # check if the request_id has already been completed
             if (
                 self.last_completed_request_id
@@ -245,6 +235,10 @@ class BytedanceTTSDuplexExtension(AsyncTTS2BaseExtension):
                 self.ten_env.log_info(
                     f"KEYPOINT New TTS request with ID: {t.request_id}"
                 )
+                if not self.last_completed_has_reset_synthesizer:
+                    self.client.reset_synthesizer()
+                self.last_completed_has_reset_synthesizer = False
+
                 self.current_request_id = t.request_id
                 if t.metadata is not None:
                     self.session_id = t.metadata.get("session_id", "")
@@ -287,7 +281,7 @@ class BytedanceTTSDuplexExtension(AsyncTTS2BaseExtension):
                 await self.client.send_text(t.text)
             if t.text_input_end:
                 self.ten_env.log_info(
-                    f"KEYPOINT finish session for request ID: {t.request_id}"
+                    f"KEYPOINT received text_input_end for request ID: {t.request_id}"
                 )
 
                 # update the latest completed request_id
@@ -302,7 +296,10 @@ class BytedanceTTSDuplexExtension(AsyncTTS2BaseExtension):
                 await self.stop_event.wait()
 
                 # session finished, connection will be re-established for next request
-                await self.client.finish_connection()
+                if not self.last_completed_has_reset_synthesizer:
+                    await self.client.finish_connection()
+                    self.client.reset_synthesizer()
+                    self.last_completed_has_reset_synthesizer = True
 
         except ModuleVendorException as e:
             self.ten_env.log_error(
@@ -337,6 +334,7 @@ class BytedanceTTSDuplexExtension(AsyncTTS2BaseExtension):
             # Cancel current connection (maintain original flush disconnect behavior)
             if self.client:
                 self.client.cancel()
+                self.last_completed_has_reset_synthesizer = True
 
             # If there's a waiting stop_event, set it to release request_tts waiting
             if self.stop_event:

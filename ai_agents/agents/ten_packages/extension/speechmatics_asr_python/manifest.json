@@ -1,7 +1,7 @@
 {
     "type": "extension",
     "name": "speechmatics_asr_python",
-    "version": "0.1.6",
+    "version": "0.1.7",
     "dependencies": [
         {
             "type": "system",
@@ -22,41 +22,19 @@
         ],
         "property": {
             "properties": {
-                "key": {
-                    "type": "string"
-                },
-                "sample_rate": {
-                    "type": "int64"
-                },
-                "language": {
-                    "type": "string"
-                },
-                "chunk_ms": {
-                    "type": "int64"
-                },
-                "uri": {
-                    "type": "string"
-                },
-                "max_delay": {
-                    "type": "float64"
-                },
-                "max_delay_mode": {
-                    "type": "string"
-                },
-                "encoding": {
-                    "type": "string"
-                },
-                "enable_partials": {
-                    "type": "bool"
-                },
-                "enable_word_final_mode": {
-                    "type": "bool"
-                },
-                "dump": {
-                    "type": "bool"
-                },
-                "dump_path": {
-                    "type": "string"
+                "params": {
+                    "type": "object",
+                    "properties": {
+                        "key": {
+                            "type": "string"
+                        },
+                        "language": {
+                            "type": "string"
+                        },
+                        "sample_rate": {
+                            "type": "int64"
+                        }
+                    }
                 }
             }
         }

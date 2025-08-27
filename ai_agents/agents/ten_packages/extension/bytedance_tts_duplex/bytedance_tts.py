@@ -248,7 +248,7 @@ class BytedanceV3Synthesizer:
         response_msgs: asyncio.Queue[Tuple[int, bytes]],
     ):
         self.config = config
-        self.app_id = config.appid
+        self.app_id = config.app_id
         self.token = config.token
         self.speaker = config.speaker
         self.session_id = uuid.uuid4().hex
@@ -427,11 +427,6 @@ class BytedanceV3Synthesizer:
             if self.ws:
                 await self.ws.close()
             self.ten_env.log_info("Websocket connection process ended.")
-
-    async def _establish_connection_and_session(self):
-        """Establish connection and session"""
-        await self.start_connection()
-        await self.start_session()
 
     async def _send_loop(self, ws: WebSocketClientProtocol) -> None:
         """Text sending loop"""
@@ -882,6 +877,15 @@ class BytedanceV3Client:
         # Create new synthesizer
         self.synthesizer = self._create_synthesizer()
         self.ten_env.log_info("New synthesizer created successfully")
+
+    def reset_synthesizer(self):
+        """Reset synthesizer"""
+        if self.synthesizer:
+            self.cancelled_synthesizers.append(self.synthesizer)
+            self.synthesizer.cancel()
+
+        self.synthesizer = self._create_synthesizer()
+        self.ten_env.log_info("Synthesizer reset successfully")
 
     async def send_text(self, text: str):
         """Send text"""
