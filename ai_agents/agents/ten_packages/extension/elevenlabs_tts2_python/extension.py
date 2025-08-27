@@ -54,7 +54,6 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
 
             if self.config is None:
                 config_json, _ = await self.ten_env.get_property_to_json("")
-                self.ten_env.log_debug(f"Raw config JSON: {config_json}")
                 self.config = ElevenLabsTTS2Config.model_validate_json(
                     config_json
                 )

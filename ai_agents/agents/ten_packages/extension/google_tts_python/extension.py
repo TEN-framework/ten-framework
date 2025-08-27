@@ -50,7 +50,6 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
         try:
             await super().on_init(ten_env)
             config_json_str, _ = await self.ten_env.get_property_to_json("")
-            ten_env.log_info(f"config_json_str: {config_json_str}")
 
             if not config_json_str or config_json_str.strip() == "{}":
                 raise ValueError(
@@ -261,6 +260,7 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                     self.ten_env.log_info(
                         "Resetting Google TTS client since request id changed and old connection already sent request"
                     )
+                    await self.client.clean()
                     await self.client.reset()
 
                 # Create new PCMWriter for new request_id and clean up old ones
@@ -405,6 +405,13 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                 await self.handle_completed_request(
                     TTSAudioEndReason.REQUEST_END
                 )
+                # reset connection if needed
+                if self.client and self.client.send_text_in_connection == True:
+                    self.ten_env.log_info(
+                        "Resetting Google TTS client since request id changed and old connection already sent request"
+                    )
+                    await self.client.clean()
+                    await self.client.reset()
 
             # Ensure all async operations are completed
             self.ten_env.log_info(

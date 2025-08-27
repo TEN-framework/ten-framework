@@ -57,6 +57,7 @@ class GoogleTTSConfig(BaseModel):
             "FEMALE": texttospeech.SsmlVoiceGender.FEMALE,
             "UNSPECIFIED": texttospeech.SsmlVoiceGender.SSML_VOICE_GENDER_UNSPECIFIED,
         }
+        # pylint: disable=no-member
         voice_params = self.params.get("VoiceSelectionParams", {})
         ssml_gender = voice_params.get("ssml_gender", "NEUTRAL")
         return gender_map.get(
