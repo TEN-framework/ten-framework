@@ -105,7 +105,7 @@ def test_error_debug_information(MockGoogleTTS):
     # Set up configuration
     config = {
         "params": {
-            "sample_rate": 16000,
+            "AudioConfig": {"sample_rate_hertz": 16000},
             "credentials": "fake_credentials_for_mock_testing",
         },
     }
@@ -168,7 +168,7 @@ def test_error_debug_stack_trace(MockGoogleTTS):
     # Set up configuration
     config = {
         "params": {
-            "sample_rate": 16000,
+            "AudioConfig": {"sample_rate_hertz": 16000},
             "credentials": "fake_credentials_for_mock_testing",
         },
     }
@@ -230,7 +230,7 @@ def test_error_debug_request_context(MockGoogleTTS):
     # Set up configuration
     config = {
         "params": {
-            "sample_rate": 16000,
+            "AudioConfig": {"sample_rate_hertz": 16000},
             "credentials": "fake_credentials_for_mock_testing",
         },
     }

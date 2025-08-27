@@ -50,7 +50,6 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
         try:
             await super().on_init(ten_env)
             config_json_str, _ = await self.ten_env.get_property_to_json("")
-            ten_env.log_info(f"config_json_str: {config_json_str}")
 
             if not config_json_str or config_json_str.strip() == "{}":
                 raise ValueError(
@@ -135,8 +134,10 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
         return "google"
 
     def synthesize_audio_sample_rate(self) -> int:
-        if self.config and hasattr(self.config, "sample_rate"):
-            return self.config.sample_rate
+        if self.config and self.config.params:
+            audio_params = self.config.params.get("AudioConfig", {})
+            if audio_params.get("sample_rate_hertz"):
+                return audio_params.get("sample_rate_hertz")
         return 24000  # Google TTS default sample rate
 
     def _calculate_audio_duration_ms(self) -> int:
@@ -253,6 +254,17 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                 self._reset_request_state()
                 if t.metadata:
                     self.current_turn_id = t.metadata.get("turn_id", -1)
+
+                # reset connection if needed
+                if self.client and self.client.send_text_in_connection == True:
+                    self.ten_env.log_info(
+                        "Resetting Google TTS client since request id changed and old connection already sent request"
+                    )
+                    await self.handle_completed_request(
+                        TTSAudioEndReason.INTERRUPTED
+                    )
+                    await self.client.clean()
+                    await self.client.reset()
 
                 # Create new PCMWriter for new request_id and clean up old ones
                 if self.config and self.config.dump:
@@ -396,6 +408,13 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                 await self.handle_completed_request(
                     TTSAudioEndReason.REQUEST_END
                 )
+                # reset connection if needed
+                if self.client and self.client.send_text_in_connection == True:
+                    self.ten_env.log_info(
+                        "Resetting Google TTS client since request id changed and old connection already sent request"
+                    )
+                    await self.client.clean()
+                    await self.client.reset()
 
             # Ensure all async operations are completed
             self.ten_env.log_info(
