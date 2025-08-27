@@ -59,7 +59,7 @@ class ElevenLabsTTS2Synthesizer:
         self.send_text_in_connection = False
         self.query_params = "?"
 
-        # 优化参数拼接逻辑，减少重复判断和冗余代码
+        # generate query parameters
         if self.config and self.config.params:
             param_map = [
                 "authorization",
@@ -239,7 +239,7 @@ class ElevenLabsTTS2Synthesizer:
                     self.ten_env.log_debug(
                         "No new text input, sending space text to keep alive."
                     )
-                    await ws.send(json.dumps({"text": " "}))
+                    await ws.send(json.dumps({"text": " ", "flush": True}))
                 if text_data is None:
                     self.ten_env.log_debug(
                         "Received None from queue, ending send loop"
