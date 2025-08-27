@@ -97,6 +97,10 @@ class TencentTTSConfig(BaseModel):
 
     def validate_params(self) -> None:
         """Validate required configuration parameters."""
+        if not self.voice_type.isdigit():
+            raise ValueError(
+                f"voice_type value must be an integer: params.voice_type={self.voice_type}"
+            )
         required_fields = [
             "app_id",
             "secret_key",
