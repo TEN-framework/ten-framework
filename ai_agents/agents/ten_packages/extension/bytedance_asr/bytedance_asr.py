@@ -185,8 +185,8 @@ class AsrWsClient:
 
         # Add missing VAD-related attributes
         self.vad_signal = kwargs.get("vad_signal", True)
-        self.start_silence_time = kwargs.get("start_silence_time", 500)
-        self.vad_silence_time = kwargs.get("vad_silence_time", 800)
+        self.start_silence_time = kwargs.get("start_silence_time", "5000")
+        self.vad_silence_time = kwargs.get("vad_silence_time", "800")
 
         self.websocket = None
         self.handle_received_message = kwargs.get(
@@ -362,47 +362,48 @@ class AsrWsClient:
         self._finalize_requested = True
         self.ten_env.log_info("Sending finalize signal to ASR server")
 
-        # According to Bytedance ASR protocol, finalize should be indicated
-        # by setting NEG_SEQUENCE flag (0b0010) on the last audio packet.
-        # We need to send a final audio packet with NEG_SEQUENCE flag immediately.
-
-        # Send a final audio packet with NEG_SEQUENCE flag
-        # Use a minimal amount of silence (5ms) to ensure the packet is sent quickly
-        silence_samples = int(16000 * 0.005)  # 5ms at 16kHz (reduced from 10ms)
-        silence_data = b"\x00" * (silence_samples * 2)  # 16-bit samples
-
-        # Compress the silence data
-        payload_bytes = gzip.compress(silence_data)
-
-        # Create audio-only request with NEG_SEQUENCE flag
-        audio_only_request = bytearray(generate_last_audio_default_header())
-        audio_only_request.extend(
-            (len(payload_bytes)).to_bytes(4, "big")
-        )  # payload size
-        audio_only_request.extend(payload_bytes)  # payload
-
+        # Send a silence frame based on vad_silence_time configuration
+        # This approach avoids NEG_SEQUENCE issues while providing sufficient silence
         try:
+            # Convert vad_silence_time from string to milliseconds, then to samples
+            silence_ms = int(self.vad_silence_time)
+            silence_samples = int(
+                16000 * silence_ms / 1000
+            )  # Convert ms to samples at 16kHz
+            silence_data = b"\x00" * (silence_samples * 2)  # 16-bit samples
+
+            # Compress the silence data
+            payload_bytes = gzip.compress(silence_data)
+
+            # Create normal audio-only request (without NEG_SEQUENCE flag)
+            audio_only_request = bytearray(generate_audio_default_header())
+            audio_only_request.extend(
+                (len(payload_bytes)).to_bytes(4, "big")
+            )  # payload size
+            audio_only_request.extend(payload_bytes)  # payload
+
             self.ten_env.log_info(
-                "Sending final audio packet with NEG_SEQUENCE flag"
+                f"Sending {silence_ms}ms silence frame for finalize"
             )
             await self.websocket.send(bytes(audio_only_request))
-            self._neg_sequence_sent = True
-            self._finalize_requested = (
-                False  # Reset finalize flag after sending NEG_SEQUENCE
-            )
             self.ten_env.log_info(
-                "NEG_SEQUENCE flag sent successfully, finalize state reset"
+                f"{silence_ms}ms silence frame sent successfully"
             )
+
         except Exception as e:
-            self.ten_env.log_error(f"Failed to send NEG_SEQUENCE packet: {e}")
+            silence_ms = int(self.vad_silence_time)
+            self.ten_env.log_error(
+                f"Failed to send {silence_ms}ms silence frame: {e}"
+            )
             if self.on_error:
                 try:
                     await self.on_error(
-                        2001, f"Failed to send NEG_SEQUENCE: {e}"
+                        2001,
+                        f"Failed to send {silence_ms}ms silence frame: {e}",
                     )
                 except Exception as callback_error:
                     self.ten_env.log_error(
-                        f"Error in NEG_SEQUENCE error callback: {callback_error}"
+                        f"Error in silence frame error callback: {callback_error}"
                     )
 
     def is_finalized(self) -> bool:
@@ -497,27 +498,13 @@ class AsrWsClient:
 
         payload_bytes = gzip.compress(chunk)
 
-        # Use NEG_SEQUENCE flag if this is the finalize request
-        # This follows the Bytedance ASR protocol: NEG_SEQUENCE is for the last audio packet
-        if self._finalize_requested and not self._neg_sequence_sent:
-            audio_only_request = bytearray(generate_last_audio_default_header())
-            self.ten_env.log_info(
-                "Sending audio packet with NEG_SEQUENCE flag (finalize)"
-            )
-            # Mark that NEG_SEQUENCE has been sent
-            self._neg_sequence_sent = True
-            # Reset finalize request after sending NEG_SEQUENCE
-            self._finalize_requested = False
+        # All audio packets use normal header (no NEG_SEQUENCE flag)
+        # This avoids connection issues while maintaining ASR functionality
+        audio_only_request = bytearray(generate_audio_default_header())
+        if self._finalize_requested:
             self.ten_env.log_debug(
-                "Finalize state reset: _finalize_requested=False, _neg_sequence_sent=True"
+                f"Audio packet during finalize: _finalize_requested={self._finalize_requested}, _neg_sequence_sent={self._neg_sequence_sent}"
             )
-        else:
-            # Normal audio packets use NO_SEQUENCE flag
-            audio_only_request = bytearray(generate_audio_default_header())
-            if self._finalize_requested:
-                self.ten_env.log_debug(
-                    f"Normal audio packet: _finalize_requested={self._finalize_requested}, _neg_sequence_sent={self._neg_sequence_sent}"
-                )
 
         audio_only_request.extend(
             (len(payload_bytes)).to_bytes(4, "big")
