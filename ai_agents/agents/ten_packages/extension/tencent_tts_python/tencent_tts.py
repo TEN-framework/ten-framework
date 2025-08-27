@@ -368,8 +368,20 @@ class TencentTTSClient:
         This method closes the WebSocket connection and logs the time
         taken for the close operation. Used during cleanup or reconnection.
         """
+        if self._ws is None:
+            return
+
         start_time = datetime.now()
-        await self._ws.close()
+        try:
+            # Add timeout to prevent hanging for 10 seconds
+            await asyncio.wait_for(self._ws.close(), timeout=1.0)
+        except asyncio.TimeoutError:
+            self.ten_env.log_warn("WebSocket close timeout, ignoring and continuing")
+        except Exception as e:
+            self.ten_env.log_error(f"Error closing WebSocket: {e}")
+        finally:
+            self._ws = None
+
         self.ten_env.log_info(
             f"__ws_close_task done, duration:{self._duration_in_ms_since(start_time)}ms"
         )
