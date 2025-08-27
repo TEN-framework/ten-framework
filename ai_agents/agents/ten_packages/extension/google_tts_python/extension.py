@@ -263,7 +263,7 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                     await self.handle_completed_request(
                         TTSAudioEndReason.INTERRUPTED
                     )
-                    await self.client.clean()
+                    self.client.clean()
                     await self.client.reset()
 
                 # Create new PCMWriter for new request_id and clean up old ones
@@ -413,7 +413,7 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                     self.ten_env.log_info(
                         "Resetting Google TTS client since request id changed and old connection already sent request"
                     )
-                    await self.client.clean()
+                    self.client.clean()
                     await self.client.reset()
 
             # Ensure all async operations are completed
