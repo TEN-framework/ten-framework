@@ -1,4 +1,4 @@
-from typing import override
+from typing_extensions import override
 
 from dataclasses import dataclass
 
@@ -16,14 +16,14 @@ from ten_runtime import (
 
 
 @dataclass
-class DefaultASRConfig(BaseModel):
+class {{class_name_prefix}}Config(BaseModel):
     pass
 
 
-class DefaultASRExtension(AsyncASRBaseExtension):
+class {{class_name_prefix}}Extension(AsyncASRBaseExtension):
     def __init__(self, name: str):
         super().__init__(name)
-        self.config: DefaultASRConfig | None = None
+        self.config: {{class_name_prefix}}Config | None = None
 
     @override
     def vendor(self) -> str:
@@ -32,12 +32,12 @@ class DefaultASRExtension(AsyncASRBaseExtension):
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         await super().on_init(ten_env)
 
-        ten_env.log_info("DefaultASRExtension on_init")
+        ten_env.log_info("{{class_name_prefix}}Extension on_init")
 
         config_json, _ = await self.ten_env.get_property_to_json("")
 
         try:
-            self.config = DefaultASRConfig.model_validate_json(config_json)
+            self.config = {{class_name_prefix}}Config.model_validate_json(config_json)
         except Exception as e:
             await self._handle_error(e)
 

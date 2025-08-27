@@ -5,38 +5,38 @@
   "display_name": {
     "locales": {
       "en-US": {
-        "content": "Default ASR Python Extension"
+        "content": "Default MLLM Python Extension"
       },
       "zh-CN": {
-        "content": "默认 ASR Python 扩展"
+        "content": "默认 MLLM Python 扩展"
       },
       "zh-TW": {
-        "content": "預設 ASR Python 擴充"
+        "content": "預設 MLLM Python 擴充"
       },
       "ja-JP": {
-        "content": "デフォルトASR Python 拡張"
+        "content": "デフォルトMLLM Python 拡張"
       },
       "ko-KR": {
-        "content": "기본 ASR Python 확장"
+        "content": "기본 MLLM Python 확장"
       }
     }
   },
   "description": {
     "locales": {
       "en-US": {
-        "content": "Default TEN Framework ASR extension template written in Python"
+        "content": "Default TEN Framework MLLM extension template written in Python"
       },
       "zh-CN": {
-        "content": "使用 Python 语言编写的默认 TEN Framework ASR 扩展模板"
+        "content": "使用 Python 语言编写的默认 TEN Framework MLLM 扩展模板"
       },
       "zh-TW": {
-        "content": "使用 Python 語言編寫的預設 TEN Framework ASR 擴充模板"
+        "content": "使用 Python 語言編寫的預設 TEN Framework MLLM 擴充模板"
       },
       "ja-JP": {
-        "content": "Pythonで書かれたデフォルトのTEN Framework ASR拡張テンプレート"
+        "content": "Pythonで書かれたデフォルトのTEN Framework MLLM拡張テンプレート"
       },
       "ko-KR": {
-        "content": "Python으로 작성된 기본 TEN Framework ASR 확장 템플릿"
+        "content": "Python으로 작성된 기본 TEN Framework MLLM 확장 템플릿"
       }
     }
   },
@@ -62,7 +62,7 @@
   "tags": [
     "python",
     "template",
-    "asr"
+    "mllm"
   ],
   "dependencies": [
     {
@@ -79,7 +79,7 @@
   "api": {
     "interface": [
       {
-        "import_uri": "../../system/ten_ai_base/api/asr-interface.json"
+        "import_uri": "../../system/ten_ai_base/api/mllm-interface.json"
       }
     ],
     "property": {

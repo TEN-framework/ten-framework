@@ -10,8 +10,8 @@ from ten_runtime import (
 )
 
 
-@register_addon_as_extension("default_asr_extension_python")
-class {{class_name_prefix}}ASRExtensionAddon(Addon):
+@register_addon_as_extension("{{package_name}}")
+class {{class_name_prefix}}ExtensionAddon(Addon):
     def on_create_instance(self, ten: TenEnv, addon_name: str, context) -> None:
         from .extension import {{class_name_prefix}}Extension
 
