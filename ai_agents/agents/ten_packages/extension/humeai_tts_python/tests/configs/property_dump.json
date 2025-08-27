@@ -6,7 +6,6 @@
         "voice_name": "Male English Actor",
         "provider": "HUME_AI",
         "speed": 1.0,
-        "trailing_silence": 0.0,
-        "request_timeout_seconds": 10
+        "trailing_silence": 0.0
     }
 }

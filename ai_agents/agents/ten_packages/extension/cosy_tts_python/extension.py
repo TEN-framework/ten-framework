@@ -39,7 +39,7 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
         # Configuration for TTS settings
         self.config: CosyTTSConfig | None = None
         # Flag indicating if current request is finished
-        self.current_request_finished: bool = False
+        self.current_request_finished: bool = True
         # ID of the current TTS request being processed
         self.current_request_id: str | None = None
         # Turn ID for conversation tracking
@@ -69,13 +69,12 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
                 self.config = CosyTTSConfig.model_validate_json(config_json)
                 # Update params from config
                 self.config.update_params()
-
-                self.ten_env.log_info(
-                    f"KEYPOINT config: {self.config.to_str()}"
-                )
-
                 # Validate params
                 self.config.validate_params()
+
+                self.ten_env.log_info(
+                    f"KEYPOINT config: {self.config.to_str(sensitive_handling=True)}"
+                )
 
             # Initialize Cosy TTS client
             self.client = CosyTTSClient(self.config, ten_env, self.vendor())
@@ -139,11 +138,18 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
                 f"KEYPOINT Requesting TTS for text: {t.text}, text_input_end: {t.text_input_end}, request_id: {t.request_id}, current_request_id: {self.current_request_id}"
             )
 
+            if self.client is None:
+                self.ten_env.log_error("Client is not initialized")
+                raise ValueError("Client is not initialized")
+
             if t.request_id != self.current_request_id:
                 self.ten_env.log_info(
                     f"KEYPOINT New TTS request with ID: {t.request_id}"
                 )
-                self.client.synthesizer = None
+                if not self.current_request_finished:
+                    self.client.complete()
+                    self.current_request_finished = True
+
                 self.current_request_id = t.request_id
                 self.current_request_finished = False
                 self.total_audio_bytes = 0  # Reset for new request
@@ -160,24 +166,13 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
                 self.ten_env.log_error(error_msg)
                 return
 
-            # Check if text is empty
-            if t.text.strip() == "":
-                self.ten_env.log_info(
-                    f"Received empty text for TTS request, text_input_end: {t.text_input_end}"
-                )
-                if t.text_input_end and not self.current_request_finished:
-                    await self.client.complete()
-                    self.current_request_finished = True
-                    await self._handle_tts_audio_end()
-                    return
-
             # Record TTFB timing
             if self.request_start_ts is None:
                 self.request_start_ts = datetime.now()
 
             # Get audio stream from Cosy TTS
             self.ten_env.log_info(
-                f"Calling client.synthesize_audio() with text: {t.text}, current_request_id: {self.current_request_id}, current_turn_id: {self.current_turn_id}"
+                f"Calling client.synthesize_audio() with text: {t.text}, current_request_id: {self.current_request_id}"
             )
 
             # Start audio synthesis (returns immediately)
@@ -186,8 +181,9 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
             # Handle text input end
             if t.text_input_end:
                 self.ten_env.log_info(
-                    f"KEYPOINT finish session for request ID: {t.request_id}, current_request_id: {self.current_request_id}, current_turn_id: {self.current_turn_id}"
+                    f"KEYPOINT finish session for request ID: {t.request_id}, current_request_id: {self.current_request_id}"
                 )
+                self.client.complete()
                 self.current_request_finished = True
 
         except WebSocketConnectionClosedException as e:
@@ -197,18 +193,18 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
                 code=ModuleErrorCode.NON_FATAL_ERROR.value,
                 vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
             )
-            self.client.synthesizer = None
+            self.client.cancel()
 
         except Exception as e:
             self.ten_env.log_error(
-                f"Error in request_tts: {traceback.format_exc()}. text: {t.text}, current_request_id: {self.current_request_id}, current_turn_id: {self.current_turn_id}"
+                f"Error in request_tts: {traceback.format_exc()}. text: {t.text}, current_request_id: {self.current_request_id}"
             )
             await self._send_tts_error(
                 str(e),
                 code=ModuleErrorCode.FATAL_ERROR.value,
                 vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
             )
-            self.client.synthesizer = None
+            self.client.cancel()
 
     async def _process_audio_data(self) -> None:
         """
