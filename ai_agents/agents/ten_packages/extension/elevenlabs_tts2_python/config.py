@@ -11,7 +11,7 @@ class ElevenLabsTTS2Config(BaseModel):
     black_list_keys: List[str] = ["key"]
 
     # url params
-    sample_rate: int = 0
+    sample_rate: int = 16000
 
     def to_str(self, sensitive_handling: bool = False) -> str:
         if not sensitive_handling:
