@@ -11,7 +11,7 @@ logger = logging.getLogger("tencent_speech.log")
 handler = logging.handlers.RotatingFileHandler(
     "tencent_speech.log", maxBytes=1024 * 1024, backupCount=5, encoding="utf-8"
 )
-handler.setLevel(logging.DEBUG)
+handler.setLevel(logging.NOTSET)
 handler.setFormatter(logging.Formatter(FORMAT))
 logger.addHandler(handler)
-logger.setLevel("INFO")
+logger.setLevel("NOTSET")

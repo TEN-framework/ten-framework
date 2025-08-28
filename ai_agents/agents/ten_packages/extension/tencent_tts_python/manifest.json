@@ -23,7 +23,8 @@
       "**.py",
       "README.md",
       "src/**",
-      "tests/**"
+      "tests/**",
+      "requirements.txt"
     ]
   },
   "api": {
