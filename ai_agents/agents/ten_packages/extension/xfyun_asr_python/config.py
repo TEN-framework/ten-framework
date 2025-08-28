@@ -10,6 +10,7 @@ class XfyunASRConfig(BaseModel):
     api_key: str = ""
     api_secret: str = ""
     language: str = "zh_cn"  # language, zh_cn, en_us
+    domain: str = "ist_open"
     accent: str = "mandarin"
     host: str = "ist-api.xfyun.cn"
     sample_rate: int = 16000
@@ -53,13 +54,6 @@ class XfyunASRConfig(BaseModel):
                 if key == "app_id":
                     config_dict["params"][key] = encrypt(value)
         return str(config_dict)
-
-    @property
-    def domain(self):
-        if self.language == "zh_cn":
-            return "ist_ed_open"
-        else:
-            return "ist_open"
 
     @property
     def normalized_language(self):

@@ -4,6 +4,7 @@
         "app_id": "${env:XFYUN_ASR_APP_ID}",
         "api_secret": "${env:XFYUN_ASR_API_SECRET}",
         "language": "en_us",
+        "domain": "ist_open",
         "dhw": "aaaaa,bbbbb"
     }
 }
