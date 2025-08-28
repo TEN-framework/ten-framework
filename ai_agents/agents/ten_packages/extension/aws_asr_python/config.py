@@ -8,6 +8,13 @@ from amazon_transcribe.auth import StaticCredentialResolver
 class AWSTranscriptionConfig(BaseModel):
     """AWS Transcription Config"""
 
+    finalize_mode: Literal["disconnect", "mute_pkg"] = Field(
+        default="disconnect", description="AWS ASR finalize mode"
+    )
+    mute_pkg_duration_ms: int = Field(
+        default=800, description="AWS ASR mute pkg duration (ms)"
+    )
+
     region: str = Field(..., description="AWS region, e.g. 'us-west-2'")
     access_key_id: str = Field(..., description="AWS access key id")
     secret_access_key: str = Field(..., description="AWS secret access key")
@@ -62,7 +69,14 @@ class AWSTranscriptionConfig(BaseModel):
         """
         return self.model_dump(
             exclude_none=True,
-            exclude={"region", "access_key_id", "secret_access_key"},
+            exclude={
+                "region",
+                "access_key_id",
+                "secret_access_key",
+                "log_level",
+                "finalize_mode",
+                "mute_pkg_duration_ms",
+            },
         )
 
     def to_client_params(self) -> Dict[str, Any]:
@@ -89,12 +103,5 @@ class AWSASRConfig(BaseModel):
     dump_path: str = Field(
         default_factory=lambda: str(Path(__file__).parent / "aws_asr_in.pcm"),
         description="AWS ASR dump path",
-    )
-    log_level: str = Field(default="INFO", description="AWS ASR log level")
-    finalize_mode: Literal["disconnect", "mute_pkg"] = Field(
-        default="disconnect", description="AWS ASR finalize mode"
-    )
-    mute_pkg_duration_ms: int = Field(
-        default=800, description="AWS ASR mute pkg duration (ms)"
     )
     params: AWSTranscriptionConfig = Field(..., description="AWS ASR params")

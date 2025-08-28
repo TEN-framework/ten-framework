@@ -77,7 +77,7 @@ class WebSocketClient(ABC):
         """Called when a message is received from the server."""
         raise NotImplementedError
 
-    async def on_close(self, code: int, reason: str):
+    async def on_close(self, code: int | None, reason: str | None):
         """Called when WebSocket connection is closed."""
 
     async def on_error(self, error: Exception):
@@ -99,11 +99,14 @@ class WebSocketClient(ABC):
                     break
                 message = await self._websocket.recv()
                 await self.on_message(message)
-            except websockets.exceptions.ConnectionClosed as e:
+            except websockets.exceptions.ConnectionClosed:
+                assert self._websocket is not None
                 self._logger.warning(
-                    f"Receiver: Connection closed (code={e.code}, reason='{e.reason}')."
+                    f"Receiver: Connection closed (code={self._websocket.close_code}, reason='{self._websocket.close_reason}')."
                 )
-                await self.on_close(e.code, e.reason)
+                await self.on_close(
+                    self._websocket.close_code, self._websocket.close_reason
+                )
                 break  # Exit loop, let main loop handle reconnection
             except Exception as e:
                 self._logger.error(

@@ -132,8 +132,8 @@ class AWSASRExtensionTester(AsyncExtensionTester):
 
 def test_asr_result(patch_asr_client):
     property_json = {
-        "log_level": "DEBUG",
         "params": {
+            "log_level": "DEBUG",
             "region": "us-west-2",
             "access_key_id": "fake_access_key_id",
             "secret_access_key": "fake_secret_access_key",

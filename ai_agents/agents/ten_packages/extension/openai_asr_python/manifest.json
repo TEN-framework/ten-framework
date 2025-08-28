@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "openai_asr_python",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "display_name": {
     "locales": {
       "en-US": {
@@ -76,7 +76,39 @@
       "version": "0.6"
     }
   ],
-  "api": {},
+  "api": {
+    "interface": [
+      {
+        "import_uri": "../../system/ten_ai_base/api/asr-interface.json"
+      }
+    ],
+    "property": {
+      "properties": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "api_key": {
+              "type": "string"
+            },
+            "input_audio_transcription": {
+              "type": "object",
+              "properties": {
+                "model": {
+                  "type": "string"
+                },
+                "prompt": {
+                  "type": "string"
+                },
+                "language": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
   "scripts": {
     "test": "tests/bin/start"
   },
