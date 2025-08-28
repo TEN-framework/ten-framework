@@ -183,7 +183,10 @@ pub async fn install_pkg_info(
 async fn update_package_manifest(
     base_pkg_info: &mut PkgInfo,
     added_dependency: &PkgInfo,
+    // If `Some(...)` is passed in, it indicates `local_path` mode.
+    local_path_if_any: Option<String>,
 ) -> Result<()> {
+    let mut is_present = false;
     let mut updated_dependencies = Vec::new();
 
     // Process the struct field dependencies first as a cache.
@@ -198,6 +201,7 @@ async fn update_package_manifest(
 
                     if manifest_dependency_type_and_name == PkgTypeAndName::from(added_dependency) {
                         if !added_dependency.is_local_dependency {
+                            is_present = true;
                             updated_dependencies.push(dep.clone());
                         }
                     } else {
@@ -247,7 +251,22 @@ async fn update_package_manifest(
         }
     }
 
-    // Update the dependencies field in the manifest struct.
+    // If the added dependency does not exist in the `manifest.json`, add
+    // it.
+    if !is_present {
+        // If `local_path_if_any` has a value, create a local dependency.
+        if let Some(local_path) = &local_path_if_any {
+            let local_dep = ManifestDependency::LocalDependency {
+                path: local_path.clone(),
+                base_dir: Some("".to_string()),
+            };
+            updated_dependencies.push(local_dep.clone());
+        } else {
+            let registry_dep = ManifestDependency::from(added_dependency);
+            updated_dependencies.push(registry_dep.clone());
+        }
+    };
+
     base_pkg_info.manifest.dependencies = Some(updated_dependencies);
 
     patch_manifest_json_file(
@@ -294,6 +313,8 @@ pub async fn write_installing_pkg_into_manifest_file(
     solver_results: &[PkgInfo],
     pkg_type: &PkgType,
     pkg_name: &String,
+    // If `Some(...)` is passed in, it indicates `local_path` mode.
+    local_path_if_any: Option<String>,
 ) -> Result<()> {
     let suitable_pkgs = filter_solver_results_by_type_and_name(
         solver_results,
@@ -314,7 +335,7 @@ pub async fn write_installing_pkg_into_manifest_file(
         ));
     }
 
-    update_package_manifest(pkg_info, suitable_pkgs[0])
+    update_package_manifest(pkg_info, suitable_pkgs[0], local_path_if_any)
         .await?;
 
     Ok(())

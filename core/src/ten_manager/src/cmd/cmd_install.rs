@@ -944,6 +944,7 @@ pub async fn execute_cmd(
                     &solver_results,
                     &installing_pkg_type.unwrap(),
                     &installing_pkg_name.unwrap(),
+                    Some(command_data.local_path.clone().unwrap()),
                 )
                 .await?;
             }
@@ -959,6 +960,7 @@ pub async fn execute_cmd(
                     &solver_results,
                     &installing_pkg_type.unwrap(),
                     &installing_pkg_name.unwrap(),
+                    None,
                 )
                 .await?;
             }
