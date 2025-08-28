@@ -63,19 +63,10 @@ class XfyunWSRecognition:
         self.api_secret = api_secret
         self.ten_env = ten_env
 
-        # Set default configuration
-        default_config = {
-            "host": "ist-api.xfyun.cn",
-            "domain": "ist_ed_open",
-            "language": "zh_cn",
-            "accent": "mandarin",
-            "dwa": "wpgs",
-        }
+        self.config = config
 
-        # Merge user configuration and default configuration
-        if config is None:
-            config = {}
-        self.config = {**default_config, **config}
+        if self.config is None:
+            self.config = {}
 
         self.host = self.config["host"]
         self.callback = callback
@@ -123,6 +114,7 @@ class XfyunWSRecognition:
         for param in optional_business_params:
             if param in self.config:
                 self.business_args[param] = self.config[param]
+
 
         self.websocket = None
         self.is_started = False
@@ -273,6 +265,7 @@ class XfyunWSRecognition:
         try:
             if self.is_first_frame:
                 # First frame data, needs to include business parameters
+                self._log_debug(f"Sending first frame data: {self.business_args}")
                 d = {
                     "common": self.common_args,
                     "business": self.business_args,
