@@ -64,6 +64,10 @@ class PollyTTSExtension(AsyncTTS2BaseExtension):
                 retry_delay=self.config.retry_delay,
                 chunk_interval_ms=self.config.chunk_interval_ms,
             )
+            # test and preconnect to aws polly
+            # this can effectively reduce latency.
+            async for _chunk in self.client.async_synthesize_speech("P"):
+                ...
         except Exception as e:
             ten_env.log_error(f"invalid property: {e}")
             self.config = None
