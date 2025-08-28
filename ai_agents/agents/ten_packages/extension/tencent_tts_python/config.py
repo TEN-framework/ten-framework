@@ -2,30 +2,7 @@ import copy
 from pydantic import BaseModel, Field
 from typing import Any
 
-
-def mask_sensitive_data(
-    s: str, unmasked_start: int = 5, unmasked_end: int = 5, mask_char: str = "*"
-) -> str:
-    """
-    Mask a sensitive string by replacing the middle part with asterisks.
-
-    Parameters:
-        s (str): The input string (e.g., API key).
-        unmasked_start (int): Number of visible characters at the beginning.
-        unmasked_end (int): Number of visible characters at the end.
-        mask_char (str): Character used for masking.
-
-    Returns:
-        str: Masked string, e.g., "abc****xyz"
-    """
-    if not s or len(s) <= unmasked_start + unmasked_end:
-        return mask_char * len(s)
-
-    return (
-        s[:unmasked_start]
-        + mask_char * (len(s) - unmasked_start - unmasked_end)
-        + s[-unmasked_end:]
-    )
+from ten_ai_base import utils
 
 
 # Docs: https://cloud.tencent.com/document/product/1073/108595
@@ -66,9 +43,9 @@ class TencentTTSConfig(BaseModel):
 
         # Encrypt sensitive fields
         if config.secret_key:
-            config.secret_key = mask_sensitive_data(config.secret_key)
+            config.secret_key = utils.encrypt(config.secret_key)
         if config.params and "secret_key" in config.params:
-            config.params["secret_key"] = mask_sensitive_data(
+            config.params["secret_key"] = utils.encrypt(
                 config.params["secret_key"]
             )
 
