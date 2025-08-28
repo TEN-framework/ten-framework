@@ -52,7 +52,7 @@ Configure the extension in `property.json`:
 ```json
 {
   "params": {
-    "api_key": "your_elevenlabs_api_key",
+    "key": "your_elevenlabs_api_key",
     "model_id": "eleven_multilingual_v2",
     "voice_id": "pNInz6obpgDQGcFmaJgB",
     "sample_rate": 16000,

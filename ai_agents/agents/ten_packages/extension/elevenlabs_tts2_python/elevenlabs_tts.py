@@ -34,7 +34,7 @@ class ElevenLabsTTS2Synthesizer:
     ) -> None:
         self.config = config
         self.ws = None
-        self.uri = f"wss://api.elevenlabs.io/v1/text-to-speech/{self.config.voice_id}/stream-input?model_id={self.config.model_id}&output_format=pcm_{self.config.sample_rate}&sync_alignment=true"
+
         self.text_input_queue = asyncio.Queue()
         self.ten_env = ten_env
         self.error_callback = error_callback
@@ -55,6 +55,53 @@ class ElevenLabsTTS2Synthesizer:
         # Start websocket connection monitoring
         self.websocket_task = asyncio.create_task(self._process_websocket())
 
+        # record whether to send text in connection
+        self.send_text_in_connection = False
+        self.query_params = "?"
+
+        # generate query parameters
+        if self.config and self.config.params:
+            param_map = [
+                "authorization",
+                "model_id",
+                "language",
+                "enable_logging",
+                "enable_ssml_parsing",
+                "inactivity_timeout",
+                "sync_alignment",
+                "auto_mode",
+                "apply_text_normalization",
+                "seed",
+            ]
+            for key in param_map:
+                value = self.config.params.get(key)
+                if value is not None:
+                    self.query_params += f"&{key}={value}"
+
+            # handle output_format and sample_rate
+            sample_rate = self.config.params.get("sample_rate")
+            output_format = self.config.params.get("output_format")
+            if sample_rate is not None:
+                self.config.sample_rate = sample_rate
+                self.query_params += f"&output_format=pcm_{sample_rate}"
+            elif output_format and str(output_format).startswith("pcm_"):
+                self.query_params += f"&output_format={output_format}"
+                try:
+                    self.config.sample_rate = int(output_format.split("_")[1])
+                except Exception as e:
+                    self.ten_env.log_error(
+                        f"output_format format error: {output_format}, error: {e}"
+                    )
+                    self.error_callback(
+                        "output_format format error",
+                        ModuleError(
+                            message="output_format format error",
+                            code=ModuleErrorCode.FATAL_ERROR,
+                        ),
+                    )
+
+        self.uri = f"wss://api.elevenlabs.io/v1/text-to-speech/{self.config.params.get('voice_id')}/stream-input{self.query_params}"
+
     def _process_ws_exception(self, exp) -> None | Exception:
         """Handle websocket connection exceptions and decide whether to reconnect"""
         self.ten_env.log_warn(
@@ -73,12 +120,11 @@ class ElevenLabsTTS2Synthesizer:
             # Use websockets.connect's automatic reconnection mechanism
             async for ws in websockets.connect(
                 uri=self.uri,
-                ping_interval=20,
-                ping_timeout=10,
-                close_timeout=10,
                 process_exception=self._process_ws_exception,
+                max_size=1024 * 1024 * 16,
             ):
                 self.ws = ws
+                self.send_text_in_connection = False
                 try:
                     self.ten_env.log_info("Websocket connected successfully")
                     if self._session_closing:
@@ -153,19 +199,33 @@ class ElevenLabsTTS2Synthesizer:
         """Text sending loop"""
         try:
             # Send initialization message
-            await ws.send(
-                json.dumps(
-                    {
-                        "text": " ",
-                        "voice_settings": {
-                            "stability": self.config.stability,
-                            "similarity_boost": self.config.similarity_boost,
-                            "use_speaker_boost": self.config.speaker_boost,
-                        },
-                        "xi_api_key": self.config.api_key,
-                    }
-                )
-            )
+            message_data = {
+                "text": " ",
+                "xi_api_key": self.config.key,
+            }
+            text_data = None
+            # only add non-None config parameters
+            if self.config and self.config.params:
+                if self.config.params.get("voice_settings"):
+                    message_data["voice_settings"] = self.config.params.get(
+                        "voice_settings"
+                    )
+                if self.config.params.get("generation_config"):
+                    message_data["generation_config"] = self.config.params.get(
+                        "generation_config"
+                    )
+                if self.config.params.get("pronunciation_dictionary_locators"):
+                    message_data["pronunciation_dictionary_locators"] = (
+                        self.config.params.get(
+                            "pronunciation_dictionary_locators"
+                        )
+                    )
+                if self.config.params.get("authorization"):
+                    message_data["authorization"] = self.config.params.get(
+                        "authorization"
+                    )
+
+            await ws.send(json.dumps(message_data))
             self.ten_env.log_info(" websocket connection established")
 
             while not self._session_closing:
@@ -179,13 +239,13 @@ class ElevenLabsTTS2Synthesizer:
                     self.ten_env.log_debug(
                         "No new text input, sending space text to keep alive."
                     )
-                    text_data = {"text": " ", "flush": True}
+                    await ws.send(json.dumps({"text": " ", "flush": True}))
                 if text_data is None:
                     self.ten_env.log_debug(
                         "Received None from queue, ending send loop"
                     )
                     continue
-
+                self.send_text_in_connection = True
                 if text_data.text.strip() != "":
                     await ws.send(
                         json.dumps({"text": text_data.text, "flush": True})
@@ -197,6 +257,7 @@ class ElevenLabsTTS2Synthesizer:
                 if text_data.text_input_end == True:
                     await ws.send(json.dumps({"text": ""}))
                     self.ten_env.log_debug("Sent end signal to WebSocket")
+                    self.send_text_in_connection = False
                     return
             self.ten_env.log_info("websocket connection closed")
 
@@ -438,6 +499,11 @@ class ElevenLabsTTS2Client:
             self.ten_env.log_info(
                 "Response messages queue cleared during cancel"
             )
+        if self.synthesizer.send_text_in_connection == False:
+            self.ten_env.log_info(
+                "No text sent in connection, no need to cancel the connection"
+            )
+            return
 
         # Move current synthesizer to cleanup list
         if self.synthesizer:

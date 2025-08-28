@@ -83,12 +83,12 @@ class ExtensionTesterRobustness(ExtensionTester):
         payload = json.loads(json_str) if json_str else {}
 
         # Add debug logging for all events
-        ten_env.log_info(
+        self.ten_env.log_info(
             f"DEBUG: Received event '{name}' with payload: {payload}"
         )
 
         if name == "error" and payload.get("id") == "tts_request_to_fail":
-            ten_env.log_info(
+            self.ten_env.log_info(
                 f"Received expected error for the first request: {payload}"
             )
             self.first_request_error = payload
@@ -99,26 +99,26 @@ class ExtensionTesterRobustness(ExtensionTester):
             name == "tts_audio_end"
             and payload.get("request_id") == "tts_request_to_succeed"
         ):
-            ten_env.log_info(
+            self.ten_env.log_info(
                 "Received tts_audio_end for the second request. Test successful."
             )
             self.second_request_successful = True
             # We can now safely stop the test.
-            ten_env.stop_test()
+            self.ten_env.stop_test()
 
         # Also check for tts_audio_end without specific request_id filtering
         elif name == "tts_audio_end":
-            ten_env.log_info(
+            self.ten_env.log_info(
                 f"Received tts_audio_end for request_id: {payload.get('id')}, but expected 'tts_request_to_succeed'"
             )
             # If this is the second request, consider it successful anyway
             if payload.get("id") == "tts_request_to_succeed":
                 ten_env.log_info("Actually this matches! Stopping test.")
                 self.second_request_successful = True
-                ten_env.stop_test()
+                self.ten_env.stop_test()
 
 
-@patch("elevenlabs_tts2_python.elevenlabs_tts.ElevenLabsTTS2Client")
+@patch("elevenlabs_tts2_python.extension.ElevenLabsTTS2Client")
 def test_reconnect_after_connection_drop(MockElevenLabsTTS2Client):
     """
     Tests that the extension can recover from a connection drop, report a
@@ -127,28 +127,27 @@ def test_reconnect_after_connection_drop(MockElevenLabsTTS2Client):
     print("Starting test_reconnect_after_connection_drop with mock...")
 
     # --- Mock State ---
-    text_to_speech_call_count = 0
+    send_text_call_count = 0
 
     # --- Mock Configuration ---
     mock_instance = MockElevenLabsTTS2Client.return_value
-    mock_instance.start_connection = AsyncMock()
-    mock_instance.text_to_speech_ws_streaming = AsyncMock()
-    mock_instance.send_text = AsyncMock()
     mock_instance.close = AsyncMock()
+    mock_instance.cancel = AsyncMock()
 
-    # Set up send_text to return immediately
-    mock_instance.send_text.return_value = None
+    # Mock the synthesizer
+    mock_synthesizer = AsyncMock()
+    mock_instance.synthesizer = mock_synthesizer
+    mock_synthesizer.send_text_in_connection = False
+    mock_synthesizer.websocket_task = None
 
     # This async method simulates different behaviors on subsequent calls
-    async def mock_text_to_speech_stateful(text: str):
-        print(f"KEYPOINT mock_text_to_speech_stateful: {text}")
-        nonlocal text_to_speech_call_count
-        text_to_speech_call_count += 1
+    async def mock_send_text_stateful(text_data):
+        print(f"KEYPOINT mock_send_text_stateful: {text_data.text}")
+        nonlocal send_text_call_count
+        send_text_call_count += 1
 
-        print(
-            f"KEYPOINT text_to_speech_call_count: {text_to_speech_call_count}"
-        )
-        if text_to_speech_call_count == 1:
+        print(f"KEYPOINT send_text_call_count: {send_text_call_count}")
+        if send_text_call_count == 1:
             # On the first call, simulate a connection drop
             vendor_info = ModuleErrorVendorInfo(
                 vendor="elevenlabs",
@@ -173,25 +172,23 @@ def test_reconnect_after_connection_drop(MockElevenLabsTTS2Client):
 
             asyncio.create_task(populate_queue())
 
-    mock_instance.text_to_speech_ws_streaming.side_effect = (
-        mock_text_to_speech_stateful
-    )
+    mock_instance.send_text = AsyncMock(side_effect=mock_send_text_stateful)
 
     # Mock the client constructor
     def mock_client_init(
         config, ten_env, error_callback=None, response_msgs=None
     ):
-        # Use the real queue passed by the extension
-        mock_instance.response_msgs = (
-            response_msgs if response_msgs else asyncio.Queue()
-        )
+        mock_instance.response_msgs = response_msgs
         return mock_instance
 
     MockElevenLabsTTS2Client.side_effect = mock_client_init
 
     # --- Test Setup ---
     config = {
-        "params": {"api_key": "valid_api_key", "voice_id": "valid_voice_id"}
+        "params": {
+            "key": "valid_key_for_test",
+            "voice_id": "valid_voice_id_for_test",
+        }
     }
     tester = ExtensionTesterRobustness()
     tester.set_test_mode_single("elevenlabs_tts2_python", json.dumps(config))

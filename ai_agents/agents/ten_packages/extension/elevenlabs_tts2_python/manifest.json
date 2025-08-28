@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "elevenlabs_tts2_python",
-  "version": "0.1.4",
+  "version": "0.1.7",
   "dependencies": [
     {
       "type": "system",
@@ -36,7 +36,7 @@
         "params": {
           "type": "object",
           "properties": {    
-            "api_key": {
+            "key": {
               "type": "string"
             },
             "model_id": {

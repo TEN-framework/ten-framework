@@ -1,6 +1,6 @@
 {
-    "api_key": "${env:OPENAI_API_KEY}",
     "params": {
+        "api_key": "${env:OPENAI_API_KEY}",
         "input_audio_format": "pcm16",
         "input_audio_transcription": {
             "model": "whisper-1",
