@@ -1,7 +1,7 @@
 {
     "type": "extension",
     "name": "xfyun_asr_python",
-    "version": "0.1.7",
+    "version": "0.1.8",
     "dependencies": [
         {
             "type": "system",
@@ -35,6 +35,12 @@
                             "type": "string"
                         },
                         "language": {
+                            "type": "string"
+                        },
+                        "domain": {
+                            "type": "string"
+                        },
+                        "accent": {
                             "type": "string"
                         },
                         "sample_rate": {
