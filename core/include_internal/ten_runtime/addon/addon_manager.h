@@ -13,6 +13,7 @@
 #include "ten_utils/container/list.h"
 #include "ten_utils/lib/rwlock.h"
 #include "ten_utils/lib/string.h"
+#include "ten_utils/macro/ctor.h"
 
 typedef struct ten_app_t ten_app_t;
 
