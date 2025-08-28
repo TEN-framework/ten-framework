@@ -11,21 +11,13 @@
 #include "include_internal/ten_runtime/addon/addon.h"
 #include "ten_runtime/addon/addon_manager.h"
 #include "ten_utils/container/list.h"
-#include "ten_utils/lib/mutex.h"
+#include "ten_utils/lib/rwlock.h"
 #include "ten_utils/lib/string.h"
 
 typedef struct ten_app_t ten_app_t;
 
-typedef struct ten_addon_registration_t {
-  TEN_ADDON_TYPE addon_type;
-  ten_string_t addon_name;
-  ten_addon_registration_func_t func;
-  void *user_data;
-} ten_addon_registration_t;
-
-typedef struct ten_addon_register_ctx_t {
-  ten_app_t *app;
-} ten_addon_register_ctx_t;
+typedef void (*ten_addon_manager_on_all_addons_registered_func_t)(
+    void *register_ctx, void *cb_data);
 
 typedef struct ten_addon_manager_t {
   // Define a registry map to store addon registration functions.
@@ -37,24 +29,32 @@ typedef struct ten_addon_manager_t {
   // The addon manager will be destroyed when the app is destroyed.
   ten_app_t *app;
 
-  ten_mutex_t *mutex;
+  ten_rwlock_t *rwlock;
 } ten_addon_manager_t;
 
 TEN_RUNTIME_PRIVATE_API void ten_addon_manager_destroy(
     ten_addon_manager_t *self);
 
 TEN_RUNTIME_API void ten_addon_manager_register_all_addons(
-    ten_addon_manager_t *self, void *register_ctx);
+    ten_addon_manager_t *self, void *register_ctx,
+    ten_addon_manager_on_all_addons_registered_func_t on_all_addons_registered,
+    void *cb_data);
 
 TEN_RUNTIME_PRIVATE_API void ten_addon_manager_register_all_addon_loaders(
-    ten_addon_manager_t *self, void *register_ctx);
+    ten_addon_manager_t *self, void *register_ctx,
+    ten_addon_manager_on_all_addons_registered_func_t on_all_addons_registered,
+    void *cb_data);
 
 TEN_RUNTIME_PRIVATE_API void ten_addon_manager_register_all_protocols(
-    ten_addon_manager_t *self, void *register_ctx);
+    ten_addon_manager_t *self, void *register_ctx,
+    ten_addon_manager_on_all_addons_registered_func_t on_all_addons_registered,
+    void *cb_data);
 
 TEN_RUNTIME_API bool ten_addon_manager_register_specific_addon(
     ten_addon_manager_t *self, TEN_ADDON_TYPE addon_type,
-    const char *addon_name, void *register_ctx);
+    const char *addon_name, void *register_ctx,
+    ten_addon_manager_on_all_addons_registered_func_t on_all_addons_registered,
+    void *cb_data);
 
 TEN_RUNTIME_API bool ten_addon_manager_is_addon_loaded(
     ten_addon_manager_t *self, TEN_ADDON_TYPE addon_type,

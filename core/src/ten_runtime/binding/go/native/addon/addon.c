@@ -296,12 +296,19 @@ ten_go_error_t ten_go_addon_register_extension(const void *addon_name,
   return cgo_error;
 }
 
-static void ten_go_addon_register_func(TEN_ADDON_TYPE addon_type,
-                                       ten_string_t *addon_name,
-                                       void *register_ctx,
-                                       TEN_UNUSED void *user_data) {
+static void ten_go_addon_register_func(
+    ten_addon_registration_t *registration,
+    ten_addon_registration_done_func_t done_callback,
+    ten_addon_register_ctx_t *register_ctx, void *user_data) {
+  TEN_ASSERT(registration, "Invalid argument.");
+  TEN_ASSERT(done_callback, "Invalid argument.");
+  TEN_ASSERT(register_ctx, "Invalid argument.");
+
   tenGoAddonManagerCallRegisterHandler(
-      addon_type, ten_string_get_raw_str(addon_name), register_ctx);
+      registration->addon_type,
+      ten_string_get_raw_str(&registration->addon_name), register_ctx);
+
+  done_callback(register_ctx, user_data);
 }
 
 ten_go_error_t ten_go_addon_manager_add_extension_addon(const void *addon_name,
