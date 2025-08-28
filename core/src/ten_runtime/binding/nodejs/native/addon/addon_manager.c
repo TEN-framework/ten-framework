@@ -6,6 +6,7 @@
 //
 #include "include_internal/ten_runtime/addon/addon_manager.h"
 
+#include "include_internal/ten_runtime/addon/common/common.h"
 #include "include_internal/ten_runtime/app/app.h"
 #include "include_internal/ten_runtime/binding/nodejs/addon/addon.h"
 #include "include_internal/ten_runtime/binding/nodejs/addon/addon_manager.h"
@@ -116,6 +117,19 @@ static void ten_app_thread_call_addon_registration_done(void *from,
   TEN_ASSERT(ctx, "Should not happen.");
 
   TEN_ASSERT(ctx->done_callback, "Should not happen.");
+
+  // Check if the addon has already been registered.
+  ten_addon_host_t *addon_host = ten_addon_store_find_by_type(
+      app, ctx->registration->addon_type,
+      ten_string_get_raw_str(&ctx->registration->addon_name));
+  if (addon_host) {
+    TEN_LOGI("Addon '%s' has already been registered, skipping registration.",
+             ten_string_get_raw_str(&ctx->registration->addon_name));
+
+    ctx->done_callback(ctx->register_ctx, ctx->user_data);
+    addon_manager_register_single_addon_ctx_destroy(ctx);
+    return;
+  }
 
   ten_addon_t *addon_instance = ctx->c_addon;
   TEN_ASSERT(addon_instance, "Should not happen.");

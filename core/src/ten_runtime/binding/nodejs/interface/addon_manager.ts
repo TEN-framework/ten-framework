@@ -13,7 +13,7 @@ import type { Addon } from "./addon.js";
 import ten_addon from "./ten_addon.js";
 
 type Ctor<T> = {
-  new (): T;
+  new(): T;
   prototype: T;
 };
 
@@ -22,6 +22,7 @@ type addonRegisterHandler = (registerContext: unknown) => void;
 export class AddonManager {
   private static _instance: AddonManager | undefined = undefined;
   private _registry: Map<string, addonRegisterHandler> = new Map();
+  private _registeredAddons: Set<string> = new Set();
 
   // Make the constructor private to prevent direct instantiation.
   private constructor() {
@@ -97,7 +98,7 @@ export class AddonManager {
     const dirs = fs.opendirSync(extension_folder);
     const loadPromises = [];
 
-    for (;;) {
+    for (; ;) {
       const entry = dirs.readSync();
       if (!entry) {
         break;
@@ -162,12 +163,18 @@ export class AddonManager {
 
   // This function will be called from C code.
   private registerSingleAddon(name: string, registerContext: unknown): void {
+    if (this._registeredAddons.has(name)) {
+      console.log(`Addon ${name} has already been registered, skipping registration.`);
+      return;
+    }
+
     const handler = this._registry.get(name);
     if (handler) {
       try {
         handler(registerContext);
 
         console.log(`Addon ${name} registered`);
+        this._registeredAddons.add(name);
       } catch (error) {
         console.error(`Failed to register addon ${name}: ${error}`);
       }
