@@ -37,7 +37,6 @@ class DefaultTTSExtension(AsyncTTS2BaseExtension):
         except Exception as e:
             await self._handle_error(e)
 
-
     @override
     def vendor(self) -> str:
         """
@@ -49,9 +48,7 @@ class DefaultTTSExtension(AsyncTTS2BaseExtension):
         )
 
     @override
-    async def request_tts(
-        self, t: TTSTextInput
-    ) -> None:
+    async def request_tts(self, t: TTSTextInput) -> None:
         """
         Called when a new input item is available in the queue. Override this method to implement the TTS request logic.
         Use send_audio_out to send the audio data to the output when the audio data is ready.

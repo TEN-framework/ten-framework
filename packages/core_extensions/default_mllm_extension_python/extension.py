@@ -9,8 +9,15 @@ from ten_ai_base.message import (
     ModuleType,
 )
 from ten_ai_base.mllm import AsyncMLLMBaseExtension
-from ten_ai_base.struct import MLLMClientFunctionCallOutput, MLLMClientMessageItem
-from ten_ai_base.types import LLMToolMetadata, MLLMBufferConfig, MLLMBufferConfigModeDiscard
+from ten_ai_base.struct import (
+    MLLMClientFunctionCallOutput,
+    MLLMClientMessageItem,
+)
+from ten_ai_base.types import (
+    LLMToolMetadata,
+    MLLMBufferConfig,
+    MLLMBufferConfigModeDiscard,
+)
 from ten_runtime import (
     AsyncTenEnv,
     AudioFrame,
@@ -67,7 +74,9 @@ class DefaultMLLMExtension(AsyncMLLMBaseExtension):
         Send a message item to the MLLM service.
         This method is used to send user or assistant messages.
         """
-        raise NotImplementedError("send_client_message_item method not implemented")
+        raise NotImplementedError(
+            "send_client_message_item method not implemented"
+        )
 
     @override
     async def send_client_create_response(
@@ -77,17 +86,19 @@ class DefaultMLLMExtension(AsyncMLLMBaseExtension):
         Send a create response to the MLLM service.
         This method is used to trigger MLLM to generate a response.
         """
-        raise NotImplementedError("send_client_create_response method not implemented")
+        raise NotImplementedError(
+            "send_client_create_response method not implemented"
+        )
 
     @override
-    async def send_client_register_tool(
-        self, tools: LLMToolMetadata
-    ) -> None:
+    async def send_client_register_tool(self, tools: LLMToolMetadata) -> None:
         """
         Register tools with the MLLM service.
         This method is used to register tools that can be called by the LLM.
         """
-        raise NotImplementedError("send_client_register_tool method not implemented")
+        raise NotImplementedError(
+            "send_client_register_tool method not implemented"
+        )
 
     @override
     async def send_client_function_call_output(
@@ -97,7 +108,9 @@ class DefaultMLLMExtension(AsyncMLLMBaseExtension):
         Send a function call output to the MLLM service.
         This method is used to send the result of a function call made by the LLM.
         """
-        raise NotImplementedError("send_client_function_call_output method not implemented")
+        raise NotImplementedError(
+            "send_client_function_call_output method not implemented"
+        )
 
     @override
     def input_audio_sample_rate(self) -> int:
@@ -105,7 +118,6 @@ class DefaultMLLMExtension(AsyncMLLMBaseExtension):
         Get the input audio sample rate in Hz.
         """
         return 24000
-
 
     @override
     def synthesize_audio_sample_rate(self) -> int:
@@ -121,13 +133,14 @@ class DefaultMLLMExtension(AsyncMLLMBaseExtension):
         return MLLMBufferConfigModeDiscard()
 
     @override
-    async def send_audio(self, frame: AudioFrame, session_id: str | None) -> bool:
+    async def send_audio(
+        self, frame: AudioFrame, session_id: str | None
+    ) -> bool:
         """
         Send an audio frame to the MLLM service, returning True if successful.
         Note: The first successful send_audio call will be timestamped for TTFW calculation.
         """
         raise NotImplementedError("send_audio method not implemented")
-
 
     async def _handle_error(self, error: Exception):
         self.ten_env.log_error(f"Default error: {error}")

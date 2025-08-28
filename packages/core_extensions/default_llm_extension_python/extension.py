@@ -21,5 +21,9 @@ class DefaultLLMExtension(AsyncLLM2BaseExtension):
         self.config: DefaultLLMConfig | None = None
 
     @override
-    async def on_call_chat_completion(self, async_ten_env: AsyncTenEnv, input: LLMRequest) -> AsyncGenerator[LLMResponse, None]:
-        raise NotImplementedError("DefaultLLMExtension does not implement on_call_chat_completion")
+    async def on_call_chat_completion(
+        self, ten_env: AsyncTenEnv, input: LLMRequest
+    ) -> AsyncGenerator[LLMResponse, None]:
+        raise NotImplementedError(
+            "DefaultLLMExtension does not implement on_call_chat_completion"
+        )

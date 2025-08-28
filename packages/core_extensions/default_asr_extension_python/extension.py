@@ -64,7 +64,9 @@ class DefaultASRExtension(AsyncASRBaseExtension):
         raise NotImplementedError("is_connected method not implemented")
 
     def input_audio_sample_rate(self) -> int:
-        raise NotImplementedError("input_audio_sample_rate method not implemented")
+        raise NotImplementedError(
+            "input_audio_sample_rate method not implemented"
+        )
 
     async def _handle_error(self, error: Exception):
         self.ten_env.log_error(f"Default error: {error}")
