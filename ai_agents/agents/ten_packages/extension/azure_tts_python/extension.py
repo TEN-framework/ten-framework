@@ -48,7 +48,6 @@ class AzureTTSExtension(AsyncTTS2BaseExtension):
         await super().on_init(ten_env)
         config_json, _ = await ten_env.get_property_to_json()
         try:
-            ten_env.log_info(f"KEYPOINT tts config_json: {config_json}")
             self.config = AzureTTSConfig.model_validate_json(config_json)
             ten_env.log_info(
                 f"KEYPOINT tts vendor_config: {self.config.model_dump_json()}"
