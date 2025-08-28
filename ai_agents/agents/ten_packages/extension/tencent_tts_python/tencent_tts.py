@@ -44,9 +44,6 @@ class AsyncIteratorCallback(FlowingSpeechSynthesisListener):
         self.ten_env.log_info("WebSocket connection closed.")
 
     def on_synthesis_start(self, session_id) -> None:
-        """
-        session_id: 请求session id，类型字符串
-        """
         super().on_synthesis_start(session_id)
         self.ten_env.log_info(
             f"TTS synthesis task started, session_id: {session_id}"
@@ -60,9 +57,6 @@ class AsyncIteratorCallback(FlowingSpeechSynthesisListener):
         )
 
     def on_audio_result(self, audio_bytes):
-        """
-        audio_bytes: 二进制音频，类型 bytes
-        """
         super().on_audio_result(audio_bytes)
         self.ten_env.log_info(f"Received audio data: {len(audio_bytes)} bytes")
         # Send audio data to queue
@@ -71,12 +65,6 @@ class AsyncIteratorCallback(FlowingSpeechSynthesisListener):
         )
 
     def on_synthesis_fail(self, response):
-        """
-        response: 文本结果，类型 dict，如下
-        字段名 类型
-        code        int         错误码
-        message     string      错误信息
-        """
         super().on_synthesis_fail(response)
 
         # TODO 合成失败，添加错误处理逻辑
