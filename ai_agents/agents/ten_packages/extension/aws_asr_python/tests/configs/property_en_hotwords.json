@@ -1,5 +1,4 @@
 {
-    "finalize_mode": "disconnect",
     "params": {
         "region": "${env:AWS_ASR_REGION}",
         "access_key_id": "${env:AWS_ASR_ACCESS_KEY_ID}",
