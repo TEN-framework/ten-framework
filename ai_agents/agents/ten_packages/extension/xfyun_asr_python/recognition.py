@@ -115,7 +115,6 @@ class XfyunWSRecognition:
             if param in self.config:
                 self.business_args[param] = self.config[param]
 
-
         self.websocket = None
         self.is_started = False
         self.is_first_frame = True
@@ -265,7 +264,9 @@ class XfyunWSRecognition:
         try:
             if self.is_first_frame:
                 # First frame data, needs to include business parameters
-                self._log_debug(f"Sending first frame data: {self.business_args}")
+                self._log_debug(
+                    f"Sending first frame data: {self.business_args}"
+                )
                 d = {
                     "common": self.common_args,
                     "business": self.business_args,
