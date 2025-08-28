@@ -120,6 +120,19 @@ bool ten_addon_manager_add_addon(ten_addon_manager_t *self,
   return true;
 }
 
+bool ten_addon_is_registered(ten_addon_register_ctx_t *register_ctx,
+                             TEN_ADDON_TYPE addon_type,
+                             const char *addon_name) {
+  TEN_ASSERT(register_ctx, "Invalid argument.");
+  TEN_ASSERT(addon_name, "Invalid argument.");
+
+  ten_app_t *app = register_ctx->app;
+  TEN_ASSERT(app, "Invalid argument.");
+  TEN_ASSERT(ten_app_check_integrity(app, true), "Invalid argument.");
+
+  return ten_addon_store_find_by_type(app, addon_type, addon_name) != NULL;
+}
+
 typedef struct ten_addon_manager_register_context_t {
   ten_addon_manager_on_all_addons_registered_func_t on_all_addons_registered;
   void *cb_data;

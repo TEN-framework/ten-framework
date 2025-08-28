@@ -32,6 +32,12 @@
       ten_addon_registration_t *registration,                                    \
       ten_addon_registration_done_func_t done_callback,                          \
       ten_addon_register_ctx_t *register_ctx, void *user_data) {                 \
+    if (ten_addon_is_registered(register_ctx, TEN_ADDON_TYPE_EXTENSION,          \
+                                #NAME)) {                                        \
+      TEN_LOGW("Addon '%s' is already registered", #NAME);                       \
+      done_callback(register_ctx, user_data);                                    \
+      return;                                                                    \
+    }                                                                            \
     auto *addon_instance = new NAME##_default_extension_addon_t();               \
     ten_string_t *base_dir =                                                     \
         ten_path_get_module_path(/* NOLINTNEXTLINE */                            \

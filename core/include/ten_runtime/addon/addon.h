@@ -11,34 +11,6 @@
 #include "ten_runtime/ten_env/internal/on_xxx_done.h"
 #include "ten_runtime/ten_env/ten_env.h"
 #include "ten_utils/lib/path.h"  // IWYU pragma: export
-#include "ten_utils/macro/ctor.h"
-
-#define TEN_ADDON_REGISTER(TYPE, NAME, ADDON)                                  \
-  static void ____ten_addon_##NAME##_##TYPE##_addon_register_handler__(        \
-      ten_addon_registration_t *registration,                                  \
-      ten_addon_registration_done_func_t done_callback,                        \
-      ten_addon_register_ctx_t *register_ctx, void *user_data) {               \
-    TEN_ASSERT(registration, "Invalid argument.");                             \
-    TEN_ASSERT(done_callback, "Invalid argument.");                            \
-    ten_string_t *base_dir = ten_path_get_module_path(                         \
-        (void *)____ten_addon_##NAME##_##TYPE##_addon_register_handler__);     \
-    ten_addon_register_##TYPE(#NAME, ten_string_get_raw_str(base_dir),         \
-                              (ADDON), register_ctx);                          \
-    ten_string_destroy(base_dir);                                              \
-    done_callback(register_ctx, user_data);                                    \
-  }                                                                            \
-  TEN_CONSTRUCTOR(____ctor_ten_declare_##NAME##_##TYPE##_addon____) {          \
-    /* Add addon registration function into addon manager. */                  \
-    ten_addon_manager_t *manager = ten_addon_manager_get_instance();           \
-    bool success = ten_addon_manager_add_addon(                                \
-        manager, #TYPE, #NAME,                                                 \
-        ____ten_addon_##NAME##_##TYPE##_addon_register_handler__, NULL, NULL); \
-    if (!success) {                                                            \
-      TEN_LOGF("Failed to register addon: %s", #NAME);                         \
-      /* NOLINTNEXTLINE(concurrency-mt-unsafe) */                              \
-      exit(EXIT_FAILURE);                                                      \
-    }                                                                          \
-  }
 
 typedef struct ten_addon_t ten_addon_t;
 typedef struct ten_env_t ten_env_t;

@@ -119,13 +119,12 @@ static void ten_app_thread_call_addon_registration_done(void *from,
   TEN_ASSERT(ctx->done_callback, "Should not happen.");
 
   // Check if the addon has already been registered.
-  ten_addon_host_t *addon_host = ten_addon_store_find_by_type(
-      app, ctx->registration->addon_type,
+  bool is_registered = ten_addon_is_registered(
+      ctx->register_ctx, ctx->registration->addon_type,
       ten_string_get_raw_str(&ctx->registration->addon_name));
-  if (addon_host) {
+  if (is_registered) {
     TEN_LOGI("Addon '%s' has already been registered, skipping registration.",
              ten_string_get_raw_str(&ctx->registration->addon_name));
-
     ctx->done_callback(ctx->register_ctx, ctx->user_data);
     addon_manager_register_single_addon_ctx_destroy(ctx);
     return;
