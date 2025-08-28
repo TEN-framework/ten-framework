@@ -37,6 +37,12 @@
                         "language": {
                             "type": "string"
                         },
+                        "domain": {
+                            "type": "string"
+                        },
+                        "accent": {
+                            "type": "string"
+                        },
                         "sample_rate": {
                             "type": "int64"
                         }
