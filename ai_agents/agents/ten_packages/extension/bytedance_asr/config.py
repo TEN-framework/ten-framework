@@ -39,8 +39,12 @@ class BytedanceASRConfig(BaseModel):
 
     # VAD configuration
     vad_signal: bool = True
-    start_silence_time: int = 5000
-    vad_silence_time: int = 800
+    start_silence_time: str = (
+        "5000"  # Start silence time in milliseconds (string format)
+    )
+    vad_silence_time: str = (
+        "800"  # VAD silence time in milliseconds (string format)
+    )
 
     def is_black_list_params(self, key: str) -> bool:
         """Check if a parameter key is in the blacklist."""
