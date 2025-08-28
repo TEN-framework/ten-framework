@@ -1,0 +1,101 @@
+{
+  "type": "extension",
+  "name": "default_tts_python",
+  "version": "0.10.31",
+  "display_name": {
+    "locales": {
+      "en-US": {
+        "content": "Default TTS Python Extension"
+      },
+      "zh-CN": {
+        "content": "默认 TTS Python 扩展"
+      },
+      "zh-TW": {
+        "content": "預設 TTS Python 擴充"
+      },
+      "ja-JP": {
+        "content": "デフォルトTTS Python 拡張"
+      },
+      "ko-KR": {
+        "content": "기본 TTS Python 확장"
+      }
+    }
+  },
+  "description": {
+    "locales": {
+      "en-US": {
+        "content": "Default TEN Framework TTS extension template written in Python"
+      },
+      "zh-CN": {
+        "content": "使用 Python 语言编写的默认 TEN Framework TTS 扩展模板"
+      },
+      "zh-TW": {
+        "content": "使用 Python 語言編寫的預設 TEN Framework TTS 擴充模板"
+      },
+      "ja-JP": {
+        "content": "Pythonで書かれたデフォルトのTEN Framework TTS拡張テンプレート"
+      },
+      "ko-KR": {
+        "content": "Python으로 작성된 기본 TEN Framework TTS 확장 템플릿"
+      }
+    }
+  },
+  "readme": {
+    "locales": {
+      "en-US": {
+        "import_uri": "docs/README.en-US.md"
+      },
+      "zh-CN": {
+        "import_uri": "docs/README.zh-CN.md"
+      },
+      "zh-TW": {
+        "import_uri": "docs/README.zh-TW.md"
+      },
+      "ja-JP": {
+        "import_uri": "docs/README.ja-JP.md"
+      },
+      "ko-KR": {
+        "import_uri": "docs/README.ko-KR.md"
+      }
+    }
+  },
+  "tags": [
+    "python",
+    "template",
+    "tts"
+  ],
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.10"
+    },
+    {
+      "type": "system",
+      "name": "ten_ai_base",
+      "version": "0.6"
+    }
+  ],
+  "api": {
+    "interface": [
+      {
+        "import_uri": "../../system/ten_ai_base/api/tts-interface.json"
+      }
+    ],
+    "property": {
+      "properties": {}
+    }
+  },
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "**.py",
+      "requirements.txt",
+      "docs/**"
+    ]
+  },
+  "scripts": {
+    "test": "tests/bin/start"
+  }
+}
