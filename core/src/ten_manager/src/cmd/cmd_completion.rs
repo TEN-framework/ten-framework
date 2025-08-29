@@ -53,10 +53,7 @@ pub async fn execute_cmd(
     out: Arc<Box<dyn TmanOutput>>,
 ) -> Result<()> {
     if is_verbose(tman_config.clone()).await {
-        out.normal_line(&format!(
-            "Generating completion for shell: {}",
-            cmd.shell
-        ));
+        out.normal_line(&format!("Generating completion for shell: {}", cmd.shell));
     }
 
     // Create the main command structure for completion generation

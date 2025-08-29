@@ -9,16 +9,15 @@ use std::sync::Arc;
 
 use anyhow::{anyhow, Result};
 use clingo::{
-    control, Configuration, ConfigurationType, Id, Model, Part, ShowType,
-    SolveMode, Statistics, StatisticsType,
+    control, Configuration, ConfigurationType, Id, Model, Part, ShowType, SolveMode, Statistics,
+    StatisticsType,
 };
 
 use semver::Version;
 use ten_rust::pkg_info::constants::MANIFEST_JSON_FILENAME;
 use ten_rust::pkg_info::manifest::dependency::ManifestDependency;
 use ten_rust::pkg_info::{
-    pkg_basic_info::PkgBasicInfo, pkg_type::PkgType,
-    pkg_type_and_name::PkgTypeAndName, PkgInfo,
+    pkg_basic_info::PkgBasicInfo, pkg_type::PkgType, pkg_type_and_name::PkgTypeAndName, PkgInfo,
 };
 
 use crate::home::config::{is_verbose, TmanConfig};
@@ -94,8 +93,9 @@ async fn print_configuration(
 ) {
     let configuration_type = conf.configuration_type(key).unwrap();
     if configuration_type.contains(ConfigurationType::VALUE) {
-        let _value =
-            conf.value_get(key).expect("Failed to retrieve statistics value.");
+        let _value = conf
+            .value_get(key)
+            .expect("Failed to retrieve statistics value.");
     } else if configuration_type.contains(ConfigurationType::ARRAY) {
         let size = conf
             .array_size(key)
@@ -238,14 +238,14 @@ async fn solve(
             .expect("Failed to set solve.models to 0.");
 
         // Configure to enumerate all optimal models.
-        let solve_opt_mode_key =
-            conf.map_at(root_key, "solve.opt_mode").unwrap();
+        let solve_opt_mode_key = conf.map_at(root_key, "solve.opt_mode").unwrap();
         conf.value_set(solve_opt_mode_key, "optN")
             .expect("Failed to set solve.opt_mode to optN.");
 
         // Enable full statistics.
         let stats_key = conf.map_at(root_key, "stats").unwrap();
-        conf.value_set(stats_key, "2").expect("Failed to set stats_key to 2.");
+        conf.value_set(stats_key, "2")
+            .expect("Failed to set stats_key to 2.");
 
         // Configure the first solver to use the berkmin heuristic.
         let mut solver_key = conf.map_at(root_key, "solver").unwrap();
@@ -269,8 +269,10 @@ async fn solve(
 
     // Add a logic program to the base part.
     // i.e., clingo_control_add
-    ctl.add("main", &[], main_program).expect("Failed to add main.lp");
-    ctl.add("display", &[], display_program).expect("Failed to add display.lp");
+    ctl.add("main", &[], main_program)
+        .expect("Failed to add main.lp");
+    ctl.add("display", &[], display_program)
+        .expect("Failed to add display.lp");
     ctl.add("base", &[], input).expect("Failed to add input.lp");
 
     // Ground the parts.
@@ -280,7 +282,8 @@ async fn solve(
     let base_part = Part::new("base", vec![]).unwrap();
 
     let parts = vec![main_part, display_part, base_part];
-    ctl.ground(&parts).expect("Failed to ground a logic program.");
+    ctl.ground(&parts)
+        .expect("Failed to ground a logic program.");
 
     // Solving. Get a solve handle.
     // i.e., clingo_control_solve
@@ -301,13 +304,8 @@ async fn solve(
             // Get the model.
             Ok(Some(model)) => {
                 let mut is_usable = false;
-                if let Some(m) = get_model(
-                    tman_config.clone(),
-                    model,
-                    &mut is_usable,
-                    out.clone(),
-                )
-                .await
+                if let Some(m) =
+                    get_model(tman_config.clone(), model, &mut is_usable, out.clone()).await
                 {
                     if is_usable {
                         usable_model = Some(m);
@@ -335,8 +333,9 @@ async fn solve(
 
     // Close the solve handle.
     // i.e., clingo_solve_handle_get
-    let _result =
-        handle.get().expect("Failed to get result from solve handle.");
+    let _result = handle
+        .get()
+        .expect("Failed to get result from solve handle.");
 
     // Free the solve handle.
     // i.e., clingo_solve_handle_close
@@ -359,9 +358,10 @@ async fn create_input_str_for_dependency_relationship(
 ) -> Result<()> {
     if let Some(dep_relationship) = dep_relationship {
         let pkg_type_and_name = match &dep_relationship.dependency {
-            ManifestDependency::RegistryDependency {
-                pkg_type, name, ..
-            } => PkgTypeAndName { pkg_type: *pkg_type, name: name.clone() },
+            ManifestDependency::RegistryDependency { pkg_type, name, .. } => PkgTypeAndName {
+                pkg_type: *pkg_type,
+                name: name.clone(),
+            },
             ManifestDependency::LocalDependency { path, base_dir, .. } => {
                 // Get type and name from the manifest.
                 let base_dir_str = base_dir.as_deref().ok_or_else(|| {
@@ -375,10 +375,8 @@ async fn create_input_str_for_dependency_relationship(
 
                 // Parse manifest to get type and name.
                 let manifest =
-                    ten_rust::pkg_info::manifest::parse_manifest_from_file(
-                        &dep_manifest_path,
-                    )
-                    .await?;
+                    ten_rust::pkg_info::manifest::parse_manifest_from_file(&dep_manifest_path)
+                        .await?;
                 manifest.type_and_name
             }
         };
@@ -389,10 +387,9 @@ async fn create_input_str_for_dependency_relationship(
             for candidate in candidates.iter() {
                 // Get version requirement from dependency.
                 let version_matches = match &dep_relationship.dependency {
-                    ManifestDependency::RegistryDependency {
-                        version_req,
-                        ..
-                    } => version_req.matches(&candidate.1.manifest.version),
+                    ManifestDependency::RegistryDependency { version_req, .. } => {
+                        version_req.matches(&candidate.1.manifest.version)
+                    }
                     ManifestDependency::LocalDependency { .. } => {
                         // For local dependencies, just return true to match all
                         // versions.
@@ -417,14 +414,8 @@ async fn create_input_str_for_dependency_relationship(
             return Err(anyhow!(
                 "Failed to find candidates for {}",
                 match &dep_relationship.dependency {
-                    ManifestDependency::RegistryDependency {
-                        pkg_type,
-                        name,
-                        ..
-                    } => format!(
-                        "{}:{} @ {}",
-                        pkg_type, name, dep_relationship.version
-                    ),
+                    ManifestDependency::RegistryDependency { pkg_type, name, .. } =>
+                        format!("{}:{} @ {}", pkg_type, name, dep_relationship.version),
                     ManifestDependency::LocalDependency { path, .. } =>
                         format!("local:{} @ {}", path, dep_relationship.version),
                 }
@@ -453,33 +444,25 @@ async fn create_input_str_for_pkg_info_dependencies(
     if let Some(dependencies) = &pkg_info.manifest.dependencies {
         for dependency in dependencies {
             let pkg_type_and_name = match dependency {
-                ManifestDependency::RegistryDependency {
-                    pkg_type,
-                    name,
-                    ..
-                } => PkgTypeAndName { pkg_type: *pkg_type, name: name.clone() },
-                ManifestDependency::LocalDependency {
-                    path, base_dir, ..
-                } => {
+                ManifestDependency::RegistryDependency { pkg_type, name, .. } => PkgTypeAndName {
+                    pkg_type: *pkg_type,
+                    name: name.clone(),
+                },
+                ManifestDependency::LocalDependency { path, base_dir, .. } => {
                     // Get type and name from the manifest.
-                    let base_dir_str =
-                        base_dir.as_deref().ok_or_else(|| {
-                            anyhow!(
-                                "base_dir cannot be None when processing \
+                    let base_dir_str = base_dir.as_deref().ok_or_else(|| {
+                        anyhow!(
+                            "base_dir cannot be None when processing \
                                  local dependency"
-                            )
-                        })?;
-                    let abs_path =
-                        std::path::Path::new(base_dir_str).join(path);
-                    let dep_manifest_path =
-                        abs_path.join(MANIFEST_JSON_FILENAME);
+                        )
+                    })?;
+                    let abs_path = std::path::Path::new(base_dir_str).join(path);
+                    let dep_manifest_path = abs_path.join(MANIFEST_JSON_FILENAME);
 
                     // Parse manifest to get type and name.
                     let manifest =
-                        ten_rust::pkg_info::manifest::parse_manifest_from_file(
-                            &dep_manifest_path,
-                        )
-                        .await?;
+                        ten_rust::pkg_info::manifest::parse_manifest_from_file(&dep_manifest_path)
+                            .await?;
                     manifest.type_and_name
                 }
             };
@@ -487,8 +470,7 @@ async fn create_input_str_for_pkg_info_dependencies(
             let candidates = all_candidates.get(&pkg_type_and_name);
 
             if let Some(candidates) = candidates {
-                let mut candidates_vec: Vec<&PkgInfo> =
-                    candidates.values().collect();
+                let mut candidates_vec: Vec<&PkgInfo> = candidates.values().collect();
 
                 // The sorting below places the larger versions at the front,
                 // thus having smaller indexes. This is correct because, in the
@@ -497,19 +479,16 @@ async fn create_input_str_for_pkg_info_dependencies(
                 // Therefore, larger version numbers have smaller weights, and
                 // the index here is equivalent to the concept of weight in the
                 // Clingo solver.
-                candidates_vec.sort_by(|a, b| {
-                    b.manifest.version.cmp(&a.manifest.version)
-                });
+                candidates_vec.sort_by(|a, b| b.manifest.version.cmp(&a.manifest.version));
 
                 let mut found_matched_count = 0;
 
                 for candidate in candidates_vec.into_iter() {
                     // Get version requirement from dependency.
                     let version_matches = match dependency {
-                        ManifestDependency::RegistryDependency {
-                            version_req,
-                            ..
-                        } => version_req.matches(&candidate.manifest.version),
+                        ManifestDependency::RegistryDependency { version_req, .. } => {
+                            version_req.matches(&candidate.manifest.version)
+                        }
                         ManifestDependency::LocalDependency { .. } => {
                             // For local dependencies, just return true to
                             // match all versions.
@@ -555,10 +534,8 @@ async fn create_input_str_for_pkg_info_dependencies(
                                 name,
                                 version_req,
                             } => format!("[{pkg_type}]{name} ({version_req})"),
-                            ManifestDependency::LocalDependency {
-                                path,
-                                ..
-                            } => format!("local:{path}"),
+                            ManifestDependency::LocalDependency { path, .. } =>
+                                format!("local:{path}"),
                         }
                     ));
                 }
@@ -571,9 +548,7 @@ async fn create_input_str_for_pkg_info_dependencies(
                             name,
                             version_req,
                         } => format!("{pkg_type}:{name} @ {version_req}"),
-                        ManifestDependency::LocalDependency {
-                            path, ..
-                        } => format!("local:{path}"),
+                        ManifestDependency::LocalDependency { path, .. } => format!("local:{path}"),
                     }
                 ));
             }
@@ -614,22 +589,20 @@ fn create_input_str_for_all_possible_pkgs_info(
         // and we prefer larger version numbers. Therefore, larger version
         // numbers have smaller weights, and the index here is equivalent to the
         // concept of weight in the Clingo solver.
-        candidates_vec
-            .sort_by(|a, b| b.manifest.version.cmp(&a.manifest.version));
+        candidates_vec.sort_by(|a, b| b.manifest.version.cmp(&a.manifest.version));
 
         // Check if the locked package exists in the candidates. If it does,
         // move it to the front of the candidates_vec so that it has a smaller
         // weight.
-        let locked_pkg =
-            locked_pkgs.and_then(|locked_pkgs| locked_pkgs.get(candidates.0));
+        let locked_pkg = locked_pkgs.and_then(|locked_pkgs| locked_pkgs.get(candidates.0));
 
         if let Some(locked_pkg) = locked_pkg {
             // If the package recorded in `manifest-lock.json` is a local
             // dependency, do not prioritize any candidate packages.
             if !locked_pkg.is_local_dependency {
-                let idx = candidates_vec.iter().position(|pkg_info| {
-                    locked_pkg.manifest.version == pkg_info.manifest.version
-                });
+                let idx = candidates_vec
+                    .iter()
+                    .position(|pkg_info| locked_pkg.manifest.version == pkg_info.manifest.version);
 
                 if let Some(idx) = idx {
                     candidates_vec.remove(idx);
@@ -643,9 +616,7 @@ fn create_input_str_for_all_possible_pkgs_info(
                 break;
             }
 
-            create_input_str_for_pkg_info_without_dependencies(
-                input_str, candidate, &idx,
-            )?;
+            create_input_str_for_pkg_info_without_dependencies(input_str, candidate, &idx)?;
         }
     }
 
@@ -665,9 +636,7 @@ async fn create_input_str(
 ) -> Result<String> {
     let mut input_str = String::new();
 
-    input_str.push_str(&format!(
-        "root_declared(\"{pkg_type}\", \"{pkg_name}\").\n",
-    ));
+    input_str.push_str(&format!("root_declared(\"{pkg_type}\", \"{pkg_name}\").\n",));
 
     create_input_str_for_all_possible_pkgs_info(
         &mut input_str,

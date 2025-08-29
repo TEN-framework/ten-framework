@@ -37,9 +37,7 @@ use jsonschema::Validator;
 use storage::in_memory::TmanStorageInMemory;
 use uuid::Uuid;
 
-use ten_rust::{
-    base_dir_pkg_info::PkgsInfoInApp, graph::graph_info::GraphInfo,
-};
+use ten_rust::{base_dir_pkg_info::PkgsInfoInApp, graph::graph_info::GraphInfo};
 
 use crate::home::config::TmanConfig;
 use crate::output::TmanOutput;
@@ -53,10 +51,7 @@ pub struct DesignerState {
     pub persistent_storage_schema: Arc<tokio::sync::RwLock<Option<Validator>>>,
 }
 
-pub fn configure_routes(
-    cfg: &mut web::ServiceConfig,
-    state: web::Data<Arc<DesignerState>>,
-) {
+pub fn configure_routes(cfg: &mut web::ServiceConfig, state: web::Data<Arc<DesignerState>>) {
     cfg.service(
         web::scope("/api/designer/v1")
             .app_data(state)

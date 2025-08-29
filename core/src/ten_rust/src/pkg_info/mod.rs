@@ -23,17 +23,15 @@ use anyhow::{anyhow, Result};
 use uuid::Uuid;
 
 use crate::{
-    base_dir_pkg_info::PkgsInfoInApp, graph::graph_info::GraphInfo,
-    schema::store::SchemaStore,
+    base_dir_pkg_info::PkgsInfoInApp, graph::graph_info::GraphInfo, schema::store::SchemaStore,
 };
 
 use constants::{
-    ADDON_LOADER_DIR, EXTENSION_DIR, MANIFEST_JSON_FILENAME, PROTOCOL_DIR,
-    SYSTEM_DIR, TEN_PACKAGES_DIR,
+    ADDON_LOADER_DIR, EXTENSION_DIR, MANIFEST_JSON_FILENAME, PROTOCOL_DIR, SYSTEM_DIR,
+    TEN_PACKAGES_DIR,
 };
 use manifest::{
-    dependency::ManifestDependency, parse_manifest_from_file,
-    parse_manifest_in_folder, Manifest,
+    dependency::ManifestDependency, parse_manifest_from_file, parse_manifest_in_folder, Manifest,
 };
 use pkg_type::PkgType;
 use property::{parse_property_in_folder, Property};
@@ -102,9 +100,7 @@ impl PkgInfo {
     }
 
     /// Async serialization method that resolves LocaleContent fields
-    pub async fn serialize_manifest_with_resolved_content(
-        &self,
-    ) -> Result<String> {
+    pub async fn serialize_manifest_with_resolved_content(&self) -> Result<String> {
         self.manifest.serialize_with_resolved_content().await
     }
 
@@ -163,12 +159,8 @@ pub async fn get_pkg_info_from_path(
         None
     };
 
-    let mut pkg_info: PkgInfo = PkgInfo::from_metadata(
-        path.to_string_lossy().as_ref(),
-        &manifest,
-        &property,
-    )
-    .await?;
+    let mut pkg_info: PkgInfo =
+        PkgInfo::from_metadata(path.to_string_lossy().as_ref(), &manifest, &property).await?;
 
     pkg_info.is_installed = is_installed;
 
@@ -189,14 +181,8 @@ async fn collect_pkg_info_from_path(
     graphs_cache: &mut Option<&mut HashMap<Uuid, GraphInfo>>,
     app_base_dir: Option<String>,
 ) -> Result<()> {
-    let pkg_info = get_pkg_info_from_path(
-        path,
-        true,
-        parse_property,
-        graphs_cache,
-        app_base_dir,
-    )
-    .await?;
+    let pkg_info =
+        get_pkg_info_from_path(path, true, parse_property, graphs_cache, app_base_dir).await?;
 
     match pkg_info.manifest.type_and_name.pkg_type {
         PkgType::App => {
@@ -207,21 +193,33 @@ async fn collect_pkg_info_from_path(
             if pkgs_info.extension_pkgs_info.is_none() {
                 pkgs_info.extension_pkgs_info = Some(Vec::new());
             }
-            pkgs_info.extension_pkgs_info.as_mut().unwrap().push(pkg_info);
+            pkgs_info
+                .extension_pkgs_info
+                .as_mut()
+                .unwrap()
+                .push(pkg_info);
             Ok(())
         }
         PkgType::Protocol => {
             if pkgs_info.protocol_pkgs_info.is_none() {
                 pkgs_info.protocol_pkgs_info = Some(Vec::new());
             }
-            pkgs_info.protocol_pkgs_info.as_mut().unwrap().push(pkg_info);
+            pkgs_info
+                .protocol_pkgs_info
+                .as_mut()
+                .unwrap()
+                .push(pkg_info);
             Ok(())
         }
         PkgType::AddonLoader => {
             if pkgs_info.addon_loader_pkgs_info.is_none() {
                 pkgs_info.addon_loader_pkgs_info = Some(Vec::new());
             }
-            pkgs_info.addon_loader_pkgs_info.as_mut().unwrap().push(pkg_info);
+            pkgs_info
+                .addon_loader_pkgs_info
+                .as_mut()
+                .unwrap()
+                .push(pkg_info);
             Ok(())
         }
         PkgType::System => {
@@ -268,12 +266,10 @@ pub async fn get_app_installed_pkgs(
     }
 
     // Define the sub-folders for searching packages.
-    let addon_type_dirs =
-        vec![EXTENSION_DIR, PROTOCOL_DIR, ADDON_LOADER_DIR, SYSTEM_DIR];
+    let addon_type_dirs = vec![EXTENSION_DIR, PROTOCOL_DIR, ADDON_LOADER_DIR, SYSTEM_DIR];
 
     for addon_type_dir in addon_type_dirs {
-        let addon_type_dir_path =
-            app_path.join(TEN_PACKAGES_DIR).join(addon_type_dir);
+        let addon_type_dir_path = app_path.join(TEN_PACKAGES_DIR).join(addon_type_dir);
 
         if addon_type_dir_path.exists() && addon_type_dir_path.is_dir() {
             for entry in addon_type_dir_path.read_dir()?.flatten() {
@@ -285,8 +281,7 @@ pub async fn get_app_installed_pkgs(
                     let manifest_path = path.join(MANIFEST_JSON_FILENAME);
 
                     if manifest_path.exists() && manifest_path.is_file() {
-                        let manifest =
-                            parse_manifest_from_file(&manifest_path).await?;
+                        let manifest = parse_manifest_from_file(&manifest_path).await?;
 
                         manifest.check_fs_location(
                             Some(addon_type_dir),
@@ -337,10 +332,8 @@ pub fn find_untracked_local_packages<'a>(
         // Check all dependencies to see if this local package is tracked.
         let is_tracked = dependencies.iter().any(|dep| {
             // Compare type, name, and version
-            pkg.manifest.type_and_name.pkg_type
-                == dep.manifest.type_and_name.pkg_type
-                && pkg.manifest.type_and_name.name
-                    == dep.manifest.type_and_name.name
+            pkg.manifest.type_and_name.pkg_type == dep.manifest.type_and_name.pkg_type
+                && pkg.manifest.type_and_name.name == dep.manifest.type_and_name.name
                 && pkg.manifest.version == dep.manifest.version
         });
 
@@ -370,10 +363,8 @@ pub fn find_to_be_replaced_local_pkgs<'a>(
         for pkg in local_pkgs {
             // If type and name match but versions differ, this package will be
             // replaced.
-            if dep.manifest.type_and_name.pkg_type
-                == pkg.manifest.type_and_name.pkg_type
-                && dep.manifest.type_and_name.name
-                    == pkg.manifest.type_and_name.name
+            if dep.manifest.type_and_name.pkg_type == pkg.manifest.type_and_name.pkg_type
+                && dep.manifest.type_and_name.name == pkg.manifest.type_and_name.name
                 && dep.manifest.version != pkg.manifest.version
             {
                 to_be_replaced.push((*dep, *pkg));
@@ -390,33 +381,32 @@ pub fn get_pkg_info_for_extension_addon<'a>(
     app: &Option<String>,
     extension_addon_name: &String,
 ) -> Option<&'a PkgInfo> {
-    let result: Option<&PkgInfo> = if let Some((_, pkgs_info_in_app)) =
-        find_pkgs_cache_entry_by_app_uri(pkgs_cache, app)
-    {
-        pkgs_info_in_app.extension_pkgs_info.as_ref().and_then(
-            |extension_pkgs_info| {
-                extension_pkgs_info.iter().find(|pkg_info| {
-                    pkg_info.manifest.type_and_name.pkg_type
-                        == PkgType::Extension
-                        && pkg_info.manifest.type_and_name.name
-                            == *extension_addon_name
+    let result: Option<&PkgInfo> =
+        if let Some((_, pkgs_info_in_app)) = find_pkgs_cache_entry_by_app_uri(pkgs_cache, app) {
+            pkgs_info_in_app
+                .extension_pkgs_info
+                .as_ref()
+                .and_then(|extension_pkgs_info| {
+                    extension_pkgs_info.iter().find(|pkg_info| {
+                        pkg_info.manifest.type_and_name.pkg_type == PkgType::Extension
+                            && pkg_info.manifest.type_and_name.name == *extension_addon_name
+                    })
                 })
-            },
-        )
-    } else {
-        None
-    };
+        } else {
+            None
+        };
 
     if let Some(pkg_info) = result {
         Some(pkg_info)
     } else if let Some(graph_app_base_dir) = graph_app_base_dir {
-        pkgs_cache.get(graph_app_base_dir).and_then(|pkgs_info_in_app| {
-            pkgs_info_in_app.get_extensions().iter().find(|pkg_info| {
-                pkg_info.manifest.type_and_name.pkg_type == PkgType::Extension
-                    && pkg_info.manifest.type_and_name.name
-                        == *extension_addon_name
+        pkgs_cache
+            .get(graph_app_base_dir)
+            .and_then(|pkgs_info_in_app| {
+                pkgs_info_in_app.get_extensions().iter().find(|pkg_info| {
+                    pkg_info.manifest.type_and_name.pkg_type == PkgType::Extension
+                        && pkg_info.manifest.type_and_name.name == *extension_addon_name
+                })
             })
-        })
     } else {
         None
     }
@@ -434,10 +424,7 @@ pub fn find_pkgs_cache_entry_by_app_uri<'a>(
                     // In this case, we should return the entry whose app_uri
                     // is None or empty.
                     if app_uri.is_none() {
-                        return ten
-                            .uri
-                            .as_ref()
-                            .is_none_or(|uri| uri.is_empty());
+                        return ten.uri.as_ref().is_none_or(|uri| uri.is_empty());
                     }
 
                     return ten.uri == *app_uri;

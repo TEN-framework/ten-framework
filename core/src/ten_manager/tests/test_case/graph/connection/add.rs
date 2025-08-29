@@ -21,26 +21,13 @@ mod tests {
         let mut pkgs_cache = HashMap::new();
         let mut graphs_cache = HashMap::new();
 
-        inject_all_standard_pkgs_for_mock(
-            &mut pkgs_cache,
-            &mut graphs_cache,
-            TEST_DIR,
-        )
-        .await;
+        inject_all_standard_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, TEST_DIR).await;
 
         // Create a graph with two nodes.
         let mut graph = Graph {
             nodes: vec![
-                create_test_node(
-                    "ext1",
-                    "extension_addon_1",
-                    Some("http://example.com:8000"),
-                ),
-                create_test_node(
-                    "ext2",
-                    "extension_addon_2",
-                    Some("http://example.com:8000"),
-                ),
+                create_test_node("ext1", "extension_addon_1", Some("http://example.com:8000")),
+                create_test_node("ext2", "extension_addon_2", Some("http://example.com:8000")),
             ],
             connections: None,
             exposed_messages: None,
@@ -93,20 +80,11 @@ mod tests {
         let mut pkgs_cache = HashMap::new();
         let mut graphs_cache = HashMap::new();
 
-        inject_all_standard_pkgs_for_mock(
-            &mut pkgs_cache,
-            &mut graphs_cache,
-            TEST_DIR,
-        )
-        .await;
+        inject_all_standard_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, TEST_DIR).await;
 
         // Create a graph with only one node.
         let mut graph = Graph {
-            nodes: vec![create_test_node(
-                "ext2",
-                "extension_addon_2",
-                Some("app1"),
-            )],
+            nodes: vec![create_test_node("ext2", "extension_addon_2", Some("app1"))],
             connections: None,
             exposed_messages: None,
             exposed_properties: None,
@@ -137,20 +115,11 @@ mod tests {
         let mut pkgs_cache = HashMap::new();
         let mut graphs_cache = HashMap::new();
 
-        inject_all_standard_pkgs_for_mock(
-            &mut pkgs_cache,
-            &mut graphs_cache,
-            TEST_DIR,
-        )
-        .await;
+        inject_all_standard_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, TEST_DIR).await;
 
         // Create a graph with only one node.
         let mut graph = Graph {
-            nodes: vec![create_test_node(
-                "ext1",
-                "extension_addon_1",
-                Some("app1"),
-            )],
+            nodes: vec![create_test_node("ext1", "extension_addon_1", Some("app1"))],
             connections: None,
             exposed_messages: None,
             exposed_properties: None,
@@ -181,31 +150,14 @@ mod tests {
         let mut pkgs_cache = HashMap::new();
         let mut graphs_cache = HashMap::new();
 
-        inject_all_standard_pkgs_for_mock(
-            &mut pkgs_cache,
-            &mut graphs_cache,
-            TEST_DIR,
-        )
-        .await;
+        inject_all_standard_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, TEST_DIR).await;
 
         // Create a graph with three nodes.
         let mut graph = Graph {
             nodes: vec![
-                create_test_node(
-                    "ext1",
-                    "extension_addon_1",
-                    Some("http://example.com:8000"),
-                ),
-                create_test_node(
-                    "ext2",
-                    "extension_addon_2",
-                    Some("http://example.com:8000"),
-                ),
-                create_test_node(
-                    "ext3",
-                    "extension_addon_3",
-                    Some("http://example.com:8000"),
-                ),
+                create_test_node("ext1", "extension_addon_1", Some("http://example.com:8000")),
+                create_test_node("ext2", "extension_addon_2", Some("http://example.com:8000")),
+                create_test_node("ext3", "extension_addon_3", Some("http://example.com:8000")),
             ],
             connections: None,
             exposed_messages: None,
@@ -276,26 +228,13 @@ mod tests {
         let mut pkgs_cache = HashMap::new();
         let mut graphs_cache = HashMap::new();
 
-        inject_all_standard_pkgs_for_mock(
-            &mut pkgs_cache,
-            &mut graphs_cache,
-            TEST_DIR,
-        )
-        .await;
+        inject_all_standard_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, TEST_DIR).await;
 
         // Create a graph with two nodes.
         let mut graph = Graph {
             nodes: vec![
-                create_test_node(
-                    "ext1",
-                    "extension_addon_1",
-                    Some("http://example.com:8000"),
-                ),
-                create_test_node(
-                    "ext2",
-                    "extension_addon_2",
-                    Some("http://example.com:8000"),
-                ),
+                create_test_node("ext1", "extension_addon_1", Some("http://example.com:8000")),
+                create_test_node("ext2", "extension_addon_2", Some("http://example.com:8000")),
             ],
             connections: None,
             exposed_messages: None,
@@ -395,26 +334,13 @@ mod tests {
         let mut pkgs_cache = HashMap::new();
         let mut graphs_cache = HashMap::new();
 
-        inject_all_standard_pkgs_for_mock(
-            &mut pkgs_cache,
-            &mut graphs_cache,
-            TEST_DIR,
-        )
-        .await;
+        inject_all_standard_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, TEST_DIR).await;
 
         // Create a graph with two nodes.
         let mut graph = Graph {
             nodes: vec![
-                create_test_node(
-                    "ext1",
-                    "extension_addon_1",
-                    Some("http://example.com:8000"),
-                ),
-                create_test_node(
-                    "ext2",
-                    "extension_addon_2",
-                    Some("http://example.com:8000"),
-                ),
+                create_test_node("ext1", "extension_addon_1", Some("http://example.com:8000")),
+                create_test_node("ext2", "extension_addon_2", Some("http://example.com:8000")),
             ],
             connections: None,
             exposed_messages: None,
@@ -477,36 +403,15 @@ mod tests {
         let mut pkgs_cache = HashMap::new();
         let mut graphs_cache = HashMap::new();
 
-        inject_all_standard_pkgs_for_mock(
-            &mut pkgs_cache,
-            &mut graphs_cache,
-            TEST_DIR,
-        )
-        .await;
+        inject_all_standard_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, TEST_DIR).await;
 
         // Create a graph with three nodes.
         let mut graph = Graph {
             nodes: vec![
-                create_test_node(
-                    "ext1",
-                    "extension_addon_1",
-                    Some("http://example.com:8000"),
-                ),
-                create_test_node(
-                    "ext2",
-                    "extension_addon_2",
-                    Some("http://example.com:8000"),
-                ),
-                create_test_node(
-                    "ext3",
-                    "extension_addon_3",
-                    Some("http://example.com:8000"),
-                ),
-                create_test_node(
-                    "ext4",
-                    "extension_addon_4",
-                    Some("http://example.com:8000"),
-                ),
+                create_test_node("ext1", "extension_addon_1", Some("http://example.com:8000")),
+                create_test_node("ext2", "extension_addon_2", Some("http://example.com:8000")),
+                create_test_node("ext3", "extension_addon_3", Some("http://example.com:8000")),
+                create_test_node("ext4", "extension_addon_4", Some("http://example.com:8000")),
             ],
             connections: None,
             exposed_messages: None,

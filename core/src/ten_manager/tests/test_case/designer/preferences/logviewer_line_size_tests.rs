@@ -14,8 +14,7 @@ use ten_manager::designer::storage::in_memory::TmanStorageInMemory;
 use ten_manager::{
     designer::{
         preferences::logviewer_line_size::{
-            get_logviewer_line_size_endpoint,
-            update_logviewer_line_size_endpoint,
+            get_logviewer_line_size_endpoint, update_logviewer_line_size_endpoint,
             UpdateLogviewerLineSizeRequestPayload,
         },
         DesignerState,
@@ -29,9 +28,7 @@ async fn test_get_logviewer_line_size_success() {
     // Create test state.
     let state = Arc::new(DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-            TmanStorageInMemory::default(),
-        )),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -39,14 +36,13 @@ async fn test_get_logviewer_line_size_success() {
     });
 
     // Create test app.
-    let app =
-        test::init_service(App::new().app_data(web::Data::new(state)).service(
-            web::scope("/api/designer/v1").route(
-                "/preferences/logviewer_line_size",
-                web::get().to(get_logviewer_line_size_endpoint),
-            ),
-        ))
-        .await;
+    let app = test::init_service(App::new().app_data(web::Data::new(state)).service(
+        web::scope("/api/designer/v1").route(
+            "/preferences/logviewer_line_size",
+            web::get().to(get_logviewer_line_size_endpoint),
+        ),
+    ))
+    .await;
 
     // Create test request.
     let req = test::TestRequest::get()
@@ -71,13 +67,14 @@ async fn test_get_logviewer_line_size_success() {
 async fn test_update_logviewer_line_size_success() {
     // Create test state with mock config file path to avoid writing to real
     // file.
-    let config = TmanConfig { config_file: None, ..TmanConfig::default() };
+    let config = TmanConfig {
+        config_file: None,
+        ..TmanConfig::default()
+    };
 
     let state = Arc::new(DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(config)),
-        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-            TmanStorageInMemory::default(),
-        )),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -85,19 +82,18 @@ async fn test_update_logviewer_line_size_success() {
     });
 
     // Create test app.
-    let app = test::init_service(
-        App::new().app_data(web::Data::new(state.clone())).service(
-            web::scope("/api/designer/v1").route(
-                "/preferences/logviewer_line_size",
-                web::put().to(update_logviewer_line_size_endpoint),
-            ),
+    let app = test::init_service(App::new().app_data(web::Data::new(state.clone())).service(
+        web::scope("/api/designer/v1").route(
+            "/preferences/logviewer_line_size",
+            web::put().to(update_logviewer_line_size_endpoint),
         ),
-    )
+    ))
     .await;
 
     // Create valid payload.
-    let payload =
-        UpdateLogviewerLineSizeRequestPayload { logviewer_line_size: 3000 };
+    let payload = UpdateLogviewerLineSizeRequestPayload {
+        logviewer_line_size: 3000,
+    };
 
     // Create test request.
     let req = test::TestRequest::put()
@@ -126,13 +122,14 @@ async fn test_update_logviewer_line_size_success() {
 #[actix_web::test]
 async fn test_update_logviewer_line_size_invalid_value() {
     // Create test state.
-    let config = TmanConfig { config_file: None, ..TmanConfig::default() };
+    let config = TmanConfig {
+        config_file: None,
+        ..TmanConfig::default()
+    };
 
     let state = Arc::new(DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(config)),
-        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-            TmanStorageInMemory::default(),
-        )),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -140,18 +137,18 @@ async fn test_update_logviewer_line_size_invalid_value() {
     });
 
     // Create test app.
-    let app =
-        test::init_service(App::new().app_data(web::Data::new(state)).service(
-            web::scope("/api/designer/v1").route(
-                "/preferences/logviewer_line_size",
-                web::put().to(update_logviewer_line_size_endpoint),
-            ),
-        ))
-        .await;
+    let app = test::init_service(App::new().app_data(web::Data::new(state)).service(
+        web::scope("/api/designer/v1").route(
+            "/preferences/logviewer_line_size",
+            web::put().to(update_logviewer_line_size_endpoint),
+        ),
+    ))
+    .await;
 
     // Create invalid payload.
-    let payload =
-        UpdateLogviewerLineSizeRequestPayload { logviewer_line_size: 0 };
+    let payload = UpdateLogviewerLineSizeRequestPayload {
+        logviewer_line_size: 0,
+    };
 
     // Create test request.
     let req = test::TestRequest::put()

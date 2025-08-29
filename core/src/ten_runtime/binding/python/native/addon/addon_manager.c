@@ -68,11 +68,18 @@ PyObject *ten_py_addon_manager_register_addon_as_extension(
   Py_RETURN_NONE;
 }
 
-static void ten_py_addon_register_func(TEN_ADDON_TYPE addon_type,
-                                       ten_string_t *addon_name,
-                                       void *register_ctx,
-                                       TEN_UNUSED void *user_data) {
+static void ten_py_addon_register_func(
+    ten_addon_registration_t *registration,
+    ten_addon_registration_done_func_t done_callback,
+    ten_addon_register_ctx_t *register_ctx, void *user_data) {
+  TEN_ASSERT(registration, "Invalid argument.");
+  TEN_ASSERT(registration->func, "Invalid argument.");
+  TEN_ASSERT(done_callback, "Invalid argument.");
+
+  TEN_ADDON_TYPE addon_type = registration->addon_type;
   TEN_ASSERT(addon_type == TEN_ADDON_TYPE_EXTENSION, "Invalid addon type.");
+
+  const char *addon_name = ten_string_get_raw_str(&registration->addon_name);
 
   // About to call the Python function, so it's necessary to ensure that the GIL
   // has been acquired.
@@ -93,8 +100,8 @@ static void ten_py_addon_register_func(TEN_ADDON_TYPE addon_type,
       PyCapsule_New(register_ctx, "ten_addon_register_ctx", NULL);
   TEN_ASSERT(py_register_ctx, "Failed to create capsule for register_ctx.");
 
-  PyObject *register_func_args = Py_BuildValue(
-      "(sO)", ten_string_get_raw_str(addon_name), py_register_ctx);
+  PyObject *register_func_args =
+      Py_BuildValue("(sO)", addon_name, py_register_ctx);
   PyObject *register_func_result =
       PyObject_CallObject(register_func, register_func_args);
   TEN_ASSERT(register_func_result, "Failed to call _register_addon.");
@@ -107,6 +114,8 @@ static void ten_py_addon_register_func(TEN_ADDON_TYPE addon_type,
   Py_DECREF(py_register_ctx);
 
   ten_py_gil_state_release_internal(prev_state);
+
+  done_callback(register_ctx, user_data);
 }
 
 PyObject *ten_py_addon_manager_add_extension_addon(TEN_UNUSED PyObject *self,

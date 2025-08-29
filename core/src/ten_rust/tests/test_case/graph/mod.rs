@@ -19,8 +19,7 @@ mod tests {
 
     use ten_rust::{
         constants::{
-            ERR_MSG_GRAPH_APP_FIELD_EMPTY,
-            ERR_MSG_GRAPH_APP_FIELD_SHOULD_BE_DECLARED,
+            ERR_MSG_GRAPH_APP_FIELD_EMPTY, ERR_MSG_GRAPH_APP_FIELD_SHOULD_BE_DECLARED,
             ERR_MSG_GRAPH_APP_FIELD_SHOULD_NOT_BE_DECLARED,
             ERR_MSG_GRAPH_LOCALHOST_FORBIDDEN_IN_MULTI_APP_MODE,
             ERR_MSG_GRAPH_LOCALHOST_FORBIDDEN_IN_SINGLE_APP_MODE,
@@ -34,20 +33,13 @@ mod tests {
 
     #[tokio::test]
     async fn test_predefined_graph_has_no_extensions() {
-        let property_json_str =
-            include_str!("../../test_data/predefined_graph_no_extensions.json");
+        let property_json_str = include_str!("../../test_data/predefined_graph_no_extensions.json");
 
         let mut graphs_cache = HashMap::new();
 
-        parse_property_from_str(
-            property_json_str,
-            &mut graphs_cache,
-            None,
-            None,
-            None,
-        )
-        .await
-        .unwrap();
+        parse_property_from_str(property_json_str, &mut graphs_cache, None, None, None)
+            .await
+            .unwrap();
         let (_, graph_info) = graphs_cache.into_iter().next().unwrap();
         let graph = &graph_info.graph;
         let result = graph.graph.static_check();
@@ -58,21 +50,14 @@ mod tests {
 
     #[tokio::test]
     async fn test_predefined_graph_has_extension_duplicated() {
-        let property_str = include_str!(
-            "../../test_data/predefined_graph_has_duplicated_extension.json"
-        );
+        let property_str =
+            include_str!("../../test_data/predefined_graph_has_duplicated_extension.json");
 
         let mut graphs_cache = HashMap::new();
 
-        parse_property_from_str(
-            property_str,
-            &mut graphs_cache,
-            None,
-            None,
-            None,
-        )
-        .await
-        .unwrap();
+        parse_property_from_str(property_str, &mut graphs_cache, None, None, None)
+            .await
+            .unwrap();
         let (_, graph_info) = graphs_cache.into_iter().next().unwrap();
         let graph = &graph_info.graph;
         let result = graph.graph.static_check();
@@ -83,12 +68,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_start_graph_cmd_has_extension_duplicated() {
-        let cmd_str = include_str!(
-            "../../test_data/start_graph_cmd_has_duplicated_extension.json"
-        );
+        let cmd_str = include_str!("../../test_data/start_graph_cmd_has_duplicated_extension.json");
 
-        let graph: Graph =
-            Graph::from_str_with_base_dir(cmd_str, None).await.unwrap();
+        let graph: Graph = Graph::from_str_with_base_dir(cmd_str, None).await.unwrap();
         let result = graph.static_check();
         assert!(result.is_err());
         println!("Error: {:?}", result.err().unwrap());
@@ -96,21 +78,14 @@ mod tests {
 
     #[tokio::test]
     async fn test_predefined_graph_connection_src_not_found() {
-        let property_str = include_str!(
-            "../../test_data/predefined_graph_connection_src_not_found.json"
-        );
+        let property_str =
+            include_str!("../../test_data/predefined_graph_connection_src_not_found.json");
 
         let mut graphs_cache = HashMap::new();
 
-        parse_property_from_str(
-            property_str,
-            &mut graphs_cache,
-            None,
-            None,
-            None,
-        )
-        .await
-        .unwrap();
+        parse_property_from_str(property_str, &mut graphs_cache, None, None, None)
+            .await
+            .unwrap();
         let (_, graph_info) = graphs_cache.into_iter().next().unwrap();
         let result = graph_info.graph.graph.check_connection_extensions_exist();
 
@@ -120,21 +95,14 @@ mod tests {
 
     #[tokio::test]
     async fn test_predefined_graph_connection_dest_not_found() {
-        let property_str = include_str!(
-            "../../test_data/predefined_graph_connection_dest_not_found.json"
-        );
+        let property_str =
+            include_str!("../../test_data/predefined_graph_connection_dest_not_found.json");
 
         let mut graphs_cache = HashMap::new();
 
-        parse_property_from_str(
-            property_str,
-            &mut graphs_cache,
-            None,
-            None,
-            None,
-        )
-        .await
-        .unwrap();
+        parse_property_from_str(property_str, &mut graphs_cache, None, None, None)
+            .await
+            .unwrap();
         let (_, graph_info) = graphs_cache.into_iter().next().unwrap();
         let result = graph_info.graph.graph.check_connection_extensions_exist();
 
@@ -144,29 +112,20 @@ mod tests {
 
     #[tokio::test]
     async fn test_predefined_graph_node_app_localhost() {
-        let property_str = include_str!(
-            "../../test_data/predefined_graph_connection_app_localhost.json"
-        );
+        let property_str =
+            include_str!("../../test_data/predefined_graph_connection_app_localhost.json");
 
         let mut graphs_cache = HashMap::new();
 
-        let property = parse_property_from_str(
-            property_str,
-            &mut graphs_cache,
-            None,
-            None,
-            None,
-        )
-        .await;
+        let property =
+            parse_property_from_str(property_str, &mut graphs_cache, None, None, None).await;
 
         // 'localhost' is not allowed in graph definition.
         assert!(property.is_err());
         println!("Error: {property:?}");
 
         let msg = property.err().unwrap().to_string();
-        assert!(
-            msg.contains(ERR_MSG_GRAPH_LOCALHOST_FORBIDDEN_IN_SINGLE_APP_MODE)
-        );
+        assert!(msg.contains(ERR_MSG_GRAPH_LOCALHOST_FORBIDDEN_IN_SINGLE_APP_MODE));
     }
 
     #[tokio::test]
@@ -183,9 +142,7 @@ mod tests {
         println!("Error: {graph:?}");
 
         let msg = graph.err().unwrap().to_string();
-        assert!(
-            msg.contains(ERR_MSG_GRAPH_LOCALHOST_FORBIDDEN_IN_SINGLE_APP_MODE)
-        );
+        assert!(msg.contains(ERR_MSG_GRAPH_LOCALHOST_FORBIDDEN_IN_SINGLE_APP_MODE));
     }
 
     #[tokio::test]
@@ -201,33 +158,22 @@ mod tests {
         println!("Error: {graph:?}");
 
         let msg = graph.err().unwrap().to_string();
-        assert!(
-            msg.contains(ERR_MSG_GRAPH_LOCALHOST_FORBIDDEN_IN_MULTI_APP_MODE)
-        );
+        assert!(msg.contains(ERR_MSG_GRAPH_LOCALHOST_FORBIDDEN_IN_MULTI_APP_MODE));
     }
 
     #[tokio::test]
     async fn test_predefined_graph_connection_app_localhost() {
-        let property_str = include_str!(
-            "../../test_data/predefined_graph_connection_app_localhost.json"
-        );
+        let property_str =
+            include_str!("../../test_data/predefined_graph_connection_app_localhost.json");
         let mut graphs_cache = HashMap::new();
-        let property = parse_property_from_str(
-            property_str,
-            &mut graphs_cache,
-            None,
-            None,
-            None,
-        )
-        .await;
+        let property =
+            parse_property_from_str(property_str, &mut graphs_cache, None, None, None).await;
         // 'localhost' is not allowed in graph definition.
         assert!(property.is_err());
         println!("Error: {property:?}");
 
         let msg = property.err().unwrap().to_string();
-        assert!(
-            msg.contains(ERR_MSG_GRAPH_LOCALHOST_FORBIDDEN_IN_SINGLE_APP_MODE)
-        );
+        assert!(msg.contains(ERR_MSG_GRAPH_LOCALHOST_FORBIDDEN_IN_SINGLE_APP_MODE));
     }
 
     #[tokio::test]
@@ -237,14 +183,8 @@ mod tests {
              json"
         );
         let mut graphs_cache = HashMap::new();
-        let property = parse_property_from_str(
-            property_str,
-            &mut graphs_cache,
-            None,
-            None,
-            None,
-        )
-        .await;
+        let property =
+            parse_property_from_str(property_str, &mut graphs_cache, None, None, None).await;
         // Either all nodes should have 'app' declared, or none should, but not
         // a mix of both.
         assert!(property.is_err());
@@ -264,14 +204,8 @@ mod tests {
              predefined_graph_app_in_connections_not_all_declared.json"
         );
         let mut graphs_cache = HashMap::new();
-        let property = parse_property_from_str(
-            property_str,
-            &mut graphs_cache,
-            None,
-            None,
-            None,
-        )
-        .await;
+        let property =
+            parse_property_from_str(property_str, &mut graphs_cache, None, None, None).await;
         // The 'app' can not be none, as it has been declared in nodes.
         assert!(property.is_err());
         println!("Error: {property:?}");
@@ -287,14 +221,8 @@ mod tests {
              predefined_graph_app_in_connections_should_not_declared.json"
         );
         let mut graphs_cache = HashMap::new();
-        let property = parse_property_from_str(
-            property_str,
-            &mut graphs_cache,
-            None,
-            None,
-            None,
-        )
-        .await;
+        let property =
+            parse_property_from_str(property_str, &mut graphs_cache, None, None, None).await;
         // The 'app' should not be declared, as not any node has declared it.
         assert!(property.is_err());
         println!("Error: {property:?}");
@@ -310,14 +238,8 @@ mod tests {
              json"
         );
         let mut graphs_cache = HashMap::new();
-        let property = parse_property_from_str(
-            property_str,
-            &mut graphs_cache,
-            None,
-            None,
-            None,
-        )
-        .await;
+        let property =
+            parse_property_from_str(property_str, &mut graphs_cache, None, None, None).await;
         // The 'app' can not be none, as it has been declared in nodes.
         assert!(property.is_err());
         println!("Error: {property:?}");
@@ -333,14 +255,8 @@ mod tests {
              json"
         );
         let mut graphs_cache = HashMap::new();
-        let property = parse_property_from_str(
-            property_str,
-            &mut graphs_cache,
-            None,
-            None,
-            None,
-        )
-        .await;
+        let property =
+            parse_property_from_str(property_str, &mut graphs_cache, None, None, None).await;
 
         // The 'app' should not be declared, as not any node has declared it.
         assert!(property.is_err());
@@ -357,8 +273,9 @@ mod tests {
              graph_same_extension_in_two_section_of_connections.json"
         );
 
-        let graph =
-            Graph::from_str_with_base_dir(graph_str, None).await.unwrap();
+        let graph = Graph::from_str_with_base_dir(graph_str, None)
+            .await
+            .unwrap();
 
         let result = graph.check_extension_uniqueness_in_connections();
 
@@ -374,12 +291,12 @@ mod tests {
 
     #[tokio::test]
     async fn test_graph_duplicated_cmd_name_in_one_connection() {
-        let graph_str = include_str!(
-            "../../test_data/graph_duplicated_cmd_name_in_one_connection.json"
-        );
+        let graph_str =
+            include_str!("../../test_data/graph_duplicated_cmd_name_in_one_connection.json");
 
-        let graph =
-            Graph::from_str_with_base_dir(graph_str, None).await.unwrap();
+        let graph = Graph::from_str_with_base_dir(graph_str, None)
+            .await
+            .unwrap();
         let result = graph.check_message_names();
         assert!(result.is_err());
         println!("Error: {result:?}");
@@ -395,17 +312,16 @@ mod tests {
              graph_messages_same_name_in_different_type_are_ok.json"
         );
 
-        let graph =
-            Graph::from_str_with_base_dir(graph_str, None).await.unwrap();
+        let graph = Graph::from_str_with_base_dir(graph_str, None)
+            .await
+            .unwrap();
         let result = graph.check_message_names();
         assert!(result.is_ok());
     }
 
     #[tokio::test]
     async fn test_graph_app_can_not_be_empty_string() {
-        let graph_str = include_str!(
-            "../../test_data/graph_app_can_not_be_empty_string.json"
-        );
+        let graph_str = include_str!("../../test_data/graph_app_can_not_be_empty_string.json");
         let graph = Graph::from_str_with_base_dir(graph_str, None).await;
 
         // The 'app' can not be empty string.
@@ -418,17 +334,21 @@ mod tests {
 
     #[tokio::test]
     async fn test_graph_message_conversion_fixed_value() {
-        let graph_str = include_str!(
-            "../../test_data/graph_message_conversion_fixed_value.json"
-        );
-        let graph =
-            Graph::from_str_with_base_dir(graph_str, None).await.unwrap();
+        let graph_str = include_str!("../../test_data/graph_message_conversion_fixed_value.json");
+        let graph = Graph::from_str_with_base_dir(graph_str, None)
+            .await
+            .unwrap();
 
         let connections = graph.connections.unwrap();
-        let cmd =
-            connections.first().unwrap().cmd.as_ref().unwrap().first().unwrap();
-        let msg_conversion =
-            cmd.dest.first().unwrap().msg_conversion.as_ref().unwrap();
+        let cmd = connections
+            .first()
+            .unwrap()
+            .cmd
+            .as_ref()
+            .unwrap()
+            .first()
+            .unwrap();
+        let msg_conversion = cmd.dest.first().unwrap().msg_conversion.as_ref().unwrap();
         let rules = &msg_conversion.msg.as_ref().unwrap().rules.rules;
         assert_eq!(rules.len(), 4);
         assert_eq!(rules[1].value.as_ref().unwrap().as_str().unwrap(), "hello");
@@ -458,8 +378,7 @@ mod tests {
         let serialized = serde_json::to_string(&graph);
         assert!(serialized.is_ok());
 
-        let parsed: serde_json::Value =
-            serde_json::from_str(&serialized.unwrap()).unwrap();
+        let parsed: serde_json::Value = serde_json::from_str(&serialized.unwrap()).unwrap();
         assert!(parsed.is_object());
         assert!(parsed["nodes"].is_array());
     }
@@ -486,8 +405,7 @@ mod tests {
 
         // Verify the graph can be serialized back to JSON
         let serialized = serde_json::to_string(&graph).unwrap();
-        let parsed: serde_json::Value =
-            serde_json::from_str(&serialized).unwrap();
+        let parsed: serde_json::Value = serde_json::from_str(&serialized).unwrap();
         assert!(parsed.is_object());
 
         // As the 'nodes' array is empty, it will not be serialized.
@@ -506,9 +424,7 @@ mod tests {
             ]
         }"#;
 
-        let result =
-            Graph::from_str_with_base_dir(input_json, Some("/some/base/dir"))
-                .await;
+        let result = Graph::from_str_with_base_dir(input_json, Some("/some/base/dir")).await;
         assert!(result.is_ok());
 
         let graph = result.unwrap();
@@ -547,8 +463,14 @@ mod tests {
         let loc = &connections.first().unwrap().loc;
         assert_eq!(loc.extension, Some("another_ext".to_string()));
 
-        let cmd =
-            connections.first().unwrap().cmd.as_ref().unwrap().first().unwrap();
+        let cmd = connections
+            .first()
+            .unwrap()
+            .cmd
+            .as_ref()
+            .unwrap()
+            .first()
+            .unwrap();
         let source = &cmd.source;
         assert!(source.is_empty());
 
@@ -559,9 +481,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_graph_result_conversion_in_not_allowed_flow() {
-        let graph_str = include_str!(
-            "../../test_data/graph_result_conversion_in_not_allowed_flow.json"
-        );
+        let graph_str =
+            include_str!("../../test_data/graph_result_conversion_in_not_allowed_flow.json");
 
         let graph = Graph::from_str_and_validate(graph_str).unwrap();
 
@@ -570,16 +491,13 @@ mod tests {
         println!("Error: {result:?}");
 
         let msg = result.err().unwrap().to_string();
-        assert!(
-            msg.contains("result conversion is not allowed for data out msg")
-        );
+        assert!(msg.contains("result conversion is not allowed for data out msg"));
     }
 
     #[tokio::test]
     async fn test_graph_selector_node() {
-        let graph_str = include_str!(
-            "../../test_data/graph_with_selector/graph_with_selector_1.json"
-        );
+        let graph_str =
+            include_str!("../../test_data/graph_with_selector/graph_with_selector_1.json");
 
         let graph = serde_json::from_str::<Graph>(graph_str).unwrap();
 

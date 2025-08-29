@@ -12,8 +12,7 @@ mod tests {
     use ten_rust::graph::{
         connection::{self, GraphConnection},
         node::{GraphContent, GraphNode, GraphNodeType},
-        Graph, GraphExposedMessage, GraphExposedMessageType,
-        GraphExposedProperty,
+        Graph, GraphExposedMessage, GraphExposedMessageType, GraphExposedProperty,
     };
 
     #[tokio::test]
@@ -36,10 +35,7 @@ mod tests {
                     "subgraph_1".to_string(),
                     Some(serde_json::json!({"app_id": "${env:AGORA_APP_ID}"})),
                     GraphContent {
-                        import_uri: format!(
-                            "file://{}",
-                            subgraph_file_path.to_str().unwrap()
-                        ),
+                        import_uri: format!("file://{}", subgraph_file_path.to_str().unwrap()),
                     },
                 ),
             ],
@@ -157,12 +153,10 @@ mod tests {
         // Check that subgraph extensions are flattened with prefix
         assert!(extension_nodes
             .iter()
-            .any(|node| node.name == "subgraph_1_ext_c"
-                && node.addon == "addon_c"));
+            .any(|node| node.name == "subgraph_1_ext_c" && node.addon == "addon_c"));
         assert!(extension_nodes
             .iter()
-            .any(|node| node.name == "subgraph_1_ext_d"
-                && node.addon == "addon_d"));
+            .any(|node| node.name == "subgraph_1_ext_d" && node.addon == "addon_d"));
 
         // Check that properties are merged correctly
         let ext_d_node = extension_nodes
@@ -193,9 +187,7 @@ mod tests {
         // Check internal subgraph connection is preserved
         let internal_connection = connections
             .iter()
-            .find(|conn| {
-                conn.loc.extension.as_deref() == Some("subgraph_1_ext_c")
-            })
+            .find(|conn| conn.loc.extension.as_deref() == Some("subgraph_1_ext_c"))
             .unwrap();
         assert!(internal_connection.cmd.is_some());
 
@@ -224,10 +216,7 @@ mod tests {
                     "subgraph_2".to_string(),
                     None,
                     GraphContent {
-                        import_uri: format!(
-                            "file://{}",
-                            subgraph_file_path.to_str().unwrap()
-                        ),
+                        import_uri: format!("file://{}", subgraph_file_path.to_str().unwrap()),
                     },
                 ),
             ],
@@ -365,12 +354,10 @@ mod tests {
         // Check that subgraph extensions are flattened with prefix
         assert!(extension_nodes
             .iter()
-            .any(|node| node.name == "subgraph_2_ext_c"
-                && node.addon == "addon_c"));
+            .any(|node| node.name == "subgraph_2_ext_c" && node.addon == "addon_c"));
         assert!(extension_nodes
             .iter()
-            .any(|node| node.name == "subgraph_2_ext_d"
-                && node.addon == "addon_d"));
+            .any(|node| node.name == "subgraph_2_ext_d" && node.addon == "addon_d"));
 
         // Check that connections are resolved correctly
         let connections = flattened.connections.as_ref().unwrap();
@@ -392,9 +379,7 @@ mod tests {
         // Check that subgraph reference in source is resolved to ext_c
         let connection_from_subgraph = connections
             .iter()
-            .find(|conn| {
-                conn.loc.extension.as_deref() == Some("subgraph_2_ext_c")
-            })
+            .find(|conn| conn.loc.extension.as_deref() == Some("subgraph_2_ext_c"))
             .unwrap();
         let cmd_flow = &connection_from_subgraph.cmd.as_ref().unwrap()[0];
         assert_eq!(cmd_flow.name.as_deref(), Some("H"));
@@ -421,10 +406,7 @@ mod tests {
                     "subgraph_2".to_string(),
                     None,
                     GraphContent {
-                        import_uri: format!(
-                            "file://{}",
-                            subgraph_file_path.to_str().unwrap()
-                        ),
+                        import_uri: format!("file://{}", subgraph_file_path.to_str().unwrap()),
                     },
                 ),
             ],
@@ -511,10 +493,7 @@ mod tests {
                     "subgraph_2".to_string(),
                     None,
                     GraphContent {
-                        import_uri: format!(
-                            "file://{}",
-                            subgraph_file_path.to_str().unwrap()
-                        ),
+                        import_uri: format!("file://{}", subgraph_file_path.to_str().unwrap()),
                     },
                 ),
             ],
@@ -569,9 +548,10 @@ mod tests {
         // Flatten the graph - should fail
         let result = main_graph.flatten_graph(None).await;
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains(
-            "Subgraph 'subgraph_2' does not have exposed_messages defined"
-        ));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Subgraph 'subgraph_2' does not have exposed_messages defined"));
     }
 
     #[tokio::test]
@@ -595,10 +575,7 @@ mod tests {
                     "subgraph_1".to_string(),
                     None,
                     GraphContent {
-                        import_uri: format!(
-                            "file://{}",
-                            subgraph1_file_path.to_str().unwrap()
-                        ),
+                        import_uri: format!("file://{}", subgraph1_file_path.to_str().unwrap()),
                     },
                 ),
             ],
@@ -614,9 +591,7 @@ mod tests {
                     vec![connection::GraphDestination {
                         loc: connection::GraphLoc {
                             app: None,
-                            extension: Some(
-                                "subgraph_1_subgraph_2_ext_z".to_string(),
-                            ),
+                            extension: Some("subgraph_1_subgraph_2_ext_z".to_string()),
                             subgraph: None,
                             selector: None,
                         },
@@ -647,10 +622,7 @@ mod tests {
                     "subgraph_2".to_string(),
                     None,
                     GraphContent {
-                        import_uri: format!(
-                            "file://{}",
-                            subgraph2_file_path.to_str().unwrap()
-                        ),
+                        import_uri: format!("file://{}", subgraph2_file_path.to_str().unwrap()),
                     },
                 ),
             ],
@@ -768,16 +740,13 @@ mod tests {
         // prefixes
         assert!(extension_nodes
             .iter()
-            .any(|node| node.name == "subgraph_1_ext_x"
-                && node.addon == "addon_x"));
+            .any(|node| node.name == "subgraph_1_ext_x" && node.addon == "addon_x"));
         assert!(extension_nodes
             .iter()
-            .any(|node| node.name == "subgraph_1_subgraph_2_ext_y"
-                && node.addon == "addon_y"));
+            .any(|node| node.name == "subgraph_1_subgraph_2_ext_y" && node.addon == "addon_y"));
         assert!(extension_nodes
             .iter()
-            .any(|node| node.name == "subgraph_1_subgraph_2_ext_z"
-                && node.addon == "addon_z"));
+            .any(|node| node.name == "subgraph_1_subgraph_2_ext_z" && node.addon == "addon_z"));
 
         // Check that connections are flattened correctly
         let connections = flattened.connections.as_ref().unwrap();
@@ -797,12 +766,9 @@ mod tests {
         // Check internal connections are preserved with proper prefixes
         let internal_connection_1 = connections
             .iter()
-            .find(|conn| {
-                conn.loc.extension.as_deref() == Some("subgraph_1_ext_x")
-            })
+            .find(|conn| conn.loc.extension.as_deref() == Some("subgraph_1_ext_x"))
             .unwrap();
-        let internal_cmd_flow_1 =
-            &internal_connection_1.cmd.as_ref().unwrap()[0];
+        let internal_cmd_flow_1 = &internal_connection_1.cmd.as_ref().unwrap()[0];
         assert_eq!(
             internal_cmd_flow_1.dest[0].loc.extension.as_ref().unwrap(),
             "subgraph_1_subgraph_2_ext_z"
@@ -810,13 +776,9 @@ mod tests {
 
         let internal_connection_2 = connections
             .iter()
-            .find(|conn| {
-                conn.loc.extension.as_deref()
-                    == Some("subgraph_1_subgraph_2_ext_y")
-            })
+            .find(|conn| conn.loc.extension.as_deref() == Some("subgraph_1_subgraph_2_ext_y"))
             .unwrap();
-        let internal_cmd_flow_2 =
-            &internal_connection_2.cmd.as_ref().unwrap()[0];
+        let internal_cmd_flow_2 = &internal_connection_2.cmd.as_ref().unwrap()[0];
         assert_eq!(
             internal_cmd_flow_2.dest[0].loc.extension.as_ref().unwrap(),
             "subgraph_1_subgraph_2_ext_z"
@@ -844,10 +806,7 @@ mod tests {
                     "subgraph_1".to_string(),
                     None,
                     GraphContent {
-                        import_uri: format!(
-                            "file://{}",
-                            subgraph1_file_path.to_str().unwrap()
-                        ),
+                        import_uri: format!("file://{}", subgraph1_file_path.to_str().unwrap()),
                     },
                 ),
             ],
@@ -894,10 +853,7 @@ mod tests {
                     "subgraph_2".to_string(),
                     None,
                     GraphContent {
-                        import_uri: format!(
-                            "file://{}",
-                            subgraph2_file_path.to_str().unwrap()
-                        ),
+                        import_uri: format!("file://{}", subgraph2_file_path.to_str().unwrap()),
                     },
                 ),
             ],
@@ -1034,10 +990,7 @@ mod tests {
                     "subgraph_3".to_string(),
                     None,
                     GraphContent {
-                        import_uri: format!(
-                            "file://{}",
-                            subgraph_file_path.to_str().unwrap()
-                        ),
+                        import_uri: format!("file://{}", subgraph_file_path.to_str().unwrap()),
                     },
                 ),
             ],
@@ -1282,8 +1235,7 @@ mod tests {
         );
 
         // Verify audio_frame destination
-        let audio_flow =
-            &connection_to_subgraph.audio_frame.as_ref().unwrap()[0];
+        let audio_flow = &connection_to_subgraph.audio_frame.as_ref().unwrap()[0];
         assert_eq!(audio_flow.name.as_deref(), Some("TestAudio"));
         assert_eq!(
             audio_flow.dest[0].loc.extension.as_ref().unwrap(),
@@ -1291,8 +1243,7 @@ mod tests {
         );
 
         // Verify video_frame destination
-        let video_flow =
-            &connection_to_subgraph.video_frame.as_ref().unwrap()[0];
+        let video_flow = &connection_to_subgraph.video_frame.as_ref().unwrap()[0];
         assert_eq!(video_flow.name.as_deref(), Some("TestVideo"));
         assert_eq!(
             video_flow.dest[0].loc.extension.as_ref().unwrap(),
@@ -1306,9 +1257,7 @@ mod tests {
         // Find the grouped connection from subgraph
         let grouped_connection = connections
             .iter()
-            .find(|conn| {
-                conn.loc.extension.as_deref() == Some("subgraph_3_ext_output")
-            })
+            .find(|conn| conn.loc.extension.as_deref() == Some("subgraph_3_ext_output"))
             .unwrap();
 
         // Verify all message types are present in the same connection
@@ -1359,10 +1308,7 @@ mod tests {
                     "subgraph_1".to_string(),
                     None,
                     GraphContent {
-                        import_uri: format!(
-                            "file://{}",
-                            subgraph_file_path.to_str().unwrap()
-                        ),
+                        import_uri: format!("file://{}", subgraph_file_path.to_str().unwrap()),
                     },
                 ),
             ],

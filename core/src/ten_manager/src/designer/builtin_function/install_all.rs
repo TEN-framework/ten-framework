@@ -13,22 +13,20 @@ use super::WsBuiltinFunction;
 use crate::cmd::cmd_install::LocalInstallMode;
 
 impl WsBuiltinFunction {
-    pub fn install_all(
-        &mut self,
-        base_dir: String,
-        ctx: &mut WebsocketContext<WsBuiltinFunction>,
-    ) {
+    pub fn install_all(&mut self, base_dir: String, ctx: &mut WebsocketContext<WsBuiltinFunction>) {
         let install_command = crate::cmd::cmd_install::InstallCommand {
             package_type: None,
             package_name: None,
-            support: ManifestSupport { os: None, arch: None },
+            support: ManifestSupport {
+                os: None,
+                arch: None,
+            },
             local_install_mode: LocalInstallMode::Link,
             standalone: false,
             production: false,
             local_path: None,
             cwd: base_dir.clone(),
-            max_latest_versions:
-                crate::constants::DEFAULT_MAX_LATEST_VERSIONS_WHEN_INSTALL,
+            max_latest_versions: crate::constants::DEFAULT_MAX_LATEST_VERSIONS_WHEN_INSTALL,
         };
 
         run_installation(

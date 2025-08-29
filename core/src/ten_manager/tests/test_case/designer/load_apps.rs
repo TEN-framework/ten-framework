@@ -11,9 +11,7 @@ mod tests {
     use actix_web::{http::StatusCode, test, web, App};
     use ten_manager::{
         designer::{
-            apps::load::{
-                load_app_endpoint, LoadAppRequestPayload, LoadAppResponseData,
-            },
+            apps::load::{load_app_endpoint, LoadAppRequestPayload, LoadAppResponseData},
             response::{ApiResponse, Status},
             storage::in_memory::TmanStorageInMemory,
             DesignerState,
@@ -25,13 +23,14 @@ mod tests {
     #[actix_web::test]
     async fn test_load_app_success_with_app_uri() {
         // Set up the designer state with initial data.
-        let tman_config = TmanConfig { verbose: true, ..TmanConfig::default() };
+        let tman_config = TmanConfig {
+            verbose: true,
+            ..TmanConfig::default()
+        };
 
         let designer_state = DesignerState {
             tman_config: Arc::new(tokio::sync::RwLock::new(tman_config)),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -42,10 +41,12 @@ mod tests {
 
         // Set up the test service.
         let app = test::init_service(
-            App::new().app_data(web::Data::new(designer_state.clone())).route(
-                "/test_load_app_success_with_app_uri",
-                web::post().to(load_app_endpoint),
-            ),
+            App::new()
+                .app_data(web::Data::new(designer_state.clone()))
+                .route(
+                    "/test_load_app_success_with_app_uri",
+                    web::post().to(load_app_endpoint),
+                ),
         )
         .await;
 
@@ -86,12 +87,8 @@ mod tests {
     async fn test_load_app_success_without_app_uri() {
         // Set up the designer state with initial data.
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -102,10 +99,12 @@ mod tests {
 
         // Set up the test service.
         let app = test::init_service(
-            App::new().app_data(web::Data::new(designer_state.clone())).route(
-                "/test_load_app_success_without_app_uri",
-                web::post().to(load_app_endpoint),
-            ),
+            App::new()
+                .app_data(web::Data::new(designer_state.clone()))
+                .route(
+                    "/test_load_app_success_without_app_uri",
+                    web::post().to(load_app_endpoint),
+                ),
         )
         .await;
 

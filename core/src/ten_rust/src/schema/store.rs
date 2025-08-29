@@ -76,8 +76,7 @@ impl SchemaStore {
             schema_store.parse_schemas_from_manifest(&api)?;
             Ok(Some(schema_store))
         } else {
-            schema_store
-                .parse_schemas_from_manifest(manifest.api.as_ref().unwrap())?;
+            schema_store.parse_schemas_from_manifest(manifest.api.as_ref().unwrap())?;
 
             Ok(Some(schema_store))
         }
@@ -94,33 +93,27 @@ impl SchemaStore {
     ///
     /// Each schema type is parsed and stored in the appropriate collection
     /// within the SchemaStore.
-    pub fn parse_schemas_from_manifest(
-        &mut self,
-        manifest_api: &ManifestApi,
-    ) -> Result<()> {
+    pub fn parse_schemas_from_manifest(&mut self, manifest_api: &ManifestApi) -> Result<()> {
         // Parse property schema if defined.
         if let Some(property) = &manifest_api.property {
             let mut property_schema_value: serde_json::Value =
                 serde_json::json!({"type": "object"});
-            let property_schema_object =
-                property_schema_value.as_object_mut().unwrap();
+            let property_schema_object = property_schema_value.as_object_mut().unwrap();
 
             if let Some(properties) = &property.properties {
-                property_schema_object.insert(
-                    "properties".to_string(),
-                    serde_json::to_value(properties)?,
-                );
+                property_schema_object
+                    .insert("properties".to_string(), serde_json::to_value(properties)?);
             }
 
             if let Some(required) = &property.required {
-                property_schema_object.insert(
-                    "required".to_string(),
-                    serde_json::to_value(required)?,
-                );
+                property_schema_object
+                    .insert("required".to_string(), serde_json::to_value(required)?);
             }
 
             let schema = create_schema_from_json(
-                serde_json::to_value(property_schema_object).as_ref().unwrap(),
+                serde_json::to_value(property_schema_object)
+                    .as_ref()
+                    .unwrap(),
             )?;
             self.property = Some(schema);
         }
@@ -145,47 +138,32 @@ impl SchemaStore {
 
         // Parse outgoing data schemas.
         if let Some(data_out_schema) = &manifest_api.data_out {
-            parse_msgs_schema_from_manifest(
-                data_out_schema,
-                &mut self.data_out,
-            )
-            .with_context(|| "Failed to parse data_out schema")?;
+            parse_msgs_schema_from_manifest(data_out_schema, &mut self.data_out)
+                .with_context(|| "Failed to parse data_out schema")?;
         }
 
         // Parse incoming video frame schemas.
         if let Some(video_frame_in_schema) = &manifest_api.video_frame_in {
-            parse_msgs_schema_from_manifest(
-                video_frame_in_schema,
-                &mut self.video_frame_in,
-            )
-            .with_context(|| "Failed to parse video_frame_in schema")?;
+            parse_msgs_schema_from_manifest(video_frame_in_schema, &mut self.video_frame_in)
+                .with_context(|| "Failed to parse video_frame_in schema")?;
         }
 
         // Parse outgoing video frame schemas.
         if let Some(video_frame_out_schema) = &manifest_api.video_frame_out {
-            parse_msgs_schema_from_manifest(
-                video_frame_out_schema,
-                &mut self.video_frame_out,
-            )
-            .with_context(|| "Failed to parse video_frame_out schema")?;
+            parse_msgs_schema_from_manifest(video_frame_out_schema, &mut self.video_frame_out)
+                .with_context(|| "Failed to parse video_frame_out schema")?;
         }
 
         // Parse incoming audio frame schemas.
         if let Some(audio_frame_in_schema) = &manifest_api.audio_frame_in {
-            parse_msgs_schema_from_manifest(
-                audio_frame_in_schema,
-                &mut self.audio_frame_in,
-            )
-            .with_context(|| "Failed to parse audio_frame_in schema")?;
+            parse_msgs_schema_from_manifest(audio_frame_in_schema, &mut self.audio_frame_in)
+                .with_context(|| "Failed to parse audio_frame_in schema")?;
         }
 
         // Parse outgoing audio frame schemas.
         if let Some(audio_frame_out_schema) = &manifest_api.audio_frame_out {
-            parse_msgs_schema_from_manifest(
-                audio_frame_out_schema,
-                &mut self.audio_frame_out,
-            )
-            .with_context(|| "Failed to parse audio_frame_out schema")?;
+            parse_msgs_schema_from_manifest(audio_frame_out_schema, &mut self.audio_frame_out)
+                .with_context(|| "Failed to parse audio_frame_out schema")?;
         }
 
         Ok(())
@@ -236,19 +214,16 @@ fn parse_msgs_schema_from_manifest(
 pub fn create_c_schema_from_properties_and_required(
     property: &Option<ManifestApiProperty>,
 ) -> Result<Option<TenSchema>> {
-    let mut property_schema_value: serde_json::Value =
-        serde_json::json!({"type": "object"});
+    let mut property_schema_value: serde_json::Value = serde_json::json!({"type": "object"});
     let property_schema_object = property_schema_value.as_object_mut().unwrap();
 
     if let Some(property) = property {
         if let Some(properties) = &property.properties {
             let mut property_json_value = serde_json::json!({});
-            let property_json_object =
-                property_json_value.as_object_mut().unwrap();
+            let property_json_object = property_json_value.as_object_mut().unwrap();
 
             properties.iter().for_each(|(key, attr)| {
-                property_json_object
-                    .insert(key.clone(), serde_json::to_value(attr).unwrap());
+                property_json_object.insert(key.clone(), serde_json::to_value(attr).unwrap());
             });
 
             property_schema_object.insert(
@@ -258,15 +233,14 @@ pub fn create_c_schema_from_properties_and_required(
         }
 
         if let Some(required) = &property.required {
-            property_schema_object.insert(
-                "required".to_string(),
-                serde_json::to_value(required)?,
-            );
+            property_schema_object.insert("required".to_string(), serde_json::to_value(required)?);
         }
     }
 
     Ok(Some(create_schema_from_json(
-        serde_json::to_value(property_schema_object).as_ref().unwrap(),
+        serde_json::to_value(property_schema_object)
+            .as_ref()
+            .unwrap(),
     )?))
 }
 
@@ -276,14 +250,12 @@ pub fn create_c_schema_from_manifest_api(
     let mut schema = TenMsgSchema::default();
 
     if let Some(manifest_result) = &manifest_msg.result {
-        let result_schema = create_c_schema_from_properties_and_required(
-            &manifest_result.property,
-        )?;
+        let result_schema =
+            create_c_schema_from_properties_and_required(&manifest_result.property)?;
         schema.result = result_schema;
     }
 
-    let property_schema =
-        create_c_schema_from_properties_and_required(&manifest_msg.property)?;
+    let property_schema = create_c_schema_from_properties_and_required(&manifest_msg.property)?;
     schema.msg = property_schema;
 
     if schema.msg.is_none() && schema.result.is_none() {
@@ -354,12 +326,7 @@ pub fn are_msg_schemas_compatible(
 
     // Note: Here target is the reverse of source, because result is the reverse
     // of source.
-    are_ten_schemas_compatible(
-        target.result.as_ref(),
-        source.result.as_ref(),
-        true,
-        true,
-    )?;
+    are_ten_schemas_compatible(target.result.as_ref(), source.result.as_ref(), true, true)?;
 
     Ok(())
 }

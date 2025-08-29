@@ -46,8 +46,7 @@ fn test_aes_ctr_decrypt() {
     let mut decrypt_bytes = Vec::new();
     for i in 0..(hex_str.len() / 2) {
         let byte_str = &hex_str[i * 2..i * 2 + 2];
-        let byte = u8::from_str_radix(byte_str, 16)
-            .expect("Invalid hexadecimal string");
+        let byte = u8::from_str_radix(byte_str, 16).expect("Invalid hexadecimal string");
         decrypt_bytes.push(byte);
     }
     let mut data_vec = decrypt_bytes;

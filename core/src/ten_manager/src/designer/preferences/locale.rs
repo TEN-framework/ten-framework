@@ -31,8 +31,11 @@ pub async fn get_locale_endpoint(
     let locale = state.tman_config.read().await.designer.locale;
 
     let response_data = GetLocaleResponseData { locale };
-    let response =
-        ApiResponse { status: Status::Ok, data: response_data, meta: None };
+    let response = ApiResponse {
+        status: Status::Ok,
+        data: response_data,
+        meta: None,
+    };
 
     Ok(HttpResponse::Ok().json(response))
 }
@@ -50,7 +53,11 @@ pub async fn update_locale_endpoint(
     // Save to config file.
     save_config_to_file(&mut tman_config)?;
 
-    let response = ApiResponse { status: Status::Ok, data: (), meta: None };
+    let response = ApiResponse {
+        status: Status::Ok,
+        data: (),
+        meta: None,
+    };
 
     Ok(HttpResponse::Ok().json(response))
 }

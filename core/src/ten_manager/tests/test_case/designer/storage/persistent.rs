@@ -15,16 +15,11 @@ use ten_manager::{
         storage::{
             in_memory::TmanStorageInMemory,
             persistent::{
-                get::{
-                    get_persistent_storage_endpoint, GetPersistentResponseData,
-                },
-                schema::{
-                    set_persistent_storage_schema_endpoint,
-                    SetSchemaRequestPayload,
-                },
+                get::{get_persistent_storage_endpoint, GetPersistentResponseData},
+                schema::{set_persistent_storage_schema_endpoint, SetSchemaRequestPayload},
                 set::{
-                    set_persistent_storage_endpoint,
-                    SetPersistentRequestPayload, SetPersistentResponseData,
+                    set_persistent_storage_endpoint, SetPersistentRequestPayload,
+                    SetPersistentResponseData,
                 },
             },
         },
@@ -43,9 +38,7 @@ async fn test_set_and_get_persistent_simple() {
     // Create a clean state with empty config.
     let designer_state = DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-            TmanStorageInMemory::default(),
-        )),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -136,9 +129,7 @@ async fn test_set_and_get_persistent_array_key() {
 
     let designer_state = DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-            TmanStorageInMemory::default(),
-        )),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -220,9 +211,7 @@ async fn test_get_persistent_nonexistent_key() {
 
     let designer_state = DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-            TmanStorageInMemory::default(),
-        )),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -284,9 +273,7 @@ async fn test_get_persistent_without_schema_fails() {
 
     let designer_state = DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-            TmanStorageInMemory::default(),
-        )),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -294,12 +281,10 @@ async fn test_get_persistent_without_schema_fails() {
     };
     let state = web::Data::new(Arc::new(designer_state));
 
-    let app = test::init_service(
-        actix_web::App::new().app_data(state.clone()).route(
-            "/storage/persistent/get",
-            web::post().to(get_persistent_storage_endpoint),
-        ),
-    )
+    let app = test::init_service(actix_web::App::new().app_data(state.clone()).route(
+        "/storage/persistent/get",
+        web::post().to(get_persistent_storage_endpoint),
+    ))
     .await;
 
     // Test getting without setting schema first - should fail
@@ -320,9 +305,7 @@ async fn test_persistent_storage_persists_across_requests() {
 
     let designer_state = DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-            TmanStorageInMemory::default(),
-        )),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -351,7 +334,9 @@ async fn test_persistent_storage_persists_across_requests() {
         "additionalProperties": true
     });
 
-    let schema_payload = SetSchemaRequestPayload { schema: schema.clone() };
+    let schema_payload = SetSchemaRequestPayload {
+        schema: schema.clone(),
+    };
 
     let schema_req = test::TestRequest::post()
         .uri("/storage/persistent/schema")
@@ -427,9 +412,7 @@ async fn test_set_persistent_invalid_key() {
 
     let designer_state = DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-            TmanStorageInMemory::default(),
-        )),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -488,9 +471,7 @@ async fn test_set_persistent_without_schema_fails() {
 
     let designer_state = DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-            TmanStorageInMemory::default(),
-        )),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -498,12 +479,10 @@ async fn test_set_persistent_without_schema_fails() {
     };
     let state = web::Data::new(Arc::new(designer_state));
 
-    let app = test::init_service(
-        actix_web::App::new().app_data(state.clone()).route(
-            "/storage/persistent/set",
-            web::post().to(set_persistent_storage_endpoint),
-        ),
-    )
+    let app = test::init_service(actix_web::App::new().app_data(state.clone()).route(
+        "/storage/persistent/set",
+        web::post().to(set_persistent_storage_endpoint),
+    ))
     .await;
 
     // Test setting without schema first - should fail

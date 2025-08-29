@@ -80,8 +80,7 @@ pub fn parse_error_statement(clingo_output: &[String]) -> Result<ConflictInfo> {
             let introducer1_version = caps.get(8).unwrap().as_str().to_string();
             let introducer2_type = caps.get(9).unwrap().as_str().to_string();
             let introducer2_name = caps.get(10).unwrap().as_str().to_string();
-            let introducer2_version =
-                caps.get(11).unwrap().as_str().to_string();
+            let introducer2_version = caps.get(11).unwrap().as_str().to_string();
 
             // Format the error message with the extracted arguments.
             let error_message = error_template

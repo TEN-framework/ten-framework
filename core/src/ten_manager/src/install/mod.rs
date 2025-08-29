@@ -20,9 +20,8 @@ use semver::Version;
 use tempfile::NamedTempFile;
 
 use ten_rust::pkg_info::{
-    find_to_be_replaced_local_pkgs, find_untracked_local_packages,
-    get_pkg_info_from_path, manifest::dependency::ManifestDependency,
-    pkg_basic_info::PkgBasicInfo, pkg_type::PkgType,
+    find_to_be_replaced_local_pkgs, find_untracked_local_packages, get_pkg_info_from_path,
+    manifest::dependency::ManifestDependency, pkg_basic_info::PkgBasicInfo, pkg_type::PkgType,
     pkg_type_and_name::PkgTypeAndName, PkgInfo,
 };
 
@@ -31,9 +30,7 @@ use crate::{
     cmd::cmd_install::{InstallCommand, LocalInstallMode},
     fs::copy_folder_recursively,
     home::config::is_verbose,
-    manifest_lock::{
-        parse_manifest_lock_in_folder, write_pkg_lockfile, ManifestLock,
-    },
+    manifest_lock::{parse_manifest_lock_in_folder, write_pkg_lockfile, ManifestLock},
     output::TmanOutput,
     package_file::unpackage::extract_and_process_tpkg_file,
     pkg_info::manifest::to_file::update_manifest_all_fields,
@@ -50,22 +47,25 @@ fn install_local_dependency_pkg_info(
     dest_dir_path: &String,
     out: Arc<Box<dyn TmanOutput>>,
 ) -> Result<()> {
-    assert!(pkg_info.local_dependency_path.is_some(), "Should not happen.",);
+    assert!(
+        pkg_info.local_dependency_path.is_some(),
+        "Should not happen.",
+    );
 
     let src_path = pkg_info.local_dependency_path.as_ref().unwrap();
-    let src_base_dir =
-        pkg_info.local_dependency_base_dir.as_deref().unwrap_or("");
+    let src_base_dir = pkg_info.local_dependency_base_dir.as_deref().unwrap_or("");
 
     let src_dir_path = Path::new(&src_base_dir)
         .join(src_path)
         .canonicalize()
-        .with_context(|| {
-        format!("Failed to canonicalize path: {src_base_dir} + {src_path}")
-    })?;
+        .with_context(|| format!("Failed to canonicalize path: {src_base_dir} + {src_path}"))?;
 
-    let src_dir_path_metadata = fs::metadata(&src_dir_path)
-        .expect("Failed to get metadata for src_path");
-    assert!(src_dir_path_metadata.is_dir(), "Source path must be a directory.");
+    let src_dir_path_metadata =
+        fs::metadata(&src_dir_path).expect("Failed to get metadata for src_path");
+    assert!(
+        src_dir_path_metadata.is_dir(),
+        "Source path must be a directory."
+    );
 
     if Path::new(dest_dir_path).exists() {
         out.normal_line(&format!(
@@ -77,9 +77,7 @@ fn install_local_dependency_pkg_info(
         let dest_path = Path::new(dest_dir_path);
         if let Some(parent) = dest_path.parent() {
             fs::create_dir_all(parent).with_context(|| {
-                format!(
-                    "Failed to create parent directories for '{dest_dir_path}'"
-                )
+                format!("Failed to create parent directories for '{dest_dir_path}'")
             })?;
         }
 
@@ -95,23 +93,14 @@ fn install_local_dependency_pkg_info(
                 #[cfg(unix)]
                 {
                     std::os::unix::fs::symlink(src_dir_path, dest_dir_path)
-                        .map_err(|e| {
-                            anyhow::anyhow!("Failed to create symlink: {}", e)
-                        })?;
+                        .map_err(|e| anyhow::anyhow!("Failed to create symlink: {}", e))?;
                 }
 
                 #[cfg(windows)]
                 {
-                    std::os::windows::fs::symlink_dir(
-                        src_dir_path,
-                        &dest_dir_path,
-                    )
-                    .map_err(|e| {
-                        anyhow::anyhow!(
-                            "Failed to create directory symlink: {}",
-                            e
-                        )
-                    })?;
+                    std::os::windows::fs::symlink_dir(src_dir_path, &dest_dir_path).map_err(
+                        |e| anyhow::anyhow!("Failed to create directory symlink: {}", e),
+                    )?;
                 }
             }
         }
@@ -138,21 +127,19 @@ async fn install_non_local_dependency_pkg_info(
     )
     .await?;
 
-    let mut installed_paths =
-        extract_and_process_tpkg_file(temp_file.path(), dest_dir_path, None)?;
+    let mut installed_paths = extract_and_process_tpkg_file(temp_file.path(), dest_dir_path, None)?;
 
     // After installation (after decompression), check whether the content
     // of property.json is correct based on the decompressed
     // content.
-    ten_rust::pkg_info::property::check_property_json_of_pkg(dest_dir_path)
-        .map_err(|e| {
-            anyhow::anyhow!(
-                "Failed to check property.json for {}:{}, {}",
-                get_pkg_type(pkg_info),
-                get_pkg_name(pkg_info),
-                e
-            )
-        })?;
+    ten_rust::pkg_info::property::check_property_json_of_pkg(dest_dir_path).map_err(|e| {
+        anyhow::anyhow!(
+            "Failed to check property.json for {}:{}, {}",
+            get_pkg_type(pkg_info),
+            get_pkg_name(pkg_info),
+            e
+        )
+    })?;
 
     // base_dir is also an installed_path.
     installed_paths.paths.push(".".to_string());
@@ -185,20 +172,9 @@ pub async fn install_pkg_info(
     let dest_dir_path = target_path.to_string_lossy().to_string();
 
     if pkg_info.is_local_dependency {
-        install_local_dependency_pkg_info(
-            command_data,
-            pkg_info,
-            &dest_dir_path,
-            out,
-        )?;
+        install_local_dependency_pkg_info(command_data, pkg_info, &dest_dir_path, out)?;
     } else {
-        install_non_local_dependency_pkg_info(
-            tman_config,
-            pkg_info,
-            &dest_dir_path,
-            out,
-        )
-        .await?;
+        install_non_local_dependency_pkg_info(tman_config, pkg_info, &dest_dir_path, out).await?;
     }
 
     Ok(())
@@ -218,19 +194,13 @@ async fn update_package_manifest(
     if let Some(ref dependencies) = base_pkg_info.manifest.dependencies {
         for dep in dependencies.iter() {
             match dep {
-                ManifestDependency::RegistryDependency {
-                    pkg_type,
-                    name,
-                    ..
-                } => {
+                ManifestDependency::RegistryDependency { pkg_type, name, .. } => {
                     let manifest_dependency_type_and_name = PkgTypeAndName {
                         pkg_type: *pkg_type,
                         name: name.clone(),
                     };
 
-                    if manifest_dependency_type_and_name
-                        == PkgTypeAndName::from(added_dependency)
-                    {
+                    if manifest_dependency_type_and_name == PkgTypeAndName::from(added_dependency) {
                         if !added_dependency.is_local_dependency {
                             is_present = true;
                             updated_dependencies.push(dep.clone());
@@ -246,50 +216,36 @@ async fn update_package_manifest(
                     }
                 }
                 ManifestDependency::LocalDependency { path, .. } => {
-                    let manifest_dependency_pkg_info =
-                        match get_pkg_info_from_path(
-                            Path::new(&path),
-                            false,
-                            false,
-                            &mut None,
-                            None,
-                        )
-                        .await
-                        {
-                            Ok(info) => info,
-                            Err(_) => {
-                                panic!(
-                                    "Failed to get package info from path: \
+                    let manifest_dependency_pkg_info = match get_pkg_info_from_path(
+                        Path::new(&path),
+                        false,
+                        false,
+                        &mut None,
+                        None,
+                    )
+                    .await
+                    {
+                        Ok(info) => info,
+                        Err(_) => {
+                            panic!(
+                                "Failed to get package info from path: \
                                      {path}"
-                                );
-                            }
-                        };
+                            );
+                        }
+                    };
 
-                    if manifest_dependency_pkg_info
-                        .manifest
-                        .type_and_name
-                        .pkg_type
+                    if manifest_dependency_pkg_info.manifest.type_and_name.pkg_type
                         == get_pkg_type(added_dependency)
-                        && manifest_dependency_pkg_info
-                            .manifest
-                            .type_and_name
-                            .name
+                        && manifest_dependency_pkg_info.manifest.type_and_name.name
                             == get_pkg_name(added_dependency)
                     {
                         if added_dependency.is_local_dependency {
                             assert!(
-                                added_dependency
-                                    .local_dependency_path
-                                    .is_some(),
+                                added_dependency.local_dependency_path.is_some(),
                                 "Should not happen."
                             );
 
-                            if path
-                                == added_dependency
-                                    .local_dependency_path
-                                    .as_ref()
-                                    .unwrap()
-                            {
+                            if path == added_dependency.local_dependency_path.as_ref().unwrap() {
                                 is_present = true;
                                 updated_dependencies.push(dep.clone());
                             } else {
@@ -339,8 +295,11 @@ async fn update_package_manifest(
     base_pkg_info.manifest.dependencies = Some(updated_dependencies);
 
     // Use the deps_to_remove for update_manifest_all_fields.
-    let deps_to_remove_option =
-        if !deps_to_remove.is_empty() { Some(&deps_to_remove) } else { None };
+    let deps_to_remove_option = if !deps_to_remove.is_empty() {
+        Some(&deps_to_remove)
+    } else {
+        None
+    };
 
     update_manifest_all_fields(
         &base_pkg_info.url,
@@ -399,11 +358,7 @@ pub async fn write_installing_pkg_into_manifest_file(
     )?;
 
     if suitable_pkgs.is_empty() {
-        return Err(anyhow!(
-            "Failed to find any of {}:{}.",
-            pkg_type,
-            pkg_name,
-        ));
+        return Err(anyhow!("Failed to find any of {}:{}.", pkg_type, pkg_name,));
     }
 
     if suitable_pkgs.len() > 1 {
@@ -414,8 +369,7 @@ pub async fn write_installing_pkg_into_manifest_file(
         ));
     }
 
-    update_package_manifest(pkg_info, suitable_pkgs[0], local_path_if_any)
-        .await?;
+    update_package_manifest(pkg_info, suitable_pkgs[0], local_path_if_any).await?;
 
     Ok(())
 }
@@ -425,24 +379,17 @@ pub async fn write_installing_pkg_into_manifest_file(
 pub async fn filter_compatible_pkgs_to_candidates(
     tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
     all_pkgs: &Vec<PkgInfo>,
-    all_candidates: &mut HashMap<
-        PkgTypeAndName,
-        HashMap<PkgBasicInfo, PkgInfo>,
-    >,
+    all_candidates: &mut HashMap<PkgTypeAndName, HashMap<PkgBasicInfo, PkgInfo>>,
     support: &ManifestSupport,
     out: Arc<Box<dyn TmanOutput>>,
 ) -> Result<()> {
     for existed_pkg in all_pkgs.to_owned().iter_mut() {
         if is_verbose(tman_config.clone()).await {
-            out.normal_line(&format!(
-                "Check support score for {existed_pkg:?}"
-            ));
+            out.normal_line(&format!("Check support score for {existed_pkg:?}"));
         }
 
-        let compatible_score = is_manifest_supports_compatible_with(
-            &get_pkg_supports(existed_pkg),
-            support,
-        );
+        let compatible_score =
+            is_manifest_supports_compatible_with(&get_pkg_supports(existed_pkg), support);
 
         if compatible_score >= 0 {
             existed_pkg.compatible_score = compatible_score;
@@ -481,9 +428,7 @@ fn get_supports_str(pkg: &PkgInfo) -> String {
     let support_items: Vec<String> = get_pkg_supports(pkg)
         .iter()
         .filter_map(|s| match (s.os.as_ref(), s.arch.as_ref()) {
-            (Some(os), Some(arch)) => {
-                Some(format!("{os:?}, {arch:?}").to_lowercase())
-            }
+            (Some(os), Some(arch)) => Some(format!("{os:?}, {arch:?}").to_lowercase()),
             (Some(os), None) => Some(format!("{os:?}").to_lowercase()),
             (None, Some(arch)) => Some(format!("{arch:?}").to_lowercase()),
             (None, None) => None,

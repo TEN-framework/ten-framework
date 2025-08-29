@@ -24,19 +24,14 @@ pub fn print_memory_stats(context: &str) {
     #[cfg(not(feature = "jemalloc"))]
     {
         println!("\n=== Memory Statistics ({context}) ===");
-        println!(
-            "No detailed memory statistics available - jemalloc not enabled"
-        );
+        println!("No detailed memory statistics available - jemalloc not enabled");
         println!("=== End of Memory Statistics ===\n");
     }
 }
 
 #[cfg(feature = "jemalloc")]
 fn print_jemalloc_stats(context: &str) {
-    extern "C" fn write_cb(
-        _cbopaque: *mut std::ffi::c_void,
-        message: *const std::os::raw::c_char,
-    ) {
+    extern "C" fn write_cb(_cbopaque: *mut std::ffi::c_void, message: *const std::os::raw::c_char) {
         unsafe {
             if !message.is_null() {
                 let c_str = std::ffi::CStr::from_ptr(message);
@@ -49,11 +44,7 @@ fn print_jemalloc_stats(context: &str) {
 
     println!("\n=== Jemalloc Memory Statistics ({}) ===", context);
     unsafe {
-        jemalloc_sys::malloc_stats_print(
-            Some(write_cb),
-            std::ptr::null_mut(),
-            std::ptr::null(),
-        );
+        jemalloc_sys::malloc_stats_print(Some(write_cb), std::ptr::null_mut(), std::ptr::null());
     }
     println!("=== End of Jemalloc Memory Statistics ===\n");
 }

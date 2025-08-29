@@ -10,10 +10,7 @@ use crate::graph::{connection::GraphMessageFlow, node::GraphNodeType, Graph};
 
 impl Graph {
     /// Creates a subgraph identifier in the format "app_uri:subgraph_name"
-    fn create_subgraph_identifier(
-        app_uri: Option<&String>,
-        subgraph_name: &str,
-    ) -> String {
+    fn create_subgraph_identifier(app_uri: Option<&String>, subgraph_name: &str) -> String {
         format!("{}:{}", app_uri.map_or("", |s| s.as_str()), subgraph_name)
     }
 
@@ -25,8 +22,7 @@ impl Graph {
         subgraph_name: &str,
         error_context: &str,
     ) -> Result<()> {
-        let subgraph_identifier =
-            Self::create_subgraph_identifier(app_uri, subgraph_name);
+        let subgraph_identifier = Self::create_subgraph_identifier(app_uri, subgraph_name);
 
         if !all_subgraphs.contains(&subgraph_identifier) {
             return Err(anyhow::anyhow!(
@@ -50,8 +46,7 @@ impl Graph {
 
             // Skip validation for built-in extensions with "ten:" prefix
             if subgraph_name != "ten" {
-                let subgraph_identifier =
-                    Self::create_subgraph_identifier(app_uri, subgraph_name);
+                let subgraph_identifier = Self::create_subgraph_identifier(app_uri, subgraph_name);
 
                 if !all_subgraphs.contains(&subgraph_identifier) {
                     return Err(anyhow::anyhow!(
@@ -134,10 +129,8 @@ impl Graph {
         let mut all_subgraphs: Vec<String> = Vec::new();
         for node in &self.nodes {
             if node.get_type() == GraphNodeType::Subgraph {
-                let unique_subgraph_name = Self::create_subgraph_identifier(
-                    node.get_app_uri().as_ref(),
-                    node.get_name(),
-                );
+                let unique_subgraph_name =
+                    Self::create_subgraph_identifier(node.get_app_uri().as_ref(), node.get_name());
                 all_subgraphs.push(unique_subgraph_name);
             }
         }
@@ -146,8 +139,7 @@ impl Graph {
         for (conn_idx, connection) in connections.iter().enumerate() {
             // Check if the source connection references a subgraph directly
             if let Some(subgraph_name) = &connection.loc.subgraph {
-                let error_context =
-                    format!("declared in connections[{conn_idx}]");
+                let error_context = format!("declared in connections[{conn_idx}]");
 
                 Self::validate_direct_subgraph_reference(
                     &all_subgraphs,
@@ -159,8 +151,7 @@ impl Graph {
 
             // Check if the source extension contains subgraph namespace
             if let Some(extension_name) = &connection.loc.extension {
-                let error_context =
-                    format!("referenced in connections[{conn_idx}]");
+                let error_context = format!("referenced in connections[{conn_idx}]");
 
                 Self::validate_extension_namespace_subgraph_reference(
                     &all_subgraphs,
