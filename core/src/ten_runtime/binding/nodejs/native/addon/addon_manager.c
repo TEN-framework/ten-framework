@@ -110,7 +110,8 @@ static bool ten_nodejs_addon_manager_check_integrity(
 static void ten_app_thread_call_addon_registration_done(void *from,
                                                         void *args) {
   ten_app_t *app = (ten_app_t *)from;
-  TEN_ASSERT(app && ten_app_check_integrity(app, true), "Should not happen.");
+  TEN_ASSERT(app, "Should not happen.");
+  TEN_ASSERT(ten_app_check_integrity(app, true), "Should not happen.");
 
   addon_manager_register_single_addon_ctx_t *ctx =
       (addon_manager_register_single_addon_ctx_t *)args;
@@ -205,7 +206,8 @@ done: {
   TEN_ASSERT(register_ctx, "Should not happen.");
 
   ten_app_t *app = register_ctx->app;
-  TEN_ASSERT(app && ten_app_check_integrity(app, false), "Should not happen.");
+  TEN_ASSERT(app, "Should not happen.");
+  TEN_ASSERT(ten_app_check_integrity(app, false), "Should not happen.");
 
   int rc = ten_runloop_post_task_tail(
       ten_app_get_attached_runloop(app),

@@ -21,9 +21,10 @@ typedef void (*ten_addon_registration_done_func_t)(void *register_ctx,
 
 // Note: The `done_callback` could be called synchronously or asynchronously,
 // depending on the situation. In Nodejs binding, a task will be posted to the
-// JS main thread, then the `done_callback` will be called in the future
-// during the JS function execution. While in other cases, the `done_callback`
-// will be directly called in the registration function.
+// JS main thread, then the `done_callback` will be called asynchronously in the
+// future during the JS function execution. While in other cases, the
+// `done_callback` will be directly called in the registration function (Because
+// in these bindings, they don't have a task queue).
 typedef void (*ten_addon_registration_func_t)(
     ten_addon_registration_t *registration,
     ten_addon_registration_done_func_t done_callback,

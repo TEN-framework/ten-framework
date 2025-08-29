@@ -35,15 +35,22 @@ class _AddonManager:
             register_handler = cls._registry.get(register_key)
             if register_handler:
                 try:
+                    # Check if the addon is already registered.
                     if register_key in cls._registered_addons:
                         print(
-                            f"Addon '{register_key}' has already been registered, skipping registration."
+                            (
+                                f"Addon '{register_key}' has already been "
+                                "registered, skipping registration."
+                            )
                         )
                         continue
 
+                    # Call the register handler.
                     register_handler(register_ctx)
 
                     print(f"Successfully registered addon '{register_key}'")
+
+                    # Mark the addon as registered.
                     cls._registered_addons.add(register_key)
                 except Exception as e:
                     print(
@@ -60,14 +67,22 @@ class _AddonManager:
         register_handler = cls._registry.get(addon_name, None)
         if register_handler:
             try:
+                # Check if the addon is already registered.
                 if addon_name in cls._registered_addons:
                     print(
-                        f"Addon '{addon_name}' has already been registered, skipping registration."
+                        (
+                            f"Addon '{addon_name}' has already been "
+                            "registered, skipping registration."
+                        )
                     )
                     return
 
+                # Call the register handler.
                 register_handler(register_ctx)
+
                 print(f"Successfully registered addon '{addon_name}'")
+
+                # Mark the addon as registered.
                 cls._registered_addons.add(addon_name)
             except Exception as e:
                 print(f"Error during registration of addon '{addon_name}': {e}")

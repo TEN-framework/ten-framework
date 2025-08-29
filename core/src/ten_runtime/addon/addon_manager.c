@@ -148,10 +148,12 @@ ten_addon_manager_register_context_create(
       (ten_addon_manager_register_context_t *)TEN_MALLOC(
           sizeof(ten_addon_manager_register_context_t));
   TEN_ASSERT(ctx, "Failed to allocate memory.");
+
   ctx->on_all_addons_registered = on_all_addons_registered;
   ctx->cb_data = cb_data;
   ctx->expected_count = expected_count;
   ctx->registered_count = 0;
+
   return ctx;
 }
 

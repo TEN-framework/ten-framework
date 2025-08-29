@@ -31,7 +31,6 @@
 #include "ten_utils/lib/smart_ptr.h"
 #include "ten_utils/lib/string.h"
 #include "ten_utils/macro/check.h"
-#include "ten_utils/macro/mark.h"
 
 void tenGoAddonCreateInstance(ten_go_handle_t go_addon,
                               ten_go_handle_t go_ten_env, const char *name,

@@ -208,7 +208,7 @@ static void ten_app_on_all_addon_loaders_created(ten_env_t *ten_env,
 }
 
 static void ten_app_on_all_protocols_registered(void *register_ctx_,
-                                                void *cb_data) {
+                                                TEN_UNUSED void *cb_data) {
   TEN_ASSERT(register_ctx_, "Should not happen.");
 
   ten_addon_register_ctx_t *register_ctx =
@@ -231,7 +231,7 @@ static void ten_app_on_all_protocols_registered(void *register_ctx_,
 }
 
 static void ten_app_on_all_addon_loaders_registered(void *register_ctx_,
-                                                    void *cb_data) {
+                                                    TEN_UNUSED void *cb_data) {
   TEN_ASSERT(register_ctx_, "Should not happen.");
 
   ten_addon_register_ctx_t *register_ctx =
@@ -245,6 +245,7 @@ static void ten_app_on_all_addon_loaders_registered(void *register_ctx_,
   TEN_ASSERT(app, "Should not happen.");
   TEN_ASSERT(ten_app_check_integrity(app, true), "Should not happen.");
 
+  // After the addon loaders are registered, we can register the protocols.
   ten_addon_manager_register_all_protocols(
       manager, register_ctx, ten_app_on_all_protocols_registered, NULL);
 }

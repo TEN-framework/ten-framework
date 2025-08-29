@@ -89,6 +89,8 @@ void ____ten_addon_graph_failed_to_create_extension__test_extension_register_han
       static_cast<ten_addon_t *>(addon_instance->get_c_instance()),
       register_ctx);
   ten_string_destroy(base_dir);
+
+  // Notify the caller that the addon has been registered.
   done_callback(register_ctx, user_data);
 }
 
