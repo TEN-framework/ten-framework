@@ -6,11 +6,9 @@
 //
 #[cfg(test)]
 mod tests {
+    use std::{fs, os::raw::c_char, thread, time::Duration};
+
     use serial_test::serial;
-    use std::fs;
-    use std::os::raw::c_char;
-    use std::thread;
-    use std::time::Duration;
     use ten_rust::{
         bindings::ten_rust_free_cstring,
         log::{
@@ -18,10 +16,9 @@ mod tests {
             decrypt::decrypt_records_bytes,
             encryption::{AesCtrParams, EncryptionConfig, EncryptionParams},
             reloadable::ten_configure_log_reloadable,
-            ten_log, AdvancedLogConfig, AdvancedLogEmitter,
-            AdvancedLogFormatter, AdvancedLogHandler, AdvancedLogLevelFilter,
-            AdvancedLogMatcher, ConsoleEmitterConfig, FileEmitterConfig,
-            FormatterType, LogLevel, StreamType,
+            ten_log, AdvancedLogConfig, AdvancedLogEmitter, AdvancedLogFormatter,
+            AdvancedLogHandler, AdvancedLogLevelFilter, AdvancedLogMatcher, ConsoleEmitterConfig,
+            FileEmitterConfig, FormatterType, LogLevel, StreamType,
         },
     };
     use tracing::{debug, info, trace};
@@ -96,14 +93,8 @@ mod tests {
 
         assert_eq!(log_config.handlers.len(), 1);
         assert_eq!(log_config.handlers[0].matchers.len(), 1);
-        assert_eq!(
-            log_config.handlers[0].matchers[0].level,
-            AdvancedLogLevelFilter::Debug
-        );
-        assert_eq!(
-            log_config.handlers[0].formatter.formatter_type,
-            FormatterType::Plain
-        );
+        assert_eq!(log_config.handlers[0].matchers[0].level, AdvancedLogLevelFilter::Debug);
+        assert_eq!(log_config.handlers[0].formatter.formatter_type, FormatterType::Plain);
         assert_eq!(log_config.handlers[0].formatter.colored, Some(false));
         assert_eq!(
             log_config.handlers[0].emitter,
@@ -202,14 +193,8 @@ mod tests {
         println!("Log file content:\n{content}");
 
         // Verify log levels
-        assert!(
-            !content.contains("Trace message"),
-            "Trace log should not appear"
-        );
-        assert!(
-            !content.contains("Debug message"),
-            "Debug log should not appear"
-        );
+        assert!(!content.contains("Trace message"), "Trace log should not appear");
+        assert!(!content.contains("Debug message"), "Debug log should not appear");
         assert!(content.contains("Info message"), "Info log should appear");
         assert!(content.contains("Warn message"), "Warn log should appear");
         assert!(content.contains("Error message"), "Error log should appear");
@@ -218,27 +203,10 @@ mod tests {
     #[test]
     #[serial]
     fn test_formatter_plain_colored() {
-<<<<<<< HEAD
-        let plain_colored_config =
-            AdvancedLogConfig::new(vec![AdvancedLogHandler {
-                matchers: vec![AdvancedLogMatcher {
-                    level: AdvancedLogLevelFilter::Debug, /* Allow all log
-                                                           * levels */
-                    category: None,
-                }],
-                formatter: AdvancedLogFormatter {
-                    formatter_type: FormatterType::Plain,
-                    colored: Some(true),
-                },
-                emitter: AdvancedLogEmitter::Console(ConsoleEmitterConfig {
-                    stream: StreamType::Stdout,
-                    encryption: None,
-                }),
-            }]);
-=======
         let plain_colored_config = AdvancedLogConfig::new(vec![AdvancedLogHandler {
             matchers: vec![AdvancedLogMatcher {
-                level: AdvancedLogLevel::Trace, // Allow all log levels
+                level: AdvancedLogLevelFilter::Debug, /* Allow all log
+                                                       * levels */
                 category: None,
             }],
             formatter: AdvancedLogFormatter {
@@ -250,7 +218,6 @@ mod tests {
                 encryption: None,
             }),
         }]);
->>>>>>> origin/main
 
         ten_configure_log_reloadable(&plain_colored_config).unwrap();
         // Test different log levels to see different colors
@@ -306,26 +273,9 @@ mod tests {
     #[test]
     #[serial]
     fn test_formatter_plain_no_color() {
-<<<<<<< HEAD
-        let plain_no_color_config =
-            AdvancedLogConfig::new(vec![AdvancedLogHandler {
-                matchers: vec![AdvancedLogMatcher {
-                    level: AdvancedLogLevelFilter::Info,
-                    category: None,
-                }],
-                formatter: AdvancedLogFormatter {
-                    formatter_type: FormatterType::Plain,
-                    colored: Some(false),
-                },
-                emitter: AdvancedLogEmitter::Console(ConsoleEmitterConfig {
-                    stream: StreamType::Stdout,
-                    encryption: None,
-                }),
-            }]);
-=======
         let plain_no_color_config = AdvancedLogConfig::new(vec![AdvancedLogHandler {
             matchers: vec![AdvancedLogMatcher {
-                level: AdvancedLogLevel::Info,
+                level: AdvancedLogLevelFilter::Info,
                 category: None,
             }],
             formatter: AdvancedLogFormatter {
@@ -337,7 +287,6 @@ mod tests {
                 encryption: None,
             }),
         }]);
->>>>>>> origin/main
 
         ten_configure_log_reloadable(&plain_no_color_config).unwrap();
 
@@ -500,26 +449,9 @@ mod tests {
         let temp_file = tempfile::NamedTempFile::new().unwrap();
         let test_file = temp_file.path().to_str().unwrap();
 
-<<<<<<< HEAD
-        let file_plain_config =
-            AdvancedLogConfig::new(vec![AdvancedLogHandler {
-                matchers: vec![AdvancedLogMatcher {
-                    level: AdvancedLogLevelFilter::Info,
-                    category: None,
-                }],
-                formatter: AdvancedLogFormatter {
-                    formatter_type: FormatterType::Plain,
-                    colored: Some(false),
-                },
-                emitter: AdvancedLogEmitter::File(FileEmitterConfig {
-                    path: test_file.to_string(),
-                    encryption: None,
-                }),
-            }]);
-=======
         let file_plain_config = AdvancedLogConfig::new(vec![AdvancedLogHandler {
             matchers: vec![AdvancedLogMatcher {
-                level: AdvancedLogLevel::Info,
+                level: AdvancedLogLevelFilter::Info,
                 category: None,
             }],
             formatter: AdvancedLogFormatter {
@@ -531,7 +463,6 @@ mod tests {
                 encryption: None,
             }),
         }]);
->>>>>>> origin/main
 
         ten_configure_log_reloadable(&file_plain_config).unwrap();
         ten_log(
@@ -564,14 +495,8 @@ mod tests {
             read_with_backoff(test_file, 0).expect("Failed to read log file after retries");
         println!("File content:\n{content}");
 
-        assert!(
-            content.contains("Plain message to file"),
-            "File should contain log content"
-        );
-        assert!(
-            content.contains("Warning message to file"),
-            "File should contain warning log"
-        );
+        assert!(content.contains("Plain message to file"), "File should contain log content");
+        assert!(content.contains("Warning message to file"), "File should contain warning log");
     }
 
     #[test]
@@ -580,26 +505,9 @@ mod tests {
         let temp_file = tempfile::NamedTempFile::new().unwrap();
         let test_file = temp_file.path().to_str().unwrap();
 
-<<<<<<< HEAD
-        let file_json_config =
-            AdvancedLogConfig::new(vec![AdvancedLogHandler {
-                matchers: vec![AdvancedLogMatcher {
-                    level: AdvancedLogLevelFilter::Debug,
-                    category: None,
-                }],
-                formatter: AdvancedLogFormatter {
-                    formatter_type: FormatterType::Json,
-                    colored: Some(true),
-                },
-                emitter: AdvancedLogEmitter::File(FileEmitterConfig {
-                    path: test_file.to_string(),
-                    encryption: None,
-                }),
-            }]);
-=======
         let file_json_config = AdvancedLogConfig::new(vec![AdvancedLogHandler {
             matchers: vec![AdvancedLogMatcher {
-                level: AdvancedLogLevel::Debug,
+                level: AdvancedLogLevelFilter::Debug,
                 category: None,
             }],
             formatter: AdvancedLogFormatter {
@@ -611,7 +519,6 @@ mod tests {
                 encryption: None,
             }),
         }]);
->>>>>>> origin/main
 
         ten_configure_log_reloadable(&file_json_config).unwrap();
         ten_log(
@@ -708,28 +615,8 @@ mod tests {
         ten_rust::log::ten_log_reopen_all(&mut config, true);
 
         // Write more lines after reopen request
-        ten_log(
-            &config,
-            "test_reopen",
-            1,
-            1,
-            LogLevel::Info,
-            "after_fn",
-            "after.rs",
-            3,
-            "after-1",
-        );
-        ten_log(
-            &config,
-            "test_reopen",
-            1,
-            1,
-            LogLevel::Warn,
-            "after_fn",
-            "after.rs",
-            4,
-            "after-2",
-        );
+        ten_log(&config, "test_reopen", 1, 1, LogLevel::Info, "after_fn", "after.rs", 3, "after-1");
+        ten_log(&config, "test_reopen", 1, 1, LogLevel::Warn, "after_fn", "after.rs", 4, "after-2");
 
         // Force flush: disable all handlers to drop worker guard(s)
         ten_configure_log_reloadable(&AdvancedLogConfig::new(vec![])).unwrap();
@@ -844,10 +731,7 @@ mod tests {
         let decrypted_text = String::from_utf8_lossy(&decrypted_all);
 
         println!("Decrypted content:\n{decrypted_text}");
-        assert!(
-            decrypted_text.contains(msg),
-            "Decrypted content should contain original message"
-        );
+        assert!(decrypted_text.contains(msg), "Decrypted content should contain original message");
     }
 
     #[test]
@@ -1044,14 +928,8 @@ mod tests {
             !auth_content.contains("Auth token details"),
             "Auth file should not contain debug level message"
         );
-        assert!(
-            !auth_content.contains("database"),
-            "Auth file should not contain database logs"
-        );
-        assert!(
-            !auth_content.contains("network"),
-            "Auth file should not contain network logs"
-        );
+        assert!(!auth_content.contains("database"), "Auth file should not contain database logs");
+        assert!(!auth_content.contains("network"), "Auth file should not contain network logs");
 
         // Read and verify database file contents with backoff strategy
         let db_content = read_with_backoff(db_file.path().to_str().unwrap(), 0)
@@ -1072,14 +950,8 @@ mod tests {
             db_content.contains("Connection pool stats"),
             "DB file should contain debug level message"
         );
-        assert!(
-            !db_content.contains("auth"),
-            "DB file should not contain auth logs"
-        );
-        assert!(
-            !db_content.contains("network"),
-            "DB file should not contain network logs"
-        );
+        assert!(!db_content.contains("auth"), "DB file should not contain auth logs");
+        assert!(!db_content.contains("network"), "DB file should not contain network logs");
     }
 
     #[test]
@@ -1104,8 +976,11 @@ mod tests {
     #[test]
     #[serial]
     fn test_file_reopen_with_frequent_logging() {
-        use std::sync::atomic::{AtomicBool, Ordering};
-        use std::sync::Arc;
+        use std::sync::{
+            atomic::{AtomicBool, Ordering},
+            Arc,
+        };
+
         use tempfile::tempdir;
 
         ten_configure_log_reloadable(&AdvancedLogConfig::new(vec![])).unwrap();
@@ -1129,9 +1004,7 @@ mod tests {
             }),
         };
 
-        let config = Arc::new(std::sync::Mutex::new(AdvancedLogConfig::new(vec![
-            handler.clone()
-        ])));
+        let config = Arc::new(std::sync::Mutex::new(AdvancedLogConfig::new(vec![handler.clone()])));
 
         ten_configure_log_reloadable(&config.lock().unwrap()).unwrap();
 
@@ -1182,17 +1055,17 @@ mod tests {
             }
         }
 
-        assert_eq!(
-            found_logs, total_logs,
-            "Some logs were lost during the reopen process"
-        );
+        assert_eq!(found_logs, total_logs, "Some logs were lost during the reopen process");
     }
 
     #[test]
     #[serial]
     fn test_file_reopen_with_rename_and_frequent_logging() {
-        use std::sync::atomic::{AtomicBool, Ordering};
-        use std::sync::Arc;
+        use std::sync::{
+            atomic::{AtomicBool, Ordering},
+            Arc,
+        };
+
         use tempfile::tempdir;
 
         ten_configure_log_reloadable(&AdvancedLogConfig::new(vec![])).unwrap();
@@ -1200,13 +1073,7 @@ mod tests {
         let dir = tempdir().expect("create temp dir");
         let original_path = dir.path().join("rename_test.log");
         let rotated_paths: Vec<String> = (0..3)
-            .map(|i| {
-                dir.path()
-                    .join(format!("rename_test.log.{i}"))
-                    .to_str()
-                    .unwrap()
-                    .to_string()
-            })
+            .map(|i| dir.path().join(format!("rename_test.log.{i}")).to_str().unwrap().to_string())
             .collect();
         let original_path_str = original_path.to_str().unwrap().to_string();
 
@@ -1225,9 +1092,7 @@ mod tests {
             }),
         };
 
-        let config = Arc::new(std::sync::Mutex::new(AdvancedLogConfig::new(vec![
-            handler.clone()
-        ])));
+        let config = Arc::new(std::sync::Mutex::new(AdvancedLogConfig::new(vec![handler.clone()])));
 
         ten_configure_log_reloadable(&config.lock().unwrap()).unwrap();
 
@@ -1404,39 +1269,9 @@ mod tests {
         ten_configure_log_reloadable(&config).unwrap();
 
         // These should all be dropped due to global OFF
-        ten_log(
-            &config,
-            "any",
-            1,
-            1,
-            LogLevel::Info,
-            "f",
-            "f.rs",
-            1,
-            "global-off-info",
-        );
-        ten_log(
-            &config,
-            "any",
-            1,
-            1,
-            LogLevel::Warn,
-            "f",
-            "f.rs",
-            2,
-            "global-off-warn",
-        );
-        ten_log(
-            &config,
-            "any",
-            1,
-            1,
-            LogLevel::Error,
-            "f",
-            "f.rs",
-            3,
-            "global-off-error",
-        );
+        ten_log(&config, "any", 1, 1, LogLevel::Info, "f", "f.rs", 1, "global-off-info");
+        ten_log(&config, "any", 1, 1, LogLevel::Warn, "f", "f.rs", 2, "global-off-warn");
+        ten_log(&config, "any", 1, 1, LogLevel::Error, "f", "f.rs", 3, "global-off-error");
 
         // Force flush logs (drop workers)
         ten_configure_log_reloadable(&AdvancedLogConfig::new(vec![])).unwrap();
@@ -1476,17 +1311,7 @@ mod tests {
         // These should all be dropped due to global OFF
         ten_log(&config, "auth", 1, 1, LogLevel::Info, "f", "f.rs", 1, "aaa");
         ten_log(&config, "auth", 1, 1, LogLevel::Warn, "f", "f.rs", 2, "bbb");
-        ten_log(
-            &config,
-            "database",
-            1,
-            1,
-            LogLevel::Error,
-            "f",
-            "f.rs",
-            3,
-            "ccc",
-        );
+        ten_log(&config, "database", 1, 1, LogLevel::Error, "f", "f.rs", 3, "ccc");
         ten_log(&config, "", 1, 1, LogLevel::Error, "f", "f.rs", 3, "ddd");
 
         // Force flush logs (drop workers)
@@ -1590,28 +1415,8 @@ mod tests {
         ten_configure_log_reloadable(&config).unwrap();
 
         // These should be written (effective level is DEBUG)
-        ten_log(
-            &config,
-            "any",
-            1,
-            1,
-            LogLevel::Debug,
-            "f",
-            "f.rs",
-            1,
-            "off-then-debug-debug",
-        );
-        ten_log(
-            &config,
-            "any",
-            1,
-            1,
-            LogLevel::Info,
-            "f",
-            "f.rs",
-            2,
-            "off-then-debug-info",
-        );
+        ten_log(&config, "any", 1, 1, LogLevel::Debug, "f", "f.rs", 1, "off-then-debug-debug");
+        ten_log(&config, "any", 1, 1, LogLevel::Info, "f", "f.rs", 2, "off-then-debug-info");
 
         // Force flush
         ten_configure_log_reloadable(&AdvancedLogConfig::new(vec![])).unwrap();
