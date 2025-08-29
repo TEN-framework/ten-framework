@@ -42,7 +42,7 @@
 //
 // This size should not be too large; otherwise, it may cause a stack overflow
 // in the deep call chain.
-#define ASSERT_ERR_MSG_MAX_LENGTH 128
+#define ASSERT_ERR_MSG_MAX_LENGTH 256
 
 #ifndef NDEBUG
 
