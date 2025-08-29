@@ -200,37 +200,37 @@ export const AddNodePayloadSchema = z.object({
   graph_id: z.string(),
   name: z.string(),
   addon: z.string(),
-  extension_group: z.string().optional(),
-  app: z.string().optional(),
-  property: z.record(z.string(), z.unknown()).optional(),
+  extension_group: z.string().nullish(),
+  app: z.string().nullish(),
+  property: z.record(z.string(), z.unknown()).nullish(),
 });
 
 export const DeleteNodePayloadSchema = z.object({
   graph_id: z.string(),
   name: z.string(),
   addon: z.string(),
-  extension_group: z.string().optional(),
-  app: z.string().optional(),
+  extension_group: z.string().nullish(),
+  app: z.string().nullish(),
 });
 
 export const AddConnectionPayloadSchema = z.object({
   graph_id: z.string(),
-  src_app: z.string().nullable().optional(),
+  src_app: z.string().nullable().nullish(),
   src_extension: z.string(),
   msg_type: z.nativeEnum(EConnectionType),
   msg_name: z.string(),
-  dest_app: z.string().nullable().optional(),
+  dest_app: z.string().nullable().nullish(),
   dest_extension: z.string(),
-  msg_conversion: z.unknown().optional(), // TODO: add msg_conversion type
+  msg_conversion: z.unknown().nullish(), // TODO: add msg_conversion type
 });
 
 export const DeleteConnectionPayloadSchema = z.object({
   graph_id: z.string(),
-  src_app: z.string().nullable().optional(),
+  src_app: z.string().nullable().nullish(),
   src_extension: z.string(),
   msg_type: z.nativeEnum(EConnectionType),
   msg_name: z.string(),
-  dest_app: z.string().nullable().optional(),
+  dest_app: z.string().nullable().nullish(),
   dest_extension: z.string(),
 });
 
@@ -238,15 +238,15 @@ export const UpdateNodePropertyPayloadSchema = z.object({
   graph_id: z.string(),
   name: z.string(),
   addon: z.string(),
-  extension_group: z.string().optional(),
-  app: z.string().optional(),
+  extension_group: z.string().nullish(),
+  app: z.string().nullish(),
   property: stringToJSONSchema
     .pipe(z.record(z.string(), z.unknown()))
     .default({}),
 });
 
 export const GraphUiNodeGeometrySchema = z.object({
-  app: z.string().optional(),
+  app: z.string().nullish(),
   id: z.string(),
   x: z.number(),
   y: z.number(),
@@ -266,8 +266,8 @@ export enum EMsgDirection {
 
 export const MsgCompatiblePayloadSchema = z.object({
   graph_id: z.string(),
-  app: z.string().optional(),
-  extension_group: z.string().optional(),
+  app: z.string().nullish(),
+  extension_group: z.string().nullish(),
   extension: z.string(),
   msg_type: z.nativeEnum(EConnectionType),
   msg_direction: z.nativeEnum(EMsgDirection),
@@ -275,9 +275,9 @@ export const MsgCompatiblePayloadSchema = z.object({
 });
 
 export const MsgCompatibleResponseItemSchema = z.object({
-  extension_group: z.string().optional(),
+  extension_group: z.string().nullish(),
   extension: z.string(),
   msg_type: z.nativeEnum(EConnectionType),
   msg_direction: z.nativeEnum(EMsgDirection),
-  msg_name: z.string().optional(),
+  msg_name: z.string().nullish(),
 });

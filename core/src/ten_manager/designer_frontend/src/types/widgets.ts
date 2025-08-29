@@ -136,12 +136,12 @@ export interface ICustomConnectionWidget
 // 4. Graph Widget
 export interface IGraphWidgetData {
   type: EGraphActions;
-  base_dir?: string;
+  base_dir?: string | null;
   graph_id: string;
   app_uri?: string | null;
-  node?: TCustomNode;
-  src_node?: TCustomNode;
-  dest_node?: TCustomNode;
+  node?: TCustomNode | null;
+  src_node?: TCustomNode | null;
+  dest_node?: TCustomNode | null;
 }
 
 export interface IGraphWidget extends IWidgetBase<IGraphWidgetData> {
@@ -218,8 +218,8 @@ export enum EDefaultWidgetType {
 
 export interface IDefaultWidgetData {
   type: EDefaultWidgetType;
-  base_dir?: string;
-  scripts?: string[];
+  base_dir?: string | null;
+  scripts?: string[] | null;
   doc_link_key?: EDocLinkKey;
 }
 
