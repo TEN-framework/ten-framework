@@ -14,8 +14,6 @@ typedef struct ten_addon_manager_t ten_addon_manager_t;
 typedef struct ten_error_t ten_error_t;
 typedef struct ten_app_t ten_app_t;
 typedef struct ten_addon_register_ctx_t ten_addon_register_ctx_t;
-
-// Forward declarations.
 typedef struct ten_addon_registration_t ten_addon_registration_t;
 
 typedef void (*ten_addon_registration_done_func_t)(void *register_ctx,
