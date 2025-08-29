@@ -5,19 +5,15 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 import z from "zod";
-
 import { API_DESIGNER_V1, ENDPOINT_METHOD } from "@/api/endpoints/constant";
 import { genResSchema } from "@/api/endpoints/utils";
 import {
   AddConnectionPayloadSchema,
   AddNodePayloadSchema,
-  BackendNodeExtension,
-  BackendNodeSelector,
-  BackendNodeSubGraph,
   DeleteConnectionPayloadSchema,
   DeleteNodePayloadSchema,
+  GraphInfo,
   GraphUiNodeGeometrySchema,
-  type IGraph,
   SetGraphUiPayloadSchema,
   UpdateNodePropertyPayloadSchema,
 } from "@/types/graphs";
@@ -88,28 +84,7 @@ export const ENDPOINT_GRAPHS = {
       url: `${API_DESIGNER_V1}/graphs`,
       method: ENDPOINT_METHOD.POST,
       requestSchema: z.object({}),
-      responseSchema: genResSchema<IGraph[]>(
-        z.array(
-          z.object({
-            graph_id: z.string(),
-            name: z.string().nullable(),
-            auto_start: z.boolean().nullable(),
-            base_dir: z.string().nullable(),
-            graph: z.object({
-              nodes: z.array(
-                z.union([
-                  BackendNodeExtension,
-                  BackendNodeSelector,
-                  BackendNodeSubGraph,
-                ])
-              ),
-              connections: z.array(z.unknown()),
-              exposed_messages: z.array(z.unknown()),
-              exposed_properties: z.array(z.unknown()),
-            }),
-          })
-        ) as z.ZodType<IGraph[]>
-      ),
+      responseSchema: genResSchema<GraphInfo[]>(z.array(GraphInfo)),
     },
   },
   graphsAutoStart: {

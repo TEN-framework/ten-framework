@@ -48,7 +48,7 @@ import { data2identifier, EFlowElementIdentifier } from "@/lib/identifier";
 import { cn } from "@/lib/utils";
 import { useWidgetStore } from "@/store";
 import type { IExtensionNodeData, TExtensionNode } from "@/types/flow";
-import { EConnectionType, type IGraph } from "@/types/graphs";
+import { EConnectionType, type GraphInfo } from "@/types/graphs";
 import { EWidgetCategory, EWidgetDisplayType } from "@/types/widgets";
 
 export function ExtensionNode(props: NodeProps<TExtensionNode>) {
@@ -242,7 +242,7 @@ const HandleGroupItem = (props: {
   const handleLaunchConnPopup = (data: {
     source: string;
     target?: string;
-    graph: IGraph;
+    graph: GraphInfo;
     metadata?: {
       filters?: {
         type?: EConnectionType;
@@ -407,7 +407,7 @@ const ConnectionCount = (props: {
   data: {
     source: string;
     target?: string;
-    graph: IGraph;
+    graph: GraphInfo;
     metadata?: {
       filters?: {
         type?: EConnectionType;
