@@ -41,29 +41,29 @@
 <details>
   <summary><kbd>目录</kbd></summary>
 
-#### Table of Contents
+#### 目录
 
-- [👋 Welcome to TEN](#-welcome-to-ten)
-- [🎨 TMAN Designer](#-tman-designer)
-- [✨ Features](#-features)
-  - [1️⃣ Real-time Avatar](#1️⃣-real-time-avatar)
-  - [2️⃣ Real-time voice with MCP servers](#2️⃣-real-time-voice-with-mcp-servers)
-  - [3️⃣ Real-time communication with hardware](#3️⃣-real-time-communication-with-hardware)
-  - [4️⃣ Real-time vision and real-time screenshare detection](#4️⃣-real-time-vision-and-real-time-screenshare-detection)
-  - [5️⃣ TEN with other LLM platforms](#5️⃣-ten-with-other-llm-platforms)
-  - [6️⃣ StoryTeller - TEN image generation](#6️⃣-storyteller---ten-image-generation)
-- [👩‍💻 Get TEN Agent up and running](#-get-ten-agent-up-and-running)
-  - [🅰️ Run TEN Agent in `localhost`](#🅰️-run-ten-agent-in-localhost)
-  - [🅱️ Run TEN Agent in Codespace(no docker)](#🅱️-run-ten-agent-in-codespaceno-docker)
-- [🛳️ TEN Agent Self Hosting](#️-ten-agent-self-hosting)
-  - [🅰️ Deploying with Docker](#🅰️-deploying-with-docker)
-  - [🅱️ Deploying with other cloud services](#🅱️-deploying-with-other-cloud-services)
-- [🌍 TEN Ecosystem](#-ten-ecosystem)
-- [❓ Ask Questions](#-ask-questions)
-- [🥰 Contributing](#-contributing)
-  - [Code Contributors](#code-contributors)
-  - [Contribution Guidelines](#contribution-guidelines)
-  - [License](#license)
+- [👋 欢迎来到 TEN](#-welcome-to-ten)
+- [🎨 TMAN 设计师](#-tman-designer)
+- [✨ 特点](#-features)
+  - [1️⃣ 实时头像](#1️⃣-real-time-avatar)
+  - [2️⃣ 使用MCP服务进行实时语音](#2️⃣-real-time-voice-with-mcp-servers)
+  - [3️⃣ 和硬件的实时交流](#3️⃣-real-time-communication-with-hardware)
+  - [4️⃣ 实时视觉和实时屏幕共享检测](#4️⃣-real-time-vision-and-real-time-screenshare-detection)
+  - [5️⃣ TEN 和其他大语言模型平台](#5️⃣-ten-with-other-llm-platforms)
+  - [6️⃣ StoryTeller - TEN 图像生成](#6️⃣-storyteller---ten-image-generation)
+- [👩‍💻 启动并运行 TEN Agent ](#-get-ten-agent-up-and-running)
+  - [🅰️ 在本地运行TEN Agent](#🅰️-run-ten-agent-in-localhost)
+  - [🅱️ 在Codespace中运行TEN Agent (无需 docker)](#🅱️-run-ten-agent-in-codespaceno-docker)
+- [🛳️ TEN Agent 自托管](#️-ten-agent-self-hosting)
+  - [🅰️ 使用Docker部署](#🅰️-deploying-with-docker)
+  - [🅱️ 和其他云服务一起部署](#🅱️-deploying-with-other-cloud-services)
+- [🌍 TEN 生态](#-ten-ecosystem)
+- [❓ 提问](#-ask-questions)
+- [🥰 贡献](#-contributing)
+  - [代码贡献者](#code-contributors)
+  - [贡献指南](#contribution-guidelines)
+  - [证书](#license)
 
 <br/>
 
