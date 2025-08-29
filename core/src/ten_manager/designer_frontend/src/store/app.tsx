@@ -14,24 +14,24 @@ import {
   type IApp,
   type PREFERENCES_SCHEMA,
 } from "@/types/apps";
-import type { IGraph } from "@/types/graphs";
+import type { GraphInfo } from "@/types/graphs";
 
 export interface IAppStore {
   /** @deprecated */
   currentWorkspace: {
     initialized?: boolean;
-    graph: IGraph | null;
+    graph: GraphInfo | null;
     app: IApp | null;
   };
   /** @deprecated */
   updateCurrentWorkspace: (currentWorkspace: {
-    graph?: IGraph | null;
+    graph?: GraphInfo | null;
     app?: IApp | null;
   }) => void;
-  selectedGraphs: IGraph[] | undefined;
-  setSelectedGraphs: (graphs: IGraph[]) => void;
-  appendSelectedGraphs: (graph: IGraph[]) => void;
-  removeSelectedGraphs: (graph: IGraph[]) => void;
+  selectedGraphs: GraphInfo[] | undefined;
+  setSelectedGraphs: (graphs: GraphInfo[]) => void;
+  appendSelectedGraphs: (graph: GraphInfo[]) => void;
+  removeSelectedGraphs: (graph: GraphInfo[]) => void;
   folderPath: string;
   setFolderPath: (folderPath: string) => void;
   fmItems: IFMItem[][];
@@ -60,7 +60,7 @@ export const useAppStore = create<IAppStore>()(
       initialized: false,
     },
     updateCurrentWorkspace: (currentWorkspace: {
-      graph?: IGraph | null; // TODO: remove
+      graph?: GraphInfo | null; // TODO: remove
       app?: IApp | null;
     }) =>
       set((state) => ({
@@ -77,7 +77,7 @@ export const useAppStore = create<IAppStore>()(
           initialized: true,
         },
       })),
-    appendSelectedGraphs: (graph: IGraph[]) =>
+    appendSelectedGraphs: (graph: GraphInfo[]) =>
       set((state) => {
         const existing = state.selectedGraphs || [];
         const existingIds = new Set(existing.map((g) => g.graph_id));
@@ -86,7 +86,7 @@ export const useAppStore = create<IAppStore>()(
           selectedGraphs: [...existing, ...newGraphs],
         };
       }),
-    removeSelectedGraphs: (graph: IGraph[]) =>
+    removeSelectedGraphs: (graph: GraphInfo[]) =>
       set((state) => {
         const existing = state.selectedGraphs || [];
         const graphIdsToRemove = new Set(graph.map((g) => g.graph_id));
@@ -98,7 +98,7 @@ export const useAppStore = create<IAppStore>()(
         };
       }),
     selectedGraphs: undefined,
-    setSelectedGraphs: (graphs: IGraph[]) => set({ selectedGraphs: graphs }),
+    setSelectedGraphs: (graphs: GraphInfo[]) => set({ selectedGraphs: graphs }),
     folderPath: "/",
     setFolderPath: (folderPath: string) => set({ folderPath }),
     fmItems: [[]],

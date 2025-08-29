@@ -10,7 +10,7 @@ import { z } from "zod";
 import type { EDocLinkKey } from "@/types/doc";
 import type { ETenPackageType } from "@/types/extension";
 import type { TCustomNode } from "@/types/flow";
-import type { EConnectionType, EGraphActions, IGraph } from "@/types/graphs";
+import type { EConnectionType, EGraphActions, GraphInfo } from "@/types/graphs";
 
 export enum EWidgetDisplayType {
   Popup = "popup",
@@ -125,7 +125,7 @@ export interface ICustomConnectionWidgetData {
     source?: boolean;
     target?: boolean;
   };
-  graph: IGraph;
+  graph: GraphInfo;
 }
 
 export interface ICustomConnectionWidget

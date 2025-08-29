@@ -8,18 +8,6 @@ import { z } from "zod";
 
 import { stringToJSONSchema } from "@/utils";
 
-/** @deprecated */
-export interface IBackendNode {
-  addon: string;
-  name: string;
-  extension_group?: string;
-  app?: string;
-  property?: Record<string, unknown> | null;
-  api?: unknown;
-  is_installed: boolean;
-  type: "extension";
-}
-
 export const BackendNodeExtension = z.object({
   addon: z.string(),
   name: z.string(),
@@ -200,41 +188,6 @@ export interface IBackendConnection {
     }[];
   }[];
 }
-
-/** @deprecated */
-export interface IGraph {
-  graph_id: string;
-  name?: string;
-  auto_start?: boolean;
-  base_dir?: string;
-  graph: {
-    // eslint-disable-next-line max-len
-    // nodes: (BackendNodeExtension | BackendNodeSelector | BackendNodeSubGraph)[];
-    nodes: BackendNodeExtension[]; // todo: selector&subgraph
-    connections: IBackendConnection[];
-    exposed_messages: Array<{
-      type: string;
-      name: string;
-      extension?: string;
-      subgraph?: string;
-    }>;
-    exposed_properties: Array<{
-      extension?: string;
-      subgraph?: string;
-      name: string;
-    }>;
-  };
-}
-
-/** @deprecated */
-export type TConnectionItem = {
-  name: string;
-  srcApp: string;
-  destApp: string;
-};
-
-/** @deprecated */
-export type TConnectionMap = Record<string, Set<TConnectionItem>>;
 
 export enum EGraphActions {
   ADD_NODE = "add_node",
