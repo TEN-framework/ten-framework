@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "humeai_tts_python",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "dependencies": [
     {
       "type": "system",
@@ -52,8 +52,8 @@
             "trailing_silence": {
               "type": "float64"
             },
-            "request_timeout_seconds": {
-              "type": "int64"
+            "generation_id": {
+              "type": "string"
             }
           }
         }

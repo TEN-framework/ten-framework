@@ -36,7 +36,7 @@ class HumeAiTTS:
 
         self.ten_env.log_info(
             f"KEYPOINT generate_TTS for '{text}' "
-            f"with generation_id {self.generation_id}"
+            f"with generation_id {self.generation_id}, voice_name {self.config.voice_name}, voice_id {self.config.voice_id}"
         )
 
         context = None

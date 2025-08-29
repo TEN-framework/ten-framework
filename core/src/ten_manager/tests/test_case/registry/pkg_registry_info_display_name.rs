@@ -36,14 +36,11 @@ mod tests {
             }
         }"#;
 
-        let manifest: Manifest =
-            Manifest::create_from_str(manifest_json).unwrap();
-        let pkg_registry_info = get_pkg_registry_info_from_manifest(
-            "https://example.com/test.tar.gz",
-            &manifest,
-        )
-        .await
-        .unwrap();
+        let manifest: Manifest = Manifest::create_from_str(manifest_json).unwrap();
+        let pkg_registry_info =
+            get_pkg_registry_info_from_manifest("https://example.com/test.tar.gz", &manifest)
+                .await
+                .unwrap();
 
         assert!(pkg_registry_info.display_name.is_some());
         let display_name = pkg_registry_info.display_name.unwrap();
@@ -88,14 +85,11 @@ mod tests {
             "version": "1.0.0"
         }"#;
 
-        let manifest: Manifest =
-            Manifest::create_from_str(manifest_json).unwrap();
-        let pkg_registry_info = get_pkg_registry_info_from_manifest(
-            "https://example.com/test.tar.gz",
-            &manifest,
-        )
-        .await
-        .unwrap();
+        let manifest: Manifest = Manifest::create_from_str(manifest_json).unwrap();
+        let pkg_registry_info =
+            get_pkg_registry_info_from_manifest("https://example.com/test.tar.gz", &manifest)
+                .await
+                .unwrap();
 
         assert!(pkg_registry_info.display_name.is_none());
     }
@@ -128,14 +122,11 @@ mod tests {
             }
         }"#;
 
-        let manifest: Manifest =
-            Manifest::create_from_str(manifest_json).unwrap();
-        let pkg_registry_info = get_pkg_registry_info_from_manifest(
-            "https://example.com/test.tar.gz",
-            &manifest,
-        )
-        .await
-        .unwrap();
+        let manifest: Manifest = Manifest::create_from_str(manifest_json).unwrap();
+        let pkg_registry_info =
+            get_pkg_registry_info_from_manifest("https://example.com/test.tar.gz", &manifest)
+                .await
+                .unwrap();
 
         assert!(pkg_registry_info.description.is_some());
         assert!(pkg_registry_info.display_name.is_some());
@@ -144,11 +135,23 @@ mod tests {
         let display_name = pkg_registry_info.display_name.unwrap();
 
         assert_eq!(
-            description.locales.get("en-US").unwrap().content.as_ref().unwrap(),
+            description
+                .locales
+                .get("en-US")
+                .unwrap()
+                .content
+                .as_ref()
+                .unwrap(),
             "This is a test extension for demonstration purposes"
         );
         assert_eq!(
-            description.locales.get("zh-CN").unwrap().content.as_ref().unwrap(),
+            description
+                .locales
+                .get("zh-CN")
+                .unwrap()
+                .content
+                .as_ref()
+                .unwrap(),
             "这是用于演示目的的测试扩展"
         );
 
@@ -194,17 +197,14 @@ mod tests {
             },
         );
 
-        let display_name =
-            ten_rust::pkg_info::manifest::LocalizedField { locales };
+        let display_name = ten_rust::pkg_info::manifest::LocalizedField { locales };
 
         let pkg_registry_info = PkgRegistryInfo {
             basic_info: PkgBasicInfo {
-                type_and_name:
-                    ten_rust::pkg_info::pkg_type_and_name::PkgTypeAndName {
-                        pkg_type:
-                            ten_rust::pkg_info::pkg_type::PkgType::Extension,
-                        name: "test_extension".to_string(),
-                    },
+                type_and_name: ten_rust::pkg_info::pkg_type_and_name::PkgTypeAndName {
+                    pkg_type: ten_rust::pkg_info::pkg_type::PkgType::Extension,
+                    name: "test_extension".to_string(),
+                },
                 version: semver::Version::parse("1.0.0").unwrap(),
                 supports: vec![],
             },
@@ -226,8 +226,7 @@ mod tests {
         assert!(serialized.contains("display_name"));
 
         // Test deserialization
-        let deserialized: PkgRegistryInfo =
-            serde_json::from_str(&serialized).unwrap();
+        let deserialized: PkgRegistryInfo = serde_json::from_str(&serialized).unwrap();
         assert!(deserialized.display_name.is_some());
         let display_name = deserialized.display_name.unwrap();
         assert_eq!(
@@ -256,12 +255,10 @@ mod tests {
     fn test_pkg_registry_info_serialization_without_display_name() {
         let pkg_registry_info = PkgRegistryInfo {
             basic_info: PkgBasicInfo {
-                type_and_name:
-                    ten_rust::pkg_info::pkg_type_and_name::PkgTypeAndName {
-                        pkg_type:
-                            ten_rust::pkg_info::pkg_type::PkgType::Extension,
-                        name: "test_extension".to_string(),
-                    },
+                type_and_name: ten_rust::pkg_info::pkg_type_and_name::PkgTypeAndName {
+                    pkg_type: ten_rust::pkg_info::pkg_type::PkgType::Extension,
+                    name: "test_extension".to_string(),
+                },
                 version: semver::Version::parse("1.0.0").unwrap(),
                 supports: vec![],
             },
@@ -282,8 +279,7 @@ mod tests {
         assert!(!serialized.contains("display_name"));
 
         // Test deserialization
-        let deserialized: PkgRegistryInfo =
-            serde_json::from_str(&serialized).unwrap();
+        let deserialized: PkgRegistryInfo = serde_json::from_str(&serialized).unwrap();
         assert!(deserialized.display_name.is_none());
     }
 
@@ -307,17 +303,14 @@ mod tests {
             },
         );
 
-        let display_name =
-            ten_rust::pkg_info::manifest::LocalizedField { locales };
+        let display_name = ten_rust::pkg_info::manifest::LocalizedField { locales };
 
         let pkg_registry_info = PkgRegistryInfo {
             basic_info: PkgBasicInfo {
-                type_and_name:
-                    ten_rust::pkg_info::pkg_type_and_name::PkgTypeAndName {
-                        pkg_type:
-                            ten_rust::pkg_info::pkg_type::PkgType::Extension,
-                        name: "test_extension".to_string(),
-                    },
+                type_and_name: ten_rust::pkg_info::pkg_type_and_name::PkgTypeAndName {
+                    pkg_type: ten_rust::pkg_info::pkg_type::PkgType::Extension,
+                    name: "test_extension".to_string(),
+                },
                 version: semver::Version::parse("1.0.0").unwrap(),
                 supports: vec![],
             },
@@ -364,8 +357,11 @@ mod tests {
         assert!(display_name_value.is_object());
         let display_name_obj = display_name_value.as_object().unwrap();
         assert!(display_name_obj.contains_key("locales"));
-        let locales_obj =
-            display_name_obj.get("locales").unwrap().as_object().unwrap();
+        let locales_obj = display_name_obj
+            .get("locales")
+            .unwrap()
+            .as_object()
+            .unwrap();
         let en_obj = locales_obj.get("en-US").unwrap().as_object().unwrap();
         assert_eq!(
             en_obj.get("content").unwrap().as_str().unwrap(),

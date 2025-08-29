@@ -59,7 +59,10 @@ struct WsLogWatcher {
 
 impl WsLogWatcher {
     fn new() -> Self {
-        Self { app_base_dir: None, file_watcher: None }
+        Self {
+            app_base_dir: None,
+            file_watcher: None,
+        }
     }
 
     fn stop_watching(&mut self) {
@@ -99,11 +102,7 @@ impl Actor for WsLogWatcher {
 impl Handler<SetAppBaseDir> for WsLogWatcher {
     type Result = ();
 
-    fn handle(
-        &mut self,
-        msg: SetAppBaseDir,
-        ctx: &mut Self::Context,
-    ) -> Self::Result {
+    fn handle(&mut self, msg: SetAppBaseDir, ctx: &mut Self::Context) -> Self::Result {
         // Store the app_base_dir.
         self.app_base_dir = Some(msg.app_base_dir.clone());
 
@@ -129,17 +128,10 @@ impl Handler<SetAppBaseDir> for WsLogWatcher {
             let options = LogFileWatchOptions::default();
 
             // Start watching the file.
-            match crate::fs::log_file_watcher::watch_log_file(
-                &log_file_path,
-                Some(options),
-            )
-            .await
-            {
+            match crate::fs::log_file_watcher::watch_log_file(&log_file_path, Some(options)).await {
                 Ok(stream) => {
                     // Successfully started watching.
-                    let _ = addr.try_send(InfoMessage(
-                        "Started watching log file".to_string(),
-                    ));
+                    let _ = addr.try_send(InfoMessage("Started watching log file".to_string()));
 
                     // Send the stream to the actor to store.
                     let _ = addr.try_send(StoreWatcher(stream));
@@ -156,11 +148,7 @@ impl Handler<SetAppBaseDir> for WsLogWatcher {
 impl Handler<FileContent> for WsLogWatcher {
     type Result = ();
 
-    fn handle(
-        &mut self,
-        msg: FileContent,
-        ctx: &mut Self::Context,
-    ) -> Self::Result {
+    fn handle(&mut self, msg: FileContent, ctx: &mut Self::Context) -> Self::Result {
         // Send the entire LogLineInfo as JSON to the WebSocket client.
         match serde_json::to_string(&msg.0) {
             Ok(json_str) => {
@@ -180,11 +168,7 @@ impl Handler<FileContent> for WsLogWatcher {
 impl Handler<ErrorMessage> for WsLogWatcher {
     type Result = ();
 
-    fn handle(
-        &mut self,
-        msg: ErrorMessage,
-        ctx: &mut Self::Context,
-    ) -> Self::Result {
+    fn handle(&mut self, msg: ErrorMessage, ctx: &mut Self::Context) -> Self::Result {
         // Send the error message to the WebSocket client.
         ctx.text(
             json!({
@@ -199,11 +183,7 @@ impl Handler<ErrorMessage> for WsLogWatcher {
 impl Handler<InfoMessage> for WsLogWatcher {
     type Result = ();
 
-    fn handle(
-        &mut self,
-        msg: InfoMessage,
-        ctx: &mut Self::Context,
-    ) -> Self::Result {
+    fn handle(&mut self, msg: InfoMessage, ctx: &mut Self::Context) -> Self::Result {
         // Send the info message to the WebSocket client.
         ctx.text(
             json!({
@@ -218,11 +198,7 @@ impl Handler<InfoMessage> for WsLogWatcher {
 impl Handler<CloseConnection> for WsLogWatcher {
     type Result = ();
 
-    fn handle(
-        &mut self,
-        _: CloseConnection,
-        ctx: &mut Self::Context,
-    ) -> Self::Result {
+    fn handle(&mut self, _: CloseConnection, ctx: &mut Self::Context) -> Self::Result {
         // Stop watching and close the connection.
         self.stop_watching();
         ctx.close(None);
@@ -232,11 +208,7 @@ impl Handler<CloseConnection> for WsLogWatcher {
 impl Handler<StopWatching> for WsLogWatcher {
     type Result = ();
 
-    fn handle(
-        &mut self,
-        _: StopWatching,
-        ctx: &mut Self::Context,
-    ) -> Self::Result {
+    fn handle(&mut self, _: StopWatching, ctx: &mut Self::Context) -> Self::Result {
         // Stop watching the file but keep the connection open.
         self.stop_watching();
         ctx.text(
@@ -252,11 +224,7 @@ impl Handler<StopWatching> for WsLogWatcher {
 impl Handler<StoreWatcher> for WsLogWatcher {
     type Result = ();
 
-    fn handle(
-        &mut self,
-        msg: StoreWatcher,
-        ctx: &mut Self::Context,
-    ) -> Self::Result {
+    fn handle(&mut self, msg: StoreWatcher, ctx: &mut Self::Context) -> Self::Result {
         // Set up a task to read from the stream and send to WebSocket.
         let stream = Arc::new(Mutex::new(msg.0));
         self.file_watcher = Some(stream.clone());
@@ -296,34 +264,23 @@ impl Handler<StoreWatcher> for WsLogWatcher {
 }
 
 impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsLogWatcher {
-    fn handle(
-        &mut self,
-        msg: Result<ws::Message, ws::ProtocolError>,
-        ctx: &mut Self::Context,
-    ) {
+    fn handle(&mut self, msg: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
         match msg {
             Ok(ws::Message::Ping(msg)) => ctx.pong(&msg),
             Ok(ws::Message::Text(text)) => {
                 println!("Received text: {text}");
 
                 // Try to parse the received message as JSON.
-                if let Ok(json) =
-                    serde_json::from_str::<serde_json::Value>(&text)
-                {
-                    if let Some(message_type) =
-                        json.get("type").and_then(|v| v.as_str())
-                    {
+                if let Ok(json) = serde_json::from_str::<serde_json::Value>(&text) {
+                    if let Some(message_type) = json.get("type").and_then(|v| v.as_str()) {
                         match message_type {
                             "stop" => {
                                 let stop_msg = StopWatching;
-                                <Self as Handler<StopWatching>>::handle(
-                                    self, stop_msg, ctx,
-                                );
+                                <Self as Handler<StopWatching>>::handle(self, stop_msg, ctx);
                             }
                             "set_app_base_dir" => {
-                                if let Some(app_base_dir) = json
-                                    .get("app_base_dir")
-                                    .and_then(|v| v.as_str())
+                                if let Some(app_base_dir) =
+                                    json.get("app_base_dir").and_then(|v| v.as_str())
                                 {
                                     // Check if we already have an app_base_dir.
                                     if self.app_base_dir.is_some() {
@@ -337,13 +294,13 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsLogWatcher {
                                     } else {
                                         // Set the app base directory and start
                                         // watching.
-                                        let set_app_base_dir_msg =
-                                            SetAppBaseDir {
-                                                app_base_dir: app_base_dir
-                                                    .to_string(),
-                                            };
+                                        let set_app_base_dir_msg = SetAppBaseDir {
+                                            app_base_dir: app_base_dir.to_string(),
+                                        };
                                         <Self as Handler<SetAppBaseDir>>::handle(
-                                            self, set_app_base_dir_msg, ctx,
+                                            self,
+                                            set_app_base_dir_msg,
+                                            ctx,
                                         );
                                     }
                                 } else {

@@ -32,11 +32,7 @@ struct FieldVisitor {
 }
 
 impl Visit for FieldVisitor {
-    fn record_debug(
-        &mut self,
-        field: &tracing::field::Field,
-        value: &dyn fmt::Debug,
-    ) {
+    fn record_debug(&mut self, field: &tracing::field::Field, value: &dyn fmt::Debug) {
         match field.name() {
             "pid" => {
                 if let Ok(pid) = format!("{value:?}").parse::<i64>() {
@@ -49,12 +45,10 @@ impl Visit for FieldVisitor {
                 }
             }
             "func_name" => {
-                self.func_name =
-                    Some(format!("{value:?}").trim_matches('"').to_string());
+                self.func_name = Some(format!("{value:?}").trim_matches('"').to_string());
             }
             "file_name" => {
-                self.file_name =
-                    Some(format!("{value:?}").trim_matches('"').to_string());
+                self.file_name = Some(format!("{value:?}").trim_matches('"').to_string());
             }
             "line_no" => {
                 if let Ok(line) = format!("{value:?}").parse::<u32>() {
@@ -62,14 +56,14 @@ impl Visit for FieldVisitor {
                 }
             }
             "target" => {
-                self.target =
-                    Some(format!("{value:?}").trim_matches('"').to_string());
+                self.target = Some(format!("{value:?}").trim_matches('"').to_string());
             }
             "message" => {
                 if !self.message.is_empty() {
                     self.message.push(' ');
                 }
-                self.message.push_str(format!("{value:?}").trim_matches('"'));
+                self.message
+                    .push_str(format!("{value:?}").trim_matches('"'));
             }
             _ => {
                 // This might be the actual log message
@@ -155,9 +149,9 @@ impl PlainFormatter {
         }
         match *level {
             // Match C implementation's color scheme
-            tracing::Level::ERROR => RED, // ERROR and FATAL
+            tracing::Level::ERROR => RED,   // ERROR and FATAL
             tracing::Level::WARN => YELLOW, // WARN
-            tracing::Level::INFO => GREEN, /* INFO and MANDATORY (though */
+            tracing::Level::INFO => GREEN,  /* INFO and MANDATORY (though */
             // MANDATORY should be GOLD)
             tracing::Level::DEBUG => CYAN, // DEBUG
             tracing::Level::TRACE => CYAN, // VERBOSE

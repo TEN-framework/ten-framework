@@ -2,6 +2,6 @@
     "dump": true,
     "dump_path": "./tests/dump_output/",
     "params": {
-        "api_key": "${env:ELEVENLABS_TTS_KEY}"
+        "key": "${env:ELEVENLABS_TTS_KEY}"
     }
 }

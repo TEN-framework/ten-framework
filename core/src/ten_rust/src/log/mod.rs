@@ -26,9 +26,7 @@ use tracing_subscriber::{
 
 use crate::log::encryption::{EncryptMakeWriter, EncryptionConfig};
 use crate::log::file_appender::FileAppenderGuard;
-use crate::log::formatter::{
-    JsonConfig, JsonFieldNames, JsonFormatter, PlainFormatter,
-};
+use crate::log::formatter::{JsonConfig, JsonFieldNames, JsonFormatter, PlainFormatter};
 
 // Encryption types and writer are moved to `encryption.rs`
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -157,7 +155,10 @@ pub struct AdvancedLogConfig {
 
 impl AdvancedLogConfig {
     pub fn new(handlers: Vec<AdvancedLogHandler>) -> Self {
-        Self { handlers, guards: Vec::new() }
+        Self {
+            handlers,
+            guards: Vec::new(),
+        }
     }
 
     pub fn add_guard(&mut self, guard: Box<dyn std::any::Any + Send + Sync>) {
@@ -195,19 +196,15 @@ fn create_layer_and_filter(
         }
     }
 
-    let filter = tracing_subscriber::EnvFilter::try_new(&filter_directive)
-        .unwrap_or_else(|_| {
-            tracing_subscriber::EnvFilter::new("info") // Default fallback to
-                                                       // info level
-        });
+    let filter = tracing_subscriber::EnvFilter::try_new(&filter_directive).unwrap_or_else(|_| {
+        tracing_subscriber::EnvFilter::new("info") // Default fallback to
+                                                   // info level
+    });
 
     // Create corresponding layer based on emitter type
     let layer_with_guard = match &handler.emitter {
         AdvancedLogEmitter::Console(console_config) => {
-            let layer = match (
-                &console_config.stream,
-                &handler.formatter.formatter_type,
-            ) {
+            let layer = match (&console_config.stream, &handler.formatter.formatter_type) {
                 (StreamType::Stdout, FormatterType::Plain) => {
                     let ansi = handler.formatter.colored.unwrap_or(false);
                     let base_writer = io::stdout;
@@ -300,8 +297,7 @@ fn create_layer_and_filter(
         AdvancedLogEmitter::File(file_config) => {
             // Create our reloadable file appender. It supports CAS-based
             // reopen.
-            let appender =
-                file_appender::ReloadableFileAppender::new(&file_config.path);
+            let appender = file_appender::ReloadableFileAppender::new(&file_config.path);
             let (non_blocking, worker_guard) = non_blocking(appender.clone());
             // keep both worker_guard and appender in a composite guard
             let composite_guard = file_appender::FileAppenderGuard {
@@ -311,10 +307,8 @@ fn create_layer_and_filter(
 
             let layer = match handler.formatter.formatter_type {
                 FormatterType::Plain => {
-                    let writer = if let Some(runtime) = file_config
-                        .encryption
-                        .as_ref()
-                        .and_then(|e| e.to_runtime())
+                    let writer = if let Some(runtime) =
+                        file_config.encryption.as_ref().and_then(|e| e.to_runtime())
                     {
                         BoxMakeWriter::new(EncryptMakeWriter {
                             inner: non_blocking.clone(),
@@ -331,10 +325,8 @@ fn create_layer_and_filter(
                         .boxed()
                 }
                 FormatterType::Json => {
-                    let writer = if let Some(runtime) = file_config
-                        .encryption
-                        .as_ref()
-                        .and_then(|e| e.to_runtime())
+                    let writer = if let Some(runtime) =
+                        file_config.encryption.as_ref().and_then(|e| e.to_runtime())
                     {
                         BoxMakeWriter::new(EncryptMakeWriter {
                             inner: non_blocking.clone(),
@@ -354,7 +346,10 @@ fn create_layer_and_filter(
                 }
             };
 
-            LayerWithGuard { layer, guard: Some(Box::new(composite_guard)) }
+            LayerWithGuard {
+                layer,
+                guard: Some(Box::new(composite_guard)),
+            }
         }
     };
 
@@ -384,9 +379,7 @@ impl std::fmt::Display for LogInitError {
 
 impl std::error::Error for LogInitError {}
 
-fn ten_configure_log_non_reloadable(
-    config: &mut AdvancedLogConfig,
-) -> Result<(), LogInitError> {
+fn ten_configure_log_non_reloadable(config: &mut AdvancedLogConfig) -> Result<(), LogInitError> {
     let mut layers = Vec::with_capacity(config.handlers.len());
     let mut guards = Vec::new();
 
@@ -408,9 +401,12 @@ fn ten_configure_log_non_reloadable(
     }
 
     // Initialize the registry
-    tracing_subscriber::registry().with(layers).try_init().map_err(|_| {
-        LogInitError { message: "Logging system is already initialized" }
-    })
+    tracing_subscriber::registry()
+        .with(layers)
+        .try_init()
+        .map_err(|_| LogInitError {
+            message: "Logging system is already initialized",
+        })
 }
 
 /// Configure the logging system for production use
@@ -449,8 +445,7 @@ pub fn ten_log_reopen_all(config: &mut AdvancedLogConfig, reloadable: bool) {
 
     // Non-reloadable: iterate config.guards directly
     for any_guard in config.guards.iter() {
-        if let Some(file_guard) = any_guard.downcast_ref::<FileAppenderGuard>()
-        {
+        if let Some(file_guard) = any_guard.downcast_ref::<FileAppenderGuard>() {
             file_guard.request_reopen();
         }
     }

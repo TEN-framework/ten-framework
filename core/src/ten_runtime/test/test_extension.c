@@ -434,10 +434,17 @@ static ten_addon_t ten_builtin_test_extension_addon = {
 // Addon registration phase 2: actually registering the addon into the addon
 // store.
 static void ten_builtin_test_extension_addon_register_handler(
-    TEN_UNUSED TEN_ADDON_TYPE addon_type, TEN_UNUSED ten_string_t *addon_name,
-    void *register_ctx, TEN_UNUSED void *user_data) {
+    ten_addon_registration_t *registration,
+    ten_addon_registration_done_func_t done_callback,
+    ten_addon_register_ctx_t *register_ctx, void *user_data) {
+  TEN_ASSERT(registration, "Invalid argument.");
+  TEN_ASSERT(register_ctx, "Invalid argument.");
+  TEN_ASSERT(registration->func, "Invalid argument.");
+
   ten_addon_register_extension(TEN_STR_TEN_TEST_EXTENSION, NULL,
                                &ten_builtin_test_extension_addon, register_ctx);
+
+  done_callback(register_ctx, user_data);
 }
 
 // This is the phase 1 of the addon registration process: adding a function,

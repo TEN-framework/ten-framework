@@ -14,9 +14,8 @@ use anyhow::{Ok, Result};
 use crate::pkg_info::value_type::ValueType;
 
 use super::bindings::{
-    ten_schema_adjust_and_validate_json_str_proxy,
-    ten_schema_create_from_json_str_proxy, ten_schema_destroy_proxy,
-    ten_schema_is_compatible_proxy, ten_schema_t,
+    ten_schema_adjust_and_validate_json_str_proxy, ten_schema_create_from_json_str_proxy,
+    ten_schema_destroy_proxy, ten_schema_is_compatible_proxy, ten_schema_t,
 };
 
 pub struct TenSchemaOfField {
@@ -126,8 +125,7 @@ impl TenSchema {
             if !success {
                 // If validation failed, convert the C error message to a Rust
                 // string.
-                let rust_err_msg =
-                    std::ffi::CStr::from_ptr(err_msg).to_str()?.to_owned();
+                let rust_err_msg = std::ffi::CStr::from_ptr(err_msg).to_str()?.to_owned();
                 // The err_msg is allocated by the C code, so we need to free
                 // it to avoid memory leaks.
                 libc::free(err_msg as *mut libc::c_void);
@@ -158,8 +156,7 @@ impl TenSchema {
             if !success {
                 // If compatibility check failed, convert the C error message to
                 // a Rust string
-                let rust_err_msg =
-                    std::ffi::CStr::from_ptr(err_msg).to_str()?.to_owned();
+                let rust_err_msg = std::ffi::CStr::from_ptr(err_msg).to_str()?.to_owned();
                 // The err_msg is allocated by the C code, so we need to free
                 // it to avoid memory leaks.
                 libc::free(err_msg as *mut libc::c_void);
@@ -172,9 +169,7 @@ impl TenSchema {
     }
 }
 
-pub fn create_schema_from_json(
-    schema_json: &serde_json::Value,
-) -> Result<TenSchema> {
+pub fn create_schema_from_json(schema_json: &serde_json::Value) -> Result<TenSchema> {
     let schema_str = serde_json::to_string(schema_json)?;
     create_schema_from_json_str(&schema_str)
 }
@@ -193,8 +188,7 @@ pub fn create_schema_from_json_str(schema_json_str: &str) -> Result<TenSchema> {
     if schema_ptr.is_null() {
         // Failed to create ten_schema_t in C world.
         unsafe {
-            let rust_err_msg =
-                std::ffi::CStr::from_ptr(err_msg).to_str()?.to_owned();
+            let rust_err_msg = std::ffi::CStr::from_ptr(err_msg).to_str()?.to_owned();
             // The err_msg is allocated by the C code, so we need to free it.
             libc::free(err_msg as *mut libc::c_void);
 

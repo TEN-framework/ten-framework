@@ -139,12 +139,7 @@ pub async fn execute_cmd(
         let mut pkgs_cache = state.pkgs_cache.write().await;
         let mut graphs_cache = state.graphs_cache.write().await;
 
-        get_all_pkgs_in_app(
-            &mut pkgs_cache,
-            &mut graphs_cache,
-            actual_base_dir,
-        )
-        .await?;
+        get_all_pkgs_in_app(&mut pkgs_cache, &mut graphs_cache, actual_base_dir).await?;
     }
 
     let server = HttpServer::new(move || {
@@ -167,8 +162,7 @@ pub async fn execute_cmd(
             .default_service(web::to(get_frontend_asset))
     });
 
-    let bind_address =
-        format!("{}:{}", command_data.ip_address, command_data.port);
+    let bind_address = format!("{}:{}", command_data.ip_address, command_data.port);
 
     out.normal_line(&format!(
         "{}  Starting server at http://{}",

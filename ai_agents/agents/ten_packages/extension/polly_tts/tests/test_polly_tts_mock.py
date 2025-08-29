@@ -97,23 +97,23 @@ class MockPollyTTSExtensionTester(AsyncExtensionTester):
 
 
 def create_mock_polly_response():
-    """创建模拟的Polly响应数据"""
-    # 模拟PCM音频数据 (16kHz, 16bit, 单声道)
+    """Create mock polly response data"""
+    # mock pcm audio data (16kHz, 16bit, single channel)
     sample_rate = 16000
-    duration_ms = 1000  # 1秒音频
+    duration_ms = 1000  # 1 second audio
     bytes_per_sample = 2  # 16bit = 2 bytes
-    channels = 1  # 单声道
+    channels = 1  # single channel
 
-    # 计算音频数据大小
+    # calculate audio data size
     total_samples = int(sample_rate * duration_ms / 1000)
     audio_data_size = total_samples * bytes_per_sample * channels
 
-    # 生成模拟的音频数据 (随机字节)
+    # generate mock audio data (random bytes)
     import random
 
     audio_data = bytes([random.randint(0, 255) for _ in range(audio_data_size)])
 
-    # 创建模拟的流对象，包含iter_chunks方法
+    # create mock stream object, contains iter_chunks method
     class MockAudioStream:
         def __init__(self, data, chunk_size=320):
             self.data = data
@@ -139,13 +139,13 @@ def create_mock_polly_response():
 @patch("boto3.client")
 def test_polly_tts_success_mock(mock_boto_client, mock_boto_session):
     """test polly tts success mock"""
-    # 设置mock
+    # set mock
     mock_session = MagicMock()
     mock_polly = MagicMock()
     mock_boto_session.return_value = mock_session
     mock_session.client.return_value = mock_polly
 
-    # 模拟Polly的synthesize_speech响应
+    # mock polly synthesize_speech response
     mock_response = {
         "AudioStream": create_mock_polly_response(),
         "ContentType": "audio/pcm",
@@ -214,6 +214,7 @@ def test_polly_tts_error_mock(mock_boto_client, mock_boto_session):
     }
 
     tester = MockPollyTTSExtensionTester()
+    tester.expect_error_code = ModuleErrorCode.FATAL_ERROR.value
     tester.set_test_mode_single("polly_tts", json.dumps(property_json))
     err = tester.run()
     assert err is None, f"test_polly_tts_error_mock err: {err.error_message}"
@@ -278,7 +279,7 @@ def test_polly_tts_network_timeout_mock(mock_boto_client, mock_boto_session):
     }
 
     tester = MockPollyTTSExtensionTester()
-    tester.expect_error_code = ModuleErrorCode.NON_FATAL_ERROR.value
+    tester.expect_error_code = ModuleErrorCode.FATAL_ERROR.value
     tester.set_test_mode_single("polly_tts", json.dumps(property_json))
     err = tester.run()
     assert (

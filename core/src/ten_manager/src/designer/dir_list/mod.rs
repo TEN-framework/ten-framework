@@ -64,8 +64,11 @@ pub async fn list_dir_endpoint(
 
     // Case 1: path is a file.
     if path.is_file() {
-        let file_name =
-            path.file_name().unwrap_or_default().to_string_lossy().to_string();
+        let file_name = path
+            .file_name()
+            .unwrap_or_default()
+            .to_string_lossy()
+            .to_string();
         entries.push(FsEntry {
             name: file_name,
             path: request_payload.path.clone(),
@@ -83,7 +86,11 @@ pub async fn list_dir_endpoint(
                 };
                 let name = entry.file_name().to_string_lossy().to_string();
                 let entry_path = entry.path().to_string_lossy().to_string();
-                entries.push(FsEntry { name, path: entry_path, is_dir });
+                entries.push(FsEntry {
+                    name,
+                    path: entry_path,
+                    is_dir,
+                });
             }
         }
     }

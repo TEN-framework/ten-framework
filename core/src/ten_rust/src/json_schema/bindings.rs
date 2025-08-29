@@ -20,12 +20,10 @@ pub extern "C" fn ten_validate_manifest_json_string(
     // Note that no copy is made here. You can call 'rust_path.to_owned()' if
     // you need a copy.
     let rust_manifest_data = c_manifest_data.to_str().unwrap();
-    let ret =
-        json_schema::ten_validate_manifest_json_string(rust_manifest_data);
+    let ret = json_schema::ten_validate_manifest_json_string(rust_manifest_data);
     if ret.is_err() {
         let err_msg = ret.err().unwrap().to_string();
-        let c_err_msg =
-            CString::new(err_msg).expect("Failed to allocate memory.");
+        let c_err_msg = CString::new(err_msg).expect("Failed to allocate memory.");
         unsafe {
             *out_err_msg = c_err_msg.into_raw();
         }
@@ -49,8 +47,7 @@ pub extern "C" fn ten_validate_manifest_json_file(
     let ret = json_schema::ten_validate_manifest_json_file(rust_manifest_file);
     if ret.is_err() {
         let err_msg = ret.err().unwrap().to_string();
-        let c_err_msg =
-            CString::new(err_msg).expect("Failed to allocate memory.");
+        let c_err_msg = CString::new(err_msg).expect("Failed to allocate memory.");
         unsafe {
             *out_err_msg = c_err_msg.into_raw();
         }
@@ -71,12 +68,10 @@ pub extern "C" fn ten_validate_property_json_string(
     // Note that no copy is made here. You can call 'rust_path.to_owned()' if
     // you need a copy.
     let rust_property_data = c_property_data.to_str().unwrap();
-    let ret =
-        json_schema::ten_validate_property_json_string(rust_property_data);
+    let ret = json_schema::ten_validate_property_json_string(rust_property_data);
     if ret.is_err() {
         let err_msg = ret.err().unwrap().to_string();
-        let c_err_msg =
-            CString::new(err_msg).expect("Failed to allocate memory.");
+        let c_err_msg = CString::new(err_msg).expect("Failed to allocate memory.");
         unsafe {
             *out_err_msg = c_err_msg.into_raw();
         }
@@ -100,8 +95,7 @@ pub extern "C" fn ten_validate_property_json_file(
     let ret = json_schema::ten_validate_property_json_file(rust_property_file);
     if ret.is_err() {
         let err_msg = ret.err().unwrap().to_string();
-        let c_err_msg =
-            CString::new(err_msg).expect("Failed to allocate memory.");
+        let c_err_msg = CString::new(err_msg).expect("Failed to allocate memory.");
         unsafe {
             *out_err_msg = c_err_msg.into_raw();
         }

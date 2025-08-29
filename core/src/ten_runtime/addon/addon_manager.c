@@ -32,8 +32,8 @@ ten_addon_manager_t *ten_addon_manager_get_instance(void) {
 
     ten_list_init(&instance->registry);
 
-    instance->mutex = ten_mutex_create();
-    TEN_ASSERT(instance->mutex, "Failed to create addon manager mutex.");
+    instance->rwlock = ten_rwlock_create(TEN_RW_DEFAULT_FAIRNESS);
+    TEN_ASSERT(instance->rwlock, "Failed to create addon manager rwlock.");
 
     instance->app = NULL;
   }
@@ -46,7 +46,7 @@ ten_addon_manager_t *ten_addon_manager_get_instance(void) {
 void ten_addon_manager_destroy(ten_addon_manager_t *self) {
   TEN_ASSERT(self, "Invalid argument.");
 
-  ten_mutex_destroy(self->mutex);
+  ten_rwlock_destroy(self->rwlock);
   ten_list_destroy(&self->registry);
 }
 
@@ -63,7 +63,7 @@ bool ten_addon_manager_add_addon(ten_addon_manager_t *self,
                                  const char *addon_type_str,
                                  const char *addon_name,
                                  ten_addon_registration_func_t func,
-                                 void *user_data, ten_error_t *error) {
+                                 void *context, ten_error_t *error) {
   TEN_ASSERT(self && addon_name && func, "Invalid argument.");
 
   TEN_ADDON_TYPE addon_type = ten_addon_type_from_string(addon_type_str);
@@ -76,7 +76,7 @@ bool ten_addon_manager_add_addon(ten_addon_manager_t *self,
     return false;
   }
 
-  ten_mutex_lock(self->mutex);
+  ten_rwlock_lock(self->rwlock, 0);
 
   // Check if addon with the same name already exists.
   bool exists = false;
@@ -104,7 +104,7 @@ bool ten_addon_manager_add_addon(ten_addon_manager_t *self,
     ten_string_init_from_c_str_with_size(&reg->addon_name, addon_name,
                                          strlen(addon_name));
     reg->func = func;
-    reg->user_data = user_data;
+    reg->context = context;
 
     // Add to the registry.
     ten_list_push_ptr_back(&self->registry, reg,
@@ -115,51 +115,129 @@ bool ten_addon_manager_add_addon(ten_addon_manager_t *self,
     TEN_LOGW("Addon '%s:%s' is already registered", addon_type_str, addon_name);
   }
 
-  ten_mutex_unlock(self->mutex);
+  ten_rwlock_unlock(self->rwlock, 0);
 
   return true;
 }
 
-void ten_addon_manager_register_all_addons(ten_addon_manager_t *self,
-                                           void *register_ctx) {
+bool ten_addon_is_registered(ten_addon_register_ctx_t *register_ctx,
+                             TEN_ADDON_TYPE addon_type,
+                             const char *addon_name) {
+  TEN_ASSERT(register_ctx, "Invalid argument.");
+  TEN_ASSERT(addon_name, "Invalid argument.");
+
+  ten_app_t *app = register_ctx->app;
+  TEN_ASSERT(app, "Invalid argument.");
+  TEN_ASSERT(ten_app_check_integrity(app, true), "Invalid argument.");
+
+  return ten_addon_store_find_by_type(app, addon_type, addon_name) != NULL;
+}
+
+typedef struct ten_addon_manager_register_context_t {
+  ten_addon_manager_on_all_addons_registered_func_t on_all_addons_registered;
+  void *cb_data;
+  size_t expected_count;
+  size_t registered_count;
+} ten_addon_manager_register_context_t;
+
+static ten_addon_manager_register_context_t *
+ten_addon_manager_register_context_create(
+    ten_addon_manager_on_all_addons_registered_func_t on_all_addons_registered,
+    void *cb_data, size_t expected_count) {
+  ten_addon_manager_register_context_t *ctx =
+      (ten_addon_manager_register_context_t *)TEN_MALLOC(
+          sizeof(ten_addon_manager_register_context_t));
+  TEN_ASSERT(ctx, "Failed to allocate memory.");
+
+  ctx->on_all_addons_registered = on_all_addons_registered;
+  ctx->cb_data = cb_data;
+  ctx->expected_count = expected_count;
+  ctx->registered_count = 0;
+
+  return ctx;
+}
+
+static void ten_addon_manager_register_context_destroy(
+    ten_addon_manager_register_context_t *ctx) {
+  TEN_ASSERT(ctx, "Invalid argument.");
+  TEN_FREE(ctx);
+}
+
+static void ten_addon_manager_on_addon_registered(void *register_ctx,
+                                                  void *user_data) {
+  ten_addon_manager_register_context_t *ctx =
+      (ten_addon_manager_register_context_t *)user_data;
+  TEN_ASSERT(ctx, "Invalid argument.");
+  TEN_ASSERT(ctx->on_all_addons_registered, "Invalid argument.");
+
+  ctx->registered_count++;
+  if (ctx->registered_count == ctx->expected_count) {
+    ctx->on_all_addons_registered(register_ctx, ctx->cb_data);
+
+    ten_addon_manager_register_context_destroy(ctx);
+  }
+}
+
+void ten_addon_manager_register_all_addons(
+    ten_addon_manager_t *self, void *register_ctx,
+    ten_addon_manager_on_all_addons_registered_func_t on_all_addons_registered,
+    void *cb_data) {
   TEN_ASSERT(self, "Invalid argument.");
 
-  // Basically, the relationship between an app and a process is one-to-one,
-  // meaning a process will only have one app. In this scenario, theoretically,
-  // the mutex lock/unlock protection below would not be necessary. However, in
-  // special cases, such as under gtest, a single gtest process may execute
-  // multiple apps, with some apps starting in parallel. As a result, this
-  // function could potentially be called multiple times in parallel. In such
-  // cases, the mutex lock/unlock is indeed necessary. In normal circumstances,
-  // where the relationship is one-to-one, performing the mutex lock/unlock
-  // action causes no harm. Therefore, mutex lock/unlock is uniformly applied
-  // here.
-  ten_mutex_lock(self->mutex);
+  ten_rwlock_lock(self->rwlock, 1);
 
-  ten_list_iterator_t iter = ten_list_begin(&self->registry);
+  ten_list_t addons_to_register = TEN_LIST_INIT_VAL;
+
+  ten_list_foreach (&self->registry, iter) {
+    ten_listnode_t *node = iter.node;
+    ten_addon_registration_t *reg =
+        (ten_addon_registration_t *)ten_ptr_listnode_get(node);
+    if (reg && reg->func) {
+      ten_list_push_ptr_back(&addons_to_register, reg, NULL);
+    }
+  }
+
+  ten_rwlock_unlock(self->rwlock, 1);
+
+  if (ten_list_is_empty(&addons_to_register)) {
+    on_all_addons_registered(register_ctx, cb_data);
+    return;
+  }
+
+  // Create a register context.
+  ten_addon_manager_register_context_t *ctx =
+      ten_addon_manager_register_context_create(
+          on_all_addons_registered, cb_data,
+          ten_list_size(&addons_to_register));
+
+  ten_list_iterator_t iter = ten_list_begin(&addons_to_register);
   while (!ten_list_iterator_is_end(iter)) {
     ten_listnode_t *node = iter.node;
     ten_addon_registration_t *reg =
         (ten_addon_registration_t *)ten_ptr_listnode_get(node);
 
     if (reg && reg->func) {
-      reg->func(reg->addon_type, &reg->addon_name, register_ctx,
-                reg->user_data);
+      reg->func(reg, ten_addon_manager_on_addon_registered, register_ctx, ctx);
     }
 
     iter = ten_list_iterator_next(iter);
   }
 
-  ten_mutex_unlock(self->mutex);
+  ten_list_clear(&addons_to_register);
 }
 
-void ten_addon_manager_register_all_addon_loaders(ten_addon_manager_t *self,
-                                                  void *register_ctx) {
+void ten_addon_manager_register_all_addon_loaders(
+    ten_addon_manager_t *self, void *register_ctx,
+    ten_addon_manager_on_all_addons_registered_func_t on_all_addons_registered,
+    void *cb_data) {
   TEN_ASSERT(self, "Invalid argument.");
   TEN_ASSERT(self->app, "Invalid argument.");
+  TEN_ASSERT(on_all_addons_registered, "Invalid argument.");
   TEN_ASSERT(ten_app_check_integrity(self->app, true), "Invalid argument.");
 
-  ten_mutex_lock(self->mutex);
+  ten_list_t addons_to_register = TEN_LIST_INIT_VAL;
+
+  ten_rwlock_lock(self->rwlock, 1);
 
   ten_list_iterator_t iter = ten_list_begin(&self->registry);
   while (!ten_list_iterator_is_end(iter)) {
@@ -173,26 +251,88 @@ void ten_addon_manager_register_all_addon_loaders(ten_addon_manager_t *self,
           self->app, TEN_ADDON_TYPE_ADDON_LOADER,
           ten_string_get_raw_str(&reg->addon_name));
       if (!addon_host) {
-        reg->func(reg->addon_type, &reg->addon_name, register_ctx,
-                  reg->user_data);
+        ten_list_push_ptr_back(&addons_to_register, reg, NULL);
       }
     }
 
     iter = ten_list_iterator_next(iter);
   }
 
-  ten_mutex_unlock(self->mutex);
+  ten_rwlock_unlock(self->rwlock, 1);
+
+  if (ten_list_is_empty(&addons_to_register)) {
+    on_all_addons_registered(register_ctx, cb_data);
+    return;
+  }
+
+  // Create a register context.
+  ten_addon_manager_register_context_t *ctx =
+      ten_addon_manager_register_context_create(
+          on_all_addons_registered, cb_data,
+          ten_list_size(&addons_to_register));
+
+  iter = ten_list_begin(&addons_to_register);
+  while (!ten_list_iterator_is_end(iter)) {
+    ten_listnode_t *node = iter.node;
+    ten_addon_registration_t *reg =
+        (ten_addon_registration_t *)ten_ptr_listnode_get(node);
+
+    if (reg && reg->func && reg->addon_type == TEN_ADDON_TYPE_ADDON_LOADER) {
+      // Check if the addon loader is already registered.
+      ten_addon_host_t *addon_host = ten_addon_store_find_by_type(
+          self->app, TEN_ADDON_TYPE_ADDON_LOADER,
+          ten_string_get_raw_str(&reg->addon_name));
+      if (!addon_host) {
+        reg->func(reg, ten_addon_manager_on_addon_registered, register_ctx,
+                  ctx);
+      }
+    }
+
+    iter = ten_list_iterator_next(iter);
+  }
+
+  ten_list_clear(&addons_to_register);
 }
 
-void ten_addon_manager_register_all_protocols(ten_addon_manager_t *self,
-                                              void *register_ctx) {
+void ten_addon_manager_register_all_protocols(
+    ten_addon_manager_t *self, void *register_ctx,
+    ten_addon_manager_on_all_addons_registered_func_t on_all_addons_registered,
+    void *cb_data) {
   TEN_ASSERT(self, "Invalid argument.");
   TEN_ASSERT(self->app, "Invalid argument.");
   TEN_ASSERT(ten_app_check_integrity(self->app, true), "Invalid argument.");
 
-  ten_mutex_lock(self->mutex);
+  ten_list_t addons_to_register = TEN_LIST_INIT_VAL;
+
+  ten_rwlock_lock(self->rwlock, 1);
 
   ten_list_iterator_t iter = ten_list_begin(&self->registry);
+  while (!ten_list_iterator_is_end(iter)) {
+    ten_listnode_t *node = iter.node;
+    ten_addon_registration_t *reg =
+        (ten_addon_registration_t *)ten_ptr_listnode_get(node);
+
+    if (reg && reg->func && reg->addon_type == TEN_ADDON_TYPE_PROTOCOL) {
+      ten_list_push_ptr_back(&addons_to_register, reg, NULL);
+    }
+
+    iter = ten_list_iterator_next(iter);
+  }
+
+  ten_rwlock_unlock(self->rwlock, 1);
+
+  if (ten_list_is_empty(&addons_to_register)) {
+    on_all_addons_registered(register_ctx, cb_data);
+    return;
+  }
+
+  // Create a register context.
+  ten_addon_manager_register_context_t *ctx =
+      ten_addon_manager_register_context_create(
+          on_all_addons_registered, cb_data,
+          ten_list_size(&addons_to_register));
+
+  iter = ten_list_begin(&addons_to_register);
   while (!ten_list_iterator_is_end(iter)) {
     ten_listnode_t *node = iter.node;
     ten_addon_registration_t *reg =
@@ -204,47 +344,55 @@ void ten_addon_manager_register_all_protocols(ten_addon_manager_t *self,
           self->app, TEN_ADDON_TYPE_PROTOCOL,
           ten_string_get_raw_str(&reg->addon_name));
       if (!addon_host) {
-        reg->func(reg->addon_type, &reg->addon_name, register_ctx,
-                  reg->user_data);
+        reg->func(reg, ten_addon_manager_on_addon_registered, register_ctx,
+                  ctx);
       }
     }
 
     iter = ten_list_iterator_next(iter);
   }
 
-  ten_mutex_unlock(self->mutex);
+  ten_list_clear(&addons_to_register);
 }
 
-bool ten_addon_manager_register_specific_addon(ten_addon_manager_t *self,
-                                               TEN_ADDON_TYPE addon_type,
-                                               const char *addon_name,
-                                               void *register_ctx) {
+bool ten_addon_manager_register_specific_addon(
+    ten_addon_manager_t *self, TEN_ADDON_TYPE addon_type,
+    const char *addon_name, void *register_ctx,
+    ten_addon_manager_on_all_addons_registered_func_t on_all_addons_registered,
+    void *cb_data) {
   TEN_ASSERT(self && addon_name, "Invalid argument.");
 
-  bool success = false;
+  ten_addon_registration_t *reg = NULL;
 
-  ten_mutex_lock(self->mutex);
+  ten_rwlock_lock(self->rwlock, 1);
 
-  // Iterate through the registry to find the specific addon.
+  // Check if the specific addon exists.
   ten_list_foreach (&self->registry, iter) {
-    ten_addon_registration_t *reg =
+    ten_addon_registration_t *node =
         (ten_addon_registration_t *)ten_ptr_listnode_get(iter.node);
-    if (reg && reg->addon_type == addon_type &&
-        ten_string_is_equal_c_str(&reg->addon_name, addon_name)) {
-      reg->func(addon_type, &reg->addon_name, register_ctx, reg->user_data);
-      success = true;
+    if (node && node->addon_type == addon_type &&
+        ten_string_is_equal_c_str(&node->addon_name, addon_name)) {
+      reg = node;
       break;
     }
   }
 
-  if (!success) {
+  ten_rwlock_unlock(self->rwlock, 1);
+
+  if (!reg) {
     TEN_LOGI("Unable to find '%s:%s' in registry",
              ten_addon_type_to_string(addon_type), addon_name);
+    return false;
   }
 
-  ten_mutex_unlock(self->mutex);
+  // Create a register context.
+  ten_addon_manager_register_context_t *ctx =
+      ten_addon_manager_register_context_create(on_all_addons_registered,
+                                                cb_data, 1);
 
-  return success;
+  reg->func(reg, ten_addon_manager_on_addon_registered, register_ctx, ctx);
+
+  return true;
 }
 
 bool ten_addon_manager_is_addon_loaded(ten_addon_manager_t *self,
@@ -253,19 +401,19 @@ bool ten_addon_manager_is_addon_loaded(ten_addon_manager_t *self,
   TEN_ASSERT(self, "Invalid argument.");
   TEN_ASSERT(addon_name, "Invalid argument.");
 
-  ten_mutex_lock(self->mutex);
+  ten_rwlock_lock(self->rwlock, 1);
 
   ten_list_foreach (&self->registry, iter) {
     ten_addon_registration_t *reg =
         (ten_addon_registration_t *)ten_ptr_listnode_get(iter.node);
     if (reg && reg->addon_type == addon_type &&
         ten_string_is_equal_c_str(&reg->addon_name, addon_name)) {
-      ten_mutex_unlock(self->mutex);
+      ten_rwlock_unlock(self->rwlock, 1);
       return true;
     }
   }
 
-  ten_mutex_unlock(self->mutex);
+  ten_rwlock_unlock(self->rwlock, 1);
 
   return false;
 }
@@ -277,7 +425,7 @@ bool ten_addon_manager_set_belonging_app_if_not_set(ten_addon_manager_t *self,
   TEN_ASSERT(app, "Invalid argument.");
   TEN_ASSERT(ten_app_check_integrity(app, true), "Invalid argument.");
 
-  ten_mutex_lock(self->mutex);
+  ten_rwlock_lock(self->rwlock, 0);
 
   bool result = self->app == NULL;
 
@@ -285,7 +433,7 @@ bool ten_addon_manager_set_belonging_app_if_not_set(ten_addon_manager_t *self,
     self->app = app;
   }
 
-  ten_mutex_unlock(self->mutex);
+  ten_rwlock_unlock(self->rwlock, 0);
 
   return result;
 }
@@ -297,11 +445,11 @@ bool ten_addon_manager_belongs_to_app(ten_addon_manager_t *self,
   TEN_ASSERT(app, "Invalid argument.");
   TEN_ASSERT(ten_app_check_integrity(app, true), "Invalid argument.");
 
-  ten_mutex_lock(self->mutex);
+  ten_rwlock_lock(self->rwlock, 1);
 
   bool result = self->app == app;
 
-  ten_mutex_unlock(self->mutex);
+  ten_rwlock_unlock(self->rwlock, 1);
 
   return result;
 }

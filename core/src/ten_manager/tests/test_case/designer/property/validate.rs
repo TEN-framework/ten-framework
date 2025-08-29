@@ -11,9 +11,7 @@ mod tests {
     use actix_web::{http::StatusCode, test, web, App};
     use ten_manager::{
         designer::{
-            property::validate::{
-                validate_property_endpoint, ValidatePropertyRequestPayload,
-            },
+            property::validate::{validate_property_endpoint, ValidatePropertyRequestPayload},
             storage::in_memory::TmanStorageInMemory,
             DesignerState,
         },
@@ -25,12 +23,8 @@ mod tests {
     async fn test_validate_property_valid_empty() {
         // Setup.
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -39,10 +33,9 @@ mod tests {
         let state = web::Data::new(Arc::new(designer_state));
 
         let app = test::init_service(
-            App::new().app_data(state.clone()).service(
-                web::resource("/")
-                    .route(web::post().to(validate_property_endpoint)),
-            ),
+            App::new()
+                .app_data(state.clone())
+                .service(web::resource("/").route(web::post().to(validate_property_endpoint))),
         )
         .await;
 
@@ -70,12 +63,8 @@ mod tests {
     async fn test_validate_property_valid_with_basic_fields() {
         // Setup
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -84,10 +73,9 @@ mod tests {
         let state = web::Data::new(Arc::new(designer_state));
 
         let app = test::init_service(
-            App::new().app_data(state.clone()).service(
-                web::resource("/")
-                    .route(web::post().to(validate_property_endpoint)),
-            ),
+            App::new()
+                .app_data(state.clone())
+                .service(web::resource("/").route(web::post().to(validate_property_endpoint))),
         )
         .await;
 
@@ -125,12 +113,8 @@ mod tests {
     async fn test_validate_property_valid_with_ten_field() {
         // Setup
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -139,10 +123,9 @@ mod tests {
         let state = web::Data::new(Arc::new(designer_state));
 
         let app = test::init_service(
-            App::new().app_data(state.clone()).service(
-                web::resource("/")
-                    .route(web::post().to(validate_property_endpoint)),
-            ),
+            App::new()
+                .app_data(state.clone())
+                .service(web::resource("/").route(web::post().to(validate_property_endpoint))),
         )
         .await;
 
@@ -199,12 +182,8 @@ mod tests {
     async fn test_validate_property_valid_with_predefined_graphs() {
         // Setup
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -213,10 +192,9 @@ mod tests {
         let state = web::Data::new(Arc::new(designer_state));
 
         let app = test::init_service(
-            App::new().app_data(state.clone()).service(
-                web::resource("/")
-                    .route(web::post().to(validate_property_endpoint)),
-            ),
+            App::new()
+                .app_data(state.clone())
+                .service(web::resource("/").route(web::post().to(validate_property_endpoint))),
         )
         .await;
 
@@ -265,12 +243,8 @@ mod tests {
     async fn test_validate_property_invalid_json_syntax() {
         // Setup
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -279,10 +253,9 @@ mod tests {
         let state = web::Data::new(Arc::new(designer_state));
 
         let app = test::init_service(
-            App::new().app_data(state.clone()).service(
-                web::resource("/")
-                    .route(web::post().to(validate_property_endpoint)),
-            ),
+            App::new()
+                .app_data(state.clone())
+                .service(web::resource("/").route(web::post().to(validate_property_endpoint))),
         )
         .await;
 
@@ -317,12 +290,8 @@ mod tests {
     async fn test_validate_property_invalid_additional_properties() {
         // Setup
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -331,10 +300,9 @@ mod tests {
         let state = web::Data::new(Arc::new(designer_state));
 
         let app = test::init_service(
-            App::new().app_data(state.clone()).service(
-                web::resource("/")
-                    .route(web::post().to(validate_property_endpoint)),
-            ),
+            App::new()
+                .app_data(state.clone())
+                .service(web::resource("/").route(web::post().to(validate_property_endpoint))),
         )
         .await;
 
@@ -384,12 +352,8 @@ mod tests {
     async fn test_validate_property_invalid_non_alphanumeric_field() {
         // Setup
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -398,10 +362,9 @@ mod tests {
         let state = web::Data::new(Arc::new(designer_state));
 
         let app = test::init_service(
-            App::new().app_data(state.clone()).service(
-                web::resource("/")
-                    .route(web::post().to(validate_property_endpoint)),
-            ),
+            App::new()
+                .app_data(state.clone())
+                .service(web::resource("/").route(web::post().to(validate_property_endpoint))),
         )
         .await;
 
@@ -463,12 +426,8 @@ mod tests {
     async fn test_validate_property_invalid_missing_required_fields() {
         // Setup
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -477,10 +436,9 @@ mod tests {
         let state = web::Data::new(Arc::new(designer_state));
 
         let app = test::init_service(
-            App::new().app_data(state.clone()).service(
-                web::resource("/")
-                    .route(web::post().to(validate_property_endpoint)),
-            ),
+            App::new()
+                .app_data(state.clone())
+                .service(web::resource("/").route(web::post().to(validate_property_endpoint))),
         )
         .await;
 

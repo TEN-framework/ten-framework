@@ -21,13 +21,9 @@ use ten_rust::pkg_info::manifest::Manifest;
 use ten_rust::pkg_info::pkg_type::PkgType;
 use ten_rust::pkg_info::PkgInfo;
 
-use super::found_result::{
-    get_pkg_registry_info_from_manifest, PkgRegistryInfo,
-};
+use super::found_result::{get_pkg_registry_info_from_manifest, PkgRegistryInfo};
 use super::pkg_cache::{find_in_package_cache, store_file_to_package_cache};
-use crate::constants::{
-    DEFAULT_REGISTRY_PAGE_SIZE, TEN_PACKAGE_FILE_EXTENSION,
-};
+use crate::constants::{DEFAULT_REGISTRY_PAGE_SIZE, TEN_PACKAGE_FILE_EXTENSION};
 use crate::home::config::{is_verbose, TmanConfig};
 use crate::output::TmanOutput;
 use crate::registry::search::{matches_filter, PkgSearchFilter};
@@ -63,9 +59,8 @@ pub async fn upload_package(
 
     // Check if the directory exists, and only create it if it doesn't.
     if !dir_path.exists() {
-        fs::create_dir_all(&dir_path).with_context(|| {
-            format!("Failed to create directory '{}'", dir_path.display())
-        })?;
+        fs::create_dir_all(&dir_path)
+            .with_context(|| format!("Failed to create directory '{}'", dir_path.display()))?;
     }
 
     // Construct the full file path for the new location.
@@ -100,13 +95,11 @@ pub async fn upload_package(
         .await
         .with_context(|| "Failed to serialize manifest to JSON")?;
 
-    let manifest_file_name =
-        format!("{}_{}_manifest.json", file_stem, pkg_info.hash);
+    let manifest_file_name = format!("{}_{}_manifest.json", file_stem, pkg_info.hash);
     let manifest_path = dir_path.join(manifest_file_name);
 
-    fs::write(&manifest_path, manifest_json).with_context(|| {
-        format!("Failed to write manifest to '{}'", manifest_path.display())
-    })?;
+    fs::write(&manifest_path, manifest_json)
+        .with_context(|| format!("Failed to write manifest to '{}'", manifest_path.display()))?;
 
     Ok(full_path.to_string_lossy().to_string())
 }
@@ -148,10 +141,7 @@ pub fn extract_filename_from_path(path: &Path) -> Option<String> {
 
 /// Determine whether the locally cached file and the target file in the local
 /// registry have the same hash.
-fn is_same_file_by_hash(
-    cache_file: &Path,
-    registry_file_url: &str,
-) -> Result<bool> {
+fn is_same_file_by_hash(cache_file: &Path, registry_file_url: &str) -> Result<bool> {
     let registry_file_path = url::Url::parse(registry_file_url)
         .map_err(|e| anyhow::anyhow!("Invalid file URL: {}", e))?
         .to_file_path()
@@ -210,14 +200,9 @@ pub async fn get_package(
                 ));
             }
 
-            fs::copy(&cached_file_path, temp_path.path()).with_context(
-                || {
-                    format!(
-                        "Failed to copy from cache {}",
-                        cached_file_path.display()
-                    )
-                },
-            )?;
+            fs::copy(&cached_file_path, temp_path.path()).with_context(|| {
+                format!("Failed to copy from cache {}", cached_file_path.display())
+            })?;
             return Ok(());
         }
     }
@@ -274,8 +259,7 @@ async fn find_file_with_criteria(
             let search_path = base_url.join(pkg_type.to_string());
             if search_path.exists() {
                 let mut path_results =
-                    search_versions(&search_path, name_str, version_req, tags)
-                        .await?;
+                    search_versions(&search_path, name_str, version_req, tags).await?;
                 results.append(&mut path_results);
             }
         }
@@ -285,15 +269,9 @@ async fn find_file_with_criteria(
             if search_path.exists() {
                 for entry in (std::fs::read_dir(&search_path)?).flatten() {
                     if entry.file_type()?.is_dir() {
-                        let name_str =
-                            entry.file_name().to_string_lossy().to_string();
-                        let mut name_results = search_versions(
-                            &search_path,
-                            &name_str,
-                            version_req,
-                            tags,
-                        )
-                        .await?;
+                        let name_str = entry.file_name().to_string_lossy().to_string();
+                        let mut name_results =
+                            search_versions(&search_path, &name_str, version_req, tags).await?;
                         results.append(&mut name_results);
                     }
                 }
@@ -307,8 +285,7 @@ async fn find_file_with_criteria(
                     let name_dir = type_dir.join(name);
                     if name_dir.exists() {
                         let mut type_results =
-                            search_versions(&type_dir, name, version_req, tags)
-                                .await?;
+                            search_versions(&type_dir, name, version_req, tags).await?;
                         results.append(&mut type_results);
                     }
                 }
@@ -320,15 +297,11 @@ async fn find_file_with_criteria(
             for type_entry in (std::fs::read_dir(base_url)?).flatten() {
                 if type_entry.file_type()?.is_dir() {
                     let type_dir = type_entry.path();
-                    for name_entry in (std::fs::read_dir(&type_dir)?).flatten()
-                    {
+                    for name_entry in (std::fs::read_dir(&type_dir)?).flatten() {
                         if name_entry.file_type()?.is_dir() {
                             let mut name_results = search_versions(
                                 &type_dir,
-                                name_entry
-                                    .file_name()
-                                    .to_string_lossy()
-                                    .as_ref(),
+                                name_entry.file_name().to_string_lossy().as_ref(),
                                 version_req,
                                 tags,
                             )
@@ -369,7 +342,9 @@ async fn search_versions(
 
         // Check if the folder meets the version requirements.
         if version_req.is_none()
-            || version_req.as_ref().is_some_and(|req| req.matches(&version))
+            || version_req
+                .as_ref()
+                .is_some_and(|req| req.matches(&version))
         {
             // Traverse the files within the folder of that version.
             for file in WalkDir::new(version_dir.path())
@@ -388,29 +363,23 @@ async fn search_versions(
                 {
                     // Get the file stem to look for the corresponding manifest
                     // file.
-                    if let Some(file_stem) =
-                        path.file_stem().and_then(|f| f.to_str())
-                    {
+                    if let Some(file_stem) = path.file_stem().and_then(|f| f.to_str()) {
                         // Look for the matching manifest file:
                         // {file_stem}_manifest.json
-                        let manifest_file_name =
-                            format!("{file_stem}_manifest.json");
-                        let manifest_path =
-                            path.with_file_name(&manifest_file_name);
+                        let manifest_file_name = format!("{file_stem}_manifest.json");
+                        let manifest_path = path.with_file_name(&manifest_file_name);
 
                         // Read the manifest file if it exists.
                         if manifest_path.exists() {
-                            let manifest_content =
-                                fs::read_to_string(&manifest_path)
-                                    .with_context(|| {
-                                        format!(
-                                            "Failed to read manifest file: {}",
-                                            manifest_path.display()
-                                        )
-                                    })?;
+                            let manifest_content = fs::read_to_string(&manifest_path)
+                                .with_context(|| {
+                                    format!(
+                                        "Failed to read manifest file: {}",
+                                        manifest_path.display()
+                                    )
+                                })?;
 
-                            let manifest =
-                                Manifest::create_from_str(&manifest_content)?;
+                            let manifest = Manifest::create_from_str(&manifest_content)?;
 
                             // Check if the manifest meets the tags
                             // requirements.
@@ -424,11 +393,9 @@ async fn search_versions(
 
                                     // If manifest has tags, check if it
                                     // contains all the required tags.
-                                    let manifest_tags =
-                                        manifest.tags.as_ref().unwrap();
-                                    let all_tags_contained = tag_filters
-                                        .iter()
-                                        .all(|tag| manifest_tags.contains(tag));
+                                    let manifest_tags = manifest.tags.as_ref().unwrap();
+                                    let all_tags_contained =
+                                        tag_filters.iter().all(|tag| manifest_tags.contains(tag));
 
                                     if !all_tags_contained {
                                         continue;
@@ -438,20 +405,13 @@ async fn search_versions(
 
                             // Generate the download URL from the file path.
                             let download_url = url::Url::from_file_path(path)
-                                .map_err(|_| {
-                                    anyhow!(
-                                        "Failed to convert path to file URL"
-                                    )
-                                })?
+                                .map_err(|_| anyhow!("Failed to convert path to file URL"))?
                                 .to_string();
 
                             // Convert manifest to PkgRegistryInfo.
                             let mut pkg_registry_info: PkgRegistryInfo =
-                                get_pkg_registry_info_from_manifest(
-                                    &download_url,
-                                    &manifest,
-                                )
-                                .await?;
+                                get_pkg_registry_info_from_manifest(&download_url, &manifest)
+                                    .await?;
 
                             pkg_registry_info.download_url = download_url;
 
@@ -508,8 +468,7 @@ pub async fn get_package_list(
 
     // If page is specified, paginate the results.
     if let Some(page_num) = page {
-        let page_size_value =
-            page_size.unwrap_or(DEFAULT_REGISTRY_PAGE_SIZE) as usize;
+        let page_size_value = page_size.unwrap_or(DEFAULT_REGISTRY_PAGE_SIZE) as usize;
         let start_idx = (page_num as usize - 1) * page_size_value;
 
         // Return empty result if start index is beyond the array length.
@@ -517,8 +476,7 @@ pub async fn get_package_list(
             return Ok(Vec::new());
         }
 
-        let end_idx =
-            std::cmp::min(start_idx + page_size_value, all_results.len());
+        let end_idx = std::cmp::min(start_idx + page_size_value, all_results.len());
         Ok(all_results[start_idx..end_idx].to_vec())
     } else {
         // If no page is specified, return all results.
@@ -544,11 +502,13 @@ pub async fn search_packages(
         .map_err(|_| anyhow!("Failed to convert file URL to path"))?
         .to_string_lossy()
         .into_owned();
-    path_url =
-        if path_url.ends_with('/') { path_url } else { format!("{path_url}/") };
+    path_url = if path_url.ends_with('/') {
+        path_url
+    } else {
+        format!("{path_url}/")
+    };
     let base_path = Path::new(&path_url);
-    let all_packages =
-        find_file_with_criteria(base_path, None, None, None, None).await?;
+    let all_packages = find_file_with_criteria(base_path, None, None, None, None).await?;
     let mut filtered = all_packages
         .into_iter()
         .filter(|p| matches_filter(p, &filter.filter))
@@ -608,26 +568,20 @@ pub async fn delete_package(
     };
 
     // Construct the directory path.
-    let dir_path =
-        PathBuf::from(format!("{path_url}{pkg_type}/{name}/{version}/"));
+    let dir_path = PathBuf::from(format!("{path_url}{pkg_type}/{name}/{version}/"));
 
     if dir_path.exists() {
         // Iterate over the files in the directory.
-        for entry in fs::read_dir(&dir_path).with_context(|| {
-            format!("Failed to read directory '{}'", dir_path.display())
-        })? {
+        for entry in fs::read_dir(&dir_path)
+            .with_context(|| format!("Failed to read directory '{}'", dir_path.display()))?
+        {
             let entry = entry.with_context(|| {
-                format!(
-                    "Failed to read entry in directory '{}'",
-                    dir_path.display()
-                )
+                format!("Failed to read entry in directory '{}'", dir_path.display())
             })?;
             let file_path = entry.path();
 
             // Check if the file name matches the pattern.
-            if let Some(file_name) =
-                file_path.file_name().and_then(|name| name.to_str())
-            {
+            if let Some(file_name) = file_path.file_name().and_then(|name| name.to_str()) {
                 if let Some(file_stem) = Path::new(file_name)
                     .file_stem()
                     .and_then(|stem| stem.to_str())
@@ -635,10 +589,7 @@ pub async fn delete_package(
                     if file_stem.ends_with(&format!("_{hash}")) {
                         // Delete the file.
                         fs::remove_file(&file_path).with_context(|| {
-                            format!(
-                                "Failed to delete file '{}'",
-                                file_path.display()
-                            )
+                            format!("Failed to delete file '{}'", file_path.display())
                         })?;
                     }
                 }

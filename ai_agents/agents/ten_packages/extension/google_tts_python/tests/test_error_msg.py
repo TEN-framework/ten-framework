@@ -111,7 +111,7 @@ def test_network_error(MockGoogleTTS):
     # Set up configuration
     config = {
         "params": {
-            "sample_rate": 16000,
+            "AudioConfig": {"sample_rate_hertz": 16000},
             "credentials": "fake_credentials_for_mock_testing",
         },
     }
@@ -175,7 +175,7 @@ def test_authentication_error(MockGoogleTTS):
     # Set up configuration
     config = {
         "params": {
-            "sample_rate": 16000,
+            "AudioConfig": {"sample_rate_hertz": 16000},
             "credentials": "fake_credentials_for_mock_testing",
         },
     }
@@ -240,7 +240,7 @@ def test_quota_exceeded_error(MockGoogleTTS):
     # Set up configuration
     config = {
         "params": {
-            "sample_rate": 16000,
+            "AudioConfig": {"sample_rate_hertz": 16000},
             "credentials": "fake_credentials_for_mock_testing",
         },
     }
@@ -303,7 +303,7 @@ def test_invalid_text_error(MockGoogleTTS):
     # Set up configuration
     config = {
         "params": {
-            "sample_rate": 16000,
+            "AudioConfig": {"sample_rate_hertz": 16000},
             "credentials": "fake_credentials_for_mock_testing",
         },
     }
@@ -367,7 +367,7 @@ def test_timeout_error(MockGoogleTTS):
     # Set up configuration
     config = {
         "params": {
-            "sample_rate": 16000,
+            "AudioConfig": {"sample_rate_hertz": 16000},
             "credentials": "fake_credentials_for_mock_testing",
         },
     }
@@ -431,7 +431,7 @@ def test_generic_error(MockGoogleTTS):
     # Set up configuration
     config = {
         "params": {
-            "sample_rate": 16000,
+            "AudioConfig": {"sample_rate_hertz": 16000},
             "credentials": "fake_credentials_for_mock_testing",
         },
     }
@@ -496,7 +496,7 @@ def test_empty_text_error(MockGoogleTTS):
     # Set up configuration
     config = {
         "credentials": "fake_credentials_for_mock_testing",
-        "params": {"audio_params": {"sample_rate": 16000}},
+        "params": {"AudioConfig": {"sample_rate_hertz": 16000}},
     }
 
     tester.set_test_mode_single("google_tts_python", json.dumps(config))
@@ -557,7 +557,7 @@ def test_unsupported_language_error(MockGoogleTTS):
     # Set up configuration with unsupported language
     config = {
         "params": {
-            "sample_rate": 16000,
+            "AudioConfig": {"sample_rate_hertz": 16000},
             "credentials": "fake_credentials_for_mock_testing",
         },
     }
@@ -613,7 +613,7 @@ def test_simple_mock_verification(MockGoogleTTS):
 
     config = {
         "params": {
-            "sample_rate": 16000,
+            "AudioConfig": {"sample_rate_hertz": 16000},
             "credentials": "fake_credentials_for_mock_testing",
         },
     }

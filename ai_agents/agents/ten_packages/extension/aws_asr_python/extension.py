@@ -221,13 +221,13 @@ class AWSASRExtension(AsyncASRBaseExtension):
         _ = self.ten_env.log_debug(
             f"KEYPOINT finalize start at {self.last_finalize_timestamp}]"
         )
-        if self.config.finalize_mode == "disconnect":
+        if self.config.params.finalize_mode == "disconnect":
             await self._handle_finalize_disconnect()
-        elif self.config.finalize_mode == "mute_pkg":
+        elif self.config.params.finalize_mode == "mute_pkg":
             await self._handle_finalize_mute_pkg()
         else:
             raise ValueError(
-                f"invalid finalize mode: {self.config.finalize_mode}"
+                f"invalid finalize mode: {self.config.params.finalize_mode}"
             )
 
     @override
@@ -375,7 +375,7 @@ class AWSASRExtension(AsyncASRBaseExtension):
             return
         assert self.stream is not None
         empty_audio_bytes_len = int(
-            self.config.mute_pkg_duration_ms
+            self.config.params.mute_pkg_duration_ms
             * self.input_audio_sample_rate()
             / 1000
             * 2
@@ -384,5 +384,7 @@ class AWSASRExtension(AsyncASRBaseExtension):
         await self.stream.input_stream.send_audio_event(
             audio_chunk=bytes(frame)
         )
-        self.audio_timeline.add_silence_audio(self.config.mute_pkg_duration_ms)
+        self.audio_timeline.add_silence_audio(
+            self.config.params.mute_pkg_duration_ms
+        )
         self.ten_env.log_debug("finalize mute pkg completed")

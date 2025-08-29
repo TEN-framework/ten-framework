@@ -3,6 +3,6 @@
     "dump_path": "./tests/keep_dump_output/",
     "params": {
         "sample_rate": 16000,
-        "api_key": "${env:ELEVENLABS_TTS_KEY}"
+        "key": "${env:ELEVENLABS_TTS_KEY}"
     }
 }

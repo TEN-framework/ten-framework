@@ -29,9 +29,11 @@
     }                                                                            \
   };                                                                             \
   static void ____ten_addon_##NAME##_register_handler__(                         \
-      TEN_UNUSED TEN_ADDON_TYPE addon_type,                                      \
-      TEN_UNUSED ten_string_t *addon_name, void *register_ctx,                   \
-      TEN_UNUSED void *user_data) {                                              \
+      ten_addon_registration_t *registration,                                    \
+      ten_addon_registration_done_func_t done_callback,                          \
+      ten_addon_register_ctx_t *register_ctx, void *user_data) {                 \
+    TEN_ASSERT(registration, "Invalid argument.");                               \
+    TEN_ASSERT(done_callback, "Invalid argument.");                              \
     auto *addon_instance = new NAME##_default_addon_loader_addon_t();            \
     ten_string_t *base_dir =                                                     \
         ten_path_get_module_path(/* NOLINTNEXTLINE */                            \
@@ -42,6 +44,7 @@
         static_cast<ten_addon_t *>(addon_instance->get_c_instance()),            \
         register_ctx);                                                           \
     ten_string_destroy(base_dir);                                                \
+    done_callback(register_ctx, user_data);                                      \
   }                                                                              \
   TEN_CONSTRUCTOR(____ten_addon_##NAME##_registrar____) {                        \
     /* Add addon registration function into addon manager. */                    \

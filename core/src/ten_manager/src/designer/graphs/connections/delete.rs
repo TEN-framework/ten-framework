@@ -64,8 +64,7 @@ async fn graph_delete_connection(
 
     // Find the source node's connection in the connections list.
     let connection_idx = connections.iter().position(|conn| {
-        conn.loc.app == src_app
-            && (conn.loc.extension.as_ref() == Some(&src_extension))
+        conn.loc.app == src_app && (conn.loc.extension.as_ref() == Some(&src_extension))
     });
 
     if let Some(idx) = connection_idx {
@@ -90,8 +89,7 @@ async fn graph_delete_connection(
 
                 // Find the destination to remove.
                 let dest_idx = flow.dest.iter().position(|dest| {
-                    dest.loc.app == dest_app
-                        && dest.loc.extension.as_ref() == Some(&dest_extension)
+                    dest.loc.app == dest_app && dest.loc.extension.as_ref() == Some(&dest_extension)
                 });
 
                 if let Some(dest_idx) = dest_idx {
@@ -154,10 +152,8 @@ pub async fn delete_graph_connection_endpoint(
     let old_graphs_cache = graphs_cache.clone();
 
     // Get the specified graph from graphs_cache.
-    let graph_info = match graphs_cache_find_by_id_mut(
-        &mut graphs_cache,
-        &request_payload.graph_id,
-    ) {
+    let graph_info = match graphs_cache_find_by_id_mut(&mut graphs_cache, &request_payload.graph_id)
+    {
         Some(graph_info) => graph_info,
         None => {
             let error_response = ErrorResponse {
@@ -189,18 +185,13 @@ pub async fn delete_graph_connection_endpoint(
         return Ok(HttpResponse::BadRequest().json(error_response));
     }
 
-    if let Ok(Some(pkg_info)) =
-        belonging_pkg_info_find_by_graph_info(&pkgs_cache, graph_info)
-    {
+    if let Ok(Some(pkg_info)) = belonging_pkg_info_find_by_graph_info(&pkgs_cache, graph_info) {
         // Update property.json file to remove the connection.
         if let Some(property) = &pkg_info.property {
             // Update property.json file.
-            if let Err(e) = patch_property_json_file(
-                &pkg_info.url,
-                property,
-                &graphs_cache,
-                &old_graphs_cache,
-            ) {
+            if let Err(e) =
+                patch_property_json_file(&pkg_info.url, property, &graphs_cache, &old_graphs_cache)
+            {
                 eprintln!("Warning: Failed to update property.json file: {e}");
             }
         }
@@ -230,12 +221,11 @@ pub fn find_connection_with_extensions<'a>(
     })
 }
 
-pub fn find_flow_with_name(
-    flows: &[GraphMessageFlow],
-    name: &str,
-) -> Option<usize> {
+pub fn find_flow_with_name(flows: &[GraphMessageFlow], name: &str) -> Option<usize> {
     // Find flow with matching name.
-    flows.iter().position(|flow| flow.name.as_deref() == Some(name))
+    flows
+        .iter()
+        .position(|flow| flow.name.as_deref() == Some(name))
 }
 
 pub fn find_dest_with_extension(

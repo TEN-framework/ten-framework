@@ -50,8 +50,10 @@ mod tests {
         assert_eq!(cmd_flows.len(), 3, "Expected 3 cmd flows after expansion");
 
         // Check that the names are correct
-        let mut names: Vec<&str> =
-            cmd_flows.iter().map(|f| f.name.as_deref().unwrap()).collect();
+        let mut names: Vec<&str> = cmd_flows
+            .iter()
+            .map(|f| f.name.as_deref().unwrap())
+            .collect();
         names.sort();
         assert_eq!(names, vec!["cmd_1", "cmd_2", "cmd_3"]);
 
@@ -106,8 +108,10 @@ mod tests {
         let data_flows = connections[0].data.as_ref().unwrap();
         assert_eq!(data_flows.len(), 2);
 
-        let mut names: Vec<&str> =
-            data_flows.iter().map(|f| f.name.as_deref().unwrap()).collect();
+        let mut names: Vec<&str> = data_flows
+            .iter()
+            .map(|f| f.name.as_deref().unwrap())
+            .collect();
         names.sort();
         assert_eq!(names, vec!["data_1", "data_2"]);
 
@@ -173,7 +177,10 @@ mod tests {
             "flatten_graph should return expanded graph"
         );
         let flattened_graph = flattened.unwrap();
-        println!("{}", serde_json::to_string_pretty(&flattened_graph).unwrap());
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&flattened_graph).unwrap()
+        );
 
         let connections = flattened_graph.connections.as_ref().unwrap();
         let cmd_flows = connections[0].cmd.as_ref().unwrap();
@@ -187,8 +194,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_flatten_graph_includes_names_expansion_with_app() -> Result<()>
-    {
+    async fn test_flatten_graph_includes_names_expansion_with_app() -> Result<()> {
         let test_json = r#"{
             "connections": [
                 {
@@ -217,7 +223,10 @@ mod tests {
             "flatten_graph should return expanded graph"
         );
         let flattened_graph = flattened.unwrap();
-        println!("{}", serde_json::to_string_pretty(&flattened_graph).unwrap());
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&flattened_graph).unwrap()
+        );
 
         let connections = flattened_graph.connections.as_ref().unwrap();
         let cmd_flows = connections[0].cmd.as_ref().unwrap();
@@ -231,8 +240,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_duplicate_names_error_between_name_and_names_fields(
-    ) -> Result<()> {
+    async fn test_duplicate_names_error_between_name_and_names_fields() -> Result<()> {
         let test_json = r#"{
             "connections": [
                 {

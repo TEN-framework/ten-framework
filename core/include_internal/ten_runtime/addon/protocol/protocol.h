@@ -8,9 +8,9 @@
 
 #include "ten_runtime/ten_config.h"
 
+#include "include_internal/ten_runtime/addon/addon_manager.h"
 #include "include_internal/ten_runtime/protocol/protocol.h"
 #include "ten_runtime/addon/addon.h"
-#include "ten_runtime/addon/addon_manager.h"
 
 typedef struct ten_addon_host_t ten_addon_host_t;
 typedef struct ten_addon_store_t ten_addon_store_t;

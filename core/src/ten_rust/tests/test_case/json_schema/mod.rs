@@ -1642,8 +1642,7 @@ mod tests {
         }
         "#;
 
-        let result =
-            ten_validate_property_json_string(property_json_with_both_fields);
+        let result = ten_validate_property_json_string(property_json_with_both_fields);
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("oneOf"));
 
@@ -1667,8 +1666,7 @@ mod tests {
   }
 }"#;
 
-        let result =
-            ten_validate_property_json_string(property_json_with_neither_field);
+        let result = ten_validate_property_json_string(property_json_with_neither_field);
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("oneOf"));
 
@@ -1692,8 +1690,7 @@ mod tests {
   }
 }"#;
 
-        let result =
-            ten_validate_property_json_string(property_json_with_extension);
+        let result = ten_validate_property_json_string(property_json_with_extension);
         assert!(result.is_ok());
 
         // Test that exposed_messages with only subgraph field succeeds
@@ -1716,8 +1713,7 @@ mod tests {
   }
 }"#;
 
-        let result =
-            ten_validate_property_json_string(property_json_with_subgraph);
+        let result = ten_validate_property_json_string(property_json_with_subgraph);
         assert!(result.is_ok());
     }
 
@@ -1744,8 +1740,7 @@ mod tests {
   }
 }"#;
 
-        let result =
-            ten_validate_property_json_string(property_json_with_both_fields);
+        let result = ten_validate_property_json_string(property_json_with_both_fields);
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("oneOf"));
 
@@ -1768,8 +1763,7 @@ mod tests {
   }
 }"#;
 
-        let result =
-            ten_validate_property_json_string(property_json_with_neither_field);
+        let result = ten_validate_property_json_string(property_json_with_neither_field);
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("oneOf"));
 
@@ -1792,8 +1786,7 @@ mod tests {
   }
 }"#;
 
-        let result =
-            ten_validate_property_json_string(property_json_with_extension);
+        let result = ten_validate_property_json_string(property_json_with_extension);
         assert!(result.is_ok());
 
         // Test that exposed_properties with only subgraph field succeeds
@@ -1815,8 +1808,7 @@ mod tests {
   }
 }"#;
 
-        let result =
-            ten_validate_property_json_string(property_json_with_subgraph);
+        let result = ten_validate_property_json_string(property_json_with_subgraph);
         assert!(result.is_ok());
     }
 

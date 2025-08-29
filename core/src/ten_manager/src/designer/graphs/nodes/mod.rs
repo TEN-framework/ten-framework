@@ -121,9 +121,9 @@ impl From<ManifestApiPropertyAttributes> for DesignerPropertyAttributes {
         DesignerPropertyAttributes {
             prop_type: api_property.prop_type,
             items: api_property.items.map(|items| Box::new((*items).into())),
-            properties: api_property.properties.map(|props| {
-                props.into_iter().map(|(k, v)| (k, v.into())).collect()
-            }),
+            properties: api_property
+                .properties
+                .map(|props| props.into_iter().map(|(k, v)| (k, v.into())).collect()),
             required: api_property.required,
         }
     }
@@ -137,7 +137,9 @@ pub struct DesignerCmdResult {
 
 impl From<ManifestApiCmdResult> for DesignerCmdResult {
     fn from(cmd_result: ManifestApiCmdResult) -> Self {
-        DesignerCmdResult { property: cmd_result.property.map(Into::into) }
+        DesignerCmdResult {
+            property: cmd_result.property.map(Into::into),
+        }
     }
 }
 
@@ -306,19 +308,17 @@ impl TryFrom<GraphNode> for DesignerGraphNode {
 
     fn try_from(node: GraphNode) -> Result<Self, Self::Error> {
         match node {
-            GraphNode::Extension { content } => {
-                Ok(DesignerGraphNode::Extension {
-                    content: Box::new(DesignerExtensionNode {
-                        addon: content.addon,
-                        name: content.name,
-                        extension_group: content.extension_group,
-                        app: content.app,
-                        api: None,
-                        property: content.property,
-                        is_installed: false,
-                    }),
-                })
-            }
+            GraphNode::Extension { content } => Ok(DesignerGraphNode::Extension {
+                content: Box::new(DesignerExtensionNode {
+                    addon: content.addon,
+                    name: content.name,
+                    extension_group: content.extension_group,
+                    app: content.app,
+                    api: None,
+                    property: content.property,
+                    is_installed: false,
+                }),
+            }),
             GraphNode::Subgraph { content } => {
                 Ok(DesignerGraphNode::Subgraph {
                     content: Box::new(DesignerSubgraphNode {
@@ -332,14 +332,12 @@ impl TryFrom<GraphNode> for DesignerGraphNode {
                     }),
                 })
             }
-            GraphNode::Selector { content } => {
-                Ok(DesignerGraphNode::Selector {
-                    content: Box::new(DesignerSelectorNode {
-                        name: content.name,
-                        filter: DesignerFilter::from(content.filter),
-                    }),
-                })
-            }
+            GraphNode::Selector { content } => Ok(DesignerGraphNode::Selector {
+                content: Box::new(DesignerSelectorNode {
+                    name: content.name,
+                    filter: DesignerFilter::from(content.filter),
+                }),
+            }),
         }
     }
 }
@@ -369,17 +367,12 @@ pub fn update_graph_node_in_property_json_file(
     old_graphs_cache: &HashMap<Uuid, GraphInfo>,
 ) -> Result<()> {
     let graph_info = graphs_cache.get(graph_id).unwrap();
-    if let Ok(Some(pkg_info)) =
-        belonging_pkg_info_find_by_graph_info(pkgs_cache, graph_info)
-    {
+    if let Ok(Some(pkg_info)) = belonging_pkg_info_find_by_graph_info(pkgs_cache, graph_info) {
         // Update property.json file with the graph node.
         if let Some(property) = &pkg_info.property {
-            if let Err(e) = patch_property_json_file(
-                &pkg_info.url,
-                property,
-                graphs_cache,
-                old_graphs_cache,
-            ) {
+            if let Err(e) =
+                patch_property_json_file(&pkg_info.url, property, graphs_cache, old_graphs_cache)
+            {
                 eprintln!("Warning: Failed to update property.json file: {e}");
             }
         }

@@ -1,5 +1,4 @@
 {
-    "finalize_mode": "disconnect",
     "params": {
         "region": "us-west-2",
         "access_key_id": "xxx",

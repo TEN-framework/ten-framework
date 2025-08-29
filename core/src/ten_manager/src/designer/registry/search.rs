@@ -49,16 +49,27 @@ pub async fn search_packages_endpoint(
         &request_payload.filter,
         request_payload.options.as_ref().and_then(|o| o.page_size),
         request_payload.options.as_ref().and_then(|o| o.page),
-        request_payload.options.as_ref().and_then(|o| o.sort_by.as_deref()),
-        request_payload.options.as_ref().and_then(|o| o.sort_order.as_deref()),
-        request_payload.options.as_ref().and_then(|o| o.scope.as_deref()),
+        request_payload
+            .options
+            .as_ref()
+            .and_then(|o| o.sort_by.as_deref()),
+        request_payload
+            .options
+            .as_ref()
+            .and_then(|o| o.sort_order.as_deref()),
+        request_payload
+            .options
+            .as_ref()
+            .and_then(|o| o.scope.as_deref()),
         &state.out,
     )
     .await
     {
         Ok((total_size, packages)) => {
-            let response_data =
-                SearchPackagesResponseData { total_size, packages };
+            let response_data = SearchPackagesResponseData {
+                total_size,
+                packages,
+            };
 
             Ok(HttpResponse::Ok().json(ApiResponse {
                 status: Status::Ok,
@@ -67,8 +78,7 @@ pub async fn search_packages_endpoint(
             }))
         }
         Err(err) => {
-            let error_response =
-                ErrorResponse::from_error(&err, "Failed to search packages");
+            let error_response = ErrorResponse::from_error(&err, "Failed to search packages");
             Ok(HttpResponse::InternalServerError().json(error_response))
         }
     }
