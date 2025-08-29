@@ -95,10 +95,7 @@ impl LocaleContent {
 
         // If content is None, try to load from import_uri
         if let Some(import_uri) = &self.import_uri {
-            let real_path = get_real_path_from_import_uri(
-                import_uri,
-                self.base_dir.as_deref(),
-            )?;
+            let real_path = get_real_path_from_import_uri(import_uri, self.base_dir.as_deref())?;
 
             // Load content from URI
             load_content_from_uri(&real_path).await.with_context(|| {
@@ -166,32 +163,22 @@ impl<'de> Deserialize<'de> for Manifest {
         let all_fields = Map::deserialize(deserializer)?;
 
         // Now extract the fields from all_fields.
-        let type_and_name = extract_type_and_name(&all_fields)
-            .map_err(serde::de::Error::custom)?;
-        let version =
-            extract_version(&all_fields).map_err(serde::de::Error::custom)?;
+        let type_and_name = extract_type_and_name(&all_fields).map_err(serde::de::Error::custom)?;
+        let version = extract_version(&all_fields).map_err(serde::de::Error::custom)?;
 
-        let description = extract_description(&all_fields)
-            .map_err(serde::de::Error::custom)?;
-        let display_name = extract_display_name(&all_fields)
-            .map_err(serde::de::Error::custom)?;
-        let readme =
-            extract_readme(&all_fields).map_err(serde::de::Error::custom)?;
+        let description = extract_description(&all_fields).map_err(serde::de::Error::custom)?;
+        let display_name = extract_display_name(&all_fields).map_err(serde::de::Error::custom)?;
+        let readme = extract_readme(&all_fields).map_err(serde::de::Error::custom)?;
 
-        let dependencies = extract_dependencies(&all_fields)
-            .map_err(serde::de::Error::custom)?;
-        let dev_dependencies = extract_dev_dependencies(&all_fields)
-            .map_err(serde::de::Error::custom)?;
+        let dependencies = extract_dependencies(&all_fields).map_err(serde::de::Error::custom)?;
+        let dev_dependencies =
+            extract_dev_dependencies(&all_fields).map_err(serde::de::Error::custom)?;
 
-        let tags =
-            extract_tags(&all_fields).map_err(serde::de::Error::custom)?;
-        let supports =
-            extract_supports(&all_fields).map_err(serde::de::Error::custom)?;
+        let tags = extract_tags(&all_fields).map_err(serde::de::Error::custom)?;
+        let supports = extract_supports(&all_fields).map_err(serde::de::Error::custom)?;
         let api = extract_api(&all_fields).map_err(serde::de::Error::custom)?;
-        let package =
-            extract_package(&all_fields).map_err(serde::de::Error::custom)?;
-        let scripts =
-            extract_scripts(&all_fields).map_err(serde::de::Error::custom)?;
+        let package = extract_package(&all_fields).map_err(serde::de::Error::custom)?;
+        let scripts = extract_scripts(&all_fields).map_err(serde::de::Error::custom)?;
 
         Ok(Manifest {
             type_and_name,
@@ -215,11 +202,9 @@ impl<'de> Deserialize<'de> for Manifest {
 impl Default for Manifest {
     fn default() -> Self {
         let mut all_fields = Map::new();
-        all_fields
-            .insert("type".to_string(), Value::String("invalid".to_string()));
+        all_fields.insert("type".to_string(), Value::String("invalid".to_string()));
         all_fields.insert("name".to_string(), Value::String(String::new()));
-        all_fields
-            .insert("version".to_string(), Value::String("0.0.0".to_string()));
+        all_fields.insert("version".to_string(), Value::String("0.0.0".to_string()));
 
         Self {
             type_and_name: PkgTypeAndName {
@@ -300,18 +285,12 @@ impl Manifest {
             for (locale, locale_content) in &description.locales {
                 let content = locale_content.get_content().await?;
                 let mut locale_obj = Map::new();
-                locale_obj
-                    .insert("content".to_string(), Value::String(content));
-                resolved_locales
-                    .insert(locale.clone(), Value::Object(locale_obj));
+                locale_obj.insert("content".to_string(), Value::String(content));
+                resolved_locales.insert(locale.clone(), Value::Object(locale_obj));
             }
             let mut description_obj = Map::new();
-            description_obj
-                .insert("locales".to_string(), Value::Object(resolved_locales));
-            serialized_fields.insert(
-                "description".to_string(),
-                Value::Object(description_obj),
-            );
+            description_obj.insert("locales".to_string(), Value::Object(resolved_locales));
+            serialized_fields.insert("description".to_string(), Value::Object(description_obj));
         }
 
         // Resolve display_name field
@@ -320,18 +299,12 @@ impl Manifest {
             for (locale, locale_content) in &display_name.locales {
                 let content = locale_content.get_content().await?;
                 let mut locale_obj = Map::new();
-                locale_obj
-                    .insert("content".to_string(), Value::String(content));
-                resolved_locales
-                    .insert(locale.clone(), Value::Object(locale_obj));
+                locale_obj.insert("content".to_string(), Value::String(content));
+                resolved_locales.insert(locale.clone(), Value::Object(locale_obj));
             }
             let mut display_name_obj = Map::new();
-            display_name_obj
-                .insert("locales".to_string(), Value::Object(resolved_locales));
-            serialized_fields.insert(
-                "display_name".to_string(),
-                Value::Object(display_name_obj),
-            );
+            display_name_obj.insert("locales".to_string(), Value::Object(resolved_locales));
+            serialized_fields.insert("display_name".to_string(), Value::Object(display_name_obj));
         }
 
         // Resolve readme field
@@ -340,16 +313,12 @@ impl Manifest {
             for (locale, locale_content) in &readme.locales {
                 let content = locale_content.get_content().await?;
                 let mut locale_obj = Map::new();
-                locale_obj
-                    .insert("content".to_string(), Value::String(content));
-                resolved_locales
-                    .insert(locale.clone(), Value::Object(locale_obj));
+                locale_obj.insert("content".to_string(), Value::String(content));
+                resolved_locales.insert(locale.clone(), Value::Object(locale_obj));
             }
             let mut readme_obj = Map::new();
-            readme_obj
-                .insert("locales".to_string(), Value::Object(resolved_locales));
-            serialized_fields
-                .insert("readme".to_string(), Value::Object(readme_obj));
+            readme_obj.insert("locales".to_string(), Value::Object(resolved_locales));
+            serialized_fields.insert("readme".to_string(), Value::Object(readme_obj));
         }
 
         serde_json::to_string_pretty(&serialized_fields)
@@ -387,8 +356,7 @@ fn extract_localized_field(
     field_name: &str,
 ) -> Result<Option<LocalizedField>> {
     // Lazy static initialization of regex that validates the locale format.
-    static LOCALE_REGEX: Lazy<Regex> =
-        Lazy::new(|| Regex::new(r"^[a-z]{2}(-[A-Z]{2})?$").unwrap());
+    static LOCALE_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"^[a-z]{2}(-[A-Z]{2})?$").unwrap());
 
     if let Some(Value::Object(field_obj)) = map.get(field_name) {
         if let Some(Value::Object(locales_obj)) = field_obj.get("locales") {
@@ -410,34 +378,24 @@ fn extract_localized_field(
                         base_dir: None,
                     };
 
-                    if let Some(Value::String(content_str)) =
-                        content_obj.get("content")
-                    {
+                    if let Some(Value::String(content_str)) = content_obj.get("content") {
                         if content_str.is_empty() {
-                            return Err(anyhow!(
-                                "Content for locale '{}' cannot be empty",
-                                locale
-                            ));
+                            return Err(anyhow!("Content for locale '{}' cannot be empty", locale));
                         }
                         locale_content.content = Some(content_str.clone());
                     }
 
-                    if let Some(Value::String(import_uri_str)) =
-                        content_obj.get("import_uri")
-                    {
+                    if let Some(Value::String(import_uri_str)) = content_obj.get("import_uri") {
                         if import_uri_str.is_empty() {
                             return Err(anyhow!(
                                 "Import URI for locale '{}' cannot be empty",
                                 locale
                             ));
                         }
-                        locale_content.import_uri =
-                            Some(import_uri_str.clone());
+                        locale_content.import_uri = Some(import_uri_str.clone());
                     }
 
-                    if locale_content.content.is_none()
-                        && locale_content.import_uri.is_none()
-                    {
+                    if locale_content.content.is_none() && locale_content.import_uri.is_none() {
                         return Err(anyhow!(
                             "Locale '{}' must have either 'content' or \
                              'import_uri'",
@@ -445,9 +403,7 @@ fn extract_localized_field(
                         ));
                     }
 
-                    if locale_content.content.is_some()
-                        && locale_content.import_uri.is_some()
-                    {
+                    if locale_content.content.is_some() && locale_content.import_uri.is_some() {
                         return Err(anyhow!(
                             "Locale '{}' cannot have both 'content' and \
                              'import_uri'",
@@ -482,15 +438,11 @@ fn extract_localized_field(
     }
 }
 
-fn extract_description(
-    map: &Map<String, Value>,
-) -> Result<Option<LocalizedField>> {
+fn extract_description(map: &Map<String, Value>) -> Result<Option<LocalizedField>> {
     extract_localized_field(map, "description")
 }
 
-fn extract_display_name(
-    map: &Map<String, Value>,
-) -> Result<Option<LocalizedField>> {
+fn extract_display_name(map: &Map<String, Value>) -> Result<Option<LocalizedField>> {
     extract_localized_field(map, "display_name")
 }
 
@@ -498,26 +450,18 @@ fn extract_readme(map: &Map<String, Value>) -> Result<Option<LocalizedField>> {
     extract_localized_field(map, "readme")
 }
 
-fn extract_dependencies(
-    map: &Map<String, Value>,
-) -> Result<Option<Vec<ManifestDependency>>> {
+fn extract_dependencies(map: &Map<String, Value>) -> Result<Option<Vec<ManifestDependency>>> {
     if let Some(Value::Array(deps)) = map.get("dependencies") {
         let mut result = Vec::new();
         let mut seen_registry_deps = HashSet::new();
 
         for dep in deps {
-            let dep_value: ManifestDependency =
-                serde_json::from_value(dep.clone())?;
+            let dep_value: ManifestDependency = serde_json::from_value(dep.clone())?;
 
             // Check for duplicate registry dependencies (type + name)
             // Only check for registry dependencies, skip local dependencies
             // as they will be checked after flattening
-            if let ManifestDependency::RegistryDependency {
-                pkg_type,
-                name,
-                ..
-            } = &dep_value
-            {
+            if let ManifestDependency::RegistryDependency { pkg_type, name, .. } = &dep_value {
                 let key = (*pkg_type, name.clone());
                 if seen_registry_deps.contains(&key) {
                     return Err(anyhow!(
@@ -539,26 +483,18 @@ fn extract_dependencies(
     }
 }
 
-fn extract_dev_dependencies(
-    map: &Map<String, Value>,
-) -> Result<Option<Vec<ManifestDependency>>> {
+fn extract_dev_dependencies(map: &Map<String, Value>) -> Result<Option<Vec<ManifestDependency>>> {
     if let Some(Value::Array(deps)) = map.get("dev_dependencies") {
         let mut result = Vec::new();
         let mut seen_registry_deps = HashSet::new();
 
         for dep in deps {
-            let dep_value: ManifestDependency =
-                serde_json::from_value(dep.clone())?;
+            let dep_value: ManifestDependency = serde_json::from_value(dep.clone())?;
 
             // Check for duplicate registry dependencies (type + name)
             // Only check for registry dependencies, skip local dependencies
             // as they will be checked after flattening
-            if let ManifestDependency::RegistryDependency {
-                pkg_type,
-                name,
-                ..
-            } = &dep_value
-            {
+            if let ManifestDependency::RegistryDependency { pkg_type, name, .. } = &dep_value {
                 let key = (*pkg_type, name.clone());
                 if seen_registry_deps.contains(&key) {
                     return Err(anyhow!(
@@ -580,9 +516,7 @@ fn extract_dev_dependencies(
     }
 }
 
-fn extract_supports(
-    map: &Map<String, Value>,
-) -> Result<Option<Vec<ManifestSupport>>> {
+fn extract_supports(map: &Map<String, Value>) -> Result<Option<Vec<ManifestSupport>>> {
     if let Some(Value::Array(supports)) = map.get("supports") {
         let mut result = Vec::new();
         for support in supports {
@@ -615,9 +549,7 @@ fn extract_package(map: &Map<String, Value>) -> Result<Option<PackageConfig>> {
     }
 }
 
-fn extract_scripts(
-    map: &Map<String, Value>,
-) -> Result<Option<HashMap<String, String>>> {
+fn extract_scripts(map: &Map<String, Value>) -> Result<Option<HashMap<String, String>>> {
     if let Some(Value::Object(scripts_map)) = map.get("scripts") {
         let mut result = HashMap::new();
         for (key, value) in scripts_map {
@@ -700,8 +632,7 @@ impl Manifest {
         }
 
         if let Some(addon_type_folder_name) = addon_type_folder_name {
-            if self.type_and_name.pkg_type.to_string() != addon_type_folder_name
-            {
+            if self.type_and_name.pkg_type.to_string() != addon_type_folder_name {
                 return Err(anyhow!(format!(
                     "The folder name '{}' does not match the expected package \
                      type '{}'",
@@ -729,9 +660,7 @@ impl Manifest {
     pub async fn get_flattened_api(&self) -> Result<Option<ManifestApi>> {
         // If the api contains no interfaces, return api directly.
         if let Some(api) = &self.api {
-            if api.interface.is_none()
-                || api.interface.as_ref().unwrap().is_empty()
-            {
+            if api.interface.is_none() || api.interface.as_ref().unwrap().is_empty() {
                 return Ok(Some(api.clone()));
             } else {
                 // If the api contains interfaces, try to flatten it.
@@ -778,20 +707,17 @@ fn update_manifest_base_dirs<P: AsRef<Path>>(
 ) -> Result<()> {
     // Get the parent directory of the manifest file to use as base_dir for
     // local dependencies.
-    let manifest_folder_path =
-        manifest_file_path.as_ref().parent().ok_or_else(|| {
-            anyhow::anyhow!(
-                "Failed to determine the parent directory of '{}'",
-                manifest_file_path.as_ref().display()
-            )
-        })?;
+    let manifest_folder_path = manifest_file_path.as_ref().parent().ok_or_else(|| {
+        anyhow::anyhow!(
+            "Failed to determine the parent directory of '{}'",
+            manifest_file_path.as_ref().display()
+        )
+    })?;
 
     // Convert manifest_folder_path to string once for reuse
     let base_dir_str = manifest_folder_path
         .to_str()
-        .ok_or_else(|| {
-            anyhow::anyhow!("Failed to convert folder path to string")
-        })?
+        .ok_or_else(|| anyhow::anyhow!("Failed to convert folder path to string"))?
         .to_string();
 
     // Update the base_dir for all local dependencies to be the manifest's
@@ -843,9 +769,7 @@ fn update_manifest_base_dirs<P: AsRef<Path>>(
 /// This function reads the contents of the specified manifest file,
 /// deserializes it into a Manifest struct, and updates any local dependency
 /// paths to use the manifest file's parent directory as the base directory.
-pub async fn parse_manifest_from_file<P: AsRef<Path>>(
-    manifest_file_path: P,
-) -> Result<Manifest> {
+pub async fn parse_manifest_from_file<P: AsRef<Path>>(manifest_file_path: P) -> Result<Manifest> {
     // Check if the manifest file exists.
     if !manifest_file_path.as_ref().exists() {
         return Err(anyhow::anyhow!(
@@ -857,16 +781,19 @@ pub async fn parse_manifest_from_file<P: AsRef<Path>>(
     // Validate the manifest schema first.
     // This ensures the file conforms to the TEN manifest schema before
     // attempting to parse it.
-    json_schema::ten_validate_manifest_json_file(
-        manifest_file_path.as_ref().to_str().ok_or_else(|| {
+    json_schema::ten_validate_manifest_json_file(manifest_file_path.as_ref().to_str().ok_or_else(
+        || {
             anyhow::anyhow!(
                 "Failed to convert path to string: {}",
                 manifest_file_path.as_ref().display()
             )
-        })?,
-    )
+        },
+    )?)
     .with_context(|| {
-        format!("Failed to validate {}.", manifest_file_path.as_ref().display())
+        format!(
+            "Failed to validate {}.",
+            manifest_file_path.as_ref().display()
+        )
     })?;
 
     // Read the contents of the manifest.json file.
@@ -900,10 +827,9 @@ pub async fn parse_manifest_in_folder(folder_path: &Path) -> Result<Manifest> {
 
     // Read and parse the manifest.json file.
     // This also handles setting the base_dir for local dependencies.
-    let manifest =
-        parse_manifest_from_file(&manifest_path).await.with_context(|| {
-            format!("Failed to load {}.", manifest_path.display())
-        })?;
+    let manifest = parse_manifest_from_file(&manifest_path)
+        .await
+        .with_context(|| format!("Failed to load {}.", manifest_path.display()))?;
 
     Ok(manifest)
 }

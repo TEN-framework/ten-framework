@@ -22,9 +22,7 @@ impl Graph {
             .any(|node| node.get_type() == GraphNodeType::Extension);
 
         if !extension_exists {
-            return Err(anyhow::anyhow!(
-                "No extension node is defined in graph."
-            ));
+            return Err(anyhow::anyhow!("No extension node is defined in graph."));
         }
 
         Ok(())

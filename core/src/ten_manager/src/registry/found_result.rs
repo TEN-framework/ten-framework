@@ -67,10 +67,7 @@ mod dependencies_conversion {
     use serde::{Deserialize, Deserializer, Serialize, Serializer};
     use ten_rust::pkg_info::manifest::dependency::ManifestDependency;
 
-    pub fn serialize<S>(
-        deps: &[ManifestDependency],
-        serializer: S,
-    ) -> Result<S::Ok, S::Error>
+    pub fn serialize<S>(deps: &[ManifestDependency], serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
@@ -78,14 +75,11 @@ mod dependencies_conversion {
         manifest_deps.serialize(serializer)
     }
 
-    pub fn deserialize<'de, D>(
-        deserializer: D,
-    ) -> Result<Vec<ManifestDependency>, D::Error>
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<ManifestDependency>, D::Error>
     where
         D: Deserializer<'de>,
     {
-        let manifest_deps: Vec<ManifestDependency> =
-            Deserialize::deserialize(deserializer)?;
+        let manifest_deps: Vec<ManifestDependency> = Deserialize::deserialize(deserializer)?;
         Ok(manifest_deps)
     }
 }
@@ -94,8 +88,7 @@ pub async fn get_pkg_registry_info_from_manifest(
     download_url: &str,
     manifest: &Manifest,
 ) -> Result<PkgRegistryInfo> {
-    let mut pkg_info =
-        PkgInfo::from_metadata(download_url, manifest, &None).await?;
+    let mut pkg_info = PkgInfo::from_metadata(download_url, manifest, &None).await?;
 
     let mut updated_manifest = pkg_info.manifest.clone();
 
@@ -103,10 +96,10 @@ pub async fn get_pkg_registry_info_from_manifest(
     if let Some(ref mut display_name) = updated_manifest.display_name {
         for (_locale, locale_content) in display_name.locales.iter_mut() {
             if locale_content.content.is_none() {
-                let content =
-                    locale_content.get_content().await.with_context(|| {
-                        "Failed to get content for display_name"
-                    })?;
+                let content = locale_content
+                    .get_content()
+                    .await
+                    .with_context(|| "Failed to get content for display_name")?;
                 locale_content.content = Some(content);
             }
         }
@@ -173,10 +166,7 @@ impl From<&PkgRegistryInfo> for PkgInfo {
             url: pkg_registry_info.download_url.clone(),
             hash: pkg_registry_info.hash.clone(),
             manifest: Manifest {
-                type_and_name: pkg_registry_info
-                    .basic_info
-                    .type_and_name
-                    .clone(),
+                type_and_name: pkg_registry_info.basic_info.type_and_name.clone(),
                 version: pkg_registry_info.basic_info.version.clone(),
                 description: pkg_registry_info.description.clone(),
                 display_name: pkg_registry_info.display_name.clone(),
@@ -192,13 +182,10 @@ impl From<&PkgRegistryInfo> for PkgInfo {
                     let mut map = serde_json::Map::new();
 
                     // Add type and name from PkgTypeAndName.
-                    let type_and_name =
-                        &pkg_registry_info.basic_info.type_and_name;
+                    let type_and_name = &pkg_registry_info.basic_info.type_and_name;
                     map.insert(
                         "type".to_string(),
-                        serde_json::Value::String(
-                            type_and_name.pkg_type.to_string(),
-                        ),
+                        serde_json::Value::String(type_and_name.pkg_type.to_string()),
                     );
                     map.insert(
                         "name".to_string(),
@@ -208,58 +195,38 @@ impl From<&PkgRegistryInfo> for PkgInfo {
                     // Add version.
                     map.insert(
                         "version".to_string(),
-                        serde_json::Value::String(
-                            pkg_registry_info.basic_info.version.to_string(),
-                        ),
+                        serde_json::Value::String(pkg_registry_info.basic_info.version.to_string()),
                     );
 
                     // Add dependencies.
-                    let deps_json =
-                        serde_json::to_value(&pkg_registry_info.dependencies)
-                            .unwrap_or(serde_json::Value::Array(vec![]));
+                    let deps_json = serde_json::to_value(&pkg_registry_info.dependencies)
+                        .unwrap_or(serde_json::Value::Array(vec![]));
                     map.insert("dependencies".to_string(), deps_json);
 
                     // Add supports.
-                    let supports_json = serde_json::to_value(
-                        &pkg_registry_info.basic_info.supports,
-                    )
-                    .unwrap_or(serde_json::Value::Array(vec![]));
+                    let supports_json =
+                        serde_json::to_value(&pkg_registry_info.basic_info.supports)
+                            .unwrap_or(serde_json::Value::Array(vec![]));
                     map.insert("supports".to_string(), supports_json);
 
                     // Add description if available.
-                    if let Some(ref description) = pkg_registry_info.description
-                    {
-                        let description_json = serde_json::to_value(
-                            description,
-                        )
-                        .unwrap_or(serde_json::Value::Object(
-                            serde_json::Map::new(),
-                        ));
+                    if let Some(ref description) = pkg_registry_info.description {
+                        let description_json = serde_json::to_value(description)
+                            .unwrap_or(serde_json::Value::Object(serde_json::Map::new()));
                         map.insert("description".to_string(), description_json);
                     }
 
                     // Add display_name if available.
-                    if let Some(ref display_name) =
-                        pkg_registry_info.display_name
-                    {
-                        let display_name_json = serde_json::to_value(
-                            display_name,
-                        )
-                        .unwrap_or(serde_json::Value::Object(
-                            serde_json::Map::new(),
-                        ));
-                        map.insert(
-                            "display_name".to_string(),
-                            display_name_json,
-                        );
+                    if let Some(ref display_name) = pkg_registry_info.display_name {
+                        let display_name_json = serde_json::to_value(display_name)
+                            .unwrap_or(serde_json::Value::Object(serde_json::Map::new()));
+                        map.insert("display_name".to_string(), display_name_json);
                     }
 
                     // Add readme if available.
                     if let Some(ref readme) = pkg_registry_info.readme {
                         let readme_json = serde_json::to_value(readme)
-                            .unwrap_or(serde_json::Value::Object(
-                                serde_json::Map::new(),
-                            ));
+                            .unwrap_or(serde_json::Value::Object(serde_json::Map::new()));
                         map.insert("readme".to_string(), readme_json);
                     }
 

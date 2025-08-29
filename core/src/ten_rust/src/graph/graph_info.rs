@@ -41,10 +41,8 @@ pub async fn load_graph_from_uri(
     *new_base_dir = Some(get_base_dir_of_uri(&real_path)?);
 
     // Parse the graph file into a Graph structure.
-    let graph: Graph =
-        serde_json::from_str(&graph_content).with_context(|| {
-            format!("Failed to parse graph file from {real_path}")
-        })?;
+    let graph: Graph = serde_json::from_str(&graph_content)
+        .with_context(|| format!("Failed to parse graph file from {real_path}"))?;
 
     Ok(graph)
 }
@@ -73,9 +71,7 @@ impl GraphContent {
     }
 
     /// Get a reference to the connections
-    pub fn connections(
-        &self,
-    ) -> &Option<Vec<crate::graph::connection::GraphConnection>> {
+    pub fn connections(&self) -> &Option<Vec<crate::graph::connection::GraphConnection>> {
         &self.graph.connections
     }
 
@@ -87,23 +83,17 @@ impl GraphContent {
     }
 
     /// Get a reference to the exposed_messages
-    pub fn exposed_messages(
-        &self,
-    ) -> &Option<Vec<crate::graph::GraphExposedMessage>> {
+    pub fn exposed_messages(&self) -> &Option<Vec<crate::graph::GraphExposedMessage>> {
         &self.graph.exposed_messages
     }
 
     /// Get a mutable reference to the exposed_messages
-    pub fn exposed_messages_mut(
-        &mut self,
-    ) -> &mut Option<Vec<crate::graph::GraphExposedMessage>> {
+    pub fn exposed_messages_mut(&mut self) -> &mut Option<Vec<crate::graph::GraphExposedMessage>> {
         &mut self.graph.exposed_messages
     }
 
     /// Get a reference to the exposed_properties
-    pub fn exposed_properties(
-        &self,
-    ) -> &Option<Vec<crate::graph::GraphExposedProperty>> {
+    pub fn exposed_properties(&self) -> &Option<Vec<crate::graph::GraphExposedProperty>> {
         &self.graph.exposed_properties
     }
 
@@ -170,13 +160,13 @@ impl GraphContent {
         // If import_uri is specified, load graph from the URI.
         if let Some(import_uri) = &self.import_uri {
             // Load graph from URI and replace the current graph
-            let graph =
-                load_graph_from_uri(import_uri, current_base_dir, &mut None)
-                    .await?;
+            let graph = load_graph_from_uri(import_uri, current_base_dir, &mut None).await?;
             self.graph = graph;
         }
 
-        self.graph.validate_and_complete_and_flatten(current_base_dir).await
+        self.graph
+            .validate_and_complete_and_flatten(current_base_dir)
+            .await
     }
 }
 
@@ -202,10 +192,7 @@ pub struct GraphInfo {
 }
 
 impl GraphInfo {
-    pub async fn from_str_with_base_dir(
-        s: &str,
-        current_base_dir: Option<&str>,
-    ) -> Result<Self> {
+    pub async fn from_str_with_base_dir(s: &str, current_base_dir: Option<&str>) -> Result<Self> {
         let mut graph_info: GraphInfo = serde_json::from_str(s)?;
         graph_info.app_base_dir = current_base_dir.map(|s| s.to_string());
         graph_info.validate_and_complete_and_flatten().await?;

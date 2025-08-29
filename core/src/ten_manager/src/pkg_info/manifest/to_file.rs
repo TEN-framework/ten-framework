@@ -43,9 +43,7 @@ pub fn update_manifest_all_fields(
     deps_to_remove: Option<&Vec<ManifestDependency>>,
 ) -> Result<()> {
     // Process dependencies array.
-    if let Some(Value::Array(dependencies_array)) =
-        manifest_all_fields.get_mut("dependencies")
-    {
+    if let Some(Value::Array(dependencies_array)) = manifest_all_fields.get_mut("dependencies") {
         // Remove dependencies if requested.
         if let Some(remove_deps) = deps_to_remove {
             if !remove_deps.is_empty() {
@@ -93,10 +91,8 @@ pub fn update_manifest_all_fields(
                 }
             }
 
-            manifest_all_fields.insert(
-                "dependencies".to_string(),
-                Value::Array(dependencies_array),
-            );
+            manifest_all_fields
+                .insert("dependencies".to_string(), Value::Array(dependencies_array));
         }
     }
 

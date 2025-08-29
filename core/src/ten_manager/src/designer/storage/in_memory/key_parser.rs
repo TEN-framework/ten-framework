@@ -100,11 +100,7 @@ pub fn get_value_by_key(data: &Value, key: &str) -> Result<Option<Value>> {
     Ok(Some(current.clone()))
 }
 
-pub fn set_value_by_key(
-    data: &mut Value,
-    key: &str,
-    value: Value,
-) -> Result<()> {
+pub fn set_value_by_key(data: &mut Value, key: &str, value: Value) -> Result<()> {
     let segments = parse_key(key)?;
 
     // Ensure root is an object
@@ -140,9 +136,7 @@ fn set_value_recursive(
                     // Look ahead to see if next segment is array
                     if let Some(next_segment) = segments.get(index + 1) {
                         match next_segment {
-                            KeySegment::Array(_, _) => {
-                                Value::Object(Map::new())
-                            }
+                            KeySegment::Array(_, _) => Value::Object(Map::new()),
                             KeySegment::Object(_) => Value::Object(Map::new()),
                         }
                     } else {

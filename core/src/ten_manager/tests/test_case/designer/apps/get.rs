@@ -13,9 +13,7 @@ mod tests {
     use ten_rust::base_dir_pkg_info::PkgsInfoInApp;
 
     use ten_manager::constants::TEST_DIR;
-    use ten_manager::designer::apps::get::{
-        get_apps_endpoint, AppInfo, GetAppsResponseData,
-    };
+    use ten_manager::designer::apps::get::{get_apps_endpoint, AppInfo, GetAppsResponseData};
     use ten_manager::designer::response::{ApiResponse, Status};
     use ten_manager::designer::storage::in_memory::TmanStorageInMemory;
     use ten_manager::designer::DesignerState;
@@ -25,12 +23,8 @@ mod tests {
     #[actix_web::test]
     async fn test_get_apps_some() {
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -54,11 +48,11 @@ mod tests {
         )
         .await;
 
-        let req =
-            test::TestRequest::get().uri("/test_get_apps_some").to_request();
+        let req = test::TestRequest::get()
+            .uri("/test_get_apps_some")
+            .to_request();
 
-        let resp: ApiResponse<GetAppsResponseData> =
-            test::call_and_read_body_json(&app, req).await;
+        let resp: ApiResponse<GetAppsResponseData> = test::call_and_read_body_json(&app, req).await;
 
         assert_eq!(resp.status, Status::Ok);
         assert_eq!(
@@ -75,12 +69,8 @@ mod tests {
     #[actix_web::test]
     async fn test_get_apps_none() {
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -95,11 +85,11 @@ mod tests {
         )
         .await;
 
-        let req =
-            test::TestRequest::get().uri("/test_get_apps_none").to_request();
+        let req = test::TestRequest::get()
+            .uri("/test_get_apps_none")
+            .to_request();
 
-        let resp: ApiResponse<GetAppsResponseData> =
-            test::call_and_read_body_json(&app, req).await;
+        let resp: ApiResponse<GetAppsResponseData> = test::call_and_read_body_json(&app, req).await;
 
         assert_eq!(resp.status, Status::Ok);
         assert_eq!(resp.data, GetAppsResponseData { app_info: vec![] });

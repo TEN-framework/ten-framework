@@ -14,17 +14,11 @@ mod tests {
     async fn test_property_predefined_graph_deserialize() {
         let mut graphs_cache = HashMap::new();
 
-        let property_json_str =
-            include_str!("../../../test_data/property.json");
-        let property = parse_property_from_str(
-            property_json_str,
-            &mut graphs_cache,
-            None,
-            None,
-            None,
-        )
-        .await
-        .unwrap();
+        let property_json_str = include_str!("../../../test_data/property.json");
+        let property =
+            parse_property_from_str(property_json_str, &mut graphs_cache, None, None, None)
+                .await
+                .unwrap();
         assert!(property.ten.is_some());
 
         assert!(graphs_cache.len() == 1);

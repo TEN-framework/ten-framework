@@ -60,8 +60,7 @@ pub async fn create_extension_endpoint(
 
     // Validate base_dir is a directory.
     if let Err(err) = check_is_valid_dir(Path::new(&base_dir)) {
-        let error_response =
-            ErrorResponse::from_error(&err, "Invalid base directory");
+        let error_response = ErrorResponse::from_error(&err, "Invalid base directory");
         return Ok(HttpResponse::BadRequest().json(error_response));
     }
 
@@ -96,25 +95,18 @@ pub async fn create_extension_endpoint(
     .await
     {
         Ok(_) => {
-            let extension_path_str =
-                extension_path.to_string_lossy().to_string();
+            let extension_path_str = extension_path.to_string_lossy().to_string();
 
             let mut pkgs_cache = state.pkgs_cache.write().await;
             let mut graphs_cache = state.graphs_cache.write().await;
 
             // Try to load the newly created extension into the cache.
-            if let Err(err) = get_all_pkgs_in_app(
-                &mut pkgs_cache,
-                &mut graphs_cache,
-                &extension_path_str,
-            )
-            .await
+            if let Err(err) =
+                get_all_pkgs_in_app(&mut pkgs_cache, &mut graphs_cache, &extension_path_str).await
             {
                 // Don't delete the extension directory on cache update failure.
-                let error_response = ErrorResponse::from_error(
-                    &err,
-                    "Extension created but failed to update cache",
-                );
+                let error_response =
+                    ErrorResponse::from_error(&err, "Extension created but failed to update cache");
                 return Ok(HttpResponse::Ok().json(error_response));
             }
 

@@ -20,8 +20,7 @@ use futures::FutureExt;
 use prometheus::Registry;
 
 use crate::constants::{
-    SERVICE_HUB_SERVER_BIND_MAX_RETRIES,
-    SERVICE_HUB_SERVER_BIND_RETRY_INTERVAL_SECS,
+    SERVICE_HUB_SERVER_BIND_MAX_RETRIES, SERVICE_HUB_SERVER_BIND_RETRY_INTERVAL_SECS,
 };
 
 pub struct ServiceHub {
@@ -62,10 +61,8 @@ fn determine_binding_addresses(
     api_endpoint: &Option<String>,
 ) -> Vec<String> {
     // Determine if both endpoints are available and if they are different.
-    let has_both_endpoints =
-        telemetry_endpoint.is_some() && api_endpoint.is_some();
-    let same_endpoint =
-        has_both_endpoints && telemetry_endpoint == api_endpoint;
+    let has_both_endpoints = telemetry_endpoint.is_some() && api_endpoint.is_some();
+    let same_endpoint = has_both_endpoints && telemetry_endpoint == api_endpoint;
 
     if has_both_endpoints && !same_endpoint {
         // Both endpoints are different, bind to both.
@@ -78,13 +75,22 @@ fn determine_binding_addresses(
         .collect::<Vec<_>>()
     } else if same_endpoint {
         // Both endpoints are the same, bind to just one.
-        telemetry_endpoint.as_ref().map(|e| vec![e.clone()]).unwrap_or_default()
+        telemetry_endpoint
+            .as_ref()
+            .map(|e| vec![e.clone()])
+            .unwrap_or_default()
     } else if telemetry_endpoint.is_some() {
         // Only telemetry endpoint.
-        telemetry_endpoint.as_ref().map(|e| vec![e.clone()]).unwrap_or_default()
+        telemetry_endpoint
+            .as_ref()
+            .map(|e| vec![e.clone()])
+            .unwrap_or_default()
     } else {
         // Only API endpoint.
-        api_endpoint.as_ref().map(|e| vec![e.clone()]).unwrap_or_default()
+        api_endpoint
+            .as_ref()
+            .map(|e| vec![e.clone()])
+            .unwrap_or_default()
     }
 }
 
@@ -136,17 +142,12 @@ fn create_server_app(
                                 .unwrap_or("");
 
                             // Check if the port matches.
-                            host.rsplit(':')
-                                .next()
-                                .map(|p| p == port)
-                                .unwrap_or(false)
+                            host.rsplit(':').next().map(|p| p == port).unwrap_or(false)
                         } else {
                             false
                         }
                     }))
-                    .configure(|cfg| {
-                        configure_routes(cfg, registry.clone(), true, false)
-                    }),
+                    .configure(|cfg| configure_routes(cfg, registry.clone(), true, false)),
             )
             // Add API routes with guard.
             .service(
@@ -162,17 +163,12 @@ fn create_server_app(
                                 .unwrap_or("");
 
                             // Check if the port matches.
-                            host.rsplit(':')
-                                .next()
-                                .map(|p| p == port)
-                                .unwrap_or(false)
+                            host.rsplit(':').next().map(|p| p == port).unwrap_or(false)
                         } else {
                             false
                         }
                     }))
-                    .configure(|cfg| {
-                        configure_routes(cfg, registry.clone(), false, true)
-                    }),
+                    .configure(|cfg| configure_routes(cfg, registry.clone(), false, true)),
             )
     } else {
         // Either single endpoint or both endpoints are the same.
@@ -180,9 +176,7 @@ fn create_server_app(
         let is_telemetry = telemetry_endpoint.is_some();
         let is_api = api_endpoint.is_some();
 
-        app_builder.configure(|cfg| {
-            configure_routes(cfg, registry.clone(), is_telemetry, is_api)
-        })
+        app_builder.configure(|cfg| configure_routes(cfg, registry.clone(), is_telemetry, is_api))
     }
 }
 
@@ -220,10 +214,7 @@ fn create_server_and_bind_to_addresses(
         // Single address binding is simple.
         match server.bind(&binding_addresses[0]) {
             Ok(server) => {
-                eprintln!(
-                    "Successfully bound to endpoint: {}",
-                    binding_addresses[0]
-                );
+                eprintln!("Successfully bound to endpoint: {}", binding_addresses[0]);
                 Some(server.run())
             }
             Err(e) => {
@@ -239,10 +230,7 @@ fn create_server_and_bind_to_addresses(
     } else if binding_addresses.len() == 2 {
         // For two addresses, try binding to both.
         let result = server.bind(&binding_addresses[0]).and_then(|server| {
-            eprintln!(
-                "Successfully bound to endpoint: {}",
-                binding_addresses[0]
-            );
+            eprintln!("Successfully bound to endpoint: {}", binding_addresses[0]);
             // Try binding to second address.
             server.bind(&binding_addresses[1])
         });
@@ -250,10 +238,7 @@ fn create_server_and_bind_to_addresses(
         match result {
             Ok(server) => {
                 // Successfully bound to both addresses.
-                eprintln!(
-                    "Successfully bound to endpoint: {}",
-                    binding_addresses[1]
-                );
+                eprintln!("Successfully bound to endpoint: {}", binding_addresses[1]);
                 Some(server.run())
             }
             Err(e) => {
@@ -294,8 +279,7 @@ fn create_service_hub_server_with_retry(
     }
 
     // Determine which addresses to bind to.
-    let binding_addresses =
-        determine_binding_addresses(telemetry_endpoint, api_endpoint);
+    let binding_addresses = determine_binding_addresses(telemetry_endpoint, api_endpoint);
 
     // Try to bind a few times with retry.
     for i in 0..SERVICE_HUB_SERVER_BIND_MAX_RETRIES {
@@ -445,9 +429,7 @@ pub unsafe extern "C" fn ten_service_hub_create(
 ) -> *mut ServiceHub {
     // Check if both hosts are NULL, if so, return null.
     if telemetry_host.is_null() && api_host.is_null() {
-        eprintln!(
-            "Both telemetry and API hosts are NULL, not starting service hub"
-        );
+        eprintln!("Both telemetry and API hosts are NULL, not starting service hub");
         return ptr::null_mut();
     }
 
@@ -477,16 +459,15 @@ pub unsafe extern "C" fn ten_service_hub_create(
     let telemetry_endpoint = telemetry_host_str
         .as_ref()
         .map(|host| format!("{host}:{telemetry_port}"));
-    let api_endpoint =
-        api_host_str.as_ref().map(|host| format!("{host}:{api_port}"));
+    let api_endpoint = api_host_str
+        .as_ref()
+        .map(|host| format!("{host}:{api_port}"));
 
     // If both endpoints are the same and not None, use a single server.
     if telemetry_endpoint.is_some() && api_endpoint.is_some() {
         if telemetry_endpoint == api_endpoint {
             if let Some(endpoint) = telemetry_endpoint.as_ref() {
-                eprintln!(
-                    "Creating combined telemetry/API server at {endpoint}"
-                );
+                eprintln!("Creating combined telemetry/API server at {endpoint}");
 
                 // Create a server with both routes.
                 let registry_clone = registry.clone();
@@ -503,8 +484,7 @@ pub unsafe extern "C" fn ten_service_hub_create(
                     }
                 };
 
-                let (thread_handle, shutdown_tx) =
-                    create_service_hub_server_thread(server);
+                let (thread_handle, shutdown_tx) = create_service_hub_server_thread(server);
 
                 return Box::into_raw(Box::new(ServiceHub {
                     registry,
@@ -542,8 +522,7 @@ pub unsafe extern "C" fn ten_service_hub_create(
                 }
             };
 
-            let (thread_handle, shutdown_tx) =
-                create_service_hub_server_thread(server);
+            let (thread_handle, shutdown_tx) = create_service_hub_server_thread(server);
 
             return Box::into_raw(Box::new(ServiceHub {
                 registry,
@@ -573,8 +552,7 @@ pub unsafe extern "C" fn ten_service_hub_create(
                 }
             };
 
-            let (thread_handle, shutdown_tx) =
-                create_service_hub_server_thread(server);
+            let (thread_handle, shutdown_tx) = create_service_hub_server_thread(server);
 
             return Box::into_raw(Box::new(ServiceHub {
                 registry,
@@ -592,20 +570,16 @@ pub unsafe extern "C" fn ten_service_hub_create(
             // Create API server with retry mechanism.
             let registry_clone = registry.clone();
 
-            let server = match create_service_hub_server_with_retry(
-                &None,
-                &api_endpoint,
-                registry_clone,
-            ) {
-                Some(server) => server,
-                None => {
-                    eprintln!("Failed to bind API server to {endpoint}");
-                    return ptr::null_mut();
-                }
-            };
+            let server =
+                match create_service_hub_server_with_retry(&None, &api_endpoint, registry_clone) {
+                    Some(server) => server,
+                    None => {
+                        eprintln!("Failed to bind API server to {endpoint}");
+                        return ptr::null_mut();
+                    }
+                };
 
-            let (thread_handle, shutdown_tx) =
-                create_service_hub_server_thread(server);
+            let (thread_handle, shutdown_tx) = create_service_hub_server_thread(server);
 
             return Box::into_raw(Box::new(ServiceHub {
                 registry,
@@ -634,9 +608,7 @@ pub unsafe extern "C" fn ten_service_hub_create(
 /// `ten_service_hub_create`. Calling this function with an invalid pointer
 /// will lead to undefined behavior.
 #[no_mangle]
-pub unsafe extern "C" fn ten_service_hub_shutdown(
-    service_hub_ptr: *mut ServiceHub,
-) {
+pub unsafe extern "C" fn ten_service_hub_shutdown(service_hub_ptr: *mut ServiceHub) {
     debug_assert!(!service_hub_ptr.is_null(), "System pointer is null");
     // Early return for null pointers.
     if service_hub_ptr.is_null() {
@@ -655,9 +627,7 @@ pub unsafe extern "C" fn ten_service_hub_shutdown(
         if let Err(e) = shutdown_tx.send(()) {
             eprintln!("Failed to send shutdown signal: {e:?}");
             // Don't panic, just continue with cleanup.
-            eprintln!(
-                "Continuing with cleanup despite shutdown signal failure"
-            );
+            eprintln!("Continuing with cleanup despite shutdown signal failure");
         }
     } else {
         eprintln!("No shutdown channel available for the service hub");
@@ -685,18 +655,12 @@ pub unsafe extern "C" fn ten_service_hub_shutdown(
             });
 
             // Wait with timeout.
-            match rx.recv_timeout(std::time::Duration::from_secs(
-                SHUTDOWN_TIMEOUT_SECS,
-            )) {
+            match rx.recv_timeout(std::time::Duration::from_secs(SHUTDOWN_TIMEOUT_SECS)) {
                 Ok(join_result) => match join_result {
                     Ok(_) => {
-                        eprintln!(
-                            "Service hub server thread joined successfully"
-                        )
+                        eprintln!("Service hub server thread joined successfully")
                     }
-                    Err(e) => eprintln!(
-                        "Error joining service hub server thread: {e:?}"
-                    ),
+                    Err(e) => eprintln!("Error joining service hub server thread: {e:?}"),
                 },
                 Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {
                     eprintln!(

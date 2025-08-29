@@ -30,8 +30,10 @@ impl Inner {
             }
         }
 
-        let file =
-            OpenOptions::new().create(true).append(true).open(&self.path)?;
+        let file = OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&self.path)?;
         let mut guard = self.file.write().unwrap();
         *guard = file;
         Ok(())
@@ -90,12 +92,7 @@ impl Write for ReloadableFileAppender {
             && self
                 .inner
                 .reload
-                .compare_exchange(
-                    true,
-                    false,
-                    Ordering::AcqRel,
-                    Ordering::Relaxed,
-                )
+                .compare_exchange(true, false, Ordering::AcqRel, Ordering::Relaxed)
                 .is_ok()
         {
             // This writer is responsible for reopening

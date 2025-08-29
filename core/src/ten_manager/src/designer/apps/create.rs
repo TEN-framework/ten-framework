@@ -60,8 +60,7 @@ pub async fn create_app_endpoint(
 
     // Validate base_dir is a directory.
     if let Err(err) = check_is_valid_dir(Path::new(&base_dir)) {
-        let error_response =
-            ErrorResponse::from_error(&err, "Invalid base directory");
+        let error_response = ErrorResponse::from_error(&err, "Invalid base directory");
         return Ok(HttpResponse::BadRequest().json(error_response));
     }
 
@@ -102,24 +101,20 @@ pub async fn create_app_endpoint(
             let mut graphs_cache = state.graphs_cache.write().await;
 
             // Try to load the newly created app into the cache.
-            if let Err(err) = get_all_pkgs_in_app(
-                &mut pkgs_cache,
-                &mut graphs_cache,
-                &app_path_str,
-            )
-            .await
+            if let Err(err) =
+                get_all_pkgs_in_app(&mut pkgs_cache, &mut graphs_cache, &app_path_str).await
             {
                 // Don't delete the app directory on cache update failure.
-                let error_response = ErrorResponse::from_error(
-                    &err,
-                    "App created but failed to update cache",
-                );
+                let error_response =
+                    ErrorResponse::from_error(&err, "App created but failed to update cache");
                 return Ok(HttpResponse::Ok().json(error_response));
             }
 
             let response = ApiResponse {
                 status: Status::Ok,
-                data: CreateAppResponseData { app_path: app_path_str },
+                data: CreateAppResponseData {
+                    app_path: app_path_str,
+                },
                 meta: None,
             };
 

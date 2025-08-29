@@ -24,9 +24,7 @@ use crate::{
     },
     fs::json::patch_property_json_file,
     graph::{
-        connections::validate::{
-            validate_connection_schema, MsgConversionValidateInfo,
-        },
+        connections::validate::{validate_connection_schema, MsgConversionValidateInfo},
         graphs_cache_find_by_id_mut,
     },
     pkg_info::belonging_pkg_info_find_by_graph_info,
@@ -54,9 +52,7 @@ pub struct UpdateGraphConnectionMsgConversionResponsePayload {
 // Update the GraphInfo structure.
 async fn update_graph_info(
     graph_info: &mut GraphInfo,
-    request_payload: &web::Json<
-        UpdateGraphConnectionMsgConversionRequestPayload,
-    >,
+    request_payload: &web::Json<UpdateGraphConnectionMsgConversionRequestPayload>,
 ) -> Result<()> {
     // Store the original state in case validation fails.
     let original_graph = graph_info.graph.clone();
@@ -66,8 +62,7 @@ async fn update_graph_info(
         // Try to find the matching connection based on app and extension.
         for connection in connections.iter_mut() {
             if connection.loc.app == request_payload.src_app
-                && connection.loc.extension.as_deref()
-                    == Some(&request_payload.src_extension)
+                && connection.loc.extension.as_deref() == Some(&request_payload.src_extension)
             {
                 // Find the correct message flow vector based on msg_type.
                 let msg_flow_vec = match request_payload.msg_type {
@@ -81,22 +76,18 @@ async fn update_graph_info(
                 // message flow by name.
                 if let Some(msg_flows) = msg_flow_vec {
                     for msg_flow in msg_flows.iter_mut() {
-                        if msg_flow.name.as_ref()
-                            == Some(&request_payload.msg_name)
-                        {
+                        if msg_flow.name.as_ref() == Some(&request_payload.msg_name) {
                             // Find the matching destination
                             for dest in msg_flow.dest.iter_mut() {
                                 if dest.loc.app == request_payload.dest_app
-                                    && dest.loc.extension.as_ref().is_some_and(
-                                        |ext| {
-                                            ext == &request_payload
-                                                .dest_extension
-                                        },
-                                    )
+                                    && dest
+                                        .loc
+                                        .extension
+                                        .as_ref()
+                                        .is_some_and(|ext| ext == &request_payload.dest_extension)
                                 {
                                     // Update the msg_conversion field.
-                                    dest.msg_conversion =
-                                        request_payload.msg_conversion.clone();
+                                    dest.msg_conversion = request_payload.msg_conversion.clone();
                                     break;
                                 }
                             }
@@ -110,7 +101,11 @@ async fn update_graph_info(
     }
 
     // Validate the updated graph.
-    match graph_info.graph.validate_and_complete_and_flatten(None).await {
+    match graph_info
+        .graph
+        .validate_and_complete_and_flatten(None)
+        .await
+    {
         Ok(_) => Ok(()),
         Err(e) => {
             // Restore the original graph if validation fails.
@@ -121,34 +116,23 @@ async fn update_graph_info(
 }
 
 fn update_property_json_file(
-    _request_payload: &web::Json<
-        UpdateGraphConnectionMsgConversionRequestPayload,
-    >,
+    _request_payload: &web::Json<UpdateGraphConnectionMsgConversionRequestPayload>,
     pkgs_cache: &HashMap<String, PkgsInfoInApp>,
     graphs_cache: &HashMap<Uuid, GraphInfo>,
     old_graphs_cache: &HashMap<Uuid, GraphInfo>,
 ) -> Result<()> {
     let graph_info = graphs_cache.get(&_request_payload.graph_id).unwrap();
 
-    if let Ok(Some(pkg_info)) =
-        belonging_pkg_info_find_by_graph_info(pkgs_cache, graph_info)
-    {
+    if let Ok(Some(pkg_info)) = belonging_pkg_info_find_by_graph_info(pkgs_cache, graph_info) {
         if let Some(property) = &pkg_info.property {
-            patch_property_json_file(
-                &pkg_info.url,
-                property,
-                graphs_cache,
-                old_graphs_cache,
-            )?;
+            patch_property_json_file(&pkg_info.url, property, graphs_cache, old_graphs_cache)?;
         }
     }
     Ok(())
 }
 
 pub async fn update_graph_connection_msg_conversion_endpoint(
-    request_payload: web::Json<
-        UpdateGraphConnectionMsgConversionRequestPayload,
-    >,
+    request_payload: web::Json<UpdateGraphConnectionMsgConversionRequestPayload>,
     state: web::Data<Arc<DesignerState>>,
 ) -> Result<impl Responder, actix_web::Error> {
     let pkgs_cache = state.pkgs_cache.read().await;
@@ -156,10 +140,8 @@ pub async fn update_graph_connection_msg_conversion_endpoint(
     let old_graphs_cache = graphs_cache.clone();
 
     // Get the specified graph from graphs_cache.
-    let graph_info = match graphs_cache_find_by_id_mut(
-        &mut graphs_cache,
-        &request_payload.graph_id,
-    ) {
+    let graph_info = match graphs_cache_find_by_id_mut(&mut graphs_cache, &request_payload.graph_id)
+    {
         Some(graph_info) => graph_info,
         None => {
             let error_response = ErrorResponse {
@@ -221,9 +203,7 @@ pub async fn update_graph_connection_msg_conversion_endpoint(
 
     let response = ApiResponse {
         status: Status::Ok,
-        data: UpdateGraphConnectionMsgConversionResponsePayload {
-            success: true,
-        },
+        data: UpdateGraphConnectionMsgConversionResponsePayload { success: true },
         meta: None,
     };
     Ok(HttpResponse::Ok().json(response))

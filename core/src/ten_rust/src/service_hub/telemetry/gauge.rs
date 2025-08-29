@@ -39,9 +39,7 @@ pub fn create_metric_gauge_with_labels(
     let gauge_opts = prometheus::Opts::new(name_str, help_str);
     match prometheus::GaugeVec::new(gauge_opts, label_names) {
         Ok(gauge_vec) => {
-            if let Err(e) =
-                system.registry.register(Box::new(gauge_vec.clone()))
-            {
+            if let Err(e) = system.registry.register(Box::new(gauge_vec.clone())) {
                 eprintln!("Error registering gauge vec: {e:?}");
                 return Err(anyhow::anyhow!("Error registering gauge"));
             }
@@ -72,18 +70,12 @@ unsafe fn apply_to_gauge<F>(
             op(gauge);
         }
         MetricHandle::GaugeVec(ref gauge_vec) => {
-            let values_owned = match convert_label_values(
-                label_values_ptr,
-                label_values_len,
-            ) {
+            let values_owned = match convert_label_values(label_values_ptr, label_values_len) {
                 Some(v) => v,
                 None => return,
             };
-            let label_refs: Vec<&str> =
-                values_owned.iter().map(|s| s.as_str()).collect();
-            if let Ok(gauge) =
-                gauge_vec.get_metric_with_label_values(&label_refs)
-            {
+            let label_refs: Vec<&str> = values_owned.iter().map(|s| s.as_str()).collect();
+            if let Ok(gauge) = gauge_vec.get_metric_with_label_values(&label_refs) {
                 op(&gauge);
             }
         }

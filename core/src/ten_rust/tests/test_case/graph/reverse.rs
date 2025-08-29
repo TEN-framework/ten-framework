@@ -7,10 +7,7 @@
 #[cfg(test)]
 mod tests {
     use ten_rust::graph::{
-        connection::{
-            GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow,
-            GraphSource,
-        },
+        connection::{GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow, GraphSource},
         Graph,
     };
 
@@ -24,11 +21,11 @@ mod tests {
             exposed_properties: None,
             pre_flatten: None,
         };
-        assert!(Graph::convert_reversed_connections_to_forward_connections(
-            &empty_graph
-        )
-        .unwrap()
-        .is_none());
+        assert!(
+            Graph::convert_reversed_connections_to_forward_connections(&empty_graph)
+                .unwrap()
+                .is_none()
+        );
     }
 
     #[test]
@@ -68,11 +65,11 @@ mod tests {
             source: vec![],
         }]);
         graph_no_reverse.connections = Some(vec![conn]);
-        assert!(Graph::convert_reversed_connections_to_forward_connections(
-            &graph_no_reverse
-        )
-        .unwrap()
-        .is_none());
+        assert!(
+            Graph::convert_reversed_connections_to_forward_connections(&graph_no_reverse)
+                .unwrap()
+                .is_none()
+        );
     }
 
     #[test]
@@ -104,10 +101,9 @@ mod tests {
         );
 
         // Convert to forward connections
-        let converted =
-            Graph::convert_reversed_connections_to_forward_connections(&graph)
-                .unwrap()
-                .unwrap();
+        let converted = Graph::convert_reversed_connections_to_forward_connections(&graph)
+            .unwrap()
+            .unwrap();
 
         println!(
             "converted: {}",
@@ -172,11 +168,9 @@ mod tests {
         conn.video_frame = Some(vec![flow]);
         graph_multi_types.connections = Some(vec![conn]);
         let converted =
-            Graph::convert_reversed_connections_to_forward_connections(
-                &graph_multi_types,
-            )
-            .unwrap()
-            .unwrap();
+            Graph::convert_reversed_connections_to_forward_connections(&graph_multi_types)
+                .unwrap()
+                .unwrap();
         assert_eq!(converted.connections.as_ref().unwrap().len(), 1);
         assert_eq!(
             converted.connections.as_ref().unwrap()[0]
@@ -191,16 +185,14 @@ mod tests {
         assert_eq!(forward_conn.loc.extension, Some("ext2".to_string()));
         assert_eq!(forward_conn.loc.app, Some("app2".to_string()));
 
-        let forward_flow =
-            &converted.connections.as_ref().unwrap()[0].cmd.as_ref().unwrap()
-                [0];
+        let forward_flow = &converted.connections.as_ref().unwrap()[0]
+            .cmd
+            .as_ref()
+            .unwrap()[0];
         assert_eq!(forward_flow.name.as_deref(), Some("flow1"));
         assert_eq!(forward_flow.source.len(), 0);
         assert_eq!(forward_flow.dest.len(), 1);
-        assert_eq!(
-            forward_flow.dest[0].loc.extension,
-            Some("ext1".to_string())
-        );
+        assert_eq!(forward_flow.dest[0].loc.extension, Some("ext1".to_string()));
         assert_eq!(forward_flow.dest[0].loc.app, Some("app1".to_string()));
         assert_eq!(forward_flow.dest[0].loc.subgraph, None);
     }
@@ -214,10 +206,9 @@ mod tests {
         ))
         .unwrap();
 
-        let converted =
-            Graph::convert_reversed_connections_to_forward_connections(&graph)
-                .unwrap()
-                .unwrap();
+        let converted = Graph::convert_reversed_connections_to_forward_connections(&graph)
+            .unwrap()
+            .unwrap();
 
         println!(
             "converted: {}",
@@ -241,7 +232,10 @@ mod tests {
             1
         );
         assert_eq!(
-            converted.connections.as_ref().unwrap()[0].cmd.as_ref().unwrap()[0]
+            converted.connections.as_ref().unwrap()[0]
+                .cmd
+                .as_ref()
+                .unwrap()[0]
                 .dest[0]
                 .loc
                 .extension,
@@ -257,10 +251,9 @@ mod tests {
         ))
         .unwrap();
 
-        let converted =
-            Graph::convert_reversed_connections_to_forward_connections(&graph)
-                .unwrap()
-                .unwrap();
+        let converted = Graph::convert_reversed_connections_to_forward_connections(&graph)
+            .unwrap()
+            .unwrap();
 
         println!(
             "converted multiple sources: {}",
@@ -301,10 +294,9 @@ mod tests {
         ))
         .unwrap();
 
-        let converted =
-            Graph::convert_reversed_connections_to_forward_connections(&graph)
-                .unwrap()
-                .unwrap();
+        let converted = Graph::convert_reversed_connections_to_forward_connections(&graph)
+            .unwrap()
+            .unwrap();
 
         println!(
             "converted mixed: {}",
@@ -366,10 +358,9 @@ mod tests {
         ))
         .unwrap();
 
-        let converted =
-            Graph::convert_reversed_connections_to_forward_connections(&graph)
-                .unwrap()
-                .unwrap();
+        let converted = Graph::convert_reversed_connections_to_forward_connections(&graph)
+            .unwrap()
+            .unwrap();
 
         println!(
             "converted app and subgraph: {}",
@@ -385,10 +376,7 @@ mod tests {
         let forward_flow = &forward_conn.cmd.as_ref().unwrap()[0];
         assert_eq!(forward_flow.name.as_deref(), Some("subgraph_call"));
         assert_eq!(forward_flow.dest[0].loc.subgraph, None);
-        assert_eq!(
-            forward_flow.dest[0].loc.extension,
-            Some("ext1".to_string())
-        );
+        assert_eq!(forward_flow.dest[0].loc.extension, Some("ext1".to_string()));
     }
 
     #[test]
@@ -401,10 +389,9 @@ mod tests {
         ))
         .unwrap();
 
-        let converted =
-            Graph::convert_reversed_connections_to_forward_connections(&graph)
-                .unwrap()
-                .unwrap();
+        let converted = Graph::convert_reversed_connections_to_forward_connections(&graph)
+            .unwrap()
+            .unwrap();
 
         println!(
             "converted all types: {}",
@@ -432,11 +419,15 @@ mod tests {
             Some("dest_ext".to_string())
         );
         assert_eq!(
-            forward_conn.audio_frame.as_ref().unwrap()[0].dest[0].loc.extension,
+            forward_conn.audio_frame.as_ref().unwrap()[0].dest[0]
+                .loc
+                .extension,
             Some("dest_ext".to_string())
         );
         assert_eq!(
-            forward_conn.video_frame.as_ref().unwrap()[0].dest[0].loc.extension,
+            forward_conn.video_frame.as_ref().unwrap()[0].dest[0]
+                .loc
+                .extension,
             Some("dest_ext".to_string())
         );
     }
@@ -450,10 +441,9 @@ mod tests {
         ))
         .unwrap();
 
-        let converted =
-            Graph::convert_reversed_connections_to_forward_connections(&graph)
-                .unwrap()
-                .unwrap();
+        let converted = Graph::convert_reversed_connections_to_forward_connections(&graph)
+            .unwrap()
+            .unwrap();
 
         println!(
             "converted multiple flows: {}",
@@ -507,10 +497,9 @@ mod tests {
         ))
         .unwrap();
 
-        let converted =
-            Graph::convert_reversed_connections_to_forward_connections(&graph)
-                .unwrap()
-                .unwrap();
+        let converted = Graph::convert_reversed_connections_to_forward_connections(&graph)
+            .unwrap()
+            .unwrap();
 
         println!(
             "converted source only: {}",
@@ -561,10 +550,8 @@ mod tests {
         graph_empty_sources.connections = Some(vec![conn]);
 
         let result =
-            Graph::convert_reversed_connections_to_forward_connections(
-                &graph_empty_sources,
-            )
-            .unwrap();
+            Graph::convert_reversed_connections_to_forward_connections(&graph_empty_sources)
+                .unwrap();
         assert!(result.is_none());
     }
 
@@ -583,24 +570,19 @@ mod tests {
 
         // Verify details of original connections
         let original_connections = graph_complex.connections.as_ref().unwrap();
-        assert!(original_connections.iter().any(|c| c.loc.extension
-            == Some("ext1".to_string())
-            && c.cmd.as_ref().unwrap()[0].name.as_deref()
-                == Some("shared_flow")
-            && c.cmd.as_ref().unwrap()[0].source[0].loc.extension
-                == Some("ext2".to_string())));
-        assert!(original_connections.iter().any(|c| c.loc.extension
-            == Some("ext3".to_string())
-            && c.cmd.as_ref().unwrap()[0].name.as_deref()
-                == Some("shared_flow")
-            && c.cmd.as_ref().unwrap()[0].source[0].loc.extension
-                == Some("ext2".to_string())));
+        assert!(original_connections
+            .iter()
+            .any(|c| c.loc.extension == Some("ext1".to_string())
+                && c.cmd.as_ref().unwrap()[0].name.as_deref() == Some("shared_flow")
+                && c.cmd.as_ref().unwrap()[0].source[0].loc.extension == Some("ext2".to_string())));
+        assert!(original_connections
+            .iter()
+            .any(|c| c.loc.extension == Some("ext3".to_string())
+                && c.cmd.as_ref().unwrap()[0].name.as_deref() == Some("shared_flow")
+                && c.cmd.as_ref().unwrap()[0].source[0].loc.extension == Some("ext2".to_string())));
 
         // Convert to forward connections
-        let converted =
-            Graph::convert_reversed_connections_to_forward_connections(
-                &graph_complex,
-            )
+        let converted = Graph::convert_reversed_connections_to_forward_connections(&graph_complex)
             .unwrap()
             .unwrap();
 
@@ -639,10 +621,9 @@ mod tests {
         ))
         .unwrap();
 
-        let converted =
-            Graph::convert_reversed_connections_to_forward_connections(&graph)
-                .unwrap()
-                .unwrap();
+        let converted = Graph::convert_reversed_connections_to_forward_connections(&graph)
+            .unwrap()
+            .unwrap();
 
         println!(
             "converted graph with app uri: {}",
@@ -659,7 +640,10 @@ mod tests {
             Some("test_extension_1".to_string())
         );
         assert_eq!(
-            converted.connections.as_ref().unwrap()[0].cmd.as_ref().unwrap()[0]
+            converted.connections.as_ref().unwrap()[0]
+                .cmd
+                .as_ref()
+                .unwrap()[0]
                 .dest[0]
                 .loc
                 .extension,

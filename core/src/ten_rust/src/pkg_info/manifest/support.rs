@@ -13,9 +13,7 @@ use crate::{
     pkg_info::supports::{Arch, Os},
 };
 
-#[derive(
-    Serialize, Deserialize, Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord,
-)]
+#[derive(Serialize, Deserialize, Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ManifestSupport {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub os: Option<Os>,
@@ -113,9 +111,7 @@ impl ManifestSupport {
     }
 }
 
-pub fn get_manifest_supports_from_pkg(
-    support: &[ManifestSupport],
-) -> Vec<ManifestSupport> {
+pub fn get_manifest_supports_from_pkg(support: &[ManifestSupport]) -> Vec<ManifestSupport> {
     support.to_vec()
 }
 

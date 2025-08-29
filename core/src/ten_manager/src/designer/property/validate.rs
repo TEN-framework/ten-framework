@@ -33,20 +33,22 @@ pub async fn validate_property_endpoint(
 ) -> Result<impl Responder, actix_web::Error> {
     let property_json_str = &request_payload.property_json_str;
 
-    let response_data =
-        match ten_validate_property_json_string(property_json_str) {
-            Ok(_) => ValidatePropertyResponseData {
-                is_valid: true,
-                error_message: None,
-            },
-            Err(err) => ValidatePropertyResponseData {
-                is_valid: false,
-                error_message: Some(err.to_string()),
-            },
-        };
+    let response_data = match ten_validate_property_json_string(property_json_str) {
+        Ok(_) => ValidatePropertyResponseData {
+            is_valid: true,
+            error_message: None,
+        },
+        Err(err) => ValidatePropertyResponseData {
+            is_valid: false,
+            error_message: Some(err.to_string()),
+        },
+    };
 
-    let api_response =
-        ApiResponse { status: Status::Ok, data: response_data, meta: None };
+    let api_response = ApiResponse {
+        status: Status::Ok,
+        data: response_data,
+        meta: None,
+    };
 
     Ok(web::Json(api_response))
 }

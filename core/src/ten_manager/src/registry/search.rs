@@ -53,23 +53,17 @@ pub fn matches_filter(info: &PkgRegistryInfo, node: &FilterNode) -> bool {
                     .tags
                     .as_ref()
                     .is_some_and(|tags| tags.iter().any(|t| re.is_match(t))),
-                "display_name" => {
-                    info.display_name.as_ref().is_some_and(|dn| {
-                        dn.locales.iter().any(|(_, v)| {
-                            re.is_match(&v.content.clone().unwrap_or_default())
-                        })
-                    })
-                }
+                "display_name" => info.display_name.as_ref().is_some_and(|dn| {
+                    dn.locales
+                        .iter()
+                        .any(|(_, v)| re.is_match(&v.content.clone().unwrap_or_default()))
+                }),
                 _ => false,
             }
         }
         FilterNode::Logic(logic) => match logic {
-            LogicFilter::And { and } => {
-                and.iter().all(|n| matches_filter(info, n))
-            }
-            LogicFilter::Or { or } => {
-                or.iter().any(|n| matches_filter(info, n))
-            }
+            LogicFilter::And { and } => and.iter().all(|n| matches_filter(info, n)),
+            LogicFilter::Or { or } => or.iter().any(|n| matches_filter(info, n)),
         },
     }
 }

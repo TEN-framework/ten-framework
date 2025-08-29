@@ -54,9 +54,7 @@ impl Graph {
         // HashMap to track first occurrence of each extension.
         let mut extensions: HashMap<String, usize> = HashMap::new();
 
-        for (conn_idx, connection) in
-            self.connections.as_ref().unwrap().iter().enumerate()
-        {
+        for (conn_idx, connection) in self.connections.as_ref().unwrap().iter().enumerate() {
             // Create a unique identifier for the extension including app URI.
             if let Some(extension_name) = &connection.loc.extension {
                 let app_str = connection.loc.app.as_deref().unwrap_or("");

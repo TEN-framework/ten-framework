@@ -23,8 +23,7 @@ mod tests {
         assert_eq!(result, Some("filename.txt".to_string()));
 
         // Test with a path
-        let result =
-            extract_filename_from_path(&PathBuf::from("path/to/filename.txt"));
+        let result = extract_filename_from_path(&PathBuf::from("path/to/filename.txt"));
         assert_eq!(result, Some("filename.txt".to_string()));
 
         // Test with just a directory ending with a slash

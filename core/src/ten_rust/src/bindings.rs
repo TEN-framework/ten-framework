@@ -235,8 +235,7 @@ pub unsafe extern "C" fn ten_rust_manifest_api_flatten(
 ) -> *const c_char {
     if manifest_api_json_str.is_null() {
         if !err_msg.is_null() {
-            let err_msg_c_str =
-                CString::new("manifest_api_json_str is null").unwrap();
+            let err_msg_c_str = CString::new("manifest_api_json_str is null").unwrap();
             *err_msg = err_msg_c_str.into_raw();
         }
         return std::ptr::null();
@@ -244,17 +243,16 @@ pub unsafe extern "C" fn ten_rust_manifest_api_flatten(
 
     // Convert C string to Rust string
     let manifest_api_json_str_c_str = CStr::from_ptr(manifest_api_json_str);
-    let manifest_api_json_str_rust_str =
-        match manifest_api_json_str_c_str.to_str() {
-            Ok(s) => s,
-            Err(e) => {
-                if !err_msg.is_null() {
-                    let err_msg_c_str = CString::new(e.to_string()).unwrap();
-                    *err_msg = err_msg_c_str.into_raw();
-                }
-                return std::ptr::null(); // Invalid UTF-8
+    let manifest_api_json_str_rust_str = match manifest_api_json_str_c_str.to_str() {
+        Ok(s) => s,
+        Err(e) => {
+            if !err_msg.is_null() {
+                let err_msg_c_str = CString::new(e.to_string()).unwrap();
+                *err_msg = err_msg_c_str.into_raw();
             }
-        };
+            return std::ptr::null(); // Invalid UTF-8
+        }
+    };
 
     // current_base_dir should be a valid null-terminated C string.
     let current_base_dir_rust_str = CStr::from_ptr(current_base_dir);
@@ -270,26 +268,23 @@ pub unsafe extern "C" fn ten_rust_manifest_api_flatten(
     };
 
     // Parse the JSON string into a ManifestApi
-    let mut manifest_api: ManifestApi =
-        match serde_json::from_str(manifest_api_json_str_rust_str) {
-            Ok(m) => m,
-            Err(e) => {
-                if !err_msg.is_null() {
-                    let err_msg_c_str = CString::new(e.to_string()).unwrap();
-                    *err_msg = err_msg_c_str.into_raw();
-                }
-                return std::ptr::null(); // Parsing failed
+    let mut manifest_api: ManifestApi = match serde_json::from_str(manifest_api_json_str_rust_str) {
+        Ok(m) => m,
+        Err(e) => {
+            if !err_msg.is_null() {
+                let err_msg_c_str = CString::new(e.to_string()).unwrap();
+                *err_msg = err_msg_c_str.into_raw();
             }
-        };
+            return std::ptr::null(); // Parsing failed
+        }
+    };
 
     let runtime = Runtime::new().unwrap();
-    let flattened_api = runtime
-        .block_on(manifest_api.get_flattened_api(current_base_dir_rust_str));
+    let flattened_api = runtime.block_on(manifest_api.get_flattened_api(current_base_dir_rust_str));
 
     if flattened_api.is_err() {
         if !err_msg.is_null() {
-            let err_msg_c_str =
-                CString::new(flattened_api.err().unwrap().to_string()).unwrap();
+            let err_msg_c_str = CString::new(flattened_api.err().unwrap().to_string()).unwrap();
             *err_msg = err_msg_c_str.into_raw();
         }
         return std::ptr::null(); // Parsing failed
@@ -298,23 +293,21 @@ pub unsafe extern "C" fn ten_rust_manifest_api_flatten(
     // If the flattened API is None, return the original manifest API.
     if flattened_api.as_ref().unwrap().is_none() {
         // Clone the manifest_api_json_str_rust_str and return the C string.
-        let manifest_api_json_str_c_str =
-            CString::new(manifest_api_json_str_rust_str).unwrap();
+        let manifest_api_json_str_c_str = CString::new(manifest_api_json_str_rust_str).unwrap();
         return manifest_api_json_str_c_str.into_raw();
     }
 
     // Serialize the flattened API back to JSON
-    let flattened_api_json_str =
-        match serde_json::to_string(&flattened_api.unwrap()) {
-            Ok(json) => json,
-            Err(e) => {
-                if !err_msg.is_null() {
-                    let err_msg_c_str = CString::new(e.to_string()).unwrap();
-                    *err_msg = err_msg_c_str.into_raw();
-                }
-                return std::ptr::null(); // Serialization failed
+    let flattened_api_json_str = match serde_json::to_string(&flattened_api.unwrap()) {
+        Ok(json) => json,
+        Err(e) => {
+            if !err_msg.is_null() {
+                let err_msg_c_str = CString::new(e.to_string()).unwrap();
+                *err_msg = err_msg_c_str.into_raw();
             }
-        };
+            return std::ptr::null(); // Serialization failed
+        }
+    };
 
     // Convert to C string
     match CString::new(flattened_api_json_str) {
@@ -382,8 +375,7 @@ pub unsafe extern "C" fn ten_rust_validate_graph_json_string(
     let result = Graph::from_str_and_validate(rust_graph_json_str);
     if result.is_err() {
         if !err_msg.is_null() {
-            let err_msg_c_str =
-                CString::new(result.err().unwrap().to_string()).unwrap();
+            let err_msg_c_str = CString::new(result.err().unwrap().to_string()).unwrap();
             *err_msg = err_msg_c_str.into_raw();
         }
         return false;
@@ -392,8 +384,7 @@ pub unsafe extern "C" fn ten_rust_validate_graph_json_string(
     let result = result.unwrap().static_check();
     if result.is_err() {
         if !err_msg.is_null() {
-            let err_msg_c_str =
-                CString::new(result.err().unwrap().to_string()).unwrap();
+            let err_msg_c_str = CString::new(result.err().unwrap().to_string()).unwrap();
             *err_msg = err_msg_c_str.into_raw();
         }
         return false;

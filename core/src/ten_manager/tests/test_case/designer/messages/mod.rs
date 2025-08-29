@@ -52,7 +52,9 @@ pub struct LocaleMessages {
 
 impl LocaleMessages {
     pub fn new() -> Self {
-        Self { messages: HashMap::new() }
+        Self {
+            messages: HashMap::new(),
+        }
     }
 
     pub fn insert(&mut self, locale: Locale, messages: Vec<MessageForLocale>) {
@@ -64,7 +66,9 @@ impl LocaleMessages {
         for (locale, messages) in &self.messages {
             new_messages.insert(*locale, messages.clone());
         }
-        Self { messages: new_messages }
+        Self {
+            messages: new_messages,
+        }
     }
 }
 
@@ -101,16 +105,13 @@ pub mod get {
         };
 
         // Find messages for this locale or fallback to default
-        let message_vec =
-            if let Some(msgs) = messages.messages.get(&LocaleWrapper(locale)) {
-                msgs.clone()
-            } else if let Some(msgs) =
-                messages.messages.get(&LocaleWrapper(Locale::EnUs))
-            {
-                msgs.clone()
-            } else {
-                Vec::new()
-            };
+        let message_vec = if let Some(msgs) = messages.messages.get(&LocaleWrapper(locale)) {
+            msgs.clone()
+        } else if let Some(msgs) = messages.messages.get(&LocaleWrapper(Locale::EnUs)) {
+            msgs.clone()
+        } else {
+            Vec::new()
+        };
 
         // Return the response
         HttpResponse::Ok().json(ApiResponse {
@@ -131,12 +132,12 @@ async fn test_get_messages_success() {
 
     // Set up app.
     let app = test::init_service(
-        App::new().app_data(web::Data::new(messages.clone())).service(
-            web::scope("/api/designer/v1").service(
-                web::resource("/messages")
-                    .route(web::get().to(get::get_endpoint)),
+        App::new()
+            .app_data(web::Data::new(messages.clone()))
+            .service(
+                web::scope("/api/designer/v1")
+                    .service(web::resource("/messages").route(web::get().to(get::get_endpoint))),
             ),
-        ),
     )
     .await;
 
@@ -156,12 +157,12 @@ async fn test_get_messages_fallback() {
 
     // Set up app.
     let app = test::init_service(
-        App::new().app_data(web::Data::new(messages.clone())).service(
-            web::scope("/api/designer/v1").service(
-                web::resource("/messages")
-                    .route(web::get().to(get::get_endpoint)),
+        App::new()
+            .app_data(web::Data::new(messages.clone()))
+            .service(
+                web::scope("/api/designer/v1")
+                    .service(web::resource("/messages").route(web::get().to(get::get_endpoint))),
             ),
-        ),
     )
     .await;
 
@@ -181,12 +182,12 @@ async fn test_get_messages_preferred_locale() {
 
     // Set up app.
     let app = test::init_service(
-        App::new().app_data(web::Data::new(messages.clone())).service(
-            web::scope("/api/designer/v1").service(
-                web::resource("/messages")
-                    .route(web::get().to(get::get_endpoint)),
+        App::new()
+            .app_data(web::Data::new(messages.clone()))
+            .service(
+                web::scope("/api/designer/v1")
+                    .service(web::resource("/messages").route(web::get().to(get::get_endpoint))),
             ),
-        ),
     )
     .await;
 
