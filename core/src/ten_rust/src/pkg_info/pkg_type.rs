@@ -10,17 +10,7 @@ use anyhow::{Error, Result};
 use serde::{Deserialize, Serialize};
 
 #[derive(
-    Copy,
-    Clone,
-    Debug,
-    PartialEq,
-    Eq,
-    PartialOrd,
-    Ord,
-    Hash,
-    Serialize,
-    Deserialize,
-    Default,
+    Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Default,
 )]
 pub enum PkgType {
     #[serde(rename = "invalid")]

@@ -13,8 +13,7 @@ mod tests {
         constants::TEST_DIR,
         designer::{
             apps::schema::{
-                get_app_schema_endpoint, GetAppSchemaRequestPayload,
-                GetAppSchemaResponseData,
+                get_app_schema_endpoint, GetAppSchemaRequestPayload, GetAppSchemaResponseData,
             },
             response::{ApiResponse, Status},
             storage::in_memory::TmanStorageInMemory,
@@ -30,12 +29,8 @@ mod tests {
     async fn test_get_app_schema_success() {
         // Set up the designer state with initial data.
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -52,12 +47,9 @@ mod tests {
             let mut pkgs_cache = designer_state.pkgs_cache.write().await;
             let mut graphs_cache = designer_state.graphs_cache.write().await;
 
-            let inject_ret = inject_all_pkgs_for_mock(
-                &mut pkgs_cache,
-                &mut graphs_cache,
-                all_pkgs_json_str,
-            )
-            .await;
+            let inject_ret =
+                inject_all_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, all_pkgs_json_str)
+                    .await;
             assert!(inject_ret.is_ok());
         }
 
@@ -65,10 +57,12 @@ mod tests {
 
         // Set up the test service.
         let app = test::init_service(
-            App::new().app_data(web::Data::new(designer_state.clone())).route(
-                "/test_get_app_schema",
-                web::post().to(get_app_schema_endpoint),
-            ),
+            App::new()
+                .app_data(web::Data::new(designer_state.clone()))
+                .route(
+                    "/test_get_app_schema",
+                    web::post().to(get_app_schema_endpoint),
+                ),
         )
         .await;
 
@@ -118,12 +112,8 @@ mod tests {
     async fn test_get_app_schema_app_not_found() {
         // Set up the designer state with initial data.
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -140,12 +130,9 @@ mod tests {
             let mut pkgs_cache = designer_state.pkgs_cache.write().await;
             let mut graphs_cache = designer_state.graphs_cache.write().await;
 
-            let inject_ret = inject_all_pkgs_for_mock(
-                &mut pkgs_cache,
-                &mut graphs_cache,
-                all_pkgs_json_str,
-            )
-            .await;
+            let inject_ret =
+                inject_all_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, all_pkgs_json_str)
+                    .await;
             assert!(inject_ret.is_ok());
         }
 
@@ -153,10 +140,12 @@ mod tests {
 
         // Set up the test service.
         let app = test::init_service(
-            App::new().app_data(web::Data::new(designer_state.clone())).route(
-                "/test_get_app_schema_not_found",
-                web::post().to(get_app_schema_endpoint),
-            ),
+            App::new()
+                .app_data(web::Data::new(designer_state.clone()))
+                .route(
+                    "/test_get_app_schema_not_found",
+                    web::post().to(get_app_schema_endpoint),
+                ),
         )
         .await;
 
@@ -179,12 +168,8 @@ mod tests {
     async fn test_get_extension_schema_app_not_found() {
         // Set up the designer state with initial data.
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -195,10 +180,12 @@ mod tests {
 
         // Set up the test service.
         let app = test::init_service(
-            App::new().app_data(web::Data::new(designer_state.clone())).route(
-                "/test_get_app_schema_app_not_found",
-                web::post().to(get_app_schema_endpoint),
-            ),
+            App::new()
+                .app_data(web::Data::new(designer_state.clone()))
+                .route(
+                    "/test_get_app_schema_app_not_found",
+                    web::post().to(get_app_schema_endpoint),
+                ),
         )
         .await;
 

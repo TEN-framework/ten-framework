@@ -48,30 +48,25 @@ pub unsafe extern "C" fn ten_rust_create_log_config_from_json(
         Ok(log_config_json_str) => log_config_json_str,
         Err(e) => {
             if !err_msg.is_null() {
-                let err_msg_c_str = CString::new(format!(
-                    "Failed to convert log config to JSON: {e:?}"
-                ))
-                .unwrap();
+                let err_msg_c_str =
+                    CString::new(format!("Failed to convert log config to JSON: {e:?}")).unwrap();
                 *err_msg = err_msg_c_str.into_raw();
             }
             return std::ptr::null();
         }
     };
 
-    let log_config: AdvancedLogConfig =
-        match serde_json::from_str(log_config_json_str) {
-            Ok(log_config) => log_config,
-            Err(e) => {
-                if !err_msg.is_null() {
-                    let err_msg_c_str = CString::new(format!(
-                        "Failed to parse log config: {e:?}"
-                    ))
-                    .unwrap();
-                    *err_msg = err_msg_c_str.into_raw();
-                }
-                return std::ptr::null();
+    let log_config: AdvancedLogConfig = match serde_json::from_str(log_config_json_str) {
+        Ok(log_config) => log_config,
+        Err(e) => {
+            if !err_msg.is_null() {
+                let err_msg_c_str =
+                    CString::new(format!("Failed to parse log config: {e:?}")).unwrap();
+                *err_msg = err_msg_c_str.into_raw();
             }
-        };
+            return std::ptr::null();
+        }
+    };
 
     Box::into_raw(Box::new(log_config))
 }
@@ -151,11 +146,7 @@ pub extern "C" fn ten_rust_log(
     line_no: u32,
     msg: *const c_char,
 ) {
-    if config.is_null()
-        || func_name.is_null()
-        || file_name.is_null()
-        || msg.is_null()
-    {
+    if config.is_null() || func_name.is_null() || file_name.is_null() || msg.is_null() {
         return;
     }
 

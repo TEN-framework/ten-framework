@@ -25,9 +25,7 @@ use crate::{
         response::{ApiResponse, ErrorResponse, Status},
         DesignerState,
     },
-    graph::compatible::{
-        get_compatible_msg_extension, CompatibleExtensionAndMsg,
-    },
+    graph::compatible::{get_compatible_msg_extension, CompatibleExtensionAndMsg},
 };
 
 /// Represents the request payload for retrieving compatible messages.
@@ -74,21 +72,17 @@ pub struct GetCompatibleMsgsSingleResponseData {
     pub msg_name: String,
 }
 
-impl From<CompatibleExtensionAndMsg<'_>>
-    for GetCompatibleMsgsSingleResponseData
-{
+impl From<CompatibleExtensionAndMsg<'_>> for GetCompatibleMsgsSingleResponseData {
     fn from(compatible: CompatibleExtensionAndMsg) -> Self {
         match compatible.extension {
-            GraphNode::Extension { content } => {
-                GetCompatibleMsgsSingleResponseData {
-                    app: content.app.clone(),
-                    extension_group: content.extension_group.clone(),
-                    extension: content.name.clone(),
-                    msg_type: compatible.msg_type,
-                    msg_direction: compatible.msg_direction,
-                    msg_name: compatible.msg_name,
-                }
-            }
+            GraphNode::Extension { content } => GetCompatibleMsgsSingleResponseData {
+                app: content.app.clone(),
+                extension_group: content.extension_group.clone(),
+                extension: content.name.clone(),
+                msg_type: compatible.msg_type,
+                msg_direction: compatible.msg_direction,
+                msg_name: compatible.msg_name,
+            },
             _ => panic!("should not happen."),
         }
     }
@@ -137,30 +131,27 @@ pub async fn get_compatible_messages_endpoint(
             if pkgs_info_in_app.app_pkg_info.is_none() {
                 let error_response = ErrorResponse {
                     status: Status::Fail,
-                    message: "Application package information is missing"
-                        .to_string(),
+                    message: "Application package information is missing".to_string(),
                     error: None,
                 };
                 return Ok(HttpResponse::NotFound().json(error_response));
             }
 
-            let extension_graph_nodes = match get_nodes_in_graph(
-                &request_payload.graph_id,
-                &graphs_cache,
-            ) {
-                Ok(exts) => exts,
-                Err(err) => {
-                    let error_response = ErrorResponse::from_error(
-                        &err,
-                        format!(
-                            "Error fetching runtime extensions for graph '{}'",
-                            request_payload.graph_id
-                        )
-                        .as_str(),
-                    );
-                    return Ok(HttpResponse::NotFound().json(error_response));
-                }
-            };
+            let extension_graph_nodes =
+                match get_nodes_in_graph(&request_payload.graph_id, &graphs_cache) {
+                    Ok(exts) => exts,
+                    Err(err) => {
+                        let error_response = ErrorResponse::from_error(
+                            &err,
+                            format!(
+                                "Error fetching runtime extensions for graph '{}'",
+                                request_payload.graph_id
+                            )
+                            .as_str(),
+                        );
+                        return Ok(HttpResponse::NotFound().json(error_response));
+                    }
+                };
 
             let extension_graph_node = match get_extension_graph_node(
                 extension_graph_nodes,
@@ -197,17 +188,18 @@ pub async fn get_compatible_messages_endpoint(
             ) {
                 let compatible_list = match msg_ty {
                     MsgType::Cmd => {
-                        let src_cmd_schema = extension_pkg_info
-                            .schema_store
-                            .as_ref()
-                            .and_then(|schema_store| match msg_dir {
-                                MsgDirection::In => schema_store
-                                    .cmd_in
-                                    .get(request_payload.msg_name.as_str()),
-                                MsgDirection::Out => schema_store
-                                    .cmd_out
-                                    .get(request_payload.msg_name.as_str()),
-                            });
+                        let src_cmd_schema =
+                            extension_pkg_info
+                                .schema_store
+                                .as_ref()
+                                .and_then(|schema_store| match msg_dir {
+                                    MsgDirection::In => {
+                                        schema_store.cmd_in.get(request_payload.msg_name.as_str())
+                                    }
+                                    MsgDirection::Out => {
+                                        schema_store.cmd_out.get(request_payload.msg_name.as_str())
+                                    }
+                                });
 
                         match get_compatible_msg_extension(
                             extension_graph_nodes,
@@ -228,42 +220,42 @@ pub async fn get_compatible_messages_endpoint(
                                     )
                                     .as_str(),
                                 );
-                                return Ok(HttpResponse::NotFound()
-                                    .json(error_response));
+                                return Ok(HttpResponse::NotFound().json(error_response));
                             }
                         }
                     }
                     _ => {
-                        let src_msg_schema = extension_pkg_info
-                            .schema_store
-                            .as_ref()
-                            .and_then(|schema_store| match msg_ty {
-                                MsgType::Data => match msg_dir {
-                                    MsgDirection::In => schema_store
-                                        .data_in
-                                        .get(request_payload.msg_name.as_str()),
-                                    MsgDirection::Out => schema_store
-                                        .data_out
-                                        .get(request_payload.msg_name.as_str()),
-                                },
-                                MsgType::AudioFrame => match msg_dir {
-                                    MsgDirection::In => schema_store
-                                        .audio_frame_in
-                                        .get(request_payload.msg_name.as_str()),
-                                    MsgDirection::Out => schema_store
-                                        .audio_frame_out
-                                        .get(request_payload.msg_name.as_str()),
-                                },
-                                MsgType::VideoFrame => match msg_dir {
-                                    MsgDirection::In => schema_store
-                                        .video_frame_in
-                                        .get(request_payload.msg_name.as_str()),
-                                    MsgDirection::Out => schema_store
-                                        .video_frame_out
-                                        .get(request_payload.msg_name.as_str()),
-                                },
-                                _ => panic!("should not happen."),
-                            });
+                        let src_msg_schema =
+                            extension_pkg_info
+                                .schema_store
+                                .as_ref()
+                                .and_then(|schema_store| match msg_ty {
+                                    MsgType::Data => match msg_dir {
+                                        MsgDirection::In => schema_store
+                                            .data_in
+                                            .get(request_payload.msg_name.as_str()),
+                                        MsgDirection::Out => schema_store
+                                            .data_out
+                                            .get(request_payload.msg_name.as_str()),
+                                    },
+                                    MsgType::AudioFrame => match msg_dir {
+                                        MsgDirection::In => schema_store
+                                            .audio_frame_in
+                                            .get(request_payload.msg_name.as_str()),
+                                        MsgDirection::Out => schema_store
+                                            .audio_frame_out
+                                            .get(request_payload.msg_name.as_str()),
+                                    },
+                                    MsgType::VideoFrame => match msg_dir {
+                                        MsgDirection::In => schema_store
+                                            .video_frame_in
+                                            .get(request_payload.msg_name.as_str()),
+                                        MsgDirection::Out => schema_store
+                                            .video_frame_out
+                                            .get(request_payload.msg_name.as_str()),
+                                    },
+                                    _ => panic!("should not happen."),
+                                });
 
                         match get_compatible_msg_extension(
                             extension_graph_nodes,
@@ -284,8 +276,7 @@ pub async fn get_compatible_messages_endpoint(
                                     )
                                     .as_str(),
                                 );
-                                return Ok(HttpResponse::NotFound()
-                                    .json(error_response));
+                                return Ok(HttpResponse::NotFound().json(error_response));
                             }
                         }
                     }

@@ -187,9 +187,10 @@ mod tests {
 
         let result: Result<Manifest, _> = serde_json::from_str(manifest_json);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains(
-            "Locale 'en-US' must have either 'content' or 'import_uri'"
-        ));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Locale 'en-US' must have either 'content' or 'import_uri'"));
     }
 
     #[test]
@@ -210,8 +211,9 @@ mod tests {
 
         let result: Result<Manifest, _> = serde_json::from_str(manifest_json);
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains(
-            "Locale 'en-US' cannot have both 'content' and 'import_uri'"
-        ));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Locale 'en-US' cannot have both 'content' and 'import_uri'"));
     }
 }

@@ -10,6 +10,7 @@
 #include "include_internal/ten_runtime/binding/cpp/ten.h"
 #include "ten_runtime/common/status_code.h"
 #include "ten_utils/lib/thread.h"
+#include "ten_utils/macro/ctor.h"
 #include "tests/common/client/cpp/msgpack_tcp.h"
 #include "tests/ten_runtime/smoke/util/binding/cpp/check.h"
 
@@ -70,8 +71,12 @@ class graph_failed_to_create_extension__test_extension_default_extension_addon_t
 };
 
 void ____ten_addon_graph_failed_to_create_extension__test_extension_register_handler__(
-    TEN_UNUSED TEN_ADDON_TYPE addon_type, TEN_UNUSED ten_string_t *addon_name,
-    void *register_ctx, TEN_UNUSED void *user_data) {
+    ten_addon_registration_t *registration,
+    ten_addon_registration_done_func_t done_callback,
+    ten_addon_register_ctx_t *register_ctx, void *user_data) {
+  TEN_ASSERT(registration, "Invalid argument.");
+  TEN_ASSERT(done_callback, "Invalid argument.");
+
   auto *addon_instance =
       new graph_failed_to_create_extension__test_extension_default_extension_addon_t();
   ten_string_t *base_dir =
@@ -84,6 +89,9 @@ void ____ten_addon_graph_failed_to_create_extension__test_extension_register_han
       static_cast<ten_addon_t *>(addon_instance->get_c_instance()),
       register_ctx);
   ten_string_destroy(base_dir);
+
+  // Notify the caller that the addon has been registered.
+  done_callback(register_ctx, user_data);
 }
 
 TEN_CONSTRUCTOR(

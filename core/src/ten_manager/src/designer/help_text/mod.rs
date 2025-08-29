@@ -21,8 +21,7 @@ use super::locale::Locale;
 
 // Supported languages.
 const DEFAULT_LOCALE: Locale = Locale::EnUs;
-const SUPPORTED_LOCALES: [Locale; 3] =
-    [Locale::EnUs, Locale::ZhCn, Locale::ZhTw];
+const SUPPORTED_LOCALES: [Locale; 3] = [Locale::EnUs, Locale::ZhCn, Locale::ZhTw];
 
 /// Enum for help text keys.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Deserialize, Serialize)]
@@ -86,19 +85,23 @@ pub async fn get_help_text_endpoint(
     let help_text = get_help_text_for_key(&key.to_string(), locale);
 
     if let Some((text, used_locale)) = help_text {
-        let response_data =
-            GetHelpTextResponseData { key: *key, locale: used_locale, text };
+        let response_data = GetHelpTextResponseData {
+            key: *key,
+            locale: used_locale,
+            text,
+        };
 
-        let api_response =
-            ApiResponse { status: Status::Ok, data: response_data, meta: None };
+        let api_response = ApiResponse {
+            status: Status::Ok,
+            data: response_data,
+            meta: None,
+        };
 
         Ok(HttpResponse::Ok().json(api_response))
     } else {
         let error_response = ErrorResponse {
             status: Status::Fail,
-            message: format!(
-                "Help text not found for key {key} and locale {locale}"
-            ),
+            message: format!("Help text not found for key {key} and locale {locale}"),
             error: None,
         };
 
@@ -109,10 +112,7 @@ pub async fn get_help_text_endpoint(
 /// Retrieves help text for a given key and locale from the JSON file.
 /// Returns a tuple of (text, locale_used) where locale_used is the locale that
 /// was actually used (might be different from requested if fallback occurred).
-fn get_help_text_for_key(
-    key: &str,
-    requested_locale: &Locale,
-) -> Option<(String, Locale)> {
+fn get_help_text_for_key(key: &str, requested_locale: &Locale) -> Option<(String, Locale)> {
     // Parse the JSON only once and store it in the static variable.
     let help_texts = HELP_TEXTS.get_or_init(|| {
         match serde_json::from_str::<Map<String, Value>>(HELP_TEXTS_JSON) {
@@ -135,9 +135,7 @@ fn get_help_text_for_key(
             // If requested locale not found, try default locale.
             if requested_locale != &DEFAULT_LOCALE {
                 let default_locale_str = DEFAULT_LOCALE.to_string();
-                if let Some(text) =
-                    obj.get(&default_locale_str).and_then(|v| v.as_str())
-                {
+                if let Some(text) = obj.get(&default_locale_str).and_then(|v| v.as_str()) {
                     return Some((text.to_string(), DEFAULT_LOCALE));
                 }
             }
@@ -145,9 +143,7 @@ fn get_help_text_for_key(
             // If even default locale is not found, try any supported locale.
             for locale in SUPPORTED_LOCALES.iter() {
                 let locale_str = locale.to_string();
-                if let Some(text) =
-                    obj.get(&locale_str).and_then(|v| v.as_str())
-                {
+                if let Some(text) = obj.get(&locale_str).and_then(|v| v.as_str()) {
                     return Some((text.to_string(), *locale));
                 }
             }

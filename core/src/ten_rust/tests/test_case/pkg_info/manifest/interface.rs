@@ -16,8 +16,7 @@ mod tests {
         let manifest_file_path =
             Path::new("tests/test_data/extension_manifest_with_interface.json");
 
-        let manifest =
-            parse_manifest_from_file(manifest_file_path).await.unwrap();
+        let manifest = parse_manifest_from_file(manifest_file_path).await.unwrap();
 
         let api = manifest.api.as_ref().unwrap();
         assert!(api.interface.is_some());
@@ -55,12 +54,10 @@ mod tests {
     #[ignore = "Temporarily disable this test as it depends on external \
                 network which may cause timeout"]
     async fn test_extension_manifest_with_interface_remote_path() {
-        let manifest_file_path = Path::new(
-            "tests/test_data/extension_manifest_with_remote_interface.json",
-        );
+        let manifest_file_path =
+            Path::new("tests/test_data/extension_manifest_with_remote_interface.json");
 
-        let manifest =
-            parse_manifest_from_file(manifest_file_path).await.unwrap();
+        let manifest = parse_manifest_from_file(manifest_file_path).await.unwrap();
 
         let api = manifest.api.as_ref().unwrap();
         assert!(api.interface.is_some());
@@ -101,17 +98,13 @@ mod tests {
         let test_dir = temp_dir.path().to_str().unwrap().to_string();
 
         // Write the json file.
-        let foo_1_json_str =
-            include_str!("../../../test_data/interface/foo_1.json");
+        let foo_1_json_str = include_str!("../../../test_data/interface/foo_1.json");
 
-        let foo_2_json_str =
-            include_str!("../../../test_data/interface/foo_2.json");
+        let foo_2_json_str = include_str!("../../../test_data/interface/foo_2.json");
 
-        let foo_1_file_path =
-            std::path::Path::new(&test_dir).join("foo_1.json");
+        let foo_1_file_path = std::path::Path::new(&test_dir).join("foo_1.json");
 
-        let foo_2_file_path =
-            std::path::Path::new(&test_dir).join("foo_2.json");
+        let foo_2_file_path = std::path::Path::new(&test_dir).join("foo_2.json");
 
         // Write the json file to the temporary file.
         std::fs::write(&foo_1_file_path, foo_1_json_str).unwrap();
@@ -124,8 +117,7 @@ mod tests {
              json"
         );
 
-        let mut manifest: Manifest =
-            Manifest::create_from_str(manifest_str).unwrap();
+        let mut manifest: Manifest = Manifest::create_from_str(manifest_str).unwrap();
 
         let api = manifest.api.as_mut().unwrap();
         api.interface.as_mut().unwrap()[0].import_uri = interface_uri;
@@ -160,8 +152,7 @@ mod tests {
         let temp_dir = tempfile::tempdir().unwrap();
         let test_dir = temp_dir.path().to_str().unwrap().to_string();
 
-        let foo_1_file_path =
-            std::path::Path::new(&test_dir).join("foo_1.json");
+        let foo_1_file_path = std::path::Path::new(&test_dir).join("foo_1.json");
 
         let interface_uri = format!("file://{}", foo_1_file_path.display());
 
@@ -171,8 +162,7 @@ mod tests {
              json"
         );
 
-        let mut manifest: Manifest =
-            Manifest::create_from_str(manifest_str).unwrap();
+        let mut manifest: Manifest = Manifest::create_from_str(manifest_str).unwrap();
 
         let api = manifest.api.as_mut().unwrap();
         api.interface.as_mut().unwrap()[0].import_uri = interface_uri;

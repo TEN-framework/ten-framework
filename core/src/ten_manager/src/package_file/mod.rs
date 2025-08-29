@@ -17,9 +17,7 @@ use ignore::{overrides::OverrideBuilder, WalkBuilder};
 
 use ten_rust::pkg_info::constants::MANIFEST_JSON_FILENAME;
 use ten_rust::pkg_info::PkgInfo;
-use ten_rust::pkg_info::{
-    constants::TEN_PACKAGES_DIR, manifest::parse_manifest_in_folder,
-};
+use ten_rust::pkg_info::{constants::TEN_PACKAGES_DIR, manifest::parse_manifest_in_folder};
 
 use super::{constants::TEN_PACKAGE_FILE_EXTENSION, home::config::TmanConfig};
 use crate::home::config::is_verbose;
@@ -32,9 +30,7 @@ pub fn get_tpkg_file_name(pkg_info: &PkgInfo) -> Result<String> {
 
     let output_pkg_file_name = format!(
         "{}_{}{}",
-        manifest.type_and_name.name,
-        manifest.version,
-        TEN_PACKAGE_FILE_EXTENSION
+        manifest.type_and_name.name, manifest.version, TEN_PACKAGE_FILE_EXTENSION
     );
 
     Ok(output_pkg_file_name)
@@ -52,10 +48,8 @@ pub async fn create_package_tar_gz_file(
 
     // Before packing the package, first check if the content of property.json
     // is correct.
-    ten_rust::pkg_info::property::check_property_json_of_pkg(
-        &folder_to_tar_gz.to_string_lossy(),
-    )
-    .map_err(|e| {
+    ten_rust::pkg_info::property::check_property_json_of_pkg(&folder_to_tar_gz.to_string_lossy())
+        .map_err(|e| {
         anyhow::anyhow!(
             "Failed to check property.json for {}:{}, {}",
             manifest.type_and_name.pkg_type,
@@ -69,8 +63,7 @@ pub async fn create_package_tar_gz_file(
         std::fs::remove_file(output_pkg_file_path)?;
     }
 
-    let output_tar_gz_file_path_str =
-        pathbuf_to_string_lossy(output_pkg_file_path);
+    let output_tar_gz_file_path_str = pathbuf_to_string_lossy(output_pkg_file_path);
 
     // Collect files to include.
     let mut include_patterns: Option<Vec<String>> = None;
@@ -101,8 +94,7 @@ pub async fn create_package_tar_gz_file(
 
     if include_patterns.as_ref().is_none() {
         // Include all folders and files by default.
-        globset_builder
-            .add(GlobBuilder::new("*").literal_separator(false).build()?);
+        globset_builder.add(GlobBuilder::new("*").literal_separator(false).build()?);
     } else {
         for pattern in &include_patterns.unwrap() {
             // Check if pattern starts with '.' or contains '/.' to identify
@@ -110,11 +102,7 @@ pub async fn create_package_tar_gz_file(
             if pattern.starts_with('.') || pattern.contains("/.") {
                 hidden_globset_builder.add(GlobBuilder::new(pattern).build()?);
             } else {
-                globset_builder.add(
-                    GlobBuilder::new(pattern)
-                        .literal_separator(true)
-                        .build()?,
-                );
+                globset_builder.add(GlobBuilder::new(pattern).literal_separator(true).build()?);
             }
         }
     }

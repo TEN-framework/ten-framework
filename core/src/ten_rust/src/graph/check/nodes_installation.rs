@@ -59,8 +59,8 @@ impl Graph {
 
             if let Some(pkgs_info_in_app) = pkgs_info_in_app {
                 // Search for the package using the helper method.
-                let found = pkgs_info_in_app
-                    .find_pkg_by_type_and_name(PkgType::Extension, &node.addon);
+                let found =
+                    pkgs_info_in_app.find_pkg_by_type_and_name(PkgType::Extension, &node.addon);
 
                 // If the node is not found, add it to the missing packages
                 // list.

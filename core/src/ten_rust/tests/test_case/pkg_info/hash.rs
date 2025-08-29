@@ -46,8 +46,14 @@ mod tests {
         let name = "test_extension";
         let version = Version::parse("1.0.0").unwrap();
         let supports = vec![
-            ManifestSupport { os: Some(Os::Linux), arch: Some(Arch::X64) },
-            ManifestSupport { os: Some(Os::Mac), arch: Some(Arch::X64) },
+            ManifestSupport {
+                os: Some(Os::Linux),
+                arch: Some(Arch::X64),
+            },
+            ManifestSupport {
+                os: Some(Os::Mac),
+                arch: Some(Arch::X64),
+            },
         ];
 
         let hash = gen_hash_hex(&pkg_type, name, &version, &supports);
@@ -64,16 +70,10 @@ mod tests {
             .map(|support| {
                 let mut support_obj = serde_json::Map::new();
                 if let Some(os) = &support.os {
-                    support_obj.insert(
-                        "os".to_string(),
-                        Value::String(os.to_string()),
-                    );
+                    support_obj.insert("os".to_string(), Value::String(os.to_string()));
                 }
                 if let Some(arch) = &support.arch {
-                    support_obj.insert(
-                        "arch".to_string(),
-                        Value::String(arch.to_string()),
-                    );
+                    support_obj.insert("arch".to_string(), Value::String(arch.to_string()));
                 }
                 Value::Object(support_obj)
             })
@@ -139,16 +139,10 @@ mod tests {
             .map(|support| {
                 let mut support_obj = serde_json::Map::new();
                 if let Some(os) = &support.os {
-                    support_obj.insert(
-                        "os".to_string(),
-                        Value::String(os.to_string()),
-                    );
+                    support_obj.insert("os".to_string(), Value::String(os.to_string()));
                 }
                 if let Some(arch) = &support.arch {
-                    support_obj.insert(
-                        "arch".to_string(),
-                        Value::String(arch.to_string()),
-                    );
+                    support_obj.insert("arch".to_string(), Value::String(arch.to_string()));
                 }
                 Value::Object(support_obj)
             })
@@ -194,16 +188,10 @@ mod tests {
             .map(|support| {
                 let mut support_obj = serde_json::Map::new();
                 if let Some(os) = &support.os {
-                    support_obj.insert(
-                        "os".to_string(),
-                        Value::String(os.to_string()),
-                    );
+                    support_obj.insert("os".to_string(), Value::String(os.to_string()));
                 }
                 if let Some(arch) = &support.arch {
-                    support_obj.insert(
-                        "arch".to_string(),
-                        Value::String(arch.to_string()),
-                    );
+                    support_obj.insert("arch".to_string(), Value::String(arch.to_string()));
                 }
                 Value::Object(support_obj)
             })

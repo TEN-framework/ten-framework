@@ -140,9 +140,7 @@ pub fn update_graph_endpoint(
     exposed_properties: &[ten_rust::graph::GraphExposedProperty],
 ) -> Result<()> {
     // Find the graph info by ID
-    if let Some(graph_info) =
-        graphs_cache_find_by_id_mut(graphs_cache, graph_id)
-    {
+    if let Some(graph_info) = graphs_cache_find_by_id_mut(graphs_cache, graph_id) {
         // Access the graph and update it
         replace_graph_nodes_and_connections(
             graph_info.graph.graph_mut(),
@@ -162,11 +160,6 @@ pub fn update_graph_in_property_json_file(
     graphs_cache: &HashMap<Uuid, GraphInfo>,
     old_graphs_cache: &HashMap<Uuid, GraphInfo>,
 ) -> Result<()> {
-    patch_property_json_file(
-        pkg_url,
-        property,
-        graphs_cache,
-        old_graphs_cache,
-    )?;
+    patch_property_json_file(pkg_url, property, graphs_cache, old_graphs_cache)?;
     Ok(())
 }

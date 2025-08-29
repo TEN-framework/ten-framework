@@ -4,5 +4,4 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-pub const TMAN_CONFIG_SCHEMA: &str =
-    include_str!("./data/config_file.schema.json");
+pub const TMAN_CONFIG_SCHEMA: &str = include_str!("./data/config_file.schema.json");

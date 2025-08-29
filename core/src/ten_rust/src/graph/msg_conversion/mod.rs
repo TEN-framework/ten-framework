@@ -91,9 +91,7 @@ impl MsgConversionRule {
                 // Ensure original_path is not empty when provided.
                 if let Some(original_path) = &self.original_path {
                     if original_path.is_empty() {
-                        return Err(anyhow::anyhow!(
-                            "original_path cannot be empty"
-                        ));
+                        return Err(anyhow::anyhow!("original_path cannot be empty"));
                     }
                 }
             }
@@ -119,9 +117,7 @@ fn serialize_keep_original(opt: &Option<bool>) -> bool {
     !opt.unwrap_or(false)
 }
 
-fn deserialize_keep_original<'de, D>(
-    deserializer: D,
-) -> Result<Option<bool>, D::Error>
+fn deserialize_keep_original<'de, D>(deserializer: D) -> Result<Option<bool>, D::Error>
 where
     D: serde::Deserializer<'de>,
 {
@@ -178,16 +174,15 @@ impl MsgAndResultConversion {
     pub fn validate(&self) -> Result<()> {
         // Validate the message conversion configuration.
         if let Some(msg) = &self.msg {
-            msg.validate().map_err(|e| {
-                anyhow::anyhow!("invalid message conversion: {}", e)
-            })?;
+            msg.validate()
+                .map_err(|e| anyhow::anyhow!("invalid message conversion: {}", e))?;
         }
 
         // Validate the result conversion configuration if present.
         if let Some(result) = &self.result {
-            result.validate().map_err(|e| {
-                anyhow::anyhow!("invalid result conversion: {}", e)
-            })?;
+            result
+                .validate()
+                .map_err(|e| anyhow::anyhow!("invalid result conversion: {}", e))?;
         }
 
         Ok(())

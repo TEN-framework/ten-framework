@@ -25,8 +25,7 @@ pub fn sync_to_disk(file: &std::fs::File) -> Result<()> {
         // Windows equivalent of fsync is FlushFileBuffers.
         use std::os::windows::io::AsRawHandle;
 
-        if winapi::um::fileapi::FlushFileBuffers(file.as_raw_handle() as _) == 0
-        {
+        if winapi::um::fileapi::FlushFileBuffers(file.as_raw_handle() as _) == 0 {
             return Err(anyhow::anyhow!(
                 "FlushFileBuffers failed with error code: {}",
                 std::io::Error::last_os_error()

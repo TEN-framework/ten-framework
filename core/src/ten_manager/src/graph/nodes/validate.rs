@@ -17,9 +17,7 @@ fn validate_extension_property_internal(
 ) -> Result<(), String> {
     // Found matching extension - check property schema if it exists and request
     // has property.
-    if let (Some(prop), Some(schema_store)) =
-        (property, &extension_pkg_info.schema_store)
-    {
+    if let (Some(prop), Some(schema_store)) = (property, &extension_pkg_info.schema_store) {
         if let Some(property_schema) = &schema_store.property {
             if let Err(e) = property_schema.validate_json(prop) {
                 return Err(format!("Property validation failed: {e}"));
@@ -37,12 +35,9 @@ pub fn validate_extension_property(
     graph_app_base_dir: &Option<String>,
     pkgs_cache: &HashMap<String, PkgsInfoInApp>,
 ) -> Result<(), String> {
-    if let Some(extension_pkg_info) = get_pkg_info_for_extension_addon(
-        pkgs_cache,
-        graph_app_base_dir,
-        app,
-        addon,
-    ) {
+    if let Some(extension_pkg_info) =
+        get_pkg_info_for_extension_addon(pkgs_cache, graph_app_base_dir, app, addon)
+    {
         // Validate the request payload before proceeding.
         validate_extension_property_internal(property, extension_pkg_info)?
     };

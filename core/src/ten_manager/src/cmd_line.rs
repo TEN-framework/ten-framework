@@ -32,21 +32,20 @@ pub struct ParsedCmd {
 pub fn get_args_cfg() -> ArgsCfg {
     ArgsCfg {
         pkg_type: ArgCfg {
-            possible_values: [
-                "system",
-                "protocol",
-                "addon_loader",
-                "extension",
-                "app",
-            ]
-            .to_vec(),
+            possible_values: ["system", "protocol", "addon_loader", "extension", "app"].to_vec(),
         },
-        os: ArgCfg { possible_values: ["linux", "mac", "win"].to_vec() },
+        os: ArgCfg {
+            possible_values: ["linux", "mac", "win"].to_vec(),
+        },
         arch: ArgCfg {
             possible_values: ["x86", "x64", "arm", "arm64"].to_vec(),
         },
-        build_type: ArgCfg { possible_values: ["debug", "release"].to_vec() },
-        _language: ArgCfg { possible_values: ["cpp", "go"].to_vec() },
+        build_type: ArgCfg {
+            possible_values: ["debug", "release"].to_vec(),
+        },
+        _language: ArgCfg {
+            possible_values: ["cpp", "go"].to_vec(),
+        },
     }
 }
 
@@ -137,24 +136,26 @@ pub fn parse_cmd() -> Result<ParsedCmd> {
     // values, and defaults.
     let tman_config = TmanConfig {
         config_file: config_file_path.or(default_config.config_file),
-        admin_token: matches.get_one::<String>("ADMIN_TOKEN").cloned().or_else(
-            || {
+        admin_token: matches
+            .get_one::<String>("ADMIN_TOKEN")
+            .cloned()
+            .or_else(|| {
                 if let Some(tman_config_file) = &tman_config_file {
                     tman_config_file.admin_token.clone()
                 } else {
                     default_config.admin_token
                 }
-            },
-        ),
-        user_token: matches.get_one::<String>("USER_TOKEN").cloned().or_else(
-            || {
+            }),
+        user_token: matches
+            .get_one::<String>("USER_TOKEN")
+            .cloned()
+            .or_else(|| {
                 if let Some(tman_config_file) = &tman_config_file {
                     tman_config_file.user_token.clone()
                 } else {
                     default_config.user_token
                 }
-            },
-        ),
+            }),
         verbose: matches.get_flag("VERBOSE"),
         assume_yes: matches.get_flag("ASSUME_YES"),
         registry: if let Some(tman_config_file) = &tman_config_file {
@@ -181,51 +182,50 @@ pub fn parse_cmd() -> Result<ParsedCmd> {
     }
 
     // Parse subcommands and their arguments.
-    let command_data =
-        if let Some((subcommand, sub_cmd_args)) = matches.subcommand() {
-            match subcommand {
-                "create" => crate::cmd::CommandData::Create(
-                    crate::cmd::cmd_create::parse_sub_cmd(sub_cmd_args)?,
-                ),
-                "install" => crate::cmd::CommandData::Install(
-                    crate::cmd::cmd_install::parse_sub_cmd(sub_cmd_args)?,
-                ),
-                "fetch" => crate::cmd::CommandData::Fetch(
-                    crate::cmd::cmd_fetch::parse_sub_cmd(sub_cmd_args)?,
-                ),
-                "uninstall" => crate::cmd::CommandData::Uninstall(
-                    crate::cmd::cmd_uninstall::parse_sub_cmd(sub_cmd_args)?,
-                ),
-                "package" => crate::cmd::CommandData::Package(
-                    crate::cmd::cmd_package::parse_sub_cmd(sub_cmd_args)?,
-                ),
-                "publish" => crate::cmd::CommandData::Publish(
-                    crate::cmd::cmd_publish::parse_sub_cmd(sub_cmd_args)?,
-                ),
-                "designer" => crate::cmd::CommandData::Designer(
-                    crate::cmd::cmd_designer::parse_sub_cmd(sub_cmd_args)?,
-                ),
-                "check" => crate::cmd::CommandData::Check(
-                    crate::cmd::cmd_check::parse_sub_cmd(sub_cmd_args)?,
-                ),
-                "modify" => crate::cmd::CommandData::Modify(
-                    crate::cmd::cmd_modify::parse_sub_cmd(sub_cmd_args)?,
-                ),
-                "run" => crate::cmd::CommandData::Run(
-                    crate::cmd::cmd_run::parse_sub_cmd(sub_cmd_args)?,
-                ),
-                "completion" => crate::cmd::CommandData::Completion(
-                    crate::cmd::cmd_completion::parse_sub_cmd(sub_cmd_args)?,
-                ),
-                // Hidden commands.
-                "delete" => crate::cmd::CommandData::Delete(
-                    crate::cmd::cmd_delete::parse_sub_cmd(sub_cmd_args)?,
-                ),
-                _ => unreachable!("Command not found"),
+    let command_data = if let Some((subcommand, sub_cmd_args)) = matches.subcommand() {
+        match subcommand {
+            "create" => crate::cmd::CommandData::Create(crate::cmd::cmd_create::parse_sub_cmd(
+                sub_cmd_args,
+            )?),
+            "install" => crate::cmd::CommandData::Install(crate::cmd::cmd_install::parse_sub_cmd(
+                sub_cmd_args,
+            )?),
+            "fetch" => {
+                crate::cmd::CommandData::Fetch(crate::cmd::cmd_fetch::parse_sub_cmd(sub_cmd_args)?)
             }
-        } else {
-            return Err(anyhow::anyhow!("No subcommand provided"));
-        };
+            "uninstall" => crate::cmd::CommandData::Uninstall(
+                crate::cmd::cmd_uninstall::parse_sub_cmd(sub_cmd_args)?,
+            ),
+            "package" => crate::cmd::CommandData::Package(crate::cmd::cmd_package::parse_sub_cmd(
+                sub_cmd_args,
+            )?),
+            "publish" => crate::cmd::CommandData::Publish(crate::cmd::cmd_publish::parse_sub_cmd(
+                sub_cmd_args,
+            )?),
+            "designer" => crate::cmd::CommandData::Designer(
+                crate::cmd::cmd_designer::parse_sub_cmd(sub_cmd_args)?,
+            ),
+            "check" => {
+                crate::cmd::CommandData::Check(crate::cmd::cmd_check::parse_sub_cmd(sub_cmd_args)?)
+            }
+            "modify" => crate::cmd::CommandData::Modify(crate::cmd::cmd_modify::parse_sub_cmd(
+                sub_cmd_args,
+            )?),
+            "run" => {
+                crate::cmd::CommandData::Run(crate::cmd::cmd_run::parse_sub_cmd(sub_cmd_args)?)
+            }
+            "completion" => crate::cmd::CommandData::Completion(
+                crate::cmd::cmd_completion::parse_sub_cmd(sub_cmd_args)?,
+            ),
+            // Hidden commands.
+            "delete" => crate::cmd::CommandData::Delete(crate::cmd::cmd_delete::parse_sub_cmd(
+                sub_cmd_args,
+            )?),
+            _ => unreachable!("Command not found"),
+        }
+    } else {
+        return Err(anyhow::anyhow!("No subcommand provided"));
+    };
 
     // Return the fully constructed ParsedCmd.
     Ok(ParsedCmd {

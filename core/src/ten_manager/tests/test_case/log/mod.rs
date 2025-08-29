@@ -43,8 +43,7 @@ mod tests {
 
     #[test]
     fn test_parse_graph_resources_log_with_extension_threads() {
-        let log_message =
-            "05-02 20:29:25.233 1565912(1565927) M \
+        let log_message = "05-02 20:29:25.233 1565912(1565927) M \
              ten_extension_thread_log_graph_resources@extension_thread.c:550 \
              [graph resources] {\"app_base_dir\": \"xxx\", \"app_uri\": \
              \"msgpack://127.0.0.1:8001/\", \"graph_id\": \
@@ -72,10 +71,14 @@ mod tests {
             Some("msgpack://127.0.0.1:8001/".to_string())
         );
 
-        assert!(graph_resources_log.extension_threads.contains_key("1565927"));
+        assert!(graph_resources_log
+            .extension_threads
+            .contains_key("1565927"));
 
-        let thread_info =
-            graph_resources_log.extension_threads.get("1565927").unwrap();
+        let thread_info = graph_resources_log
+            .extension_threads
+            .get("1565927")
+            .unwrap();
         assert_eq!(thread_info.extensions.len(), 1);
         assert_eq!(thread_info.extensions[0], "test_extension");
     }
@@ -152,9 +155,7 @@ mod tests {
             .map(|log| {
                 log.split_once('[')
                     .and_then(|(_, rest)| rest.split_once(']'))
-                    .map(|(extension_name, _)| {
-                        extension_name.trim().to_string()
-                    })
+                    .map(|(extension_name, _)| extension_name.trim().to_string())
             })
             .collect();
 

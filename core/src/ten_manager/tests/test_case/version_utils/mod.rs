@@ -27,10 +27,8 @@ mod tests {
         let version_str = "0.8.0-rc.1";
         let req_str = "^0.8.0-rc.1";
 
-        let req = VersionReq::parse(req_str)
-            .expect("Failed to parse version requirement");
-        let version =
-            Version::parse(version_str).expect("Failed to parse version");
+        let req = VersionReq::parse(req_str).expect("Failed to parse version requirement");
+        let version = Version::parse(version_str).expect("Failed to parse version");
 
         assert!(
             req.matches(&version),
@@ -43,10 +41,8 @@ mod tests {
         let version_str = "0.8.0-rc.1";
         let req_str = "=0.8.0-rc.1";
 
-        let req = VersionReq::parse(req_str)
-            .expect("Failed to parse version requirement");
-        let version =
-            Version::parse(version_str).expect("Failed to parse version");
+        let req = VersionReq::parse(req_str).expect("Failed to parse version requirement");
+        let version = Version::parse(version_str).expect("Failed to parse version");
 
         assert!(
             req.matches(&version),

@@ -21,9 +21,7 @@ use crate::{
 
 use super::DesignerState;
 
-#[derive(
-    Deserialize, Serialize, Debug, EnumString, Display, Clone, PartialEq,
-)]
+#[derive(Deserialize, Serialize, Debug, EnumString, Display, Clone, PartialEq)]
 #[strum(serialize_all = "lowercase")]
 pub enum TemplateLanguage {
     #[serde(rename = "cpp")]
@@ -60,8 +58,7 @@ pub async fn get_template_endpoint(
     request_payload: web::Json<GetTemplateRequestPayload>,
     state: web::Data<Arc<DesignerState>>,
 ) -> Result<impl Responder, actix_web::Error> {
-    let GetTemplateRequestPayload { pkg_type, language } =
-        request_payload.into_inner();
+    let GetTemplateRequestPayload { pkg_type, language } = request_payload.into_inner();
 
     // Clone the language for later use in error messages.
     let language_clone = language.clone();
@@ -109,10 +106,8 @@ pub async fn get_template_endpoint(
                 );
 
                 let error = anyhow!(error_message);
-                let error_response = ErrorResponse::from_error(
-                    &error,
-                    "Unsupported template combination",
-                );
+                let error_response =
+                    ErrorResponse::from_error(&error, "Unsupported template combination");
 
                 return Ok(HttpResponse::BadRequest().json(error_response));
             }
@@ -132,8 +127,7 @@ pub async fn get_template_endpoint(
             );
 
             let error = anyhow!(error_message);
-            let error_response =
-                ErrorResponse::from_error(&error, "Failed to fetch templates");
+            let error_response = ErrorResponse::from_error(&error, "Failed to fetch templates");
 
             Ok(HttpResponse::InternalServerError().json(error_response))
         }

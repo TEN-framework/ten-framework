@@ -51,15 +51,13 @@ impl Default for TmanConfig {
     fn default() -> Self {
         let mut registry = HashMap::new();
 
-        registry
-            .entry(DEFAULT.to_string())
-            .or_insert(Registry { index: DEFAULT_REGISTRY.to_string() });
+        registry.entry(DEFAULT.to_string()).or_insert(Registry {
+            index: DEFAULT_REGISTRY.to_string(),
+        });
 
         Self {
             registry,
-            config_file: Some(
-                get_home_config_path().to_string_lossy().to_string(),
-            ),
+            config_file: Some(get_home_config_path().to_string_lossy().to_string()),
             admin_token: None,
             user_token: None,
             verbose: false,
@@ -79,9 +77,7 @@ pub fn get_home_config_path() -> PathBuf {
 }
 
 // Read the configuration from the specified path.
-pub fn read_config(
-    config_file_path: &Option<String>,
-) -> Result<Option<TmanConfigFile>> {
+pub fn read_config(config_file_path: &Option<String>) -> Result<Option<TmanConfigFile>> {
     let config_path = match config_file_path {
         Some(path) => PathBuf::from(path),
         None => get_home_config_path(),
@@ -95,25 +91,16 @@ pub fn read_config(
                 Ok(config_json) => {
                     // Validate the config against schema.
                     if let Err(e) = validate_tman_config(&config_json) {
-                        return Err(anyhow::anyhow!(
-                            "Failed to validate config file: {}",
-                            e
-                        ));
+                        return Err(anyhow::anyhow!("Failed to validate config file: {}", e));
                     }
 
                     // Parse the config.
-                    match serde_json::from_value::<TmanConfigFile>(config_json)
-                    {
+                    match serde_json::from_value::<TmanConfigFile>(config_json) {
                         Ok(config) => Ok(Some(config)),
-                        Err(e) => Err(anyhow::anyhow!(
-                            "Failed to parse config file: {}",
-                            e
-                        )),
+                        Err(e) => Err(anyhow::anyhow!("Failed to parse config file: {}", e)),
                     }
                 }
-                Err(e) => {
-                    Err(anyhow::anyhow!("Failed to parse config file: {}", e))
-                }
+                Err(e) => Err(anyhow::anyhow!("Failed to parse config file: {}", e)),
             },
             Err(e) => Err(anyhow::anyhow!("Failed to read config file: {}", e)),
         }
@@ -122,8 +109,6 @@ pub fn read_config(
     }
 }
 
-pub async fn is_verbose(
-    tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
-) -> bool {
+pub async fn is_verbose(tman_config: Arc<tokio::sync::RwLock<TmanConfig>>) -> bool {
     tman_config.read().await.verbose
 }

@@ -11,8 +11,7 @@ use actix_web::{http::StatusCode, test, web};
 use ten_manager::{
     designer::{
         help_text::{
-            get_help_text_endpoint, GetHelpTextRequestPayload,
-            GetHelpTextResponseData, HelpTextKey,
+            get_help_text_endpoint, GetHelpTextRequestPayload, GetHelpTextResponseData, HelpTextKey,
         },
         locale::Locale,
         response::ApiResponse,
@@ -34,9 +33,7 @@ async fn test_get_help_text_success() {
     // Get mock state.
     let designer_state = DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-            TmanStorageInMemory::default(),
-        )),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -53,8 +50,10 @@ async fn test_get_help_text_success() {
     .await;
 
     // Make the request.
-    let req =
-        test::TestRequest::post().uri("/help").set_json(&payload).to_request();
+    let req = test::TestRequest::post()
+        .uri("/help")
+        .set_json(&payload)
+        .to_request();
 
     let resp = test::call_service(&app, req).await;
 
@@ -63,8 +62,7 @@ async fn test_get_help_text_success() {
 
     // Extract and check the response body.
     let body = test::read_body(resp).await;
-    let result: ApiResponse<GetHelpTextResponseData> =
-        serde_json::from_slice(&body).unwrap();
+    let result: ApiResponse<GetHelpTextResponseData> = serde_json::from_slice(&body).unwrap();
 
     // Assert data.
     assert_eq!(result.data.key, HelpTextKey::TenAgent);
@@ -83,9 +81,7 @@ async fn test_get_help_text_chinese() {
     // Get mock state.
     let designer_state = DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-            TmanStorageInMemory::default(),
-        )),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -102,8 +98,10 @@ async fn test_get_help_text_chinese() {
     .await;
 
     // Make the request.
-    let req =
-        test::TestRequest::post().uri("/help").set_json(&payload).to_request();
+    let req = test::TestRequest::post()
+        .uri("/help")
+        .set_json(&payload)
+        .to_request();
 
     let resp = test::call_service(&app, req).await;
 
@@ -112,8 +110,7 @@ async fn test_get_help_text_chinese() {
 
     // Extract and check the response body.
     let body = test::read_body(resp).await;
-    let result: ApiResponse<GetHelpTextResponseData> =
-        serde_json::from_slice(&body).unwrap();
+    let result: ApiResponse<GetHelpTextResponseData> = serde_json::from_slice(&body).unwrap();
 
     // Assert data.
     assert_eq!(result.data.key, HelpTextKey::TenAgent);
@@ -134,9 +131,7 @@ async fn test_get_help_text_language_fallback() {
     // Get mock state.
     let designer_state = DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-            TmanStorageInMemory::default(),
-        )),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -153,8 +148,10 @@ async fn test_get_help_text_language_fallback() {
     .await;
 
     // Make the request.
-    let req =
-        test::TestRequest::post().uri("/help").set_json(&payload).to_request();
+    let req = test::TestRequest::post()
+        .uri("/help")
+        .set_json(&payload)
+        .to_request();
 
     let resp = test::call_service(&app, req).await;
 
@@ -163,8 +160,7 @@ async fn test_get_help_text_language_fallback() {
 
     // Extract and check the response body.
     let body = test::read_body(resp).await;
-    let result: ApiResponse<GetHelpTextResponseData> =
-        serde_json::from_slice(&body).unwrap();
+    let result: ApiResponse<GetHelpTextResponseData> = serde_json::from_slice(&body).unwrap();
 
     // Assert data - should fall back to another locale.
     assert_eq!(result.data.key, HelpTextKey::TenFramework);
@@ -183,9 +179,7 @@ async fn test_get_help_text_not_found() {
     // Get mock state.
     let designer_state = DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-            TmanStorageInMemory::default(),
-        )),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -202,8 +196,10 @@ async fn test_get_help_text_not_found() {
     .await;
 
     // Make the request.
-    let req =
-        test::TestRequest::post().uri("/help").set_json(&payload).to_request();
+    let req = test::TestRequest::post()
+        .uri("/help")
+        .set_json(&payload)
+        .to_request();
 
     let resp = test::call_service(&app, req).await;
 
@@ -216,8 +212,7 @@ async fn test_default_locale() {
     // Test the default_locale function indirectly by deserializing JSON without
     // a locale field.
     let json = r#"{"key": "ten_agent"}"#;
-    let request: GetHelpTextRequestPayload =
-        serde_json::from_str(json).unwrap();
+    let request: GetHelpTextRequestPayload = serde_json::from_str(json).unwrap();
 
     assert_eq!(request.locale, Locale::EnUs);
 }

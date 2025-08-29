@@ -12,9 +12,7 @@ mod tests {
 
     use ten_manager::{
         designer::{
-            registry::packages::{
-                get_packages_endpoint, GetPackagesResponseData,
-            },
+            registry::packages::{get_packages_endpoint, GetPackagesResponseData},
             response::{ApiResponse, Status},
             storage::in_memory::TmanStorageInMemory,
             DesignerState,
@@ -29,11 +27,10 @@ mod tests {
     #[actix_rt::test]
     async fn test_get_packages_success() {
         // Start the http server and get its address.
-        let server_addr =
-            start_test_server("/api/designer/v1/packages", || {
-                web::get().to(get_packages_endpoint)
-            })
-            .await;
+        let server_addr = start_test_server("/api/designer/v1/packages", || {
+            web::get().to(get_packages_endpoint)
+        })
+        .await;
         println!("Server started at: {server_addr}");
 
         // Create query parameters
@@ -55,8 +52,11 @@ mod tests {
         println!("Sending request to URL: {url}");
 
         // Send the GET request with query parameters.
-        let response =
-            client.get(&url).send().await.expect("Failed to send request");
+        let response = client
+            .get(&url)
+            .send()
+            .await
+            .expect("Failed to send request");
 
         assert_eq!(response.status(), 200);
         let body = response.text().await.expect("Failed to read response");
@@ -66,12 +66,8 @@ mod tests {
     #[actix_rt::test]
     async fn test_get_packages_from_remote_registry() {
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -80,10 +76,12 @@ mod tests {
         let designer_state = Arc::new(designer_state);
 
         let app = test::init_service(
-            App::new().app_data(web::Data::new(designer_state.clone())).route(
-                "/api/designer/v1/registry/packages",
-                web::get().to(get_packages_endpoint),
-            ),
+            App::new()
+                .app_data(web::Data::new(designer_state.clone()))
+                .route(
+                    "/api/designer/v1/registry/packages",
+                    web::get().to(get_packages_endpoint),
+                ),
         )
         .await;
 
@@ -129,9 +127,7 @@ mod tests {
                 verbose: true,
                 ..TmanConfig::default()
             })),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -140,10 +136,12 @@ mod tests {
         let designer_state = Arc::new(designer_state);
 
         let app = test::init_service(
-            App::new().app_data(web::Data::new(designer_state.clone())).route(
-                "/api/designer/v1/registry/packages",
-                web::get().to(get_packages_endpoint),
-            ),
+            App::new()
+                .app_data(web::Data::new(designer_state.clone()))
+                .route(
+                    "/api/designer/v1/registry/packages",
+                    web::get().to(get_packages_endpoint),
+                ),
         )
         .await;
 

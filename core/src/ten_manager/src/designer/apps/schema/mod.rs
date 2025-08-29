@@ -32,35 +32,24 @@ pub async fn get_app_schema_endpoint(
 ) -> Result<impl Responder, actix_web::Error> {
     let pkgs_cache = state.pkgs_cache.read().await;
 
-    if let Some(pkgs_info_in_app) =
-        pkgs_cache.get(&request_payload.app_base_dir)
-    {
+    if let Some(pkgs_info_in_app) = pkgs_cache.get(&request_payload.app_base_dir) {
         if let Some(app_pkg_info) = &pkgs_info_in_app.app_pkg_info {
             let response = ApiResponse {
                 status: Status::Ok,
                 data: GetAppSchemaResponseData {
-                    schema: app_pkg_info
-                        .manifest
-                        .get_flattened_api()
-                        .await
-                        .unwrap(),
+                    schema: app_pkg_info.manifest.get_flattened_api().await.unwrap(),
                 },
                 meta: None,
             };
 
             Ok(HttpResponse::Ok().json(response))
         } else {
-            let error_response = ErrorResponse::from_error(
-                &anyhow!("App not found"),
-                "App not found",
-            );
+            let error_response =
+                ErrorResponse::from_error(&anyhow!("App not found"), "App not found");
             Ok(HttpResponse::NotFound().json(error_response))
         }
     } else {
-        let error_response = ErrorResponse::from_error(
-            &anyhow!("App not found"),
-            "App not found",
-        );
+        let error_response = ErrorResponse::from_error(&anyhow!("App not found"), "App not found");
         Ok(HttpResponse::NotFound().json(error_response))
     }
 }

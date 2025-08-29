@@ -18,10 +18,8 @@ use crate::test_case::common::builtin_server::start_test_server;
 #[actix_rt::test]
 async fn test_ws_terminal_endpoint() {
     // Start the WebSocket server and get its address.
-    let server_addr = start_test_server("/ws/terminal", || {
-        web::get().to(ws_terminal_endpoint)
-    })
-    .await;
+    let server_addr =
+        start_test_server("/ws/terminal", || web::get().to(ws_terminal_endpoint)).await;
     println!("Server started at: {server_addr}");
 
     // Connect WebSocket client to the server.
@@ -41,11 +39,7 @@ async fn test_ws_terminal_endpoint() {
     while let Some(Ok(message)) = read.next().await {
         match message {
             Message::Text(text) => {
-                println!(
-                    "Received initial message #{}: {}",
-                    message_count + 1,
-                    text
-                );
+                println!("Received initial message #{}: {}", message_count + 1, text);
                 message_count += 1;
                 has_welcome_message = true;
 
@@ -92,7 +86,10 @@ async fn test_ws_terminal_endpoint() {
     #[cfg(not(target_os = "windows"))]
     let exit_command = "exit\n";
 
-    write.send(Message::Text(exit_command.into())).await.unwrap();
+    write
+        .send(Message::Text(exit_command.into()))
+        .await
+        .unwrap();
     println!("Sent exit command to close the terminal");
 
     // Read responses until we get an exit message or timeout.
