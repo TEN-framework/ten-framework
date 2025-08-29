@@ -167,6 +167,10 @@ jobs:
             ten_packages/extension/default_extension_go \
             ten_packages/extension/default_extension_python \
             ten_packages/extension/default_async_extension_python \
+            ten_packages/extension/default_asr_extension_python \
+            ten_packages/extension/default_llm_extension_python \
+            ten_packages/extension/default_tts_extension_python \
+            ten_packages/extension/default_mllm_extension_python \
             ten_packages/extension/default_extension_nodejs \
             ten_packages/addon_loader/python_addon_loader \
             ten_packages/addon_loader/nodejs_addon_loader
@@ -241,6 +245,10 @@ jobs:
             "ten_packages/extension/default_extension_go"
             "ten_packages/extension/default_extension_python"
             "ten_packages/extension/default_async_extension_python"
+            "ten_packages/extension/default_asr_extension_python"
+            "ten_packages/extension/default_llm_extension_python"
+            "ten_packages/extension/default_tts_extension_python"
+            "ten_packages/extension/default_mllm_extension_python"
             "ten_packages/extension/default_extension_nodejs"
             "ten_packages/addon_loader/python_addon_loader"
             "ten_packages/addon_loader/nodejs_addon_loader"
