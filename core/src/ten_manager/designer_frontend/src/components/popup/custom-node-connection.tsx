@@ -20,7 +20,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CustomNodeConnectionButton } from "@/flow/edge/button";
 import { identifier2data, type TCustomNodeData } from "@/lib/identifier";
 import { useFlowStore } from "@/store/flow";
-import type { EConnectionType, IGraph } from "@/types/graphs";
+import type { EConnectionType, GraphInfo } from "@/types/graphs";
 import type {
   ICustomConnectionWidget,
   ICustomConnectionWidgetData,
@@ -89,7 +89,7 @@ function EdgeInfoContent(props: {
     source?: boolean;
     target?: boolean;
   };
-  graph: IGraph;
+  graph: GraphInfo;
 }) {
   const { source, target, filters: initialFilters, graph } = props;
   const [filters, setFilters] = React.useState<TFilterItem[]>(() => {
@@ -186,7 +186,7 @@ function CustomNodeConnContent(props: {
     source?: boolean;
     target?: boolean;
   };
-  graph: IGraph;
+  graph: GraphInfo;
 }) {
   const { source, filters: initialFilters, graph } = props;
   const [filters, setFilters] = React.useState<TFilterItem[]>(() => {

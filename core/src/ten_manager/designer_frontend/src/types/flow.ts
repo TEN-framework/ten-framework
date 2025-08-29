@@ -5,7 +5,11 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 import type { Edge, Node } from "@xyflow/react";
-import type { EConnectionType, IBackendNode, IGraph } from "@/types/graphs";
+import type {
+  BackendNodeExtension,
+  EConnectionType,
+  GraphInfo,
+} from "@/types/graphs";
 
 export enum ECustomNodeType {
   GRAPH = "graph",
@@ -14,9 +18,9 @@ export enum ECustomNodeType {
   SUB_GRAPH = "sub-graph",
 }
 
-export interface IExtensionNodeData extends IBackendNode {
+export interface IExtensionNodeData extends BackendNodeExtension {
   _type: ECustomNodeType.EXTENSION;
-  graph: IGraph;
+  graph: GraphInfo;
   src: Record<EConnectionType, TCustomEdgeAddressData[]>;
   target: Record<EConnectionType, TCustomEdgeAddressData[]>;
   url?: string; // ? need to be removed(ws)
@@ -26,12 +30,32 @@ export type TExtensionNode = Node<IExtensionNodeData, "extensionNode">;
 
 export interface IGraphNodeData {
   _type: ECustomNodeType.GRAPH;
-  graph: IGraph;
+  graph: GraphInfo;
   [key: string]: unknown;
 }
 export type TGraphNode = Node<IGraphNodeData, "graphNode">;
 
-export type TCustomNode = TGraphNode | TExtensionNode;
+// todo: refine it
+export interface ISelectorNodeData {
+  _type: ECustomNodeType.SELECTOR;
+  graph: GraphInfo;
+  [key: string]: unknown;
+}
+export type TSelectorNode = Node<ISelectorNodeData, "selectorNode">;
+
+// todo: refine it
+export interface ISubGraphNodeData {
+  _type: ECustomNodeType.SUB_GRAPH;
+  graph: GraphInfo;
+  [key: string]: unknown;
+}
+export type TSubGraphNode = Node<ISubGraphNodeData, "subGraphNode">;
+
+export type TCustomNode =
+  | TGraphNode
+  | TExtensionNode
+  | TSelectorNode
+  | TSubGraphNode;
 
 export type TCustomEdgeAddress = {
   extension: string;
@@ -47,14 +71,14 @@ export type TCustomEdgeData = {
   src: TCustomEdgeAddress;
   target: TCustomEdgeAddress;
   name: string;
-  graph: IGraph;
+  graph: GraphInfo;
 };
 
 export type TCustomEdgeAddressData = {
   src: TCustomEdgeAddress;
   target: TCustomEdgeAddress;
   name: string;
-  graph: IGraph;
+  graph: GraphInfo;
 };
 
 export type TCustomEdgeAddressMap = Record<
