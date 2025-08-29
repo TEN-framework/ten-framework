@@ -69,7 +69,7 @@ import {
 } from "@/types/graphs";
 
 const GraphAddNodePropertyField = (props: {
-  base_dir?: string;
+  base_dir?: string | null;
   addon: string;
   onChange?: (value: Record<string, unknown> | undefined) => void;
 }) => {
@@ -190,10 +190,10 @@ const GraphAddNodePropertyField = (props: {
 };
 
 export const GraphAddNodeWidget = (props: {
-  base_dir?: string;
+  base_dir?: string | null;
   graph_id: string;
   postAddNodeActions?: () => void | Promise<void>;
-  node?: TCustomNode;
+  node?: TCustomNode | null;
   isReplaceNode?: boolean;
 }) => {
   const {
@@ -223,7 +223,7 @@ export const GraphAddNodeWidget = (props: {
     data: addons,
     isLoading: isAddonsLoading,
     error: addonError,
-  } = useFetchAddons({ base_dir });
+  } = useFetchAddons({ base_dir: base_dir });
 
   const form = useForm<z.infer<typeof AddNodePayloadSchema>>({
     resolver: zodResolver(AddNodePayloadSchema),
@@ -438,7 +438,7 @@ export const GraphAddNodeWidget = (props: {
 };
 
 export const GraphUpdateNodePropertyWidget = (props: {
-  base_dir?: string;
+  base_dir?: string | null;
   app_uri?: string | null;
   graph_id: string;
   node: TCustomNode;
@@ -554,11 +554,11 @@ export const GraphUpdateNodePropertyWidget = (props: {
 };
 
 export const GraphConnectionCreationWidget = (props: {
-  base_dir?: string;
+  base_dir?: string | null;
   app_uri?: string | null;
   graph_id: string;
-  src_node?: TCustomNode;
-  dest_node?: TCustomNode;
+  src_node?: TCustomNode | null;
+  dest_node?: TCustomNode | null;
   postAddConnectionActions?: () => void | Promise<void>;
 }) => {
   const {
