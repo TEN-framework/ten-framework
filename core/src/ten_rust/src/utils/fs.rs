@@ -19,15 +19,10 @@ pub fn read_file_to_string<P: AsRef<Path>>(path: P) -> Result<String> {
         io::ErrorKind::NotFound => {
             anyhow::anyhow!("'{}' is not found.", path_ref.to_string_lossy())
         }
-        _ => anyhow::anyhow!(
-            "'{}' is invalid: {}",
-            path_ref.to_string_lossy(),
-            e
-        ),
+        _ => anyhow::anyhow!("'{}' is invalid: {}", path_ref.to_string_lossy(), e),
     })?;
     let mut contents = String::new();
-    file.read_to_string(&mut contents).map_err(|e| {
-        anyhow::anyhow!("Failed to read content, {}.", e.to_string())
-    })?;
+    file.read_to_string(&mut contents)
+        .map_err(|e| anyhow::anyhow!("Failed to read content, {}.", e.to_string()))?;
     Ok(contents)
 }

@@ -61,11 +61,7 @@ impl PkgsInfoInApp {
 
     /// Find a package by its type and name.
     /// Returns None if no matching package is found.
-    pub fn find_pkg_by_type_and_name(
-        &self,
-        pkg_type: PkgType,
-        name: &str,
-    ) -> Option<&PkgInfo> {
+    pub fn find_pkg_by_type_and_name(&self, pkg_type: PkgType, name: &str) -> Option<&PkgInfo> {
         if let Some(app_pkg) = &self.app_pkg_info {
             if app_pkg.manifest.type_and_name.pkg_type == pkg_type
                 && app_pkg.manifest.type_and_name.name == name

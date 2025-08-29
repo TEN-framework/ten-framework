@@ -34,10 +34,7 @@ pub struct SetSchemaResponseData {
 /// persistent storage satisfy the schema. Fields that don't match are removed
 /// entirely. In the future, we may optimize this validation logic based on
 /// requirements, which might require more time to complete the validation.
-fn validate_and_clean_storage_data(
-    data: &mut Value,
-    schema: &Value,
-) -> Result<Vec<String>> {
+fn validate_and_clean_storage_data(data: &mut Value, schema: &Value) -> Result<Vec<String>> {
     let mut cleaned_fields = Vec::new();
 
     if let Some(obj) = data.as_object_mut() {
@@ -45,16 +42,13 @@ fn validate_and_clean_storage_data(
 
         for (key, value) in obj.iter() {
             // Check if this field has a corresponding schema
-            if let Some(schema_props) =
-                schema.get("properties").and_then(|p| p.as_object())
-            {
+            if let Some(schema_props) = schema.get("properties").and_then(|p| p.as_object()) {
                 if let Some(field_schema) = schema_props.get(key) {
                     // Validate the field value against its schema
-                    let field_validator =
-                        match jsonschema::validator_for(field_schema) {
-                            Ok(v) => v,
-                            Err(_) => continue, // Skip if schema is invalid
-                        };
+                    let field_validator = match jsonschema::validator_for(field_schema) {
+                        Ok(v) => v,
+                        Err(_) => continue, // Skip if schema is invalid
+                    };
 
                     if field_validator.validate(value).is_err() {
                         // Field doesn't match schema, mark for removal
@@ -75,25 +69,14 @@ fn validate_and_clean_storage_data(
         }
 
         // Add default values for required fields that are missing
-        if let Some(schema_props) =
-            schema.get("properties").and_then(|p| p.as_object())
-        {
-            if let Some(required_fields) =
-                schema.get("required").and_then(|r| r.as_array())
-            {
+        if let Some(schema_props) = schema.get("properties").and_then(|p| p.as_object()) {
+            if let Some(required_fields) = schema.get("required").and_then(|r| r.as_array()) {
                 for required_field in required_fields {
                     if let Some(field_name) = required_field.as_str() {
                         if !obj.contains_key(field_name) {
-                            if let Some(field_schema) =
-                                schema_props.get(field_name)
-                            {
-                                if let Some(default_value) =
-                                    get_default_value(field_schema)
-                                {
-                                    obj.insert(
-                                        field_name.to_string(),
-                                        default_value,
-                                    );
+                            if let Some(field_schema) = schema_props.get(field_name) {
+                                if let Some(default_value) = get_default_value(field_schema) {
+                                    obj.insert(field_name.to_string(), default_value);
                                 }
                             }
                         }
@@ -169,22 +152,19 @@ pub async fn set_persistent_storage_schema_endpoint(
     };
 
     // Validate and clean existing data against the new schema
-    let cleaned_fields =
-        match validate_and_clean_storage_data(&mut storage_data, &schema) {
-            Ok(fields) => fields,
-            Err(_e) => {
-                return Ok(HttpResponse::InternalServerError().json(
-                    ApiResponse {
-                        status: Status::Fail,
-                        data: SetSchemaResponseData {
-                            success: false,
-                            cleaned_fields: None,
-                        },
-                        meta: None,
-                    },
-                ));
-            }
-        };
+    let cleaned_fields = match validate_and_clean_storage_data(&mut storage_data, &schema) {
+        Ok(fields) => fields,
+        Err(_e) => {
+            return Ok(HttpResponse::InternalServerError().json(ApiResponse {
+                status: Status::Fail,
+                data: SetSchemaResponseData {
+                    success: false,
+                    cleaned_fields: None,
+                },
+                meta: None,
+            }));
+        }
+    };
 
     // Write the cleaned data back to storage
     if let Err(_e) = write_persistent_storage(&storage_data) {

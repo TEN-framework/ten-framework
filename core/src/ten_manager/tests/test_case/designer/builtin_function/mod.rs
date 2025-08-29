@@ -15,8 +15,8 @@ use actix_web::{
 
 use ten_manager::{
     designer::{
-        builtin_function::builtin_function_endpoint,
-        storage::in_memory::TmanStorageInMemory, DesignerState,
+        builtin_function::builtin_function_endpoint, storage::in_memory::TmanStorageInMemory,
+        DesignerState,
     },
     home::config::TmanConfig,
     output::cli::TmanOutputCli,
@@ -26,9 +26,7 @@ use ten_manager::{
 async fn test_cmd_builtin_function_websocket_connection() {
     let designer_state = DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-            TmanStorageInMemory::default(),
-        )),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -38,12 +36,10 @@ async fn test_cmd_builtin_function_websocket_connection() {
     let designer_state = Arc::new(designer_state);
 
     // Initialize the test service with the WebSocket endpoint.
-    let app = test::init_service(
-        App::new().app_data(web::Data::new(designer_state)).route(
-            "/ws/builtin-function",
-            web::get().to(builtin_function_endpoint),
-        ),
-    )
+    let app = test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
+        "/ws/builtin-function",
+        web::get().to(builtin_function_endpoint),
+    ))
     .await;
 
     // Create a test request with proper WebSocket headers.

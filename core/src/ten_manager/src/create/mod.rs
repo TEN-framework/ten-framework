@@ -22,10 +22,7 @@ use crate::{
     registry::{found_result::BASIC_SCOPE, get_package, get_package_list},
 };
 
-fn can_package_be_created_in_path(
-    path: &Path,
-    pkg_name: &String,
-) -> Result<()> {
+fn can_package_be_created_in_path(path: &Path, pkg_name: &String) -> Result<()> {
     let target: PathBuf = path.join(pkg_name);
 
     if target.exists() {
@@ -86,16 +83,14 @@ pub async fn create_pkg_in_path(
     }
 
     // Get the latest package that meets the requirements.
-    found_packages
-        .sort_by(|a, b| b.basic_info.version.cmp(&a.basic_info.version));
+    found_packages.sort_by(|a, b| b.basic_info.version.cmp(&a.basic_info.version));
 
     let package = &found_packages[0];
     let package_url = &package.download_url;
 
     // Download the package from the registry.
-    let mut temp_file = tempfile::NamedTempFile::new().context(
-        "Failed to create a temporary file for downloading the package",
-    )?;
+    let mut temp_file = tempfile::NamedTempFile::new()
+        .context("Failed to create a temporary file for downloading the package")?;
     get_package(
         tman_config,
         &package.basic_info.type_and_name.pkg_type,
@@ -112,15 +107,12 @@ pub async fn create_pkg_in_path(
     let target_path = path.join(pkg_name);
 
     // Create the target directory.
-    std::fs::create_dir_all(&target_path).with_context(|| {
-        format!("Failed to create directory '{}'", target_path.display())
-    })?;
+    std::fs::create_dir_all(&target_path)
+        .with_context(|| format!("Failed to create directory '{}'", target_path.display()))?;
 
     // Convert template_data to serde_json::Value if present.
-    let template_ctx = template_data.map(|data| {
-        serde_json::to_value(data)
-            .expect("Failed to convert template data to JSON")
-    });
+    let template_ctx = template_data
+        .map(|data| serde_json::to_value(data).expect("Failed to convert template data to JSON"));
 
     // Extract the downloaded package into the target directory.
     extract_and_process_tpkg_file(

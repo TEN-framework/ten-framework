@@ -13,9 +13,7 @@ mod tests {
     use ten_rust::{
         base_dir_pkg_info::PkgsInfoInApp,
         graph::{
-            connection::{
-                GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow,
-            },
+            connection::{GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow},
             graph_info::GraphInfo,
             node::{GraphContent, GraphNode},
             Graph,
@@ -28,13 +26,10 @@ mod tests {
         let mut graphs_cache: HashMap<Uuid, GraphInfo> = HashMap::new();
 
         let app_dir = "tests/test_data/graph_check_extension_not_installed_1";
-        let pkgs_info_in_app = get_app_installed_pkgs(
-            Path::new(app_dir),
-            true,
-            &mut Some(&mut graphs_cache),
-        )
-        .await
-        .unwrap();
+        let pkgs_info_in_app =
+            get_app_installed_pkgs(Path::new(app_dir), true, &mut Some(&mut graphs_cache))
+                .await
+                .unwrap();
         assert!(!pkgs_info_in_app.is_empty());
 
         let (_, graph_info) = graphs_cache.into_iter().next().unwrap();
@@ -54,13 +49,10 @@ mod tests {
         let mut graphs_cache: HashMap<Uuid, GraphInfo> = HashMap::new();
 
         let app_dir = "tests/test_data/graph_check_extension_not_installed_2";
-        let pkgs_info_in_app = get_app_installed_pkgs(
-            Path::new(app_dir),
-            true,
-            &mut Some(&mut graphs_cache),
-        )
-        .await
-        .unwrap();
+        let pkgs_info_in_app =
+            get_app_installed_pkgs(Path::new(app_dir), true, &mut Some(&mut graphs_cache))
+                .await
+                .unwrap();
         assert!(!pkgs_info_in_app.is_empty());
 
         let (_, graph_info) = graphs_cache.into_iter().next().unwrap();
@@ -79,13 +71,10 @@ mod tests {
         let mut graphs_cache: HashMap<Uuid, GraphInfo> = HashMap::new();
 
         let app_dir = "tests/test_data/graph_check_predefined_graph_success";
-        let pkgs_info_in_app = get_app_installed_pkgs(
-            Path::new(app_dir),
-            true,
-            &mut Some(&mut graphs_cache),
-        )
-        .await
-        .unwrap();
+        let pkgs_info_in_app =
+            get_app_installed_pkgs(Path::new(app_dir), true, &mut Some(&mut graphs_cache))
+                .await
+                .unwrap();
         assert!(!pkgs_info_in_app.is_empty());
 
         let (_, graph_info) = graphs_cache.into_iter().next().unwrap();
@@ -103,15 +92,11 @@ mod tests {
     async fn test_graph_check_all_msgs_schema_incompatible() {
         let mut graphs_cache: HashMap<Uuid, GraphInfo> = HashMap::new();
 
-        let app_dir =
-            "tests/test_data/graph_check_all_msgs_schema_incompatible";
-        let pkgs_info_in_app = get_app_installed_pkgs(
-            Path::new(app_dir),
-            true,
-            &mut Some(&mut graphs_cache),
-        )
-        .await
-        .unwrap();
+        let app_dir = "tests/test_data/graph_check_all_msgs_schema_incompatible";
+        let pkgs_info_in_app =
+            get_app_installed_pkgs(Path::new(app_dir), true, &mut Some(&mut graphs_cache))
+                .await
+                .unwrap();
         assert!(!pkgs_info_in_app.is_empty());
 
         let (_, graph_info) = graphs_cache.into_iter().next().unwrap();
@@ -128,27 +113,23 @@ mod tests {
     #[tokio::test]
     async fn test_graph_check_single_app() {
         let app_dir = "tests/test_data/graph_check_single_app";
-        let pkgs_info_in_app = get_app_installed_pkgs(
-            Path::new(app_dir),
-            true,
-            &mut Some(&mut HashMap::new()),
-        )
-        .await
-        .unwrap();
+        let pkgs_info_in_app =
+            get_app_installed_pkgs(Path::new(app_dir), true, &mut Some(&mut HashMap::new()))
+                .await
+                .unwrap();
         assert!(!pkgs_info_in_app.is_empty());
 
-        let graph_json_str =
-            include_str!("../test_data/graph_check_single_app/graph.json");
-        let graph =
-            Graph::from_str_with_base_dir(graph_json_str, None).await.unwrap();
+        let graph_json_str = include_str!("../test_data/graph_check_single_app/graph.json");
+        let graph = Graph::from_str_with_base_dir(graph_json_str, None)
+            .await
+            .unwrap();
 
         let mut pkgs_cache: HashMap<String, PkgsInfoInApp> = HashMap::new();
         pkgs_cache.insert(app_dir.to_string(), pkgs_info_in_app);
 
         // The schema of 'ext_c' is not found, but it's OK because we only check
         // for the app 'http://localhost:8001'.
-        let result =
-            graph.check_for_single_app(&Some(app_dir.to_string()), &pkgs_cache);
+        let result = graph.check_for_single_app(&Some(app_dir.to_string()), &pkgs_cache);
         eprintln!("result: {result:?}");
         assert!(result.is_ok());
     }
@@ -156,26 +137,21 @@ mod tests {
     #[tokio::test]
     async fn test_graph_check_builtin_extension() {
         let app_dir = "tests/test_data/graph_check_builtin_extension";
-        let pkgs_info_in_app = get_app_installed_pkgs(
-            Path::new(app_dir),
-            true,
-            &mut Some(&mut HashMap::new()),
-        )
-        .await
-        .unwrap();
+        let pkgs_info_in_app =
+            get_app_installed_pkgs(Path::new(app_dir), true, &mut Some(&mut HashMap::new()))
+                .await
+                .unwrap();
         assert!(!pkgs_info_in_app.is_empty());
 
-        let graph_json_str = include_str!(
-            "../test_data/graph_check_builtin_extension/graph.json"
-        );
-        let graph =
-            Graph::from_str_with_base_dir(graph_json_str, None).await.unwrap();
+        let graph_json_str = include_str!("../test_data/graph_check_builtin_extension/graph.json");
+        let graph = Graph::from_str_with_base_dir(graph_json_str, None)
+            .await
+            .unwrap();
 
         let mut pkgs_cache: HashMap<String, PkgsInfoInApp> = HashMap::new();
         pkgs_cache.insert(app_dir.to_string(), pkgs_info_in_app);
 
-        let result =
-            graph.check_for_single_app(&Some(app_dir.to_string()), &pkgs_cache);
+        let result = graph.check_for_single_app(&Some(app_dir.to_string()), &pkgs_cache);
         eprintln!("result: {result:?}");
         assert!(result.is_ok());
     }
@@ -211,8 +187,9 @@ mod tests {
         }
         "#;
 
-        let graph =
-            Graph::from_str_with_base_dir(graph_json, None).await.unwrap();
+        let graph = Graph::from_str_with_base_dir(graph_json, None)
+            .await
+            .unwrap();
         let pkgs_cache: HashMap<String, PkgsInfoInApp> = HashMap::new();
 
         let result = graph.check(&None, &pkgs_cache);
@@ -318,8 +295,9 @@ mod tests {
         }
         "#;
 
-        let graph =
-            Graph::from_str_with_base_dir(graph_json, None).await.unwrap();
+        let graph = Graph::from_str_with_base_dir(graph_json, None)
+            .await
+            .unwrap();
         let pkgs_cache: HashMap<String, PkgsInfoInApp> = HashMap::new();
 
         let result = graph.check(&None, &pkgs_cache);

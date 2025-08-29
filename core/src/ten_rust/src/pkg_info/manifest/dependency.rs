@@ -14,8 +14,7 @@ use serde::{Deserialize, Serialize};
 use crate::pkg_info::manifest::parse_manifest_in_folder;
 use crate::pkg_info::{pkg_type::PkgType, PkgInfo};
 
-type TypeAndNameFuture<'a> =
-    Pin<Box<dyn Future<Output = Option<(PkgType, String)>> + Send + 'a>>;
+type TypeAndNameFuture<'a> = Pin<Box<dyn Future<Output = Option<(PkgType, String)>> + Send + 'a>>;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(untagged)]
@@ -48,18 +47,12 @@ impl ManifestDependency {
     pub fn get_type_and_name(&self) -> TypeAndNameFuture<'_> {
         Box::pin(async move {
             match self {
-                ManifestDependency::RegistryDependency {
-                    pkg_type,
-                    name,
-                    ..
-                } => Some((*pkg_type, name.clone())),
-                ManifestDependency::LocalDependency {
-                    path, base_dir, ..
-                } => {
+                ManifestDependency::RegistryDependency { pkg_type, name, .. } => {
+                    Some((*pkg_type, name.clone()))
+                }
+                ManifestDependency::LocalDependency { path, base_dir, .. } => {
                     // Construct the full path to the dependency
-                    let full_path =
-                        Path::new(base_dir.as_deref().unwrap_or_default())
-                            .join(path);
+                    let full_path = Path::new(base_dir.as_deref().unwrap_or_default()).join(path);
 
                     // Try to canonicalize the path
                     let abs_path = match full_path.canonicalize() {
@@ -72,10 +65,9 @@ impl ManifestDependency {
 
                     // Read the manifest from the local path
                     match parse_manifest_in_folder(&abs_path).await {
-                        Ok(manifest) => Some((
-                            manifest.type_and_name.pkg_type,
-                            manifest.type_and_name.name,
-                        )),
+                        Ok(manifest) => {
+                            Some((manifest.type_and_name.pkg_type, manifest.type_and_name.name))
+                        }
                         Err(_) => {
                             // If we can't read the manifest, return None
                             None
@@ -91,10 +83,7 @@ impl From<&PkgInfo> for ManifestDependency {
     fn from(pkg_info: &PkgInfo) -> Self {
         if pkg_info.is_local_dependency {
             ManifestDependency::LocalDependency {
-                path: pkg_info
-                    .local_dependency_path
-                    .clone()
-                    .unwrap_or_default(),
+                path: pkg_info.local_dependency_path.clone().unwrap_or_default(),
                 base_dir: pkg_info
                     .local_dependency_base_dir
                     .clone()
@@ -104,11 +93,7 @@ impl From<&PkgInfo> for ManifestDependency {
             ManifestDependency::RegistryDependency {
                 pkg_type: pkg_info.manifest.type_and_name.pkg_type,
                 name: pkg_info.manifest.type_and_name.name.clone(),
-                version_req: VersionReq::parse(&format!(
-                    "{}",
-                    pkg_info.manifest.version
-                ))
-                .unwrap(),
+                version_req: VersionReq::parse(&format!("{}", pkg_info.manifest.version)).unwrap(),
             }
         }
     }

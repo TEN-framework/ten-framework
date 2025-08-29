@@ -18,10 +18,7 @@ use crate::{
         get_pkg_info_for_extension_addon,
         message::{MsgDirection, MsgType},
     },
-    schema::store::{
-        are_msg_schemas_compatible, find_c_msg_schema_from_pkg_info,
-        TenMsgSchema,
-    },
+    schema::store::{are_msg_schemas_compatible, find_c_msg_schema_from_pkg_info, TenMsgSchema},
 };
 
 impl Graph {
@@ -40,15 +37,10 @@ impl Graph {
 
         for dest in dests {
             let dest_addon = match &dest.loc.extension {
-                Some(extension) => self.get_addon_name_of_extension(
-                    dest.get_app_uri(),
-                    extension,
-                )?,
-                None => {
-                    return Err(anyhow::anyhow!(
-                        "Extension field is required but was None"
-                    ))
+                Some(extension) => {
+                    self.get_addon_name_of_extension(dest.get_app_uri(), extension)?
                 }
+                None => return Err(anyhow::anyhow!("Extension field is required but was None")),
             };
 
             let extension_pkg_info = match get_pkg_info_for_extension_addon(
@@ -75,12 +67,8 @@ impl Graph {
                 &MsgDirection::In,
             );
 
-            if let Err(e) = are_msg_schemas_compatible(
-                src_msg_schema,
-                dest_msg_schema,
-                true,
-                true,
-            ) {
+            if let Err(e) = are_msg_schemas_compatible(src_msg_schema, dest_msg_schema, true, true)
+            {
                 errors.push(format!(
                     "Schema incompatible to [extension: {}], {}",
                     dest.loc.extension.as_ref().unwrap_or(&String::new()),
@@ -107,11 +95,12 @@ impl Graph {
         let mut errors: Vec<String> = Vec::new();
 
         let src_app_uri = connection.get_app_uri();
-        let extension = connection.loc.extension.as_ref().ok_or_else(|| {
-            anyhow::anyhow!("Extension field is required but was None")
-        })?;
-        let src_addon =
-            self.get_addon_name_of_extension(src_app_uri, extension)?;
+        let extension = connection
+            .loc
+            .extension
+            .as_ref()
+            .ok_or_else(|| anyhow::anyhow!("Extension field is required but was None"))?;
+        let src_addon = self.get_addon_name_of_extension(src_app_uri, extension)?;
 
         let extension_pkg_info = match get_pkg_info_for_extension_addon(
             pkgs_cache,
@@ -135,9 +124,10 @@ impl Graph {
             for (flow_idx, flow) in cmd_flows.iter().enumerate() {
                 // After flatten_graph processing, name should be Some and names
                 // should be None
-                let flow_name = flow.name.as_ref().expect(
-                    "name field should be Some after flatten_graph processing",
-                );
+                let flow_name = flow
+                    .name
+                    .as_ref()
+                    .expect("name field should be Some after flatten_graph processing");
 
                 if flow.names.is_some() {
                     panic!(
@@ -174,9 +164,10 @@ impl Graph {
             for (flow_idx, flow) in data_flows.iter().enumerate() {
                 // After flatten_graph processing, name should be Some and names
                 // should be None
-                let flow_name = flow.name.as_ref().expect(
-                    "name field should be Some after flatten_graph processing",
-                );
+                let flow_name = flow
+                    .name
+                    .as_ref()
+                    .expect("name field should be Some after flatten_graph processing");
 
                 if flow.names.is_some() {
                     panic!(
@@ -213,9 +204,10 @@ impl Graph {
             for (flow_idx, flow) in video_frame_flows.iter().enumerate() {
                 // After flatten_graph processing, name should be Some and names
                 // should be None
-                let flow_name = flow.name.as_ref().expect(
-                    "name field should be Some after flatten_graph processing",
-                );
+                let flow_name = flow
+                    .name
+                    .as_ref()
+                    .expect("name field should be Some after flatten_graph processing");
 
                 if flow.names.is_some() {
                     panic!(
@@ -252,9 +244,10 @@ impl Graph {
             for (flow_idx, flow) in audio_frame_flows.iter().enumerate() {
                 // After flatten_graph processing, name should be Some and names
                 // should be None
-                let flow_name = flow.name.as_ref().expect(
-                    "name field should be Some after flatten_graph processing",
-                );
+                let flow_name = flow
+                    .name
+                    .as_ref()
+                    .expect("name field should be Some after flatten_graph processing");
 
                 if flow.names.is_some() {
                     panic!(

@@ -15,9 +15,7 @@ mod tests {
     use tokio::runtime::Runtime;
     use tokio::time::sleep;
 
-    use ten_manager::fs::log_file_watcher::{
-        watch_log_file, LogFileWatchOptions,
-    };
+    use ten_manager::fs::log_file_watcher::{watch_log_file, LogFileWatchOptions};
 
     use crate::test_case::common::fs::sync_to_disk;
 
@@ -41,8 +39,7 @@ mod tests {
             };
 
             // Start watching the file.
-            let mut stream =
-                watch_log_file(temp_file.path(), Some(options)).await?;
+            let mut stream = watch_log_file(temp_file.path(), Some(options)).await?;
 
             // Get the first chunk.
             let chunk = stream.next().await.expect("Should receive data")?;
@@ -131,8 +128,7 @@ mod tests {
             }
 
             // Get the content after rotation
-            let chunk =
-                stream.next().await.expect("Should receive rotated data")?;
+            let chunk = stream.next().await.expect("Should receive rotated data")?;
             println!("chunk 2: {chunk:?}");
             assert_eq!(chunk.line, "Rotated content");
 
@@ -161,8 +157,7 @@ mod tests {
             };
 
             // Start watching the file.
-            let mut stream =
-                watch_log_file(temp_file.path(), Some(options)).await?;
+            let mut stream = watch_log_file(temp_file.path(), Some(options)).await?;
 
             // Get the first chunk.
             let chunk = stream.next().await.expect("Should receive data")?;
@@ -193,13 +188,11 @@ mod tests {
             };
 
             // Start watching the file (with empty initial content)
-            let mut stream =
-                watch_log_file(temp_file.path(), Some(options)).await?;
+            let mut stream = watch_log_file(temp_file.path(), Some(options)).await?;
 
             // Write the graph resources first (to establish connection between
             // thread ID and extension)
-            let graph_resources_with_thread =
-                "05-02 22:23:37.397 1713000(1713045) M \
+            let graph_resources_with_thread = "05-02 22:23:37.397 1713000(1713045) M \
                  ten_extension_thread_log_graph_resources@extension_thread.c:\
                  556 [graph resources] {\"app_base_dir\": \"xxx\", \
                  \"app_uri\": \"msgpack://127.0.0.1:8001/\", \"graph_name\": \
@@ -214,8 +207,10 @@ mod tests {
             println!("Wrote graph resources and synced to disk");
 
             // Get the graph resources line
-            let chunk =
-                stream.next().await.expect("Should receive graph resources")?;
+            let chunk = stream
+                .next()
+                .await
+                .expect("Should receive graph resources")?;
             println!("chunk 1: {chunk:?}");
             assert!(chunk.line.contains("[graph resources]"));
 
@@ -284,12 +279,10 @@ mod tests {
             };
 
             // Start watching the file (with empty initial content)
-            let mut stream =
-                watch_log_file(temp_file.path(), Some(options)).await?;
+            let mut stream = watch_log_file(temp_file.path(), Some(options)).await?;
 
             // Write the complete log content from the example
-            let complete_log =
-                "05-02 22:23:37.301 1713000(1713002) D \
+            let complete_log = "05-02 22:23:37.301 1713000(1713002) D \
                  ten_extension_context_create@extension_context.c:62 \
                  [38097178-1712-4562-b60d-8e6ab15ba0cf] Create Extension \
                  context
@@ -413,19 +406,14 @@ mod tests {
                 println!("chunk: {chunk:?}");
 
                 // Check if this is one of our target lines
-                if chunk.line.contains(target_start_line)
-                    || chunk.line.contains(target_done_line)
-                {
+                if chunk.line.contains(target_start_line) || chunk.line.contains(target_done_line) {
                     target_lines_found += 1;
 
                     // Verify that the metadata includes the extension name
                     assert!(chunk.metadata.is_some(), "Should have metadata");
                     let metadata = chunk.metadata.unwrap();
                     println!("metadata: {metadata:?}");
-                    assert_eq!(
-                        metadata.extension,
-                        Some("test_extension".to_string())
-                    );
+                    assert_eq!(metadata.extension, Some("test_extension".to_string()));
                 }
 
                 // If we found both target lines, we can break
@@ -435,10 +423,7 @@ mod tests {
             }
 
             // Verify that we found both target lines
-            assert_eq!(
-                target_lines_found, 2,
-                "Should have found both target lines"
-            );
+            assert_eq!(target_lines_found, 2, "Should have found both target lines");
 
             // Stop watching
             stream.stop();

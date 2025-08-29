@@ -91,9 +91,8 @@ async fn remove_installed_paths(
         .join(INSTALLED_PATHS_JSON_FILENAME);
 
     // Read the installed_paths.json file.
-    let file = fs::File::open(&installed_paths_path).with_context(|| {
-        format!("Failed to open file: {installed_paths_path:?}")
-    })?;
+    let file = fs::File::open(&installed_paths_path)
+        .with_context(|| format!("Failed to open file: {installed_paths_path:?}"))?;
 
     let installed_paths = InstalledPaths {
         paths: from_reader(file).with_context(|| {
@@ -113,11 +112,9 @@ async fn remove_installed_paths(
 
     // Process each path.
     for path_str in installed_paths.paths {
-        let path = if path_str
-            .starts_with(&format!("{INSTALL_PATHS_APP_PREFIX}/"))
-        {
-            let relative_path = path_str
-                .trim_start_matches(&format!("{INSTALL_PATHS_APP_PREFIX}/"));
+        let path = if path_str.starts_with(&format!("{INSTALL_PATHS_APP_PREFIX}/")) {
+            let relative_path =
+                path_str.trim_start_matches(&format!("{INSTALL_PATHS_APP_PREFIX}/"));
             cwd.join(relative_path)
         } else {
             addon_path.join(path_str)
@@ -127,8 +124,7 @@ async fn remove_installed_paths(
             std::result::Result::Ok(canonical_path) => {
                 if canonical_path.is_file() {
                     remove_file(&canonical_path)?;
-                } else if canonical_path.is_dir()
-                    && fs::read_dir(&canonical_path)?.next().is_none()
+                } else if canonical_path.is_dir() && fs::read_dir(&canonical_path)?.next().is_none()
                 {
                     fs::remove_dir(&canonical_path)?;
                 }

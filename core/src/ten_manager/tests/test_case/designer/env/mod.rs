@@ -14,10 +14,7 @@ mod tests {
     use actix_web::{test, web, App};
 
     use ten_manager::{
-        designer::{
-            env::get_env_endpoint, storage::in_memory::TmanStorageInMemory,
-            DesignerState,
-        },
+        designer::{env::get_env_endpoint, storage::in_memory::TmanStorageInMemory, DesignerState},
         home::config::TmanConfig,
         output::cli::TmanOutputCli,
     };
@@ -26,12 +23,8 @@ mod tests {
     async fn test_get_env_success() {
         // Create test state.
         let state = Arc::new(DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -39,17 +32,15 @@ mod tests {
         });
 
         // Create test app.
-        let app = test::init_service(
-            App::new().app_data(web::Data::new(state)).service(
-                web::scope("/api/designer/v1")
-                    .route("/env", web::get().to(get_env_endpoint)),
-            ),
-        )
+        let app = test::init_service(App::new().app_data(web::Data::new(state)).service(
+            web::scope("/api/designer/v1").route("/env", web::get().to(get_env_endpoint)),
+        ))
         .await;
 
         // Create test request.
-        let req =
-            test::TestRequest::get().uri("/api/designer/v1/env").to_request();
+        let req = test::TestRequest::get()
+            .uri("/api/designer/v1/env")
+            .to_request();
         let resp = test::call_service(&app, req).await;
 
         // Assert response status.
@@ -70,12 +61,8 @@ mod tests {
     async fn test_get_env_error() {
         // Create test state
         let state = Arc::new(RwLock::new(DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -83,12 +70,9 @@ mod tests {
         }));
 
         // Create test app
-        let app = test::init_service(
-            App::new().app_data(web::Data::new(state)).service(
-                web::scope("/api/designer/v1")
-                    .route("/env", web::get().to(get_env_endpoint)),
-            ),
-        )
+        let app = test::init_service(App::new().app_data(web::Data::new(state)).service(
+            web::scope("/api/designer/v1").route("/env", web::get().to(get_env_endpoint)),
+        ))
         .await;
 
         // Create test request with invalid path

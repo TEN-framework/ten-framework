@@ -28,10 +28,12 @@ use crate::registry::upload_package;
 pub struct PublishCommand {}
 
 pub fn create_sub_cmd(_args_cfg: &crate::cmd_line::ArgsCfg) -> Command {
-    Command::new("publish").about("Publish a package").after_help(
-        "Switch to the base directory of the TEN package you want to publish, \
+    Command::new("publish")
+        .about("Publish a package")
+        .after_help(
+            "Switch to the base directory of the TEN package you want to publish, \
          then simply run 'tman publish' directly in that directory.",
-    )
+        )
 }
 
 pub fn parse_sub_cmd(
@@ -55,8 +57,7 @@ pub async fn execute_cmd(
 
     let cwd = crate::fs::get_cwd()?;
 
-    let pkg_info =
-        get_pkg_info_from_path(&cwd, true, false, &mut None, None).await?;
+    let pkg_info = get_pkg_info_from_path(&cwd, true, false, &mut None, None).await?;
     let output_pkg_file_name = get_tpkg_file_name(&pkg_info)?;
 
     // Use the default output path, which is located in the `.ten/`
@@ -75,13 +76,8 @@ pub async fn execute_cmd(
     }
 
     // Generate the package file.
-    let output_path_str = create_package_tar_gz_file(
-        tman_config.clone(),
-        &output_path,
-        &cwd,
-        out.clone(),
-    )
-    .await?;
+    let output_path_str =
+        create_package_tar_gz_file(tman_config.clone(), &output_path, &cwd, out.clone()).await?;
 
     upload_package(
         tman_config.clone(),

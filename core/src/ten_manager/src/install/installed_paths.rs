@@ -35,12 +35,8 @@ pub fn sort_installed_paths(installed_paths: &mut InstalledPaths) {
     });
 }
 
-pub fn save_installed_paths(
-    installed_paths: &InstalledPaths,
-    cwd: &Path,
-) -> Result<()> {
-    let target_dir =
-        cwd.join(DOT_TEN_DIR).join(PACKAGE_INFO_DIR_IN_DOT_TEN_DIR);
+pub fn save_installed_paths(installed_paths: &InstalledPaths, cwd: &Path) -> Result<()> {
+    let target_dir = cwd.join(DOT_TEN_DIR).join(PACKAGE_INFO_DIR_IN_DOT_TEN_DIR);
     let target_file = target_dir.join(INSTALLED_PATHS_JSON_FILENAME);
     fs::create_dir_all(&target_dir)?;
 

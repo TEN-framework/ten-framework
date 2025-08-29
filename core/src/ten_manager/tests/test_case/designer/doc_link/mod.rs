@@ -11,8 +11,7 @@ use actix_web::{http::StatusCode, test, web};
 use ten_manager::{
     designer::{
         doc_link::{
-            get_doc_link_endpoint, DocLinkKey, GetDocLinkRequestPayload,
-            GetDocLinkResponseData,
+            get_doc_link_endpoint, DocLinkKey, GetDocLinkRequestPayload, GetDocLinkResponseData,
         },
         locale::Locale,
         response::ApiResponse,
@@ -34,9 +33,7 @@ async fn test_get_doc_link_success() {
     // Get mock state.
     let designer_state = DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-            TmanStorageInMemory::default(),
-        )),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -65,8 +62,7 @@ async fn test_get_doc_link_success() {
 
     // Extract and check the response body.
     let body = test::read_body(resp).await;
-    let result: ApiResponse<GetDocLinkResponseData> =
-        serde_json::from_slice(&body).unwrap();
+    let result: ApiResponse<GetDocLinkResponseData> = serde_json::from_slice(&body).unwrap();
 
     // Assert data.
     assert_eq!(result.data.key, DocLinkKey::Graph);
@@ -85,9 +81,7 @@ async fn test_get_doc_link_chinese() {
     // Get mock state.
     let designer_state = DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-            TmanStorageInMemory::default(),
-        )),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -116,8 +110,7 @@ async fn test_get_doc_link_chinese() {
 
     // Extract and check the response body.
     let body = test::read_body(resp).await;
-    let result: ApiResponse<GetDocLinkResponseData> =
-        serde_json::from_slice(&body).unwrap();
+    let result: ApiResponse<GetDocLinkResponseData> = serde_json::from_slice(&body).unwrap();
 
     // Assert data.
     assert_eq!(result.data.key, DocLinkKey::Graph);
@@ -138,9 +131,7 @@ async fn test_get_doc_link_language_fallback() {
     // Get mock state.
     let designer_state = DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-            TmanStorageInMemory::default(),
-        )),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -169,8 +160,7 @@ async fn test_get_doc_link_language_fallback() {
 
     // Extract and check the response body.
     let body = test::read_body(resp).await;
-    let result: ApiResponse<GetDocLinkResponseData> =
-        serde_json::from_slice(&body).unwrap();
+    let result: ApiResponse<GetDocLinkResponseData> = serde_json::from_slice(&body).unwrap();
 
     // Assert data - should fall back to another locale.
     assert_eq!(result.data.key, DocLinkKey::Graph);
@@ -189,9 +179,7 @@ async fn test_get_doc_link_not_found() {
     // Get mock state.
     let designer_state = DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-            TmanStorageInMemory::default(),
-        )),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),

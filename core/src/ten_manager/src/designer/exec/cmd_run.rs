@@ -26,11 +26,7 @@ pub struct ShutdownSenders {
 // method.
 
 impl WsRunCmd {
-    pub fn cmd_run(
-        &mut self,
-        cmd: &String,
-        ctx: &mut WebsocketContext<WsRunCmd>,
-    ) {
+    pub fn cmd_run(&mut self, cmd: &String, ctx: &mut WebsocketContext<WsRunCmd>) {
         // Create shutdown channels for each thread.
         let (stdout_shutdown_tx, stdout_shutdown_rx) = bounded::<()>(1);
         let (stderr_shutdown_tx, stderr_shutdown_rx) = bounded::<()>(1);
@@ -172,19 +168,12 @@ impl WsRunCmd {
                         Ok(line) => {
                             if is_log {
                                 // Process line as log content.
-                                let metadata = process_log_line(
-                                    &line,
-                                    &mut graph_resources_log,
-                                );
-                                let log_line_info =
-                                    LogLineInfo { line, metadata };
-                                addr_stdout.do_send(RunCmdOutput::StdOutLog(
-                                    log_line_info,
-                                ));
+                                let metadata = process_log_line(&line, &mut graph_resources_log);
+                                let log_line_info = LogLineInfo { line, metadata };
+                                addr_stdout.do_send(RunCmdOutput::StdOutLog(log_line_info));
                             } else {
                                 // Process as normal stdout.
-                                addr_stdout
-                                    .do_send(RunCmdOutput::StdOutNormal(line));
+                                addr_stdout.do_send(RunCmdOutput::StdOutNormal(line));
                             }
                         }
                         Err(_) => break,
@@ -228,19 +217,12 @@ impl WsRunCmd {
                         Ok(line) => {
                             if is_log {
                                 // Process line as log content.
-                                let metadata = process_log_line(
-                                    &line,
-                                    &mut graph_resources_log,
-                                );
-                                let log_line_info =
-                                    LogLineInfo { line, metadata };
-                                addr_stderr.do_send(RunCmdOutput::StdErrLog(
-                                    log_line_info,
-                                ));
+                                let metadata = process_log_line(&line, &mut graph_resources_log);
+                                let log_line_info = LogLineInfo { line, metadata };
+                                addr_stderr.do_send(RunCmdOutput::StdErrLog(log_line_info));
                             } else {
                                 // Process as normal stderr.
-                                addr_stderr
-                                    .do_send(RunCmdOutput::StdErrNormal(line));
+                                addr_stderr.do_send(RunCmdOutput::StdErrNormal(line));
                             }
                         }
                         Err(_) => break,

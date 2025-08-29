@@ -33,20 +33,22 @@ pub async fn validate_manifest_endpoint(
 ) -> Result<impl Responder, actix_web::Error> {
     let manifest_json_str = &request_payload.manifest_json_str;
 
-    let response_data =
-        match ten_validate_manifest_json_string(manifest_json_str) {
-            Ok(_) => ValidateManifestResponseData {
-                is_valid: true,
-                error_message: None,
-            },
-            Err(err) => ValidateManifestResponseData {
-                is_valid: false,
-                error_message: Some(err.to_string()),
-            },
-        };
+    let response_data = match ten_validate_manifest_json_string(manifest_json_str) {
+        Ok(_) => ValidateManifestResponseData {
+            is_valid: true,
+            error_message: None,
+        },
+        Err(err) => ValidateManifestResponseData {
+            is_valid: false,
+            error_message: Some(err.to_string()),
+        },
+    };
 
-    let api_response =
-        ApiResponse { status: Status::Ok, data: response_data, meta: None };
+    let api_response = ApiResponse {
+        status: Status::Ok,
+        data: response_data,
+        meta: None,
+    };
 
     Ok(web::Json(api_response))
 }

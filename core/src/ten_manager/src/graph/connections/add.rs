@@ -11,9 +11,7 @@ use anyhow::Result;
 use ten_rust::{
     base_dir_pkg_info::PkgsInfoInApp,
     graph::{
-        connection::{
-            GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow,
-        },
+        connection::{GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow},
         msg_conversion::MsgAndResultConversion,
         node::GraphNode,
         Graph,
@@ -34,9 +32,7 @@ fn add_to_flow(
 
     // Check if a message flow with the same name already exists.
     let flows = flow_collection.as_mut().unwrap();
-    if let Some(existing_flow) =
-        flows.iter_mut().find(|flow| flow.name == message_flow.name)
-    {
+    if let Some(existing_flow) = flows.iter_mut().find(|flow| flow.name == message_flow.name) {
         // Add the destination to the existing flow if it doesn't already
         // exist.
         if !existing_flow.dest.iter().any(|dest| {
@@ -61,12 +57,8 @@ fn add_message_flow_to_connection(
     match msg_type {
         MsgType::Cmd => add_to_flow(&mut connection.cmd, message_flow),
         MsgType::Data => add_to_flow(&mut connection.data, message_flow),
-        MsgType::AudioFrame => {
-            add_to_flow(&mut connection.audio_frame, message_flow)
-        }
-        MsgType::VideoFrame => {
-            add_to_flow(&mut connection.video_frame, message_flow)
-        }
+        MsgType::AudioFrame => add_to_flow(&mut connection.audio_frame, message_flow),
+        MsgType::VideoFrame => add_to_flow(&mut connection.video_frame, message_flow),
     }
     Ok(())
 }
@@ -105,8 +97,7 @@ fn check_connection_exists(
                         if flow.name.as_deref() == Some(msg_name) {
                             // Check if destination already exists.
                             for dest in &flow.dest {
-                                if dest.loc.extension.as_deref()
-                                    == Some(dest_extension)
+                                if dest.loc.extension.as_deref() == Some(dest_extension)
                                     && dest.loc.app == *dest_app
                                 {
                                     return Err(anyhow::anyhow!(
@@ -194,13 +185,7 @@ pub async fn graph_add_connection(
     let original_graph = graph.clone();
 
     // Check if nodes exist.
-    check_nodes_exist(
-        graph,
-        &src_app,
-        &src_extension,
-        &dest_app,
-        &dest_extension,
-    )?;
+    check_nodes_exist(graph, &src_app, &src_extension, &dest_app, &dest_extension)?;
 
     // Check if connection already exists.
     check_connection_exists(
@@ -247,8 +232,7 @@ pub async fn graph_add_connection(
     }
 
     // Create a message flow.
-    let message_flow =
-        GraphMessageFlow::new(msg_name, vec![destination], vec![]);
+    let message_flow = GraphMessageFlow::new(msg_name, vec![destination], vec![]);
 
     // Get or create a connection for the source node and add the message
     // flow.
@@ -258,8 +242,7 @@ pub async fn graph_add_connection(
         // Find or create connection.
         let connection_idx = if let Some((idx, _)) =
             connections.iter().enumerate().find(|(_, conn)| {
-                (conn.loc.extension.as_ref() == Some(&src_extension))
-                    && conn.loc.app == src_app
+                (conn.loc.extension.as_ref() == Some(&src_extension)) && conn.loc.app == src_app
             }) {
             idx
         } else {

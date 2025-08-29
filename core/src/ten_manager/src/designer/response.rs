@@ -28,10 +28,7 @@ impl From<Status> for String {
     }
 }
 
-fn status_to_string<S>(
-    status: &Status,
-    serializer: S,
-) -> Result<S::Ok, S::Error>
+fn status_to_string<S>(status: &Status, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: serde::Serializer,
 {

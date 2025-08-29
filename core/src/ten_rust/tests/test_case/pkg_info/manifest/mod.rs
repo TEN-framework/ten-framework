@@ -17,8 +17,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_extension_manifest_from_str() {
-        let manifest_str =
-            include_str!("../../../test_data/test_extension_manifest.json");
+        let manifest_str = include_str!("../../../test_data/test_extension_manifest.json");
 
         let result: Result<Manifest> = Manifest::create_from_str(manifest_str);
         assert!(result.is_ok());

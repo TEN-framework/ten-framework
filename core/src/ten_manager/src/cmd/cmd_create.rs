@@ -19,10 +19,8 @@ use ten_rust::pkg_info::{
 };
 
 use crate::{
-    create::create_pkg_in_path,
-    designer::storage::in_memory::TmanStorageInMemory,
-    home::config::TmanConfig, output::TmanOutput,
-    version_utils::parse_pkg_name_version_req,
+    create::create_pkg_in_path, designer::storage::in_memory::TmanStorageInMemory,
+    home::config::TmanConfig, output::TmanOutput, version_utils::parse_pkg_name_version_req,
 };
 
 #[derive(Debug)]
@@ -99,8 +97,9 @@ pub fn parse_sub_cmd(sub_cmd_args: &ArgMatches) -> Result<CreateCommand> {
         .cloned()
         .ok_or_else(|| anyhow!("Missing required argument: PACKAGE_NAME"))?;
 
-    let os =
-        sub_cmd_args.get_one::<String>("OS").and_then(|s| s.parse::<Os>().ok());
+    let os = sub_cmd_args
+        .get_one::<String>("OS")
+        .and_then(|s| s.parse::<Os>().ok());
 
     let arch = sub_cmd_args
         .get_one::<String>("ARCH")
@@ -136,17 +135,16 @@ pub fn parse_sub_cmd(sub_cmd_args: &ArgMatches) -> Result<CreateCommand> {
         ));
     }
 
-    cmd.template_data.insert("package_name".to_string(), cmd.pkg_name.clone());
+    cmd.template_data
+        .insert("package_name".to_string(), cmd.pkg_name.clone());
 
     let template = sub_cmd_args
         .get_one::<String>("TEMPLATE")
         .cloned()
         .ok_or_else(|| anyhow!("Missing required argument: TEMPLATE"))?;
 
-    let (parsed_name, parsed_version_req) =
-        parse_pkg_name_version_req(&template).with_context(|| {
-            format!("Failed to parse template '{template}'")
-        })?;
+    let (parsed_name, parsed_version_req) = parse_pkg_name_version_req(&template)
+        .with_context(|| format!("Failed to parse template '{template}'"))?;
 
     cmd.template_name = parsed_name;
     cmd.template_version_req = parsed_version_req;
@@ -163,8 +161,7 @@ pub async fn execute_cmd(
     let started = Instant::now();
 
     // Retrieve the current working directory.
-    let cwd = std::env::current_dir()
-        .context("Failed to get current working directory")?;
+    let cwd = std::env::current_dir().context("Failed to get current working directory")?;
 
     create_pkg_in_path(
         tman_config,

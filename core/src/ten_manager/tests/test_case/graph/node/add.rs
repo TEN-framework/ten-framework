@@ -33,15 +33,10 @@ mod tests {
         eprintln!("result: {result:?}");
         assert!(result.is_ok());
         assert_eq!(graph.nodes.len(), 1);
-        if let ten_rust::graph::node::GraphNode::Extension { content } =
-            &graph.nodes[0]
-        {
+        if let ten_rust::graph::node::GraphNode::Extension { content } = &graph.nodes[0] {
             assert_eq!(content.name, "test_extension");
             assert_eq!(content.addon, "test_addon");
-            assert_eq!(
-                content.app,
-                Some("http://test-app-uri.com".to_string())
-            );
+            assert_eq!(content.app, Some("http://test-app-uri.com".to_string()));
         } else {
             panic!("Expected Extension node");
         }
@@ -58,14 +53,9 @@ mod tests {
         .await;
         assert!(result.is_ok());
         assert_eq!(graph.nodes.len(), 2);
-        if let ten_rust::graph::node::GraphNode::Extension { content } =
-            &graph.nodes[1]
-        {
+        if let ten_rust::graph::node::GraphNode::Extension { content } = &graph.nodes[1] {
             assert_eq!(content.name, "test_extension2");
-            assert_eq!(
-                content.extension_group,
-                Some("custom_group".to_string())
-            );
+            assert_eq!(content.extension_group, Some("custom_group".to_string()));
         } else {
             panic!("Expected Extension node");
         }

@@ -40,9 +40,7 @@ pub async fn set_persistent_storage_endpoint(
         if let Some(validator) = schema_lock.as_ref() {
             // Create a temporary object to validate the key/value pair
             let mut temp_data = serde_json::json!({});
-            if let Err(_e) =
-                set_value_by_key(&mut temp_data, &key, value.clone())
-            {
+            if let Err(_e) = set_value_by_key(&mut temp_data, &key, value.clone()) {
                 return Ok(HttpResponse::BadRequest().json(ApiResponse {
                     status: Status::Fail,
                     data: SetPersistentResponseData { success: false },
@@ -54,8 +52,7 @@ pub async fn set_persistent_storage_endpoint(
             if let Err(_e) = validator.validate(&temp_data) {
                 let mut error_messages = Vec::new();
                 for error in validator.iter_errors(&temp_data) {
-                    error_messages
-                        .push(format!("{} @ {}", error, error.instance_path));
+                    error_messages.push(format!("{} @ {}", error, error.instance_path));
                 }
                 return Ok(HttpResponse::BadRequest().json(ApiResponse {
                     status: Status::Fail,
@@ -103,8 +100,11 @@ pub async fn set_persistent_storage_endpoint(
     }
 
     let response_data = SetPersistentResponseData { success: true };
-    let response =
-        ApiResponse { status: Status::Ok, data: response_data, meta: None };
+    let response = ApiResponse {
+        status: Status::Ok,
+        data: response_data,
+        meta: None,
+    };
 
     Ok(HttpResponse::Ok().json(response))
 }

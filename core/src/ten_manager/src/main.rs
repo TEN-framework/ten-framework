@@ -68,11 +68,7 @@ fn main() {
                 process::exit(0);
             }
             Err(e) => {
-                out.error_line(&format!(
-                    "{}  Error: {}",
-                    Emoji("🔴", ":-("),
-                    e
-                ));
+                out.error_line(&format!("{}  Error: {}", Emoji("🔴", ":-("), e));
                 process::exit(1);
             }
         }

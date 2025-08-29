@@ -13,10 +13,7 @@ use regex::Regex;
 use semver::Version;
 
 use ten_rust::pkg_info::{
-    constants::{
-        ADDON_LOADER_DIR, EXTENSION_DIR, PROTOCOL_DIR, SYSTEM_DIR,
-        TEN_PACKAGES_DIR,
-    },
+    constants::{ADDON_LOADER_DIR, EXTENSION_DIR, PROTOCOL_DIR, SYSTEM_DIR, TEN_PACKAGES_DIR},
     pkg_basic_info::PkgBasicInfo,
     pkg_type::PkgType,
     pkg_type_and_name::PkgTypeAndName,
@@ -24,17 +21,15 @@ use ten_rust::pkg_info::{
 };
 
 use crate::{
-    cmd::cmd_install::InstallCommand, home::config::TmanConfig,
-    install::install_pkg_info, output::TmanOutput,
+    cmd::cmd_install::InstallCommand, home::config::TmanConfig, install::install_pkg_info,
+    output::TmanOutput,
 };
 
 pub fn extract_solver_results_from_raw_solver_results(
     results: &[String],
     all_candidates: &HashMap<PkgTypeAndName, HashMap<PkgBasicInfo, PkgInfo>>,
 ) -> Result<Vec<PkgInfo>> {
-    let re =
-        Regex::new(r#"selected_pkg_version\("([^"]+)","([^"]+)","([^"]+)"\)"#)
-            .unwrap();
+    let re = Regex::new(r#"selected_pkg_version\("([^"]+)","([^"]+)","([^"]+)"\)"#).unwrap();
 
     let mut results_info: Vec<PkgInfo> = vec![];
 
@@ -48,7 +43,10 @@ pub fn extract_solver_results_from_raw_solver_results(
             let semver = semver_str.parse::<Version>()?;
 
             for candidate in all_candidates
-                .get(&PkgTypeAndName { pkg_type, name: name.to_string() })
+                .get(&PkgTypeAndName {
+                    pkg_type,
+                    name: name.to_string(),
+                })
                 .unwrap()
             {
                 if candidate.1.manifest.type_and_name.pkg_type != pkg_type
@@ -84,12 +82,11 @@ pub fn filter_solver_results_by_type_and_name<'a>(
         // LLVM/Clang to prevent ASAN linking errors), we disable this specific
         // Clippy warning here.
         #[allow(clippy::unnecessary_map_or)]
-        let matches_type = pkg_type
-            .map_or(true, |pt| result.manifest.type_and_name.pkg_type == *pt);
+        let matches_type =
+            pkg_type.map_or(true, |pt| result.manifest.type_and_name.pkg_type == *pt);
 
         #[allow(clippy::unnecessary_map_or)]
-        let matches_name =
-            name.map_or(true, |n| result.manifest.type_and_name.name == *n);
+        let matches_name = name.map_or(true, |n| result.manifest.type_and_name.name == *n);
 
         let matches = matches_type && matches_name;
 
@@ -142,18 +139,10 @@ pub async fn install_solver_results_in_app_folder(
             let tman_config = tman_config.clone();
             let out = out.clone();
             let base_dir = match solver_result.manifest.type_and_name.pkg_type {
-                PkgType::Extension => {
-                    app_dir.join(TEN_PACKAGES_DIR).join(EXTENSION_DIR)
-                }
-                PkgType::Protocol => {
-                    app_dir.join(TEN_PACKAGES_DIR).join(PROTOCOL_DIR)
-                }
-                PkgType::System => {
-                    app_dir.join(TEN_PACKAGES_DIR).join(SYSTEM_DIR)
-                }
-                PkgType::AddonLoader => {
-                    app_dir.join(TEN_PACKAGES_DIR).join(ADDON_LOADER_DIR)
-                }
+                PkgType::Extension => app_dir.join(TEN_PACKAGES_DIR).join(EXTENSION_DIR),
+                PkgType::Protocol => app_dir.join(TEN_PACKAGES_DIR).join(PROTOCOL_DIR),
+                PkgType::System => app_dir.join(TEN_PACKAGES_DIR).join(SYSTEM_DIR),
+                PkgType::AddonLoader => app_dir.join(TEN_PACKAGES_DIR).join(ADDON_LOADER_DIR),
                 PkgType::App => app_dir.to_path_buf(),
                 PkgType::Invalid => {
                     panic!("Should not happen.");
@@ -170,24 +159,16 @@ pub async fn install_solver_results_in_app_folder(
 
             async move {
                 // Install the package
-                let result = install_pkg_info(
-                    tman_config,
-                    command_data,
-                    solver_result,
-                    &base_dir,
-                    out,
-                )
-                .await;
+                let result =
+                    install_pkg_info(tman_config, command_data, solver_result, &base_dir, out)
+                        .await;
 
                 // Update progress after installation completes
                 if let Some(bar) = bar_clone {
-                    let current = progress_counter
-                        .fetch_add(1, std::sync::atomic::Ordering::SeqCst)
-                        + 1;
+                    let current =
+                        progress_counter.fetch_add(1, std::sync::atomic::Ordering::SeqCst) + 1;
                     bar.set_position(current.try_into().unwrap_or(0));
-                    bar.set_message(format!(
-                        "Completed {current}/{total_pkgs}: {pkg_name}"
-                    ));
+                    bar.set_message(format!("Completed {current}/{total_pkgs}: {pkg_name}"));
                 }
 
                 result

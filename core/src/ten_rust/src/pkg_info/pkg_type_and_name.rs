@@ -21,7 +21,10 @@ pub struct PkgTypeAndName {
 
 impl Default for PkgTypeAndName {
     fn default() -> Self {
-        Self { pkg_type: PkgType::Invalid, name: String::new() }
+        Self {
+            pkg_type: PkgType::Invalid,
+            name: String::new(),
+        }
     }
 }
 
