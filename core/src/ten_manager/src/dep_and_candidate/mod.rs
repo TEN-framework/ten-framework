@@ -17,7 +17,7 @@ use ten_rust::pkg_info::manifest::support::{
 };
 use ten_rust::pkg_info::pkg_type::PkgType;
 use ten_rust::pkg_info::{
-    constants::MANIFEST_JSON_FILENAME, manifest::dependency::ManifestDependency,
+    constants::MANIFEST_JSON_FILENAME, manifest::dependency::{ManifestDependency, TenVersion},
     pkg_basic_info::PkgBasicInfo, pkg_type_and_name::PkgTypeAndName,
 };
 use ten_rust::pkg_info::{get_pkg_info_from_path, PkgInfo};
@@ -93,7 +93,7 @@ async fn merge_dependency_to_dependencies(
             let local_manifest = parse_manifest_from_file(&dep_manifest_path).await?;
             (
                 local_manifest.type_and_name.clone(),
-                &VersionReq::parse(&local_manifest.version.to_string())?,
+                &TenVersion::new(local_manifest.version.to_string())?,
             )
         }
     };
@@ -101,10 +101,10 @@ async fn merge_dependency_to_dependencies(
     let mut changed = true;
 
     if let Some(existed_dependency) = merged_dependencies.get_mut(&pkg_type_name) {
-        changed = existed_dependency.merge(version_req)?;
+        changed = existed_dependency.merge(version_req.as_req())?;
     } else {
         // This is the first time seeing this dependency.
-        merged_dependencies.insert(pkg_type_name, MergedVersionReq::new(version_req));
+        merged_dependencies.insert(pkg_type_name, MergedVersionReq::new(version_req.as_req()));
     }
 
     Ok(changed)
@@ -182,7 +182,7 @@ async fn process_non_local_dependency_to_get_candidate(
 
     // First, check whether the package list cache has already processed the
     // same or a more permissive version requirement combination.
-    if !pkg_list_cache.check_and_update(&pkg_type_name, &version_req) {
+    if !pkg_list_cache.check_and_update(&pkg_type_name, version_req.as_req()) {
         // If a covering combination already exists in the package list cache,
         // skip calling `get_package_list`.
         return Ok(());
@@ -199,7 +199,7 @@ async fn process_non_local_dependency_to_get_candidate(
         // some overlap with previous version requirements, given the current
         // design, this is the best we can do for now. The answer won't be
         // wrong, but the efficiency might be somewhat lower.
-        Some(version_req.clone()),
+        Some(version_req.as_req().clone()),
         None, // No tag filtering.
         Some(BASIC_SCOPE.iter().map(|s| s.to_string()).collect()),
         None,
@@ -454,7 +454,7 @@ pub async fn get_all_candidates_from_deps(
             let get_version_req = |dep: &ManifestDependency| -> Option<VersionReq> {
                 match dep {
                     ManifestDependency::RegistryDependency { version_req, .. } => {
-                        Some(version_req.clone())
+                        Some(version_req.as_req().clone())
                     }
                     ManifestDependency::LocalDependency { .. } => None,
                 }

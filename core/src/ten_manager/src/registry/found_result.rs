@@ -6,7 +6,6 @@
 //
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
-use serde_json;
 
 use std::sync::Arc;
 

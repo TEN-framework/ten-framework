@@ -7,9 +7,10 @@
 use std::future::Future;
 use std::path::Path;
 use std::pin::Pin;
+use std::fmt;
 
 use semver::VersionReq;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer, Deserializer, de::Visitor, de::Error};
 
 use crate::pkg_info::manifest::parse_manifest_in_folder;
 use crate::pkg_info::{pkg_type::PkgType, PkgInfo};
@@ -26,7 +27,7 @@ pub enum ManifestDependency {
         name: String,
 
         #[serde(rename = "version")]
-        version_req: VersionReq,
+        version_req: TenVersion,
     },
 
     LocalDependency {
@@ -38,6 +39,70 @@ pub enum ManifestDependency {
         #[serde(skip)]
         base_dir: Option<String>,
     },
+}
+#[derive(Debug, Clone)]
+pub struct TenVersion{
+    raw_version: String,
+    processed_version: VersionReq,
+}
+
+/// write back the raw string of version, make sure its original form is preserved
+impl Serialize for TenVersion{
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&self.raw_version)
+    }
+}
+
+impl<'de> Deserialize<'de> for TenVersion{
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>
+    {
+        struct TenVersionVisitor;
+        impl<'de> Visitor<'de> for TenVersionVisitor {
+            type Value = TenVersion;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("a version requirement string")
+            }
+
+            fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+            where
+                E: Error,
+            {
+                let processed = VersionReq::parse(v)
+                    .map_err(|err| Error::custom(format!("invalid version req: {err}")))?;
+                Ok(TenVersion {
+                    raw_version: v.to_string(),
+                    processed_version: processed,
+                })
+            }
+        }
+
+        deserializer.deserialize_str(TenVersionVisitor)
+    }
+}
+
+impl TenVersion {
+    pub fn new(raw: String) -> Result<Self, semver::Error> {
+        let processed = VersionReq::parse(&raw)?;
+        Ok(Self { raw_version: raw, processed_version: processed })
+    }
+
+    pub fn matches(&self, version: &semver::Version) -> bool {
+        self.processed_version.matches(version)
+    }
+
+    pub fn as_raw(&self) -> &str {
+        &self.raw_version
+    }
+
+    pub fn as_req(&self) -> &VersionReq {
+        &self.processed_version
+    }
 }
 
 impl ManifestDependency {
@@ -90,10 +155,20 @@ impl From<&PkgInfo> for ManifestDependency {
                     .map(|dir| dir.to_string()),
             }
         } else {
+            //let raw_version = pkg_info.manifest.version.clone().to_string();//Error: no ^ for version
+            let parsed_version_req = VersionReq::parse(&pkg_info.manifest.version.clone().to_string()).ok();
+            let raw_version = parsed_version_req.clone().unwrap().to_string();
+
+            println!("raw_version: {}", raw_version);
+            println!("parsed_version_req: {:?}", parsed_version_req);
+
             ManifestDependency::RegistryDependency {
                 pkg_type: pkg_info.manifest.type_and_name.pkg_type,
                 name: pkg_info.manifest.type_and_name.name.clone(),
-                version_req: VersionReq::parse(&format!("{}", pkg_info.manifest.version)).unwrap(),
+                version_req: TenVersion {
+                    raw_version,
+                    processed_version: parsed_version_req.unwrap(),
+                },
             }
         }
     }

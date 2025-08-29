@@ -13,12 +13,12 @@ use std::sync::Arc;
 
 use anyhow::{anyhow, Result};
 use console::Emoji;
-use semver::{Version, VersionReq};
+use semver::{Version};
 use serde::{Deserialize, Serialize};
 
 use ten_rust::json_schema::validate_manifest_lock_json_string;
 use ten_rust::pkg_info::constants::{MANIFEST_JSON_FILENAME, MANIFEST_LOCK_JSON_FILENAME};
-use ten_rust::pkg_info::manifest::dependency::ManifestDependency;
+use ten_rust::pkg_info::manifest::dependency::{ManifestDependency, TenVersion};
 use ten_rust::pkg_info::manifest::support::ManifestSupport;
 use ten_rust::pkg_info::manifest::Manifest;
 use ten_rust::pkg_info::pkg_basic_info::PkgBasicInfo;
@@ -362,7 +362,7 @@ impl<'a> From<&'a ManifestLockItem> for PkgInfo {
                         pkg_type,
                         name: dep.name,
                         // Default version requirement.
-                        version_req: VersionReq::parse("*").unwrap(),
+                        version_req: TenVersion::new("*".to_string()).unwrap(),
                     }
                 })
                 .collect()
