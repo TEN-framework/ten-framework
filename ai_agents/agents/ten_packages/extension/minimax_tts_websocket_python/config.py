@@ -36,6 +36,10 @@ class MinimaxTTSWebsocketConfig(BaseModel):
             self.group_id = self.params["group_id"]
             del self.params["group_id"]
 
+        if "url" in self.params:
+            self.url = self.params["url"]
+            del self.params["url"]
+
         if (
             "audio_setting" in self.params
             and "sample_rate" in self.params["audio_setting"]
