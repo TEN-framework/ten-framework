@@ -46,3 +46,4 @@ xdump_config
 /manifest-lock.json
 /property.json
 build/
+*.tsbuildinfo
