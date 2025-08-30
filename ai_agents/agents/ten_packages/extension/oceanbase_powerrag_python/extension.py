@@ -1,339 +1,240 @@
 #
 # This file is part of TEN Framework, an open source project.
 # Licensed under the Apache License, Version 2.0.
-# See the LICENSE file for more information.
 #
-import asyncio
+from __future__ import annotations
+
 import json
 import time
 import traceback
-from dataclasses import dataclass
-from typing import AsyncGenerator
+import uuid
+from typing import AsyncGenerator, Optional
 
 import aiohttp
-from ten_runtime import (
-    AsyncTenEnv,
-    AudioFrame,
-    Cmd,
-    CmdResult,
-    Data,
-    StatusCode,
-    VideoFrame,
-)
-from ten_ai_base.config import BaseConfig
-from ten_ai_base.types import (
-    LLMChatCompletionUserMessageParam,
-    LLMDataCompletionArgs,
-)
-from ten_ai_base.llm import (
-    AsyncLLMBaseExtension,
+from pydantic import BaseModel
+
+from ten_runtime import AsyncTenEnv
+from ten_ai_base.llm2 import AsyncLLM2BaseExtension
+from ten_ai_base.struct import (
+    LLMRequest,
+    LLMResponse,
+    LLMResponseMessageDelta,
+    LLMResponseMessageDone,
 )
 
-CMD_IN_FLUSH = "flush"
-CMD_IN_ON_USER_JOINED = "on_user_joined"
-CMD_IN_ON_USER_LEFT = "on_user_left"
-CMD_OUT_FLUSH = "flush"
-CMD_OUT_TOOL_CALL = "tool_call"
 
-DATA_IN_TEXT_DATA_PROPERTY_IS_FINAL = "is_final"
-DATA_IN_TEXT_DATA_PROPERTY_TEXT = "text"
-
-DATA_OUT_TEXT_DATA_PROPERTY_TEXT = "text"
-DATA_OUT_TEXT_DATA_PROPERTY_END_OF_SEGMENT = "end_of_segment"
-
-CMD_PROPERTY_RESULT = "tool_result"
-
-
-def is_punctuation(char):
-    if char in [",", "，", ".", "。", "?", "？", "!", "！"]:
-        return True
-    return False
-
-
-def parse_sentences(sentence_fragment, content):
-    sentences = []
-    current_sentence = sentence_fragment
-    for char in content:
-        current_sentence += char
-        if is_punctuation(char):
-            stripped_sentence = current_sentence
-            if any(c.isalnum() for c in stripped_sentence):
-                sentences.append(stripped_sentence)
-            current_sentence = ""
-
-    remain = current_sentence
-    return sentences, remain
-
-
-@dataclass
-class OceanBasePowerRAGConfig(BaseConfig):
+# ------------------------------
+# Config
+# ------------------------------
+class OceanBaseLLM2Config(BaseModel):
     base_url: str = ""
     api_key: str = ""
     ai_database_name: str = ""
     collection_id: str = ""
     user_id: str = "TenAgent"
-    greeting: str = ""
     failure_info: str = ""
 
 
-class OceanBasePowerRAGExtension(AsyncLLMBaseExtension):
-    config: OceanBasePowerRAGConfig = None
-    ten_env: AsyncTenEnv = None
-    loop: asyncio.AbstractEventLoop = None
-    stopped: bool = False
-    users_count = 0
-
-    async def on_init(self, ten_env: AsyncTenEnv) -> None:
-        await super().on_init(ten_env)
-        ten_env.log_debug("on_init")
-
-    async def on_start(self, ten_env: AsyncTenEnv) -> None:
-        await super().on_start(ten_env)
-        ten_env.log_debug("on_start")
-        self.loop = asyncio.get_event_loop()
-
-        self.config = await OceanBasePowerRAGConfig.create_async(
-            ten_env=ten_env
-        )
-        ten_env.log_info(f"config: {self.config}")
-
-        if not self.config.base_url:
-            ten_env.log_error("Missing required configuration: base_url")
-            return
-
-        if not self.config.api_key:
-            ten_env.log_error("Missing required configuration: api_key")
-            return
-
-        if not self.config.ai_database_name:
-            ten_env.log_error(
-                "Missing required configuration: ai_database_name"
-            )
-            return
-
-        if not self.config.collection_id:
-            ten_env.log_error("Missing required configuration: collection_id")
-            return
-
+# ------------------------------
+# Provider client
+# ------------------------------
+class OceanBaseChatClient:
+    def __init__(self, ten_env: AsyncTenEnv, cfg: OceanBaseLLM2Config):
         self.ten_env = ten_env
+        self.cfg = cfg
+        self._session: Optional[aiohttp.ClientSession] = None
 
-    async def on_stop(self, ten_env: AsyncTenEnv) -> None:
-        await super().on_stop(ten_env)
-        ten_env.log_debug("on_stop")
+    async def _ensure_session(self) -> aiohttp.ClientSession:
+        if self._session is None or self._session.closed:
+            self._session = aiohttp.ClientSession()
+        return self._session
 
-        self.stopped = True
+    async def aclose(self) -> None:
+        if self._session and not self._session.closed:
+            await self._session.close()
 
-    async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
-        await super().on_deinit(ten_env)
-        ten_env.log_debug("on_deinit")
+    async def get_chat_completions(
+        self, request_input: LLMRequest
+    ) -> AsyncGenerator[LLMResponse, None]:
+        """
+        Stream OceanBase PowerRAG answers as LLM2 messages.
+        Emits LLMResponseMessageDelta chunks, then a single LLMResponseMessageDone.
+        """
+        # last user message wins
+        prompt = ""
+        for m in request_input.messages or []:
+            if (m.role or "").lower() == "user":
+                prompt = m.content or prompt
 
-    async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
-        cmd_name = cmd.get_name()
-        ten_env.log_debug("on_cmd name {}".format(cmd_name))
-
-        status = StatusCode.OK
-        detail = "success"
-
-        if cmd_name == CMD_IN_FLUSH:
-            await self.flush_input_items(ten_env)
-            await ten_env.send_cmd(Cmd.create(CMD_OUT_FLUSH))
-            ten_env.log_info("on flush")
-        elif cmd_name == CMD_IN_ON_USER_JOINED:
-            self.users_count += 1
-            # Send greeting when first user joined
-            if self.config.greeting and self.users_count == 1:
-                self.send_text_output(ten_env, self.config.greeting, True)
-        elif cmd_name == CMD_IN_ON_USER_LEFT:
-            self.users_count -= 1
-        else:
-            await super().on_cmd(ten_env, cmd)
+        response_id = str(uuid.uuid4())
+        if not prompt:
+            # still follow the delta/done contract
+            now_ms = int(time.time() * 1000)
+            yield LLMResponseMessageDelta(
+                response_id=response_id,
+                role="assistant",
+                content="(no user message to send)",
+                created=now_ms,
+            )
+            yield LLMResponseMessageDone(response_id=response_id, created=now_ms, role="assistant")
             return
 
-        cmd_result = CmdResult.create(status, cmd)
-        cmd_result.set_property_string("detail", detail)
-        await ten_env.return_result(cmd_result)
+        session = await self._ensure_session()
 
-    async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
-        data_name = data.get_name()
-        ten_env.log_info("on_data name {}".format(data_name))
+        url = (
+            f"{self.cfg.base_url}/"
+            f"{self.cfg.ai_database_name}/collections/"
+            f"{self.cfg.collection_id}/chat"
+        )
+        headers = {
+            "Authorization": self.cfg.api_key,
+            "Content-Type": "application/json",
+        }
+        payload = {"stream": True, "jsonFormat": True, "content": prompt}
 
-        is_final = False
-        input_text = ""
+        self.ten_env.log_info(f"[OceanBase] PUT {url}")
+        self.ten_env.log_info(f"[OceanBase] payload: {json.dumps(payload)}")
+
+        start_perf = time.perf_counter()
+
         try:
-            is_final, _ = data.get_property_bool(
-                DATA_IN_TEXT_DATA_PROPERTY_IS_FINAL
-            )
-        except Exception as err:
-            ten_env.log_info(
-                f"GetProperty optional {DATA_IN_TEXT_DATA_PROPERTY_IS_FINAL} failed, err: {err}"
-            )
-
-        try:
-            input_text, _ = data.get_property_string(
-                DATA_IN_TEXT_DATA_PROPERTY_TEXT
-            )
-        except Exception as err:
-            ten_env.log_info(
-                f"GetProperty optional {DATA_IN_TEXT_DATA_PROPERTY_TEXT} failed, err: {err}"
-            )
-
-        if not is_final:
-            ten_env.log_info("ignore non-final input")
-            return
-        if not input_text:
-            ten_env.log_info("ignore empty text")
-            return
-
-        ten_env.log_info(f"OnData input text: [{input_text}]")
-
-        # Start an asynchronous task for handling chat completion
-        message = LLMChatCompletionUserMessageParam(
-            role="user", content=input_text
-        )
-        await self.queue_input_item(False, messages=[message])
-
-    async def on_audio_frame(
-        self, ten_env: AsyncTenEnv, audio_frame: AudioFrame
-    ) -> None:
-        pass
-
-    async def on_video_frame(
-        self, ten_env: AsyncTenEnv, video_frame: VideoFrame
-    ) -> None:
-        pass
-
-    async def on_call_chat_completion(self, async_ten_env, **kargs):
-        raise NotImplementedError
-
-    async def on_tools_update(self, async_ten_env, tool):
-        raise NotImplementedError
-
-    async def on_data_chat_completion(
-        self, ten_env: AsyncTenEnv, **kargs: LLMDataCompletionArgs
-    ) -> None:
-        input_messages: LLMChatCompletionUserMessageParam = kargs.get(
-            "messages", []
-        )
-        if not input_messages:
-            ten_env.log_warn("No message in data")
-
-        # Send fixed response first
-        self.send_text_output(
-            ten_env,
-            sentence="PowerRAG is processing your request, please wait...",
-            end_of_segment=True,
-        )
-
-        total_output = ""
-        sentence_fragment = ""
-
-        sentences = []
-        self.ten_env.log_info(f"messages: {input_messages}")
-        response = self._stream_chat(query=input_messages[0]["content"])
-        async for message in response:
-            self.ten_env.log_info(f"content: {message}")
-
-            # Handle JSON-formatted streaming messages from OceanBase PowerRAG
-            if isinstance(message, dict):
-                content = message.get("content", "")
-                if content:
-                    total_output += content
-                    sentences, sentence_fragment = parse_sentences(
-                        sentence_fragment, content
+            async with session.put(url, json=payload, headers=headers) as resp:
+                if resp.status != 200:
+                    body = await resp.text()
+                    msg = f"[OceanBase] HTTP {resp.status}: {body}"
+                    self.ten_env.log_error(msg)
+                    err_ms = int(time.time() * 1000)
+                    # surface a friendly line, then Done
+                    yield LLMResponseMessageDelta(
+                        response_id=response_id,
+                        role="assistant",
+                        delta="PowerRAG request failed.",
+                        content=self.cfg.failure_info or "PowerRAG request failed.",
+                        created=err_ms,
                     )
-                    for s in sentences:
-                        await self._send_text(s, False)
-                elif message.get("error"):
-                    error_msg = message.get("error", "Unknown error occurred")
-                    ten_env.log_error(f"error: {error_msg}")
-                    await self._send_text(error_msg, True)
+                    yield LLMResponseMessageDone(
+                        response_id=response_id, created=err_ms, role="assistant", content=""
+                    )
                     return
-            else:
-                # Handle plain text responses
-                if message:
-                    total_output += message
-                    sentences, sentence_fragment = parse_sentences(
-                        sentence_fragment, message
-                    )
-                    for s in sentences:
-                        await self._send_text(s, False)
-
-        await self._send_text(sentence_fragment, True)
-        self.ten_env.log_info(f"total_output: {total_output}")
-
-    async def _stream_chat(self, query: str) -> AsyncGenerator[dict, None]:
-        async with aiohttp.ClientSession() as session:
-            try:
-                payload = {"stream": True, "jsonFormat": True, "content": query}
 
                 self.ten_env.log_info(
-                    f"payload before sending: {json.dumps(payload)}"
+                    f"[OceanBase] connected in {time.perf_counter() - start_perf:.3f}s"
                 )
 
-                headers = {
-                    "Authorization": self.config.api_key,
-                    "Content-Type": "application/json",
-                }
+                content = ""
 
-                url = f"{self.config.base_url}/{self.config.ai_database_name}/collections/{self.config.collection_id}/chat"
-                self.ten_env.log_info(f"oceanbase powerRAG url: {url}")
+                # stream SSE lines
+                async for raw in resp.content:
+                    if not raw:
+                        continue
+                    line = raw.decode("utf-8", errors="ignore").strip()
+                    self.ten_env.log_info(f"[OceanBase] SSE line: {line}")
+                    if not line or not line.startswith("data:"):
+                        continue
 
-                start_time = time.time()
-                async with session.put(
-                    url, json=payload, headers=headers
-                ) as response:
-                    if response.status != 200:
-                        r = await response.text()
-                        self.ten_env.log_error(
-                            f"Received unexpected status {response.status}: {r} from the server."
-                        )
-                        if self.config.failure_info:
-                            await self._send_text(
-                                self.config.failure_info, True
-                            )
-                        return
-                    end_time = time.time()
-                    self.ten_env.log_info(
-                        f"connect time {end_time - start_time} s"
+                    data_str = line[5:].strip()
+                    if not data_str:
+                        continue
+
+                    try:
+                        data_json = json.loads(data_str)
+                    except json.JSONDecodeError:
+                        continue
+
+                    answer = data_json.get("answer")
+                    if not isinstance(answer, dict):
+                        continue
+
+                    chunk = answer.get("content")
+                    if not chunk:
+                        continue
+                    if chunk == "[DONE]":
+                        break
+
+                    content += chunk
+                    yield LLMResponseMessageDelta(
+                        response_id=response_id,
+                        role="assistant",
+                        content=content,
+                        delta=chunk,
+                        created=int(time.time() * 1000),
                     )
 
-                    async for line in response.content:
-                        if not line:
-                            continue
-                        raw_line = line.decode("utf-8").strip()
-                        if not raw_line:
-                            continue
+        except Exception as e:
+            traceback.print_exc()
+            msg = f"[OceanBase] exception: {e}"
+            self.ten_env.log_error(msg)
+            err_ms = int(time.time() * 1000)
+            yield LLMResponseMessageDelta(
+                response_id=response_id,
+                role="assistant",
+                content=self.cfg.failure_info or "PowerRAG request failed with exception.",
+                created=err_ms,
+            )
+            yield LLMResponseMessageDone(
+                response_id=response_id, created=err_ms, error=str(e), role="assistant"
+            )
+            return
 
-                        # Process only SSE lines starting with "data:"
-                        if not raw_line.startswith("data:"):
-                            continue
-
-                        payload_str = raw_line[5:].strip()
-                        if not payload_str:
-                            continue
-
-                        try:
-                            payload_json = json.loads(raw_line[5:].strip())
-                        except json.JSONDecodeError:
-                            # Ignore non-JSON data lines
-                            continue
-
-                        answer = payload_json.get("answer")
-                        if isinstance(answer, dict):
-                            content_text = answer.get("content")
-                            if content_text and content_text != "[DONE]":
-                                yield content_text
-            except Exception as e:
-                traceback.print_exc()
-                self.ten_env.log_error(f"Failed to handle {e}")
-            finally:
-                await session.close()
-                session = None
-
-    async def _send_text(self, text: str, end_of_segment: bool) -> None:
-        data = Data.create("text_data")
-        data.set_property_string(DATA_OUT_TEXT_DATA_PROPERTY_TEXT, text)
-        data.set_property_bool(
-            DATA_OUT_TEXT_DATA_PROPERTY_END_OF_SEGMENT, end_of_segment
+        # finalize
+        yield LLMResponseMessageDone(
+            response_id=response_id, created=int(time.time() * 1000), role="assistant"
         )
-        asyncio.create_task(self.ten_env.send_data(data))
+
+
+# ------------------------------
+# Extension
+# ------------------------------
+class OceanBasePowerRAGExtension(AsyncLLM2BaseExtension):
+    """
+    OceanBase PowerRAG provider in LLM2 form, mirroring the DifyLLM2Extension pattern.
+    """
+
+    def __init__(self, name: str):
+        super().__init__(name)
+        self.config: Optional[OceanBaseLLM2Config] = None
+        self.client: Optional[OceanBaseChatClient] = None
+
+    async def on_init(self, ten_env: AsyncTenEnv) -> None:
+        ten_env.log_info("on_init")
+        await super().on_init(ten_env)
+
+    async def on_start(self, async_ten_env: AsyncTenEnv) -> None:
+        async_ten_env.log_info("on_start")
+        await super().on_start(async_ten_env)
+
+        cfg_json, _ = await self.ten_env.get_property_to_json("")
+        self.config = OceanBaseLLM2Config.model_validate_json(cfg_json)
+
+        missing = [
+            key
+            for key in ("base_url", "api_key", "ai_database_name", "collection_id")
+            if not getattr(self.config, key)
+        ]
+        if missing:
+            async_ten_env.log_error(f"[OceanBase] missing config: {', '.join(missing)}")
+            return
+
+        try:
+            self.client = OceanBaseChatClient(async_ten_env, self.config)
+            async_ten_env.log_info(
+                f"[OceanBase] client ready: base_url={self.config.base_url}, "
+                f"db={self.config.ai_database_name}, col={self.config.collection_id}"
+            )
+        except Exception as err:
+            async_ten_env.log_error(f"[OceanBase] failed to init client: {err}")
+
+    async def on_stop(self, async_ten_env: AsyncTenEnv) -> None:
+        async_ten_env.log_info("on_stop")
+        if self.client:
+            await self.client.aclose()
+        await super().on_stop(async_ten_env)
+
+    async def on_deinit(self, async_ten_env: AsyncTenEnv) -> None:
+        async_ten_env.log_info("on_deinit")
+        await super().on_deinit(async_ten_env)
+
+    def on_call_chat_completion(
+        self, async_ten_env: AsyncTenEnv, request_input: LLMRequest
+    ) -> AsyncGenerator[LLMResponse, None]:
+        return self.client.get_chat_completions(request_input)
