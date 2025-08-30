@@ -2,6 +2,7 @@
 
 ![TEN banner][ten-framework-banner]
 
+
 [![TEN Releases]( https://img.shields.io/github/v/release/ten-framework/ten-framework?color=369eff&labelColor=gray&logo=github&style=flat-square )](https://github.com/TEN-framework/ten-framework/releases)
 [![](https://img.shields.io/github/release-date/ten-framework/ten-framework?labelColor=gray&style=flat-square)](https://github.com/TEN-framework/ten-framework/releases)
 [![Discussion posts](https://img.shields.io/github/discussions/TEN-framework/ten_framework?labelColor=gray&color=%20%23f79009)](https://github.com/TEN-framework/ten-framework/discussions/)
@@ -11,6 +12,7 @@
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome!-brightgreen.svg?style=flat-square)](https://github.com/TEN-framework/ten-framework/pulls)
 [![GitHub license](https://img.shields.io/badge/License-Apache_2.0_with_certain_conditions-blue.svg?labelColor=%20%23155EEF&color=%20%23528bff)](https://github.com/TEN-framework/ten_framework/blob/main/LICENSE)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/TEN-framework/TEN-framework)
+[![ReadmeX](https://raw.githubusercontent.com/CodePhiliaX/resource-trusteeship/main/readmex.svg)](https://readmex.com/TEN-framework/ten-framework)
 
 [![GitHub watchers](https://img.shields.io/github/watchers/TEN-framework/ten_framework?style=social&label=Watch)](https://GitHub.com/TEN-framework/ten_framework/watchers/?WT.mc_id=academic-105485-koreyst)
 [![GitHub forks](https://img.shields.io/github/forks/TEN-framework/ten_framework?style=social&label=Fork)](https://GitHub.com/TEN-framework/ten_framework/network/?WT.mc_id=academic-105485-koreyst)
@@ -41,54 +43,55 @@
 
 #### 目录
 
-- [👋 欢迎使用 TEN](#-欢迎使用-ten)
-- [🎨 TMAN Designer](#-tman-designer)
-- [✨ 功能特性](#-功能特性)
-  - [1️⃣ 实时头像](#1️⃣-实时头像)
-  - [2️⃣ 使用 MCP 服务器的实时语音](#2️⃣-使用-mcp-服务器的实时语音)
-  - [3️⃣ 与硬件的实时通信](#3️⃣-与硬件的实时通信)
-  - [4️⃣ 实时视觉和实时屏幕共享检测](#4️⃣-实时视觉和实时屏幕共享检测)
-  - [5️⃣ 与其他 LLM 平台的集成](#5️⃣-与其他-llm-平台的集成)
-  - [6️⃣ StoryTeller - TEN 图像生成](#6️⃣-storyteller---ten-图像生成)
-- [🛝 TEN Agent Playground](#-ten-agent-playground)
-  - [🅰️ 在 `localhost` 运行 Playground](#🅰️-在-localhost-运行-playground)
-  - [🅱️ 在 Codespace 中运行 Playground(无需 Docker)](#🅱️-在-codespace-中运行-playground无需-docker)
-- [🛳️ TEN Agent 自托管](#️-ten-agent-自托管)
-  - [🅰️ 🐳 使用 Docker 部署](#️--使用-docker-部署)
-  - [🅱️ 使用其他云服务部署](#️-使用其他云服务部署)
-- [🏗️ TEN Agent 架构](#️-ten-agent-架构)
-- [🌍 TEN 生态](#-ten-生态)
-- [❓问题](#-问题)
-- [🥰 贡献](#-贡献)
-  - [代码贡献者](#代码贡献者)
-  - [贡献指南](#贡献指南)
-  - [许可证](#许可证)
+- [👋 欢迎来到 TEN](#-welcome-to-ten)
+- [🎨 TMAN 设计师](#-tman-designer)
+- [✨ 特点](#-features)
+  - [1️⃣ 实时头像](#1️⃣-real-time-avatar)
+  - [2️⃣ 使用MCP服务进行实时语音](#2️⃣-real-time-voice-with-mcp-servers)
+  - [3️⃣ 和硬件的实时交流](#3️⃣-real-time-communication-with-hardware)
+  - [4️⃣ 实时视觉和实时屏幕共享检测](#4️⃣-real-time-vision-and-real-time-screenshare-detection)
+  - [5️⃣ TEN 和其他大语言模型平台](#5️⃣-ten-with-other-llm-platforms)
+  - [6️⃣ StoryTeller - TEN 图像生成](#6️⃣-storyteller---ten-image-generation)
+- [👩‍💻 启动并运行 TEN Agent ](#-get-ten-agent-up-and-running)
+  - [🅰️ 在本地运行TEN Agent](#🅰️-run-ten-agent-in-localhost)
+  - [🅱️ 在Codespace中运行TEN Agent (无需 docker)](#🅱️-run-ten-agent-in-codespaceno-docker)
+- [🛳️ TEN Agent 自托管](#️-ten-agent-self-hosting)
+  - [🅰️ 使用Docker部署](#🅰️-deploying-with-docker)
+  - [🅱️ 和其他云服务一起部署](#🅱️-deploying-with-other-cloud-services)
+- [🌍 TEN 生态](#-ten-ecosystem)
+- [❓ 提问](#-ask-questions)
+- [🥰 贡献](#-contributing)
+  - [代码贡献者](#code-contributors)
+  - [贡献指南](#contribution-guidelines)
+  - [证书](#license)
 
 <br/>
 
 </details>
 
-## 👋 欢迎使用 TEN
+## 👋 欢迎来到 TEN
 
-TEN 是一系列用于构建实时、多模态对话语音代理的开源项目集合。它包括 [TEN Framework](https://github.com/ten-framework/ten-framework)、[TEN Turn Detection](https://github.com/ten-framework/ten-turn-detection)、TEN Agent、TMAN Designer 和 [TEN Portal](https://github.com/ten-framework/portal)，全部都是完全开源的。[TEN VAD](https://github.com/ten-framework/ten-vad) 目前还不是完全开源的，但已开放供公众使用。
+TEN 是一个全面的开源生态系统，用于创建、定制和部署具有多模式功能（包括语音、视觉和化身交互）的实时对话 AI 代理。
 
-<br>
-
-| 社区渠道 | 用途 |
-| ---------------- | ------- |
-| [![Follow on X](https://img.shields.io/twitter/follow/TenFramework?logo=X&color=%20%23f5f5f5)](https://twitter.com/intent/follow?screen_name=TenFramework) | 在 X 上关注 TEN Framework 获取更新和公告 |
-| [![Follow on LinkedIn](https://custom-icon-badges.demolab.com/badge/LinkedIn-TEN_Framework-0A66C2?logo=linkedin-white&logoColor=fff)](https://www.linkedin.com/company/ten-framework) | 在 LinkedIn 上关注 TEN Framework 获取更新和公告 |
-| [![Discord TEN Community](https://dcbadge.vercel.app/api/server/VnPftUzAMJ?&style=flat&theme=light&color=lightgray)](https://discord.gg/VnPftUzAMJ) | 加入我们的 Discord 社区与开发者交流 |
-| [![Hugging Face Space](https://img.shields.io/badge/Hugging%20Face-TEN%20Framework-yellow?style=flat&logo=huggingface)](https://huggingface.co/TEN-framework) | 加入我们的 Hugging Face 社区探索我们的空间和模型 |
-| [![WeChat](https://img.shields.io/badge/TEN_Framework-WeChat_Group-%2307C160?logo=wechat&labelColor=darkgreen&color=gray)](https://github.com/TEN-framework/ten-agent/discussions/170) | 加入我们的微信群进行中文社区讨论 |
+TEN 包括 [TEN 架构](https://github.com/ten-framework/ten-framework), [TEN 转弯检测](https://github.com/ten-framework/ten-turn-detection), [TEN VAD](https://github.com/ten-framework/ten-vad), [TEN 代理](https://github.com/TEN-framework/ten-framework/tree/main/ai_agents/demo), [TMAN 设计师](https://github.com/TEN-framework/ten-framework/tree/main/core/src/ten_manager/designer_frontend), and [TEN 门户](https://github.com/ten-framework/portal). 查看 [🌍 TEN 生态系统](#-ten-ecosystem) 了解更多详情。
 
 <br>
 
-> \[!IMPORTANT]
+| 社区频道 | 目的                                   |
+| ---------------- |--------------------------------------|
+| [![Follow on X](https://img.shields.io/twitter/follow/TenFramework?logo=X&color=%20%23f5f5f5)](https://twitter.com/intent/follow?screen_name=TenFramework) | 关注X社区，可以获得关于TEN Framework的更新和公告      |
+| [![Follow on LinkedIn](https://custom-icon-badges.demolab.com/badge/LinkedIn-TEN_Framework-0A66C2?logo=linkedin-white&logoColor=fff)](https://www.linkedin.com/company/ten-framework) | 关注LinkedIn，可以获得关于TEN Framework的更新和公告 |
+| [![Discord TEN Community](https://dcbadge.vercel.app/api/server/VnPftUzAMJ?&style=flat&theme=light&color=lightgray)](https://discord.gg/VnPftUzAMJ) | 加入我们的 Discord 社区与开发者联系               |
+| [![Hugging Face Space](https://img.shields.io/badge/Hugging%20Face-TEN%20Framework-yellow?style=flat&logo=huggingface)](https://huggingface.co/TEN-framework) | 加入我们的 Hugging Face 社区，探索我们的空间和模型     |
+| [![WeChat](https://img.shields.io/badge/TEN_Framework-WeChat_Group-%2307C160?logo=wechat&labelColor=darkgreen&color=gray)](https://github.com/TEN-framework/ten-agent/discussions/170) | 加入我们的 微信 中文社区讨论群                     |
+
+<br>
+
+> \[!重要]
 >
-> **为 TEN 仓库点赞** ⭐️
+> **点亮 TEN 仓库** ⭐️
 >
-> 获取新版本和更新的即时通知。您的支持帮助我们成长和改进 TEN！
+> 获取新版本和更新的即时通知。您的支持帮助我们成长和改进 !
 
 <br>
 
@@ -97,7 +100,7 @@ TEN 是一系列用于构建实时、多模态对话语音代理的开源项目�
 <br>
 
 <details>
-  <summary><kbd>Star 历史</kbd></summary>
+  <summary><kbd>点亮历史曲线</kbd></summary>
   <picture>
     <img width="100%" src="https://api.star-history.com/svg?repos=ten-framework/ten-framework&type=Date">
   </picture>
@@ -111,15 +114,16 @@ TEN 是一系列用于构建实时、多模态对话语音代理的开源项目�
 
 <br>
 
-## 🎨 TMAN Designer
+## 🎨 TMAN 设计师
 
 ![TMAN Designer](https://github.com/user-attachments/assets/04fd75df-4de9-41b6-8aab-19014ecb46a4)
 
-### TMAN Designer
 
-TMAN Designer 是一个低代码/无代码选项，用于通过易于使用的工作流 UI 创建语音代理。它可以加载应用程序和图表，并包含在线编辑器、日志查看器等更多功能。
+### TMAN 设计师
 
-查看[这篇博客](https://theten.ai/blog/tman-designer-of-ten-framework)了解更多详情。
+TMAN Designer 是一款低代码/无代码的语音代理创建工具，拥有易于使用的工作流 UI。它可以加载应用程序和图表，并包含在线编辑器、日志查看器等功能。
+
+请查看[此博客](https://theten.ai/blog/tman-designer-of-ten-framework)以了解更多详细信息。
 
 <div align="right">
 
@@ -127,16 +131,30 @@ TMAN Designer 是一个低代码/无代码选项，用于通过易于使用的�
 
 </div>
 
-## ✨ 功能特性
+<!-- ## 🧩 Extensions
+
+![Ready-to-use Extensions](https://ten-framework-assets.s3.us-east-1.amazonaws.com/extensions.jpg)
+
+<div align="right">
+
+[![][back-to-top]](#readme-top)
+
+</div> -->
+
+<br>
+
+## ✨ 特征
 
 ![TEN Agent with Trulience](https://github.com/user-attachments/assets/2f1dfd55-14a3-47ea-ae25-40ad40ceadea)
 
 ### 1️⃣ 实时头像
 
-使用 TEN Agent 和 [Trulience](https://trulience.com) 提供的多样化免费头像选项构建引人入胜的 AI 头像。只需 2 个步骤即可开始使用：
+使用 [Trulience](https://trulience.com)丰富的免费虚拟形象选项，通过 TEN Agent 构建引人入胜的 AI 虚拟形象。只需两步即可启动并运行：
 
-1. 按照 README 完成游乐场的设置和运行
-2. 输入从 [Trulience](https://trulience.com) 获取的头像 ID 和 [token](https://trulience.com/docs#/authentication/jwt-tokens/jwt-tokens?id=use-your-custom-userid)
+
+
+1. 按照 README 完成 Playground 的设置和运行
+2. 输入您从[Trulience](https://trulience.com)获取的头像 ID 和[token](https://trulience.com/docs#/authentication/jwt-tokens/jwt-tokens?id=use-your-custom-userid)
 
 <div align="right">
 
@@ -148,16 +166,17 @@ TMAN Designer 是一个低代码/无代码选项，用于通过易于使用的�
 
 ![TEN Agent with MCP servers](https://github.com/user-attachments/assets/934ba928-a4a3-4662-8624-cebefc88ce05)
 
-### 2️⃣ 使用 MCP 服务器的实时语音
 
-TEN Agent 现在可以无缝集成 MCP 服务器，扩展其 LLM 功能。开始使用：
+### 2️⃣ 使用 MCP 服务器进行实时语音
 
-1. 在游乐场中打开模块选择器
-2. 添加 MCP 服务器工具进行 LLM 集成
-3. 在扩展中粘贴来自 MCP 服务器的 URL
-4. 开始与 TEN Agent 进行实时对话
+TEN Agent 现已与 MCP 服务器无缝集成，扩展了其 LLM 功能。开始使用：
 
-这种集成使您能够利用 MCP 的多样化服务器产品，同时保持 TEN Agent 强大的对话能力。
+1. 在 Playground 中打开模块选择器
+2. 添加用于 LLM 集成的 MCP 服务器工具
+3. 在扩展程序中粘贴 MCP 服务器的 URL
+4. 与 TEN Agent 开始实时对话
+
+通过这种集成，您可以利用 MCP 的多样化服务器产品，同时保持 TEN Agent 强大的对话能力。
 
 <div align="right">
 
@@ -169,11 +188,11 @@ TEN Agent 现在可以无缝集成 MCP 服务器，扩展其 LLM 功能。开始
 
 <https://github.com/user-attachments/assets/78647eef-2d66-44e6-99a8-1918a940fb9f>
 
-### 3️⃣ 与硬件的实时通信
+### 3️⃣ 与硬件实时通信
 
-TEN Agent 现在可以在 Espressif ESP32-S3 Korvo V3 开发板上运行，这是在硬件上集成 LLM 实时通信的绝佳方式。
+TEN Agent 现已在 Espressif ESP32-S3 Korvo V3 开发板上运行，这是在硬件上集成实时通信与 LLM 的绝佳方式。
 
-查看[集成指南](https://github.com/TEN-framework/ten-framework/tree/main/ai_agents/esp32-client)了解更多详情。
+请参阅[集成指南](https://github.com/TEN-framework/ten-framework/tree/main/ai_agents/esp32-client)以了解更多详细信息。
 
 <div align="right">
 
@@ -185,10 +204,10 @@ TEN Agent 现在可以在 Espressif ESP32-S3 Korvo V3 开发板上运行，这�
 
 ![Real-time vision](https://github.com/user-attachments/assets/7be06e38-994e-4f82-8ec6-183d08fe90f1)
 
+
 ### 4️⃣ 实时视觉和实时屏幕共享检测
 
-尝试使用 Google Gemini Multimodal Live API 的实时视觉和实时屏幕共享检测功能，这是一个即用型扩展，同时集成了天气查询和网络搜索等强大工具，完美融入 TEN Agent。
-
+尝试具有实时视觉和实时屏幕共享检测功能的 Google Gemini Multimodal Live API，它是一个可立即使用的扩展程序，并且将天气检查和网络搜索等强大的工具完美集成到 TEN Agent 中。
 <div align="right">
 
 [![][back-to-top]](#readme-top)
@@ -199,11 +218,12 @@ TEN Agent 现在可以在 Espressif ESP32-S3 Korvo V3 开发板上运行，这�
 
 ![TEN with other LLM platforms](https://github.com/user-attachments/assets/a3766d50-6a25-4299-b28c-e15772e4201c)
 
-### 5️⃣ 与其他 LLM 平台的集成
 
-[TEN Agent + Dify](https://doc.theten.ai/docs/ten_agent/playground/use-cases/voice-assistant/run_dify)
+### 5️⃣ TEN 与其他 LLM 平台
 
-TEN 提供了出色的支持，使其他 LLM 平台上的实时交互体验更好，查看文档了解更多。
+[TEN Agent + Dify](https://theten.ai/docs/ten_agent/playground/use-cases/voice-assistant/run_dify#steps)
+
+TEN 提供了强大的支持，使其他 LLM 平台上的实时交互体验更加出色，请查看文档了解更多信息。
 
 <div align="right">
 
@@ -215,9 +235,10 @@ TEN 提供了出色的支持，使其他 LLM 平台上的实时交互体验更�
 
 ![Image](https://github.com/user-attachments/assets/ea1025d4-b22b-4416-ab35-36cd910bc28c)
 
+
 ### 6️⃣ StoryTeller - TEN 图像生成
 
-体验 StoryTeller 的实时图像生成功能，这是一个即用型扩展，同时集成了天气查询和网络搜索等强大工具，完美融入 TEN。
+使用 StoryTeller 体验实时图像生成，它是一个可立即使用的扩展，并且与天气检查和 Web 搜索等强大的工具完美集成到 TEN 中。
 
 <div align="right">
 
@@ -227,25 +248,25 @@ TEN 提供了出色的支持，使其他 LLM 平台上的实时交互体验更�
 
 <br>
 
-## 🛝 TEN Agent Playground
+## 👩‍💻 启动并运行 TEN Agent
 
-#### 🅰️ 在 `localhost` Playground
+#### 🅰️ 在本地主机中运行 TEN Agent
 
-#### 步骤 ⓵ - 先决条件
+#### 步骤⓵-先决条件
 
-| 类别 | 要求 |
-| --- | --- |
-| **密钥** | • 声网 [APP ID](https://doc.shengwang.cn/doc/rtc/javascript/get-started/enable-service) 和 [APP 证书](https://doc.shengwang.cn/doc/rtc/javascript/get-started/enable-service)（每月免费分钟数）<br>• [OpenAI](https://openai.com/index/openai-api/) API 密钥（任何兼容 OpenAI 的 LLM）<br>• [Deepgram](https://deepgram.com/) ASR（注册可获得免费积分）<br>• [Elevenlabs](https://elevenlabs.io/) TTS（注册可获得免费积分） |
-| **安装** | • [Docker](https://www.docker.com/) / [Docker Compose](https://docs.docker.com/compose/)<br>• [Node.js(LTS) v18](https://nodejs.org/en) |
-| **最低系统要求** | • CPU >= 2 核<br>• 内存 >= 4 GB |
+| 类别         | 要求                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+|------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **关键**     | • 声网 [App ID](https://doc.shengwang.cn/doc/rtc/javascript/get-started/enable-service) and [App Certificate](https://doc.shengwang.cn/doc/rtc/javascript/get-started/enable-service) (每月免费分钟数) <br>• [OpenAI](https://openai.com/index/openai-api/) API key (任何与 OpenAI 兼容的 LLM)<br>• [Deepgram](https://deepgram.com/) ASR (注册后可获得免费积分)<br>• [Elevenlabs](https://elevenlabs.io/) TTS (注册后可获得免费积分) |
+| **安装**     | • [Docker](https://www.docker.com/) / [Docker Compose](https://docs.docker.com/compose/)<br>• [Node.js(LTS) v18](https://nodejs.org/en)                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| **系统最低配置** | • CPU >= 2 Core<br>• RAM >= 4 GB                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 
 <br>
 
-> \[!NOTE]
+> \[!注意]
 >
 > **macOS：Apple Silicon 上的 Docker 设置**
 >
-> 在 Docker 设置中取消选中"Use Rosetta for x86/amd64 emulation"，这可能会在 ARM 上导致较慢的构建时间，但在部署到 x64 服务器时性能将正常。
+> 在 Docker 设置中取消选中“使用 Rosetta 进行 x86/amd64 仿真”，这可能会导致 ARM 上的构建时间变慢，但部署到 x64 服务器时性能会正常。
 
 <br>
 
@@ -280,16 +301,16 @@ pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
 export UV_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
 ```
 
-#### 步骤 ⓶ - 在 VM 中构建 Agent
+#### 步骤⓶-在虚拟机中构建代理
 
-##### 1. 克隆仓库，`cd` 到 `ai-agents` 并从 `.env.example` 创建 `.env` 文件
+##### 1. 克隆仓库，cd到ai-agents，并拷贝文件从.env.example到.env文件
 
 ```bash
-cd ai_agent
+cd ai_agents
 cp ./.env.example ./.env
 ```
 
-##### 2. 在 `.env` 中设置 Agora App ID 和 App Certificate
+##### 2. 从Agora平台获取App ID 和 App Certificate ，并配置在 `.env`中
 
 ```bash
 AGORA_APP_ID=
@@ -308,19 +329,18 @@ docker compose up -d
 docker exec -it ten_agent_dev bash
 ```
 
-##### 5. 使用默认 `graph` 构建代理（约 5-8 分钟）
-
-查看 `/examples` 文件夹获取更多示例
+##### 5. 使用默认值构建代理graph（约 5 分钟 - 约 8 分钟）
+检查 `/examples` 文件夹以获取更多示例
 
 ```bash
-# 使用默认代理
+# use the default agent
 task use
 
-# 或使用演示代理
+# or use the demo agent
 task use AGENT=agents/examples/demo
 ```
 
-##### 6. 启动 Web 服务器
+##### 6. 启动Web服务器
 
 ```bash
 task run
@@ -328,14 +348,16 @@ task run
 
 <br>
 
-#### 步骤 ⓷ - 使用 TMAN Designer 自定义您的 Agent
+#### 步骤⓷ - 使用 TMAN Designer 自定义您的代理
 
 ![使用 TMAN Designer 自定义您的代理](https://github.com/user-attachments/assets/33f8357b-6762-45eb-8231-c2d83bb77591)
 
- 1. 打开 [localhost:49483](http://localhost:49483)。
- 2. 从菜单中选择相应的图表（例如，语音助手）。
- 3. 为每个扩展输入 API 密钥并设置首选项。
- 4. 选择语音助手后，打开 [localhost:3000](http://localhost:3000) 查看更改。
+
+ 1. 打开[localhost:49483](http://localhost:49483)。
+ 2. 右键单击以加载相应的图形（例如，语音助手）。
+ 3. 输入 API 密钥并为每个扩展设置首选项。
+ 4. 右键单击并选择“管理应用程序”以打开应用程序管理器。
+ 5. 单击▶运行应用程序。
 
 <div align="right">
 
@@ -345,14 +367,14 @@ task run
 
 <br>
 
-### 🅱️ 在 Codespace 中运行 Playground(无需 Docker)
+### 🅱️ 在 Codespace 中运行 TEN Agent（无需 docker）
 
-GitHub 为每个仓库提供免费的 Codespace，您可以在 Codespace 中运行 Playground 而无需使用 Docker。此外，Codespace 的速度比 localhost 快得多。
+GitHub 为每个仓库提供免费的 Codespace，你可以在 Codespace 中运行 playground，而无需使用 Docker。而且 Codespace 的速度比 localhost 快得多。
 
 [codespaces-shield]: <https://github.com/codespaces/badge.svg>
 [![][codespaces-shield]](https://codespaces.new/ten-framework/ten-agent)
 
-查看[本指南](https://theten.ai/docs/ten_agent/setup_development_env/setting_up_development_inside_codespace)了解更多详情。
+请参阅[this guide](https://theten.ai/docs/ten_agent/setup_development_env/setting_up_development_inside_codespace)以了解更多详细信息。
 
 <div align="right">
 
@@ -361,20 +383,33 @@ GitHub 为每个仓库提供免费的 Codespace，您可以在 Codespace 中运�
 </div>
 
 <br>
+
+<!-- ## 👀 TEN Agent Demo
+
+Playground and Demo server different purposes, in a nut shell, think it as Playground is for you to customize you agent, and Demo is for you to deploy your agent.
+
+Check out [this guide](https://theten.ai/docs/ten_agent/demo) for more details.
+<div align="right">
+
+[![][back-to-top]](#readme-top)
+
+</div>
+
+<br> -->
 
 ## 🛳️ TEN Agent 自托管
 
-#### 🅰️ 🐳 使用 Docker 部署
+#### 🅰️ 使用 Docker 部署
 
-一旦您自定义了代理（通过使用 TMAN Manager、Playground 或直接编辑 `property.json`），您就可以通过为您的服务创建发布 Docker 镜像来部署它。
+一旦您定制了agent（或者通过使用 TMAN 管理器、Playground 或property.json直接编辑），您就可以通过为您的服务创建发布 Docker 镜像来部署它。
 
-阅读[部署指南](https://theten.ai/docs/ten_agent/deploy_ten_agent/deploy_agent_service)了解有关部署的详细信息。
+阅读[部署指南](https://theten.ai/docs/ten_agent/deploy_ten_agent/deploy_agent_service)以获取有关部署的详细信息。
 
 <br>
 
-#### 🅱️ 使用其他云服务部署
+#### 🅱️ 与其他云服务一起部署
 
-*即将推出*
+*敬请期待*
 
 <div align="right">
 
@@ -384,16 +419,40 @@ GitHub 为每个仓库提供免费的 Codespace，您可以在 Codespace 中运�
 
 <br>
 
-## 🌏 TEN 生态
+<!--
+## 🏗️ TEN Agent Architecture
 
-| 项目 | 预览 |
-| ------- | ------- |
-| [**🏚️ TEN Framework**][ten-framework-link]<br>TEN 是一个用于实时、多模态对话 AI 的开源框架。<br><br>![][ten-framework-shield] | ![][ten-framework-banner] |
-| [**TEN VAD**][ten-vad-link]<br>TEN VAD 是一个低延迟、轻量级和高性能的流式语音活动检测器 (VAD)。<br><br>![][ten-vad-shield] | ![][ten-vad-banner] |
-| [**️TEN Turn Detection**][ten-turn-detection-link]<br>TEN 用于全双工对话通信。<br><br>![][ten-turn-detection-shield] | ![][ten-turn-detection-banner] |
-| [**🎙️ TEN Agent**][ten-agent-link]<br>TEN Agent 是 TEN Framework 的展示。<br><br> | ![][ten-agent-banner] |
-| **🎨 TMAN Designer** `beta`<br>TMAN Designer 是一个低代码/无代码选项，用于通过易于使用的工作流 UI 创建语音代理。<br><br> | ![][tman-designer-banner] |
-| [**📒 TEN Portal**][ten-portal-link]<br>TEN 框架的官方网站，包含文档和博客。<br><br>![][ten-portal-shield] | ![][ten-portal-banner] |
+1️⃣ **TEN Agent App**: Core application that manages extensions and data flow based on graph configuration
+
+2️⃣ **Dev Server**: `port:49480`- local server for development purposes.
+
+3️⃣ **Web Server**: `port:8080`- Golang server handling HTTP requests and agent process management
+
+4️⃣ **Front-end UI**:
+
+- `port:3000` Playground - To customize and test your agent configurations.
+- `port:3002` Demo - To deploy your agent without module picker.
+
+![Components Diagram](https://ten-framework-assets.s3.us-east-1.amazonaws.com/diagram.jpg)
+
+<div align="right">
+
+[![][back-to-top]](#readme-top)
+
+</div>
+
+<br> -->
+
+## 🌍 TEN 生态系统
+
+| 项目                                                                                                     | 预览                             |
+|--------------------------------------------------------------------------------------------------------|--------------------------------|
+| [**🏚️ TEN 框架**][ten-framework-link]<br>TEN 是一个用于实时、多模式对话式 AI 的开源框架。<br><br>![][ten-framework-shield]  | ![][ten-framework-banner]      |
+| [**️🔂 TEN 转弯检测**][ten-turn-detection-link]<br>TEN 用于全双工对话通信。<br><br>![][ten-turn-detection-shield]    | ![][ten-turn-detection-banner] |
+| [**🔉 TEN 语音活动检测**][ten-vad-link]<br>TEN VAD 是一种低延迟、轻量级和高性能的流语音活动检测器 (VAD)。<br><br>![][ten-vad-shield] | ![][ten-vad-banner]            |
+| [**🎙️ TEN 智能体**][ten-agent-link]<br>TEN Agent 是 TEN Framewrok 的展示。<br><br>                            | ![][ten-agent-banner]          |
+| [**🎨 TMAN 设计师**][tman-designer-link]<br>TMAN 设计师 是一种低代码/无代码选项，可以制作具有易于使用的工作流 UI 的语音代理。<br><br>        | ![][tman-designer-banner]      |
+| [**📒 TEN 门户**][ten-portal-link]<br>TEN 框架的官方网站，其中有文档和博客。<br><br>![][ten-portal-shield]                | ![][ten-portal-banner]         |
 
 <br>
 <div align="right">
@@ -404,12 +463,16 @@ GitHub 为每个仓库提供免费的 Codespace，您可以在 Codespace 中运�
 
 <br>
 
-## ❓ 问题
+## ❓ 提问
 
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/TEN-framework/TEN-framework)
+这些人工智能问答平台均提供 TEN 框架。它们可以帮助您快速准确地找到多种语言的答案，涵盖从基本设置到高级实现细节的所有内容。
 
-大多数问题都可以通过使用 DeepWiki 得到解答，它快速、直观且支持多种语言。
+| 服务 | 关联 |
+| ------ | ---- |
+| 深度Wiki | [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/TEN-framework/TEN-framework) |
+| 自述文件X | [![ReadmeX](https://raw.githubusercontent.com/CodePhiliaX/resource-trusteeship/main/readmex.svg)](https://readmex.com/TEN-framework/ten-framework) |
 
+<br>
 <div align="right">
 
 [![][back-to-top]](#readme-top)
@@ -418,17 +481,18 @@ GitHub 为每个仓库提供免费的 Codespace，您可以在 Codespace 中运�
 
 ## 🥰 贡献
 
-我们欢迎各种形式的开源合作！无论您是修复错误、添加功能、改进文档还是分享想法 - 您的贡献都有助于推进个性化 AI 工具的发展。查看我们的 GitHub Issues 和 Projects 找到贡献方式并展示您的技能。让我们一起构建一些令人惊叹的东西！
+我们欢迎各种形式的开源协作！无论您是修复错误、添加功能、改进文档，还是分享创意，您的贡献都将有助于推进个性化 AI 工具的发展。查看我们的 GitHub Issues 和项目，找到贡献力量并展现您技能的方法。携手共创辉煌！
 
 <br>
 
-> \[!TIP]
+> \[!提示]
 >
-> **欢迎各种形式的贡献** 🙏
+> **欢迎各种形式的捐助** 🙏
 >
-> 加入我们，让 TEN 变得更好！从代码到文档，每个贡献都很重要。在社交媒体上分享您的 TEN Agent 项目，以激励他人！
+> 加入我们，共同打造更美好的 TEN！从代码到文档，每一份贡献都意义非凡。在社交媒体上分享您的 TEN Agent 项目，激励他人!
 >
-> 在 𝕏 上联系 TEN 维护者 [@elliotchen100](https://x.com/elliotchen100) 或在 GitHub 上联系 [@cyfyifanchen](https://github.com/cyfyifanchen)，获取项目更新、讨论和合作机会。
+> 与 𝕏 上的 TEN 维护者[@elliotchen100](https://x.com/elliotchen100)或GitHub 上的[@cyfyifanchen](https://github.com/cyfyifanchen) 联系，了解项目更新、讨论和合作机会。
+
 
 <br>
 
@@ -438,15 +502,16 @@ GitHub 为每个仓库提供免费的 Codespace，您可以在 Codespace 中运�
 
 ### 贡献指南
 
-欢迎贡献！请先阅读[贡献指南](./docs/code-of-conduct/contributing.md)。
+欢迎贡献！请先阅读[贡献指南](./docs/code-of-conduct/contributing.md) 。
 
-### 许可证
+### 证书
 
-1. 整个 TEN 框架（除了下面明确列出的文件夹外）在 Apache License, Version 2.0 下发布，并附有额外限制。详情请参阅位于 TEN 框架根目录的 [LICENSE](./LICENSE) 文件。
+1. 整个 TEN 框架（除下文明确列出的文件夹外）均遵循 Apache 许可证 2.0 版发布，并附带一些附加限制。详情请参阅TEN 框架根目录中的[LICENSE](./LICENSE)文件。
 
-2. `packages` 目录中的组件在 Apache License, Version 2.0 下发布。详情请参阅每个包根目录中的 `LICENSE` 文件。
+2. 目录中的组件`packages`均遵循 Apache 许可证 2.0 版发布。详情请参阅`LICENSE`每个软件包根目录中的文件。
 
-3. TEN 框架使用的第三方库已详细列出和描述。更多信息，请参阅 [third_party](./third_party/) 文件夹。
+3. 列出并详细描述了 TEN 框架使用的第三方库。更多信息，请参阅[third_party](./third_party/) 文件夹。
+
 
 <div align="right">
 
@@ -471,6 +536,7 @@ GitHub 为每个仓库提供免费的 Codespace，您可以在 Codespace 中运�
 [ten-agent-link]: https://github.com/TEN-framework/ten-framework/tree/main/ai_agents
 [ten-agent-banner]: https://github.com/user-attachments/assets/38de2207-939b-4702-a0aa-04491f5b5275
 [tman-designer-banner]: https://github.com/user-attachments/assets/804c3543-0a47-42b7-b40b-ef32b742fb8f
+[tman-designer-link]: https://github.com/TEN-framework/ten-framework/tree/main/core/src/ten_manager/designer_frontend
 
 [ten-portal-link]: https://github.com/ten-framework/portal
 [ten-portal-shield]: https://img.shields.io/github/stars/ten-framework/portal?color=ffcb47&labelColor=gray&style=flat-square&logo=github
