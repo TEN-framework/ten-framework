@@ -5,6 +5,7 @@ APP_HOME=$(
     pwd
 )
 
+echo $APP_HOME
 cd $APP_HOME
 
 rm -rf .release
@@ -33,9 +34,10 @@ copy_package() {
 
     # package .py for python extensions
     # TODO: package 'publish' contents only
-    cp ten_packages/${package_type}/${package_name}/*.py .release/ten_packages/${package_type}/${package_name}/ | true
+    # cp ten_packages/${package_type}/${package_name}/*.py .release/ten_packages/${package_type}/${package_name}/ | true
     if [[ -f ten_packages/${package_type}/${package_name}/requirements.txt ]]; then
-        cp ten_packages/${package_type}/${package_name}/requirements.txt .release/ten_packages/${package_type}/${package_name}/
+        # cp -rf ten_packages/${package_type}/${package_name}/* .release/ten_packages/${package_type}/${package_name}/
+        find ten_packages/${package_type}/${package_name}/* -type f ! -name ".*" ! -name "*.log" ! -name "*.bak" -exec cp --parents {} .release/ten_packages/${package_type}/${package_name}/ \;
     fi
 
     # TODO: copy specific contents
