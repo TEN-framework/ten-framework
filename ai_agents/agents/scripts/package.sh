@@ -11,6 +11,7 @@ cd $APP_HOME
 rm -rf .release
 mkdir .release
 
+
 copy_package() {
     local package_type=$1
     local package_name=$2
@@ -22,6 +23,10 @@ copy_package() {
 
     if [[ -d ten_packages/${package_type}/${package_name}/interface ]]; then
         cp -r ten_packages/${package_type}/${package_name}/interface .release/ten_packages/${package_type}/${package_name}/
+    fi
+
+    if [[ -d ten_packages/${package_type}/${package_name}/api ]]; then
+        cp -r ten_packages/${package_type}/${package_name}/api .release/ten_packages/${package_type}/${package_name}/
     fi
 
     if [[ -f ten_packages/${package_type}/${package_name}/manifest.json ]]; then
