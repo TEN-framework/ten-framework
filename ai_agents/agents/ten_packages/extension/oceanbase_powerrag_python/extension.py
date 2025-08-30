@@ -76,7 +76,9 @@ class OceanBaseChatClient:
                 content="(no user message to send)",
                 created=now_ms,
             )
-            yield LLMResponseMessageDone(response_id=response_id, created=now_ms, role="assistant")
+            yield LLMResponseMessageDone(
+                response_id=response_id, created=now_ms, role="assistant"
+            )
             return
 
         session = await self._ensure_session()
@@ -109,11 +111,15 @@ class OceanBaseChatClient:
                         response_id=response_id,
                         role="assistant",
                         delta="PowerRAG request failed.",
-                        content=self.cfg.failure_info or "PowerRAG request failed.",
+                        content=self.cfg.failure_info
+                        or "PowerRAG request failed.",
                         created=err_ms,
                     )
                     yield LLMResponseMessageDone(
-                        response_id=response_id, created=err_ms, role="assistant", content=""
+                        response_id=response_id,
+                        created=err_ms,
+                        role="assistant",
+                        content="",
                     )
                     return
 
@@ -168,17 +174,23 @@ class OceanBaseChatClient:
             yield LLMResponseMessageDelta(
                 response_id=response_id,
                 role="assistant",
-                content=self.cfg.failure_info or "PowerRAG request failed with exception.",
+                content=self.cfg.failure_info
+                or "PowerRAG request failed with exception.",
                 created=err_ms,
             )
             yield LLMResponseMessageDone(
-                response_id=response_id, created=err_ms, error=str(e), role="assistant"
+                response_id=response_id,
+                created=err_ms,
+                error=str(e),
+                role="assistant",
             )
             return
 
         # finalize
         yield LLMResponseMessageDone(
-            response_id=response_id, created=int(time.time() * 1000), role="assistant"
+            response_id=response_id,
+            created=int(time.time() * 1000),
+            role="assistant",
         )
 
 
@@ -208,11 +220,18 @@ class OceanBasePowerRAGExtension(AsyncLLM2BaseExtension):
 
         missing = [
             key
-            for key in ("base_url", "api_key", "ai_database_name", "collection_id")
+            for key in (
+                "base_url",
+                "api_key",
+                "ai_database_name",
+                "collection_id",
+            )
             if not getattr(self.config, key)
         ]
         if missing:
-            async_ten_env.log_error(f"[OceanBase] missing config: {', '.join(missing)}")
+            async_ten_env.log_error(
+                f"[OceanBase] missing config: {', '.join(missing)}"
+            )
             return
 
         try:

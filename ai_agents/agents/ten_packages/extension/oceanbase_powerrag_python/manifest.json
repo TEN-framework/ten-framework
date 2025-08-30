@@ -24,6 +24,11 @@
       "tests/**"
     ]
   },
+  "tags": [
+    "python",
+    "template",
+    "llm"
+  ],
   "api": {
     "interface": [
       {
