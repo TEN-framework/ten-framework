@@ -490,6 +490,28 @@ func (s *HttpServer) output(c *gin.Context, code *Code, data any, httpStatus ...
 	c.JSON(httpStatus[0], gin.H{"code": code.code, "msg": code.msg, "data": data})
 }
 
+// Helper function to recursively merge two maps
+func mergeProperties(original, newProps map[string]interface{}) map[string]interface{} {
+	for key, newValue := range newProps {
+		if existingValue, exists := original[key]; exists {
+			// If the existing value is a map, recursively merge
+			if existingMap, ok := existingValue.(map[string]interface{}); ok {
+				if newMap, ok := newValue.(map[string]interface{}); ok {
+					original[key] = mergeProperties(existingMap, newMap)
+				} else {
+					original[key] = newValue // Replace value if it's not a map
+				}
+			} else {
+				original[key] = newValue // Replace non-map values
+			}
+		} else {
+			// If the key doesn't exist, simply add the new value
+			original[key] = newValue
+		}
+	}
+	return original
+}
+
 func (s *HttpServer) processProperty(req *StartReq) (propertyJsonFile string, logFile string, err error) {
 	content, err := os.ReadFile(PropertyJsonFile)
 	if err != nil {
@@ -573,7 +595,21 @@ func (s *HttpServer) processProperty(req *StartReq) (propertyJsonFile string, lo
 						nodeMap, _ := node.(map[string]interface{})
 						if nodeMap["name"] == extensionName {
 							properties := nodeMap["property"].(map[string]interface{})
-							properties[prop] = val
+
+							// Handle type assertion properly
+							if existingProp, ok := properties[prop].(map[string]interface{}); ok {
+								// If the existing property is a map, merge it
+								properties[prop] = mergeProperties(existingProp, val.(map[string]interface{}))
+							} else {
+								// If the existing property is not a map, convert it or skip the merge
+								// You can initialize a new map or just replace the value
+								if newProp, ok := val.(map[string]interface{}); ok {
+									properties[prop] = newProp
+								} else {
+									// If val is not a map, you may just set it as a value directly
+									properties[prop] = val
+								}
+							}
 						}
 					}
 				}

@@ -1,6 +1,6 @@
 {
   "type": "extension",
-  "name": "openai_llm2_python",
+  "name": "oceanbase_powerrag_python",
   "version": "0.1.0",
   "dependencies": [
     {
@@ -18,11 +18,17 @@
     "include": [
       "manifest.json",
       "property.json",
+      "**.tent",
       "**.py",
       "README.md",
-      "requirements.txt"
+      "tests/**"
     ]
   },
+  "tags": [
+    "python",
+    "template",
+    "llm"
+  ],
   "api": {
     "interface": [
       {
@@ -31,19 +37,22 @@
     ],
     "property": {
       "properties": {
-        "api_key": {
-          "type": "string"
-        },
-        "model": {
+        "user_id": {
           "type": "string"
         },
         "base_url": {
           "type": "string"
         },
-        "proxy_url": {
+        "api_key": {
           "type": "string"
         },
-        "prompt": {
+        "ai_database_name": {
+          "type": "string"
+        },
+        "collection_id": {
+          "type": "string"
+        },
+        "failure_info": {
           "type": "string"
         }
       }

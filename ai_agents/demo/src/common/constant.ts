@@ -67,10 +67,10 @@ export const GRAPH_OPTIONS: GraphOptionItem[] = [
     label: "Voice Agent with Azure Voice AI API",
     value: "va_azure_v2v"
   },
-  {
-    label: "Voice Agent with Grok 4",
-    value: "grok4",
-  },
+  // {
+  //   label: "Voice Agent with Grok 4",
+  //   value: "grok4",
+  // },
   {
     label: "Voice Agent with Llama4",
     value: "va_llama4",
@@ -79,10 +79,10 @@ export const GRAPH_OPTIONS: GraphOptionItem[] = [
     label: "Voice Agent with Qwen3 Reasoning",
     value: "qwen3",
   },
-  {
-    label: "Voice Agent with DeepSeek R1 Reasoning",
-    value: "deepseek_r1",
-  },
+  // {
+  //   label: "Voice Agent with DeepSeek R1 Reasoning",
+  //   value: "deepseek_r1",
+  // },
   {
     label: "Voice Agent Gemini 2.0 Realtime - Live API",
     value: "va_gemini_v2v",
