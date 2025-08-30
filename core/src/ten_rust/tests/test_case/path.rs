@@ -15,8 +15,7 @@ mod tests {
         {
             let import_uri = "/home/user/interface.json";
             let base_dir = "/home/user";
-            let real_path =
-                get_real_path_from_import_uri(import_uri, Some(base_dir));
+            let real_path = get_real_path_from_import_uri(import_uri, Some(base_dir));
 
             assert!(real_path.is_err());
             assert!(real_path
@@ -31,8 +30,7 @@ mod tests {
     fn test_get_real_path_http_url() {
         let import_uri = "http://example.com/api/interface.json";
         let base_dir = "/some/path";
-        let real_path =
-            get_real_path_from_import_uri(import_uri, Some(base_dir));
+        let real_path = get_real_path_from_import_uri(import_uri, Some(base_dir));
 
         assert!(real_path.is_ok());
         assert_eq!(real_path.unwrap(), "http://example.com/api/interface.json");
@@ -42,22 +40,17 @@ mod tests {
     fn test_get_real_path_https_url() {
         let import_uri = "https://example.com/api/interface.json";
         let base_dir = "/some/path";
-        let real_path =
-            get_real_path_from_import_uri(import_uri, Some(base_dir));
+        let real_path = get_real_path_from_import_uri(import_uri, Some(base_dir));
 
         assert!(real_path.is_ok());
-        assert_eq!(
-            real_path.unwrap(),
-            "https://example.com/api/interface.json"
-        );
+        assert_eq!(real_path.unwrap(), "https://example.com/api/interface.json");
     }
 
     #[test]
     fn test_get_real_path_file_url() {
         let import_uri = "file:///home/user/interface.json";
         let base_dir = "/some/path";
-        let real_path =
-            get_real_path_from_import_uri(import_uri, Some(base_dir));
+        let real_path = get_real_path_from_import_uri(import_uri, Some(base_dir));
 
         assert!(real_path.is_ok());
         assert_eq!(real_path.unwrap(), "file:///home/user/interface.json");
@@ -67,8 +60,7 @@ mod tests {
     fn test_get_real_path_unsupported_url_scheme() {
         let import_uri = "ftp://example.com/interface.json";
         let base_dir = "/some/path";
-        let real_path =
-            get_real_path_from_import_uri(import_uri, Some(base_dir));
+        let real_path = get_real_path_from_import_uri(import_uri, Some(base_dir));
 
         assert!(real_path.is_err());
         assert!(real_path
@@ -82,8 +74,7 @@ mod tests {
     fn test_get_real_path_relative_path_empty_base_dir() {
         let import_uri = "interface.json";
         let base_dir = "";
-        let real_path =
-            get_real_path_from_import_uri(import_uri, Some(base_dir));
+        let real_path = get_real_path_from_import_uri(import_uri, Some(base_dir));
 
         assert!(real_path.is_err());
         assert!(real_path
@@ -97,8 +88,7 @@ mod tests {
     fn test_get_real_path_relative_path_with_http_base_dir() {
         let import_uri = "interface.json";
         let base_dir = "http://example.com/api/v1";
-        let real_path =
-            get_real_path_from_import_uri(import_uri, Some(base_dir));
+        let real_path = get_real_path_from_import_uri(import_uri, Some(base_dir));
 
         assert!(real_path.is_ok());
         assert_eq!(
@@ -111,8 +101,7 @@ mod tests {
     fn test_get_real_path_relative_path_with_https_base_dir() {
         let import_uri = "interface.json";
         let base_dir = "https://example.com/api/v1";
-        let real_path =
-            get_real_path_from_import_uri(import_uri, Some(base_dir));
+        let real_path = get_real_path_from_import_uri(import_uri, Some(base_dir));
 
         assert!(real_path.is_ok());
         assert_eq!(
@@ -125,8 +114,7 @@ mod tests {
     fn test_get_real_path_relative_path_with_https_base_dir2() {
         let import_uri = "./interface.json";
         let base_dir = "https://example.com/api/v1";
-        let real_path =
-            get_real_path_from_import_uri(import_uri, Some(base_dir));
+        let real_path = get_real_path_from_import_uri(import_uri, Some(base_dir));
 
         assert!(real_path.is_ok());
         assert_eq!(
@@ -136,26 +124,20 @@ mod tests {
     }
 
     #[test]
-    fn test_get_real_path_relative_path_with_https_base_dir_and_relative_path()
-    {
+    fn test_get_real_path_relative_path_with_https_base_dir_and_relative_path() {
         let import_uri = "../interface.json";
         let base_dir = "https://example.com/api/v1";
-        let real_path =
-            get_real_path_from_import_uri(import_uri, Some(base_dir));
+        let real_path = get_real_path_from_import_uri(import_uri, Some(base_dir));
 
         assert!(real_path.is_ok());
-        assert_eq!(
-            real_path.unwrap(),
-            "https://example.com/api/interface.json"
-        );
+        assert_eq!(real_path.unwrap(), "https://example.com/api/interface.json");
     }
 
     #[test]
     fn test_get_real_path_relative_path_with_file_base_dir() {
         let import_uri = "../interface.json";
         let base_dir = "file:///home/user/tmp";
-        let real_path =
-            get_real_path_from_import_uri(import_uri, Some(base_dir));
+        let real_path = get_real_path_from_import_uri(import_uri, Some(base_dir));
 
         assert!(real_path.is_ok());
         assert_eq!(real_path.unwrap(), "file:///home/user/interface.json");
@@ -165,8 +147,7 @@ mod tests {
     fn test_get_real_path_relative_path_with_local_base_dir() {
         let import_uri = "interface.json";
         let base_dir = "/home/user";
-        let real_path =
-            get_real_path_from_import_uri(import_uri, Some(base_dir));
+        let real_path = get_real_path_from_import_uri(import_uri, Some(base_dir));
 
         assert!(real_path.is_ok());
         let result = real_path.unwrap();
@@ -186,8 +167,7 @@ mod tests {
     fn test_get_real_path_relative_path_with_subdirectory() {
         let import_uri = "subdir/interface.json";
         let base_dir = "/home/user";
-        let real_path =
-            get_real_path_from_import_uri(import_uri, Some(base_dir));
+        let real_path = get_real_path_from_import_uri(import_uri, Some(base_dir));
 
         assert!(real_path.is_ok());
         let result = real_path.unwrap();
@@ -206,8 +186,7 @@ mod tests {
     fn test_get_real_path_relative_path_with_parent_directory() {
         let import_uri = "../interface.json";
         let base_dir = "/home/user/project";
-        let real_path =
-            get_real_path_from_import_uri(import_uri, Some(base_dir));
+        let real_path = get_real_path_from_import_uri(import_uri, Some(base_dir));
 
         assert!(real_path.is_ok());
         let result = real_path.unwrap();
@@ -229,10 +208,7 @@ mod tests {
         {
             let import_uri_win = "C:\\Users\\test\\interface.json";
             let base_dir_win = "C:\\Users\\test";
-            let real_path_win = get_real_path_from_import_uri(
-                import_uri_win,
-                Some(base_dir_win),
-            );
+            let real_path_win = get_real_path_from_import_uri(import_uri_win, Some(base_dir_win));
 
             assert!(real_path_win.is_err());
             assert!(real_path_win
@@ -247,8 +223,7 @@ mod tests {
     fn test_get_real_path_complex_relative_path() {
         let import_uri = "./subdir/../interface.json";
         let base_dir = "/home/user/project";
-        let real_path =
-            get_real_path_from_import_uri(import_uri, Some(base_dir));
+        let real_path = get_real_path_from_import_uri(import_uri, Some(base_dir));
 
         assert!(real_path.is_ok());
         let result = real_path.unwrap();
@@ -267,8 +242,7 @@ mod tests {
     fn test_get_real_path_url_with_query_params() {
         let import_uri = "https://example.com/api/interface.json?version=1.0";
         let base_dir = "/some/path";
-        let real_path =
-            get_real_path_from_import_uri(import_uri, Some(base_dir));
+        let real_path = get_real_path_from_import_uri(import_uri, Some(base_dir));
 
         assert!(real_path.is_ok());
         assert_eq!(
@@ -281,8 +255,7 @@ mod tests {
     fn test_get_real_path_url_with_fragment() {
         let import_uri = "https://example.com/api/interface.json#section1";
         let base_dir = "/some/path";
-        let real_path =
-            get_real_path_from_import_uri(import_uri, Some(base_dir));
+        let real_path = get_real_path_from_import_uri(import_uri, Some(base_dir));
 
         assert!(real_path.is_ok());
         assert_eq!(
@@ -295,8 +268,7 @@ mod tests {
     fn test_get_real_path_relative_with_windows_base_dir() {
         let import_uri = "interface.json";
         let base_dir = "C:\\Users\\test";
-        let real_path =
-            get_real_path_from_import_uri(import_uri, Some(base_dir));
+        let real_path = get_real_path_from_import_uri(import_uri, Some(base_dir));
 
         assert!(real_path.is_ok());
         // On Windows, this would be C:\Users\test\interface.json

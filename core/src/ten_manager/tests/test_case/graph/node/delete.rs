@@ -8,9 +8,7 @@
 mod tests {
     use ten_manager::designer::graphs::nodes::delete::graph_delete_extension_node;
     use ten_rust::graph::{
-        connection::{
-            GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow,
-        },
+        connection::{GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow},
         node::GraphNode,
         Graph,
     };
@@ -47,8 +45,7 @@ mod tests {
             msg_conversion: None,
         };
 
-        let message_flow =
-            GraphMessageFlow::new(cmd_name.to_string(), vec![dest], vec![]);
+        let message_flow = GraphMessageFlow::new(cmd_name.to_string(), vec![dest], vec![]);
 
         GraphConnection {
             loc: GraphLoc {
@@ -69,47 +66,14 @@ mod tests {
         // Create a graph with multiple nodes and connections.
         let mut graph = Graph {
             nodes: vec![
-                create_test_node(
-                    "ext1",
-                    "addon1",
-                    Some("app1"),
-                    Some("group1"),
-                ),
-                create_test_node(
-                    "ext2",
-                    "addon2",
-                    Some("app1"),
-                    Some("group2"),
-                ),
-                create_test_node(
-                    "ext3",
-                    "addon3",
-                    Some("app2"),
-                    Some("group3"),
-                ),
+                create_test_node("ext1", "addon1", Some("app1"), Some("group1")),
+                create_test_node("ext2", "addon2", Some("app1"), Some("group2")),
+                create_test_node("ext3", "addon3", Some("app2"), Some("group3")),
             ],
             connections: Some(vec![
-                create_test_connection(
-                    "ext1",
-                    Some("app1"),
-                    "cmd1",
-                    "ext2",
-                    Some("app1"),
-                ),
-                create_test_connection(
-                    "ext2",
-                    Some("app1"),
-                    "cmd2",
-                    "ext3",
-                    Some("app2"),
-                ),
-                create_test_connection(
-                    "ext3",
-                    Some("app2"),
-                    "cmd3",
-                    "ext1",
-                    Some("app1"),
-                ),
+                create_test_connection("ext1", Some("app1"), "cmd1", "ext2", Some("app1")),
+                create_test_connection("ext2", Some("app1"), "cmd2", "ext3", Some("app2")),
+                create_test_connection("ext3", Some("app2"), "cmd3", "ext1", Some("app1")),
             ]),
             exposed_messages: None,
             exposed_properties: None,

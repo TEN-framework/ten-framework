@@ -25,13 +25,14 @@ pub async fn get_frontend_asset(
 ) -> Result<impl Responder, actix_web::Error> {
     let start_time = Instant::now();
     let path = req.path().trim_start_matches('/').to_owned();
-    let client_ip =
-        req.connection_info().peer_addr().unwrap_or("unknown").to_string();
+    let client_ip = req
+        .connection_info()
+        .peer_addr()
+        .unwrap_or("unknown")
+        .to_string();
 
     if is_verbose(state.tman_config.clone()).await {
-        println!(
-            "[FRONTEND ASSET] Request from IP: {client_ip}, Path: '{path}'"
-        );
+        println!("[FRONTEND ASSET] Request from IP: {client_ip}, Path: '{path}'");
     }
 
     if path.is_empty() {

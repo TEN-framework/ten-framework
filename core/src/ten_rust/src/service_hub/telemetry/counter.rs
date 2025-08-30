@@ -45,8 +45,7 @@ pub fn create_metric_counter(
     let counter_opts = prometheus::Opts::new(name_str, help_str);
     match prometheus::Counter::with_opts(counter_opts) {
         Ok(counter) => {
-            if let Err(e) = system.registry.register(Box::new(counter.clone()))
-            {
+            if let Err(e) = system.registry.register(Box::new(counter.clone())) {
                 eprintln!("Error registering counter: {e:?}");
                 return Err(anyhow::anyhow!("Error registering counter"));
             }
@@ -65,9 +64,7 @@ pub fn create_metric_counter_with_labels(
     let counter_opts = prometheus::Opts::new(name_str, help_str);
     match prometheus::CounterVec::new(counter_opts, label_names) {
         Ok(counter_vec) => {
-            if let Err(e) =
-                system.registry.register(Box::new(counter_vec.clone()))
-            {
+            if let Err(e) = system.registry.register(Box::new(counter_vec.clone())) {
                 eprintln!("Error registering counter vec: {e:?}");
                 return Err(anyhow::anyhow!("Error registering counter"));
             }
@@ -98,18 +95,12 @@ unsafe fn apply_to_counter<F>(
             op(counter);
         }
         MetricHandle::CounterVec(ref counter_vec) => {
-            let values_owned = match convert_label_values(
-                label_values_ptr,
-                label_values_len,
-            ) {
+            let values_owned = match convert_label_values(label_values_ptr, label_values_len) {
                 Some(v) => v,
                 None => return,
             };
-            let label_refs: Vec<&str> =
-                values_owned.iter().map(|s| s.as_str()).collect();
-            if let Ok(counter) =
-                counter_vec.get_metric_with_label_values(&label_refs)
-            {
+            let label_refs: Vec<&str> = values_owned.iter().map(|s| s.as_str()).collect();
+            if let Ok(counter) = counter_vec.get_metric_with_label_values(&label_refs) {
                 op(&counter);
             }
         }
@@ -124,12 +115,9 @@ pub unsafe extern "C" fn ten_metric_counter_inc(
     label_values_ptr: *const *const c_char,
     label_values_len: usize,
 ) {
-    apply_to_counter(
-        metric_ptr,
-        label_values_ptr,
-        label_values_len,
-        |counter| counter.inc(),
-    );
+    apply_to_counter(metric_ptr, label_values_ptr, label_values_len, |counter| {
+        counter.inc()
+    });
 }
 
 #[no_mangle]
@@ -140,10 +128,7 @@ pub unsafe extern "C" fn ten_metric_counter_add(
     label_values_ptr: *const *const c_char,
     label_values_len: usize,
 ) {
-    apply_to_counter(
-        metric_ptr,
-        label_values_ptr,
-        label_values_len,
-        |counter| counter.inc_by(value),
-    );
+    apply_to_counter(metric_ptr, label_values_ptr, label_values_len, |counter| {
+        counter.inc_by(value)
+    });
 }

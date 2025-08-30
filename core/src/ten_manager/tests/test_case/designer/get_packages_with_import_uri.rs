@@ -98,12 +98,10 @@ mod tests {
         }
 
         // Create pkg_registry_info
-        let pkg_registry_info = get_pkg_registry_info_from_manifest(
-            "https://example.com/test.tar.gz",
-            &manifest,
-        )
-        .await
-        .unwrap();
+        let pkg_registry_info =
+            get_pkg_registry_info_from_manifest("https://example.com/test.tar.gz", &manifest)
+                .await
+                .unwrap();
 
         // Verify that import_uri fields are resolved to actual content
         assert!(pkg_registry_info.display_name.is_some());
@@ -129,13 +127,25 @@ mod tests {
 
         assert!(description.locales.get("en-US").unwrap().content.is_some());
         assert_eq!(
-            description.locales.get("en-US").unwrap().content.as_ref().unwrap(),
+            description
+                .locales
+                .get("en-US")
+                .unwrap()
+                .content
+                .as_ref()
+                .unwrap(),
             "This is a test extension for demonstration"
         );
 
         assert!(readme.locales.get("en-US").unwrap().content.is_some());
         assert_eq!(
-            readme.locales.get("en-US").unwrap().content.as_ref().unwrap(),
+            readme
+                .locales
+                .get("en-US")
+                .unwrap()
+                .content
+                .as_ref()
+                .unwrap(),
             "# Test Extension\n\nThis is a comprehensive test extension."
         );
 
@@ -159,7 +169,12 @@ mod tests {
             .unwrap()
             .import_uri
             .is_some());
-        assert!(description.locales.get("en-US").unwrap().import_uri.is_some());
+        assert!(description
+            .locales
+            .get("en-US")
+            .unwrap()
+            .import_uri
+            .is_some());
         assert!(readme.locales.get("en-US").unwrap().import_uri.is_some());
 
         println!(
@@ -205,8 +220,7 @@ mod tests {
         // parse_manifest_from_file behavior)
         if let Some(ref mut display_name) = manifest.display_name {
             for (_locale, locale_content) in display_name.locales.iter_mut() {
-                locale_content.base_dir =
-                    Some(temp_path.to_string_lossy().to_string());
+                locale_content.base_dir = Some(temp_path.to_string_lossy().to_string());
             }
         }
 

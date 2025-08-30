@@ -20,9 +20,7 @@ use ten_rust::pkg_info::property::Property;
 use crate::constants::BUF_WRITER_BUF_SIZE;
 
 /// Read json file from disk
-fn read_json_file_to_map(
-    path: &str,
-) -> Result<serde_json::Map<String, serde_json::Value>> {
+fn read_json_file_to_map(path: &str) -> Result<serde_json::Map<String, serde_json::Value>> {
     let property_file = OpenOptions::new()
         .read(true)
         .open(path)
@@ -45,8 +43,7 @@ fn write_json_map_to_file(
         .open(path)
         .context("Failed to open property.json file")?;
 
-    let mut buf_writer =
-        BufWriter::with_capacity(BUF_WRITER_BUF_SIZE, property_file);
+    let mut buf_writer = BufWriter::with_capacity(BUF_WRITER_BUF_SIZE, property_file);
 
     serde_json::to_writer_pretty(&mut buf_writer, json)
         .context("Failed to write to property.json file")?;
@@ -62,7 +59,10 @@ pub fn write_property_json_file(
     property_json: &serde_json::Map<String, serde_json::Value>,
 ) -> Result<()> {
     write_json_map_to_file(
-        Path::new(base_dir).join(PROPERTY_JSON_FILENAME).to_str().unwrap(),
+        Path::new(base_dir)
+            .join(PROPERTY_JSON_FILENAME)
+            .to_str()
+            .unwrap(),
         property_json,
     )
 }
@@ -73,7 +73,10 @@ pub fn write_manifest_json_file(
     manifest_json: &serde_json::Map<String, serde_json::Value>,
 ) -> Result<()> {
     write_json_map_to_file(
-        Path::new(base_dir).join(MANIFEST_JSON_FILENAME).to_str().unwrap(),
+        Path::new(base_dir)
+            .join(MANIFEST_JSON_FILENAME)
+            .to_str()
+            .unwrap(),
         manifest_json,
     )
 }
@@ -110,7 +113,10 @@ pub fn patch_property_json_file(
     let mut whole_property_json = serde_json::Value::Object(
         // Read from property.json.
         read_json_file_to_map(
-            Path::new(base_dir).join(PROPERTY_JSON_FILENAME).to_str().unwrap(),
+            Path::new(base_dir)
+                .join(PROPERTY_JSON_FILENAME)
+                .to_str()
+                .unwrap(),
         )
         .context("Failed to read property.json file")?,
     );

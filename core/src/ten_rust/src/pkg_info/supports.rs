@@ -10,9 +10,7 @@ use std::{fmt, str::FromStr};
 use anyhow::{Error, Result};
 use serde::{Deserialize, Serialize};
 
-#[derive(
-    Clone, Debug, Serialize, Hash, Deserialize, PartialEq, Eq, PartialOrd, Ord,
-)]
+#[derive(Clone, Debug, Serialize, Hash, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Os {
     #[serde(rename = "win")]
     Win,
@@ -49,9 +47,7 @@ impl fmt::Display for Os {
     }
 }
 
-#[derive(
-    Clone, Debug, Serialize, Hash, Deserialize, PartialEq, Eq, PartialOrd, Ord,
-)]
+#[derive(Clone, Debug, Serialize, Hash, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Arch {
     #[serde(rename = "x86")]
     X86,

@@ -32,7 +32,12 @@ pub struct DesignerGraphLoc {
 
 impl DesignerGraphLoc {
     pub fn new() -> Self {
-        Self { app: None, extension: None, subgraph: None, selector: None }
+        Self {
+            app: None,
+            extension: None,
+            subgraph: None,
+            selector: None,
+        }
     }
 
     pub fn with_app_and_extension_or_subgraph(
@@ -40,7 +45,12 @@ impl DesignerGraphLoc {
         extension: Option<String>,
         subgraph: Option<String>,
     ) -> Self {
-        Self { app, extension, subgraph, selector: None }
+        Self {
+            app,
+            extension,
+            subgraph,
+            selector: None,
+        }
     }
 }
 
@@ -170,9 +180,7 @@ fn get_designer_destination_from_property(
     destinations.into_iter().map(|v| v.into()).collect()
 }
 
-fn get_designer_source_from_property(
-    sources: Vec<GraphSource>,
-) -> Vec<DesignerGraphSource> {
+fn get_designer_source_from_property(sources: Vec<GraphSource>) -> Vec<DesignerGraphSource> {
     sources.into_iter().map(|v| v.into()).collect()
 }
 
@@ -224,13 +232,9 @@ impl From<GraphConnection> for DesignerGraphConnection {
 
             data: conn.data.map(get_designer_msg_flow_from_property),
 
-            audio_frame: conn
-                .audio_frame
-                .map(get_designer_msg_flow_from_property),
+            audio_frame: conn.audio_frame.map(get_designer_msg_flow_from_property),
 
-            video_frame: conn
-                .video_frame
-                .map(get_designer_msg_flow_from_property),
+            video_frame: conn.video_frame.map(get_designer_msg_flow_from_property),
         }
     }
 }

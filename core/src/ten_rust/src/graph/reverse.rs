@@ -5,9 +5,7 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 use crate::graph::{
-    connection::{
-        GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow,
-    },
+    connection::{GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow},
     Graph,
 };
 use anyhow::Result;
@@ -69,9 +67,9 @@ impl Graph {
     fn has_reversed_connections(connections: &[GraphConnection]) -> bool {
         connections.iter().any(|conn| {
             let check_flows = |flows: &Option<Vec<GraphMessageFlow>>| {
-                flows.as_ref().is_some_and(|f| {
-                    f.iter().any(|flow| !flow.source.is_empty())
-                })
+                flows
+                    .as_ref()
+                    .is_some_and(|f| f.iter().any(|flow| !flow.source.is_empty()))
             };
 
             check_flows(&conn.cmd)
@@ -83,9 +81,7 @@ impl Graph {
 
     /// If there are reverse connections in a connection, directly flip it to
     /// generate new connections and add them to result connections
-    fn reverse_connection(
-        conn: &GraphConnection,
-    ) -> Result<Vec<GraphConnection>> {
+    fn reverse_connection(conn: &GraphConnection) -> Result<Vec<GraphConnection>> {
         let mut new_conns = Vec::new();
         let conn_loc = GraphDestination {
             loc: GraphLoc {
@@ -99,42 +95,22 @@ impl Graph {
 
         // Process command flows
         if let Some(cmd_flows) = &conn.cmd {
-            Self::process_message_flows(
-                cmd_flows,
-                "cmd",
-                &conn_loc,
-                &mut new_conns,
-            )?;
+            Self::process_message_flows(cmd_flows, "cmd", &conn_loc, &mut new_conns)?;
         }
 
         // Process data flows
         if let Some(data_flows) = &conn.data {
-            Self::process_message_flows(
-                data_flows,
-                "data",
-                &conn_loc,
-                &mut new_conns,
-            )?;
+            Self::process_message_flows(data_flows, "data", &conn_loc, &mut new_conns)?;
         }
 
         // Process audio frame flows
         if let Some(audio_flows) = &conn.audio_frame {
-            Self::process_message_flows(
-                audio_flows,
-                "audio_frame",
-                &conn_loc,
-                &mut new_conns,
-            )?;
+            Self::process_message_flows(audio_flows, "audio_frame", &conn_loc, &mut new_conns)?;
         }
 
         // Process video frame flows
         if let Some(video_flows) = &conn.video_frame {
-            Self::process_message_flows(
-                video_flows,
-                "video_frame",
-                &conn_loc,
-                &mut new_conns,
-            )?;
+            Self::process_message_flows(video_flows, "video_frame", &conn_loc, &mut new_conns)?;
         }
 
         Ok(new_conns)
@@ -142,14 +118,11 @@ impl Graph {
 
     /// Merge flows within a connection to handle duplicates
     fn merge_flows(flows: &mut Vec<GraphMessageFlow>) -> Result<()> {
-        let mut flow_map: HashMap<
-            (Vec<GraphLoc>, Option<String>),
-            GraphMessageFlow,
-        > = HashMap::new();
+        let mut flow_map: HashMap<(Vec<GraphLoc>, Option<String>), GraphMessageFlow> =
+            HashMap::new();
 
         for flow in flows.drain(..) {
-            let sources: Vec<GraphLoc> =
-                flow.source.iter().map(|src| src.loc.clone()).collect();
+            let sources: Vec<GraphLoc> = flow.source.iter().map(|src| src.loc.clone()).collect();
             let key = (sources, flow.name.clone());
 
             if let Some(existing) = flow_map.get_mut(&key) {
@@ -158,11 +131,10 @@ impl Graph {
                     if !existing.dest.iter().any(|d| d.loc == dest.loc) {
                         // If destination exists with different msg_conversion,
                         // it's a conflict
-                        if let Some(existing_dest) =
-                            existing.dest.iter().find(|d| {
-                                d.loc == dest.loc
-                                    && d.msg_conversion != dest.msg_conversion
-                            })
+                        if let Some(existing_dest) = existing
+                            .dest
+                            .iter()
+                            .find(|d| d.loc == dest.loc && d.msg_conversion != dest.msg_conversion)
                         {
                             return Err(anyhow::anyhow!(
                                 "Conflicting message conversion for \
@@ -185,11 +157,8 @@ impl Graph {
     }
 
     /// Merge duplicate forward connections and their flows
-    fn merge_connections(
-        connections: Vec<GraphConnection>,
-    ) -> Result<Vec<GraphConnection>> {
-        let mut merged_connections: HashMap<GraphLoc, GraphConnection> =
-            HashMap::new();
+    fn merge_connections(connections: Vec<GraphConnection>) -> Result<Vec<GraphConnection>> {
+        let mut merged_connections: HashMap<GraphLoc, GraphConnection> = HashMap::new();
 
         for mut conn in connections {
             let key = conn.loc.clone();
@@ -281,9 +250,7 @@ impl Graph {
     fn remove_empty_flows(conn: &mut GraphConnection) {
         // Helper closure to remove empty flows from a Vec<GraphMessageFlow>
         let remove_empty = |flows: &mut Vec<GraphMessageFlow>| {
-            flows.retain(|flow| {
-                !flow.source.is_empty() || !flow.dest.is_empty()
-            });
+            flows.retain(|flow| !flow.source.is_empty() || !flow.dest.is_empty());
         };
 
         // Remove empty command flows
@@ -321,9 +288,7 @@ impl Graph {
 
     /// Removes flows that have no source and no dest from a connection.
     /// If all flows of a certain type are removed, sets that type to None.
-    fn remove_empty_flows_and_connections(
-        connections: &mut Vec<GraphConnection>,
-    ) {
+    fn remove_empty_flows_and_connections(connections: &mut Vec<GraphConnection>) {
         for conn in connections.iter_mut() {
             Self::remove_empty_flows(conn);
         }
@@ -352,9 +317,7 @@ impl Graph {
     /// * `Ok(None)` if no reversed connections found
     /// * `Ok(Some(Graph))` with converted graph if reversed connections exist
     /// * `Err` if there are conflicts during merging
-    pub fn convert_reversed_connections_to_forward_connections(
-        &self,
-    ) -> Result<Option<Graph>> {
+    pub fn convert_reversed_connections_to_forward_connections(&self) -> Result<Option<Graph>> {
         // Early return if no connections exist
         let Some(connections) = &self.connections else {
             return Ok(None);

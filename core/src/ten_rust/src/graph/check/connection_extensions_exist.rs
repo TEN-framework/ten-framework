@@ -107,21 +107,17 @@ impl Graph {
                 // format) except for built-in extensions with
                 // "ten:" prefix These will be validated by
                 // check_subgraph_references_exist
-                let should_skip =
-                    if let Some(colon_pos) = extension_name.find(':') {
-                        let namespace = &extension_name[..colon_pos];
-                        namespace != "ten"
-                    } else {
-                        false
-                    };
+                let should_skip = if let Some(colon_pos) = extension_name.find(':') {
+                    let namespace = &extension_name[..colon_pos];
+                    namespace != "ten"
+                } else {
+                    false
+                };
 
                 if !should_skip {
                     let src_extension = format!(
                         "{}:{}",
-                        connection
-                            .get_app_uri()
-                            .as_ref()
-                            .map_or("", |s| s.as_str()),
+                        connection.get_app_uri().as_ref().map_or("", |s| s.as_str()),
                         extension_name
                     );
                     if !all_extensions.contains(&src_extension) {

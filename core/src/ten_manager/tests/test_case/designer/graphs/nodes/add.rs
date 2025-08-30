@@ -14,8 +14,7 @@ mod tests {
         constants::TEST_DIR,
         designer::{
             graphs::nodes::add::{
-                add_graph_node_endpoint, AddGraphNodeRequestPayload,
-                AddGraphNodeResponsePayload,
+                add_graph_node_endpoint, AddGraphNodeRequestPayload, AddGraphNodeResponsePayload,
             },
             response::{ApiResponse, ErrorResponse, Status},
             storage::in_memory::TmanStorageInMemory,
@@ -38,12 +37,8 @@ mod tests {
     #[actix_web::test]
     async fn test_add_graph_node_invalid_graph() {
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -54,22 +49,15 @@ mod tests {
             let mut pkgs_cache = designer_state.pkgs_cache.write().await;
             let mut graphs_cache = designer_state.graphs_cache.write().await;
 
-            inject_all_standard_pkgs_for_mock(
-                &mut pkgs_cache,
-                &mut graphs_cache,
-                TEST_DIR,
-            )
-            .await;
+            inject_all_standard_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, TEST_DIR).await;
         }
 
         let designer_state = Arc::new(designer_state);
 
-        let app = test::init_service(
-            App::new().app_data(web::Data::new(designer_state)).route(
-                "/api/designer/v1/graphs/nodes/add",
-                web::post().to(add_graph_node_endpoint),
-            ),
-        )
+        let app = test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
+            "/api/designer/v1/graphs/nodes/add",
+            web::post().to(add_graph_node_endpoint),
+        ))
         .await;
 
         // Try to add a node to a non-existent graph.
@@ -103,12 +91,8 @@ mod tests {
     #[actix_web::test]
     async fn test_add_graph_node_invalid_app_uri() {
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -119,32 +103,24 @@ mod tests {
             let mut pkgs_cache = designer_state.pkgs_cache.write().await;
             let mut graphs_cache = designer_state.graphs_cache.write().await;
 
-            inject_all_standard_pkgs_for_mock(
-                &mut pkgs_cache,
-                &mut graphs_cache,
-                TEST_DIR,
-            )
-            .await;
+            inject_all_standard_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, TEST_DIR).await;
         }
 
         let graph_id_clone;
         {
             let graphs_cache = designer_state.graphs_cache.read().await;
 
-            let (graph_id, _) =
-                graphs_cache_find_by_name(&graphs_cache, "default").unwrap();
+            let (graph_id, _) = graphs_cache_find_by_name(&graphs_cache, "default").unwrap();
 
             graph_id_clone = *graph_id;
         }
 
         let designer_state = Arc::new(designer_state);
 
-        let app = test::init_service(
-            App::new().app_data(web::Data::new(designer_state)).route(
-                "/api/designer/v1/graphs/nodes/add",
-                web::post().to(add_graph_node_endpoint),
-            ),
-        )
+        let app = test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
+            "/api/designer/v1/graphs/nodes/add",
+            web::post().to(add_graph_node_endpoint),
+        ))
         .await;
 
         // Try to add a node with localhost app URI (which is not allowed).
@@ -180,12 +156,8 @@ mod tests {
     #[actix_web::test]
     async fn test_add_graph_node_success() {
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -196,35 +168,25 @@ mod tests {
             let mut pkgs_cache = designer_state.pkgs_cache.write().await;
             let mut graphs_cache = designer_state.graphs_cache.write().await;
 
-            inject_all_standard_pkgs_for_mock(
-                &mut pkgs_cache,
-                &mut graphs_cache,
-                TEST_DIR,
-            )
-            .await;
+            inject_all_standard_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, TEST_DIR).await;
         }
 
         let graph_id_clone;
         {
             let graphs_cache = designer_state.graphs_cache.read().await;
 
-            let (graph_id, _) = graphs_cache_find_by_name(
-                &graphs_cache,
-                "default_with_app_uri",
-            )
-            .unwrap();
+            let (graph_id, _) =
+                graphs_cache_find_by_name(&graphs_cache, "default_with_app_uri").unwrap();
 
             graph_id_clone = *graph_id;
         }
 
         let designer_state = Arc::new(designer_state);
 
-        let app = test::init_service(
-            App::new().app_data(web::Data::new(designer_state)).route(
-                "/api/designer/v1/graphs/nodes/add",
-                web::post().to(add_graph_node_endpoint),
-            ),
-        )
+        let app = test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
+            "/api/designer/v1/graphs/nodes/add",
+            web::post().to(add_graph_node_endpoint),
+        ))
         .await;
 
         // Add a node to the default graph with the same app URI as other nodes
@@ -263,12 +225,8 @@ mod tests {
     #[actix_web::test]
     async fn test_add_graph_node_without_app_uri_success() {
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -279,32 +237,24 @@ mod tests {
             let mut pkgs_cache = designer_state.pkgs_cache.write().await;
             let mut graphs_cache = designer_state.graphs_cache.write().await;
 
-            inject_all_standard_pkgs_for_mock(
-                &mut pkgs_cache,
-                &mut graphs_cache,
-                TEST_DIR,
-            )
-            .await;
+            inject_all_standard_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, TEST_DIR).await;
         }
 
         let graph_id_clone;
         {
             let graphs_cache = designer_state.graphs_cache.read().await;
 
-            let (graph_id, _) =
-                graphs_cache_find_by_name(&graphs_cache, "default").unwrap();
+            let (graph_id, _) = graphs_cache_find_by_name(&graphs_cache, "default").unwrap();
 
             graph_id_clone = *graph_id;
         }
 
         let designer_state = Arc::new(designer_state);
 
-        let app = test::init_service(
-            App::new().app_data(web::Data::new(designer_state)).route(
-                "/api/designer/v1/graphs/nodes/add",
-                web::post().to(add_graph_node_endpoint),
-            ),
-        )
+        let app = test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
+            "/api/designer/v1/graphs/nodes/add",
+            web::post().to(add_graph_node_endpoint),
+        ))
         .await;
 
         // Add a node to the default graph with the same app URI as other nodes.
@@ -347,32 +297,23 @@ mod tests {
         let temp_dir_path = temp_dir.path().to_str().unwrap().to_string();
 
         // Read test data from embedded JSON files
-        let input_property_json_str = include_str!(
-            "../../../../test_data/input_property_with_ordered_fields.json"
-        );
-        let input_manifest_json_str =
-            include_str!("../../../../test_data/test_app_manifest.json");
-        let expected_property = include_str!(
-            "../../../../test_data/expected_property_with_new_node.json"
-        );
+        let input_property_json_str =
+            include_str!("../../../../test_data/input_property_with_ordered_fields.json");
+        let input_manifest_json_str = include_str!("../../../../test_data/test_app_manifest.json");
+        let expected_property =
+            include_str!("../../../../test_data/expected_property_with_new_node.json");
 
         // Write input files to temp directory.
-        let property_path =
-            Path::new(&temp_dir_path).join(PROPERTY_JSON_FILENAME);
+        let property_path = Path::new(&temp_dir_path).join(PROPERTY_JSON_FILENAME);
         fs::write(&property_path, input_property_json_str).unwrap();
 
-        let manifest_path =
-            Path::new(&temp_dir_path).join(MANIFEST_JSON_FILENAME);
+        let manifest_path = Path::new(&temp_dir_path).join(MANIFEST_JSON_FILENAME);
         fs::write(&manifest_path, input_manifest_json_str).unwrap();
 
         // Initialize test state.
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -390,12 +331,8 @@ mod tests {
             let mut pkgs_cache = designer_state.pkgs_cache.write().await;
             let mut graphs_cache = designer_state.graphs_cache.write().await;
 
-            let inject_ret = inject_all_pkgs_for_mock(
-                &mut pkgs_cache,
-                &mut graphs_cache,
-                all_pkgs_json,
-            )
-            .await;
+            let inject_ret =
+                inject_all_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, all_pkgs_json).await;
             assert!(inject_ret.is_ok());
         }
 
@@ -403,8 +340,7 @@ mod tests {
         {
             let graphs_cache = designer_state.graphs_cache.read().await;
 
-            let (graph_id, _) =
-                graphs_cache_find_by_name(&graphs_cache, "test_graph").unwrap();
+            let (graph_id, _) = graphs_cache_find_by_name(&graphs_cache, "test_graph").unwrap();
 
             graph_id_clone = *graph_id;
         }
@@ -412,10 +348,12 @@ mod tests {
         let designer_state = Arc::new(designer_state);
 
         let app = test::init_service(
-            App::new().app_data(web::Data::new(designer_state.clone())).route(
-                "/api/designer/v1/graphs/nodes/add",
-                web::post().to(add_graph_node_endpoint),
-            ),
+            App::new()
+                .app_data(web::Data::new(designer_state.clone()))
+                .route(
+                    "/api/designer/v1/graphs/nodes/add",
+                    web::post().to(add_graph_node_endpoint),
+                ),
         )
         .await;
 
@@ -440,14 +378,11 @@ mod tests {
         assert_eq!(resp.status(), 200);
 
         // Read the updated property.json file.
-        let updated_property_content =
-            fs::read_to_string(&property_path).unwrap();
+        let updated_property_content = fs::read_to_string(&property_path).unwrap();
 
         // Parse the contents as JSON for proper comparison.
-        let updated_property: Value =
-            serde_json::from_str(&updated_property_content).unwrap();
-        let expected_property: Value =
-            serde_json::from_str(expected_property).unwrap();
+        let updated_property: Value = serde_json::from_str(&updated_property_content).unwrap();
+        let expected_property: Value = serde_json::from_str(expected_property).unwrap();
 
         // Compare the updated property with the expected property.
         assert_eq!(
@@ -463,28 +398,20 @@ mod tests {
         let temp_dir_path = temp_dir.path().to_str().unwrap().to_string();
 
         // Read test data from embedded JSON files.
-        let input_property_json_str =
-            include_str!("../../../../test_data/app_property.json");
-        let input_manifest_json_str =
-            include_str!("../../../../test_data/app_manifest.json");
+        let input_property_json_str = include_str!("../../../../test_data/app_property.json");
+        let input_manifest_json_str = include_str!("../../../../test_data/app_manifest.json");
 
         // Write input files to temp directory.
-        let property_path =
-            std::path::Path::new(&temp_dir_path).join(PROPERTY_JSON_FILENAME);
+        let property_path = std::path::Path::new(&temp_dir_path).join(PROPERTY_JSON_FILENAME);
         std::fs::write(&property_path, input_property_json_str).unwrap();
 
-        let manifest_path =
-            std::path::Path::new(&temp_dir_path).join(MANIFEST_JSON_FILENAME);
+        let manifest_path = std::path::Path::new(&temp_dir_path).join(MANIFEST_JSON_FILENAME);
         std::fs::write(&manifest_path, input_manifest_json_str).unwrap();
 
         // Initialize test state.
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -504,8 +431,7 @@ mod tests {
                     temp_dir_path.clone(),
                     "/ten_packages/extension/extension_1"
                 ),
-                include_str!("../../../../test_data/test_addon_manifest.json")
-                    .to_string(),
+                include_str!("../../../../test_data/test_addon_manifest.json").to_string(),
                 "{}".to_string(),
             ),
         ];
@@ -514,12 +440,9 @@ mod tests {
             let mut pkgs_cache = designer_state.pkgs_cache.write().await;
             let mut graphs_cache = designer_state.graphs_cache.write().await;
 
-            let inject_ret = inject_all_pkgs_for_mock(
-                &mut pkgs_cache,
-                &mut graphs_cache,
-                all_pkgs_json_str,
-            )
-            .await;
+            let inject_ret =
+                inject_all_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, all_pkgs_json_str)
+                    .await;
             assert!(inject_ret.is_ok());
         }
 
@@ -527,11 +450,8 @@ mod tests {
         {
             let graphs_cache = designer_state.graphs_cache.read().await;
 
-            let (graph_id, _) = graphs_cache_find_by_name(
-                &graphs_cache,
-                "default_with_app_uri",
-            )
-            .unwrap();
+            let (graph_id, _) =
+                graphs_cache_find_by_name(&graphs_cache, "default_with_app_uri").unwrap();
 
             graph_id_clone = *graph_id;
         }
@@ -541,10 +461,12 @@ mod tests {
         // First add a node, then delete it.
         // Setup the add endpoint.
         let app_add = test::init_service(
-            App::new().app_data(web::Data::new(designer_state.clone())).route(
-                "/api/designer/v1/graphs/nodes/add",
-                web::post().to(add_graph_node_endpoint),
-            ),
+            App::new()
+                .app_data(web::Data::new(designer_state.clone()))
+                .route(
+                    "/api/designer/v1/graphs/nodes/add",
+                    web::post().to(add_graph_node_endpoint),
+                ),
         )
         .await;
 
@@ -569,8 +491,7 @@ mod tests {
         // Ensure add was successful.
         assert_eq!(resp.status(), 200);
 
-        let updated_property_json_str =
-            std::fs::read_to_string(&property_path).unwrap();
+        let updated_property_json_str = std::fs::read_to_string(&property_path).unwrap();
 
         let expected_property_json_str = include_str!(
             "../../../../test_data/\
@@ -598,28 +519,20 @@ mod tests {
         let temp_dir_path = temp_dir.path().to_str().unwrap().to_string();
 
         // Read test data from embedded JSON files.
-        let input_property_json_str =
-            include_str!("../../../../test_data/app_property.json");
-        let input_manifest_json_str =
-            include_str!("../../../../test_data/app_manifest.json");
+        let input_property_json_str = include_str!("../../../../test_data/app_property.json");
+        let input_manifest_json_str = include_str!("../../../../test_data/app_manifest.json");
 
         // Write input files to temp directory.
-        let property_path =
-            std::path::Path::new(&temp_dir_path).join(PROPERTY_JSON_FILENAME);
+        let property_path = std::path::Path::new(&temp_dir_path).join(PROPERTY_JSON_FILENAME);
         std::fs::write(&property_path, input_property_json_str).unwrap();
 
-        let manifest_path =
-            std::path::Path::new(&temp_dir_path).join(MANIFEST_JSON_FILENAME);
+        let manifest_path = std::path::Path::new(&temp_dir_path).join(MANIFEST_JSON_FILENAME);
         std::fs::write(&manifest_path, input_manifest_json_str).unwrap();
 
         // Initialize test state.
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -639,8 +552,7 @@ mod tests {
                     temp_dir_path.clone(),
                     "/ten_packages/extension/extension_1"
                 ),
-                include_str!("../../../../test_data/test_addon_manifest.json")
-                    .to_string(),
+                include_str!("../../../../test_data/test_addon_manifest.json").to_string(),
                 "{}".to_string(),
             ),
         ];
@@ -649,12 +561,9 @@ mod tests {
             let mut pkgs_cache = designer_state.pkgs_cache.write().await;
             let mut graphs_cache = designer_state.graphs_cache.write().await;
 
-            let inject_ret = inject_all_pkgs_for_mock(
-                &mut pkgs_cache,
-                &mut graphs_cache,
-                all_pkgs_json_str,
-            )
-            .await;
+            let inject_ret =
+                inject_all_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, all_pkgs_json_str)
+                    .await;
             assert!(inject_ret.is_ok());
         }
 
@@ -662,11 +571,8 @@ mod tests {
         {
             let graphs_cache = designer_state.graphs_cache.read().await;
 
-            let (graph_id, _) = graphs_cache_find_by_name(
-                &graphs_cache,
-                "default_with_app_uri",
-            )
-            .unwrap();
+            let (graph_id, _) =
+                graphs_cache_find_by_name(&graphs_cache, "default_with_app_uri").unwrap();
 
             graph_id_clone = *graph_id;
         }
@@ -676,10 +582,12 @@ mod tests {
         // First add a node, then delete it.
         // Setup the add endpoint.
         let app_add = test::init_service(
-            App::new().app_data(web::Data::new(designer_state.clone())).route(
-                "/api/designer/v1/graphs/nodes/add",
-                web::post().to(add_graph_node_endpoint),
-            ),
+            App::new()
+                .app_data(web::Data::new(designer_state.clone()))
+                .route(
+                    "/api/designer/v1/graphs/nodes/add",
+                    web::post().to(add_graph_node_endpoint),
+                ),
         )
         .await;
 
@@ -704,8 +612,7 @@ mod tests {
         // Ensure add was failed.
         assert_eq!(resp.status(), 400);
 
-        let updated_property_str =
-            std::fs::read_to_string(&property_path).unwrap();
+        let updated_property_str = std::fs::read_to_string(&property_path).unwrap();
 
         // Parse the contents as JSON for proper comparison.
         let updated_property: serde_json::Value =

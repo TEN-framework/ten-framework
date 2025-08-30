@@ -42,8 +42,7 @@ mod tests {
             .to_request();
 
         // Send request and get response.
-        let resp: GetEnvVarResponseData =
-            test::call_and_read_body_json(&app, req).await;
+        let resp: GetEnvVarResponseData = test::call_and_read_body_json(&app, req).await;
 
         // Clean up.
         env::remove_var(TEST_VAR_NAME);
@@ -78,8 +77,7 @@ mod tests {
             .to_request();
 
         // Send request and get response.
-        let resp: GetEnvVarResponseData =
-            test::call_and_read_body_json(&app, req).await;
+        let resp: GetEnvVarResponseData = test::call_and_read_body_json(&app, req).await;
 
         // Verify response.
         assert_eq!(resp.value, None);
@@ -111,8 +109,7 @@ mod tests {
             .to_request();
 
         // Send request and get response.
-        let resp: GetEnvVarResponseData =
-            test::call_and_read_body_json(&app, req).await;
+        let resp: GetEnvVarResponseData = test::call_and_read_body_json(&app, req).await;
 
         // Clean up.
         env::remove_var(TEST_VAR_NAME);

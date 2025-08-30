@@ -15,10 +15,7 @@ use super::designer_state::create_designer_state;
 /// Starts a test server for the given endpoint path and returns the server
 /// address. This is a common function used by multiple test cases to avoid
 /// code duplication.
-pub async fn start_test_server<F>(
-    endpoint_path: &str,
-    endpoint_factory: F,
-) -> std::net::SocketAddr
+pub async fn start_test_server<F>(endpoint_path: &str, endpoint_factory: F) -> std::net::SocketAddr
 where
     F: Fn() -> actix_web::Route + Clone + Send + 'static,
 {

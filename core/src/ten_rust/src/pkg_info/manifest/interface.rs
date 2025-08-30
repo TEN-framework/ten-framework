@@ -57,10 +57,8 @@ async fn load_interface(
         .with_context(|| format!("Invalid interface file: {real_path}"))?;
 
     // Parse the interface file into a ManifestApi structure.
-    let mut interface_api: ManifestApi =
-        serde_json::from_str(&interface_content).with_context(|| {
-            format!("Failed to parse interface file from {real_path}")
-        })?;
+    let mut interface_api: ManifestApi = serde_json::from_str(&interface_content)
+        .with_context(|| format!("Failed to parse interface file from {real_path}"))?;
 
     let base_dir = get_base_dir_of_uri(&real_path)?;
 
@@ -81,20 +79,15 @@ fn merge_manifest_api(apis: Vec<ManifestApi>) -> Result<ManifestApi> {
         ));
     }
 
-    let mut merged_property: HashMap<String, ManifestApiPropertyAttributes> =
-        HashMap::new();
+    let mut merged_property: HashMap<String, ManifestApiPropertyAttributes> = HashMap::new();
     let mut merged_cmd_in: HashMap<String, ManifestApiMsg> = HashMap::new();
     let mut merged_cmd_out: HashMap<String, ManifestApiMsg> = HashMap::new();
     let mut merged_data_in: HashMap<String, ManifestApiMsg> = HashMap::new();
     let mut merged_data_out: HashMap<String, ManifestApiMsg> = HashMap::new();
-    let mut merged_audio_frame_in: HashMap<String, ManifestApiMsg> =
-        HashMap::new();
-    let mut merged_audio_frame_out: HashMap<String, ManifestApiMsg> =
-        HashMap::new();
-    let mut merged_video_frame_in: HashMap<String, ManifestApiMsg> =
-        HashMap::new();
-    let mut merged_video_frame_out: HashMap<String, ManifestApiMsg> =
-        HashMap::new();
+    let mut merged_audio_frame_in: HashMap<String, ManifestApiMsg> = HashMap::new();
+    let mut merged_audio_frame_out: HashMap<String, ManifestApiMsg> = HashMap::new();
+    let mut merged_video_frame_in: HashMap<String, ManifestApiMsg> = HashMap::new();
+    let mut merged_video_frame_out: HashMap<String, ManifestApiMsg> = HashMap::new();
 
     // Helper function to merge message maps
     fn merge_msg_map(
@@ -127,9 +120,7 @@ fn merge_manifest_api(apis: Vec<ManifestApi>) -> Result<ManifestApi> {
         if let Some(api_property) = &api.property {
             if let Some(properties) = &api_property.properties {
                 for (key, value) in properties {
-                    if let Some(existing_value) =
-                        merged_property.get(key.as_str())
-                    {
+                    if let Some(existing_value) = merged_property.get(key.as_str()) {
                         if existing_value != value {
                             return Err(anyhow!(
                                 "Conflicting property '{}': values do not \
@@ -233,8 +224,11 @@ pub async fn flatten_manifest_api(
     flattened_api: &mut Option<ManifestApi>,
 ) -> Result<()> {
     // Try to flatten the manifest api if it contains any interface references.
-    let maybe_flattened_api =
-        if let Some(api) = manifest_api { api.flatten().await? } else { None };
+    let maybe_flattened_api = if let Some(api) = manifest_api {
+        api.flatten().await?
+    } else {
+        None
+    };
 
     if let Some(api) = maybe_flattened_api {
         *flattened_api = Some(api);
@@ -255,8 +249,8 @@ impl ManifestApi {
         flattened_apis.push(self.clone());
 
         // Check if the ManifestApi contains any interface.
-        let has_interfaces = self.interface.is_some()
-            && !self.interface.as_ref().unwrap().is_empty();
+        let has_interfaces =
+            self.interface.is_some() && !self.interface.as_ref().unwrap().is_empty();
 
         if !has_interfaces {
             // No interfaces, return immediately.
@@ -268,15 +262,10 @@ impl ManifestApi {
             // Load the interface.
             // If the interface is already loaded or cannot be loaded,
             // return an error.
-            let loaded_interface =
-                load_interface(interface, interface_set).await?;
+            let loaded_interface = load_interface(interface, interface_set).await?;
 
             // Flatten the loaded interface using Box::pin to handle recursion
-            Box::pin(
-                loaded_interface
-                    .flatten_internal(flattened_apis, interface_set),
-            )
-            .await?;
+            Box::pin(loaded_interface.flatten_internal(flattened_apis, interface_set)).await?;
         }
 
         Ok(())
@@ -289,9 +278,7 @@ impl ManifestApi {
     /// ManifestApi was successfully flattened.
     async fn flatten(&self) -> Result<Option<ManifestApi>> {
         // Check if the ManifestApi contains any interface.
-        if self.interface.is_none()
-            || self.interface.as_ref().unwrap().is_empty()
-        {
+        if self.interface.is_none() || self.interface.as_ref().unwrap().is_empty() {
             return Ok(None);
         }
 
@@ -299,7 +286,8 @@ impl ManifestApi {
         let mut flattened_apis = Vec::new();
         let mut interface_set = HashSet::new();
 
-        self.flatten_internal(&mut flattened_apis, &mut interface_set).await?;
+        self.flatten_internal(&mut flattened_apis, &mut interface_set)
+            .await?;
 
         // Merge the flattened apis into a single ManifestApi.
         let merged_api = merge_manifest_api(flattened_apis)?;

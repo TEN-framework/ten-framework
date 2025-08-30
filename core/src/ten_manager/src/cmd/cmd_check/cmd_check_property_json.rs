@@ -9,14 +9,10 @@ use std::sync::Arc;
 use anyhow::Result;
 use clap::{Arg, ArgMatches, Command};
 use console::Emoji;
-use ten_rust::{
-    json_schema::ten_validate_property_json_string,
-    utils::fs::read_file_to_string,
-};
+use ten_rust::{json_schema::ten_validate_property_json_string, utils::fs::read_file_to_string};
 
 use crate::{
-    designer::storage::in_memory::TmanStorageInMemory,
-    home::config::TmanConfig, output::TmanOutput,
+    designer::storage::in_memory::TmanStorageInMemory, home::config::TmanConfig, output::TmanOutput,
 };
 
 #[derive(Debug)]
@@ -26,9 +22,7 @@ pub struct CheckPropertyJsonCommand {
 
 pub fn create_sub_cmd(_args_cfg: &crate::cmd_line::ArgsCfg) -> Command {
     Command::new("property-json")
-        .about(
-            "Check if the property.json is valid according to the json schema",
-        )
+        .about("Check if the property.json is valid according to the json schema")
         .arg(
             Arg::new("PATH")
                 .long("path")
@@ -38,9 +32,7 @@ pub fn create_sub_cmd(_args_cfg: &crate::cmd_line::ArgsCfg) -> Command {
         )
 }
 
-pub fn parse_sub_cmd(
-    sub_cmd_args: &ArgMatches,
-) -> Result<CheckPropertyJsonCommand> {
+pub fn parse_sub_cmd(sub_cmd_args: &ArgMatches) -> Result<CheckPropertyJsonCommand> {
     let cmd = CheckPropertyJsonCommand {
         path: sub_cmd_args.get_one::<String>("PATH").cloned().unwrap(),
     };

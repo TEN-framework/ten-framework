@@ -32,9 +32,7 @@ use crate::home::config::is_verbose;
 use crate::http::create_http_client_with_proxies;
 use crate::output::TmanOutput;
 use crate::registry::search::PkgSearchFilter;
-use crate::{
-    home::config::TmanConfig, registry::found_result::PkgRegistryInfo,
-};
+use crate::{home::config::TmanConfig, registry::found_result::PkgRegistryInfo};
 
 /// Checks if a package requires admin token authorization based on its tags.
 ///
@@ -56,20 +54,14 @@ async fn retry_async<'a, F, T>(
     mut operation: F,
 ) -> Result<T>
 where
-    F: FnMut() -> std::pin::Pin<
-        Box<dyn std::future::Future<Output = Result<T>> + Send + 'a>,
-    >,
+    F: FnMut() -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<T>> + Send + 'a>>,
 {
     for attempt in 0..=max_retries {
         match operation().await {
             Ok(result) => return Ok(result),
             Err(e) => {
                 if is_verbose(tman_config.clone()).await {
-                    out.normal_line(&format!(
-                        "Attempt {} failed: {:?}",
-                        attempt + 1,
-                        e
-                    ));
+                    out.normal_line(&format!("Attempt {} failed: {:?}", attempt + 1, e));
                 }
 
                 if attempt == max_retries {
@@ -138,54 +130,40 @@ async fn get_package_upload_info(
                         let content = locale_content
                             .get_content()
                             .await
-                            .map_err(|e| {
-                                anyhow!(
-                                    "Failed to resolve description content: {}",
-                                    e
-                                )
-                            })?;
-                        let resolved_content =
-                            ten_rust::pkg_info::manifest::LocaleContent {
-                                content: Some(content),
-                                import_uri: None,
-                                base_dir: None,
-                            };
-                        resolved_locales
-                            .insert(locale.clone(), resolved_content);
+                            .map_err(|e| anyhow!("Failed to resolve description content: {}", e))?;
+                        let resolved_content = ten_rust::pkg_info::manifest::LocaleContent {
+                            content: Some(content),
+                            import_uri: None,
+                            base_dir: None,
+                        };
+                        resolved_locales.insert(locale.clone(), resolved_content);
                     }
-                    description =
-                        Some(ten_rust::pkg_info::manifest::LocalizedField {
-                            locales: resolved_locales,
-                        });
+                    description = Some(ten_rust::pkg_info::manifest::LocalizedField {
+                        locales: resolved_locales,
+                    });
                 }
 
                 let mut display_name = None;
                 if let Some(name) = &pkg_info.manifest.display_name {
                     let mut resolved_locales = HashMap::new();
                     for (locale, locale_content) in &name.locales {
-                        let content = locale_content
-                            .get_content()
-                            .await
-                            .map_err(|e| {
-                                anyhow!(
-                                    "Failed to resolve display_name content: \
+                        let content = locale_content.get_content().await.map_err(|e| {
+                            anyhow!(
+                                "Failed to resolve display_name content: \
                                      {}",
-                                    e
-                                )
-                            })?;
-                        let resolved_content =
-                            ten_rust::pkg_info::manifest::LocaleContent {
-                                content: Some(content),
-                                import_uri: None,
-                                base_dir: None,
-                            };
-                        resolved_locales
-                            .insert(locale.clone(), resolved_content);
+                                e
+                            )
+                        })?;
+                        let resolved_content = ten_rust::pkg_info::manifest::LocaleContent {
+                            content: Some(content),
+                            import_uri: None,
+                            base_dir: None,
+                        };
+                        resolved_locales.insert(locale.clone(), resolved_content);
                     }
-                    display_name =
-                        Some(ten_rust::pkg_info::manifest::LocalizedField {
-                            locales: resolved_locales,
-                        });
+                    display_name = Some(ten_rust::pkg_info::manifest::LocalizedField {
+                        locales: resolved_locales,
+                    });
                 }
 
                 let mut readme = None;
@@ -195,25 +173,17 @@ async fn get_package_upload_info(
                         let content = locale_content
                             .get_content()
                             .await
-                            .map_err(|e| {
-                                anyhow!(
-                                    "Failed to resolve readme content: {}",
-                                    e
-                                )
-                            })?;
-                        let resolved_content =
-                            ten_rust::pkg_info::manifest::LocaleContent {
-                                content: Some(content),
-                                import_uri: None,
-                                base_dir: None,
-                            };
-                        resolved_locales
-                            .insert(locale.clone(), resolved_content);
+                            .map_err(|e| anyhow!("Failed to resolve readme content: {}", e))?;
+                        let resolved_content = ten_rust::pkg_info::manifest::LocaleContent {
+                            content: Some(content),
+                            import_uri: None,
+                            base_dir: None,
+                        };
+                        resolved_locales.insert(locale.clone(), resolved_content);
                     }
-                    readme =
-                        Some(ten_rust::pkg_info::manifest::LocalizedField {
-                            locales: resolved_locales,
-                        });
+                    readme = Some(ten_rust::pkg_info::manifest::LocalizedField {
+                        locales: resolved_locales,
+                    });
                 }
 
                 let payload = json!(PkgRegistryInfo {
@@ -232,22 +202,17 @@ async fn get_package_upload_info(
                 });
 
                 if is_verbose(tman_config.clone()).await {
-                    out.normal_line(&format!(
-                        "Payload of publishing: {payload}"
-                    ));
+                    out.normal_line(&format!("Payload of publishing: {payload}"));
                 }
 
                 let mut headers = HeaderMap::new();
 
                 // Check if the package requires admin token based on its tags.
-                let requires_admin =
-                    requires_admin_token_based_on_tags(&pkg_info);
+                let requires_admin = requires_admin_token_based_on_tags(&pkg_info);
 
                 if requires_admin {
                     // If a tag starts with "ten:", we must use admin_token.
-                    if let Some(admin_token) =
-                        &tman_config.read().await.admin_token
-                    {
+                    if let Some(admin_token) = &tman_config.read().await.admin_token {
                         let basic_token = format!("Basic {admin_token}");
                         headers.insert(
                             ADMIN_TOKEN,
@@ -277,9 +242,7 @@ async fn get_package_upload_info(
                     headers.insert(
                         AUTHORIZATION,
                         basic_token.parse().map_err(|e| {
-                            out.error_line(&format!(
-                                "Failed to parse authorization token: {e}"
-                            ));
+                            out.error_line(&format!("Failed to parse authorization token: {e}"));
                             e
                         })?,
                     );
@@ -293,9 +256,7 @@ async fn get_package_upload_info(
                 let response = client
                     .post(base_url)
                     .headers(headers)
-                    .timeout(Duration::from_secs(
-                        REMOTE_REGISTRY_REQUEST_TIMEOUT_SECS,
-                    ))
+                    .timeout(Duration::from_secs(REMOTE_REGISTRY_REQUEST_TIMEOUT_SECS))
                     .json(&payload)
                     .send()
                     .await
@@ -308,9 +269,10 @@ async fn get_package_upload_info(
                     ));
                 }
 
-                let data: Value = response.json().await.map_err(|e| {
-                    anyhow!("Failed to parse JSON response: {}", e)
-                })?;
+                let data: Value = response
+                    .json()
+                    .await
+                    .map_err(|e| anyhow!("Failed to parse JSON response: {}", e))?;
 
                 let resource_id = data["data"]["resourceId"]
                     .as_str()
@@ -361,15 +323,12 @@ async fn upload_package_to_remote(
             headers.insert(
                 CONTENT_TYPE,
                 "application/gzip".parse().map_err(|e| {
-                    out.error_line(&format!(
-                        "Failed to parse content type: {e}"
-                    ));
+                    out.error_line(&format!("Failed to parse content type: {e}"));
                     e
                 })?,
             );
 
-            let response =
-                client.put(url).headers(headers).body(body).send().await;
+            let response = client.put(url).headers(headers).body(body).send().await;
             match response {
                 Ok(resp) => {
                     if resp.status().is_success() {
@@ -417,9 +376,7 @@ async fn ack_of_uploading(
 
             let response = client
                 .patch(url)
-                .timeout(Duration::from_secs(
-                    REMOTE_REGISTRY_REQUEST_TIMEOUT_SECS,
-                ))
+                .timeout(Duration::from_secs(REMOTE_REGISTRY_REQUEST_TIMEOUT_SECS))
                 .json(&body)
                 .send()
                 .await;
@@ -508,14 +465,11 @@ pub async fn get_package(
 ) -> Result<()> {
     // First, check the cache. If there is a matching filename, use the cached
     // file directly.
-    let parsed_url = url::Url::parse(url)
-        .map_err(|e| anyhow::anyhow!("Invalid URL: {}", e))?;
+    let parsed_url = url::Url::parse(url).map_err(|e| anyhow::anyhow!("Invalid URL: {}", e))?;
     let file_name = parsed_url
         .path_segments()
         .and_then(|mut segments| segments.next_back())
-        .ok_or_else(|| {
-            anyhow::anyhow!("Failed to extract file name from URL")
-        })?;
+        .ok_or_else(|| anyhow::anyhow!("Failed to extract file name from URL"))?;
 
     if let Some(cached_file_path) =
         find_in_package_cache(pkg_type, pkg_name, pkg_version, file_name)?
@@ -531,9 +485,8 @@ pub async fn get_package(
             ));
         }
 
-        fs::copy(&cached_file_path, temp_file.path()).with_context(|| {
-            format!("Failed to copy from cache {}", cached_file_path.display())
-        })?;
+        fs::copy(&cached_file_path, temp_file.path())
+            .with_context(|| format!("Failed to copy from cache {}", cached_file_path.display()))?;
         return Ok(());
     }
 
@@ -583,14 +536,10 @@ pub async fn get_package(
                 let response = client
                     .get(&url)
                     .headers(headers)
-                    .timeout(Duration::from_secs(
-                        REMOTE_REGISTRY_REQUEST_TIMEOUT_SECS,
-                    ))
+                    .timeout(Duration::from_secs(REMOTE_REGISTRY_REQUEST_TIMEOUT_SECS))
                     .send()
                     .await
-                    .with_context(|| {
-                        format!("Failed to send GET request to {url}")
-                    })?;
+                    .with_context(|| format!("Failed to send GET request to {url}"))?;
 
                 if !response.status().is_success()
                     && response.status() != reqwest::StatusCode::PARTIAL_CONTENT
@@ -627,17 +576,13 @@ pub async fn get_package(
                 temp_file_write
                     .as_file_mut()
                     .write_all(&content)
-                    .with_context(|| {
-                        "Failed to write content to temporary file"
-                    })?;
+                    .with_context(|| "Failed to write content to temporary file")?;
 
                 // Check if we have downloaded the entire file.
                 if let Some(content_range) = content_range {
                     // Parse the content-range to check if download is complete.
                     let content_range_str = content_range.to_str().unwrap();
-                    if let Some((_, _, total_size)) =
-                        parse_content_range(content_range_str)
-                    {
+                    if let Some((_, _, total_size)) = parse_content_range(content_range_str) {
                         if temp_file_len + content.len() as u64 >= total_size {
                             *download_complete.write().await = true;
                         }
@@ -769,8 +714,7 @@ pub async fn get_package_list(
                 let fetch_single_page = page.is_some();
                 // Use provided page_size or default to
                 // DEFAULT_REGISTRY_PAGE_SIZE.
-                let page_size_value =
-                    page_size.unwrap_or(DEFAULT_REGISTRY_PAGE_SIZE);
+                let page_size_value = page_size.unwrap_or(DEFAULT_REGISTRY_PAGE_SIZE);
 
                 loop {
                     // Build the URL with query parameters for pagination and
@@ -808,10 +752,7 @@ pub async fn get_package_list(
 
                         // Pagination parameters.
                         query
-                            .append_pair(
-                                "pageSize",
-                                &page_size_value.to_string(),
-                            )
+                            .append_pair("pageSize", &page_size_value.to_string())
                             .append_pair("page", &current_page.to_string());
                     } // query is dropped here
 
@@ -820,17 +761,12 @@ pub async fn get_package_list(
                             "{}{}{}{}{}",
                             pkg_type
                                 .as_ref()
-                                .map_or("".to_string(), |pt| format!(
-                                    "type={pt} "
-                                )),
-                            name.as_ref().map_or("".to_string(), |n| format!(
-                                "name={n} "
-                            )),
+                                .map_or("".to_string(), |pt| format!("type={pt} ")),
+                            name.as_ref()
+                                .map_or("".to_string(), |n| format!("name={n} ")),
                             version_req
                                 .as_ref()
-                                .map_or("".to_string(), |vr| format!(
-                                    "version={vr} "
-                                )),
+                                .map_or("".to_string(), |vr| format!("version={vr} ")),
                             tags.as_ref().map_or("".to_string(), |t| {
                                 if t.is_empty() {
                                     "".to_string()
@@ -859,19 +795,14 @@ pub async fn get_package_list(
                     // Send the request with timeout.
                     let response = client
                         .get(url)
-                        .timeout(Duration::from_secs(
-                            REMOTE_REGISTRY_REQUEST_TIMEOUT_SECS,
-                        ))
+                        .timeout(Duration::from_secs(REMOTE_REGISTRY_REQUEST_TIMEOUT_SECS))
                         .send()
                         .await;
 
                     let response = match response {
                         Ok(response) => response,
                         Err(e) => {
-                            return Err(anyhow::anyhow!(
-                                "Request failed: {}",
-                                e
-                            ));
+                            return Err(anyhow::anyhow!("Request failed: {}", e));
                         }
                     };
 
@@ -884,15 +815,11 @@ pub async fn get_package_list(
 
                     // Parse the response
                     let body = response.text().await?;
-                    let api_response =
-                        serde_json::from_str::<ApiResponse>(&body);
+                    let api_response = serde_json::from_str::<ApiResponse>(&body);
                     let api_response = match api_response {
                         Ok(api_response) => api_response,
                         Err(e) => {
-                            return Err(anyhow::anyhow!(
-                                "Failed to parse JSON response: {}",
-                                e
-                            ));
+                            return Err(anyhow::anyhow!("Failed to parse JSON response: {}", e));
                         }
                     };
 
@@ -905,8 +832,7 @@ pub async fn get_package_list(
 
                     // Update total size and collect packages.
                     total_size = api_response.data.total_size as usize;
-                    let packages_is_empty =
-                        api_response.data.packages.is_empty();
+                    let packages_is_empty = api_response.data.packages.is_empty();
                     results.extend(api_response.data.packages);
 
                     if is_verbose(tman_config.clone()).await {
@@ -928,10 +854,7 @@ pub async fn get_package_list(
 
                     // If we're only fetching a single page or we've reached the
                     // end, break the loop.
-                    if fetch_single_page
-                        || results.len() >= total_size
-                        || packages_is_empty
-                    {
+                    if fetch_single_page || results.len() >= total_size || packages_is_empty {
                         break;
                     }
 
@@ -989,8 +912,7 @@ pub async fn search_packages(
                 let fetch_single_page = page.is_some();
                 // Use provided page_size or default to
                 // DEFAULT_REGISTRY_PAGE_SIZE.
-                let page_size_value =
-                    page_size.unwrap_or(DEFAULT_REGISTRY_PAGE_SIZE);
+                let page_size_value = page_size.unwrap_or(DEFAULT_REGISTRY_PAGE_SIZE);
 
                 loop {
                     let body = json!({
@@ -1007,29 +929,20 @@ pub async fn search_packages(
                     let response = client
                         .post(&url)
                         .json(&body)
-                        .timeout(Duration::from_secs(
-                            REMOTE_REGISTRY_REQUEST_TIMEOUT_SECS,
-                        ))
+                        .timeout(Duration::from_secs(REMOTE_REGISTRY_REQUEST_TIMEOUT_SECS))
                         .send()
                         .await?;
 
                     if !response.status().is_success() {
-                        return Err(anyhow!(
-                            "Request failed with status: {}",
-                            response.status()
-                        ));
+                        return Err(anyhow!("Request failed with status: {}", response.status()));
                     }
 
                     // Parse the response
                     let body = response.text().await?;
-                    let api_response =
-                        serde_json::from_str::<ApiResponse>(&body)?;
+                    let api_response = serde_json::from_str::<ApiResponse>(&body)?;
 
                     if api_response.status != "ok" {
-                        return Err(anyhow!(
-                            "API error: {}",
-                            api_response.status
-                        ));
+                        return Err(anyhow!("API error: {}", api_response.status));
                     }
 
                     if is_verbose(tman_config.clone()).await {
@@ -1043,8 +956,7 @@ pub async fn search_packages(
 
                     // Update total size and collect packages.
                     total_size = api_response.data.total_size;
-                    let packages_is_empty =
-                        api_response.data.packages.is_empty();
+                    let packages_is_empty = api_response.data.packages.is_empty();
                     results.extend(api_response.data.packages);
 
                     // If we're only fetching a single page or we've reached the
@@ -1116,22 +1028,17 @@ pub async fn delete_package(
                         hash,
                     ))
                     .inspect_err(|&e| {
-                        out.error_line(&format!(
-                            "Failed to join URL path: {e}"
-                        ));
+                        out.error_line(&format!("Failed to join URL path: {e}"));
                     })?;
 
                 let mut headers = HeaderMap::new();
 
-                if let Some(admin_token) = &tman_config.read().await.admin_token
-                {
+                if let Some(admin_token) = &tman_config.read().await.admin_token {
                     let basic_token = format!("Basic {admin_token}");
                     headers.insert(
                         ADMIN_TOKEN,
                         basic_token.parse().map_err(|e| {
-                            out.error_line(&format!(
-                                "Failed to parse authorization token: {e}"
-                            ));
+                            out.error_line(&format!("Failed to parse authorization token: {e}"));
                             e
                         })?,
                     );
@@ -1146,9 +1053,7 @@ pub async fn delete_package(
                 let response = client
                     .delete(url)
                     .headers(headers)
-                    .timeout(Duration::from_secs(
-                        REMOTE_REGISTRY_REQUEST_TIMEOUT_SECS,
-                    ))
+                    .timeout(Duration::from_secs(REMOTE_REGISTRY_REQUEST_TIMEOUT_SECS))
                     .send()
                     .await;
 

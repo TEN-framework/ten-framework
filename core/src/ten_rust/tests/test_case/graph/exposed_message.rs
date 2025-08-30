@@ -7,9 +7,7 @@
 #[cfg(test)]
 mod tests {
     use ten_rust::graph::{
-        connection::{
-            GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow,
-        },
+        connection::{GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow},
         node::GraphNode,
         Graph, GraphExposedMessage, GraphExposedMessageType,
     };
@@ -99,10 +97,7 @@ mod tests {
 
         let exposed_messages = deserialized_graph.exposed_messages.unwrap();
         assert_eq!(exposed_messages.len(), 3);
-        assert_eq!(
-            exposed_messages[0].msg_type,
-            GraphExposedMessageType::CmdIn
-        );
+        assert_eq!(exposed_messages[0].msg_type, GraphExposedMessageType::CmdIn);
         assert_eq!(exposed_messages[0].name, "B");
         assert_eq!(exposed_messages[0].extension, Some("ext_d".to_string()));
         assert_eq!(

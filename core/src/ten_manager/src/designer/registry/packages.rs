@@ -57,8 +57,7 @@ pub async fn get_packages_endpoint(
     state: web::Data<Arc<DesignerState>>,
 ) -> Result<impl Responder, actix_web::Error> {
     // Parse version requirement if provided.
-    let version_req = if let Some(version_req_str) = &request_query.version_req
-    {
+    let version_req = if let Some(version_req_str) = &request_query.version_req {
         match VersionReq::parse(version_req_str) {
             Ok(req) => Some(req),
             Err(e) => {

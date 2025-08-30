@@ -22,6 +22,7 @@ type addonRegisterHandler = (registerContext: unknown) => void;
 export class AddonManager {
   private static _instance: AddonManager | undefined = undefined;
   private _registry: Map<string, addonRegisterHandler> = new Map();
+  private _registeredAddons: Set<string> = new Set();
 
   // Make the constructor private to prevent direct instantiation.
   private constructor() {
@@ -137,7 +138,7 @@ export class AddonManager {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const dirs = fs.opendirSync(extension_folder);
+    const _dirs = fs.opendirSync(extension_folder);
     const packageJsonFile = `${extension_folder}/package.json`;
     if (!fs.existsSync(packageJsonFile)) {
       console.log(
@@ -162,12 +163,24 @@ export class AddonManager {
 
   // This function will be called from C code.
   private registerSingleAddon(name: string, registerContext: unknown): void {
+    // Check if the addon is already registered.
+    if (this._registeredAddons.has(name)) {
+      console.log(
+        `Addon ${name} has already been registered, skipping registration.`,
+      );
+      return;
+    }
+
     const handler = this._registry.get(name);
     if (handler) {
       try {
+        // Call the register handler.
         handler(registerContext);
 
         console.log(`Addon ${name} registered`);
+
+        // Mark the addon as registered.
+        this._registeredAddons.add(name);
       } catch (error) {
         console.error(`Failed to register addon ${name}: ${error}`);
       }
@@ -180,7 +193,7 @@ export class AddonManager {
 export function RegisterAddonAsExtension(
   name: string,
 ): <T extends Ctor<Addon>>(klass: T) => T {
-  return function <T extends Ctor<Addon>>(klass: T): T {
+  return <T extends Ctor<Addon>>(klass: T): T => {
     function registerHandler(registerContext: unknown) {
       const addon_instance = new klass();
 

@@ -11,9 +11,7 @@ use std::{
 
 use anyhow::{anyhow, Result};
 use clap::{Arg, ArgMatches, Command};
-use ten_rust::{
-    pkg_info::constants::MANIFEST_JSON_FILENAME, utils::fs::read_file_to_string,
-};
+use ten_rust::{pkg_info::constants::MANIFEST_JSON_FILENAME, utils::fs::read_file_to_string};
 use tokio::io::AsyncBufReadExt;
 
 use crate::{
@@ -60,7 +58,10 @@ pub fn parse_sub_cmd(sub_cmd_args: &ArgMatches) -> Result<RunCommand> {
         .map(|vals| vals.map(|s| s.to_string()).collect())
         .unwrap_or_default();
 
-    Ok(RunCommand { script_name, extra_args })
+    Ok(RunCommand {
+        script_name,
+        extra_args,
+    })
 }
 
 pub async fn execute_cmd(
@@ -85,14 +86,10 @@ pub async fn execute_cmd(
     }
 
     // Parse `manifest.json`.
-    let manifest_json_str =
-        read_file_to_string(&manifest_path).map_err(|e| {
-            anyhow!("Failed to read {}: {}", MANIFEST_JSON_FILENAME, e)
-        })?;
-    let manifest_value: serde_json::Value =
-        serde_json::from_str(&manifest_json_str).map_err(|e| {
-            anyhow!("Failed to parse {}: {}", MANIFEST_JSON_FILENAME, e)
-        })?;
+    let manifest_json_str = read_file_to_string(&manifest_path)
+        .map_err(|e| anyhow!("Failed to read {}: {}", MANIFEST_JSON_FILENAME, e))?;
+    let manifest_value: serde_json::Value = serde_json::from_str(&manifest_json_str)
+        .map_err(|e| anyhow!("Failed to parse {}: {}", MANIFEST_JSON_FILENAME, e))?;
 
     // Get `scripts`.
     let scripts = match manifest_value.get(SCRIPTS) {

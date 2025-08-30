@@ -14,8 +14,8 @@ mod tests {
         designer::{
             graphs::{
                 connections::{
-                    DesignerGraphConnection, DesignerGraphDestination,
-                    DesignerGraphLoc, DesignerGraphMessageFlow,
+                    DesignerGraphConnection, DesignerGraphDestination, DesignerGraphLoc,
+                    DesignerGraphMessageFlow,
                 },
                 get::{get_graphs_endpoint, GetGraphsRequestPayload},
                 DesignerGraphInfo,
@@ -35,12 +35,8 @@ mod tests {
     #[actix_web::test]
     async fn test_get_connections_success() {
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -51,12 +47,7 @@ mod tests {
             let mut pkgs_cache = designer_state.pkgs_cache.write().await;
             let mut graphs_cache = designer_state.graphs_cache.write().await;
 
-            inject_all_standard_pkgs_for_mock(
-                &mut pkgs_cache,
-                &mut graphs_cache,
-                TEST_DIR,
-            )
-            .await;
+            inject_all_standard_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, TEST_DIR).await;
         }
 
         // Find the UUID for the graph with name "default"
@@ -66,8 +57,7 @@ mod tests {
             default_graph_uuid = graphs_cache
                 .iter()
                 .find_map(|(uuid, graph)| {
-                    if graph.name.as_ref().is_some_and(|name| name == "default")
-                    {
+                    if graph.name.as_ref().is_some_and(|name| name == "default") {
                         Some(*uuid)
                     } else {
                         None
@@ -79,10 +69,12 @@ mod tests {
         let designer_state = Arc::new(designer_state);
 
         let app = test::init_service(
-            App::new().app_data(web::Data::new(designer_state.clone())).route(
-                "/api/designer/v1/graphs",
-                web::post().to(get_graphs_endpoint),
-            ),
+            App::new()
+                .app_data(web::Data::new(designer_state.clone()))
+                .route(
+                    "/api/designer/v1/graphs",
+                    web::post().to(get_graphs_endpoint),
+                ),
         )
         .await;
 
@@ -141,20 +133,15 @@ mod tests {
         assert_eq!(connections, expected_connections);
         assert!(!connections.is_empty());
 
-        let pretty_json =
-            serde_json::to_string_pretty(&graphs_response).unwrap();
+        let pretty_json = serde_json::to_string_pretty(&graphs_response).unwrap();
         println!("Response body: {pretty_json}");
     }
 
     #[actix_web::test]
     async fn test_get_connections_have_all_data_type() {
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -207,12 +194,9 @@ mod tests {
             let mut pkgs_cache = designer_state.pkgs_cache.write().await;
             let mut graphs_cache = designer_state.graphs_cache.write().await;
 
-            let inject_ret = inject_all_pkgs_for_mock(
-                &mut pkgs_cache,
-                &mut graphs_cache,
-                all_pkgs_json_str,
-            )
-            .await;
+            let inject_ret =
+                inject_all_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, all_pkgs_json_str)
+                    .await;
             assert!(inject_ret.is_ok());
         }
 
@@ -223,8 +207,7 @@ mod tests {
             default_graph_uuid = graphs_cache
                 .iter()
                 .find_map(|(uuid, graph)| {
-                    if graph.name.as_ref().is_some_and(|name| name == "default")
-                    {
+                    if graph.name.as_ref().is_some_and(|name| name == "default") {
                         Some(*uuid)
                     } else {
                         None
@@ -235,10 +218,12 @@ mod tests {
 
         let designer_state = Arc::new(designer_state);
         let app = test::init_service(
-            App::new().app_data(web::Data::new(designer_state.clone())).route(
-                "/api/designer/v1/graphs",
-                web::post().to(get_graphs_endpoint),
-            ),
+            App::new()
+                .app_data(web::Data::new(designer_state.clone()))
+                .route(
+                    "/api/designer/v1/graphs",
+                    web::post().to(get_graphs_endpoint),
+                ),
         )
         .await;
 
@@ -336,8 +321,7 @@ mod tests {
         assert_eq!(connections, expected_connections);
         assert!(!connections.is_empty());
 
-        let pretty_json =
-            serde_json::to_string_pretty(&graphs_response).unwrap();
+        let pretty_json = serde_json::to_string_pretty(&graphs_response).unwrap();
         println!("Response body: {pretty_json}");
     }
 }
