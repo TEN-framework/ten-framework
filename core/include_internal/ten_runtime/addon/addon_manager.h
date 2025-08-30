@@ -38,7 +38,7 @@ typedef struct ten_app_t ten_app_t;
         manager, #TYPE, #NAME,                                                 \
         ____ten_addon_##NAME##_##TYPE##_addon_register_handler__, NULL, NULL); \
     if (!success) {                                                            \
-      TEN_LOGF("Failed to register addon: %s", #NAME);                         \
+      TEN_LOGE("Failed to register addon: %s", #NAME);                         \
       /* NOLINTNEXTLINE(concurrency-mt-unsafe) */                              \
       exit(EXIT_FAILURE);                                                      \
     }                                                                          \

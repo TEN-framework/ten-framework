@@ -30,7 +30,7 @@ type DefaultApp struct{}
 func (p *DefaultApp) OnConfigure(
 	tenEnv TenEnv,
 ) {
-	tenEnv.Log(LogLevelDebug, "OnConfigure.")
+	tenEnv.LogDebug("OnConfigure.")
 
 	tenEnv.OnConfigureDone()
 }
@@ -39,14 +39,14 @@ func (p *DefaultApp) OnConfigure(
 func (p *DefaultApp) OnInit(
 	tenEnv TenEnv,
 ) {
-	tenEnv.Log(LogLevelDebug, "OnInit.")
+	tenEnv.LogDebug("OnInit.")
 
 	tenEnv.OnInitDone()
 }
 
 // OnDeinit deinitializes the app.
 func (p *DefaultApp) OnDeinit(tenEnv TenEnv) {
-	tenEnv.Log(LogLevelDebug, "OnDeinit.")
+	tenEnv.LogDebug("OnDeinit.")
 
 	tenEnv.OnDeinitDone()
 }

@@ -367,7 +367,7 @@ static void ten_extension_context_log_graph_resources(
   ten_string_append_formatted(&log_json, ", \"graph_id\": \"%s\"", graph_id);
 
   // Log the complete JSON.
-  TEN_LOGM("[graph resources] {%s}", ten_string_get_raw_str(&log_json));
+  TEN_LOGI("[graph resources] {%s}", ten_string_get_raw_str(&log_json));
 
   // Clean up.
   ten_string_deinit(&log_json);

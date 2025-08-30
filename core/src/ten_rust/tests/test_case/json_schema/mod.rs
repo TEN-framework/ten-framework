@@ -1277,8 +1277,25 @@ mod tests {
         {
           "ten": {
             "log": {
-              "level": 2,
-              "file": "api.log"
+              "handlers": [
+                {
+                  "matchers": [
+                    {
+                      "level": "info"
+                    }
+                  ],
+                  "formatter": {
+                    "type": "json",
+                    "colored": false
+                  },
+                  "emitter": {
+                    "type": "file",
+                    "config": {
+                      "path": "api.log"
+                    }
+                  }
+                }
+              ]
             }
           },
           "a": 1,

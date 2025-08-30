@@ -21,12 +21,12 @@ type defaultApp struct {
 }
 
 func (p *defaultApp) OnInit(tenEnv ten.TenEnv) {
-	tenEnv.Log(ten.LogLevelDebug, "onInit")
+	tenEnv.LogDebug("onInit")
 	tenEnv.OnInitDone()
 }
 
 func (p *defaultApp) OnDeinit(tenEnv ten.TenEnv) {
-	tenEnv.Log(ten.LogLevelDebug, "onDeinit")
+	tenEnv.LogDebug("onDeinit")
 	tenEnv.OnDeinitDone()
 }
 

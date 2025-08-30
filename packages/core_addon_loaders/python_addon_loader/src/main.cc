@@ -177,7 +177,7 @@ class python_addon_loader_t : public ten::addon_loader_t {
     if (py_init_by_self_) {
       int rc = ten_py_finalize();
       if (rc < 0) {
-        TEN_LOGF(
+        TEN_LOGE(
             "[Python addon loader] Failed to finalize python runtime, rc: %d",
             rc);
 

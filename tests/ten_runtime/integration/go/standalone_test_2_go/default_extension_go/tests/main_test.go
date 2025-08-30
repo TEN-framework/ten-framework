@@ -28,6 +28,39 @@ type fakeApp struct {
 	initDoneChan chan bool
 }
 
+func (p *fakeApp) OnConfigure(tenEnv ten.TenEnv) {
+	// Default log config
+	tenEnv.InitPropertyFromJSONBytes(
+		[]byte(`{
+			"ten": {
+				"log": {
+					"handlers": [
+						{
+							"matchers": [
+								{
+									"level": "debug"
+								}
+							],
+							"formatter": {
+								"type": "plain",
+								"colored": true
+							},
+							"emitter": {
+								"type": "console",
+								"config": {
+									"stream": "stdout"
+								}
+							}
+						}
+					]
+				}
+			}
+		}`),
+	)
+
+	tenEnv.OnConfigureDone()
+}
+
 func (p *fakeApp) OnInit(tenEnv ten.TenEnv) {
 	tenEnv.OnInitDone()
 	p.initDoneChan <- true

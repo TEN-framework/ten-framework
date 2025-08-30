@@ -756,7 +756,7 @@
           "$ref": "#/$defs/notEmptyString"
         },
         // @}
-        "log": {
+        "deprecated_log": {
           "type": "object",
           "additionalProperties": false,
           "properties": {
@@ -1036,7 +1036,7 @@
             }
           }
         },
-        "advanced_log": {
+        "log": {
           "$ref": "#/$defs/advancedLogConfiguration"
         }
       }
@@ -1108,7 +1108,7 @@
     "advancedLogLevels": {
       "type": "string",
       "enum": [
-        "trace",
+        "off",
         "debug",
         "info",
         "warn",

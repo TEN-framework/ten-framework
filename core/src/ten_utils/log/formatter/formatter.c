@@ -33,8 +33,6 @@ static const size_t registered_formatters_size =
 // Helper function to convert log level to string.
 const char *ten_log_level_to_string(TEN_LOG_LEVEL level) {
   switch (level) {
-  case TEN_LOG_LEVEL_VERBOSE:
-    return "VERBOSE";
   case TEN_LOG_LEVEL_DEBUG:
     return "DEBUG";
   case TEN_LOG_LEVEL_INFO:
@@ -43,10 +41,6 @@ const char *ten_log_level_to_string(TEN_LOG_LEVEL level) {
     return "WARN";
   case TEN_LOG_LEVEL_ERROR:
     return "ERROR";
-  case TEN_LOG_LEVEL_FATAL:
-    return "FATAL";
-  case TEN_LOG_LEVEL_MANDATORY:
-    return "MANDATORY";
   default:
     return "UNKNOWN";
   }

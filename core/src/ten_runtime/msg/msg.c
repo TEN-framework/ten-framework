@@ -81,8 +81,6 @@ void ten_raw_msg_deinit(ten_msg_t *self) {
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_raw_msg_check_integrity(self), "Should not happen.");
 
-  TEN_LOGV("Destroy c_msg %p", self);
-
   ten_signature_set(&self->signature, 0);
   ten_value_deinit(&self->name);
 

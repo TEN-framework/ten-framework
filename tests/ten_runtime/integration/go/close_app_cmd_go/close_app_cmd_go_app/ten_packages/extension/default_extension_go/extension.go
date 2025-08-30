@@ -16,7 +16,7 @@ type defaultExtension struct {
 }
 
 func (ext *defaultExtension) OnConfigure(tenEnv ten.TenEnv) {
-	tenEnv.Log(ten.LogLevelDebug, "OnConfigure")
+	tenEnv.LogDebug("OnConfigure")
 	tenEnv.OnConfigureDone()
 }
 
@@ -31,7 +31,7 @@ func (ext *defaultExtension) OnCmd(
 		testCmd.SetPropertyFromJSONBytes("", []byte("{\"key\":\"value\"}"))
 
 		testValue, _ := testCmd.GetPropertyToJSONBytes("")
-		tenEnv.Log(ten.LogLevelDebug, "testValue: "+string(testValue))
+		tenEnv.LogDebug("testValue: " + string(testValue))
 		// Testing end.
 
 		closeAppCmd, _ := ten.NewCmd("ten:close_app")
@@ -42,16 +42,13 @@ func (ext *defaultExtension) OnCmd(
 			ExtensionName: ten.Ptr(""),
 		})
 		if err != nil {
-			tenEnv.Log(ten.LogLevelError, "Failed to SetDests:"+err.Error())
+			tenEnv.LogError("Failed to SetDests:" + err.Error())
 			return
 		}
 
 		err = tenEnv.SendCmd(closeAppCmd, nil)
 		if err != nil {
-			tenEnv.Log(
-				ten.LogLevelError,
-				"Failed to send close cmd:"+err.Error(),
-			)
+			tenEnv.LogError("Failed to send close cmd:" + err.Error())
 			return
 		}
 

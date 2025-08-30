@@ -22,16 +22,16 @@ class DefaultExtension extends Extension {
     super(name);
   }
 
-  async onConfigure(_tenEnv: TenEnv): Promise<void> {
-    console.log("DefaultExtension onConfigure");
+  async onConfigure(tenEnv: TenEnv): Promise<void> {
+    tenEnv.logInfo("DefaultExtension onConfigure");
   }
 
-  async onInit(_tenEnv: TenEnv): Promise<void> {
-    console.log("DefaultExtension onInit");
+  async onInit(tenEnv: TenEnv): Promise<void> {
+    tenEnv.logInfo("DefaultExtension onInit");
   }
 
   async onStart(tenEnv: TenEnv): Promise<void> {
-    console.log("DefaultExtension onStart");
+    tenEnv.logInfo("DefaultExtension onStart");
 
     const greetingCmd = Cmd.Create("greeting");
 
@@ -47,7 +47,7 @@ class DefaultExtension extends Extension {
   async onCmd(tenEnv: TenEnv, cmd: Cmd): Promise<void> {
     const cmdName = cmd.getName();
 
-    console.log("DefaultExtension onCmd" + cmdName);
+    tenEnv.logInfo("DefaultExtension onCmd" + cmdName);
 
     if (cmdName === "ping") {
       const cmdResult = CmdResult.Create(StatusCode.OK, cmd);
@@ -63,7 +63,7 @@ class DefaultExtension extends Extension {
   }
 
   async onData(tenEnv: TenEnv, data: Data): Promise<void> {
-    console.log("DefaultExtension onData");
+    tenEnv.logInfo("DefaultExtension onData");
 
     const dataName = data.getName();
     if (dataName === "ping") {
@@ -75,7 +75,7 @@ class DefaultExtension extends Extension {
   }
 
   async onVideoFrame(tenEnv: TenEnv, videoFrame: VideoFrame): Promise<void> {
-    console.log("DefaultExtension onVideoFrame");
+    tenEnv.logInfo("DefaultExtension onVideoFrame");
 
     const videoFrameName = videoFrame.getName();
     if (videoFrameName === "ping") {
@@ -90,7 +90,7 @@ class DefaultExtension extends Extension {
   }
 
   async onAudioFrame(tenEnv: TenEnv, audioFrame: AudioFrame): Promise<void> {
-    console.log("DefaultExtension onAudioFrame");
+    tenEnv.logInfo("DefaultExtension onAudioFrame");
 
     const audioFrameName = audioFrame.getName();
     if (audioFrameName === "ping") {
@@ -104,12 +104,12 @@ class DefaultExtension extends Extension {
     }
   }
 
-  async onStop(_tenEnv: TenEnv): Promise<void> {
-    console.log("DefaultExtension onStop");
+  async onStop(tenEnv: TenEnv): Promise<void> {
+    tenEnv.logInfo("DefaultExtension onStop");
   }
 
-  async onDeinit(_tenEnv: TenEnv): Promise<void> {
-    console.log("DefaultExtension onDeinit");
+  async onDeinit(tenEnv: TenEnv): Promise<void> {
+    tenEnv.logInfo("DefaultExtension onDeinit");
   }
 }
 

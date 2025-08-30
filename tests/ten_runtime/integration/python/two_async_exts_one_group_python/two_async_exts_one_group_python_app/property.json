@@ -1,7 +1,25 @@
 {
   "ten": {
     "log": {
-      "level": 2
+      "handlers": [
+        {
+          "matchers": [
+            {
+              "level": "info"
+            }
+          ],
+          "formatter": {
+            "type": "plain",
+            "colored": true
+          },
+          "emitter": {
+            "type": "console",
+            "config": {
+              "stream": "stdout"
+            }
+          }
+        }
+      ]
     },
     "predefined_graphs": [
       {

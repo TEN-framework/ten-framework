@@ -40,7 +40,25 @@ class test_app : public ten::app_t {
                         "uri": "msgpack://127.0.0.1:8001/",
                         "one_event_loop_per_engine": true,
                         "log": {
-                          "level": 2
+                          "handlers": [
+                            {
+                              "matchers": [
+                                {
+                                  "level": "debug"
+                                }
+                              ],
+                              "formatter": {
+                                "type": "plain",
+                                "colored": true
+                              },
+                              "emitter": {
+                                "type": "console",
+                                "config": {
+                                  "stream": "stdout"
+                                }
+                              }
+                            }
+                          ]
                         }
                        }
                     })"

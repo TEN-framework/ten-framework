@@ -105,14 +105,14 @@ bool ten_app_init_uri(ten_app_t *self, ten_value_t *value) {
   return true;
 }
 
-bool ten_app_init_log(ten_app_t *self, ten_value_t *value) {
+bool ten_app_init_deprecated_log(ten_app_t *self, ten_value_t *value) {
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_app_check_integrity(self, true), "Should not happen.");
   TEN_ASSERT(value, "Should not happen.");
   TEN_ASSERT(ten_value_check_integrity(value), "Should not happen.");
 
   if (!ten_value_is_object(value)) {
-    TEN_LOGE("Invalid value type for property: %s", TEN_STR_LOG);
+    TEN_LOGE("Invalid value type for property: %s", TEN_STR_DEPRECATED_LOG);
     return false;
   }
 
@@ -237,7 +237,7 @@ bool ten_app_init_advanced_log(ten_app_t *self, ten_value_t *value) {
   TEN_ASSERT(ten_value_check_integrity(value), "Should not happen.");
 
   if (!ten_value_is_object(value)) {
-    TEN_LOGE("Invalid value type for property: %s", TEN_STR_ADVANCED_LOG);
+    TEN_LOGE("Invalid value type for property: %s", TEN_STR_LOG);
     return false;
   }
 
@@ -280,6 +280,7 @@ bool ten_app_init_advanced_log(ten_app_t *self, ten_value_t *value) {
     if (err_msg) {
       TEN_LOGE("Failed to configure log: %s", err_msg);
       ten_rust_free_cstring(err_msg);
+      ten_rust_log_config_destroy(log_config);
     }
 
     return false;

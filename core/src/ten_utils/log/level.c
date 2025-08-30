@@ -12,8 +12,6 @@
 
 char ten_log_level_char(const TEN_LOG_LEVEL level) {
   switch (level) {
-  case TEN_LOG_LEVEL_VERBOSE:
-    return 'V';
   case TEN_LOG_LEVEL_DEBUG:
     return 'D';
   case TEN_LOG_LEVEL_INFO:
@@ -22,10 +20,6 @@ char ten_log_level_char(const TEN_LOG_LEVEL level) {
     return 'W';
   case TEN_LOG_LEVEL_ERROR:
     return 'E';
-  case TEN_LOG_LEVEL_FATAL:
-    return 'F';
-  case TEN_LOG_LEVEL_MANDATORY:
-    return 'M';
   default:
     return '?';
   }

@@ -21,14 +21,14 @@ class test_extension : public ten::extension_t {
   explicit test_extension(const char *name) : ten::extension_t(name) {}
 
   void on_init(ten::ten_env_t &ten_env) override {
-    TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_INFO, "check log advanced on_init");
+    TEN_ENV_LOG_INFO(ten_env, "check log advanced on_init");
     ten_env.on_init_done();
   }
 
   void on_cmd(ten::ten_env_t &ten_env,
               std::unique_ptr<ten::cmd_t> cmd) override {
-    TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_DEBUG,
-                (std::string("on_cmd ") + cmd->get_name()).c_str());
+    TEN_ENV_LOG_DEBUG(ten_env,
+                      (std::string("on_cmd ") + cmd->get_name()).c_str());
 
     if (cmd->get_name() == "hello_world") {
       auto cmd_result = ten::cmd_result_t::create(TEN_STATUS_CODE_OK, *cmd);
@@ -38,7 +38,7 @@ class test_extension : public ten::extension_t {
   }
 
   void on_deinit(ten::ten_env_t &ten_env) override {
-    TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_INFO, "check log advanced on_deinit");
+    TEN_ENV_LOG_INFO(ten_env, "check log advanced on_deinit");
     ten_env.on_deinit_done();
   }
 };
@@ -51,7 +51,7 @@ class test_app : public ten::app_t {
         R"({
              "ten": {
                "uri": "msgpack://127.0.0.1:8001/",
-               "advanced_log": {
+               "log": {
                  "handlers": [
                    {
                      "matchers": [
@@ -66,15 +66,7 @@ class test_app : public ten::app_t {
                      "emitter": {
                        "type": "file",
                        "config": {
-                         "path": "advanced_log_encryption_file.log",
-                         "encryption": {
-                           "enabled": true,
-                           "algorithm": "AES-CTR",
-                           "params": {
-                             "key": "0123456789012345",
-                             "nonce": "0123456789012345"
-                           }
-                         }
+                         "path": "advanced_log_file.log"
                        }
                      }
                    }
@@ -99,12 +91,12 @@ void *test_app_thread_main(TEN_UNUSED void *args) {
   return nullptr;
 }
 
-TEN_CPP_REGISTER_ADDON_AS_EXTENSION(log_advanced_encryption__test_extension,
+TEN_CPP_REGISTER_ADDON_AS_EXTENSION(log_advanced_file__test_extension,
                                     test_extension);
 
 }  // namespace
 
-TEST(AdvancedLogTest, LogAdvancedEncryption) {  // NOLINT
+TEST(AdvancedLogTest, LogAdvancedFile) {  // NOLINT
   auto *app_thread =
       ten_thread_create("app thread", test_app_thread_main, nullptr);
 
@@ -117,7 +109,7 @@ TEST(AdvancedLogTest, LogAdvancedEncryption) {  // NOLINT
            "nodes": [{
                 "type": "extension",
                 "name": "test_extension",
-                "addon": "log_advanced_encryption__test_extension",
+                "addon": "log_advanced_file__test_extension",
                 "extension_group": "test_extension_group",
                 "app": "msgpack://127.0.0.1:8001/"
              }]
@@ -139,8 +131,6 @@ TEST(AdvancedLogTest, LogAdvancedEncryption) {  // NOLINT
   ten_thread_join(app_thread, -1);
 
   // Check the log file exists.
-  std::ifstream log_file("advanced_log_encryption_file.log");
+  std::ifstream log_file("advanced_log_file.log");
   EXPECT_TRUE(log_file.good());
-
-  ten_log_global_deinit_advanced_log();
 }

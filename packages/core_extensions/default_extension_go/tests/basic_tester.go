@@ -17,7 +17,7 @@ type BasicExtensionTester struct {
 
 // OnStart is called when the test starts.
 func (tester *BasicExtensionTester) OnStart(tenEnvTester ten.TenEnvTester) {
-	tenEnvTester.Log(ten.LogLevelInfo, "OnStart")
+	tenEnvTester.LogInfo("OnStart")
 
 	cmdTest, _ := ten.NewCmd("test")
 	tenEnvTester.SendCmd(
@@ -41,7 +41,7 @@ func (tester *BasicExtensionTester) OnStart(tenEnvTester ten.TenEnvTester) {
 
 // OnStop is called when the test stops.
 func (tester *BasicExtensionTester) OnStop(tenEnvTester ten.TenEnvTester) {
-	tenEnvTester.Log(ten.LogLevelInfo, "OnStop")
+	tenEnvTester.LogInfo("OnStop")
 
 	tenEnvTester.OnStopDone()
 }

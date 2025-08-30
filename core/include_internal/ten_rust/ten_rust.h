@@ -213,12 +213,11 @@ TEN_RUST_PRIVATE_API bool ten_rust_log_reopen_all(AdvancedLogConfig *config,
                                                   bool reloadable,
                                                   char **err_msg);
 
-TEN_RUST_PRIVATE_API void ten_rust_log(AdvancedLogConfig *config,
-                                       const char *category, int64_t pid,
-                                       int64_t tid, int level,
-                                       const char *func_name,
-                                       const char *file_name, size_t line_no,
-                                       const char *msg);
+TEN_RUST_PRIVATE_API void ten_rust_log(
+    AdvancedLogConfig *config, const char *category, size_t category_len,
+    int64_t pid, int64_t tid, int level, const char *func_name,
+    size_t func_name_len, const char *file_name, size_t file_name_len,
+    size_t line_no, const char *msg, size_t msg_len);
 
 TEN_RUST_PRIVATE_API void ten_rust_log_config_destroy(
     AdvancedLogConfig *config);

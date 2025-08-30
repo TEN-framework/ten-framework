@@ -2,7 +2,25 @@
   "ten": {
     "uri": "msgpack://127.0.0.1:8001/",
     "log": {
-      "level": 2
+      "handlers": [
+        {
+          "matchers": [
+            {
+              "level": "info"
+            }
+          ],
+          "formatter": {
+            "type": "json",
+            "colored": false
+          },
+          "emitter": {
+            "type": "console",
+            "config": {
+              "stream": "stdout"
+            }
+          }
+        }
+      ]
     },
     "predefined_graphs": [
       {

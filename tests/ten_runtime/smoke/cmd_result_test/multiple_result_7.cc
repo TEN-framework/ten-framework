@@ -30,12 +30,12 @@ class test_extension_1 : public ten::extension_t {
             ++received_result_cnt;
 
             if (received_result_cnt < 5) {
-              TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_INFO,
-                          (std::string("receives ") +
-                           std::to_string(received_result_cnt) + " cmd_result")
-                              .c_str());
+              TEN_ENV_LOG_INFO(
+                  ten_env, (std::string("receives ") +
+                            std::to_string(received_result_cnt) + " cmd_result")
+                               .c_str());
             } else if (received_result_cnt == 5) {
-              TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_INFO, "receives 5 cmd result");
+              TEN_ENV_LOG_INFO(ten_env, "receives 5 cmd result");
               ten_env.return_result(std::move(cmd_result));
             }
           });
@@ -101,7 +101,25 @@ class test_app : public ten::app_t {
              "ten": {
                "uri": "msgpack://127.0.0.1:8001/",
                "log": {
-                 "level": 2
+                 "handlers": [
+                   {
+                     "matchers": [
+                       {
+                         "level": "debug"
+                       }
+                     ],
+                     "formatter": {
+                       "type": "plain",
+                       "colored": true
+                     },
+                     "emitter": {
+                       "type": "console",
+                       "config": {
+                         "stream": "stdout"
+                       }
+                     }
+                   }
+                 ]
                }
              }
            })",
