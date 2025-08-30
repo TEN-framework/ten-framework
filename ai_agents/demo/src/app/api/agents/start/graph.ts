@@ -1,10 +1,12 @@
 import { LanguageMap } from "@/common/constant";
 
+const OPENAI_REALTIME_MODEL = "gpt-realtime"
+
 export const voiceNameMap: LanguageMap = {
     "zh-CN": {
         azure: {
-            male: "zh-CN-YunxiNeural",
-            female: "zh-CN-XiaoxiaoNeural",
+            male: "zh-CN-YunyiMultilingualNeural",
+            female: "zh-CN-XiaoxiaoMultilingualNeural",
         },
         elevenlabs: {
             male: "pNInz6obpgDQGcFmaJgB", // Adam
@@ -26,7 +28,7 @@ export const voiceNameMap: LanguageMap = {
             langCode: "cmn-CN",
         },
         azure_grok4: {
-            male: "zh-CN-XiaoxiaoMultilingualNeural",
+            male: "zh-CN-YunyiMultilingualNeural",
             female: "zh-CN-XiaoxiaoMultilingualNeural",
         }
     },
@@ -55,8 +57,8 @@ export const voiceNameMap: LanguageMap = {
             langCode: "en-US",
         },
         azure_grok4: {
-            male: "zh-CN-XiaoxiaoMultilingualNeural",
-            female: "zh-CN-XiaoxiaoMultilingualNeural",
+            male: "en-US-AndrewMultilingualNeural",
+            female: "en-US-AvaMultilingualNeural",
         }
     },
     "ja-JP": {
@@ -74,8 +76,8 @@ export const voiceNameMap: LanguageMap = {
             langCode: "ja-JP",
         },
         azure_grok4: {
-            male: "zh-CN-XiaoxiaoMultilingualNeural",
-            female: "zh-CN-XiaoxiaoMultilingualNeural",
+            male: "ja-JP-KeitaNeural",
+            female: "ja-JP-NanamiNeural",
         }
     },
     "ko-KR": {
@@ -93,8 +95,8 @@ export const voiceNameMap: LanguageMap = {
             langCode: "ko-KR",
         },
         azure_grok4: {
-            male: "zh-CN-XiaoxiaoMultilingualNeural",
-            female: "zh-CN-XiaoxiaoMultilingualNeural",
+            male: "ko-KR-InJoonNeural",
+            female: "ko-KR-JiMinNeural",
         }
     },
 };
@@ -175,7 +177,7 @@ export const getGraphProperties = (
     } else if (graphName === "va_openai_v2v") {
         return {
             "v2v": {
-                "model": "gpt-realtime",
+                "model": OPENAI_REALTIME_MODEL,
                 "voice": voiceNameMap[language]["openai"][voiceType],
                 "language": converteLanguage,
                 "prompt": prompt,
@@ -244,7 +246,7 @@ export const getGraphProperties = (
                 }
             }
         }
-    } else if (graphName === "deepseek_r1") {
+    } else if (graphName === "deepseek_v3_1") {
         return {
             "stt": {
                 "params": {
@@ -253,7 +255,8 @@ export const getGraphProperties = (
             },
             "llm": {
                 "prompt": prompt,
-                "model": "DeepSeek-R1",
+                "greeting": combined_greeting,
+                "model": "deepseek-chat-v3.1",
             },
             "main_control": {
                 "greeting": combined_greeting
