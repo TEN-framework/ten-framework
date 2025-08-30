@@ -158,9 +158,11 @@ export const getGraphProperties = (
                     "language": language
                 },
             },
-            "coze_python_async": {
+            "main_control": {
+                "greeting": combined_greeting
+            },
+            "llm": {
                 "prompt": prompt,
-                "greeting": combined_greeting,
             },
             "tts": {
                 "params": {
@@ -173,11 +175,13 @@ export const getGraphProperties = (
     } else if (graphName === "va_openai_v2v") {
         return {
             "v2v": {
-                "model": "gpt-4o-realtime-preview",
+                "model": "gpt-realtime",
                 "voice": voiceNameMap[language]["openai"][voiceType],
                 "language": converteLanguage,
                 "prompt": prompt,
-                "greeting": combined_greeting,
+            },
+            "main_control": {
+                "greeting": combined_greeting
             }
         }
     } else if (graphName === "va_openai_azure") {
@@ -190,6 +194,9 @@ export const getGraphProperties = (
             "llm": {
                 "model": "gpt-4o",
                 "prompt": prompt,
+            },
+            "main_control": {
+                "greeting": combined_greeting
             },
             "tts": {
                 "params": {
@@ -224,7 +231,10 @@ export const getGraphProperties = (
                 },
             },
             "llm": {
-                "greeting": combined_greeting,
+                "prompt": prompt,
+            },
+            "main_control": {
+                "greeting": combined_greeting
             },
             "tts": {
                 "params": {
@@ -243,8 +253,10 @@ export const getGraphProperties = (
             },
             "llm": {
                 "prompt": prompt,
-                "greeting": combined_greeting,
                 "model": "DeepSeek-R1",
+            },
+            "main_control": {
+                "greeting": combined_greeting
             },
             "tts": {
                 "params": {
@@ -263,8 +275,10 @@ export const getGraphProperties = (
             },
             "llm": {
                 "prompt": prompt,
-                "greeting": combined_greeting,
                 "model": "qwq-plus",
+            },
+            "main_control": {
+                "greeting": combined_greeting
             },
             "tts": {
                 "params": {
@@ -296,8 +310,10 @@ export const getGraphProperties = (
             },
             "llm": {
                 "prompt": prompt,
-                "greeting": combined_greeting,
                 "model": "grok-4-0709",
+            },
+            "main_control": {
+                "greeting": combined_greeting
             },
             "tts": {
                 "params": {
@@ -316,7 +332,9 @@ export const getGraphProperties = (
             },
             "llm": {
                 "prompt": prompt,
-                "greeting": combined_greeting,
+            },
+            "main_control": {
+                "greeting": combined_greeting
             },
             "tts": {
                 "params": {
