@@ -23,9 +23,8 @@ pub struct EnvInfo {
 pub async fn get_env_endpoint(
     _state: web::Data<Arc<DesignerState>>,
 ) -> Result<impl Responder, actix_web::Error> {
-    let current_env = ten_rust::env::get_env().map_err(|e| {
-        actix_web::error::ErrorInternalServerError(e.to_string())
-    })?;
+    let current_env = ten_rust::env::get_env()
+        .map_err(|e| actix_web::error::ErrorInternalServerError(e.to_string()))?;
 
     // Create response object
     let env_info = EnvInfo {
@@ -33,8 +32,11 @@ pub async fn get_env_endpoint(
         arch: current_env.arch.to_string(),
     };
 
-    let response =
-        ApiResponse { status: Status::Ok, data: env_info, meta: None };
+    let response = ApiResponse {
+        status: Status::Ok,
+        data: env_info,
+        meta: None,
+    };
 
     Ok(HttpResponse::Ok().json(response))
 }

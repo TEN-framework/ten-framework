@@ -29,8 +29,7 @@ pub async fn tman_get_all_installed_pkgs_info_of_app(
     app_path: &Path,
     out: Arc<Box<dyn TmanOutput>>,
 ) -> Result<Vec<PkgInfo>> {
-    let pkg_info_struct =
-        get_app_installed_pkgs(app_path, false, &mut None).await?;
+    let pkg_info_struct = get_app_installed_pkgs(app_path, false, &mut None).await?;
 
     // Use the to_vec method to combine all package types into a single vector.
     let all_pkgs = pkg_info_struct.to_vec();
@@ -52,9 +51,9 @@ pub fn get_pkg_in_app<'a>(
             assert!(pkg_name.is_some());
 
             match &pkgs_info_in_app.extension_pkgs_info {
-                Some(pkgs) => Ok(pkgs.iter().find(|pkg| {
-                    pkg.manifest.type_and_name.name == *pkg_name.unwrap()
-                })),
+                Some(pkgs) => Ok(pkgs
+                    .iter()
+                    .find(|pkg| pkg.manifest.type_and_name.name == *pkg_name.unwrap())),
                 None => Ok(None),
             }
         }
@@ -73,9 +72,7 @@ pub fn belonging_pkg_info_find_by_graph_info<'a>(
 
             if let Some(pkgs_info_in_app) = pkgs_info_in_app {
                 match graph_info.belonging_pkg_type {
-                    Some(PkgType::App) => {
-                        Ok(pkgs_info_in_app.app_pkg_info.as_ref())
-                    }
+                    Some(PkgType::App) => Ok(pkgs_info_in_app.app_pkg_info.as_ref()),
                     Some(PkgType::Extension) => {
                         assert!(graph_info.belonging_pkg_name.is_some());
                         assert!(pkgs_info_in_app.extension_pkgs_info.is_some());
@@ -84,9 +81,9 @@ pub fn belonging_pkg_info_find_by_graph_info<'a>(
                             if let Some(extension_pkgs_info) =
                                 pkgs_info_in_app.extension_pkgs_info.as_ref()
                             {
-                                Ok(extension_pkgs_info.iter().find(|pkg| {
-                                    pkg.manifest.type_and_name.name == *pkg_name
-                                }))
+                                Ok(extension_pkgs_info
+                                    .iter()
+                                    .find(|pkg| pkg.manifest.type_and_name.name == *pkg_name))
                             } else {
                                 Err(anyhow!(
                                     "Package name not found: {:?}",
@@ -125,9 +122,7 @@ pub fn belonging_pkg_info_find_by_graph_info_mut<'a>(
 
             if let Some(pkgs_info_in_app) = pkgs_info_in_app {
                 match graph_info.belonging_pkg_type {
-                    Some(PkgType::App) => {
-                        Ok(pkgs_info_in_app.app_pkg_info.as_mut())
-                    }
+                    Some(PkgType::App) => Ok(pkgs_info_in_app.app_pkg_info.as_mut()),
                     Some(PkgType::Extension) => {
                         assert!(graph_info.belonging_pkg_name.is_some());
                         assert!(pkgs_info_in_app.extension_pkgs_info.is_some());
@@ -136,9 +131,9 @@ pub fn belonging_pkg_info_find_by_graph_info_mut<'a>(
                             if let Some(extension_pkgs_info) =
                                 pkgs_info_in_app.extension_pkgs_info.as_mut()
                             {
-                                Ok(extension_pkgs_info.iter_mut().find(|pkg| {
-                                    pkg.manifest.type_and_name.name == *pkg_name
-                                }))
+                                Ok(extension_pkgs_info
+                                    .iter_mut()
+                                    .find(|pkg| pkg.manifest.type_and_name.name == *pkg_name))
                             } else {
                                 Err(anyhow!(
                                     "Package name not found: {:?}",

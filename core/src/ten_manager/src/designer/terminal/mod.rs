@@ -46,18 +46,16 @@ struct WsProcessor {
 
 impl WsProcessor {
     fn new(path: String) -> Self {
-        Self { pty: Arc::new(Mutex::new(PtyManager::new(path))) }
+        Self {
+            pty: Arc::new(Mutex::new(PtyManager::new(path))),
+        }
     }
 }
 
 impl actix::Handler<PtyMessage> for WsProcessor {
     type Result = ();
 
-    fn handle(
-        &mut self,
-        msg: PtyMessage,
-        ctx: &mut Self::Context,
-    ) -> Self::Result {
+    fn handle(&mut self, msg: PtyMessage, ctx: &mut Self::Context) -> Self::Result {
         // Receive a message from actor (pty), and to interact with the
         // websocket client.
 
@@ -128,11 +126,7 @@ impl Actor for WsProcessor {
 
 // Handle the data received from the websocket.
 impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsProcessor {
-    fn handle(
-        &mut self,
-        msg: Result<ws::Message, ws::ProtocolError>,
-        ctx: &mut Self::Context,
-    ) {
+    fn handle(&mut self, msg: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
         match msg {
             Ok(ws::Message::Ping(msg)) => ctx.pong(&msg),
             Ok(ws::Message::Text(text)) => {
@@ -140,9 +134,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsProcessor {
 
                 // Try to parse the received message as a json.
                 if let Ok(json) = serde_json::from_str::<Value>(&text) {
-                    if let Some(message_type) =
-                        json.get("type").and_then(|v| v.as_str())
-                    {
+                    if let Some(message_type) = json.get("type").and_then(|v| v.as_str()) {
                         match message_type {
                             "resize" => {
                                 if let (Some(cols), Some(rows)) = (
@@ -175,9 +167,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsProcessor {
                             .unwrap()
                             .write_to_pty(&text)
                             .unwrap_or_else(|_| {
-                                println!(
-                                    "Failed to write to PTY with data: {text}"
-                                )
+                                println!("Failed to write to PTY with data: {text}")
                             });
                     }
                 } else {
@@ -186,9 +176,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsProcessor {
                         .lock()
                         .unwrap()
                         .write_to_pty(&text)
-                        .unwrap_or_else(|_| {
-                            println!("Failed to write to PTY with data: {text}")
-                        });
+                        .unwrap_or_else(|_| println!("Failed to write to PTY with data: {text}"));
                 }
             }
             Ok(ws::Message::Binary(bin)) => ctx.binary(bin),
@@ -203,9 +191,13 @@ pub async fn ws_terminal_endpoint(
 ) -> Result<HttpResponse, Error> {
     // Extract 'path' from query parameters.
     let query = req.query_string();
-    let params: HashMap<_, _> =
-        url::form_urlencoded::parse(query.as_bytes()).into_owned().collect();
-    let path = params.get("path").cloned().unwrap_or_else(|| "".to_string());
+    let params: HashMap<_, _> = url::form_urlencoded::parse(query.as_bytes())
+        .into_owned()
+        .collect();
+    let path = params
+        .get("path")
+        .cloned()
+        .unwrap_or_else(|| "".to_string());
 
     ws::start(WsProcessor::new(path), &req, stream)
 }

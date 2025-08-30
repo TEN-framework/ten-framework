@@ -25,7 +25,11 @@ mod tests {
         // Verify get_home_dir uses the test home
         let home_dir = get_home_dir();
         let expected_path = if cfg!(target_os = "windows") {
-            temp_home.path().join("AppData").join("Roaming").join("tman")
+            temp_home
+                .path()
+                .join("AppData")
+                .join("Roaming")
+                .join("tman")
         } else {
             temp_home.path().join(".tman")
         };

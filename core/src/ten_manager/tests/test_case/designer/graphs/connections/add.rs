@@ -12,8 +12,7 @@ mod tests {
     use ten_manager::{
         designer::{
             graphs::connections::add::{
-                add_graph_connection_endpoint,
-                AddGraphConnectionRequestPayload,
+                add_graph_connection_endpoint, AddGraphConnectionRequestPayload,
                 AddGraphConnectionResponsePayload,
             },
             response::ApiResponse,
@@ -26,9 +25,7 @@ mod tests {
         output::cli::TmanOutputCli,
         pkg_info::get_all_pkgs::get_all_pkgs_in_app,
     };
-    use ten_rust::pkg_info::{
-        constants::PROPERTY_JSON_FILENAME, message::MsgType,
-    };
+    use ten_rust::pkg_info::{constants::PROPERTY_JSON_FILENAME, message::MsgType};
     use uuid::Uuid;
 
     use crate::test_case::common::mock::inject_all_pkgs_for_mock;
@@ -36,12 +33,8 @@ mod tests {
     #[actix_web::test]
     async fn test_add_graph_connection_success_1() {
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -60,31 +53,28 @@ mod tests {
             include_str!("../../../../test_data/app_property.json").to_string();
 
         // Create the property.json file in the temporary directory.
-        let property_path =
-            std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
+        let property_path = std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
         std::fs::write(&property_path, &app_property_json_str).unwrap();
 
         // Create extension addon manifest strings.
-        let ext1_manifest = include_str!(
-            "../../../../test_data/extension_addon_1_manifest.json"
-        )
-        .to_string();
+        let ext1_manifest =
+            include_str!("../../../../test_data/extension_addon_1_manifest.json").to_string();
 
-        let ext2_manifest = include_str!(
-            "../../../../test_data/extension_addon_2_manifest.json"
-        )
-        .to_string();
+        let ext2_manifest =
+            include_str!("../../../../test_data/extension_addon_2_manifest.json").to_string();
 
-        let ext3_manifest = include_str!(
-            "../../../../test_data/extension_addon_3_manifest.json"
-        )
-        .to_string();
+        let ext3_manifest =
+            include_str!("../../../../test_data/extension_addon_3_manifest.json").to_string();
 
         // The empty property for addons
         let empty_property = r#"{"ten":{}}"#.to_string();
 
         let all_pkgs_json = vec![
-            (test_dir.clone(), app_manifest_json_str, app_property_json_str),
+            (
+                test_dir.clone(),
+                app_manifest_json_str,
+                app_property_json_str,
+            ),
             (
                 format!(
                     "{}{}",
@@ -118,34 +108,26 @@ mod tests {
             let mut pkgs_cache = designer_state.pkgs_cache.write().await;
             let mut graphs_cache = designer_state.graphs_cache.write().await;
 
-            let inject_ret = inject_all_pkgs_for_mock(
-                &mut pkgs_cache,
-                &mut graphs_cache,
-                all_pkgs_json,
-            );
+            let inject_ret =
+                inject_all_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, all_pkgs_json);
             assert!(inject_ret.await.is_ok());
         }
 
         let graph_id_clone;
         {
             let graphs_cache = designer_state.graphs_cache.read().await;
-            let (graph_id, _) = graphs_cache_find_by_name(
-                &graphs_cache,
-                "default_with_app_uri",
-            )
-            .unwrap();
+            let (graph_id, _) =
+                graphs_cache_find_by_name(&graphs_cache, "default_with_app_uri").unwrap();
 
             graph_id_clone = *graph_id;
         }
 
         let designer_state = Arc::new(designer_state);
 
-        let app = test::init_service(
-            App::new().app_data(web::Data::new(designer_state)).route(
-                "/api/designer/v1/graphs/connections/add",
-                web::post().to(add_graph_connection_endpoint),
-            ),
-        )
+        let app = test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
+            "/api/designer/v1/graphs/connections/add",
+            web::post().to(add_graph_connection_endpoint),
+        ))
         .await;
 
         // Add a connection between existing nodes in the default graph.
@@ -188,15 +170,13 @@ mod tests {
         );
 
         // Read the actual property.json file generated during the test.
-        let property_path =
-            std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
+        let property_path = std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
         let actual_property = std::fs::read_to_string(property_path).unwrap();
 
         // Normalize both JSON strings to handle formatting differences.
         let expected_value: serde_json::Value =
             serde_json::from_str(expected_property_json_str).unwrap();
-        let actual_value: serde_json::Value =
-            serde_json::from_str(&actual_property).unwrap();
+        let actual_value: serde_json::Value = serde_json::from_str(&actual_property).unwrap();
 
         // Compare the normalized JSON values.
         assert_eq!(
@@ -212,12 +192,8 @@ mod tests {
     #[actix_web::test]
     async fn test_add_graph_connection_success_2() {
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -232,14 +208,12 @@ mod tests {
         // Load both the app package JSON and extension addon package JSONs.
         let app_manifest_json_str =
             include_str!("../../../../test_data/app_manifest.json").to_string();
-        let app_property_json_str = include_str!(
-            "../../../../test_data/initial_property_add_connection_2.json"
-        )
-        .to_string();
+        let app_property_json_str =
+            include_str!("../../../../test_data/initial_property_add_connection_2.json")
+                .to_string();
 
         // Create the property.json file in the temporary directory.
-        let property_path =
-            std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
+        let property_path = std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
         std::fs::write(&property_path, &app_property_json_str).unwrap();
 
         // Create extension addon manifest strings.
@@ -275,7 +249,11 @@ mod tests {
         let empty_property = r#"{}"#.to_string();
 
         let all_pkgs_json = vec![
-            (test_dir.clone(), app_manifest_json_str, app_property_json_str),
+            (
+                test_dir.clone(),
+                app_manifest_json_str,
+                app_property_json_str,
+            ),
             (
                 format!(
                     "{}{}",
@@ -318,31 +296,25 @@ mod tests {
             let mut pkgs_cache = designer_state.pkgs_cache.write().await;
             let mut graphs_cache = designer_state.graphs_cache.write().await;
 
-            let inject_ret = inject_all_pkgs_for_mock(
-                &mut pkgs_cache,
-                &mut graphs_cache,
-                all_pkgs_json,
-            );
+            let inject_ret =
+                inject_all_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, all_pkgs_json);
             assert!(inject_ret.await.is_ok());
         }
 
         let graph_id_clone;
         {
             let graphs_cache = designer_state.graphs_cache.read().await;
-            let (graph_id, _) =
-                graphs_cache_find_by_name(&graphs_cache, "default").unwrap();
+            let (graph_id, _) = graphs_cache_find_by_name(&graphs_cache, "default").unwrap();
 
             graph_id_clone = *graph_id;
         }
 
         let designer_state = Arc::new(designer_state);
 
-        let app = test::init_service(
-            App::new().app_data(web::Data::new(designer_state)).route(
-                "/api/designer/v1/graphs/connections/add",
-                web::post().to(add_graph_connection_endpoint),
-            ),
-        )
+        let app = test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
+            "/api/designer/v1/graphs/connections/add",
+            web::post().to(add_graph_connection_endpoint),
+        ))
         .await;
 
         // Add a connection between existing nodes in the default graph.
@@ -378,20 +350,17 @@ mod tests {
         assert!(response.data.success);
 
         // Define expected property.json content after adding the connection.
-        let expected_property_json_str = include_str!(
-            "../../../../test_data/expected_property_add_connection_2.json"
-        );
+        let expected_property_json_str =
+            include_str!("../../../../test_data/expected_property_add_connection_2.json");
 
         // Read the actual property.json file generated during the test.
-        let property_path =
-            std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
+        let property_path = std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
         let actual_property = std::fs::read_to_string(property_path).unwrap();
 
         // Normalize both JSON strings to handle formatting differences.
         let expected_value: serde_json::Value =
             serde_json::from_str(expected_property_json_str).unwrap();
-        let actual_value: serde_json::Value =
-            serde_json::from_str(&actual_property).unwrap();
+        let actual_value: serde_json::Value = serde_json::from_str(&actual_property).unwrap();
 
         // Compare the normalized JSON values.
         assert_eq!(
@@ -407,12 +376,8 @@ mod tests {
     #[actix_web::test]
     async fn test_add_graph_connection_invalid_graph() {
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -431,8 +396,7 @@ mod tests {
         )];
 
         // Create the property.json file in the temporary directory.
-        let property_path =
-            std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
+        let property_path = std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
         std::fs::write(
             &property_path,
             include_str!("../../../../test_data/app_property.json"),
@@ -443,22 +407,17 @@ mod tests {
             let mut pkgs_cache = designer_state.pkgs_cache.write().await;
             let mut graphs_cache = designer_state.graphs_cache.write().await;
 
-            let inject_ret = inject_all_pkgs_for_mock(
-                &mut pkgs_cache,
-                &mut graphs_cache,
-                all_pkgs_json_str,
-            );
+            let inject_ret =
+                inject_all_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, all_pkgs_json_str);
             assert!(inject_ret.await.is_ok());
         }
 
         let designer_state = Arc::new(designer_state);
 
-        let app = test::init_service(
-            App::new().app_data(web::Data::new(designer_state)).route(
-                "/api/designer/v1/graphs/connections/add",
-                web::post().to(add_graph_connection_endpoint),
-            ),
-        )
+        let app = test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
+            "/api/designer/v1/graphs/connections/add",
+            web::post().to(add_graph_connection_endpoint),
+        ))
         .await;
 
         // Try to add a connection to a non-existent graph.
@@ -485,12 +444,8 @@ mod tests {
     #[actix_web::test]
     async fn test_add_graph_connection_preserves_order() {
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -509,31 +464,28 @@ mod tests {
             include_str!("../../../../test_data/app_property.json").to_string();
 
         // Create the property.json file in the temporary directory.
-        let property_path =
-            std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
+        let property_path = std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
         std::fs::write(&property_path, &app_property_json_str).unwrap();
 
         // Create extension addon manifest strings.
-        let ext1_manifest = include_str!(
-            "../../../../test_data/extension_addon_1_manifest.json"
-        )
-        .to_string();
+        let ext1_manifest =
+            include_str!("../../../../test_data/extension_addon_1_manifest.json").to_string();
 
-        let ext2_manifest = include_str!(
-            "../../../../test_data/extension_addon_2_manifest.json"
-        )
-        .to_string();
+        let ext2_manifest =
+            include_str!("../../../../test_data/extension_addon_2_manifest.json").to_string();
 
-        let ext3_manifest = include_str!(
-            "../../../../test_data/extension_addon_3_manifest.json"
-        )
-        .to_string();
+        let ext3_manifest =
+            include_str!("../../../../test_data/extension_addon_3_manifest.json").to_string();
 
         // The empty property for addons.
         let empty_property = r#"{"ten":{}}"#.to_string();
 
         let all_pkgs_json = vec![
-            (test_dir.clone(), app_manifest_json_str, app_property_json_str),
+            (
+                test_dir.clone(),
+                app_manifest_json_str,
+                app_property_json_str,
+            ),
             (
                 format!(
                     "{}{}",
@@ -567,22 +519,16 @@ mod tests {
             let mut pkgs_cache = designer_state.pkgs_cache.write().await;
             let mut graphs_cache = designer_state.graphs_cache.write().await;
 
-            let inject_ret = inject_all_pkgs_for_mock(
-                &mut pkgs_cache,
-                &mut graphs_cache,
-                all_pkgs_json,
-            );
+            let inject_ret =
+                inject_all_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, all_pkgs_json);
             assert!(inject_ret.await.is_ok());
         }
 
         let graph_id_clone;
         {
             let graphs_cache = designer_state.graphs_cache.read().await;
-            let (graph_id, _) = graphs_cache_find_by_name(
-                &graphs_cache,
-                "default_with_app_uri",
-            )
-            .unwrap();
+            let (graph_id, _) =
+                graphs_cache_find_by_name(&graphs_cache, "default_with_app_uri").unwrap();
 
             graph_id_clone = *graph_id;
         }
@@ -646,15 +592,13 @@ mod tests {
         );
 
         // Read the actual property.json file generated during the test.
-        let property_path =
-            std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
+        let property_path = std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
         let actual_property = std::fs::read_to_string(property_path).unwrap();
 
         // Normalize both JSON strings to handle formatting differences.
         let expected_value: serde_json::Value =
             serde_json::from_str(expected_property_json_str).unwrap();
-        let actual_value: serde_json::Value =
-            serde_json::from_str(&actual_property).unwrap();
+        let actual_value: serde_json::Value = serde_json::from_str(&actual_property).unwrap();
 
         // Compare the normalized JSON values.
         assert_eq!(
@@ -670,12 +614,8 @@ mod tests {
     #[actix_web::test]
     async fn test_add_graph_connection_file_comparison() {
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -694,31 +634,28 @@ mod tests {
             include_str!("../../../../test_data/app_property.json").to_string();
 
         // Create the property.json file in the temporary directory.
-        let property_path =
-            std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
+        let property_path = std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
         std::fs::write(&property_path, &app_property_json_str).unwrap();
 
         // Create extension addon manifest strings.
-        let ext1_manifest = include_str!(
-            "../../../../test_data/extension_addon_1_manifest.json"
-        )
-        .to_string();
+        let ext1_manifest =
+            include_str!("../../../../test_data/extension_addon_1_manifest.json").to_string();
 
-        let ext2_manifest = include_str!(
-            "../../../../test_data/extension_addon_2_manifest.json"
-        )
-        .to_string();
+        let ext2_manifest =
+            include_str!("../../../../test_data/extension_addon_2_manifest.json").to_string();
 
-        let ext3_manifest = include_str!(
-            "../../../../test_data/extension_addon_3_manifest.json"
-        )
-        .to_string();
+        let ext3_manifest =
+            include_str!("../../../../test_data/extension_addon_3_manifest.json").to_string();
 
         // The empty property for addons.
         let empty_property = r#"{"ten":{}}"#.to_string();
 
         let all_pkgs_json = vec![
-            (test_dir.clone(), app_manifest_json_str, app_property_json_str),
+            (
+                test_dir.clone(),
+                app_manifest_json_str,
+                app_property_json_str,
+            ),
             (
                 format!(
                     "{}{}",
@@ -752,22 +689,16 @@ mod tests {
             let mut pkgs_cache = designer_state.pkgs_cache.write().await;
             let mut graphs_cache = designer_state.graphs_cache.write().await;
 
-            let inject_ret = inject_all_pkgs_for_mock(
-                &mut pkgs_cache,
-                &mut graphs_cache,
-                all_pkgs_json,
-            );
+            let inject_ret =
+                inject_all_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, all_pkgs_json);
             assert!(inject_ret.await.is_ok());
         }
 
         let graph_id_clone;
         {
             let graphs_cache = designer_state.graphs_cache.read().await;
-            let (graph_id, _) = graphs_cache_find_by_name(
-                &graphs_cache,
-                "default_with_app_uri",
-            )
-            .unwrap();
+            let (graph_id, _) =
+                graphs_cache_find_by_name(&graphs_cache, "default_with_app_uri").unwrap();
 
             graph_id_clone = *graph_id;
         }
@@ -831,15 +762,13 @@ mod tests {
         );
 
         // Read the actual property.json file generated during the test.
-        let property_path =
-            std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
+        let property_path = std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
         let actual_property = std::fs::read_to_string(property_path).unwrap();
 
         // Normalize both JSON strings to handle formatting differences
         let expected_value: serde_json::Value =
             serde_json::from_str(expected_property_json_str).unwrap();
-        let actual_value: serde_json::Value =
-            serde_json::from_str(&actual_property).unwrap();
+        let actual_value: serde_json::Value = serde_json::from_str(&actual_property).unwrap();
 
         // Compare the normalized JSON values
         assert_eq!(
@@ -855,12 +784,8 @@ mod tests {
     #[actix_web::test]
     async fn test_add_graph_connection_data_type() {
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -879,26 +804,25 @@ mod tests {
             include_str!("../../../../test_data/app_property.json").to_string();
 
         // Create the property.json file in the temporary directory.
-        let property_path =
-            std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
+        let property_path = std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
         std::fs::write(&property_path, &app_property_json_str).unwrap();
 
         // Create extension addon manifest strings.
-        let ext1_manifest = include_str!(
-            "../../../../test_data/extension_addon_1_manifest.json"
-        )
-        .to_string();
+        let ext1_manifest =
+            include_str!("../../../../test_data/extension_addon_1_manifest.json").to_string();
 
-        let ext2_manifest = include_str!(
-            "../../../../test_data/extension_addon_2_manifest.json"
-        )
-        .to_string();
+        let ext2_manifest =
+            include_str!("../../../../test_data/extension_addon_2_manifest.json").to_string();
 
         // The empty property for addons.
         let empty_property = r#"{"ten":{}}"#.to_string();
 
         let all_pkgs_json = vec![
-            (test_dir.clone(), app_manifest_json_str, app_property_json_str),
+            (
+                test_dir.clone(),
+                app_manifest_json_str,
+                app_property_json_str,
+            ),
             (
                 format!(
                     "{}{}",
@@ -923,22 +847,16 @@ mod tests {
             let mut pkgs_cache = designer_state.pkgs_cache.write().await;
             let mut graphs_cache = designer_state.graphs_cache.write().await;
 
-            let inject_ret = inject_all_pkgs_for_mock(
-                &mut pkgs_cache,
-                &mut graphs_cache,
-                all_pkgs_json,
-            );
+            let inject_ret =
+                inject_all_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, all_pkgs_json);
             assert!(inject_ret.await.is_ok());
         }
 
         let graph_id_clone;
         {
             let graphs_cache = designer_state.graphs_cache.read().await;
-            let (graph_id, _) = graphs_cache_find_by_name(
-                &graphs_cache,
-                "default_with_app_uri",
-            )
-            .unwrap();
+            let (graph_id, _) =
+                graphs_cache_find_by_name(&graphs_cache, "default_with_app_uri").unwrap();
 
             graph_id_clone = *graph_id;
         }
@@ -990,15 +908,13 @@ mod tests {
         );
 
         // Read the actual property.json file generated during the test.
-        let property_path =
-            std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
+        let property_path = std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
         let actual_property = std::fs::read_to_string(property_path).unwrap();
 
         // Normalize both JSON strings to handle formatting differences.
         let expected_value: serde_json::Value =
             serde_json::from_str(expected_property_json_str).unwrap();
-        let actual_value: serde_json::Value =
-            serde_json::from_str(&actual_property).unwrap();
+        let actual_value: serde_json::Value = serde_json::from_str(&actual_property).unwrap();
 
         // Compare the normalized JSON values.
         assert_eq!(
@@ -1014,12 +930,8 @@ mod tests {
     #[actix_web::test]
     async fn test_add_graph_connection_frame_types() {
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -1038,26 +950,25 @@ mod tests {
             include_str!("../../../../test_data/app_property.json").to_string();
 
         // Create the property.json file in the temporary directory.
-        let property_path =
-            std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
+        let property_path = std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
         std::fs::write(&property_path, &app_property_json_str).unwrap();
 
         // Create extension addon manifest strings.
-        let ext1_manifest = include_str!(
-            "../../../../test_data/extension_addon_1_manifest.json"
-        )
-        .to_string();
+        let ext1_manifest =
+            include_str!("../../../../test_data/extension_addon_1_manifest.json").to_string();
 
-        let ext2_manifest = include_str!(
-            "../../../../test_data/extension_addon_2_manifest.json"
-        )
-        .to_string();
+        let ext2_manifest =
+            include_str!("../../../../test_data/extension_addon_2_manifest.json").to_string();
 
         // The empty property for addons.
         let empty_property = r#"{"ten":{}}"#.to_string();
 
         let all_pkgs_json = vec![
-            (test_dir.clone(), app_manifest_json_str, app_property_json_str),
+            (
+                test_dir.clone(),
+                app_manifest_json_str,
+                app_property_json_str,
+            ),
             (
                 format!(
                     "{}{}",
@@ -1082,22 +993,16 @@ mod tests {
             let mut pkgs_cache = designer_state.pkgs_cache.write().await;
             let mut graphs_cache = designer_state.graphs_cache.write().await;
 
-            let inject_ret = inject_all_pkgs_for_mock(
-                &mut pkgs_cache,
-                &mut graphs_cache,
-                all_pkgs_json,
-            );
+            let inject_ret =
+                inject_all_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, all_pkgs_json);
             assert!(inject_ret.await.is_ok());
         }
 
         let graph_id_clone;
         {
             let graphs_cache = designer_state.graphs_cache.read().await;
-            let (graph_id, _) = graphs_cache_find_by_name(
-                &graphs_cache,
-                "default_with_app_uri",
-            )
-            .unwrap();
+            let (graph_id, _) =
+                graphs_cache_find_by_name(&graphs_cache, "default_with_app_uri").unwrap();
 
             graph_id_clone = *graph_id;
         }
@@ -1161,15 +1066,13 @@ mod tests {
         );
 
         // Read the actual property.json file generated during the test.
-        let property_path =
-            std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
+        let property_path = std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
         let actual_property = std::fs::read_to_string(property_path).unwrap();
 
         // Normalize both JSON strings to handle formatting differences.
         let expected_value: serde_json::Value =
             serde_json::from_str(expected_property_json_str).unwrap();
-        let actual_value: serde_json::Value =
-            serde_json::from_str(&actual_property).unwrap();
+        let actual_value: serde_json::Value = serde_json::from_str(&actual_property).unwrap();
 
         // Compare the normalized JSON values.
         assert_eq!(
@@ -1185,12 +1088,8 @@ mod tests {
     #[actix_web::test]
     async fn test_add_multiple_connections_preservation_order() {
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -1209,30 +1108,27 @@ mod tests {
             include_str!("../../../../test_data/app_property.json").to_string();
 
         // Create the property.json file in the temporary directory.
-        let property_path =
-            std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
+        let property_path = std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
         std::fs::write(&property_path, &app_property_json_str).unwrap();
 
         // Create three extension addon manifest strings.
-        let ext1_manifest = include_str!(
-            "../../../../test_data/extension_addon_1_manifest.json"
-        )
-        .to_string();
+        let ext1_manifest =
+            include_str!("../../../../test_data/extension_addon_1_manifest.json").to_string();
 
-        let ext2_manifest = include_str!(
-            "../../../../test_data/extension_addon_2_manifest.json"
-        )
-        .to_string();
+        let ext2_manifest =
+            include_str!("../../../../test_data/extension_addon_2_manifest.json").to_string();
 
-        let ext3_manifest = include_str!(
-            "../../../../test_data/extension_addon_3_manifest.json"
-        )
-        .to_string();
+        let ext3_manifest =
+            include_str!("../../../../test_data/extension_addon_3_manifest.json").to_string();
         // The empty property for addons.
         let empty_property = r#"{"ten":{}}"#.to_string();
 
         let all_pkgs_json = vec![
-            (test_dir.clone(), app_manifest_json_str, app_property_json_str),
+            (
+                test_dir.clone(),
+                app_manifest_json_str,
+                app_property_json_str,
+            ),
             (
                 format!(
                     "{}{}",
@@ -1266,22 +1162,16 @@ mod tests {
             let mut pkgs_cache = designer_state.pkgs_cache.write().await;
             let mut graphs_cache = designer_state.graphs_cache.write().await;
 
-            let inject_ret = inject_all_pkgs_for_mock(
-                &mut pkgs_cache,
-                &mut graphs_cache,
-                all_pkgs_json,
-            );
+            let inject_ret =
+                inject_all_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, all_pkgs_json);
             assert!(inject_ret.await.is_ok());
         }
 
         let graph_id_clone;
         {
             let graphs_cache = designer_state.graphs_cache.read().await;
-            let (graph_id, _) = graphs_cache_find_by_name(
-                &graphs_cache,
-                "default_with_app_uri",
-            )
-            .unwrap();
+            let (graph_id, _) =
+                graphs_cache_find_by_name(&graphs_cache, "default_with_app_uri").unwrap();
 
             graph_id_clone = *graph_id;
         }
@@ -1367,15 +1257,13 @@ mod tests {
         );
 
         // Read the actual property.json file generated during the test.
-        let property_path =
-            std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
+        let property_path = std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
         let actual_property = std::fs::read_to_string(property_path).unwrap();
 
         // Normalize both JSON strings to handle formatting differences.
         let expected_value: serde_json::Value =
             serde_json::from_str(expected_property_json_str).unwrap();
-        let actual_value: serde_json::Value =
-            serde_json::from_str(&actual_property).unwrap();
+        let actual_value: serde_json::Value = serde_json::from_str(&actual_property).unwrap();
 
         // Compare the normalized JSON values.
         assert_eq!(
@@ -1391,12 +1279,8 @@ mod tests {
     #[actix_web::test]
     async fn test_add_graph_connection_to_extension_with_interface() {
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -1413,11 +1297,7 @@ mod tests {
             .join("test_data")
             .join("graph_add_connection_to_extension_with_interface");
 
-        copy_folder_recursively(
-            &test_data_dir.to_str().unwrap().to_string(),
-            &test_dir,
-        )
-        .unwrap();
+        copy_folder_recursively(&test_data_dir.to_str().unwrap().to_string(), &test_dir).unwrap();
 
         // Get the new created test directory.
         let test_data_dir = std::path::Path::new(&test_dir)
@@ -1446,20 +1326,17 @@ mod tests {
         let graph_id_clone;
         {
             let graphs_cache = designer_state.graphs_cache.read().await;
-            let (graph_id, _) =
-                graphs_cache_find_by_name(&graphs_cache, "default").unwrap();
+            let (graph_id, _) = graphs_cache_find_by_name(&graphs_cache, "default").unwrap();
 
             graph_id_clone = *graph_id;
         }
 
         let designer_state = Arc::new(designer_state);
 
-        let app = test::init_service(
-            App::new().app_data(web::Data::new(designer_state)).route(
-                "/api/designer/v1/graphs/connections/add",
-                web::post().to(add_graph_connection_endpoint),
-            ),
-        )
+        let app = test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
+            "/api/designer/v1/graphs/connections/add",
+            web::post().to(add_graph_connection_endpoint),
+        ))
         .await;
 
         // Add connections between existing nodes in the default graph.
@@ -1550,12 +1427,8 @@ mod tests {
     #[actix_web::test]
     async fn test_add_graph_connection_to_multi_dests() {
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -1572,15 +1445,11 @@ mod tests {
             .join("test_data")
             .join("graph_add_connection_to_multi_dests");
 
-        copy_folder_recursively(
-            &test_data_dir.to_str().unwrap().to_string(),
-            &test_dir,
-        )
-        .unwrap();
+        copy_folder_recursively(&test_data_dir.to_str().unwrap().to_string(), &test_dir).unwrap();
 
         // Get the new created test directory.
-        let test_data_dir = std::path::Path::new(&test_dir)
-            .join("graph_add_connection_to_multi_dests");
+        let test_data_dir =
+            std::path::Path::new(&test_dir).join("graph_add_connection_to_multi_dests");
 
         {
             let mut pkgs_cache = designer_state.pkgs_cache.write().await;
@@ -1598,20 +1467,17 @@ mod tests {
         let graph_id_clone;
         {
             let graphs_cache = designer_state.graphs_cache.read().await;
-            let (graph_id, _) =
-                graphs_cache_find_by_name(&graphs_cache, "default").unwrap();
+            let (graph_id, _) = graphs_cache_find_by_name(&graphs_cache, "default").unwrap();
 
             graph_id_clone = *graph_id;
         }
 
         let designer_state = Arc::new(designer_state);
 
-        let app = test::init_service(
-            App::new().app_data(web::Data::new(designer_state)).route(
-                "/api/designer/v1/graphs/connections/add",
-                web::post().to(add_graph_connection_endpoint),
-            ),
-        )
+        let app = test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
+            "/api/designer/v1/graphs/connections/add",
+            web::post().to(add_graph_connection_endpoint),
+        ))
         .await;
 
         // Add a connection between "ext_b" and "ext_a" with "data" data.
@@ -1670,8 +1536,7 @@ mod tests {
         assert!(response.data.success);
 
         // Read the actual property.json file generated during the test.
-        let property_path =
-            std::path::Path::new(&test_data_dir).join(PROPERTY_JSON_FILENAME);
+        let property_path = std::path::Path::new(&test_data_dir).join(PROPERTY_JSON_FILENAME);
         let actual_property = std::fs::read_to_string(property_path).unwrap();
 
         println!("actual_property: {actual_property}");

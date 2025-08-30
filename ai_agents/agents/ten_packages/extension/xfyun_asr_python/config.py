@@ -9,10 +9,9 @@ class XfyunASRConfig(BaseModel):
     app_id: str = ""
     api_key: str = ""
     api_secret: str = ""
-    lang: str = "zh_cn"  # ten use language, zh_cn, en_us
-    language: str = "zh_cn"  # api use language zh_cn support zh, en,
+    language: str = "zh_cn"  # language, zh_cn, en_us
+    domain: str = "ist_open"
     accent: str = "mandarin"
-    domain: str = "ist_ed_open"
     host: str = "ist-api.xfyun.cn"
     sample_rate: int = 16000
     finalize_mode: str = "disconnect"  # "disconnect" or "mute_pkg"
@@ -58,9 +57,21 @@ class XfyunASRConfig(BaseModel):
 
     @property
     def normalized_language(self):
-        if self.lang == "zh_cn":
+        if self.language == "zh_cn":
             return "zh-CN"
-        elif self.lang == "en_us":
+        elif self.language == "en_us":
             return "en-US"
+        elif self.language == "ja_jp":
+            return "ja-JP"
+        elif self.language == "ko_kr":
+            return "ko-KR"
+        elif self.language == "ru_ru":
+            return "ru-RU"
+        elif self.language == "fr_fr":
+            return "fr-FR"
+        elif self.language == "es_es":
+            return "es-ES"
+        elif self.language == "ar_il":
+            return "ar-AE"
         else:
-            return self.lang
+            return self.language

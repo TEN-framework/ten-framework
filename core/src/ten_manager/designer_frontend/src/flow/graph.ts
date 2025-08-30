@@ -24,10 +24,9 @@ import {
   type TGraphNode,
 } from "@/types/flow";
 import {
+  type BackendNode,
   EConnectionType,
-  type IBackendConnection,
-  type IBackendNode,
-  type IGraph,
+  type GraphInfo,
 } from "@/types/graphs";
 
 const NODE_WIDTH = 384;
@@ -37,8 +36,8 @@ const NODE_Y_SPACING = 100;
 
 export const generateRawNodesFromSets = (
   sets: {
-    backendNodes: IBackendNode[];
-    graph: IGraph;
+    backendNodes: BackendNode[];
+    graph: GraphInfo;
   }[]
 ): TCustomNode[] => {
   let currentX = 0;
@@ -66,8 +65,8 @@ export const generateRawNodesFromSets = (
 };
 
 export const generateRawNodes = (
-  backendNodes: IBackendNode[],
-  graph: IGraph,
+  backendNodes: BackendNode[],
+  graph: GraphInfo,
   options?: {
     startX?: number; // Optional starting X position for the graph node
     startY?: number; // Optional starting Y position for the graph node
@@ -107,47 +106,51 @@ export const generateRawNodes = (
     height: graphAreaHeight,
   };
 
-  const extensionNodes: TExtensionNode[] = backendNodes.map((n, idx) => {
-    const row = Math.floor(idx / cols);
-    const col = idx % cols;
+  const extensionNodes: TExtensionNode[] = backendNodes
+    .filter((i) => i.type === "extension")
+    .map((n, idx) => {
+      const row = Math.floor(idx / cols);
+      const col = idx % cols;
 
-    return {
-      // id: `${graph.graph_id}-${n.name}`,
-      id: data2identifier(EFlowElementIdentifier.CUSTOM_NODE, {
-        type: ECustomNodeType.EXTENSION,
-        graph: graph.graph_id,
-        name: n.name,
-      }),
-      position: {
-        x:
-          NODE_X_SPACING + col * (NODE_WIDTH + NODE_X_SPACING) + NODE_X_SPACING,
-        y:
-          NODE_Y_SPACING +
-          row * (NODE_HEIGHT + NODE_Y_SPACING) +
-          NODE_Y_SPACING,
-      },
-      type: "extensionNode",
-      parentId: graph.graph_id,
-      extent: "parent",
-      data: {
-        ...n,
-        _type: ECustomNodeType.EXTENSION,
-        graph: graph,
-        src: {
-          [EConnectionType.CMD]: [],
-          [EConnectionType.DATA]: [],
-          [EConnectionType.AUDIO_FRAME]: [],
-          [EConnectionType.VIDEO_FRAME]: [],
+      return {
+        // id: `${graph.graph_id}-${n.name}`,
+        id: data2identifier(EFlowElementIdentifier.CUSTOM_NODE, {
+          type: ECustomNodeType.EXTENSION,
+          graph: graph.graph_id,
+          name: n.name,
+        }),
+        position: {
+          x:
+            NODE_X_SPACING +
+            col * (NODE_WIDTH + NODE_X_SPACING) +
+            NODE_X_SPACING,
+          y:
+            NODE_Y_SPACING +
+            row * (NODE_HEIGHT + NODE_Y_SPACING) +
+            NODE_Y_SPACING,
         },
-        target: {
-          [EConnectionType.CMD]: [],
-          [EConnectionType.DATA]: [],
-          [EConnectionType.AUDIO_FRAME]: [],
-          [EConnectionType.VIDEO_FRAME]: [],
+        type: "extensionNode",
+        parentId: graph.graph_id,
+        extent: "parent",
+        data: {
+          ...n,
+          _type: ECustomNodeType.EXTENSION,
+          graph: graph,
+          src: {
+            [EConnectionType.CMD]: [],
+            [EConnectionType.DATA]: [],
+            [EConnectionType.AUDIO_FRAME]: [],
+            [EConnectionType.VIDEO_FRAME]: [],
+          },
+          target: {
+            [EConnectionType.CMD]: [],
+            [EConnectionType.DATA]: [],
+            [EConnectionType.AUDIO_FRAME]: [],
+            [EConnectionType.VIDEO_FRAME]: [],
+          },
         },
-      },
-    };
-  });
+      };
+    });
 
   return {
     nodes: [graphNode, ...extensionNodes],
@@ -159,8 +162,7 @@ export const generateRawNodes = (
 };
 
 export const generateRawEdges = (
-  backendConnections: IBackendConnection[],
-  graph: IGraph,
+  graph: GraphInfo,
   options?: {
     // Optional default edges to include
     defaultEdges?: TCustomEdge[];
@@ -177,9 +179,10 @@ export const generateRawEdges = (
     };
   const edges: TCustomEdge[] = options?.defaultEdges ?? [];
 
-  backendConnections.forEach((connection) => {
-    const extension = connection.extension;
-    const app = connection.app;
+  graph?.graph?.connections?.forEach((connection) => {
+    const extension = connection.loc?.extension;
+    const app = connection.loc?.app;
+    if (!extension || !app) return;
     const TYPES = [
       EConnectionType.CMD,
       EConnectionType.DATA,
@@ -187,15 +190,17 @@ export const generateRawEdges = (
       EConnectionType.VIDEO_FRAME,
     ];
     TYPES.forEach((connectionType) => {
-      if (!connection[connectionType]) {
+      if (!connection?.[connectionType]) {
         return;
       }
       connection[connectionType].forEach((connectionItem) => {
-        const name = connectionItem.name;
+        const name = connectionItem?.name;
         const dest = connectionItem?.dest || [];
+        if (!name) return;
         dest.forEach((connectionItemDest) => {
-          const targetExtension = connectionItemDest.extension;
-          const targetApp = connectionItemDest.app;
+          const targetExtension = connectionItemDest.loc?.extension;
+          const targetApp = connectionItemDest.loc?.app;
+          if (!targetExtension || !targetApp) return;
           const edgeId = data2identifier(EFlowElementIdentifier.EDGE, {
             name,
             src: extension,
@@ -540,7 +545,7 @@ export const syncGraphNodeGeometry = async (
   }
 };
 
-export const resetNodesAndEdgesByGraphs = async (graphs: IGraph[]) => {
+export const resetNodesAndEdgesByGraphs = async (graphs: GraphInfo[]) => {
   const backendNodes = graphs.map((graph) => ({
     graph: graph,
     nodes: graph.graph?.nodes || [],
@@ -565,14 +570,10 @@ export const resetNodesAndEdgesByGraphs = async (graphs: IGraph[]) => {
     [EConnectionType.VIDEO_FRAME]: [],
   };
   backendConnections.forEach((set) => {
-    const [edges, edgeAddressMap] = generateRawEdges(
-      set.connections,
-      set.graph,
-      {
-        defaultEdges: rawEdges,
-        defaultEdgeAddressMap: rawEdgeAddressMap,
-      }
-    );
+    const [edges, edgeAddressMap] = generateRawEdges(set.graph, {
+      defaultEdges: rawEdges,
+      defaultEdgeAddressMap: rawEdgeAddressMap,
+    });
     rawEdges = edges;
     rawEdgeAddressMap = edgeAddressMap;
   });

@@ -29,7 +29,9 @@ pub struct AesCtrCipher {
 pub fn new_aes_ctr_cipher(params: &str) -> Result<AesCtrCipher> {
     let config: AesCtrConfig = serde_json::from_str(params)?;
     let cipher = Aes128Ctr128BE::new(&config.key.into(), &config.nonce.into());
-    Ok(AesCtrCipher { cipher: Mutex::new(cipher) })
+    Ok(AesCtrCipher {
+        cipher: Mutex::new(cipher),
+    })
 }
 
 impl<'de> Deserialize<'de> for AesCtrConfig {

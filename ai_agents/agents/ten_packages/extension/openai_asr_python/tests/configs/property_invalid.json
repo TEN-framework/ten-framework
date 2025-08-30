@@ -1,6 +1,6 @@
 {
-    "api_key": "xxx",
     "params": {
+        "api_key": "xxx",
         "input_audio_format": "pcm16",
         "input_audio_transcription": {
             "model": "whisper-1",

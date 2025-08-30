@@ -30,12 +30,8 @@ mod tests {
     async fn test_reload_app_error_base_dir_not_found() {
         // Set up the designer state.
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -46,20 +42,16 @@ mod tests {
         let all_pkgs_json_str = vec![(
             TEST_DIR.to_string(),
             include_str!("../../../test_data/app_manifest.json").to_string(),
-            include_str!("../../../test_data/app_property_without_uri.json")
-                .to_string(),
+            include_str!("../../../test_data/app_property_without_uri.json").to_string(),
         )];
 
         {
             let mut pkgs_cache = designer_state.pkgs_cache.write().await;
             let mut graphs_cache = designer_state.graphs_cache.write().await;
 
-            let inject_ret = inject_all_pkgs_for_mock(
-                &mut pkgs_cache,
-                &mut graphs_cache,
-                all_pkgs_json_str,
-            )
-            .await;
+            let inject_ret =
+                inject_all_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, all_pkgs_json_str)
+                    .await;
             assert!(inject_ret.is_ok());
         }
 
@@ -67,10 +59,12 @@ mod tests {
 
         // Set up the test service.
         let app = test::init_service(
-            App::new().app_data(web::Data::new(designer_state.clone())).route(
-                "/api/designer/v1/apps/reload",
-                web::post().to(reload_app_endpoint),
-            ),
+            App::new()
+                .app_data(web::Data::new(designer_state.clone()))
+                .route(
+                    "/api/designer/v1/apps/reload",
+                    web::post().to(reload_app_endpoint),
+                ),
         )
         .await;
 
@@ -93,8 +87,7 @@ mod tests {
         let body = test::read_body(resp).await;
         let body_str = std::str::from_utf8(&body).unwrap();
 
-        let error_response: ErrorResponse =
-            serde_json::from_str(body_str).unwrap();
+        let error_response: ErrorResponse = serde_json::from_str(body_str).unwrap();
         assert_eq!(error_response.status, Status::Fail);
         assert_eq!(
             error_response.message,
@@ -117,9 +110,7 @@ mod tests {
                 verbose: true,
                 ..TmanConfig::default()
             })),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -143,10 +134,12 @@ mod tests {
 
         // Set up the test service.
         let app = test::init_service(
-            App::new().app_data(web::Data::new(designer_state.clone())).route(
-                "/api/designer/v1/apps/reload",
-                web::post().to(reload_app_endpoint),
-            ),
+            App::new()
+                .app_data(web::Data::new(designer_state.clone()))
+                .route(
+                    "/api/designer/v1/apps/reload",
+                    web::post().to(reload_app_endpoint),
+                ),
         )
         .await;
 
@@ -170,11 +163,12 @@ mod tests {
         let body = test::read_body(resp).await;
         let body_str = std::str::from_utf8(&body).unwrap();
 
-        let error_response: ErrorResponse =
-            serde_json::from_str(body_str).unwrap();
+        let error_response: ErrorResponse = serde_json::from_str(body_str).unwrap();
         assert_eq!(error_response.status, Status::Fail);
         // The exact error message will depend on the implementation of
         // get_all_pkgs.
-        assert!(error_response.message.contains("Failed to reload packages:"));
+        assert!(error_response
+            .message
+            .contains("Failed to reload packages:"));
     }
 }

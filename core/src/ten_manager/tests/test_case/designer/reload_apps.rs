@@ -26,12 +26,8 @@ mod tests {
     async fn test_reload_app_success_with_base_dir() {
         // Set up the designer state with initial data.
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -50,7 +46,10 @@ mod tests {
             .await;
 
             assert_eq!(
-                pkgs_cache.get("tests/test_data/app_with_uri").unwrap().len(),
+                pkgs_cache
+                    .get("tests/test_data/app_with_uri")
+                    .unwrap()
+                    .len(),
                 3
             );
         }
@@ -59,10 +58,12 @@ mod tests {
 
         // Set up the test service.
         let app = test::init_service(
-            App::new().app_data(web::Data::new(designer_state.clone())).route(
-                "/api/designer/v1/apps/reload",
-                web::post().to(reload_app_endpoint),
-            ),
+            App::new()
+                .app_data(web::Data::new(designer_state.clone()))
+                .route(
+                    "/api/designer/v1/apps/reload",
+                    web::post().to(reload_app_endpoint),
+                ),
         )
         .await;
 
@@ -85,8 +86,7 @@ mod tests {
         let body = test::read_body(resp).await;
         let body_str = std::str::from_utf8(&body).unwrap();
 
-        let api_response: ApiResponse<&str> =
-            serde_json::from_str(body_str).unwrap();
+        let api_response: ApiResponse<&str> = serde_json::from_str(body_str).unwrap();
         assert_eq!(api_response.status, Status::Ok);
         assert_eq!(api_response.data, "Packages reloaded successfully");
 
@@ -102,12 +102,8 @@ mod tests {
     async fn test_reload_app_success_without_base_dir() {
         // Set up the designer state with initial data.
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -126,7 +122,10 @@ mod tests {
             .await;
 
             assert_eq!(
-                pkgs_cache.get("tests/test_data/app_with_uri").unwrap().len(),
+                pkgs_cache
+                    .get("tests/test_data/app_with_uri")
+                    .unwrap()
+                    .len(),
                 3
             );
         }
@@ -135,10 +134,12 @@ mod tests {
 
         // Set up the test service.
         let app = test::init_service(
-            App::new().app_data(web::Data::new(designer_state.clone())).route(
-                "/api/designer/v1/apps/reload",
-                web::post().to(reload_app_endpoint),
-            ),
+            App::new()
+                .app_data(web::Data::new(designer_state.clone()))
+                .route(
+                    "/api/designer/v1/apps/reload",
+                    web::post().to(reload_app_endpoint),
+                ),
         )
         .await;
 
@@ -159,8 +160,7 @@ mod tests {
         let body = test::read_body(resp).await;
         let body_str = std::str::from_utf8(&body).unwrap();
 
-        let api_response: ApiResponse<&str> =
-            serde_json::from_str(body_str).unwrap();
+        let api_response: ApiResponse<&str> = serde_json::from_str(body_str).unwrap();
         assert_eq!(api_response.status, Status::Ok);
         assert_eq!(api_response.data, "Packages reloaded successfully");
 

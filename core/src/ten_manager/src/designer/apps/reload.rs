@@ -38,9 +38,7 @@ pub async fn reload_app_endpoint(
         if !pkgs_cache.contains_key(base_dir) {
             let error_response = ErrorResponse {
                 status: Status::Fail,
-                message: format!(
-                    "App with base_dir '{base_dir}' is not loaded"
-                ),
+                message: format!("App with base_dir '{base_dir}' is not loaded"),
                 error: None,
             };
             return Ok(HttpResponse::BadRequest().json(error_response));
@@ -53,13 +51,13 @@ pub async fn reload_app_endpoint(
         graphs_cache_remove_by_app_base_dir(&mut graphs_cache, base_dir);
 
         // Reload packages for this base_dir.
-        if let Err(err) =
-            get_all_pkgs_in_app(&mut pkgs_cache, &mut graphs_cache, base_dir)
-                .await
-        {
-            return Ok(HttpResponse::InternalServerError().json(
-                ErrorResponse::from_error(&err, "Failed to reload packages:"),
-            ));
+        if let Err(err) = get_all_pkgs_in_app(&mut pkgs_cache, &mut graphs_cache, base_dir).await {
+            return Ok(
+                HttpResponse::InternalServerError().json(ErrorResponse::from_error(
+                    &err,
+                    "Failed to reload packages:",
+                )),
+            );
         }
     } else {
         // Case 2: base_dir is not specified, reload all apps.
@@ -84,19 +82,15 @@ pub async fn reload_app_endpoint(
             graphs_cache_remove_by_app_base_dir(&mut graphs_cache, &base_dir);
 
             // Reload packages for this base_dir.
-            if let Err(err) = get_all_pkgs_in_app(
-                &mut pkgs_cache,
-                &mut graphs_cache,
-                &base_dir,
-            )
-            .await
+            if let Err(err) =
+                get_all_pkgs_in_app(&mut pkgs_cache, &mut graphs_cache, &base_dir).await
             {
-                return Ok(HttpResponse::InternalServerError().json(
-                    ErrorResponse::from_error(
+                return Ok(
+                    HttpResponse::InternalServerError().json(ErrorResponse::from_error(
                         &err,
                         "Failed to reload packages:",
-                    ),
-                ));
+                    )),
+                );
             }
         }
     }

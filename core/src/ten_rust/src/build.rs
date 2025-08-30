@@ -11,15 +11,13 @@ mod deprecated {
     use std::{env, fs, path::Path, process::id, thread, time::Duration};
 
     pub fn auto_gen_schema_bindings_from_c() {
-        let mut base_dir = env::current_dir()
-            .unwrap_or("Failed to get path of //ten_rust/src".into());
+        let mut base_dir =
+            env::current_dir().unwrap_or("Failed to get path of //ten_rust/src".into());
         base_dir.pop();
         base_dir.pop();
 
         let mut schema_header = base_dir.clone();
-        schema_header.push(
-            "include_internal/ten_utils/schema/bindings/rust/schema_proxy.h",
-        );
+        schema_header.push("include_internal/ten_utils/schema/bindings/rust/schema_proxy.h");
         if !schema_header.exists() {
             println!(
                 "Path of schema_proxy.h: {}",
@@ -84,16 +82,15 @@ mod deprecated {
         // paths, with each build path using its own `schema/bindings.rs`.
         let schema_dir = Path::new("src/schema/");
         let generated_bindings = schema_dir.join("bindings.rs");
-        let temp_bindings =
-            schema_dir.join(format!("bindings_{}.rs.tmp", id()));
+        let temp_bindings = schema_dir.join(format!("bindings_{}.rs.tmp", id()));
 
         binding_gen
             .write_to_file(&temp_bindings)
             .expect("Unable to write bindings into file.");
 
         // Add some rules to the bindings file to disable clippy lints.
-        let bindings_content = fs::read_to_string(&temp_bindings)
-            .expect("Unable to read generated bindings");
+        let bindings_content =
+            fs::read_to_string(&temp_bindings).expect("Unable to read generated bindings");
         let disabled_clippy_lints = [
             "#![allow(non_upper_case_globals)]",
             "#![allow(non_camel_case_types)]",
@@ -103,11 +100,9 @@ mod deprecated {
             "#![allow(improper_ctypes_definitions)]",
             "#![allow(clippy::upper_case_acronyms)]",
         ];
-        let new_bindings_content =
-            disabled_clippy_lints.join("\n") + "\n\n" + &bindings_content;
-        fs::write(&temp_bindings, new_bindings_content).expect(
-            "Unable to add clippy lint rules to the generated bindings.",
-        );
+        let new_bindings_content = disabled_clippy_lints.join("\n") + "\n\n" + &bindings_content;
+        fs::write(&temp_bindings, new_bindings_content)
+            .expect("Unable to add clippy lint rules to the generated bindings.");
 
         let max_retries = 5;
         // 500 milliseconds delay between retries.
@@ -138,14 +133,13 @@ mod deprecated {
     }
 
     pub fn auto_gen_service_hub_bindings_from_c() {
-        let mut base_dir = env::current_dir()
-            .unwrap_or("Failed to get path of //ten_rust/src".into());
+        let mut base_dir =
+            env::current_dir().unwrap_or("Failed to get path of //ten_rust/src".into());
         base_dir.pop();
         base_dir.pop();
 
         let mut service_hub_api_header = base_dir.clone();
-        service_hub_api_header
-            .push("include_internal/ten_runtime/app/service_hub/api/api.h");
+        service_hub_api_header.push("include_internal/ten_runtime/app/service_hub/api/api.h");
         if !service_hub_api_header.exists() {
             println!(
                 "Path of service_hub/api/api.h: {}",
@@ -186,16 +180,15 @@ mod deprecated {
 
         let service_hub_dir = Path::new("src/service_hub/");
         let generated_bindings = service_hub_dir.join("bindings.rs");
-        let temp_bindings =
-            service_hub_dir.join(format!("bindings_{}.rs.tmp", id()));
+        let temp_bindings = service_hub_dir.join(format!("bindings_{}.rs.tmp", id()));
 
         binding_gen
             .write_to_file(&temp_bindings)
             .expect("Unable to write bindings into file.");
 
         // Add some rules to the bindings file to disable clippy lints.
-        let bindings_content = fs::read_to_string(&temp_bindings)
-            .expect("Unable to read generated bindings");
+        let bindings_content =
+            fs::read_to_string(&temp_bindings).expect("Unable to read generated bindings");
         let disabled_clippy_lints = [
             "#![allow(non_upper_case_globals)]",
             "#![allow(non_camel_case_types)]",
@@ -205,11 +198,9 @@ mod deprecated {
             "#![allow(improper_ctypes_definitions)]",
             "#![allow(clippy::upper_case_acronyms)]",
         ];
-        let new_bindings_content =
-            disabled_clippy_lints.join("\n") + "\n\n" + &bindings_content;
-        fs::write(&temp_bindings, new_bindings_content).expect(
-            "Unable to add clippy lint rules to the generated bindings.",
-        );
+        let new_bindings_content = disabled_clippy_lints.join("\n") + "\n\n" + &bindings_content;
+        fs::write(&temp_bindings, new_bindings_content)
+            .expect("Unable to add clippy lint rules to the generated bindings.");
 
         let max_retries = 5;
         // 500 milliseconds delay between retries.
@@ -243,8 +234,7 @@ mod deprecated {
 // The current auto-detection only supports limited environment combinations;
 // for example, cross-compilation is not supported.
 fn auto_detect_utils_library_path() -> PathBuf {
-    let mut ten_rust_dir =
-        env::current_dir().unwrap_or("Failed to get path of //ten_rust".into());
+    let mut ten_rust_dir = env::current_dir().unwrap_or("Failed to get path of //ten_rust".into());
     ten_rust_dir.pop();
     ten_rust_dir.pop();
     ten_rust_dir.pop();

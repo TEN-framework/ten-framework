@@ -72,8 +72,11 @@ pub async fn set_in_memory_storage_endpoint(
     }
 
     let response_data = SetMemoryResponseData { success: true };
-    let response =
-        ApiResponse { status: Status::Ok, data: response_data, meta: None };
+    let response = ApiResponse {
+        status: Status::Ok,
+        data: response_data,
+        meta: None,
+    };
 
     Ok(HttpResponse::Ok().json(response))
 }

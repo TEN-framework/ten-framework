@@ -96,9 +96,7 @@ pub fn parse_sub_cmd(sub_cmd_args: &ArgMatches) -> Result<FetchCommand> {
         .get_one::<String>("PACKAGE_NAME")
         .ok_or_else(|| anyhow!("Missing PACKAGE_NAME"))?;
     let (pkg_name, version_req) = parse_pkg_name_version_req(pkg_with_version)
-        .with_context(|| {
-            format!("Failed to parse package name '{pkg_with_version}'")
-        })?;
+        .with_context(|| format!("Failed to parse package name '{pkg_with_version}'"))?;
 
     let support = ManifestSupport {
         os: sub_cmd_args
@@ -109,8 +107,7 @@ pub fn parse_sub_cmd(sub_cmd_args: &ArgMatches) -> Result<FetchCommand> {
             .and_then(|s| s.parse::<Arch>().ok()),
     };
 
-    let output_dir =
-        PathBuf::from(sub_cmd_args.get_one::<String>("OUTPUT_DIR").unwrap());
+    let output_dir = PathBuf::from(sub_cmd_args.get_one::<String>("OUTPUT_DIR").unwrap());
 
     let no_extract = sub_cmd_args.get_flag("NO_EXTRACT");
 
@@ -156,8 +153,7 @@ pub async fn execute_cmd(
     }
 
     // Get the latest package.
-    found_packages
-        .sort_by(|a, b| b.basic_info.version.cmp(&a.basic_info.version));
+    found_packages.sort_by(|a, b| b.basic_info.version.cmp(&a.basic_info.version));
     let package = &found_packages[0];
     let package_url = &package.download_url;
 

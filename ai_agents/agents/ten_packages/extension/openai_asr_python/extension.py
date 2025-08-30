@@ -43,6 +43,7 @@ class OpenAIASRExtension(AsyncASRBaseExtension, AsyncOpenAIAsrListener):
         super().__init__(name)
         self.client: OpenAIAsrClient | None = None
         self.config: OpenAIASRConfig | None = None
+        self.transcription_param: TranscriptionParam | None = None
         self.sent_user_audio_duration_ms_before_last_reset: int = 0
         self.last_finalize_timestamp: int = 0
         self.audio_dumper: Dumper | None = None
@@ -59,6 +60,9 @@ class OpenAIASRExtension(AsyncASRBaseExtension, AsyncOpenAIAsrListener):
         dump_file_path = None
         try:
             self.config = OpenAIASRConfig.model_validate_json(config_json)
+            self.transcription_param = (
+                self.config.params.to_transcription_param()
+            )
             ten_env.log_info(
                 f"KEYPOINT vendor_config: {self.config.model_dump_json()}"
             )
@@ -82,19 +86,20 @@ class OpenAIASRExtension(AsyncASRBaseExtension, AsyncOpenAIAsrListener):
             )
 
         assert self.config is not None
+        assert self.transcription_param is not None
 
         try:
             log_path = None
             if dump_file_path is not None:
                 log_path = str(dump_file_path.parent)
             self.client = OpenAIAsrClient(
-                params=self.config.params,
-                api_key=self.config.api_key,
-                organization=self.config.organization,
-                project=self.config.project,
-                websocket_base_url=self.config.websocket_base_url,
+                params=self.transcription_param,
+                api_key=self.config.params.api_key,
+                organization=self.config.params.organization,
+                project=self.config.params.project,
+                websocket_base_url=self.config.params.websocket_base_url,
                 listener=self,
-                log_level=self.config.log_level,
+                log_level=self.config.params.log_level,
                 log_path=log_path,
             )
             ten_env.log_info("OpenAI ASR client started")
@@ -212,8 +217,8 @@ class OpenAIASRExtension(AsyncASRBaseExtension, AsyncOpenAIAsrListener):
         )
 
     def _get_language(self) -> str:
-        assert self.config is not None
-        language = self.config.params.input_audio_transcription.get(
+        assert self.transcription_param is not None
+        language = self.transcription_param.input_audio_transcription.get(
             "language", "en"
         )
 

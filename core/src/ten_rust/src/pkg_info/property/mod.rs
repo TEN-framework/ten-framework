@@ -64,7 +64,10 @@ pub async fn parse_property_from_str(
     belonging_pkg_type: Option<PkgType>,
     belonging_pkg_name: Option<String>,
 ) -> Result<Property> {
-    let mut property: Property = Property { ten: None, other_fields: None };
+    let mut property: Property = Property {
+        ten: None,
+        other_fields: None,
+    };
 
     ten_validate_property_json_string(s)?;
     let temp_all_fields: Map<String, Value> = serde_json::from_str(s)?;
@@ -76,20 +79,19 @@ pub async fn parse_property_from_str(
         // Process the ten field manually instead of using
         // serde_json::from_value directly. Create a TenInProperty with empty
         // predefined_graphs.
-        let mut ten_in_property =
-            TenInProperty { predefined_graphs: None, uri: None };
+        let mut ten_in_property = TenInProperty {
+            predefined_graphs: None,
+            uri: None,
+        };
 
         // Get other fields from ten_value using serde.
         if let Value::Object(map) = ten_value {
             // Extract and process predefined_graphs specially.
-            if let Some(Value::Array(graphs_array)) =
-                map.get(TEN_STR_PREDEFINED_GRAPHS)
-            {
+            if let Some(Value::Array(graphs_array)) = map.get(TEN_STR_PREDEFINED_GRAPHS) {
                 let mut graph_infos = Vec::new();
 
                 for graph_value in graphs_array {
-                    let graph: GraphInfo =
-                        serde_json::from_value(graph_value.clone())?;
+                    let graph: GraphInfo = serde_json::from_value(graph_value.clone())?;
                     graph_infos.push(graph);
                 }
 
@@ -214,16 +216,12 @@ impl Property {
         &self,
         graphs_cache: &HashMap<Uuid, GraphInfo>,
     ) -> Result<serde_json::Map<String, serde_json::Value>> {
-        let mut json_map: serde_json::Map<String, serde_json::Value> =
-            serde_json::Map::new();
+        let mut json_map: serde_json::Map<String, serde_json::Value> = serde_json::Map::new();
 
         if let Some(ten_in_property) = &self.ten {
             // Handle uri field.
             if let Some(uri) = &ten_in_property.uri {
-                json_map.insert(
-                    "uri".to_string(),
-                    serde_json::to_value(uri.clone())?,
-                );
+                json_map.insert("uri".to_string(), serde_json::to_value(uri.clone())?);
             }
 
             // Handle predefined_graphs field.
@@ -231,8 +229,7 @@ impl Property {
             if let Some(graph_uuids) = &ten_in_property.predefined_graphs {
                 for uuid in graph_uuids {
                     if let Some(graph_info) = graphs_cache.get(uuid) {
-                        graphs_array
-                            .push(serde_json::to_value(graph_info.clone())?);
+                        graphs_array.push(serde_json::to_value(graph_info.clone())?);
                     }
                 }
             }
@@ -251,8 +248,7 @@ impl Property {
         &self,
         graphs_cache: &HashMap<Uuid, GraphInfo>,
     ) -> Result<serde_json::Map<String, serde_json::Value>> {
-        let mut json_map: serde_json::Map<String, serde_json::Value> =
-            serde_json::Map::new();
+        let mut json_map: serde_json::Map<String, serde_json::Value> = serde_json::Map::new();
 
         if let Some(other_fields) = &self.other_fields {
             for (k, v) in other_fields {
@@ -297,9 +293,7 @@ pub fn check_property_json_of_pkg(pkg_dir: &str) -> Result<()> {
         return Ok(());
     }
 
-    json_schema::ten_validate_property_json_file(
-        property_json_path.to_str().unwrap(),
-    )
+    json_schema::ten_validate_property_json_file(property_json_path.to_str().unwrap())
 }
 
 /// Parses a property.json file into a Property struct.
@@ -325,13 +319,12 @@ async fn parse_property_from_file<P: AsRef<Path>>(
     }
 
     // Validate the property schema only if it is present.
-    json_schema::ten_validate_property_json_file(&property_file_path)
-        .with_context(|| {
-            format!(
-                "Failed to validate {}.",
-                property_file_path.as_ref().display()
-            )
-        })?;
+    json_schema::ten_validate_property_json_file(&property_file_path).with_context(|| {
+        format!(
+            "Failed to validate {}.",
+            property_file_path.as_ref().display()
+        )
+    })?;
 
     // Read the contents of the property.json file.
     let content = read_file_to_string(property_file_path)?;

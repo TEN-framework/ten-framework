@@ -36,8 +36,7 @@ mod tests {
 
         // Test loading the graph
         let mut new_base_dir = Some(String::new());
-        let result =
-            load_graph_from_uri(&file_url, None, &mut new_base_dir).await;
+        let result = load_graph_from_uri(&file_url, None, &mut new_base_dir).await;
 
         assert!(result.is_ok());
         let graph = result.unwrap();
@@ -115,8 +114,7 @@ mod tests {
         #[cfg(windows)]
         let absolute_path = "C:\\absolute\\path\\to\\graph.json";
 
-        let result =
-            load_graph_from_uri(absolute_path, None, &mut new_base_dir).await;
+        let result = load_graph_from_uri(absolute_path, None, &mut new_base_dir).await;
 
         assert!(result.is_err());
         let error_msg = result.unwrap_err().to_string();
@@ -127,12 +125,8 @@ mod tests {
     #[tokio::test]
     async fn test_unsupported_url_scheme() {
         let mut new_base_dir = Some(String::new());
-        let result = load_graph_from_uri(
-            "ftp://example.com/graph.json",
-            None,
-            &mut new_base_dir,
-        )
-        .await;
+        let result =
+            load_graph_from_uri("ftp://example.com/graph.json", None, &mut new_base_dir).await;
 
         assert!(result.is_err());
         let error_msg = result.unwrap_err().to_string();
@@ -142,13 +136,10 @@ mod tests {
     #[tokio::test]
     async fn test_relative_path_without_base_dir() {
         let mut new_base_dir = Some(String::new());
-        let result =
-            load_graph_from_uri("test_graph.json", None, &mut new_base_dir)
-                .await;
+        let result = load_graph_from_uri("test_graph.json", None, &mut new_base_dir).await;
 
         assert!(result.is_err());
         let error_msg = result.unwrap_err().to_string();
-        assert!(error_msg
-            .contains("base_dir cannot be None when uri is a relative path"));
+        assert!(error_msg.contains("base_dir cannot be None when uri is a relative path"));
     }
 }

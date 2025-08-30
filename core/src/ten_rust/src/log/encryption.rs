@@ -142,8 +142,7 @@ where
 
     fn make_writer(&'writer self) -> Self::Writer {
         let inner = self.inner.make_writer();
-        let cipher =
-            new_cipher(&self.runtime.algorithm, &self.runtime.params_json).ok();
+        let cipher = new_cipher(&self.runtime.algorithm, &self.runtime.params_json).ok();
         EncryptWriter::new(inner, cipher)
     }
 }

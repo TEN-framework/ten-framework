@@ -10,9 +10,7 @@ use anyhow::Result;
 use regex::Regex;
 use serde::{Deserialize, Deserializer, Serialize};
 
-use crate::pkg_info::{
-    manifest::interface::flatten_manifest_api, value_type::ValueType,
-};
+use crate::pkg_info::{manifest::interface::flatten_manifest_api, value_type::ValueType};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ManifestApi {
@@ -46,10 +44,7 @@ pub struct ManifestApi {
 impl ManifestApi {
     /// Return the flattened API.
     /// If the api has no interface, return None.
-    pub async fn get_flattened_api(
-        &mut self,
-        base_dir: &str,
-    ) -> Result<Option<ManifestApi>> {
+    pub async fn get_flattened_api(&mut self, base_dir: &str) -> Result<Option<ManifestApi>> {
         if let Some(interface) = &mut self.interface {
             // Set the base_dir for each interface.
             for interface in interface.iter_mut() {
@@ -58,8 +53,7 @@ impl ManifestApi {
 
             // Flatten the api.
             let mut flattened_api = None;
-            flatten_manifest_api(&Some(self.clone()), &mut flattened_api)
-                .await?;
+            flatten_manifest_api(&Some(self.clone()), &mut flattened_api).await?;
             Ok(flattened_api)
         } else {
             Ok(None)
@@ -79,30 +73,27 @@ pub struct ManifestApiProperty {
 impl ManifestApiProperty {
     /// Check if the property is empty (no properties and no required fields)
     pub fn is_empty(&self) -> bool {
-        (self.properties.is_none()
-            || self.properties.as_ref().unwrap().is_empty())
-            && (self.required.is_none()
-                || self.required.as_ref().unwrap().is_empty())
+        (self.properties.is_none() || self.properties.as_ref().unwrap().is_empty())
+            && (self.required.is_none() || self.required.as_ref().unwrap().is_empty())
     }
 
     /// Get a reference to the properties HashMap, if it exists
-    pub fn properties(
-        &self,
-    ) -> Option<&HashMap<String, ManifestApiPropertyAttributes>> {
+    pub fn properties(&self) -> Option<&HashMap<String, ManifestApiPropertyAttributes>> {
         self.properties.as_ref()
     }
 
     /// Get a mutable reference to the properties HashMap, creating it if it
     /// doesn't exist
-    pub fn properties_mut(
-        &mut self,
-    ) -> &mut HashMap<String, ManifestApiPropertyAttributes> {
+    pub fn properties_mut(&mut self) -> &mut HashMap<String, ManifestApiPropertyAttributes> {
         self.properties.get_or_insert_with(HashMap::new)
     }
 
     /// Create a new empty ManifestApiProperty
     pub fn new() -> Self {
-        Self { properties: Some(HashMap::new()), required: None }
+        Self {
+            properties: Some(HashMap::new()),
+            required: None,
+        }
     }
 }
 

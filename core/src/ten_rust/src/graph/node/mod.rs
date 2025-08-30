@@ -154,7 +154,13 @@ impl GraphNode {
         property: Option<serde_json::Value>,
         graph: GraphContent,
     ) -> Self {
-        Self::Subgraph { content: SubgraphNode { name, property, graph } }
+        Self::Subgraph {
+            content: SubgraphNode {
+                name,
+                property,
+                graph,
+            },
+        }
     }
 
     /// Validates and completes a graph node by ensuring it has all required
@@ -176,9 +182,7 @@ impl GraphNode {
                 if let Some(app) = &content.app {
                     // Disallow 'localhost' as an app URI in graph definitions.
                     if app.as_str() == localhost() {
-                        let err_msg = if app_uri_declaration_state
-                            .is_single_app_graph()
-                        {
+                        let err_msg = if app_uri_declaration_state.is_single_app_graph() {
                             ERR_MSG_GRAPH_LOCALHOST_FORBIDDEN_IN_SINGLE_APP_MODE
                         } else {
                             ERR_MSG_GRAPH_LOCALHOST_FORBIDDEN_IN_MULTI_APP_MODE

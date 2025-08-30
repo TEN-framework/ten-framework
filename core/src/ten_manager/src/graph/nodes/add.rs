@@ -9,16 +9,10 @@ use anyhow::Result;
 use ten_rust::graph::{node::GraphNode, Graph};
 
 /// Checks if a node exists in the graph.
-fn check_node_exist(
-    graph: &Graph,
-    app: &Option<String>,
-    extension: &str,
-) -> Result<()> {
+fn check_node_exist(graph: &Graph, app: &Option<String>, extension: &str) -> Result<()> {
     // Validate that source node exists.
     let src_node_exists = graph.nodes.iter().any(|node| match node {
-        GraphNode::Extension { content } => {
-            content.name == extension && content.app == *app
-        }
+        GraphNode::Extension { content } => content.name == extension && content.app == *app,
         _ => false,
     });
 

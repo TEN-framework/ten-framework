@@ -5,9 +5,7 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 use ten_rust::graph::{
-    connection::{
-        GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow,
-    },
+    connection::{GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow},
     node::{GraphContent, GraphNode, GraphNodeType},
     Graph,
 };
@@ -77,8 +75,7 @@ mod tests {
         // Verify the error message contains information about base_dir being
         // None
         let error_msg = result.err().unwrap().to_string();
-        assert!(error_msg
-            .contains("base_dir cannot be None when uri is a relative path"));
+        assert!(error_msg.contains("base_dir cannot be None when uri is a relative path"));
     }
 
     #[tokio::test]
@@ -223,7 +220,10 @@ mod tests {
 
         let flattened = result.unwrap();
         assert_eq!(flattened.nodes.len(), 2); // ext_a + subgraph_1_ext_b
-        assert!(flattened.nodes.iter().any(|node| node.get_name() == "ext_a"));
+        assert!(flattened
+            .nodes
+            .iter()
+            .any(|node| node.get_name() == "ext_a"));
         assert!(flattened
             .nodes
             .iter()
