@@ -4,16 +4,15 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-use std::future::Future;
-use std::path::Path;
-use std::pin::Pin;
-use std::fmt;
+use std::{fmt, future::Future, path::Path, pin::Pin};
 
 use semver::VersionReq;
-use serde::{Deserialize, Serialize, Serializer, Deserializer, de::Visitor, de::Error};
+use serde::{
+    de::{Error, Visitor},
+    Deserialize, Deserializer, Serialize, Serializer,
+};
 
-use crate::pkg_info::manifest::parse_manifest_in_folder;
-use crate::pkg_info::{pkg_type::PkgType, PkgInfo};
+use crate::pkg_info::{manifest::parse_manifest_in_folder, pkg_type::PkgType, PkgInfo};
 
 type TypeAndNameFuture<'a> = Pin<Box<dyn Future<Output = Option<(PkgType, String)>> + Send + 'a>>;
 
@@ -27,7 +26,7 @@ pub enum ManifestDependency {
         name: String,
 
         #[serde(rename = "version")]
-        version_req: TenVersion,
+        version_req: TenVersionReq,
     },
 
     LocalDependency {
@@ -41,29 +40,30 @@ pub enum ManifestDependency {
     },
 }
 #[derive(Debug, Clone)]
-pub struct TenVersion{
-    raw_version: String,
-    processed_version: VersionReq,
+pub struct TenVersionReq {
+    raw_version_req: String,
+    processed_version_req: VersionReq,
 }
 
-/// write back the raw string of version, make sure its original form is preserved
-impl Serialize for TenVersion{
+/// write back the raw string of version, make sure its original form is
+/// preserved
+impl Serialize for TenVersionReq {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
     {
-        serializer.serialize_str(&self.raw_version)
+        serializer.serialize_str(&self.raw_version_req)
     }
 }
 
-impl<'de> Deserialize<'de> for TenVersion{
+impl<'de> Deserialize<'de> for TenVersionReq {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
-        D: Deserializer<'de>
+        D: Deserializer<'de>,
     {
         struct TenVersionVisitor;
         impl<'de> Visitor<'de> for TenVersionVisitor {
-            type Value = TenVersion;
+            type Value = TenVersionReq;
 
             fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
                 formatter.write_str("a version requirement string")
@@ -75,9 +75,9 @@ impl<'de> Deserialize<'de> for TenVersion{
             {
                 let processed = VersionReq::parse(v)
                     .map_err(|err| Error::custom(format!("invalid version req: {err}")))?;
-                Ok(TenVersion {
-                    raw_version: v.to_string(),
-                    processed_version: processed,
+                Ok(TenVersionReq {
+                    raw_version_req: v.to_string(),
+                    processed_version_req: processed,
                 })
             }
         }
@@ -86,22 +86,25 @@ impl<'de> Deserialize<'de> for TenVersion{
     }
 }
 
-impl TenVersion {
+impl TenVersionReq {
     pub fn new(raw: String) -> Result<Self, semver::Error> {
         let processed = VersionReq::parse(&raw)?;
-        Ok(Self { raw_version: raw, processed_version: processed })
+        Ok(Self {
+            raw_version_req: raw,
+            processed_version_req: processed,
+        })
     }
 
     pub fn matches(&self, version: &semver::Version) -> bool {
-        self.processed_version.matches(version)
+        self.processed_version_req.matches(version)
     }
 
     pub fn as_raw(&self) -> &str {
-        &self.raw_version
+        &self.raw_version_req
     }
 
-    pub fn as_req(&self) -> &VersionReq {
-        &self.processed_version
+    pub fn as_processed(&self) -> &VersionReq {
+        &self.processed_version_req
     }
 }
 
@@ -112,10 +115,16 @@ impl ManifestDependency {
     pub fn get_type_and_name(&self) -> TypeAndNameFuture<'_> {
         Box::pin(async move {
             match self {
-                ManifestDependency::RegistryDependency { pkg_type, name, .. } => {
-                    Some((*pkg_type, name.clone()))
-                }
-                ManifestDependency::LocalDependency { path, base_dir, .. } => {
+                ManifestDependency::RegistryDependency {
+                    pkg_type,
+                    name,
+                    ..
+                } => Some((*pkg_type, name.clone())),
+                ManifestDependency::LocalDependency {
+                    path,
+                    base_dir,
+                    ..
+                } => {
                     // Construct the full path to the dependency
                     let full_path = Path::new(base_dir.as_deref().unwrap_or_default()).join(path);
 
@@ -149,25 +158,19 @@ impl From<&PkgInfo> for ManifestDependency {
         if pkg_info.is_local_dependency {
             ManifestDependency::LocalDependency {
                 path: pkg_info.local_dependency_path.clone().unwrap_or_default(),
-                base_dir: pkg_info
-                    .local_dependency_base_dir
-                    .clone()
-                    .map(|dir| dir.to_string()),
+                base_dir: pkg_info.local_dependency_base_dir.clone().map(|dir| dir.to_string()),
             }
         } else {
-            //let raw_version = pkg_info.manifest.version.clone().to_string();//Error: no ^ for version
-            let parsed_version_req = VersionReq::parse(&pkg_info.manifest.version.clone().to_string()).ok();
+            let parsed_version_req =
+                VersionReq::parse(&pkg_info.manifest.version.clone().to_string()).ok();
             let raw_version = parsed_version_req.clone().unwrap().to_string();
-
-            println!("raw_version: {}", raw_version);
-            println!("parsed_version_req: {:?}", parsed_version_req);
 
             ManifestDependency::RegistryDependency {
                 pkg_type: pkg_info.manifest.type_and_name.pkg_type,
                 name: pkg_info.manifest.type_and_name.name.clone(),
-                version_req: TenVersion {
-                    raw_version,
-                    processed_version: parsed_version_req.unwrap(),
+                version_req: TenVersionReq {
+                    raw_version_req: raw_version,
+                    processed_version_req: parsed_version_req.unwrap(),
                 },
             }
         }

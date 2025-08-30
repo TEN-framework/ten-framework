@@ -4,15 +4,15 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-use anyhow::{Context, Result};
-use serde::{Deserialize, Serialize};
-
 use std::sync::Arc;
 
-use ten_rust::pkg_info::manifest::dependency::ManifestDependency;
-use ten_rust::pkg_info::manifest::Manifest;
-use ten_rust::pkg_info::pkg_basic_info::PkgBasicInfo;
-use ten_rust::pkg_info::PkgInfo;
+use anyhow::{Context, Result};
+use serde::{Deserialize, Serialize};
+use ten_rust::pkg_info::{
+    manifest::{dependency::ManifestDependency, Manifest},
+    pkg_basic_info::PkgBasicInfo,
+    PkgInfo,
+};
 
 pub const BASIC_SCOPE: [&str; 9] = [
     "type",

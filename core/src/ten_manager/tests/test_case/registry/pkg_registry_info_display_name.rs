@@ -11,9 +11,7 @@ mod tests {
     use ten_manager::registry::found_result::{
         get_pkg_registry_info_from_manifest, PkgRegistryInfo,
     };
-    use ten_rust::pkg_info::manifest::Manifest;
-    use ten_rust::pkg_info::pkg_basic_info::PkgBasicInfo;
-    use ten_rust::pkg_info::PkgInfo;
+    use ten_rust::pkg_info::{manifest::Manifest, pkg_basic_info::PkgBasicInfo, PkgInfo};
 
     #[tokio::test]
     async fn test_pkg_registry_info_with_display_name() {
@@ -46,33 +44,15 @@ mod tests {
         let display_name = pkg_registry_info.display_name.unwrap();
 
         assert_eq!(
-            display_name
-                .locales
-                .get("en-US")
-                .unwrap()
-                .content
-                .as_ref()
-                .unwrap(),
+            display_name.locales.get("en-US").unwrap().content.as_ref().unwrap(),
             "Test Extension"
         );
         assert_eq!(
-            display_name
-                .locales
-                .get("zh-CN")
-                .unwrap()
-                .content
-                .as_ref()
-                .unwrap(),
+            display_name.locales.get("zh-CN").unwrap().content.as_ref().unwrap(),
             "测试扩展"
         );
         assert_eq!(
-            display_name
-                .locales
-                .get("es-ES")
-                .unwrap()
-                .content
-                .as_ref()
-                .unwrap(),
+            display_name.locales.get("es-ES").unwrap().content.as_ref().unwrap(),
             "Extensión de Prueba"
         );
     }
@@ -135,44 +115,20 @@ mod tests {
         let display_name = pkg_registry_info.display_name.unwrap();
 
         assert_eq!(
-            description
-                .locales
-                .get("en-US")
-                .unwrap()
-                .content
-                .as_ref()
-                .unwrap(),
+            description.locales.get("en-US").unwrap().content.as_ref().unwrap(),
             "This is a test extension for demonstration purposes"
         );
         assert_eq!(
-            description
-                .locales
-                .get("zh-CN")
-                .unwrap()
-                .content
-                .as_ref()
-                .unwrap(),
+            description.locales.get("zh-CN").unwrap().content.as_ref().unwrap(),
             "这是用于演示目的的测试扩展"
         );
 
         assert_eq!(
-            display_name
-                .locales
-                .get("en-US")
-                .unwrap()
-                .content
-                .as_ref()
-                .unwrap(),
+            display_name.locales.get("en-US").unwrap().content.as_ref().unwrap(),
             "Test Extension"
         );
         assert_eq!(
-            display_name
-                .locales
-                .get("zh-CN")
-                .unwrap()
-                .content
-                .as_ref()
-                .unwrap(),
+            display_name.locales.get("zh-CN").unwrap().content.as_ref().unwrap(),
             "测试扩展"
         );
     }
@@ -197,7 +153,9 @@ mod tests {
             },
         );
 
-        let display_name = ten_rust::pkg_info::manifest::LocalizedField { locales };
+        let display_name = ten_rust::pkg_info::manifest::LocalizedField {
+            locales,
+        };
 
         let pkg_registry_info = PkgRegistryInfo {
             basic_info: PkgBasicInfo {
@@ -230,23 +188,11 @@ mod tests {
         assert!(deserialized.display_name.is_some());
         let display_name = deserialized.display_name.unwrap();
         assert_eq!(
-            display_name
-                .locales
-                .get("en-US")
-                .unwrap()
-                .content
-                .as_ref()
-                .unwrap(),
+            display_name.locales.get("en-US").unwrap().content.as_ref().unwrap(),
             "Test Extension"
         );
         assert_eq!(
-            display_name
-                .locales
-                .get("zh-CN")
-                .unwrap()
-                .content
-                .as_ref()
-                .unwrap(),
+            display_name.locales.get("zh-CN").unwrap().content.as_ref().unwrap(),
             "测试扩展"
         );
     }
@@ -303,7 +249,9 @@ mod tests {
             },
         );
 
-        let display_name = ten_rust::pkg_info::manifest::LocalizedField { locales };
+        let display_name = ten_rust::pkg_info::manifest::LocalizedField {
+            locales,
+        };
 
         let pkg_registry_info = PkgRegistryInfo {
             basic_info: PkgBasicInfo {
@@ -329,23 +277,11 @@ mod tests {
         assert!(pkg_info.manifest.display_name.is_some());
         let converted_display_name = pkg_info.manifest.display_name.unwrap();
         assert_eq!(
-            converted_display_name
-                .locales
-                .get("en-US")
-                .unwrap()
-                .content
-                .as_ref()
-                .unwrap(),
+            converted_display_name.locales.get("en-US").unwrap().content.as_ref().unwrap(),
             "Test Extension"
         );
         assert_eq!(
-            converted_display_name
-                .locales
-                .get("fr")
-                .unwrap()
-                .content
-                .as_ref()
-                .unwrap(),
+            converted_display_name.locales.get("fr").unwrap().content.as_ref().unwrap(),
             "Extension de Test"
         );
     }
