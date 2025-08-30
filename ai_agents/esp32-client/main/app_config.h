@@ -16,7 +16,7 @@
 #if defined(CONFIG_GRAPH_OPENAI)
 #define GRAPH_NAME             "va_openai_v2v"
 
-#define V2V_MODEL              "gpt-4o-realtime-preview-2024-12-17"
+#define V2V_MODEL              "gpt-realtime"
 #define LANGUAGE               "en-US"
 #define VOICE                  "ash"
 #elif defined(CONFIG_GRAPH_GEMINI)

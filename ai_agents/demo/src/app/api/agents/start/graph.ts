@@ -1,4 +1,4 @@
-import { LanguageMap } from "@/common/constant";
+import { LanguageMap, OPENAI_REALTIME_MODEL } from "@/common/constant";
 
 export const voiceNameMap: LanguageMap = {
     "zh-CN": {
@@ -194,7 +194,7 @@ export const getGraphProperties = (
     } else if (graphName === "va_openai_v2v") {
         return {
             "v2v": {
-                "model": "gpt-4o-realtime-preview",
+                "model": OPENAI_REALTIME_MODEL,
                 "voice": voiceNameMap[language]["openai"][voiceType],
                 "language": converteLanguage,
                 "prompt": prompt,
@@ -204,7 +204,7 @@ export const getGraphProperties = (
     } else if (graphName === "va_openai_v2v_fish") {
         return {
             "v2v": {
-                "model": "gpt-4o-realtime-preview-2024-12-17",
+                "model": OPENAI_REALTIME_MODEL,
                 "voice": voiceNameMap[language]["openai"][voiceType],
                 "language": language,
                 "prompt": prompt,
@@ -307,7 +307,7 @@ export const getGraphProperties = (
                 "lang_code": language,
             }
         }
-    } else if (graphName === "deepseek_r1") {
+    } else if (graphName === "deepseek_v3_1") {
         return {
             "agora_rtc": {
                 "agora_asr_language": language,
@@ -315,7 +315,7 @@ export const getGraphProperties = (
             "llm": {
                 "prompt": prompt,
                 "greeting": combined_greeting,
-                "model": "DeepSeek-R1",
+                "model": "deepseek-chat-v3.1",
             },
             "tts": {
                 "azure_synthesis_voice_name": voiceNameMap[language]["azure"][voiceType]
