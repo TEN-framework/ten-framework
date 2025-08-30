@@ -44,3 +44,5 @@ xdump_config
 /manifest.json
 /manifest-lock.json
 /property.json
+*.tsbuildinfo
+azure_tts_log.txt

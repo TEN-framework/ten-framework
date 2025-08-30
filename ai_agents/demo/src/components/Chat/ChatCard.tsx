@@ -55,7 +55,7 @@ export default function ChatCard(props: { className?: string }) {
       return
     }
 
-    init()
+    // init()
 
     return () => {
       // if (hasInit) {
@@ -64,66 +64,66 @@ export default function ChatCard(props: { className?: string }) {
     }
   }, [options.channel, options.userId, options.appId, options.token])
 
-  const init = async () => {
-    console.log("[rtm] init")
-    await rtmManager.init({
-      channel: options.channel,
-      userId: options.userId,
-      appId: options.appId,
-      token: options.token,
-    })
-    dispatch(setRtmConnected(true))
-    rtmManager.on("rtmMessage", onTextChanged)
-    hasInit = true
-  }
-  const destory = async () => {
-    console.log("[rtm] destory")
-    rtmManager.off("rtmMessage", onTextChanged)
-    await rtmManager.destroy()
-    dispatch(setRtmConnected(false))
-    hasInit = false
-  }
+  // const init = async () => {
+  //   console.log("[rtm] init")
+  //   await rtmManager.init({
+  //     channel: options.channel,
+  //     userId: options.userId,
+  //     appId: options.appId,
+  //     token: options.token,
+  //   })
+  //   dispatch(setRtmConnected(true))
+  //   rtmManager.on("rtmMessage", onTextChanged)
+  //   hasInit = true
+  // }
+  // const destory = async () => {
+  //   console.log("[rtm] destory")
+  //   rtmManager.off("rtmMessage", onTextChanged)
+  //   await rtmManager.destroy()
+  //   dispatch(setRtmConnected(false))
+  //   hasInit = false
+  // }
 
-  const onTextChanged = (text: IRTMTextItem) => {
-    console.log("[rtm] onTextChanged", text)
-    if (text.type == ERTMTextType.TRANSCRIBE) {
-      // const isAgent = Number(text.uid) != Number(options.userId)
-      dispatch(
-        addChatItem({
-          userId: options.userId,
-          text: text.text,
-          type: `${text.stream_id}` === "0" ? EMessageType.AGENT : EMessageType.USER,
-          data_type: EMessageDataType.TEXT,
-          isFinal: text.is_final,
-          time: text.ts,
-        }),
-      )
-    }
-    if (text.type == ERTMTextType.INPUT_TEXT) {
-      dispatch(
-        addChatItem({
-          userId: options.userId,
-          text: text.text,
-          type: EMessageType.USER,
-          data_type: EMessageDataType.TEXT,
-          isFinal: true,
-          time: text.ts,
-        }),
-      )
-    }
-  }
+  // const onTextChanged = (text: IRTMTextItem) => {
+  //   console.log("[rtm] onTextChanged", text)
+  //   if (text.type == ERTMTextType.TRANSCRIBE) {
+  //     // const isAgent = Number(text.uid) != Number(options.userId)
+  //     dispatch(
+  //       addChatItem({
+  //         userId: options.userId,
+  //         text: text.text,
+  //         type: `${text.stream_id}` === "0" ? EMessageType.AGENT : EMessageType.USER,
+  //         data_type: EMessageDataType.TEXT,
+  //         isFinal: text.is_final,
+  //         time: text.ts,
+  //       }),
+  //     )
+  //   }
+  //   if (text.type == ERTMTextType.INPUT_TEXT) {
+  //     dispatch(
+  //       addChatItem({
+  //         userId: options.userId,
+  //         text: text.text,
+  //         type: EMessageType.USER,
+  //         data_type: EMessageDataType.TEXT,
+  //         isFinal: true,
+  //         time: text.ts,
+  //       }),
+  //     )
+  //   }
+  // }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setInputValue(e.target.value)
+    // setInputValue(e.target.value)
   }
 
   const handleInputSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    if (!inputValue || disableInputMemo) {
-      return
-    }
-    rtmManager.sendText(inputValue)
-    setInputValue("")
+    // if (!inputValue || disableInputMemo) {
+    //   return
+    // }
+    // rtmManager.sendText(inputValue)
+    // setInputValue("")
   }
 
   return (

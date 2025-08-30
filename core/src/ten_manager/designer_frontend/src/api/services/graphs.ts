@@ -15,8 +15,9 @@ import type {
   AddNodePayloadSchema,
   DeleteConnectionPayloadSchema,
   DeleteNodePayloadSchema,
+  Graph,
+  GraphInfo,
   GraphUiNodeGeometrySchema,
-  IGraph,
   SetGraphUiPayloadSchema,
   UpdateNodePropertyPayloadSchema,
 } from "@/types/graphs";
@@ -43,15 +44,15 @@ export const retrieveGraphs = async () => {
 
   const resp = await template.responseSchema.parseAsync(res);
 
-  // todo: selector&subgraph
+  // todo: need to support selector & subgraph
   const filtered = resp.data.map((item) => ({
     ...item,
     graph: {
       ...item.graph,
       nodes:
         item.graph.nodes?.filter((node) => node.type === "extension") || [],
-    },
-  })) as IGraph[];
+    } as Graph,
+  })) as GraphInfo[];
 
   return filtered;
 };
