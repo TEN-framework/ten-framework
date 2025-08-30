@@ -37,7 +37,7 @@ import {
 } from "@/flow/context-menu/base";
 import { useWidgetStore } from "@/store";
 import type { IRunAppParams } from "@/types/apps";
-import { EGraphActions, type IGraph } from "@/types/graphs";
+import { EGraphActions, type GraphInfo } from "@/types/graphs";
 import {
   EDefaultWidgetType,
   ELogViewerScriptType,
@@ -45,7 +45,7 @@ import {
   EWidgetDisplayType,
 } from "@/types/widgets";
 
-export const ContextMenuItems = (props: { graph: IGraph }) => {
+export const ContextMenuItems = (props: { graph: GraphInfo }) => {
   const { graph } = props;
 
   const { t } = useTranslation();

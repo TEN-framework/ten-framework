@@ -13,10 +13,7 @@ use super::{
     response::{ApiResponse, Status},
     DesignerState,
 };
-use crate::{
-    constants::GITHUB_RELEASE_PAGE, version::VERSION,
-    version_utils::check_update,
-};
+use crate::{constants::GITHUB_RELEASE_PAGE, version::VERSION, version_utils::check_update};
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 struct GetVersionResponseData {
@@ -34,16 +31,20 @@ struct CheckUpdateResponseData {
 pub async fn get_version_endpoint(
     _state: web::Data<Arc<DesignerState>>,
 ) -> Result<impl Responder, actix_web::Error> {
-    let version_info = GetVersionResponseData { version: VERSION.to_string() };
+    let version_info = GetVersionResponseData {
+        version: VERSION.to_string(),
+    };
 
-    let response =
-        ApiResponse { status: Status::Ok, data: version_info, meta: None };
+    let response = ApiResponse {
+        status: Status::Ok,
+        data: version_info,
+        meta: None,
+    };
 
     Ok(HttpResponse::Ok().json(response))
 }
 
-pub async fn check_update_endpoint() -> Result<impl Responder, actix_web::Error>
-{
+pub async fn check_update_endpoint() -> Result<impl Responder, actix_web::Error> {
     match check_update().await {
         Ok((true, latest)) => {
             let update_info = CheckUpdateResponseData {

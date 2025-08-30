@@ -8,9 +8,7 @@
 mod tests {
     use serde_json::json;
     use ten_manager::{
-        designer::storage::persistent::{
-            read_persistent_storage, write_persistent_storage,
-        },
+        designer::storage::persistent::{read_persistent_storage, write_persistent_storage},
         home::data::get_home_data_path,
     };
 
@@ -31,8 +29,7 @@ mod tests {
     #[test]
     fn test_write_and_read_storage() {
         with_temp_home_dir(|| {
-            let test_data =
-                json!({"test_key": "test_value", "nested": {"inner": 42}});
+            let test_data = json!({"test_key": "test_value", "nested": {"inner": 42}});
 
             // Write data
             let write_result = write_persistent_storage(&test_data);

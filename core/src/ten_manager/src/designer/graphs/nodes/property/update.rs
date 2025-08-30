@@ -19,10 +19,7 @@ use crate::{
         response::{ApiResponse, ErrorResponse, Status},
         DesignerState,
     },
-    graph::{
-        graphs_cache_find_by_id_mut,
-        nodes::validate::validate_extension_property,
-    },
+    graph::{graphs_cache_find_by_id_mut, nodes::validate::validate_extension_property},
 };
 
 #[derive(Serialize, Deserialize)]
@@ -47,13 +44,15 @@ fn update_node_property_in_graph(
     request_payload: &UpdateGraphNodePropertyRequestPayload,
 ) -> Result<()> {
     // Find the node in the graph.
-    let graph_node =
-        graph_info.graph.nodes_mut().iter_mut().find(|node| match node {
+    let graph_node = graph_info
+        .graph
+        .nodes_mut()
+        .iter_mut()
+        .find(|node| match node {
             GraphNode::Extension { content } => {
                 content.name == request_payload.name
                     && content.addon == request_payload.addon
-                    && content.extension_group
-                        == request_payload.extension_group
+                    && content.extension_group == request_payload.extension_group
                     && content.app == request_payload.app
             }
             _ => false,
@@ -89,10 +88,8 @@ pub async fn update_graph_node_property_endpoint(
     let old_graphs_cache = graphs_cache.clone();
 
     // Get the specified graph from graphs_cache.
-    let graph_info = match graphs_cache_find_by_id_mut(
-        &mut graphs_cache,
-        &request_payload.graph_id,
-    ) {
+    let graph_info = match graphs_cache_find_by_id_mut(&mut graphs_cache, &request_payload.graph_id)
+    {
         Some(graph_info) => graph_info,
         None => {
             let error_response = ErrorResponse {
@@ -119,8 +116,7 @@ pub async fn update_graph_node_property_endpoint(
         return Ok(HttpResponse::BadRequest().json(error_response));
     }
 
-    if let Err(e) = update_node_property_in_graph(graph_info, &request_payload)
-    {
+    if let Err(e) = update_node_property_in_graph(graph_info, &request_payload) {
         let error_response = ErrorResponse {
             status: Status::Fail,
             message: format!("Failed to update node property in graph: {e}"),

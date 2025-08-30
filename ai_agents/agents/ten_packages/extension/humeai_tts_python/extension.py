@@ -48,22 +48,15 @@ class HumeaiTTSExtension(AsyncTTS2BaseExtension):
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         try:
             await super().on_init(ten_env)
-            config_json_str, _ = await self.ten_env.get_property_to_json("")
-            ten_env.log_info(f"config_json_str: {config_json_str}")
+            config_json, _ = await self.ten_env.get_property_to_json("")
 
-            if not config_json_str or config_json_str.strip() == "{}":
-                raise ValueError(
-                    "Configuration is empty. Required parameter 'key' is missing."
-                )
-
-            self.config = HumeAiTTSConfig.model_validate_json(config_json_str)
+            self.config = HumeAiTTSConfig.model_validate_json(config_json)
             self.config.update_params()
+            self.config.validate_params()
 
             ten_env.log_info(
-                f"config: {self.config.to_str(sensitive_handling=True)}"
+                f"KEYPOINT config: {self.config.to_str(sensitive_handling=True)}"
             )
-            if not self.config.key:
-                raise ValueError("API key is required")
 
             self.client = HumeAiTTS(config=self.config, ten_env=ten_env)
 
@@ -149,6 +142,10 @@ class HumeaiTTSExtension(AsyncTTS2BaseExtension):
         try:
             if not self.client or not self.config:
                 raise RuntimeError("Extension is not initialized properly.")
+
+            self.ten_env.log_info(
+                f"KEYPOINT request_tts: {t.text}, request_id: {t.request_id}"
+            )
 
             if t.request_id != self.current_request_id:
                 self.first_chunk = True

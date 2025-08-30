@@ -14,8 +14,8 @@ use semver::Version;
 use serde::{Deserialize, Serialize};
 
 use super::{
-    manifest::support::ManifestSupport, manifest::Manifest,
-    pkg_type_and_name::PkgTypeAndName, PkgInfo,
+    manifest::support::ManifestSupport, manifest::Manifest, pkg_type_and_name::PkgTypeAndName,
+    PkgInfo,
 };
 
 // Basic info refers to the information used to "uniquely" identify a TEN

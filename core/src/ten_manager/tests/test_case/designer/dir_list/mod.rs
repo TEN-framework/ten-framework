@@ -53,12 +53,8 @@ mod tests {
 
         // Initialize DesignerState.
         let state = web::Data::new(Arc::new(DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -85,8 +81,7 @@ mod tests {
         assert!(resp.status().is_success());
 
         let body = test::read_body(resp).await;
-        let response: ApiResponse<DirListResponseData> =
-            serde_json::from_slice(&body).unwrap();
+        let response: ApiResponse<DirListResponseData> = serde_json::from_slice(&body).unwrap();
 
         assert_eq!(response.status, Status::Ok);
         assert_eq!(response.data.entries.len(), 1);
@@ -110,12 +105,8 @@ mod tests {
 
         // Initialize DesignerState.
         let state = web::Data::new(Arc::new(DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -140,8 +131,7 @@ mod tests {
         assert!(resp.status().is_success());
 
         let body = test::read_body(resp).await;
-        let response: ApiResponse<DirListResponseData> =
-            serde_json::from_slice(&body).unwrap();
+        let response: ApiResponse<DirListResponseData> = serde_json::from_slice(&body).unwrap();
 
         assert_eq!(response.status, Status::Ok);
         assert_eq!(response.data.entries.len(), 2);
@@ -159,12 +149,8 @@ mod tests {
     #[actix_web::test]
     async fn test_list_dir_with_non_existing_path() {
         let state = web::Data::new(Arc::new(DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -182,7 +168,9 @@ mod tests {
 
         let req = test::TestRequest::post()
             .uri("/api/designer/v1/dir-list")
-            .set_json(ListDirRequestPayload { path: non_existing_path })
+            .set_json(ListDirRequestPayload {
+                path: non_existing_path,
+            })
             .to_request();
 
         let resp = test::call_service(&app, req).await;

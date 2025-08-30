@@ -141,7 +141,7 @@ def test_concurrent_requests(MockGoogleTTS):
     # Set up configuration with fake credentials for mock testing
     config = {
         "params": {
-            "sample_rate": 16000,
+            "AudioConfig": {"sample_rate_hertz": 16000},
             "credentials": "fake_credentials_for_mock_testing",
         },
     }
@@ -188,7 +188,7 @@ def test_rapid_requests(MockGoogleTTS):
     # Set up configuration with fake credentials for mock testing
     config = {
         "params": {
-            "sample_rate": 16000,
+            "AudioConfig": {"sample_rate_hertz": 16000},
             "credentials": "fake_credentials_for_mock_testing",
         },
     }
@@ -236,7 +236,7 @@ def test_large_text_requests(MockGoogleTTS):
     # Set up configuration
     config = {
         "params": {
-            "sample_rate": 16000,
+            "AudioConfig": {"sample_rate_hertz": 16000},
             "credentials": "fake_credentials_for_mock_testing",
         },
     }
@@ -291,7 +291,7 @@ def test_network_retry_robustness(MockGoogleTTS):
     # Set up configuration
     config = {
         "params": {
-            "sample_rate": 16000,
+            "AudioConfig": {"sample_rate_hertz": 16000},
             "credentials": "fake_credentials_for_mock_testing",
         },
     }
@@ -342,7 +342,7 @@ def test_memory_robustness(MockGoogleTTS):
     # Set up configuration
     config = {
         "params": {
-            "sample_rate": 16000,
+            "AudioConfig": {"sample_rate_hertz": 16000},
             "credentials": "fake_credentials_for_mock_testing",
         },
     }
@@ -389,7 +389,7 @@ def test_cancellation_robustness(MockGoogleTTS):
     # Set up configuration with fake credentials for mock testing
     config = {
         "params": {
-            "sample_rate": 16000,
+            "AudioConfig": {"sample_rate_hertz": 16000},
             "credentials": "fake_credentials_for_mock_testing",
         },
     }

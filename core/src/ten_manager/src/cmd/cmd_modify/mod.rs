@@ -13,8 +13,7 @@ use anyhow::Result;
 use clap::{ArgMatches, Command};
 
 use crate::{
-    designer::storage::in_memory::TmanStorageInMemory,
-    home::config::TmanConfig, output::TmanOutput,
+    designer::storage::in_memory::TmanStorageInMemory, home::config::TmanConfig, output::TmanOutput,
 };
 
 #[derive(Debug)]
@@ -35,9 +34,7 @@ pub fn create_sub_cmd(args_cfg: &crate::cmd_line::ArgsCfg) -> Command {
 pub fn parse_sub_cmd(sub_cmd_args: &ArgMatches) -> Result<ModifyCommandData> {
     let command_data = match sub_cmd_args.subcommand() {
         Some(("graph", graph_cmd_args)) => ModifyCommandData::ModifyGraph(
-            crate::cmd::cmd_modify::cmd_modify_graph::parse_sub_cmd(
-                graph_cmd_args,
-            )?,
+            crate::cmd::cmd_modify::cmd_modify_graph::parse_sub_cmd(graph_cmd_args)?,
         ),
 
         _ => unreachable!("Command not found"),

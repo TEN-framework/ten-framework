@@ -13,7 +13,7 @@ import {
   GROUP_CUSTOM_CONNECTION_ID,
 } from "@/constants/widgets";
 import { useWidgetStore } from "@/store";
-import type { EConnectionType, IGraph } from "@/types/graphs";
+import type { EConnectionType, GraphInfo } from "@/types/graphs";
 import { EWidgetCategory, EWidgetDisplayType } from "@/types/widgets";
 
 export const CustomNodeConnectionButton = (
@@ -21,7 +21,7 @@ export const CustomNodeConnectionButton = (
     data: {
       source: string;
       target?: string;
-      graph: IGraph;
+      graph: GraphInfo;
       metadata?: {
         filters?: {
           type?: EConnectionType;

@@ -13,5 +13,5 @@
 typedef struct ten_addon_host_t ten_addon_host_t;
 typedef struct ten_app_t ten_app_t;
 
-TEN_RUNTIME_PRIVATE_API ten_addon_host_t *ten_addon_store_find_by_type(
+TEN_RUNTIME_API ten_addon_host_t *ten_addon_store_find_by_type(
     ten_app_t *app, TEN_ADDON_TYPE addon_type, const char *addon_name);

@@ -12,10 +12,7 @@ mod tests {
     use ten_manager::{
         designer::{
             graphs::connections::{
-                add::{
-                    add_graph_connection_endpoint,
-                    AddGraphConnectionRequestPayload,
-                },
+                add::{add_graph_connection_endpoint, AddGraphConnectionRequestPayload},
                 msg_conversion::update::{
                     update_graph_connection_msg_conversion_endpoint,
                     UpdateGraphConnectionMsgConversionRequestPayload,
@@ -32,8 +29,8 @@ mod tests {
     };
     use ten_rust::{
         graph::msg_conversion::{
-            MsgAndResultConversion, MsgConversion, MsgConversionMode,
-            MsgConversionRule, MsgConversionRules, MsgConversionType,
+            MsgAndResultConversion, MsgConversion, MsgConversionMode, MsgConversionRule,
+            MsgConversionRules, MsgConversionType,
         },
         pkg_info::{constants::PROPERTY_JSON_FILENAME, message::MsgType},
     };
@@ -43,12 +40,8 @@ mod tests {
     #[actix_web::test]
     async fn test_update_graph_connection_msg_conversion_1() {
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -61,31 +54,30 @@ mod tests {
 
         // Load both the app package JSON and extension addon package JSONs.
         let app_manifest_json_str =
-            include_str!("../../../../../test_data/app_manifest.json")
-                .to_string();
+            include_str!("../../../../../test_data/app_manifest.json").to_string();
         let app_property_json_str =
-            include_str!("../../../../../test_data/app_property.json")
-                .to_string();
+            include_str!("../../../../../test_data/app_property.json").to_string();
 
         // Create the property.json file in the temporary directory.
-        let property_path =
-            std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
+        let property_path = std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
         std::fs::write(&property_path, &app_property_json_str).unwrap();
 
         // Create extension addon manifest strings
         let ext1_manifest_json_str =
-            include_str!("../../../../../test_data/extension_1_manifest.json")
-                .to_string();
+            include_str!("../../../../../test_data/extension_1_manifest.json").to_string();
 
         let ext2_manifest_json_str =
-            include_str!("../../../../../test_data/extension_2_manifest.json")
-                .to_string();
+            include_str!("../../../../../test_data/extension_2_manifest.json").to_string();
 
         // The empty property for addons.
         let empty_property = r#"{"ten":{}}"#.to_string();
 
         let all_pkgs_json = vec![
-            (test_dir.clone(), app_manifest_json_str, app_property_json_str),
+            (
+                test_dir.clone(),
+                app_manifest_json_str,
+                app_property_json_str,
+            ),
             (
                 format!(
                     "{}{}",
@@ -110,23 +102,16 @@ mod tests {
             let mut pkgs_cache = designer_state.pkgs_cache.write().await;
             let mut graphs_cache = designer_state.graphs_cache.write().await;
 
-            let inject_ret = inject_all_pkgs_for_mock(
-                &mut pkgs_cache,
-                &mut graphs_cache,
-                all_pkgs_json,
-            )
-            .await;
+            let inject_ret =
+                inject_all_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, all_pkgs_json).await;
             assert!(inject_ret.is_ok());
         }
 
         let graph_id_clone;
         {
             let graphs_cache = designer_state.graphs_cache.read().await;
-            let (graph_id, _) = graphs_cache_find_by_name(
-                &graphs_cache,
-                "default_with_app_uri",
-            )
-            .unwrap();
+            let (graph_id, _) =
+                graphs_cache_find_by_name(&graphs_cache, "default_with_app_uri").unwrap();
 
             graph_id_clone = *graph_id;
         }
@@ -142,8 +127,7 @@ mod tests {
                 )
                 .route(
                     "/api/designer/v1/graphs/connections/msg_conversion/update",
-                    web::post()
-                        .to(update_graph_connection_msg_conversion_endpoint),
+                    web::post().to(update_graph_connection_msg_conversion_endpoint),
                 ),
         )
         .await;
@@ -231,17 +215,16 @@ mod tests {
         };
 
         // Now update the connection's message conversion.
-        let update_request_payload =
-            UpdateGraphConnectionMsgConversionRequestPayload {
-                graph_id: graph_id_clone,
-                src_app: Some("http://example.com:8000".to_string()),
-                src_extension: "extension_1".to_string(),
-                msg_type: MsgType::Cmd,
-                msg_name: "test_cmd_for_update".to_string(),
-                dest_app: Some("http://example.com:8000".to_string()),
-                dest_extension: "extension_2".to_string(),
-                msg_conversion: Some(updated_msg_conversion),
-            };
+        let update_request_payload = UpdateGraphConnectionMsgConversionRequestPayload {
+            graph_id: graph_id_clone,
+            src_app: Some("http://example.com:8000".to_string()),
+            src_extension: "extension_1".to_string(),
+            msg_type: MsgType::Cmd,
+            msg_name: "test_cmd_for_update".to_string(),
+            dest_app: Some("http://example.com:8000".to_string()),
+            dest_extension: "extension_2".to_string(),
+            msg_conversion: Some(updated_msg_conversion),
+        };
 
         let update_req = test::TestRequest::post()
             .uri("/api/designer/v1/graphs/connections/msg_conversion/update")
@@ -258,9 +241,8 @@ mod tests {
 
         assert!(status.is_success());
 
-        let response: ApiResponse<
-            UpdateGraphConnectionMsgConversionResponsePayload,
-        > = serde_json::from_str(body_str).unwrap();
+        let response: ApiResponse<UpdateGraphConnectionMsgConversionResponsePayload> =
+            serde_json::from_str(body_str).unwrap();
 
         assert!(response.data.success);
 
@@ -272,15 +254,13 @@ mod tests {
         );
 
         // Read the actual property.json file generated during the test.
-        let property_path =
-            std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
+        let property_path = std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
         let actual_property = std::fs::read_to_string(property_path).unwrap();
 
         // Normalize both JSON strings to handle formatting differences.
         let expected_value: serde_json::Value =
             serde_json::from_str(expected_property_json_str).unwrap();
-        let actual_value: serde_json::Value =
-            serde_json::from_str(&actual_property).unwrap();
+        let actual_value: serde_json::Value = serde_json::from_str(&actual_property).unwrap();
 
         // Compare the normalized JSON values.
         assert_eq!(
@@ -296,12 +276,8 @@ mod tests {
     #[actix_web::test]
     async fn test_update_graph_connection_msg_conversion_2() {
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -314,32 +290,30 @@ mod tests {
 
         // Load both the app package JSON and extension addon package JSONs.
         let app_manifest_json_str =
-            include_str!("../../../../../test_data/app_manifest.json")
-                .to_string();
+            include_str!("../../../../../test_data/app_manifest.json").to_string();
         let app_property_json_str =
-            include_str!("../../../../../test_data/app_property_2.json")
-                .to_string();
+            include_str!("../../../../../test_data/app_property_2.json").to_string();
 
         // Create the property.json file in the temporary directory.
-        let property_path =
-            std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
+        let property_path = std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
         std::fs::write(&property_path, &app_property_json_str).unwrap();
 
         // Create extension addon manifest strings
         let ext1_manifest_json_str =
-            include_str!("../../../../../test_data/extension_1_manifest.json")
-                .to_string();
+            include_str!("../../../../../test_data/extension_1_manifest.json").to_string();
 
-        let ext2_manifest_json_str = include_str!(
-            "../../../../../test_data/extension_2_manifest_3.json"
-        )
-        .to_string();
+        let ext2_manifest_json_str =
+            include_str!("../../../../../test_data/extension_2_manifest_3.json").to_string();
 
         // The empty property for addons.
         let empty_property = r#"{"ten":{}}"#.to_string();
 
         let all_pkgs_json = vec![
-            (test_dir.clone(), app_manifest_json_str, app_property_json_str),
+            (
+                test_dir.clone(),
+                app_manifest_json_str,
+                app_property_json_str,
+            ),
             (
                 format!(
                     "{}{}",
@@ -364,23 +338,16 @@ mod tests {
             let mut pkgs_cache = designer_state.pkgs_cache.write().await;
             let mut graphs_cache = designer_state.graphs_cache.write().await;
 
-            let inject_ret = inject_all_pkgs_for_mock(
-                &mut pkgs_cache,
-                &mut graphs_cache,
-                all_pkgs_json,
-            )
-            .await;
+            let inject_ret =
+                inject_all_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, all_pkgs_json).await;
             assert!(inject_ret.is_ok());
         }
 
         let graph_id_clone;
         {
             let graphs_cache = designer_state.graphs_cache.read().await;
-            let (graph_id, _) = graphs_cache_find_by_name(
-                &graphs_cache,
-                "default_with_app_uri",
-            )
-            .unwrap();
+            let (graph_id, _) =
+                graphs_cache_find_by_name(&graphs_cache, "default_with_app_uri").unwrap();
 
             graph_id_clone = *graph_id;
         }
@@ -388,10 +355,12 @@ mod tests {
         let designer_state = Arc::new(designer_state);
 
         let app = test::init_service(
-            App::new().app_data(web::Data::new(designer_state.clone())).route(
-                "/api/designer/v1/graphs/connections/msg_conversion/update",
-                web::post().to(update_graph_connection_msg_conversion_endpoint),
-            ),
+            App::new()
+                .app_data(web::Data::new(designer_state.clone()))
+                .route(
+                    "/api/designer/v1/graphs/connections/msg_conversion/update",
+                    web::post().to(update_graph_connection_msg_conversion_endpoint),
+                ),
         )
         .await;
 
@@ -432,17 +401,16 @@ mod tests {
         };
 
         // Now update the connection's message conversion.
-        let update_request_payload =
-            UpdateGraphConnectionMsgConversionRequestPayload {
-                graph_id: graph_id_clone,
-                src_app: Some("http://example.com:8000".to_string()),
-                src_extension: "extension_1".to_string(),
-                msg_type: MsgType::Cmd,
-                msg_name: "change_name".to_string(),
-                dest_app: Some("http://example.com:8000".to_string()),
-                dest_extension: "extension_2".to_string(),
-                msg_conversion: Some(updated_msg_conversion),
-            };
+        let update_request_payload = UpdateGraphConnectionMsgConversionRequestPayload {
+            graph_id: graph_id_clone,
+            src_app: Some("http://example.com:8000".to_string()),
+            src_extension: "extension_1".to_string(),
+            msg_type: MsgType::Cmd,
+            msg_name: "change_name".to_string(),
+            dest_app: Some("http://example.com:8000".to_string()),
+            dest_extension: "extension_2".to_string(),
+            msg_conversion: Some(updated_msg_conversion),
+        };
 
         let update_req = test::TestRequest::post()
             .uri("/api/designer/v1/graphs/connections/msg_conversion/update")
@@ -459,9 +427,8 @@ mod tests {
 
         assert!(status.is_success());
 
-        let response: ApiResponse<
-            UpdateGraphConnectionMsgConversionResponsePayload,
-        > = serde_json::from_str(body_str).unwrap();
+        let response: ApiResponse<UpdateGraphConnectionMsgConversionResponsePayload> =
+            serde_json::from_str(body_str).unwrap();
 
         assert!(response.data.success);
 
@@ -473,15 +440,13 @@ mod tests {
         );
 
         // Read the actual property.json file generated during the test.
-        let property_path =
-            std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
+        let property_path = std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
         let actual_property = std::fs::read_to_string(property_path).unwrap();
 
         // Normalize both JSON strings to handle formatting differences.
         let expected_value: serde_json::Value =
             serde_json::from_str(expected_property_json_str).unwrap();
-        let actual_value: serde_json::Value =
-            serde_json::from_str(&actual_property).unwrap();
+        let actual_value: serde_json::Value = serde_json::from_str(&actual_property).unwrap();
 
         // Compare the normalized JSON values.
         assert_eq!(
@@ -497,12 +462,8 @@ mod tests {
     #[actix_web::test]
     async fn test_update_graph_connection_msg_conversion_3() {
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -515,32 +476,30 @@ mod tests {
 
         // Load both the app package JSON and extension addon package JSONs.
         let app_manifest_json_str =
-            include_str!("../../../../../test_data/app_manifest.json")
-                .to_string();
+            include_str!("../../../../../test_data/app_manifest.json").to_string();
         let app_property_json_str =
-            include_str!("../../../../../test_data/app_property_3.json")
-                .to_string();
+            include_str!("../../../../../test_data/app_property_3.json").to_string();
 
         // Create the property.json file in the temporary directory.
-        let property_path =
-            std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
+        let property_path = std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
         std::fs::write(&property_path, &app_property_json_str).unwrap();
 
         // Create extension addon manifest strings
         let ext1_manifest_json_str =
-            include_str!("../../../../../test_data/extension_1_manifest.json")
-                .to_string();
+            include_str!("../../../../../test_data/extension_1_manifest.json").to_string();
 
-        let ext2_manifest_json_str = include_str!(
-            "../../../../../test_data/extension_2_manifest_3.json"
-        )
-        .to_string();
+        let ext2_manifest_json_str =
+            include_str!("../../../../../test_data/extension_2_manifest_3.json").to_string();
 
         // The empty property for addons.
         let empty_property = r#"{"ten":{}}"#.to_string();
 
         let all_pkgs_json = vec![
-            (test_dir.clone(), app_manifest_json_str, app_property_json_str),
+            (
+                test_dir.clone(),
+                app_manifest_json_str,
+                app_property_json_str,
+            ),
             (
                 format!(
                     "{}{}",
@@ -565,23 +524,16 @@ mod tests {
             let mut pkgs_cache = designer_state.pkgs_cache.write().await;
             let mut graphs_cache = designer_state.graphs_cache.write().await;
 
-            let inject_ret = inject_all_pkgs_for_mock(
-                &mut pkgs_cache,
-                &mut graphs_cache,
-                all_pkgs_json,
-            )
-            .await;
+            let inject_ret =
+                inject_all_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, all_pkgs_json).await;
             assert!(inject_ret.is_ok());
         }
 
         let graph_id_clone;
         {
             let graphs_cache = designer_state.graphs_cache.read().await;
-            let (graph_id, _) = graphs_cache_find_by_name(
-                &graphs_cache,
-                "default_with_app_uri",
-            )
-            .unwrap();
+            let (graph_id, _) =
+                graphs_cache_find_by_name(&graphs_cache, "default_with_app_uri").unwrap();
 
             graph_id_clone = *graph_id;
         }
@@ -589,10 +541,12 @@ mod tests {
         let designer_state = Arc::new(designer_state);
 
         let app = test::init_service(
-            App::new().app_data(web::Data::new(designer_state.clone())).route(
-                "/api/designer/v1/graphs/connections/msg_conversion/update",
-                web::post().to(update_graph_connection_msg_conversion_endpoint),
-            ),
+            App::new()
+                .app_data(web::Data::new(designer_state.clone()))
+                .route(
+                    "/api/designer/v1/graphs/connections/msg_conversion/update",
+                    web::post().to(update_graph_connection_msg_conversion_endpoint),
+                ),
         )
         .await;
 
@@ -639,17 +593,16 @@ mod tests {
         };
 
         // Now update the connection's message conversion.
-        let update_request_payload =
-            UpdateGraphConnectionMsgConversionRequestPayload {
-                graph_id: graph_id_clone,
-                src_app: Some("http://example.com:8000".to_string()),
-                src_extension: "extension_1".to_string(),
-                msg_type: MsgType::Cmd,
-                msg_name: "test_cmd_for_update".to_string(),
-                dest_app: Some("http://example.com:8000".to_string()),
-                dest_extension: "extension_2".to_string(),
-                msg_conversion: Some(updated_msg_conversion),
-            };
+        let update_request_payload = UpdateGraphConnectionMsgConversionRequestPayload {
+            graph_id: graph_id_clone,
+            src_app: Some("http://example.com:8000".to_string()),
+            src_extension: "extension_1".to_string(),
+            msg_type: MsgType::Cmd,
+            msg_name: "test_cmd_for_update".to_string(),
+            dest_app: Some("http://example.com:8000".to_string()),
+            dest_extension: "extension_2".to_string(),
+            msg_conversion: Some(updated_msg_conversion),
+        };
 
         let update_req = test::TestRequest::post()
             .uri("/api/designer/v1/graphs/connections/msg_conversion/update")
@@ -666,9 +619,8 @@ mod tests {
 
         assert!(status.is_success());
 
-        let response: ApiResponse<
-            UpdateGraphConnectionMsgConversionResponsePayload,
-        > = serde_json::from_str(body_str).unwrap();
+        let response: ApiResponse<UpdateGraphConnectionMsgConversionResponsePayload> =
+            serde_json::from_str(body_str).unwrap();
 
         assert!(response.data.success);
 
@@ -680,15 +632,13 @@ mod tests {
         );
 
         // Read the actual property.json file generated during the test.
-        let property_path =
-            std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
+        let property_path = std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
         let actual_property = std::fs::read_to_string(property_path).unwrap();
 
         // Normalize both JSON strings to handle formatting differences.
         let expected_value: serde_json::Value =
             serde_json::from_str(expected_property_json_str).unwrap();
-        let actual_value: serde_json::Value =
-            serde_json::from_str(&actual_property).unwrap();
+        let actual_value: serde_json::Value = serde_json::from_str(&actual_property).unwrap();
 
         // Compare the normalized JSON values.
         assert_eq!(
@@ -704,12 +654,8 @@ mod tests {
     #[actix_web::test]
     async fn test_update_graph_connection_msg_conversion_schema_failure_1() {
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -722,31 +668,30 @@ mod tests {
 
         // Load both the app package JSON and extension addon package JSONs.
         let app_manifest_json_str =
-            include_str!("../../../../../test_data/app_manifest.json")
-                .to_string();
+            include_str!("../../../../../test_data/app_manifest.json").to_string();
         let app_property_json_str =
-            include_str!("../../../../../test_data/app_property.json")
-                .to_string();
+            include_str!("../../../../../test_data/app_property.json").to_string();
 
         // Create the property.json file in the temporary directory.
-        let property_path =
-            std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
+        let property_path = std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
         std::fs::write(&property_path, &app_property_json_str).unwrap();
 
         // Create extension addon manifest strings
         let ext1_manifest_json_str =
-            include_str!("../../../../../test_data/extension_1_manifest.json")
-                .to_string();
+            include_str!("../../../../../test_data/extension_1_manifest.json").to_string();
 
         let ext2_manifest_json_str =
-            include_str!("../../../../../test_data/extension_2_manifest.json")
-                .to_string();
+            include_str!("../../../../../test_data/extension_2_manifest.json").to_string();
 
         // The empty property for addons.
         let empty_property = r#"{"ten":{}}"#.to_string();
 
         let all_pkgs_json = vec![
-            (test_dir.clone(), app_manifest_json_str, app_property_json_str),
+            (
+                test_dir.clone(),
+                app_manifest_json_str,
+                app_property_json_str,
+            ),
             (
                 format!(
                     "{}{}",
@@ -771,23 +716,16 @@ mod tests {
             let mut pkgs_cache = designer_state.pkgs_cache.write().await;
             let mut graphs_cache = designer_state.graphs_cache.write().await;
 
-            let inject_ret = inject_all_pkgs_for_mock(
-                &mut pkgs_cache,
-                &mut graphs_cache,
-                all_pkgs_json,
-            )
-            .await;
+            let inject_ret =
+                inject_all_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, all_pkgs_json).await;
             assert!(inject_ret.is_ok());
         }
 
         let graph_id_clone;
         {
             let graphs_cache = designer_state.graphs_cache.read().await;
-            let (graph_id, _) = graphs_cache_find_by_name(
-                &graphs_cache,
-                "default_with_app_uri",
-            )
-            .unwrap();
+            let (graph_id, _) =
+                graphs_cache_find_by_name(&graphs_cache, "default_with_app_uri").unwrap();
 
             graph_id_clone = *graph_id;
         }
@@ -803,8 +741,7 @@ mod tests {
                 )
                 .route(
                     "/api/designer/v1/graphs/connections/msg_conversion/update",
-                    web::post()
-                        .to(update_graph_connection_msg_conversion_endpoint),
+                    web::post().to(update_graph_connection_msg_conversion_endpoint),
                 ),
         )
         .await;
@@ -892,17 +829,16 @@ mod tests {
         };
 
         // Now update the connection's message conversion.
-        let update_request_payload =
-            UpdateGraphConnectionMsgConversionRequestPayload {
-                graph_id: graph_id_clone,
-                src_app: Some("http://example.com:8000".to_string()),
-                src_extension: "extension_1".to_string(),
-                msg_type: MsgType::Cmd,
-                msg_name: "test_cmd_for_update".to_string(),
-                dest_app: Some("http://example.com:8000".to_string()),
-                dest_extension: "extension_2".to_string(),
-                msg_conversion: Some(updated_msg_conversion),
-            };
+        let update_request_payload = UpdateGraphConnectionMsgConversionRequestPayload {
+            graph_id: graph_id_clone,
+            src_app: Some("http://example.com:8000".to_string()),
+            src_extension: "extension_1".to_string(),
+            msg_type: MsgType::Cmd,
+            msg_name: "test_cmd_for_update".to_string(),
+            dest_app: Some("http://example.com:8000".to_string()),
+            dest_extension: "extension_2".to_string(),
+            msg_conversion: Some(updated_msg_conversion),
+        };
 
         let update_req = test::TestRequest::post()
             .uri("/api/designer/v1/graphs/connections/msg_conversion/update")
@@ -923,12 +859,8 @@ mod tests {
     #[actix_web::test]
     async fn test_update_graph_connection_msg_conversion_schema_failure_2() {
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -941,31 +873,30 @@ mod tests {
 
         // Load both the app package JSON and extension addon package JSONs.
         let app_manifest_json_str =
-            include_str!("../../../../../test_data/app_manifest.json")
-                .to_string();
+            include_str!("../../../../../test_data/app_manifest.json").to_string();
         let app_property_json_str =
-            include_str!("../../../../../test_data/app_property.json")
-                .to_string();
+            include_str!("../../../../../test_data/app_property.json").to_string();
 
         // Create the property.json file in the temporary directory.
-        let property_path =
-            std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
+        let property_path = std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
         std::fs::write(&property_path, &app_property_json_str).unwrap();
 
         // Create extension addon manifest strings
         let ext1_manifest_json_str =
-            include_str!("../../../../../test_data/extension_1_manifest.json")
-                .to_string();
+            include_str!("../../../../../test_data/extension_1_manifest.json").to_string();
 
         let ext2_manifest_json_str =
-            include_str!("../../../../../test_data/extension_2_manifest.json")
-                .to_string();
+            include_str!("../../../../../test_data/extension_2_manifest.json").to_string();
 
         // The empty property for addons.
         let empty_property = r#"{"ten":{}}"#.to_string();
 
         let all_pkgs_json = vec![
-            (test_dir.clone(), app_manifest_json_str, app_property_json_str),
+            (
+                test_dir.clone(),
+                app_manifest_json_str,
+                app_property_json_str,
+            ),
             (
                 format!(
                     "{}{}",
@@ -990,23 +921,16 @@ mod tests {
             let mut pkgs_cache = designer_state.pkgs_cache.write().await;
             let mut graphs_cache = designer_state.graphs_cache.write().await;
 
-            let inject_ret = inject_all_pkgs_for_mock(
-                &mut pkgs_cache,
-                &mut graphs_cache,
-                all_pkgs_json,
-            )
-            .await;
+            let inject_ret =
+                inject_all_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, all_pkgs_json).await;
             assert!(inject_ret.is_ok());
         }
 
         let graph_id_clone;
         {
             let graphs_cache = designer_state.graphs_cache.read().await;
-            let (graph_id, _) = graphs_cache_find_by_name(
-                &graphs_cache,
-                "default_with_app_uri",
-            )
-            .unwrap();
+            let (graph_id, _) =
+                graphs_cache_find_by_name(&graphs_cache, "default_with_app_uri").unwrap();
 
             graph_id_clone = *graph_id;
         }
@@ -1022,8 +946,7 @@ mod tests {
                 )
                 .route(
                     "/api/designer/v1/graphs/connections/msg_conversion/update",
-                    web::post()
-                        .to(update_graph_connection_msg_conversion_endpoint),
+                    web::post().to(update_graph_connection_msg_conversion_endpoint),
                 ),
         )
         .await;
@@ -1117,17 +1040,16 @@ mod tests {
         };
 
         // Now update the connection's message conversion.
-        let update_request_payload =
-            UpdateGraphConnectionMsgConversionRequestPayload {
-                graph_id: graph_id_clone,
-                src_app: Some("http://example.com:8000".to_string()),
-                src_extension: "extension_1".to_string(),
-                msg_type: MsgType::Cmd,
-                msg_name: "test_cmd_for_update".to_string(),
-                dest_app: Some("http://example.com:8000".to_string()),
-                dest_extension: "extension_2".to_string(),
-                msg_conversion: Some(updated_msg_conversion),
-            };
+        let update_request_payload = UpdateGraphConnectionMsgConversionRequestPayload {
+            graph_id: graph_id_clone,
+            src_app: Some("http://example.com:8000".to_string()),
+            src_extension: "extension_1".to_string(),
+            msg_type: MsgType::Cmd,
+            msg_name: "test_cmd_for_update".to_string(),
+            dest_app: Some("http://example.com:8000".to_string()),
+            dest_extension: "extension_2".to_string(),
+            msg_conversion: Some(updated_msg_conversion),
+        };
 
         let update_req = test::TestRequest::post()
             .uri("/api/designer/v1/graphs/connections/msg_conversion/update")
@@ -1149,12 +1071,8 @@ mod tests {
     #[actix_web::test]
     async fn test_update_graph_connection_msg_conversion_schema_failure_3() {
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -1167,32 +1085,30 @@ mod tests {
 
         // Load both the app package JSON and extension addon package JSONs.
         let app_manifest_json_str =
-            include_str!("../../../../../test_data/app_manifest.json")
-                .to_string();
+            include_str!("../../../../../test_data/app_manifest.json").to_string();
         let app_property_json_str =
-            include_str!("../../../../../test_data/app_property_3.json")
-                .to_string();
+            include_str!("../../../../../test_data/app_property_3.json").to_string();
 
         // Create the property.json file in the temporary directory.
-        let property_path =
-            std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
+        let property_path = std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
         std::fs::write(&property_path, &app_property_json_str).unwrap();
 
         // Create extension addon manifest strings
         let ext1_manifest_json_str =
-            include_str!("../../../../../test_data/extension_1_manifest.json")
-                .to_string();
+            include_str!("../../../../../test_data/extension_1_manifest.json").to_string();
 
-        let ext2_manifest_json_str = include_str!(
-            "../../../../../test_data/extension_2_manifest_3.json"
-        )
-        .to_string();
+        let ext2_manifest_json_str =
+            include_str!("../../../../../test_data/extension_2_manifest_3.json").to_string();
 
         // The empty property for addons.
         let empty_property = r#"{"ten":{}}"#.to_string();
 
         let all_pkgs_json = vec![
-            (test_dir.clone(), app_manifest_json_str, app_property_json_str),
+            (
+                test_dir.clone(),
+                app_manifest_json_str,
+                app_property_json_str,
+            ),
             (
                 format!(
                     "{}{}",
@@ -1217,23 +1133,16 @@ mod tests {
             let mut pkgs_cache = designer_state.pkgs_cache.write().await;
             let mut graphs_cache = designer_state.graphs_cache.write().await;
 
-            let inject_ret = inject_all_pkgs_for_mock(
-                &mut pkgs_cache,
-                &mut graphs_cache,
-                all_pkgs_json,
-            )
-            .await;
+            let inject_ret =
+                inject_all_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, all_pkgs_json).await;
             assert!(inject_ret.is_ok());
         }
 
         let graph_id_clone;
         {
             let graphs_cache = designer_state.graphs_cache.read().await;
-            let (graph_id, _) = graphs_cache_find_by_name(
-                &graphs_cache,
-                "default_with_app_uri",
-            )
-            .unwrap();
+            let (graph_id, _) =
+                graphs_cache_find_by_name(&graphs_cache, "default_with_app_uri").unwrap();
 
             graph_id_clone = *graph_id;
         }
@@ -1241,10 +1150,12 @@ mod tests {
         let designer_state = Arc::new(designer_state);
 
         let app = test::init_service(
-            App::new().app_data(web::Data::new(designer_state.clone())).route(
-                "/api/designer/v1/graphs/connections/msg_conversion/update",
-                web::post().to(update_graph_connection_msg_conversion_endpoint),
-            ),
+            App::new()
+                .app_data(web::Data::new(designer_state.clone()))
+                .route(
+                    "/api/designer/v1/graphs/connections/msg_conversion/update",
+                    web::post().to(update_graph_connection_msg_conversion_endpoint),
+                ),
         )
         .await;
 
@@ -1291,17 +1202,16 @@ mod tests {
         };
 
         // Now update the connection's message conversion.
-        let update_request_payload =
-            UpdateGraphConnectionMsgConversionRequestPayload {
-                graph_id: graph_id_clone,
-                src_app: Some("http://example.com:8000".to_string()),
-                src_extension: "extension_1".to_string(),
-                msg_type: MsgType::Cmd,
-                msg_name: "test_cmd_for_update".to_string(),
-                dest_app: Some("http://example.com:8000".to_string()),
-                dest_extension: "extension_2".to_string(),
-                msg_conversion: Some(updated_msg_conversion),
-            };
+        let update_request_payload = UpdateGraphConnectionMsgConversionRequestPayload {
+            graph_id: graph_id_clone,
+            src_app: Some("http://example.com:8000".to_string()),
+            src_extension: "extension_1".to_string(),
+            msg_type: MsgType::Cmd,
+            msg_name: "test_cmd_for_update".to_string(),
+            dest_app: Some("http://example.com:8000".to_string()),
+            dest_extension: "extension_2".to_string(),
+            msg_conversion: Some(updated_msg_conversion),
+        };
 
         let update_req = test::TestRequest::post()
             .uri("/api/designer/v1/graphs/connections/msg_conversion/update")
@@ -1328,12 +1238,8 @@ mod tests {
     #[actix_web::test]
     async fn test_update_graph_connection_remove_msg_conversion() {
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -1346,33 +1252,30 @@ mod tests {
 
         // Load both the app package JSON and extension addon package JSONs.
         let app_manifest_json_str =
-            include_str!("../../../../../test_data/app_manifest.json")
-                .to_string();
+            include_str!("../../../../../test_data/app_manifest.json").to_string();
         let app_property_json_str =
-            include_str!("../../../../../test_data/app_property.json")
-                .to_string();
+            include_str!("../../../../../test_data/app_property.json").to_string();
 
         // Create the property.json file in the temporary directory.
-        let property_path =
-            std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
+        let property_path = std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
         std::fs::write(&property_path, &app_property_json_str).unwrap();
 
         // Create extension addon manifest strings.
-        let ext1_manifest = include_str!(
-            "../../../../../test_data/extension_1_simple_manifest.json"
-        )
-        .to_string();
+        let ext1_manifest =
+            include_str!("../../../../../test_data/extension_1_simple_manifest.json").to_string();
 
-        let ext2_manifest = include_str!(
-            "../../../../../test_data/extension_2_simple_manifest.json"
-        )
-        .to_string();
+        let ext2_manifest =
+            include_str!("../../../../../test_data/extension_2_simple_manifest.json").to_string();
 
         // The empty property for addons.
         let empty_property = r#"{"ten":{}}"#.to_string();
 
         let all_pkgs_json = vec![
-            (test_dir.clone(), app_manifest_json_str, app_property_json_str),
+            (
+                test_dir.clone(),
+                app_manifest_json_str,
+                app_property_json_str,
+            ),
             (
                 format!(
                     "{}{}",
@@ -1397,23 +1300,16 @@ mod tests {
             let mut pkgs_cache = designer_state.pkgs_cache.write().await;
             let mut graphs_cache = designer_state.graphs_cache.write().await;
 
-            let inject_ret = inject_all_pkgs_for_mock(
-                &mut pkgs_cache,
-                &mut graphs_cache,
-                all_pkgs_json,
-            )
-            .await;
+            let inject_ret =
+                inject_all_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, all_pkgs_json).await;
             assert!(inject_ret.is_ok());
         }
 
         let graph_id_clone;
         {
             let graphs_cache = designer_state.graphs_cache.read().await;
-            let (graph_id, _) = graphs_cache_find_by_name(
-                &graphs_cache,
-                "default_with_app_uri",
-            )
-            .unwrap();
+            let (graph_id, _) =
+                graphs_cache_find_by_name(&graphs_cache, "default_with_app_uri").unwrap();
 
             graph_id_clone = *graph_id;
         }
@@ -1457,8 +1353,7 @@ mod tests {
                 )
                 .route(
                     "/api/designer/v1/graphs/connections/msg_conversion/update",
-                    web::post()
-                        .to(update_graph_connection_msg_conversion_endpoint),
+                    web::post().to(update_graph_connection_msg_conversion_endpoint),
                 ),
         )
         .await;
@@ -1488,18 +1383,17 @@ mod tests {
         );
 
         // Now update the connection to remove the message conversion.
-        let update_request_payload =
-            UpdateGraphConnectionMsgConversionRequestPayload {
-                graph_id: graph_id_clone,
-                src_app: Some("http://example.com:8000".to_string()),
-                src_extension: "extension_1".to_string(),
-                msg_type: MsgType::Cmd,
-                msg_name: "test_cmd_remove_conversion".to_string(),
-                dest_app: Some("http://example.com:8000".to_string()),
-                dest_extension: "extension_2".to_string(),
-                // Set to None to remove the msg_conversion.
-                msg_conversion: None,
-            };
+        let update_request_payload = UpdateGraphConnectionMsgConversionRequestPayload {
+            graph_id: graph_id_clone,
+            src_app: Some("http://example.com:8000".to_string()),
+            src_extension: "extension_1".to_string(),
+            msg_type: MsgType::Cmd,
+            msg_name: "test_cmd_remove_conversion".to_string(),
+            dest_app: Some("http://example.com:8000".to_string()),
+            dest_extension: "extension_2".to_string(),
+            // Set to None to remove the msg_conversion.
+            msg_conversion: None,
+        };
 
         let update_req = test::TestRequest::post()
             .uri("/api/designer/v1/graphs/connections/msg_conversion/update")
@@ -1511,9 +1405,8 @@ mod tests {
 
         let body = test::read_body(update_resp).await;
         let body_str = std::str::from_utf8(&body).unwrap();
-        let response: ApiResponse<
-            UpdateGraphConnectionMsgConversionResponsePayload,
-        > = serde_json::from_str(body_str).unwrap();
+        let response: ApiResponse<UpdateGraphConnectionMsgConversionResponsePayload> =
+            serde_json::from_str(body_str).unwrap();
 
         assert!(response.data.success);
 
@@ -1525,15 +1418,13 @@ mod tests {
         );
 
         // Read the actual property.json file generated during the test
-        let property_path =
-            std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
+        let property_path = std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
         let actual_property = std::fs::read_to_string(property_path).unwrap();
 
         // Normalize both JSON strings to handle formatting differences.
         let expected_value: serde_json::Value =
             serde_json::from_str(expected_property_json_str).unwrap();
-        let actual_value: serde_json::Value =
-            serde_json::from_str(&actual_property).unwrap();
+        let actual_value: serde_json::Value = serde_json::from_str(&actual_property).unwrap();
 
         // Compare the normalized JSON values.
         assert_eq!(

@@ -20,8 +20,8 @@ use ten_rust::{
     },
     schema::store::{
         are_msg_schemas_compatible, are_ten_schemas_compatible,
-        create_c_schema_from_properties_and_required,
-        find_c_msg_schema_from_pkg_info, TenMsgSchema,
+        create_c_schema_from_properties_and_required, find_c_msg_schema_from_pkg_info,
+        TenMsgSchema,
     },
 };
 
@@ -47,9 +47,7 @@ fn validate_msg_conversion_c_schema_oneway(
     graph_app_base_dir: &Option<String>,
     msg_conversion_validate_info: &MsgConversionValidateInfo,
     pkgs_cache: &HashMap<String, PkgsInfoInApp>,
-    compared_schema_properties: &Option<
-        HashMap<String, ManifestApiPropertyAttributes>,
-    >,
+    compared_schema_properties: &Option<HashMap<String, ManifestApiPropertyAttributes>>,
     compared_schema_required: &Option<Vec<String>>,
     target_app: &Option<String>,
     target_extension_addon: &String,
@@ -58,28 +56,23 @@ fn validate_msg_conversion_c_schema_oneway(
 ) -> Result<()> {
     // Create a temporary ManifestApiProperty from the separate properties and
     // required
-    let temp_property = if compared_schema_properties.is_some()
-        || compared_schema_required.is_some()
-    {
-        Some(ManifestApiProperty {
-            properties: compared_schema_properties.clone(),
-            required: compared_schema_required.clone(),
-        })
-    } else {
-        None
-    };
+    let temp_property =
+        if compared_schema_properties.is_some() || compared_schema_required.is_some() {
+            Some(ManifestApiProperty {
+                properties: compared_schema_properties.clone(),
+                required: compared_schema_required.clone(),
+            })
+        } else {
+            None
+        };
 
-    if let Ok(compared_c_schema) =
-        create_c_schema_from_properties_and_required(&temp_property)
-    {
-        if let Some(target_extension_pkg_info) =
-            get_pkg_info_for_extension_addon(
-                pkgs_cache,
-                graph_app_base_dir,
-                target_app,
-                target_extension_addon,
-            )
-        {
+    if let Ok(compared_c_schema) = create_c_schema_from_properties_and_required(&temp_property) {
+        if let Some(target_extension_pkg_info) = get_pkg_info_for_extension_addon(
+            pkgs_cache,
+            graph_app_base_dir,
+            target_app,
+            target_extension_addon,
+        ) {
             if let Some(target_c_msg_schema) = find_c_msg_schema_from_pkg_info(
                 target_extension_pkg_info,
                 msg_conversion_validate_info.msg_type,
@@ -125,27 +118,31 @@ async fn validate_msg_conversion_schema<'a>(
 
     // Default to using `src_msg_name` as the `dest_msg_name`, but check if
     // there's a special rule for `ten.name` to determine the `dest_msg_name`.
-    let (dest_msg_name, ten_name_rule_index) =
-        msg_conversion_get_dest_msg_name(
-            msg_conversion_validate_info.msg_name,
-            msg_conversion_validate_info.msg_conversion.as_ref().unwrap(),
-        )?;
+    let (dest_msg_name, ten_name_rule_index) = msg_conversion_get_dest_msg_name(
+        msg_conversion_validate_info.msg_name,
+        msg_conversion_validate_info
+            .msg_conversion
+            .as_ref()
+            .unwrap(),
+    )?;
 
-    let (converted_schema, converted_result_schema) =
-        msg_conversion_get_final_target_schema(
-            graph_app_base_dir,
-            pkgs_cache,
-            msg_conversion_validate_info.src_app,
-            src_extension_addon_name,
-            msg_conversion_validate_info.dest_app,
-            dest_extension_addon_name,
-            msg_conversion_validate_info.msg_type,
-            msg_conversion_validate_info.msg_name,
-            &dest_msg_name,
-            ten_name_rule_index,
-            msg_conversion_validate_info.msg_conversion.as_ref().unwrap(),
-        )
-        .await?;
+    let (converted_schema, converted_result_schema) = msg_conversion_get_final_target_schema(
+        graph_app_base_dir,
+        pkgs_cache,
+        msg_conversion_validate_info.src_app,
+        src_extension_addon_name,
+        msg_conversion_validate_info.dest_app,
+        dest_extension_addon_name,
+        msg_conversion_validate_info.msg_type,
+        msg_conversion_validate_info.msg_name,
+        &dest_msg_name,
+        ten_name_rule_index,
+        msg_conversion_validate_info
+            .msg_conversion
+            .as_ref()
+            .unwrap(),
+    )
+    .await?;
 
     if let Some(converted_schema) = converted_schema {
         #[cfg(test)]
@@ -205,11 +202,7 @@ async fn validate_msg_conversion_schema<'a>(
         // No result conversion, so directly check if the original source result
         // schema and destination result schema are compatible.
         let (src_c_msg_schema, dest_c_msg_schema, error_message) =
-            get_src_and_dest_c_msg_schema(
-                pkgs_cache,
-                graph,
-                msg_conversion_validate_info,
-            )?;
+            get_src_and_dest_c_msg_schema(pkgs_cache, graph, msg_conversion_validate_info)?;
 
         if src_c_msg_schema.is_none() || dest_c_msg_schema.is_none() {
             return Ok(());
@@ -247,8 +240,7 @@ fn find_pkg_infos<'a>(
      -> Result<Option<&'a PkgInfo>> {
         let entity_type = if is_source { "Source" } else { "Destination" };
 
-        let Some((_, base_dir_pkg_info)) =
-            find_pkgs_cache_entry_by_app_uri(pkgs_cache, app_uri)
+        let Some((_, base_dir_pkg_info)) = find_pkgs_cache_entry_by_app_uri(pkgs_cache, app_uri)
         else {
             return Err(anyhow::anyhow!(
                 "{} app '{:?}' not found in the installed packages",
@@ -267,18 +259,12 @@ fn find_pkg_infos<'a>(
         }
 
         // Find extension in extension_pkg_info.
-        if let Some(extension_pkgs_info) =
-            &base_dir_pkg_info.extension_pkgs_info
-        {
-            let found_extension_pkg_info =
-                extension_pkgs_info.iter().find(|pkg| {
-                    assert!(
-                        pkg.manifest.type_and_name.pkg_type
-                            == PkgType::Extension
-                    );
+        if let Some(extension_pkgs_info) = &base_dir_pkg_info.extension_pkgs_info {
+            let found_extension_pkg_info = extension_pkgs_info.iter().find(|pkg| {
+                assert!(pkg.manifest.type_and_name.pkg_type == PkgType::Extension);
 
-                    pkg.manifest.type_and_name.name == extension_name
-                });
+                pkg.manifest.type_and_name.name == extension_name
+            });
 
             if found_extension_pkg_info.is_none() {
                 return Err(anyhow::anyhow!(
@@ -304,11 +290,9 @@ fn find_pkg_infos<'a>(
     };
 
     // Find both source and destination package info.
-    let src_extension_pkg_info =
-        find_extension_pkg(src_app, src_extension_addon_name, true)?;
+    let src_extension_pkg_info = find_extension_pkg(src_app, src_extension_addon_name, true)?;
 
-    let dest_extension_pkg_info =
-        find_extension_pkg(dest_app, dest_extension_addon_name, false)?;
+    let dest_extension_pkg_info = find_extension_pkg(dest_app, dest_extension_addon_name, false)?;
 
     Ok((src_extension_pkg_info, dest_extension_pkg_info))
 }
@@ -317,8 +301,11 @@ fn get_src_and_dest_c_msg_schema<'a>(
     pkgs_cache: &'a HashMap<String, PkgsInfoInApp>,
     graph: &mut Graph,
     msg_conversion_validate_info: &MsgConversionValidateInfo,
-) -> Result<(Option<&'a TenMsgSchema>, Option<&'a TenMsgSchema>, Option<String>)>
-{
+) -> Result<(
+    Option<&'a TenMsgSchema>,
+    Option<&'a TenMsgSchema>,
+    Option<String>,
+)> {
     let src_extension_addon = graph.get_addon_name_of_extension(
         msg_conversion_validate_info.src_app,
         msg_conversion_validate_info.src_extension,
@@ -345,99 +332,88 @@ fn get_src_and_dest_c_msg_schema<'a>(
     let dest_extension_pkg_info = dest_extension_pkg_info.unwrap();
 
     // Get source and destination schemas based on message type.
-    let (src_schema, dest_schema, error_message) =
-        match msg_conversion_validate_info.msg_type {
-            MsgType::Cmd => {
-                let src = src_extension_pkg_info
-                    .schema_store
-                    .as_ref()
-                    .and_then(|store| {
-                        store.cmd_out.get(msg_conversion_validate_info.msg_name)
-                    });
-                let dest = dest_extension_pkg_info
-                    .schema_store
-                    .as_ref()
-                    .and_then(|store| {
-                        store.cmd_in.get(msg_conversion_validate_info.msg_name)
-                    });
-                (
-                    src,
-                    dest,
-                    "Command schema incompatibility between source and \
+    let (src_schema, dest_schema, error_message) = match msg_conversion_validate_info.msg_type {
+        MsgType::Cmd => {
+            let src = src_extension_pkg_info
+                .schema_store
+                .as_ref()
+                .and_then(|store| store.cmd_out.get(msg_conversion_validate_info.msg_name));
+            let dest = dest_extension_pkg_info
+                .schema_store
+                .as_ref()
+                .and_then(|store| store.cmd_in.get(msg_conversion_validate_info.msg_name));
+            (
+                src,
+                dest,
+                "Command schema incompatibility between source and \
                      destination",
-                )
-            }
-            MsgType::Data => {
-                let src = src_extension_pkg_info
-                    .schema_store
-                    .as_ref()
-                    .and_then(|store| {
-                        store
-                            .data_out
-                            .get(msg_conversion_validate_info.msg_name)
-                    });
-                let dest = dest_extension_pkg_info
-                    .schema_store
-                    .as_ref()
-                    .and_then(|store| {
-                        store.data_in.get(msg_conversion_validate_info.msg_name)
-                    });
-                (
-                    src,
-                    dest,
-                    "Data schema incompatibility between source and \
+            )
+        }
+        MsgType::Data => {
+            let src = src_extension_pkg_info
+                .schema_store
+                .as_ref()
+                .and_then(|store| store.data_out.get(msg_conversion_validate_info.msg_name));
+            let dest = dest_extension_pkg_info
+                .schema_store
+                .as_ref()
+                .and_then(|store| store.data_in.get(msg_conversion_validate_info.msg_name));
+            (
+                src,
+                dest,
+                "Data schema incompatibility between source and \
                      destination",
-                )
-            }
-            MsgType::AudioFrame => {
-                let src = src_extension_pkg_info
-                    .schema_store
-                    .as_ref()
-                    .and_then(|store| {
-                        store
-                            .audio_frame_out
-                            .get(msg_conversion_validate_info.msg_name)
-                    });
-                let dest = dest_extension_pkg_info
-                    .schema_store
-                    .as_ref()
-                    .and_then(|store| {
-                        store
-                            .audio_frame_in
-                            .get(msg_conversion_validate_info.msg_name)
-                    });
-                (
-                    src,
-                    dest,
-                    "Audio frame schema incompatibility between source and \
+            )
+        }
+        MsgType::AudioFrame => {
+            let src = src_extension_pkg_info
+                .schema_store
+                .as_ref()
+                .and_then(|store| {
+                    store
+                        .audio_frame_out
+                        .get(msg_conversion_validate_info.msg_name)
+                });
+            let dest = dest_extension_pkg_info
+                .schema_store
+                .as_ref()
+                .and_then(|store| {
+                    store
+                        .audio_frame_in
+                        .get(msg_conversion_validate_info.msg_name)
+                });
+            (
+                src,
+                dest,
+                "Audio frame schema incompatibility between source and \
                      destination",
-                )
-            }
-            MsgType::VideoFrame => {
-                let src = src_extension_pkg_info
-                    .schema_store
-                    .as_ref()
-                    .and_then(|store| {
-                        store
-                            .video_frame_out
-                            .get(msg_conversion_validate_info.msg_name)
-                    });
-                let dest = dest_extension_pkg_info
-                    .schema_store
-                    .as_ref()
-                    .and_then(|store| {
-                        store
-                            .video_frame_in
-                            .get(msg_conversion_validate_info.msg_name)
-                    });
-                (
-                    src,
-                    dest,
-                    "Video frame schema incompatibility between source and \
+            )
+        }
+        MsgType::VideoFrame => {
+            let src = src_extension_pkg_info
+                .schema_store
+                .as_ref()
+                .and_then(|store| {
+                    store
+                        .video_frame_out
+                        .get(msg_conversion_validate_info.msg_name)
+                });
+            let dest = dest_extension_pkg_info
+                .schema_store
+                .as_ref()
+                .and_then(|store| {
+                    store
+                        .video_frame_in
+                        .get(msg_conversion_validate_info.msg_name)
+                });
+            (
+                src,
+                dest,
+                "Video frame schema incompatibility between source and \
                      destination",
-                )
-            }
-        };
+            )
+        }
+    };
 
     Ok((src_schema, dest_schema, Some(error_message.to_string())))
 }
@@ -449,23 +425,14 @@ fn check_schema_compatibility(
     msg_conversion_validate_info: &MsgConversionValidateInfo,
 ) -> Result<()> {
     let (src_c_msg_schema, dest_c_msg_schema, error_message) =
-        get_src_and_dest_c_msg_schema(
-            pkgs_cache,
-            graph,
-            msg_conversion_validate_info,
-        )?;
+        get_src_and_dest_c_msg_schema(pkgs_cache, graph, msg_conversion_validate_info)?;
 
     if src_c_msg_schema.is_none() || dest_c_msg_schema.is_none() {
         return Ok(());
     }
 
     // Check schema compatibility.
-    if let Err(err) = are_msg_schemas_compatible(
-        src_c_msg_schema,
-        dest_c_msg_schema,
-        true,
-        true,
-    ) {
+    if let Err(err) = are_msg_schemas_compatible(src_c_msg_schema, dest_c_msg_schema, true, true) {
         assert!(error_message.is_some());
         return Err(anyhow::anyhow!("{}: {}", error_message.unwrap(), err));
     }
@@ -488,11 +455,7 @@ pub async fn validate_connection_schema(
         )
         .await?;
     } else {
-        check_schema_compatibility(
-            pkgs_cache,
-            graph,
-            msg_conversion_validate_info,
-        )?;
+        check_schema_compatibility(pkgs_cache, graph, msg_conversion_validate_info)?;
     }
 
     Ok(())

@@ -66,7 +66,11 @@ impl PtyManager {
 
         let writer = pty_pair.master.take_writer().unwrap();
 
-        Self { pty_pair, writer, child: Some(child) }
+        Self {
+            pty_pair,
+            writer,
+            child: Some(child),
+        }
     }
 
     pub fn start(&mut self) -> std::sync::mpsc::Receiver<PtyMessage> {
@@ -78,14 +82,10 @@ impl PtyManager {
             let tx_clone = tx.clone();
             std::thread::spawn(move || {
                 let status = child.wait().unwrap();
-                println!(
-                    "The terminal process exited: {}",
-                    status.exit_code() as i32
-                );
+                println!("The terminal process exited: {}", status.exit_code() as i32);
 
                 // Send Exit message after the child process exited.
-                let _ =
-                    tx_clone.send(PtyMessage::Exit(status.exit_code() as i32));
+                let _ = tx_clone.send(PtyMessage::Exit(status.exit_code() as i32));
             });
         }
 
@@ -120,7 +120,11 @@ impl PtyManager {
     pub fn resize_pty(&self, cols: u16, rows: u16) -> Result<(), ()> {
         self.pty_pair
             .master
-            .resize(PtySize { rows, cols, ..Default::default() })
+            .resize(PtySize {
+                rows,
+                cols,
+                ..Default::default()
+            })
             .map_err(|_| ())
     }
 }

@@ -17,9 +17,7 @@ use crate::{
 };
 
 /// Used to parse a pattern like `aaa@3.0.0` and return `aaa` and `3.0.0`.
-pub fn parse_pkg_name_version_req(
-    pkg_name_version: &str,
-) -> Result<(String, VersionReq)> {
+pub fn parse_pkg_name_version_req(pkg_name_version: &str) -> Result<(String, VersionReq)> {
     let parts: Vec<&str> = pkg_name_version.split('@').collect();
     if parts.len() == 2 {
         // Currently, tman uses the Rust semver crate, while the cloud store
@@ -71,8 +69,7 @@ pub async fn check_update() -> Result<(bool, String), String> {
         .await
         .map_err(|e| {
             if e.is_timeout() {
-                "Check for updates timed out. Please try again later."
-                    .to_string()
+                "Check for updates timed out. Please try again later.".to_string()
             } else {
                 format!("Failed to check for updates: {e}")
             }
@@ -89,17 +86,18 @@ pub async fn check_update() -> Result<(bool, String), String> {
         .json()
         .await
         .map_err(|e| format!("Failed to parse update information: {e}"))?;
-    let latest_version =
-        json.get("tag_name").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let latest_version = json
+        .get("tag_name")
+        .and_then(|v| v.as_str())
+        .unwrap_or("")
+        .to_string();
 
     if latest_version.is_empty() {
         return Err("Failed to get the latest version information.".to_string());
     }
 
-    let current_version =
-        Version::parse(VERSION).unwrap_or(Version::new(0, 0, 0));
-    let latest_semver =
-        Version::parse(&latest_version).unwrap_or(Version::new(0, 0, 0));
+    let current_version = Version::parse(VERSION).unwrap_or(Version::new(0, 0, 0));
+    let latest_semver = Version::parse(&latest_version).unwrap_or(Version::new(0, 0, 0));
 
     Ok((latest_semver > current_version, latest_version))
 }

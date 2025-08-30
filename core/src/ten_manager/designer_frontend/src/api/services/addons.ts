@@ -28,9 +28,9 @@ export const retrieveAddons = async (payload: {
 };
 
 export const useFetchAddons = (payload: {
-  base_dir?: string;
-  addon_name?: string;
-  addon_type?: string;
+  base_dir?: string | null;
+  addon_name?: string | null;
+  addon_type?: string | null;
 }) => {
   const queryClient = getTanstackQueryClient();
   const queryKey = ["addons", ENDPOINT_METHOD.POST, payload];

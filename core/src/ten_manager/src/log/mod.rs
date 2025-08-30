@@ -99,8 +99,7 @@ pub fn parse_log_line(
         }
 
         // Extract the JSON content after "[graph resources]".
-        let json_content =
-            log_message.split("[graph resources]").nth(1)?.trim();
+        let json_content = log_message.split("[graph resources]").nth(1)?.trim();
 
         // Parse the JSON content.
         let json_value: Value = match serde_json::from_str(json_content) {
@@ -124,9 +123,7 @@ pub fn parse_log_line(
         if let Some(extension_threads) = json_value.get("extension_threads") {
             if let Some(extension_threads_obj) = extension_threads.as_object() {
                 for (thread_id, thread_info) in extension_threads_obj {
-                    if let Some(extensions_array) =
-                        thread_info.get("extensions")
-                    {
+                    if let Some(extensions_array) = thread_info.get("extensions") {
                         if let Some(extensions) = extensions_array.as_array() {
                             let mut extension_names = Vec::new();
                             for ext in extensions {
@@ -168,8 +165,7 @@ pub fn parse_log_line(
     // Extract the process ID and thread ID.
     // Format expected: "processID(threadID)".
     let process_thread_part = parts[2];
-    if !process_thread_part.contains('(') || !process_thread_part.contains(')')
-    {
+    if !process_thread_part.contains('(') || !process_thread_part.contains(')') {
         return None;
     }
 
@@ -179,7 +175,10 @@ pub fn parse_log_line(
         .trim_end_matches(')'); // Remove the trailing ')'.
 
     // Check if the thread ID exists in graph_resources_log.extension_threads.
-    if !graph_resources_log.extension_threads.contains_key(thread_id) {
+    if !graph_resources_log
+        .extension_threads
+        .contains_key(thread_id)
+    {
         return None;
     }
 
@@ -206,9 +205,7 @@ pub fn parse_log_line(
 
         // Check if extension_name exists in the extension_threads for the given
         // thread_id.
-        if let Some(thread_info) =
-            graph_resources_log.extension_threads.get(thread_id)
-        {
+        if let Some(thread_info) = graph_resources_log.extension_threads.get(thread_id) {
             if thread_info.extensions.contains(&extracted_name.to_string()) {
                 Some(extracted_name.to_string())
             } else {

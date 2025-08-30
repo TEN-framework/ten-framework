@@ -54,9 +54,8 @@ pub fn store_file_to_package_cache(
         .join(name)
         .join(version.to_string());
 
-    fs::create_dir_all(&pkg_dir).with_context(|| {
-        format!("Failed to create cache dir {}", pkg_dir.display())
-    })?;
+    fs::create_dir_all(&pkg_dir)
+        .with_context(|| format!("Failed to create cache dir {}", pkg_dir.display()))?;
 
     let dest_path = pkg_dir.join(file_name);
 

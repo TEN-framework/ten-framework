@@ -17,10 +17,7 @@ use fs_extra::dir::CopyOptions;
 use ten_rust::pkg_info::constants::MANIFEST_JSON_FILENAME;
 use ten_rust::pkg_info::pkg_type::PkgType;
 
-pub fn copy_folder_recursively(
-    src_dir_path: &String,
-    dest_dir_path: &String,
-) -> Result<()> {
+pub fn copy_folder_recursively(src_dir_path: &String, dest_dir_path: &String) -> Result<()> {
     let mut options = CopyOptions::new();
 
     // Copy the contents inside the directory.
@@ -52,8 +49,7 @@ pub fn pathbuf_to_string_lossy(path_buf: &Path) -> String {
 
 /// Check if the directory specified by `path` is an app directory.
 pub async fn check_is_app_folder(path: &Path) -> Result<()> {
-    let manifest =
-        ten_rust::pkg_info::manifest::parse_manifest_in_folder(path).await?;
+    let manifest = ten_rust::pkg_info::manifest::parse_manifest_in_folder(path).await?;
     if manifest.type_and_name.pkg_type != PkgType::App {
         return Err(anyhow!("The `type` in manifest.json is not `app`."));
     }
@@ -81,10 +77,7 @@ pub async fn find_nearest_app_dir(mut start_dir: PathBuf) -> Result<PathBuf> {
         if manifest_path.exists() {
             // If it can be parsed correctly and `type=app`, return it directly.
             let manifest =
-                ten_rust::pkg_info::manifest::parse_manifest_in_folder(
-                    &start_dir,
-                )
-                .await?;
+                ten_rust::pkg_info::manifest::parse_manifest_in_folder(&start_dir).await?;
             if manifest.type_and_name.pkg_type == PkgType::App {
                 return Ok(start_dir);
             }

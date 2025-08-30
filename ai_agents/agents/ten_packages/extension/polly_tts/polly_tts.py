@@ -6,10 +6,14 @@ from contextlib import closing
 from typing import AsyncIterator, Iterator
 
 import boto3
+from botocore.config import Config
 from botocore.exceptions import ClientError
 from pydantic import BaseModel, ConfigDict, Field
 
-from .utils import encrypting_serializer
+try:
+    from .utils import encrypting_serializer
+except ImportError:
+    from utils import encrypting_serializer
 
 
 class PollyTTSParams(BaseModel):
@@ -82,10 +86,10 @@ class PollyTTS:
     def __init__(
         self,
         params: PollyTTSParams,
-        thread_pool_size: int = 2,
-        timeout: float = 30.0,
+        thread_pool_size: int = 1,
+        timeout: float = 5.0,
         max_retries: int = 3,
-        retry_delay: float = 1.0,
+        retry_delay: float = 0.1,
         chunk_interval_ms: int = 50,
     ) -> None:
         self.params = params
@@ -101,7 +105,9 @@ class PollyTTS:
         self.retry_delay = retry_delay
 
         self.session = boto3.Session(**params.to_session_params())
-        self.client = self.session.client("polly")
+        self.client = self.session.client(
+            "polly", config=Config(tcp_keepalive=True)
+        )
 
     def __enter__(self):
         return self
@@ -255,6 +261,7 @@ class PollyTTS:
 
 if __name__ == "__main__":
     import os
+    import time
 
     aws_access_key_id = os.getenv("AWS_TTS_ACCESS_KEY_ID", "")
     aws_secret_access_key = os.getenv("AWS_TTS_SECRET_ACCESS_KEY", "")
@@ -273,14 +280,30 @@ if __name__ == "__main__":
     with PollyTTS(params) as polly:
 
         async def main():
-            print("test basic async speech synthesis:")
-            async for chunk in polly.async_synthesize_speech(" "):
-                print(f"received audio chunk: {len(chunk)} bytes")
-            print("basic async speech synthesis done")
+            # pre connect to aws polly
+            async for chunk in polly.async_synthesize_speech("P"):
+                ...
 
-            # print("\ntest speech synthesis with retry mechanism:")
-            # async for chunk in polly.async_synthesize_speech_with_retry("Hello world!"):
-            #     print(f"received audio chunk: {len(chunk)} bytes")
-            # print("speech synthesis with retry mechanism done")
+            t = time.time()
+            print("test speech synthesis:")
+            async for chunk in polly.async_synthesize_speech_with_retry(
+                "Hello world!"
+            ):
+                print(
+                    f"received audio chunk delay: {time.time() - t} seconds, chunk: {len(chunk)} bytes"
+                )
+            print("speech synthesis done")
+
+            await asyncio.sleep(30)
+
+            t = time.time()
+            print("\nsecond test speech synthesis:")
+            async for chunk in polly.async_synthesize_speech_with_retry(
+                "Hello world!"
+            ):
+                print(
+                    f"received audio chunk delay: {time.time() - t} seconds, chunk: {len(chunk)} bytes"
+                )
+            print("second speech synthesis done")
 
         asyncio.run(main())

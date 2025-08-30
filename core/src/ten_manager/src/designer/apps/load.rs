@@ -55,13 +55,11 @@ pub async fn load_app_endpoint(
             )
             .await
             {
-                let error_response =
-                    ErrorResponse::from_error(&err, "Error fetching packages:");
+                let error_response = ErrorResponse::from_error(&err, "Error fetching packages:");
                 return Ok(HttpResponse::NotFound().json(error_response));
             }
 
-            let app_uri =
-                extract_app_uri(&pkgs_cache, &request_payload.base_dir);
+            let app_uri = extract_app_uri(&pkgs_cache, &request_payload.base_dir);
             Ok(HttpResponse::Ok().json(ApiResponse {
                 status: Status::Ok,
                 data: LoadAppResponseData { app_uri },
@@ -71,18 +69,14 @@ pub async fn load_app_endpoint(
         Err(err) => {
             let error_response = ErrorResponse::from_error(
                 &err,
-                format!("{} is not an app folder: ", &request_payload.base_dir)
-                    .as_str(),
+                format!("{} is not an app folder: ", &request_payload.base_dir).as_str(),
             );
             Ok(HttpResponse::NotFound().json(error_response))
         }
     }
 }
 
-fn extract_app_uri(
-    pkgs_cache: &HashMap<String, PkgsInfoInApp>,
-    base_dir: &str,
-) -> Option<String> {
+fn extract_app_uri(pkgs_cache: &HashMap<String, PkgsInfoInApp>, base_dir: &str) -> Option<String> {
     pkgs_cache.get(base_dir).and_then(|base_dir_pkg_info| {
         // Check the app package first.
         if let Some(app_pkg) = &base_dir_pkg_info.app_pkg_info {

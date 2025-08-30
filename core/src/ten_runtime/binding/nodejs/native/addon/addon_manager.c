@@ -6,6 +6,8 @@
 //
 #include "include_internal/ten_runtime/addon/addon_manager.h"
 
+#include "include_internal/ten_runtime/addon/common/common.h"
+#include "include_internal/ten_runtime/app/app.h"
 #include "include_internal/ten_runtime/binding/nodejs/addon/addon.h"
 #include "include_internal/ten_runtime/binding/nodejs/addon/addon_manager.h"
 #include "include_internal/ten_runtime/binding/nodejs/common/common.h"
@@ -17,28 +19,32 @@
 
 typedef struct addon_manager_register_single_addon_ctx_t {
   ten_nodejs_addon_manager_t *addon_manager_bridge;
-  ten_string_t *addon_name;
+  ten_addon_registration_t *registration;
   void *register_ctx;
-  ten_event_t *completed;
 
   // These fields will be set on the JS main thread.
   ten_addon_t *c_addon;
   ten_nodejs_addon_t *addon_bridge;
+  ten_addon_registration_done_func_t done_callback;
+
+  void *user_data;
 } addon_manager_register_single_addon_ctx_t;
 
 static addon_manager_register_single_addon_ctx_t *
 addon_manager_register_single_addon_ctx_create(
-    ten_nodejs_addon_manager_t *addon_manager_bridge, ten_string_t *addon_name,
-    void *register_ctx) {
+    ten_nodejs_addon_manager_t *addon_manager_bridge,
+    ten_addon_registration_t *registration,
+    ten_addon_register_ctx_t *register_ctx,
+    ten_addon_registration_done_func_t done_callback, void *user_data) {
   addon_manager_register_single_addon_ctx_t *ctx =
       TEN_MALLOC(sizeof(addon_manager_register_single_addon_ctx_t));
   TEN_ASSERT(ctx, "Failed to allocate memory.");
 
   ctx->addon_manager_bridge = addon_manager_bridge;
-  ctx->addon_name = addon_name;
+  ctx->registration = registration;
   ctx->register_ctx = register_ctx;
-  ctx->completed = ten_event_create(0, 1);
-
+  ctx->done_callback = done_callback;
+  ctx->user_data = user_data;
   ctx->c_addon = NULL;
   ctx->addon_bridge = NULL;
 
@@ -49,7 +55,6 @@ static void addon_manager_register_single_addon_ctx_destroy(
     addon_manager_register_single_addon_ctx_t *ctx) {
   TEN_ASSERT(ctx, "Should not happen.");
 
-  ten_event_destroy(ctx->completed);
   TEN_FREE(ctx);
 }
 
@@ -102,6 +107,48 @@ static bool ten_nodejs_addon_manager_check_integrity(
   return true;
 }
 
+static void ten_app_thread_call_addon_registration_done(void *from,
+                                                        void *args) {
+  ten_app_t *app = (ten_app_t *)from;
+  TEN_ASSERT(app, "Should not happen.");
+  TEN_ASSERT(ten_app_check_integrity(app, true), "Should not happen.");
+
+  addon_manager_register_single_addon_ctx_t *ctx =
+      (addon_manager_register_single_addon_ctx_t *)args;
+  TEN_ASSERT(ctx, "Should not happen.");
+
+  TEN_ASSERT(ctx->done_callback, "Should not happen.");
+
+  // Check if the addon has already been registered.
+  bool is_registered = ten_addon_is_registered(
+      ctx->register_ctx, ctx->registration->addon_type,
+      ten_string_get_raw_str(&ctx->registration->addon_name));
+  if (is_registered) {
+    TEN_LOGI("Addon '%s' has already been registered, skipping registration.",
+             ten_string_get_raw_str(&ctx->registration->addon_name));
+    ctx->done_callback(ctx->register_ctx, ctx->user_data);
+    addon_manager_register_single_addon_ctx_destroy(ctx);
+    return;
+  }
+
+  ten_addon_t *addon_instance = ctx->c_addon;
+  TEN_ASSERT(addon_instance, "Should not happen.");
+
+  ten_nodejs_addon_t *addon_bridge = ctx->addon_bridge;
+  TEN_ASSERT(addon_bridge, "Should not happen.");
+
+  ten_addon_host_t *c_addon_host = ten_addon_register_extension(
+      ten_string_get_raw_str(&ctx->registration->addon_name), NULL,
+      addon_instance, ctx->register_ctx);
+  TEN_ASSERT(c_addon_host, "ten_addon_register_extension() failed.");
+
+  addon_bridge->c_addon_host = c_addon_host;
+
+  ctx->done_callback(ctx->register_ctx, ctx->user_data);
+
+  addon_manager_register_single_addon_ctx_destroy(ctx);
+}
+
 static void invoke_addon_manager_js_register_single_addon(
     napi_env env, napi_value fn, TEN_UNUSED void *context, void *data) {
   addon_manager_register_single_addon_ctx_t *ctx = data;
@@ -131,8 +178,8 @@ static void invoke_addon_manager_js_register_single_addon(
 
     napi_value js_addon_name = NULL;
     status = napi_create_string_utf8(
-        env, ten_string_get_raw_str(ctx->addon_name),
-        ten_string_len(ctx->addon_name), &js_addon_name);
+        env, ten_string_get_raw_str(&ctx->registration->addon_name),
+        ten_string_len(&ctx->registration->addon_name), &js_addon_name);
     GOTO_LABEL_IF_NAPI_FAIL(error, status == napi_ok && js_addon_name != NULL,
                             "Failed to create JS addon name: %d", status);
 
@@ -153,8 +200,20 @@ static void invoke_addon_manager_js_register_single_addon(
 error:
   TEN_LOGE("Failed to call JS addon manager registerSingleAddon()");
 
-done:
-  ten_event_set(ctx->completed);
+done: {
+  // Switch to the app thread and call the done callback.
+  ten_addon_register_ctx_t *register_ctx = ctx->register_ctx;
+  TEN_ASSERT(register_ctx, "Should not happen.");
+
+  ten_app_t *app = register_ctx->app;
+  TEN_ASSERT(app, "Should not happen.");
+  TEN_ASSERT(ten_app_check_integrity(app, false), "Should not happen.");
+
+  int rc = ten_runloop_post_task_tail(
+      ten_app_get_attached_runloop(app),
+      ten_app_thread_call_addon_registration_done, app, ctx);
+  TEN_ASSERT(!rc, "Failed to post task to the app thread.");
+}
 }
 
 static void ten_nodejs_addon_manager_create_and_attach_callbacks(
@@ -332,12 +391,13 @@ static napi_value ten_nodejs_addon_manager_register_addon_as_extension(
   return js_undefined(env);
 }
 
-static void ten_nodejs_addon_register_func(TEN_UNUSED TEN_ADDON_TYPE addon_type,
-                                           ten_string_t *addon_name,
-                                           void *register_ctx_,
-                                           void *user_data) {
-  ten_addon_register_ctx_t *register_ctx = register_ctx_;
-  TEN_ASSERT(register_ctx, "Should not happen.");
+static void ten_nodejs_addon_register_func(
+    ten_addon_registration_t *registration,
+    ten_addon_registration_done_func_t done_callback,
+    ten_addon_register_ctx_t *register_ctx, void *user_data) {
+  TEN_ASSERT(registration, "Invalid argument.");
+  TEN_ASSERT(done_callback, "Invalid argument.");
+  TEN_ASSERT(register_ctx, "Invalid argument.");
 
   ten_app_t *app = register_ctx->app;
   TEN_ASSERT(app, "Should not happen.");
@@ -345,7 +405,7 @@ static void ten_nodejs_addon_register_func(TEN_UNUSED TEN_ADDON_TYPE addon_type,
 
   // Call the static JS function AddonManager._register_single_addon from the
   // app thread other than the JS main thread.
-  ten_nodejs_addon_manager_t *addon_manager_bridge = user_data;
+  ten_nodejs_addon_manager_t *addon_manager_bridge = registration->context;
   TEN_ASSERT(
       addon_manager_bridge && ten_nodejs_addon_manager_check_integrity(
                                   addon_manager_bridge,
@@ -357,40 +417,13 @@ static void ten_nodejs_addon_register_func(TEN_UNUSED TEN_ADDON_TYPE addon_type,
 
   addon_manager_register_single_addon_ctx_t *ctx =
       addon_manager_register_single_addon_ctx_create(addon_manager_bridge,
-                                                     addon_name, register_ctx);
+                                                     registration, register_ctx,
+                                                     done_callback, user_data);
   TEN_ASSERT(ctx, "Should not happen.");
 
   bool rc = ten_nodejs_tsfn_invoke(
       addon_manager_bridge->js_register_single_addon, ctx);
   TEN_ASSERT(rc, "Failed to invoke JS addon manager registerSingleAddon().");
-
-  // Currently, addon register phase 1 and phase 2 are both synchronous, and
-  // C++/Go/Python addon registrations can be completed synchronously. However,
-  // Node.js addon registration needs to switch to the JS main thread to execute
-  // (Node.js limitation), so we need to wait for the JS main thread to complete
-  // the actions required for phase 2 before continuing.
-  //
-  // TODO(xilin): This event wait can be removed in the future by making the
-  // `ten_addon_register` function asynchronous (i.e., making phase 2
-  // asynchronous). Currently, we need to wait for the JS thread to complete the
-  // registration before proceeding.
-  ten_event_wait(ctx->completed, -1);
-
-  ten_addon_t *addon_instance = ctx->c_addon;
-  TEN_ASSERT(addon_instance, "Should not happen.");
-
-  ten_nodejs_addon_t *addon_bridge = ctx->addon_bridge;
-  TEN_ASSERT(addon_bridge, "Should not happen.");
-
-  ten_addon_host_t *c_addon_host = ten_addon_register_extension(
-      ten_string_get_raw_str(addon_name), NULL, addon_instance, register_ctx);
-  TEN_ASSERT(c_addon_host, "ten_addon_register_extension() failed.");
-
-  addon_bridge->c_addon_host = c_addon_host;
-
-  TEN_LOGD("JS addon manager registerSingleAddon() completed");
-
-  addon_manager_register_single_addon_ctx_destroy(ctx);
 }
 
 static napi_value ten_nodejs_addon_manager_add_extension_addon(

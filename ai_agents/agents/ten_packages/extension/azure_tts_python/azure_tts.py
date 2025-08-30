@@ -19,7 +19,7 @@ class AzureTTSParams(BaseModel):
     """
 
     # pass to speechsdk.SpeechConfig
-    subscription: str | None = None
+    subscription: str
     region: str | None = None
     endpoint: str | None = None
     host: str | None = None
@@ -368,10 +368,13 @@ if __name__ == "__main__":
     tts.sync_start_connection(pre_connect=True)
     print("start synthesize")
     f = open("test.pcm", "wb")
+    t = time.time()
     for chunk in tts.sync_synthesize("I'm excited to be here today!"):
         _len = len(chunk)
         f.write(chunk)
-        print(f"received {_len} bytes: {chunk[:10]}...")
+        print(
+            f"received {_len} bytes delay: {time.time() - t}: {chunk[:10]}..."
+        )
     f.close()
     tts.sync_stop_connection()
 
@@ -381,10 +384,13 @@ if __name__ == "__main__":
     async def test_async():
         tts = AzureTTS(params)
         await tts.start_connection(pre_connect=True)
+        t = time.time()
         print("start synthesize")
         async for chunk in await tts.synthesize_with_retry("Hello, world!"):
             _len = len(chunk)
-            print(f"received {_len} bytes: {chunk[:10]}...")
+            print(
+                f"received {_len} bytes delay: {time.time() - t}s: {chunk[:10]}..."
+            )
         await tts.stop_connection()
 
     asyncio.run(test_async())
