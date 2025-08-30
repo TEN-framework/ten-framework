@@ -39,7 +39,7 @@ copy_package() {
 
     # package .py for python extensions
     # TODO: package 'publish' contents only
-    # cp ten_packages/${package_type}/${package_name}/*.py .release/ten_packages/${package_type}/${package_name}/ | true
+    cp ten_packages/${package_type}/${package_name}/*.py .release/ten_packages/${package_type}/${package_name}/ | true
     if [[ -f ten_packages/${package_type}/${package_name}/requirements.txt ]]; then
         cp -rf ten_packages/${package_type}/${package_name}/requirements.txt .release/ten_packages/${package_type}/${package_name}/
         # TODO: workaround
