@@ -87,7 +87,7 @@ export const apiUpdateDocument = async (options: { channel: string, collection: 
 }
 
 
-// ping/pong 
+// ping/pong
 export const apiPing = async (channel: string) => {
   // the request will be rewrite at middleware.tsx to send to $AGENT_SERVER_URL
   const url = `/api/agents/ping`
@@ -127,7 +127,7 @@ export const apiFetchGraphs = async (): Promise<Graph[]> => {
     let resp: any = await axios.post(`/api/dev/v1/graphs`, {})
     return resp.data.data.map((graph: any) => ({
       name: graph.name,
-      uuid: graph.uuid,
+      graph_id: graph.graph_id,
       autoStart: graph.auto_start,
       nodes: [],
       connections: [],
@@ -136,7 +136,7 @@ export const apiFetchGraphs = async (): Promise<Graph[]> => {
     let resp: any = await axios.get(`/api/agents/graphs`)
     return resp.data.data.map((graph: any) => ({
       name: graph.name,
-      uuid: graph.uuid,
+      graph_id: graph.graph_id,
       autoStart: graph.auto_start,
       nodes: [],
       connections: [],
@@ -471,11 +471,11 @@ export const apiFetchInstalledAddons = async (): Promise<AddonDef.Module[]> => {
 
 export const apiFetchGraphDetails = async (graph: Graph): Promise<Graph> => {
   const [nodes, connections] = await Promise.all([
-    apiFetchGraphNodes(graph.uuid),
-    apiFetchGraphConnections(graph.uuid),
+    apiFetchGraphNodes(graph.graph_id),
+    apiFetchGraphConnections(graph.graph_id),
   ])
   return {
-    uuid: graph.uuid,
+    graph_id: graph.graph_id,
     name: graph.name,
     autoStart: graph.autoStart,
     nodes,

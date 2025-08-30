@@ -215,7 +215,7 @@ export function RemoteModuleCfgSheet() {
                                 if (needUpdate) {
                                     await updateGraph(selectedGraph, selectedGraphCopy);
                                     toast.success("Modules updated", {
-                                        description: `Graph: ${selectedGraphCopy.uuid}`,
+                                        description: `Graph: ${selectedGraphCopy.graph_id}`,
                                     });
                                 }
                             } catch (e: any) {

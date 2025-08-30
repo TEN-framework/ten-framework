@@ -26,7 +26,7 @@ export function RemoteGraphSelect() {
 
   const graphOptions = graphs.map((item) => ({
     label: item.name,
-    value: item.uuid,
+    value: item.graph_id,
   }))
 
   return (
