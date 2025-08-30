@@ -57,14 +57,25 @@
             {
               "type": "extension",
               "name": "tts",
-              "addon": "bytedance_tts_duplex",
+              "addon": "azure_tts_python",
               "extension_group": "tts",
               "property": {
-                "appid": "${env:BYTEDANCE_TTS_APPID}",
-                "token": "${env:BYTEDANCE_TTS_TOKEN}",
-                "sample_rate": 24000,
-                "voice_type": "zh_female_shuangkuaisisi_moon_bigtts",
-                "api_url": "wss://openspeech.bytedance.com/api/v3/tts/bidirection"
+                "params": {
+                  "subscription": "${env:AZURE_TTS_API_KEY}",
+                  "region": "${env:AZURE_TTS_REGION}",
+                  "speech_recognition_language": "en-US",
+                  "output_format": "Raw16Khz16BitMonoPcm",
+                  "propertys": [
+                    [
+                      "Speech_LogFilename",
+                      "azure_tts_log.txt"
+                    ],
+                    [
+                      "SpeechServiceConnection_SynthVoice",
+                      "en-US-AriaNeural"
+                    ]
+                  ]
+                }
               }
             },
             {
@@ -240,14 +251,25 @@
             {
               "type": "extension",
               "name": "tts",
-              "addon": "bytedance_tts_duplex",
+              "addon": "azure_tts_python",
               "extension_group": "tts",
               "property": {
-                "appid": "${env:BYTEDANCE_TTS_APPID}",
-                "token": "${env:BYTEDANCE_TTS_TOKEN}",
-                "sample_rate": 24000,
-                "voice_type": "zh_female_shuangkuaisisi_moon_bigtts",
-                "api_url": "wss://openspeech.bytedance.com/api/v3/tts/bidirection"
+                "params": {
+                  "subscription": "${env:AZURE_TTS_API_KEY}",
+                  "region": "${env:AZURE_TTS_REGION}",
+                  "speech_recognition_language": "en-US",
+                  "output_format": "Raw16Khz16BitMonoPcm",
+                  "propertys": [
+                    [
+                      "Speech_LogFilename",
+                      "azure_tts_log.txt"
+                    ],
+                    [
+                      "SpeechServiceConnection_SynthVoice",
+                      "en-US-AriaNeural"
+                    ]
+                  ]
+                }
               }
             },
             {
@@ -422,14 +444,25 @@
             {
               "type": "extension",
               "name": "tts",
-              "addon": "bytedance_tts_duplex",
+              "addon": "azure_tts_python",
               "extension_group": "tts",
               "property": {
-                "appid": "${env:BYTEDANCE_TTS_APPID}",
-                "token": "${env:BYTEDANCE_TTS_TOKEN}",
-                "sample_rate": 24000,
-                "voice_type": "zh_female_shuangkuaisisi_moon_bigtts",
-                "api_url": "wss://openspeech.bytedance.com/api/v3/tts/bidirection"
+                "params": {
+                  "subscription": "${env:AZURE_TTS_API_KEY}",
+                  "region": "${env:AZURE_TTS_REGION}",
+                  "speech_recognition_language": "en-US",
+                  "output_format": "Raw16Khz16BitMonoPcm",
+                  "propertys": [
+                    [
+                      "Speech_LogFilename",
+                      "azure_tts_log.txt"
+                    ],
+                    [
+                      "SpeechServiceConnection_SynthVoice",
+                      "en-US-AriaNeural"
+                    ]
+                  ]
+                }
               }
             },
             {
@@ -605,14 +638,25 @@
             {
               "type": "extension",
               "name": "tts",
-              "addon": "bytedance_tts_duplex",
+              "addon": "azure_tts_python",
               "extension_group": "tts",
               "property": {
-                "appid": "${env:BYTEDANCE_TTS_APPID}",
-                "token": "${env:BYTEDANCE_TTS_TOKEN}",
-                "sample_rate": 24000,
-                "voice_type": "zh_female_shuangkuaisisi_moon_bigtts",
-                "api_url": "wss://openspeech.bytedance.com/api/v3/tts/bidirection"
+                "params": {
+                  "subscription": "${env:AZURE_TTS_API_KEY}",
+                  "region": "${env:AZURE_TTS_REGION}",
+                  "speech_recognition_language": "en-US",
+                  "output_format": "Raw16Khz16BitMonoPcm",
+                  "propertys": [
+                    [
+                      "Speech_LogFilename",
+                      "azure_tts_log.txt"
+                    ],
+                    [
+                      "SpeechServiceConnection_SynthVoice",
+                      "en-US-AriaNeural"
+                    ]
+                  ]
+                }
               }
             },
             {
@@ -1429,8 +1473,8 @@
               "extension_group": "stt",
               "property": {
                 "params": {
-                  "key": "${env:AZURE_STT_KEY}",
-                  "region": "${env:AZURE_STT_REGION}"
+                  "key": "${env:AZURE_STT_KEY|}",
+                  "region": "${env:AZURE_STT_REGION|}"
                 }
               }
             },
@@ -1454,14 +1498,25 @@
             {
               "type": "extension",
               "name": "tts",
-              "addon": "bytedance_tts_duplex",
+              "addon": "azure_tts_python",
               "extension_group": "tts",
               "property": {
-                "appid": "${env:BYTEDANCE_TTS_APPID}",
-                "token": "${env:BYTEDANCE_TTS_TOKEN}",
-                "sample_rate": 24000,
-                "voice_type": "zh_female_shuangkuaisisi_moon_bigtts",
-                "api_url": "wss://openspeech.bytedance.com/api/v3/tts/bidirection"
+                "params": {
+                  "subscription": "${env:AZURE_TTS_API_KEY}",
+                  "region": "${env:AZURE_TTS_REGION}",
+                  "speech_recognition_language": "en-US",
+                  "output_format": "Raw16Khz16BitMonoPcm",
+                  "propertys": [
+                    [
+                      "Speech_LogFilename",
+                      "azure_tts_log.txt"
+                    ],
+                    [
+                      "SpeechServiceConnection_SynthVoice",
+                      "en-US-AriaNeural"
+                    ]
+                  ]
+                }
               }
             },
             {
@@ -1633,14 +1688,25 @@
             {
               "type": "extension",
               "name": "tts",
-              "addon": "bytedance_tts_duplex",
+              "addon": "azure_tts_python",
               "extension_group": "tts",
               "property": {
-                "appid": "${env:BYTEDANCE_TTS_APPID}",
-                "token": "${env:BYTEDANCE_TTS_TOKEN}",
-                "sample_rate": 24000,
-                "voice_type": "zh_female_shuangkuaisisi_moon_bigtts",
-                "api_url": "wss://openspeech.bytedance.com/api/v3/tts/bidirection"
+                "params": {
+                  "subscription": "${env:AZURE_TTS_API_KEY}",
+                  "region": "${env:AZURE_TTS_REGION}",
+                  "speech_recognition_language": "en-US",
+                  "output_format": "Raw16Khz16BitMonoPcm",
+                  "propertys": [
+                    [
+                      "Speech_LogFilename",
+                      "azure_tts_log.txt"
+                    ],
+                    [
+                      "SpeechServiceConnection_SynthVoice",
+                      "en-US-AriaNeural"
+                    ]
+                  ]
+                }
               }
             },
             {
@@ -1812,14 +1878,25 @@
             {
               "type": "extension",
               "name": "tts",
-              "addon": "bytedance_tts_duplex",
+              "addon": "azure_tts_python",
               "extension_group": "tts",
               "property": {
-                "appid": "${env:BYTEDANCE_TTS_APPID}",
-                "token": "${env:BYTEDANCE_TTS_TOKEN}",
-                "sample_rate": 24000,
-                "voice_type": "zh_female_shuangkuaisisi_moon_bigtts",
-                "api_url": "wss://openspeech.bytedance.com/api/v3/tts/bidirection"
+                "params": {
+                  "subscription": "${env:AZURE_TTS_API_KEY}",
+                  "region": "${env:AZURE_TTS_REGION}",
+                  "speech_recognition_language": "en-US",
+                  "output_format": "Raw16Khz16BitMonoPcm",
+                  "propertys": [
+                    [
+                      "Speech_LogFilename",
+                      "azure_tts_log.txt"
+                    ],
+                    [
+                      "SpeechServiceConnection_SynthVoice",
+                      "en-US-AriaNeural"
+                    ]
+                  ]
+                }
               }
             },
             {
