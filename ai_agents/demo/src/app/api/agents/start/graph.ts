@@ -351,7 +351,9 @@ export const getGraphProperties = (
                 "voice_name": voiceNameMap[language]["azure"][voiceType],
                 "language": voiceNameMap[language]["azure"]["langCode"] || language,
                 "prompt": prompt,
-                "greeting": combined_greeting,
+            },
+            "main_control": {
+                "greeting": combined_greeting
             }
         }
     }
