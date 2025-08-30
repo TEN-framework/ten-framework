@@ -533,7 +533,7 @@ async fn create_input_str_for_pkg_info_dependencies(
                                 pkg_type,
                                 name,
                                 version_req,
-                            } => format!("[{pkg_type}]{name} ({version_req})"),
+                            } => format!("[{pkg_type}]{name} ({:?})", version_req.as_req()),
                             ManifestDependency::LocalDependency { path, .. } =>
                                 format!("local:{path}"),
                         }
@@ -547,7 +547,7 @@ async fn create_input_str_for_pkg_info_dependencies(
                             pkg_type,
                             name,
                             version_req,
-                        } => format!("{pkg_type}:{name} @ {version_req}"),
+                        } => format!("{pkg_type}:{name} @ {:?}", version_req.as_req()),
                         ManifestDependency::LocalDependency { path, .. } => format!("local:{path}"),
                     }
                 ));

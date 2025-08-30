@@ -18,11 +18,10 @@ use console::Emoji;
 use indicatif::HumanDuration;
 use inquire::Confirm;
 
-use semver::VersionReq;
 use ten_rust::pkg_info::{
     constants::{BUILD_GN_FILENAME, MANIFEST_JSON_FILENAME},
     manifest::support::ManifestSupport,
-    manifest::{dependency::ManifestDependency, parse_manifest_in_folder, Manifest},
+    manifest::{dependency::{ManifestDependency, TenVersion}, parse_manifest_in_folder, Manifest},
     pkg_basic_info::PkgBasicInfo,
 };
 use ten_rust::pkg_info::{
@@ -667,7 +666,6 @@ pub async fn execute_cmd(
                 local_version_str
             ));
         }
-        let installing_pkg_version_req = VersionReq::parse(&local_version_str)?;
 
         dep_relationship_from_cmd_line = Some(DependencyRelationship {
             type_and_name: PkgTypeAndName {
@@ -678,7 +676,7 @@ pub async fn execute_cmd(
             dependency: ManifestDependency::RegistryDependency {
                 pkg_type: installing_pkg_type.unwrap(),
                 name: installing_pkg_name.clone().unwrap(),
-                version_req: installing_pkg_version_req,
+                version_req: TenVersion::new(local_version_str.clone()).unwrap(),
             },
         });
 
@@ -699,8 +697,27 @@ pub async fn execute_cmd(
         // tman install <package_type> <package_name>
         let installing_pkg_type_: PkgType = package_type_str.parse()?;
 
-        let (installing_pkg_name_, installing_pkg_version_req_) =
+        let (installing_pkg_name_, _) =
             parse_pkg_name_version_req(command_data.package_name.as_ref().unwrap())?;
+
+        // get installing_pkg_version_req
+        let parts: Vec<&str> = command_data.package_name.as_ref().unwrap().split('@').collect();
+        let mut _installing_pkg_version_req = TenVersion::new("*".to_string()).unwrap();
+        if parts.len() == 2 {
+            if parts[1].contains("||")
+                || parts[1].chars().any(|c| c.is_whitespace())
+                || parts[1].contains(",")
+            {
+                return Err(anyhow!(
+                    "Invalid version requirement '{}' in package name version \
+                        string: contains forbidden characters (||, whitespace, or ,)",
+                    parts[1]
+                ));
+            }
+            _installing_pkg_version_req = TenVersion::new(parts[1].to_string()).unwrap();
+        } else {
+            _installing_pkg_version_req = TenVersion::new("*".to_string()).unwrap();
+        }
 
         installing_pkg_type = Some(installing_pkg_type_);
         installing_pkg_name = Some(installing_pkg_name_.clone());
@@ -714,7 +731,7 @@ pub async fn execute_cmd(
             dependency: ManifestDependency::RegistryDependency {
                 pkg_type: installing_pkg_type_,
                 name: installing_pkg_name_.clone(),
-                version_req: installing_pkg_version_req_.clone(),
+                version_req: _installing_pkg_version_req,
             },
         });
     }

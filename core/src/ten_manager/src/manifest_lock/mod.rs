@@ -13,12 +13,12 @@ use std::sync::Arc;
 
 use anyhow::{anyhow, Result};
 use console::Emoji;
-use semver::{Version, VersionReq};
+use semver::{Version};
 use serde::{Deserialize, Serialize};
 
 use ten_rust::json_schema::validate_manifest_lock_json_string;
 use ten_rust::pkg_info::constants::{MANIFEST_JSON_FILENAME, MANIFEST_LOCK_JSON_FILENAME};
-use ten_rust::pkg_info::manifest::dependency::ManifestDependency;
+use ten_rust::pkg_info::manifest::dependency::{ManifestDependency, TenVersion};
 use ten_rust::pkg_info::manifest::support::ManifestSupport;
 use ten_rust::pkg_info::manifest::Manifest;
 use ten_rust::pkg_info::pkg_basic_info::PkgBasicInfo;
@@ -362,7 +362,7 @@ impl<'a> From<&'a ManifestLockItem> for PkgInfo {
                         pkg_type,
                         name: dep.name,
                         // Default version requirement.
-                        version_req: VersionReq::parse("*").unwrap(),
+                        version_req: TenVersion::new("*".to_string()).unwrap(),
                     }
                 })
                 .collect()
@@ -387,41 +387,6 @@ impl<'a> From<&'a ManifestLockItem> for PkgInfo {
             api: None,
             package: None,
             scripts: None,
-            all_fields: {
-                let mut map = serde_json::Map::new();
-
-                // Add type and name.
-                map.insert(
-                    "type".to_string(),
-                    serde_json::Value::String(type_and_name.pkg_type.to_string()),
-                );
-                map.insert(
-                    "name".to_string(),
-                    serde_json::Value::String(type_and_name.name.clone()),
-                );
-
-                // Add version.
-                map.insert(
-                    "version".to_string(),
-                    serde_json::Value::String(locked_item.version.to_string()),
-                );
-
-                // Add dependencies if present.
-                if let Some(deps) = &dependencies_option {
-                    let deps_json =
-                        serde_json::to_value(deps).unwrap_or(serde_json::Value::Array(vec![]));
-                    map.insert("dependencies".to_string(), deps_json);
-                }
-
-                // Add supports if present.
-                if let Some(supports) = &locked_item.supports {
-                    let supports_json =
-                        serde_json::to_value(supports).unwrap_or(serde_json::Value::Array(vec![]));
-                    map.insert("supports".to_string(), supports_json);
-                }
-
-                map
-            },
             flattened_api: Arc::new(tokio::sync::RwLock::new(None)),
         };
 

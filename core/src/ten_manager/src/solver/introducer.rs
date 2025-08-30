@@ -60,10 +60,13 @@ pub fn extract_introducer_relations_from_raw_solver_results(
                     // The `version` declared in the `dependencies` section in
                     // manifest.json is always present.
                     requested_version_str = match requested_dep_in_introducer {
-                        ManifestDependency::RegistryDependency { version_req, .. } => {
-                            version_req.to_string()
+                        ManifestDependency::RegistryDependency {
+                            version_req,
+                            ..
+                        } => version_req.as_req().to_string(),
+                        ManifestDependency::LocalDependency { .. } => {
+                            version_str.to_string()
                         }
-                        ManifestDependency::LocalDependency { .. } => version_str.to_string(),
                     };
                 } else {
                     return Err(anyhow::anyhow!(
@@ -103,7 +106,7 @@ pub fn get_dependency_chain(
         .unwrap();
 
     let version_req_str = match requested_dep_in_introducer {
-        ManifestDependency::RegistryDependency { version_req, .. } => version_req.to_string(),
+        ManifestDependency::RegistryDependency { version_req, .. } => version_req.as_req().to_string(),
         ManifestDependency::LocalDependency { .. } => {
             // Use wildcard for local deps.
             "*".to_string()

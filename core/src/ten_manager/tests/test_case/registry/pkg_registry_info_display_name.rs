@@ -348,29 +348,5 @@ mod tests {
                 .unwrap(),
             "Extension de Test"
         );
-
-        // Check that display_name is properly added to all_fields
-        let all_fields = &pkg_info.manifest.all_fields;
-        assert!(all_fields.contains_key("display_name"));
-
-        let display_name_value = &all_fields["display_name"];
-        assert!(display_name_value.is_object());
-        let display_name_obj = display_name_value.as_object().unwrap();
-        assert!(display_name_obj.contains_key("locales"));
-        let locales_obj = display_name_obj
-            .get("locales")
-            .unwrap()
-            .as_object()
-            .unwrap();
-        let en_obj = locales_obj.get("en-US").unwrap().as_object().unwrap();
-        assert_eq!(
-            en_obj.get("content").unwrap().as_str().unwrap(),
-            "Test Extension"
-        );
-        let fr_obj = locales_obj.get("fr").unwrap().as_object().unwrap();
-        assert_eq!(
-            fr_obj.get("content").unwrap().as_str().unwrap(),
-            "Extension de Test"
-        );
     }
 }
