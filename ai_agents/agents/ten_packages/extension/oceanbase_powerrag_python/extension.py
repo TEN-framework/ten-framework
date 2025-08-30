@@ -174,6 +174,7 @@ class OceanBaseChatClient:
             yield LLMResponseMessageDelta(
                 response_id=response_id,
                 role="assistant",
+                delta=self.cfg.failure_info or "PowerRAG request failed.",
                 content=self.cfg.failure_info
                 or "PowerRAG request failed with exception.",
                 created=err_ms,
@@ -181,7 +182,6 @@ class OceanBaseChatClient:
             yield LLMResponseMessageDone(
                 response_id=response_id,
                 created=err_ms,
-                error=str(e),
                 role="assistant",
             )
             return
