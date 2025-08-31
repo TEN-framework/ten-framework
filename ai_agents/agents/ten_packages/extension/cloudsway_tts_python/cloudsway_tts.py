@@ -1,11 +1,10 @@
 import asyncio
 from dataclasses import dataclass
 import aiohttp
-import json
 from datetime import datetime
 from typing import AsyncIterator
 
-from ten.async_ten_env import AsyncTenEnv
+from ten_runtime.async_ten_env import AsyncTenEnv
 from ten_ai_base.config import BaseConfig
 
 
@@ -17,6 +16,7 @@ class CloudswayTTSConfig(BaseConfig):
     sample_rate: int = 32000
     url: str = "http://0.0.0.0:9880/tts/stream"
     language: str = "en"
+
 
 class CloudswayTTS:
     def __init__(self, config: CloudswayTTSConfig):
@@ -44,7 +44,7 @@ class CloudswayTTS:
 
         start_time = datetime.now()
         ten_env.log_info(f"Start request, url: {self.config.url}, text: {text}")
-        ttfb = None
+        # ttfb = None
 
         async with aiohttp.ClientSession() as session:
             try:
