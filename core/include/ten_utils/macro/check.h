@@ -64,17 +64,20 @@
                    "%" PRId64 "(%" PRId64 ") %s@%s:%d " fmt, pid, tid, \
                    __func__, __FILE__, __LINE__, ##__VA_ARGS__);       \
       if (written < 0) {                                               \
+        free(____err_msg);                                             \
         /* NOLINTNEXTLINE */                                           \
         assert(0);                                                     \
       }                                                                \
       written = fprintf(stderr, "%s\n", ____err_msg);                  \
       if (written < 0) {                                               \
+        free(____err_msg);                                             \
         /* NOLINTNEXTLINE */                                           \
         assert(0);                                                     \
       }                                                                \
       ten_backtrace_dump_global(0);                                    \
       /* Wait for a short period to allow backtrace to be written. */  \
       ten_sleep_ms(200);                                               \
+      free(____err_msg);                                               \
       /* NOLINTNEXTLINE */                                             \
       assert(0);                                                       \
     }                                                                  \
@@ -102,15 +105,18 @@
                    "%" PRId64 "(%" PRId64 ") %s@%s:%d " fmt, pid, tid, \
                    __func__, __FILE__, __LINE__, ##__VA_ARGS__);       \
       if (written < 0) {                                               \
+        free(____err_msg);                                             \
         abort();                                                       \
       }                                                                \
       written = fprintf(stderr, "%s\n", ____err_msg);                  \
       if (written < 0) {                                               \
+        free(____err_msg);                                             \
         abort();                                                       \
       }                                                                \
       ten_backtrace_dump_global(0);                                    \
       /* Wait for a short period to allow backtrace to be written. */  \
       ten_sleep_ms(200);                                               \
+      free(____err_msg);                                               \
       /* NOLINTNEXTLINE */                                             \
       abort();                                                         \
     }                                                                  \
