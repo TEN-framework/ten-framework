@@ -9,10 +9,11 @@ use std::sync::Arc;
 use actix_web::{web, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
 
-use crate::designer::response::{ApiResponse, Status};
-use crate::designer::DesignerState;
-
 use super::save_config_to_file;
+use crate::designer::{
+    response::{ApiResponse, Status},
+    DesignerState,
+};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GetLogviewerLineSizeResponseData {

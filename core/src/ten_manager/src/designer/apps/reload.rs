@@ -6,6 +6,9 @@
 //
 use std::sync::Arc;
 
+use actix_web::{web, HttpResponse, Responder};
+use serde::{Deserialize, Serialize};
+
 use crate::{
     designer::{
         response::{ApiResponse, ErrorResponse, Status},
@@ -14,8 +17,6 @@ use crate::{
     graph::graphs_cache_remove_by_app_base_dir,
     pkg_info::get_all_pkgs::get_all_pkgs_in_app,
 };
-use actix_web::{web, HttpResponse, Responder};
-use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
 pub struct ReloadPkgsRequestPayload {
@@ -52,12 +53,8 @@ pub async fn reload_app_endpoint(
 
         // Reload packages for this base_dir.
         if let Err(err) = get_all_pkgs_in_app(&mut pkgs_cache, &mut graphs_cache, base_dir).await {
-            return Ok(
-                HttpResponse::InternalServerError().json(ErrorResponse::from_error(
-                    &err,
-                    "Failed to reload packages:",
-                )),
-            );
+            return Ok(HttpResponse::InternalServerError()
+                .json(ErrorResponse::from_error(&err, "Failed to reload packages:")));
         }
     } else {
         // Case 2: base_dir is not specified, reload all apps.
@@ -85,12 +82,8 @@ pub async fn reload_app_endpoint(
             if let Err(err) =
                 get_all_pkgs_in_app(&mut pkgs_cache, &mut graphs_cache, &base_dir).await
             {
-                return Ok(
-                    HttpResponse::InternalServerError().json(ErrorResponse::from_error(
-                        &err,
-                        "Failed to reload packages:",
-                    )),
-                );
+                return Ok(HttpResponse::InternalServerError()
+                    .json(ErrorResponse::from_error(&err, "Failed to reload packages:")));
             }
         }
     }

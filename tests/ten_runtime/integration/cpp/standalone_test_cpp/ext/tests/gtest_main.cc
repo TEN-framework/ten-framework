@@ -18,6 +18,37 @@ class fake_app_t : public ten::app_t {
   }
 
   void on_configure(ten::ten_env_t &ten_env) override {
+    bool rc = ten_env.init_property_from_json(
+        // clang-format off
+      R"({
+           "ten": {
+             "log": {
+               "handlers": [
+                 {
+                   "matchers": [
+                     {
+                       "level": "debug"
+                     }
+                   ],
+                   "formatter": {
+                     "type": "plain",
+                     "colored": true
+                   },
+                   "emitter": {
+                     "type": "console",
+                     "config": {
+                       "stream": "stdout"
+                     }
+                   }
+                 }
+               ]
+             }
+           }
+         })",
+        // clang-format on
+        nullptr);
+    TEN_ASSERT(rc, "Failed to init default log config.");
+
     ten_env.on_configure_done();
   }
 

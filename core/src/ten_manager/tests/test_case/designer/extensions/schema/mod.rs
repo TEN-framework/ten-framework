@@ -52,10 +52,7 @@ mod tests {
         let app = test::init_service(
             App::new()
                 .app_data(web::Data::new(designer_state.clone()))
-                .route(
-                    "/test_get_extension_schema",
-                    web::post().to(get_extension_schema_endpoint),
-                ),
+                .route("/test_get_extension_schema", web::post().to(get_extension_schema_endpoint)),
         )
         .await;
 
@@ -119,15 +116,12 @@ mod tests {
         let designer_state = Arc::new(designer_state);
 
         // Set up the test service.
-        let app = test::init_service(
-            App::new()
-                .app_data(web::Data::new(designer_state.clone()))
-                .route(
-                    "/test_get_extension_schema_not_found",
-                    web::post().to(get_extension_schema_endpoint),
-                ),
-        )
-        .await;
+        let app =
+            test::init_service(App::new().app_data(web::Data::new(designer_state.clone())).route(
+                "/test_get_extension_schema_not_found",
+                web::post().to(get_extension_schema_endpoint),
+            ))
+            .await;
 
         // Create request payload for a non-existent extension.
         let req = test::TestRequest::post()
@@ -160,15 +154,12 @@ mod tests {
         let designer_state = Arc::new(designer_state);
 
         // Set up the test service.
-        let app = test::init_service(
-            App::new()
-                .app_data(web::Data::new(designer_state.clone()))
-                .route(
-                    "/test_get_extension_schema_app_not_found",
-                    web::post().to(get_extension_schema_endpoint),
-                ),
-        )
-        .await;
+        let app =
+            test::init_service(App::new().app_data(web::Data::new(designer_state.clone())).route(
+                "/test_get_extension_schema_app_not_found",
+                web::post().to(get_extension_schema_endpoint),
+            ))
+            .await;
 
         // Create request payload for a non-existent app.
         let req = test::TestRequest::post()
@@ -211,20 +202,15 @@ mod tests {
             .await;
         }
 
-        let app = test::init_service(
-            App::new()
-                .app_data(web::Data::new(designer_state.clone()))
-                .route(
-                    "/test_get_extension_schema_with_not_found_interface",
-                    web::post().to(get_extension_schema_endpoint),
-                ),
-        )
-        .await;
+        let app =
+            test::init_service(App::new().app_data(web::Data::new(designer_state.clone())).route(
+                "/test_get_extension_schema_with_not_found_interface",
+                web::post().to(get_extension_schema_endpoint),
+            ))
+            .await;
 
         let request_payload = GetExtensionSchemaRequestPayload {
-            app_base_dir: "tests/test_data/\
-                           extension_interface_reference_not_found"
-                .to_string(),
+            app_base_dir: "tests/test_data/extension_interface_reference_not_found".to_string(),
             addon_name: "ext_a".to_string(),
         };
 
@@ -266,20 +252,15 @@ mod tests {
             .await;
         }
 
-        let app = test::init_service(
-            App::new()
-                .app_data(web::Data::new(designer_state.clone()))
-                .route(
-                    "/test_get_extension_schema_with_invalid_interface",
-                    web::post().to(get_extension_schema_endpoint),
-                ),
-        )
-        .await;
+        let app =
+            test::init_service(App::new().app_data(web::Data::new(designer_state.clone())).route(
+                "/test_get_extension_schema_with_invalid_interface",
+                web::post().to(get_extension_schema_endpoint),
+            ))
+            .await;
 
         let request_payload = GetExtensionSchemaRequestPayload {
-            app_base_dir: "tests/test_data/\
-                           extension_interface_reference_invalid"
-                .to_string(),
+            app_base_dir: "tests/test_data/extension_interface_reference_invalid".to_string(),
             addon_name: "ext_a".to_string(),
         };
 

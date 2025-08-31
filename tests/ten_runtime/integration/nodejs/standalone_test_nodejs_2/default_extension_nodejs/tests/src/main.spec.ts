@@ -20,6 +20,24 @@ class FakeApp extends App {
     });
   }
 
+  async onConfigure(tenEnv: TenEnv): Promise<void> {
+    tenEnv.initPropertyFromJson(
+      JSON.stringify({
+        ten: {
+          log: {
+            handlers: [
+              {
+                matchers: [{ level: "debug" }],
+                formatter: { type: "plain", colored: true },
+                emitter: { type: "console", config: { stream: "stdout" } },
+              }
+            ],
+          },
+        },
+      })
+    );
+  }
+
   async onInit(_tenEnv: TenEnv): Promise<void> {
     console.log("Default App onInit");
     if (this.resolveInit) {

@@ -6,16 +6,17 @@
 //
 mod pty_manager;
 
-use std::collections::HashMap;
-use std::fmt::Display;
-use std::sync::{Arc, Mutex};
+use std::{
+    collections::HashMap,
+    fmt::Display,
+    sync::{Arc, Mutex},
+};
 
 use actix::{Actor, AsyncContext, Message, StreamHandler};
 use actix_web::{web, Error, HttpRequest, HttpResponse};
 use actix_web_actors::ws;
-use serde::__private::from_utf8_lossy;
-
 use pty_manager::PtyManager;
+use serde::__private::from_utf8_lossy;
 use serde_json::Value;
 
 // The message to/from the pty.
@@ -143,16 +144,14 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsProcessor {
                                 ) {
                                     let cols = cols as u16;
                                     let rows = rows as u16;
-                                    self.pty
-                                        .lock()
-                                        .unwrap()
-                                        .resize_pty(cols, rows)
-                                        .unwrap_or_else(|_| {
+                                    self.pty.lock().unwrap().resize_pty(cols, rows).unwrap_or_else(
+                                        |_| {
                                             println!(
-                                                "Failed to resize PTY to \
-                                                 cols: {cols}, rows: {rows}"
+                                                "Failed to resize PTY to cols: {cols}, rows: \
+                                                 {rows}"
                                             )
-                                        });
+                                        },
+                                    );
                                 }
                             }
                             _ => {
@@ -162,13 +161,9 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsProcessor {
                     } else {
                         // If it's not a control message, treat it as user
                         // input.
-                        self.pty
-                            .lock()
-                            .unwrap()
-                            .write_to_pty(&text)
-                            .unwrap_or_else(|_| {
-                                println!("Failed to write to PTY with data: {text}")
-                            });
+                        self.pty.lock().unwrap().write_to_pty(&text).unwrap_or_else(|_| {
+                            println!("Failed to write to PTY with data: {text}")
+                        });
                     }
                 } else {
                     // If it's not JSON, treat it as user input.
@@ -191,13 +186,9 @@ pub async fn ws_terminal_endpoint(
 ) -> Result<HttpResponse, Error> {
     // Extract 'path' from query parameters.
     let query = req.query_string();
-    let params: HashMap<_, _> = url::form_urlencoded::parse(query.as_bytes())
-        .into_owned()
-        .collect();
-    let path = params
-        .get("path")
-        .cloned()
-        .unwrap_or_else(|| "".to_string());
+    let params: HashMap<_, _> =
+        url::form_urlencoded::parse(query.as_bytes()).into_owned().collect();
+    let path = params.get("path").cloned().unwrap_or_else(|| "".to_string());
 
     ws::start(WsProcessor::new(path), &req, stream)
 }

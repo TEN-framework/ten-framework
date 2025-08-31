@@ -50,7 +50,7 @@ static bool ten_engine_del_weak_remote(ten_engine_t *self,
 
   bool success = ten_list_remove_ptr(&self->weak_remotes, remote);
 
-  TEN_LOGV("[%s] Delete remote %p from weak list: %s",
+  TEN_LOGD("[%s] Delete remote %p from weak list: %s",
            ten_engine_get_id(self, true), remote,
            success ? "success." : "failed.");
 
@@ -85,7 +85,7 @@ static size_t ten_engine_weak_remotes_cnt_in_specified_uri(ten_engine_t *self,
   size_t cnt = ten_list_find_ptr_cnt_custom(&self->weak_remotes, uri,
                                             ten_remote_is_uri_equal_to);
 
-  TEN_LOGV("[%s] weak remote cnt for %s: %zu", ten_engine_get_id(self, true),
+  TEN_LOGD("[%s] weak remote cnt for %s: %zu", ten_engine_get_id(self, true),
            uri, cnt);
 
   return cnt;

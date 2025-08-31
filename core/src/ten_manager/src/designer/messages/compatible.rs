@@ -9,8 +9,6 @@ use std::sync::Arc;
 use actix_web::{web, HttpResponse, Responder};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
-
 use ten_rust::{
     graph::node::{ExtensionNode, GraphNode},
     pkg_info::{
@@ -18,6 +16,7 @@ use ten_rust::{
         message::{MsgDirection, MsgType},
     },
 };
+use uuid::Uuid;
 
 use crate::{
     designer::{
@@ -75,7 +74,9 @@ pub struct GetCompatibleMsgsSingleResponseData {
 impl From<CompatibleExtensionAndMsg<'_>> for GetCompatibleMsgsSingleResponseData {
     fn from(compatible: CompatibleExtensionAndMsg) -> Self {
         match compatible.extension {
-            GraphNode::Extension { content } => GetCompatibleMsgsSingleResponseData {
+            GraphNode::Extension {
+                content,
+            } => GetCompatibleMsgsSingleResponseData {
                 app: content.app.clone(),
                 extension_group: content.extension_group.clone(),
                 extension: content.name.clone(),
@@ -95,7 +96,10 @@ fn get_extension_graph_node<'a>(
     extension_name: &str,
 ) -> Result<&'a ExtensionNode> {
     for extension in extension_graph_nodes {
-        if let GraphNode::Extension { content } = extension {
+        if let GraphNode::Extension {
+            content,
+        } = extension
+        {
             if content.name == extension_name
                 && content.extension_group.as_ref() == extension_group.as_ref()
                 && content.app == *app
@@ -163,11 +167,8 @@ pub async fn get_compatible_messages_endpoint(
                 Err(err) => {
                     let error_response = ErrorResponse::from_error(
                         &err,
-                        format!(
-                            "Failed to find the extension: {}",
-                            request_payload.extension
-                        )
-                        .as_str(),
+                        format!("Failed to find the extension: {}", request_payload.extension)
+                            .as_str(),
                     );
 
                     return Ok(HttpResponse::NotFound().json(error_response));
@@ -189,17 +190,16 @@ pub async fn get_compatible_messages_endpoint(
                 let compatible_list = match msg_ty {
                     MsgType::Cmd => {
                         let src_cmd_schema =
-                            extension_pkg_info
-                                .schema_store
-                                .as_ref()
-                                .and_then(|schema_store| match msg_dir {
+                            extension_pkg_info.schema_store.as_ref().and_then(|schema_store| {
+                                match msg_dir {
                                     MsgDirection::In => {
                                         schema_store.cmd_in.get(request_payload.msg_name.as_str())
                                     }
                                     MsgDirection::Out => {
                                         schema_store.cmd_out.get(request_payload.msg_name.as_str())
                                     }
-                                });
+                                }
+                            });
 
                         match get_compatible_msg_extension(
                             extension_graph_nodes,
@@ -226,10 +226,8 @@ pub async fn get_compatible_messages_endpoint(
                     }
                     _ => {
                         let src_msg_schema =
-                            extension_pkg_info
-                                .schema_store
-                                .as_ref()
-                                .and_then(|schema_store| match msg_ty {
+                            extension_pkg_info.schema_store.as_ref().and_then(|schema_store| {
+                                match msg_ty {
                                     MsgType::Data => match msg_dir {
                                         MsgDirection::In => schema_store
                                             .data_in
@@ -255,7 +253,8 @@ pub async fn get_compatible_messages_endpoint(
                                             .get(request_payload.msg_name.as_str()),
                                     },
                                     _ => panic!("should not happen."),
-                                });
+                                }
+                            });
 
                         match get_compatible_msg_extension(
                             extension_graph_nodes,

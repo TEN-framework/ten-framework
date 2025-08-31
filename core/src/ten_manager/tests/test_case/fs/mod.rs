@@ -6,16 +6,12 @@
 //
 #[cfg(test)]
 mod tests {
-    use std::fs::OpenOptions;
-    use std::io::Write;
-    use std::time::Duration;
+    use std::{fs::OpenOptions, io::Write, time::Duration};
 
     use anyhow::Result;
     use tempfile::NamedTempFile;
-    use tokio::runtime::Runtime;
-    use tokio::time::sleep;
-
     use ten_manager::fs::log_file_watcher::{watch_log_file, LogFileWatchOptions};
+    use tokio::{runtime::Runtime, time::sleep};
 
     use crate::test_case::common::fs::sync_to_disk;
 
@@ -84,11 +80,8 @@ mod tests {
 
             // Write initial content
             {
-                let mut file = OpenOptions::new()
-                    .write(true)
-                    .create(true)
-                    .truncate(true)
-                    .open(&path_str)?;
+                let mut file =
+                    OpenOptions::new().write(true).create(true).truncate(true).open(&path_str)?;
                 file.write_all("Initial content".as_bytes())?;
                 file.flush()?;
                 sync_to_disk(&file)?;
@@ -116,11 +109,8 @@ mod tests {
             // Create new file with same name but different content (simulating
             // rotation)
             {
-                let mut file = OpenOptions::new()
-                    .write(true)
-                    .create(true)
-                    .truncate(true)
-                    .open(&path_str)?;
+                let mut file =
+                    OpenOptions::new().write(true).create(true).truncate(true).open(&path_str)?;
                 file.write_all("Rotated content".as_bytes())?;
                 file.flush()?;
                 sync_to_disk(&file)?;
@@ -192,14 +182,13 @@ mod tests {
 
             // Write the graph resources first (to establish connection between
             // thread ID and extension)
-            let graph_resources_with_thread = "05-02 22:23:37.397 1713000(1713045) M \
-                 ten_extension_thread_log_graph_resources@extension_thread.c:\
-                 556 [graph resources] {\"app_base_dir\": \"xxx\", \
-                 \"app_uri\": \"msgpack://127.0.0.1:8001/\", \"graph_name\": \
-                 \"\", \"graph_id\": \
-                 \"38097178-1712-4562-b60d-8e6ab15ba0cf\", \
-                 \"extension_threads\": {\"1713045\": {\"extensions\": \
-                 [\"test_extension\"]}}}\n";
+            let graph_resources_with_thread =
+                "05-02 22:23:37.397 1713000(1713045) M \
+                 ten_extension_thread_log_graph_resources@extension_thread.c:556 [graph \
+                 resources] {\"app_base_dir\": \"xxx\", \"app_uri\": \
+                 \"msgpack://127.0.0.1:8001/\", \"graph_name\": \"\", \"graph_id\": \
+                 \"38097178-1712-4562-b60d-8e6ab15ba0cf\", \"extension_threads\": {\"1713045\": \
+                 {\"extensions\": [\"test_extension\"]}}}\n";
 
             temp_file.write_all(graph_resources_with_thread.as_bytes())?;
             temp_file.flush()?;
@@ -207,21 +196,16 @@ mod tests {
             println!("Wrote graph resources and synced to disk");
 
             // Get the graph resources line
-            let chunk = stream
-                .next()
-                .await
-                .expect("Should receive graph resources")?;
+            let chunk = stream.next().await.expect("Should receive graph resources")?;
             println!("chunk 1: {chunk:?}");
             assert!(chunk.line.contains("[graph resources]"));
 
             // Now write logs that contain extension metadata in format
             // [test_extension]
-            let extension_logs = "05-02 22:23:37.514 1713000(1713045) I \
-                                  ten_extension_on_start@extension.c:697 \
-                                  [test_extension] on_start()\n05-02 \
-                                  22:23:37.514 1713000(1713045) I \
-                                  ten_extension_on_start_done@on_xxx.c:306 \
-                                  [test_extension] on_start() done";
+            let extension_logs =
+                "05-02 22:23:37.514 1713000(1713045) I ten_extension_on_start@extension.c:697 \
+                 [test_extension] on_start()\n05-02 22:23:37.514 1713000(1713045) I \
+                 ten_extension_on_start_done@on_xxx.c:306 [test_extension] on_start() done";
 
             temp_file.write_all(extension_logs.as_bytes())?;
             temp_file.write_all(b"\n")?;
@@ -230,10 +214,7 @@ mod tests {
             println!("Wrote extension log and synced to disk");
 
             // Get first log with extension metadata
-            let chunk = stream
-                .next()
-                .await
-                .expect("Should receive log with extension")?;
+            let chunk = stream.next().await.expect("Should receive log with extension")?;
             println!("chunk 2: {chunk:?}");
             assert!(chunk.line.contains("on_start()"));
 
@@ -244,10 +225,7 @@ mod tests {
             assert_eq!(metadata.extension, Some("test_extension".to_string()));
 
             // Get second log with extension metadata
-            let chunk = stream
-                .next()
-                .await
-                .expect("Should receive log with extension")?;
+            let chunk = stream.next().await.expect("Should receive log with extension")?;
             println!("chunk 3: {chunk:?}");
             assert!(chunk.line.contains("on_start() done"));
 
@@ -282,108 +260,79 @@ mod tests {
             let mut stream = watch_log_file(temp_file.path(), Some(options)).await?;
 
             // Write the complete log content from the example
-            let complete_log = "05-02 22:23:37.301 1713000(1713002) D \
+            let complete_log =
+                "05-02 22:23:37.301 1713000(1713002) D \
                  ten_extension_context_create@extension_context.c:62 \
-                 [38097178-1712-4562-b60d-8e6ab15ba0cf] Create Extension \
-                 context
-05-02 22:23:37.318 1713000(1713001) D \
-                 ten_app_create_addon_instance@addon.c:396 Try to find addon \
+                 [38097178-1712-4562-b60d-8e6ab15ba0cf] Create Extension context
+05-02 22:23:37.318 1713000(1713001) D ten_app_create_addon_instance@addon.c:396 Try to find addon \
                  for default_extension_group
-05-02 22:23:37.318 1713000(1713001) D \
-                 ten_app_create_addon_instance@addon.c:429 The addon \
-                 default_extension_group is loaded and registered using \
-                 native addon loader successfully.
+05-02 22:23:37.318 1713000(1713001) D ten_app_create_addon_instance@addon.c:429 The addon \
+                 default_extension_group is loaded and registered using native addon loader \
+                 successfully.
 05-02 22:23:37.329 1713000(1713002) M \
-                 ten_extension_context_log_graph_resources@extension_context.\
-                 c:352 [graph resources] {\"app_base_dir\": \"xxx\", \
-                 \"app_uri\": \"msgpack://127.0.0.1:8001/\", \"graph_id\": \
+                 ten_extension_context_log_graph_resources@extension_context.c:352 [graph \
+                 resources] {\"app_base_dir\": \"xxx\", \"app_uri\": \
+                 \"msgpack://127.0.0.1:8001/\", \"graph_id\": \
                  \"38097178-1712-4562-b60d-8e6ab15ba0cf\" }
-05-02 22:23:37.329 1713000(1713045) W pthread_routine@thread.c:114 Failed to \
-                 set thread name:
-05-02 22:23:37.329 1713000(1713045) D \
-                 ten_extension_thread_main_actual@extension_thread.c:250 \
+05-02 22:23:37.329 1713000(1713045) W pthread_routine@thread.c:114 Failed to set thread name:
+05-02 22:23:37.329 1713000(1713045) D ten_extension_thread_main_actual@extension_thread.c:250 \
                  Extension thread is started
-05-02 22:23:37.366 1713000(1713045) D \
-                 ten_extension_group_load_metadata@metadata.c:24 [] Load \
+05-02 22:23:37.366 1713000(1713045) D ten_extension_group_load_metadata@metadata.c:24 [] Load \
                  metadata
-05-02 22:23:37.366 1713000(1713045) D \
-                 ten_extension_group_on_init_done@on_xxx.c:78 [] on_init() \
+05-02 22:23:37.366 1713000(1713045) D ten_extension_group_on_init_done@on_xxx.c:78 [] on_init() \
                  done
-05-02 22:23:37.384 1713000(1713045) I \
-                 ten_set_default_manifest_info@default.c:25 Skip the loading \
+05-02 22:23:37.384 1713000(1713045) I ten_set_default_manifest_info@default.c:25 Skip the loading \
                  of manifest.json because the base_dir of  is missing.
-05-02 22:23:37.384 1713000(1713045) I \
-                 ten_set_default_property_info@default.c:51 Skip the loading \
+05-02 22:23:37.384 1713000(1713045) I ten_set_default_property_info@default.c:51 Skip the loading \
                  of property.json because the base_dir of  is missing.
-05-02 22:23:37.384 1713000(1713045) D \
-                 ten_extension_group_create_extensions@extension_group.c:174 \
+05-02 22:23:37.384 1713000(1713045) D ten_extension_group_create_extensions@extension_group.c:174 \
                  [] create_extensions
-05-02 22:23:37.386 1713000(1713001) D \
-                 ten_app_create_addon_instance@addon.c:396 Try to find addon \
+05-02 22:23:37.386 1713000(1713001) D ten_app_create_addon_instance@addon.c:396 Try to find addon \
                  for basic_empty_extension_group__extension
-05-02 22:23:37.387 1713000(1713001) D \
-                 ten_app_create_addon_instance@addon.c:429 The addon \
-                 basic_empty_extension_group__extension is loaded and \
-                 registered using native addon loader successfully.
-05-02 22:23:37.396 1713000(1713045) I \
-                 on_addon_create_extension_done@builtin_extension_group.c:92 \
+05-02 22:23:37.387 1713000(1713001) D ten_app_create_addon_instance@addon.c:429 The addon \
+                 basic_empty_extension_group__extension is loaded and registered using native \
+                 addon loader successfully.
+05-02 22:23:37.396 1713000(1713045) I on_addon_create_extension_done@builtin_extension_group.c:92 \
                  Success to create extension test_extension
-05-02 22:23:37.396 1713000(1713045) D \
-                 ten_extension_group_on_create_extensions_done@on_xxx.c:160 \
+05-02 22:23:37.396 1713000(1713045) D ten_extension_group_on_create_extensions_done@on_xxx.c:160 \
                  [] create_extensions() done
 05-02 22:23:37.397 1713000(1713045) M \
-                 ten_extension_thread_log_graph_resources@extension_thread.c:\
-                 556 [graph resources] {\"app_base_dir\": \"xxx\", \
-                 \"app_uri\": \"msgpack://127.0.0.1:8001/\", \"graph_id\": \
-                 \"38097178-1712-4562-b60d-8e6ab15ba0cf\", \
-                 \"extension_threads\": {\"1713045\": {\"extensions\": \
-                 [\"test_extension\"]}}}
+                 ten_extension_thread_log_graph_resources@extension_thread.c:556 [graph \
+                 resources] {\"app_base_dir\": \"xxx\", \"app_uri\": \
+                 \"msgpack://127.0.0.1:8001/\", \"graph_id\": \
+                 \"38097178-1712-4562-b60d-8e6ab15ba0cf\", \"extension_threads\": {\"1713045\": \
+                 {\"extensions\": [\"test_extension\"]}}}
 05-02 22:23:37.406 1713000(1713002) D \
-                 ten_engine_check_if_all_extension_threads_are_ready@\
-                 extension_interface.c:173 [msgpack://127.0.0.1:8001/] Engine \
-                 is ready to handle messages
-05-02 22:23:37.460 1713000(1713045) D \
-                 ten_extension_load_metadata@extension.c:888 [test_extension] \
+                 ten_engine_check_if_all_extension_threads_are_ready@extension_interface.c:173 \
+                 [msgpack://127.0.0.1:8001/] Engine is ready to handle messages
+05-02 22:23:37.460 1713000(1713045) D ten_extension_load_metadata@extension.c:888 [test_extension] \
                  Load metadata
-05-02 22:23:37.460 1713000(1713045) D \
-                 ten_extension_on_configure@extension.c:628 [test_extension] \
+05-02 22:23:37.460 1713000(1713045) D ten_extension_on_configure@extension.c:628 [test_extension] \
                  on_configure()
-05-02 22:23:37.460 1713000(1713045) D \
-                 ten_extension_on_configure_done@on_xxx.c:95 [test_extension] \
+05-02 22:23:37.460 1713000(1713045) D ten_extension_on_configure_done@on_xxx.c:95 [test_extension] \
                  on_configure() done
-05-02 22:23:37.460 1713000(1713045) I \
-                 ten_extension_handle_ten_namespace_properties@metadata.c:314 \
-                 [test_extension] `ten` section is not found in the property, \
-                 skip
-05-02 22:23:37.471 1713000(1713002) D \
-                 ten_engine_handle_in_msgs_task@common.c:223 \
-                 [38097178-1712-4562-b60d-8e6ab15ba0cf] Handle incoming \
-                 messages
-05-02 22:23:37.479 1713000(1713045) D ten_extension_on_init@extension.c:665 \
-                 [test_extension] on_init()
-05-02 22:23:37.479 1713000(1713045) D ten_extension_on_init_done@on_xxx.c:247 \
-                 [test_extension] on_init() done
-05-02 22:23:37.506 1713000(1713002) D \
-                 ten_engine_handle_in_msgs_task@common.c:223 \
-                 [38097178-1712-4562-b60d-8e6ab15ba0cf] Handle incoming \
-                 messages
-05-02 22:23:37.514 1713000(1713045) I ten_extension_on_start@extension.c:697 \
-                 [test_extension] on_start()
-05-02 22:23:37.514 1713000(1713045) I ten_extension_on_start_done@on_xxx.c:306 \
-                 [test_extension] on_start() done
-05-02 22:23:37.528 1713000(1713000) D \
-                 ten_test_tcp_client_dump_socket_info@tcp.c:75 Close tcp \
+05-02 22:23:37.460 1713000(1713045) I ten_extension_handle_ten_namespace_properties@metadata.c:314 \
+                 [test_extension] `ten` section is not found in the property, skip
+05-02 22:23:37.471 1713000(1713002) D ten_engine_handle_in_msgs_task@common.c:223 \
+                 [38097178-1712-4562-b60d-8e6ab15ba0cf] Handle incoming messages
+05-02 22:23:37.479 1713000(1713045) D ten_extension_on_init@extension.c:665 [test_extension] \
+                 on_init()
+05-02 22:23:37.479 1713000(1713045) D ten_extension_on_init_done@on_xxx.c:247 [test_extension] \
+                 on_init() done
+05-02 22:23:37.506 1713000(1713002) D ten_engine_handle_in_msgs_task@common.c:223 \
+                 [38097178-1712-4562-b60d-8e6ab15ba0cf] Handle incoming messages
+05-02 22:23:37.514 1713000(1713045) I ten_extension_on_start@extension.c:697 [test_extension] \
+                 on_start()
+05-02 22:23:37.514 1713000(1713045) I ten_extension_on_start_done@on_xxx.c:306 [test_extension] \
+                 on_start() done
+05-02 22:23:37.528 1713000(1713000) D ten_test_tcp_client_dump_socket_info@tcp.c:75 Close tcp \
                  client: 127.0.0.1:38742
-05-02 22:23:37.528 1713000(1713002) D \
-                 ten_stream_on_data@protocol_integrated.c:135 Failed to \
+05-02 22:23:37.528 1713000(1713002) D ten_stream_on_data@protocol_integrated.c:135 Failed to \
                  receive data, close the protocol: -4095
 05-02 22:23:37.535 1713000(1713002) D ten_protocol_close@close.c:127 \
-                 [2b11c6a8-9a63-4e9e-b18a-92456dee49d5] Try to close \
-                 communication protocol
-05-02 22:23:37.535 1713000(1713002) D \
-                 ten_protocol_integrated_on_close@close.c:107 \
-                 [2b11c6a8-9a63-4e9e-b18a-92456dee49d5] Integrated protocol \
-                 can be closed now\n";
+                 [2b11c6a8-9a63-4e9e-b18a-92456dee49d5] Try to close communication protocol
+05-02 22:23:37.535 1713000(1713002) D ten_protocol_integrated_on_close@close.c:107 \
+                 [2b11c6a8-9a63-4e9e-b18a-92456dee49d5] Integrated protocol can be closed now\n";
 
             temp_file.write_all(complete_log.as_bytes())?;
             temp_file.flush()?;
@@ -394,11 +343,11 @@ mod tests {
             // ones we're looking for
             let mut target_lines_found = 0;
             let target_start_line = "05-02 22:23:37.514 1713000(1713045) I \
-                                     ten_extension_on_start@extension.c:697 \
-                                     [test_extension] on_start()";
+                                     ten_extension_on_start@extension.c:697 [test_extension] \
+                                     on_start()";
             let target_done_line = "05-02 22:23:37.514 1713000(1713045) I \
-                                    ten_extension_on_start_done@on_xxx.c:306 \
-                                    [test_extension] on_start() done";
+                                    ten_extension_on_start_done@on_xxx.c:306 [test_extension] \
+                                    on_start() done";
 
             // Process all log lines
             while let Some(result) = stream.next().await {

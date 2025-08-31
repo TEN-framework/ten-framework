@@ -20,8 +20,6 @@ use std::{collections::HashMap, sync::Arc};
 
 use actix_web::web;
 use futures_util::{SinkExt, StreamExt};
-use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
-
 use ten_manager::{
     designer::{
         exec::{exec_endpoint, InboundMsg},
@@ -31,6 +29,7 @@ use ten_manager::{
     home::config::TmanConfig,
     output::cli::TmanOutputCli,
 };
+use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
 
 use crate::test_case::common::{builtin_server::start_test_server, mock::inject_all_pkgs_for_mock};
 
@@ -327,10 +326,7 @@ async fn test_exec_endpoint_run_script() {
     println!("   - build: echo 'Building project'");
     println!("   - dev: echo 'Starting development server'");
     println!("🎯 Key difference: RunScript.name='test' vs ExecCmd.cmd='echo ...'");
-    println!(
-        "🚀 RunScript successfully executed and validated real WebSocket \
-         communication!"
-    );
+    println!("🚀 RunScript successfully executed and validated real WebSocket communication!");
 }
 
 /// Test execution of invalid commands
@@ -433,10 +429,7 @@ async fn test_exec_endpoint_invalid_json() {
     let invalid_json = "{ invalid json here }";
     println!("📤 Sending invalid JSON: {invalid_json}");
 
-    write
-        .send(Message::Text(invalid_json.into()))
-        .await
-        .unwrap();
+    write.send(Message::Text(invalid_json.into())).await.unwrap();
 
     // Wait for response
     let mut message_count = 0;
@@ -459,10 +452,7 @@ async fn test_exec_endpoint_invalid_json() {
                 }
             }
             Ok(Message::Close(_)) => {
-                println!(
-                    "🔚 Server closed the connection (expected for invalid \
-                     JSON)"
-                );
+                println!("🔚 Server closed the connection (expected for invalid JSON)");
                 break;
             }
             Ok(_) => {}
@@ -479,8 +469,7 @@ async fn test_exec_endpoint_invalid_json() {
     // closed Either case is reasonable error handling
     assert!(
         received_error || message_count == 0,
-        "Should receive error message or connection should be closed for \
-         invalid JSON"
+        "Should receive error message or connection should be closed for invalid JSON"
     );
 
     println!("✅ Invalid JSON test passed!");

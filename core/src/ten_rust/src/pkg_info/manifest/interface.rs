@@ -4,22 +4,21 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
+use std::collections::{HashMap, HashSet};
+
+use anyhow::{anyhow, Context, Result};
+
 use crate::{
     json_schema::ten_validate_interface_json_string,
-    pkg_info::manifest::api::{ManifestApi, ManifestApiInterface},
+    pkg_info::manifest::api::{
+        ManifestApi, ManifestApiInterface, ManifestApiMsg, ManifestApiProperty,
+        ManifestApiPropertyAttributes,
+    },
     utils::{
         path::{get_base_dir_of_uri, get_real_path_from_import_uri},
         uri::load_content_from_uri,
     },
 };
-
-use crate::pkg_info::manifest::api::{
-    ManifestApiMsg, ManifestApiProperty, ManifestApiPropertyAttributes,
-};
-use std::collections::HashMap;
-use std::collections::HashSet;
-
-use anyhow::{anyhow, Context, Result};
 
 /// Loads interface from the specified URI with an optional base directory.
 ///
@@ -40,10 +39,7 @@ async fn load_interface(
 
     // Check if the interface is in the interface_set.
     if interface_set.contains(&real_path) {
-        return Err(anyhow::anyhow!(
-            "Circular reference detected: {}",
-            real_path
-        ));
+        return Err(anyhow::anyhow!("Circular reference detected: {}", real_path));
     }
 
     // Add the interface to the interface_set.
@@ -74,9 +70,7 @@ async fn load_interface(
 
 fn merge_manifest_api(apis: Vec<ManifestApi>) -> Result<ManifestApi> {
     if apis.len() < 2 {
-        return Err(anyhow::anyhow!(
-            "At least 2 ManifestApi instances are required to merge"
-        ));
+        return Err(anyhow::anyhow!("At least 2 ManifestApi instances are required to merge"));
     }
 
     let mut merged_property: HashMap<String, ManifestApiPropertyAttributes> = HashMap::new();
@@ -100,8 +94,8 @@ fn merge_manifest_api(apis: Vec<ManifestApi>) -> Result<ManifestApi> {
                 if let Some(existing_msg) = target.get(&msg.name) {
                     if existing_msg != &msg {
                         return Err(anyhow!(
-                            "Conflicting {} message '{}': properties, \
-                             required fields, or result do not match",
+                            "Conflicting {} message '{}': properties, required fields, or result \
+                             do not match",
                             msg_type,
                             msg.name
                         ));
@@ -123,8 +117,7 @@ fn merge_manifest_api(apis: Vec<ManifestApi>) -> Result<ManifestApi> {
                     if let Some(existing_value) = merged_property.get(key.as_str()) {
                         if existing_value != value {
                             return Err(anyhow!(
-                                "Conflicting property '{}': values do not \
-                                 match",
+                                "Conflicting property '{}': values do not match",
                                 key
                             ));
                         }
@@ -140,26 +133,10 @@ fn merge_manifest_api(apis: Vec<ManifestApi>) -> Result<ManifestApi> {
         merge_msg_map(&mut merged_cmd_out, api.cmd_out, "cmd_out")?;
         merge_msg_map(&mut merged_data_in, api.data_in, "data_in")?;
         merge_msg_map(&mut merged_data_out, api.data_out, "data_out")?;
-        merge_msg_map(
-            &mut merged_audio_frame_in,
-            api.audio_frame_in,
-            "audio_frame_in",
-        )?;
-        merge_msg_map(
-            &mut merged_audio_frame_out,
-            api.audio_frame_out,
-            "audio_frame_out",
-        )?;
-        merge_msg_map(
-            &mut merged_video_frame_in,
-            api.video_frame_in,
-            "video_frame_in",
-        )?;
-        merge_msg_map(
-            &mut merged_video_frame_out,
-            api.video_frame_out,
-            "video_frame_out",
-        )?;
+        merge_msg_map(&mut merged_audio_frame_in, api.audio_frame_in, "audio_frame_in")?;
+        merge_msg_map(&mut merged_audio_frame_out, api.audio_frame_out, "audio_frame_out")?;
+        merge_msg_map(&mut merged_video_frame_in, api.video_frame_in, "video_frame_in")?;
+        merge_msg_map(&mut merged_video_frame_out, api.video_frame_out, "video_frame_out")?;
     }
 
     // Build the merged result
@@ -224,11 +201,8 @@ pub async fn flatten_manifest_api(
     flattened_api: &mut Option<ManifestApi>,
 ) -> Result<()> {
     // Try to flatten the manifest api if it contains any interface references.
-    let maybe_flattened_api = if let Some(api) = manifest_api {
-        api.flatten().await?
-    } else {
-        None
-    };
+    let maybe_flattened_api =
+        if let Some(api) = manifest_api { api.flatten().await? } else { None };
 
     if let Some(api) = maybe_flattened_api {
         *flattened_api = Some(api);
@@ -286,8 +260,7 @@ impl ManifestApi {
         let mut flattened_apis = Vec::new();
         let mut interface_set = HashSet::new();
 
-        self.flatten_internal(&mut flattened_apis, &mut interface_set)
-            .await?;
+        self.flatten_internal(&mut flattened_apis, &mut interface_set).await?;
 
         // Merge the flattened apis into a single ManifestApi.
         let merged_api = merge_manifest_api(flattened_apis)?;

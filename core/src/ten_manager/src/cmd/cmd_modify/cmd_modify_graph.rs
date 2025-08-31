@@ -46,10 +46,7 @@ pub fn create_sub_cmd(_args_cfg: &crate::cmd_line::ArgsCfg) -> Command {
             Arg::new("MODIFICATION")
                 .long("modification")
                 .short('m')
-                .help(
-                    "The path=JsonString to modify in the selected graph. \
-                     E.g. .name=\"test\"",
-                )
+                .help("The path=JsonString to modify in the selected graph. E.g. .name=\"test\"")
                 .required(true)
                 .num_args(1),
         )
@@ -65,18 +62,12 @@ pub fn create_sub_cmd(_args_cfg: &crate::cmd_line::ArgsCfg) -> Command {
 
 pub fn parse_sub_cmd(sub_cmd_args: &ArgMatches) -> Result<ModifyGraphCommand> {
     let cmd = ModifyGraphCommand {
-        app_dir: sub_cmd_args
-            .get_one::<String>("APP_DIR")
-            .unwrap()
-            .to_string(),
+        app_dir: sub_cmd_args.get_one::<String>("APP_DIR").unwrap().to_string(),
         predefined_graph_name: sub_cmd_args
             .get_one::<String>("PREDEFINED_GRAPH_NAME")
             .unwrap()
             .to_string(),
-        modification: sub_cmd_args
-            .get_one::<String>("MODIFICATION")
-            .unwrap()
-            .to_string(),
+        modification: sub_cmd_args.get_one::<String>("MODIFICATION").unwrap().to_string(),
         inplace: sub_cmd_args.get_flag("INPLACE"),
     };
 
@@ -104,10 +95,7 @@ pub async fn execute_cmd(
         .ok_or_else(|| anyhow::anyhow!("No predefined_graphs in {}", PROPERTY_JSON_FILENAME))?;
 
     let graphs = graphs_val.as_array_mut().ok_or_else(|| {
-        anyhow::anyhow!(
-            "predefined_graphs in {} is not an array",
-            PROPERTY_JSON_FILENAME
-        )
+        anyhow::anyhow!("predefined_graphs in {} is not an array", PROPERTY_JSON_FILENAME)
     })?;
 
     let mut target_graph_opt = None;

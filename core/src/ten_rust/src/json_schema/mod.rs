@@ -110,10 +110,7 @@ pub fn ten_validate_manifest_json_file(file_path: &str) -> Result<()> {
 
 pub fn validate_manifest_lock_json_string(data: &str) -> Result<()> {
     let manifest_lock_json: serde_json::Value = serde_json::from_str(data)?;
-    validate_json_object(
-        &manifest_lock_json,
-        definition::MANIFEST_LOCK_SCHEMA_DEFINITION,
-    )
+    validate_json_object(&manifest_lock_json, definition::MANIFEST_LOCK_SCHEMA_DEFINITION)
 }
 
 pub fn validate_manifest_lock_json_file(file_path: &str) -> Result<()> {
@@ -121,10 +118,7 @@ pub fn validate_manifest_lock_json_file(file_path: &str) -> Result<()> {
     let reader = std::io::BufReader::new(file);
     let manifest_lock_json: serde_json::Value = serde_json::from_reader(reader)?;
 
-    validate_json_object(
-        &manifest_lock_json,
-        definition::MANIFEST_LOCK_SCHEMA_DEFINITION,
-    )
+    validate_json_object(&manifest_lock_json, definition::MANIFEST_LOCK_SCHEMA_DEFINITION)
 }
 
 pub fn ten_validate_property_json_string(data: &str) -> Result<()> {

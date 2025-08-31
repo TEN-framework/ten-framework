@@ -394,7 +394,8 @@ class test_extension_1 : public ten::extension_t {
       (ten_env).log(TEN_LOG_LEVEL_INFO, __func__, __FILE__, __LINE__,          \
                     (std::string("notify outer thread ") + std::to_string(X) + \
                      " to stop")                                               \
-                        .c_str());                                             \
+                        .c_str(),                                              \
+                    nullptr, nullptr);                                         \
       std::unique_lock<std::mutex> lock(outer_thread_##X##_cv_lock);           \
       outer_thread_##X##_towards_to_close = true;                              \
     }                                                                          \
@@ -533,13 +534,14 @@ class test_extension_1 : public ten::extension_t {
     NOTIFY_OUTER_THREAD_TO_STOP(128);
 #endif
 
-#define RECLAIM_OUTER_THREAD(X)                                              \
-  do {                                                                       \
-    (ten_env).log(                                                           \
-        TEN_LOG_LEVEL_INFO, __func__, __FILE__, __LINE__,                    \
-        (std::string("Reclaim outer thread ") + std::to_string(X)).c_str()); \
-    outer_thread##X->join();                                                 \
-    delete outer_thread##X;                                                  \
+#define RECLAIM_OUTER_THREAD(X)                                             \
+  do {                                                                      \
+    (ten_env).log(                                                          \
+        TEN_LOG_LEVEL_INFO, __func__, __FILE__, __LINE__,                   \
+        (std::string("Reclaim outer thread ") + std::to_string(X)).c_str(), \
+        nullptr, nullptr);                                                  \
+    outer_thread##X->join();                                                \
+    delete outer_thread##X;                                                 \
   } while (0)
 
     RECLAIM_OUTER_THREAD(1);
@@ -906,8 +908,8 @@ class test_extension_2 : public ten::extension_t {
                           "Failed to send 'from_extension_2' command.");
 
                       received_from_extension_2_cmd_result++;
-                      TEN_ENV_LOG(
-                          ten_env, TEN_LOG_LEVEL_INFO,
+                      TEN_ENV_LOG_INFO(
+                          ten_env,
                           (std::string("extension_2 got a result for "
                                        "from_extension_2 cmd: ") +
                            std::to_string(received_from_extension_2_cmd_result))
@@ -981,8 +983,7 @@ class test_extension_2 : public ten::extension_t {
   void on_stop(ten::ten_env_t &ten_env) override {
     TEN_ASSERT(timeout_thread, "Should not happen.");
 
-    TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_INFO,
-                "extension_2 join timeout thread.");
+    TEN_ENV_LOG_INFO(ten_env, "extension_2 join timeout thread.");
 
     timeout_thread->join();
     delete timeout_thread;
@@ -1019,7 +1020,25 @@ class test_app : public ten::app_t {
              "ten": {
                "uri": "msgpack://127.0.0.1:8001/",
                "log": {
-                 "level": 2
+                 "handlers": [
+                   {
+                     "matchers": [
+                       {
+                         "level": "debug"
+                       }
+                     ],
+                     "formatter": {
+                       "type": "plain",
+                       "colored": true
+                     },
+                     "emitter": {
+                       "type": "console",
+                       "config": {
+                         "stream": "stdout"
+                       }
+                     }
+                   }
+                 ]
                }
              }
            })",

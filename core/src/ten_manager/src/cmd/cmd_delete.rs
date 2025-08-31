@@ -4,22 +4,21 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-use std::str::FromStr;
-use std::sync::Arc;
-use std::time::Instant;
+use std::{str::FromStr, sync::Arc, time::Instant};
 
 use anyhow::Result;
 use clap::{Arg, ArgMatches, Command};
 use console::Emoji;
 use indicatif::HumanDuration;
 use semver::Version;
-
 use ten_rust::pkg_info::pkg_type::PkgType;
 
-use crate::designer::storage::in_memory::TmanStorageInMemory;
-use crate::home::config::is_verbose;
-use crate::output::TmanOutput;
-use crate::{home::config::TmanConfig, registry::delete_package};
+use crate::{
+    designer::storage::in_memory::TmanStorageInMemory,
+    home::config::{is_verbose, TmanConfig},
+    output::TmanOutput,
+    registry::delete_package,
+};
 
 #[derive(Debug)]
 pub struct DeleteCommand {
@@ -43,33 +42,15 @@ pub fn create_sub_cmd(args_cfg: &crate::cmd_line::ArgsCfg) -> Command {
                 // If PACKAGE_TYPE is provided, PACKAGE_NAME must be too.
                 .requires("PACKAGE_NAME"),
         )
-        .arg(
-            Arg::new("PACKAGE_NAME")
-                .help("The name of the package")
-                .required(true),
-        )
-        .arg(
-            Arg::new("VERSION")
-                .help("The name of the package")
-                .required(true),
-        )
-        .arg(
-            Arg::new("HASH")
-                .help("The hash of the package")
-                .required(true),
-        )
+        .arg(Arg::new("PACKAGE_NAME").help("The name of the package").required(true))
+        .arg(Arg::new("VERSION").help("The name of the package").required(true))
+        .arg(Arg::new("HASH").help("The hash of the package").required(true))
 }
 
 pub fn parse_sub_cmd(sub_cmd_args: &ArgMatches) -> Result<crate::cmd::cmd_delete::DeleteCommand> {
     Ok(crate::cmd::cmd_delete::DeleteCommand {
-        package_type: sub_cmd_args
-            .get_one::<String>("PACKAGE_TYPE")
-            .cloned()
-            .unwrap(),
-        package_name: sub_cmd_args
-            .get_one::<String>("PACKAGE_NAME")
-            .cloned()
-            .unwrap(),
+        package_type: sub_cmd_args.get_one::<String>("PACKAGE_TYPE").cloned().unwrap(),
+        package_name: sub_cmd_args.get_one::<String>("PACKAGE_NAME").cloned().unwrap(),
         version: sub_cmd_args.get_one::<String>("VERSION").cloned().unwrap(),
         hash: sub_cmd_args.get_one::<String>("HASH").cloned().unwrap(),
     })

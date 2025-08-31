@@ -7,8 +7,8 @@
 #[cfg(test)]
 mod tests {
     use std::fs;
-    use tempfile::TempDir;
 
+    use tempfile::TempDir;
     use ten_manager::registry::found_result::get_pkg_registry_info_from_manifest;
     use ten_rust::pkg_info::manifest::Manifest;
 
@@ -29,16 +29,9 @@ mod tests {
         let readme_en_path = temp_path.join("readme_en.md");
 
         fs::write(&display_name_en_path, "Test Extension").unwrap();
-        fs::write(
-            &description_en_path,
-            "This is a test extension for demonstration",
-        )
-        .unwrap();
-        fs::write(
-            &readme_en_path,
-            "# Test Extension\n\nThis is a comprehensive test extension.",
-        )
-        .unwrap();
+        fs::write(&description_en_path, "This is a test extension for demonstration").unwrap();
+        fs::write(&readme_en_path, "# Test Extension\n\nThis is a comprehensive test extension.")
+            .unwrap();
 
         // Create manifest with import_uri fields using relative paths
         let manifest_json = r#"{
@@ -115,76 +108,36 @@ mod tests {
         // Verify content is now available (resolved from import_uri)
         assert!(display_name.locales.get("en-US").unwrap().content.is_some());
         assert_eq!(
-            display_name
-                .locales
-                .get("en-US")
-                .unwrap()
-                .content
-                .as_ref()
-                .unwrap(),
+            display_name.locales.get("en-US").unwrap().content.as_ref().unwrap(),
             "Test Extension"
         );
 
         assert!(description.locales.get("en-US").unwrap().content.is_some());
         assert_eq!(
-            description
-                .locales
-                .get("en-US")
-                .unwrap()
-                .content
-                .as_ref()
-                .unwrap(),
+            description.locales.get("en-US").unwrap().content.as_ref().unwrap(),
             "This is a test extension for demonstration"
         );
 
         assert!(readme.locales.get("en-US").unwrap().content.is_some());
         assert_eq!(
-            readme
-                .locales
-                .get("en-US")
-                .unwrap()
-                .content
-                .as_ref()
-                .unwrap(),
+            readme.locales.get("en-US").unwrap().content.as_ref().unwrap(),
             "# Test Extension\n\nThis is a comprehensive test extension."
         );
 
         // Verify mixed content (zh-CN has direct content)
         assert!(display_name.locales.get("zh-CN").unwrap().content.is_some());
         assert_eq!(
-            display_name
-                .locales
-                .get("zh-CN")
-                .unwrap()
-                .content
-                .as_ref()
-                .unwrap(),
+            display_name.locales.get("zh-CN").unwrap().content.as_ref().unwrap(),
             "测试扩展"
         );
 
         // Verify import_uri is still preserved (not cleared)
-        assert!(display_name
-            .locales
-            .get("en-US")
-            .unwrap()
-            .import_uri
-            .is_some());
-        assert!(description
-            .locales
-            .get("en-US")
-            .unwrap()
-            .import_uri
-            .is_some());
+        assert!(display_name.locales.get("en-US").unwrap().import_uri.is_some());
+        assert!(description.locales.get("en-US").unwrap().import_uri.is_some());
         assert!(readme.locales.get("en-US").unwrap().import_uri.is_some());
 
-        println!(
-            "✅ import_uri fields are resolved to actual content while \
-             preserving import_uri"
-        );
-        println!(
-            "📝 Note: get_packages_endpoint now resolves import_uri to actual \
-             content"
-        );
+        println!("✅ import_uri fields are resolved to actual content while preserving import_uri");
+        println!("📝 Note: get_packages_endpoint now resolves import_uri to actual content");
     }
 
     /// Test using LocaleContent.get_content() method to demonstrate
@@ -231,9 +184,6 @@ mod tests {
         let actual_content = en_locale_content.get_content().await.unwrap();
         assert_eq!(actual_content, expected_content);
 
-        println!(
-            "✅ LocaleContent.get_content() correctly resolves import_uri to \
-             actual content"
-        );
+        println!("✅ LocaleContent.get_content() correctly resolves import_uri to actual content");
     }
 }

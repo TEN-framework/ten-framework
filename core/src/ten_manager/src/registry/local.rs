@@ -4,29 +4,32 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-use std::fs::{self, File};
-use std::io::Read;
-use std::path::{Path, PathBuf};
-use std::str::FromStr;
-use std::sync::Arc;
+use std::{
+    fs::{self, File},
+    io::Read,
+    path::{Path, PathBuf},
+    str::FromStr,
+    sync::Arc,
+};
 
 use anyhow::{anyhow, Context, Result};
 use console::Emoji;
 use semver::{Version, VersionReq};
 use sha2::{Digest, Sha256};
 use tempfile::NamedTempFile;
+use ten_rust::pkg_info::{manifest::Manifest, pkg_type::PkgType, PkgInfo};
 use walkdir::WalkDir;
 
-use ten_rust::pkg_info::manifest::Manifest;
-use ten_rust::pkg_info::pkg_type::PkgType;
-use ten_rust::pkg_info::PkgInfo;
-
-use super::found_result::{get_pkg_registry_info_from_manifest, PkgRegistryInfo};
-use super::pkg_cache::{find_in_package_cache, store_file_to_package_cache};
-use crate::constants::{DEFAULT_REGISTRY_PAGE_SIZE, TEN_PACKAGE_FILE_EXTENSION};
-use crate::home::config::{is_verbose, TmanConfig};
-use crate::output::TmanOutput;
-use crate::registry::search::{matches_filter, PkgSearchFilter};
+use super::{
+    found_result::{get_pkg_registry_info_from_manifest, PkgRegistryInfo},
+    pkg_cache::{find_in_package_cache, store_file_to_package_cache},
+};
+use crate::{
+    constants::{DEFAULT_REGISTRY_PAGE_SIZE, TEN_PACKAGE_FILE_EXTENSION},
+    home::config::{is_verbose, TmanConfig},
+    output::TmanOutput,
+    registry::search::{matches_filter, PkgSearchFilter},
+};
 
 pub async fn upload_package(
     base_url: &str,
@@ -42,11 +45,7 @@ pub async fn upload_package(
         .into_owned();
 
     // Ensure the base URL ends with a '/'.
-    path_url = if path_url.ends_with('/') {
-        path_url.to_string()
-    } else {
-        format!("{path_url}/")
-    };
+    path_url = if path_url.ends_with('/') { path_url.to_string() } else { format!("{path_url}/") };
 
     // Construct the directory path.
     let dir_path = PathBuf::from(format!(
@@ -82,11 +81,7 @@ pub async fn upload_package(
 
     // Copy the file to the new path.
     fs::copy(package_file_path, &full_path).with_context(|| {
-        format!(
-            "Failed to copy file from '{}' to '{}'",
-            package_file_path,
-            full_path.display()
-        )
+        format!("Failed to copy file from '{}' to '{}'", package_file_path, full_path.display())
     })?;
 
     // Serialize and write the manifest to a JSON file.
@@ -149,8 +144,7 @@ fn is_same_file_by_hash(cache_file: &Path, registry_file_url: &str) -> Result<bo
 
     if !registry_file_path.exists() {
         panic!(
-            "Should not happen. The file does not exist in the local \
-             registry: {}",
+            "Should not happen. The file does not exist in the local registry: {}",
             registry_file_path.display()
         );
     }
@@ -180,12 +174,9 @@ pub async fn get_package(
         .file_name()
         .ok_or_else(|| anyhow::anyhow!("downloaded file has invalid name"))?;
 
-    if let Some(cached_file_path) = find_in_package_cache(
-        pkg_type,
-        pkg_name,
-        pkg_version,
-        &file_name.to_string_lossy(),
-    )? {
+    if let Some(cached_file_path) =
+        find_in_package_cache(pkg_type, pkg_name, pkg_version, &file_name.to_string_lossy())?
+    {
         // We need to check whether the cached file and the target file have the
         // same content (i.e., the same hash).
         if let Ok(true) = is_same_file_by_hash(&cached_file_path, url) {
@@ -193,8 +184,7 @@ pub async fn get_package(
             // `temp_path`.
             if is_verbose(tman_config.clone()).await {
                 out.normal_line(&format!(
-                    "{}  Found the package file ({}) in the package cache, \
-                     using it directly.",
+                    "{}  Found the package file ({}) in the package cache, using it directly.",
                     Emoji("🚀", ":-)"),
                     cached_file_path.to_string_lossy()
                 ));
@@ -220,10 +210,7 @@ pub async fn get_package(
     let path_url = PathBuf::from_str(&path_url_str)?;
 
     if !path_url.exists() {
-        return Err(anyhow!(
-            "The package directory does not exist: {}",
-            path_url.display()
-        ));
+        return Err(anyhow!("The package directory does not exist: {}", path_url.display()));
     }
 
     fs::copy(&path_url, temp_path.path())?;
@@ -328,11 +315,8 @@ async fn search_versions(
     let target_path = base_dir.join(name);
 
     // Traverse the folders of all versions within the specified package.
-    for version_dir in WalkDir::new(target_path)
-        .min_depth(1)
-        .max_depth(1)
-        .into_iter()
-        .filter_map(|e| e.ok())
+    for version_dir in
+        WalkDir::new(target_path).min_depth(1).max_depth(1).into_iter().filter_map(|e| e.ok())
     {
         let version_str = version_dir.file_name().to_str().unwrap_or_default();
         let version = match Version::parse(version_str) {
@@ -341,11 +325,7 @@ async fn search_versions(
         };
 
         // Check if the folder meets the version requirements.
-        if version_req.is_none()
-            || version_req
-                .as_ref()
-                .is_some_and(|req| req.matches(&version))
-        {
+        if version_req.is_none() || version_req.as_ref().is_some_and(|req| req.matches(&version)) {
             // Traverse the files within the folder of that version.
             for file in WalkDir::new(version_dir.path())
                 .min_depth(1)
@@ -447,11 +427,7 @@ pub async fn get_package_list(
         .into_owned();
 
     // Ensure the base URL ends with a '/'.
-    path_url = if path_url.ends_with('/') {
-        path_url.to_string()
-    } else {
-        format!("{path_url}/")
-    };
+    path_url = if path_url.ends_with('/') { path_url.to_string() } else { format!("{path_url}/") };
 
     let version_req_ref = version_req.as_ref();
     let name_ref = name.as_ref();
@@ -502,25 +478,15 @@ pub async fn search_packages(
         .map_err(|_| anyhow!("Failed to convert file URL to path"))?
         .to_string_lossy()
         .into_owned();
-    path_url = if path_url.ends_with('/') {
-        path_url
-    } else {
-        format!("{path_url}/")
-    };
+    path_url = if path_url.ends_with('/') { path_url } else { format!("{path_url}/") };
     let base_path = Path::new(&path_url);
     let all_packages = find_file_with_criteria(base_path, None, None, None, None).await?;
-    let mut filtered = all_packages
-        .into_iter()
-        .filter(|p| matches_filter(p, &filter.filter))
-        .collect::<Vec<_>>();
+    let mut filtered =
+        all_packages.into_iter().filter(|p| matches_filter(p, &filter.filter)).collect::<Vec<_>>();
     // Sort
     if sort_by.is_some_and(|s| s == "name") {
         filtered.sort_by(|a, b| {
-            let cmp = a
-                .basic_info
-                .type_and_name
-                .name
-                .cmp(&b.basic_info.type_and_name.name);
+            let cmp = a.basic_info.type_and_name.name.cmp(&b.basic_info.type_and_name.name);
             if sort_order.is_some_and(|s| s == "asc") {
                 cmp
             } else {
@@ -561,11 +527,7 @@ pub async fn delete_package(
         .into_owned();
 
     // Ensure the base URL ends with a '/'.
-    path_url = if path_url.ends_with('/') {
-        path_url.to_string()
-    } else {
-        format!("{path_url}/")
-    };
+    path_url = if path_url.ends_with('/') { path_url.to_string() } else { format!("{path_url}/") };
 
     // Construct the directory path.
     let dir_path = PathBuf::from(format!("{path_url}{pkg_type}/{name}/{version}/"));
@@ -582,9 +544,8 @@ pub async fn delete_package(
 
             // Check if the file name matches the pattern.
             if let Some(file_name) = file_path.file_name().and_then(|name| name.to_str()) {
-                if let Some(file_stem) = Path::new(file_name)
-                    .file_stem()
-                    .and_then(|stem| stem.to_str())
+                if let Some(file_stem) =
+                    Path::new(file_name).file_stem().and_then(|stem| stem.to_str())
                 {
                     if file_stem.ends_with(&format!("_{hash}")) {
                         // Delete the file.

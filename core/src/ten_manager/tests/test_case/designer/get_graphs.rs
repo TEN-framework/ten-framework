@@ -7,7 +7,6 @@
 use std::{collections::HashMap, sync::Arc};
 
 use actix_web::{http::StatusCode, test, web, App};
-
 use ten_manager::{
     designer::{
         graphs::{
@@ -39,30 +38,29 @@ async fn test_cmd_designer_graphs_app_property_not_exist() {
         (
             "tests/test_data/cmd_designer_graphs_app_property_not_exist".to_string(),
             include_str!(
-                "../../test_data/cmd_designer_graphs_app_property_not_exist/\
-                 manifest.json"
+                "../../test_data/cmd_designer_graphs_app_property_not_exist/manifest.json"
             )
             .to_string(),
             "{}".to_string(),
         ),
         (
-            "tests/test_data/cmd_designer_graphs_app_property_not_exist/\
-             ten_packages/extension/addon_a"
+            "tests/test_data/cmd_designer_graphs_app_property_not_exist/ten_packages/extension/\
+             addon_a"
                 .to_string(),
             include_str!(
-                "../../test_data/cmd_designer_graphs_app_property_not_exist/\
-                 ten_packages/extension/addon_a/manifest.json"
+                "../../test_data/cmd_designer_graphs_app_property_not_exist/ten_packages/\
+                 extension/addon_a/manifest.json"
             )
             .to_string(),
             "{}".to_string(),
         ),
         (
-            "tests/test_data/cmd_designer_graphs_app_property_not_exist/\
-             ten_packages/extension/addon_b"
+            "tests/test_data/cmd_designer_graphs_app_property_not_exist/ten_packages/extension/\
+             addon_b"
                 .to_string(),
             include_str!(
-                "../../test_data/cmd_designer_graphs_app_property_not_exist/\
-                 ten_packages/extension/addon_b/manifest.json"
+                "../../test_data/cmd_designer_graphs_app_property_not_exist/ten_packages/\
+                 extension/addon_b/manifest.json"
             )
             .to_string(),
             "{}".to_string(),
@@ -79,10 +77,11 @@ async fn test_cmd_designer_graphs_app_property_not_exist() {
     }
 
     let designer_state = Arc::new(designer_state);
-    let app = test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
-        "/api/designer/v1/graphs",
-        web::post().to(get_graphs_endpoint),
-    ))
+    let app = test::init_service(
+        App::new()
+            .app_data(web::Data::new(designer_state))
+            .route("/api/designer/v1/graphs", web::post().to(get_graphs_endpoint)),
+    )
     .await;
 
     let request_payload = GetGraphsRequestPayload {};
@@ -119,34 +118,32 @@ async fn test_cmd_designer_connections_has_msg_conversion() {
         (
             "tests/test_data/cmd_designer_connections_has_msg_conversion".to_string(),
             include_str!(
-                "../../test_data/cmd_designer_connections_has_msg_conversion/\
-                 manifest.json"
+                "../../test_data/cmd_designer_connections_has_msg_conversion/manifest.json"
             )
             .to_string(),
             include_str!(
-                "../../test_data/cmd_designer_connections_has_msg_conversion/\
-                 property.json"
+                "../../test_data/cmd_designer_connections_has_msg_conversion/property.json"
             )
             .to_string(),
         ),
         (
-            "tests/test_data/cmd_designer_connections_has_msg_conversion/\
-             ten_packages/extension/addon_a"
+            "tests/test_data/cmd_designer_connections_has_msg_conversion/ten_packages/extension/\
+             addon_a"
                 .to_string(),
             include_str!(
-                "../../test_data/cmd_designer_connections_has_msg_conversion/\
-                 ten_packages/extension/addon_a/manifest.json"
+                "../../test_data/cmd_designer_connections_has_msg_conversion/ten_packages/\
+                 extension/addon_a/manifest.json"
             )
             .to_string(),
             "{}".to_string(),
         ),
         (
-            "tests/test_data/cmd_designer_connections_has_msg_conversion/\
-             ten_packages/extension/addon_b"
+            "tests/test_data/cmd_designer_connections_has_msg_conversion/ten_packages/extension/\
+             addon_b"
                 .to_string(),
             include_str!(
-                "../../test_data/cmd_designer_connections_has_msg_conversion/\
-                 ten_packages/extension/addon_b/manifest.json"
+                "../../test_data/cmd_designer_connections_has_msg_conversion/ten_packages/\
+                 extension/addon_b/manifest.json"
             )
             .to_string(),
             "{}".to_string(),
@@ -182,10 +179,7 @@ async fn test_cmd_designer_connections_has_msg_conversion() {
     let app = test::init_service(
         App::new()
             .app_data(web::Data::new(designer_state.clone()))
-            .route(
-                "/api/designer/v1/graphs",
-                web::post().to(get_graphs_endpoint),
-            ),
+            .route("/api/designer/v1/graphs", web::post().to(get_graphs_endpoint)),
     )
     .await;
 

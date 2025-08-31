@@ -9,9 +9,7 @@ from enum import IntEnum
 
 class LogLevel(IntEnum):
     INVALID = 0
-    VERBOSE = 1
-    DEBUG = 2
-    INFO = 3
-    WARN = 4
-    ERROR = 5
-    FATAL = 6
+    DEBUG = 1
+    INFO = 2
+    WARN = 3
+    ERROR = 4

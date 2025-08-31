@@ -6,11 +6,13 @@
 //
 pub mod compatible;
 
+use std::{
+    collections::HashMap,
+    hash::{Hash, Hasher},
+};
+
 use actix_web::{test, web, App};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::hash::{Hash, Hasher};
-
 use ten_manager::designer::locale::Locale;
 
 // Create a newtype wrapper for Locale to implement Hash
@@ -75,21 +77,21 @@ impl LocaleMessages {
 // Define a placeholder for get_endpoint since it couldn't be found in the
 // source
 pub mod get {
-    use super::{LocaleMessages, LocaleWrapper, MessagesResponse};
     use actix_web::{web, HttpRequest, HttpResponse};
-    use ten_manager::designer::locale::Locale;
-    use ten_manager::designer::response::{ApiResponse, Status};
+    use ten_manager::designer::{
+        locale::Locale,
+        response::{ApiResponse, Status},
+    };
+
+    use super::{LocaleMessages, LocaleWrapper, MessagesResponse};
 
     pub async fn get_endpoint(
         req: HttpRequest,
         messages: web::Data<LocaleMessages>,
     ) -> HttpResponse {
         // Extract Accept-Language header
-        let accept_lang = req
-            .headers()
-            .get("Accept-Language")
-            .and_then(|h| h.to_str().ok())
-            .unwrap_or("en-US");
+        let accept_lang =
+            req.headers().get("Accept-Language").and_then(|h| h.to_str().ok()).unwrap_or("en-US");
 
         // Check if we have any of the requested locales
         let locale_str = if accept_lang.contains("zh-CN") {
@@ -132,12 +134,10 @@ async fn test_get_messages_success() {
 
     // Set up app.
     let app = test::init_service(
-        App::new()
-            .app_data(web::Data::new(messages.clone()))
-            .service(
-                web::scope("/api/designer/v1")
-                    .service(web::resource("/messages").route(web::get().to(get::get_endpoint))),
-            ),
+        App::new().app_data(web::Data::new(messages.clone())).service(
+            web::scope("/api/designer/v1")
+                .service(web::resource("/messages").route(web::get().to(get::get_endpoint))),
+        ),
     )
     .await;
 
@@ -157,12 +157,10 @@ async fn test_get_messages_fallback() {
 
     // Set up app.
     let app = test::init_service(
-        App::new()
-            .app_data(web::Data::new(messages.clone()))
-            .service(
-                web::scope("/api/designer/v1")
-                    .service(web::resource("/messages").route(web::get().to(get::get_endpoint))),
-            ),
+        App::new().app_data(web::Data::new(messages.clone())).service(
+            web::scope("/api/designer/v1")
+                .service(web::resource("/messages").route(web::get().to(get::get_endpoint))),
+        ),
     )
     .await;
 
@@ -182,12 +180,10 @@ async fn test_get_messages_preferred_locale() {
 
     // Set up app.
     let app = test::init_service(
-        App::new()
-            .app_data(web::Data::new(messages.clone()))
-            .service(
-                web::scope("/api/designer/v1")
-                    .service(web::resource("/messages").route(web::get().to(get::get_endpoint))),
-            ),
+        App::new().app_data(web::Data::new(messages.clone())).service(
+            web::scope("/api/designer/v1")
+                .service(web::resource("/messages").route(web::get().to(get::get_endpoint))),
+        ),
     )
     .await;
 

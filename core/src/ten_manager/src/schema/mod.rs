@@ -6,9 +6,8 @@
 //
 mod definition;
 
-pub use definition::TMAN_CONFIG_SCHEMA;
-
 use anyhow::Result;
+pub use definition::TMAN_CONFIG_SCHEMA;
 use json5;
 use jsonschema::Validator;
 use serde_json;

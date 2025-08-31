@@ -70,12 +70,7 @@ fn create_cmd() -> clap::ArgMatches {
                 .help("The location of config.json")
                 .default_value(None),
         )
-        .arg(
-            Arg::new("USER_TOKEN")
-                .long("user-token")
-                .help("The user token")
-                .default_value(None),
-        )
+        .arg(Arg::new("USER_TOKEN").long("user-token").help("The user token").default_value(None))
         .arg(
             Arg::new("VERBOSE")
                 .long("verbose")
@@ -136,26 +131,20 @@ pub fn parse_cmd() -> Result<ParsedCmd> {
     // values, and defaults.
     let tman_config = TmanConfig {
         config_file: config_file_path.or(default_config.config_file),
-        admin_token: matches
-            .get_one::<String>("ADMIN_TOKEN")
-            .cloned()
-            .or_else(|| {
-                if let Some(tman_config_file) = &tman_config_file {
-                    tman_config_file.admin_token.clone()
-                } else {
-                    default_config.admin_token
-                }
-            }),
-        user_token: matches
-            .get_one::<String>("USER_TOKEN")
-            .cloned()
-            .or_else(|| {
-                if let Some(tman_config_file) = &tman_config_file {
-                    tman_config_file.user_token.clone()
-                } else {
-                    default_config.user_token
-                }
-            }),
+        admin_token: matches.get_one::<String>("ADMIN_TOKEN").cloned().or_else(|| {
+            if let Some(tman_config_file) = &tman_config_file {
+                tman_config_file.admin_token.clone()
+            } else {
+                default_config.admin_token
+            }
+        }),
+        user_token: matches.get_one::<String>("USER_TOKEN").cloned().or_else(|| {
+            if let Some(tman_config_file) = &tman_config_file {
+                tman_config_file.user_token.clone()
+            } else {
+                default_config.user_token
+            }
+        }),
         verbose: matches.get_flag("VERBOSE"),
         assume_yes: matches.get_flag("ASSUME_YES"),
         registry: if let Some(tman_config_file) = &tman_config_file {

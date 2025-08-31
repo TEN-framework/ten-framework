@@ -9,11 +9,10 @@ pub mod delete;
 pub mod msg_conversion;
 
 use serde::{Deserialize, Serialize};
-
-use ten_rust::graph::connection::{
-    GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow, GraphSource,
+use ten_rust::graph::{
+    connection::{GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow, GraphSource},
+    msg_conversion::MsgAndResultConversion,
 };
-use ten_rust::graph::msg_conversion::MsgAndResultConversion;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct DesignerGraphLoc {
@@ -65,16 +64,8 @@ impl From<DesignerGraphMessageFlow> for GraphMessageFlow {
         GraphMessageFlow {
             name: designer_msg_flow.name,
             names: designer_msg_flow.names,
-            dest: designer_msg_flow
-                .dest
-                .into_iter()
-                .map(|d| d.into())
-                .collect(),
-            source: designer_msg_flow
-                .source
-                .into_iter()
-                .map(|s| s.into())
-                .collect(),
+            dest: designer_msg_flow.dest.into_iter().map(|d| d.into()).collect(),
+            source: designer_msg_flow.source.into_iter().map(|s| s.into()).collect(),
         }
     }
 }
@@ -249,18 +240,10 @@ impl From<DesignerGraphConnection> for GraphConnection {
                 selector: designer_connection.loc.selector,
             },
 
-            cmd: designer_connection
-                .cmd
-                .map(get_property_msg_flow_from_designer),
-            data: designer_connection
-                .data
-                .map(get_property_msg_flow_from_designer),
-            audio_frame: designer_connection
-                .audio_frame
-                .map(get_property_msg_flow_from_designer),
-            video_frame: designer_connection
-                .video_frame
-                .map(get_property_msg_flow_from_designer),
+            cmd: designer_connection.cmd.map(get_property_msg_flow_from_designer),
+            data: designer_connection.data.map(get_property_msg_flow_from_designer),
+            audio_frame: designer_connection.audio_frame.map(get_property_msg_flow_from_designer),
+            video_frame: designer_connection.video_frame.map(get_property_msg_flow_from_designer),
         }
     }
 }

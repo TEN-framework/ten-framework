@@ -186,11 +186,7 @@ mod tests {
                 input_property_json_str.to_string(),
             ),
             (
-                format!(
-                    "{}{}",
-                    temp_dir_path.clone(),
-                    "/ten_packages/extension/extension_1"
-                ),
+                format!("{}{}", temp_dir_path.clone(), "/ten_packages/extension/extension_1"),
                 include_str!("../../../../test_data/test_addon_manifest.json").to_string(),
                 "{}".to_string(),
             ),
@@ -218,12 +214,10 @@ mod tests {
 
         // Setup test app.
         let app = test::init_service(
-            App::new()
-                .app_data(web::Data::new(designer_state_arc.clone()))
-                .route(
-                    "/api/designer/v1/graphs/nodes/replace",
-                    web::post().to(replace_graph_node_endpoint),
-                ),
+            App::new().app_data(web::Data::new(designer_state_arc.clone())).route(
+                "/api/designer/v1/graphs/nodes/replace",
+                web::post().to(replace_graph_node_endpoint),
+            ),
         )
         .await;
 
@@ -234,13 +228,7 @@ mod tests {
             let graph_info = graphs_cache.get(&graph_id).unwrap();
 
             // Assuming there's at least one node in the graph.
-            graph_info
-                .graph
-                .nodes()
-                .first()
-                .unwrap()
-                .get_name()
-                .to_string()
+            graph_info.graph.nodes().first().unwrap().get_name().to_string()
         };
 
         // Try to replace a node with an invalid property (integer instead of
@@ -286,20 +274,14 @@ mod tests {
         let expected_property: serde_json::Value =
             serde_json::from_str(expected_property_content).unwrap();
 
-        println!(
-            "Updated property: {}",
-            serde_json::to_string_pretty(&updated_property).unwrap()
-        );
+        println!("Updated property: {}", serde_json::to_string_pretty(&updated_property).unwrap());
         println!(
             "Expected property: {}",
             serde_json::to_string_pretty(&expected_property).unwrap()
         );
 
         // Compare the updated property with the expected property.
-        assert_eq!(
-            updated_property, expected_property,
-            "Property file should not have changed"
-        );
+        assert_eq!(updated_property, expected_property, "Property file should not have changed");
     }
 
     #[actix_web::test]
@@ -337,11 +319,7 @@ mod tests {
                 input_property_json_str.to_string(),
             ),
             (
-                format!(
-                    "{}{}",
-                    temp_dir_path.clone(),
-                    "/ten_packages/extension/extension_1"
-                ),
+                format!("{}{}", temp_dir_path.clone(), "/ten_packages/extension/extension_1"),
                 include_str!("../../../../test_data/test_addon_manifest.json").to_string(),
                 "{}".to_string(),
             ),
@@ -369,12 +347,10 @@ mod tests {
 
         // Setup test app.
         let app = test::init_service(
-            App::new()
-                .app_data(web::Data::new(designer_state_arc.clone()))
-                .route(
-                    "/api/designer/v1/graphs/nodes/replace",
-                    web::post().to(replace_graph_node_endpoint),
-                ),
+            App::new().app_data(web::Data::new(designer_state_arc.clone())).route(
+                "/api/designer/v1/graphs/nodes/replace",
+                web::post().to(replace_graph_node_endpoint),
+            ),
         )
         .await;
 
@@ -384,13 +360,7 @@ mod tests {
             let graph_info = graphs_cache.get(&graph_id).unwrap();
 
             // Assuming there's at least one node in the graph.
-            graph_info
-                .graph
-                .nodes()
-                .first()
-                .unwrap()
-                .get_name()
-                .to_string()
+            graph_info.graph.nodes().first().unwrap().get_name().to_string()
         };
 
         // Try to replace a node with an invalid property (integer instead of
@@ -429,9 +399,7 @@ mod tests {
         let response: ErrorResponse = serde_json::from_str(body_str).unwrap();
         assert_eq!(response.status, Status::Fail);
         assert!(
-            response
-                .message
-                .contains("Failed to validate extension property")
+            response.message.contains("Failed to validate extension property")
                 || response.message.contains("Property validation failed")
         );
 
@@ -446,10 +414,7 @@ mod tests {
 
         // Compare the updated property with the input property (should be
         // unchanged).
-        assert_eq!(
-            updated_property, input_property,
-            "Property file should not have changed"
-        );
+        assert_eq!(updated_property, input_property, "Property file should not have changed");
     }
 
     #[actix_web::test]
@@ -483,12 +448,10 @@ mod tests {
 
         // Setup test app.
         let app = test::init_service(
-            App::new()
-                .app_data(web::Data::new(designer_state_arc.clone()))
-                .route(
-                    "/api/designer/v1/graphs/nodes/replace",
-                    web::post().to(replace_graph_node_endpoint),
-                ),
+            App::new().app_data(web::Data::new(designer_state_arc.clone())).route(
+                "/api/designer/v1/graphs/nodes/replace",
+                web::post().to(replace_graph_node_endpoint),
+            ),
         )
         .await;
 
@@ -500,7 +463,9 @@ mod tests {
             // Assuming there's at least one node in the graph.
             let node = graph_info.graph.nodes().first().unwrap();
             let app = match node {
-                GraphNode::Extension { content } => content.app.clone(),
+                GraphNode::Extension {
+                    content,
+                } => content.app.clone(),
                 _ => None,
             };
 
@@ -547,15 +512,17 @@ mod tests {
             .nodes()
             .iter()
             .find(|node| match node {
-                GraphNode::Extension { content } => {
-                    content.name == node_name && content.app == app_uri
-                }
+                GraphNode::Extension {
+                    content,
+                } => content.name == node_name && content.app == app_uri,
                 _ => false,
             })
             .unwrap();
 
         let updated_node_addon = match updated_node {
-            GraphNode::Extension { content } => content.addon.clone(),
+            GraphNode::Extension {
+                content,
+            } => content.addon.clone(),
             _ => panic!("Updated node is not an extension node"),
         };
 

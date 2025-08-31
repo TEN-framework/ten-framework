@@ -7,7 +7,6 @@
 use std::collections::HashMap;
 
 use anyhow::Result;
-
 use ten_rust::{
     base_dir_pkg_info::PkgsInfoInApp,
     graph::{
@@ -76,11 +75,7 @@ fn check_connection_exists(
     if let Some(connections) = &graph.connections {
         for conn in connections.iter() {
             // Check if source matches.
-            if conn
-                .loc
-                .extension
-                .as_ref()
-                .is_some_and(|ext| ext == src_extension)
+            if conn.loc.extension.as_ref().is_some_and(|ext| ext == src_extension)
                 && conn.loc.app == *src_app
             {
                 // Check for duplicate message flows based on message type.
@@ -101,9 +96,8 @@ fn check_connection_exists(
                                     && dest.loc.app == *dest_app
                                 {
                                     return Err(anyhow::anyhow!(
-                                        "Connection already exists: \
-                                         src:({:?}, {}), msg_type:{:?}, \
-                                         msg_name:{}, dest:({:?}, {})",
+                                        "Connection already exists: src:({:?}, {}), \
+                                         msg_type:{:?}, msg_name:{}, dest:({:?}, {})",
                                         src_app,
                                         src_extension,
                                         msg_type,
@@ -132,16 +126,15 @@ fn check_nodes_exist(
 ) -> Result<()> {
     // Validate that source node exists.
     let src_node_exists = graph.nodes.iter().any(|node| match node {
-        GraphNode::Extension { content } => {
-            content.name == src_extension && content.app == *src_app
-        }
+        GraphNode::Extension {
+            content,
+        } => content.name == src_extension && content.app == *src_app,
         _ => false,
     });
 
     if !src_node_exists {
         return Err(anyhow::anyhow!(
-            "Source node with extension '{}' and app '{:?}' not found in the \
-             graph",
+            "Source node with extension '{}' and app '{:?}' not found in the graph",
             src_extension,
             src_app
         ));
@@ -149,16 +142,15 @@ fn check_nodes_exist(
 
     // Validate that destination node exists.
     let dest_node_exists = graph.nodes.iter().any(|node| match node {
-        GraphNode::Extension { content } => {
-            content.name == dest_extension && content.app == *dest_app
-        }
+        GraphNode::Extension {
+            content,
+        } => content.name == dest_extension && content.app == *dest_app,
         _ => false,
     });
 
     if !dest_node_exists {
         return Err(anyhow::anyhow!(
-            "Destination node with extension '{}' and app '{:?}' not found in \
-             the graph",
+            "Destination node with extension '{}' and app '{:?}' not found in the graph",
             dest_extension,
             dest_app
         ));

@@ -44,10 +44,7 @@ mod tests {
         assert!(en_readme.import_uri.is_none());
 
         let zh_readme = &readme.locales["zh-CN"];
-        assert_eq!(
-            zh_readme.content.as_ref().unwrap(),
-            "这是测试扩展的完整说明文档。"
-        );
+        assert_eq!(zh_readme.content.as_ref().unwrap(), "这是测试扩展的完整说明文档。");
         assert!(zh_readme.import_uri.is_none());
     }
 
@@ -77,17 +74,11 @@ mod tests {
         assert_eq!(readme.locales.len(), 2);
 
         let en_readme = &readme.locales["en-US"];
-        assert_eq!(
-            en_readme.import_uri.as_ref().unwrap(),
-            "file://./docs/readme.md"
-        );
+        assert_eq!(en_readme.import_uri.as_ref().unwrap(), "file://./docs/readme.md");
         assert!(en_readme.content.is_none());
 
         let zh_readme = &readme.locales["zh-CN"];
-        assert_eq!(
-            zh_readme.import_uri.as_ref().unwrap(),
-            "file://./docs/readme-zh.md"
-        );
+        assert_eq!(zh_readme.import_uri.as_ref().unwrap(), "file://./docs/readme-zh.md");
         assert!(zh_readme.content.is_none());
     }
 
@@ -120,10 +111,7 @@ mod tests {
 
         let result: Result<Manifest, _> = serde_json::from_str(manifest_json);
         assert!(result.is_err());
-        assert!(result
-            .unwrap_err()
-            .to_string()
-            .contains("Invalid locale format"));
+        assert!(result.unwrap_err().to_string().contains("Invalid locale format"));
     }
 
     #[test]

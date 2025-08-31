@@ -4,12 +4,14 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
+use std::collections::HashMap;
+
+use anyhow::Result;
+
 use crate::graph::{
     connection::{GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow},
     Graph,
 };
-use anyhow::Result;
-use std::collections::HashMap;
 
 impl Graph {
     /// Helper function to process a single type of message flows
@@ -67,9 +69,7 @@ impl Graph {
     fn has_reversed_connections(connections: &[GraphConnection]) -> bool {
         connections.iter().any(|conn| {
             let check_flows = |flows: &Option<Vec<GraphMessageFlow>>| {
-                flows
-                    .as_ref()
-                    .is_some_and(|f| f.iter().any(|flow| !flow.source.is_empty()))
+                flows.as_ref().is_some_and(|f| f.iter().any(|flow| !flow.source.is_empty()))
             };
 
             check_flows(&conn.cmd)
@@ -137,8 +137,7 @@ impl Graph {
                             .find(|d| d.loc == dest.loc && d.msg_conversion != dest.msg_conversion)
                         {
                             return Err(anyhow::anyhow!(
-                                "Conflicting message conversion for \
-                                 destination {:?}: {:?} vs {:?}",
+                                "Conflicting message conversion for destination {:?}: {:?} vs {:?}",
                                 dest.loc,
                                 existing_dest.msg_conversion,
                                 dest.msg_conversion
@@ -170,24 +169,15 @@ impl Graph {
                 }
                 // Merge data flows
                 if let Some(data_flows) = conn.data.take() {
-                    existing
-                        .data
-                        .get_or_insert_with(Vec::new)
-                        .extend(data_flows);
+                    existing.data.get_or_insert_with(Vec::new).extend(data_flows);
                 }
                 // Merge audio_frame flows
                 if let Some(audio_flows) = conn.audio_frame.take() {
-                    existing
-                        .audio_frame
-                        .get_or_insert_with(Vec::new)
-                        .extend(audio_flows);
+                    existing.audio_frame.get_or_insert_with(Vec::new).extend(audio_flows);
                 }
                 // Merge video_frame flows
                 if let Some(video_flows) = conn.video_frame.take() {
-                    existing
-                        .video_frame
-                        .get_or_insert_with(Vec::new)
-                        .extend(video_flows);
+                    existing.video_frame.get_or_insert_with(Vec::new).extend(video_flows);
                 }
             } else {
                 merged_connections.insert(key, conn);

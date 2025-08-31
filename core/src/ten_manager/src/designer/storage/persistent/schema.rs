@@ -12,8 +12,10 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 
 use super::{read_persistent_storage, write_persistent_storage};
-use crate::designer::response::{ApiResponse, Status};
-use crate::designer::DesignerState;
+use crate::designer::{
+    response::{ApiResponse, Status},
+    DesignerState,
+};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SetSchemaRequestPayload {
@@ -186,11 +188,7 @@ pub async fn set_persistent_storage_schema_endpoint(
 
     let response_data = SetSchemaResponseData {
         success: true,
-        cleaned_fields: if cleaned_fields.is_empty() {
-            None
-        } else {
-            Some(cleaned_fields)
-        },
+        cleaned_fields: if cleaned_fields.is_empty() { None } else { Some(cleaned_fields) },
     };
 
     Ok(HttpResponse::Ok().json(ApiResponse {

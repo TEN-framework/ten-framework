@@ -53,8 +53,7 @@ impl Graph {
                 None if ignore_missing_apps => continue,
                 None => {
                     return Err(anyhow::anyhow!(
-                        "Extension addon [{}] is not found in the pkgs map, \
-                         should not happen.",
+                        "Extension addon [{}] is not found in the pkgs map, should not happen.",
                         dest_addon
                     ))
                 }
@@ -112,8 +111,7 @@ impl Graph {
             None if ignore_missing_apps => return Ok(()),
             None => {
                 return Err(anyhow::anyhow!(
-                    "Extension addon [{}] is not found in the pkgs map, \
-                     should not happen.",
+                    "Extension addon [{}] is not found in the pkgs map, should not happen.",
                     src_addon
                 ))
             }
@@ -130,10 +128,7 @@ impl Graph {
                     .expect("name field should be Some after flatten_graph processing");
 
                 if flow.names.is_some() {
-                    panic!(
-                        "names field should be None after flatten_graph \
-                         processing"
-                    );
+                    panic!("names field should be None after flatten_graph processing");
                 }
 
                 // Get source command schema.
@@ -170,10 +165,7 @@ impl Graph {
                     .expect("name field should be Some after flatten_graph processing");
 
                 if flow.names.is_some() {
-                    panic!(
-                        "names field should be None after flatten_graph \
-                         processing"
-                    );
+                    panic!("names field should be None after flatten_graph processing");
                 }
 
                 // Get source message schema.
@@ -210,10 +202,7 @@ impl Graph {
                     .expect("name field should be Some after flatten_graph processing");
 
                 if flow.names.is_some() {
-                    panic!(
-                        "names field should be None after flatten_graph \
-                         processing"
-                    );
+                    panic!("names field should be None after flatten_graph processing");
                 }
 
                 // Get source message schema.
@@ -250,10 +239,7 @@ impl Graph {
                     .expect("name field should be Some after flatten_graph processing");
 
                 if flow.names.is_some() {
-                    panic!(
-                        "names field should be None after flatten_graph \
-                         processing"
-                    );
+                    panic!("names field should be None after flatten_graph processing");
                 }
 
                 // Get source message schema.

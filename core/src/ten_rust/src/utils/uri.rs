@@ -12,9 +12,7 @@ use crate::utils::fs::read_file_to_string;
 /// Loads content from a file:// URL.
 fn load_content_from_file_url(url: &Url) -> Result<String> {
     // Convert file URL to local path
-    let path = url
-        .to_file_path()
-        .map_err(|_| anyhow!("Invalid file URL: {}", url))?;
+    let path = url.to_file_path().map_err(|_| anyhow!("Invalid file URL: {}", url))?;
 
     // Read the content file.
     read_file_to_string(&path)
@@ -35,18 +33,11 @@ async fn load_content_from_http_url(url: &url::Url) -> Result<String> {
 
     // Check if request was successful
     if !response.status().is_success() {
-        return Err(anyhow!(
-            "HTTP request failed with status {}: {}",
-            response.status(),
-            url
-        ));
+        return Err(anyhow!("HTTP request failed with status {}: {}", response.status(), url));
     }
 
     // Get response body as text
-    response
-        .text()
-        .await
-        .with_context(|| format!("Failed to read response body from {url}"))
+    response.text().await.with_context(|| format!("Failed to read response body from {url}"))
 }
 
 /// Load content from a URI.
@@ -72,8 +63,7 @@ pub async fn load_content_from_uri(uri: &str) -> Result<String> {
                     // Continue to parse the uri as a relative path.
                 } else {
                     return Err(anyhow::anyhow!(
-                        "Unsupported URL scheme '{}' in uri: {} when \
-                         load_content_from_uri",
+                        "Unsupported URL scheme '{}' in uri: {} when load_content_from_uri",
                         url.scheme(),
                         uri
                     ));
@@ -81,8 +71,7 @@ pub async fn load_content_from_uri(uri: &str) -> Result<String> {
 
                 #[cfg(not(windows))]
                 return Err(anyhow::anyhow!(
-                    "Unsupported URL scheme '{}' in uri: {} when \
-                     load_content_from_uri",
+                    "Unsupported URL scheme '{}' in uri: {} when load_content_from_uri",
                     url.scheme(),
                     uri
                 ));

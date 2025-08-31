@@ -16,43 +16,41 @@ use std::{fmt, io};
 use serde::{Deserialize, Serialize};
 use tracing;
 use tracing_appender::non_blocking;
-use tracing_subscriber::fmt::writer::BoxMakeWriter;
 use tracing_subscriber::{
-    fmt::{self as tracing_fmt},
+    fmt::{
+        writer::BoxMakeWriter,
+        {self as tracing_fmt},
+    },
     layer::SubscriberExt,
     util::SubscriberInitExt,
     Layer, Registry,
 };
 
-use crate::log::encryption::{EncryptMakeWriter, EncryptionConfig};
-use crate::log::file_appender::FileAppenderGuard;
-use crate::log::formatter::{JsonConfig, JsonFieldNames, JsonFormatter, PlainFormatter};
+use crate::log::{
+    encryption::{EncryptMakeWriter, EncryptionConfig},
+    file_appender::FileAppenderGuard,
+    formatter::{JsonConfig, JsonFieldNames, JsonFormatter, PlainFormatter},
+};
 
 // Encryption types and writer are moved to `encryption.rs`
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(from = "u8")]
 pub enum LogLevel {
     Invalid = 0,
-    Verbose = 1,
-    Debug = 2,
-    Info = 3,
-    Warn = 4,
-    Error = 5,
-    Fatal = 6,
-    Mandatory = 7,
+    Debug = 1,
+    Info = 2,
+    Warn = 3,
+    Error = 4,
 }
 
 impl From<u8> for LogLevel {
     fn from(value: u8) -> Self {
         match value {
             0 => LogLevel::Invalid,
-            1 => LogLevel::Verbose,
-            2 => LogLevel::Debug,
-            3 => LogLevel::Info,
-            4 => LogLevel::Warn,
-            5 => LogLevel::Error,
-            6 => LogLevel::Fatal,
-            7 => LogLevel::Mandatory,
+            1 => LogLevel::Debug,
+            2 => LogLevel::Info,
+            3 => LogLevel::Warn,
+            4 => LogLevel::Error,
             _ => LogLevel::Invalid,
         }
     }
@@ -61,13 +59,10 @@ impl From<u8> for LogLevel {
 impl LogLevel {
     fn to_tracing_level(&self) -> tracing::Level {
         match self {
-            LogLevel::Verbose => tracing::Level::TRACE,
             LogLevel::Debug => tracing::Level::DEBUG,
             LogLevel::Info => tracing::Level::INFO,
             LogLevel::Warn => tracing::Level::WARN,
             LogLevel::Error => tracing::Level::ERROR,
-            LogLevel::Fatal => tracing::Level::ERROR,
-            LogLevel::Mandatory => tracing::Level::ERROR,
             LogLevel::Invalid => tracing::Level::ERROR,
         }
     }
@@ -76,18 +71,18 @@ impl LogLevel {
 // Advanced log level enum that serializes to/from strings
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "lowercase")]
-pub enum AdvancedLogLevel {
-    Trace,
+pub enum AdvancedLogLevelFilter {
+    OFF,
     Debug,
     Info,
     Warn,
     Error,
 }
 
-impl fmt::Display for AdvancedLogLevel {
+impl fmt::Display for AdvancedLogLevelFilter {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_str(match self {
-            Self::Trace => "trace",
+            Self::OFF => "off",
             Self::Debug => "debug",
             Self::Info => "info",
             Self::Warn => "warn",
@@ -98,7 +93,7 @@ impl fmt::Display for AdvancedLogLevel {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct AdvancedLogMatcher {
-    pub level: AdvancedLogLevel,
+    pub level: AdvancedLogLevelFilter,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub category: Option<String>,
 }
@@ -217,10 +212,8 @@ fn create_layer_and_filter(
                 (StreamType::Stdout, FormatterType::Plain) => {
                     let ansi = handler.formatter.colored.unwrap_or(false);
                     let base_writer = io::stdout;
-                    let writer = if let Some(runtime) = console_config
-                        .encryption
-                        .as_ref()
-                        .and_then(|e| e.to_runtime())
+                    let writer = if let Some(runtime) =
+                        console_config.encryption.as_ref().and_then(|e| e.to_runtime())
                     {
                         BoxMakeWriter::new(EncryptMakeWriter {
                             inner: base_writer,
@@ -237,10 +230,8 @@ fn create_layer_and_filter(
                 (StreamType::Stderr, FormatterType::Plain) => {
                     let ansi = handler.formatter.colored.unwrap_or(false);
                     let base_writer = io::stderr;
-                    let writer = if let Some(runtime) = console_config
-                        .encryption
-                        .as_ref()
-                        .and_then(|e| e.to_runtime())
+                    let writer = if let Some(runtime) =
+                        console_config.encryption.as_ref().and_then(|e| e.to_runtime())
                     {
                         BoxMakeWriter::new(EncryptMakeWriter {
                             inner: base_writer,
@@ -256,10 +247,8 @@ fn create_layer_and_filter(
                 }
                 (StreamType::Stdout, FormatterType::Json) => {
                     let base_writer = io::stdout;
-                    let writer = if let Some(runtime) = console_config
-                        .encryption
-                        .as_ref()
-                        .and_then(|e| e.to_runtime())
+                    let writer = if let Some(runtime) =
+                        console_config.encryption.as_ref().and_then(|e| e.to_runtime())
                     {
                         BoxMakeWriter::new(EncryptMakeWriter {
                             inner: base_writer,
@@ -279,10 +268,8 @@ fn create_layer_and_filter(
                 }
                 (StreamType::Stderr, FormatterType::Json) => {
                     let base_writer = io::stderr;
-                    let writer = if let Some(runtime) = console_config
-                        .encryption
-                        .as_ref()
-                        .and_then(|e| e.to_runtime())
+                    let writer = if let Some(runtime) =
+                        console_config.encryption.as_ref().and_then(|e| e.to_runtime())
                     {
                         BoxMakeWriter::new(EncryptMakeWriter {
                             inner: base_writer,
@@ -301,7 +288,10 @@ fn create_layer_and_filter(
                         .boxed()
                 }
             };
-            LayerWithGuard { layer, guard: None }
+            LayerWithGuard {
+                layer,
+                guard: None,
+            }
         }
         AdvancedLogEmitter::File(file_config) => {
             // Create our reloadable file appender. It supports CAS-based
@@ -410,12 +400,9 @@ fn ten_configure_log_non_reloadable(config: &mut AdvancedLogConfig) -> Result<()
     }
 
     // Initialize the registry
-    tracing_subscriber::registry()
-        .with(layers)
-        .try_init()
-        .map_err(|_| LogInitError {
-            message: "Logging system is already initialized",
-        })
+    tracing_subscriber::registry().with(layers).try_init().map_err(|_| LogInitError {
+        message: "Logging system is already initialized",
+    })
 }
 
 /// Configure the logging system for production use
@@ -475,10 +462,8 @@ pub fn ten_log(
     let tracing_level = level.to_tracing_level();
 
     // Extract just the filename from the full path
-    let filename = std::path::Path::new(file_name)
-        .file_name()
-        .and_then(|n| n.to_str())
-        .unwrap_or(file_name);
+    let filename =
+        std::path::Path::new(file_name).file_name().and_then(|n| n.to_str()).unwrap_or(file_name);
 
     match tracing_level {
         tracing::Level::TRACE => {

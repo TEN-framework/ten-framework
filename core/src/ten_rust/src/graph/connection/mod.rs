@@ -7,17 +7,16 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
-use crate::constants::{
-    ERR_MSG_GRAPH_APP_FIELD_SHOULD_BE_DECLARED, ERR_MSG_GRAPH_APP_FIELD_SHOULD_NOT_BE_DECLARED,
-    ERR_MSG_GRAPH_LOCALHOST_FORBIDDEN_IN_MULTI_APP_MODE,
-};
-use crate::pkg_info::localhost;
-use crate::{
-    constants::ERR_MSG_GRAPH_LOCALHOST_FORBIDDEN_IN_SINGLE_APP_MODE,
-    graph::is_app_default_loc_or_none,
-};
-
 use super::{msg_conversion::MsgAndResultConversion, AppUriDeclarationState};
+use crate::{
+    constants::{
+        ERR_MSG_GRAPH_APP_FIELD_SHOULD_BE_DECLARED, ERR_MSG_GRAPH_APP_FIELD_SHOULD_NOT_BE_DECLARED,
+        ERR_MSG_GRAPH_LOCALHOST_FORBIDDEN_IN_MULTI_APP_MODE,
+        ERR_MSG_GRAPH_LOCALHOST_FORBIDDEN_IN_SINGLE_APP_MODE,
+    },
+    graph::is_app_default_loc_or_none,
+    pkg_info::localhost,
+};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct GraphLoc {
@@ -85,9 +84,7 @@ impl GraphLoc {
 
             // If no nodes have declared app, locations shouldn't either.
             if *app_uri_declaration_state == AppUriDeclarationState::NoneDeclared {
-                return Err(anyhow::anyhow!(
-                    ERR_MSG_GRAPH_APP_FIELD_SHOULD_NOT_BE_DECLARED
-                ));
+                return Err(anyhow::anyhow!(ERR_MSG_GRAPH_APP_FIELD_SHOULD_NOT_BE_DECLARED));
             }
         } else {
             // If nodes have declared app, locations must also declare it.
@@ -205,16 +202,14 @@ impl GraphMessageFlow {
     pub fn validate_name_mutual_exclusivity(&self) -> Result<()> {
         match (&self.name, &self.names) {
             (Some(_), Some(_)) => Err(anyhow::anyhow!(
-                "Both 'name' and 'names' fields are specified, but they are \
-                 mutually exclusive"
+                "Both 'name' and 'names' fields are specified, but they are mutually exclusive"
             )),
             (None, None) => Err(anyhow::anyhow!(
-                "Neither 'name' nor 'names' field is specified, but one must \
-                 be provided"
+                "Neither 'name' nor 'names' field is specified, but one must be provided"
             )),
-            (None, Some(names)) if names.is_empty() => Err(anyhow::anyhow!(
-                "'names' field is empty, must contain at least one name"
-            )),
+            (None, Some(names)) if names.is_empty() => {
+                Err(anyhow::anyhow!("'names' field is empty, must contain at least one name"))
+            }
             _ => Ok(()),
         }
     }

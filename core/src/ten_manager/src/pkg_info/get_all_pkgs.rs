@@ -7,12 +7,11 @@
 use std::{collections::HashMap, path::PathBuf};
 
 use anyhow::Result;
-use uuid::Uuid;
-
 use ten_rust::{
     base_dir_pkg_info::PkgsInfoInApp, graph::graph_info::GraphInfo,
     pkg_info::get_app_installed_pkgs,
 };
+use uuid::Uuid;
 
 /// Retrieves and caches all installed packages for the given app.
 ///

@@ -14,15 +14,11 @@ use std::sync::Arc;
 use actix::{Actor, Handler, Message, StreamHandler};
 use actix_web::{web, Error, HttpRequest, HttpResponse};
 use actix_web_actors::ws;
-use anyhow::Context;
-use anyhow::Result;
-use msg::InboundMsg;
-use msg::OutboundMsg;
-
-use crate::designer::DesignerState;
-use crate::home::config::TmanConfig;
+use anyhow::{Context, Result};
+use msg::{InboundMsg, OutboundMsg};
 
 use super::storage::in_memory::TmanStorageInMemory;
+use crate::{designer::DesignerState, home::config::TmanConfig};
 
 #[derive(Message)]
 #[rtype(result = "()")]
@@ -31,22 +27,12 @@ pub enum BuiltinFunctionOutput {
     NormalPartial(String),
     ErrorLine(String),
     ErrorPartial(String),
-    Exit {
-        exit_code: i32,
-        error_message: Option<String>,
-    },
+    Exit { exit_code: i32, error_message: Option<String> },
 }
 
 enum BuiltinFunction {
-    InstallAll {
-        base_dir: String,
-    },
-    Install {
-        base_dir: String,
-        pkg_type: String,
-        pkg_name: String,
-        pkg_version: Option<String>,
-    },
+    InstallAll { base_dir: String },
+    Install { base_dir: String, pkg_type: String, pkg_name: String, pkg_version: Option<String> },
 }
 
 /// `BuiltinFunctionParser` returns a tuple: the 1st element is the command
@@ -92,7 +78,9 @@ impl Handler<BuiltinFunctionOutput> for WsBuiltinFunction {
         match msg {
             BuiltinFunctionOutput::NormalLine(line) => {
                 // Send the line to the client.
-                let msg_out = OutboundMsg::NormalLine { data: line };
+                let msg_out = OutboundMsg::NormalLine {
+                    data: line,
+                };
                 let out_str = serde_json::to_string(&msg_out).unwrap();
 
                 // Sends a text message to the WebSocket client.
@@ -100,21 +88,27 @@ impl Handler<BuiltinFunctionOutput> for WsBuiltinFunction {
             }
             BuiltinFunctionOutput::NormalPartial(line) => {
                 // Send the line to the client.
-                let msg_out = OutboundMsg::NormalPartial { data: line };
+                let msg_out = OutboundMsg::NormalPartial {
+                    data: line,
+                };
                 let out_str = serde_json::to_string(&msg_out).unwrap();
 
                 // Sends a text message to the WebSocket client.
                 ctx.text(out_str);
             }
             BuiltinFunctionOutput::ErrorLine(line) => {
-                let msg_out = OutboundMsg::ErrorLine { data: line };
+                let msg_out = OutboundMsg::ErrorLine {
+                    data: line,
+                };
                 let out_str = serde_json::to_string(&msg_out).unwrap();
 
                 // Sends a text message to the WebSocket client.
                 ctx.text(out_str);
             }
             BuiltinFunctionOutput::ErrorPartial(line) => {
-                let msg_out = OutboundMsg::ErrorPartial { data: line };
+                let msg_out = OutboundMsg::ErrorPartial {
+                    data: line,
+                };
                 let out_str = serde_json::to_string(&msg_out).unwrap();
 
                 // Sends a text message to the WebSocket client.
@@ -153,7 +147,9 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsBuiltinFunction
 
                 match (self.builtin_function_parser)(&text) {
                     Ok(builtin_function) => match builtin_function {
-                        BuiltinFunction::InstallAll { base_dir } => self.install_all(base_dir, ctx),
+                        BuiltinFunction::InstallAll {
+                            base_dir,
+                        } => self.install_all(base_dir, ctx),
                         BuiltinFunction::Install {
                             base_dir,
                             pkg_type,
@@ -195,7 +191,11 @@ pub async fn builtin_function_endpoint(
             .with_context(|| format!("Failed to parse {text} into JSON"))?;
 
         match inbound {
-            InboundMsg::InstallAll { base_dir } => Ok(BuiltinFunction::InstallAll { base_dir }),
+            InboundMsg::InstallAll {
+                base_dir,
+            } => Ok(BuiltinFunction::InstallAll {
+                base_dir,
+            }),
             InboundMsg::Install {
                 base_dir,
                 pkg_type,
@@ -210,9 +210,5 @@ pub async fn builtin_function_endpoint(
         }
     });
 
-    ws::start(
-        WsBuiltinFunction::new(default_parser, tman_config, tman_metadata),
-        &req,
-        stream,
-    )
+    ws::start(WsBuiltinFunction::new(default_parser, tman_config, tman_metadata), &req, stream)
 }

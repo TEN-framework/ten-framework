@@ -4,7 +4,6 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-#include "include_internal/ten_runtime/common/log.h"
 #include "include_internal/ten_runtime/extension_group/builtin/builtin_extension_group.h"
 #include "include_internal/ten_runtime/global/global.h"
 #include "include_internal/ten_runtime/global/signal.h"
@@ -12,6 +11,10 @@
 #include "include_internal/ten_utils/log/log.h"
 #include "ten_utils/macro/ctor.h"
 #include "ten_utils/sanitizer/memory_check.h"
+
+#if !defined(TEN_ENABLE_TEN_RUST_APIS)
+#include "include_internal/ten_runtime/common/log.h"
+#endif
 
 // LeakSanitizer checks for memory leaks when `main` ends, but functions with
 // the __attribute__((destructor)) attribute are called after LeakSanitizer
@@ -36,8 +39,12 @@ TEN_CONSTRUCTOR(ten_runtime_on_load) {
   ten_global_init();
 
   ten_global_setup_signal_stuff();
-  ten_log_global_init();
+#if defined(TEN_ENABLE_TEN_RUST_APIS)
+  ten_log_global_init(true);
+#else
+  ten_log_global_init(false);
   ten_log_global_set_output_level(DEFAULT_LOG_OUTPUT_LEVEL);
+#endif
 }
 
 TEN_DESTRUCTOR(ten_runtime_on_unload) {

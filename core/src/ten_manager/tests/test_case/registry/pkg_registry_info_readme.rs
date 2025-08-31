@@ -11,9 +11,11 @@ mod tests {
     use ten_manager::registry::found_result::{
         get_pkg_registry_info_from_manifest, PkgRegistryInfo,
     };
-    use ten_rust::pkg_info::manifest::{LocaleContent, LocalizedField, Manifest};
-    use ten_rust::pkg_info::pkg_basic_info::PkgBasicInfo;
-    use ten_rust::pkg_info::PkgInfo;
+    use ten_rust::pkg_info::{
+        manifest::{LocaleContent, LocalizedField, Manifest},
+        pkg_basic_info::PkgBasicInfo,
+        PkgInfo,
+    };
 
     #[tokio::test]
     async fn test_pkg_registry_info_with_readme() {
@@ -43,23 +45,11 @@ mod tests {
         let readme = pkg_registry_info.readme.unwrap();
 
         assert_eq!(
-            readme
-                .locales
-                .get("en-US")
-                .unwrap()
-                .content
-                .as_ref()
-                .unwrap(),
+            readme.locales.get("en-US").unwrap().content.as_ref().unwrap(),
             "This is a comprehensive README for the test extension."
         );
         assert_eq!(
-            readme
-                .locales
-                .get("zh-CN")
-                .unwrap()
-                .content
-                .as_ref()
-                .unwrap(),
+            readme.locales.get("zh-CN").unwrap().content.as_ref().unwrap(),
             "这是测试扩展的完整说明文档。"
         );
     }
@@ -117,49 +107,25 @@ mod tests {
         // Verify content is resolved from import_uri
         assert!(readme.locales.get("en-US").unwrap().content.is_some());
         assert_eq!(
-            readme
-                .locales
-                .get("en-US")
-                .unwrap()
-                .content
-                .as_ref()
-                .unwrap(),
+            readme.locales.get("en-US").unwrap().content.as_ref().unwrap(),
             "English README content"
         );
 
         assert!(readme.locales.get("zh-CN").unwrap().content.is_some());
         assert_eq!(
-            readme
-                .locales
-                .get("zh-CN")
-                .unwrap()
-                .content
-                .as_ref()
-                .unwrap(),
+            readme.locales.get("zh-CN").unwrap().content.as_ref().unwrap(),
             "Chinese README content"
         );
 
         // Verify import_uri is still preserved
         assert!(readme.locales.get("en-US").unwrap().import_uri.is_some());
         assert_eq!(
-            readme
-                .locales
-                .get("en-US")
-                .unwrap()
-                .import_uri
-                .as_ref()
-                .unwrap(),
+            readme.locales.get("en-US").unwrap().import_uri.as_ref().unwrap(),
             "docs/readme-en.md"
         );
         assert!(readme.locales.get("zh-CN").unwrap().import_uri.is_some());
         assert_eq!(
-            readme
-                .locales
-                .get("zh-CN")
-                .unwrap()
-                .import_uri
-                .as_ref()
-                .unwrap(),
+            readme.locales.get("zh-CN").unwrap().import_uri.as_ref().unwrap(),
             "docs/readme-zh.md"
         );
     }
@@ -208,13 +174,7 @@ mod tests {
         assert!(pkg_info.manifest.readme.is_some());
         let readme = pkg_info.manifest.readme.unwrap();
         assert_eq!(
-            readme
-                .locales
-                .get("en-US")
-                .unwrap()
-                .content
-                .as_ref()
-                .unwrap(),
+            readme.locales.get("en-US").unwrap().content.as_ref().unwrap(),
             "Test README content"
         );
     }
@@ -247,7 +207,9 @@ mod tests {
             tags: None,
             description: None,
             display_name: None,
-            readme: Some(LocalizedField { locales }),
+            readme: Some(LocalizedField {
+                locales,
+            }),
         };
 
         let serialized = serde_json::to_string(&pkg_registry_info).unwrap();
@@ -258,15 +220,7 @@ mod tests {
         let deserialized: PkgRegistryInfo = serde_json::from_str(&serialized).unwrap();
         assert!(deserialized.readme.is_some());
         assert_eq!(
-            deserialized
-                .readme
-                .unwrap()
-                .locales
-                .get("en-US")
-                .unwrap()
-                .content
-                .as_ref()
-                .unwrap(),
+            deserialized.readme.unwrap().locales.get("en-US").unwrap().content.as_ref().unwrap(),
             "Test README"
         );
     }
@@ -339,7 +293,9 @@ mod tests {
             tags: None,
             description: None,
             display_name: None,
-            readme: Some(LocalizedField { locales }),
+            readme: Some(LocalizedField {
+                locales,
+            }),
         };
 
         let serialized = serde_json::to_string(&pkg_registry_info).unwrap();
@@ -347,23 +303,11 @@ mod tests {
 
         let readme = deserialized.readme.unwrap();
         assert_eq!(
-            readme
-                .locales
-                .get("en-US")
-                .unwrap()
-                .content
-                .as_ref()
-                .unwrap(),
+            readme.locales.get("en-US").unwrap().content.as_ref().unwrap(),
             "English README content"
         );
         assert_eq!(
-            readme
-                .locales
-                .get("zh-CN")
-                .unwrap()
-                .import_uri
-                .as_ref()
-                .unwrap(),
+            readme.locales.get("zh-CN").unwrap().import_uri.as_ref().unwrap(),
             "file://./docs/readme-zh.md"
         );
     }

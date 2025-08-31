@@ -53,10 +53,7 @@ mod tests {
         let response_body: serde_json::Value = test::read_body_json(resp).await;
         assert_eq!(response_body["status"], "ok");
         assert_eq!(response_body["data"]["is_valid"], true);
-        assert_eq!(
-            response_body["data"]["error_message"],
-            serde_json::json!(null)
-        );
+        assert_eq!(response_body["data"]["error_message"], serde_json::json!(null));
     }
 
     #[actix_web::test]
@@ -103,10 +100,7 @@ mod tests {
         let response_body: serde_json::Value = test::read_body_json(resp).await;
         assert_eq!(response_body["status"], "ok");
         assert_eq!(response_body["data"]["is_valid"], true);
-        assert_eq!(
-            response_body["data"]["error_message"],
-            serde_json::json!(null)
-        );
+        assert_eq!(response_body["data"]["error_message"], serde_json::json!(null));
     }
 
     #[actix_web::test]
@@ -136,10 +130,26 @@ mod tests {
                 property_json_str: r#"
                 {
                   "ten": {
-                    "log_level": 2,
                     "log": {
-                      "level": 2,
-                      "file": "api.log"
+                      "handlers": [
+                        {
+                          "matchers": [
+                            {
+                              "level": "info"
+                            }
+                          ],
+                          "formatter": {
+                            "type": "json",
+                            "colored": false
+                          },
+                          "emitter": {
+                            "type": "file",
+                            "config": {
+                              "path": "api.log"
+                            }
+                          }
+                        }
+                      ]
                     }
                   },
                   "a": 1,
@@ -156,10 +166,7 @@ mod tests {
         let response_body: serde_json::Value = test::read_body_json(resp).await;
         assert_eq!(response_body["status"], "ok");
         assert_eq!(response_body["data"]["is_valid"], true);
-        assert_eq!(
-            response_body["data"]["error_message"],
-            serde_json::json!(null)
-        );
+        assert_eq!(response_body["data"]["error_message"], serde_json::json!(null));
     }
 
     #[actix_web::test]
@@ -217,10 +224,7 @@ mod tests {
         let response_body: serde_json::Value = test::read_body_json(resp).await;
         assert_eq!(response_body["status"], "ok");
         assert_eq!(response_body["data"]["is_valid"], true);
-        assert_eq!(
-            response_body["data"]["error_message"],
-            serde_json::json!(null)
-        );
+        assert_eq!(response_body["data"]["error_message"], serde_json::json!(null));
     }
 
     #[actix_web::test]
@@ -459,10 +463,7 @@ mod tests {
         let response_body: serde_json::Value = test::read_body_json(resp).await;
         assert_eq!(response_body["status"], "ok");
         assert_eq!(response_body["data"]["is_valid"], false);
-        assert!(response_body["data"]["error_message"]
-            .as_str()
-            .unwrap()
-            .contains("required"));
+        assert!(response_body["data"]["error_message"].as_str().unwrap().contains("required"));
 
         println!("error_message: {}", response_body["data"]["error_message"]);
     }

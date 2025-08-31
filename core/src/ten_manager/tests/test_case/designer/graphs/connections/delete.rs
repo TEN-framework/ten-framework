@@ -9,12 +9,6 @@ mod tests {
     use std::{collections::HashMap, sync::Arc};
 
     use actix_web::{test, web, App};
-    use ten_rust::pkg_info::{
-        constants::{MANIFEST_JSON_FILENAME, PROPERTY_JSON_FILENAME},
-        message::MsgType,
-    };
-    use uuid::Uuid;
-
     use ten_manager::{
         constants::TEST_DIR,
         designer::{
@@ -30,6 +24,11 @@ mod tests {
         home::config::TmanConfig,
         output::cli::TmanOutputCli,
     };
+    use ten_rust::pkg_info::{
+        constants::{MANIFEST_JSON_FILENAME, PROPERTY_JSON_FILENAME},
+        message::MsgType,
+    };
+    use uuid::Uuid;
 
     use crate::test_case::common::mock::{
         inject_all_pkgs_for_mock, inject_all_standard_pkgs_for_mock,
@@ -207,15 +206,12 @@ mod tests {
 
         let designer_state = Arc::new(designer_state);
 
-        let app = test::init_service(
-            App::new()
-                .app_data(web::Data::new(designer_state.clone()))
-                .route(
-                    "/api/designer/v1/graphs/connections/delete",
-                    web::post().to(delete_graph_connection_endpoint),
-                ),
-        )
-        .await;
+        let app =
+            test::init_service(App::new().app_data(web::Data::new(designer_state.clone())).route(
+                "/api/designer/v1/graphs/connections/delete",
+                web::post().to(delete_graph_connection_endpoint),
+            ))
+            .await;
 
         // Delete a connection from the default_with_app_uri graph.
         let request_payload = DeleteGraphConnectionRequestPayload {
@@ -251,24 +247,19 @@ mod tests {
         if let Some(predefined_graph) = graphs_cache_find_by_id(&graphs_cache, &graph_id_clone) {
             // Check if the connection is gone.
             let connection_exists =
-                predefined_graph
-                    .graph
-                    .connections()
-                    .as_ref()
-                    .is_some_and(|connections| {
-                        connections.iter().any(|conn| {
-                            conn.loc.extension == Some("extension_1".to_string())
-                                && conn
-                                    .loc
-                                    .app
-                                    .as_ref()
-                                    .is_some_and(|app| app == "http://example.com:8000")
-                                && conn.cmd.as_ref().is_some_and(|cmds| {
-                                    cmds.iter()
-                                        .any(|cmd| cmd.name.as_deref() == Some("hello_world"))
-                                })
-                        })
-                    });
+                predefined_graph.graph.connections().as_ref().is_some_and(|connections| {
+                    connections.iter().any(|conn| {
+                        conn.loc.extension == Some("extension_1".to_string())
+                            && conn
+                                .loc
+                                .app
+                                .as_ref()
+                                .is_some_and(|app| app == "http://example.com:8000")
+                            && conn.cmd.as_ref().is_some_and(|cmds| {
+                                cmds.iter().any(|cmd| cmd.name.as_deref() == Some("hello_world"))
+                            })
+                    })
+                });
             assert!(!connection_exists, "Connection should have been deleted");
         } else {
             panic!("Graph 'default_with_app_uri' not found");
@@ -293,8 +284,7 @@ mod tests {
         assert_eq!(
             updated_property,
             expected_property,
-            "Property file doesn't match expected \
-             content.\nExpected:\n{}\nActual:\n{}",
+            "Property file doesn't match expected content.\nExpected:\n{}\nActual:\n{}",
             serde_json::to_string_pretty(&expected_property).unwrap(),
             serde_json::to_string_pretty(&updated_property).unwrap()
         );

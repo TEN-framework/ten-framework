@@ -27,7 +27,7 @@ func newAExtension(name string) ten.Extension {
 func (p *aExtension) OnDeinit(tenEnv ten.TenEnv) {
 	defer tenEnv.OnDeinitDone()
 
-	tenEnv.Log(ten.LogLevelDebug, "onDeinit")
+	tenEnv.LogDebug("onDeinit")
 	if !p.isStopped {
 		panic("should not happen.")
 	}
@@ -39,10 +39,7 @@ func (p *aExtension) OnCmd(
 ) {
 	go func() {
 		cmdName, _ := cmd.GetName()
-		tenEnv.Log(
-			ten.LogLevelInfo,
-			"receive command: "+cmdName,
-		)
+		tenEnv.LogInfo("receive command: " + cmdName)
 		if cmdName == "start" {
 			tenEnv.SendCmd(cmd, func(r ten.TenEnv, cs ten.CmdResult, e error) {
 				r.ReturnResult(cs, nil)
@@ -53,7 +50,7 @@ func (p *aExtension) OnCmd(
 
 func (p *aExtension) OnStop(tenEnv ten.TenEnv) {
 	go func() {
-		tenEnv.Log(ten.LogLevelDebug, "onStop ")
+		tenEnv.LogDebug("onStop ")
 
 		cmd, _ := ten.NewCmd("stop")
 		respChan := make(chan ten.CmdResult, 1)

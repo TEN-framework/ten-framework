@@ -10,10 +10,11 @@ use actix::AsyncContext;
 use actix_web_actors::ws::WebsocketContext;
 use crossbeam_channel::{bounded, Sender};
 
-use crate::designer::exec::RunCmdOutput;
-use crate::log::{process_log_line, GraphResourcesLog, LogLineInfo};
-
 use super::{msg::OutboundMsg, WsRunCmd};
+use crate::{
+    designer::exec::RunCmdOutput,
+    log::{process_log_line, GraphResourcesLog, LogLineInfo},
+};
 
 // Add this struct to store shutdown senders.
 pub struct ShutdownSenders {
@@ -54,11 +55,7 @@ impl WsRunCmd {
                 // Set TEN_LOG_FORMATTER to json if any output is log content.
                 .env(
                     "TEN_LOG_FORMATTER",
-                    if self.stdout_is_log || self.stderr_is_log {
-                        "json"
-                    } else {
-                        ""
-                    },
+                    if self.stdout_is_log || self.stderr_is_log { "json" } else { "" },
                 )
                 .stdout(std::process::Stdio::piped())
                 .stderr(std::process::Stdio::piped());
@@ -71,11 +68,7 @@ impl WsRunCmd {
                 .arg(format!("exec {cmd}"))
                 .env(
                     "TEN_LOG_FORMATTER",
-                    if self.stdout_is_log || self.stderr_is_log {
-                        "json"
-                    } else {
-                        ""
-                    },
+                    if self.stdout_is_log || self.stderr_is_log { "json" } else { "" },
                 )
                 .stdout(std::process::Stdio::piped())
                 .stderr(std::process::Stdio::piped());
@@ -98,8 +91,7 @@ impl WsRunCmd {
             } else {
                 let err_msg = OutboundMsg::Error {
                     msg: format!(
-                        "Working directory does not exist or is not a \
-                         directory: {normalized_dir}"
+                        "Working directory does not exist or is not a directory: {normalized_dir}"
                     ),
                 };
                 ctx.text(serde_json::to_string(&err_msg).unwrap());
@@ -169,7 +161,10 @@ impl WsRunCmd {
                             if is_log {
                                 // Process line as log content.
                                 let metadata = process_log_line(&line, &mut graph_resources_log);
-                                let log_line_info = LogLineInfo { line, metadata };
+                                let log_line_info = LogLineInfo {
+                                    line,
+                                    metadata,
+                                };
                                 addr_stdout.do_send(RunCmdOutput::StdOutLog(log_line_info));
                             } else {
                                 // Process as normal stdout.
@@ -218,7 +213,10 @@ impl WsRunCmd {
                             if is_log {
                                 // Process line as log content.
                                 let metadata = process_log_line(&line, &mut graph_resources_log);
-                                let log_line_info = LogLineInfo { line, metadata };
+                                let log_line_info = LogLineInfo {
+                                    line,
+                                    metadata,
+                                };
                                 addr_stderr.do_send(RunCmdOutput::StdErrLog(log_line_info));
                             } else {
                                 // Process as normal stderr.

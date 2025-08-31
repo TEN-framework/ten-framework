@@ -4,10 +4,12 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-use std::fs;
-use std::path::{Path, PathBuf};
-use std::thread;
-use std::time::Duration;
+use std::{
+    fs,
+    path::{Path, PathBuf},
+    thread,
+    time::Duration,
+};
 
 use anyhow::{Context, Result};
 use semver::Version;
@@ -25,11 +27,8 @@ pub fn find_in_package_cache(
     file_name: &str,
 ) -> Result<Option<PathBuf>> {
     let cache_dir = get_default_package_cache_folder();
-    let pkg_file = cache_dir
-        .join(pkg_type.to_string())
-        .join(name)
-        .join(version.to_string())
-        .join(file_name);
+    let pkg_file =
+        cache_dir.join(pkg_type.to_string()).join(name).join(version.to_string()).join(file_name);
 
     if !pkg_file.exists() {
         return Ok(None);
@@ -49,10 +48,7 @@ pub fn store_file_to_package_cache(
     downloaded_path: &Path,
 ) -> Result<()> {
     let cache_dir = get_default_package_cache_folder();
-    let pkg_dir = cache_dir
-        .join(pkg_type.to_string())
-        .join(name)
-        .join(version.to_string());
+    let pkg_dir = cache_dir.join(pkg_type.to_string()).join(name).join(version.to_string());
 
     fs::create_dir_all(&pkg_dir)
         .with_context(|| format!("Failed to create cache dir {}", pkg_dir.display()))?;
@@ -80,10 +76,6 @@ pub fn store_file_to_package_cache(
 
     // If we get here, all retry attempts failed.
     Err(anyhow::anyhow!(last_error.unwrap())).with_context(|| {
-        format!(
-            "Failed to copy into cache {} after {} attempts",
-            dest_path.display(),
-            MAX_RETRIES
-        )
+        format!("Failed to copy into cache {} after {} attempts", dest_path.display(), MAX_RETRIES)
     })
 }

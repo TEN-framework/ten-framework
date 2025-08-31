@@ -8,15 +8,11 @@ mod api;
 mod bindings;
 mod telemetry;
 
-use std::os::raw::c_char;
-use std::ptr;
-use std::{ffi::CStr, thread};
+use std::{ffi::CStr, os::raw::c_char, ptr, thread};
 
 use actix_web::{web, App, HttpServer};
 use anyhow::Result;
-use futures::channel::oneshot;
-use futures::future::select;
-use futures::FutureExt;
+use futures::{channel::oneshot, future::select, FutureExt};
 use prometheus::Registry;
 
 use crate::constants::{
@@ -66,31 +62,19 @@ fn determine_binding_addresses(
 
     if has_both_endpoints && !same_endpoint {
         // Both endpoints are different, bind to both.
-        vec![
-            telemetry_endpoint.as_ref().cloned(),
-            api_endpoint.as_ref().cloned(),
-        ]
-        .into_iter()
-        .flatten()
-        .collect::<Vec<_>>()
+        vec![telemetry_endpoint.as_ref().cloned(), api_endpoint.as_ref().cloned()]
+            .into_iter()
+            .flatten()
+            .collect::<Vec<_>>()
     } else if same_endpoint {
         // Both endpoints are the same, bind to just one.
-        telemetry_endpoint
-            .as_ref()
-            .map(|e| vec![e.clone()])
-            .unwrap_or_default()
+        telemetry_endpoint.as_ref().map(|e| vec![e.clone()]).unwrap_or_default()
     } else if telemetry_endpoint.is_some() {
         // Only telemetry endpoint.
-        telemetry_endpoint
-            .as_ref()
-            .map(|e| vec![e.clone()])
-            .unwrap_or_default()
+        telemetry_endpoint.as_ref().map(|e| vec![e.clone()]).unwrap_or_default()
     } else {
         // Only API endpoint.
-        api_endpoint
-            .as_ref()
-            .map(|e| vec![e.clone()])
-            .unwrap_or_default()
+        api_endpoint.as_ref().map(|e| vec![e.clone()]).unwrap_or_default()
     }
 }
 
@@ -119,13 +103,11 @@ fn create_server_app(
     if has_both && !same_ep {
         // Both endpoints are provided and they are different. We need to use
         // guards to ensure the right routes are bound to the right endpoints.
-        let telemetry_port = telemetry_endpoint
-            .as_ref()
-            .and_then(|s| s.rsplit(':').next().map(|p| p.to_string()));
+        let telemetry_port =
+            telemetry_endpoint.as_ref().and_then(|s| s.rsplit(':').next().map(|p| p.to_string()));
 
-        let api_port = api_endpoint
-            .as_ref()
-            .and_then(|s| s.rsplit(':').next().map(|p| p.to_string()));
+        let api_port =
+            api_endpoint.as_ref().and_then(|s| s.rsplit(':').next().map(|p| p.to_string()));
 
         app_builder
             // Add telemetry routes with guard.
@@ -134,12 +116,8 @@ fn create_server_app(
                     .guard(actix_web::guard::fn_guard(move |ctx| {
                         if let Some(port) = &telemetry_port {
                             // Get the host/port info from the request.
-                            let host = ctx
-                                .head()
-                                .uri
-                                .authority()
-                                .map(|auth| auth.as_str())
-                                .unwrap_or("");
+                            let host =
+                                ctx.head().uri.authority().map(|auth| auth.as_str()).unwrap_or("");
 
                             // Check if the port matches.
                             host.rsplit(':').next().map(|p| p == port).unwrap_or(false)
@@ -155,12 +133,8 @@ fn create_server_app(
                     .guard(actix_web::guard::fn_guard(move |ctx| {
                         if let Some(port) = &api_port {
                             // Get the host/port info from the request.
-                            let host = ctx
-                                .head()
-                                .uri
-                                .authority()
-                                .map(|auth| auth.as_str())
-                                .unwrap_or("");
+                            let host =
+                                ctx.head().uri.authority().map(|auth| auth.as_str()).unwrap_or("");
 
                             // Check if the port matches.
                             host.rsplit(':').next().map(|p| p == port).unwrap_or(false)
@@ -201,11 +175,7 @@ fn create_server_and_bind_to_addresses(
     // Create a new server with a factory that uses the create_server_app
     // function
     let server = HttpServer::new(move || {
-        create_server_app(
-            registry_clone.clone(),
-            &telemetry_endpoint_clone,
-            &api_endpoint_clone,
-        )
+        create_server_app(registry_clone.clone(), &telemetry_endpoint_clone, &api_endpoint_clone)
     })
     .shutdown_timeout(0)
     .backlog(1024);
@@ -218,10 +188,8 @@ fn create_server_and_bind_to_addresses(
                 Some(server.run())
             }
             Err(e) => {
-                let error_msg = format!(
-                    "Failed to bind to address {}: {:?}",
-                    binding_addresses[0], e
-                );
+                let error_msg =
+                    format!("Failed to bind to address {}: {:?}", binding_addresses[0], e);
                 eprintln!("{error_msg}");
                 bind_errors.push(error_msg);
                 None
@@ -300,8 +268,7 @@ fn create_service_hub_server_with_retry(
         // return None.
         if i >= SERVICE_HUB_SERVER_BIND_MAX_RETRIES - 1 {
             eprintln!(
-                "Error binding to addresses: {:?} after {} attempts. Errors: \
-                 {:?}",
+                "Error binding to addresses: {:?} after {} attempts. Errors: {:?}",
                 binding_addresses,
                 i + 1,
                 errors
@@ -309,8 +276,8 @@ fn create_service_hub_server_with_retry(
 
             // Provide a helpful message for common issues.
             eprintln!(
-                "Check if another process is using these ports or if you have \
-                 permission to bind to these addresses."
+                "Check if another process is using these ports or if you have permission to bind \
+                 to these addresses."
             );
 
             return None;
@@ -318,16 +285,11 @@ fn create_service_hub_server_with_retry(
 
         // Otherwise, log the error and retry after a delay.
         eprintln!(
-            "Failed to bind to endpoints. Attempt {} of {}. Retrying in {} \
-             second{}...",
+            "Failed to bind to endpoints. Attempt {} of {}. Retrying in {} second{}...",
             i + 1,
             SERVICE_HUB_SERVER_BIND_MAX_RETRIES,
             SERVICE_HUB_SERVER_BIND_RETRY_INTERVAL_SECS,
-            if SERVICE_HUB_SERVER_BIND_RETRY_INTERVAL_SECS == 1 {
-                ""
-            } else {
-                "s"
-            }
+            if SERVICE_HUB_SERVER_BIND_RETRY_INTERVAL_SECS == 1 { "" } else { "s" }
         );
         std::thread::sleep(std::time::Duration::from_secs(
             SERVICE_HUB_SERVER_BIND_RETRY_INTERVAL_SECS,
@@ -456,12 +418,9 @@ pub unsafe extern "C" fn ten_service_hub_create(
     };
 
     // Format the endpoints if hosts are available.
-    let telemetry_endpoint = telemetry_host_str
-        .as_ref()
-        .map(|host| format!("{host}:{telemetry_port}"));
-    let api_endpoint = api_host_str
-        .as_ref()
-        .map(|host| format!("{host}:{api_port}"));
+    let telemetry_endpoint =
+        telemetry_host_str.as_ref().map(|host| format!("{host}:{telemetry_port}"));
+    let api_endpoint = api_host_str.as_ref().map(|host| format!("{host}:{api_port}"));
 
     // If both endpoints are the same and not None, use a single server.
     if telemetry_endpoint.is_some() && api_endpoint.is_some() {
@@ -664,18 +623,14 @@ pub unsafe extern "C" fn ten_service_hub_shutdown(service_hub_ptr: *mut ServiceH
                 },
                 Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {
                     eprintln!(
-                        "WARNING: Service hub server thread did not shut down \
-                         within timeout ({SHUTDOWN_TIMEOUT_SECS}s)"
+                        "WARNING: Service hub server thread did not shut down within timeout \
+                         ({SHUTDOWN_TIMEOUT_SECS}s)"
                     );
-                    eprintln!(
-                        "The thread may still be running, potentially leaking \
-                         resources"
-                    );
+                    eprintln!("The thread may still be running, potentially leaking resources");
                 }
                 Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => {
                     eprintln!(
-                        "ERROR: Channel disconnected while waiting for server \
-                         thread to join"
+                        "ERROR: Channel disconnected while waiting for server thread to join"
                     );
                 }
             }

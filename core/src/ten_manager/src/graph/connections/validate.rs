@@ -7,7 +7,6 @@
 use std::collections::HashMap;
 
 use anyhow::Result;
-
 use ten_rust::{
     base_dir_pkg_info::PkgsInfoInApp,
     graph::{msg_conversion::MsgAndResultConversion, Graph},
@@ -120,10 +119,7 @@ async fn validate_msg_conversion_schema<'a>(
     // there's a special rule for `ten.name` to determine the `dest_msg_name`.
     let (dest_msg_name, ten_name_rule_index) = msg_conversion_get_dest_msg_name(
         msg_conversion_validate_info.msg_name,
-        msg_conversion_validate_info
-            .msg_conversion
-            .as_ref()
-            .unwrap(),
+        msg_conversion_validate_info.msg_conversion.as_ref().unwrap(),
     )?;
 
     let (converted_schema, converted_result_schema) = msg_conversion_get_final_target_schema(
@@ -137,10 +133,7 @@ async fn validate_msg_conversion_schema<'a>(
         msg_conversion_validate_info.msg_name,
         &dest_msg_name,
         ten_name_rule_index,
-        msg_conversion_validate_info
-            .msg_conversion
-            .as_ref()
-            .unwrap(),
+        msg_conversion_validate_info.msg_conversion.as_ref().unwrap(),
     )
     .await?;
 
@@ -157,14 +150,8 @@ async fn validate_msg_conversion_schema<'a>(
             graph_app_base_dir,
             msg_conversion_validate_info,
             pkgs_cache,
-            &converted_schema
-                .property
-                .as_ref()
-                .and_then(|p| p.properties().cloned()),
-            &converted_schema
-                .property
-                .as_ref()
-                .and_then(|p| p.required.clone()),
+            &converted_schema.property.as_ref().and_then(|p| p.properties().cloned()),
+            &converted_schema.property.as_ref().and_then(|p| p.required.clone()),
             msg_conversion_validate_info.dest_app,
             dest_extension_addon_name,
             &converted_schema.name,
@@ -185,14 +172,8 @@ async fn validate_msg_conversion_schema<'a>(
             graph_app_base_dir,
             msg_conversion_validate_info,
             pkgs_cache,
-            &converted_result_schema
-                .property
-                .as_ref()
-                .and_then(|p| p.properties().cloned()),
-            &converted_result_schema
-                .property
-                .as_ref()
-                .and_then(|p| p.required.clone()),
+            &converted_result_schema.property.as_ref().and_then(|p| p.properties().cloned()),
+            &converted_result_schema.property.as_ref().and_then(|p| p.required.clone()),
             msg_conversion_validate_info.src_app,
             src_extension_addon_name,
             msg_conversion_validate_info.msg_name,
@@ -268,8 +249,7 @@ fn find_pkg_infos<'a>(
 
             if found_extension_pkg_info.is_none() {
                 return Err(anyhow::anyhow!(
-                    "{} extension '{}' not found in the installed packages \
-                     for app '{:?}'",
+                    "{} extension '{}' not found in the installed packages for app '{:?}'",
                     entity_type,
                     extension_name,
                     app_uri
@@ -281,8 +261,7 @@ fn find_pkg_infos<'a>(
 
         // If we reach here, no package was found.
         Err(anyhow::anyhow!(
-            "{} extension '{}' not found in the installed packages for app \
-             '{:?}'",
+            "{} extension '{}' not found in the installed packages for app '{:?}'",
             entity_type,
             extension_name,
             app_uri
@@ -301,11 +280,7 @@ fn get_src_and_dest_c_msg_schema<'a>(
     pkgs_cache: &'a HashMap<String, PkgsInfoInApp>,
     graph: &mut Graph,
     msg_conversion_validate_info: &MsgConversionValidateInfo,
-) -> Result<(
-    Option<&'a TenMsgSchema>,
-    Option<&'a TenMsgSchema>,
-    Option<String>,
-)> {
+) -> Result<(Option<&'a TenMsgSchema>, Option<&'a TenMsgSchema>, Option<String>)> {
     let src_extension_addon = graph.get_addon_name_of_extension(
         msg_conversion_validate_info.src_app,
         msg_conversion_validate_info.src_extension,
@@ -332,88 +307,49 @@ fn get_src_and_dest_c_msg_schema<'a>(
     let dest_extension_pkg_info = dest_extension_pkg_info.unwrap();
 
     // Get source and destination schemas based on message type.
-    let (src_schema, dest_schema, error_message) = match msg_conversion_validate_info.msg_type {
-        MsgType::Cmd => {
-            let src = src_extension_pkg_info
-                .schema_store
-                .as_ref()
-                .and_then(|store| store.cmd_out.get(msg_conversion_validate_info.msg_name));
-            let dest = dest_extension_pkg_info
-                .schema_store
-                .as_ref()
-                .and_then(|store| store.cmd_in.get(msg_conversion_validate_info.msg_name));
-            (
-                src,
-                dest,
-                "Command schema incompatibility between source and \
-                     destination",
-            )
-        }
-        MsgType::Data => {
-            let src = src_extension_pkg_info
-                .schema_store
-                .as_ref()
-                .and_then(|store| store.data_out.get(msg_conversion_validate_info.msg_name));
-            let dest = dest_extension_pkg_info
-                .schema_store
-                .as_ref()
-                .and_then(|store| store.data_in.get(msg_conversion_validate_info.msg_name));
-            (
-                src,
-                dest,
-                "Data schema incompatibility between source and \
-                     destination",
-            )
-        }
-        MsgType::AudioFrame => {
-            let src = src_extension_pkg_info
-                .schema_store
-                .as_ref()
-                .and_then(|store| {
-                    store
-                        .audio_frame_out
-                        .get(msg_conversion_validate_info.msg_name)
+    let (src_schema, dest_schema, error_message) =
+        match msg_conversion_validate_info.msg_type {
+            MsgType::Cmd => {
+                let src = src_extension_pkg_info
+                    .schema_store
+                    .as_ref()
+                    .and_then(|store| store.cmd_out.get(msg_conversion_validate_info.msg_name));
+                let dest = dest_extension_pkg_info
+                    .schema_store
+                    .as_ref()
+                    .and_then(|store| store.cmd_in.get(msg_conversion_validate_info.msg_name));
+                (src, dest, "Command schema incompatibility between source and destination")
+            }
+            MsgType::Data => {
+                let src = src_extension_pkg_info
+                    .schema_store
+                    .as_ref()
+                    .and_then(|store| store.data_out.get(msg_conversion_validate_info.msg_name));
+                let dest = dest_extension_pkg_info
+                    .schema_store
+                    .as_ref()
+                    .and_then(|store| store.data_in.get(msg_conversion_validate_info.msg_name));
+                (src, dest, "Data schema incompatibility between source and destination")
+            }
+            MsgType::AudioFrame => {
+                let src = src_extension_pkg_info.schema_store.as_ref().and_then(|store| {
+                    store.audio_frame_out.get(msg_conversion_validate_info.msg_name)
                 });
-            let dest = dest_extension_pkg_info
-                .schema_store
-                .as_ref()
-                .and_then(|store| {
-                    store
-                        .audio_frame_in
-                        .get(msg_conversion_validate_info.msg_name)
+                let dest = dest_extension_pkg_info.schema_store.as_ref().and_then(|store| {
+                    store.audio_frame_in.get(msg_conversion_validate_info.msg_name)
                 });
-            (
-                src,
-                dest,
-                "Audio frame schema incompatibility between source and \
-                     destination",
-            )
-        }
-        MsgType::VideoFrame => {
-            let src = src_extension_pkg_info
-                .schema_store
-                .as_ref()
-                .and_then(|store| {
-                    store
-                        .video_frame_out
-                        .get(msg_conversion_validate_info.msg_name)
+                (src, dest, "Audio frame schema incompatibility between source and destination")
+            }
+            MsgType::VideoFrame => {
+                let src = src_extension_pkg_info.schema_store.as_ref().and_then(|store| {
+                    store.video_frame_out.get(msg_conversion_validate_info.msg_name)
                 });
-            let dest = dest_extension_pkg_info
-                .schema_store
-                .as_ref()
-                .and_then(|store| {
-                    store
-                        .video_frame_in
-                        .get(msg_conversion_validate_info.msg_name)
+                let dest = dest_extension_pkg_info.schema_store.as_ref().and_then(|store| {
+                    store.video_frame_in.get(msg_conversion_validate_info.msg_name)
                 });
-            (
-                src,
-                dest,
-                "Video frame schema incompatibility between source and \
-                     destination",
-            )
-        }
-    };
+                (src, dest, "Video frame schema incompatibility between source and destination")
+            }
+        };
 
     Ok((src_schema, dest_schema, Some(error_message.to_string())))
 }

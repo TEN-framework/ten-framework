@@ -60,11 +60,7 @@ mod tests {
         let property_path = std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
         std::fs::write(&property_path, &app_property_json_str).unwrap();
 
-        let all_pkgs_json = vec![(
-            test_dir.clone(),
-            app_manifest_json_str,
-            app_property_json_str,
-        )];
+        let all_pkgs_json = vec![(test_dir.clone(), app_manifest_json_str, app_property_json_str)];
 
         {
             let mut pkgs_cache = designer_state.pkgs_cache.write().await;
@@ -90,10 +86,7 @@ mod tests {
         let app = test::init_service(
             App::new()
                 .app_data(web::Data::new(designer_state.clone()))
-                .route(
-                    "/api/designer/v1/graphs/update",
-                    web::post().to(update_graph_endpoint),
-                ),
+                .route("/api/designer/v1/graphs/update", web::post().to(update_graph_endpoint)),
         )
         .await;
 
@@ -140,7 +133,9 @@ mod tests {
             nodes: nodes
                 .iter()
                 .map(|node| match node {
-                    GraphNode::Extension { content } => GraphNodeForUpdate {
+                    GraphNode::Extension {
+                        content,
+                    } => GraphNodeForUpdate {
                         name: content.name.clone(),
                         addon: content.addon.clone(),
                         extension_group: content.extension_group.clone(),
@@ -187,8 +182,7 @@ mod tests {
         assert_eq!(
             expected_value,
             actual_value,
-            "Property file doesn't match expected \
-             content.\nExpected:\n{}\nActual:\n{}",
+            "Property file doesn't match expected content.\nExpected:\n{}\nActual:\n{}",
             serde_json::to_string_pretty(&expected_value).unwrap(),
             serde_json::to_string_pretty(&actual_value).unwrap()
         );
@@ -207,10 +201,11 @@ mod tests {
         });
 
         // Create a test app with the update_graph_endpoint.
-        let app = test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
-            "/api/designer/v1/graphs/update",
-            web::post().to(update_graph_endpoint),
-        ))
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(designer_state))
+                .route("/api/designer/v1/graphs/update", web::post().to(update_graph_endpoint)),
+        )
         .await;
 
         // Use a random UUID that doesn't exist in the cache.
@@ -274,11 +269,7 @@ mod tests {
         let property_path = std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
         std::fs::write(&property_path, &app_property_json_str).unwrap();
 
-        let all_pkgs_json = vec![(
-            test_dir.clone(),
-            app_manifest_json_str,
-            app_property_json_str,
-        )];
+        let all_pkgs_json = vec![(test_dir.clone(), app_manifest_json_str, app_property_json_str)];
 
         {
             let mut pkgs_cache = designer_state.pkgs_cache.write().await;
@@ -304,10 +295,7 @@ mod tests {
         let app = test::init_service(
             App::new()
                 .app_data(web::Data::new(designer_state.clone()))
-                .route(
-                    "/api/designer/v1/graphs/update",
-                    web::post().to(update_graph_endpoint),
-                ),
+                .route("/api/designer/v1/graphs/update", web::post().to(update_graph_endpoint)),
         )
         .await;
 
@@ -328,7 +316,9 @@ mod tests {
             nodes: nodes
                 .iter()
                 .map(|node| match node {
-                    GraphNode::Extension { content } => GraphNodeForUpdate {
+                    GraphNode::Extension {
+                        content,
+                    } => GraphNodeForUpdate {
                         name: content.name.clone(),
                         addon: content.addon.clone(),
                         extension_group: content.extension_group.clone(),
@@ -375,8 +365,7 @@ mod tests {
         assert_eq!(
             expected_value,
             actual_value,
-            "Property file doesn't match expected \
-             content.\nExpected:\n{}\nActual:\n{}",
+            "Property file doesn't match expected content.\nExpected:\n{}\nActual:\n{}",
             serde_json::to_string_pretty(&expected_value).unwrap(),
             serde_json::to_string_pretty(&actual_value).unwrap()
         );

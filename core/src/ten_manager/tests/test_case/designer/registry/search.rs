@@ -9,7 +9,6 @@ mod tests {
     use std::{collections::HashMap, sync::Arc};
 
     use actix_web::{http::StatusCode, test, web, App};
-
     use ten_manager::{
         designer::{
             registry::search::{
@@ -37,15 +36,12 @@ mod tests {
         };
         let designer_state = Arc::new(designer_state);
 
-        let app = test::init_service(
-            App::new()
-                .app_data(web::Data::new(designer_state.clone()))
-                .route(
-                    "/api/designer/v1/registry/packages/search",
-                    web::post().to(search_packages_endpoint),
-                ),
-        )
-        .await;
+        let app =
+            test::init_service(App::new().app_data(web::Data::new(designer_state.clone())).route(
+                "/api/designer/v1/registry/packages/search",
+                web::post().to(search_packages_endpoint),
+            ))
+            .await;
 
         let request_payload = SearchPackagesRequestPayload {
             filter: PkgSearchFilter {
@@ -89,15 +85,12 @@ mod tests {
         };
         let designer_state = Arc::new(designer_state);
 
-        let app = test::init_service(
-            App::new()
-                .app_data(web::Data::new(designer_state.clone()))
-                .route(
-                    "/api/designer/v1/registry/packages/search",
-                    web::post().to(search_packages_endpoint),
-                ),
-        )
-        .await;
+        let app =
+            test::init_service(App::new().app_data(web::Data::new(designer_state.clone())).route(
+                "/api/designer/v1/registry/packages/search",
+                web::post().to(search_packages_endpoint),
+            ))
+            .await;
 
         let filter = PkgSearchFilter {
             filter: FilterNode::Logic(LogicFilter::And {
@@ -160,15 +153,12 @@ mod tests {
         };
         let designer_state = Arc::new(designer_state);
 
-        let app = test::init_service(
-            App::new()
-                .app_data(web::Data::new(designer_state.clone()))
-                .route(
-                    "/api/designer/v1/registry/packages/search",
-                    web::post().to(search_packages_endpoint),
-                ),
-        )
-        .await;
+        let app =
+            test::init_service(App::new().app_data(web::Data::new(designer_state.clone())).route(
+                "/api/designer/v1/registry/packages/search",
+                web::post().to(search_packages_endpoint),
+            ))
+            .await;
 
         let request_payload = SearchPackagesRequestPayload {
             filter: PkgSearchFilter {

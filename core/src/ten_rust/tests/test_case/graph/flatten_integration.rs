@@ -134,10 +134,7 @@ mod tests {
 
         // The graph should remain unchanged
         assert_eq!(graph.nodes.len(), 2);
-        assert!(graph
-            .nodes
-            .iter()
-            .all(|node| node.get_type() == GraphNodeType::Extension));
+        assert!(graph.nodes.iter().all(|node| node.get_type() == GraphNodeType::Extension));
     }
 
     #[tokio::test]
@@ -212,21 +209,12 @@ mod tests {
         fs::write(subgraph_file_path, subgraph_json).unwrap();
 
         // flatten_graph should return Some since there are subgraphs
-        let result = graph
-            .flatten_graph(Some(temp_dir.path().to_str().unwrap()))
-            .await
-            .unwrap();
+        let result = graph.flatten_graph(Some(temp_dir.path().to_str().unwrap())).await.unwrap();
         assert!(result.is_some());
 
         let flattened = result.unwrap();
         assert_eq!(flattened.nodes.len(), 2); // ext_a + subgraph_1_ext_b
-        assert!(flattened
-            .nodes
-            .iter()
-            .any(|node| node.get_name() == "ext_a"));
-        assert!(flattened
-            .nodes
-            .iter()
-            .any(|node| node.get_name() == "subgraph_1_ext_b"));
+        assert!(flattened.nodes.iter().any(|node| node.get_name() == "ext_a"));
+        assert!(flattened.nodes.iter().any(|node| node.get_name() == "subgraph_1_ext_b"));
     }
 }

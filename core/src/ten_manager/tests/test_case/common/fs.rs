@@ -4,8 +4,9 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-use anyhow::Result;
 use std::time::Duration;
+
+use anyhow::Result;
 
 // Helper function to ensure content is synced to disk.
 pub fn sync_to_disk(file: &std::fs::File) -> Result<()> {

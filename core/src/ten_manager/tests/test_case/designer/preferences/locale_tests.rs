@@ -4,19 +4,17 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-use std::collections::HashMap;
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 use actix_web::{test, web, App};
 use serde_json;
-
-use ten_manager::designer::storage::in_memory::TmanStorageInMemory;
 use ten_manager::{
     designer::{
         locale::Locale,
         preferences::locale::{
             get_locale_endpoint, update_locale_endpoint, UpdateLocaleRequestPayload,
         },
+        storage::in_memory::TmanStorageInMemory,
         DesignerState,
     },
     home::config::TmanConfig,
@@ -45,9 +43,7 @@ async fn test_get_locale_success() {
     .await;
 
     // Create test request.
-    let req = test::TestRequest::get()
-        .uri("/api/designer/v1/preferences/locale")
-        .to_request();
+    let req = test::TestRequest::get().uri("/api/designer/v1/preferences/locale").to_request();
     let resp = test::call_service(&app, req).await;
 
     // Assert response status is 200 OK.
@@ -114,10 +110,7 @@ async fn test_update_locale_success() {
     assert_eq!(json["status"], "ok");
 
     // Verify config was updated.
-    assert!(matches!(
-        state.tman_config.read().await.designer.locale,
-        Locale::ZhCn
-    ));
+    assert!(matches!(state.tman_config.read().await.designer.locale, Locale::ZhCn));
 }
 
 #[actix_web::test]
@@ -152,7 +145,9 @@ async fn test_update_locale_all_supported_locales() {
         .await;
 
         // Create valid payload.
-        let payload = UpdateLocaleRequestPayload { locale: *locale };
+        let payload = UpdateLocaleRequestPayload {
+            locale: *locale,
+        };
 
         // Create test request.
         let req = test::TestRequest::put()

@@ -202,7 +202,7 @@ ten_thread_t *ten_thread_create(const char *name,
   }
 
 #if defined(_DEBUG) && defined(__linux__)
-  TEN_LOGV("New thread is created, id(%lu), name(%s)", syscall(__NR_gettid),
+  TEN_LOGD("New thread is created, id(%lu), name(%s)", syscall(__NR_gettid),
            name);
 #endif
 
@@ -270,7 +270,7 @@ ten_thread_t *ten_thread_create_fake(const char *name) {
   t->aux = (void *)pthread_self();
 
 #if defined(_DEBUG) && defined(__linux__)
-  TEN_LOGV("New thread is created, id(%lu), name(%s)", syscall(__NR_gettid),
+  TEN_LOGD("New thread is created, id(%lu), name(%s)", syscall(__NR_gettid),
            name);
 #endif
 

@@ -12,7 +12,6 @@ mod tests {
     };
 
     use actix_web::{test, web, App};
-
     use ten_manager::{
         designer::{env::get_env_endpoint, storage::in_memory::TmanStorageInMemory, DesignerState},
         home::config::TmanConfig,
@@ -38,9 +37,7 @@ mod tests {
         .await;
 
         // Create test request.
-        let req = test::TestRequest::get()
-            .uri("/api/designer/v1/env")
-            .to_request();
+        let req = test::TestRequest::get().uri("/api/designer/v1/env").to_request();
         let resp = test::call_service(&app, req).await;
 
         // Assert response status.
@@ -76,9 +73,7 @@ mod tests {
         .await;
 
         // Create test request with invalid path
-        let req = test::TestRequest::get()
-            .uri("/api/designer/v1/invalid")
-            .to_request();
+        let req = test::TestRequest::get().uri("/api/designer/v1/invalid").to_request();
         let resp = test::call_service(&app, req).await;
 
         // Assert response status is 404

@@ -11,8 +11,10 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use super::key_parser::get_value_by_key;
-use crate::designer::response::{ApiResponse, Status};
-use crate::designer::DesignerState;
+use crate::designer::{
+    response::{ApiResponse, Status},
+    DesignerState,
+};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GetMemoryRequestPayload {
@@ -40,7 +42,9 @@ pub async fn get_in_memory_storage_endpoint(
         Err(_e) => {
             return Ok(HttpResponse::InternalServerError().json(ApiResponse {
                 status: Status::Fail,
-                data: GetMemoryResponseData { value: None },
+                data: GetMemoryResponseData {
+                    value: None,
+                },
                 meta: None,
             }));
         }
@@ -52,13 +56,17 @@ pub async fn get_in_memory_storage_endpoint(
         Err(_e) => {
             return Ok(HttpResponse::BadRequest().json(ApiResponse {
                 status: Status::Fail,
-                data: GetMemoryResponseData { value: None },
+                data: GetMemoryResponseData {
+                    value: None,
+                },
                 meta: None,
             }));
         }
     };
 
-    let response_data = GetMemoryResponseData { value };
+    let response_data = GetMemoryResponseData {
+        value,
+    };
     let response = ApiResponse {
         status: Status::Ok,
         data: response_data,

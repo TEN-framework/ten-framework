@@ -4,9 +4,7 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-use std::fs;
-use std::path::Path;
-use std::sync::Arc;
+use std::{fs, path::Path, sync::Arc};
 
 use actix_web::{
     error::{ErrorForbidden, ErrorNotFound},
@@ -64,11 +62,7 @@ pub async fn list_dir_endpoint(
 
     // Case 1: path is a file.
     if path.is_file() {
-        let file_name = path
-            .file_name()
-            .unwrap_or_default()
-            .to_string_lossy()
-            .to_string();
+        let file_name = path.file_name().unwrap_or_default().to_string_lossy().to_string();
         entries.push(FsEntry {
             name: file_name,
             path: request_payload.path.clone(),
@@ -79,11 +73,8 @@ pub async fn list_dir_endpoint(
     else if path.is_dir() {
         if let Ok(dir_entries) = fs::read_dir(path) {
             for entry in dir_entries.flatten() {
-                let is_dir = if let Ok(file_type) = entry.file_type() {
-                    file_type.is_dir()
-                } else {
-                    false
-                };
+                let is_dir =
+                    if let Ok(file_type) = entry.file_type() { file_type.is_dir() } else { false };
                 let name = entry.file_name().to_string_lossy().to_string();
                 let entry_path = entry.path().to_string_lossy().to_string();
                 entries.push(FsEntry {
@@ -97,7 +88,9 @@ pub async fn list_dir_endpoint(
 
     let response = ApiResponse {
         status: Status::Ok,
-        data: DirListResponseData { entries },
+        data: DirListResponseData {
+            entries,
+        },
         meta: None,
     };
     Ok(HttpResponse::Ok().json(response))

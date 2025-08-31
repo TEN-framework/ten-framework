@@ -12,7 +12,6 @@ mod readme;
 #[cfg(test)]
 mod tests {
     use anyhow::Result;
-
     use ten_rust::pkg_info::{manifest::Manifest, pkg_type::PkgType};
 
     #[tokio::test]

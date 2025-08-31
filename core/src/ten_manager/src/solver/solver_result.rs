@@ -11,7 +11,6 @@ use console::Emoji;
 use indicatif::{ProgressBar, ProgressStyle};
 use regex::Regex;
 use semver::Version;
-
 use ten_rust::pkg_info::{
     constants::{ADDON_LOADER_DIR, EXTENSION_DIR, PROTOCOL_DIR, SYSTEM_DIR, TEN_PACKAGES_DIR},
     pkg_basic_info::PkgBasicInfo,
@@ -121,8 +120,8 @@ pub async fn install_solver_results_in_app_folder(
         bar.set_style(
             ProgressStyle::default_bar()
                 .template(
-                    "{spinner:.green} [{elapsed_precise}] \
-                     [{bar:40.cyan/blue}] {pos:>7}/{len:7} {msg}",
+                    "{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos:>7}/{len:7} \
+                     {msg}",
                 )?
                 .progress_chars("#>-"),
         );

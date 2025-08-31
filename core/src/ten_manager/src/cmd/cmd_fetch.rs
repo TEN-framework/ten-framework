@@ -12,7 +12,6 @@ use console::Emoji;
 use indicatif::HumanDuration;
 use semver::VersionReq;
 use tempfile;
-
 use ten_rust::pkg_info::{
     manifest::support::ManifestSupport,
     pkg_type::PkgType,
@@ -49,10 +48,7 @@ pub fn create_sub_cmd(args_cfg: &crate::cmd_line::ArgsCfg) -> Command {
         )
         .arg(
             Arg::new("PACKAGE_NAME")
-                .help(
-                    "The name of the package with optional version \
-                     requirement (e.g., foo@1.0.0",
-                )
+                .help("The name of the package with optional version requirement (e.g., foo@1.0.0")
                 .required(true),
         )
         .arg(
@@ -99,12 +95,8 @@ pub fn parse_sub_cmd(sub_cmd_args: &ArgMatches) -> Result<FetchCommand> {
         .with_context(|| format!("Failed to parse package name '{pkg_with_version}'"))?;
 
     let support = ManifestSupport {
-        os: sub_cmd_args
-            .get_one::<String>("OS")
-            .and_then(|s| s.parse::<Os>().ok()),
-        arch: sub_cmd_args
-            .get_one::<String>("ARCH")
-            .and_then(|s| s.parse::<Arch>().ok()),
+        os: sub_cmd_args.get_one::<String>("OS").and_then(|s| s.parse::<Os>().ok()),
+        arch: sub_cmd_args.get_one::<String>("ARCH").and_then(|s| s.parse::<Arch>().ok()),
     };
 
     let output_dir = PathBuf::from(sub_cmd_args.get_one::<String>("OUTPUT_DIR").unwrap());

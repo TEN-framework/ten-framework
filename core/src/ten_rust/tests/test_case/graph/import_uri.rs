@@ -9,7 +9,6 @@ mod tests {
     use std::fs;
 
     use tempfile::tempdir;
-
     use ten_rust::graph::{
         graph_info::{GraphContent, GraphInfo},
         node::GraphNode,
@@ -77,15 +76,15 @@ mod tests {
         };
 
         // Validate and complete (this should load the graph from import_uri).
-        graph_info
-            .validate_and_complete_and_flatten()
-            .await
-            .unwrap();
+        graph_info.validate_and_complete_and_flatten().await.unwrap();
 
         // Verify that the graph was loaded correctly.
         assert_eq!(graph_info.graph.nodes().len(), 1);
 
-        if let GraphNode::Extension { content } = &graph_info.graph.nodes()[0] {
+        if let GraphNode::Extension {
+            content,
+        } = &graph_info.graph.nodes()[0]
+        {
             assert_eq!(content.addon, "test_addon");
         } else {
             panic!("Unexpected non-extension node in graph");
@@ -177,10 +176,10 @@ mod tests {
         // This should fail due to mutual exclusion
         let result = graph_info.validate_and_complete_and_flatten().await;
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains(
-            "When 'import_uri' is specified, 'connections' field must not be \
-             present"
-        ));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("When 'import_uri' is specified, 'connections' field must not be present"));
     }
 
     #[tokio::test]
@@ -217,8 +216,7 @@ mod tests {
         let result = graph_info.validate_and_complete_and_flatten().await;
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains(
-            "When 'import_uri' is specified, 'exposed_messages' field must \
-             not be present"
+            "When 'import_uri' is specified, 'exposed_messages' field must not be present"
         ));
     }
 
@@ -255,8 +253,7 @@ mod tests {
         let result = graph_info.validate_and_complete_and_flatten().await;
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains(
-            "When 'import_uri' is specified, 'exposed_properties' field must \
-             not be present"
+            "When 'import_uri' is specified, 'exposed_properties' field must not be present"
         ));
     }
 

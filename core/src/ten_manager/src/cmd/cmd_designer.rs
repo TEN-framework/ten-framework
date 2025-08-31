@@ -14,8 +14,10 @@ use console::Emoji;
 
 use crate::{
     constants::DESIGNER_BACKEND_DEFAULT_PORT,
-    designer::storage::in_memory::TmanStorageInMemory,
-    designer::{configure_routes, frontend::get_frontend_asset, DesignerState},
+    designer::{
+        configure_routes, frontend::get_frontend_asset, storage::in_memory::TmanStorageInMemory,
+        DesignerState,
+    },
     fs::{check_is_app_folder, get_cwd},
     home::config::{is_verbose, TmanConfig},
     output::{cli::TmanOutputCli, TmanOutput},
@@ -32,12 +34,7 @@ pub struct DesignerCommand {
 pub fn create_sub_cmd(_args_cfg: &crate::cmd_line::ArgsCfg) -> Command {
     Command::new("designer")
         .about("Launch designer")
-        .arg(
-            Arg::new("IP_ADDRESS")
-                .long("ip")
-                .help("Sets the IP address")
-                .default_value("0.0.0.0"),
-        )
+        .arg(Arg::new("IP_ADDRESS").long("ip").help("Sets the IP address").default_value("0.0.0.0"))
         .arg(
             Arg::new("PORT")
                 .long("port")
@@ -58,22 +55,14 @@ pub fn create_sub_cmd(_args_cfg: &crate::cmd_line::ArgsCfg) -> Command {
                 //             = 49483
                 .default_value(DESIGNER_BACKEND_DEFAULT_PORT),
         )
-        .arg(
-            Arg::new("BASE_DIR")
-                .long("base-dir")
-                .help("The base directory")
-                .required(false),
-        )
+        .arg(Arg::new("BASE_DIR").long("base-dir").help("The base directory").required(false))
 }
 
 pub fn parse_sub_cmd(
     sub_cmd_args: &ArgMatches,
 ) -> Result<crate::cmd::cmd_designer::DesignerCommand> {
     let cmd = crate::cmd::cmd_designer::DesignerCommand {
-        ip_address: sub_cmd_args
-            .get_one::<String>("IP_ADDRESS")
-            .unwrap()
-            .to_string(),
+        ip_address: sub_cmd_args.get_one::<String>("IP_ADDRESS").unwrap().to_string(),
         port: *sub_cmd_args.get_one::<u16>("PORT").unwrap(),
         base_dir: sub_cmd_args.get_one::<String>("BASE_DIR").cloned(),
     };
@@ -102,8 +91,7 @@ pub async fn execute_cmd(
             let cwd = get_cwd()?.to_str().unwrap_or_default().to_string();
 
             out.normal_line(&format!(
-                "{}  Doesn't specify the base directory, use current working \
-                 directory instead: {}",
+                "{}  Doesn't specify the base directory, use current working directory instead: {}",
                 Emoji("💡", "!"),
                 &cwd
             ));
@@ -148,11 +136,7 @@ pub async fn execute_cmd(
         let cors = Cors::default()
             .allow_any_origin()
             .allowed_methods(vec!["GET", "POST", "PUT", "DELETE"])
-            .allowed_headers(vec![
-                header::AUTHORIZATION,
-                header::ACCEPT,
-                header::CONTENT_TYPE,
-            ])
+            .allowed_headers(vec![header::AUTHORIZATION, header::ACCEPT, header::CONTENT_TYPE])
             .max_age(3600);
 
         App::new()
@@ -164,11 +148,9 @@ pub async fn execute_cmd(
 
     let bind_address = format!("{}:{}", command_data.ip_address, command_data.port);
 
-    out.normal_line(&format!(
-        "{}  Starting server at http://{}",
-        Emoji("🏆", ":-)"),
-        bind_address,
-    ));
+    out.normal_line(
+        &format!("{}  Starting server at http://{}", Emoji("🏆", ":-)"), bind_address,),
+    );
 
     server.bind(&bind_address)?.run().await?;
 
