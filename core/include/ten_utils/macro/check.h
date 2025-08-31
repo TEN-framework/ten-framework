@@ -42,7 +42,7 @@
 //
 // This size should not be too large; otherwise, it may cause a stack overflow
 // in the deep call chain.
-#define ASSERT_ERR_MSG_MAX_LENGTH 128
+#define ASSERT_ERR_MSG_MAX_LENGTH 256
 
 #ifndef NDEBUG
 
@@ -51,26 +51,33 @@
     /* NOLINTNEXTLINE */                                               \
     if (!(expr)) {                                                     \
       /* NOLINTNEXTLINE */                                             \
-      char ____err_msg[ASSERT_ERR_MSG_MAX_LENGTH];                     \
+      char *____err_msg =                                              \
+          (char *)calloc(ASSERT_ERR_MSG_MAX_LENGTH, sizeof(char));     \
+      if (!____err_msg) {                                              \
+        abort();                                                       \
+      }                                                                \
       int64_t pid = 0;                                                 \
       int64_t tid = 0;                                                 \
       ten_get_pid_tid(&pid, &tid);                                     \
       int written =                                                    \
-          snprintf(____err_msg, sizeof(____err_msg),                   \
+          snprintf(____err_msg, ASSERT_ERR_MSG_MAX_LENGTH,             \
                    "%" PRId64 "(%" PRId64 ") %s@%s:%d " fmt, pid, tid, \
                    __func__, __FILE__, __LINE__, ##__VA_ARGS__);       \
       if (written < 0) {                                               \
+        free(____err_msg);                                             \
         /* NOLINTNEXTLINE */                                           \
         assert(0);                                                     \
       }                                                                \
       written = fprintf(stderr, "%s\n", ____err_msg);                  \
       if (written < 0) {                                               \
+        free(____err_msg);                                             \
         /* NOLINTNEXTLINE */                                           \
         assert(0);                                                     \
       }                                                                \
       ten_backtrace_dump_global(0);                                    \
       /* Wait for a short period to allow backtrace to be written. */  \
       ten_sleep_ms(200);                                               \
+      free(____err_msg);                                               \
       /* NOLINTNEXTLINE */                                             \
       assert(0);                                                       \
     }                                                                  \
@@ -85,24 +92,31 @@
     /* NOLINTNEXTLINE */                                               \
     if (!(expr)) {                                                     \
       /* NOLINTNEXTLINE */                                             \
-      char ____err_msg[ASSERT_ERR_MSG_MAX_LENGTH];                     \
+      char *____err_msg =                                              \
+          (char *)calloc(ASSERT_ERR_MSG_MAX_LENGTH, sizeof(char));     \
+      if (!____err_msg) {                                              \
+        abort();                                                       \
+      }                                                                \
       int64_t pid = 0;                                                 \
       int64_t tid = 0;                                                 \
       ten_get_pid_tid(&pid, &tid);                                     \
       int written =                                                    \
-          snprintf(____err_msg, sizeof(____err_msg),                   \
+          snprintf(____err_msg, ASSERT_ERR_MSG_MAX_LENGTH,             \
                    "%" PRId64 "(%" PRId64 ") %s@%s:%d " fmt, pid, tid, \
                    __func__, __FILE__, __LINE__, ##__VA_ARGS__);       \
       if (written < 0) {                                               \
+        free(____err_msg);                                             \
         abort();                                                       \
       }                                                                \
       written = fprintf(stderr, "%s\n", ____err_msg);                  \
       if (written < 0) {                                               \
+        free(____err_msg);                                             \
         abort();                                                       \
       }                                                                \
       ten_backtrace_dump_global(0);                                    \
       /* Wait for a short period to allow backtrace to be written. */  \
       ten_sleep_ms(200);                                               \
+      free(____err_msg);                                               \
       /* NOLINTNEXTLINE */                                             \
       abort();                                                         \
     }                                                                  \
