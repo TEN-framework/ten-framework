@@ -22,31 +22,35 @@
   },
   "api": {
     "property": {
-      "api_key": {
-        "type": "string"
-      },
-      "model": {
-        "type": "string"
-      },
-      "sample_rate": {
-        "type": "int64"
-      },
-      "url": {
-        "type": "string"
-      },
-      "voice_id": {
-        "type": "string"
-      },
-      "language": {
-        "type": "string"
+      "properties": {
+        "api_key": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string"
+        },
+        "sample_rate": {
+          "type": "int64"
+        },
+        "url": {
+          "type": "string"
+        },
+        "voice_id": {
+          "type": "string"
+        },
+        "language": {
+          "type": "string"
+        }
       }
     },
     "data_in": [
       {
         "name": "text_data",
         "property": {
-          "text": {
-            "type": "string"
+          "properties": {
+            "text": {
+              "type": "string"
+            }
           }
         }
       }
