@@ -4,24 +4,26 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-use std::collections::{HashMap, HashSet};
-use std::sync::Arc;
+use std::{
+    collections::{HashMap, HashSet},
+    sync::Arc,
+};
 
 use anyhow::{anyhow, Result};
 use clingo::{
     control, Configuration, ConfigurationType, Id, Model, Part, ShowType, SolveMode, Statistics,
     StatisticsType,
 };
-
 use semver::Version;
-use ten_rust::pkg_info::constants::MANIFEST_JSON_FILENAME;
-use ten_rust::pkg_info::manifest::dependency::ManifestDependency;
 use ten_rust::pkg_info::{
+    constants::MANIFEST_JSON_FILENAME, manifest::dependency::ManifestDependency,
     pkg_basic_info::PkgBasicInfo, pkg_type::PkgType, pkg_type_and_name::PkgTypeAndName, PkgInfo,
 };
 
-use crate::home::config::{is_verbose, TmanConfig};
-use crate::output::TmanOutput;
+use crate::{
+    home::config::{is_verbose, TmanConfig},
+    output::TmanOutput,
+};
 #[derive(Debug)]
 pub struct DependencyRelationship {
     pub type_and_name: PkgTypeAndName,
@@ -36,9 +38,7 @@ async fn get_model(
     out: Arc<Box<dyn TmanOutput>>,
 ) -> Option<Vec<String>> {
     // Retrieve the symbols in the model.
-    let atoms = model
-        .symbols(ShowType::SHOWN)
-        .expect("Failed to retrieve symbols in the model.");
+    let atoms = model.symbols(ShowType::SHOWN).expect("Failed to retrieve symbols in the model.");
 
     if is_verbose(tman_config.clone()).await {
         out.normal_line("Model:");
@@ -93,17 +93,11 @@ async fn print_configuration(
 ) {
     let configuration_type = conf.configuration_type(key).unwrap();
     if configuration_type.contains(ConfigurationType::VALUE) {
-        let _value = conf
-            .value_get(key)
-            .expect("Failed to retrieve statistics value.");
+        let _value = conf.value_get(key).expect("Failed to retrieve statistics value.");
     } else if configuration_type.contains(ConfigurationType::ARRAY) {
-        let size = conf
-            .array_size(key)
-            .expect("Failed to retrieve statistics array size.");
+        let size = conf.array_size(key).expect("Failed to retrieve statistics array size.");
         for i in 0..size {
-            let subkey = conf
-                .array_at(key, i)
-                .expect("Failed to retrieve statistics array.");
+            let subkey = conf.array_at(key, i).expect("Failed to retrieve statistics array.");
             print_prefix(tman_config.clone(), depth, out.clone()).await;
 
             Box::pin(print_configuration(
@@ -149,21 +143,15 @@ async fn print_statistics(
     let statistics_type = stats.statistics_type(key).unwrap();
     match statistics_type {
         StatisticsType::Value => {
-            let value = stats
-                .value_get(key)
-                .expect("Failed to retrieve statistics value.");
+            let value = stats.value_get(key).expect("Failed to retrieve statistics value.");
 
             out.normal_line(&format!(" {value}"));
         }
 
         StatisticsType::Array => {
-            let size = stats
-                .array_size(key)
-                .expect("Failed to retrieve statistics array size.");
+            let size = stats.array_size(key).expect("Failed to retrieve statistics array size.");
             for i in 0..size {
-                let subkey = stats
-                    .array_at(key, i)
-                    .expect("Failed to retrieve statistics array.");
+                let subkey = stats.array_at(key, i).expect("Failed to retrieve statistics array.");
                 print_prefix(tman_config.clone(), depth, out.clone()).await;
                 out.normal_partial(&format!("{i} zu:"));
 
@@ -234,25 +222,21 @@ async fn solve(
 
         // Configure to enumerate all models.
         let solve_models_key = conf.map_at(root_key, "solve.models").unwrap();
-        conf.value_set(solve_models_key, "0")
-            .expect("Failed to set solve.models to 0.");
+        conf.value_set(solve_models_key, "0").expect("Failed to set solve.models to 0.");
 
         // Configure to enumerate all optimal models.
         let solve_opt_mode_key = conf.map_at(root_key, "solve.opt_mode").unwrap();
-        conf.value_set(solve_opt_mode_key, "optN")
-            .expect("Failed to set solve.opt_mode to optN.");
+        conf.value_set(solve_opt_mode_key, "optN").expect("Failed to set solve.opt_mode to optN.");
 
         // Enable full statistics.
         let stats_key = conf.map_at(root_key, "stats").unwrap();
-        conf.value_set(stats_key, "2")
-            .expect("Failed to set stats_key to 2.");
+        conf.value_set(stats_key, "2").expect("Failed to set stats_key to 2.");
 
         // Configure the first solver to use the berkmin heuristic.
         let mut solver_key = conf.map_at(root_key, "solver").unwrap();
         solver_key = conf.array_at(solver_key, 0).unwrap();
         let heuristic_key = conf.map_at(solver_key, "heuristic").unwrap();
-        conf.value_set(heuristic_key, "berkmin")
-            .expect("Failed to set heuristic to berkmin.");
+        conf.value_set(heuristic_key, "berkmin").expect("Failed to set heuristic to berkmin.");
 
         // print_configuration(
         //     tman_config.clone(),
@@ -269,10 +253,8 @@ async fn solve(
 
     // Add a logic program to the base part.
     // i.e., clingo_control_add
-    ctl.add("main", &[], main_program)
-        .expect("Failed to add main.lp");
-    ctl.add("display", &[], display_program)
-        .expect("Failed to add display.lp");
+    ctl.add("main", &[], main_program).expect("Failed to add main.lp");
+    ctl.add("display", &[], display_program).expect("Failed to add display.lp");
     ctl.add("base", &[], input).expect("Failed to add input.lp");
 
     // Ground the parts.
@@ -282,14 +264,11 @@ async fn solve(
     let base_part = Part::new("base", vec![]).unwrap();
 
     let parts = vec![main_part, display_part, base_part];
-    ctl.ground(&parts)
-        .expect("Failed to ground a logic program.");
+    ctl.ground(&parts).expect("Failed to ground a logic program.");
 
     // Solving. Get a solve handle.
     // i.e., clingo_control_solve
-    let mut handle = ctl
-        .solve(SolveMode::YIELD, &[])
-        .expect("Failed retrieving solve handle.");
+    let mut handle = ctl.solve(SolveMode::YIELD, &[]).expect("Failed retrieving solve handle.");
 
     let mut usable_model = None;
     let mut non_usable_models = Vec::new();
@@ -333,9 +312,7 @@ async fn solve(
 
     // Close the solve handle.
     // i.e., clingo_solve_handle_get
-    let _result = handle
-        .get()
-        .expect("Failed to get result from solve handle.");
+    let _result = handle.get().expect("Failed to get result from solve handle.");
 
     // Free the solve handle.
     // i.e., clingo_solve_handle_close
@@ -358,17 +335,22 @@ async fn create_input_str_for_dependency_relationship(
 ) -> Result<()> {
     if let Some(dep_relationship) = dep_relationship {
         let pkg_type_and_name = match &dep_relationship.dependency {
-            ManifestDependency::RegistryDependency { pkg_type, name, .. } => PkgTypeAndName {
+            ManifestDependency::RegistryDependency {
+                pkg_type,
+                name,
+                ..
+            } => PkgTypeAndName {
                 pkg_type: *pkg_type,
                 name: name.clone(),
             },
-            ManifestDependency::LocalDependency { path, base_dir, .. } => {
+            ManifestDependency::LocalDependency {
+                path,
+                base_dir,
+                ..
+            } => {
                 // Get type and name from the manifest.
                 let base_dir_str = base_dir.as_deref().ok_or_else(|| {
-                    anyhow!(
-                        "base_dir cannot be None when processing local \
-                         dependency"
-                    )
+                    anyhow!("base_dir cannot be None when processing local dependency")
                 })?;
                 let abs_path = std::path::Path::new(base_dir_str).join(path);
                 let dep_manifest_path = abs_path.join(MANIFEST_JSON_FILENAME);
@@ -387,10 +369,12 @@ async fn create_input_str_for_dependency_relationship(
             for candidate in candidates.iter() {
                 // Get version requirement from dependency.
                 let version_matches = match &dep_relationship.dependency {
-                    ManifestDependency::RegistryDependency { version_req, .. } => {
-                        version_req.matches(&candidate.1.manifest.version)
-                    }
-                    ManifestDependency::LocalDependency { .. } => {
+                    ManifestDependency::RegistryDependency {
+                        version_req, ..
+                    } => version_req.matches(&candidate.1.manifest.version),
+                    ManifestDependency::LocalDependency {
+                        ..
+                    } => {
                         // For local dependencies, just return true to match all
                         // versions.
                         true
@@ -399,8 +383,7 @@ async fn create_input_str_for_dependency_relationship(
 
                 if version_matches {
                     input_str.push_str(&format!(
-                        "depends_on_declared(\"{}\", \"{}\", \"{}\", \"{}\", \
-                         \"{}\", \"{}\").\n",
+                        "depends_on_declared(\"{}\", \"{}\", \"{}\", \"{}\", \"{}\", \"{}\").\n",
                         dep_relationship.type_and_name.pkg_type,
                         dep_relationship.type_and_name.name,
                         dep_relationship.version,
@@ -414,10 +397,14 @@ async fn create_input_str_for_dependency_relationship(
             return Err(anyhow!(
                 "Failed to find candidates for {}",
                 match &dep_relationship.dependency {
-                    ManifestDependency::RegistryDependency { pkg_type, name, .. } =>
-                        format!("{}:{} @ {}", pkg_type, name, dep_relationship.version),
-                    ManifestDependency::LocalDependency { path, .. } =>
-                        format!("local:{} @ {}", path, dep_relationship.version),
+                    ManifestDependency::RegistryDependency {
+                        pkg_type,
+                        name,
+                        ..
+                    } => format!("{}:{} @ {}", pkg_type, name, dep_relationship.version),
+                    ManifestDependency::LocalDependency {
+                        path, ..
+                    } => format!("local:{} @ {}", path, dep_relationship.version),
                 }
             ));
         }
@@ -444,17 +431,22 @@ async fn create_input_str_for_pkg_info_dependencies(
     if let Some(dependencies) = &pkg_info.manifest.dependencies {
         for dependency in dependencies {
             let pkg_type_and_name = match dependency {
-                ManifestDependency::RegistryDependency { pkg_type, name, .. } => PkgTypeAndName {
+                ManifestDependency::RegistryDependency {
+                    pkg_type,
+                    name,
+                    ..
+                } => PkgTypeAndName {
                     pkg_type: *pkg_type,
                     name: name.clone(),
                 },
-                ManifestDependency::LocalDependency { path, base_dir, .. } => {
+                ManifestDependency::LocalDependency {
+                    path,
+                    base_dir,
+                    ..
+                } => {
                     // Get type and name from the manifest.
                     let base_dir_str = base_dir.as_deref().ok_or_else(|| {
-                        anyhow!(
-                            "base_dir cannot be None when processing \
-                                 local dependency"
-                        )
+                        anyhow!("base_dir cannot be None when processing local dependency")
                     })?;
                     let abs_path = std::path::Path::new(base_dir_str).join(path);
                     let dep_manifest_path = abs_path.join(MANIFEST_JSON_FILENAME);
@@ -486,10 +478,12 @@ async fn create_input_str_for_pkg_info_dependencies(
                 for candidate in candidates_vec.into_iter() {
                     // Get version requirement from dependency.
                     let version_matches = match dependency {
-                        ManifestDependency::RegistryDependency { version_req, .. } => {
-                            version_req.matches(&candidate.manifest.version)
-                        }
-                        ManifestDependency::LocalDependency { .. } => {
+                        ManifestDependency::RegistryDependency {
+                            version_req, ..
+                        } => version_req.matches(&candidate.manifest.version),
+                        ManifestDependency::LocalDependency {
+                            ..
+                        } => {
                             // For local dependencies, just return true to
                             // match all versions.
                             true
@@ -500,8 +494,8 @@ async fn create_input_str_for_pkg_info_dependencies(
                         found_matched_count += 1;
 
                         input_str.push_str(&format!(
-                            "depends_on_declared(\"{}\", \"{}\", \"{}\", \
-                             \"{}\", \"{}\", \"{}\").\n",
+                            "depends_on_declared(\"{}\", \"{}\", \"{}\", \"{}\", \"{}\", \
+                             \"{}\").\n",
                             pkg_info.manifest.type_and_name.pkg_type,
                             pkg_info.manifest.type_and_name.name,
                             pkg_info.manifest.version,
@@ -533,9 +527,10 @@ async fn create_input_str_for_pkg_info_dependencies(
                                 pkg_type,
                                 name,
                                 version_req,
-                            } => format!("[{pkg_type}]{name} ({version_req})"),
-                            ManifestDependency::LocalDependency { path, .. } =>
-                                format!("local:{path}"),
+                            } => format!("[{pkg_type}]{name} ({:?})", version_req.as_processed()),
+                            ManifestDependency::LocalDependency {
+                                path, ..
+                            } => format!("local:{path}"),
                         }
                     ));
                 }
@@ -547,8 +542,10 @@ async fn create_input_str_for_pkg_info_dependencies(
                             pkg_type,
                             name,
                             version_req,
-                        } => format!("{pkg_type}:{name} @ {version_req}"),
-                        ManifestDependency::LocalDependency { path, .. } => format!("local:{path}"),
+                        } => format!("{pkg_type}:{name} @ {:?}", version_req.as_processed()),
+                        ManifestDependency::LocalDependency {
+                            path, ..
+                        } => format!("local:{path}"),
                     }
                 ));
             }

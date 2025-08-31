@@ -4,31 +4,37 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-use std::collections::HashMap;
-use std::fs::OpenOptions;
-use std::io::{BufWriter, Write};
-use std::path::Path;
-use std::str::FromStr;
-use std::sync::Arc;
+use std::{
+    collections::HashMap,
+    fs::OpenOptions,
+    io::{BufWriter, Write},
+    path::Path,
+    str::FromStr,
+    sync::Arc,
+};
 
 use anyhow::{anyhow, Result};
 use console::Emoji;
-use semver::{Version, VersionReq};
+use semver::Version;
 use serde::{Deserialize, Serialize};
+use ten_rust::{
+    json_schema::validate_manifest_lock_json_string,
+    pkg_info::{
+        constants::{MANIFEST_JSON_FILENAME, MANIFEST_LOCK_JSON_FILENAME},
+        manifest::{
+            dependency::{ManifestDependency, TenVersionReq},
+            support::ManifestSupport,
+            Manifest,
+        },
+        pkg_basic_info::PkgBasicInfo,
+        pkg_type::PkgType,
+        pkg_type_and_name::PkgTypeAndName,
+        PkgInfo,
+    },
+    utils::fs::read_file_to_string,
+};
 
-use ten_rust::json_schema::validate_manifest_lock_json_string;
-use ten_rust::pkg_info::constants::{MANIFEST_JSON_FILENAME, MANIFEST_LOCK_JSON_FILENAME};
-use ten_rust::pkg_info::manifest::dependency::ManifestDependency;
-use ten_rust::pkg_info::manifest::support::ManifestSupport;
-use ten_rust::pkg_info::manifest::Manifest;
-use ten_rust::pkg_info::pkg_basic_info::PkgBasicInfo;
-use ten_rust::pkg_info::pkg_type::PkgType;
-use ten_rust::pkg_info::pkg_type_and_name::PkgTypeAndName;
-use ten_rust::pkg_info::PkgInfo;
-use ten_rust::utils::fs::read_file_to_string;
-
-use crate::constants::BUF_WRITER_BUF_SIZE;
-use crate::output::TmanOutput;
+use crate::{constants::BUF_WRITER_BUF_SIZE, output::TmanOutput};
 
 // Helper function to check if an Option<Vec> is None or an empty Vec.
 fn is_none_or_empty<T>(option: &Option<Vec<T>>) -> bool {
@@ -180,11 +186,7 @@ pub fn write_pkg_lockfile<P: AsRef<Path>>(
 
     // TODO(xilin): Maybe RWlock is needed.
     // Use BufWriter with custom capacity for improved disk I/O efficiency.
-    let file = OpenOptions::new()
-        .write(true)
-        .create(true)
-        .truncate(true)
-        .open(&lock_file_path)?;
+    let file = OpenOptions::new().write(true).create(true).truncate(true).open(&lock_file_path)?;
 
     let mut buf_writer = BufWriter::with_capacity(BUF_WRITER_BUF_SIZE, file);
 
@@ -266,19 +268,25 @@ async fn get_encodable_deps_from_pkg_deps(
 
         for dep in manifest_deps {
             let item = match dep {
-                ManifestDependency::RegistryDependency { pkg_type, name, .. } => {
-                    ManifestLockItemDependencyItem {
-                        pkg_type: pkg_type.to_string(),
-                        name,
-                    }
-                }
-                ManifestDependency::LocalDependency { path, base_dir, .. } => {
+                ManifestDependency::RegistryDependency {
+                    pkg_type,
+                    name,
+                    ..
+                } => ManifestLockItemDependencyItem {
+                    pkg_type: pkg_type.to_string(),
+                    name,
+                },
+                ManifestDependency::LocalDependency {
+                    path,
+                    base_dir,
+                    ..
+                } => {
                     // For local dependencies, we need to extract info from the
                     // manifest.
                     let base_dir_str = base_dir.as_deref().ok_or_else(|| {
                         anyhow!(
-                            "base_dir cannot be None when processing \
-                                 local dependency with path: {}",
+                            "base_dir cannot be None when processing local dependency with path: \
+                             {}",
                             path
                         )
                     })?;
@@ -331,16 +339,8 @@ impl ManifestLockItem {
             name,
             version,
             hash: pkg_info.hash.to_string(),
-            dependencies: if dependencies.is_empty() {
-                None
-            } else {
-                Some(dependencies)
-            },
-            supports: if supports.is_empty() {
-                None
-            } else {
-                Some(supports)
-            },
+            dependencies: if dependencies.is_empty() { None } else { Some(dependencies) },
+            supports: if supports.is_empty() { None } else { Some(supports) },
             path: pkg_info.local_dependency_path.clone(),
         })
     }
@@ -348,8 +348,9 @@ impl ManifestLockItem {
 
 impl<'a> From<&'a ManifestLockItem> for PkgInfo {
     fn from(locked_item: &'a ManifestLockItem) -> Self {
-        use ten_rust::pkg_info::manifest::dependency::ManifestDependency;
-        use ten_rust::pkg_info::pkg_type_and_name::PkgTypeAndName;
+        use ten_rust::pkg_info::{
+            manifest::dependency::ManifestDependency, pkg_type_and_name::PkgTypeAndName,
+        };
 
         let dependencies_option = locked_item.clone().dependencies.map(|deps| {
             deps.into_iter()
@@ -362,7 +363,7 @@ impl<'a> From<&'a ManifestLockItem> for PkgInfo {
                         pkg_type,
                         name: dep.name,
                         // Default version requirement.
-                        version_req: VersionReq::parse("*").unwrap(),
+                        version_req: TenVersionReq::new("*".to_string()).unwrap(),
                     }
                 })
                 .collect()
@@ -387,41 +388,6 @@ impl<'a> From<&'a ManifestLockItem> for PkgInfo {
             api: None,
             package: None,
             scripts: None,
-            all_fields: {
-                let mut map = serde_json::Map::new();
-
-                // Add type and name.
-                map.insert(
-                    "type".to_string(),
-                    serde_json::Value::String(type_and_name.pkg_type.to_string()),
-                );
-                map.insert(
-                    "name".to_string(),
-                    serde_json::Value::String(type_and_name.name.clone()),
-                );
-
-                // Add version.
-                map.insert(
-                    "version".to_string(),
-                    serde_json::Value::String(locked_item.version.to_string()),
-                );
-
-                // Add dependencies if present.
-                if let Some(deps) = &dependencies_option {
-                    let deps_json =
-                        serde_json::to_value(deps).unwrap_or(serde_json::Value::Array(vec![]));
-                    map.insert("dependencies".to_string(), deps_json);
-                }
-
-                // Add supports if present.
-                if let Some(supports) = &locked_item.supports {
-                    let supports_json =
-                        serde_json::to_value(supports).unwrap_or(serde_json::Value::Array(vec![]));
-                    map.insert("supports".to_string(), supports_json);
-                }
-
-                map
-            },
             flattened_api: Arc::new(tokio::sync::RwLock::new(None)),
         };
 

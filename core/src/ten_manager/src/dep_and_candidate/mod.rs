@@ -4,30 +4,37 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-use std::collections::{HashMap, HashSet};
-use std::path::Path;
-use std::sync::Arc;
+use std::{
+    collections::{HashMap, HashSet},
+    path::Path,
+    sync::Arc,
+};
 
 use anyhow::{anyhow, Context, Result};
 use semver::{Version, VersionReq};
-
-use ten_rust::pkg_info::manifest::parse_manifest_from_file;
-use ten_rust::pkg_info::manifest::support::{
-    is_manifest_supports_compatible_with, ManifestSupport, SupportsDisplay,
-};
-use ten_rust::pkg_info::pkg_type::PkgType;
 use ten_rust::pkg_info::{
-    constants::MANIFEST_JSON_FILENAME, manifest::dependency::ManifestDependency,
-    pkg_basic_info::PkgBasicInfo, pkg_type_and_name::PkgTypeAndName,
+    constants::MANIFEST_JSON_FILENAME,
+    get_pkg_info_from_path,
+    manifest::{
+        dependency::{ManifestDependency, TenVersionReq},
+        parse_manifest_from_file,
+        support::{is_manifest_supports_compatible_with, ManifestSupport, SupportsDisplay},
+    },
+    pkg_basic_info::PkgBasicInfo,
+    pkg_type::PkgType,
+    pkg_type_and_name::PkgTypeAndName,
+    PkgInfo,
 };
-use ten_rust::pkg_info::{get_pkg_info_from_path, PkgInfo};
 
-use super::home::config::TmanConfig;
-use super::registry::get_package_list;
-use crate::home::config::is_verbose;
-use crate::output::TmanOutput;
-use crate::registry::found_result::BASIC_SCOPE;
-use crate::registry::pkg_list_cache::{is_superset_of, PackageListCache};
+use super::{home::config::TmanConfig, registry::get_package_list};
+use crate::{
+    home::config::is_verbose,
+    output::TmanOutput,
+    registry::{
+        found_result::BASIC_SCOPE,
+        pkg_list_cache::{is_superset_of, PackageListCache},
+    },
+};
 
 // TODO(Wei): Should use the union of the semantic versioning rather than the
 // union of all version requirements.
@@ -79,13 +86,14 @@ async fn merge_dependency_to_dependencies(
             },
             version_req,
         ),
-        ManifestDependency::LocalDependency { path, base_dir, .. } => {
+        ManifestDependency::LocalDependency {
+            path,
+            base_dir,
+            ..
+        } => {
             // Get type and name from manifest for local dependency.
             let base_dir_str = base_dir.as_deref().ok_or_else(|| {
-                anyhow!(
-                    "base_dir cannot be None when processing local dependency \
-                     in merge"
-                )
+                anyhow!("base_dir cannot be None when processing local dependency in merge")
             })?;
             let abs_path = Path::new(base_dir_str).join(path);
             let dep_manifest_path = abs_path.join(MANIFEST_JSON_FILENAME);
@@ -93,7 +101,7 @@ async fn merge_dependency_to_dependencies(
             let local_manifest = parse_manifest_from_file(&dep_manifest_path).await?;
             (
                 local_manifest.type_and_name.clone(),
-                &VersionReq::parse(&local_manifest.version.to_string())?,
+                &TenVersionReq::new(local_manifest.version.to_string())?,
             )
         }
     };
@@ -101,10 +109,11 @@ async fn merge_dependency_to_dependencies(
     let mut changed = true;
 
     if let Some(existed_dependency) = merged_dependencies.get_mut(&pkg_type_name) {
-        changed = existed_dependency.merge(version_req)?;
+        changed = existed_dependency.merge(version_req.as_processed())?;
     } else {
         // This is the first time seeing this dependency.
-        merged_dependencies.insert(pkg_type_name, MergedVersionReq::new(version_req));
+        merged_dependencies
+            .insert(pkg_type_name, MergedVersionReq::new(version_req.as_processed()));
     }
 
     Ok(changed)
@@ -116,7 +125,12 @@ async fn process_local_dependency_to_get_candidate(
     new_pkgs_to_be_searched: &mut Vec<PkgInfo>,
 ) -> Result<()> {
     // We should only call this with a LocalDependency.
-    if let ManifestDependency::LocalDependency { path, base_dir, .. } = dependency {
+    if let ManifestDependency::LocalDependency {
+        path,
+        base_dir,
+        ..
+    } = dependency
+    {
         // Construct a `PkgInfo` to represent the package corresponding to
         // the specified path.
         let base_dir_str = base_dir
@@ -143,9 +157,7 @@ async fn process_local_dependency_to_get_candidate(
 
         Ok(())
     } else {
-        Err(anyhow!(
-            "Expected LocalDependency but got RegistryDependency"
-        ))
+        Err(anyhow!("Expected LocalDependency but got RegistryDependency"))
     }
 }
 
@@ -174,15 +186,13 @@ async fn process_non_local_dependency_to_get_candidate(
             version_req.clone(),
         ),
         _ => {
-            return Err(anyhow!(
-                "Expected RegistryDependency but got LocalDependency"
-            ));
+            return Err(anyhow!("Expected RegistryDependency but got LocalDependency"));
         }
     };
 
     // First, check whether the package list cache has already processed the
     // same or a more permissive version requirement combination.
-    if !pkg_list_cache.check_and_update(&pkg_type_name, &version_req) {
+    if !pkg_list_cache.check_and_update(&pkg_type_name, version_req.as_processed()) {
         // If a covering combination already exists in the package list cache,
         // skip calling `get_package_list`.
         return Ok(());
@@ -199,7 +209,7 @@ async fn process_non_local_dependency_to_get_candidate(
         // some overlap with previous version requirements, given the current
         // design, this is the best we can do for now. The answer won't be
         // wrong, but the efficiency might be somewhat lower.
-        Some(version_req.clone()),
+        Some(version_req.as_processed().clone()),
         None, // No tag filtering.
         Some(BASIC_SCOPE.iter().map(|s| s.to_string()).collect()),
         None,
@@ -236,11 +246,7 @@ async fn process_non_local_dependency_to_get_candidate(
     // Filter suitable candidate packages according to `supports`.
     for mut candidate_pkg_info in candidate_pkg_infos {
         let compatible_score = is_manifest_supports_compatible_with(
-            &candidate_pkg_info
-                .manifest
-                .supports
-                .clone()
-                .unwrap_or_default(),
+            &candidate_pkg_info.manifest.supports.clone().unwrap_or_default(),
             support,
         );
 
@@ -257,11 +263,7 @@ async fn process_non_local_dependency_to_get_candidate(
                     candidate_pkg_info.manifest.type_and_name.name.clone(),
                     candidate_pkg_info.manifest.version.clone(),
                     SupportsDisplay(
-                        &candidate_pkg_info
-                            .manifest
-                            .supports
-                            .clone()
-                            .unwrap_or_default(),
+                        &candidate_pkg_info.manifest.supports.clone().unwrap_or_default(),
                     ),
                 ));
             }
@@ -311,7 +313,9 @@ async fn process_dependencies_to_get_candidates(
 ) -> Result<()> {
     for manifest_dep in input_dependencies {
         match manifest_dep {
-            ManifestDependency::LocalDependency { .. } => {
+            ManifestDependency::LocalDependency {
+                ..
+            } => {
                 process_local_dependency_to_get_candidate(
                     manifest_dep,
                     ctx.all_candidates,
@@ -319,7 +323,9 @@ async fn process_dependencies_to_get_candidates(
                 )
                 .await?;
             }
-            ManifestDependency::RegistryDependency { .. } => {
+            ManifestDependency::RegistryDependency {
+                ..
+            } => {
                 // Check if we need to get the package info from the slow path.
                 let changed =
                     merge_dependency_to_dependencies(ctx.merged_dependencies, manifest_dep).await?;
@@ -383,10 +389,8 @@ fn clean_up_all_candidates(
         // score with the locked one.
         version_map.extend(locked_pkgs_map);
 
-        *pkg_infos = version_map
-            .into_values()
-            .map(|pkg_info| (pkg_info.into(), pkg_info.clone()))
-            .collect();
+        *pkg_infos =
+            version_map.into_values().map(|pkg_info| (pkg_info.into(), pkg_info.clone())).collect();
     }
 }
 
@@ -453,10 +457,12 @@ pub async fn get_all_candidates_from_deps(
             // variants.
             let get_version_req = |dep: &ManifestDependency| -> Option<VersionReq> {
                 match dep {
-                    ManifestDependency::RegistryDependency { version_req, .. } => {
-                        Some(version_req.clone())
-                    }
-                    ManifestDependency::LocalDependency { .. } => None,
+                    ManifestDependency::RegistryDependency {
+                        version_req, ..
+                    } => Some(version_req.as_processed().clone()),
+                    ManifestDependency::LocalDependency {
+                        ..
+                    } => None,
                 }
             };
 
@@ -509,17 +515,7 @@ pub fn get_pkg_info_from_candidates(
     let version_parsed = Version::parse(version)?;
     let pkg_info = all_candidates
         .get(&pkg_type_name)
-        .and_then(|set| {
-            set.iter()
-                .find(|pkg| pkg.1.manifest.version.clone() == version_parsed)
-        })
-        .ok_or_else(|| {
-            anyhow!(
-                "PkgInfo not found for [{}]{}@{}",
-                pkg_type,
-                pkg_name,
-                version
-            )
-        })?;
+        .and_then(|set| set.iter().find(|pkg| pkg.1.manifest.version.clone() == version_parsed))
+        .ok_or_else(|| anyhow!("PkgInfo not found for [{}]{}@{}", pkg_type, pkg_name, version))?;
     Ok(pkg_info.1.clone())
 }
