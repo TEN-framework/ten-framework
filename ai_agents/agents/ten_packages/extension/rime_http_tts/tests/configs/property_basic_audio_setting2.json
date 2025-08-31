@@ -1,0 +1,10 @@
+{
+    "dump": true,
+    "dump_path": "./tests/keep_dump_output/",
+    "params": {
+        "api_key": "${env:RIME_TTS_API_KEY}",
+        "speaker": "celeste",
+        "modelId": "arcana",
+        "samplingRate": 24000
+    }
+}
