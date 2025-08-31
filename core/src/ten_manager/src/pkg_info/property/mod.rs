@@ -4,13 +4,13 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-use std::fs;
-use std::path::Path;
+use std::{fs, path::Path};
 
 use serde_json::Value;
-
-use ten_rust::log::{AdvancedLogConfig, AdvancedLogEmitter};
-use ten_rust::pkg_info::constants::PROPERTY_JSON_FILENAME;
+use ten_rust::{
+    log::{AdvancedLogConfig, AdvancedLogEmitter},
+    pkg_info::constants::PROPERTY_JSON_FILENAME,
+};
 
 /// Get the log file path from property.json if it exists.
 pub fn get_log_file_path(base_dir: &str) -> Option<String> {
@@ -34,18 +34,15 @@ pub fn get_log_file_path(base_dir: &str) -> Option<String> {
         Err(_) => return None,
     };
 
-    // Parse advanced_log.
-    let advanced_log = json_value.get("ten")?.get("log")?;
-
-    let advanced_log_config: AdvancedLogConfig =
-        serde_json::from_value(advanced_log.clone()).unwrap();
+    // Parse log.
+    let log = json_value.get("ten")?.get("log")?;
+    let log_config: AdvancedLogConfig = serde_json::from_value(log.clone()).unwrap();
 
     // Check for ten.log.file field.
-    let log_file =
-        match advanced_log_config.handlers.first().unwrap().emitter.clone() {
-            AdvancedLogEmitter::File(config) => config.path,
-            _ => return None,
-        };
+    let log_file = match log_config.handlers.first().unwrap().emitter.clone() {
+        AdvancedLogEmitter::File(config) => config.path,
+        _ => return None,
+    };
 
     // Check if path is absolute or relative.
     let path = Path::new(&log_file);

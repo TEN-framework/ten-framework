@@ -9,12 +9,14 @@ use std::sync::Arc;
 use actix_web::{web, HttpResponse, Responder};
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
-
 use ten_rust::{
-    graph::{connection::GraphConnection, connection::GraphMessageFlow, Graph},
+    graph::{
+        connection::{GraphConnection, GraphMessageFlow},
+        Graph,
+    },
     pkg_info::message::MsgType,
 };
+use uuid::Uuid;
 
 use crate::{
     designer::{
@@ -81,9 +83,8 @@ async fn graph_delete_connection(
         // If the message flows array exists, find and remove the specific
         // message flow.
         if let Some(flows) = message_flows {
-            if let Some(flow_idx) = flows
-                .iter()
-                .position(|flow| flow.name.as_ref() == Some(&msg_name))
+            if let Some(flow_idx) =
+                flows.iter().position(|flow| flow.name.as_ref() == Some(&msg_name))
             {
                 let flow = &mut flows[flow_idx];
 
@@ -199,7 +200,9 @@ pub async fn delete_graph_connection_endpoint(
 
     let response = ApiResponse {
         status: Status::Ok,
-        data: DeleteGraphConnectionResponsePayload { success: true },
+        data: DeleteGraphConnectionResponsePayload {
+            success: true,
+        },
         meta: None,
     };
     Ok(HttpResponse::Ok().json(response))
@@ -213,19 +216,13 @@ pub fn find_connection_with_extensions<'a>(
     // Find connection with matching src app and extension.
     connection_list.iter().find(|conn| {
         conn.loc.app == *src_app
-            && conn
-                .loc
-                .extension
-                .as_ref()
-                .is_some_and(|ext| ext == src_extension)
+            && conn.loc.extension.as_ref().is_some_and(|ext| ext == src_extension)
     })
 }
 
 pub fn find_flow_with_name(flows: &[GraphMessageFlow], name: &str) -> Option<usize> {
     // Find flow with matching name.
-    flows
-        .iter()
-        .position(|flow| flow.name.as_deref() == Some(name))
+    flows.iter().position(|flow| flow.name.as_deref() == Some(name))
 }
 
 pub fn find_dest_with_extension(
@@ -236,10 +233,6 @@ pub fn find_dest_with_extension(
     // Find destination with matching extension and app.
     flow.dest.iter().position(|dest| {
         dest.loc.app == *dest_app
-            && dest
-                .loc
-                .extension
-                .as_ref()
-                .is_some_and(|ext| ext == dest_extension)
+            && dest.loc.extension.as_ref().is_some_and(|ext| ext == dest_extension)
     })
 }

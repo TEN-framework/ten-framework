@@ -8,11 +8,14 @@
 use anyhow::{anyhow, Context, Result};
 use serde::{Deserialize, Serialize};
 
-use crate::pkg_info::pkg_type::PkgType;
-use crate::utils::path::{get_base_dir_of_uri, get_real_path_from_import_uri};
-use crate::utils::uri::load_content_from_uri;
-
 use super::Graph;
+use crate::{
+    pkg_info::pkg_type::PkgType,
+    utils::{
+        path::{get_base_dir_of_uri, get_real_path_from_import_uri},
+        uri::load_content_from_uri,
+    },
+};
 
 /// Loads graph data from the specified URI with an optional base directory.
 ///
@@ -124,16 +127,14 @@ impl GraphContent {
             // None
             if !self.graph.nodes.is_empty() {
                 return Err(anyhow!(
-                    "When 'import_uri' is specified, 'nodes' field must not \
-                     be present"
+                    "When 'import_uri' is specified, 'nodes' field must not be present"
                 ));
             }
 
             if let Some(connections) = &self.graph.connections {
                 if !connections.is_empty() {
                     return Err(anyhow!(
-                        "When 'import_uri' is specified, 'connections' field \
-                         must not be present"
+                        "When 'import_uri' is specified, 'connections' field must not be present"
                     ));
                 }
             }
@@ -141,8 +142,8 @@ impl GraphContent {
             if let Some(exposed_messages) = &self.graph.exposed_messages {
                 if !exposed_messages.is_empty() {
                     return Err(anyhow!(
-                        "When 'import_uri' is specified, 'exposed_messages' \
-                         field must not be present"
+                        "When 'import_uri' is specified, 'exposed_messages' field must not be \
+                         present"
                     ));
                 }
             }
@@ -150,8 +151,8 @@ impl GraphContent {
             if let Some(exposed_properties) = &self.graph.exposed_properties {
                 if !exposed_properties.is_empty() {
                     return Err(anyhow!(
-                        "When 'import_uri' is specified, 'exposed_properties' \
-                         field must not be present"
+                        "When 'import_uri' is specified, 'exposed_properties' field must not be \
+                         present"
                     ));
                 }
             }
@@ -164,9 +165,7 @@ impl GraphContent {
             self.graph = graph;
         }
 
-        self.graph
-            .validate_and_complete_and_flatten(current_base_dir)
-            .await
+        self.graph.validate_and_complete_and_flatten(current_base_dir).await
     }
 }
 
@@ -201,8 +200,6 @@ impl GraphInfo {
     }
 
     pub async fn validate_and_complete_and_flatten(&mut self) -> Result<()> {
-        self.graph
-            .validate_and_complete_and_flatten(self.app_base_dir.as_deref())
-            .await
+        self.graph.validate_and_complete_and_flatten(self.app_base_dir.as_deref()).await
     }
 }

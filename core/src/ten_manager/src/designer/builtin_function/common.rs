@@ -4,18 +4,23 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-use std::sync::{mpsc, Arc};
-use std::thread;
+use std::{
+    sync::{mpsc, Arc},
+    thread,
+};
 
 use actix::{fut, AsyncContext};
 use actix_web_actors::ws::WebsocketContext;
 
-use crate::cmd::cmd_install::InstallCommand;
-use crate::designer::builtin_function::{BuiltinFunctionOutput, WsBuiltinFunction};
-use crate::designer::storage::in_memory::TmanStorageInMemory;
-use crate::home::config::TmanConfig;
-use crate::output::channel::TmanOutputChannel;
-use crate::output::TmanOutput;
+use crate::{
+    cmd::cmd_install::InstallCommand,
+    designer::{
+        builtin_function::{BuiltinFunctionOutput, WsBuiltinFunction},
+        storage::in_memory::TmanStorageInMemory,
+    },
+    home::config::TmanConfig,
+    output::{channel::TmanOutputChannel, TmanOutput},
+};
 
 pub fn run_installation(
     tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
@@ -59,10 +64,7 @@ pub fn run_installation(
         // does not use `tokio::spawn()` to start other tokio tasks, there is no
         // need to use a multi-thread runtime. A single-thread runtime created
         // using `new_current_thread` can be used.
-        let rt = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .unwrap();
+        let rt = tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap();
 
         // Execute the installation in the new runtime.
         //
@@ -84,17 +86,9 @@ pub fn run_installation(
         // Send the completion status to the main thread (an actix worker
         // thread).
         let exit_code = if result.is_ok() { 0 } else { -1 };
-        let error_message = if let Err(err) = result {
-            Some(err.to_string())
-        } else {
-            None
-        };
+        let error_message = if let Err(err) = result { Some(err.to_string()) } else { None };
 
-        let _ = sender.send(format!(
-            "EXIT:{}:{}",
-            exit_code,
-            error_message.unwrap_or_default()
-        ));
+        let _ = sender.send(format!("EXIT:{}:{}", exit_code, error_message.unwrap_or_default()));
     });
 
     // Start a local task in the actix worker thread to listen to the message

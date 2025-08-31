@@ -1,21 +1,19 @@
-use std::fs;
-use std::sync::Arc;
 //
 // Copyright © 2025 Agora
 // This file is part of TEN Framework, an open source project.
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
-//
-use std::{collections::HashMap, path::PathBuf};
+use std::{collections::HashMap, fs, path::PathBuf, sync::Arc};
 
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
-use crate::constants::{CONFIG_JSON, DEFAULT, DEFAULT_REGISTRY};
-use crate::designer::preferences::{default_designer, Designer};
-use crate::home::package_cache::default_enable_package_cache;
-use crate::home::{get_home_dir, Registry};
-use crate::schema::validate_tman_config;
+use crate::{
+    constants::{CONFIG_JSON, DEFAULT, DEFAULT_REGISTRY},
+    designer::preferences::{default_designer, Designer},
+    home::{get_home_dir, package_cache::default_enable_package_cache, Registry},
+    schema::validate_tman_config,
+};
 
 #[derive(Serialize, Deserialize, Debug, Default)]
 pub struct TmanConfigFile {

@@ -5,11 +5,9 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 use actix_web_actors::ws::WebsocketContext;
-
 use ten_rust::pkg_info::manifest::support::ManifestSupport;
 
-use super::common::run_installation;
-use super::WsBuiltinFunction;
+use super::{common::run_installation, WsBuiltinFunction};
 use crate::cmd::cmd_install::LocalInstallMode;
 
 impl WsBuiltinFunction {

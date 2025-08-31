@@ -6,8 +6,7 @@
 //
 use std::sync::Arc;
 
-use actix::fut;
-use actix::{Actor, AsyncContext, Handler, Message, StreamHandler};
+use actix::{fut, Actor, AsyncContext, Handler, Message, StreamHandler};
 use actix_web::{web, Error, HttpRequest, HttpResponse};
 use actix_web_actors::ws;
 use anyhow::Result;
@@ -15,10 +14,12 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tokio::sync::Mutex;
 
-use crate::designer::DesignerState;
-use crate::fs::log_file_watcher::{LogFileContentStream, LogFileWatchOptions};
-use crate::log::LogLineInfo;
-use crate::pkg_info::property::get_log_file_path;
+use crate::{
+    designer::DesignerState,
+    fs::log_file_watcher::{LogFileContentStream, LogFileWatchOptions},
+    log::LogLineInfo,
+    pkg_info::property::get_log_file_path,
+};
 
 // Message types for WebSocket communication
 #[derive(Message, Debug, Serialize, Deserialize)]

@@ -132,8 +132,7 @@ mod tests {
         assert_eq!(graph.nodes.len(), 1);
 
         // After deleting ext3:
-        // - ext2's connection is empty because its only destination (ext3) is
-        //   gone.
+        // - ext2's connection is empty because its only destination (ext3) is gone.
         // So all connections are removed.
         assert!(graph.connections.is_none());
 

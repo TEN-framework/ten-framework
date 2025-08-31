@@ -9,7 +9,6 @@ use std::sync::Arc;
 use actix_web::{web, HttpResponse, Responder};
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
-
 use serde_json::{Map, Value};
 
 use crate::designer::{
@@ -82,7 +81,9 @@ pub async fn get_extension_property_endpoint(
     // Success case.
     let response = ApiResponse {
         status: Status::Ok,
-        data: GetExtensionPropertyResponseData { property },
+        data: GetExtensionPropertyResponseData {
+            property,
+        },
         meta: None,
     };
 

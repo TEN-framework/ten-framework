@@ -4,19 +4,17 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-use std::collections::HashMap;
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 use actix_web::{test, web, App};
 use serde_json;
-
-use ten_manager::designer::storage::in_memory::TmanStorageInMemory;
 use ten_manager::{
     designer::{
         preferences::logviewer_line_size::{
             get_logviewer_line_size_endpoint, update_logviewer_line_size_endpoint,
             UpdateLogviewerLineSizeRequestPayload,
         },
+        storage::in_memory::TmanStorageInMemory,
         DesignerState,
     },
     home::config::TmanConfig,
@@ -113,10 +111,7 @@ async fn test_update_logviewer_line_size_success() {
     assert_eq!(json["status"], "ok");
 
     // Verify config was updated.
-    assert_eq!(
-        state.tman_config.read().await.designer.logviewer_line_size,
-        3000
-    );
+    assert_eq!(state.tman_config.read().await.designer.logviewer_line_size, 3000);
 }
 
 #[actix_web::test]

@@ -45,11 +45,7 @@ pub fn create_sub_cmd(args_cfg: &crate::cmd_line::ArgsCfg) -> Command {
                 .value_parser(args_cfg.pkg_type.possible_values.clone())
                 .required(true),
         )
-        .arg(
-            Arg::new("PACKAGE_NAME")
-                .help("The name of the package")
-                .required(true),
-        )
+        .arg(Arg::new("PACKAGE_NAME").help("The name of the package").required(true))
 }
 
 pub fn parse_sub_cmd(sub_cmd_args: &ArgMatches) -> Result<UninstallCommand> {
@@ -78,11 +74,7 @@ async fn remove_installed_paths(
         .join(&uninstall_cmd.package_name);
 
     if !addon_path.exists() {
-        bail!(
-            "{}:{} does not exist.",
-            uninstall_cmd.package_type,
-            uninstall_cmd.package_name
-        );
+        bail!("{}:{} does not exist.", uninstall_cmd.package_type, uninstall_cmd.package_name);
     }
 
     let installed_paths_path = addon_path

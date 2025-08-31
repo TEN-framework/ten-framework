@@ -6,19 +6,21 @@
 //
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
-    use std::sync::Arc;
+    use std::{collections::HashMap, sync::Arc};
 
     use actix_web::{test, web, App};
+    use ten_manager::{
+        constants::TEST_DIR,
+        designer::{
+            apps::get::{get_apps_endpoint, AppInfo, GetAppsResponseData},
+            response::{ApiResponse, Status},
+            storage::in_memory::TmanStorageInMemory,
+            DesignerState,
+        },
+        home::config::TmanConfig,
+        output::cli::TmanOutputCli,
+    };
     use ten_rust::base_dir_pkg_info::PkgsInfoInApp;
-
-    use ten_manager::constants::TEST_DIR;
-    use ten_manager::designer::apps::get::{get_apps_endpoint, AppInfo, GetAppsResponseData};
-    use ten_manager::designer::response::{ApiResponse, Status};
-    use ten_manager::designer::storage::in_memory::TmanStorageInMemory;
-    use ten_manager::designer::DesignerState;
-    use ten_manager::home::config::TmanConfig;
-    use ten_manager::output::cli::TmanOutputCli;
 
     #[actix_web::test]
     async fn test_get_apps_some() {
@@ -48,9 +50,7 @@ mod tests {
         )
         .await;
 
-        let req = test::TestRequest::get()
-            .uri("/test_get_apps_some")
-            .to_request();
+        let req = test::TestRequest::get().uri("/test_get_apps_some").to_request();
 
         let resp: ApiResponse<GetAppsResponseData> = test::call_and_read_body_json(&app, req).await;
 
@@ -85,13 +85,16 @@ mod tests {
         )
         .await;
 
-        let req = test::TestRequest::get()
-            .uri("/test_get_apps_none")
-            .to_request();
+        let req = test::TestRequest::get().uri("/test_get_apps_none").to_request();
 
         let resp: ApiResponse<GetAppsResponseData> = test::call_and_read_body_json(&app, req).await;
 
         assert_eq!(resp.status, Status::Ok);
-        assert_eq!(resp.data, GetAppsResponseData { app_info: vec![] });
+        assert_eq!(
+            resp.data,
+            GetAppsResponseData {
+                app_info: vec![]
+            }
+        );
     }
 }

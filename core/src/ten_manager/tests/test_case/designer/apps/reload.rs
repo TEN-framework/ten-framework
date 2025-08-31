@@ -6,8 +6,7 @@
 //
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
-    use std::sync::Arc;
+    use std::{collections::HashMap, sync::Arc};
 
     use actix_web::{http::StatusCode, test, web, App};
     use ten_manager::{
@@ -61,10 +60,7 @@ mod tests {
         let app = test::init_service(
             App::new()
                 .app_data(web::Data::new(designer_state.clone()))
-                .route(
-                    "/api/designer/v1/apps/reload",
-                    web::post().to(reload_app_endpoint),
-                ),
+                .route("/api/designer/v1/apps/reload", web::post().to(reload_app_endpoint)),
         )
         .await;
 
@@ -136,10 +132,7 @@ mod tests {
         let app = test::init_service(
             App::new()
                 .app_data(web::Data::new(designer_state.clone()))
-                .route(
-                    "/api/designer/v1/apps/reload",
-                    web::post().to(reload_app_endpoint),
-                ),
+                .route("/api/designer/v1/apps/reload", web::post().to(reload_app_endpoint)),
         )
         .await;
 
@@ -167,8 +160,6 @@ mod tests {
         assert_eq!(error_response.status, Status::Fail);
         // The exact error message will depend on the implementation of
         // get_all_pkgs.
-        assert!(error_response
-            .message
-            .contains("Failed to reload packages:"));
+        assert!(error_response.message.contains("Failed to reload packages:"));
     }
 }

@@ -7,7 +7,6 @@
 use std::{collections::HashMap, sync::Arc};
 
 use actix_web::{http::StatusCode, test, web};
-
 use ten_manager::{
     designer::{
         doc_link::{
@@ -50,10 +49,7 @@ async fn test_get_doc_link_success() {
     .await;
 
     // Make the request.
-    let req = test::TestRequest::post()
-        .uri("/doc_link")
-        .set_json(&payload)
-        .to_request();
+    let req = test::TestRequest::post().uri("/doc_link").set_json(&payload).to_request();
 
     let resp = test::call_service(&app, req).await;
 
@@ -98,10 +94,7 @@ async fn test_get_doc_link_chinese() {
     .await;
 
     // Make the request.
-    let req = test::TestRequest::post()
-        .uri("/doc_link")
-        .set_json(&payload)
-        .to_request();
+    let req = test::TestRequest::post().uri("/doc_link").set_json(&payload).to_request();
 
     let resp = test::call_service(&app, req).await;
 
@@ -148,10 +141,7 @@ async fn test_get_doc_link_language_fallback() {
     .await;
 
     // Make the request.
-    let req = test::TestRequest::post()
-        .uri("/doc_link")
-        .set_json(&payload)
-        .to_request();
+    let req = test::TestRequest::post().uri("/doc_link").set_json(&payload).to_request();
 
     let resp = test::call_service(&app, req).await;
 
@@ -196,10 +186,7 @@ async fn test_get_doc_link_not_found() {
     .await;
 
     // Make the request.
-    let req = test::TestRequest::post()
-        .uri("/doc_link")
-        .set_json(&payload)
-        .to_request();
+    let req = test::TestRequest::post().uri("/doc_link").set_json(&payload).to_request();
 
     let resp = test::call_service(&app, req).await;
 

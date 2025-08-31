@@ -4,8 +4,7 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-use std::collections::HashMap;
-use std::str::FromStr;
+use std::{collections::HashMap, str::FromStr};
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -175,10 +174,7 @@ pub fn parse_log_line(
         .trim_end_matches(')'); // Remove the trailing ')'.
 
     // Check if the thread ID exists in graph_resources_log.extension_threads.
-    if !graph_resources_log
-        .extension_threads
-        .contains_key(thread_id)
-    {
+    if !graph_resources_log.extension_threads.contains_key(thread_id) {
         return None;
     }
 

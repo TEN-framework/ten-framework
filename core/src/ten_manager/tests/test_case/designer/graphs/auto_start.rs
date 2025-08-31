@@ -63,15 +63,12 @@ mod tests {
 
         let designer_state = Arc::new(designer_state);
 
-        let app = test::init_service(
-            App::new()
-                .app_data(web::Data::new(designer_state.clone()))
-                .route(
-                    "/api/designer/v1/graphs/auto-start",
-                    web::post().to(update_graph_auto_start_endpoint),
-                ),
-        )
-        .await;
+        let app =
+            test::init_service(App::new().app_data(web::Data::new(designer_state.clone())).route(
+                "/api/designer/v1/graphs/auto-start",
+                web::post().to(update_graph_auto_start_endpoint),
+            ))
+            .await;
 
         // Test setting auto_start to false
         let request_payload = UpdateGraphAutoStartRequestPayload {

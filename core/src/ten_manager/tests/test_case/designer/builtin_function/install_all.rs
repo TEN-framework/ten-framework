@@ -8,23 +8,25 @@ use std::{collections::HashMap, sync::Arc};
 
 use actix_web::{test, web, App};
 use futures_util::{SinkExt, StreamExt};
-use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
-
-use ten_manager::designer::{
-    builtin_function::{builtin_function_endpoint, msg::InboundMsg},
-    storage::in_memory::TmanStorageInMemory,
+use ten_manager::{
+    designer::{
+        builtin_function::{builtin_function_endpoint, msg::InboundMsg},
+        storage::in_memory::TmanStorageInMemory,
+        DesignerState,
+    },
+    home::config::TmanConfig,
+    output::cli::TmanOutputCli,
 };
-use ten_manager::{designer::DesignerState, home::config::TmanConfig, output::cli::TmanOutputCli};
+use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
 
 use crate::test_case::common::builtin_server::start_test_server;
 
 #[actix_rt::test]
 async fn test_ws_builtin_function_install_all() {
     // Start the WebSocket server and get its address
-    let server_addr = start_test_server("/ws/builtin-function", || {
-        web::get().to(builtin_function_endpoint)
-    })
-    .await;
+    let server_addr =
+        start_test_server("/ws/builtin-function", || web::get().to(builtin_function_endpoint))
+            .await;
     println!("Server started at: {server_addr}");
 
     // Connect WebSocket client
@@ -43,10 +45,7 @@ async fn test_ws_builtin_function_install_all() {
 
     // Send the message.
     write.send(Message::Text(json_msg.into())).await.unwrap();
-    println!(
-        "Sent InstallAll message: {}",
-        serde_json::to_string(&install_all_msg).unwrap()
-    );
+    println!("Sent InstallAll message: {}", serde_json::to_string(&install_all_msg).unwrap());
 
     // Wait for all response messages until server disconnects.
     let mut message_count = 0;
@@ -73,10 +72,7 @@ async fn test_ws_builtin_function_install_all() {
     }
 
     // Make sure we received at least one message.
-    assert!(
-        message_count > 0,
-        "Should have received at least one message"
-    );
+    assert!(message_count > 0, "Should have received at least one message");
 
     // Check if the last message matches the expected exit message.
     let expected_exit_message = r#"{"type":"exit","code":0,"error_message":null}"#;
@@ -107,16 +103,15 @@ async fn test_cmd_builtin_function_install_all() {
     let designer_state = Arc::new(designer_state);
 
     // Initialize the test service with the WebSocket endpoint.
-    let app = test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
-        "/ws/builtin-function",
-        web::get().to(builtin_function_endpoint),
-    ))
+    let app = test::init_service(
+        App::new()
+            .app_data(web::Data::new(designer_state))
+            .route("/ws/builtin-function", web::get().to(builtin_function_endpoint)),
+    )
     .await;
 
     // Create a basic request just to test if the route is defined.
-    let req = test::TestRequest::get()
-        .uri("/ws/builtin-function")
-        .to_request();
+    let req = test::TestRequest::get().uri("/ws/builtin-function").to_request();
 
     // Execute the request but don't check for success. This just verifies
     // that the route exists and the handler is called.

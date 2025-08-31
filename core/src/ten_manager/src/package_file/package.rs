@@ -6,12 +6,13 @@
 //
 #[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
-use std::path::PathBuf;
-use std::{fs::File, path::Path};
+use std::{
+    fs::File,
+    path::{Path, PathBuf},
+};
 
 use anyhow::{Context, Result};
-use flate2::write::GzEncoder;
-use flate2::Compression;
+use flate2::{write::GzEncoder, Compression};
 use tar::{Builder as TarBuilder, Header};
 
 pub fn tar_gz_files_to_file<P: AsRef<Path>>(

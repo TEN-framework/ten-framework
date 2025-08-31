@@ -4,22 +4,18 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-use std::process;
-use std::sync::Arc;
+use std::{process, sync::Arc};
 
 use anyhow::Result;
 use console::Emoji;
-use ten_manager::cmd::execute_cmd;
-use ten_manager::designer::storage::in_memory::TmanStorageInMemory;
 // use ten_manager::memory_stats::print_memory_stats;
 use ten_manager::output::cli::TmanOutputCli;
+use ten_manager::{
+    cmd::execute_cmd, cmd_line, constants::GITHUB_RELEASE_PAGE,
+    designer::storage::in_memory::TmanStorageInMemory, output::TmanOutput, version::VERSION,
+    version_utils::check_update,
+};
 use tokio::runtime::Runtime;
-
-use ten_manager::cmd_line;
-use ten_manager::constants::GITHUB_RELEASE_PAGE;
-use ten_manager::output::TmanOutput;
-use ten_manager::version::VERSION;
-use ten_manager::version_utils::check_update;
 
 fn check_update_from_cmdline(out: Arc<Box<dyn TmanOutput>>) -> Result<()> {
     out.normal_line("Checking for new version...");
@@ -29,8 +25,8 @@ fn check_update_from_cmdline(out: Arc<Box<dyn TmanOutput>>) -> Result<()> {
     match rt.block_on(check_update()) {
         Ok((true, latest)) => {
             out.normal_line(&format!(
-                "New version found: {latest}. Please go to \
-                 {GITHUB_RELEASE_PAGE} to download the update."
+                "New version found: {latest}. Please go to {GITHUB_RELEASE_PAGE} to download the \
+                 update."
             ));
         }
         Ok((false, _)) => {

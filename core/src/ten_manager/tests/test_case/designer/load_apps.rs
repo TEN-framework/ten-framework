@@ -43,10 +43,7 @@ mod tests {
         let app = test::init_service(
             App::new()
                 .app_data(web::Data::new(designer_state.clone()))
-                .route(
-                    "/test_load_app_success_with_app_uri",
-                    web::post().to(load_app_endpoint),
-                ),
+                .route("/test_load_app_success_with_app_uri", web::post().to(load_app_endpoint)),
         )
         .await;
 
@@ -77,10 +74,7 @@ mod tests {
         let api_response: ApiResponse<LoadAppResponseData> =
             serde_json::from_str(body_str).unwrap();
         assert_eq!(api_response.status, Status::Ok);
-        assert_eq!(
-            api_response.data.app_uri,
-            Some("msgpack://localhost:8000".to_string())
-        );
+        assert_eq!(api_response.data.app_uri, Some("msgpack://localhost:8000".to_string()));
     }
 
     #[actix_web::test]
@@ -101,10 +95,7 @@ mod tests {
         let app = test::init_service(
             App::new()
                 .app_data(web::Data::new(designer_state.clone()))
-                .route(
-                    "/test_load_app_success_without_app_uri",
-                    web::post().to(load_app_endpoint),
-                ),
+                .route("/test_load_app_success_without_app_uri", web::post().to(load_app_endpoint)),
         )
         .await;
 

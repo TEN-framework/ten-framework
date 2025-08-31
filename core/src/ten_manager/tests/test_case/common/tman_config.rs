@@ -59,10 +59,8 @@ pub fn find_config_json() -> Option<PathBuf> {
             }
 
             // Look for `config.json` at `tests/local_registry/config.json`.
-            let config_path = nested_subfolders[0]
-                .join("tests")
-                .join("local_registry")
-                .join("config.json");
+            let config_path =
+                nested_subfolders[0].join("tests").join("local_registry").join("config.json");
 
             if config_path.exists() {
                 return Some(config_path);

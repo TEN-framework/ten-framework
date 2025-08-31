@@ -54,11 +54,12 @@ mod tests {
 
         let designer_state = Arc::new(designer_state);
 
-        let app = test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
-            "/api/designer/v1/graphs/nodes/add",
-            web::post().to(add_graph_node_endpoint),
-        ))
-        .await;
+        let app =
+            test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
+                "/api/designer/v1/graphs/nodes/add",
+                web::post().to(add_graph_node_endpoint),
+            ))
+            .await;
 
         // Try to add a node to a non-existent graph.
         let request_payload = AddGraphNodeRequestPayload {
@@ -117,11 +118,12 @@ mod tests {
 
         let designer_state = Arc::new(designer_state);
 
-        let app = test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
-            "/api/designer/v1/graphs/nodes/add",
-            web::post().to(add_graph_node_endpoint),
-        ))
-        .await;
+        let app =
+            test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
+                "/api/designer/v1/graphs/nodes/add",
+                web::post().to(add_graph_node_endpoint),
+            ))
+            .await;
 
         // Try to add a node with localhost app URI (which is not allowed).
         let request_payload = AddGraphNodeRequestPayload {
@@ -183,11 +185,12 @@ mod tests {
 
         let designer_state = Arc::new(designer_state);
 
-        let app = test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
-            "/api/designer/v1/graphs/nodes/add",
-            web::post().to(add_graph_node_endpoint),
-        ))
-        .await;
+        let app =
+            test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
+                "/api/designer/v1/graphs/nodes/add",
+                web::post().to(add_graph_node_endpoint),
+            ))
+            .await;
 
         // Add a node to the default graph with the same app URI as other nodes
         let request_payload = AddGraphNodeRequestPayload {
@@ -251,11 +254,12 @@ mod tests {
 
         let designer_state = Arc::new(designer_state);
 
-        let app = test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
-            "/api/designer/v1/graphs/nodes/add",
-            web::post().to(add_graph_node_endpoint),
-        ))
-        .await;
+        let app =
+            test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
+                "/api/designer/v1/graphs/nodes/add",
+                web::post().to(add_graph_node_endpoint),
+            ))
+            .await;
 
         // Add a node to the default graph with the same app URI as other nodes.
         let request_payload = AddGraphNodeRequestPayload {
@@ -347,15 +351,12 @@ mod tests {
 
         let designer_state = Arc::new(designer_state);
 
-        let app = test::init_service(
-            App::new()
-                .app_data(web::Data::new(designer_state.clone()))
-                .route(
-                    "/api/designer/v1/graphs/nodes/add",
-                    web::post().to(add_graph_node_endpoint),
-                ),
-        )
-        .await;
+        let app =
+            test::init_service(App::new().app_data(web::Data::new(designer_state.clone())).route(
+                "/api/designer/v1/graphs/nodes/add",
+                web::post().to(add_graph_node_endpoint),
+            ))
+            .await;
 
         // Add a node to the test-graph.
         let request_payload = AddGraphNodeRequestPayload {
@@ -426,11 +427,7 @@ mod tests {
                 input_property_json_str.to_string(),
             ),
             (
-                format!(
-                    "{}{}",
-                    temp_dir_path.clone(),
-                    "/ten_packages/extension/extension_1"
-                ),
+                format!("{}{}", temp_dir_path.clone(), "/ten_packages/extension/extension_1"),
                 include_str!("../../../../test_data/test_addon_manifest.json").to_string(),
                 "{}".to_string(),
             ),
@@ -460,15 +457,12 @@ mod tests {
 
         // First add a node, then delete it.
         // Setup the add endpoint.
-        let app_add = test::init_service(
-            App::new()
-                .app_data(web::Data::new(designer_state.clone()))
-                .route(
-                    "/api/designer/v1/graphs/nodes/add",
-                    web::post().to(add_graph_node_endpoint),
-                ),
-        )
-        .await;
+        let app_add =
+            test::init_service(App::new().app_data(web::Data::new(designer_state.clone())).route(
+                "/api/designer/v1/graphs/nodes/add",
+                web::post().to(add_graph_node_endpoint),
+            ))
+            .await;
 
         // Add a node to the default graph.
         let add_request_payload = AddGraphNodeRequestPayload {
@@ -495,8 +489,7 @@ mod tests {
 
         let expected_property_json_str = include_str!(
             "../../../../test_data/\
-             expected_property_after_adding_in_test_delete_graph_node_success.\
-             json"
+             expected_property_after_adding_in_test_delete_graph_node_success.json"
         );
 
         // Parse the contents as JSON for proper comparison.
@@ -547,11 +540,7 @@ mod tests {
                 input_property_json_str.to_string(),
             ),
             (
-                format!(
-                    "{}{}",
-                    temp_dir_path.clone(),
-                    "/ten_packages/extension/extension_1"
-                ),
+                format!("{}{}", temp_dir_path.clone(), "/ten_packages/extension/extension_1"),
                 include_str!("../../../../test_data/test_addon_manifest.json").to_string(),
                 "{}".to_string(),
             ),
@@ -581,15 +570,12 @@ mod tests {
 
         // First add a node, then delete it.
         // Setup the add endpoint.
-        let app_add = test::init_service(
-            App::new()
-                .app_data(web::Data::new(designer_state.clone()))
-                .route(
-                    "/api/designer/v1/graphs/nodes/add",
-                    web::post().to(add_graph_node_endpoint),
-                ),
-        )
-        .await;
+        let app_add =
+            test::init_service(App::new().app_data(web::Data::new(designer_state.clone())).route(
+                "/api/designer/v1/graphs/nodes/add",
+                web::post().to(add_graph_node_endpoint),
+            ))
+            .await;
 
         // Add a node to the default graph.
         let add_request_payload = AddGraphNodeRequestPayload {

@@ -4,8 +4,7 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-use std::env;
-use std::sync::Arc;
+use std::{env, sync::Arc};
 
 use actix_web::{web, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
@@ -34,7 +33,9 @@ pub async fn get_env_var_endpoint(
     // Cross-platform way to get environment variables.
     let value = env::var(name).ok();
 
-    let response_data = GetEnvVarResponseData { value };
+    let response_data = GetEnvVarResponseData {
+        value,
+    };
 
     Ok(HttpResponse::Ok().json(response_data))
 }

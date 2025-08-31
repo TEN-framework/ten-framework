@@ -21,8 +21,8 @@ pub fn parse_key(key: &str) -> Result<Vec<KeySegment>> {
     let valid_key_regex = Regex::new(r"^[a-z0-9_.\[\]]+$").unwrap();
     if !valid_key_regex.is_match(key) {
         return Err(anyhow!(
-            "Key contains invalid characters. Only lowercase letters, \
-             numbers, underscore, dots and brackets are allowed"
+            "Key contains invalid characters. Only lowercase letters, numbers, underscore, dots \
+             and brackets are allowed"
         ));
     }
 
@@ -40,10 +40,8 @@ pub fn parse_key(key: &str) -> Result<Vec<KeySegment>> {
             let field_name = captures.get(1).unwrap().as_str().to_string();
 
             if let Some(index_match) = captures.get(2) {
-                let index: usize = index_match
-                    .as_str()
-                    .parse()
-                    .map_err(|_| anyhow!("Invalid array index"))?;
+                let index: usize =
+                    index_match.as_str().parse().map_err(|_| anyhow!("Invalid array index"))?;
                 segments.push(KeySegment::Array(field_name, index));
             } else {
                 segments.push(KeySegment::Object(field_name));
@@ -148,9 +146,8 @@ fn set_value_recursive(
         }
         KeySegment::Array(field, array_index) => {
             if let Some(obj) = current.as_object_mut() {
-                let arr_entry = obj
-                    .entry(field.clone())
-                    .or_insert_with(|| Value::Array(Vec::new()));
+                let arr_entry =
+                    obj.entry(field.clone()).or_insert_with(|| Value::Array(Vec::new()));
 
                 if let Some(arr) = arr_entry.as_array_mut() {
                     // Extend array if necessary

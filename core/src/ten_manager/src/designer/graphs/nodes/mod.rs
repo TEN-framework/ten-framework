@@ -13,20 +13,26 @@ use std::collections::HashMap;
 
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
+use ten_rust::{
+    base_dir_pkg_info::PkgsInfoInApp,
+    graph::{
+        graph_info::GraphInfo,
+        node::{AtomicFilter, Filter, FilterOperator, GraphNode},
+    },
+    pkg_info::{
+        manifest::api::{
+            ManifestApiCmdResult, ManifestApiMsg, ManifestApiProperty,
+            ManifestApiPropertyAttributes,
+        },
+        value_type::ValueType,
+    },
+};
 use uuid::Uuid;
 
-use ten_rust::base_dir_pkg_info::PkgsInfoInApp;
-use ten_rust::graph::graph_info::GraphInfo;
-use ten_rust::graph::node::{AtomicFilter, Filter, FilterOperator, GraphNode};
-use ten_rust::pkg_info::manifest::api::ManifestApiMsg;
-use ten_rust::pkg_info::manifest::api::{
-    ManifestApiCmdResult, ManifestApiProperty, ManifestApiPropertyAttributes,
+use crate::{
+    designer::graphs::DesignerGraph, fs::json::patch_property_json_file,
+    pkg_info::belonging_pkg_info_find_by_graph_info,
 };
-use ten_rust::pkg_info::value_type::ValueType;
-
-use crate::designer::graphs::DesignerGraph;
-use crate::fs::json::patch_property_json_file;
-use crate::pkg_info::belonging_pkg_info_find_by_graph_info;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct DesignerApiProperty {
@@ -40,19 +46,12 @@ pub struct DesignerApiProperty {
 impl From<ManifestApiProperty> for DesignerApiProperty {
     fn from(manifest_property: ManifestApiProperty) -> Self {
         let properties_map = manifest_property.properties().map(|properties| {
-            properties
-                .iter()
-                .map(|(k, v)| (k.clone(), v.clone().into()))
-                .collect()
+            properties.iter().map(|(k, v)| (k.clone(), v.clone().into())).collect()
         });
 
         DesignerApiProperty {
             properties: properties_map,
-            required: manifest_property
-                .required
-                .as_ref()
-                .filter(|req| !req.is_empty())
-                .cloned(),
+            required: manifest_property.required.as_ref().filter(|req| !req.is_empty()).cloned(),
         }
     }
 }
@@ -262,10 +261,14 @@ impl From<Filter> for DesignerFilter {
     fn from(filter: Filter) -> Self {
         match filter {
             Filter::Atomic(atomic) => DesignerFilter::Atomic(atomic.into()),
-            Filter::And { and } => DesignerFilter::And {
+            Filter::And {
+                and,
+            } => DesignerFilter::And {
                 and: and.into_iter().map(|f| f.into()).collect(),
             },
-            Filter::Or { or } => DesignerFilter::Or {
+            Filter::Or {
+                or,
+            } => DesignerFilter::Or {
                 or: or.into_iter().map(|f| f.into()).collect(),
             },
         }
@@ -296,9 +299,15 @@ impl DesignerGraphNode {
     /// Get the name of the node regardless of its type.
     pub fn get_name(&self) -> &str {
         match self {
-            DesignerGraphNode::Extension { content } => &content.name,
-            DesignerGraphNode::Subgraph { content } => &content.name,
-            DesignerGraphNode::Selector { content } => &content.name,
+            DesignerGraphNode::Extension {
+                content,
+            } => &content.name,
+            DesignerGraphNode::Subgraph {
+                content,
+            } => &content.name,
+            DesignerGraphNode::Selector {
+                content,
+            } => &content.name,
         }
     }
 }
@@ -308,7 +317,9 @@ impl TryFrom<GraphNode> for DesignerGraphNode {
 
     fn try_from(node: GraphNode) -> Result<Self, Self::Error> {
         match node {
-            GraphNode::Extension { content } => Ok(DesignerGraphNode::Extension {
+            GraphNode::Extension {
+                content,
+            } => Ok(DesignerGraphNode::Extension {
                 content: Box::new(DesignerExtensionNode {
                     addon: content.addon,
                     name: content.name,
@@ -319,7 +330,9 @@ impl TryFrom<GraphNode> for DesignerGraphNode {
                     is_installed: false,
                 }),
             }),
-            GraphNode::Subgraph { content } => {
+            GraphNode::Subgraph {
+                content,
+            } => {
                 Ok(DesignerGraphNode::Subgraph {
                     content: Box::new(DesignerSubgraphNode {
                         name: content.name,
@@ -332,7 +345,9 @@ impl TryFrom<GraphNode> for DesignerGraphNode {
                     }),
                 })
             }
-            GraphNode::Selector { content } => Ok(DesignerGraphNode::Selector {
+            GraphNode::Selector {
+                content,
+            } => Ok(DesignerGraphNode::Selector {
                 content: Box::new(DesignerSelectorNode {
                     name: content.name,
                     filter: DesignerFilter::from(content.filter),
@@ -352,10 +367,7 @@ pub fn get_nodes_in_graph<'a>(
         // Collect all extension nodes from the graph.
         Ok(graph_info.graph.nodes())
     } else {
-        Err(anyhow::anyhow!(
-            "Graph with ID '{}' not found in graph caches",
-            graph_id
-        ))
+        Err(anyhow::anyhow!("Graph with ID '{}' not found in graph caches", graph_id))
     }
 }
 

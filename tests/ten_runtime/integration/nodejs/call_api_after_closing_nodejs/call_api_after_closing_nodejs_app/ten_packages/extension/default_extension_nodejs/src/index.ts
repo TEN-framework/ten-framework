@@ -153,7 +153,9 @@ class DefaultExtension extends Extension {
     const [result, _] = await tenEnv.sendCmd(testCmd);
     assert(result !== undefined, "result is undefined");
 
-    tenEnv.logInfo("received result detail:" + result?.getPropertyToJson("detail"));
+    tenEnv.logInfo(
+      "received result detail:" + result?.getPropertyToJson("detail"),
+    );
 
     const cmdResult = CmdResult.Create(StatusCode.OK, cmd);
     cmdResult.setPropertyFromJson(

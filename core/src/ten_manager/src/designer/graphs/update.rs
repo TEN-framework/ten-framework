@@ -8,8 +8,7 @@ use std::sync::Arc;
 
 use actix_web::{web, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
-use ten_rust::graph::node::GraphNode;
-use ten_rust::graph::{connection::GraphConnection, GraphExposedMessage};
+use ten_rust::graph::{connection::GraphConnection, node::GraphNode, GraphExposedMessage};
 use uuid::Uuid;
 
 use crate::{
@@ -71,11 +70,8 @@ pub async fn update_graph_endpoint(
     let old_graphs_cache = state.graphs_cache.read().await.clone();
 
     // Convert GraphNodeForUpdate to GraphNode
-    let graph_nodes: Vec<GraphNode> = request_payload
-        .nodes
-        .iter()
-        .map(|node_update| node_update.to_graph_node())
-        .collect();
+    let graph_nodes: Vec<GraphNode> =
+        request_payload.nodes.iter().map(|node_update| node_update.to_graph_node()).collect();
 
     // update graph info
     let graph_info = {
@@ -162,7 +158,9 @@ pub async fn update_graph_endpoint(
 
     let response = ApiResponse {
         status: Status::Ok,
-        data: UpdateGraphResponseData { success: true },
+        data: UpdateGraphResponseData {
+            success: true,
+        },
         meta: None,
     };
     Ok(HttpResponse::Ok().json(response))

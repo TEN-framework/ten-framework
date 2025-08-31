@@ -4,15 +4,17 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-use crate::graph::connection::{GraphDestination, GraphLoc, GraphMessageFlow, GraphSource};
-use crate::graph::msg_conversion::MsgAndResultConversion;
-use crate::graph::node::{
-    AtomicFilter, Filter, FilterOperator, GraphNode, GraphNodeType, SelectorNode,
-};
-use crate::graph::Graph;
+use std::collections::HashMap;
+
 use anyhow::Result;
 use regex::Regex;
-use std::collections::HashMap;
+
+use crate::graph::{
+    connection::{GraphDestination, GraphLoc, GraphMessageFlow, GraphSource},
+    msg_conversion::MsgAndResultConversion,
+    node::{AtomicFilter, Filter, FilterOperator, GraphNode, GraphNodeType, SelectorNode},
+    Graph,
+};
 
 #[derive(Debug)]
 pub struct SelectorError {
@@ -33,33 +35,23 @@ impl std::fmt::Display for SelectorError {
 impl std::error::Error for SelectorError {}
 
 fn has_selector_nodes(graph: &Graph) -> bool {
-    graph
-        .nodes
-        .iter()
-        .any(|node| matches!(node.get_type(), GraphNodeType::Selector))
+    graph.nodes.iter().any(|node| matches!(node.get_type(), GraphNodeType::Selector))
 }
 
 fn check_flows(flows: &Option<Vec<GraphMessageFlow>>) -> bool {
     flows.iter().flat_map(|f| f.iter()).any(|flow| {
         flow.dest.iter().any(|dest| dest.loc.selector.is_some())
-            || flow
-                .source
-                .iter()
-                .any(|source| source.loc.selector.is_some())
+            || flow.source.iter().any(|source| source.loc.selector.is_some())
     })
 }
 
 fn has_connections_with_selectors(graph: &Graph) -> bool {
-    graph
-        .connections
-        .iter()
-        .flat_map(|c| c.iter())
-        .any(|connection| {
-            check_flows(&connection.cmd)
-                || check_flows(&connection.data)
-                || check_flows(&connection.audio_frame)
-                || check_flows(&connection.video_frame)
-        })
+    graph.connections.iter().flat_map(|c| c.iter()).any(|connection| {
+        check_flows(&connection.cmd)
+            || check_flows(&connection.data)
+            || check_flows(&connection.audio_frame)
+            || check_flows(&connection.video_frame)
+    })
 }
 
 fn process_message_flows_with_selector(
@@ -85,8 +77,7 @@ fn process_message_flows_with_selector(
 
                 if matching_nodes.is_empty() {
                     println!(
-                        "Selector '{selector_name}' in flow '{flow_type}' \
-                         didn't match any nodes"
+                        "Selector '{selector_name}' in flow '{flow_type}' didn't match any nodes"
                     );
                 }
 
@@ -116,8 +107,7 @@ fn process_message_flows_with_selector(
 
                 if matching_nodes.is_empty() {
                     println!(
-                        "Selector '{selector_name}' in flow '{flow_type}' \
-                         didn't match any nodes"
+                        "Selector '{selector_name}' in flow '{flow_type}' didn't match any nodes"
                     );
                 }
 
@@ -169,8 +159,12 @@ fn matches_filter(
 ) -> bool {
     match filter {
         Filter::Atomic(atomic) => matches_atomic_filter(atomic, node, regex_cache),
-        Filter::And { and } => and.iter().all(|f| matches_filter(f, node, regex_cache)),
-        Filter::Or { or } => or.iter().any(|f| matches_filter(f, node, regex_cache)),
+        Filter::And {
+            and,
+        } => and.iter().all(|f| matches_filter(f, node, regex_cache)),
+        Filter::Or {
+            or,
+        } => or.iter().any(|f| matches_filter(f, node, regex_cache)),
     }
 }
 
@@ -211,7 +205,9 @@ fn match_regex(pattern: &str, input: &str, regex_cache: &mut HashMap<String, Reg
 
 fn create_source_for_node(node: &GraphNode) -> Option<GraphSource> {
     match node {
-        GraphNode::Extension { content: ext_node } => Some(GraphSource {
+        GraphNode::Extension {
+            content: ext_node,
+        } => Some(GraphSource {
             loc: GraphLoc {
                 app: ext_node.app.clone(),
                 extension: Some(ext_node.name.clone()),
@@ -238,7 +234,9 @@ fn create_destination_for_node(
     msg_conversion: Option<MsgAndResultConversion>,
 ) -> Option<GraphDestination> {
     match node {
-        GraphNode::Extension { content: ext_node } => Some(GraphDestination {
+        GraphNode::Extension {
+            content: ext_node,
+        } => Some(GraphDestination {
             loc: GraphLoc {
                 app: ext_node.app.clone(),
                 extension: Some(ext_node.name.clone()),
@@ -280,8 +278,7 @@ impl Graph {
             .nodes
             .iter()
             .filter_map(|node| {
-                node.as_selector_node()
-                    .map(|selector_node| (node.get_name(), selector_node))
+                node.as_selector_node().map(|selector_node| (node.get_name(), selector_node))
             })
             .collect();
 
@@ -310,9 +307,7 @@ impl Graph {
         }
 
         // Remove all selector nodes
-        new_graph
-            .nodes
-            .retain(|node| !matches!(node.get_type(), GraphNodeType::Selector));
+        new_graph.nodes.retain(|node| !matches!(node.get_type(), GraphNodeType::Selector));
 
         Ok(Some(new_graph))
     }

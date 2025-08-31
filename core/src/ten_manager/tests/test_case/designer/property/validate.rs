@@ -53,10 +53,7 @@ mod tests {
         let response_body: serde_json::Value = test::read_body_json(resp).await;
         assert_eq!(response_body["status"], "ok");
         assert_eq!(response_body["data"]["is_valid"], true);
-        assert_eq!(
-            response_body["data"]["error_message"],
-            serde_json::json!(null)
-        );
+        assert_eq!(response_body["data"]["error_message"], serde_json::json!(null));
     }
 
     #[actix_web::test]
@@ -103,10 +100,7 @@ mod tests {
         let response_body: serde_json::Value = test::read_body_json(resp).await;
         assert_eq!(response_body["status"], "ok");
         assert_eq!(response_body["data"]["is_valid"], true);
-        assert_eq!(
-            response_body["data"]["error_message"],
-            serde_json::json!(null)
-        );
+        assert_eq!(response_body["data"]["error_message"], serde_json::json!(null));
     }
 
     #[actix_web::test]
@@ -172,10 +166,7 @@ mod tests {
         let response_body: serde_json::Value = test::read_body_json(resp).await;
         assert_eq!(response_body["status"], "ok");
         assert_eq!(response_body["data"]["is_valid"], true);
-        assert_eq!(
-            response_body["data"]["error_message"],
-            serde_json::json!(null)
-        );
+        assert_eq!(response_body["data"]["error_message"], serde_json::json!(null));
     }
 
     #[actix_web::test]
@@ -233,10 +224,7 @@ mod tests {
         let response_body: serde_json::Value = test::read_body_json(resp).await;
         assert_eq!(response_body["status"], "ok");
         assert_eq!(response_body["data"]["is_valid"], true);
-        assert_eq!(
-            response_body["data"]["error_message"],
-            serde_json::json!(null)
-        );
+        assert_eq!(response_body["data"]["error_message"], serde_json::json!(null));
     }
 
     #[actix_web::test]
@@ -475,10 +463,7 @@ mod tests {
         let response_body: serde_json::Value = test::read_body_json(resp).await;
         assert_eq!(response_body["status"], "ok");
         assert_eq!(response_body["data"]["is_valid"], false);
-        assert!(response_body["data"]["error_message"]
-            .as_str()
-            .unwrap()
-            .contains("required"));
+        assert!(response_body["data"]["error_message"].as_str().unwrap().contains("required"));
 
         println!("error_message: {}", response_body["data"]["error_message"]);
     }

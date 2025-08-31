@@ -70,26 +70,14 @@ mod tests {
         let empty_property = r#"{"ten":{}}"#.to_string();
 
         let all_pkgs_json = vec![
+            (test_dir.clone(), app_manifest_json_str, app_property_json_str),
             (
-                test_dir.clone(),
-                app_manifest_json_str,
-                app_property_json_str,
-            ),
-            (
-                format!(
-                    "{}{}",
-                    test_dir.clone(),
-                    "/ten_packages/extension/extension_addon_1"
-                ),
+                format!("{}{}", test_dir.clone(), "/ten_packages/extension/extension_addon_1"),
                 ext1_manifest,
                 empty_property.clone(),
             ),
             (
-                format!(
-                    "{}{}",
-                    test_dir.clone(),
-                    "/ten_packages/extension/extension_addon_2"
-                ),
+                format!("{}{}", test_dir.clone(), "/ten_packages/extension/extension_addon_2"),
                 ext2_manifest,
                 empty_property.clone(),
             ),
@@ -185,8 +173,7 @@ mod tests {
         // Define expected property.json content after adding all three
         // connections.
         let expected_property_json_str = include_str!(
-            "../../../../../test_data/\
-             expected_json__connection_with_msg_conversion.json"
+            "../../../../../test_data/expected_json__connection_with_msg_conversion.json"
         );
 
         // Read the actual property.json file generated during the test.
@@ -202,8 +189,7 @@ mod tests {
         assert_eq!(
             expected_value,
             actual_value,
-            "Property file doesn't match expected \
-             content.\nExpected:\n{}\nActual:\n{}",
+            "Property file doesn't match expected content.\nExpected:\n{}\nActual:\n{}",
             serde_json::to_string_pretty(&expected_value).unwrap(),
             serde_json::to_string_pretty(&actual_value).unwrap()
         );
@@ -246,26 +232,14 @@ mod tests {
         let empty_property = r#"{"ten":{}}"#.to_string();
 
         let all_pkgs_json = vec![
+            (test_dir.clone(), app_manifest_json_str, app_property_json_str),
             (
-                test_dir.clone(),
-                app_manifest_json_str,
-                app_property_json_str,
-            ),
-            (
-                format!(
-                    "{}{}",
-                    test_dir.clone(),
-                    "/ten_packages/extension/extension_addon_1"
-                ),
+                format!("{}{}", test_dir.clone(), "/ten_packages/extension/extension_addon_1"),
                 ext1_manifest,
                 empty_property.clone(),
             ),
             (
-                format!(
-                    "{}{}",
-                    test_dir.clone(),
-                    "/ten_packages/extension/extension_addon_2"
-                ),
+                format!("{}{}", test_dir.clone(), "/ten_packages/extension/extension_addon_2"),
                 ext2_manifest,
                 empty_property.clone(),
             ),
@@ -359,8 +333,8 @@ mod tests {
         // Define expected property.json content after adding all three
         // connections.
         let expected_property_json_str = include_str!(
-            "../../../../../test_data/\
-             expected_json__connection_with_msg_and_result_conversion.json"
+            "../../../../../test_data/expected_json__connection_with_msg_and_result_conversion.\
+             json"
         );
 
         // Read the actual property.json file generated during the test.
@@ -376,8 +350,7 @@ mod tests {
         assert_eq!(
             expected_value,
             actual_value,
-            "Property file doesn't match expected \
-             content.\nExpected:\n{}\nActual:\n{}",
+            "Property file doesn't match expected content.\nExpected:\n{}\nActual:\n{}",
             serde_json::to_string_pretty(&expected_value).unwrap(),
             serde_json::to_string_pretty(&actual_value).unwrap()
         );
@@ -420,26 +393,14 @@ mod tests {
         let empty_property = r#"{"ten":{}}"#.to_string();
 
         let all_pkgs_json = vec![
+            (test_dir.clone(), app_manifest_json_str, app_property_json_str),
             (
-                test_dir.clone(),
-                app_manifest_json_str,
-                app_property_json_str,
-            ),
-            (
-                format!(
-                    "{}{}",
-                    test_dir.clone(),
-                    "/ten_packages/extension/extension_addon_1"
-                ),
+                format!("{}{}", test_dir.clone(), "/ten_packages/extension/extension_addon_1"),
                 ext1_manifest,
                 empty_property.clone(),
             ),
             (
-                format!(
-                    "{}{}",
-                    test_dir.clone(),
-                    "/ten_packages/extension/extension_addon_2"
-                ),
+                format!("{}{}", test_dir.clone(), "/ten_packages/extension/extension_addon_2"),
                 ext2_manifest,
                 empty_property.clone(),
             ),
@@ -541,8 +502,7 @@ mod tests {
         // Define expected property.json content after adding all three
         // connections.
         let expected_property_json_str = include_str!(
-            "../../../../../test_data/\
-             expected_json__connection_added_with_msg_conversion.json"
+            "../../../../../test_data/expected_json__connection_added_with_msg_conversion.json"
         );
 
         // Read the actual property.json file generated during the test.
@@ -558,8 +518,7 @@ mod tests {
         assert_eq!(
             expected_value,
             actual_value,
-            "Property file doesn't match expected \
-             content.\nExpected:\n{}\nActual:\n{}",
+            "Property file doesn't match expected content.\nExpected:\n{}\nActual:\n{}",
             serde_json::to_string_pretty(&expected_value).unwrap(),
             serde_json::to_string_pretty(&actual_value).unwrap()
         );
@@ -602,26 +561,14 @@ mod tests {
         let empty_property = r#"{"ten":{}}"#.to_string();
 
         let all_pkgs_json = vec![
+            (test_dir.clone(), app_manifest_json_str, app_property_json_str),
             (
-                test_dir.clone(),
-                app_manifest_json_str,
-                app_property_json_str,
-            ),
-            (
-                format!(
-                    "{}{}",
-                    test_dir.clone(),
-                    "/ten_packages/extension/extension_1"
-                ),
+                format!("{}{}", test_dir.clone(), "/ten_packages/extension/extension_1"),
                 ext1_manifest,
                 empty_property.clone(),
             ),
             (
-                format!(
-                    "{}{}",
-                    test_dir.clone(),
-                    "/ten_packages/extension/extension_2"
-                ),
+                format!("{}{}", test_dir.clone(), "/ten_packages/extension/extension_2"),
                 ext2_manifest,
                 empty_property.clone(),
             ),
@@ -724,8 +671,7 @@ mod tests {
         // connections.
         let expected_property_json_str = include_str!(
             "../../../../../test_data/\
-             expected_json__connection_added_with_msg_conversion_keep_original.\
-             json"
+             expected_json__connection_added_with_msg_conversion_keep_original.json"
         );
 
         // Read the actual property.json file generated during the test.
@@ -741,8 +687,7 @@ mod tests {
         assert_eq!(
             expected_value,
             actual_value,
-            "Property file doesn't match expected \
-             content.\nExpected:\n{}\nActual:\n{}",
+            "Property file doesn't match expected content.\nExpected:\n{}\nActual:\n{}",
             serde_json::to_string_pretty(&expected_value).unwrap(),
             serde_json::to_string_pretty(&actual_value).unwrap()
         );
@@ -785,26 +730,14 @@ mod tests {
         let empty_property = r#"{"ten":{}}"#.to_string();
 
         let all_pkgs_json = vec![
+            (test_dir.clone(), app_manifest_json_str, app_property_json_str),
             (
-                test_dir.clone(),
-                app_manifest_json_str,
-                app_property_json_str,
-            ),
-            (
-                format!(
-                    "{}{}",
-                    test_dir.clone(),
-                    "/ten_packages/extension/extension_addon_1"
-                ),
+                format!("{}{}", test_dir.clone(), "/ten_packages/extension/extension_addon_1"),
                 ext1_manifest,
                 empty_property.clone(),
             ),
             (
-                format!(
-                    "{}{}",
-                    test_dir.clone(),
-                    "/ten_packages/extension/extension_addon_2"
-                ),
+                format!("{}{}", test_dir.clone(), "/ten_packages/extension/extension_addon_2"),
                 ext2_manifest,
                 empty_property.clone(),
             ),

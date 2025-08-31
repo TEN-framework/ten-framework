@@ -7,7 +7,6 @@
 use std::collections::HashMap;
 
 use anyhow::Result;
-
 use ten_rust::{
     base_dir_pkg_info::PkgsInfoInApp,
     graph::node::GraphNode,
@@ -39,7 +38,9 @@ pub fn get_compatible_msg_extension<'a>(
 
     for target_node in extension_graph_nodes {
         let target_extension_graph_node = match target_node {
-            GraphNode::Extension { content } => content,
+            GraphNode::Extension {
+                content,
+            } => content,
             _ => continue,
         };
 
@@ -53,30 +54,27 @@ pub fn get_compatible_msg_extension<'a>(
         match target_extension_pkg_info {
             Some(target_extension_pkg_info) => {
                 let target_msg_schema =
-                    target_extension_pkg_info
-                        .schema_store
-                        .as_ref()
-                        .and_then(|schema_store| {
-                            let msg_name = msg_name.as_str();
-                            match msg_type {
-                                MsgType::Cmd => match desired_msg_dir {
-                                    MsgDirection::In => schema_store.cmd_in.get(msg_name),
-                                    MsgDirection::Out => schema_store.cmd_out.get(msg_name),
-                                },
-                                MsgType::Data => match desired_msg_dir {
-                                    MsgDirection::In => schema_store.data_in.get(msg_name),
-                                    MsgDirection::Out => schema_store.data_out.get(msg_name),
-                                },
-                                MsgType::AudioFrame => match desired_msg_dir {
-                                    MsgDirection::In => schema_store.audio_frame_in.get(msg_name),
-                                    MsgDirection::Out => schema_store.audio_frame_out.get(msg_name),
-                                },
-                                MsgType::VideoFrame => match desired_msg_dir {
-                                    MsgDirection::In => schema_store.video_frame_in.get(msg_name),
-                                    MsgDirection::Out => schema_store.video_frame_out.get(msg_name),
-                                },
-                            }
-                        });
+                    target_extension_pkg_info.schema_store.as_ref().and_then(|schema_store| {
+                        let msg_name = msg_name.as_str();
+                        match msg_type {
+                            MsgType::Cmd => match desired_msg_dir {
+                                MsgDirection::In => schema_store.cmd_in.get(msg_name),
+                                MsgDirection::Out => schema_store.cmd_out.get(msg_name),
+                            },
+                            MsgType::Data => match desired_msg_dir {
+                                MsgDirection::In => schema_store.data_in.get(msg_name),
+                                MsgDirection::Out => schema_store.data_out.get(msg_name),
+                            },
+                            MsgType::AudioFrame => match desired_msg_dir {
+                                MsgDirection::In => schema_store.audio_frame_in.get(msg_name),
+                                MsgDirection::Out => schema_store.audio_frame_out.get(msg_name),
+                            },
+                            MsgType::VideoFrame => match desired_msg_dir {
+                                MsgDirection::In => schema_store.video_frame_in.get(msg_name),
+                                MsgDirection::Out => schema_store.video_frame_out.get(msg_name),
+                            },
+                        }
+                    });
 
                 let compatible = match desired_msg_dir {
                     MsgDirection::In => {

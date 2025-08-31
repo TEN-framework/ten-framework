@@ -7,6 +7,7 @@
 #[cfg(test)]
 mod tests {
     use std::path::PathBuf;
+
     use ten_manager::registry::local::*;
 
     #[test]
@@ -29,11 +30,8 @@ mod tests {
         // Test with just a directory ending with a slash
         // Note: The function will return the last component even if it's a
         // directory
-        let path_with_trailing_slash = if cfg!(windows) {
-            PathBuf::from("path\\to\\")
-        } else {
-            PathBuf::from("path/to")
-        };
+        let path_with_trailing_slash =
+            if cfg!(windows) { PathBuf::from("path\\to\\") } else { PathBuf::from("path/to") };
         let result = extract_filename_from_path(&path_with_trailing_slash);
         assert_eq!(result, Some("to".to_string()));
     }

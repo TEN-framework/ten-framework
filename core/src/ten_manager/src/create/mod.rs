@@ -12,7 +12,6 @@ use std::{
 
 use anyhow::{anyhow, Context, Result};
 use semver::VersionReq;
-
 use ten_rust::pkg_info::pkg_type::PkgType;
 
 use crate::{
@@ -27,8 +26,8 @@ fn can_package_be_created_in_path(path: &Path, pkg_name: &String) -> Result<()> 
 
     if target.exists() {
         Err(anyhow!(
-            "Cannot create package '{}': '{}' already contains a file or \
-             folder with the same name.",
+            "Cannot create package '{}': '{}' already contains a file or folder with the same \
+             name.",
             pkg_name,
             path.display()
         ))
@@ -50,10 +49,7 @@ pub async fn create_pkg_in_path(
 ) -> Result<()> {
     // Check that 'path' is a directory.
     if !path.is_dir() {
-        return Err(anyhow!(
-            "The provided path '{}' is not a directory.",
-            path.display()
-        ));
+        return Err(anyhow!("The provided path '{}' is not a directory.", path.display()));
     }
 
     can_package_be_created_in_path(path, pkg_name)?;

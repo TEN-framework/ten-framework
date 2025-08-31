@@ -4,24 +4,30 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-use std::fs::{self, File};
-use std::io::{self, BufWriter};
 #[cfg(unix)]
 use std::os::unix::fs::symlink;
 #[cfg(windows)]
 use std::os::windows::fs::{symlink_dir, symlink_file};
-use std::path::Path;
+use std::{
+    fs::{self, File},
+    io::{self, BufWriter},
+    path::Path,
+};
 
 use anyhow::{anyhow, Context, Result};
 use flate2::read::GzDecoder;
 use tar::Archive as TarArchive;
 use zip::ZipArchive;
 
-use crate::constants::BUF_WRITER_BUF_SIZE;
-use crate::fs::file_type::detect_file_type;
-use crate::install::installed_paths::{sort_installed_paths, InstalledPaths};
-use crate::install::template::{
-    extract_and_process_tar_gz_template_part, extract_and_process_zip_template_part,
+use crate::{
+    constants::BUF_WRITER_BUF_SIZE,
+    fs::file_type::detect_file_type,
+    install::{
+        installed_paths::{sort_installed_paths, InstalledPaths},
+        template::{
+            extract_and_process_tar_gz_template_part, extract_and_process_zip_template_part,
+        },
+    },
 };
 
 fn create_symlink(target: &str, link: &Path, output_dir: &str) -> Result<()> {
@@ -43,10 +49,7 @@ fn create_symlink(target: &str, link: &Path, output_dir: &str) -> Result<()> {
 
         if target_metadata.is_dir() {
             symlink_dir(target, link).with_context(|| {
-                format!(
-                    "Failed to create directory symlink {:?} -> {:?}",
-                    link, target
-                )
+                format!("Failed to create directory symlink {:?} -> {:?}", link, target)
             })?;
         } else {
             symlink_file(target, link).with_context(|| {
@@ -63,7 +66,9 @@ fn extract_and_process_zip_normal_part(zip_path: &str, output_dir: &str) -> Resu
     let file = File::open(zip_path)?;
     let mut archive = ZipArchive::new(file)?;
 
-    let mut installed_paths = InstalledPaths { paths: Vec::new() };
+    let mut installed_paths = InstalledPaths {
+        paths: Vec::new(),
+    };
 
     // Iterate through each entry in the ZIP.
     for i in 0..archive.len() {
@@ -102,11 +107,7 @@ fn extract_and_process_zip_normal_part(zip_path: &str, output_dir: &str) -> Resu
             }
         }
 
-        let relative_path = out_path
-            .strip_prefix(output_dir)?
-            .to_str()
-            .unwrap()
-            .to_string();
+        let relative_path = out_path.strip_prefix(output_dir)?.to_str().unwrap().to_string();
         installed_paths.paths.push(relative_path);
     }
 
@@ -124,12 +125,8 @@ fn extract_and_process_zip(
         // In the 'template' mode.
         extract_and_process_zip_template_part(zip_path, output_dir, template_ctx)?;
 
-        let rtet_paths: Vec<_> = installed_paths
-            .paths
-            .iter()
-            .filter(|p| p.ends_with(".tent"))
-            .cloned()
-            .collect();
+        let rtet_paths: Vec<_> =
+            installed_paths.paths.iter().filter(|p| p.ends_with(".tent")).cloned().collect();
 
         for rtet_path in rtet_paths {
             installed_paths.paths.retain(|p| p != &rtet_path);
@@ -155,7 +152,9 @@ fn extract_and_process_tar_gz_normal_part(
     let file = File::open(tar_gz_path)?;
     let mut archive = TarArchive::new(GzDecoder::new(file));
 
-    let mut installed_paths = InstalledPaths { paths: Vec::new() };
+    let mut installed_paths = InstalledPaths {
+        paths: Vec::new(),
+    };
 
     // Iterate through each entry in the package file.
     for entry_result in archive.entries()? {
@@ -192,8 +191,7 @@ fn extract_and_process_tar_gz_normal_part(
             if out_path.exists() {
                 fs::remove_file(&out_path).with_context(|| {
                     format!(
-                        "Failed to remove existing file at {out_path:?} before \
-                         creating symlink"
+                        "Failed to remove existing file at {out_path:?} before creating symlink"
                     )
                 })?;
             }
@@ -228,11 +226,7 @@ fn extract_and_process_tar_gz_normal_part(
             }
         }
 
-        let relative_path = out_path
-            .strip_prefix(output_dir)?
-            .to_str()
-            .unwrap()
-            .to_string();
+        let relative_path = out_path.strip_prefix(output_dir)?.to_str().unwrap().to_string();
         installed_paths.paths.push(relative_path);
     }
 
@@ -250,12 +244,8 @@ fn extract_and_process_tar_gz(
         // In the 'template' mode.
         extract_and_process_tar_gz_template_part(tar_gz_path, output_dir, template_ctx)?;
 
-        let tent_paths: Vec<_> = installed_paths
-            .paths
-            .iter()
-            .filter(|p| p.ends_with(".tent"))
-            .cloned()
-            .collect();
+        let tent_paths: Vec<_> =
+            installed_paths.paths.iter().filter(|p| p.ends_with(".tent")).cloned().collect();
 
         for tent_path in tent_paths {
             installed_paths.paths.retain(|p| p != &tent_path);

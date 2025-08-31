@@ -78,7 +78,9 @@ pub async fn update_graph_auto_start_endpoint(
 
     let response = ApiResponse {
         status: Status::Ok,
-        data: UpdateGraphAutoStartResponseData { success: true },
+        data: UpdateGraphAutoStartResponseData {
+            success: true,
+        },
         meta: None,
     };
     Ok(HttpResponse::Ok().json(response))

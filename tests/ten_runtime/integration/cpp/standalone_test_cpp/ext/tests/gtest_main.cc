@@ -21,8 +21,8 @@ class fake_app_t : public ten::app_t {
     bool rc = ten_env.init_property_from_json(
         // clang-format off
       R"({
-         "ten": {
-           "log": {
+           "ten": {
+             "log": {
                "handlers": [
                  {
                    "matchers": [

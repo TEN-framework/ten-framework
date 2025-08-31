@@ -11,8 +11,10 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use super::key_parser::set_value_by_key;
-use crate::designer::response::{ApiResponse, Status};
-use crate::designer::DesignerState;
+use crate::designer::{
+    response::{ApiResponse, Status},
+    DesignerState,
+};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SetMemoryRequestPayload {
@@ -42,7 +44,9 @@ pub async fn set_in_memory_storage_endpoint(
         Err(_e) => {
             return Ok(HttpResponse::InternalServerError().json(ApiResponse {
                 status: Status::Fail,
-                data: SetMemoryResponseData { success: false },
+                data: SetMemoryResponseData {
+                    success: false,
+                },
                 meta: None,
             }));
         }
@@ -52,7 +56,9 @@ pub async fn set_in_memory_storage_endpoint(
     if let Err(_e) = set_value_by_key(&mut json_data, &key, value) {
         return Ok(HttpResponse::BadRequest().json(ApiResponse {
             status: Status::Fail,
-            data: SetMemoryResponseData { success: false },
+            data: SetMemoryResponseData {
+                success: false,
+            },
             meta: None,
         }));
     }
@@ -65,13 +71,17 @@ pub async fn set_in_memory_storage_endpoint(
         Err(_e) => {
             return Ok(HttpResponse::InternalServerError().json(ApiResponse {
                 status: Status::Fail,
-                data: SetMemoryResponseData { success: false },
+                data: SetMemoryResponseData {
+                    success: false,
+                },
                 meta: None,
             }));
         }
     }
 
-    let response_data = SetMemoryResponseData { success: true };
+    let response_data = SetMemoryResponseData {
+        success: true,
+    };
     let response = ApiResponse {
         status: Status::Ok,
         data: response_data,

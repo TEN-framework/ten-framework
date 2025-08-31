@@ -16,17 +16,21 @@ use std::{fmt, io};
 use serde::{Deserialize, Serialize};
 use tracing;
 use tracing_appender::non_blocking;
-use tracing_subscriber::fmt::writer::BoxMakeWriter;
 use tracing_subscriber::{
-    fmt::{self as tracing_fmt},
+    fmt::{
+        writer::BoxMakeWriter,
+        {self as tracing_fmt},
+    },
     layer::SubscriberExt,
     util::SubscriberInitExt,
     Layer, Registry,
 };
 
-use crate::log::encryption::{EncryptMakeWriter, EncryptionConfig};
-use crate::log::file_appender::FileAppenderGuard;
-use crate::log::formatter::{JsonConfig, JsonFieldNames, JsonFormatter, PlainFormatter};
+use crate::log::{
+    encryption::{EncryptMakeWriter, EncryptionConfig},
+    file_appender::FileAppenderGuard,
+    formatter::{JsonConfig, JsonFieldNames, JsonFormatter, PlainFormatter},
+};
 
 // Encryption types and writer are moved to `encryption.rs`
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -208,10 +212,8 @@ fn create_layer_and_filter(
                 (StreamType::Stdout, FormatterType::Plain) => {
                     let ansi = handler.formatter.colored.unwrap_or(false);
                     let base_writer = io::stdout;
-                    let writer = if let Some(runtime) = console_config
-                        .encryption
-                        .as_ref()
-                        .and_then(|e| e.to_runtime())
+                    let writer = if let Some(runtime) =
+                        console_config.encryption.as_ref().and_then(|e| e.to_runtime())
                     {
                         BoxMakeWriter::new(EncryptMakeWriter {
                             inner: base_writer,
@@ -228,10 +230,8 @@ fn create_layer_and_filter(
                 (StreamType::Stderr, FormatterType::Plain) => {
                     let ansi = handler.formatter.colored.unwrap_or(false);
                     let base_writer = io::stderr;
-                    let writer = if let Some(runtime) = console_config
-                        .encryption
-                        .as_ref()
-                        .and_then(|e| e.to_runtime())
+                    let writer = if let Some(runtime) =
+                        console_config.encryption.as_ref().and_then(|e| e.to_runtime())
                     {
                         BoxMakeWriter::new(EncryptMakeWriter {
                             inner: base_writer,
@@ -247,10 +247,8 @@ fn create_layer_and_filter(
                 }
                 (StreamType::Stdout, FormatterType::Json) => {
                     let base_writer = io::stdout;
-                    let writer = if let Some(runtime) = console_config
-                        .encryption
-                        .as_ref()
-                        .and_then(|e| e.to_runtime())
+                    let writer = if let Some(runtime) =
+                        console_config.encryption.as_ref().and_then(|e| e.to_runtime())
                     {
                         BoxMakeWriter::new(EncryptMakeWriter {
                             inner: base_writer,
@@ -270,10 +268,8 @@ fn create_layer_and_filter(
                 }
                 (StreamType::Stderr, FormatterType::Json) => {
                     let base_writer = io::stderr;
-                    let writer = if let Some(runtime) = console_config
-                        .encryption
-                        .as_ref()
-                        .and_then(|e| e.to_runtime())
+                    let writer = if let Some(runtime) =
+                        console_config.encryption.as_ref().and_then(|e| e.to_runtime())
                     {
                         BoxMakeWriter::new(EncryptMakeWriter {
                             inner: base_writer,
@@ -292,7 +288,10 @@ fn create_layer_and_filter(
                         .boxed()
                 }
             };
-            LayerWithGuard { layer, guard: None }
+            LayerWithGuard {
+                layer,
+                guard: None,
+            }
         }
         AdvancedLogEmitter::File(file_config) => {
             // Create our reloadable file appender. It supports CAS-based
@@ -401,12 +400,9 @@ fn ten_configure_log_non_reloadable(config: &mut AdvancedLogConfig) -> Result<()
     }
 
     // Initialize the registry
-    tracing_subscriber::registry()
-        .with(layers)
-        .try_init()
-        .map_err(|_| LogInitError {
-            message: "Logging system is already initialized",
-        })
+    tracing_subscriber::registry().with(layers).try_init().map_err(|_| LogInitError {
+        message: "Logging system is already initialized",
+    })
 }
 
 /// Configure the logging system for production use
@@ -466,10 +462,8 @@ pub fn ten_log(
     let tracing_level = level.to_tracing_level();
 
     // Extract just the filename from the full path
-    let filename = std::path::Path::new(file_name)
-        .file_name()
-        .and_then(|n| n.to_str())
-        .unwrap_or(file_name);
+    let filename =
+        std::path::Path::new(file_name).file_name().and_then(|n| n.to_str()).unwrap_or(file_name);
 
     match tracing_level {
         tracing::Level::TRACE => {

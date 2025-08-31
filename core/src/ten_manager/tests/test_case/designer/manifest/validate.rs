@@ -7,7 +7,6 @@
 use std::sync::Arc;
 
 use actix_web::{http::StatusCode, test, web, App};
-
 use ten_manager::{
     designer::{
         manifest::validate::{
@@ -35,11 +34,12 @@ async fn test_validate_manifest_valid() {
     });
 
     // Initialize test application with the endpoint.
-    let app = test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
-        "/api/designer/v1/manifest/validate",
-        web::post().to(validate_manifest_endpoint),
-    ))
-    .await;
+    let app =
+        test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
+            "/api/designer/v1/manifest/validate",
+            web::post().to(validate_manifest_endpoint),
+        ))
+        .await;
 
     // Valid manifest JSON.
     let valid_manifest = r#"{
@@ -88,11 +88,12 @@ async fn test_validate_manifest_with_api() {
     });
 
     // Initialize test application with the endpoint.
-    let app = test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
-        "/api/designer/v1/manifest/validate",
-        web::post().to(validate_manifest_endpoint),
-    ))
-    .await;
+    let app =
+        test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
+            "/api/designer/v1/manifest/validate",
+            web::post().to(validate_manifest_endpoint),
+        ))
+        .await;
 
     // Valid manifest JSON with API section.
     let valid_manifest = r#"{
@@ -181,11 +182,12 @@ async fn test_validate_app_manifest_with_incorrect_api() {
     });
 
     // Initialize test application with the endpoint.
-    let app = test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
-        "/api/designer/v1/manifest/validate",
-        web::post().to(validate_manifest_endpoint),
-    ))
-    .await;
+    let app =
+        test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
+            "/api/designer/v1/manifest/validate",
+            web::post().to(validate_manifest_endpoint),
+        ))
+        .await;
 
     // Valid manifest JSON with API section.
     let valid_manifest = r#"{
@@ -276,11 +278,12 @@ async fn test_validate_app_manifest_with_correct_api() {
     });
 
     // Initialize test application with the endpoint.
-    let app = test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
-        "/api/designer/v1/manifest/validate",
-        web::post().to(validate_manifest_endpoint),
-    ))
-    .await;
+    let app =
+        test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
+            "/api/designer/v1/manifest/validate",
+            web::post().to(validate_manifest_endpoint),
+        ))
+        .await;
 
     // Valid manifest JSON with API section.
     let valid_manifest = r#"{
@@ -338,11 +341,12 @@ async fn test_validate_manifest_missing_required_fields() {
     });
 
     // Initialize test application with the endpoint.
-    let app = test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
-        "/api/designer/v1/manifest/validate",
-        web::post().to(validate_manifest_endpoint),
-    ))
-    .await;
+    let app =
+        test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
+            "/api/designer/v1/manifest/validate",
+            web::post().to(validate_manifest_endpoint),
+        ))
+        .await;
 
     // Invalid manifest JSON - missing required fields.
     let invalid_manifest = r#"{
@@ -393,11 +397,12 @@ async fn test_validate_manifest_invalid_type() {
     });
 
     // Initialize test application with the endpoint.
-    let app = test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
-        "/api/designer/v1/manifest/validate",
-        web::post().to(validate_manifest_endpoint),
-    ))
-    .await;
+    let app =
+        test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
+            "/api/designer/v1/manifest/validate",
+            web::post().to(validate_manifest_endpoint),
+        ))
+        .await;
 
     // Invalid manifest JSON - invalid type value.
     let invalid_manifest = r#"{
@@ -450,11 +455,12 @@ async fn test_validate_manifest_invalid_version_format() {
     });
 
     // Initialize test application with the endpoint.
-    let app = test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
-        "/api/designer/v1/manifest/validate",
-        web::post().to(validate_manifest_endpoint),
-    ))
-    .await;
+    let app =
+        test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
+            "/api/designer/v1/manifest/validate",
+            web::post().to(validate_manifest_endpoint),
+        ))
+        .await;
 
     // Invalid manifest JSON - invalid version format.
     let invalid_manifest = r#"{
@@ -507,11 +513,12 @@ async fn test_validate_manifest_invalid_json_syntax() {
     });
 
     // Initialize test application with the endpoint.
-    let app = test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
-        "/api/designer/v1/manifest/validate",
-        web::post().to(validate_manifest_endpoint),
-    ))
-    .await;
+    let app =
+        test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
+            "/api/designer/v1/manifest/validate",
+            web::post().to(validate_manifest_endpoint),
+        ))
+        .await;
 
     // Invalid JSON syntax.
     let invalid_json = r#"{

@@ -30,11 +30,11 @@ class FakeApp extends App {
                 matchers: [{ level: "debug" }],
                 formatter: { type: "plain", colored: true },
                 emitter: { type: "console", config: { stream: "stdout" } },
-              }
+              },
             ],
           },
         },
-      })
+      }),
     );
   }
 

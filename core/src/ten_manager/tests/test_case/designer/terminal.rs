@@ -8,10 +8,9 @@ use std::time::Duration;
 
 use actix_web::web;
 use futures_util::{SinkExt, StreamExt};
+use ten_manager::designer::terminal::ws_terminal_endpoint;
 use tokio::time::sleep;
 use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
-
-use ten_manager::designer::terminal::ws_terminal_endpoint;
 
 use crate::test_case::common::builtin_server::start_test_server;
 
@@ -86,10 +85,7 @@ async fn test_ws_terminal_endpoint() {
     #[cfg(not(target_os = "windows"))]
     let exit_command = "exit\n";
 
-    write
-        .send(Message::Text(exit_command.into()))
-        .await
-        .unwrap();
+    write.send(Message::Text(exit_command.into())).await.unwrap();
     println!("Sent exit command to close the terminal");
 
     // Read responses until we get an exit message or timeout.
@@ -143,10 +139,7 @@ async fn test_ws_terminal_endpoint() {
     }
 
     // Verify that we got responses to our commands.
-    assert!(
-        response_count > 0,
-        "Should have received responses to our commands"
-    );
+    assert!(response_count > 0, "Should have received responses to our commands");
 
     // Verify that we got an exit message or the connection was closed.
     assert!(got_exit_message, "Should have received an exit message");
@@ -155,7 +148,7 @@ async fn test_ws_terminal_endpoint() {
     let _ = write.send(Message::Close(None)).await;
 
     println!(
-        "Test completed successfully with {message_count} initial messages \
-         and {response_count} response messages"
+        "Test completed successfully with {message_count} initial messages and {response_count} \
+         response messages"
     );
 }
