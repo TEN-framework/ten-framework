@@ -12,6 +12,10 @@
 #include "ten_utils/macro/ctor.h"
 #include "ten_utils/sanitizer/memory_check.h"
 
+#if !defined(TEN_ENABLE_TEN_RUST_APIS)
+#include "include_internal/ten_runtime/common/log.h"
+#endif
+
 // LeakSanitizer checks for memory leaks when `main` ends, but functions with
 // the __attribute__((destructor)) attribute are called after LeakSanitizer
 // runs. Therefore, if the result of TEN_MALLOC is placed into a global
