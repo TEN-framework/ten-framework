@@ -100,16 +100,10 @@ mod tests {
         assert_eq!(exposed_messages[0].msg_type, GraphExposedMessageType::CmdIn);
         assert_eq!(exposed_messages[0].name, "B");
         assert_eq!(exposed_messages[0].extension, Some("ext_d".to_string()));
-        assert_eq!(
-            exposed_messages[1].msg_type,
-            GraphExposedMessageType::CmdOut
-        );
+        assert_eq!(exposed_messages[1].msg_type, GraphExposedMessageType::CmdOut);
         assert_eq!(exposed_messages[1].name, "C");
         assert_eq!(exposed_messages[1].extension, Some("ext_c".to_string()));
-        assert_eq!(
-            exposed_messages[2].msg_type,
-            GraphExposedMessageType::DataIn
-        );
+        assert_eq!(exposed_messages[2].msg_type, GraphExposedMessageType::DataIn);
         assert_eq!(exposed_messages[2].name, "DataX");
         assert_eq!(exposed_messages[2].extension, Some("ext_d".to_string()));
     }

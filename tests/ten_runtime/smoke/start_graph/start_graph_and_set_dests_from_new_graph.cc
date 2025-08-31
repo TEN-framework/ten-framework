@@ -204,7 +204,7 @@ class test_extension_2 : public ten::extension_t {
     } else {
       auto error_msg =
           "test_extension_2 received unexpected cmd: " + cmd->get_name();
-      TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_ERROR, error_msg.c_str());
+      TEN_ENV_LOG_ERROR(ten_env, error_msg.c_str());
       TEN_ASSERT(0, "Should not happen.");
     }
   }
@@ -265,7 +265,7 @@ class test_extension_3 : public ten::extension_t {
       handle_B_cmd(ten_env, std::move(cmd));
     } else {
       auto error_msg = "test_extension_3 received unexpected cmd: " + cmd_name;
-      TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_ERROR, error_msg.c_str());
+      TEN_ENV_LOG_ERROR(ten_env, error_msg.c_str());
       TEN_ASSERT(0, "Should not happen.");
     }
   }
@@ -291,7 +291,7 @@ class test_extension_4 : public ten::extension_t {
       handle_set_original_graph_info_cmd(ten_env, std::move(cmd));
     } else {
       auto error_msg = "test_extension_4 received unexpected cmd: " + cmd_name;
-      TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_ERROR, error_msg.c_str());
+      TEN_ENV_LOG_ERROR(ten_env, error_msg.c_str());
       TEN_ASSERT(0, "Should not happen.");
     }
   }
@@ -340,7 +340,25 @@ class test_app : public ten::app_t {
              "ten": {
                "uri": "msgpack://127.0.0.1:8001/",
                "log": {
-                 "level": 2
+                 "handlers": [
+                   {
+                     "matchers": [
+                       {
+                         "level": "debug"
+                       }
+                     ],
+                     "formatter": {
+                       "type": "plain",
+                       "colored": true
+                     },
+                     "emitter": {
+                       "type": "console",
+                       "config": {
+                         "stream": "stdout"
+                       }
+                     }
+                   }
+                 ]
                },
                "predefined_graphs": [{
                  "name": "default",

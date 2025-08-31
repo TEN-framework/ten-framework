@@ -4,22 +4,16 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-use std::fs::File;
-use std::io::Write;
-use std::path::Path;
-use std::time::Duration;
+use std::{fs::File, io::Write, path::Path, time::Duration};
 
 use actix_web::web;
 use futures_util::{SinkExt, StreamExt};
 use serde_json::json;
 use tempfile::tempdir;
+use ten_manager::{designer::log_watcher::log_watcher_endpoint, log::LogLineInfo};
 use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
 
-use ten_manager::designer::log_watcher::log_watcher_endpoint;
-use ten_manager::log::LogLineInfo;
-
-use crate::test_case::common::builtin_server::start_test_server;
-use crate::test_case::common::fs::sync_to_disk;
+use crate::test_case::common::{builtin_server::start_test_server, fs::sync_to_disk};
 
 #[actix_rt::test]
 async fn test_ws_log_watcher_endpoint() {
@@ -61,21 +55,14 @@ async fn test_ws_log_watcher_endpoint() {
             }
         }
     }
-    assert!(
-        ready_received,
-        "({}) Didn't receive ready message",
-        log_file_path.display()
-    );
+    assert!(ready_received, "({}) Didn't receive ready message", log_file_path.display());
 
     // Send the app_base_dir to the server.
     let app_base_dir_msg = json!({
         "type": "set_app_base_dir",
         "app_base_dir": app_dir.to_string_lossy().to_string()
     });
-    write
-        .send(Message::Text(app_base_dir_msg.to_string().into()))
-        .await
-        .unwrap();
+    write.send(Message::Text(app_base_dir_msg.to_string().into())).await.unwrap();
     println!("({}) Sent app_base_dir message", log_file_path.display());
 
     // Wait for the info message about starting the watcher.
@@ -91,20 +78,12 @@ async fn test_ws_log_watcher_endpoint() {
             }
         }
     }
-    assert!(
-        received_start_msg,
-        "({}) Didn't receive start message",
-        log_file_path.display()
-    );
+    assert!(received_start_msg, "({}) Didn't receive start message", log_file_path.display());
 
     // Now append to the log file.
     let test_content = "Test log message\n";
     append_to_log_file(&log_file_path, test_content);
-    eprintln!(
-        "({}) Appended to log file: {}",
-        log_file_path.display(),
-        test_content
-    );
+    eprintln!("({}) Appended to log file: {}", log_file_path.display(), test_content);
 
     // Check if we receive the content - with timeout of 10 seconds.
     let mut received_content = false;
@@ -126,11 +105,7 @@ async fn test_ws_log_watcher_endpoint() {
             }
         }
     }
-    assert!(
-        received_content,
-        "({}) Didn't receive log content",
-        log_file_path.display()
-    );
+    assert!(received_content, "({}) Didn't receive log content", log_file_path.display());
 
     // Send stop message.
     let stop_msg = r#"{"type":"stop"}"#;
@@ -150,11 +125,7 @@ async fn test_ws_log_watcher_endpoint() {
             }
         }
     }
-    assert!(
-        received_stop,
-        "({}) Didn't receive stop confirmation",
-        log_file_path.display()
-    );
+    assert!(received_stop, "({}) Didn't receive stop confirmation", log_file_path.display());
 
     // Clean up.
     temp_dir.close().unwrap();
@@ -165,7 +136,25 @@ fn create_property_json(app_dir: &Path, log_file_path: &Path) {
         r#"{{
             "ten": {{
                 "log": {{
-                    "file": "{}"
+                    "handlers": [
+                        {{
+                            "matchers": [
+                                {{
+                                    "level": "info"
+                                }}
+                            ],
+                            "formatter": {{
+                                "type": "json",
+                                "colored": false
+                            }},
+                            "emitter": {{
+                                "type": "file",
+                                "config": {{
+                                    "path": "{}"
+                                }}
+                            }}
+                        }}
+                    ]
                 }}
             }}
         }}"#,

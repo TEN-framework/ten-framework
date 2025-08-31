@@ -26,7 +26,9 @@ impl Graph {
         // Iterate through all nodes in the graph to find extensions
         for (node_idx, node) in self.nodes.iter().enumerate() {
             match node {
-                GraphNode::Extension { content } => {
+                GraphNode::Extension {
+                    content,
+                } => {
                     // Create a unique identifier by combining app URI and
                     // extension name
                     let unique_ext_name = format!(
@@ -39,8 +41,7 @@ impl Graph {
                     // list
                     if all_extensions.contains(&unique_ext_name) {
                         return Err(anyhow::anyhow!(
-                            "Duplicated extension was found in nodes[{}], \
-                             addon: {}, name: {}.",
+                            "Duplicated extension was found in nodes[{}], addon: {}, name: {}.",
                             node_idx,
                             content.addon,
                             content.name

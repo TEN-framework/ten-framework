@@ -9,21 +9,17 @@ mod msg;
 mod run_script;
 
 // Re-export only the types that should be public API
-pub use msg::{InboundMsg, OutboundMsg};
-
-use std::process::Child;
-use std::sync::Arc;
+use std::{process::Child, sync::Arc};
 
 use actix::{Actor, AsyncContext, Handler, Message, StreamHandler};
 use actix_web::{web, Error, HttpRequest, HttpResponse};
 use actix_web_actors::ws;
-use anyhow::Context;
-use anyhow::Result;
-
-use crate::designer::DesignerState;
-use crate::log::LogLineInfo;
+use anyhow::{Context, Result};
 use cmd_run::ShutdownSenders;
+pub use msg::{InboundMsg, OutboundMsg};
 use run_script::extract_command_from_manifest;
+
+use crate::{designer::DesignerState, log::LogLineInfo};
 
 // The output (stdout, stderr) and exit status from the child process.
 #[derive(Message)]
@@ -101,28 +97,36 @@ impl Handler<RunCmdOutput> for WsRunCmd {
         match msg {
             RunCmdOutput::StdOutNormal(line) => {
                 // Send the line to the client.
-                let msg_out = OutboundMsg::StdOutNormal { data: line };
+                let msg_out = OutboundMsg::StdOutNormal {
+                    data: line,
+                };
                 let out_str = serde_json::to_string(&msg_out).unwrap();
 
                 // Sends a text message to the WebSocket client.
                 ctx.text(out_str);
             }
             RunCmdOutput::StdOutLog(log_line) => {
-                let msg_out = OutboundMsg::StdOutLog { data: log_line };
+                let msg_out = OutboundMsg::StdOutLog {
+                    data: log_line,
+                };
                 let out_str = serde_json::to_string(&msg_out).unwrap();
 
                 // Sends a text message to the WebSocket client.
                 ctx.text(out_str);
             }
             RunCmdOutput::StdErrNormal(line) => {
-                let msg_out = OutboundMsg::StdErrNormal { data: line };
+                let msg_out = OutboundMsg::StdErrNormal {
+                    data: line,
+                };
                 let out_str = serde_json::to_string(&msg_out).unwrap();
 
                 // Sends a text message to the WebSocket client.
                 ctx.text(out_str);
             }
             RunCmdOutput::StdErrLog(log_line) => {
-                let msg_out = OutboundMsg::StdErrLog { data: log_line };
+                let msg_out = OutboundMsg::StdErrLog {
+                    data: log_line,
+                };
                 let out_str = serde_json::to_string(&msg_out).unwrap();
 
                 // Sends a text message to the WebSocket client.
@@ -130,7 +134,9 @@ impl Handler<RunCmdOutput> for WsRunCmd {
             }
             RunCmdOutput::Exit(code) => {
                 // Send it to the client.
-                let msg_out = OutboundMsg::Exit { code };
+                let msg_out = OutboundMsg::Exit {
+                    code,
+                };
                 let out_str = serde_json::to_string(&msg_out).unwrap();
 
                 // Sends a text message to the WebSocket client.
@@ -167,7 +173,9 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsRunCmd {
                             });
                         }
                         Err(e) => {
-                            let err_out = OutboundMsg::Error { msg: e.to_string() };
+                            let err_out = OutboundMsg::Error {
+                                msg: e.to_string(),
+                            };
                             let out_str = serde_json::to_string(&err_out).unwrap();
                             actor_addr.do_send(SendText(out_str));
                             actor_addr.do_send(CloseConnection);

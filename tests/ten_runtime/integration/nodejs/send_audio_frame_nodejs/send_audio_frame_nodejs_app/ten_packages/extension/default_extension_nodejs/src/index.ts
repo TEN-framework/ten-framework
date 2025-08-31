@@ -31,29 +31,29 @@ class DefaultExtension extends Extension {
     super(name);
   }
 
-  async onConfigure(_tenEnv: TenEnv): Promise<void> {
-    console.log("DefaultExtension onConfigure");
+  async onConfigure(tenEnv: TenEnv): Promise<void> {
+    tenEnv.logInfo("DefaultExtension onConfigure");
   }
 
-  async onInit(_tenEnv: TenEnv): Promise<void> {
-    console.log("DefaultExtension onInit");
+  async onInit(tenEnv: TenEnv): Promise<void> {
+    tenEnv.logInfo("DefaultExtension onInit");
   }
 
-  async onStart(_tenEnv: TenEnv): Promise<void> {
-    console.log("DefaultExtension onStart");
+  async onStart(tenEnv: TenEnv): Promise<void> {
+    tenEnv.logInfo("DefaultExtension onStart");
   }
 
-  async onStop(_tenEnv: TenEnv): Promise<void> {
-    console.log("DefaultExtension onStop");
+  async onStop(tenEnv: TenEnv): Promise<void> {
+    tenEnv.logInfo("DefaultExtension onStop");
   }
 
-  async onDeinit(_tenEnv: TenEnv): Promise<void> {
-    console.log("DefaultExtension onDeinit");
+  async onDeinit(tenEnv: TenEnv): Promise<void> {
+    tenEnv.logInfo("DefaultExtension onDeinit");
   }
 
   async onCmd(tenEnv: TenEnv, cmd: Cmd): Promise<void> {
     const cmdName = cmd.getName();
-    tenEnv.log(LogLevel.DEBUG, "DefaultExtension onCmd " + cmdName);
+    tenEnv.logInfo("DefaultExtension onCmd " + cmdName);
 
     this.cachedCmd = cmd;
 
@@ -82,7 +82,7 @@ class DefaultExtension extends Extension {
   }
 
   async onAudioFrame(tenEnv: TenEnv, frame: AudioFrame): Promise<void> {
-    tenEnv.log(LogLevel.DEBUG, "DefaultExtension onAudioFrame");
+    tenEnv.logInfo("DefaultExtension onAudioFrame");
 
     assert(
       frame.getDataFmt() === AudioFrameDataFmt.INTERLEAVE,

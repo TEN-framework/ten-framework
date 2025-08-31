@@ -4,9 +4,11 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-use std::fs::{self, File};
-use std::io::{self, Read, Write};
-use std::path::Path;
+use std::{
+    fs::{self, File},
+    io::{self, Read, Write},
+    path::Path,
+};
 
 use anyhow::{Context, Result};
 use flate2::read::GzDecoder;
@@ -16,9 +18,8 @@ use zip::ZipArchive;
 
 fn render_template(template: &str, template_ctx: &serde_json::Value) -> Result<String> {
     let reg = Handlebars::new();
-    let rendered = reg
-        .render_template(template, template_ctx)
-        .with_context(|| "Failed to render template")?;
+    let rendered =
+        reg.render_template(template, template_ctx).with_context(|| "Failed to render template")?;
     Ok(rendered)
 }
 

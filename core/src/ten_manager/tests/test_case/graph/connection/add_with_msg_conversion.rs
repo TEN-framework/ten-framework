@@ -8,17 +8,21 @@
 mod tests {
     use std::collections::HashMap;
 
-    use ten_manager::constants::TEST_DIR;
-    use ten_manager::graph::connections::add::graph_add_connection;
-    use ten_rust::graph::msg_conversion::{
-        MsgAndResultConversion, MsgConversion, MsgConversionMode, MsgConversionRule,
-        MsgConversionRules, MsgConversionType,
+    use ten_manager::{constants::TEST_DIR, graph::connections::add::graph_add_connection};
+    use ten_rust::{
+        graph::{
+            msg_conversion::{
+                MsgAndResultConversion, MsgConversion, MsgConversionMode, MsgConversionRule,
+                MsgConversionRules, MsgConversionType,
+            },
+            Graph,
+        },
+        pkg_info::message::MsgType,
     };
-    use ten_rust::graph::Graph;
-    use ten_rust::pkg_info::message::MsgType;
 
-    use crate::test_case::common::mock::inject_all_standard_pkgs_for_mock;
-    use crate::test_case::graph::connection::create_test_node;
+    use crate::test_case::{
+        common::mock::inject_all_standard_pkgs_for_mock, graph::connection::create_test_node,
+    };
 
     #[tokio::test]
     async fn test_add_connection_with_fixed_value_msg_conversion() {
@@ -87,10 +91,7 @@ mod tests {
         assert_eq!(connections.len(), 1);
 
         let connection = &connections[0];
-        assert_eq!(
-            connection.loc.app,
-            Some("http://example.com:8000".to_string())
-        );
+        assert_eq!(connection.loc.app, Some("http://example.com:8000".to_string()));
         assert_eq!(connection.loc.extension, Some("ext1".to_string()));
 
         let cmd_flows = connection.cmd.as_ref().unwrap();
@@ -123,10 +124,7 @@ mod tests {
         let rule1 = &rules.rules[0];
         assert_eq!(rule1.path, "ten.name");
         assert_eq!(rule1.conversion_mode, MsgConversionMode::FixedValue);
-        assert_eq!(
-            rule1.value.as_ref().unwrap().as_str().unwrap(),
-            "test_value"
-        );
+        assert_eq!(rule1.value.as_ref().unwrap().as_str().unwrap(), "test_value");
 
         // Check second rule
         let rule2 = &rules.rules[1];
@@ -453,25 +451,13 @@ mod tests {
         assert!(dest_msg_conversion.result.is_some());
 
         // Check message conversion.
-        assert_eq!(
-            dest_msg_conversion.msg.as_ref().unwrap().rules.rules[0].path,
-            "mapped_param"
-        );
+        assert_eq!(dest_msg_conversion.msg.as_ref().unwrap().rules.rules[0].path, "mapped_param");
 
         // Check result conversion.
         let result_conversion = dest_msg_conversion.result.as_ref().unwrap();
-        assert_eq!(
-            result_conversion.conversion_type,
-            MsgConversionType::PerProperty
-        );
+        assert_eq!(result_conversion.conversion_type, MsgConversionType::PerProperty);
         assert_eq!(result_conversion.rules.rules[0].path, "mapped_detail");
-        assert_eq!(
-            result_conversion.rules.rules[0]
-                .original_path
-                .as_ref()
-                .unwrap(),
-            "detail"
-        );
+        assert_eq!(result_conversion.rules.rules[0].original_path.as_ref().unwrap(), "detail");
     }
 
     #[tokio::test]

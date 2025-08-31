@@ -5,10 +5,13 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 use std::fmt;
+
 use tracing::{Event, Subscriber};
-use tracing_subscriber::field::Visit;
-use tracing_subscriber::fmt::{format, FmtContext, FormatEvent, FormatFields};
-use tracing_subscriber::registry::LookupSpan;
+use tracing_subscriber::{
+    field::Visit,
+    fmt::{format, FmtContext, FormatEvent, FormatFields},
+    registry::LookupSpan,
+};
 
 fn level_to_char(level: &tracing::Level) -> char {
     match *level {
@@ -62,8 +65,7 @@ impl Visit for FieldVisitor {
                 if !self.message.is_empty() {
                     self.message.push(' ');
                 }
-                self.message
-                    .push_str(format!("{value:?}").trim_matches('"'));
+                self.message.push_str(format!("{value:?}").trim_matches('"'));
             }
             _ => {
                 // This might be the actual log message
@@ -71,8 +73,7 @@ impl Visit for FieldVisitor {
                     if !self.message.is_empty() {
                         self.message.push(' ');
                     }
-                    self.message
-                        .push_str(format!("{value:?}").trim_matches('"'));
+                    self.message.push_str(format!("{value:?}").trim_matches('"'));
                 }
             }
         }
@@ -140,7 +141,9 @@ pub struct PlainFormatter {
 
 impl PlainFormatter {
     pub fn new(ansi: bool) -> Self {
-        Self { ansi }
+        Self {
+            ansi,
+        }
     }
 
     fn level_color(&self, level: &tracing::Level) -> &'static str {
@@ -201,29 +204,28 @@ where
         write!(writer, "{color}{level_char}{}", self.reset_color())?;
 
         // Category
-        if self.ansi {
-            write!(
-                writer,
-                " {magenta}{}{reset}",
-                target,
-                magenta = CYAN,
-                reset = self.reset_color()
-            )?;
-        } else {
-            write!(writer, " {target}")?;
-        }
-
-        // Format function@file:line using extracted fields with colors
-        if let (Some(func_name), Some(file_name), Some(line_no)) = (
-            visitor.func_name.as_ref(),
-            visitor.file_name.as_ref(),
-            visitor.line_no,
-        ) {
+        if !target.is_empty() {
             if self.ansi {
                 write!(
                     writer,
-                    " {magenta}{func_name}{reset}@{blue}{file_name}:\
-                     {line_no}{reset}",
+                    " {magenta}{}{reset}",
+                    target,
+                    magenta = CYAN,
+                    reset = self.reset_color()
+                )?;
+            } else {
+                write!(writer, " {target}")?;
+            }
+        }
+
+        // Format function@file:line using extracted fields with colors
+        if let (Some(func_name), Some(file_name), Some(line_no)) =
+            (visitor.func_name.as_ref(), visitor.file_name.as_ref(), visitor.line_no)
+        {
+            if self.ansi {
+                write!(
+                    writer,
+                    " {magenta}{func_name}{reset}@{blue}{file_name}:{line_no}{reset}",
                     magenta = MAGENTA,
                     reset = self.reset_color(),
                     blue = BLUE
@@ -234,10 +236,8 @@ where
         } else if let Some(file) = metadata.file() {
             // Fallback to tracing's built-in metadata
             let line = metadata.line().unwrap_or(0);
-            let filename = std::path::Path::new(file)
-                .file_name()
-                .and_then(|n| n.to_str())
-                .unwrap_or(file);
+            let filename =
+                std::path::Path::new(file).file_name().and_then(|n| n.to_str()).unwrap_or(file);
 
             if self.ansi {
                 write!(

@@ -9,13 +9,12 @@ use std::{collections::HashMap, sync::Arc};
 use actix_web::{web, HttpResponse, Responder};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
-
 use ten_rust::{
     base_dir_pkg_info::PkgsInfoInApp,
     graph::{graph_info::GraphInfo, msg_conversion::MsgAndResultConversion},
     pkg_info::message::MsgType,
 };
+use uuid::Uuid;
 
 use crate::{
     designer::{
@@ -101,11 +100,7 @@ async fn update_graph_info(
     }
 
     // Validate the updated graph.
-    match graph_info
-        .graph
-        .validate_and_complete_and_flatten(None)
-        .await
-    {
+    match graph_info.graph.validate_and_complete_and_flatten(None).await {
         Ok(_) => Ok(()),
         Err(e) => {
             // Restore the original graph if validation fails.
@@ -187,12 +182,9 @@ pub async fn update_graph_connection_msg_conversion_endpoint(
         return Ok(HttpResponse::BadRequest().json(error_response));
     }
 
-    if let Err(e) = update_property_json_file(
-        &request_payload,
-        &pkgs_cache,
-        &graphs_cache,
-        &old_graphs_cache,
-    ) {
+    if let Err(e) =
+        update_property_json_file(&request_payload, &pkgs_cache, &graphs_cache, &old_graphs_cache)
+    {
         let error_response = ErrorResponse {
             status: Status::Fail,
             message: format!("Failed to update property.json file: {e}"),
@@ -203,7 +195,9 @@ pub async fn update_graph_connection_msg_conversion_endpoint(
 
     let response = ApiResponse {
         status: Status::Ok,
-        data: UpdateGraphConnectionMsgConversionResponsePayload { success: true },
+        data: UpdateGraphConnectionMsgConversionResponsePayload {
+            success: true,
+        },
         meta: None,
     };
     Ok(HttpResponse::Ok().json(response))

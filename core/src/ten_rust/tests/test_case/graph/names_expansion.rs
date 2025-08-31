@@ -50,29 +50,20 @@ mod tests {
         assert_eq!(cmd_flows.len(), 3, "Expected 3 cmd flows after expansion");
 
         // Check that the names are correct
-        let mut names: Vec<&str> = cmd_flows
-            .iter()
-            .map(|f| f.name.as_deref().unwrap())
-            .collect();
+        let mut names: Vec<&str> = cmd_flows.iter().map(|f| f.name.as_deref().unwrap()).collect();
         names.sort();
         assert_eq!(names, vec!["cmd_1", "cmd_2", "cmd_3"]);
 
         // Check that none of the flows have the names field anymore
         for flow in cmd_flows {
-            assert!(
-                flow.names.is_none(),
-                "names field should be None after expansion"
-            );
+            assert!(flow.names.is_none(), "names field should be None after expansion");
             assert_eq!(flow.dest.len(), 1, "dest should be preserved");
             assert_eq!(flow.dest[0].loc.extension.as_ref().unwrap(), "ext_b");
         }
 
         println!("Expansion test passed successfully!");
         println!("Original had 1 cmd flow with names array");
-        println!(
-            "Expanded to {} cmd flows with individual names",
-            cmd_flows.len()
-        );
+        println!("Expanded to {} cmd flows with individual names", cmd_flows.len());
 
         Ok(())
     }
@@ -108,10 +99,7 @@ mod tests {
         let data_flows = connections[0].data.as_ref().unwrap();
         assert_eq!(data_flows.len(), 2);
 
-        let mut names: Vec<&str> = data_flows
-            .iter()
-            .map(|f| f.name.as_deref().unwrap())
-            .collect();
+        let mut names: Vec<&str> = data_flows.iter().map(|f| f.name.as_deref().unwrap()).collect();
         names.sort();
         assert_eq!(names, vec!["data_1", "data_2"]);
 
@@ -172,23 +160,13 @@ mod tests {
         let graph: Graph = serde_json::from_str(test_json)?;
         let flattened = graph.flatten_graph(None).await?;
 
-        assert!(
-            flattened.is_some(),
-            "flatten_graph should return expanded graph"
-        );
+        assert!(flattened.is_some(), "flatten_graph should return expanded graph");
         let flattened_graph = flattened.unwrap();
-        println!(
-            "{}",
-            serde_json::to_string_pretty(&flattened_graph).unwrap()
-        );
+        println!("{}", serde_json::to_string_pretty(&flattened_graph).unwrap());
 
         let connections = flattened_graph.connections.as_ref().unwrap();
         let cmd_flows = connections[0].cmd.as_ref().unwrap();
-        assert_eq!(
-            cmd_flows.len(),
-            2,
-            "flatten_graph should include names expansion"
-        );
+        assert_eq!(cmd_flows.len(), 2, "flatten_graph should include names expansion");
 
         Ok(())
     }
@@ -218,23 +196,13 @@ mod tests {
         let graph: Graph = serde_json::from_str(test_json)?;
         let flattened = graph.flatten_graph(None).await?;
 
-        assert!(
-            flattened.is_some(),
-            "flatten_graph should return expanded graph"
-        );
+        assert!(flattened.is_some(), "flatten_graph should return expanded graph");
         let flattened_graph = flattened.unwrap();
-        println!(
-            "{}",
-            serde_json::to_string_pretty(&flattened_graph).unwrap()
-        );
+        println!("{}", serde_json::to_string_pretty(&flattened_graph).unwrap());
 
         let connections = flattened_graph.connections.as_ref().unwrap();
         let cmd_flows = connections[0].cmd.as_ref().unwrap();
-        assert_eq!(
-            cmd_flows.len(),
-            2,
-            "flatten_graph should include names expansion"
-        );
+        assert_eq!(cmd_flows.len(), 2, "flatten_graph should include names expansion");
 
         Ok(())
     }
@@ -272,10 +240,7 @@ mod tests {
         // Test that check_message_names correctly identifies the duplicate
         let result = graph.check_message_names();
 
-        assert!(
-            result.is_err(),
-            "Expected error due to duplicate data name 'data_1'"
-        );
+        assert!(result.is_err(), "Expected error due to duplicate data name 'data_1'");
 
         let error_msg = result.unwrap_err().to_string();
         assert!(
@@ -284,8 +249,7 @@ mod tests {
         );
         assert!(
             error_msg.contains("flow[0]") && error_msg.contains("flow[1]"),
-            "Error message should mention both flow indices where 'data_1' \
-             appears"
+            "Error message should mention both flow indices where 'data_1' appears"
         );
 
         println!("Successfully detected duplicate name error: {error_msg}");

@@ -7,9 +7,8 @@
 use actix::Addr;
 use serde::{Deserialize, Serialize};
 
-use crate::output::TmanOutput;
-
 use super::{BuiltinFunctionOutput, WsBuiltinFunction};
+use crate::output::TmanOutput;
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(tag = "type")]
@@ -18,12 +17,7 @@ pub enum InboundMsg {
     InstallAll { base_dir: String },
 
     #[serde(rename = "install")]
-    Install {
-        base_dir: String,
-        pkg_type: String,
-        pkg_name: String,
-        pkg_version: Option<String>,
-    },
+    Install { base_dir: String, pkg_type: String, pkg_name: String, pkg_version: Option<String> },
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -42,10 +36,7 @@ pub enum OutboundMsg {
     ErrorPartial { data: String },
 
     #[serde(rename = "exit")]
-    Exit {
-        code: i32,
-        error_message: Option<String>,
-    },
+    Exit { code: i32, error_message: Option<String> },
 }
 
 pub struct TmanOutputWs {
@@ -54,20 +45,16 @@ pub struct TmanOutputWs {
 
 impl TmanOutput for TmanOutputWs {
     fn normal_line(&self, text: &str) {
-        self.addr
-            .do_send(BuiltinFunctionOutput::NormalLine(text.to_string()));
+        self.addr.do_send(BuiltinFunctionOutput::NormalLine(text.to_string()));
     }
     fn normal_partial(&self, text: &str) {
-        self.addr
-            .do_send(BuiltinFunctionOutput::NormalPartial(text.to_string()));
+        self.addr.do_send(BuiltinFunctionOutput::NormalPartial(text.to_string()));
     }
     fn error_line(&self, text: &str) {
-        self.addr
-            .do_send(BuiltinFunctionOutput::ErrorLine(text.to_string()));
+        self.addr.do_send(BuiltinFunctionOutput::ErrorLine(text.to_string()));
     }
     fn error_partial(&self, text: &str) {
-        self.addr
-            .do_send(BuiltinFunctionOutput::ErrorPartial(text.to_string()));
+        self.addr.do_send(BuiltinFunctionOutput::ErrorPartial(text.to_string()));
     }
     fn is_interactive(&self) -> bool {
         false

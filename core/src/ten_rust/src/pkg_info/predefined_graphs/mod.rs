@@ -17,15 +17,7 @@ pub fn graphs_cache_find<F>(
 where
     F: Fn(&GraphInfo) -> bool,
 {
-    graphs_cache.iter().find_map(
-        |(_, graph)| {
-            if predicate(graph) {
-                Some(graph)
-            } else {
-                None
-            }
-        },
-    )
+    graphs_cache.iter().find_map(|(_, graph)| if predicate(graph) { Some(graph) } else { None })
 }
 
 pub fn graphs_cache_find_mut<F>(
@@ -35,13 +27,5 @@ pub fn graphs_cache_find_mut<F>(
 where
     F: Fn(&mut GraphInfo) -> bool,
 {
-    graphs_cache.iter_mut().find_map(
-        |(_, graph)| {
-            if predicate(graph) {
-                Some(graph)
-            } else {
-                None
-            }
-        },
-    )
+    graphs_cache.iter_mut().find_map(|(_, graph)| if predicate(graph) { Some(graph) } else { None })
 }

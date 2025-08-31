@@ -20,12 +20,6 @@ pub mod value_type;
 use std::{collections::HashMap, path::Path};
 
 use anyhow::{anyhow, Result};
-use uuid::Uuid;
-
-use crate::{
-    base_dir_pkg_info::PkgsInfoInApp, graph::graph_info::GraphInfo, schema::store::SchemaStore,
-};
-
 use constants::{
     ADDON_LOADER_DIR, EXTENSION_DIR, MANIFEST_JSON_FILENAME, PROTOCOL_DIR, SYSTEM_DIR,
     TEN_PACKAGES_DIR,
@@ -35,6 +29,11 @@ use manifest::{
 };
 use pkg_type::PkgType;
 use property::{parse_property_in_folder, Property};
+use uuid::Uuid;
+
+use crate::{
+    base_dir_pkg_info::PkgsInfoInApp, graph::graph_info::GraphInfo, schema::store::SchemaStore,
+};
 
 pub fn localhost() -> &'static str {
     "localhost"
@@ -55,9 +54,9 @@ pub struct PkgInfo {
     /// A string that represents the location or path where the package is
     /// installed or can be accessed.
     ///
-    /// - If `PkgInfo represents a package in the registry, then the `url`
-    ///   field represents the download URL that can be used to download the
-    ///   package from the registry.
+    /// - If `PkgInfo represents a package in the registry, then the `url` field
+    ///   represents the download URL that can be used to download the package
+    ///   from the registry.
     /// - If PkgInfo represents a package that already exists locally, then the
     ///   url field represents the base directory of the package.
     pub url: String,
@@ -117,7 +116,9 @@ impl PkgInfo {
                         name,
                         ..
                     } => dep_type.to_string() == pkg_type && name == pkg_name,
-                    ManifestDependency::LocalDependency { .. } => {
+                    ManifestDependency::LocalDependency {
+                        ..
+                    } => {
                         // For local dependencies, we would need to resolve
                         // the actual type and name by examining the
                         // manifest at the local path, which is beyond the
@@ -193,33 +194,21 @@ async fn collect_pkg_info_from_path(
             if pkgs_info.extension_pkgs_info.is_none() {
                 pkgs_info.extension_pkgs_info = Some(Vec::new());
             }
-            pkgs_info
-                .extension_pkgs_info
-                .as_mut()
-                .unwrap()
-                .push(pkg_info);
+            pkgs_info.extension_pkgs_info.as_mut().unwrap().push(pkg_info);
             Ok(())
         }
         PkgType::Protocol => {
             if pkgs_info.protocol_pkgs_info.is_none() {
                 pkgs_info.protocol_pkgs_info = Some(Vec::new());
             }
-            pkgs_info
-                .protocol_pkgs_info
-                .as_mut()
-                .unwrap()
-                .push(pkg_info);
+            pkgs_info.protocol_pkgs_info.as_mut().unwrap().push(pkg_info);
             Ok(())
         }
         PkgType::AddonLoader => {
             if pkgs_info.addon_loader_pkgs_info.is_none() {
                 pkgs_info.addon_loader_pkgs_info = Some(Vec::new());
             }
-            pkgs_info
-                .addon_loader_pkgs_info
-                .as_mut()
-                .unwrap()
-                .push(pkg_info);
+            pkgs_info.addon_loader_pkgs_info.as_mut().unwrap().push(pkg_info);
             Ok(())
         }
         PkgType::System => {
@@ -260,9 +249,7 @@ pub async fn get_app_installed_pkgs(
 
     let app_pkg_info = pkgs_info.app_pkg_info.as_ref().unwrap();
     if app_pkg_info.manifest.type_and_name.pkg_type != PkgType::App {
-        return Err(anyhow!(
-            "The current working directory does not belong to the `app`."
-        ));
+        return Err(anyhow!("The current working directory does not belong to the `app`."));
     }
 
     // Define the sub-folders for searching packages.
@@ -383,15 +370,12 @@ pub fn get_pkg_info_for_extension_addon<'a>(
 ) -> Option<&'a PkgInfo> {
     let result: Option<&PkgInfo> =
         if let Some((_, pkgs_info_in_app)) = find_pkgs_cache_entry_by_app_uri(pkgs_cache, app) {
-            pkgs_info_in_app
-                .extension_pkgs_info
-                .as_ref()
-                .and_then(|extension_pkgs_info| {
-                    extension_pkgs_info.iter().find(|pkg_info| {
-                        pkg_info.manifest.type_and_name.pkg_type == PkgType::Extension
-                            && pkg_info.manifest.type_and_name.name == *extension_addon_name
-                    })
+            pkgs_info_in_app.extension_pkgs_info.as_ref().and_then(|extension_pkgs_info| {
+                extension_pkgs_info.iter().find(|pkg_info| {
+                    pkg_info.manifest.type_and_name.pkg_type == PkgType::Extension
+                        && pkg_info.manifest.type_and_name.name == *extension_addon_name
                 })
+            })
         } else {
             None
         };
@@ -399,14 +383,12 @@ pub fn get_pkg_info_for_extension_addon<'a>(
     if let Some(pkg_info) = result {
         Some(pkg_info)
     } else if let Some(graph_app_base_dir) = graph_app_base_dir {
-        pkgs_cache
-            .get(graph_app_base_dir)
-            .and_then(|pkgs_info_in_app| {
-                pkgs_info_in_app.get_extensions().iter().find(|pkg_info| {
-                    pkg_info.manifest.type_and_name.pkg_type == PkgType::Extension
-                        && pkg_info.manifest.type_and_name.name == *extension_addon_name
-                })
+        pkgs_cache.get(graph_app_base_dir).and_then(|pkgs_info_in_app| {
+            pkgs_info_in_app.get_extensions().iter().find(|pkg_info| {
+                pkg_info.manifest.type_and_name.pkg_type == PkgType::Extension
+                    && pkg_info.manifest.type_and_name.name == *extension_addon_name
             })
+        })
     } else {
         None
     }

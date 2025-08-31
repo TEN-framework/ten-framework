@@ -48,10 +48,8 @@ pub fn create_sub_cmd(_args_cfg: &crate::cmd_line::ArgsCfg) -> Command {
 }
 
 pub fn parse_sub_cmd(sub_cmd_args: &ArgMatches) -> Result<RunCommand> {
-    let script_name = sub_cmd_args
-        .get_one::<String>("SCRIPT_NAME")
-        .expect("SCRIPT_NAME is required")
-        .to_string();
+    let script_name =
+        sub_cmd_args.get_one::<String>("SCRIPT_NAME").expect("SCRIPT_NAME is required").to_string();
 
     let extra_args = sub_cmd_args
         .get_many::<String>("EXTRA_ARGS")
@@ -95,19 +93,12 @@ pub async fn execute_cmd(
     let scripts = match manifest_value.get(SCRIPTS) {
         Some(s) => s.clone(),
         None => {
-            return Err(anyhow!(
-                "No 'scripts' field found in {}",
-                manifest_path.display()
-            ));
+            return Err(anyhow!("No 'scripts' field found in {}", manifest_path.display()));
         }
     };
 
     if !scripts.is_object() {
-        return Err(anyhow!(
-            "'{}' in {} must be an object",
-            SCRIPTS,
-            MANIFEST_JSON_FILENAME
-        ));
+        return Err(anyhow!("'{}' in {} must be an object", SCRIPTS, MANIFEST_JSON_FILENAME));
     }
 
     // Find the specified script_name.
@@ -121,20 +112,13 @@ pub async fn execute_cmd(
             )
         })?,
         None => {
-            return Err(anyhow!(
-                "Script '{}' not found in '{}'",
-                &cmd.script_name,
-                SCRIPTS
-            ));
+            return Err(anyhow!("Script '{}' not found in '{}'", &cmd.script_name, SCRIPTS));
         }
     };
 
     // Execute the subprocess.
     if is_verbose(tman_config.clone()).await {
-        out.normal_line(&format!(
-            "About to run script: {} -> {}",
-            &cmd.script_name, script_cmd
-        ));
+        out.normal_line(&format!("About to run script: {} -> {}", &cmd.script_name, script_cmd));
     }
 
     // Determine whether it is a shell command.
@@ -210,10 +194,7 @@ pub async fn execute_cmd(
     };
 
     // Get the standard output and standard error of the subprocess.
-    command_builder
-        .stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped());
+    command_builder.stdin(Stdio::null()).stdout(Stdio::piped()).stderr(Stdio::piped());
 
     // Spawn the subprocess.
     let mut child = tokio::process::Command::from(command_builder)
@@ -246,10 +227,8 @@ pub async fn execute_cmd(
     }
 
     // Await child exit asynchronously.
-    let status = child
-        .wait()
-        .await
-        .map_err(|e| anyhow!("Failed to wait for the subprocess: {}", e))?;
+    let status =
+        child.wait().await.map_err(|e| anyhow!("Failed to wait for the subprocess: {}", e))?;
 
     if !status.success() {
         return Err(anyhow!(

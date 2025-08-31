@@ -4,8 +4,7 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-use std::ffi::CStr;
-use std::os::raw::c_char;
+use std::{ffi::CStr, os::raw::c_char};
 
 use anyhow::Result;
 
@@ -115,9 +114,7 @@ pub unsafe extern "C" fn ten_metric_counter_inc(
     label_values_ptr: *const *const c_char,
     label_values_len: usize,
 ) {
-    apply_to_counter(metric_ptr, label_values_ptr, label_values_len, |counter| {
-        counter.inc()
-    });
+    apply_to_counter(metric_ptr, label_values_ptr, label_values_len, |counter| counter.inc());
 }
 
 #[no_mangle]

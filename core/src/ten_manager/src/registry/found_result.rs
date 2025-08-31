@@ -4,16 +4,15 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-use anyhow::{Context, Result};
-use serde::{Deserialize, Serialize};
-use serde_json;
-
 use std::sync::Arc;
 
-use ten_rust::pkg_info::manifest::dependency::ManifestDependency;
-use ten_rust::pkg_info::manifest::Manifest;
-use ten_rust::pkg_info::pkg_basic_info::PkgBasicInfo;
-use ten_rust::pkg_info::PkgInfo;
+use anyhow::{Context, Result};
+use serde::{Deserialize, Serialize};
+use ten_rust::pkg_info::{
+    manifest::{dependency::ManifestDependency, Manifest},
+    pkg_basic_info::PkgBasicInfo,
+    PkgInfo,
+};
 
 pub const BASIC_SCOPE: [&str; 9] = [
     "type",
@@ -178,60 +177,6 @@ impl From<&PkgRegistryInfo> for PkgInfo {
                 api: None,
                 package: None,
                 scripts: None,
-                all_fields: {
-                    let mut map = serde_json::Map::new();
-
-                    // Add type and name from PkgTypeAndName.
-                    let type_and_name = &pkg_registry_info.basic_info.type_and_name;
-                    map.insert(
-                        "type".to_string(),
-                        serde_json::Value::String(type_and_name.pkg_type.to_string()),
-                    );
-                    map.insert(
-                        "name".to_string(),
-                        serde_json::Value::String(type_and_name.name.clone()),
-                    );
-
-                    // Add version.
-                    map.insert(
-                        "version".to_string(),
-                        serde_json::Value::String(pkg_registry_info.basic_info.version.to_string()),
-                    );
-
-                    // Add dependencies.
-                    let deps_json = serde_json::to_value(&pkg_registry_info.dependencies)
-                        .unwrap_or(serde_json::Value::Array(vec![]));
-                    map.insert("dependencies".to_string(), deps_json);
-
-                    // Add supports.
-                    let supports_json =
-                        serde_json::to_value(&pkg_registry_info.basic_info.supports)
-                            .unwrap_or(serde_json::Value::Array(vec![]));
-                    map.insert("supports".to_string(), supports_json);
-
-                    // Add description if available.
-                    if let Some(ref description) = pkg_registry_info.description {
-                        let description_json = serde_json::to_value(description)
-                            .unwrap_or(serde_json::Value::Object(serde_json::Map::new()));
-                        map.insert("description".to_string(), description_json);
-                    }
-
-                    // Add display_name if available.
-                    if let Some(ref display_name) = pkg_registry_info.display_name {
-                        let display_name_json = serde_json::to_value(display_name)
-                            .unwrap_or(serde_json::Value::Object(serde_json::Map::new()));
-                        map.insert("display_name".to_string(), display_name_json);
-                    }
-
-                    // Add readme if available.
-                    if let Some(ref readme) = pkg_registry_info.readme {
-                        let readme_json = serde_json::to_value(readme)
-                            .unwrap_or(serde_json::Value::Object(serde_json::Map::new()));
-                        map.insert("readme".to_string(), readme_json);
-                    }
-
-                    map
-                },
                 flattened_api: Arc::new(tokio::sync::RwLock::new(None)),
             },
             property: None,

@@ -4,9 +4,7 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-use std::fs;
-use std::path::Path;
-use std::sync::Arc;
+use std::{fs, path::Path, sync::Arc};
 
 use actix_web::{web, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
@@ -36,15 +34,15 @@ pub async fn get_file_content_endpoint(
         Ok(content) => {
             let response = ApiResponse {
                 status: Status::Ok,
-                data: GetFileContentResponseData { content },
+                data: GetFileContentResponseData {
+                    content,
+                },
                 meta: None,
             };
             Ok(HttpResponse::Ok().json(response))
         }
         Err(err) => {
-            state
-                .out
-                .error_line(&format!("Error reading file at path {file_path}: {err}"));
+            state.out.error_line(&format!("Error reading file at path {file_path}: {err}"));
 
             let response = ApiResponse {
                 status: Status::Fail,

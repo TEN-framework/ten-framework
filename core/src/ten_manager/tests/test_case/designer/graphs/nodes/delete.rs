@@ -9,12 +9,6 @@ mod tests {
     use std::{collections::HashMap, sync::Arc};
 
     use actix_web::{test, web, App};
-    use ten_rust::{
-        graph::node::GraphNode,
-        pkg_info::constants::{MANIFEST_JSON_FILENAME, PROPERTY_JSON_FILENAME},
-    };
-    use uuid::Uuid;
-
     use ten_manager::{
         constants::TEST_DIR,
         designer::{
@@ -33,6 +27,11 @@ mod tests {
         home::config::TmanConfig,
         output::cli::TmanOutputCli,
     };
+    use ten_rust::{
+        graph::node::GraphNode,
+        pkg_info::constants::{MANIFEST_JSON_FILENAME, PROPERTY_JSON_FILENAME},
+    };
+    use uuid::Uuid;
 
     use crate::test_case::common::mock::{
         inject_all_pkgs_for_mock, inject_all_standard_pkgs_for_mock,
@@ -212,15 +211,12 @@ mod tests {
 
         // First add a node, then delete it.
         // Setup the add endpoint.
-        let app_add = test::init_service(
-            App::new()
-                .app_data(web::Data::new(designer_state.clone()))
-                .route(
-                    "/api/designer/v1/graphs/nodes/add",
-                    web::post().to(add_graph_node_endpoint),
-                ),
-        )
-        .await;
+        let app_add =
+            test::init_service(App::new().app_data(web::Data::new(designer_state.clone())).route(
+                "/api/designer/v1/graphs/nodes/add",
+                web::post().to(add_graph_node_endpoint),
+            ))
+            .await;
 
         // Add a node to the default graph.
         let add_request_payload = AddGraphNodeRequestPayload {
@@ -247,8 +243,7 @@ mod tests {
 
         let expected_property_json_str = include_str!(
             "../../../../test_data/\
-             expected_property_after_adding_in_test_delete_graph_node_success.\
-             json"
+             expected_property_after_adding_in_test_delete_graph_node_success.json"
         );
 
         // Parse the contents as JSON for proper comparison.
@@ -264,15 +259,12 @@ mod tests {
         );
 
         // Setup the delete endpoint.
-        let app_delete = test::init_service(
-            App::new()
-                .app_data(web::Data::new(designer_state.clone()))
-                .route(
-                    "/api/designer/v1/graphs/nodes/delete",
-                    web::post().to(delete_graph_node_endpoint),
-                ),
-        )
-        .await;
+        let app_delete =
+            test::init_service(App::new().app_data(web::Data::new(designer_state.clone())).route(
+                "/api/designer/v1/graphs/nodes/delete",
+                web::post().to(delete_graph_node_endpoint),
+            ))
+            .await;
 
         // Now delete the node we just added.
         let delete_request_payload = DeleteGraphNodeRequestPayload {
@@ -307,9 +299,9 @@ mod tests {
         if let Some(graph_info) = graphs_cache_find_by_id(&graphs_cache, &graph_id_clone) {
             // Check if the node is gone.
             let node_exists = graph_info.graph.nodes().iter().any(|node| match node {
-                GraphNode::Extension { content } => {
-                    content.name == "test_delete_node" && content.addon == "test_addon"
-                }
+                GraphNode::Extension {
+                    content,
+                } => content.name == "test_delete_node" && content.addon == "test_addon",
                 _ => false,
             });
             assert!(!node_exists, "Node should have been deleted");

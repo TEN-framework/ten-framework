@@ -8,7 +8,6 @@ use std::{collections::HashMap, sync::Arc};
 
 use actix_web::{http::StatusCode, test, web, App};
 use serde_json::json;
-
 use ten_manager::{
     designer::{
         response::{ApiResponse, Status},
@@ -50,10 +49,11 @@ fn create_test_designer_state() -> Arc<DesignerState> {
 async fn test_set_schema_success() {
     let designer_state = create_test_designer_state();
 
-    let app = test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
-        "/schema",
-        web::post().to(set_persistent_storage_schema_endpoint),
-    ))
+    let app = test::init_service(
+        App::new()
+            .app_data(web::Data::new(designer_state))
+            .route("/schema", web::post().to(set_persistent_storage_schema_endpoint)),
+    )
     .await;
 
     let schema = json!({
@@ -70,12 +70,11 @@ async fn test_set_schema_success() {
         "required": ["name"]
     });
 
-    let request_payload = SetSchemaRequestPayload { schema };
+    let request_payload = SetSchemaRequestPayload {
+        schema,
+    };
 
-    let req = test::TestRequest::post()
-        .uri("/schema")
-        .set_json(&request_payload)
-        .to_request();
+    let req = test::TestRequest::post().uri("/schema").set_json(&request_payload).to_request();
 
     let resp = test::call_service(&app, req).await;
     assert_eq!(resp.status(), StatusCode::OK);
@@ -103,10 +102,7 @@ async fn test_get_without_schema_fails() {
         key: "name".to_string(),
     };
 
-    let req = test::TestRequest::post()
-        .uri("/get")
-        .set_json(&request_payload)
-        .to_request();
+    let req = test::TestRequest::post().uri("/get").set_json(&request_payload).to_request();
 
     let resp = test::call_service(&app, req).await;
     assert_eq!(resp.status(), StatusCode::BAD_REQUEST);
@@ -134,10 +130,7 @@ async fn test_set_without_schema_fails() {
         value: json!("John"),
     };
 
-    let req = test::TestRequest::post()
-        .uri("/set")
-        .set_json(&request_payload)
-        .to_request();
+    let req = test::TestRequest::post().uri("/set").set_json(&request_payload).to_request();
 
     let resp = test::call_service(&app, req).await;
     assert_eq!(resp.status(), StatusCode::BAD_REQUEST);

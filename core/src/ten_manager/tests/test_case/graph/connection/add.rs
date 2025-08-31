@@ -8,13 +8,12 @@
 mod tests {
     use std::collections::HashMap;
 
-    use ten_manager::constants::TEST_DIR;
-    use ten_manager::graph::connections::add::graph_add_connection;
-    use ten_rust::graph::Graph;
-    use ten_rust::pkg_info::message::MsgType;
+    use ten_manager::{constants::TEST_DIR, graph::connections::add::graph_add_connection};
+    use ten_rust::{graph::Graph, pkg_info::message::MsgType};
 
-    use crate::test_case::common::mock::inject_all_standard_pkgs_for_mock;
-    use crate::test_case::graph::connection::create_test_node;
+    use crate::test_case::{
+        common::mock::inject_all_standard_pkgs_for_mock, graph::connection::create_test_node,
+    };
 
     #[tokio::test]
     async fn test_add_connection() {
@@ -57,10 +56,7 @@ mod tests {
         assert_eq!(connections.len(), 1);
 
         let connection = &connections[0];
-        assert_eq!(
-            connection.loc.app,
-            Some("http://example.com:8000".to_string())
-        );
+        assert_eq!(connection.loc.app, Some("http://example.com:8000".to_string()));
         assert_eq!(connection.loc.extension, Some("ext1".to_string()));
 
         let cmd_flows = connection.cmd.as_ref().unwrap();
@@ -311,22 +307,10 @@ mod tests {
         assert!(connection.audio_frame.is_some());
         assert!(connection.video_frame.is_some());
 
-        assert_eq!(
-            connection.cmd.as_ref().unwrap()[0].name.as_deref(),
-            Some("cmd1")
-        );
-        assert_eq!(
-            connection.data.as_ref().unwrap()[0].name.as_deref(),
-            Some("data1")
-        );
-        assert_eq!(
-            connection.audio_frame.as_ref().unwrap()[0].name.as_deref(),
-            Some("audio1")
-        );
-        assert_eq!(
-            connection.video_frame.as_ref().unwrap()[0].name.as_deref(),
-            Some("video1")
-        );
+        assert_eq!(connection.cmd.as_ref().unwrap()[0].name.as_deref(), Some("cmd1"));
+        assert_eq!(connection.data.as_ref().unwrap()[0].name.as_deref(), Some("data1"));
+        assert_eq!(connection.audio_frame.as_ref().unwrap()[0].name.as_deref(), Some("audio1"));
+        assert_eq!(connection.video_frame.as_ref().unwrap()[0].name.as_deref(), Some("video1"));
     }
 
     #[tokio::test]
@@ -466,10 +450,7 @@ mod tests {
         )
         .await;
         assert!(result.is_err());
-        assert!(result
-            .unwrap_err()
-            .to_string()
-            .contains("schema incompatibility"));
+        assert!(result.unwrap_err().to_string().contains("schema incompatibility"));
 
         // Test connecting ext1 to ext4 with compatible schema.
         let result = graph_add_connection(
@@ -503,10 +484,7 @@ mod tests {
         .await;
         println!("result: {result:?}");
         assert!(result.is_err());
-        assert!(result
-            .unwrap_err()
-            .to_string()
-            .contains("schema incompatibility"));
+        assert!(result.unwrap_err().to_string().contains("schema incompatibility"));
 
         // Test connecting ext1 to ext3 with incompatible schema for data -
         // should fail.
@@ -524,9 +502,6 @@ mod tests {
         )
         .await;
         assert!(result.is_err());
-        assert!(result
-            .unwrap_err()
-            .to_string()
-            .contains("schema incompatibility"));
+        assert!(result.unwrap_err().to_string().contains("schema incompatibility"));
     }
 }

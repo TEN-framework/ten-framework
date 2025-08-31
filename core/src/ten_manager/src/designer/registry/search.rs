@@ -9,11 +9,14 @@ use std::sync::Arc;
 use actix_web::{web, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
 
-use crate::designer::response::{ApiResponse, ErrorResponse, Status};
-use crate::designer::DesignerState;
-use crate::registry;
-use crate::registry::found_result::PkgRegistryInfo;
-use crate::registry::search::PkgSearchFilter;
+use crate::{
+    designer::{
+        response::{ApiResponse, ErrorResponse, Status},
+        DesignerState,
+    },
+    registry,
+    registry::{found_result::PkgRegistryInfo, search::PkgSearchFilter},
+};
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct PkgSearchOptions {
@@ -49,18 +52,9 @@ pub async fn search_packages_endpoint(
         &request_payload.filter,
         request_payload.options.as_ref().and_then(|o| o.page_size),
         request_payload.options.as_ref().and_then(|o| o.page),
-        request_payload
-            .options
-            .as_ref()
-            .and_then(|o| o.sort_by.as_deref()),
-        request_payload
-            .options
-            .as_ref()
-            .and_then(|o| o.sort_order.as_deref()),
-        request_payload
-            .options
-            .as_ref()
-            .and_then(|o| o.scope.as_deref()),
+        request_payload.options.as_ref().and_then(|o| o.sort_by.as_deref()),
+        request_payload.options.as_ref().and_then(|o| o.sort_order.as_deref()),
+        request_payload.options.as_ref().and_then(|o| o.scope.as_deref()),
         &state.out,
     )
     .await

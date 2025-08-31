@@ -19,13 +19,10 @@ mod deprecated {
         let mut schema_header = base_dir.clone();
         schema_header.push("include_internal/ten_utils/schema/bindings/rust/schema_proxy.h");
         if !schema_header.exists() {
-            println!(
-                "Path of schema_proxy.h: {}",
-                schema_header.to_str().unwrap()
-            );
+            println!("Path of schema_proxy.h: {}", schema_header.to_str().unwrap());
             panic!(
-                "The //include_internal/ten_utils/schema/bindings/rust/\
-                 schema_proxy.h does not exist."
+                "The //include_internal/ten_utils/schema/bindings/rust/schema_proxy.h does not \
+                 exist."
             );
         }
 
@@ -84,9 +81,7 @@ mod deprecated {
         let generated_bindings = schema_dir.join("bindings.rs");
         let temp_bindings = schema_dir.join(format!("bindings_{}.rs.tmp", id()));
 
-        binding_gen
-            .write_to_file(&temp_bindings)
-            .expect("Unable to write bindings into file.");
+        binding_gen.write_to_file(&temp_bindings).expect("Unable to write bindings into file.");
 
         // Add some rules to the bindings file to disable clippy lints.
         let bindings_content =
@@ -116,16 +111,13 @@ mod deprecated {
                     break;
                 }
                 Err(e) if attempt < max_retries => {
-                    println!(
-                        "Attempt {attempt}/{max_retries} failed: {e}. \
-                         Retrying...",
-                    );
+                    println!("Attempt {attempt}/{max_retries} failed: {e}. Retrying...",);
                     thread::sleep(retry_delay);
                 }
                 Err(e) => {
                     panic!(
-                        "Unable to move temporary bindings to final \
-                         destination after {max_retries} attempts: {e}",
+                        "Unable to move temporary bindings to final destination after \
+                         {max_retries} attempts: {e}",
                     );
                 }
             }
@@ -141,20 +133,11 @@ mod deprecated {
         let mut service_hub_api_header = base_dir.clone();
         service_hub_api_header.push("include_internal/ten_runtime/app/service_hub/api/api.h");
         if !service_hub_api_header.exists() {
-            println!(
-                "Path of service_hub/api/api.h: {}",
-                service_hub_api_header.to_str().unwrap()
-            );
-            panic!(
-                "The //include_internal/ten_runtime/app/service_hub/api/api.h \
-                 does not exist."
-            );
+            println!("Path of service_hub/api/api.h: {}", service_hub_api_header.to_str().unwrap());
+            panic!("The //include_internal/ten_runtime/app/service_hub/api/api.h does not exist.");
         }
 
-        println!(
-            "cargo:rerun-if-changed={}",
-            service_hub_api_header.to_str().unwrap()
-        );
+        println!("cargo:rerun-if-changed={}", service_hub_api_header.to_str().unwrap());
 
         base_dir.push("include");
 
@@ -182,9 +165,7 @@ mod deprecated {
         let generated_bindings = service_hub_dir.join("bindings.rs");
         let temp_bindings = service_hub_dir.join(format!("bindings_{}.rs.tmp", id()));
 
-        binding_gen
-            .write_to_file(&temp_bindings)
-            .expect("Unable to write bindings into file.");
+        binding_gen.write_to_file(&temp_bindings).expect("Unable to write bindings into file.");
 
         // Add some rules to the bindings file to disable clippy lints.
         let bindings_content =
@@ -214,16 +195,13 @@ mod deprecated {
                     break;
                 }
                 Err(e) if attempt < max_retries => {
-                    println!(
-                        "Attempt {attempt}/{max_retries} failed: {e}. \
-                         Retrying...",
-                    );
+                    println!("Attempt {attempt}/{max_retries} failed: {e}. Retrying...",);
                     thread::sleep(retry_delay);
                 }
                 Err(e) => {
                     panic!(
-                        "Unable to move temporary bindings to final \
-                         destination after {max_retries} attempts: {e}",
+                        "Unable to move temporary bindings to final destination after \
+                         {max_retries} attempts: {e}",
                     );
                 }
             }

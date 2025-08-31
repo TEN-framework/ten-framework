@@ -49,10 +49,7 @@ pub async fn execute_cmd(
     let content = read_file_to_string(&command_data.path)?;
     match ten_validate_manifest_json_string(&content) {
         Ok(_) => {
-            out.normal_line(&format!(
-                "{}  Conforms to JSON schema.",
-                Emoji("👍", "Passed")
-            ));
+            out.normal_line(&format!("{}  Conforms to JSON schema.", Emoji("👍", "Passed")));
             Ok(())
         }
         Err(e) => Err(e),

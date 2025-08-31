@@ -6,19 +6,22 @@
 //
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
-    use std::sync::Arc;
+    use std::{collections::HashMap, sync::Arc};
 
     use actix_web::{test, web, App};
-    use ten_manager::designer::storage::in_memory::TmanStorageInMemory;
+    use ten_manager::{
+        constants::TEST_DIR,
+        designer::{
+            apps::unload::{unload_app_endpoint, UnloadAppRequestPayload},
+            response::{ApiResponse, ErrorResponse, Status},
+            storage::in_memory::TmanStorageInMemory,
+            DesignerState,
+        },
+        home::config::TmanConfig,
+        output::cli::TmanOutputCli,
+    };
 
     use crate::test_case::common::mock::inject_all_pkgs_for_mock;
-    use ten_manager::constants::TEST_DIR;
-    use ten_manager::designer::apps::unload::{unload_app_endpoint, UnloadAppRequestPayload};
-    use ten_manager::designer::response::{ApiResponse, ErrorResponse, Status};
-    use ten_manager::designer::DesignerState;
-    use ten_manager::home::config::TmanConfig;
-    use ten_manager::output::cli::TmanOutputCli;
 
     #[actix_web::test]
     async fn test_unload_app_success() {
@@ -58,10 +61,7 @@ mod tests {
         let app = test::init_service(
             App::new()
                 .app_data(web::Data::new(designer_state.clone()))
-                .route(
-                    "/api/designer/v1/apps/unload",
-                    web::post().to(unload_app_endpoint),
-                ),
+                .route("/api/designer/v1/apps/unload", web::post().to(unload_app_endpoint)),
         )
         .await;
 
@@ -109,10 +109,7 @@ mod tests {
         let app = test::init_service(
             App::new()
                 .app_data(web::Data::new(designer_state.clone()))
-                .route(
-                    "/api/designer/v1/apps/unload",
-                    web::post().to(unload_app_endpoint),
-                ),
+                .route("/api/designer/v1/apps/unload", web::post().to(unload_app_endpoint)),
         )
         .await;
 
@@ -157,10 +154,7 @@ mod tests {
         let app = test::init_service(
             App::new()
                 .app_data(web::Data::new(designer_state.clone()))
-                .route(
-                    "/api/designer/v1/apps/unload",
-                    web::post().to(unload_app_endpoint),
-                ),
+                .route("/api/designer/v1/apps/unload", web::post().to(unload_app_endpoint)),
         )
         .await;
 

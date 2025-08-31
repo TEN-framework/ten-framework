@@ -59,8 +59,7 @@ pub fn get_base_dir_of_uri(uri: &str) -> Result<String> {
                     // Continue to parse the uri as a relative path.
                 } else {
                     return Err(anyhow::anyhow!(
-                        "Unsupported URL scheme '{}' in uri: {} when \
-                         get_base_dir_of_uri",
+                        "Unsupported URL scheme '{}' in uri: {} when get_base_dir_of_uri",
                         url.scheme(),
                         uri
                     ));
@@ -68,8 +67,7 @@ pub fn get_base_dir_of_uri(uri: &str) -> Result<String> {
 
                 #[cfg(not(windows))]
                 return Err(anyhow::anyhow!(
-                    "Unsupported URL scheme '{}' in uri: {} when \
-                     get_base_dir_of_uri",
+                    "Unsupported URL scheme '{}' in uri: {} when get_base_dir_of_uri",
                     url.scheme(),
                     uri
                 ));
@@ -94,8 +92,8 @@ pub fn get_real_path_from_import_uri(import_uri: &str, base_dir: Option<&str>) -
     // an absolute path, it should be start with file://
     if Path::new(import_uri).is_absolute() {
         return Err(anyhow::anyhow!(
-            "Absolute paths are not supported in import_uri: {}. Use file:// \
-             URI or relative path instead",
+            "Absolute paths are not supported in import_uri: {}. Use file:// URI or relative path \
+             instead",
             import_uri
         ));
     }
@@ -142,8 +140,7 @@ pub fn get_real_path_from_import_uri(import_uri: &str, base_dir: Option<&str>) -
     // If the base_dir is not provided, return an error.
     if base_dir.is_none() || base_dir.unwrap().is_empty() {
         return Err(anyhow::anyhow!(
-            "base_dir cannot be None when uri is a relative path, import_uri: \
-             {import_uri}"
+            "base_dir cannot be None when uri is a relative path, import_uri: {import_uri}"
         ));
     }
 
@@ -172,8 +169,7 @@ pub fn get_real_path_from_import_uri(import_uri: &str, base_dir: Option<&str>) -
                 }
                 Err(e) => {
                     return Err(anyhow::anyhow!(
-                        "Failed to resolve relative path '{}' against base \
-                         URL '{}': {}",
+                        "Failed to resolve relative path '{}' against base URL '{}': {}",
                         import_uri,
                         base_dir.unwrap(),
                         e

@@ -4,9 +4,7 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-use std::collections::HashMap;
-use std::path::Path;
-use std::sync::Arc;
+use std::{collections::HashMap, path::Path, sync::Arc};
 
 use actix_web::{web, HttpResponse, Responder};
 use anyhow::Result;
@@ -14,8 +12,10 @@ use serde::{Deserialize, Serialize};
 use ten_rust::base_dir_pkg_info::PkgsInfoInApp;
 
 use crate::{
-    designer::response::{ApiResponse, ErrorResponse, Status},
-    designer::DesignerState,
+    designer::{
+        response::{ApiResponse, ErrorResponse, Status},
+        DesignerState,
+    },
     fs::check_is_app_folder,
     pkg_info::get_all_pkgs::get_all_pkgs_in_app,
 };
@@ -41,19 +41,18 @@ pub async fn load_app_endpoint(
         let app_uri = extract_app_uri(&pkgs_cache, &request_payload.base_dir);
         return Ok(HttpResponse::Ok().json(ApiResponse {
             status: Status::Ok,
-            data: LoadAppResponseData { app_uri },
+            data: LoadAppResponseData {
+                app_uri,
+            },
             meta: None,
         }));
     }
 
     match check_is_app_folder(Path::new(&request_payload.base_dir)).await {
         Ok(_) => {
-            if let Err(err) = get_all_pkgs_in_app(
-                &mut pkgs_cache,
-                &mut graphs_cache,
-                &request_payload.base_dir,
-            )
-            .await
+            if let Err(err) =
+                get_all_pkgs_in_app(&mut pkgs_cache, &mut graphs_cache, &request_payload.base_dir)
+                    .await
             {
                 let error_response = ErrorResponse::from_error(&err, "Error fetching packages:");
                 return Ok(HttpResponse::NotFound().json(error_response));
@@ -62,7 +61,9 @@ pub async fn load_app_endpoint(
             let app_uri = extract_app_uri(&pkgs_cache, &request_payload.base_dir);
             Ok(HttpResponse::Ok().json(ApiResponse {
                 status: Status::Ok,
-                data: LoadAppResponseData { app_uri },
+                data: LoadAppResponseData {
+                    app_uri,
+                },
                 meta: None,
             }))
         }

@@ -9,7 +9,6 @@ use std::sync::Arc;
 use actix_web::{web, HttpResponse, Responder};
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
-
 use ten_rust::pkg_info::manifest::api::ManifestApi;
 
 use crate::designer::{
@@ -80,7 +79,9 @@ pub async fn get_extension_schema_endpoint(
 
     let response = ApiResponse {
         status: Status::Ok,
-        data: GetExtensionSchemaResponseData { schema },
+        data: GetExtensionSchemaResponseData {
+            schema,
+        },
         meta: None,
     };
 

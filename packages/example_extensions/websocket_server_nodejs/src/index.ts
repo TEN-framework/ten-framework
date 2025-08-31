@@ -23,16 +23,16 @@ class WebsocketServerExtension extends Extension {
   }
 
   async onConfigure(tenEnv: TenEnv): Promise<void> {
-    console.log("WebsocketServerExtension onConfigure");
+    tenEnv.logInfo("WebsocketServerExtension onConfigure");
   }
 
   async onInit(tenEnv: TenEnv): Promise<void> {
     this.tenEnv = tenEnv;
-    console.log("WebsocketServerExtension onInit");
+    tenEnv.logInfo("WebsocketServerExtension onInit");
   }
 
   async onStart(tenEnv: TenEnv): Promise<void> {
-    console.log("WebsocketServerExtension onStart");
+    tenEnv.logInfo("WebsocketServerExtension onStart");
 
     const hostname = "127.0.0.1";
     let [port, err] = await tenEnv.getPropertyNumber("server_port");
@@ -44,7 +44,7 @@ class WebsocketServerExtension extends Extension {
     const app = express();
 
     const server = app.listen(port, () => {
-      console.log("Server running at http://" + hostname + ":" + port + "/");
+      tenEnv.logInfo("Server running at http://" + hostname + ":" + port + "/");
     });
 
     this.httpServer = server;
@@ -52,30 +52,30 @@ class WebsocketServerExtension extends Extension {
     const wss = new WebSocketServer({ server });
 
     wss.on("connection", (ws) => {
-      console.log("Client connected");
+      tenEnv.logInfo("Client connected");
 
       ws.on("message", (message) => {
-        console.log("Received: " + message);
+        tenEnv.logInfo("Received: " + message);
         ws.send("Echo: " + message);
       });
 
       ws.on("close", () => {
-        console.log("Client disconnected");
+        tenEnv.logInfo("Client disconnected");
       });
     });
   }
 
-  async onStop(_tenEnv: TenEnv): Promise<void> {
-    console.log("WebsocketServerExtension onStop");
+  async onStop(tenEnv: TenEnv): Promise<void> {
+    tenEnv.logInfo("WebsocketServerExtension onStop");
 
     if (this.httpServer) {
       this.httpServer.close();
     }
   }
 
-  async onDeinit(_tenEnv: TenEnv): Promise<void> {
+  async onDeinit(tenEnv: TenEnv): Promise<void> {
     this.tenEnv = undefined;
-    console.log("WebsocketServerExtension onDeinit");
+    tenEnv.logInfo("WebsocketServerExtension onDeinit");
   }
 }
 

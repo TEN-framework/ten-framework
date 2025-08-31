@@ -10,9 +10,8 @@ use actix_web::{web, HttpRequest, HttpResponse, Responder};
 use mime_guess::from_path;
 use rust_embed::RustEmbed;
 
-use crate::home::config::is_verbose;
-
 use super::DesignerState;
+use crate::home::config::is_verbose;
 
 // Points to the frontend build output directory.
 #[derive(RustEmbed)]
@@ -25,11 +24,7 @@ pub async fn get_frontend_asset(
 ) -> Result<impl Responder, actix_web::Error> {
     let start_time = Instant::now();
     let path = req.path().trim_start_matches('/').to_owned();
-    let client_ip = req
-        .connection_info()
-        .peer_addr()
-        .unwrap_or("unknown")
-        .to_string();
+    let client_ip = req.connection_info().peer_addr().unwrap_or("unknown").to_string();
 
     if is_verbose(state.tman_config.clone()).await {
         println!("[FRONTEND ASSET] Request from IP: {client_ip}, Path: '{path}'");
@@ -43,15 +38,12 @@ pub async fn get_frontend_asset(
 
                 if is_verbose(state.tman_config.clone()).await {
                     println!(
-                        "[FRONTEND ASSET] Serving index.html, size: {} bytes, \
-                         time: {:?}",
+                        "[FRONTEND ASSET] Serving index.html, size: {} bytes, time: {:?}",
                         size,
                         start_time.elapsed()
                     );
                 }
-                Ok(HttpResponse::Ok()
-                    .content_type("text/html")
-                    .body(content.data.into_owned()))
+                Ok(HttpResponse::Ok().content_type("text/html").body(content.data.into_owned()))
             }
             None => {
                 if is_verbose(state.tman_config.clone()).await {
@@ -69,8 +61,7 @@ pub async fn get_frontend_asset(
 
                 if is_verbose(state.tman_config.clone()).await {
                     println!(
-                        "[FRONTEND ASSET] Serving: '{}', type: {}, size: {} \
-                         bytes, time: {:?}",
+                        "[FRONTEND ASSET] Serving: '{}', type: {}, size: {} bytes, time: {:?}",
                         path,
                         mime.as_ref(),
                         size,
@@ -78,17 +69,15 @@ pub async fn get_frontend_asset(
                     );
                 }
 
-                Ok(HttpResponse::Ok()
-                    .content_type(mime.as_ref())
-                    .body(content.data.into_owned()))
+                Ok(HttpResponse::Ok().content_type(mime.as_ref()).body(content.data.into_owned()))
             }
             // If the file is not found, return `index.html` to support React
             // Router.
             None => {
                 if is_verbose(state.tman_config.clone()).await {
                     println!(
-                        "[FRONTEND ASSET] Asset '{path}' not found, falling \
-                         back to index.html (SPA mode)"
+                        "[FRONTEND ASSET] Asset '{path}' not found, falling back to index.html \
+                         (SPA mode)"
                     );
                 }
 
@@ -98,8 +87,8 @@ pub async fn get_frontend_asset(
 
                         if is_verbose(state.tman_config.clone()).await {
                             println!(
-                                "[FRONTEND ASSET] Serving index.html \
-                                 (fallback), size: {} bytes, time: {:?}",
+                                "[FRONTEND ASSET] Serving index.html (fallback), size: {} bytes, \
+                                 time: {:?}",
                                 size,
                                 start_time.elapsed()
                             );
@@ -111,10 +100,7 @@ pub async fn get_frontend_asset(
                     }
                     None => {
                         if is_verbose(state.tman_config.clone()).await {
-                            println!(
-                                "[FRONTEND ASSET] ERROR: index.html fallback \
-                                 not found!"
-                            );
+                            println!("[FRONTEND ASSET] ERROR: index.html fallback not found!");
                         }
 
                         Ok(HttpResponse::NotFound().body("404 Not Found"))

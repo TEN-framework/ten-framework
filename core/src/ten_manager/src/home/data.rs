@@ -6,8 +6,7 @@
 //
 use std::path::PathBuf;
 
-use crate::constants::DATA_JSON;
-use crate::home::get_home_dir;
+use crate::{constants::DATA_JSON, home::get_home_dir};
 
 /// Get the path to the persistent storage data file
 pub fn get_home_data_path() -> PathBuf {

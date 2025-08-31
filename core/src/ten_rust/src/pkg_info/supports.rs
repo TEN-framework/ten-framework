@@ -4,8 +4,7 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-use std::hash::Hash;
-use std::{fmt, str::FromStr};
+use std::{fmt, hash::Hash, str::FromStr};
 
 use anyhow::{Error, Result};
 use serde::{Deserialize, Serialize};

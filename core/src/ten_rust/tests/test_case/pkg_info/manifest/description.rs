@@ -7,7 +7,6 @@
 #[cfg(test)]
 mod tests {
     use anyhow::Result;
-
     use ten_rust::pkg_info::manifest::Manifest;
 
     #[test]
@@ -38,33 +37,12 @@ mod tests {
 
         let description = manifest.description.unwrap();
         assert_eq!(
-            description
-                .locales
-                .get("en-US")
-                .unwrap()
-                .content
-                .as_ref()
-                .unwrap(),
+            description.locales.get("en-US").unwrap().content.as_ref().unwrap(),
             "English description"
         );
+        assert_eq!(description.locales.get("zh-CN").unwrap().content.as_ref().unwrap(), "中文描述");
         assert_eq!(
-            description
-                .locales
-                .get("zh-CN")
-                .unwrap()
-                .content
-                .as_ref()
-                .unwrap(),
-            "中文描述"
-        );
-        assert_eq!(
-            description
-                .locales
-                .get("es-ES")
-                .unwrap()
-                .content
-                .as_ref()
-                .unwrap(),
+            description.locales.get("es-ES").unwrap().content.as_ref().unwrap(),
             "Descripción en español"
         );
     }
@@ -158,25 +136,10 @@ mod tests {
 
         let description = manifest.description.unwrap();
         assert_eq!(
-            description
-                .locales
-                .get("en-US")
-                .unwrap()
-                .import_uri
-                .as_ref()
-                .unwrap(),
+            description.locales.get("en-US").unwrap().import_uri.as_ref().unwrap(),
             "http://example.com/desc_en.md"
         );
-        assert_eq!(
-            description
-                .locales
-                .get("zh-CN")
-                .unwrap()
-                .content
-                .as_ref()
-                .unwrap(),
-            "中文描述"
-        );
+        assert_eq!(description.locales.get("zh-CN").unwrap().content.as_ref().unwrap(), "中文描述");
     }
 
     #[test]
@@ -207,33 +170,12 @@ mod tests {
 
         let description = manifest.description.unwrap();
         assert_eq!(
-            description
-                .locales
-                .get("en")
-                .unwrap()
-                .content
-                .as_ref()
-                .unwrap(),
+            description.locales.get("en").unwrap().content.as_ref().unwrap(),
             "English description"
         );
+        assert_eq!(description.locales.get("zh").unwrap().content.as_ref().unwrap(), "中文描述");
         assert_eq!(
-            description
-                .locales
-                .get("zh")
-                .unwrap()
-                .content
-                .as_ref()
-                .unwrap(),
-            "中文描述"
-        );
-        assert_eq!(
-            description
-                .locales
-                .get("es")
-                .unwrap()
-                .content
-                .as_ref()
-                .unwrap(),
+            description.locales.get("es").unwrap().content.as_ref().unwrap(),
             "Descripción en español"
         );
     }
@@ -266,43 +208,19 @@ mod tests {
 
         let description = manifest.description.unwrap();
         assert_eq!(
-            description
-                .locales
-                .get("en")
-                .unwrap()
-                .content
-                .as_ref()
-                .unwrap(),
+            description.locales.get("en").unwrap().content.as_ref().unwrap(),
             "English description"
         );
         assert_eq!(
-            description
-                .locales
-                .get("zh-CN")
-                .unwrap()
-                .content
-                .as_ref()
-                .unwrap(),
+            description.locales.get("zh-CN").unwrap().content.as_ref().unwrap(),
             "简体中文描述"
         );
         assert_eq!(
-            description
-                .locales
-                .get("zh-TW")
-                .unwrap()
-                .content
-                .as_ref()
-                .unwrap(),
+            description.locales.get("zh-TW").unwrap().content.as_ref().unwrap(),
             "繁體中文描述"
         );
         assert_eq!(
-            description
-                .locales
-                .get("es-ES")
-                .unwrap()
-                .content
-                .as_ref()
-                .unwrap(),
+            description.locales.get("es-ES").unwrap().content.as_ref().unwrap(),
             "Descripción en español"
         );
     }

@@ -92,9 +92,7 @@ impl FromStr for ValueType {
 
             "ptr" => Ok(ValueType::Ptr),
 
-            _ => Err(Error::msg(format!(
-                "Failed to parse string '{s}' to value type"
-            ))),
+            _ => Err(Error::msg(format!("Failed to parse string '{s}' to value type"))),
         }
     }
 }

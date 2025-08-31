@@ -45,13 +45,7 @@ mod tests {
             )
             .await;
 
-            assert_eq!(
-                pkgs_cache
-                    .get("tests/test_data/app_with_uri")
-                    .unwrap()
-                    .len(),
-                3
-            );
+            assert_eq!(pkgs_cache.get("tests/test_data/app_with_uri").unwrap().len(), 3);
         }
 
         let designer_state = Arc::new(designer_state);
@@ -60,10 +54,7 @@ mod tests {
         let app = test::init_service(
             App::new()
                 .app_data(web::Data::new(designer_state.clone()))
-                .route(
-                    "/api/designer/v1/apps/reload",
-                    web::post().to(reload_app_endpoint),
-                ),
+                .route("/api/designer/v1/apps/reload", web::post().to(reload_app_endpoint)),
         )
         .await;
 
@@ -121,13 +112,7 @@ mod tests {
             )
             .await;
 
-            assert_eq!(
-                pkgs_cache
-                    .get("tests/test_data/app_with_uri")
-                    .unwrap()
-                    .len(),
-                3
-            );
+            assert_eq!(pkgs_cache.get("tests/test_data/app_with_uri").unwrap().len(), 3);
         }
 
         let designer_state = Arc::new(designer_state);
@@ -136,15 +121,14 @@ mod tests {
         let app = test::init_service(
             App::new()
                 .app_data(web::Data::new(designer_state.clone()))
-                .route(
-                    "/api/designer/v1/apps/reload",
-                    web::post().to(reload_app_endpoint),
-                ),
+                .route("/api/designer/v1/apps/reload", web::post().to(reload_app_endpoint)),
         )
         .await;
 
         // Create request without base_dir specified.
-        let request_payload = ReloadPkgsRequestPayload { base_dir: None };
+        let request_payload = ReloadPkgsRequestPayload {
+            base_dir: None,
+        };
 
         let req = test::TestRequest::post()
             .uri("/api/designer/v1/apps/reload")

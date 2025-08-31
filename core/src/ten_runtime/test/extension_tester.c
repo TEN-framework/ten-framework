@@ -525,7 +525,7 @@ static void ten_extension_tester_start_timeout_timer(
   TEN_ASSERT(self->timeout_timer == NULL, "Should not happen.");
 
   if (self->timeout_us <= 0) {
-    TEN_LOGV(
+    TEN_LOGD(
         "Timeout is not set, skipping timeout timer for extension_tester.");
     return;
   }

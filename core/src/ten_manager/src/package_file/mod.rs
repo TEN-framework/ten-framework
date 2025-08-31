@@ -7,23 +7,24 @@
 pub mod package;
 pub mod unpackage;
 
-use std::path::Path;
-use std::sync::Arc;
+use std::{path::Path, sync::Arc};
 
 use anyhow::Result;
 use console::Emoji;
 use globset::{GlobBuilder, GlobSetBuilder};
 use ignore::{overrides::OverrideBuilder, WalkBuilder};
-
-use ten_rust::pkg_info::constants::MANIFEST_JSON_FILENAME;
-use ten_rust::pkg_info::PkgInfo;
-use ten_rust::pkg_info::{constants::TEN_PACKAGES_DIR, manifest::parse_manifest_in_folder};
+use package::tar_gz_files_to_file;
+use ten_rust::pkg_info::{
+    constants::{MANIFEST_JSON_FILENAME, TEN_PACKAGES_DIR},
+    manifest::parse_manifest_in_folder,
+    PkgInfo,
+};
 
 use super::{constants::TEN_PACKAGE_FILE_EXTENSION, home::config::TmanConfig};
-use crate::home::config::is_verbose;
-use crate::output::TmanOutput;
-use crate::{constants::DOT_TEN_DIR, fs::pathbuf_to_string_lossy};
-use package::tar_gz_files_to_file;
+use crate::{
+    constants::DOT_TEN_DIR, fs::pathbuf_to_string_lossy, home::config::is_verbose,
+    output::TmanOutput,
+};
 
 pub fn get_tpkg_file_name(pkg_info: &PkgInfo) -> Result<String> {
     let manifest = &pkg_info.manifest;
@@ -86,11 +87,7 @@ pub async fn create_package_tar_gz_file(
     let mut hidden_globset_builder = GlobSetBuilder::new();
 
     // manifest.json is needed for all TEN packages.
-    globset_builder.add(
-        GlobBuilder::new(MANIFEST_JSON_FILENAME)
-            .literal_separator(false)
-            .build()?,
-    );
+    globset_builder.add(GlobBuilder::new(MANIFEST_JSON_FILENAME).literal_separator(false).build()?);
 
     if include_patterns.as_ref().is_none() {
         // Include all folders and files by default.
@@ -175,11 +172,7 @@ pub async fn create_package_tar_gz_file(
         }
     }
 
-    tar_gz_files_to_file(
-        files_to_include,
-        folder_to_tar_gz,
-        &output_tar_gz_file_path_str,
-    )?;
+    tar_gz_files_to_file(files_to_include, folder_to_tar_gz, &output_tar_gz_file_path_str)?;
 
     Ok(output_tar_gz_file_path_str)
 }

@@ -153,7 +153,7 @@ static void ten_engine_check_if_all_extension_threads_are_ready(
       cmd_result = ten_cmd_result_create_from_cmd(TEN_STATUS_CODE_ERROR,
                                                   original_start_graph_cmd);
     } else {
-      TEN_LOGV("[%s] All extension threads are initted",
+      TEN_LOGD("[%s] All extension threads are initted",
                ten_app_get_uri(self->app));
 
       ten_string_t *graph_id = &self->graph_id;

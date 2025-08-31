@@ -4,36 +4,31 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-use std::sync::Arc;
-use std::time::Instant;
+use std::{sync::Arc, time::Instant};
 
 use anyhow::Result;
 use clap::{ArgMatches, Command};
 use console::Emoji;
 use indicatif::HumanDuration;
-
 use ten_rust::pkg_info::get_pkg_info_from_path;
 
-use crate::constants::DOT_TEN_DIR;
-use crate::constants::PACKAGE_DIR_IN_DOT_TEN_DIR;
-use crate::designer::storage::in_memory::TmanStorageInMemory;
-use crate::home::config::is_verbose;
-use crate::home::config::TmanConfig;
-use crate::output::TmanOutput;
-use crate::package_file::create_package_tar_gz_file;
-use crate::package_file::get_tpkg_file_name;
-use crate::registry::upload_package;
+use crate::{
+    constants::{DOT_TEN_DIR, PACKAGE_DIR_IN_DOT_TEN_DIR},
+    designer::storage::in_memory::TmanStorageInMemory,
+    home::config::{is_verbose, TmanConfig},
+    output::TmanOutput,
+    package_file::{create_package_tar_gz_file, get_tpkg_file_name},
+    registry::upload_package,
+};
 
 #[derive(Debug)]
 pub struct PublishCommand {}
 
 pub fn create_sub_cmd(_args_cfg: &crate::cmd_line::ArgsCfg) -> Command {
-    Command::new("publish")
-        .about("Publish a package")
-        .after_help(
-            "Switch to the base directory of the TEN package you want to publish, \
-         then simply run 'tman publish' directly in that directory.",
-        )
+    Command::new("publish").about("Publish a package").after_help(
+        "Switch to the base directory of the TEN package you want to publish, then simply run \
+         'tman publish' directly in that directory.",
+    )
 }
 
 pub fn parse_sub_cmd(
@@ -79,13 +74,7 @@ pub async fn execute_cmd(
     let output_path_str =
         create_package_tar_gz_file(tman_config.clone(), &output_path, &cwd, out.clone()).await?;
 
-    upload_package(
-        tman_config.clone(),
-        &output_path_str,
-        &pkg_info,
-        out.clone(),
-    )
-    .await?;
+    upload_package(tman_config.clone(), &output_path_str, &pkg_info, out.clone()).await?;
 
     out.normal_line(&format!(
         "{}  Publish successfully in {}",

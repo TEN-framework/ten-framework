@@ -39,9 +39,15 @@ impl Graph {
             }
 
             let node = match node {
-                GraphNode::Extension { content } => content,
-                GraphNode::Subgraph { .. } => unreachable!(),
-                GraphNode::Selector { .. } => unreachable!(),
+                GraphNode::Extension {
+                    content,
+                } => content,
+                GraphNode::Subgraph {
+                    ..
+                } => unreachable!(),
+                GraphNode::Selector {
+                    ..
+                } => unreachable!(),
             };
 
             let found = find_pkgs_cache_entry_by_app_uri(pkgs_cache, &node.app);
@@ -66,20 +72,14 @@ impl Graph {
                 // list.
                 if found.is_none() && !ignore_missing_apps {
                     not_installed_pkgs.push((
-                        node.app
-                            .as_ref()
-                            .map(|s| s.to_string())
-                            .unwrap_or("".to_string()),
+                        node.app.as_ref().map(|s| s.to_string()).unwrap_or("".to_string()),
                         PkgType::Extension,
                         node.addon.clone(),
                     ));
                 }
             } else if !ignore_missing_apps {
                 not_installed_pkgs.push((
-                    node.app
-                        .as_ref()
-                        .map(|s| s.to_string())
-                        .unwrap_or("".to_string()),
+                    node.app.as_ref().map(|s| s.to_string()).unwrap_or("".to_string()),
                     PkgType::Extension,
                     node.addon.clone(),
                 ));
@@ -91,9 +91,8 @@ impl Graph {
         // Define filters for packages that don't need to be physically
         // installed Each filter returns true if the package should be checked
         // (not exempted).
-        let filters: Vec<FilterFn> = vec![Box::new(|pkg| {
-            !(pkg.1 == PkgType::Extension && pkg.2 == *"ten:test_extension")
-        })];
+        let filters: Vec<FilterFn> =
+            vec![Box::new(|pkg| !(pkg.1 == PkgType::Extension && pkg.2 == *"ten:test_extension"))];
 
         // Filter out those known addons that do not need to be installed in the
         // file system.
@@ -102,8 +101,7 @@ impl Graph {
         // Return error if there are any non-exempted missing packages.
         if !not_installed_pkgs.is_empty() {
             return Err(anyhow::anyhow!(
-                "The following packages are declared in nodes but not \
-                 installed: {:?}.",
+                "The following packages are declared in nodes but not installed: {:?}.",
                 not_installed_pkgs
             ));
         }

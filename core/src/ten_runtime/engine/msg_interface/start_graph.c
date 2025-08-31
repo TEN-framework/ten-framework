@@ -158,7 +158,7 @@ void ten_engine_handle_cmd_start_graph(ten_engine_t *self,
         }
         ten_list_clear(&new_works);
       } else {
-        TEN_LOGV(
+        TEN_LOGD(
             "[%s] No more new connections should be made, enable the extension "
             "system now.",
             ten_app_get_uri(self->app));

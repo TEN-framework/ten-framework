@@ -63,11 +63,7 @@ mod tests {
         let real_path = get_real_path_from_import_uri(import_uri, Some(base_dir));
 
         assert!(real_path.is_err());
-        assert!(real_path
-            .err()
-            .unwrap()
-            .to_string()
-            .contains("Unsupported URL scheme 'ftp'"));
+        assert!(real_path.err().unwrap().to_string().contains("Unsupported URL scheme 'ftp'"));
     }
 
     #[test]
@@ -91,10 +87,7 @@ mod tests {
         let real_path = get_real_path_from_import_uri(import_uri, Some(base_dir));
 
         assert!(real_path.is_ok());
-        assert_eq!(
-            real_path.unwrap(),
-            "http://example.com/api/v1/interface.json"
-        );
+        assert_eq!(real_path.unwrap(), "http://example.com/api/v1/interface.json");
     }
 
     #[test]
@@ -104,10 +97,7 @@ mod tests {
         let real_path = get_real_path_from_import_uri(import_uri, Some(base_dir));
 
         assert!(real_path.is_ok());
-        assert_eq!(
-            real_path.unwrap(),
-            "https://example.com/api/v1/interface.json"
-        );
+        assert_eq!(real_path.unwrap(), "https://example.com/api/v1/interface.json");
     }
 
     #[test]
@@ -117,10 +107,7 @@ mod tests {
         let real_path = get_real_path_from_import_uri(import_uri, Some(base_dir));
 
         assert!(real_path.is_ok());
-        assert_eq!(
-            real_path.unwrap(),
-            "https://example.com/api/v1/interface.json"
-        );
+        assert_eq!(real_path.unwrap(), "https://example.com/api/v1/interface.json");
     }
 
     #[test]
@@ -245,10 +232,7 @@ mod tests {
         let real_path = get_real_path_from_import_uri(import_uri, Some(base_dir));
 
         assert!(real_path.is_ok());
-        assert_eq!(
-            real_path.unwrap(),
-            "https://example.com/api/interface.json?version=1.0"
-        );
+        assert_eq!(real_path.unwrap(), "https://example.com/api/interface.json?version=1.0");
     }
 
     #[test]
@@ -258,10 +242,7 @@ mod tests {
         let real_path = get_real_path_from_import_uri(import_uri, Some(base_dir));
 
         assert!(real_path.is_ok());
-        assert_eq!(
-            real_path.unwrap(),
-            "https://example.com/api/interface.json#section1"
-        );
+        assert_eq!(real_path.unwrap(), "https://example.com/api/interface.json#section1");
     }
 
     #[test]

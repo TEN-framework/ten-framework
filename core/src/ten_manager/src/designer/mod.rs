@@ -35,12 +35,10 @@ use std::{collections::HashMap, sync::Arc};
 use actix_web::web;
 use jsonschema::Validator;
 use storage::in_memory::TmanStorageInMemory;
+use ten_rust::{base_dir_pkg_info::PkgsInfoInApp, graph::graph_info::GraphInfo};
 use uuid::Uuid;
 
-use ten_rust::{base_dir_pkg_info::PkgsInfoInApp, graph::graph_info::GraphInfo};
-
-use crate::home::config::TmanConfig;
-use crate::output::TmanOutput;
+use crate::{home::config::TmanConfig, output::TmanOutput};
 
 pub struct DesignerState {
     pub tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,

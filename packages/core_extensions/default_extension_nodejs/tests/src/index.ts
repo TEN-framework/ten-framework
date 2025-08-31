@@ -8,7 +8,7 @@ import { ExtensionTester, TenEnvTester } from "ten-runtime-nodejs";
 
 export class MyExtensionTester extends ExtensionTester {
   async onStart(tenEnvTester: TenEnvTester) {
-    console.log("MyExtensionTester onStart");
+    tenEnvTester.logInfo("MyExtensionTester onStart");
 
     new Promise((resolve) => {
       setTimeout(() => {
@@ -20,10 +20,10 @@ export class MyExtensionTester extends ExtensionTester {
   }
 
   async onStop(tenEnvTester: TenEnvTester) {
-    console.log("MyExtensionTester onStop");
+    tenEnvTester.logInfo("MyExtensionTester onStop");
   }
 
   async onDeinit(tenEnvTester: TenEnvTester) {
-    console.log("MyExtensionTester onDeinit");
+    tenEnvTester.logInfo("MyExtensionTester onDeinit");
   }
 }

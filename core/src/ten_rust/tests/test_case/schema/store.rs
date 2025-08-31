@@ -15,9 +15,7 @@ mod tests {
 
         let manifest = Manifest::create_from_str(manifest_str).unwrap();
         let mut schema_store = SchemaStore::default();
-        schema_store
-            .parse_schemas_from_manifest(manifest.api.as_ref().unwrap())
-            .unwrap();
+        schema_store.parse_schemas_from_manifest(manifest.api.as_ref().unwrap()).unwrap();
 
         assert!(schema_store.property.is_some());
 

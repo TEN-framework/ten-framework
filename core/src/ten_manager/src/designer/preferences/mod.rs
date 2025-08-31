@@ -9,12 +9,11 @@ pub mod logviewer_line_size;
 
 use serde::{Deserialize, Serialize};
 
+use super::locale::Locale;
 use crate::{
     constants::DESIGNER_FRONTEND_DEFAULT_LOGVIEWER_LINE_SIZE,
     home::config::{TmanConfig, TmanConfigFile},
 };
-
-use super::locale::Locale;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct Designer {

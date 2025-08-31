@@ -9,8 +9,6 @@ mod tests {
     use std::{collections::HashMap, sync::Arc};
 
     use actix_web::{test, web, App};
-    use uuid::Uuid;
-
     use ten_manager::{
         constants::TEST_DIR,
         designer::{
@@ -26,6 +24,7 @@ mod tests {
         home::config::TmanConfig,
         output::cli::TmanOutputCli,
     };
+    use uuid::Uuid;
 
     use crate::test_case::common::mock::{
         inject_all_pkgs_for_mock, inject_all_standard_pkgs_for_mock,
@@ -51,10 +50,11 @@ mod tests {
 
         let designer_state = Arc::new(designer_state);
 
-        let app = test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
-            "/api/designer/v1/graphs",
-            web::post().to(get_graphs_endpoint),
-        ))
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(designer_state))
+                .route("/api/designer/v1/graphs", web::post().to(get_graphs_endpoint)),
+        )
         .await;
 
         let request_payload = GetGraphsRequestPayload {};
@@ -107,15 +107,11 @@ mod tests {
         assert_eq!(graphs.data.len(), expected_graphs.len());
 
         // Create a map of expected graphs by name for easier lookup.
-        let expected_map: HashMap<_, _> = expected_graphs
-            .iter()
-            .map(|g| (g.name.clone(), g))
-            .collect();
+        let expected_map: HashMap<_, _> =
+            expected_graphs.iter().map(|g| (g.name.clone(), g)).collect();
 
         for actual in graphs.data.iter() {
-            let expected = expected_map
-                .get(&actual.name)
-                .expect("Missing expected graph");
+            let expected = expected_map.get(&actual.name).expect("Missing expected graph");
             assert_eq!(actual.name, expected.name);
             assert_eq!(actual.auto_start, expected.auto_start);
             assert_eq!(actual.base_dir, expected.base_dir);
@@ -137,10 +133,11 @@ mod tests {
             persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
         });
 
-        let app = test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
-            "/api/designer/v1/graphs",
-            web::post().to(get_graphs_endpoint),
-        ))
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(designer_state))
+                .route("/api/designer/v1/graphs", web::post().to(get_graphs_endpoint)),
+        )
         .await;
 
         let request_payload = GetGraphsRequestPayload {};
@@ -180,11 +177,8 @@ mod tests {
         // Create test directory name for the app
         let test_app_dir = "/tmp/test_graph_with_selector".to_string();
 
-        let all_pkgs_json = vec![(
-            test_app_dir.clone(),
-            app_manifest_json_str,
-            app_property_json_str,
-        )];
+        let all_pkgs_json =
+            vec![(test_app_dir.clone(), app_manifest_json_str, app_property_json_str)];
 
         // Inject the test data into caches
         {
@@ -202,10 +196,7 @@ mod tests {
         let app = test::init_service(
             App::new()
                 .app_data(web::Data::new(designer_state.clone()))
-                .route(
-                    "/api/designer/v1/graphs",
-                    web::post().to(get_graphs_endpoint),
-                ),
+                .route("/api/designer/v1/graphs", web::post().to(get_graphs_endpoint)),
         )
         .await;
 
@@ -295,11 +286,8 @@ mod tests {
         // Create test directory name for the app
         let test_app_dir = "/tmp/test_graph_with_sources".to_string();
 
-        let all_pkgs_json = vec![(
-            test_app_dir.clone(),
-            app_manifest_json_str,
-            app_property_json_str,
-        )];
+        let all_pkgs_json =
+            vec![(test_app_dir.clone(), app_manifest_json_str, app_property_json_str)];
 
         // Inject the test data into caches
         {
@@ -317,10 +305,7 @@ mod tests {
         let app = test::init_service(
             App::new()
                 .app_data(web::Data::new(designer_state.clone()))
-                .route(
-                    "/api/designer/v1/graphs",
-                    web::post().to(get_graphs_endpoint),
-                ),
+                .route("/api/designer/v1/graphs", web::post().to(get_graphs_endpoint)),
         )
         .await;
 
@@ -374,10 +359,7 @@ mod tests {
 
         // Verify the connection has source information
         let connection = &connections[0];
-        assert_eq!(
-            connection.loc.extension,
-            Some("test_extension_2".to_string())
-        );
+        assert_eq!(connection.loc.extension, Some("test_extension_2".to_string()));
 
         // Verify that the connection contains source data
         // The connection should have a cmd with source information
@@ -393,10 +375,7 @@ mod tests {
 
         let source = &sources[0];
         assert_eq!(source.loc.extension, Some("test_extension_1".to_string()));
-        assert_eq!(
-            source.loc.app,
-            Some("msgpack://127.0.0.1:8001/".to_string())
-        );
+        assert_eq!(source.loc.app, Some("msgpack://127.0.0.1:8001/".to_string()));
 
         // Verify the graph base directory
         assert_eq!(graph_info.base_dir, Some(test_app_dir));
@@ -428,11 +407,8 @@ mod tests {
         // Create test directory name for the app
         let test_app_dir = "/tmp/test_graph_with_multiple_sources".to_string();
 
-        let all_pkgs_json = vec![(
-            test_app_dir.clone(),
-            app_manifest_json_str,
-            app_property_json_str,
-        )];
+        let all_pkgs_json =
+            vec![(test_app_dir.clone(), app_manifest_json_str, app_property_json_str)];
 
         // Inject the test data into caches
         {
@@ -450,10 +426,7 @@ mod tests {
         let app = test::init_service(
             App::new()
                 .app_data(web::Data::new(designer_state.clone()))
-                .route(
-                    "/api/designer/v1/graphs",
-                    web::post().to(get_graphs_endpoint),
-                ),
+                .route("/api/designer/v1/graphs", web::post().to(get_graphs_endpoint)),
         )
         .await;
 
@@ -509,10 +482,7 @@ mod tests {
 
         // Verify the connection has multiple source information
         let connection = &connections[0];
-        assert_eq!(
-            connection.loc.extension,
-            Some("destination_ext".to_string())
-        );
+        assert_eq!(connection.loc.extension, Some("destination_ext".to_string()));
 
         // Verify that the connection contains multiple sources data
         // The connection should have a cmd with multiple source information
@@ -558,13 +528,11 @@ mod tests {
         // Load the test data from cmd_check_predefined_graph_with_subgraph
         // folder
         let app_manifest_json_str = include_str!(
-            "../../../test_data/cmd_check_predefined_graph_with_subgraph/\
-             manifest.json"
+            "../../../test_data/cmd_check_predefined_graph_with_subgraph/manifest.json"
         )
         .to_string();
         let app_property_json_str = include_str!(
-            "../../../test_data/cmd_check_predefined_graph_with_subgraph/\
-             property.json"
+            "../../../test_data/cmd_check_predefined_graph_with_subgraph/property.json"
         )
         .to_string();
 
@@ -576,11 +544,8 @@ mod tests {
             .to_string_lossy()
             .to_string();
 
-        let all_pkgs_json = vec![(
-            test_app_dir.clone(),
-            app_manifest_json_str,
-            app_property_json_str,
-        )];
+        let all_pkgs_json =
+            vec![(test_app_dir.clone(), app_manifest_json_str, app_property_json_str)];
 
         // Inject the test data into caches
         {
@@ -601,10 +566,7 @@ mod tests {
         let app = test::init_service(
             App::new()
                 .app_data(web::Data::new(designer_state.clone()))
-                .route(
-                    "/api/designer/v1/graphs",
-                    web::post().to(get_graphs_endpoint),
-                ),
+                .route("/api/designer/v1/graphs", web::post().to(get_graphs_endpoint)),
         )
         .await;
 
@@ -660,7 +622,10 @@ mod tests {
         let subgraph_node = nodes
             .iter()
             .find(|node| {
-                if let DesignerGraphNode::Subgraph { content } = node {
+                if let DesignerGraphNode::Subgraph {
+                    content,
+                } = node
+                {
                     content.name == "subgraph_1"
                 } else {
                     false
@@ -668,27 +633,24 @@ mod tests {
             })
             .expect("Should have subgraph_1 node");
 
-        if let DesignerGraphNode::Subgraph { content } = subgraph_node {
+        if let DesignerGraphNode::Subgraph {
+            content,
+        } = subgraph_node
+        {
             // Verify import_uri is preserved
             assert_eq!(content.graph.import_uri, "graphs/test_graph.json");
 
             // Verify that the graph field is populated with the resolved
             // content
-            let resolved_graph = content
-                .graph
-                .graph
-                .as_ref()
-                .expect("Subgraph should have resolved graph content");
+            let resolved_graph =
+                content.graph.graph.as_ref().expect("Subgraph should have resolved graph content");
 
             // Verify the resolved graph has the expected nodes from
             // test_graph.json
             assert_eq!(resolved_graph.nodes.len(), 2); // addon_b and addon_c
 
-            let resolved_node_names: Vec<&str> = resolved_graph
-                .nodes
-                .iter()
-                .map(|node| node.get_name())
-                .collect();
+            let resolved_node_names: Vec<&str> =
+                resolved_graph.nodes.iter().map(|node| node.get_name()).collect();
 
             assert!(resolved_node_names.contains(&"addon_b"));
             assert!(resolved_node_names.contains(&"addon_c"));
@@ -717,15 +679,9 @@ mod tests {
         let connection = &connections[0];
         assert_eq!(connection.loc.extension, Some("addon_a".to_string()));
         assert_eq!(connection.cmd.as_ref().unwrap().len(), 1);
-        assert_eq!(
-            connection.cmd.as_ref().unwrap()[0].name,
-            Some("C".to_string())
-        );
+        assert_eq!(connection.cmd.as_ref().unwrap()[0].name, Some("C".to_string()));
         assert_eq!(connection.cmd.as_ref().unwrap()[0].dest.len(), 1);
-        assert_eq!(
-            connection.cmd.as_ref().unwrap()[0].dest[0].loc.extension,
-            None
-        );
+        assert_eq!(connection.cmd.as_ref().unwrap()[0].dest[0].loc.extension, None);
         assert_eq!(
             connection.cmd.as_ref().unwrap()[0].dest[0].loc.subgraph,
             Some("subgraph_1".to_string())

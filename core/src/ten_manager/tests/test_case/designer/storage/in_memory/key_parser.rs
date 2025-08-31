@@ -4,7 +4,6 @@ use serde_json::json;
 // This file is part of TEN Framework, an open source project.
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
-//
 use ten_manager::designer::storage::in_memory::key_parser::{
     get_value_by_key, parse_key, set_value_by_key, KeySegment,
 };

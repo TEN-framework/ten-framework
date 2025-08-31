@@ -19,12 +19,15 @@ use anyhow::Result;
 use node::GraphNode;
 use serde::{Deserialize, Serialize};
 
-use crate::base_dir_pkg_info::PkgsInfoInApp;
-use crate::constants::{ERR_MSG_GRAPH_APP_FIELD_EMPTY, ERR_MSG_GRAPH_MIXED_APP_DECLARATIONS};
-use crate::pkg_info::localhost;
-
-use self::connection::{GraphConnection, GraphMessageFlow};
-use self::node::GraphNodeType;
+use self::{
+    connection::{GraphConnection, GraphMessageFlow},
+    node::GraphNodeType,
+};
+use crate::{
+    base_dir_pkg_info::PkgsInfoInApp,
+    constants::{ERR_MSG_GRAPH_APP_FIELD_EMPTY, ERR_MSG_GRAPH_MIXED_APP_DECLARATIONS},
+    pkg_info::localhost,
+};
 
 /// The state of the 'app' field declaration in all nodes in the graph.
 ///
@@ -202,9 +205,7 @@ impl Graph {
     pub async fn from_str_with_base_dir(s: &str, current_base_dir: Option<&str>) -> Result<Self> {
         let mut graph: Graph = serde_json::from_str(s)?;
 
-        graph
-            .validate_and_complete_and_flatten(current_base_dir)
-            .await?;
+        graph.validate_and_complete_and_flatten(current_base_dir).await?;
 
         // Return the parsed data.
         Ok(graph)
@@ -264,11 +265,8 @@ impl Graph {
             }
         }
 
-        let extension_nodes_len = self
-            .nodes
-            .iter()
-            .filter(|node| node.get_type() == GraphNodeType::Extension)
-            .count();
+        let extension_nodes_len =
+            self.nodes.iter().filter(|node| node.get_type() == GraphNodeType::Extension).count();
 
         // Some nodes have 'app' declared and some don't - this is invalid.
         // Because TEN can not determine which app the nodes without the defined
@@ -322,8 +320,7 @@ impl Graph {
                     }
                 }) {
                     return Err(anyhow::anyhow!(
-                        "exposed_properties[{}]: extension '{}' does not \
-                         exist in the graph",
+                        "exposed_properties[{}]: extension '{}' does not exist in the graph",
                         idx,
                         property.extension.as_ref().unwrap_or(&String::new())
                     ));
@@ -417,7 +414,10 @@ impl Graph {
                     && node.get_app_uri() == app
             })
             .and_then(|node| {
-                if let GraphNode::Extension { content } = node {
+                if let GraphNode::Extension {
+                    content,
+                } = node
+                {
                     Some(&content.addon)
                 } else {
                     None
@@ -555,9 +555,7 @@ impl Graph {
         // Step 2: Match nodes according to selector rules and replace them in
         // connections
         let flattened_selector_graph = processing_graph.flatten_selectors()?;
-        processing_graph = flattened_selector_graph
-            .as_ref()
-            .unwrap_or(processing_graph);
+        processing_graph = flattened_selector_graph.as_ref().unwrap_or(processing_graph);
 
         // Step 3: Convert reversed connections to forward connections if needed
         let reversed_graph =

@@ -1,12 +1,12 @@
 {
   "type": "extension",
   "name": "ffmpeg_client",
-  "version": "0.10.36",
+  "version": "0.10.37",
   "dependencies": [
     {
       "type": "system",
       "name": "ten_runtime",
-      "version": "0.10.36"
+      "version": "0.10.37"
     }
   ]
 }

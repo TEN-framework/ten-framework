@@ -9,7 +9,6 @@ mod tests {
     use std::{collections::HashMap, sync::Arc};
 
     use actix_web::{http::StatusCode, test, web, App};
-
     use ten_manager::{
         designer::{
             apps::scripts::{
@@ -48,13 +47,7 @@ mod tests {
             )
             .await;
 
-            assert_eq!(
-                pkgs_cache
-                    .get("tests/test_data/app_with_uri")
-                    .unwrap()
-                    .len(),
-                3
-            );
+            assert_eq!(pkgs_cache.get("tests/test_data/app_with_uri").unwrap().len(), 3);
         }
 
         let designer_state = Arc::new(designer_state);
@@ -63,10 +56,7 @@ mod tests {
         let app = test::init_service(
             App::new()
                 .app_data(web::Data::new(designer_state.clone()))
-                .route(
-                    "/api/designer/v1/apps/scripts",
-                    web::post().to(get_app_scripts_endpoint),
-                ),
+                .route("/api/designer/v1/apps/scripts", web::post().to(get_app_scripts_endpoint)),
         )
         .await;
 
@@ -118,10 +108,7 @@ mod tests {
         let app = test::init_service(
             App::new()
                 .app_data(web::Data::new(designer_state.clone()))
-                .route(
-                    "/api/designer/v1/apps/scripts",
-                    web::post().to(get_app_scripts_endpoint),
-                ),
+                .route("/api/designer/v1/apps/scripts", web::post().to(get_app_scripts_endpoint)),
         )
         .await;
 

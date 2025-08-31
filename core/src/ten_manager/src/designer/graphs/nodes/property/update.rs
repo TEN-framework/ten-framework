@@ -9,9 +9,8 @@ use std::sync::Arc;
 use actix_web::{web, HttpResponse, Responder};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
-
 use ten_rust::graph::{graph_info::GraphInfo, node::GraphNode};
+use uuid::Uuid;
 
 use crate::{
     designer::{
@@ -44,19 +43,17 @@ fn update_node_property_in_graph(
     request_payload: &UpdateGraphNodePropertyRequestPayload,
 ) -> Result<()> {
     // Find the node in the graph.
-    let graph_node = graph_info
-        .graph
-        .nodes_mut()
-        .iter_mut()
-        .find(|node| match node {
-            GraphNode::Extension { content } => {
-                content.name == request_payload.name
-                    && content.addon == request_payload.addon
-                    && content.extension_group == request_payload.extension_group
-                    && content.app == request_payload.app
-            }
-            _ => false,
-        });
+    let graph_node = graph_info.graph.nodes_mut().iter_mut().find(|node| match node {
+        GraphNode::Extension {
+            content,
+        } => {
+            content.name == request_payload.name
+                && content.addon == request_payload.addon
+                && content.extension_group == request_payload.extension_group
+                && content.app == request_payload.app
+        }
+        _ => false,
+    });
 
     if graph_node.is_none() {
         return Err(anyhow::anyhow!(
@@ -69,7 +66,9 @@ fn update_node_property_in_graph(
 
     // Update the node's property.
     match graph_node.unwrap() {
-        GraphNode::Extension { content } => {
+        GraphNode::Extension {
+            content,
+        } => {
             content.property = request_payload.property.clone();
         }
         _ => return Err(anyhow::anyhow!("Node is not an extension node")),
@@ -141,7 +140,9 @@ pub async fn update_graph_node_property_endpoint(
 
     let response = ApiResponse {
         status: Status::Ok,
-        data: UpdateGraphNodePropertyResponsePayload { success: true },
+        data: UpdateGraphNodePropertyResponsePayload {
+            success: true,
+        },
         meta: None,
     };
     Ok(HttpResponse::Ok().json(response))

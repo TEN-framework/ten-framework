@@ -7,7 +7,6 @@
 use std::collections::HashMap;
 
 use anyhow::Result;
-
 use ten_rust::{
     base_dir_pkg_info::PkgsInfoInApp,
     graph::msg_conversion::{MsgAndResultConversion, MsgConversionMode, MsgConversionRule},
@@ -108,11 +107,7 @@ fn navigate_property_path_mut<'a>(
             current_props.insert(
                 name.to_string(),
                 ManifestApiPropertyAttributes {
-                    prop_type: if index.is_some() {
-                        ValueType::Array
-                    } else {
-                        ValueType::Object
-                    },
+                    prop_type: if index.is_some() { ValueType::Array } else { ValueType::Object },
                     items: None,
                     properties: Some(HashMap::new()),
                     required: None,
@@ -163,10 +158,7 @@ fn navigate_property_path_mut<'a>(
         }
     }
 
-    Err(anyhow::anyhow!(
-        "Failed to navigate property path: {}",
-        path
-    ))
+    Err(anyhow::anyhow!("Failed to navigate property path: {}", path))
 }
 
 // Helper function to find a property at the specified path in a read-only
@@ -335,10 +327,7 @@ fn convert_rules_to_schema_properties(
                             if dest_schema_required.is_none() {
                                 *dest_schema_required = Some(Vec::new());
                             }
-                            dest_schema_required
-                                .as_mut()
-                                .unwrap()
-                                .push(path.to_string());
+                            dest_schema_required.as_mut().unwrap().push(path.to_string());
 
                             dest_schema_properties.entry(path.clone()).or_insert(
                                 ManifestApiPropertyAttributes {
@@ -389,8 +378,7 @@ fn convert_rules_to_schema_properties(
                                     }
                                     Err(e) => {
                                         return Err(anyhow::anyhow!(
-                                            "Failed to navigate to \
-                                             destination path {}: {}",
+                                            "Failed to navigate to destination path {}: {}",
                                             dest_path,
                                             e
                                         ));
@@ -421,8 +409,7 @@ fn convert_rules_to_schema_properties(
                     }
                     None => {
                         return Err(anyhow::anyhow!(
-                            "FromOriginal mode at index {} has no original \
-                             path",
+                            "FromOriginal mode at index {} has no original path",
                             index
                         ));
                     }
@@ -501,10 +488,7 @@ pub async fn msg_conversion_get_final_target_schema(
     )
     .await?;
 
-    eprintln!(
-        "src_msg_schema: {}",
-        serde_json::to_string_pretty(&src_msg_schema).unwrap()
-    );
+    eprintln!("src_msg_schema: {}", serde_json::to_string_pretty(&src_msg_schema).unwrap());
 
     let mut converted_schema: Option<ManifestApiMsg> = None;
 
@@ -580,9 +564,8 @@ pub async fn msg_conversion_get_final_target_schema(
             if keep_original {
                 // If source message schema exists and has a result schema, use
                 // it
-                let src_result_schema = src_msg_schema
-                    .as_ref()
-                    .and_then(|schema| schema.result.as_ref());
+                let src_result_schema =
+                    src_msg_schema.as_ref().and_then(|schema| schema.result.as_ref());
 
                 if let Some(result_schema) = src_result_schema {
                     converted_result_schema_real = result_schema.clone();
@@ -609,10 +592,7 @@ pub async fn msg_conversion_get_final_target_schema(
         )
         .await?;
 
-        eprintln!(
-            "dest_msg_schema: {}",
-            serde_json::to_string_pretty(&dest_msg_schema).unwrap(),
-        );
+        eprintln!("dest_msg_schema: {}", serde_json::to_string_pretty(&dest_msg_schema).unwrap(),);
 
         let dest_properties = dest_msg_schema
             .as_ref()

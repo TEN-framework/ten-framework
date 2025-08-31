@@ -12,12 +12,14 @@ use serde::{Deserialize, Serialize};
 use ten_rust::graph::node::GraphNode;
 use uuid::Uuid;
 
-use crate::designer::graphs::nodes::update_graph_node_in_property_json_file;
-use crate::designer::{
-    response::{ApiResponse, ErrorResponse, Status},
-    DesignerState,
+use crate::{
+    designer::{
+        graphs::nodes::update_graph_node_in_property_json_file,
+        response::{ApiResponse, ErrorResponse, Status},
+        DesignerState,
+    },
+    graph::{graphs_cache_find_by_id_mut, nodes::validate::validate_extension_property},
 };
-use crate::graph::{graphs_cache_find_by_id_mut, nodes::validate::validate_extension_property};
 
 #[derive(Serialize, Deserialize)]
 pub struct ReplaceGraphNodeRequestPayload {
@@ -77,16 +79,12 @@ pub async fn replace_graph_node_endpoint(
     let original_graph = graph_info.graph.clone();
 
     // Find the graph node in the graph.
-    let graph_node = graph_info
-        .graph
-        .nodes_mut()
-        .iter_mut()
-        .find(|node| match node {
-            GraphNode::Extension { content } => {
-                content.name == request_payload.name && content.app == request_payload.app
-            }
-            _ => false,
-        });
+    let graph_node = graph_info.graph.nodes_mut().iter_mut().find(|node| match node {
+        GraphNode::Extension {
+            content,
+        } => content.name == request_payload.name && content.app == request_payload.app,
+        _ => false,
+    });
 
     if graph_node.is_none() {
         let error_response = ErrorResponse {
@@ -102,17 +100,16 @@ pub async fn replace_graph_node_endpoint(
 
     // Replace the addon and property of the graph node.
     let graph_node = graph_node.unwrap();
-    if let GraphNode::Extension { content } = graph_node {
+    if let GraphNode::Extension {
+        content,
+    } = graph_node
+    {
         content.addon = request_payload.addon.clone();
         content.property = request_payload.property.clone();
     }
 
     // Validate the graph.
-    if let Err(e) = graph_info
-        .graph
-        .validate_and_complete_and_flatten(None)
-        .await
-    {
+    if let Err(e) = graph_info.graph.validate_and_complete_and_flatten(None).await {
         // Restore the original graph if validation fails.
         graph_info.graph = original_graph;
         let error_response = ErrorResponse {
@@ -140,7 +137,9 @@ pub async fn replace_graph_node_endpoint(
 
     let response = ApiResponse {
         status: Status::Ok,
-        data: ReplaceGraphNodeResponsePayload { success: true },
+        data: ReplaceGraphNodeResponsePayload {
+            success: true,
+        },
         meta: None,
     };
     Ok(HttpResponse::Ok().json(response))
