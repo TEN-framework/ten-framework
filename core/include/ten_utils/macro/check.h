@@ -56,10 +56,10 @@
       int64_t pid = 0;                                                     \
       int64_t tid = 0;                                                     \
       ten_get_pid_tid(&pid, &tid);                                         \
-      int written =                                                        \
-          snprintf(____err_msg, sizeof(____err_msg),                       \
-                   "%" PRId64 "(%" PRId64 ") %s@%s:%d " fmt, pid, tid,     \
-                   __func__, __FILE__, __LINE__, ##__VA_ARGS__);           \
+      int written = snprintf(                                              \
+          ____err_msg, sizeof(ASSERT_ERR_MSG_MAX_LENGTH * sizeof(char)),   \
+          "%" PRId64 "(%" PRId64 ") %s@%s:%d " fmt, pid, tid, __func__,    \
+          __FILE__, __LINE__, ##__VA_ARGS__);                              \
       if (written < 0) {                                                   \
         /* NOLINTNEXTLINE */                                               \
         assert(0);                                                         \
@@ -91,10 +91,10 @@
       int64_t pid = 0;                                                     \
       int64_t tid = 0;                                                     \
       ten_get_pid_tid(&pid, &tid);                                         \
-      int written =                                                        \
-          snprintf(____err_msg, sizeof(____err_msg),                       \
-                   "%" PRId64 "(%" PRId64 ") %s@%s:%d " fmt, pid, tid,     \
-                   __func__, __FILE__, __LINE__, ##__VA_ARGS__);           \
+      int written = snprintf(                                              \
+          ____err_msg, sizeof(ASSERT_ERR_MSG_MAX_LENGTH * sizeof(char)),   \
+          "%" PRId64 "(%" PRId64 ") %s@%s:%d " fmt, pid, tid, __func__,    \
+          __FILE__, __LINE__, ##__VA_ARGS__);                              \
       if (written < 0) {                                                   \
         abort();                                                           \
       }                                                                    \
