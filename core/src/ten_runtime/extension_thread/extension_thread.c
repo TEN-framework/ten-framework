@@ -25,6 +25,7 @@
 #include "include_internal/ten_runtime/extension_group/on_xxx.h"
 #include "include_internal/ten_runtime/extension_store/extension_store.h"
 #include "include_internal/ten_runtime/extension_thread/msg_interface/common.h"
+#include "include_internal/ten_runtime/extension_thread/on_xxx.h"
 #include "include_internal/ten_runtime/msg/msg.h"
 #include "include_internal/ten_runtime/ten_env/ten_env.h"
 #include "include_internal/ten_utils/log/log.h"
@@ -252,11 +253,11 @@ static void *ten_extension_thread_main_actual(ten_extension_thread_t *self) {
   TEN_LOGD("Extension thread is started");
 
   TEN_ASSERT(self, "Should not happen.");
-  TEN_ASSERT(
-      // TEN_NOLINTNEXTLINE(thread-check)
-      // thread-check: The correct threading ownership will be setup
-      // soon, so we can _not_ check thread safety here.
-      ten_extension_thread_check_integrity(self, false), "Should not happen.");
+  // TEN_NOLINTNEXTLINE(thread-check)
+  // thread-check: The correct threading ownership will be setup soon, so we can
+  // _not_ check thread safety here.
+  TEN_ASSERT(ten_extension_thread_check_integrity(self, false),
+             "Should not happen.");
 
   ten_extension_thread_inherit_thread_ownership(self);
   self->tid = ten_thread_get_id(NULL);
@@ -311,11 +312,11 @@ static void *ten_extension_thread_main(void *self_) {
 }
 
 void ten_extension_thread_start(ten_extension_thread_t *self) {
-  TEN_ASSERT(self &&
-                 // TEN_NOLINTNEXTLINE(thread-check)
-                 // thread-check: because the extension thread has not started
-                 // yet, we can _not_ check thread safety here.
-                 ten_extension_thread_check_integrity(self, false),
+  // TEN_NOLINTNEXTLINE(thread-check)
+  // thread-check: because the extension thread has not started yet, we can
+  // _not_ check thread safety here.
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_extension_thread_check_integrity(self, false),
              "Should not happen.");
 
   ten_thread_create(ten_string_get_raw_str(&self->extension_group->name),
@@ -599,23 +600,6 @@ void ten_extension_thread_add_all_created_extensions(
   TEN_ASSERT(ten_extension_context_check_integrity(extension_context, false),
              "Should not happen.");
 
-  ten_list_foreach (&self->extensions, iter) {
-    ten_extension_t *extension = ten_ptr_listnode_get(iter.node);
-    TEN_ASSERT(extension, "Should not happen.");
-    TEN_ASSERT(ten_extension_check_integrity(extension, true),
-               "Should not happen.");
-
-    // Correct the belonging_thread of the contained path_table.
-    ten_sanitizer_thread_check_set_belonging_thread_to_current_thread(
-        &extension->path_table->thread_check);
-
-    ten_extension_thread_add_extension(self, extension);
-  }
-
-  ten_extension_thread_log_graph_resources(self);
-
-  // Notify the engine to handle those newly created extensions.
-
   ten_engine_t *engine = extension_context->engine;
   // TEN_NOLINTNEXTLINE(thread-check)
   // thread-check: The runloop of the engine will not be changed during the
@@ -623,6 +607,34 @@ void ten_extension_thread_add_all_created_extensions(
   // it here.
   TEN_ASSERT(engine, "Should not happen.");
   TEN_ASSERT(ten_engine_check_integrity(engine, false), "Should not happen.");
+
+  ten_app_t *app = extension_context->engine->app;
+  TEN_ASSERT(app, "Should not happen.");
+  TEN_ASSERT(ten_app_check_integrity(app, false), "Should not happen.");
+
+  ten_list_foreach (&self->extensions, iter) {
+    ten_extension_t *extension = ten_ptr_listnode_get(iter.node);
+    TEN_ASSERT(extension, "Should not happen.");
+    TEN_ASSERT(ten_extension_check_integrity(extension, true),
+               "Should not happen.");
+
+    ten_extension_inherit_thread_ownership(extension, self);
+    TEN_ASSERT(ten_extension_check_integrity(extension, true),
+               "Invalid use of extension %p.", extension);
+
+    // Correct the belonging_thread of the contained path_table.
+    ten_sanitizer_thread_check_set_belonging_thread_to_current_thread(
+        &extension->path_table->thread_check);
+
+    ten_extension_thread_add_extension(self, extension);
+
+    extension->engine = engine;
+    extension->app = app;
+  }
+
+  ten_extension_thread_log_graph_resources(self);
+
+  // Notify the engine to handle those newly created extensions.
 
   int rc = ten_runloop_post_task_tail(
       ten_engine_get_attached_runloop(engine),

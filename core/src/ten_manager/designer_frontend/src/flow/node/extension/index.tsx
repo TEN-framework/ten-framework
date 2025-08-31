@@ -48,7 +48,7 @@ import { data2identifier, EFlowElementIdentifier } from "@/lib/identifier";
 import { cn } from "@/lib/utils";
 import { useWidgetStore } from "@/store";
 import type { IExtensionNodeData, TExtensionNode } from "@/types/flow";
-import { EConnectionType, type IGraph } from "@/types/graphs";
+import { EConnectionType, type GraphInfo } from "@/types/graphs";
 import { EWidgetCategory, EWidgetDisplayType } from "@/types/widgets";
 
 export function ExtensionNode(props: NodeProps<TExtensionNode>) {
@@ -136,8 +136,8 @@ export function ExtensionNode(props: NodeProps<TExtensionNode>) {
       <ContextMenuContent className="w-fit">
         <ContextMenuItems
           node={props as unknown as TExtensionNode}
-          baseDir={data.graph.base_dir}
-          graphId={data.graph.uuid}
+          baseDir={data.graph.base_dir ?? ""}
+          graphId={data.graph.graph_id}
         />
       </ContextMenuContent>
     </ContextMenu>
@@ -165,6 +165,7 @@ const ExtensionNodeHeader = (props: {
       className={cn(
         "rounded-t-md rounded-b-md px-4 py-2",
         "flex items-center gap-2",
+        "w-full",
         className
       )}
     >
@@ -190,7 +191,7 @@ const ExtensionNodeHeader = (props: {
       />
 
       {/* Content */}
-      <div className="flex flex-col">
+      <div className="flex flex-1 flex-col truncate">
         <span
           className={cn("font-medium text-foreground text-sm", {
             "text-foreground/50": !isInstalled,
@@ -206,6 +207,7 @@ const ExtensionNodeHeader = (props: {
           {data.addon}
         </span>
       </div>
+
       {/* Actions */}
       <div className="ml-auto flex items-center gap-1">
         {/* Expand button */}
@@ -240,7 +242,7 @@ const HandleGroupItem = (props: {
   const handleLaunchConnPopup = (data: {
     source: string;
     target?: string;
-    graph: IGraph;
+    graph: GraphInfo;
     metadata?: {
       filters?: {
         type?: EConnectionType;
@@ -281,7 +283,7 @@ const HandleGroupItem = (props: {
           id={data2identifier(EFlowElementIdentifier.HANDLE, {
             type: "target",
             extension: data.name,
-            graph: data.graph.uuid,
+            graph: data.graph.graph_id,
             connectionType,
           })}
           isConnectable={isConnectable}
@@ -389,7 +391,7 @@ const HandleGroupItem = (props: {
           id={data2identifier(EFlowElementIdentifier.HANDLE, {
             type: "source",
             extension: data.name,
-            graph: data.graph.uuid,
+            graph: data.graph.graph_id,
             connectionType,
           })}
           isConnectable={isConnectable}
@@ -405,7 +407,7 @@ const ConnectionCount = (props: {
   data: {
     source: string;
     target?: string;
-    graph: IGraph;
+    graph: GraphInfo;
     metadata?: {
       filters?: {
         type?: EConnectionType;

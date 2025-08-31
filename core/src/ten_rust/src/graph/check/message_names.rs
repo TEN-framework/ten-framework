@@ -23,12 +23,9 @@ impl Graph {
         let mut errors: Vec<String> = vec![];
 
         // Iterate through each connection.
-        for (conn_idx, connection) in
-            self.connections.as_ref().unwrap().iter().enumerate()
-        {
+        for (conn_idx, connection) in self.connections.as_ref().unwrap().iter().enumerate() {
             // Check for duplicate message names within this connection.
-            if let Some(errs) = self.check_connection_message_names(connection)
-            {
+            if let Some(errs) = self.check_connection_message_names(connection) {
                 errors.push(format!("- connection[{conn_idx}]:"));
                 for err in errs {
                     errors.push(format!("  {err}"));
@@ -64,15 +61,31 @@ impl Graph {
 
         // Iterate through each message flow in the group.
         for (flow_idx, flow) in message_flows.iter().enumerate() {
-            // Check if the message name has already been seen.
-            if let Some(idx) = msg_names.get(&flow.name) {
-                errors.push(format!(
-                    "'{}' is defined in flow[{}] and flow[{}].",
-                    flow.name, idx, flow_idx
-                ));
-            } else {
-                // Record the first occurrence of the message name.
-                msg_names.insert(flow.name.clone(), flow_idx);
+            // Handle both name and names fields
+            if let Some(flow_name) = &flow.name {
+                // If name field exists, use it
+                if let Some(idx) = msg_names.get(flow_name) {
+                    errors.push(format!(
+                        "'{flow_name}' is defined in flow[{idx}] and \
+                         flow[{flow_idx}]."
+                    ));
+                } else {
+                    // Record the first occurrence of the message name.
+                    msg_names.insert(flow_name.clone(), flow_idx);
+                }
+            } else if let Some(flow_names) = &flow.names {
+                // If name field doesn't exist, check names field
+                for name in flow_names {
+                    if let Some(idx) = msg_names.get(name) {
+                        errors.push(format!(
+                            "'{name}' is defined in flow[{idx}] and \
+                             flow[{flow_idx}]."
+                        ));
+                    } else {
+                        // Record the first occurrence of the message name.
+                        msg_names.insert(name.clone(), flow_idx);
+                    }
+                }
             }
         }
 
@@ -90,19 +103,14 @@ impl Graph {
     /// # Returns
     /// - `None` if no duplicates are found
     /// - `Some(Vec<String>)` with error messages if duplicates exist
-    fn check_connection_message_names(
-        &self,
-        connection: &GraphConnection,
-    ) -> Option<Vec<String>> {
+    fn check_connection_message_names(&self, connection: &GraphConnection) -> Option<Vec<String>> {
         let mut errors: Vec<String> = vec![];
 
         // Check command message flows for duplicates.
         if let Some(cmd) = &connection.cmd {
             let errs = self.find_duplicate_names_in_flow_group(cmd);
             if !errs.is_empty() {
-                errors.push(
-                    "- Merge the following cmd into one section:".to_string(),
-                );
+                errors.push("- Merge the following cmd into one section:".to_string());
                 for err in errs {
                     errors.push(format!("  {err}"));
                 }
@@ -113,9 +121,7 @@ impl Graph {
         if let Some(data) = &connection.data {
             let errs = self.find_duplicate_names_in_flow_group(data);
             if !errs.is_empty() {
-                errors.push(
-                    "- Merge the following data into one section:".to_string(),
-                );
+                errors.push("- Merge the following data into one section:".to_string());
                 for err in errs {
                     errors.push(format!("  {err}"));
                 }
@@ -126,10 +132,7 @@ impl Graph {
         if let Some(audio_frame) = &connection.audio_frame {
             let errs = self.find_duplicate_names_in_flow_group(audio_frame);
             if !errs.is_empty() {
-                errors.push(
-                    "- Merge the following auto_frame into one section:"
-                        .to_string(),
-                );
+                errors.push("- Merge the following auto_frame into one section:".to_string());
                 for err in errs {
                     errors.push(format!("  {err}"));
                 }
@@ -140,10 +143,7 @@ impl Graph {
         if let Some(video_frame) = &connection.video_frame {
             let errs = self.find_duplicate_names_in_flow_group(video_frame);
             if !errs.is_empty() {
-                errors.push(
-                    "- Merge the following video_frame into one section:"
-                        .to_string(),
-                );
+                errors.push("- Merge the following video_frame into one section:".to_string());
                 for err in errs {
                     errors.push(format!("  {err}"));
                 }

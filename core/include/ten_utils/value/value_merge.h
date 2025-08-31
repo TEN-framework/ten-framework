@@ -14,9 +14,6 @@
 
 typedef struct ten_value_t ten_value_t;
 
-TEN_UTILS_API bool ten_value_object_merge_with_move(ten_value_t *dest,
-                                                    ten_value_t *src);
-
 TEN_UTILS_API bool ten_value_object_merge_with_clone(ten_value_t *dest,
                                                      ten_value_t *src);
 

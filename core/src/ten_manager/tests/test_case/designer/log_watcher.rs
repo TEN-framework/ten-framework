@@ -36,10 +36,8 @@ async fn test_ws_log_watcher_endpoint() {
     create_empty_log_file(&log_file_path);
 
     // Start the WebSocket server and get its address.
-    let server_addr = start_test_server("/ws/log-watcher", || {
-        web::get().to(log_watcher_endpoint)
-    })
-    .await;
+    let server_addr =
+        start_test_server("/ws/log-watcher", || web::get().to(log_watcher_endpoint)).await;
     println!("Server started at: {server_addr}");
 
     // Connect WebSocket client to the server with the app_base_dir parameter.
@@ -74,7 +72,10 @@ async fn test_ws_log_watcher_endpoint() {
         "type": "set_app_base_dir",
         "app_base_dir": app_dir.to_string_lossy().to_string()
     });
-    write.send(Message::Text(app_base_dir_msg.to_string())).await.unwrap();
+    write
+        .send(Message::Text(app_base_dir_msg.to_string().into()))
+        .await
+        .unwrap();
     println!("({}) Sent app_base_dir message", log_file_path.display());
 
     // Wait for the info message about starting the watcher.
@@ -107,17 +108,14 @@ async fn test_ws_log_watcher_endpoint() {
 
     // Check if we receive the content - with timeout of 10 seconds.
     let mut received_content = false;
-    if let Ok(Some(msg)) =
-        tokio::time::timeout(Duration::from_secs(10), read.next()).await
-    {
+    if let Ok(Some(msg)) = tokio::time::timeout(Duration::from_secs(10), read.next()).await {
         let msg = msg.unwrap();
         if msg.is_text() {
             let text = msg.to_text().unwrap();
             println!("({}) Received text: {text}", log_file_path.display());
 
             // Try to parse the JSON response.
-            if let Ok(log_line_info) = serde_json::from_str::<LogLineInfo>(text)
-            {
+            if let Ok(log_line_info) = serde_json::from_str::<LogLineInfo>(text) {
                 if log_line_info.line.contains(test_content.trim()) {
                     received_content = true;
                 }
@@ -136,14 +134,12 @@ async fn test_ws_log_watcher_endpoint() {
 
     // Send stop message.
     let stop_msg = r#"{"type":"stop"}"#;
-    write.send(Message::Text(stop_msg.to_string())).await.unwrap();
+    write.send(Message::Text(stop_msg.into())).await.unwrap();
     println!("({}) Sent stop message", log_file_path.display());
 
     // Wait for connection to close or stop confirmation.
     let mut received_stop = false;
-    while let Ok(Some(msg)) =
-        tokio::time::timeout(Duration::from_secs(5), read.next()).await
-    {
+    while let Ok(Some(msg)) = tokio::time::timeout(Duration::from_secs(5), read.next()).await {
         let msg = msg.unwrap();
         if msg.is_text() {
             let text = msg.to_text().unwrap();

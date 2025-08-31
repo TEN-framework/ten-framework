@@ -21,7 +21,7 @@ use crate::{
     graph::graphs_cache_find_by_id_mut,
 };
 
-use super::{update_graph_node_in_property_all_fields, GraphNodeUpdateAction};
+use super::update_graph_node_in_property_json_file;
 
 #[derive(Serialize, Deserialize)]
 pub struct DeleteGraphNodeRequestPayload {
@@ -73,8 +73,7 @@ pub async fn graph_delete_extension_node(
     if let Some(connections) = &mut graph.connections {
         // 1. Remove entire connections with matching app and extension.
         connections.retain(|conn| {
-            !((conn.loc.extension.as_ref() == Some(&pkg_name))
-                && conn.loc.app == app)
+            !((conn.loc.extension.as_ref() == Some(&pkg_name)) && conn.loc.app == app)
         });
 
         // 2. Remove destinations from message flows in all connections.
@@ -83,8 +82,7 @@ pub async fn graph_delete_extension_node(
             if let Some(cmd_flows) = &mut connection.cmd {
                 for flow in cmd_flows.iter_mut() {
                     flow.dest.retain(|dest| {
-                        !((dest.loc.extension.as_ref() == Some(&pkg_name))
-                            && dest.loc.app == app)
+                        !((dest.loc.extension.as_ref() == Some(&pkg_name)) && dest.loc.app == app)
                     });
                 }
                 // Remove empty cmd flows.
@@ -95,8 +93,7 @@ pub async fn graph_delete_extension_node(
             if let Some(data_flows) = &mut connection.data {
                 for flow in data_flows.iter_mut() {
                     flow.dest.retain(|dest| {
-                        !((dest.loc.extension.as_ref() == Some(&pkg_name))
-                            && dest.loc.app == app)
+                        !((dest.loc.extension.as_ref() == Some(&pkg_name)) && dest.loc.app == app)
                     });
                 }
                 // Remove empty data flows.
@@ -107,8 +104,7 @@ pub async fn graph_delete_extension_node(
             if let Some(audio_flows) = &mut connection.audio_frame {
                 for flow in audio_flows.iter_mut() {
                     flow.dest.retain(|dest| {
-                        !((dest.loc.extension.as_ref() == Some(&pkg_name))
-                            && dest.loc.app == app)
+                        !((dest.loc.extension.as_ref() == Some(&pkg_name)) && dest.loc.app == app)
                     });
                 }
                 // Remove empty audio_frame flows.
@@ -119,8 +115,7 @@ pub async fn graph_delete_extension_node(
             if let Some(video_flows) = &mut connection.video_frame {
                 for flow in video_flows.iter_mut() {
                     flow.dest.retain(|dest| {
-                        !((dest.loc.extension.as_ref() == Some(&pkg_name))
-                            && dest.loc.app == app)
+                        !((dest.loc.extension.as_ref() == Some(&pkg_name)) && dest.loc.app == app)
                     });
                 }
                 // Remove empty video_frame flows.
@@ -132,10 +127,8 @@ pub async fn graph_delete_extension_node(
         connections.retain(|conn| {
             let has_cmd = conn.cmd.as_ref().is_some_and(|c| !c.is_empty());
             let has_data = conn.data.as_ref().is_some_and(|d| !d.is_empty());
-            let has_audio =
-                conn.audio_frame.as_ref().is_some_and(|a| !a.is_empty());
-            let has_video =
-                conn.video_frame.as_ref().is_some_and(|v| !v.is_empty());
+            let has_audio = conn.audio_frame.as_ref().is_some_and(|a| !a.is_empty());
+            let has_video = conn.video_frame.as_ref().is_some_and(|v| !v.is_empty());
             has_cmd || has_data || has_audio || has_video
         });
 
@@ -161,14 +154,13 @@ pub async fn delete_graph_node_endpoint(
     state: web::Data<Arc<DesignerState>>,
 ) -> Result<impl Responder, actix_web::Error> {
     // Get a write lock on the state since we need to modify the graph.
-    let mut pkgs_cache = state.pkgs_cache.write().await;
+    let pkgs_cache = state.pkgs_cache.write().await;
     let mut graphs_cache = state.graphs_cache.write().await;
+    let old_graphs_cache = graphs_cache.clone();
 
     // Get the specified graph from graphs_cache.
-    let graph_info = match graphs_cache_find_by_id_mut(
-        &mut graphs_cache,
-        &request_payload.graph_id,
-    ) {
+    let graph_info = match graphs_cache_find_by_id_mut(&mut graphs_cache, &request_payload.graph_id)
+    {
         Some(graph_info) => graph_info,
         None => {
             let error_response = ErrorResponse {
@@ -199,15 +191,11 @@ pub async fn delete_graph_node_endpoint(
     }
 
     // Try to update property.json file if possible.
-    if let Err(e) = update_graph_node_in_property_all_fields(
-        &mut pkgs_cache,
-        graph_info,
-        &request_payload.name,
-        &request_payload.addon,
-        &request_payload.extension_group,
-        &request_payload.app,
-        &None,
-        GraphNodeUpdateAction::Delete,
+    if let Err(e) = update_graph_node_in_property_json_file(
+        &request_payload.graph_id,
+        &pkgs_cache,
+        &graphs_cache,
+        &old_graphs_cache,
     ) {
         let error_response = ErrorResponse {
             status: Status::Fail,

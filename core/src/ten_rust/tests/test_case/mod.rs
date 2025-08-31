@@ -8,6 +8,7 @@ mod crypto_test;
 mod graph;
 mod graph_check;
 mod json_schema;
+mod log;
 mod path;
 mod pkg_info;
 mod schema;

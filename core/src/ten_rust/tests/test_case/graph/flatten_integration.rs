@@ -5,9 +5,7 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 use ten_rust::graph::{
-    connection::{
-        GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow,
-    },
+    connection::{GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow},
     node::{GraphContent, GraphNode, GraphNodeType},
     Graph,
 };
@@ -66,6 +64,7 @@ mod tests {
             }]),
             exposed_messages: None,
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         // Test with current_base_dir as None - should fail because subgraph has
@@ -76,8 +75,7 @@ mod tests {
         // Verify the error message contains information about base_dir being
         // None
         let error_msg = result.err().unwrap().to_string();
-        assert!(error_msg
-            .contains("base_dir cannot be None when uri is a relative path"));
+        assert!(error_msg.contains("base_dir cannot be None when uri is a relative path"));
     }
 
     #[tokio::test]
@@ -126,6 +124,7 @@ mod tests {
             }]),
             exposed_messages: None,
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         // Test with current_base_dir as None - should work fine since no
@@ -155,6 +154,7 @@ mod tests {
             connections: None,
             exposed_messages: None,
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         // flatten_graph should return None since there are no subgraphs
@@ -189,6 +189,7 @@ mod tests {
             connections: None,
             exposed_messages: None,
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         // Create a simple subgraph
@@ -203,6 +204,7 @@ mod tests {
             connections: None,
             exposed_messages: None,
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         // Write the subgraph to a file
@@ -218,7 +220,10 @@ mod tests {
 
         let flattened = result.unwrap();
         assert_eq!(flattened.nodes.len(), 2); // ext_a + subgraph_1_ext_b
-        assert!(flattened.nodes.iter().any(|node| node.get_name() == "ext_a"));
+        assert!(flattened
+            .nodes
+            .iter()
+            .any(|node| node.get_name() == "ext_a"));
         assert!(flattened
             .nodes
             .iter()

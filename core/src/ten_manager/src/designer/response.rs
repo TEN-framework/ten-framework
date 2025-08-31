@@ -4,6 +4,9 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
+use std::fmt;
+
+use actix_web::{HttpResponse, ResponseError};
 use anyhow::{Error, Result};
 use serde::{Deserialize, Serialize};
 
@@ -25,10 +28,7 @@ impl From<Status> for String {
     }
 }
 
-fn status_to_string<S>(
-    status: &Status,
-    serializer: S,
-) -> Result<S::Ok, S::Error>
+fn status_to_string<S>(status: &Status, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: serde::Serializer,
 {
@@ -92,5 +92,23 @@ impl ErrorResponse {
         }
 
         this
+    }
+}
+
+impl fmt::Display for ErrorResponse {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.message)
+    }
+}
+
+impl ResponseError for ErrorResponse {
+    fn error_response(&self) -> HttpResponse {
+        let error_response = ErrorResponse {
+            status: Status::Fail,
+            message: self.to_string(),
+            error: None,
+        };
+
+        HttpResponse::BadRequest().json(error_response)
     }
 }

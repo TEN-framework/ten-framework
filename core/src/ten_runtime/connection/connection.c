@@ -519,8 +519,8 @@ void ten_connection_attach_to_remote(ten_connection_t *self,
   TEN_ASSERT(ten_connection_check_integrity(self, true),
              "Invalid use of connection %p.", self);
 
-  TEN_ASSERT(remote && ten_remote_check_integrity(remote, true),
-             "Should not happen.");
+  TEN_ASSERT(remote, "Should not happen.");
+  TEN_ASSERT(ten_remote_check_integrity(remote, true), "Should not happen.");
 
   ten_atomic_store(&self->attach_to, TEN_CONNECTION_ATTACH_TO_REMOTE);
   self->attached_target.remote = remote;
@@ -600,9 +600,12 @@ void ten_connection_reply_result_for_duplicate_connection(
 
   ten_shared_ptr_t *ret_cmd =
       ten_cmd_result_create_from_cmd(TEN_STATUS_CODE_OK, cmd_start_graph);
-  ten_msg_set_property(ret_cmd, TEN_STR_DETAIL,
-                       ten_value_create_string(TEN_STR_DUPLICATE), NULL);
   ten_msg_clear_and_set_dest_from_msg_src(ret_cmd, cmd_start_graph);
+
+  ten_msg_set_property(ret_cmd, TEN_STR_GRAPH_ID,
+                       ten_value_create_string(TEN_STR_DUPLICATE), NULL);
+
   ten_connection_send_msg(self, ret_cmd);
+
   ten_shared_ptr_destroy(ret_cmd);
 }

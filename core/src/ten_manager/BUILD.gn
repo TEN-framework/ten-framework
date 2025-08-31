@@ -8,7 +8,6 @@ import("//build/feature/ten_package.gni")
 import("//build/ten_common/general/glob.gni")
 import("//build/ten_common/rust/rust.gni")
 import("//build/ten_manager/options.gni")
-import("//third_party/clingo/output_libs.gni")
 
 declare_args() {
   use_shared_lib = false
@@ -37,27 +36,15 @@ copy_glob("ten_manager_standalone_test_data") {
   }
 }
 
-if (is_win) {
-  copy("ten_manager_standalone_test_clingo_dll") {
-    sources = [ "${root_out_dir}/ten_manager/bin/clingo.dll" ]
-    outputs = [ "${root_out_dir}/tests/standalone/ten_manager/clingo.dll" ]
-    deps = [ ":ten_manager_package" ]
-  }
-}
-
 if (ten_enable_ten_manager) {
   if (ten_manager_enable_tests) {
     rust_test("tman_test_cargo_build") {
       project_path = "//core/src/ten_manager"
       integration_test_output_name = "integration_test"
 
-      clingo_lib_folder =
-          rebase_path("${root_out_dir}/gen/cmake/clingo/install/lib")
-      env = [ "CLINGO_LIBRARY_PATH=${clingo_lib_folder}" ]
-
       # The transitive dependency of the ten_rust crate.
       utils_static_lib_path = rebase_path("${root_gen_dir}/core/src/ten_utils")
-      env += [ "TEN_UTILS_LIBRARY_PATH=${utils_static_lib_path}" ]
+      env = [ "TEN_UTILS_LIBRARY_PATH=${utils_static_lib_path}" ]
 
       # If the output directory of `cargo build` (tman) and
       # `cargo build --tests` (tman_test) is the same, and if `cargo build` is
@@ -73,12 +60,7 @@ if (ten_enable_ten_manager) {
       deps = [
         ":ten_manager_standalone_test_data",
         "//core/src/ten_rust:ten_rust_static_lib",
-        "//third_party/clingo",
       ]
-
-      if (is_win) {
-        deps += [ ":ten_manager_standalone_test_clingo_dll" ]
-      }
     }
 
     if (ten_enable_cargo_clean) {
@@ -97,24 +79,6 @@ if (ten_enable_ten_manager) {
       } else {
         deps = [ ":tman_test_cargo_build" ]
       }
-    }
-  }
-
-  action("copy_clingo_config_files") {
-    script = "//build/ten_common/scripts/copy_files.py"
-
-    sources = [
-      "//core/src/ten_manager/src/solver/display.lp",
-      "//core/src/ten_manager/src/solver/main.lp",
-    ]
-    outputs = [
-      "${root_out_dir}/ten_manager/solver/display.lp",
-      "${root_out_dir}/ten_manager/solver/main.lp",
-    ]
-
-    args = []
-    foreach(f, sources + outputs) {
-      args += [ rebase_path(f) ]
     }
   }
 
@@ -181,13 +145,9 @@ if (ten_enable_ten_manager) {
     manifest_path = "//core/src/ten_manager/Cargo.toml"
     target_path = "${target_gen_dir}/tman"
 
-    clingo_lib_folder =
-        rebase_path("${root_out_dir}/gen/cmake/clingo/install/lib")
-    env = [ "CLINGO_LIBRARY_PATH=${clingo_lib_folder}" ]
-
     # The transitive dependency of the ten_rust crate.
     utils_static_lib_path = rebase_path("${root_gen_dir}/core/src/ten_utils")
-    env += [ "TEN_UTILS_LIBRARY_PATH=${utils_static_lib_path}" ]
+    env = [ "TEN_UTILS_LIBRARY_PATH=${utils_static_lib_path}" ]
 
     extra_sources = [
       "//core/src/ten_manager/src/solver/display.lp",
@@ -202,7 +162,6 @@ if (ten_enable_ten_manager) {
 
     deps = [
       "//core/src/ten_rust:ten_rust_static_lib",
-      "//third_party/clingo",
     ]
 
     if (ten_manager_enable_frontend) {
@@ -225,10 +184,6 @@ if (ten_enable_ten_manager) {
 
     tman_output = get_target_outputs(":tman")
 
-    if (is_win) {
-      use_shared_lib = true
-    }
-
     resources = []
     if (is_win) {
       resources += [ "${tman_output[0]}=>bin/tman.exe" ]
@@ -236,28 +191,9 @@ if (ten_enable_ten_manager) {
       resources += [ "${tman_output[0]}=>bin/tman" ]
     }
 
-    if (use_shared_lib) {
-      lib_dest_folder = "lib"
-      if (is_win) {
-        # In Windows, all .dll used by the executable must be in the same folder.
-        lib_dest_folder = "bin"
-      }
-
-      foreach(lib, clingo_output_libs) {
-        libname = get_path_info(rebase_path(lib), "file")
-        resources += [ "${lib}=>${lib_dest_folder}/${libname}" ]
-      }
-    }
-
     deps = [
       ":tman",
-      "//third_party/clingo",
     ]
-
-    if (use_shared_lib) {
-      # Copy relevant resources files.
-      # deps += [ ":copy_clingo_config_files" ]
-    }
   }
 
   if (ten_enable_cargo_clean) {

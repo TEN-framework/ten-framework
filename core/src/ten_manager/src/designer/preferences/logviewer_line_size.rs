@@ -28,13 +28,16 @@ pub struct UpdateLogviewerLineSizeRequestPayload {
 pub async fn get_logviewer_line_size_endpoint(
     state: web::Data<Arc<DesignerState>>,
 ) -> Result<impl Responder, actix_web::Error> {
-    let logviewer_line_size =
-        state.tman_config.read().await.designer.logviewer_line_size;
+    let logviewer_line_size = state.tman_config.read().await.designer.logviewer_line_size;
 
-    let response_data =
-        GetLogviewerLineSizeResponseData { logviewer_line_size };
-    let response =
-        ApiResponse { status: Status::Ok, data: response_data, meta: None };
+    let response_data = GetLogviewerLineSizeResponseData {
+        logviewer_line_size,
+    };
+    let response = ApiResponse {
+        status: Status::Ok,
+        data: response_data,
+        meta: None,
+    };
 
     Ok(HttpResponse::Ok().json(response))
 }
@@ -53,13 +56,16 @@ pub async fn update_logviewer_line_size_endpoint(
     let mut tman_config = state.tman_config.write().await;
 
     // Update logviewer_line_size field.
-    tman_config.designer.logviewer_line_size =
-        request_payload.logviewer_line_size;
+    tman_config.designer.logviewer_line_size = request_payload.logviewer_line_size;
 
     // Save to config file.
     save_config_to_file(&mut tman_config)?;
 
-    let response = ApiResponse { status: Status::Ok, data: (), meta: None };
+    let response = ApiResponse {
+        status: Status::Ok,
+        data: (),
+        meta: None,
+    };
 
     Ok(HttpResponse::Ok().json(response))
 }

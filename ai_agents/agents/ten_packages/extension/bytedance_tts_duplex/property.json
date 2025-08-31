@@ -1,0 +1,9 @@
+{
+    "dump": false,
+    "dump_path": "./",
+    "params": {
+        "app_id": "${env:BYTEDANCE_TTS_APPID|}",
+        "token": "${env:BYTEDANCE_TTS_TOKEN|}",
+        "speaker": "zh_female_shuangkuaisisi_moon_bigtts"
+    }
+}

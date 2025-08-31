@@ -25,7 +25,7 @@ import { Separator } from "@/components/ui/separator";
 import { resetNodesAndEdgesByGraphs } from "@/flow/graph";
 import { calcAbbreviatedBaseDir, cn } from "@/lib/utils";
 import { useAppStore, useFlowStore } from "@/store";
-import type { IGraph } from "@/types/graphs";
+import type { GraphInfo } from "@/types/graphs";
 
 export const GraphSelector = (props: { className?: string }) => {
   const { className } = props;
@@ -78,18 +78,25 @@ export const GraphSelector = (props: { className?: string }) => {
       return;
     }
     const nextDisplayedNodes = nodes.filter((node) =>
-      selectedGraphs.some((graph) => graph.uuid === node.data.graph.uuid)
+      selectedGraphs.some(
+        (graph) => graph.graph_id === node.data.graph.graph_id
+      )
     );
     const nextDisplayedEdges = edges.filter((edge) =>
-      selectedGraphs.some((graph) => graph.uuid === edge.data?.graph.uuid)
+      selectedGraphs.some(
+        (graph) => graph.graph_id === edge.data?.graph.graph_id
+      )
     );
     setDisplayedNodes(nextDisplayedNodes);
     setDisplayedEdges(nextDisplayedEdges);
   }, [nodes, edges, selectedGraphs, setDisplayedEdges, setDisplayedNodes]);
 
-  if (!graphs) {
-    return null;
-  }
+  React.useEffect(() => {
+    if (isGraphError) {
+      console.error("Error loading graphs:", isGraphError);
+      toast.error("Error loading graphs");
+    }
+  }, [isGraphError]);
 
   return (
     <Card
@@ -113,7 +120,7 @@ export const GraphSelector = (props: { className?: string }) => {
               ? "Error loading graphs"
               : t("graph.selected-sum-count", {
                   count: selectedGraphs?.length || 0,
-                  sum: graphs.length,
+                  sum: graphs?.length,
                 })}
         </CardDescription>
         <CardAction className="flex justify-end">
@@ -147,13 +154,13 @@ export const GraphSelector = (props: { className?: string }) => {
           }
         )}
       >
-        <GraphList graphs={graphs} />
+        {graphs && <GraphList graphs={graphs} />}
       </CardContent>
     </Card>
   );
 };
 
-const GraphList = (props: { graphs: IGraph[] }) => {
+const GraphList = (props: { graphs: GraphInfo[] }) => {
   const [isLoading, setIsLoading] = React.useState(false);
 
   const { mutate: mutateGraphs } = useGraphs();
@@ -166,7 +173,7 @@ const GraphList = (props: { graphs: IGraph[] }) => {
     removeSelectedGraphs,
   } = useAppStore();
 
-  const groupedGraphs: { standalone: IGraph[]; [x: string]: IGraph[] } =
+  const groupedGraphs: { standalone: GraphInfo[]; [x: string]: GraphInfo[] } =
     props.graphs.reduce(
       (acc, graph) => {
         const baseDir = graph.base_dir || "standalone";
@@ -176,7 +183,7 @@ const GraphList = (props: { graphs: IGraph[] }) => {
         acc[baseDir].push(graph);
         return acc;
       },
-      {} as { standalone: IGraph[]; [x: string]: IGraph[] }
+      {} as { standalone: GraphInfo[]; [x: string]: GraphInfo[] }
     );
 
   return (
@@ -218,13 +225,15 @@ const GraphList = (props: { graphs: IGraph[] }) => {
             </div>
             {graphs.map((graph) => (
               <div
-                key={graph.uuid}
+                key={graph.graph_id}
                 className={cn("flex items-center gap-3", "group relative")}
               >
                 <Checkbox
-                  id={`graph-selector-${graph.uuid}`}
+                  id={`graph-selector-${graph.graph_id}`}
                   disabled={isLoading}
-                  checked={selectedGraphs?.some((g) => g.uuid === graph.uuid)}
+                  checked={selectedGraphs?.some(
+                    (g) => g.graph_id === graph.graph_id
+                  )}
                   onCheckedChange={(checked) => {
                     if (checked) {
                       appendSelectedGraphs([graph]);
@@ -234,7 +243,7 @@ const GraphList = (props: { graphs: IGraph[] }) => {
                   }}
                 />
                 <Label
-                  htmlFor={`graph-selector-${graph.uuid}`}
+                  htmlFor={`graph-selector-${graph.graph_id}`}
                   className="w-full"
                 >
                   <span
@@ -274,7 +283,7 @@ const GraphList = (props: { graphs: IGraph[] }) => {
                         setIsLoading(true);
                         await postGraphsAutoStart({
                           auto_start: !graph.auto_start,
-                          graph_id: graph.uuid,
+                          graph_id: graph.graph_id,
                         });
                         await mutateGraphs();
                         toast.success(t("graph.change-auto-start-success"), {

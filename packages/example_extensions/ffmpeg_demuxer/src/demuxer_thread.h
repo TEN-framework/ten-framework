@@ -20,7 +20,7 @@ class demuxer_thread_t {
  public:
   demuxer_thread_t(ten::ten_env_proxy_t *ten_env_proxy,
                    std::unique_ptr<ten::cmd_t> start_cmd,
-                   extension_t *extension, std::string &input_stream_loc);
+                   extension_t *extension, std::string input_stream_loc);
 
   ~demuxer_thread_t();
 
@@ -42,12 +42,14 @@ class demuxer_thread_t {
   friend class demuxer_t;
   friend void *demuxer_thread_main(void *self_);
 
+  void return_error_result_to_prepare_cmd();
+  void return_success_result_to_prepare_cmd();
+
   void send_video_eof();
   void send_audio_eof();
-  void reply_to_start_cmd(bool success);
   bool create_demuxer();
   void wait_to_start_demuxing();
-  void notify_completed(bool success = true);
+  void send_complete_cmd(bool complete_status = true);
 
   ten::ten_env_proxy_t *ten_env_proxy_;
   ten::extension_t *extension_;
@@ -59,7 +61,8 @@ class demuxer_thread_t {
   ten_event_t *event_for_start_demuxing;
 
   std::string input_stream_loc_;
-  std::unique_ptr<ten::cmd_t> start_cmd_;
+
+  std::unique_ptr<ten::cmd_t> prepare_cmd_;
 };
 
 }  // namespace ffmpeg_extension

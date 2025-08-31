@@ -37,11 +37,11 @@ pub struct LogFileContentStream {
 
 impl LogFileContentStream {
     /// Create a new FileContentStream.
-    fn new(
-        content_rx: Receiver<Result<LogLineInfo>>,
-        stop_tx: oneshot::Sender<()>,
-    ) -> Self {
-        Self { content_rx, stop_tx: Some(stop_tx) }
+    fn new(content_rx: Receiver<Result<LogLineInfo>>, stop_tx: oneshot::Sender<()>) -> Self {
+        Self {
+            content_rx,
+            stop_tx: Some(stop_tx),
+        }
     }
 
     /// Get the next chunk of text from the file.
@@ -95,8 +95,7 @@ fn is_same_file(a: &Metadata, b: &Metadata) -> bool {
     }
     #[cfg(windows)]
     {
-        a.volume_serial_number() == b.volume_serial_number()
-            && a.file_index() == b.file_index()
+        a.volume_serial_number() == b.volume_serial_number() && a.file_index() == b.file_index()
     }
 }
 
@@ -187,7 +186,10 @@ async fn watch_log_file_task(
         // Process each line.
         let metadata = process_log_line(&line, &mut graph_resources_log);
 
-        let log_line_info = LogLineInfo { line: line.clone(), metadata };
+        let log_line_info = LogLineInfo {
+            line: line.clone(),
+            metadata,
+        };
 
         let _ = content_tx.send(Ok(log_line_info)).await;
         line.clear(); // Clear for the next line.
@@ -221,8 +223,23 @@ async fn watch_log_file_task(
                         }
                     }
                     Err(e) => {
-                        // Cannot get metadata, skip this round.
+                        // Cannot get metadata for the path. This can happen if the
+                        // file was removed (e.g. temp dir cleaned up on Windows).
                         eprintln!("({}) Error getting metadata: {e}", path.display());
+
+                        // If the path is gone for longer than the timeout, stop.
+                        if e.kind() == std::io::ErrorKind::NotFound
+                            && Instant::now().duration_since(last_activity)
+                                > options.timeout
+                        {
+                            eprintln!(
+                                "({}) File missing for more than timeout, stopping watcher",
+                                path.display()
+                            );
+                            break;
+                        }
+
+                        // Otherwise, try again on next interval.
                         continue;
                     }
                 }
@@ -232,6 +249,16 @@ async fn watch_log_file_task(
                     Ok(m) => m.len(),
                     Err(e) => {
                         eprintln!("({}) Error getting metadata: {e}", path.display());
+
+                        // If we cannot query the file handle's metadata, and we
+                        // have exceeded the timeout since last activity, stop.
+                        if Instant::now().duration_since(last_activity)
+                            > options.timeout
+                        {
+                            eprintln!("({}) Timeout reached while file metadata unavailable, stopping watcher", path.display());
+                            break;
+                        }
+
                         continue;
                     }
                 };

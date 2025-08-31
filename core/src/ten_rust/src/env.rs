@@ -22,7 +22,10 @@ pub fn get_env() -> Result<EnvInfo> {
     let current_arch = Arch::from_str(std::env::consts::ARCH)?;
 
     // Create response object
-    let env_info = EnvInfo { os: current_os, arch: current_arch };
+    let env_info = EnvInfo {
+        os: current_os,
+        arch: current_arch,
+    };
 
     Ok(env_info)
 }

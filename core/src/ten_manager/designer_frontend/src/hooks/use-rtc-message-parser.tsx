@@ -25,6 +25,7 @@ export function useRTCMessageParser(
 ) {
   const messageCache = useRef<Record<string, TextDataChunk[]>>({});
   // @ts-expect-error-next-line
+  // biome-ignore lint/correctness/noUnusedFunctionParameters: <ignore>
   useClientEvent(client, "stream-message", (uid: UID, payload: Uint8Array) => {
     // Handle incoming stream messages
     const decoded = new TextDecoder("utf-8").decode(payload);
@@ -38,6 +39,7 @@ export function useRTCMessageParser(
       .join("");
   };
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <ignore>
   const handleChunk = useCallback(
     (formattedChunk: string) => {
       try {

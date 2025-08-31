@@ -10,33 +10,29 @@ import type { z } from "zod";
 import { ENDPOINT_GRAPH_UI, ENDPOINT_GRAPHS } from "@/api/endpoints";
 import { ENDPOINT_METHOD } from "@/api/endpoints/constant";
 import { getTanstackQueryClient, makeAPIRequest } from "@/api/services/utils";
-
 import type {
   AddConnectionPayloadSchema,
   AddNodePayloadSchema,
   DeleteConnectionPayloadSchema,
   DeleteNodePayloadSchema,
+  Graph,
+  GraphInfo,
   GraphUiNodeGeometrySchema,
   SetGraphUiPayloadSchema,
   UpdateNodePropertyPayloadSchema,
 } from "@/types/graphs";
 
-export const retrieveGraphNodes = async (graphId: string) => {
-  const template = ENDPOINT_GRAPHS.nodes[ENDPOINT_METHOD.POST];
-  const req = makeAPIRequest(template, {
-    body: { graph_id: graphId },
-  });
-  const res = await req;
-  return template.responseSchema.parse(res).data;
-};
-
 export const retrieveGraphConnections = async (graphId: string) => {
-  const template = ENDPOINT_GRAPHS.connections[ENDPOINT_METHOD.POST];
+  const template = ENDPOINT_GRAPHS.graphs[ENDPOINT_METHOD.POST];
   const req = makeAPIRequest(template, {
     body: { graph_id: graphId },
   });
   const res = await req;
-  return template.responseSchema.parse(res).data;
+  const data = template.responseSchema.parse(res).data;
+
+  // Find the graph with matching graph_id and return its connections
+  const targetGraph = data.find((graph) => graph.graph_id === graphId);
+  return targetGraph?.graph.connections || [];
 };
 
 export const retrieveGraphs = async () => {
@@ -45,7 +41,20 @@ export const retrieveGraphs = async () => {
     body: {},
   });
   const res = await req;
-  return template.responseSchema.parse(res).data;
+
+  const resp = await template.responseSchema.parseAsync(res);
+
+  // todo: need to support selector & subgraph
+  const filtered = resp.data.map((item) => ({
+    ...item,
+    graph: {
+      ...item.graph,
+      nodes:
+        item.graph.nodes?.filter((node) => node.type === "extension") || [],
+    } as Graph,
+  })) as GraphInfo[];
+
+  return filtered;
 };
 
 export const useGraphs = () => {

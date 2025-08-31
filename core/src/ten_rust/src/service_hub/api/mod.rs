@@ -25,8 +25,8 @@ pub fn configure_api_route(cfg: &mut web::ServiceConfig) {
                     "version": version
                 })))
             })))
-            .service(web::resource("/log-path").route(web::get().to(
-                move || async move {
+            .service(
+                web::resource("/log-path").route(web::get().to(move || async move {
                     let log_path = unsafe {
                         let c_str = CStr::from_ptr(ten_get_global_log_path());
                         c_str.to_string_lossy().into_owned()
@@ -35,8 +35,8 @@ pub fn configure_api_route(cfg: &mut web::ServiceConfig) {
                     HttpResponse::Ok().json(web::Json(serde_json::json!({
                         "log_path": log_path
                     })))
-                },
-            ))),
+                })),
+            ),
     );
 }
 

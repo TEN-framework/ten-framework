@@ -33,7 +33,8 @@ class test_extension_1 : public ten::extension_t {
       rc = ten_env.send_cmd(
           std::move(fetch_cmd),
           [](ten::ten_env_t &ten_env,
-             std::unique_ptr<ten::cmd_result_t> cmd_result, ten::error_t *err) {
+             std::unique_ptr<ten::cmd_result_t> cmd_result,
+             ten::error_t * /* err */) {
             if (cmd_result->get_status_code() == TEN_STATUS_CODE_OK) {
               auto detail = cmd_result->get_property_string("detail");
               EXPECT_EQ(detail, "hola");
@@ -63,15 +64,15 @@ class extension_tester_1 : public ten::extension_tester_t {
     // Send the first command to the extension.
     auto new_cmd = ten::cmd_t::create("hello_world");
 
-    ten_env.send_cmd(
-        std::move(new_cmd),
-        [](ten::ten_env_tester_t &ten_env,
-           std::unique_ptr<ten::cmd_result_t> result, ten::error_t *err) {
-          if (result->get_status_code() == TEN_STATUS_CODE_OK) {
-            auto detail = result->get_property_string("detail");
-            EXPECT_EQ(detail, "hello world, too");
-          }
-        });
+    ten_env.send_cmd(std::move(new_cmd),
+                     [](ten::ten_env_tester_t & /* ten_env */,
+                        std::unique_ptr<ten::cmd_result_t> result,
+                        ten::error_t * /* err */) {
+                       if (result->get_status_code() == TEN_STATUS_CODE_OK) {
+                         auto detail = result->get_property_string("detail");
+                         EXPECT_EQ(detail, "hello world, too");
+                       }
+                     });
 
     ten_env.on_start_done();
   }

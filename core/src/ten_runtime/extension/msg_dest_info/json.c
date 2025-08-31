@@ -14,6 +14,7 @@
 #include "include_internal/ten_runtime/extension/msg_dest_info/msg_dest_info.h"
 #include "include_internal/ten_runtime/msg_conversion/msg_and_result_conversion.h"
 #include "include_internal/ten_runtime/msg_conversion/msg_conversion_context.h"
+#include "include_internal/ten_utils/lib/json.h"
 #include "ten_utils/container/list.h"
 #include "ten_utils/lib/error.h"
 #include "ten_utils/lib/json.h"
@@ -24,8 +25,8 @@
 bool ten_msg_dest_info_to_json(ten_msg_dest_info_t *self,
                                ten_extension_info_t *src_extension_info,
                                ten_json_t *json, ten_error_t *err) {
-  TEN_ASSERT(self && ten_msg_dest_info_check_integrity(self),
-             "Should not happen.");
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_msg_dest_info_check_integrity(self), "Should not happen.");
   TEN_ASSERT(json, "Should not happen.");
 
   ten_json_object_set_string(json, TEN_STR_NAME,
@@ -70,8 +71,8 @@ bool ten_msg_dest_info_to_json(ten_msg_dest_info_t *self,
                       msg_conversion_iter) {
       ten_msg_conversion_context_t *msg_conversion =
           ten_ptr_listnode_get(msg_conversion_iter.node);
-      TEN_ASSERT(msg_conversion &&
-                     ten_msg_conversion_context_check_integrity(msg_conversion),
+      TEN_ASSERT(msg_conversion, "Should not happen.");
+      TEN_ASSERT(ten_msg_conversion_context_check_integrity(msg_conversion),
                  "Should not happen.");
 
       if (ten_loc_is_equal(&src_extension_info->loc,

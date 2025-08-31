@@ -13,10 +13,11 @@ use super::{manifest::support::ManifestSupport, pkg_type::PkgType, PkgInfo};
 impl PkgInfo {
     pub fn gen_hash_hex(&self) -> String {
         // Get supports or use empty vector if None
-        let supports = self.manifest.supports.as_ref().map_or_else(
-            || &[] as &[ManifestSupport],
-            |supports| supports.as_slice(),
-        );
+        let supports = self
+            .manifest
+            .supports
+            .as_ref()
+            .map_or_else(|| &[] as &[ManifestSupport], |supports| supports.as_slice());
 
         gen_hash_hex(
             &self.manifest.type_and_name.pkg_type,
@@ -48,17 +49,11 @@ pub fn gen_hash_hex(
                 let mut support_obj = serde_json::Map::new();
 
                 if let Some(os) = &support.os {
-                    support_obj.insert(
-                        "os".to_string(),
-                        Value::String(os.to_string()),
-                    );
+                    support_obj.insert("os".to_string(), Value::String(os.to_string()));
                 }
 
                 if let Some(arch) = &support.arch {
-                    support_obj.insert(
-                        "arch".to_string(),
-                        Value::String(arch.to_string()),
-                    );
+                    support_obj.insert("arch".to_string(), Value::String(arch.to_string()));
                 }
 
                 Value::Object(support_obj)
@@ -68,8 +63,8 @@ pub fn gen_hash_hex(
     }
 
     // Serialize JSON to string
-    let json_string = serde_json::to_string(&json_obj)
-        .expect("Failed to serialize JSON for hash generation");
+    let json_string =
+        serde_json::to_string(&json_obj).expect("Failed to serialize JSON for hash generation");
 
     // Calculate hash from JSON string
     let mut hasher = Sha256::new();

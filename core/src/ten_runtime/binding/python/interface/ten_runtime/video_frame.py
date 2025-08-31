@@ -6,10 +6,12 @@
 #
 from enum import IntEnum
 from typing import TypeVar, cast
+
 from libten_runtime_python import (
     _VideoFrame,  # pyright: ignore[reportPrivateUsage]
-    _ten_py_video_frame_register_video_frame_type,  # pyright: ignore[reportPrivateUsage] # noqa: E501
+    _ten_py_video_frame_register_type,  # pyright: ignore[reportPrivateUsage] # noqa: E501
 )
+
 from .msg import Msg
 
 T = TypeVar("T", bound="VideoFrame")
@@ -43,4 +45,4 @@ class VideoFrame(_VideoFrame, Msg):
         return cast("VideoFrame", _VideoFrame.clone(self))
 
 
-_ten_py_video_frame_register_video_frame_type(VideoFrame)
+_ten_py_video_frame_register_type(VideoFrame)

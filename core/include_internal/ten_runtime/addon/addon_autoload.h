@@ -11,6 +11,7 @@
 #include <stdbool.h>
 
 #include "include_internal/ten_runtime/addon/addon.h"
+#include "include_internal/ten_runtime/addon/addon_manager.h"
 #include "ten_utils/lib/error.h"
 
 typedef struct ten_app_t ten_app_t;
@@ -31,7 +32,9 @@ ten_addon_load_all_protocols_and_addon_loaders_from_app_base_dir(
 TEN_RUNTIME_PRIVATE_API bool
 ten_addon_try_load_specific_addon_using_native_addon_loader(
     const char *app_base_dir, TEN_ADDON_TYPE addon_type, const char *addon_name,
-    void *register_ctx, ten_error_t *err);
+    void *register_ctx,
+    ten_addon_manager_on_all_addons_registered_func_t on_all_addons_registered,
+    void *cb_data, ten_error_t *err);
 
 TEN_RUNTIME_PRIVATE_API void
 ten_addon_try_load_specific_addon_using_all_addon_loaders(

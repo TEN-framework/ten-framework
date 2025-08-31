@@ -9,26 +9,21 @@ use std::sync::Arc;
 use actix_web::{web, HttpResponse, Responder};
 use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 use ten_rust::{
-    graph::{
-        connection::GraphConnection, connection::GraphDestination,
-        connection::GraphLoc, connection::GraphMessageFlow, Graph,
-    },
+    graph::{connection::GraphConnection, connection::GraphMessageFlow, Graph},
     pkg_info::message::MsgType,
 };
-use uuid::Uuid;
 
 use crate::{
     designer::{
         response::{ApiResponse, ErrorResponse, Status},
         DesignerState,
     },
-    graph::{
-        graphs_cache_find_by_id_mut,
-        update_graph_connections_in_property_all_fields,
-    },
-    pkg_info::belonging_pkg_info_find_by_graph_info_mut,
+    fs::json::patch_property_json_file,
+    graph::graphs_cache_find_by_id_mut,
+    pkg_info::belonging_pkg_info_find_by_graph_info,
 };
 
 #[derive(Serialize, Deserialize)]
@@ -69,8 +64,7 @@ async fn graph_delete_connection(
 
     // Find the source node's connection in the connections list.
     let connection_idx = connections.iter().position(|conn| {
-        conn.loc.app == src_app
-            && (conn.loc.extension.as_ref() == Some(&src_extension))
+        conn.loc.app == src_app && (conn.loc.extension.as_ref() == Some(&src_extension))
     });
 
     if let Some(idx) = connection_idx {
@@ -87,15 +81,15 @@ async fn graph_delete_connection(
         // If the message flows array exists, find and remove the specific
         // message flow.
         if let Some(flows) = message_flows {
-            if let Some(flow_idx) =
-                flows.iter().position(|flow| flow.name == msg_name)
+            if let Some(flow_idx) = flows
+                .iter()
+                .position(|flow| flow.name.as_ref() == Some(&msg_name))
             {
                 let flow = &mut flows[flow_idx];
 
                 // Find the destination to remove.
                 let dest_idx = flow.dest.iter().position(|dest| {
-                    dest.loc.app == dest_app
-                        && dest.loc.extension.as_ref() == Some(&dest_extension)
+                    dest.loc.app == dest_app && dest.loc.extension.as_ref() == Some(&dest_extension)
                 });
 
                 if let Some(dest_idx) = dest_idx {
@@ -153,14 +147,13 @@ pub async fn delete_graph_connection_endpoint(
     state: web::Data<Arc<DesignerState>>,
 ) -> Result<impl Responder, actix_web::Error> {
     // Get a write lock on the state since we need to modify the graph.
-    let mut pkgs_cache = state.pkgs_cache.write().await;
+    let pkgs_cache = state.pkgs_cache.read().await;
     let mut graphs_cache = state.graphs_cache.write().await;
+    let old_graphs_cache = graphs_cache.clone();
 
     // Get the specified graph from graphs_cache.
-    let graph_info = match graphs_cache_find_by_id_mut(
-        &mut graphs_cache,
-        &request_payload.graph_id,
-    ) {
+    let graph_info = match graphs_cache_find_by_id_mut(&mut graphs_cache, &request_payload.graph_id)
+    {
         Some(graph_info) => graph_info,
         None => {
             let error_response = ErrorResponse {
@@ -192,72 +185,13 @@ pub async fn delete_graph_connection_endpoint(
         return Ok(HttpResponse::BadRequest().json(error_response));
     }
 
-    if let Ok(Some(pkg_info)) =
-        belonging_pkg_info_find_by_graph_info_mut(&mut pkgs_cache, graph_info)
-    {
+    if let Ok(Some(pkg_info)) = belonging_pkg_info_find_by_graph_info(&pkgs_cache, graph_info) {
         // Update property.json file to remove the connection.
-        if let Some(property) = &mut pkg_info.property {
-            // Create a GraphConnection representing what we
-            // want to remove.
-            let mut connection_to_remove = GraphConnection {
-                loc: GraphLoc {
-                    app: request_payload.src_app.clone(),
-                    extension: Some(request_payload.src_extension.clone()),
-                    subgraph: None,
-                    selector: None,
-                },
-                cmd: None,
-                data: None,
-                audio_frame: None,
-                video_frame: None,
-            };
-
-            // Create destination for the message flow.
-            let dest_to_remove = GraphDestination {
-                loc: GraphLoc {
-                    app: request_payload.dest_app.clone(),
-                    extension: Some(request_payload.dest_extension.clone()),
-                    subgraph: None,
-                    selector: None,
-                },
-                msg_conversion: None,
-            };
-
-            // Create the message flow with destination.
-            let message_flow = GraphMessageFlow::new(
-                request_payload.msg_name.clone(),
-                vec![dest_to_remove],
-                vec![],
-            );
-
-            // Set the appropriate message type field.
-            match request_payload.msg_type {
-                MsgType::Cmd => {
-                    connection_to_remove.cmd = Some(vec![message_flow]);
-                }
-                MsgType::Data => {
-                    connection_to_remove.data = Some(vec![message_flow]);
-                }
-                MsgType::AudioFrame => {
-                    connection_to_remove.audio_frame = Some(vec![message_flow]);
-                }
-                MsgType::VideoFrame => {
-                    connection_to_remove.video_frame = Some(vec![message_flow]);
-                }
-            }
-
-            let connections_to_remove = vec![connection_to_remove];
-
-            // Write the updated property_all_fields map to
-            // property.json.
-            if let Err(e) = update_graph_connections_in_property_all_fields(
-                &pkg_info.url,
-                &mut property.all_fields,
-                graph_info.name.as_ref().unwrap(),
-                None,
-                Some(&connections_to_remove),
-                None,
-            ) {
+        if let Some(property) = &pkg_info.property {
+            // Update property.json file.
+            if let Err(e) =
+                patch_property_json_file(&pkg_info.url, property, &graphs_cache, &old_graphs_cache)
+            {
                 eprintln!("Warning: Failed to update property.json file: {e}");
             }
         }
@@ -287,12 +221,11 @@ pub fn find_connection_with_extensions<'a>(
     })
 }
 
-pub fn find_flow_with_name(
-    flows: &[GraphMessageFlow],
-    name: &str,
-) -> Option<usize> {
+pub fn find_flow_with_name(flows: &[GraphMessageFlow], name: &str) -> Option<usize> {
     // Find flow with matching name.
-    flows.iter().position(|flow| flow.name == name)
+    flows
+        .iter()
+        .position(|flow| flow.name.as_deref() == Some(name))
 }
 
 pub fn find_dest_with_extension(

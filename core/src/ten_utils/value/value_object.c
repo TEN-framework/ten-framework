@@ -11,8 +11,9 @@
 #include "ten_utils/value/value_kv.h"
 
 ten_value_t *ten_value_object_peek(ten_value_t *self, const char *key) {
-  TEN_ASSERT(self && ten_value_check_integrity(self) && key,
-             "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_value_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(key, "Invalid argument.");
 
   if (!ten_value_is_object(self)) {
     TEN_ASSERT(0, "Invalid argument.");
@@ -21,7 +22,8 @@ ten_value_t *ten_value_object_peek(ten_value_t *self, const char *key) {
 
   ten_list_foreach (&self->content.object, iter) {
     ten_value_kv_t *kv = ten_ptr_listnode_get(iter.node);
-    TEN_ASSERT(kv && ten_value_kv_check_integrity(kv), "Invalid argument.");
+    TEN_ASSERT(kv, "Invalid argument.");
+    TEN_ASSERT(ten_value_kv_check_integrity(kv), "Invalid argument.");
 
     if (ten_string_is_equal_c_str(&kv->key, key)) {
       return kv->value;
@@ -33,8 +35,9 @@ ten_value_t *ten_value_object_peek(ten_value_t *self, const char *key) {
 
 bool ten_value_object_get_bool(ten_value_t *self, const char *key,
                                ten_error_t *err) {
-  TEN_ASSERT(self && ten_value_check_integrity(self) && key,
-             "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_value_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(key, "Invalid argument.");
 
   ten_value_t *v = ten_value_object_peek(self, key);
   if (!v) {
@@ -59,8 +62,9 @@ bool ten_value_object_get_bool(ten_value_t *self, const char *key,
 }
 
 const char *ten_value_object_peek_string(ten_value_t *self, const char *key) {
-  TEN_ASSERT(self && ten_value_check_integrity(self) && key,
-             "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_value_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(key, "Invalid argument.");
 
   ten_value_t *v = ten_value_object_peek(self, key);
   if (!v) {
@@ -76,8 +80,9 @@ const char *ten_value_object_peek_string(ten_value_t *self, const char *key) {
 }
 
 ten_list_t *ten_value_object_peek_array(ten_value_t *self, const char *key) {
-  TEN_ASSERT(self && ten_value_check_integrity(self) && key,
-             "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_value_check_integrity(self), "Invalid argument.");
+  TEN_ASSERT(key, "Invalid argument.");
 
   ten_value_t *v = ten_value_object_peek(self, key);
   if (!v) {
@@ -107,7 +112,8 @@ bool ten_value_object_move(ten_value_t *self, const char *key,
 
   ten_list_foreach (&self->content.object, iter) {
     ten_value_kv_t *kv = ten_ptr_listnode_get(iter.node);
-    TEN_ASSERT(kv && ten_value_kv_check_integrity(kv), "Invalid argument.");
+    TEN_ASSERT(kv, "Invalid argument.");
+    TEN_ASSERT(ten_value_kv_check_integrity(kv), "Invalid argument.");
 
     if (ten_string_is_equal_c_str(&kv->key, key)) {
       found = true;

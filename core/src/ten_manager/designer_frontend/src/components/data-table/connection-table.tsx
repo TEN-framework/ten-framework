@@ -51,7 +51,7 @@ import { identifier2data, type TCustomNodeData } from "@/lib/identifier";
 import { cn } from "@/lib/utils";
 import { useDialogStore, useFlowStore } from "@/store";
 import type { TCustomEdge } from "@/types/flow";
-import { EConnectionType, type IGraph } from "@/types/graphs";
+import { EConnectionType, type GraphInfo } from "@/types/graphs";
 
 export type TConnection = {
   id: string;
@@ -59,7 +59,7 @@ export type TConnection = {
   target: string;
   type?: EConnectionType;
   _meta: TCustomEdge;
-  graph?: IGraph;
+  graph?: GraphInfo;
 };
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -188,7 +188,7 @@ export const ActionDropdownMenu = (props: { edge: TCustomEdge }) => {
                 }
                 try {
                   await postDeleteConnection({
-                    graph_id: edge.data.graph.uuid,
+                    graph_id: edge.data.graph.graph_id,
                     src_app: edge.data.app,
                     src_extension: edge.source,
                     msg_type: edge.data.connectionType,

@@ -47,13 +47,7 @@ pub async fn upload_package(
 
     match parsed_registry_url.scheme() {
         "file" => {
-            local::upload_package(
-                &default_registry_url,
-                package_file_path,
-                pkg_info,
-                out,
-            )
-            .await
+            local::upload_package(&default_registry_url, package_file_path, pkg_info, out).await
         }
         "https" => {
             remote::upload_package(
@@ -81,8 +75,7 @@ pub async fn get_package(
     temp_path: &mut NamedTempFile,
     out: Arc<Box<dyn TmanOutput>>,
 ) -> Result<()> {
-    let parsed_url =
-        url::Url::parse(url).map_err(|_| anyhow!("Invalid URL: {}", url))?;
+    let parsed_url = url::Url::parse(url).map_err(|_| anyhow!("Invalid URL: {}", url))?;
 
     match parsed_url.scheme() {
         "file" => {
@@ -208,8 +201,7 @@ pub async fn get_package_list(
 
     // Sort packages by version in descending order (newer versions first).
     let mut sorted_results = results;
-    sorted_results
-        .sort_by(|a, b| b.basic_info.version.cmp(&a.basic_info.version));
+    sorted_results.sort_by(|a, b| b.basic_info.version.cmp(&a.basic_info.version));
 
     Ok(sorted_results)
 }
@@ -302,15 +294,7 @@ pub async fn delete_package(
 
     match parsed_registry_url.scheme() {
         "file" => {
-            local::delete_package(
-                &default_registry_url,
-                pkg_type,
-                name,
-                version,
-                hash,
-                out,
-            )
-            .await
+            local::delete_package(&default_registry_url, pkg_type, name, version, hash, out).await
         }
         "https" => {
             remote::delete_package(

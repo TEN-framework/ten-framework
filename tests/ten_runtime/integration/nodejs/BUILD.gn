@@ -15,6 +15,7 @@ group("nodejs") {
     "http_server_nodejs",
     "mix_python_ext_nodejs",
     "send_audio_frame_nodejs",
+    "send_cmd_ex_nodejs",
     "send_cmd_nodejs",
     "send_data_nodejs",
     "send_video_frame_nodejs",
@@ -22,6 +23,7 @@ group("nodejs") {
     "standalone_test_nodejs",
     "standalone_test_nodejs_2",
     "standalone_test_nodejs_3",
+    "start_graph_and_set_dests_from_new_graph_nodejs",
     "websocket_server_nodejs",
   ]
 

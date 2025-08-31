@@ -54,32 +54,11 @@ class muxer_extension_t : public extension_t {
  public:
   explicit muxer_extension_t(const char *name) : extension_t(name) {}
 
-  void on_start(TEN_UNUSED ten_env_t &ten_env) override {
-    ten_env.on_start_done();
-  }
-
   void on_cmd(ten_env_t &ten_env, std::unique_ptr<ten::cmd_t> cmd) override {
     const auto cmd_name = cmd->get_name();
 
     if (std::string(cmd_name) == "start_muxer") {
-      TEN_LOGE("muxer_extension_t::on_cmd, %s",
-               cmd->get_property_to_json().c_str());
-
-      auto settings = read_settings(*cmd);
-      auto output = cmd->get_property_string("output_stream");
-      if (output.empty()) {
-        output = "ten_packages/extension/ffmpeg_muxer/test.mp4";
-      }
-
-      auto *ten_env_proxy = ten::ten_env_proxy_t::create(ten_env);
-
-      // Start the muxer thread. ffmpeg is living in its own thread.
-      muxer_thread_ = new muxer_thread_t(ten_env_proxy, settings, output);
-      muxer_thread_->start();
-      muxer_thread_->wait_for_start();
-
-      auto cmd_result = ten::cmd_result_t::create(TEN_STATUS_CODE_OK, *cmd);
-      ten_env.return_result(std::move(cmd_result));
+      start_muxer(ten_env, std::move(cmd));
     }
   }
 
@@ -104,6 +83,27 @@ class muxer_extension_t : public extension_t {
 
  private:
   muxer_thread_t *muxer_thread_{};
+
+  void start_muxer(ten_env_t &ten_env, std::unique_ptr<ten::cmd_t> cmd) {
+    TEN_LOGE("muxer_extension_t::on_cmd, %s",
+             cmd->get_property_to_json().c_str());
+
+    auto settings = read_settings(*cmd);
+    auto output_stream = cmd->get_property_string("output_stream");
+    if (output_stream.empty()) {
+      output_stream = "ten_packages/extension/ffmpeg_muxer/test.mp4";
+    }
+
+    auto *ten_env_proxy = ten::ten_env_proxy_t::create(ten_env);
+
+    // Start the muxer thread. ffmpeg is living in its own thread.
+    muxer_thread_ = new muxer_thread_t(ten_env_proxy, settings, output_stream);
+    muxer_thread_->start();
+    muxer_thread_->wait_for_start();
+
+    auto cmd_result = ten::cmd_result_t::create(TEN_STATUS_CODE_OK, *cmd);
+    ten_env.return_result(std::move(cmd_result));
+  }
 };
 
 }  // namespace ffmpeg_extension

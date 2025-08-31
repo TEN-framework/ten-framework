@@ -168,6 +168,7 @@
     "apps": {
       "manager": "應用程式管理器",
       "tableCaption": "已載入的應用程式列表。",
+      "emptyPlaceholder": "未載入應用程式。",
       "baseDir": "基礎目錄",
       "run": "執行應用程式",
       "runScript": "執行腳本",
@@ -187,7 +188,13 @@
       "appNameDescription": "輸入應用程式的名稱。",
       "baseDirDescription": "選擇應用程式的基礎目錄。",
       "run_opts": "選項",
-      "run_with_agent": "使用 TEN Agent 執行"
+      "run_with_agent": "使用 TEN Agent 執行",
+      "status": "狀態",
+      "noRunningScripts": "無運行中的腳本",
+      "runningScriptsCaption": "運行中腳本的列表。",
+      "loadedApps": "已載入應用程式",
+      "runningScripts": "運行中腳本",
+      "runningScriptsWithCount": "{{count}} 個運行中腳本"
     },
     "graph": {
       "title": "節點",
@@ -315,6 +322,7 @@
   },
   "statusBar": {
     "appsLoadedWithCount": "已載入 {{count}} 個應用程式",
+    "scriptsRunningWithCount": "正在運行 {{count}} 個腳本",
     "appsError": "獲取應用程式失敗",
     "workspace": {
       "title": "目前工作區",
@@ -371,6 +379,28 @@
       "disable-auto-start": "停用自動啟動",
       "change-auto-start-success": "自動啟動設定更新成功",
       "change-auto-start-failed": "自動啟動設定更新失敗"
+    }
+  },
+  "ui": {
+    "autoForm": {
+      "rootLevel": "根層級",
+      "addDynamicField": "新增動態欄位",
+      "location": "位置",
+      "selectLocation": "選擇位置",
+      "fieldName": "欄位名稱",
+      "enterFieldName": "輸入欄位名稱（例如：dump_size、model_name）",
+      "fieldType": "欄位類型",
+      "string": "字串",
+      "number": "數字",
+      "object": "物件（JSON）",
+      "defaultValue": "預設值",
+      "enterDefaultValue": "輸入預設值",
+      "addField": "新增欄位",
+      "dynamicFields": "動態欄位",
+      "path": "路徑",
+      "root": "根",
+      "type": "類型",
+      "noDynamicFields": "尚未定義動態欄位。請在上方新增您的第一個欄位。"
     }
   }
 }

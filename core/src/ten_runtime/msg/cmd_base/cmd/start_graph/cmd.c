@@ -335,42 +335,62 @@ static void ten_cmd_start_graph_collect_all_connectable_apps(
     ten_shared_ptr_t *self, ten_app_t *app,
     ten_extension_info_t *extension_info, ten_list_t *next,
     bool from_src_point_of_view) {
-  TEN_ASSERT(self && ten_cmd_base_check_integrity(self) &&
-                 ten_msg_get_type(self) == TEN_MSG_TYPE_CMD_START_GRAPH &&
-                 app && next,
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_cmd_base_check_integrity(self), "Should not happen.");
+  TEN_ASSERT(ten_msg_get_type(self) == TEN_MSG_TYPE_CMD_START_GRAPH,
              "Should not happen.");
+  TEN_ASSERT(app, "Should not happen.");
+  TEN_ASSERT(next, "Should not happen.");
 
-  ten_list_foreach (&extension_info->msg_dest_info.cmd, iter_cmd) {
-    ten_msg_dest_info_t *cmd_dest =
-        ten_shared_ptr_get_data(ten_smart_ptr_listnode_get(iter_cmd.node));
+  ten_hashtable_foreach(&extension_info->msg_dest_info.cmd, iter) {
+    ten_hashhandle_t *hh = iter.node;
+    ten_msg_dest_info_t *msg_dest = CONTAINER_OF_FROM_OFFSET(
+        hh, extension_info->msg_dest_info.cmd.hh_offset);
+    TEN_ASSERT(msg_dest, "Should not happen.");
+    TEN_ASSERT(ten_msg_dest_info_check_integrity(msg_dest),
+               "Should not happen.");
+
     ten_cmd_start_graph_collect_connectable_apps(self, app, extension_info,
-                                                 &cmd_dest->dest, next,
+                                                 &msg_dest->dest, next,
                                                  from_src_point_of_view);
   }
 
-  ten_list_foreach (&extension_info->msg_dest_info.video_frame,
-                    iter_video_frame) {
-    ten_msg_dest_info_t *video_frame_dest = ten_shared_ptr_get_data(
-        ten_smart_ptr_listnode_get(iter_video_frame.node));
+  ten_hashtable_foreach(&extension_info->msg_dest_info.video_frame, iter) {
+    ten_hashhandle_t *hh = iter.node;
+    ten_msg_dest_info_t *msg_dest = CONTAINER_OF_FROM_OFFSET(
+        hh, extension_info->msg_dest_info.video_frame.hh_offset);
+    TEN_ASSERT(msg_dest, "Should not happen.");
+    TEN_ASSERT(ten_msg_dest_info_check_integrity(msg_dest),
+               "Should not happen.");
+
     ten_cmd_start_graph_collect_connectable_apps(self, app, extension_info,
-                                                 &video_frame_dest->dest, next,
+                                                 &msg_dest->dest, next,
                                                  from_src_point_of_view);
   }
 
-  ten_list_foreach (&extension_info->msg_dest_info.audio_frame,
-                    iter_audio_frame) {
-    ten_msg_dest_info_t *audio_frame_dest = ten_shared_ptr_get_data(
-        ten_smart_ptr_listnode_get(iter_audio_frame.node));
+  ten_hashtable_foreach(&extension_info->msg_dest_info.audio_frame, iter) {
+    ten_hashhandle_t *hh = iter.node;
+    ten_msg_dest_info_t *msg_dest = CONTAINER_OF_FROM_OFFSET(
+        hh, extension_info->msg_dest_info.audio_frame.hh_offset);
+    TEN_ASSERT(msg_dest, "Should not happen.");
+    TEN_ASSERT(ten_msg_dest_info_check_integrity(msg_dest),
+               "Should not happen.");
+
     ten_cmd_start_graph_collect_connectable_apps(self, app, extension_info,
-                                                 &audio_frame_dest->dest, next,
+                                                 &msg_dest->dest, next,
                                                  from_src_point_of_view);
   }
 
-  ten_list_foreach (&extension_info->msg_dest_info.data, iter_data) {
-    ten_msg_dest_info_t *data_dest =
-        ten_shared_ptr_get_data(ten_smart_ptr_listnode_get(iter_data.node));
+  ten_hashtable_foreach(&extension_info->msg_dest_info.data, iter) {
+    ten_hashhandle_t *hh = iter.node;
+    ten_msg_dest_info_t *msg_dest = CONTAINER_OF_FROM_OFFSET(
+        hh, extension_info->msg_dest_info.data.hh_offset);
+    TEN_ASSERT(msg_dest, "Should not happen.");
+    TEN_ASSERT(ten_msg_dest_info_check_integrity(msg_dest),
+               "Should not happen.");
+
     ten_cmd_start_graph_collect_connectable_apps(self, app, extension_info,
-                                                 &data_dest->dest, next,
+                                                 &msg_dest->dest, next,
                                                  from_src_point_of_view);
   }
 }
@@ -378,10 +398,12 @@ static void ten_cmd_start_graph_collect_all_connectable_apps(
 // Get the list of the immediate remote apps of the local app.
 void ten_cmd_start_graph_collect_all_immediate_connectable_apps(
     ten_shared_ptr_t *self, ten_app_t *app, ten_list_t *next) {
-  TEN_ASSERT(self && ten_cmd_base_check_integrity(self) &&
-                 ten_msg_get_type(self) == TEN_MSG_TYPE_CMD_START_GRAPH &&
-                 app && next,
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_cmd_base_check_integrity(self), "Should not happen.");
+  TEN_ASSERT(ten_msg_get_type(self) == TEN_MSG_TYPE_CMD_START_GRAPH,
              "Should not happen.");
+  TEN_ASSERT(app, "Should not happen.");
+  TEN_ASSERT(next, "Should not happen.");
 
   ten_list_foreach (ten_cmd_start_graph_get_extensions_info(self), iter) {
     ten_extension_info_t *extension_info =
@@ -558,10 +580,13 @@ ten_list_t
 ten_cmd_start_graph_get_extension_addon_and_instance_name_pairs_of_specified_extension_group(
     ten_shared_ptr_t *self, const char *app_uri, const char *graph_id,
     const char *extension_group_name) {
-  TEN_ASSERT(self && ten_cmd_base_check_integrity(self) &&
-                 ten_msg_get_type(self) == TEN_MSG_TYPE_CMD_START_GRAPH &&
-                 app_uri && graph_id && extension_group_name,
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_cmd_base_check_integrity(self), "Should not happen.");
+  TEN_ASSERT(ten_msg_get_type(self) == TEN_MSG_TYPE_CMD_START_GRAPH,
              "Should not happen.");
+  TEN_ASSERT(app_uri && graph_id && extension_group_name, "Should not happen.");
+  TEN_ASSERT(graph_id && extension_group_name, "Should not happen.");
+  TEN_ASSERT(extension_group_name, "Should not happen.");
 
   ten_list_t result = TEN_LIST_INIT_VAL;
 
@@ -615,9 +640,10 @@ ten_list_t ten_cmd_start_graph_get_requested_extension_names(
   ten_list_foreach (requested_extensions_info, iter) {
     ten_extension_info_t *requested_extension_info =
         ten_shared_ptr_get_data(ten_smart_ptr_listnode_get(iter.node));
-    TEN_ASSERT(requested_extension_info && ten_extension_info_check_integrity(
-                                               requested_extension_info, true),
-               "Should not happen.");
+    TEN_ASSERT(requested_extension_info, "Should not happen.");
+    TEN_ASSERT(
+        ten_extension_info_check_integrity(requested_extension_info, true),
+        "Should not happen.");
 
     ten_string_t *requested_extension_name =
         &requested_extension_info->loc.extension_name;
@@ -633,8 +659,10 @@ ten_list_t ten_cmd_start_graph_get_requested_extension_names(
 bool ten_raw_cmd_start_graph_loop_all_fields(
     ten_msg_t *self, ten_raw_msg_process_one_field_func_t cb, void *user_data,
     ten_error_t *err) {
-  TEN_ASSERT(self && ten_raw_cmd_check_integrity((ten_cmd_t *)self) && cb,
+  TEN_ASSERT(self, "Should not happen.");
+  TEN_ASSERT(ten_raw_cmd_check_integrity((ten_cmd_t *)self),
              "Should not happen.");
+  TEN_ASSERT(cb, "Should not happen.");
 
   for (size_t i = 0; i < ten_cmd_start_graph_fields_info_size; ++i) {
     ten_msg_process_field_func_t process_field =

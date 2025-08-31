@@ -354,7 +354,7 @@ static void ten_engine_post_msg_to_extension_thread(
       // Create a cmd result to inform the sender that the destination extension
       // has been terminated.
       ten_engine_create_cmd_result_and_dispatch(
-          self, msg, TEN_STATUS_CODE_ERROR,
+          self, msg, TEN_STATUS_CODE_ERROR, TEN_STR_DETAIL,
           "The destination extension has been terminated.");
     }
 
@@ -506,7 +506,8 @@ bool ten_engine_dispatch_msg(ten_engine_t *self, ten_shared_ptr_t *msg) {
 void ten_engine_create_cmd_result_and_dispatch(ten_engine_t *self,
                                                ten_shared_ptr_t *origin_cmd,
                                                TEN_STATUS_CODE status_code,
-                                               const char *detail) {
+                                               const char *property_key,
+                                               const char *property_value) {
   TEN_ASSERT(self, "Invalid argument.");
   TEN_ASSERT(ten_engine_check_integrity(self, true), "Invalid argument.");
   TEN_ASSERT(origin_cmd, "Invalid argument.");
@@ -521,9 +522,9 @@ void ten_engine_create_cmd_result_and_dispatch(ten_engine_t *self,
   bool rc = ten_cmd_result_set_final(cmd_result, true, NULL);
   TEN_ASSERT(rc, "Should not happen.");
 
-  if (detail) {
-    ten_msg_set_property(cmd_result, TEN_STR_DETAIL,
-                         ten_value_create_string(detail), NULL);
+  if (property_key && property_value) {
+    ten_msg_set_property(cmd_result, property_key,
+                         ten_value_create_string(property_value), NULL);
   }
 
   ten_engine_dispatch_msg(self, cmd_result);

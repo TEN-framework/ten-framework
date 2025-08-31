@@ -40,7 +40,7 @@ pip install -r requirements.txt
 ## Configuration
 
 The extension can be configured through manifest.json properties:
-- `base_uri`: Bedrock API endpoint
+- `base_url`: Bedrock API endpoint
 - `region`: AWS region for Bedrock
 - `aws_access_key_id`: AWS access key ID
 - `aws_secret_access_key`: AWS secret access key
@@ -54,10 +54,10 @@ The extension implements smart input truncation:
 
 1. Duration-based truncation:
    - Automatically truncates input exceeding 30 seconds
-   
+
 2. Silence-based truncation:
    - Triggers when silence exceeds 2 seconds
-   
+
 3. Manual truncation:
    - Supports user-initiated truncation
 

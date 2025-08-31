@@ -5,10 +5,12 @@
 # Refer to the "LICENSE" file in the root directory for more information.
 #
 from typing import TypeVar, cast
+
 from libten_runtime_python import (
     _Data,  # pyright: ignore[reportPrivateUsage]
-    _ten_py_data_register_data_type,  # pyright: ignore[reportPrivateUsage]
+    _ten_py_data_register_type,  # pyright: ignore[reportPrivateUsage]
 )
+
 from .msg import Msg
 
 T = TypeVar("T", bound="Data")
@@ -26,4 +28,4 @@ class Data(_Data, Msg):
         return cast("Data", _Data.clone(self))
 
 
-_ten_py_data_register_data_type(Data)
+_ten_py_data_register_type(Data)

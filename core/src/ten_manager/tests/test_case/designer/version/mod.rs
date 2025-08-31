@@ -14,9 +14,7 @@ mod tests {
 
     use ten_manager::designer::storage::in_memory::TmanStorageInMemory;
     use ten_manager::{
-        designer::{
-            response::ApiResponse, version::get_version_endpoint, DesignerState,
-        },
+        designer::{response::ApiResponse, version::get_version_endpoint, DesignerState},
         home::config::TmanConfig,
         output::cli::TmanOutputCli,
         version::VERSION,
@@ -31,12 +29,8 @@ mod tests {
     async fn test_get_version() {
         // Initialize the DesignerState.
         let state = web::Data::new(Arc::new(DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -64,18 +58,17 @@ mod tests {
         let body = test::read_body(resp).await;
         let body_str = std::str::from_utf8(&body).unwrap();
 
-        let version: ApiResponse<GetVersionResponseData> =
-            serde_json::from_str(body_str).unwrap();
+        let version: ApiResponse<GetVersionResponseData> = serde_json::from_str(body_str).unwrap();
 
         // Create the expected Version struct
-        let expected_version =
-            GetVersionResponseData { version: VERSION.to_string() };
+        let expected_version = GetVersionResponseData {
+            version: VERSION.to_string(),
+        };
 
         // Compare the actual Version struct with the expected one
         assert_eq!(version.data, expected_version);
 
-        let json: ApiResponse<GetVersionResponseData> =
-            serde_json::from_str(body_str).unwrap();
+        let json: ApiResponse<GetVersionResponseData> = serde_json::from_str(body_str).unwrap();
         let pretty_json = serde_json::to_string_pretty(&json).unwrap();
         println!("Response body: {pretty_json}");
     }

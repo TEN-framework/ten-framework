@@ -207,6 +207,49 @@ static void ten_app_on_all_addon_loaders_created(ten_env_t *ten_env,
   ten_app_continue_run_after_builtin_addons_completed(ten_env);
 }
 
+static void ten_app_on_all_protocols_registered(void *register_ctx_,
+                                                TEN_UNUSED void *cb_data) {
+  TEN_ASSERT(register_ctx_, "Should not happen.");
+
+  ten_addon_register_ctx_t *register_ctx =
+      (ten_addon_register_ctx_t *)register_ctx_;
+  TEN_ASSERT(register_ctx, "Should not happen.");
+
+  ten_app_t *app = register_ctx->app;
+  TEN_ASSERT(app, "Should not happen.");
+  TEN_ASSERT(ten_app_check_integrity(app, true), "Should not happen.");
+
+  ten_env_t *ten_env = app->ten_env;
+  TEN_ASSERT(ten_env, "Should not happen.");
+  TEN_ASSERT(ten_env_check_integrity(ten_env, true), "Should not happen.");
+
+  ten_addon_register_ctx_destroy(register_ctx);
+
+  // Create addon loader singleton instances.
+  ten_addon_loader_addons_create_singleton_instance(
+      ten_env, ten_app_on_all_addon_loaders_created, app);
+}
+
+static void ten_app_on_all_addon_loaders_registered(void *register_ctx_,
+                                                    TEN_UNUSED void *cb_data) {
+  TEN_ASSERT(register_ctx_, "Should not happen.");
+
+  ten_addon_register_ctx_t *register_ctx =
+      (ten_addon_register_ctx_t *)register_ctx_;
+  TEN_ASSERT(register_ctx, "Should not happen.");
+
+  ten_addon_manager_t *manager = ten_addon_manager_get_instance();
+  TEN_ASSERT(manager, "Should not happen.");
+
+  ten_app_t *app = register_ctx->app;
+  TEN_ASSERT(app, "Should not happen.");
+  TEN_ASSERT(ten_app_check_integrity(app, true), "Should not happen.");
+
+  // After the addon loaders are registered, we can register the protocols.
+  ten_addon_manager_register_all_protocols(
+      manager, register_ctx, ten_app_on_all_protocols_registered, NULL);
+}
+
 void ten_app_on_configure_done(ten_env_t *ten_env) {
   TEN_ASSERT(ten_env, "Invalid argument.");
   TEN_ASSERT(ten_env_check_integrity(ten_env, true),
@@ -313,14 +356,8 @@ void ten_app_on_configure_done(ten_env_t *ten_env) {
   // Addon_loader addons and protocol addons do not implement the `on_init()`
   // function, so after the following method is called, all addon loaders and
   // protocols will be registered and added to the addon store.
-  ten_addon_manager_register_all_addon_loaders(manager, register_ctx);
-  ten_addon_manager_register_all_protocols(manager, register_ctx);
-
-  ten_addon_register_ctx_destroy(register_ctx);
-
-  // Create addon loader singleton instances.
-  ten_addon_loader_addons_create_singleton_instance(
-      ten_env, ten_app_on_all_addon_loaders_created, self);
+  ten_addon_manager_register_all_addon_loaders(
+      manager, register_ctx, ten_app_on_all_addon_loaders_registered, NULL);
 }
 
 void ten_app_on_configure(ten_env_t *ten_env) {

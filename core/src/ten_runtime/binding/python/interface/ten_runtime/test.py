@@ -8,14 +8,14 @@ from typing import Callable, final
 
 from libten_runtime_python import (
     _ExtensionTester,  # pyright: ignore[reportPrivateUsage]
-    _ten_py_ten_env_tester_register_ten_env_tester_type,  # pyright: ignore[reportPrivateUsage] # noqa: E501
+    _ten_py_ten_env_tester_register_type,  # pyright: ignore[reportPrivateUsage] # noqa: E501
 )
 
 
 from .test_base import TenEnvTesterBase
-from .cmd_result import CmdResult
 from .error import TenError
 from .cmd import Cmd
+from .cmd_result import CmdResult
 from .data import Data
 from .audio_frame import AudioFrame
 from .video_frame import VideoFrame
@@ -157,4 +157,4 @@ class ExtensionTester(_ExtensionTester):
         pass
 
 
-_ten_py_ten_env_tester_register_ten_env_tester_type(TenEnvTester)
+_ten_py_ten_env_tester_register_type(TenEnvTester)

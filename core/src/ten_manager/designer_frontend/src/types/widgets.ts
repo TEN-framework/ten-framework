@@ -10,7 +10,7 @@ import { z } from "zod";
 import type { EDocLinkKey } from "@/types/doc";
 import type { ETenPackageType } from "@/types/extension";
 import type { TCustomNode } from "@/types/flow";
-import type { EConnectionType, EGraphActions, IGraph } from "@/types/graphs";
+import type { EConnectionType, EGraphActions, GraphInfo } from "@/types/graphs";
 
 export enum EWidgetDisplayType {
   Popup = "popup",
@@ -125,7 +125,7 @@ export interface ICustomConnectionWidgetData {
     source?: boolean;
     target?: boolean;
   };
-  graph: IGraph;
+  graph: GraphInfo;
 }
 
 export interface ICustomConnectionWidget
@@ -136,12 +136,12 @@ export interface ICustomConnectionWidget
 // 4. Graph Widget
 export interface IGraphWidgetData {
   type: EGraphActions;
-  base_dir?: string;
+  base_dir?: string | null;
   graph_id: string;
   app_uri?: string | null;
-  node?: TCustomNode;
-  src_node?: TCustomNode;
-  dest_node?: TCustomNode;
+  node?: TCustomNode | null;
+  src_node?: TCustomNode | null;
+  dest_node?: TCustomNode | null;
 }
 
 export interface IGraphWidget extends IWidgetBase<IGraphWidgetData> {
@@ -161,6 +161,8 @@ export const LogViewerScriptSchemaMap = {
     type: z.literal(ELogViewerScriptType.RUN_SCRIPT),
     base_dir: z.string().default(""),
     name: z.string().default(""),
+    stdout_is_log: z.boolean().default(true),
+    stderr_is_log: z.boolean().default(true),
   }),
   [ELogViewerScriptType.INSTALL_ALL]: z.object({
     type: z.literal(ELogViewerScriptType.INSTALL_ALL),
@@ -170,7 +172,7 @@ export const LogViewerScriptSchemaMap = {
   [ELogViewerScriptType.INSTALL]: z.object({
     type: z.literal(ELogViewerScriptType.INSTALL),
     base_dir: z.string().default(""),
-    name: z.string().default(""),
+    name: z.string().default("").optional(),
     pkg_type: z.string().default(""),
     pkg_name: z.string().default(""),
     pkg_version: z.string().default(""),
@@ -216,8 +218,8 @@ export enum EDefaultWidgetType {
 
 export interface IDefaultWidgetData {
   type: EDefaultWidgetType;
-  base_dir?: string;
-  scripts?: string[];
+  base_dir?: string | null;
+  scripts?: string[] | null;
   doc_link_key?: EDocLinkKey;
 }
 

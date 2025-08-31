@@ -22,11 +22,7 @@ impl PackageListCache {
     /// - If `new_req` is a superset of some entries in the cache, remove those
     ///   entries and add `new_req`.
     /// - Otherwise, add `new_req` to the cache.
-    pub fn check_and_update(
-        &mut self,
-        key: &PkgTypeAndName,
-        new_req: &VersionReq,
-    ) -> bool {
+    pub fn check_and_update(&mut self, key: &PkgTypeAndName, new_req: &VersionReq) -> bool {
         let entry = self.cache.entry(key.clone()).or_default();
 
         // If an existing version requirement can cover `new_req`, then skip it.

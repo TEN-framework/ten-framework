@@ -22,7 +22,7 @@
   "api": {
     "property": {
       "properties": {
-        "base_uri": {
+        "base_url": {
           "type": "string"
         },
         "api_key": {

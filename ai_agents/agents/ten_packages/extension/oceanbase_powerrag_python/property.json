@@ -1,0 +1,9 @@
+{
+    "user_id": "User",
+    "base_url": "${env:OCEANBASE_BASE_URL}",
+    "api_key": "${env:OCEANBASE_API_KEY}",
+    "ai_database_name": "${env:OCEANBASE_AI_DATABASE_NAME}",
+    "collection_id": "${env:OCEANBASE_COLLECTION_ID}",
+    "greeting": "TEN Agent connected with OceanBase PowerRAG. How can I help you today?",
+    "failure_info": "Sorry, I am unable to process your request at the moment. Please check your OceanBase PowerRAG configuration."
+}

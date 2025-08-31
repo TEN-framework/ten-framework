@@ -4,7 +4,6 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-pub mod _0_8_compatible;
 pub mod base_dir_pkg_info;
 pub mod bindings;
 pub mod constants;
@@ -13,6 +12,7 @@ pub mod env;
 pub mod graph;
 pub mod json;
 pub mod json_schema;
+pub mod log;
 pub mod pkg_info;
 pub mod utils;
 

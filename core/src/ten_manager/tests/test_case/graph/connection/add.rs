@@ -8,158 +8,31 @@
 mod tests {
     use std::collections::HashMap;
 
-    use anyhow::Result;
-    use serde_json::Value;
-    use tempfile::TempDir;
-
     use ten_manager::constants::TEST_DIR;
     use ten_manager::graph::connections::add::graph_add_connection;
-    use ten_manager::graph::update_graph_connections_in_property_all_fields;
-    use ten_rust::graph::{
-        connection::{
-            GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow,
-        },
-        Graph,
-    };
-    use ten_rust::pkg_info::constants::PROPERTY_JSON_FILENAME;
+    use ten_rust::graph::Graph;
     use ten_rust::pkg_info::message::MsgType;
 
     use crate::test_case::common::mock::inject_all_standard_pkgs_for_mock;
     use crate::test_case::graph::connection::create_test_node;
 
-    #[test]
-    fn test_add_connection_1() -> Result<()> {
-        // Create a temporary directory for our test.
-        let temp_dir = TempDir::new()?;
-        let test_dir = temp_dir.path().to_str().unwrap().to_string();
-
-        // First, create the initial property.json with a connection.
-        let initial_json =
-            include_str!("../../../test_data/initial_property.json");
-
-        // Expected JSON after adding the connections.
-        let expected_json =
-            include_str!("../../../test_data/expected_property.json");
-
-        // Write the initial JSON to property.json.
-        let property_path =
-            std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
-        std::fs::write(&property_path, initial_json)?;
-
-        // Parse the initial JSON to all_fields.
-        let mut all_fields: serde_json::Map<String, Value> =
-            serde_json::from_str(initial_json)?;
-
-        // Create connections to add.
-        let connection1 = GraphConnection {
-            loc: GraphLoc {
-                app: Some("http://example.com:8000".to_string()),
-                extension: Some("extension_1".to_string()),
-                subgraph: None,
-                selector: None,
-            },
-            cmd: Some(vec![GraphMessageFlow::new(
-                "new_cmd1".to_string(),
-                vec![GraphDestination {
-                    loc: GraphLoc {
-                        app: Some("http://example.com:8000".to_string()),
-                        extension: Some("extension_2".to_string()),
-                        subgraph: None,
-                        selector: None,
-                    },
-                    msg_conversion: None,
-                }],
-                vec![],
-            )]),
-            data: None,
-            audio_frame: None,
-            video_frame: None,
-        };
-
-        let connection2 = GraphConnection {
-            loc: GraphLoc {
-                app: Some("http://example.com:8000".to_string()),
-                extension: Some("extension_1".to_string()),
-                subgraph: None,
-                selector: None,
-            },
-            cmd: Some(vec![GraphMessageFlow::new(
-                "new_cmd2".to_string(),
-                vec![GraphDestination {
-                    loc: GraphLoc {
-                        app: Some("http://example.com:8000".to_string()),
-                        extension: Some("extension_3".to_string()),
-                        subgraph: None,
-                        selector: None,
-                    },
-                    msg_conversion: None,
-                }],
-                vec![],
-            )]),
-            data: None,
-            audio_frame: None,
-            video_frame: None,
-        };
-
-        let connections_to_add = vec![connection1, connection2];
-
-        // Update the connections in memory and in the file.
-        update_graph_connections_in_property_all_fields(
-            &test_dir,
-            &mut all_fields,
-            "test_graph",
-            Some(&connections_to_add),
-            None,
-            None,
-        )?;
-
-        // Read the updated property.json.
-        let actual_json = std::fs::read_to_string(&property_path)?;
-
-        // Normalize both JSON strings (parse and reformat to remove whitespace
-        // differences).
-        let expected_value: serde_json::Value =
-            serde_json::from_str(expected_json)?;
-        let actual_value: serde_json::Value =
-            serde_json::from_str(&actual_json)?;
-
-        assert_eq!(
-            expected_value, actual_value,
-            "Updated property does not match expected property"
-        );
-
-        Ok(())
-    }
-
     #[tokio::test]
-    async fn test_add_connection_2() {
+    async fn test_add_connection() {
         let mut pkgs_cache = HashMap::new();
         let mut graphs_cache = HashMap::new();
 
-        inject_all_standard_pkgs_for_mock(
-            &mut pkgs_cache,
-            &mut graphs_cache,
-            TEST_DIR,
-        )
-        .await;
+        inject_all_standard_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, TEST_DIR).await;
 
         // Create a graph with two nodes.
         let mut graph = Graph {
             nodes: vec![
-                create_test_node(
-                    "ext1",
-                    "extension_addon_1",
-                    Some("http://example.com:8000"),
-                ),
-                create_test_node(
-                    "ext2",
-                    "extension_addon_2",
-                    Some("http://example.com:8000"),
-                ),
+                create_test_node("ext1", "extension_addon_1", Some("http://example.com:8000")),
+                create_test_node("ext2", "extension_addon_2", Some("http://example.com:8000")),
             ],
             connections: None,
             exposed_messages: None,
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         // Test adding a connection.
@@ -194,7 +67,7 @@ mod tests {
         assert_eq!(cmd_flows.len(), 1);
 
         let flow = &cmd_flows[0];
-        assert_eq!(flow.name, "test_cmd");
+        assert_eq!(flow.name.as_deref(), Some("test_cmd"));
         assert_eq!(flow.dest.len(), 1);
 
         let dest = &flow.dest[0];
@@ -207,23 +80,15 @@ mod tests {
         let mut pkgs_cache = HashMap::new();
         let mut graphs_cache = HashMap::new();
 
-        inject_all_standard_pkgs_for_mock(
-            &mut pkgs_cache,
-            &mut graphs_cache,
-            TEST_DIR,
-        )
-        .await;
+        inject_all_standard_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, TEST_DIR).await;
 
         // Create a graph with only one node.
         let mut graph = Graph {
-            nodes: vec![create_test_node(
-                "ext2",
-                "extension_addon_2",
-                Some("app1"),
-            )],
+            nodes: vec![create_test_node("ext2", "extension_addon_2", Some("app1"))],
             connections: None,
             exposed_messages: None,
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         // Test adding a connection with nonexistent source.
@@ -250,23 +115,15 @@ mod tests {
         let mut pkgs_cache = HashMap::new();
         let mut graphs_cache = HashMap::new();
 
-        inject_all_standard_pkgs_for_mock(
-            &mut pkgs_cache,
-            &mut graphs_cache,
-            TEST_DIR,
-        )
-        .await;
+        inject_all_standard_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, TEST_DIR).await;
 
         // Create a graph with only one node.
         let mut graph = Graph {
-            nodes: vec![create_test_node(
-                "ext1",
-                "extension_addon_1",
-                Some("app1"),
-            )],
+            nodes: vec![create_test_node("ext1", "extension_addon_1", Some("app1"))],
             connections: None,
             exposed_messages: None,
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         // Test adding a connection with nonexistent destination.
@@ -293,35 +150,19 @@ mod tests {
         let mut pkgs_cache = HashMap::new();
         let mut graphs_cache = HashMap::new();
 
-        inject_all_standard_pkgs_for_mock(
-            &mut pkgs_cache,
-            &mut graphs_cache,
-            TEST_DIR,
-        )
-        .await;
+        inject_all_standard_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, TEST_DIR).await;
 
         // Create a graph with three nodes.
         let mut graph = Graph {
             nodes: vec![
-                create_test_node(
-                    "ext1",
-                    "extension_addon_1",
-                    Some("http://example.com:8000"),
-                ),
-                create_test_node(
-                    "ext2",
-                    "extension_addon_2",
-                    Some("http://example.com:8000"),
-                ),
-                create_test_node(
-                    "ext3",
-                    "extension_addon_3",
-                    Some("http://example.com:8000"),
-                ),
+                create_test_node("ext1", "extension_addon_1", Some("http://example.com:8000")),
+                create_test_node("ext2", "extension_addon_2", Some("http://example.com:8000")),
+                create_test_node("ext3", "extension_addon_3", Some("http://example.com:8000")),
             ],
             connections: None,
             exposed_messages: None,
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         // Add first connection.
@@ -368,14 +209,14 @@ mod tests {
         assert_eq!(cmd_flows.len(), 2);
 
         let flow = &cmd_flows[0];
-        assert_eq!(flow.name, "test_cmd");
+        assert_eq!(flow.name.as_deref(), Some("test_cmd"));
         assert_eq!(flow.dest.len(), 1);
 
         // Verify destinations.
         assert_eq!(flow.dest[0].loc.extension, Some("ext2".to_string()));
 
         let flow = &cmd_flows[1];
-        assert_eq!(flow.name, "test_cmd_2");
+        assert_eq!(flow.name.as_deref(), Some("test_cmd_2"));
         assert_eq!(flow.dest.len(), 1);
 
         // Verify destinations.
@@ -387,30 +228,18 @@ mod tests {
         let mut pkgs_cache = HashMap::new();
         let mut graphs_cache = HashMap::new();
 
-        inject_all_standard_pkgs_for_mock(
-            &mut pkgs_cache,
-            &mut graphs_cache,
-            TEST_DIR,
-        )
-        .await;
+        inject_all_standard_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, TEST_DIR).await;
 
         // Create a graph with two nodes.
         let mut graph = Graph {
             nodes: vec![
-                create_test_node(
-                    "ext1",
-                    "extension_addon_1",
-                    Some("http://example.com:8000"),
-                ),
-                create_test_node(
-                    "ext2",
-                    "extension_addon_2",
-                    Some("http://example.com:8000"),
-                ),
+                create_test_node("ext1", "extension_addon_1", Some("http://example.com:8000")),
+                create_test_node("ext2", "extension_addon_2", Some("http://example.com:8000")),
             ],
             connections: None,
             exposed_messages: None,
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         // Add different message types.
@@ -482,10 +311,22 @@ mod tests {
         assert!(connection.audio_frame.is_some());
         assert!(connection.video_frame.is_some());
 
-        assert_eq!(connection.cmd.as_ref().unwrap()[0].name, "cmd1");
-        assert_eq!(connection.data.as_ref().unwrap()[0].name, "data1");
-        assert_eq!(connection.audio_frame.as_ref().unwrap()[0].name, "audio1");
-        assert_eq!(connection.video_frame.as_ref().unwrap()[0].name, "video1");
+        assert_eq!(
+            connection.cmd.as_ref().unwrap()[0].name.as_deref(),
+            Some("cmd1")
+        );
+        assert_eq!(
+            connection.data.as_ref().unwrap()[0].name.as_deref(),
+            Some("data1")
+        );
+        assert_eq!(
+            connection.audio_frame.as_ref().unwrap()[0].name.as_deref(),
+            Some("audio1")
+        );
+        assert_eq!(
+            connection.video_frame.as_ref().unwrap()[0].name.as_deref(),
+            Some("video1")
+        );
     }
 
     #[tokio::test]
@@ -493,30 +334,18 @@ mod tests {
         let mut pkgs_cache = HashMap::new();
         let mut graphs_cache = HashMap::new();
 
-        inject_all_standard_pkgs_for_mock(
-            &mut pkgs_cache,
-            &mut graphs_cache,
-            TEST_DIR,
-        )
-        .await;
+        inject_all_standard_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, TEST_DIR).await;
 
         // Create a graph with two nodes.
         let mut graph = Graph {
             nodes: vec![
-                create_test_node(
-                    "ext1",
-                    "extension_addon_1",
-                    Some("http://example.com:8000"),
-                ),
-                create_test_node(
-                    "ext2",
-                    "extension_addon_2",
-                    Some("http://example.com:8000"),
-                ),
+                create_test_node("ext1", "extension_addon_1", Some("http://example.com:8000")),
+                create_test_node("ext2", "extension_addon_2", Some("http://example.com:8000")),
             ],
             connections: None,
             exposed_messages: None,
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         // Add a connection.
@@ -574,40 +403,20 @@ mod tests {
         let mut pkgs_cache = HashMap::new();
         let mut graphs_cache = HashMap::new();
 
-        inject_all_standard_pkgs_for_mock(
-            &mut pkgs_cache,
-            &mut graphs_cache,
-            TEST_DIR,
-        )
-        .await;
+        inject_all_standard_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, TEST_DIR).await;
 
         // Create a graph with three nodes.
         let mut graph = Graph {
             nodes: vec![
-                create_test_node(
-                    "ext1",
-                    "extension_addon_1",
-                    Some("http://example.com:8000"),
-                ),
-                create_test_node(
-                    "ext2",
-                    "extension_addon_2",
-                    Some("http://example.com:8000"),
-                ),
-                create_test_node(
-                    "ext3",
-                    "extension_addon_3",
-                    Some("http://example.com:8000"),
-                ),
-                create_test_node(
-                    "ext4",
-                    "extension_addon_4",
-                    Some("http://example.com:8000"),
-                ),
+                create_test_node("ext1", "extension_addon_1", Some("http://example.com:8000")),
+                create_test_node("ext2", "extension_addon_2", Some("http://example.com:8000")),
+                create_test_node("ext3", "extension_addon_3", Some("http://example.com:8000")),
+                create_test_node("ext4", "extension_addon_4", Some("http://example.com:8000")),
             ],
             connections: None,
             exposed_messages: None,
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         // Test connecting ext1 to ext2 with compatible schema - should succeed.

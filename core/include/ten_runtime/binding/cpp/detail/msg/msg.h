@@ -226,8 +226,16 @@ class msg_t {
     if (c_value == nullptr) {
       return "";
     }
-    return ten_value_peek_raw_str(
+
+    const char *raw_str = ten_value_peek_raw_str(
         c_value, err != nullptr ? err->get_c_error() : nullptr);
+
+    if (raw_str == nullptr) {
+      TEN_ASSERT(0, "Should not happen.");
+      return "";
+    }
+
+    return raw_str;
   }
 
   void *get_property_ptr(const char *path, error_t *err = nullptr) {

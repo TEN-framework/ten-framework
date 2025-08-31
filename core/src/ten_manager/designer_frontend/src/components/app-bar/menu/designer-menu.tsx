@@ -74,49 +74,47 @@ export function DesignerMenu(props: {
   };
 
   return (
-    <>
-      <NavigationMenuItem>
-        <NavigationMenuTrigger
-          className="submenu-trigger font-bold"
-          ref={(ref) => {
-            if (triggerListRef?.current && ref) {
-              triggerListRef.current[idx] = ref;
-            }
-          }}
-          onClick={(e) => {
-            if (disableMenuClick) {
-              e.preventDefault();
-            }
-          }}
-        >
-          {t("header.menuDesigner.title")}
-        </NavigationMenuTrigger>
-        <NavigationMenuContent
-          className={cn("flex flex-col items-center gap-1.5 px-1 py-1.5")}
-        >
-          <NavigationMenuLink asChild>
-            <Button
-              className="w-full max-w-(--breakpoint-sm) justify-start"
-              variant="ghost"
-              onClick={openPreferences}
-            >
-              <SettingsIcon />
-              {t("header.menuDesigner.preferences")}
-            </Button>
-          </NavigationMenuLink>
-          <Separator className="w-full" />
-          <NavigationMenuLink asChild>
-            <Button
-              className="w-full max-w-(--breakpoint-sm) justify-start"
-              variant="ghost"
-              onClick={openAbout}
-            >
-              <InfoIcon />
-              {t("header.menuDesigner.about")}
-            </Button>
-          </NavigationMenuLink>
-        </NavigationMenuContent>
-      </NavigationMenuItem>
-    </>
+    <NavigationMenuItem>
+      <NavigationMenuTrigger
+        className="submenu-trigger font-bold"
+        ref={(ref) => {
+          if (triggerListRef?.current && ref) {
+            triggerListRef.current[idx] = ref;
+          }
+        }}
+        onClick={(e) => {
+          if (disableMenuClick) {
+            e.preventDefault();
+          }
+        }}
+      >
+        {t("header.menuDesigner.title")}
+      </NavigationMenuTrigger>
+      <NavigationMenuContent
+        className={cn("flex flex-col items-center gap-1.5 px-1 py-1.5")}
+      >
+        <NavigationMenuLink asChild>
+          <Button
+            className="w-full max-w-(--breakpoint-sm) justify-start"
+            variant="ghost"
+            onClick={openPreferences}
+          >
+            <SettingsIcon />
+            {t("header.menuDesigner.preferences")}
+          </Button>
+        </NavigationMenuLink>
+        <Separator className="w-full" />
+        <NavigationMenuLink asChild>
+          <Button
+            className="w-full max-w-(--breakpoint-sm) justify-start"
+            variant="ghost"
+            onClick={openAbout}
+          >
+            <InfoIcon />
+            {t("header.menuDesigner.about")}
+          </Button>
+        </NavigationMenuLink>
+      </NavigationMenuContent>
+    </NavigationMenuItem>
   );
 }

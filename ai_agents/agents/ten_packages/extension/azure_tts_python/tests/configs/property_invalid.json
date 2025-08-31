@@ -1,0 +1,12 @@
+{
+    "params": {
+        "subscription": "invalid",
+        "region": "invalid",
+        "speech_recognition_language": "invalid",
+        "output_format": "Raw17Khz16BitMonoPcm",
+        "propertys": [
+            ["Speech_LogFilename", "azure_tts_log.txt"],
+            ["SpeechServiceConnection_SynthVoice", "en-US-AriaNeural"]
+        ]
+    }
+}

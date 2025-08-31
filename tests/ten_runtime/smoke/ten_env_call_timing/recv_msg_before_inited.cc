@@ -64,7 +64,7 @@ class test_extension_2 : public ten::extension_t {
 
   void close_app_if_all_msg_received(ten::ten_env_t &ten_env) const {
     if (msg_received_count_ == 4) {
-      auto close_app_cmd = ten::cmd_close_app_t::create();
+      auto close_app_cmd = ten::close_app_cmd_t::create();
       close_app_cmd->set_dests({{""}});
       ten_env.send_cmd(std::move(close_app_cmd));
     }
@@ -189,7 +189,7 @@ TEST(TenEnvCallTimingTest, RecvMsgBeforeInited) {  // NOLINT
   auto *client = new ten::msgpack_tcp_client_t("msgpack://127.0.0.1:8001/");
 
   // Send graph.
-  auto start_graph_cmd = ten::cmd_start_graph_t::create();
+  auto start_graph_cmd = ten::start_graph_cmd_t::create();
   start_graph_cmd->set_graph_from_json(R"({
            "nodes": [{
                 "type": "extension",

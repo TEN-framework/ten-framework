@@ -41,9 +41,7 @@ fn load_schema_with_shared_definitions(
         }
 
         // Merge shared definitions into main schema $defs
-        if let Some(main_defs) =
-            main_schema.get_mut("$defs").and_then(|v| v.as_object_mut())
-        {
+        if let Some(main_defs) = main_schema.get_mut("$defs").and_then(|v| v.as_object_mut()) {
             if let Some(shared_defs_obj) = shared_defs.as_object() {
                 for (key, value) in shared_defs_obj {
                     main_defs.insert(key.clone(), value.clone());
@@ -55,10 +53,7 @@ fn load_schema_with_shared_definitions(
     Ok(jsonschema::validator_for(&main_schema)?)
 }
 
-fn validate_json_object(
-    json: &serde_json::Value,
-    schema_str: &str,
-) -> Result<()> {
+fn validate_json_object(json: &serde_json::Value, schema_str: &str) -> Result<()> {
     let validator = load_schema(schema_str);
 
     match validator.validate(json) {
@@ -66,10 +61,7 @@ fn validate_json_object(
         Err(_) => {
             let mut msgs = String::new();
             for error in validator.iter_errors(json) {
-                msgs.push_str(&format!(
-                    "{} @ {}\n",
-                    error, error.instance_path
-                ));
+                msgs.push_str(&format!("{} @ {}\n", error, error.instance_path));
             }
             Err(anyhow::anyhow!("{}", msgs))
         }
@@ -81,18 +73,14 @@ fn validate_json_object_with_shared_definitions(
     schema_str: &str,
     shared_definitions: &str,
 ) -> Result<()> {
-    let validator =
-        load_schema_with_shared_definitions(schema_str, shared_definitions)?;
+    let validator = load_schema_with_shared_definitions(schema_str, shared_definitions)?;
 
     match validator.validate(json) {
         Ok(()) => Ok(()),
         Err(_) => {
             let mut msgs = String::new();
             for error in validator.iter_errors(json) {
-                msgs.push_str(&format!(
-                    "{} @ {}\n",
-                    error, error.instance_path
-                ));
+                msgs.push_str(&format!("{} @ {}\n", error, error.instance_path));
             }
             Err(anyhow::anyhow!("{}", msgs))
         }
@@ -131,8 +119,7 @@ pub fn validate_manifest_lock_json_string(data: &str) -> Result<()> {
 pub fn validate_manifest_lock_json_file(file_path: &str) -> Result<()> {
     let file = std::fs::File::open(file_path)?;
     let reader = std::io::BufReader::new(file);
-    let manifest_lock_json: serde_json::Value =
-        serde_json::from_reader(reader)?;
+    let manifest_lock_json: serde_json::Value = serde_json::from_reader(reader)?;
 
     validate_json_object(
         &manifest_lock_json,
@@ -145,9 +132,7 @@ pub fn ten_validate_property_json_string(data: &str) -> Result<()> {
     validate_json_object(&property_json, definition::PROPERTY_SCHEMA_DEFINITION)
 }
 
-pub fn ten_validate_property_json_file<P: AsRef<Path>>(
-    file_path: P,
-) -> Result<()> {
+pub fn ten_validate_property_json_file<P: AsRef<Path>>(file_path: P) -> Result<()> {
     let file = std::fs::File::open(file_path)?;
     let reader = std::io::BufReader::new(file);
     let property_json: serde_json::Value = serde_json::from_reader(reader)?;
@@ -164,9 +149,7 @@ pub fn ten_validate_interface_json_string(data: &str) -> Result<()> {
     )
 }
 
-pub fn ten_validate_interface_json_file<P: AsRef<Path>>(
-    file_path: P,
-) -> Result<()> {
+pub fn ten_validate_interface_json_file<P: AsRef<Path>>(file_path: P) -> Result<()> {
     let file = std::fs::File::open(file_path)?;
     let reader = std::io::BufReader::new(file);
     let interface_json: serde_json::Value = serde_json::from_reader(reader)?;

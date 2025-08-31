@@ -20,9 +20,7 @@ use node::GraphNode;
 use serde::{Deserialize, Serialize};
 
 use crate::base_dir_pkg_info::PkgsInfoInApp;
-use crate::constants::{
-    ERR_MSG_GRAPH_APP_FIELD_EMPTY, ERR_MSG_GRAPH_MIXED_APP_DECLARATIONS,
-};
+use crate::constants::{ERR_MSG_GRAPH_APP_FIELD_EMPTY, ERR_MSG_GRAPH_MIXED_APP_DECLARATIONS};
 use crate::pkg_info::localhost;
 
 use self::connection::{GraphConnection, GraphMessageFlow};
@@ -105,8 +103,7 @@ impl AppUriDeclarationState {
     pub fn is_single_app_graph(&self) -> bool {
         matches!(
             self,
-            AppUriDeclarationState::NoneDeclared
-                | AppUriDeclarationState::UniformDeclared
+            AppUriDeclarationState::NoneDeclared | AppUriDeclarationState::UniformDeclared
         )
     }
 }
@@ -181,6 +178,9 @@ pub struct Graph {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub exposed_properties: Option<Vec<GraphExposedProperty>>,
+
+    #[serde(skip)]
+    pub pre_flatten: Option<Box<Graph>>,
 }
 
 impl Graph {
@@ -199,13 +199,12 @@ impl Graph {
     /// # Returns
     /// - `Ok(Graph)`: Successfully parsed and processed graph
     /// - `Err(anyhow::Error)`: Parsing, validation, or processing error
-    pub async fn from_str_with_base_dir(
-        s: &str,
-        current_base_dir: Option<&str>,
-    ) -> Result<Self> {
+    pub async fn from_str_with_base_dir(s: &str, current_base_dir: Option<&str>) -> Result<Self> {
         let mut graph: Graph = serde_json::from_str(s)?;
 
-        graph.validate_and_complete_and_flatten(current_base_dir).await?;
+        graph
+            .validate_and_complete_and_flatten(current_base_dir)
+            .await?;
 
         // Return the parsed data.
         Ok(graph)
@@ -246,9 +245,7 @@ impl Graph {
     /// not allow 'localhost' as an explicit app field value. Instead,
     /// 'localhost' is used as the internal default value when no app field is
     /// specified.
-    fn analyze_app_uri_declaration_state(
-        &self,
-    ) -> Result<AppUriDeclarationState> {
+    fn analyze_app_uri_declaration_state(&self) -> Result<AppUriDeclarationState> {
         let mut nodes_have_declared_app = 0;
         let mut app_uris = std::collections::HashSet::new();
 
@@ -276,9 +273,7 @@ impl Graph {
         // Some nodes have 'app' declared and some don't - this is invalid.
         // Because TEN can not determine which app the nodes without the defined
         // field belong to.
-        if nodes_have_declared_app != 0
-            && nodes_have_declared_app != extension_nodes_len
-        {
+        if nodes_have_declared_app != 0 && nodes_have_declared_app != extension_nodes_len {
             return Err(anyhow::anyhow!(ERR_MSG_GRAPH_MIXED_APP_DECLARATIONS));
         }
 
@@ -296,13 +291,9 @@ impl Graph {
 
     /// Validates and completes the graph by ensuring all nodes and connections
     /// follow the app declaration rules and other validation requirements.
-    fn validate_and_complete(
-        &mut self,
-        _current_base_dir: Option<&str>,
-    ) -> Result<()> {
+    fn validate_and_complete(&mut self, _current_base_dir: Option<&str>) -> Result<()> {
         // Determine the app URI declaration state by examining all nodes.
-        let app_uri_declaration_state =
-            self.analyze_app_uri_declaration_state()?;
+        let app_uri_declaration_state = self.analyze_app_uri_declaration_state()?;
 
         // Validate all nodes.
         for (idx, node) in self.nodes.iter_mut().enumerate() {
@@ -315,9 +306,7 @@ impl Graph {
             for (idx, connection) in connections.iter_mut().enumerate() {
                 connection
                     .validate_and_complete(&app_uri_declaration_state)
-                    .map_err(|e| {
-                        anyhow::anyhow!("connections[{}]: {}", idx, e)
-                    })?;
+                    .map_err(|e| anyhow::anyhow!("connections[{}]: {}", idx, e))?;
             }
         }
 
@@ -352,6 +341,9 @@ impl Graph {
         // Step 1: Initial validation and completion
         self.validate_and_complete(current_base_dir)?;
 
+        // Step 1.1: Store the pre-flatten graph
+        self.pre_flatten = Some(Box::new(self.clone()));
+
         // Step 2: Attempt to flatten the graph
         // Always attempt to flatten the graph, regardless of current_base_dir
         // If there are subgraphs that need current_base_dir but it's None,
@@ -378,11 +370,7 @@ impl Graph {
         self.static_check()?;
 
         self.check_nodes_installation(graph_app_base_dir, pkgs_cache, false)?;
-        self.check_connections_compatibility(
-            graph_app_base_dir,
-            pkgs_cache,
-            false,
-        )?;
+        self.check_connections_compatibility(graph_app_base_dir, pkgs_cache, false)?;
 
         Ok(())
     }
@@ -399,11 +387,7 @@ impl Graph {
         // In a single app, there is no information about pkg_info of other
         // apps, neither the message schemas.
         self.check_nodes_installation(graph_app_base_dir, pkgs_cache, true)?;
-        self.check_connections_compatibility(
-            graph_app_base_dir,
-            pkgs_cache,
-            true,
-        )?;
+        self.check_connections_compatibility(graph_app_base_dir, pkgs_cache, true)?;
 
         Ok(())
     }
@@ -447,35 +431,143 @@ impl Graph {
             })
     }
 
+    /// Expands items with 'names' arrays into multiple items with individual
+    /// 'name' fields.
+    ///
+    /// This method processes all connections in the graph and for any message
+    /// flow (cmd, data, audio_frame, video_frame) that has a 'names' field,
+    /// it creates multiple copies of that item, one for each name in the
+    /// array, replacing the 'names' field with an individual 'name' field.
+    pub fn expand_names_to_individual_items(&self) -> Result<Option<Graph>> {
+        let mut graph_changed = false;
+        let mut new_connections = Vec::new();
+
+        if let Some(connections) = &self.connections {
+            for connection in connections {
+                let mut new_connection = connection.clone();
+
+                // Process cmd flows
+                if let Some(cmd_flows) = &connection.cmd {
+                    let mut new_cmd_flows = Vec::new();
+                    for flow in cmd_flows {
+                        if let Some(names) = &flow.names {
+                            // Expand this flow into multiple flows
+                            for name in names {
+                                let mut new_flow = flow.clone();
+                                new_flow.name = Some(name.clone());
+                                new_flow.names = None; // Remove the names field
+                                new_cmd_flows.push(new_flow);
+                            }
+                            graph_changed = true;
+                        } else {
+                            new_cmd_flows.push(flow.clone());
+                        }
+                    }
+                    new_connection.cmd = Some(new_cmd_flows);
+                }
+
+                // Process data flows
+                if let Some(data_flows) = &connection.data {
+                    let mut new_data_flows = Vec::new();
+                    for flow in data_flows {
+                        if let Some(names) = &flow.names {
+                            // Expand this flow into multiple flows
+                            for name in names {
+                                let mut new_flow = flow.clone();
+                                new_flow.name = Some(name.clone());
+                                new_flow.names = None; // Remove the names field
+                                new_data_flows.push(new_flow);
+                            }
+                            graph_changed = true;
+                        } else {
+                            new_data_flows.push(flow.clone());
+                        }
+                    }
+                    new_connection.data = Some(new_data_flows);
+                }
+
+                // Process audio_frame flows
+                if let Some(audio_frame_flows) = &connection.audio_frame {
+                    let mut new_audio_frame_flows = Vec::new();
+                    for flow in audio_frame_flows {
+                        if let Some(names) = &flow.names {
+                            // Expand this flow into multiple flows
+                            for name in names {
+                                let mut new_flow = flow.clone();
+                                new_flow.name = Some(name.clone());
+                                new_flow.names = None; // Remove the names field
+                                new_audio_frame_flows.push(new_flow);
+                            }
+                            graph_changed = true;
+                        } else {
+                            new_audio_frame_flows.push(flow.clone());
+                        }
+                    }
+                    new_connection.audio_frame = Some(new_audio_frame_flows);
+                }
+
+                // Process video_frame flows
+                if let Some(video_frame_flows) = &connection.video_frame {
+                    let mut new_video_frame_flows = Vec::new();
+                    for flow in video_frame_flows {
+                        if let Some(names) = &flow.names {
+                            // Expand this flow into multiple flows
+                            for name in names {
+                                let mut new_flow = flow.clone();
+                                new_flow.name = Some(name.clone());
+                                new_flow.names = None; // Remove the names field
+                                new_video_frame_flows.push(new_flow);
+                            }
+                            graph_changed = true;
+                        } else {
+                            new_video_frame_flows.push(flow.clone());
+                        }
+                    }
+                    new_connection.video_frame = Some(new_video_frame_flows);
+                }
+
+                new_connections.push(new_connection);
+            }
+        }
+
+        if !graph_changed {
+            return Ok(None);
+        }
+
+        // Create new graph with expanded connections
+        let mut new_graph = self.clone();
+        new_graph.connections = Some(new_connections);
+        Ok(Some(new_graph))
+    }
+
     /// Convenience method for flattening a graph instance without preserving
     /// exposed info. This is the main public API for flattening graphs.
     ///
     /// Returns `Ok(None)` if the graph doesn't need flattening. Returns
     /// `Ok(Some(flattened_graph))` if the graph was successfully flattened.
-    pub async fn flatten_graph(
-        &self,
-        current_base_dir: Option<&str>,
-    ) -> Result<Option<Graph>> {
+    pub async fn flatten_graph(&self, current_base_dir: Option<&str>) -> Result<Option<Graph>> {
         let mut processing_graph = self;
 
-        // Step 1: Match nodes according to selector rules and replace them in
+        // Step 1: Expand names arrays to individual name items
+        let expanded_names_graph = processing_graph.expand_names_to_individual_items()?;
+        processing_graph = expanded_names_graph.as_ref().unwrap_or(processing_graph);
+
+        // Step 2: Match nodes according to selector rules and replace them in
         // connections
         let flattened_selector_graph = processing_graph.flatten_selectors()?;
-        processing_graph =
-            flattened_selector_graph.as_ref().unwrap_or(processing_graph);
+        processing_graph = flattened_selector_graph
+            .as_ref()
+            .unwrap_or(processing_graph);
 
-        // Step 2: Convert reversed connections to forward connections if needed
-        let reversed_graph = processing_graph
-            .convert_reversed_connections_to_forward_connections()?;
+        // Step 3: Convert reversed connections to forward connections if needed
+        let reversed_graph =
+            processing_graph.convert_reversed_connections_to_forward_connections()?;
         processing_graph = reversed_graph.as_ref().unwrap_or(processing_graph);
 
-        // Step 3: Flatten subgraphs
-        let flattened =
-            Self::flatten_subgraphs(processing_graph, current_base_dir, false)
-                .await
-                .map_err(|e| {
-                    anyhow::anyhow!("Failed to flatten graph: {}", e)
-                })?;
+        // Step 4: Flatten subgraphs
+        let flattened = Self::flatten_subgraphs(processing_graph, current_base_dir, false)
+            .await
+            .map_err(|e| anyhow::anyhow!("Failed to flatten graph: {}", e))?;
         processing_graph = flattened.as_ref().unwrap_or(processing_graph);
 
         // Check if the processing graph is the same as the original graph.

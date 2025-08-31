@@ -32,23 +32,18 @@ mod tests {
 
         let mut graphs_cache = HashMap::new();
 
-        let property = parse_property_from_str(
-            json_data,
-            &mut graphs_cache,
-            None,
-            None,
-            None,
-        )
-        .await
-        .unwrap();
+        let property = parse_property_from_str(json_data, &mut graphs_cache, None, None, None)
+            .await
+            .unwrap();
 
         assert!(property.ten.is_some());
         let ten_in_property = property.ten.unwrap();
 
         assert_eq!(ten_in_property.uri.unwrap(), "http://example.com");
         assert!(graphs_cache.is_empty());
-        assert_eq!(property.all_fields.len(), 1); // Should contain ten field.
-        assert!(property.all_fields.contains_key("ten"));
+
+        // Should not contain other fields.
+        assert!(property.other_fields.is_none());
     }
 
     #[tokio::test]
@@ -65,15 +60,9 @@ mod tests {
 
         let mut graphs_cache = HashMap::new();
 
-        let property = parse_property_from_str(
-            json_data,
-            &mut graphs_cache,
-            None,
-            None,
-            None,
-        )
-        .await
-        .unwrap();
+        let property = parse_property_from_str(json_data, &mut graphs_cache, None, None, None)
+            .await
+            .unwrap();
 
         assert!(property.ten.is_some());
         let ten_in_property = property.ten.unwrap();
@@ -81,9 +70,14 @@ mod tests {
         assert!(graphs_cache.is_empty());
 
         // Should contain ten and global_field_1.
-        assert_eq!(property.all_fields.len(), 2);
+        assert_eq!(property.other_fields.as_ref().unwrap().len(), 1);
         assert_eq!(
-            property.all_fields.get("global_field_1").unwrap(),
+            property
+                .other_fields
+                .as_ref()
+                .unwrap()
+                .get("global_field_1")
+                .unwrap(),
             "global_value1"
         );
     }
@@ -94,18 +88,12 @@ mod tests {
 
         let json_str = include_str!("../../../test_data/property.json");
 
-        let property = parse_property_from_str(
-            json_str,
-            &mut graphs_cache,
-            None,
-            None,
-            None,
-        )
-        .await
-        .unwrap();
+        let property = parse_property_from_str(json_str, &mut graphs_cache, None, None, None)
+            .await
+            .unwrap();
         assert!(property.ten.is_some());
 
-        let (_, graph_info) = graphs_cache.into_iter().next().unwrap();
+        let graph_info = graphs_cache.values().next().unwrap();
 
         let nodes = graph_info.graph.nodes();
         let node = nodes.first().unwrap();
@@ -113,7 +101,9 @@ mod tests {
 
         let dir = tempdir().unwrap();
         let file_path = dir.path().join("property.json");
-        property.dump_property_to_file(&file_path).unwrap();
+        property
+            .dump_property_to_file(&file_path, &graphs_cache)
+            .unwrap();
 
         let saved_content = fs::read_to_string(file_path).unwrap();
         eprintln!("{saved_content}");
@@ -122,24 +112,16 @@ mod tests {
 
     #[tokio::test]
     async fn test_dump_property_with_msg_conversion() {
-        let prop_str = include_str!(
-            "../../../test_data/dump_property_with_msg_conversion.json"
-        );
+        let prop_str = include_str!("../../../test_data/dump_property_with_msg_conversion.json");
 
         let mut graphs_cache = HashMap::new();
 
-        let property = parse_property_from_str(
-            prop_str,
-            &mut graphs_cache,
-            None,
-            None,
-            None,
-        )
-        .await
-        .unwrap();
+        let property = parse_property_from_str(prop_str, &mut graphs_cache, None, None, None)
+            .await
+            .unwrap();
         assert!(property.ten.is_some());
 
-        let (_, graph_info) = graphs_cache.into_iter().next().unwrap();
+        let graph_info = graphs_cache.values().next().unwrap();
 
         let connections = graph_info.graph.connections().as_ref().unwrap();
         let connection = connections.first().unwrap();
@@ -149,8 +131,7 @@ mod tests {
         let cmd_dest = &cmd.first().unwrap().dest;
         assert_eq!(cmd_dest.len(), 1);
 
-        let msg_conversion =
-            cmd_dest.first().unwrap().msg_conversion.as_ref().unwrap();
+        let msg_conversion = cmd_dest.first().unwrap().msg_conversion.as_ref().unwrap();
         assert_eq!(
             msg_conversion.msg.as_ref().unwrap().conversion_type,
             MsgConversionType::PerProperty
@@ -168,7 +149,9 @@ mod tests {
         let dir = tempdir().unwrap();
         let file_path = dir.path().join("property.json");
 
-        property.dump_property_to_file(&file_path).unwrap();
+        property
+            .dump_property_to_file(&file_path, &graphs_cache)
+            .unwrap();
 
         let saved_content = fs::read_to_string(file_path).unwrap();
         eprintln!("{saved_content}");

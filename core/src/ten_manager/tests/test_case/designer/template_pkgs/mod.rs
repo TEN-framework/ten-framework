@@ -13,8 +13,8 @@ use ten_manager::{
         response::{ApiResponse, Status},
         storage::in_memory::TmanStorageInMemory,
         template_pkgs::{
-            get_template_endpoint, GetTemplateRequestPayload,
-            GetTemplateResponseData, TemplateLanguage,
+            get_template_endpoint, GetTemplateRequestPayload, GetTemplateResponseData,
+            TemplateLanguage,
         },
         DesignerState,
     },
@@ -27,9 +27,7 @@ use ten_rust::pkg_info::pkg_type::PkgType;
 async fn test_get_template_app_typescript() {
     let designer_state = DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-            TmanStorageInMemory::default(),
-        )),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -38,10 +36,12 @@ async fn test_get_template_app_typescript() {
     let designer_state = Arc::new(designer_state);
 
     let app = test::init_service(
-        App::new().app_data(web::Data::new(designer_state.clone())).route(
-            "/api/designer/v1/template-pkgs",
-            web::post().to(get_template_endpoint),
-        ),
+        App::new()
+            .app_data(web::Data::new(designer_state.clone()))
+            .route(
+                "/api/designer/v1/template-pkgs",
+                web::post().to(get_template_endpoint),
+            ),
     )
     .await;
 
@@ -55,8 +55,7 @@ async fn test_get_template_app_typescript() {
         .set_json(&request_payload)
         .to_request();
 
-    let resp: ApiResponse<GetTemplateResponseData> =
-        test::call_and_read_body_json(&app, req).await;
+    let resp: ApiResponse<GetTemplateResponseData> = test::call_and_read_body_json(&app, req).await;
 
     assert_eq!(resp.status, Status::Ok);
     println!("{:?}", resp.data.templates);
@@ -66,9 +65,7 @@ async fn test_get_template_app_typescript() {
 async fn test_get_template_extension_cpp() {
     let designer_state = DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-            TmanStorageInMemory::default(),
-        )),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -77,10 +74,12 @@ async fn test_get_template_extension_cpp() {
     let designer_state = Arc::new(designer_state);
 
     let app = test::init_service(
-        App::new().app_data(web::Data::new(designer_state.clone())).route(
-            "/api/designer/v1/template-pkgs",
-            web::post().to(get_template_endpoint),
-        ),
+        App::new()
+            .app_data(web::Data::new(designer_state.clone()))
+            .route(
+                "/api/designer/v1/template-pkgs",
+                web::post().to(get_template_endpoint),
+            ),
     )
     .await;
 
@@ -94,8 +93,7 @@ async fn test_get_template_extension_cpp() {
         .set_json(&request_payload)
         .to_request();
 
-    let resp: ApiResponse<GetTemplateResponseData> =
-        test::call_and_read_body_json(&app, req).await;
+    let resp: ApiResponse<GetTemplateResponseData> = test::call_and_read_body_json(&app, req).await;
 
     assert_eq!(resp.status, Status::Ok);
     println!("{:?}", resp.data.templates);
@@ -105,9 +103,7 @@ async fn test_get_template_extension_cpp() {
 async fn test_get_template_unsupported() {
     let designer_state = DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-            TmanStorageInMemory::default(),
-        )),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -116,10 +112,12 @@ async fn test_get_template_unsupported() {
     let designer_state = Arc::new(designer_state);
 
     let app = test::init_service(
-        App::new().app_data(web::Data::new(designer_state.clone())).route(
-            "/api/designer/v1/template-pkgs",
-            web::post().to(get_template_endpoint),
-        ),
+        App::new()
+            .app_data(web::Data::new(designer_state.clone()))
+            .route(
+                "/api/designer/v1/template-pkgs",
+                web::post().to(get_template_endpoint),
+            ),
     )
     .await;
 

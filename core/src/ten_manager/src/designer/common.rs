@@ -8,14 +8,10 @@ use ten_rust::pkg_info::manifest::api::{ManifestApiMsg, ManifestApiProperty};
 
 use super::graphs::nodes::{DesignerApiMsg, DesignerApiProperty};
 
-pub fn get_designer_api_property_from_pkg(
-    items: ManifestApiProperty,
-) -> DesignerApiProperty {
+pub fn get_designer_api_property_from_pkg(items: ManifestApiProperty) -> DesignerApiProperty {
     items.into()
 }
 
-pub fn get_designer_api_msg_from_pkg(
-    items: Vec<ManifestApiMsg>,
-) -> Vec<DesignerApiMsg> {
+pub fn get_designer_api_msg_from_pkg(items: Vec<ManifestApiMsg>) -> Vec<DesignerApiMsg> {
     items.into_iter().map(|v| v.into()).collect()
 }

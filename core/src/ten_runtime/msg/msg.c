@@ -324,16 +324,15 @@ void ten_msg_set_src_to_extension(ten_shared_ptr_t *self,
 
   ten_extension_group_t *extension_group =
       extension->extension_thread->extension_group;
-  TEN_ASSERT(
-      extension_group &&
-          // TEN_NOLINTNEXTLINE(thread-check)
-          // thread-check: we might be in other threads except extension threads
-          // (ex: the JS main thread), and here, we only need to get the name of
-          // the extension_group and the engine, and those pointers and the name
-          // values will not be changed after they are created, and before the
-          // entire engine is closed, so it's thread-safe here.
-          ten_extension_group_check_integrity(extension_group, false),
-      "Should not happen.");
+  // TEN_NOLINTNEXTLINE(thread-check)
+  // thread-check: we might be in other threads except extension threads (ex:
+  // the JS main thread), and here, we only need to get the name of the
+  // extension_group and the engine, and those pointers and the name values will
+  // not be changed after they are created, and before the entire engine is
+  // closed, so it's thread-safe here.
+  TEN_ASSERT(extension_group, "Should not happen.");
+  TEN_ASSERT(ten_extension_group_check_integrity(extension_group, false),
+             "Should not happen.");
 
   ten_engine_t *engine =
       extension_group->extension_thread->extension_context->engine;
@@ -500,7 +499,11 @@ void ten_msg_clear_and_set_dest_from_extension_info(
   TEN_ASSERT(ten_extension_info_check_integrity(extension_info, false),
              "Invalid use of extension_info %p.", extension_info);
 
-  ten_msg_clear_and_set_dest_to_loc(self, &extension_info->loc);
+  ten_loc_t *dest_loc = &extension_info->loc;
+  TEN_ASSERT(dest_loc, "Should not happen.");
+  TEN_ASSERT(ten_loc_check_integrity(dest_loc), "Should not happen.");
+
+  ten_msg_clear_and_set_dest_to_loc(self, dest_loc);
 }
 
 ten_list_t *ten_msg_get_dest(ten_shared_ptr_t *self) {
@@ -1232,6 +1235,9 @@ static bool ten_raw_msg_set_property(ten_msg_t *self, const char *path,
   if (!path || !strlen(path)) {
     // If the path is empty, clear and set all properties.
     ten_value_deinit(&self->properties);
+
+    TEN_ASSERT(ten_value_is_object(value), "Should not happen.");
+
     bool result = ten_value_init_object_with_move(&self->properties,
                                                   ten_value_peek_object(value));
     if (result) {
@@ -1259,7 +1265,7 @@ static bool ten_raw_msg_set_property(ten_msg_t *self, const char *path,
     case TEN_VALUE_PATH_ITEM_TYPE_OBJECT_ITEM: {
       if ((item_iter.index == 0) &&
           !strcmp(TEN_STR_TEN, ten_string_get_raw_str(&item->obj_item_str))) {
-        // It is the 'ten::' namespace.
+        // It is the 'ten:' namespace.
         in_ten_namespace = true;
 
         // Remove the 'ten' namespace path part.

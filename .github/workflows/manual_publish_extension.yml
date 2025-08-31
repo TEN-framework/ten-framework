@@ -1,0 +1,96 @@
+name: 🚀 Manual - Publish Extension to TEN Store
+
+on:
+  workflow_dispatch:
+    inputs:
+      extension:
+        description: 'Extension name(s), use comma to separate multiple (required)'
+        required: true
+        type: string
+      branch:
+        description: 'Branch to publish (optional, defaults to main branch)'
+        required: false
+        type: string
+        default: 'main'
+
+permissions:
+  contents: read
+
+jobs:
+  publish-extension:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/ten-framework/ten_agent_build:0.6.15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: "0"
+          submodules: "true"
+          ref: ${{ github.event.inputs.branch || github.ref }}
+
+      - name: Configure git
+        run: |
+          git config --global --add safe.directory $(pwd)
+
+      - name: Setup environment
+        run: |
+          echo "EXTENSION=${{ github.event.inputs.extension }}" >> $GITHUB_ENV
+          echo "BRANCH=${{ github.event.inputs.branch || github.ref_name }}" >> $GITHUB_ENV
+
+      - name: Display publish parameters
+        run: |
+          echo "==================== Publish Parameters ===================="
+          echo "Branch: ${{ github.event.inputs.branch || github.ref_name }}"
+          echo "Extension(s): ${{ github.event.inputs.extension }}"
+          echo "========================================================"
+
+      - name: Install and build extension(s)
+        run: |
+          extensions="${{ github.event.inputs.extension }}"
+          for raw in $(echo "$extensions" | tr ',' ' '); do
+            ext=$(echo "$raw" | xargs)
+            [ -z "$ext" ] && continue
+            echo "---- Processing: $ext ----"
+            if [ ! -d "ai_agents/agents/ten_packages/extension/$ext" ]; then
+              echo "Directory not found for extension: $ext" >&2
+              continue
+            fi
+            (
+              cd "ai_agents/agents/ten_packages/extension/$ext"
+              echo "Installing extension $ext..."
+              tman install --standalone
+              echo "Attempting to build extension $ext..."
+              tman run build || echo "Build step skipped or failed for $ext - continuing with publish"
+            )
+          done
+
+      - name: Publish extension(s)
+        run: |
+          extensions="${{ github.event.inputs.extension }}"
+          for raw in $(echo "$extensions" | tr ',' ' '); do
+            ext=$(echo "$raw" | xargs)
+            [ -z "$ext" ] && continue
+            echo "---- Publishing: $ext ----"
+            if [ ! -d "ai_agents/agents/ten_packages/extension/$ext" ]; then
+              echo "Directory not found for extension: $ext" >&2
+              continue
+            fi
+            (
+              cd "ai_agents/agents/ten_packages/extension/$ext"
+              echo "Publishing extension $ext to TEN store..."
+              identity=$(tman package --get-identity)
+              echo "Identity: $identity"
+              tman --verbose --user-token ${{ secrets.TEN_CLOUD_STORE }} publish
+            )
+          done
+
+      - name: Show publish completion
+        if: always()
+        run: |
+          echo "==================== Publish Completed ===================="
+          echo "Branch: ${{ github.event.inputs.branch || github.ref_name }}"
+          echo "Extension(s): ${{ github.event.inputs.extension }}"
+          echo "Check the logs above for detailed publish results."
+          echo "========================================================"

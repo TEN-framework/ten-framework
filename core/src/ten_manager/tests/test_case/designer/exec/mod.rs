@@ -32,9 +32,7 @@ use ten_manager::{
     output::cli::TmanOutputCli,
 };
 
-use crate::test_case::common::{
-    builtin_server::start_test_server, mock::inject_all_pkgs_for_mock,
-};
+use crate::test_case::common::{builtin_server::start_test_server, mock::inject_all_pkgs_for_mock};
 
 /// Test system command execution via WebSocket
 ///
@@ -47,8 +45,7 @@ use crate::test_case::common::{
 async fn test_exec_endpoint_command_execution() {
     // Start test server
     // start_test_server is a helper function that starts a real server
-    let server_addr =
-        start_test_server("/ws/exec", || web::get().to(exec_endpoint)).await;
+    let server_addr = start_test_server("/ws/exec", || web::get().to(exec_endpoint)).await;
     println!("📡 Test server started at: {server_addr}");
 
     // Establish WebSocket client connection
@@ -66,7 +63,7 @@ async fn test_exec_endpoint_command_execution() {
     let temp_dir = std::env::temp_dir();
     let exec_cmd_msg = InboundMsg::ExecCmd {
         base_dir: temp_dir.to_string_lossy().to_string(), // Working directory
-        cmd: "echo Hello from exec test".to_string(),     // Command to execute
+        cmd: "echo 'Hello from exec test'".to_string(),   // Command to execute
         // Standard output not treated as log
         stdout_is_log: false,
         stderr_is_log: false, // Error output not treated as log
@@ -77,7 +74,7 @@ async fn test_exec_endpoint_command_execution() {
     println!("📤 Sending ExecCmd message: {json_msg}");
 
     // Send message via WebSocket
-    write.send(Message::Text(json_msg)).await.unwrap();
+    write.send(Message::Text(json_msg.into())).await.unwrap();
 
     // Collect server responses
     let mut received_output = false;
@@ -95,9 +92,7 @@ async fn test_exec_endpoint_command_execution() {
                 assert!(!text.is_empty(), "Response should not be empty");
 
                 // Check if we received expected output type
-                if text.contains("stdout_normal")
-                    && text.contains("Hello from exec test")
-                {
+                if text.contains("stdout_normal") && text.contains("Hello from exec test") {
                     received_output = true;
                     println!("✅ Received expected command output");
                 }
@@ -199,9 +194,7 @@ async fn test_exec_endpoint_run_script() {
     // Create DesignerState with correct pkgs_cache
     let designer_state = Arc::new(DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-            TmanStorageInMemory::default(),
-        )),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(pkgs_cache),
         graphs_cache: tokio::sync::RwLock::new(graphs_cache),
@@ -261,12 +254,10 @@ async fn test_exec_endpoint_run_script() {
 
     let json_msg = serde_json::to_string(&run_script_msg).unwrap();
     println!("📤 Sending RunScript message: {json_msg}");
-    println!(
-        "📝 This should execute: echo 'Running test script from manifest'"
-    );
+    println!("📝 This should execute: echo 'Running test script from manifest'");
 
     // Send message via WebSocket
-    write.send(Message::Text(json_msg)).await.unwrap();
+    write.send(Message::Text(json_msg.into())).await.unwrap();
 
     // Collect server responses
     let mut message_count = 0;
@@ -335,9 +326,7 @@ async fn test_exec_endpoint_run_script() {
     println!("   - test: echo 'Running test script from manifest'");
     println!("   - build: echo 'Building project'");
     println!("   - dev: echo 'Starting development server'");
-    println!(
-        "🎯 Key difference: RunScript.name='test' vs ExecCmd.cmd='echo ...'"
-    );
+    println!("🎯 Key difference: RunScript.name='test' vs ExecCmd.cmd='echo ...'");
     println!(
         "🚀 RunScript successfully executed and validated real WebSocket \
          communication!"
@@ -353,8 +342,7 @@ async fn test_exec_endpoint_run_script() {
 #[actix_rt::test]
 async fn test_exec_endpoint_invalid_command() {
     // Start test server
-    let server_addr =
-        start_test_server("/ws/exec", || web::get().to(exec_endpoint)).await;
+    let server_addr = start_test_server("/ws/exec", || web::get().to(exec_endpoint)).await;
     println!("📡 Test server started at: {server_addr}");
 
     // Establish WebSocket connection
@@ -378,7 +366,7 @@ async fn test_exec_endpoint_invalid_command() {
     let json_msg = serde_json::to_string(&exec_cmd_msg).unwrap();
     println!("📤 Sending invalid command: {json_msg}");
 
-    write.send(Message::Text(json_msg)).await.unwrap();
+    write.send(Message::Text(json_msg.into())).await.unwrap();
 
     // Collect responses
     let mut message_count = 0;
@@ -391,7 +379,8 @@ async fn test_exec_endpoint_invalid_command() {
                 println!("📥 Received message #{message_count}: {text}");
 
                 // Check if we received error information or non-zero exit code
-                if text.contains("stderr")
+                if text.contains("error")
+                    || text.contains("stderr")
                     || (text.contains("exit") && !text.contains("\"code\":0"))
                 {
                     received_error_or_exit = true;
@@ -431,8 +420,7 @@ async fn test_exec_endpoint_invalid_command() {
 /// 3. Whether connection is closed appropriately
 #[actix_rt::test]
 async fn test_exec_endpoint_invalid_json() {
-    let server_addr =
-        start_test_server("/ws/exec", || web::get().to(exec_endpoint)).await;
+    let server_addr = start_test_server("/ws/exec", || web::get().to(exec_endpoint)).await;
     println!("📡 Test server started at: {server_addr}");
 
     let ws_url = format!("ws://{server_addr}/ws/exec");
@@ -445,7 +433,10 @@ async fn test_exec_endpoint_invalid_json() {
     let invalid_json = "{ invalid json here }";
     println!("📤 Sending invalid JSON: {invalid_json}");
 
-    write.send(Message::Text(invalid_json.to_string())).await.unwrap();
+    write
+        .send(Message::Text(invalid_json.into()))
+        .await
+        .unwrap();
 
     // Wait for response
     let mut message_count = 0;

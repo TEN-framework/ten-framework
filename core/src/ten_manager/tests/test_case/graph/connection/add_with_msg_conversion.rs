@@ -8,176 +8,35 @@
 mod tests {
     use std::collections::HashMap;
 
-    use anyhow::Result;
-    use serde_json::Value;
-    use tempfile::TempDir;
-
     use ten_manager::constants::TEST_DIR;
     use ten_manager::graph::connections::add::graph_add_connection;
-    use ten_manager::graph::update_graph_connections_in_property_all_fields;
-    use ten_rust::graph::connection::{
-        GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow,
-    };
     use ten_rust::graph::msg_conversion::{
-        MsgAndResultConversion, MsgConversion, MsgConversionMode,
-        MsgConversionRule, MsgConversionRules, MsgConversionType,
+        MsgAndResultConversion, MsgConversion, MsgConversionMode, MsgConversionRule,
+        MsgConversionRules, MsgConversionType,
     };
     use ten_rust::graph::Graph;
-    use ten_rust::pkg_info::constants::PROPERTY_JSON_FILENAME;
     use ten_rust::pkg_info::message::MsgType;
 
     use crate::test_case::common::mock::inject_all_standard_pkgs_for_mock;
     use crate::test_case::graph::connection::create_test_node;
-
-    #[test]
-    fn test_add_connection_with_msg_conversion() -> Result<()> {
-        // Create a temporary directory for our test.
-        let temp_dir = TempDir::new()?;
-        let test_dir = temp_dir.path().to_str().unwrap().to_string();
-
-        // First, create the initial property.json with a connection.
-        let initial_json =
-            include_str!("../../../test_data/initial_property.json");
-
-        // Expected JSON after adding the connection with message conversion.
-        let expected_json = include_str!(
-            "../../../test_data/expected_property_with_msg_conversion.json"
-        );
-
-        // Write the initial JSON to property.json.
-        let property_path =
-            std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
-        std::fs::write(&property_path, initial_json)?;
-
-        // Parse the initial JSON to all_fields.
-        let mut all_fields: serde_json::Map<String, Value> =
-            serde_json::from_str(initial_json)?;
-
-        // Create a connection with message conversion
-        let connection = GraphConnection {
-            loc: GraphLoc {
-                app: Some("http://example.com:8000".to_string()),
-                extension: Some("extension_1".to_string()),
-                subgraph: None,
-                selector: None,
-            },
-            cmd: Some(vec![GraphMessageFlow::new(
-                "cmd_with_conversion".to_string(),
-                vec![GraphDestination {
-                    loc: GraphLoc {
-                        app: Some("http://example.com:8000".to_string()),
-                        extension: Some("extension_2".to_string()),
-                        subgraph: None,
-                        selector: None,
-                    },
-                    msg_conversion: Some(MsgAndResultConversion {
-                        msg: Some(MsgConversion {
-                            conversion_type: MsgConversionType::PerProperty,
-                            rules: MsgConversionRules {
-                                rules: vec![
-                                    MsgConversionRule {
-                                        path: "mapped_param".to_string(),
-                                        conversion_mode:
-                                            MsgConversionMode::FromOriginal,
-                                        original_path: Some(
-                                            "original_param".to_string(),
-                                        ),
-                                        value: None,
-                                    },
-                                    MsgConversionRule {
-                                        path: "fixed_param".to_string(),
-                                        conversion_mode:
-                                            MsgConversionMode::FixedValue,
-                                        original_path: None,
-                                        value: Some(serde_json::json!(42)),
-                                    },
-                                ],
-                                keep_original: Some(true),
-                            },
-                        }),
-                        result: Some(MsgConversion {
-                            conversion_type: MsgConversionType::PerProperty,
-                            rules: MsgConversionRules {
-                                rules: vec![MsgConversionRule {
-                                    path: "mapped_result".to_string(),
-                                    conversion_mode:
-                                        MsgConversionMode::FromOriginal,
-                                    original_path: Some(
-                                        "original_result".to_string(),
-                                    ),
-                                    value: None,
-                                }],
-                                keep_original: Some(false),
-                            },
-                        }),
-                    }),
-                }],
-                vec![],
-            )]),
-            data: None,
-            audio_frame: None,
-            video_frame: None,
-        };
-
-        let connections_to_add = vec![connection];
-
-        // Update the connections in memory and in the file.
-        update_graph_connections_in_property_all_fields(
-            &test_dir,
-            &mut all_fields,
-            "test_graph",
-            Some(&connections_to_add),
-            None,
-            None,
-        )?;
-
-        // Read the updated property.json.
-        let actual_json = std::fs::read_to_string(&property_path)?;
-
-        // Normalize both JSON strings (parse and reformat to remove whitespace
-        // differences).
-        let expected_value: serde_json::Value =
-            serde_json::from_str(expected_json)?;
-        let actual_value: serde_json::Value =
-            serde_json::from_str(&actual_json)?;
-
-        assert_eq!(
-            expected_value, actual_value,
-            "Updated property does not match expected property"
-        );
-
-        Ok(())
-    }
 
     #[tokio::test]
     async fn test_add_connection_with_fixed_value_msg_conversion() {
         let mut pkgs_cache = HashMap::new();
         let mut graphs_cache = HashMap::new();
 
-        inject_all_standard_pkgs_for_mock(
-            &mut pkgs_cache,
-            &mut graphs_cache,
-            TEST_DIR,
-        )
-        .await;
+        inject_all_standard_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, TEST_DIR).await;
 
         // Create a graph with two nodes.
         let mut graph = Graph {
             nodes: vec![
-                create_test_node(
-                    "ext1",
-                    "extension_addon_1",
-                    Some("http://example.com:8000"),
-                ),
-                create_test_node(
-                    "ext2",
-                    "extension_addon_2",
-                    Some("http://example.com:8000"),
-                ),
+                create_test_node("ext1", "extension_addon_1", Some("http://example.com:8000")),
+                create_test_node("ext2", "extension_addon_2", Some("http://example.com:8000")),
             ],
             connections: None,
             exposed_messages: None,
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         // Create a message conversion with fixed value.
@@ -190,17 +49,13 @@ mod tests {
                             path: "ten.name".to_string(),
                             conversion_mode: MsgConversionMode::FixedValue,
                             original_path: None,
-                            value: Some(serde_json::Value::String(
-                                "test_value".to_string(),
-                            )),
+                            value: Some(serde_json::Value::String("test_value".to_string())),
                         },
                         MsgConversionRule {
                             path: "param1".to_string(),
                             conversion_mode: MsgConversionMode::FixedValue,
                             original_path: None,
-                            value: Some(serde_json::Value::Number(
-                                serde_json::Number::from(42),
-                            )),
+                            value: Some(serde_json::Value::Number(serde_json::Number::from(42))),
                         },
                     ],
                     keep_original: Some(true),
@@ -242,7 +97,7 @@ mod tests {
         assert_eq!(cmd_flows.len(), 1);
 
         let flow = &cmd_flows[0];
-        assert_eq!(flow.name, "cmd1");
+        assert_eq!(flow.name.as_deref(), Some("cmd1"));
         assert_eq!(flow.dest.len(), 1);
 
         let dest = &flow.dest[0];
@@ -281,35 +136,22 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_add_connection_with_fixed_value_msg_conversion_with_required()
-    {
+    async fn test_add_connection_with_fixed_value_msg_conversion_with_required() {
         let mut pkgs_cache = HashMap::new();
         let mut graphs_cache = HashMap::new();
 
-        inject_all_standard_pkgs_for_mock(
-            &mut pkgs_cache,
-            &mut graphs_cache,
-            TEST_DIR,
-        )
-        .await;
+        inject_all_standard_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, TEST_DIR).await;
 
         // Create a graph with two nodes.
         let mut graph = Graph {
             nodes: vec![
-                create_test_node(
-                    "ext1",
-                    "extension_addon_1",
-                    Some("http://example.com:8000"),
-                ),
-                create_test_node(
-                    "ext2",
-                    "extension_addon_2",
-                    Some("http://example.com:8000"),
-                ),
+                create_test_node("ext1", "extension_addon_1", Some("http://example.com:8000")),
+                create_test_node("ext2", "extension_addon_2", Some("http://example.com:8000")),
             ],
             connections: None,
             exposed_messages: None,
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         // Create a message conversion with fixed value.
@@ -321,9 +163,7 @@ mod tests {
                         path: "bar".to_string(),
                         conversion_mode: MsgConversionMode::FixedValue,
                         original_path: None,
-                        value: Some(serde_json::Value::String(
-                            "some_string_value".to_string(),
-                        )),
+                        value: Some(serde_json::Value::String("some_string_value".to_string())),
                     }],
                     keep_original: Some(true),
                 },
@@ -350,35 +190,22 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_add_connection_with_fixed_value_result_conversion_with_required(
-    ) {
+    async fn test_add_connection_with_fixed_value_result_conversion_with_required() {
         let mut pkgs_cache = HashMap::new();
         let mut graphs_cache = HashMap::new();
 
-        inject_all_standard_pkgs_for_mock(
-            &mut pkgs_cache,
-            &mut graphs_cache,
-            TEST_DIR,
-        )
-        .await;
+        inject_all_standard_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, TEST_DIR).await;
 
         // Create a graph with two nodes.
         let mut graph = Graph {
             nodes: vec![
-                create_test_node(
-                    "ext1",
-                    "extension_addon_1",
-                    Some("http://example.com:8000"),
-                ),
-                create_test_node(
-                    "ext2",
-                    "extension_addon_2",
-                    Some("http://example.com:8000"),
-                ),
+                create_test_node("ext1", "extension_addon_1", Some("http://example.com:8000")),
+                create_test_node("ext2", "extension_addon_2", Some("http://example.com:8000")),
             ],
             connections: None,
             exposed_messages: None,
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         // Create a message conversion with fixed value.
@@ -391,9 +218,7 @@ mod tests {
                         path: "bar".to_string(),
                         conversion_mode: MsgConversionMode::FixedValue,
                         original_path: None,
-                        value: Some(serde_json::Value::String(
-                            "some_string_value".to_string(),
-                        )),
+                        value: Some(serde_json::Value::String("some_string_value".to_string())),
                     }],
                     keep_original: Some(true),
                 },
@@ -420,35 +245,22 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_add_connection_with_from_original_msg_conversion_with_required(
-    ) {
+    async fn test_add_connection_with_from_original_msg_conversion_with_required() {
         let mut pkgs_cache = HashMap::new();
         let mut graphs_cache = HashMap::new();
 
-        inject_all_standard_pkgs_for_mock(
-            &mut pkgs_cache,
-            &mut graphs_cache,
-            TEST_DIR,
-        )
-        .await;
+        inject_all_standard_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, TEST_DIR).await;
 
         // Create a graph with two nodes.
         let mut graph = Graph {
             nodes: vec![
-                create_test_node(
-                    "ext1",
-                    "extension_addon_1",
-                    Some("http://example.com:8000"),
-                ),
-                create_test_node(
-                    "ext2",
-                    "extension_addon_2",
-                    Some("http://example.com:8000"),
-                ),
+                create_test_node("ext1", "extension_addon_1", Some("http://example.com:8000")),
+                create_test_node("ext2", "extension_addon_2", Some("http://example.com:8000")),
             ],
             connections: None,
             exposed_messages: None,
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         // Create a message conversion with fixed value.
@@ -491,30 +303,18 @@ mod tests {
         let mut pkgs_cache = HashMap::new();
         let mut graphs_cache = HashMap::new();
 
-        inject_all_standard_pkgs_for_mock(
-            &mut pkgs_cache,
-            &mut graphs_cache,
-            TEST_DIR,
-        )
-        .await;
+        inject_all_standard_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, TEST_DIR).await;
 
         // Create a graph with two nodes.
         let mut graph = Graph {
             nodes: vec![
-                create_test_node(
-                    "ext1",
-                    "extension_addon_1",
-                    Some("http://example.com:8000"),
-                ),
-                create_test_node(
-                    "ext2",
-                    "extension_addon_2",
-                    Some("http://example.com:8000"),
-                ),
+                create_test_node("ext1", "extension_addon_1", Some("http://example.com:8000")),
+                create_test_node("ext2", "extension_addon_2", Some("http://example.com:8000")),
             ],
             connections: None,
             exposed_messages: None,
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         // Create a message conversion with from_original mode.
@@ -583,30 +383,18 @@ mod tests {
         let mut pkgs_cache = HashMap::new();
         let mut graphs_cache = HashMap::new();
 
-        inject_all_standard_pkgs_for_mock(
-            &mut pkgs_cache,
-            &mut graphs_cache,
-            TEST_DIR,
-        )
-        .await;
+        inject_all_standard_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, TEST_DIR).await;
 
         // Create a graph with two nodes.
         let mut graph = Graph {
             nodes: vec![
-                create_test_node(
-                    "ext1",
-                    "extension_addon_1",
-                    Some("http://example.com:8000"),
-                ),
-                create_test_node(
-                    "ext2",
-                    "extension_addon_2",
-                    Some("http://example.com:8000"),
-                ),
+                create_test_node("ext1", "extension_addon_1", Some("http://example.com:8000")),
+                create_test_node("ext2", "extension_addon_2", Some("http://example.com:8000")),
             ],
             connections: None,
             exposed_messages: None,
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         // Create a message conversion with both message and result conversion.
@@ -656,9 +444,7 @@ mod tests {
         assert!(result.is_ok());
 
         // Verify connection and msg_conversion were added correctly.
-        let dest =
-            &graph.connections.as_ref().unwrap()[0].cmd.as_ref().unwrap()[0]
-                .dest[0];
+        let dest = &graph.connections.as_ref().unwrap()[0].cmd.as_ref().unwrap()[0].dest[0];
 
         // Verify the msg_conversion was properly set.
         let dest_msg_conversion = dest.msg_conversion.as_ref().unwrap();
@@ -680,7 +466,10 @@ mod tests {
         );
         assert_eq!(result_conversion.rules.rules[0].path, "mapped_detail");
         assert_eq!(
-            result_conversion.rules.rules[0].original_path.as_ref().unwrap(),
+            result_conversion.rules.rules[0]
+                .original_path
+                .as_ref()
+                .unwrap(),
             "detail"
         );
     }
@@ -690,30 +479,18 @@ mod tests {
         let mut pkgs_cache = HashMap::new();
         let mut graphs_cache = HashMap::new();
 
-        inject_all_standard_pkgs_for_mock(
-            &mut pkgs_cache,
-            &mut graphs_cache,
-            TEST_DIR,
-        )
-        .await;
+        inject_all_standard_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, TEST_DIR).await;
 
         // Create a graph with two nodes.
         let mut graph = Graph {
             nodes: vec![
-                create_test_node(
-                    "ext1",
-                    "extension_addon_1",
-                    Some("http://example.com:8000"),
-                ),
-                create_test_node(
-                    "ext2",
-                    "extension_addon_2",
-                    Some("http://example.com:8000"),
-                ),
+                create_test_node("ext1", "extension_addon_1", Some("http://example.com:8000")),
+                create_test_node("ext2", "extension_addon_2", Some("http://example.com:8000")),
             ],
             connections: None,
             exposed_messages: None,
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         // Create an invalid message conversion with empty rules.
@@ -754,40 +531,20 @@ mod tests {
         let mut pkgs_cache = HashMap::new();
         let mut graphs_cache = HashMap::new();
 
-        inject_all_standard_pkgs_for_mock(
-            &mut pkgs_cache,
-            &mut graphs_cache,
-            TEST_DIR,
-        )
-        .await;
+        inject_all_standard_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, TEST_DIR).await;
 
         // Create a graph with two nodes.
         let mut graph = Graph {
             nodes: vec![
-                create_test_node(
-                    "ext1",
-                    "extension_addon_1",
-                    Some("http://example.com:8000"),
-                ),
-                create_test_node(
-                    "ext2",
-                    "extension_addon_2",
-                    Some("http://example.com:8000"),
-                ),
-                create_test_node(
-                    "ext3",
-                    "extension_addon_3",
-                    Some("http://example.com:8000"),
-                ),
-                create_test_node(
-                    "ext4",
-                    "addon4",
-                    Some("http://example.com:8000"),
-                ),
+                create_test_node("ext1", "extension_addon_1", Some("http://example.com:8000")),
+                create_test_node("ext2", "extension_addon_2", Some("http://example.com:8000")),
+                create_test_node("ext3", "extension_addon_3", Some("http://example.com:8000")),
+                create_test_node("ext4", "addon4", Some("http://example.com:8000")),
             ],
             connections: None,
             exposed_messages: None,
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         let msg_conversion = MsgAndResultConversion {
@@ -843,40 +600,20 @@ mod tests {
         let mut pkgs_cache = HashMap::new();
         let mut graphs_cache = HashMap::new();
 
-        inject_all_standard_pkgs_for_mock(
-            &mut pkgs_cache,
-            &mut graphs_cache,
-            TEST_DIR,
-        )
-        .await;
+        inject_all_standard_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, TEST_DIR).await;
 
         // Create a graph with two nodes.
         let mut graph = Graph {
             nodes: vec![
-                create_test_node(
-                    "ext1",
-                    "extension_addon_1",
-                    Some("http://example.com:8000"),
-                ),
-                create_test_node(
-                    "ext2",
-                    "extension_addon_2",
-                    Some("http://example.com:8000"),
-                ),
-                create_test_node(
-                    "ext3",
-                    "extension_addon_3",
-                    Some("http://example.com:8000"),
-                ),
-                create_test_node(
-                    "ext4",
-                    "addon4",
-                    Some("http://example.com:8000"),
-                ),
+                create_test_node("ext1", "extension_addon_1", Some("http://example.com:8000")),
+                create_test_node("ext2", "extension_addon_2", Some("http://example.com:8000")),
+                create_test_node("ext3", "extension_addon_3", Some("http://example.com:8000")),
+                create_test_node("ext4", "addon4", Some("http://example.com:8000")),
             ],
             connections: None,
             exposed_messages: None,
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         let msg_conversion = MsgAndResultConversion {
@@ -931,40 +668,20 @@ mod tests {
         let mut pkgs_cache = HashMap::new();
         let mut graphs_cache = HashMap::new();
 
-        inject_all_standard_pkgs_for_mock(
-            &mut pkgs_cache,
-            &mut graphs_cache,
-            TEST_DIR,
-        )
-        .await;
+        inject_all_standard_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, TEST_DIR).await;
 
         // Create a graph with two nodes.
         let mut graph = Graph {
             nodes: vec![
-                create_test_node(
-                    "ext1",
-                    "extension_addon_1",
-                    Some("http://example.com:8000"),
-                ),
-                create_test_node(
-                    "ext2",
-                    "extension_addon_2",
-                    Some("http://example.com:8000"),
-                ),
-                create_test_node(
-                    "ext3",
-                    "extension_addon_3",
-                    Some("http://example.com:8000"),
-                ),
-                create_test_node(
-                    "ext4",
-                    "addon4",
-                    Some("http://example.com:8000"),
-                ),
+                create_test_node("ext1", "extension_addon_1", Some("http://example.com:8000")),
+                create_test_node("ext2", "extension_addon_2", Some("http://example.com:8000")),
+                create_test_node("ext3", "extension_addon_3", Some("http://example.com:8000")),
+                create_test_node("ext4", "addon4", Some("http://example.com:8000")),
             ],
             connections: None,
             exposed_messages: None,
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         let msg_conversion = MsgAndResultConversion {
@@ -1015,45 +732,24 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_add_connection_with_msg_conversion_without_result_conversion_failure(
-    ) {
+    async fn test_add_connection_with_msg_conversion_without_result_conversion_failure() {
         let mut pkgs_cache = HashMap::new();
         let mut graphs_cache = HashMap::new();
 
-        inject_all_standard_pkgs_for_mock(
-            &mut pkgs_cache,
-            &mut graphs_cache,
-            TEST_DIR,
-        )
-        .await;
+        inject_all_standard_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, TEST_DIR).await;
 
         // Create a graph with two nodes.
         let mut graph = Graph {
             nodes: vec![
-                create_test_node(
-                    "ext1",
-                    "extension_addon_1",
-                    Some("http://example.com:8000"),
-                ),
-                create_test_node(
-                    "ext2",
-                    "extension_addon_2",
-                    Some("http://example.com:8000"),
-                ),
-                create_test_node(
-                    "ext3",
-                    "extension_addon_3",
-                    Some("http://example.com:8000"),
-                ),
-                create_test_node(
-                    "ext4",
-                    "addon4",
-                    Some("http://example.com:8000"),
-                ),
+                create_test_node("ext1", "extension_addon_1", Some("http://example.com:8000")),
+                create_test_node("ext2", "extension_addon_2", Some("http://example.com:8000")),
+                create_test_node("ext3", "extension_addon_3", Some("http://example.com:8000")),
+                create_test_node("ext4", "addon4", Some("http://example.com:8000")),
             ],
             connections: None,
             exposed_messages: None,
             exposed_properties: None,
+            pre_flatten: None,
         };
 
         let msg_conversion = MsgAndResultConversion {

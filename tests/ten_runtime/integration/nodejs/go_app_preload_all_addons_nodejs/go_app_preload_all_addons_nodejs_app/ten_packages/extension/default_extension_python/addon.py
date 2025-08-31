@@ -19,6 +19,8 @@ print("default_extension_python addon loaded")
 
 @register_addon_as_extension("default_extension_python")
 class DefaultExtensionAddon(Addon):
-    def on_create_instance(self, ten_env: TenEnv, name: str, context) -> None:
+    def on_create_instance(
+        self, ten_env: TenEnv, name: str, context: object
+    ) -> None:
         ten_env.log(LogLevel.INFO, "on_create_instance")
         ten_env.on_create_instance_done(DefaultExtension(name), context)

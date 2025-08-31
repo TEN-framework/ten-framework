@@ -68,6 +68,7 @@ mod tests {
                     connections: None,
                     exposed_messages: None,
                     exposed_properties: None,
+                    pre_flatten: None,
                 },
             },
             app_base_dir: None,
@@ -76,7 +77,10 @@ mod tests {
         };
 
         // Validate and complete (this should load the graph from import_uri).
-        graph_info.validate_and_complete_and_flatten().await.unwrap();
+        graph_info
+            .validate_and_complete_and_flatten()
+            .await
+            .unwrap();
 
         // Verify that the graph was loaded correctly.
         assert_eq!(graph_info.graph.nodes().len(), 1);
@@ -113,6 +117,7 @@ mod tests {
                     connections: None,
                     exposed_messages: None,
                     exposed_properties: None,
+                    pre_flatten: None,
                 },
             },
             app_base_dir: None,
@@ -123,16 +128,15 @@ mod tests {
         // This should fail due to mutual exclusion
         let result = graph_info.validate_and_complete_and_flatten().await;
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains(
-            "When 'import_uri' is specified, 'nodes' field must not be present"
-        ));
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("When 'import_uri' is specified, 'nodes' field must not be present"));
     }
 
     #[tokio::test]
     async fn test_import_uri_mutual_exclusion_with_connections() {
-        use ten_rust::graph::connection::{
-            GraphConnection, GraphLoc, GraphMessageFlow,
-        };
+        use ten_rust::graph::connection::{GraphConnection, GraphLoc, GraphMessageFlow};
 
         // Create a GraphInfo with both import_uri and connections - this should
         // fail
@@ -162,6 +166,7 @@ mod tests {
                     }]),
                     exposed_messages: None,
                     exposed_properties: None,
+                    pre_flatten: None,
                 },
             },
             app_base_dir: None,
@@ -200,6 +205,7 @@ mod tests {
                         subgraph: None,
                     }]),
                     exposed_properties: None,
+                    pre_flatten: None,
                 },
             },
             app_base_dir: None,
@@ -237,6 +243,7 @@ mod tests {
                         subgraph: None,
                         name: "test_prop".to_string(),
                     }]),
+                    pre_flatten: None,
                 },
             },
             app_base_dir: None,
@@ -290,6 +297,7 @@ mod tests {
                     connections: None,
                     exposed_messages: None,
                     exposed_properties: None,
+                    pre_flatten: None,
                 },
             },
             app_base_dir: None,

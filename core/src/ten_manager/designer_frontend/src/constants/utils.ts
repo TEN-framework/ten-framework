@@ -8,7 +8,7 @@ import { TEN_DEFAULT_BACKEND_WS_ENDPOINT } from "@/constants";
 
 export const getWSEndpointFromWindow = (): string => {
   if (process.env.NODE_ENV === "development") {
-    return `ws://localhost:49483`;
+    return TEN_DEFAULT_BACKEND_WS_ENDPOINT;
   }
   if (typeof window !== "undefined" && window.location) {
     const { protocol, host } = window.location;

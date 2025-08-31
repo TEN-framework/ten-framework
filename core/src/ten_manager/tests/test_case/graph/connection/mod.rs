@@ -6,15 +6,10 @@
 //
 mod add;
 mod add_with_msg_conversion;
-mod modify_msg_conversion;
 
 use ten_rust::graph::node::GraphNode;
 
-pub fn create_test_node(
-    name: &str,
-    addon: &str,
-    app: Option<&str>,
-) -> GraphNode {
+pub fn create_test_node(name: &str, addon: &str, app: Option<&str>) -> GraphNode {
     GraphNode::new_extension_node(
         name.to_string(),
         addon.to_string(),

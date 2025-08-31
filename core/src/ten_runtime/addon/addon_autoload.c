@@ -371,16 +371,17 @@ done:
   return success;
 }
 
-static bool ten_addon_register_specific_addon(TEN_ADDON_TYPE addon_type,
-                                              const char *addon_name,
-                                              void *register_ctx,
-                                              ten_error_t *err) {
+static bool ten_addon_register_specific_addon(
+    TEN_ADDON_TYPE addon_type, const char *addon_name, void *register_ctx,
+    ten_addon_manager_on_all_addons_registered_func_t on_all_addons_registered,
+    void *cb_data, ten_error_t *err) {
   TEN_ASSERT(addon_name, "Invalid argument.");
 
   ten_addon_manager_t *manager = ten_addon_manager_get_instance();
 
   bool success = ten_addon_manager_register_specific_addon(
-      manager, addon_type, addon_name, register_ctx);
+      manager, addon_type, addon_name, register_ctx, on_all_addons_registered,
+      cb_data);
 
   if (!success && err) {
     ten_error_set(err, TEN_ERROR_CODE_GENERIC,
@@ -393,13 +394,16 @@ static bool ten_addon_register_specific_addon(TEN_ADDON_TYPE addon_type,
 
 bool ten_addon_try_load_specific_addon_using_native_addon_loader(
     const char *app_base_dir, TEN_ADDON_TYPE addon_type, const char *addon_name,
-    void *register_ctx, ten_error_t *err) {
+    void *register_ctx,
+    ten_addon_manager_on_all_addons_registered_func_t on_all_addons_registered,
+    void *cb_data, ten_error_t *err) {
   TEN_ASSERT(register_ctx, "Invalid argument.");
 
   // First, check whether the phase 2 registering function of the addon we want
   // to handle has already been added to the addon manager. If it has, proceed
   // directly with the phase 2 registration. Otherwise, start from phase 1.
   if (!ten_addon_register_specific_addon(addon_type, addon_name, register_ctx,
+                                         on_all_addons_registered, cb_data,
                                          err)) {
     // If the addon is not registered, try to load it using the native addon
     // loader (phase 1).
@@ -410,8 +414,9 @@ bool ten_addon_try_load_specific_addon_using_native_addon_loader(
     }
 
     // If the addon is loaded successfully, try to register it again (phase 2).
-    return ten_addon_register_specific_addon(addon_type, addon_name,
-                                             register_ctx, err);
+    return ten_addon_register_specific_addon(
+        addon_type, addon_name, register_ctx, on_all_addons_registered, cb_data,
+        err);
   }
 
   return true;

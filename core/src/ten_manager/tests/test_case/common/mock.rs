@@ -45,12 +45,7 @@ pub async fn inject_all_pkgs_for_mock(
         )
         .await?;
 
-        let pkg_info = PkgInfo::from_metadata(
-            &metadata_json.0,
-            &manifest,
-            &Some(property),
-        )
-        .await?;
+        let pkg_info = PkgInfo::from_metadata(&metadata_json.0, &manifest, &Some(property)).await?;
 
         // Sort package by type.
         match manifest.type_and_name.pkg_type {
@@ -118,8 +113,7 @@ pub async fn inject_all_standard_pkgs_for_mock(
                 "{}{}",
                 app_base_dir, "/ten_packages/extension/extension_addon_1"
             ),
-            include_str!("../../test_data/extension_addon_1_manifest.json")
-                .to_string(),
+            include_str!("../../test_data/extension_addon_1_manifest.json").to_string(),
             "{}".to_string(),
         ),
         (
@@ -127,8 +121,7 @@ pub async fn inject_all_standard_pkgs_for_mock(
                 "{}{}",
                 app_base_dir, "/ten_packages/extension/extension_addon_2"
             ),
-            include_str!("../../test_data/extension_addon_2_manifest.json")
-                .to_string(),
+            include_str!("../../test_data/extension_addon_2_manifest.json").to_string(),
             "{}".to_string(),
         ),
         (
@@ -136,8 +129,7 @@ pub async fn inject_all_standard_pkgs_for_mock(
                 "{}{}",
                 app_base_dir, "/ten_packages/extension/extension_addon_3"
             ),
-            include_str!("../../test_data/extension_addon_3_manifest.json")
-                .to_string(),
+            include_str!("../../test_data/extension_addon_3_manifest.json").to_string(),
             "{}".to_string(),
         ),
         (
@@ -145,14 +137,11 @@ pub async fn inject_all_standard_pkgs_for_mock(
                 "{}{}",
                 app_base_dir, "/ten_packages/extension/extension_addon_4"
             ),
-            include_str!("../../test_data/extension_addon_4_manifest.json")
-                .to_string(),
+            include_str!("../../test_data/extension_addon_4_manifest.json").to_string(),
             "{}".to_string(),
         ),
     ];
 
-    let inject_ret =
-        inject_all_pkgs_for_mock(pkgs_cache, graphs_cache, all_pkgs_json_str)
-            .await;
+    let inject_ret = inject_all_pkgs_for_mock(pkgs_cache, graphs_cache, all_pkgs_json_str).await;
     assert!(inject_ret.is_ok());
 }

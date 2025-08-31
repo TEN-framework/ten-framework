@@ -20,7 +20,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CustomNodeConnectionButton } from "@/flow/edge/button";
 import { identifier2data, type TCustomNodeData } from "@/lib/identifier";
 import { useFlowStore } from "@/store/flow";
-import type { EConnectionType, IGraph } from "@/types/graphs";
+import type { EConnectionType, GraphInfo } from "@/types/graphs";
 import type {
   ICustomConnectionWidget,
   ICustomConnectionWidgetData,
@@ -35,6 +35,7 @@ export const CustomNodeConnPopupTitle = (props: {
   const { source, target } = props;
   const { t } = useTranslation();
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <ignore>
   const titleMemo = React.useMemo(() => {
     if (source && !target) {
       return t("popup.customNodeConn.srcTitle", { source });
@@ -88,7 +89,7 @@ function EdgeInfoContent(props: {
     source?: boolean;
     target?: boolean;
   };
-  graph: IGraph;
+  graph: GraphInfo;
 }) {
   const { source, target, filters: initialFilters, graph } = props;
   const [filters, setFilters] = React.useState<TFilterItem[]>(() => {
@@ -185,7 +186,7 @@ function CustomNodeConnContent(props: {
     source?: boolean;
     target?: boolean;
   };
-  graph: IGraph;
+  graph: GraphInfo;
 }) {
   const { source, filters: initialFilters, graph } = props;
   const [filters, setFilters] = React.useState<TFilterItem[]>(() => {
@@ -211,7 +212,7 @@ function CustomNodeConnContent(props: {
 
   const [rowsMemo] = React.useMemo(() => {
     const relatedEdges = edges
-      .filter((e) => e.data?.graph?.uuid === graph.uuid)
+      .filter((e) => e.data?.graph?.graph_id === graph.graph_id)
       ?.filter((e) =>
         flowDirection === "upstream"
           ? identifier2data<TCustomNodeData>(e.target).name === source
@@ -235,7 +236,7 @@ function CustomNodeConnContent(props: {
         );
       });
     return [rows, relatedEdges];
-  }, [edges, graph.uuid, flowDirection, source, filters]);
+  }, [edges, graph.graph_id, flowDirection, source, filters]);
 
   const handleRemoveFilter = (label: string) => {
     setFilters(filters.filter((f) => f.label !== label));

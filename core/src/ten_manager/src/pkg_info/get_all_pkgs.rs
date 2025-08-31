@@ -35,8 +35,7 @@ pub async fn get_all_pkgs_in_app(
     let app_path = PathBuf::from(base_dir);
 
     // Fetch package information.
-    let result_pkgs =
-        get_app_installed_pkgs(&app_path, true, &mut Some(graphs_cache)).await;
+    let result_pkgs = get_app_installed_pkgs(&app_path, true, &mut Some(graphs_cache)).await;
 
     match result_pkgs {
         Ok(pkgs) => {

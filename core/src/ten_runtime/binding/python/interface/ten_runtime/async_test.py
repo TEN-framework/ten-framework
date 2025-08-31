@@ -15,12 +15,13 @@ from typing import final
 from libten_runtime_python import (
     _ExtensionTester,  # pyright: ignore[reportPrivateUsage]
 )
+
 from .cmd_result import CmdResult
-from .error import TenError
 from .cmd import Cmd
 from .data import Data
 from .audio_frame import AudioFrame
 from .video_frame import VideoFrame
+from .error import TenError
 from .test import TenEnvTester
 from .test_base import TenEnvTesterBase
 

@@ -45,7 +45,7 @@ void ten_msg_conversion_per_property_rules_destroy(
 
 ten_shared_ptr_t *ten_msg_conversion_per_property_rules_convert(
     ten_msg_conversion_per_property_rules_t *self, ten_shared_ptr_t *msg,
-    ten_error_t *err) {
+    bool is_result, ten_error_t *err) {
   TEN_ASSERT(self, "Invalid argument.");
   TEN_ASSERT(msg, "Invalid argument.");
   TEN_ASSERT(ten_msg_check_integrity(msg), "Invalid argument.");
@@ -53,6 +53,7 @@ ten_shared_ptr_t *ten_msg_conversion_per_property_rules_convert(
   ten_shared_ptr_t *new_msg = NULL;
 
   if (self->keep_original) {
+    // Clone the original message.
     new_msg = ten_msg_clone(msg, NULL);
   } else {
     // Do _not_ clone 'properties' field.
@@ -65,54 +66,17 @@ ten_shared_ptr_t *ten_msg_conversion_per_property_rules_convert(
     ten_list_clear(&excluded_field_ids);
   }
 
-  ten_list_foreach (&self->rules, iter) {
-    ten_msg_conversion_per_property_rule_t *property_rule =
-        ten_ptr_listnode_get(iter.node);
-    TEN_ASSERT(property_rule, "Invalid argument.");
-
-    if (!ten_msg_conversion_per_property_rule_convert(property_rule, msg,
-                                                      new_msg, err)) {
-      ten_shared_ptr_destroy(new_msg);
-      new_msg = NULL;
-      break;
-    }
+  if (is_result) {
+    // The command ID of the cloned cmd result should be equal to the original
+    // cmd result.
+    //
+    // Note: In the TEN runtime, if a command A is cloned from a command B, then
+    // the command ID of A & B must be different. However, here is the _ONLY_
+    // location where the command ID of the cloned command will be equal to the
+    // original command.
+    ten_cmd_base_set_cmd_id(new_msg, ten_cmd_base_get_cmd_id(msg));
   }
 
-  return new_msg;
-}
-
-ten_shared_ptr_t *ten_result_conversion_per_property_rules_convert(
-    ten_msg_conversion_per_property_rules_t *self, ten_shared_ptr_t *msg,
-    ten_error_t *err) {
-  TEN_ASSERT(self, "Invalid argument.");
-  TEN_ASSERT(msg, "Invalid argument.");
-  TEN_ASSERT(ten_msg_check_integrity(msg), "Invalid argument.");
-
-  ten_shared_ptr_t *new_msg = NULL;
-
-  if (self->keep_original) {
-    new_msg = ten_msg_clone(msg, NULL);
-  } else {
-    // Do _not_ clone 'properties' field.
-    ten_list_t excluded_field_ids = TEN_LIST_INIT_VAL;
-    ten_list_push_back(
-        &excluded_field_ids,
-        ten_int32_listnode_create(
-            ten_msg_fields_info[TEN_MSG_FIELD_PROPERTIES].field_id));
-    new_msg = ten_msg_clone(msg, &excluded_field_ids);
-    ten_list_clear(&excluded_field_ids);
-  }
-
-  // The command ID of the cloned cmd result should be equal to the original
-  // cmd result.
-  //
-  // Note: In the TEN runtime, if a command A is cloned from a command B, then
-  // the command ID of A & B must be different. However, here is the _ONLY_
-  // location where the command ID of the cloned command will be equal to the
-  // original command.
-  ten_cmd_base_set_cmd_id(new_msg, ten_cmd_base_get_cmd_id(msg));
-
-  // Properties.
   ten_list_foreach (&self->rules, iter) {
     ten_msg_conversion_per_property_rule_t *property_rule =
         ten_ptr_listnode_get(iter.node);

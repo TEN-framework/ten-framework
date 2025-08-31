@@ -28,19 +28,21 @@ namespace ffmpeg_extension {
 demuxer_thread_t::demuxer_thread_t(ten::ten_env_proxy_t *ten_env_proxy,
                                    std::unique_ptr<ten::cmd_t> start_cmd,
                                    extension_t *extension,
-                                   std::string &input_stream_loc)
+                                   std::string input_stream_loc)
     : ten_env_proxy_(ten_env_proxy),
       extension_(extension),
       stop_(false),
       demuxer(nullptr),
       demuxer_thread(nullptr),
       event_for_start_demuxing(ten_event_create(0, 0)),
-      input_stream_loc_(input_stream_loc),
-      start_cmd_(std::move(start_cmd)) {
+      input_stream_loc_(std::move(input_stream_loc)),
+      prepare_cmd_(std::move(start_cmd)) {
   TEN_ASSERT(extension, "Invalid argument.");
 }
 
 demuxer_thread_t::~demuxer_thread_t() {
+  // Demuxer is created in the demuxer thread, so it should be deleted in the
+  // demuxer thread.
   if (demuxer != nullptr) {
     delete demuxer;
     demuxer = nullptr;
@@ -57,17 +59,19 @@ void *demuxer_thread_main(void *self_) {
   auto *demuxer_thread = reinterpret_cast<demuxer_thread_t *>(self_);
   TEN_ASSERT(demuxer_thread, "Invalid argument.");
 
+  // The purpose of the demuxer thread is to perform demuxing, so create the
+  // demuxer first.
   if (!demuxer_thread->create_demuxer()) {
     TEN_LOGW("Failed to create demuxer, stop the demuxer thread");
 
-    demuxer_thread->reply_to_start_cmd(false);
+    demuxer_thread->return_error_result_to_prepare_cmd();
     return nullptr;
   }
 
   TEN_ASSERT(demuxer_thread->demuxer, "Demuxer should have been created.");
 
-  // Notify that the demuxer has been created.
-  demuxer_thread->reply_to_start_cmd(true);
+  // Notify that the demuxer has been prepared, and is ready to start demuxing.
+  demuxer_thread->return_success_result_to_prepare_cmd();
 
   // The demuxter thread will be blocked until receiving start signal.
   demuxer_thread->wait_to_start_demuxing();
@@ -98,20 +102,11 @@ void *demuxer_thread_main(void *self_) {
     }
   }
 
-  demuxer_thread->notify_completed(status == DECODE_STATUS_EOF);
+  demuxer_thread->send_complete_cmd(status == DECODE_STATUS_EOF);
 
   TEN_LOGD("Demuxer thread is stopped");
 
   return nullptr;
-}
-
-void demuxer_thread_t::notify_completed(bool success) {
-  ten_env_proxy_->notify([this, success](ten::ten_env_t &ten_env) {
-    auto cmd = ten::cmd_t::create("complete");
-    cmd->set_property("input_stream", input_stream_loc_);
-    cmd->set_property("success", success);
-    ten_env.send_cmd(std::move(cmd));
-  });
 }
 
 void demuxer_thread_t::start() {
@@ -169,27 +164,46 @@ void demuxer_thread_t::send_audio_eof() {
 
 namespace {
 
+// Converts an AVRational to a double-precision floating point value.
 double rational_to_double(const AVRational &r) {
-  return r.num / static_cast<double>(r.den);
+  if (r.den == 0) {
+    // Avoid division by zero; return 0.0 as a safe default.
+    return 0.0;
+  }
+  return static_cast<double>(r.num) / static_cast<double>(r.den);
 }
 
 }  // namespace
 
-void demuxer_thread_t::reply_to_start_cmd(bool success) {
-  if (!success || demuxer == nullptr) {
-    ten_env_proxy_->notify([this](ten::ten_env_t &ten_env) {
-      auto cmd_result =
-          ten::cmd_result_t::create(TEN_STATUS_CODE_ERROR, *start_cmd_);
-      cmd_result->set_property("detail", "fail to prepare demuxer.");
-      ten_env.return_result(std::move(cmd_result));
-    });
-    return;
-  }
+void demuxer_thread_t::send_complete_cmd(bool complete_status) {
+  ten_env_proxy_->notify([this, complete_status](ten::ten_env_t &ten_env) {
+    auto cmd = ten::cmd_t::create("complete");
 
-  auto cmd_result = ten::cmd_result_t::create(TEN_STATUS_CODE_OK, *start_cmd_);
+    cmd->set_property("input_stream", input_stream_loc_);
+    cmd->set_property("success", complete_status);
+    ten_env.send_cmd(std::move(cmd));
+  });
+}
+
+void demuxer_thread_t::return_error_result_to_prepare_cmd() {
+  TEN_ASSERT(demuxer == nullptr, "Demuxer should not have been created.");
+
+  ten_env_proxy_->notify([this](ten::ten_env_t &ten_env) {
+    auto cmd_result =
+        ten::cmd_result_t::create(TEN_STATUS_CODE_ERROR, *prepare_cmd_);
+    cmd_result->set_property("detail", "fail to prepare demuxer.");
+    ten_env.return_result(std::move(cmd_result));
+  });
+}
+
+void demuxer_thread_t::return_success_result_to_prepare_cmd() {
+  TEN_ASSERT(demuxer != nullptr, "Demuxer should have been created.");
+
+  auto cmd_result =
+      ten::cmd_result_t::create(TEN_STATUS_CODE_OK, *prepare_cmd_);
   cmd_result->set_property("detail", "The demuxer has been started.");
 
-  // Demuxer video settings.
+  // Get the demuxer settings, and return them to the TEN world.
   cmd_result->set_property("frame_rate_num", demuxer->video_frame_rate().num);
   cmd_result->set_property("frame_rate_den", demuxer->video_frame_rate().den);
   cmd_result->set_property("frame_rate_d",

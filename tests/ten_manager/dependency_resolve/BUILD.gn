@@ -33,6 +33,10 @@ ten_package_test_prepare_auxiliary_resources("dependency_resolve") {
     "test_cases/c_depends_d_not_resolved/manifest.json",
 
     #
+    "test_cases/c_depends_h_conflict/expected.json",
+    "test_cases/c_depends_h_conflict/manifest.json",
+
+    #
     "test_cases/c_depends_d_resolved/expected.json",
     "test_cases/c_depends_d_resolved/manifest.json",
 

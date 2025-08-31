@@ -6,7 +6,7 @@
 //
 import { AddonManager } from "./addon_manager.js";
 import ten_addon from "./ten_addon.js";
-import { TenEnv } from "./ten_env.js";
+import type { TenEnv } from "./ten_env.js";
 
 export class App {
   constructor() {

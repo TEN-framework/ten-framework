@@ -6,14 +6,16 @@
 #
 import os
 from typing import final
+
 from libten_runtime_python import (
     _Extension,  # pyright: ignore[reportPrivateUsage]
 )
+
+from .data import Data
+from .cmd import Cmd
 from .video_frame import VideoFrame
 from .audio_frame import AudioFrame
 from .ten_env import TenEnv
-from .cmd import Cmd
-from .data import Data
 
 
 class Extension(_Extension):

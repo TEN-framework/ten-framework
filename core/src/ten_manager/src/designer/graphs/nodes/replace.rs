@@ -12,16 +12,12 @@ use serde::{Deserialize, Serialize};
 use ten_rust::graph::node::GraphNode;
 use uuid::Uuid;
 
-use crate::designer::graphs::nodes::{
-    update_graph_node_in_property_all_fields, GraphNodeUpdateAction,
-};
+use crate::designer::graphs::nodes::update_graph_node_in_property_json_file;
 use crate::designer::{
     response::{ApiResponse, ErrorResponse, Status},
     DesignerState,
 };
-use crate::graph::{
-    graphs_cache_find_by_id_mut, nodes::validate::validate_extension_property,
-};
+use crate::graph::{graphs_cache_find_by_id_mut, nodes::validate::validate_extension_property};
 
 #[derive(Serialize, Deserialize)]
 pub struct ReplaceGraphNodeRequestPayload {
@@ -43,14 +39,13 @@ pub async fn replace_graph_node_endpoint(
     state: web::Data<Arc<DesignerState>>,
 ) -> Result<impl Responder, actix_web::Error> {
     // Get a write lock on the state since we need to modify the graph.
-    let mut pkgs_cache = state.pkgs_cache.write().await;
+    let pkgs_cache = state.pkgs_cache.read().await;
     let mut graphs_cache = state.graphs_cache.write().await;
+    let old_graphs_cache = graphs_cache.clone();
 
     // Get the specified graph from graphs_cache.
-    let graph_info = match graphs_cache_find_by_id_mut(
-        &mut graphs_cache,
-        &request_payload.graph_id,
-    ) {
+    let graph_info = match graphs_cache_find_by_id_mut(&mut graphs_cache, &request_payload.graph_id)
+    {
         Some(graph_info) => graph_info,
         None => {
             let error_response = ErrorResponse {
@@ -82,11 +77,13 @@ pub async fn replace_graph_node_endpoint(
     let original_graph = graph_info.graph.clone();
 
     // Find the graph node in the graph.
-    let graph_node =
-        graph_info.graph.nodes_mut().iter_mut().find(|node| match node {
+    let graph_node = graph_info
+        .graph
+        .nodes_mut()
+        .iter_mut()
+        .find(|node| match node {
             GraphNode::Extension { content } => {
-                content.name == request_payload.name
-                    && content.app == request_payload.app
+                content.name == request_payload.name && content.app == request_payload.app
             }
             _ => false,
         });
@@ -96,9 +93,7 @@ pub async fn replace_graph_node_endpoint(
             status: Status::Fail,
             message: format!(
                 "Node '{}' with app '{:?}' not found in graph '{}'",
-                request_payload.name,
-                request_payload.app,
-                request_payload.graph_id
+                request_payload.name, request_payload.app, request_payload.graph_id
             ),
             error: None,
         };
@@ -107,18 +102,16 @@ pub async fn replace_graph_node_endpoint(
 
     // Replace the addon and property of the graph node.
     let graph_node = graph_node.unwrap();
-    let extension_group = match graph_node {
-        GraphNode::Extension { content } => content.extension_group.clone(),
-        _ => None,
-    };
     if let GraphNode::Extension { content } = graph_node {
         content.addon = request_payload.addon.clone();
         content.property = request_payload.property.clone();
     }
 
     // Validate the graph.
-    if let Err(e) =
-        graph_info.graph.validate_and_complete_and_flatten(None).await
+    if let Err(e) = graph_info
+        .graph
+        .validate_and_complete_and_flatten(None)
+        .await
     {
         // Restore the original graph if validation fails.
         graph_info.graph = original_graph;
@@ -131,15 +124,11 @@ pub async fn replace_graph_node_endpoint(
     }
 
     // Update property.json file with the updated graph node.
-    if let Err(e) = update_graph_node_in_property_all_fields(
-        &mut pkgs_cache,
-        graph_info,
-        &request_payload.name,
-        &request_payload.addon,
-        &extension_group,
-        &request_payload.app,
-        &request_payload.property,
-        GraphNodeUpdateAction::Update,
+    if let Err(e) = update_graph_node_in_property_json_file(
+        &request_payload.graph_id,
+        &pkgs_cache,
+        &graphs_cache,
+        &old_graphs_cache,
     ) {
         let error_response = ErrorResponse {
             status: Status::Fail,

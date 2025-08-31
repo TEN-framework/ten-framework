@@ -38,10 +38,8 @@ pub async fn get_extension_schema_endpoint(
     let pkgs_info_in_app = match pkgs_cache.get(&request_payload.app_base_dir) {
         Some(info) => info,
         None => {
-            let error_response = ErrorResponse::from_error(
-                &anyhow!("App not found"),
-                "App not found",
-            );
+            let error_response =
+                ErrorResponse::from_error(&anyhow!("App not found"), "App not found");
             return Ok(HttpResponse::NotFound().json(error_response));
         }
     };
@@ -50,27 +48,23 @@ pub async fn get_extension_schema_endpoint(
     let extension_pkgs_info = match &pkgs_info_in_app.extension_pkgs_info {
         Some(info) => info,
         None => {
-            let error_response = ErrorResponse::from_error(
-                &anyhow!("Extension not found"),
-                "Extension not found",
-            );
+            let error_response =
+                ErrorResponse::from_error(&anyhow!("Extension not found"), "Extension not found");
             return Ok(HttpResponse::NotFound().json(error_response));
         }
     };
 
     // Find specific extension.
-    let extension_pkg_info = extension_pkgs_info.iter().find(|pkg_info| {
-        pkg_info.manifest.type_and_name.name == request_payload.addon_name
-    });
+    let extension_pkg_info = extension_pkgs_info
+        .iter()
+        .find(|pkg_info| pkg_info.manifest.type_and_name.name == request_payload.addon_name);
 
     // Check if extension exists.
     let extension_pkg_info = match extension_pkg_info {
         Some(info) => info,
         None => {
-            let error_response = ErrorResponse::from_error(
-                &anyhow!("Extension not found"),
-                "Extension not found",
-            );
+            let error_response =
+                ErrorResponse::from_error(&anyhow!("Extension not found"), "Extension not found");
             return Ok(HttpResponse::NotFound().json(error_response));
         }
     };
@@ -79,10 +73,7 @@ pub async fn get_extension_schema_endpoint(
     let schema = match extension_pkg_info.manifest.get_flattened_api().await {
         Ok(api) => api,
         Err(err) => {
-            let error_response = ErrorResponse::from_error(
-                &err,
-                "Flatten api interface failed.",
-            );
+            let error_response = ErrorResponse::from_error(&err, "Flatten api interface failed.");
             return Ok(HttpResponse::InternalServerError().json(error_response));
         }
     };

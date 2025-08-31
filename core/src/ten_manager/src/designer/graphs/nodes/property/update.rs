@@ -15,16 +15,11 @@ use ten_rust::graph::{graph_info::GraphInfo, node::GraphNode};
 
 use crate::{
     designer::{
-        graphs::nodes::{
-            update_graph_node_in_property_all_fields, GraphNodeUpdateAction,
-        },
+        graphs::nodes::update_graph_node_in_property_json_file,
         response::{ApiResponse, ErrorResponse, Status},
         DesignerState,
     },
-    graph::{
-        graphs_cache_find_by_id_mut,
-        nodes::validate::validate_extension_property,
-    },
+    graph::{graphs_cache_find_by_id_mut, nodes::validate::validate_extension_property},
 };
 
 #[derive(Serialize, Deserialize)]
@@ -49,13 +44,15 @@ fn update_node_property_in_graph(
     request_payload: &UpdateGraphNodePropertyRequestPayload,
 ) -> Result<()> {
     // Find the node in the graph.
-    let graph_node =
-        graph_info.graph.nodes_mut().iter_mut().find(|node| match node {
+    let graph_node = graph_info
+        .graph
+        .nodes_mut()
+        .iter_mut()
+        .find(|node| match node {
             GraphNode::Extension { content } => {
                 content.name == request_payload.name
                     && content.addon == request_payload.addon
-                    && content.extension_group
-                        == request_payload.extension_group
+                    && content.extension_group == request_payload.extension_group
                     && content.app == request_payload.app
             }
             _ => false,
@@ -86,14 +83,13 @@ pub async fn update_graph_node_property_endpoint(
     state: web::Data<Arc<DesignerState>>,
 ) -> Result<impl Responder, actix_web::Error> {
     // Get a write lock on the state since we need to modify the graph.
-    let mut pkgs_cache = state.pkgs_cache.write().await;
+    let pkgs_cache = state.pkgs_cache.read().await;
     let mut graphs_cache = state.graphs_cache.write().await;
+    let old_graphs_cache = graphs_cache.clone();
 
     // Get the specified graph from graphs_cache.
-    let graph_info = match graphs_cache_find_by_id_mut(
-        &mut graphs_cache,
-        &request_payload.graph_id,
-    ) {
+    let graph_info = match graphs_cache_find_by_id_mut(&mut graphs_cache, &request_payload.graph_id)
+    {
         Some(graph_info) => graph_info,
         None => {
             let error_response = ErrorResponse {
@@ -120,8 +116,7 @@ pub async fn update_graph_node_property_endpoint(
         return Ok(HttpResponse::BadRequest().json(error_response));
     }
 
-    if let Err(e) = update_node_property_in_graph(graph_info, &request_payload)
-    {
+    if let Err(e) = update_node_property_in_graph(graph_info, &request_payload) {
         let error_response = ErrorResponse {
             status: Status::Fail,
             message: format!("Failed to update node property in graph: {e}"),
@@ -130,15 +125,11 @@ pub async fn update_graph_node_property_endpoint(
         return Ok(HttpResponse::BadRequest().json(error_response));
     }
 
-    if let Err(e) = update_graph_node_in_property_all_fields(
-        &mut pkgs_cache,
-        graph_info,
-        &request_payload.name,
-        &request_payload.addon,
-        &request_payload.extension_group,
-        &request_payload.app,
-        &request_payload.property,
-        GraphNodeUpdateAction::Update,
+    if let Err(e) = update_graph_node_in_property_json_file(
+        &request_payload.graph_id,
+        &pkgs_cache,
+        &graphs_cache,
+        &old_graphs_cache,
     ) {
         let error_response = ErrorResponse {
             status: Status::Fail,

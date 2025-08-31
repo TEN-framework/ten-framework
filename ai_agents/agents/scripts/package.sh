@@ -5,10 +5,12 @@ APP_HOME=$(
     pwd
 )
 
+echo $APP_HOME
 cd $APP_HOME
 
 rm -rf .release
 mkdir .release
+
 
 copy_package() {
     local package_type=$1
@@ -23,6 +25,10 @@ copy_package() {
         cp -r ten_packages/${package_type}/${package_name}/interface .release/ten_packages/${package_type}/${package_name}/
     fi
 
+    if [[ -d ten_packages/${package_type}/${package_name}/api ]]; then
+        cp -r ten_packages/${package_type}/${package_name}/api .release/ten_packages/${package_type}/${package_name}/
+    fi
+
     if [[ -f ten_packages/${package_type}/${package_name}/manifest.json ]]; then
         cp ten_packages/${package_type}/${package_name}/manifest.json .release/ten_packages/${package_type}/${package_name}/
     fi
@@ -33,9 +39,11 @@ copy_package() {
 
     # package .py for python extensions
     # TODO: package 'publish' contents only
-    cp ten_packages/${package_type}/${package_name}/*.py .release/ten_packages/${package_type}/${package_name}/ | true
+    # cp ten_packages/${package_type}/${package_name}/*.py .release/ten_packages/${package_type}/${package_name}/ | true
     if [[ -f ten_packages/${package_type}/${package_name}/requirements.txt ]]; then
-        cp ten_packages/${package_type}/${package_name}/requirements.txt .release/ten_packages/${package_type}/${package_name}/
+        cp -rf ten_packages/${package_type}/${package_name}/requirements.txt .release/ten_packages/${package_type}/${package_name}/
+        # TODO: workaround
+        cp -rf ten_packages/${package_type}/${package_name}/agent .release/ten_packages/${package_type}/${package_name}/
     fi
 
     # TODO: copy specific contents

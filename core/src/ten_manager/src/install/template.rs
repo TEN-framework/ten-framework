@@ -14,10 +14,7 @@ use handlebars::Handlebars;
 use tar::Archive as TarArchive;
 use zip::ZipArchive;
 
-fn render_template(
-    template: &str,
-    template_ctx: &serde_json::Value,
-) -> Result<String> {
+fn render_template(template: &str, template_ctx: &serde_json::Value) -> Result<String> {
     let reg = Handlebars::new();
     let rendered = reg
         .render_template(template, template_ctx)
@@ -77,10 +74,7 @@ where
     {
         use std::os::unix::fs::PermissionsExt;
         if let Some(mode) = file_mode {
-            fs::set_permissions(
-                &new_out_path,
-                fs::Permissions::from_mode(mode),
-            )?;
+            fs::set_permissions(&new_out_path, fs::Permissions::from_mode(mode))?;
         }
     }
 
@@ -105,8 +99,7 @@ pub fn extract_and_process_zip_template_part(
         let is_template = file_in_zip.name().ends_with(".tent");
 
         if is_template {
-            let out_path =
-                Path::new(output_dir).join(file_in_zip.mangled_name());
+            let out_path = Path::new(output_dir).join(file_in_zip.mangled_name());
 
             // Check if the entry is a file or directory.
             let is_dir = file_in_zip.name().ends_with('/');

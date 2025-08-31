@@ -8,14 +8,14 @@ import os
 import sys
 from typing import Callable
 
-from .addon import Addon
-
 # Internal APIs from libten_runtime_python - these are private by design and
 # only intended for use within ten-framework's Python binding layer.
 from libten_runtime_python import (
     _ten_py_addon_manager_add_extension_addon,  # pyright: ignore[reportPrivateUsage] # noqa: E501
     _ten_py_addon_manager_register_addon_as_extension,  # pyright: ignore[reportPrivateUsage] # noqa: E501
 )
+
+from .addon import Addon
 
 
 class _AddonManager:
@@ -25,6 +25,7 @@ class _AddonManager:
     # supported in advanced environments like Cython. The global array method
     # is simple enough that it should work in all environments.
     _registry: dict[str, Callable[[object], None]] = {}
+    _registered_addons: set[str] = set()
 
     @classmethod
     def register_all_addons(cls, register_ctx: object):
@@ -34,9 +35,23 @@ class _AddonManager:
             register_handler = cls._registry.get(register_key)
             if register_handler:
                 try:
+                    # Check if the addon is already registered.
+                    if register_key in cls._registered_addons:
+                        print(
+                            (
+                                f"Addon '{register_key}' has already been "
+                                "registered, skipping registration."
+                            )
+                        )
+                        continue
+
+                    # Call the register handler.
                     register_handler(register_ctx)
 
                     print(f"Successfully registered addon '{register_key}'")
+
+                    # Mark the addon as registered.
+                    cls._registered_addons.add(register_key)
                 except Exception as e:
                     print(
                         (
@@ -52,8 +67,23 @@ class _AddonManager:
         register_handler = cls._registry.get(addon_name, None)
         if register_handler:
             try:
+                # Check if the addon is already registered.
+                if addon_name in cls._registered_addons:
+                    print(
+                        (
+                            f"Addon '{addon_name}' has already been "
+                            "registered, skipping registration."
+                        )
+                    )
+                    return
+
+                # Call the register handler.
                 register_handler(register_ctx)
+
                 print(f"Successfully registered addon '{addon_name}'")
+
+                # Mark the addon as registered.
+                cls._registered_addons.add(addon_name)
             except Exception as e:
                 print(f"Error during registration of addon '{addon_name}': {e}")
         else:

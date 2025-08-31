@@ -1,3 +1,4 @@
-azure-cognitiveservices-speech==1.44.0
+azure-cognitiveservices-speech==1.45.0
 websockets~=14.0
 pydantic
+aiofiles

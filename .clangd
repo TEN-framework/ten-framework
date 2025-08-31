@@ -7,3 +7,5 @@ Diagnostics:
     IgnoreHeader: ten_config\.h
 InlayHints:
   Enabled: No
+CompileFlags:
+  Add: [-Igen/autotool/ffmpeg/install/include]

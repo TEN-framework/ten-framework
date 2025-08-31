@@ -5,7 +5,6 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 import z from "zod";
-
 import { API_DESIGNER_V1, ENDPOINT_METHOD } from "@/api/endpoints/constant";
 import { genResSchema } from "@/api/endpoints/utils";
 import {
@@ -13,37 +12,13 @@ import {
   AddNodePayloadSchema,
   DeleteConnectionPayloadSchema,
   DeleteNodePayloadSchema,
+  GraphInfo,
   GraphUiNodeGeometrySchema,
-  type IBackendConnection,
-  type IBackendNode,
-  type IGraph,
   SetGraphUiPayloadSchema,
   UpdateNodePropertyPayloadSchema,
 } from "@/types/graphs";
 
 export const ENDPOINT_GRAPHS = {
-  nodes: {
-    [ENDPOINT_METHOD.POST]: {
-      url: `${API_DESIGNER_V1}/graphs/nodes`,
-      method: ENDPOINT_METHOD.POST,
-      requestSchema: z.object({
-        graph_id: z.string(),
-      }),
-      responseSchema: genResSchema<IBackendNode[]>(
-        z.array(
-          z.object({
-            addon: z.string(),
-            name: z.string(),
-            extension_group: z.string().optional(),
-            app: z.string().optional(),
-            property: z.unknown().optional(),
-            api: z.unknown().optional(),
-            is_installed: z.boolean(),
-          })
-        ) as z.ZodType<IBackendNode[]>
-      ),
-    },
-  },
   addNode: {
     [ENDPOINT_METHOD.POST]: {
       url: `${API_DESIGNER_V1}/graphs/nodes/add`,
@@ -88,75 +63,6 @@ export const ENDPOINT_GRAPHS = {
       ),
     },
   },
-  connections: {
-    [ENDPOINT_METHOD.POST]: {
-      url: `${API_DESIGNER_V1}/graphs/connections`,
-      method: ENDPOINT_METHOD.POST,
-      requestSchema: z.object({
-        graph_id: z.string(),
-      }),
-      responseSchema: genResSchema<IBackendConnection[]>(
-        z.array(
-          z.object({
-            app: z.string().optional(),
-            extension: z.string(),
-            cmd: z
-              .array(
-                z.object({
-                  name: z.string(),
-                  dest: z.array(
-                    z.object({
-                      app: z.string().optional(),
-                      extension: z.string(),
-                    })
-                  ),
-                })
-              )
-              .optional(),
-            data: z
-              .array(
-                z.object({
-                  name: z.string(),
-                  dest: z.array(
-                    z.object({
-                      app: z.string().optional(),
-                      extension: z.string(),
-                    })
-                  ),
-                })
-              )
-              .optional(),
-            audio_frame: z
-              .array(
-                z.object({
-                  name: z.string(),
-                  dest: z.array(
-                    z.object({
-                      app: z.string().optional(),
-                      extension: z.string(),
-                    })
-                  ),
-                })
-              )
-              .optional(),
-            video_frame: z
-              .array(
-                z.object({
-                  name: z.string(),
-                  dest: z.array(
-                    z.object({
-                      app: z.string().optional(),
-                      extension: z.string(),
-                    })
-                  ),
-                })
-              )
-              .optional(),
-          })
-        )
-      ),
-    },
-  },
   addConnection: {
     [ENDPOINT_METHOD.POST]: {
       url: `${API_DESIGNER_V1}/graphs/connections/add`,
@@ -178,16 +84,7 @@ export const ENDPOINT_GRAPHS = {
       url: `${API_DESIGNER_V1}/graphs`,
       method: ENDPOINT_METHOD.POST,
       requestSchema: z.object({}),
-      responseSchema: genResSchema<IGraph[]>(
-        z.array(
-          z.object({
-            name: z.string(),
-            auto_start: z.boolean(),
-            base_dir: z.string(),
-            uuid: z.string(),
-          })
-        )
-      ),
+      responseSchema: genResSchema<GraphInfo[]>(z.array(GraphInfo)),
     },
   },
   graphsAutoStart: {

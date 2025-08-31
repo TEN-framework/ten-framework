@@ -15,7 +15,8 @@
 // otherwise, there will be a circular dependency issue.
 
 void ten_hashbucket_add(ten_hashbucket_t *self, ten_hashhandle_t *hh) {
-  TEN_ASSERT(self && hh, "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(hh, "Invalid argument.");
 
   self->items_cnt++;
 
@@ -36,7 +37,8 @@ void ten_hashbucket_add(ten_hashbucket_t *self, ten_hashhandle_t *hh) {
 
 // Remove a item from a given bucket.
 void ten_hashbucket_del(ten_hashbucket_t *self, ten_hashhandle_t *hh) {
-  TEN_ASSERT(self && hh, "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(hh, "Invalid argument.");
 
   self->items_cnt--;
 
@@ -54,7 +56,8 @@ void ten_hashbucket_del(ten_hashbucket_t *self, ten_hashhandle_t *hh) {
 
 ten_hashhandle_t *ten_hashbucket_find(ten_hashbucket_t *self, uint32_t hashval,
                                       const void *key, size_t keylen) {
-  TEN_ASSERT(self && key, "Invalid argument.");
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(key, "Invalid argument.");
 
   ten_hashhandle_t *out = NULL;
   if (self->head != NULL) {

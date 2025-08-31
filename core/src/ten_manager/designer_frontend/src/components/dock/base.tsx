@@ -13,6 +13,12 @@ import {
   SquareArrowOutUpRightIcon,
   XIcon,
 } from "lucide-react";
+// import TerminalWidget from "@/components/Widget/TerminalWidget";
+// import EditorWidget from "@/components/Widget/EditorWidget";
+// eslint-disable-next-line max-len
+// import { LogViewerFrontStageWidget } from "@/components/Widget/LogViewerWidget";
+// import { ExtensionStoreWidget } from "@/components/Widget/ExtensionWidget";
+import { motion } from "motion/react";
 import type * as React from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -43,11 +49,6 @@ import type {
   //   ILogViewerWidget,
   //   IEditorWidgetRef,
 } from "@/types/widgets";
-// import TerminalWidget from "@/components/Widget/TerminalWidget";
-// import EditorWidget from "@/components/Widget/EditorWidget";
-// eslint-disable-next-line max-len
-// import { LogViewerFrontStageWidget } from "@/components/Widget/LogViewerWidget";
-// import { ExtensionStoreWidget } from "@/components/Widget/ExtensionWidget";
 
 export interface IDockBaseProps {
   children?: React.ReactNode;
@@ -127,7 +128,6 @@ export const DockHeader = (props: {
           <XIcon
             className="h-4 w-4 cursor-pointer"
             type="button"
-            tabIndex={1}
             onClick={onClose}
           />
         )}
@@ -154,7 +154,7 @@ export const DockerHeaderTabElement = (props: {
   return (
     <ContextMenu>
       <ContextMenuTrigger>
-        <div
+        <motion.div
           className={cn(
             "w-fit px-2 py-1 text-muted-foreground text-xs",
             "flex cursor-pointer items-center gap-1",
@@ -177,7 +177,7 @@ export const DockerHeaderTabElement = (props: {
               onClick={() => onClose(widget.widget_id)}
             />
           )}
-        </div>
+        </motion.div>
       </ContextMenuTrigger>
       <ContextMenuContent>
         <ContextMenuItem
