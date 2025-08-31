@@ -46,66 +46,68 @@
 
 #ifndef NDEBUG
 
-#define TEN_ASSERT(expr, fmt, ...)                                     \
-  do {                                                                 \
-    /* NOLINTNEXTLINE */                                               \
-    if (!(expr)) {                                                     \
-      /* NOLINTNEXTLINE */                                             \
-      char ____err_msg[ASSERT_ERR_MSG_MAX_LENGTH];                     \
-      int64_t pid = 0;                                                 \
-      int64_t tid = 0;                                                 \
-      ten_get_pid_tid(&pid, &tid);                                     \
-      int written =                                                    \
-          snprintf(____err_msg, sizeof(____err_msg),                   \
-                   "%" PRId64 "(%" PRId64 ") %s@%s:%d " fmt, pid, tid, \
-                   __func__, __FILE__, __LINE__, ##__VA_ARGS__);       \
-      if (written < 0) {                                               \
-        /* NOLINTNEXTLINE */                                           \
-        assert(0);                                                     \
-      }                                                                \
-      written = fprintf(stderr, "%s\n", ____err_msg);                  \
-      if (written < 0) {                                               \
-        /* NOLINTNEXTLINE */                                           \
-        assert(0);                                                     \
-      }                                                                \
-      ten_backtrace_dump_global(0);                                    \
-      /* Wait for a short period to allow backtrace to be written. */  \
-      ten_sleep_ms(200);                                               \
-      /* NOLINTNEXTLINE */                                             \
-      assert(0);                                                       \
-    }                                                                  \
+#define TEN_ASSERT(expr, fmt, ...)                                         \
+  do {                                                                     \
+    /* NOLINTNEXTLINE */                                                   \
+    if (!(expr)) {                                                         \
+      /* NOLINTNEXTLINE */                                                 \
+      char *____err_msg = calloc(ASSERT_ERR_MSG_MAX_LENGTH, sizeof(char)); \
+      assert(____err_msg);                                                 \
+      int64_t pid = 0;                                                     \
+      int64_t tid = 0;                                                     \
+      ten_get_pid_tid(&pid, &tid);                                         \
+      int written =                                                        \
+          snprintf(____err_msg, sizeof(____err_msg),                       \
+                   "%" PRId64 "(%" PRId64 ") %s@%s:%d " fmt, pid, tid,     \
+                   __func__, __FILE__, __LINE__, ##__VA_ARGS__);           \
+      if (written < 0) {                                                   \
+        /* NOLINTNEXTLINE */                                               \
+        assert(0);                                                         \
+      }                                                                    \
+      written = fprintf(stderr, "%s\n", ____err_msg);                      \
+      if (written < 0) {                                                   \
+        /* NOLINTNEXTLINE */                                               \
+        assert(0);                                                         \
+      }                                                                    \
+      ten_backtrace_dump_global(0);                                        \
+      /* Wait for a short period to allow backtrace to be written. */      \
+      ten_sleep_ms(200);                                                   \
+      /* NOLINTNEXTLINE */                                                 \
+      assert(0);                                                           \
+    }                                                                      \
   } while (0)
 
 #else  // NDEBUG
 
 // Enable minimal protection if the optimization is enabled.
 
-#define TEN_ASSERT(expr, fmt, ...)                                     \
-  do {                                                                 \
-    /* NOLINTNEXTLINE */                                               \
-    if (!(expr)) {                                                     \
-      /* NOLINTNEXTLINE */                                             \
-      char ____err_msg[ASSERT_ERR_MSG_MAX_LENGTH];                     \
-      int64_t pid = 0;                                                 \
-      int64_t tid = 0;                                                 \
-      ten_get_pid_tid(&pid, &tid);                                     \
-      int written =                                                    \
-          snprintf(____err_msg, sizeof(____err_msg),                   \
-                   "%" PRId64 "(%" PRId64 ") %s@%s:%d " fmt, pid, tid, \
-                   __func__, __FILE__, __LINE__, ##__VA_ARGS__);       \
-      if (written < 0) {                                               \
-        abort();                                                       \
-      }                                                                \
-      written = fprintf(stderr, "%s\n", ____err_msg);                  \
-      if (written < 0) {                                               \
-        abort();                                                       \
-      }                                                                \
-      ten_backtrace_dump_global(0);                                    \
-      /* Wait for a short period to allow backtrace to be written. */  \
-      ten_sleep_ms(200);                                               \
-      /* NOLINTNEXTLINE */                                             \
-      abort();                                                         \
-    }                                                                  \
+#define TEN_ASSERT(expr, fmt, ...)                                         \
+  do {                                                                     \
+    /* NOLINTNEXTLINE */                                                   \
+    if (!(expr)) {                                                         \
+      /* NOLINTNEXTLINE */                                                 \
+      char *____err_msg = calloc(ASSERT_ERR_MSG_MAX_LENGTH, sizeof(char)); \
+      assert(____err_msg);                                                 \
+      int64_t pid = 0;                                                     \
+      int64_t tid = 0;                                                     \
+      ten_get_pid_tid(&pid, &tid);                                         \
+      int written =                                                        \
+          snprintf(____err_msg, sizeof(____err_msg),                       \
+                   "%" PRId64 "(%" PRId64 ") %s@%s:%d " fmt, pid, tid,     \
+                   __func__, __FILE__, __LINE__, ##__VA_ARGS__);           \
+      if (written < 0) {                                                   \
+        abort();                                                           \
+      }                                                                    \
+      written = fprintf(stderr, "%s\n", ____err_msg);                      \
+      if (written < 0) {                                                   \
+        abort();                                                           \
+      }                                                                    \
+      ten_backtrace_dump_global(0);                                        \
+      /* Wait for a short period to allow backtrace to be written. */      \
+      ten_sleep_ms(200);                                                   \
+      /* NOLINTNEXTLINE */                                                 \
+      abort();                                                             \
+    }                                                                      \
   } while (0)
 
 #endif  // NDEBUG
