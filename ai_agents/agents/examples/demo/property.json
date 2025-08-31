@@ -582,7 +582,7 @@
         }
       },
       {
-        "name": "deepseek_r1",
+        "name": "deepseek_v3_1",
         "auto_start": true,
         "graph": {
           "nodes": [
@@ -627,10 +627,10 @@
               "extension_group": "chatgpt",
               "property": {
                 "api_key": "${env:DEEPSEEK_API_KEY}",
-                "base_url": "https://tenagentopenai.services.ai.azure.com/models",
+                "base_url": "https://api.deepseek.com/v1",
                 "frequency_penalty": 0.9,
                 "max_tokens": 512,
-                "model": "DeepSeek-R1",
+                "model": "deepseek-chat-v3.1",
                 "prompt": "",
                 "proxy_url": "${env:OPENAI_PROXY_URL}"
               }

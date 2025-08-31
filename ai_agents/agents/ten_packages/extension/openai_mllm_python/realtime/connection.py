@@ -15,7 +15,7 @@ from .struct import (
     to_json,
 )
 
-DEFAULT_VIRTUAL_MODEL = "gpt-4o-realtime-preview"
+DEFAULT_VIRTUAL_MODEL = "gpt-realtime"
 
 VENDOR_AZURE = "azure"
 

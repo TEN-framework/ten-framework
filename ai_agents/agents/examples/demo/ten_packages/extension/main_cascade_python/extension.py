@@ -102,6 +102,11 @@ class MainControlExtension(AsyncExtension):
             for s in sentences:
                 await self._send_to_tts(s, False)
 
+        if event.is_final and event.type == "message":
+            remaining_text = self.sentence_fragment or ""
+            self.sentence_fragment = ""
+            await self._send_to_tts(remaining_text, True)
+
         await self._send_transcript(
             "assistant",
             event.text,

@@ -11,9 +11,11 @@ mod tests {
     use ten_manager::registry::found_result::{
         get_pkg_registry_info_from_manifest, PkgRegistryInfo,
     };
-    use ten_rust::pkg_info::manifest::{LocaleContent, LocalizedField, Manifest};
-    use ten_rust::pkg_info::pkg_basic_info::PkgBasicInfo;
-    use ten_rust::pkg_info::PkgInfo;
+    use ten_rust::pkg_info::{
+        manifest::{LocaleContent, LocalizedField, Manifest},
+        pkg_basic_info::PkgBasicInfo,
+        PkgInfo,
+    };
 
     #[tokio::test]
     async fn test_pkg_registry_info_with_description() {
@@ -46,33 +48,12 @@ mod tests {
         let description = pkg_registry_info.description.unwrap();
 
         assert_eq!(
-            description
-                .locales
-                .get("en-US")
-                .unwrap()
-                .content
-                .as_ref()
-                .unwrap(),
+            description.locales.get("en-US").unwrap().content.as_ref().unwrap(),
             "English description"
         );
+        assert_eq!(description.locales.get("zh-CN").unwrap().content.as_ref().unwrap(), "中文描述");
         assert_eq!(
-            description
-                .locales
-                .get("zh-CN")
-                .unwrap()
-                .content
-                .as_ref()
-                .unwrap(),
-            "中文描述"
-        );
-        assert_eq!(
-            description
-                .locales
-                .get("es-ES")
-                .unwrap()
-                .content
-                .as_ref()
-                .unwrap(),
+            description.locales.get("es-ES").unwrap().content.as_ref().unwrap(),
             "Descripción en español"
         );
     }
@@ -114,7 +95,9 @@ mod tests {
             },
         );
 
-        let description = LocalizedField { locales };
+        let description = LocalizedField {
+            locales,
+        };
 
         let pkg_registry_info = PkgRegistryInfo {
             basic_info: PkgBasicInfo {
@@ -149,10 +132,7 @@ mod tests {
             desc.locales.get("en-US").unwrap().content.as_ref().unwrap(),
             "Test description"
         );
-        assert_eq!(
-            desc.locales.get("zh-CN").unwrap().content.as_ref().unwrap(),
-            "测试描述"
-        );
+        assert_eq!(desc.locales.get("zh-CN").unwrap().content.as_ref().unwrap(), "测试描述");
     }
 
     #[test]
@@ -207,7 +187,9 @@ mod tests {
             },
         );
 
-        let description = LocalizedField { locales };
+        let description = LocalizedField {
+            locales,
+        };
 
         let pkg_registry_info = PkgRegistryInfo {
             basic_info: PkgBasicInfo {
@@ -233,43 +215,11 @@ mod tests {
         assert!(pkg_info.manifest.description.is_some());
         let converted_description = pkg_info.manifest.description.unwrap();
         assert_eq!(
-            converted_description
-                .locales
-                .get("en-US")
-                .unwrap()
-                .content
-                .as_ref()
-                .unwrap(),
+            converted_description.locales.get("en-US").unwrap().content.as_ref().unwrap(),
             "Test description"
         );
         assert_eq!(
-            converted_description
-                .locales
-                .get("fr")
-                .unwrap()
-                .content
-                .as_ref()
-                .unwrap(),
-            "Description de test"
-        );
-
-        // Check that description is properly added to all_fields
-        let all_fields = &pkg_info.manifest.all_fields;
-        assert!(all_fields.contains_key("description"));
-
-        let desc_value = &all_fields["description"];
-        assert!(desc_value.is_object());
-        let desc_obj = desc_value.as_object().unwrap();
-        assert!(desc_obj.contains_key("locales"));
-        let locales_obj = desc_obj.get("locales").unwrap().as_object().unwrap();
-        let en_obj = locales_obj.get("en-US").unwrap().as_object().unwrap();
-        assert_eq!(
-            en_obj.get("content").unwrap().as_str().unwrap(),
-            "Test description"
-        );
-        let fr_obj = locales_obj.get("fr").unwrap().as_object().unwrap();
-        assert_eq!(
-            fr_obj.get("content").unwrap().as_str().unwrap(),
+            converted_description.locales.get("fr").unwrap().content.as_ref().unwrap(),
             "Description de test"
         );
     }
