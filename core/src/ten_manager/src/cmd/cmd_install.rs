@@ -17,16 +17,16 @@ use clap::{Arg, ArgMatches, Command};
 use console::Emoji;
 use indicatif::HumanDuration;
 use inquire::Confirm;
-
-use semver::VersionReq;
 use ten_rust::pkg_info::{
     constants::{BUILD_GN_FILENAME, MANIFEST_JSON_FILENAME},
-    manifest::support::ManifestSupport,
-    manifest::{dependency::ManifestDependency, parse_manifest_in_folder, Manifest},
-    pkg_basic_info::PkgBasicInfo,
-};
-use ten_rust::pkg_info::{
     get_pkg_info_from_path,
+    manifest::{
+        dependency::{ManifestDependency, TenVersionReq},
+        parse_manifest_in_folder,
+        support::ManifestSupport,
+        Manifest,
+    },
+    pkg_basic_info::PkgBasicInfo,
     pkg_type::PkgType,
     pkg_type_and_name::PkgTypeAndName,
     supports::{Arch, Os},
@@ -99,17 +99,10 @@ pub struct InstallCommand {
 pub fn create_sub_cmd(args_cfg: &crate::cmd_line::ArgsCfg) -> Command {
     Command::new("install")
         .about("Install a package")
-        .arg(
-            Arg::new("PACKAGE_TYPE")
-                .help("The type of the package")
-                .required(false),
-        )
+        .arg(Arg::new("PACKAGE_TYPE").help("The type of the package").required(false))
         .arg(
             Arg::new("PACKAGE_NAME")
-                .help(
-                    "The name of the package with optional version \
-                     requirement (e.g., foo@1.0.0)",
-                )
+                .help("The name of the package with optional version requirement (e.g., foo@1.0.0)")
                 .required(false),
         )
         .arg(
@@ -144,10 +137,7 @@ pub fn create_sub_cmd(args_cfg: &crate::cmd_line::ArgsCfg) -> Command {
         .arg(
             Arg::new("PRODUCTION")
                 .long("production")
-                .help(
-                    "Install in production mode, dev_dependencies will be \
-                      ignored",
-                )
+                .help("Install in production mode, dev_dependencies will be ignored")
                 .action(clap::ArgAction::SetTrue)
                 .required(false),
         )
@@ -175,12 +165,8 @@ pub fn parse_sub_cmd(sub_cmd_args: &ArgMatches) -> Result<InstallCommand> {
         package_type: None,
         package_name: None,
         support: ManifestSupport {
-            os: sub_cmd_args
-                .get_one::<String>("OS")
-                .and_then(|s| s.parse::<Os>().ok()),
-            arch: sub_cmd_args
-                .get_one::<String>("ARCH")
-                .and_then(|s| s.parse::<Arch>().ok()),
+            os: sub_cmd_args.get_one::<String>("OS").and_then(|s| s.parse::<Os>().ok()),
+            arch: sub_cmd_args.get_one::<String>("ARCH").and_then(|s| s.parse::<Arch>().ok()),
         },
         local_install_mode: LocalInstallMode::Invalid,
         standalone: false,
@@ -226,8 +212,7 @@ pub fn parse_sub_cmd(sub_cmd_args: &ArgMatches) -> Result<InstallCommand> {
 
             if sub_cmd_args.get_one::<String>("PACKAGE_NAME").is_some() {
                 return Err(anyhow::anyhow!(
-                    "PACKAGE_NAME is not required when a local path is \
-                     specified."
+                    "PACKAGE_NAME is not required when a local path is specified."
                 ));
             }
         } else {
@@ -281,10 +266,7 @@ fn add_pkg_to_initial_pkg_to_find_candidates_and_all_candidates(
 ) -> Result<()> {
     initial_pkgs_to_find_candidates.push(pkg.clone());
 
-    all_candidates
-        .entry(pkg.into())
-        .or_default()
-        .insert(pkg.into(), pkg.clone());
+    all_candidates.entry(pkg.into()).or_default().insert(pkg.into(), pkg.clone());
 
     Ok(())
 }
@@ -425,7 +407,10 @@ async fn filter_packages_for_production_mode<'a>(
     // Note: This needs to be converted to async iteration
     for dep in app_pkg_dependencies.iter() {
         if let Some((pkg_type, name)) = dep.get_type_and_name().await {
-            let type_and_name = PkgTypeAndName { pkg_type, name };
+            let type_and_name = PkgTypeAndName {
+                pkg_type,
+                name,
+            };
             if let Some(pkg) = remaining_solver_results_map.get(&type_and_name) {
                 if !visited.contains(&type_and_name) {
                     pkgs_to_be_installed.push(pkg);
@@ -442,7 +427,10 @@ async fn filter_packages_for_production_mode<'a>(
         if let Some(dependencies) = &pkg.manifest.dependencies {
             for dep in dependencies {
                 if let Some((pkg_type, name)) = dep.get_type_and_name().await {
-                    let type_and_name = PkgTypeAndName { pkg_type, name };
+                    let type_and_name = PkgTypeAndName {
+                        pkg_type,
+                        name,
+                    };
                     if let Some(dep_pkg) = remaining_solver_results_map.get(&type_and_name) {
                         if !visited.contains(&type_and_name) {
                             pkgs_to_be_installed.push(dep_pkg);
@@ -548,16 +536,10 @@ pub async fn execute_cmd(
     let mut app_pkg_to_work_with =
         get_pkg_info_from_path(&app_dir_to_work_with, true, false, &mut None, None).await?;
 
-    let app_pkg_dependencies = app_pkg_to_work_with
-        .manifest
-        .dependencies
-        .clone()
-        .unwrap_or_default();
-    let app_pkg_dev_dependencies = app_pkg_to_work_with
-        .manifest
-        .dev_dependencies
-        .clone()
-        .unwrap_or_default();
+    let app_pkg_dependencies =
+        app_pkg_to_work_with.manifest.dependencies.clone().unwrap_or_default();
+    let app_pkg_dev_dependencies =
+        app_pkg_to_work_with.manifest.dev_dependencies.clone().unwrap_or_default();
 
     // We will include the `dev_dependencies` of the app in the dependency
     // calculation (even in production mode), but when actually installing, we
@@ -577,10 +559,7 @@ pub async fn execute_cmd(
         &mut all_candidates,
     )?;
 
-    out.normal_line(&format!(
-        "{}  Get all installed packages...",
-        Emoji("📦", "")
-    ));
+    out.normal_line(&format!("{}  Get all installed packages...", Emoji("📦", "")));
 
     all_installed_pkgs = tman_get_all_installed_pkgs_info_of_app(
         tman_config.clone(),
@@ -589,10 +568,7 @@ pub async fn execute_cmd(
     )
     .await?;
 
-    out.normal_line(&format!(
-        "{}  Filter compatible packages...",
-        Emoji("🔍", "")
-    ));
+    out.normal_line(&format!("{}  Filter compatible packages...", Emoji("🔍", "")));
 
     filter_compatible_pkgs_to_candidates(
         tman_config.clone(),
@@ -616,10 +592,7 @@ pub async fn execute_cmd(
         let local_manifest_dir = if local_path.is_dir() {
             local_path.clone()
         } else {
-            return Err(anyhow!(
-                "The specified local path is not a folder.: {}",
-                local_path_str
-            ));
+            return Err(anyhow!("The specified local path is not a folder.: {}", local_path_str));
         };
 
         let manifest_json_path = local_manifest_dir.join(MANIFEST_JSON_FILENAME);
@@ -642,11 +615,11 @@ pub async fn execute_cmd(
         // uses the npm semver package. The semver requirement specifications of
         // these two packages are not completely identical. For example:
         //
-        // - The Rust semver crate uses "," to separate different ranges,
-        //   whereas the npm semver package uses a space (" ") to separate
-        //   different requirement ranges.
-        // - The npm semver package uses "||" to unify different ranges, but the
-        //   Rust semver crate does not support this feature.
+        // - The Rust semver crate uses "," to separate different ranges, whereas the
+        //   npm semver package uses a space (" ") to separate different requirement
+        //   ranges.
+        // - The npm semver package uses "||" to unify different ranges, but the Rust
+        //   semver crate does not support this feature.
         //
         // Since TEN is a cross-language system, it needs to define its own
         // semver requirement specification. This specification could follow
@@ -662,12 +635,11 @@ pub async fn execute_cmd(
             || local_version_str.contains(",")
         {
             return Err(anyhow!(
-                "Invalid version requirement '{}' in local package manifest: \
-                 contains forbidden characters (||, whitespace, or ,)",
+                "Invalid version requirement '{}' in local package manifest: contains forbidden \
+                 characters (||, whitespace, or ,)",
                 local_version_str
             ));
         }
-        let installing_pkg_version_req = VersionReq::parse(&local_version_str)?;
 
         dep_relationship_from_cmd_line = Some(DependencyRelationship {
             type_and_name: PkgTypeAndName {
@@ -678,7 +650,7 @@ pub async fn execute_cmd(
             dependency: ManifestDependency::RegistryDependency {
                 pkg_type: installing_pkg_type.unwrap(),
                 name: installing_pkg_name.clone().unwrap(),
-                version_req: installing_pkg_version_req,
+                version_req: TenVersionReq::new(local_version_str.clone()).unwrap(),
             },
         });
 
@@ -699,8 +671,27 @@ pub async fn execute_cmd(
         // tman install <package_type> <package_name>
         let installing_pkg_type_: PkgType = package_type_str.parse()?;
 
-        let (installing_pkg_name_, installing_pkg_version_req_) =
+        let (installing_pkg_name_, _) =
             parse_pkg_name_version_req(command_data.package_name.as_ref().unwrap())?;
+
+        // get installing_pkg_version_req
+        let parts: Vec<&str> = command_data.package_name.as_ref().unwrap().split('@').collect();
+        let mut _installing_pkg_version_req = TenVersionReq::new("*".to_string()).unwrap();
+        if parts.len() == 2 {
+            if parts[1].contains("||")
+                || parts[1].chars().any(|c| c.is_whitespace())
+                || parts[1].contains(",")
+            {
+                return Err(anyhow!(
+                    "Invalid version requirement '{}' in package name version string: contains \
+                     forbidden characters (||, whitespace, or ,)",
+                    parts[1]
+                ));
+            }
+            _installing_pkg_version_req = TenVersionReq::new(parts[1].to_string()).unwrap();
+        } else {
+            _installing_pkg_version_req = TenVersionReq::new("*".to_string()).unwrap();
+        }
 
         installing_pkg_type = Some(installing_pkg_type_);
         installing_pkg_name = Some(installing_pkg_name_.clone());
@@ -714,24 +705,20 @@ pub async fn execute_cmd(
             dependency: ManifestDependency::RegistryDependency {
                 pkg_type: installing_pkg_type_,
                 name: installing_pkg_name_.clone(),
-                version_req: installing_pkg_version_req_.clone(),
+                version_req: _installing_pkg_version_req,
             },
         });
     }
 
     out.normal_line(&format!(
-        "{}  Attempting to retrieve information about locked packages from \
-         manifest-lock.json...",
+        "{}  Attempting to retrieve information about locked packages from manifest-lock.json...",
         Emoji("📜", "")
     ));
 
     // Get the locked pkgs from the lock file in the app folder.
     let locked_pkgs = get_locked_pkgs(&app_dir_to_work_with);
 
-    out.normal_line(&format!(
-        "{}  Collect all candidate packages...",
-        Emoji("📦", "")
-    ));
+    out.normal_line(&format!("{}  Collect all candidate packages...", Emoji("📦", "")));
 
     // Get all possible candidates according to the input packages and extra
     // dependencies.
@@ -739,9 +726,7 @@ pub async fn execute_cmd(
         tman_config.clone(),
         &command_data.support,
         initial_pkgs_to_find_candidates,
-        dep_relationship_from_cmd_line
-            .as_ref()
-            .map(|rel| &rel.dependency),
+        dep_relationship_from_cmd_line.as_ref().map(|rel| &rel.dependency),
         &all_compatible_installed_pkgs,
         all_candidates,
         locked_pkgs.as_ref(),
@@ -795,8 +780,8 @@ pub async fn execute_cmd(
                         && is_verbose(tman_config.clone()).await
                     {
                         out.normal_line(&format!(
-                            "{}  Dependency resolution failed, increasing \
-                             search space and retrying...",
+                            "{}  Dependency resolution failed, increasing search space and \
+                             retrying...",
                             Emoji("⚠️", "")
                         ));
                     }
@@ -810,8 +795,8 @@ pub async fn execute_cmd(
                 if current_max_latest_versions < command_data.max_latest_versions {
                     if is_verbose(tman_config.clone()).await {
                         out.normal_line(&format!(
-                            "{}  Dependency resolution failed, increasing \
-                             search space and retrying...",
+                            "{}  Dependency resolution failed, increasing search space and \
+                             retrying...",
                             Emoji("⚠️", "")
                         ));
                     }
@@ -871,8 +856,7 @@ pub async fn execute_cmd(
             if out.is_interactive() {
                 // "y" for continuing to install, "n" for stopping.
                 let ans = Confirm::new(
-                    "Warning!!! Some local packages will be overwritten, do \
-                     you want to continue?",
+                    "Warning!!! Some local packages will be overwritten, do you want to continue?",
                 )
                 .with_default(false)
                 .prompt();
@@ -1047,8 +1031,6 @@ pub async fn execute_cmd(
 
         // If there are no error models or unable to parse, return a generic
         // error.
-        Err(anyhow!(
-            "Dependency resolution failed without specific error details."
-        ))
+        Err(anyhow!("Dependency resolution failed without specific error details."))
     }
 }
