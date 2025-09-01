@@ -8,7 +8,6 @@ import { MarkerType } from "@xyflow/react";
 import dagre from "dagre";
 
 import { retrieveAddons } from "@/api/services/addons";
-import { retrieveGraphConnections } from "@/api/services/graphs";
 import {
   postGetGraphNodeGeometry,
   postSetGraphNodeGeometry,
@@ -22,6 +21,7 @@ import {
   type TCustomNode,
   type TExtensionNode,
   type TGraphNode,
+  type TSelectorNode,
 } from "@/types/flow";
 import {
   type BackendNode,
@@ -34,24 +34,20 @@ const NODE_HEIGHT = 200;
 const NODE_X_SPACING = 100;
 const NODE_Y_SPACING = 100;
 
-export const generateRawNodesFromSets = (
-  sets: {
-    backendNodes: BackendNode[];
-    graph: GraphInfo;
-  }[]
+export const generateRawNodesFromGraphs = (
+  graphs: GraphInfo[]
 ): TCustomNode[] => {
   let currentX = 0;
   let currentY = 100;
 
   const results: TCustomNode[][] = [];
 
-  for (const set of sets) {
-    const { backendNodes, graph } = set;
+  for (const graph of graphs) {
     const {
       nodes: rawNodes,
       width: graphWidth,
       // height: graphHeight,
-    } = generateRawNodes(backendNodes, graph, {
+    } = generateRawNodes(graph.graph?.nodes || [], graph, {
       startX: currentX,
       startY: currentY,
     });
@@ -97,7 +93,7 @@ export const generateRawNodes = (
   const graphNode: TGraphNode = {
     id: graph.graph_id,
     position: { x: startX, y: startY },
-    type: "graphNode",
+    type: ECustomNodeType.GRAPH,
     data: {
       _type: ECustomNodeType.GRAPH,
       graph,
@@ -106,54 +102,103 @@ export const generateRawNodes = (
     height: graphAreaHeight,
   };
 
-  const extensionNodes: TExtensionNode[] = backendNodes
-    .filter((i) => i.type === "extension")
-    .map((n, idx) => {
+  const parsedBackendNodes: (TExtensionNode | TSelectorNode | undefined)[] =
+    backendNodes.map((n, idx) => {
       const row = Math.floor(idx / cols);
       const col = idx % cols;
 
-      return {
-        // id: `${graph.graph_id}-${n.name}`,
-        id: data2identifier(EFlowElementIdentifier.CUSTOM_NODE, {
+      // extension node
+      if (n.type === "extension") {
+        return {
+          id: data2identifier(EFlowElementIdentifier.CUSTOM_NODE, {
+            type: ECustomNodeType.EXTENSION,
+            graph: graph.graph_id,
+            name: n.name,
+          }),
+          position: {
+            x:
+              NODE_X_SPACING +
+              col * (NODE_WIDTH + NODE_X_SPACING) +
+              NODE_X_SPACING,
+            y:
+              NODE_Y_SPACING +
+              row * (NODE_HEIGHT + NODE_Y_SPACING) +
+              NODE_Y_SPACING,
+          },
           type: ECustomNodeType.EXTENSION,
-          graph: graph.graph_id,
-          name: n.name,
-        }),
-        position: {
-          x:
-            NODE_X_SPACING +
-            col * (NODE_WIDTH + NODE_X_SPACING) +
-            NODE_X_SPACING,
-          y:
-            NODE_Y_SPACING +
-            row * (NODE_HEIGHT + NODE_Y_SPACING) +
-            NODE_Y_SPACING,
-        },
-        type: "extensionNode",
-        parentId: graph.graph_id,
-        extent: "parent",
-        data: {
-          ...n,
-          _type: ECustomNodeType.EXTENSION,
-          graph: graph,
-          src: {
-            [EConnectionType.CMD]: [],
-            [EConnectionType.DATA]: [],
-            [EConnectionType.AUDIO_FRAME]: [],
-            [EConnectionType.VIDEO_FRAME]: [],
+          parentId: graph.graph_id,
+          extent: "parent",
+          data: {
+            ...n,
+            _type: ECustomNodeType.EXTENSION,
+            graph: graph,
+            src: {
+              [EConnectionType.CMD]: [],
+              [EConnectionType.DATA]: [],
+              [EConnectionType.AUDIO_FRAME]: [],
+              [EConnectionType.VIDEO_FRAME]: [],
+            },
+            target: {
+              [EConnectionType.CMD]: [],
+              [EConnectionType.DATA]: [],
+              [EConnectionType.AUDIO_FRAME]: [],
+              [EConnectionType.VIDEO_FRAME]: [],
+            },
           },
-          target: {
-            [EConnectionType.CMD]: [],
-            [EConnectionType.DATA]: [],
-            [EConnectionType.AUDIO_FRAME]: [],
-            [EConnectionType.VIDEO_FRAME]: [],
+        } as TExtensionNode;
+      }
+
+      // selector node
+      if (n.type === "selector") {
+        return {
+          id: data2identifier(EFlowElementIdentifier.CUSTOM_NODE, {
+            type: ECustomNodeType.SELECTOR,
+            graph: graph.graph_id,
+            name: n.name,
+          }),
+          position: {
+            x:
+              NODE_X_SPACING +
+              col * (NODE_WIDTH + NODE_X_SPACING) +
+              NODE_X_SPACING,
+            y:
+              NODE_Y_SPACING +
+              row * (NODE_HEIGHT + NODE_Y_SPACING) +
+              NODE_Y_SPACING,
           },
-        },
-      };
+          type: ECustomNodeType.SELECTOR,
+          parentId: graph.graph_id,
+          extent: "parent",
+          data: {
+            ...n,
+            _type: ECustomNodeType.SELECTOR,
+            graph: graph,
+            // src: {
+            //   [EConnectionType.CMD]: [],
+            //   [EConnectionType.DATA]: [],
+            //   [EConnectionType.AUDIO_FRAME]: [],
+            //   [EConnectionType.VIDEO_FRAME]: [],
+            // },
+            // target: {
+            //   [EConnectionType.CMD]: [],
+            //   [EConnectionType.DATA]: [],
+            //   [EConnectionType.AUDIO_FRAME]: [],
+            //   [EConnectionType.VIDEO_FRAME]: [],
+            // },
+          },
+        };
+      }
+
+      // sub-graph node
+      // todo
     });
 
+  const customNodes: TCustomNode[] = parsedBackendNodes.filter(
+    Boolean
+  ) as TCustomNode[];
+
   return {
-    nodes: [graphNode, ...extensionNodes],
+    nodes: [graphNode, ...customNodes],
     width: graphAreaWidth,
     height: graphAreaHeight,
     startX,
@@ -546,22 +591,11 @@ export const syncGraphNodeGeometry = async (
 };
 
 export const resetNodesAndEdgesByGraphs = async (graphs: GraphInfo[]) => {
-  const backendNodes = graphs.map((graph) => ({
-    graph: graph,
-    nodes: graph.graph?.nodes || [],
+  const backendConnections = graphs.map((graph) => ({
+    graph,
+    connections: graph.graph?.connections || [],
   }));
-  const backendConnections = await Promise.all(
-    graphs.map(async (graph) => {
-      const connections = await retrieveGraphConnections(graph.graph_id);
-      return { graph: graph, connections: connections };
-    })
-  );
-  const rawNodes = generateRawNodesFromSets(
-    backendNodes.map((set) => ({
-      backendNodes: set.nodes,
-      graph: set.graph,
-    }))
-  );
+  const rawNodes = generateRawNodesFromGraphs(graphs);
   let rawEdges: TCustomEdge[] = [];
   let rawEdgeAddressMap: TCustomEdgeAddressMap = {
     [EConnectionType.CMD]: [],

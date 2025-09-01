@@ -15,7 +15,6 @@ import {
   AudioLinesIcon,
   ChevronDownIcon,
   DatabaseIcon,
-  PuzzleIcon,
   TerminalIcon,
   VideoIcon,
 } from "lucide-react";
@@ -43,6 +42,7 @@ import {
   GROUP_CUSTOM_CONNECTION_ID,
 } from "@/constants/widgets";
 import { CustomNodeConnectionButton } from "@/flow/edge/button";
+import { NODE_CONFIG_MAPPING } from "@/flow/node/base";
 import { ContextMenuItems } from "@/flow/node/extension/context-menu";
 import { data2identifier, EFlowElementIdentifier } from "@/lib/identifier";
 import { cn } from "@/lib/utils";
@@ -50,6 +50,8 @@ import { useWidgetStore } from "@/store";
 import type { IExtensionNodeData, TExtensionNode } from "@/types/flow";
 import { EConnectionType, type GraphInfo } from "@/types/graphs";
 import { EWidgetCategory, EWidgetDisplayType } from "@/types/widgets";
+
+const CONFIG = NODE_CONFIG_MAPPING.extension;
 
 export function ExtensionNode(props: NodeProps<TExtensionNode>) {
   const { data, isConnectable } = props;
@@ -186,7 +188,7 @@ const ExtensionNodeHeader = (props: {
         </Tooltip>
       </TooltipProvider>
       {/* Extension type icon */}
-      <PuzzleIcon
+      <CONFIG.Icon
         className={cn("size-4", { "text-foreground/50": !isInstalled })}
       />
 
@@ -229,7 +231,7 @@ const ExtensionNodeHeader = (props: {
   );
 };
 
-const HandleGroupItem = (props: {
+export const HandleGroupItem = (props: {
   data: IExtensionNodeData;
   isConnectable: boolean;
   onConnect?: (params: Connection | Edge) => void;
@@ -402,7 +404,7 @@ const HandleGroupItem = (props: {
   );
 };
 
-const ConnectionCount = (props: {
+export const ConnectionCount = (props: {
   children: React.ReactNode;
   data: {
     source: string;
