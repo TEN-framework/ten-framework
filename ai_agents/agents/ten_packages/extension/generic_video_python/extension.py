@@ -6,8 +6,6 @@
 import asyncio
 import base64
 import traceback
-import numpy as np
-from scipy.signal import resample_poly
 
 from ten import (
     AudioFrame,
@@ -23,6 +21,9 @@ from ten_ai_base.config import BaseConfig
 from .generic import AgoraGenericRecorder
 from dataclasses import dataclass
 
+# Error codes
+ERROR_CODE_CONFIG_VALIDATION_ERROR = -1012
+
 
 @dataclass
 class GenericVideoConfig(BaseConfig):
@@ -36,9 +37,24 @@ class GenericVideoConfig(BaseConfig):
     version: str = "v1"
     video_encoding: str = "H264"
     enable_string_uid: bool = False
+    activity_idle_timeout: int = 60
     start_endpoint: str = "https://api.example.com/v1/sessions/start"
     stop_endpoint: str = "https://api.example.com/v1/sessions/stop"
     input_audio_sample_rate: int = 48000
+
+    def validate_params(self) -> None:
+        """Validate required configuration parameters."""
+        required_fields = {
+            "agora_appid": self.agora_appid,
+            "generic_video_api_key": self.generic_video_api_key,
+            "avatar_id": self.avatar_id,
+            "start_endpoint": self.start_endpoint,
+            "stop_endpoint": self.stop_endpoint,
+        }
+
+        for field_name, value in required_fields.items():
+            if not value or (isinstance(value, str) and value.strip() == ""):
+                raise ValueError(f"Required field is missing or empty: {field_name}")
 
 
 class GenericVideoExtension(AsyncExtension):
@@ -46,10 +62,13 @@ class GenericVideoExtension(AsyncExtension):
         super().__init__(name)
         self.config = None
         self.input_audio_queue = asyncio.Queue()
-        self.audio_queue = asyncio.Queue[bytes]()
-        self.video_queue = asyncio.Queue()
         self.recorder: AgoraGenericRecorder = None
         self.ten_env: AsyncTenEnv = None
+
+        self._audio_processing_enabled = False  # Control audio processing loop
+        self._audio_task = None
+        self._config_valid = False  # Track configuration validation status
+        self._connection_task = None
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_debug("on_init")
@@ -60,15 +79,21 @@ class GenericVideoExtension(AsyncExtension):
 
         try:
             self.config = await GenericVideoConfig.create_async(ten_env)
+
+            # Validate configuration
+            self.config.validate_params()
+            self._config_valid = True
+
             # Log key configuration values
-            ten_env.log_info(f"BWBW API Key: {self.config.generic_video_api_key}")
-            ten_env.log_info(f"BWBW Start Endpoint: {self.config.start_endpoint}")
-            ten_env.log_info(f"BWBW input_audio_sample_rate: {self.config.input_audio_sample_rate}")
-            ten_env.log_info(f"BWBW avatar_id: {self.config.avatar_id}")
-            ten_env.log_info(f"BWBW quality: {self.config.quality}")
-            ten_env.log_info(f"BWBW version: {self.config.version}")
-            ten_env.log_info(f"BWBW video_encoding: {self.config.video_encoding}")
-            ten_env.log_info(f"BWBW enable_string_uid: {self.config.enable_string_uid}")
+            ten_env.log_info(f"API Key configured: {bool(self.config.generic_video_api_key)}")
+            ten_env.log_info(f"Start Endpoint: {self.config.start_endpoint}")
+            ten_env.log_info(f"Input audio sample rate: {self.config.input_audio_sample_rate}")
+            ten_env.log_info(f"Avatar ID: {self.config.avatar_id}")
+            ten_env.log_info(f"Activity idle timeout: {self.config.activity_idle_timeout}")
+            ten_env.log_info(f"Quality: {self.config.quality}")
+            ten_env.log_info(f"Version: {self.config.version}")
+            ten_env.log_info(f"Video encoding: {self.config.video_encoding}")
+            ten_env.log_info(f"Enable string UID: {self.config.enable_string_uid}")
 
             recorder = AgoraGenericRecorder(
                 api_key=self.config.generic_video_api_key,
@@ -78,6 +103,7 @@ class GenericVideoExtension(AsyncExtension):
                 avatar_uid=self.config.agora_video_uid,
                 ten_env=ten_env,
                 avatar_id=self.config.avatar_id,
+                activity_idle_timeout=self.config.activity_idle_timeout,
                 quality=self.config.quality,
                 version=self.config.version,
                 video_encoding=self.config.video_encoding,
@@ -87,59 +113,49 @@ class GenericVideoExtension(AsyncExtension):
             )
 
             self.recorder = recorder
+            self._audio_processing_enabled = True
 
             asyncio.create_task(self._loop_input_audio_sender(ten_env))
 
             await self.recorder.connect()
+
+        except ValueError as e:
+            await self._handle_error(
+                f"Config validation error: {e}",
+                code=ERROR_CODE_CONFIG_VALIDATION_ERROR,
+            )
         except Exception:
             ten_env.log_error(f"error on_start, {traceback.format_exc()}")
 
     async def _loop_input_audio_sender(self, _: AsyncTenEnv):
-        while True:
+        while self._audio_processing_enabled:
             audio_frame = await self.input_audio_queue.get()
+
+            # Wait for recorder to be ready
+            await self._wait_for_recorder_ready()
+
             if self.recorder is not None and self.recorder.ws_connected():
                 try:
                     original_rate = self.config.input_audio_sample_rate
-                    target_rate = 24000
 
-                    audio_data = np.frombuffer(audio_frame, dtype=np.int16)
-                    if len(audio_data) == 0:
+                    if len(audio_frame) == 0:
                         continue
 
-                    # Skip resampling if rates are the same
-                    if original_rate == target_rate:
-                        resampled_frame = audio_frame
-                    else:
-                        # Calculate resampling ratio
-                        resample_ratio = target_rate / original_rate
+                    # Send audio at original sample rate - let server handle any resampling
+                    base64_audio_data = base64.b64encode(audio_frame).decode("utf-8")
 
-                        if resample_ratio > 1:
-                            # Upsampling: create more samples
-                            new_length = int(len(audio_data) * resample_ratio)
-                            old_indices = np.linspace(0, len(audio_data) - 1, new_length)
-                            resampled_audio = audio_data[np.round(old_indices).astype(int)]
-                        else:
-                            # Downsampling: select fewer samples
-                            step = 1 / resample_ratio
-                            indices = np.round(np.arange(0, len(audio_data), step)).astype(int)
-                            indices = indices[indices < len(audio_data)]
-                            resampled_audio = audio_data[indices]
-
-                        resampled_frame = resampled_audio.tobytes()
-
-                    # Encode and send
-                    base64_audio_data = base64.b64encode(resampled_frame).decode("utf-8")
-                    await self.recorder.send(base64_audio_data)
+                    # Update the recorder to send with actual sample rate
+                    await self.recorder.send(base64_audio_data, sample_rate=original_rate)
 
                 except Exception as e:
                     self.ten_env.log_error(f"Error processing audio frame: {e}")
                     continue
 
-    def _dump_audio_if_need(self, buf: bytearray) -> None:
-        with open(
-            "{}_{}.pcm".format("tts", self.config.agora_channel_name), "ab"
-        ) as dump_file:
-            dump_file.write(buf)
+    async def _wait_for_recorder_ready(self) -> None:
+        """Wait for recorder to be ready and connected."""
+        while self.recorder is None or not self.recorder.ws_connected():
+            self.ten_env.log_debug("Recorder not ready, waiting...")
+            await asyncio.sleep(0.5)
 
     async def _clear_audio_queue(self) -> None:
         """Clear audio queue before interrupt."""
@@ -172,11 +188,49 @@ class GenericVideoExtension(AsyncExtension):
 
         self.ten_env.log_info("Interrupt handling completed")
 
+    async def _handle_error(self, message: str, code: int = 0) -> None:
+        """Handle and log errors consistently."""
+        self.ten_env.log_error(f"Error {code}: {message}")
+
+        # Send structured error message to system
+        try:
+            from ten_ai_base import ErrorMessage
+            from ten import Data
+
+            data = Data.create("message")
+            error_msg = ErrorMessage(
+                module="avatar",
+                message=message,
+                code=code,
+            )
+            data.set_property_from_json("", error_msg.model_dump_json())
+            asyncio.create_task(self.ten_env.send_data(data))
+        except ImportError:
+            # Fall back to simple logging if ErrorMessage not available
+            pass
+
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_info("on_stop")
+        self._audio_processing_enabled = False
+
+        # Cancel audio processing task
+        if self._audio_task and not self._audio_task.done():
+            self._audio_task.cancel()
+            try:
+                await self._audio_task
+            except asyncio.CancelledError:
+                pass
+
+        # Cancel connection task if running
+        if self._connection_task and not self._connection_task.done():
+            self._connection_task.cancel()
+            try:
+                await self._connection_task
+            except asyncio.CancelledError:
+                pass
+
         if self.recorder:
             await self.recorder.disconnect()
-        # TODO: clean up resources
 
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_debug("on_deinit")
@@ -200,10 +254,21 @@ class GenericVideoExtension(AsyncExtension):
     async def on_audio_frame(
         self, ten_env: AsyncTenEnv, audio_frame: AudioFrame
     ) -> None:
+        # Skip processing if audio processing is disabled
+        if not self._audio_processing_enabled:
+            return
+
         audio_frame_name = audio_frame.get_name()
-        ten_env.log_debug("on_audio_frame name {}".format(audio_frame_name))
+        audio_frame_sample_rate = audio_frame.get_sample_rate()
+        ten_env.log_debug(
+            f"on_audio_frame name {audio_frame_name}, sample_rate {audio_frame_sample_rate}"
+        )
 
         frame_buf = audio_frame.get_buf()
+        if not frame_buf:
+            self.ten_env.log_warn("on_audio_frame: empty pcm_frame detected.")
+            return
+
         self.input_audio_queue.put_nowait(frame_buf)
 
     async def on_video_frame(

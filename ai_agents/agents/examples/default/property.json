@@ -355,11 +355,13 @@
               "agora_channel_name": "ten_agent_test",
               "agora_avatar_uid": 12345,
               "input_audio_sample_rate": 48000,
-              "avatar_id": "dood",
+              "avatar_id": "abc123",
+              "video_encoding": "H264",
               "enable_string_uid": true,
+              "activity_idle_timeout": 60,
               "generic_video_api_key": "${env:GENERIC_VIDEO_API_KEY}",
               "start_endpoint": "http://oai.agora.io:8764/session/start",
-              "stop_endpoint": "http://localhost:8764/session/stop"
+              "stop_endpoint": "http://oai.agora.io:8764/session/stop"
             }
           }
         ],
