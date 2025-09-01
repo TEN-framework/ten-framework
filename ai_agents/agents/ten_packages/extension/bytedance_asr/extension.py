@@ -262,14 +262,10 @@ class BytedanceASRExtension(AsyncASRBaseExtension):
             # Check if this is a fatal error that shouldn't trigger reconnection
             if error_code in FATAL_ERROR_CODES:
                 self.last_fatal_error = error_code
-                if error_code == 400:
-                    self.ten_env.log_info(
-                        "=== Received quota exceeded error (400), closing connection to prevent further quota issues ==="
-                    )
-                else:
-                    self.ten_env.log_info(
-                        f"=== Received fatal error code {error_code}, closing connection to prevent further errors ==="
-                    )
+
+                self.ten_env.log_info(
+                    f"=== Received fatal error code {error_code}, closing connection to prevent further errors ==="
+                )
                 # Close connection immediately for fatal errors to prevent continuous error logs
                 await self.stop_connection()
                 return
