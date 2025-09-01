@@ -10,13 +10,10 @@ use anyhow::{Context, Result};
 use clap::{Arg, ArgMatches, Command};
 use console::Emoji;
 use serde_json::Value;
-use ten_rust::{
-    pkg_info::constants::PROPERTY_JSON_FILENAME, utils::fs::read_file_to_string,
-};
+use ten_rust::{pkg_info::constants::PROPERTY_JSON_FILENAME, utils::fs::read_file_to_string};
 
 use crate::{
-    cmd::cmd_modify::jq_util::jq_run,
-    designer::storage::in_memory::TmanStorageInMemory,
+    cmd::cmd_modify::jq_util::jq_run, designer::storage::in_memory::TmanStorageInMemory,
     home::config::TmanConfig, output::TmanOutput,
 };
 
@@ -49,10 +46,7 @@ pub fn create_sub_cmd(_args_cfg: &crate::cmd_line::ArgsCfg) -> Command {
             Arg::new("MODIFICATION")
                 .long("modification")
                 .short('m')
-                .help(
-                    "The path=JsonString to modify in the selected graph. \
-                     E.g. .name=\"test\"",
-                )
+                .help("The path=JsonString to modify in the selected graph. E.g. .name=\"test\"")
                 .required(true)
                 .num_args(1),
         )
@@ -73,10 +67,7 @@ pub fn parse_sub_cmd(sub_cmd_args: &ArgMatches) -> Result<ModifyGraphCommand> {
             .get_one::<String>("PREDEFINED_GRAPH_NAME")
             .unwrap()
             .to_string(),
-        modification: sub_cmd_args
-            .get_one::<String>("MODIFICATION")
-            .unwrap()
-            .to_string(),
+        modification: sub_cmd_args.get_one::<String>("MODIFICATION").unwrap().to_string(),
         inplace: sub_cmd_args.get_flag("INPLACE"),
     };
 
@@ -90,34 +81,21 @@ pub async fn execute_cmd(
     out: Arc<Box<dyn TmanOutput>>,
 ) -> Result<()> {
     // Find `property.json`.
-    let property_file_path =
-        PathBuf::from(&command_data.app_dir).join(PROPERTY_JSON_FILENAME);
-    let property_str =
-        read_file_to_string(&property_file_path).with_context(|| {
-            format!("Failed to read file: {property_file_path:?}")
-        })?;
+    let property_file_path = PathBuf::from(&command_data.app_dir).join(PROPERTY_JSON_FILENAME);
+    let property_str = read_file_to_string(&property_file_path)
+        .with_context(|| format!("Failed to read file: {property_file_path:?}"))?;
 
     // Parse `property.json`.
     let mut property_json: Value = serde_json::from_str(&property_str)
-        .with_context(|| {
-            format!("Failed to parse {PROPERTY_JSON_FILENAME} into JSON")
-        })?;
+        .with_context(|| format!("Failed to parse {PROPERTY_JSON_FILENAME} into JSON"))?;
 
     // Find the specified predefined_graph.
     let graphs_val = property_json
         .pointer_mut("/ten/predefined_graphs")
-        .ok_or_else(|| {
-            anyhow::anyhow!(
-                "No predefined_graphs in {}",
-                PROPERTY_JSON_FILENAME
-            )
-        })?;
+        .ok_or_else(|| anyhow::anyhow!("No predefined_graphs in {}", PROPERTY_JSON_FILENAME))?;
 
     let graphs = graphs_val.as_array_mut().ok_or_else(|| {
-        anyhow::anyhow!(
-            "predefined_graphs in {} is not an array",
-            PROPERTY_JSON_FILENAME
-        )
+        anyhow::anyhow!("predefined_graphs in {} is not an array", PROPERTY_JSON_FILENAME)
     })?;
 
     let mut target_graph_opt = None;
@@ -137,8 +115,7 @@ pub async fn execute_cmd(
         )
     })?;
 
-    let output =
-        jq_run(target_graph.clone(), &command_data.modification).unwrap();
+    let output = jq_run(target_graph.clone(), &command_data.modification).unwrap();
 
     if !command_data.inplace {
         out.normal_line(&serde_json::to_string_pretty(&output)?);

@@ -14,15 +14,11 @@ use std::sync::Arc;
 use actix::{Actor, Handler, Message, StreamHandler};
 use actix_web::{web, Error, HttpRequest, HttpResponse};
 use actix_web_actors::ws;
-use anyhow::Context;
-use anyhow::Result;
-use msg::InboundMsg;
-use msg::OutboundMsg;
-
-use crate::designer::DesignerState;
-use crate::home::config::TmanConfig;
+use anyhow::{Context, Result};
+use msg::{InboundMsg, OutboundMsg};
 
 use super::storage::in_memory::TmanStorageInMemory;
+use crate::{designer::DesignerState, home::config::TmanConfig};
 
 #[derive(Message)]
 #[rtype(result = "()")]
@@ -35,21 +31,13 @@ pub enum BuiltinFunctionOutput {
 }
 
 enum BuiltinFunction {
-    InstallAll {
-        base_dir: String,
-    },
-    Install {
-        base_dir: String,
-        pkg_type: String,
-        pkg_name: String,
-        pkg_version: Option<String>,
-    },
+    InstallAll { base_dir: String },
+    Install { base_dir: String, pkg_type: String, pkg_name: String, pkg_version: Option<String> },
 }
 
 /// `BuiltinFunctionParser` returns a tuple: the 1st element is the command
 /// string, and the 2nd is an optional working directory.
-type BuiltinFunctionParser =
-    Box<dyn Fn(&str) -> Result<BuiltinFunction> + Send + Sync>;
+type BuiltinFunctionParser = Box<dyn Fn(&str) -> Result<BuiltinFunction> + Send + Sync>;
 
 pub struct WsBuiltinFunction {
     builtin_function_parser: BuiltinFunctionParser,
@@ -63,7 +51,11 @@ impl WsBuiltinFunction {
         tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
         tman_storage_in_memory: Arc<tokio::sync::RwLock<TmanStorageInMemory>>,
     ) -> Self {
-        Self { builtin_function_parser, tman_config, tman_storage_in_memory }
+        Self {
+            builtin_function_parser,
+            tman_config,
+            tman_storage_in_memory,
+        }
     }
 }
 
@@ -82,15 +74,13 @@ impl Handler<BuiltinFunctionOutput> for WsBuiltinFunction {
     type Result = ();
 
     // Handles the output and exit status from the builtin function.
-    fn handle(
-        &mut self,
-        msg: BuiltinFunctionOutput,
-        ctx: &mut Self::Context,
-    ) -> Self::Result {
+    fn handle(&mut self, msg: BuiltinFunctionOutput, ctx: &mut Self::Context) -> Self::Result {
         match msg {
             BuiltinFunctionOutput::NormalLine(line) => {
                 // Send the line to the client.
-                let msg_out = OutboundMsg::NormalLine { data: line };
+                let msg_out = OutboundMsg::NormalLine {
+                    data: line,
+                };
                 let out_str = serde_json::to_string(&msg_out).unwrap();
 
                 // Sends a text message to the WebSocket client.
@@ -98,30 +88,41 @@ impl Handler<BuiltinFunctionOutput> for WsBuiltinFunction {
             }
             BuiltinFunctionOutput::NormalPartial(line) => {
                 // Send the line to the client.
-                let msg_out = OutboundMsg::NormalPartial { data: line };
+                let msg_out = OutboundMsg::NormalPartial {
+                    data: line,
+                };
                 let out_str = serde_json::to_string(&msg_out).unwrap();
 
                 // Sends a text message to the WebSocket client.
                 ctx.text(out_str);
             }
             BuiltinFunctionOutput::ErrorLine(line) => {
-                let msg_out = OutboundMsg::ErrorLine { data: line };
+                let msg_out = OutboundMsg::ErrorLine {
+                    data: line,
+                };
                 let out_str = serde_json::to_string(&msg_out).unwrap();
 
                 // Sends a text message to the WebSocket client.
                 ctx.text(out_str);
             }
             BuiltinFunctionOutput::ErrorPartial(line) => {
-                let msg_out = OutboundMsg::ErrorPartial { data: line };
+                let msg_out = OutboundMsg::ErrorPartial {
+                    data: line,
+                };
                 let out_str = serde_json::to_string(&msg_out).unwrap();
 
                 // Sends a text message to the WebSocket client.
                 ctx.text(out_str);
             }
-            BuiltinFunctionOutput::Exit { exit_code, error_message } => {
+            BuiltinFunctionOutput::Exit {
+                exit_code,
+                error_message,
+            } => {
                 // Send it to the client.
-                let msg_out =
-                    OutboundMsg::Exit { code: exit_code, error_message };
+                let msg_out = OutboundMsg::Exit {
+                    code: exit_code,
+                    error_message,
+                };
                 let out_str = serde_json::to_string(&msg_out).unwrap();
 
                 // Sends a text message to the WebSocket client.
@@ -136,41 +137,30 @@ impl Handler<BuiltinFunctionOutput> for WsBuiltinFunction {
     }
 }
 
-impl StreamHandler<Result<ws::Message, ws::ProtocolError>>
-    for WsBuiltinFunction
-{
+impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsBuiltinFunction {
     // Handles messages from WebSocket clients, including text messages, Ping,
     // Close, and more.
-    fn handle(
-        &mut self,
-        item: Result<ws::Message, ws::ProtocolError>,
-        ctx: &mut Self::Context,
-    ) {
+    fn handle(&mut self, item: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
         match item {
             Ok(ws::Message::Text(text)) => {
                 println!("Received text: {text}");
 
                 match (self.builtin_function_parser)(&text) {
                     Ok(builtin_function) => match builtin_function {
-                        BuiltinFunction::InstallAll { base_dir } => {
-                            self.install_all(base_dir, ctx)
-                        }
+                        BuiltinFunction::InstallAll {
+                            base_dir,
+                        } => self.install_all(base_dir, ctx),
                         BuiltinFunction::Install {
                             base_dir,
                             pkg_type,
                             pkg_name,
                             pkg_version,
-                        } => self.install(
-                            base_dir,
-                            pkg_type,
-                            pkg_name,
-                            pkg_version,
-                            ctx,
-                        ),
+                        } => self.install(base_dir, pkg_type, pkg_name, pkg_version, ctx),
                     },
                     Err(e) => {
-                        let err_out =
-                            OutboundMsg::ErrorLine { data: e.to_string() };
+                        let err_out = OutboundMsg::ErrorLine {
+                            data: e.to_string(),
+                        };
                         let out_str = serde_json::to_string(&err_out).unwrap();
                         ctx.text(out_str);
                         ctx.close(None);
@@ -201,9 +191,11 @@ pub async fn builtin_function_endpoint(
             .with_context(|| format!("Failed to parse {text} into JSON"))?;
 
         match inbound {
-            InboundMsg::InstallAll { base_dir } => {
-                Ok(BuiltinFunction::InstallAll { base_dir })
-            }
+            InboundMsg::InstallAll {
+                base_dir,
+            } => Ok(BuiltinFunction::InstallAll {
+                base_dir,
+            }),
             InboundMsg::Install {
                 base_dir,
                 pkg_type,
@@ -218,9 +210,5 @@ pub async fn builtin_function_endpoint(
         }
     });
 
-    ws::start(
-        WsBuiltinFunction::new(default_parser, tman_config, tman_metadata),
-        &req,
-        stream,
-    )
+    ws::start(WsBuiltinFunction::new(default_parser, tman_config, tman_metadata), &req, stream)
 }

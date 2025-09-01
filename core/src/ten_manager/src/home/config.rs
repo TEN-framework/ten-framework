@@ -1,21 +1,19 @@
-use std::fs;
-use std::sync::Arc;
 //
 // Copyright © 2025 Agora
 // This file is part of TEN Framework, an open source project.
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
-//
-use std::{collections::HashMap, path::PathBuf};
+use std::{collections::HashMap, fs, path::PathBuf, sync::Arc};
 
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
-use crate::constants::{CONFIG_JSON, DEFAULT, DEFAULT_REGISTRY};
-use crate::designer::preferences::{default_designer, Designer};
-use crate::home::package_cache::default_enable_package_cache;
-use crate::home::{get_home_dir, Registry};
-use crate::schema::validate_tman_config;
+use crate::{
+    constants::{CONFIG_JSON, DEFAULT, DEFAULT_REGISTRY},
+    designer::preferences::{default_designer, Designer},
+    home::{get_home_dir, package_cache::default_enable_package_cache, Registry},
+    schema::validate_tman_config,
+};
 
 #[derive(Serialize, Deserialize, Debug, Default)]
 pub struct TmanConfigFile {
@@ -51,15 +49,13 @@ impl Default for TmanConfig {
     fn default() -> Self {
         let mut registry = HashMap::new();
 
-        registry
-            .entry(DEFAULT.to_string())
-            .or_insert(Registry { index: DEFAULT_REGISTRY.to_string() });
+        registry.entry(DEFAULT.to_string()).or_insert(Registry {
+            index: DEFAULT_REGISTRY.to_string(),
+        });
 
         Self {
             registry,
-            config_file: Some(
-                get_home_config_path().to_string_lossy().to_string(),
-            ),
+            config_file: Some(get_home_config_path().to_string_lossy().to_string()),
             admin_token: None,
             user_token: None,
             verbose: false,
@@ -79,9 +75,7 @@ pub fn get_home_config_path() -> PathBuf {
 }
 
 // Read the configuration from the specified path.
-pub fn read_config(
-    config_file_path: &Option<String>,
-) -> Result<Option<TmanConfigFile>> {
+pub fn read_config(config_file_path: &Option<String>) -> Result<Option<TmanConfigFile>> {
     let config_path = match config_file_path {
         Some(path) => PathBuf::from(path),
         None => get_home_config_path(),
@@ -95,25 +89,16 @@ pub fn read_config(
                 Ok(config_json) => {
                     // Validate the config against schema.
                     if let Err(e) = validate_tman_config(&config_json) {
-                        return Err(anyhow::anyhow!(
-                            "Failed to validate config file: {}",
-                            e
-                        ));
+                        return Err(anyhow::anyhow!("Failed to validate config file: {}", e));
                     }
 
                     // Parse the config.
-                    match serde_json::from_value::<TmanConfigFile>(config_json)
-                    {
+                    match serde_json::from_value::<TmanConfigFile>(config_json) {
                         Ok(config) => Ok(Some(config)),
-                        Err(e) => Err(anyhow::anyhow!(
-                            "Failed to parse config file: {}",
-                            e
-                        )),
+                        Err(e) => Err(anyhow::anyhow!("Failed to parse config file: {}", e)),
                     }
                 }
-                Err(e) => {
-                    Err(anyhow::anyhow!("Failed to parse config file: {}", e))
-                }
+                Err(e) => Err(anyhow::anyhow!("Failed to parse config file: {}", e)),
             },
             Err(e) => Err(anyhow::anyhow!("Failed to read config file: {}", e)),
         }
@@ -122,8 +107,6 @@ pub fn read_config(
     }
 }
 
-pub async fn is_verbose(
-    tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
-) -> bool {
+pub async fn is_verbose(tman_config: Arc<tokio::sync::RwLock<TmanConfig>>) -> bool {
     tman_config.read().await.verbose
 }

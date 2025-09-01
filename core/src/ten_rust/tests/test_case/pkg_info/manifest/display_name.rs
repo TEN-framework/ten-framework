@@ -7,7 +7,6 @@
 #[cfg(test)]
 mod tests {
     use anyhow::Result;
-
     use ten_rust::pkg_info::manifest::Manifest;
 
     #[test]
@@ -38,33 +37,15 @@ mod tests {
 
         let display_name = manifest.display_name.unwrap();
         assert_eq!(
-            display_name
-                .locales
-                .get("en-US")
-                .unwrap()
-                .content
-                .as_ref()
-                .unwrap(),
+            display_name.locales.get("en-US").unwrap().content.as_ref().unwrap(),
             "Test Extension"
         );
         assert_eq!(
-            display_name
-                .locales
-                .get("zh-CN")
-                .unwrap()
-                .content
-                .as_ref()
-                .unwrap(),
+            display_name.locales.get("zh-CN").unwrap().content.as_ref().unwrap(),
             "测试扩展"
         );
         assert_eq!(
-            display_name
-                .locales
-                .get("es-ES")
-                .unwrap()
-                .content
-                .as_ref()
-                .unwrap(),
+            display_name.locales.get("es-ES").unwrap().content.as_ref().unwrap(),
             "Extensión de Prueba"
         );
     }
@@ -158,23 +139,11 @@ mod tests {
 
         let display_name = manifest.display_name.unwrap();
         assert_eq!(
-            display_name
-                .locales
-                .get("en-US")
-                .unwrap()
-                .import_uri
-                .as_ref()
-                .unwrap(),
+            display_name.locales.get("en-US").unwrap().import_uri.as_ref().unwrap(),
             "file://display_name_en.txt"
         );
         assert_eq!(
-            display_name
-                .locales
-                .get("zh-CN")
-                .unwrap()
-                .content
-                .as_ref()
-                .unwrap(),
+            display_name.locales.get("zh-CN").unwrap().content.as_ref().unwrap(),
             "测试扩展"
         );
     }
@@ -210,10 +179,7 @@ mod tests {
             display_name.locales.get("en").unwrap().content.as_ref().unwrap(),
             "Test Extension"
         );
-        assert_eq!(
-            display_name.locales.get("zh").unwrap().content.as_ref().unwrap(),
-            "测试扩展"
-        );
+        assert_eq!(display_name.locales.get("zh").unwrap().content.as_ref().unwrap(), "测试扩展");
         assert_eq!(
             display_name.locales.get("es").unwrap().content.as_ref().unwrap(),
             "Extensión de Prueba"
@@ -252,33 +218,15 @@ mod tests {
             "Test Extension"
         );
         assert_eq!(
-            display_name
-                .locales
-                .get("zh-CN")
-                .unwrap()
-                .content
-                .as_ref()
-                .unwrap(),
+            display_name.locales.get("zh-CN").unwrap().content.as_ref().unwrap(),
             "测试扩展"
         );
         assert_eq!(
-            display_name
-                .locales
-                .get("zh-TW")
-                .unwrap()
-                .content
-                .as_ref()
-                .unwrap(),
+            display_name.locales.get("zh-TW").unwrap().content.as_ref().unwrap(),
             "測試擴展"
         );
         assert_eq!(
-            display_name
-                .locales
-                .get("es-ES")
-                .unwrap()
-                .content
-                .as_ref()
-                .unwrap(),
+            display_name.locales.get("es-ES").unwrap().content.as_ref().unwrap(),
             "Extensión de Prueba"
         );
     }
@@ -425,23 +373,11 @@ mod tests {
 
         let display_name = manifest.display_name.unwrap();
         assert_eq!(
-            display_name
-                .locales
-                .get("en-US")
-                .unwrap()
-                .content
-                .as_ref()
-                .unwrap(),
+            display_name.locales.get("en-US").unwrap().content.as_ref().unwrap(),
             "Test Extension"
         );
         assert_eq!(
-            display_name
-                .locales
-                .get("zh-CN")
-                .unwrap()
-                .content
-                .as_ref()
-                .unwrap(),
+            display_name.locales.get("zh-CN").unwrap().content.as_ref().unwrap(),
             "测试扩展"
         );
     }

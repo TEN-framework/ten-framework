@@ -4,26 +4,23 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
+use std::sync::Arc;
+
 use actix_web::{web, HttpResponse, Responder};
 use anyhow::{anyhow, Result};
 use semver::Version;
 use serde::{Deserialize, Serialize};
-use std::sync::Arc;
 use strum_macros::{Display, EnumString};
-
 use ten_rust::pkg_info::pkg_type::PkgType;
 
+use super::DesignerState;
 use crate::{
     constants::{TAG_CPP, TAG_GO, TAG_NODEJS, TAG_PYTHON},
     designer::response::{ApiResponse, ErrorResponse, Status},
     registry,
 };
 
-use super::DesignerState;
-
-#[derive(
-    Deserialize, Serialize, Debug, EnumString, Display, Clone, PartialEq,
-)]
+#[derive(Deserialize, Serialize, Debug, EnumString, Display, Clone, PartialEq)]
 #[strum(serialize_all = "lowercase")]
 pub enum TemplateLanguage {
     #[serde(rename = "cpp")]
@@ -60,8 +57,10 @@ pub async fn get_template_endpoint(
     request_payload: web::Json<GetTemplateRequestPayload>,
     state: web::Data<Arc<DesignerState>>,
 ) -> Result<impl Responder, actix_web::Error> {
-    let GetTemplateRequestPayload { pkg_type, language } =
-        request_payload.into_inner();
+    let GetTemplateRequestPayload {
+        pkg_type,
+        language,
+    } = request_payload.into_inner();
 
     // Clone the language for later use in error messages.
     let language_clone = language.clone();
@@ -109,17 +108,17 @@ pub async fn get_template_endpoint(
                 );
 
                 let error = anyhow!(error_message);
-                let error_response = ErrorResponse::from_error(
-                    &error,
-                    "Unsupported template combination",
-                );
+                let error_response =
+                    ErrorResponse::from_error(&error, "Unsupported template combination");
 
                 return Ok(HttpResponse::BadRequest().json(error_response));
             }
 
             let response = ApiResponse {
                 status: Status::Ok,
-                data: GetTemplateResponseData { templates },
+                data: GetTemplateResponseData {
+                    templates,
+                },
                 meta: None,
             };
 
@@ -127,13 +126,12 @@ pub async fn get_template_endpoint(
         }
         Err(err) => {
             let error_message = format!(
-                "Failed to fetch templates: pkg_type={pkg_type}, \
-                 language={language_clone}, error={err}"
+                "Failed to fetch templates: pkg_type={pkg_type}, language={language_clone}, \
+                 error={err}"
             );
 
             let error = anyhow!(error_message);
-            let error_response =
-                ErrorResponse::from_error(&error, "Failed to fetch templates");
+            let error_response = ErrorResponse::from_error(&error, "Failed to fetch templates");
 
             Ok(HttpResponse::InternalServerError().json(error_response))
         }

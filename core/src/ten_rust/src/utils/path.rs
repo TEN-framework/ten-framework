@@ -11,13 +11,12 @@ use url::Url;
 
 pub fn normalize_path(path: &Path) -> PathBuf {
     let mut components = path.components().peekable();
-    let mut ret =
-        if let Some(c @ Component::Prefix(..)) = components.peek().cloned() {
-            components.next();
-            PathBuf::from(c.as_os_str())
-        } else {
-            PathBuf::new()
-        };
+    let mut ret = if let Some(c @ Component::Prefix(..)) = components.peek().cloned() {
+        components.next();
+        PathBuf::from(c.as_os_str())
+    } else {
+        PathBuf::new()
+    };
 
     for component in components {
         match component {
@@ -54,19 +53,13 @@ pub fn get_base_dir_of_uri(uri: &str) -> Result<String> {
                 #[cfg(windows)]
                 // Windows drive letter
                 if url.scheme().len() == 1
-                    && url
-                        .scheme()
-                        .chars()
-                        .next()
-                        .unwrap()
-                        .is_ascii_alphabetic()
+                    && url.scheme().chars().next().unwrap().is_ascii_alphabetic()
                 {
                     // The uri may be a relative path in Windows.
                     // Continue to parse the uri as a relative path.
                 } else {
                     return Err(anyhow::anyhow!(
-                        "Unsupported URL scheme '{}' in uri: {} when \
-                         get_base_dir_of_uri",
+                        "Unsupported URL scheme '{}' in uri: {} when get_base_dir_of_uri",
                         url.scheme(),
                         uri
                     ));
@@ -74,8 +67,7 @@ pub fn get_base_dir_of_uri(uri: &str) -> Result<String> {
 
                 #[cfg(not(windows))]
                 return Err(anyhow::anyhow!(
-                    "Unsupported URL scheme '{}' in uri: {} when \
-                     get_base_dir_of_uri",
+                    "Unsupported URL scheme '{}' in uri: {} when get_base_dir_of_uri",
                     url.scheme(),
                     uri
                 ));
@@ -95,16 +87,13 @@ pub fn get_base_dir_of_uri(uri: &str) -> Result<String> {
 /// The import_uri can be a relative path or a URL.
 /// The base_dir is the base directory of the import_uri if it's a relative
 /// path.
-pub fn get_real_path_from_import_uri(
-    import_uri: &str,
-    base_dir: Option<&str>,
-) -> Result<String> {
+pub fn get_real_path_from_import_uri(import_uri: &str, base_dir: Option<&str>) -> Result<String> {
     // If the import_uri is an absolute path, return an error because if it's
     // an absolute path, it should be start with file://
     if Path::new(import_uri).is_absolute() {
         return Err(anyhow::anyhow!(
-            "Absolute paths are not supported in import_uri: {}. Use file:// \
-             URI or relative path instead",
+            "Absolute paths are not supported in import_uri: {}. Use file:// URI or relative path \
+             instead",
             import_uri
         ));
     }
@@ -122,12 +111,7 @@ pub fn get_real_path_from_import_uri(
                 #[cfg(windows)]
                 // Windows drive letter
                 if url.scheme().len() == 1
-                    && url
-                        .scheme()
-                        .chars()
-                        .next()
-                        .unwrap()
-                        .is_ascii_alphabetic()
+                    && url.scheme().chars().next().unwrap().is_ascii_alphabetic()
                 {
                     // The import_uri may be a relative path in Windows.
                     // Continue to parse the import_uri as a relative path.
@@ -156,8 +140,7 @@ pub fn get_real_path_from_import_uri(
     // If the base_dir is not provided, return an error.
     if base_dir.is_none() || base_dir.unwrap().is_empty() {
         return Err(anyhow::anyhow!(
-            "base_dir cannot be None when uri is a relative path, import_uri: \
-             {import_uri}"
+            "base_dir cannot be None when uri is a relative path, import_uri: {import_uri}"
         ));
     }
 
@@ -170,9 +153,7 @@ pub fn get_real_path_from_import_uri(
     if let Ok(mut base_url) = Url::parse(base_dir.unwrap()) {
         // Check if it's a real URL scheme (not just a Windows path with a
         // colon)
-        if base_url.scheme().len() > 1
-            && !base_url.scheme().eq_ignore_ascii_case("c")
-        {
+        if base_url.scheme().len() > 1 && !base_url.scheme().eq_ignore_ascii_case("c") {
             // Ensure the base URL ends with '/' to properly append relative
             // paths
             if !base_url.path().ends_with('/') {
@@ -188,8 +169,7 @@ pub fn get_real_path_from_import_uri(
                 }
                 Err(e) => {
                     return Err(anyhow::anyhow!(
-                        "Failed to resolve relative path '{}' against base \
-                         URL '{}': {}",
+                        "Failed to resolve relative path '{}' against base URL '{}': {}",
                         import_uri,
                         base_dir.unwrap(),
                         e

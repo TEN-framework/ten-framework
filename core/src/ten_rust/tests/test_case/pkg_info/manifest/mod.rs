@@ -12,13 +12,11 @@ mod readme;
 #[cfg(test)]
 mod tests {
     use anyhow::Result;
-
     use ten_rust::pkg_info::{manifest::Manifest, pkg_type::PkgType};
 
     #[tokio::test]
     async fn test_extension_manifest_from_str() {
-        let manifest_str =
-            include_str!("../../../test_data/test_extension_manifest.json");
+        let manifest_str = include_str!("../../../test_data/test_extension_manifest.json");
 
         let result: Result<Manifest> = Manifest::create_from_str(manifest_str);
         assert!(result.is_ok());

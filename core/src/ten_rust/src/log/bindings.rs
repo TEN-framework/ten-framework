@@ -48,30 +48,25 @@ pub unsafe extern "C" fn ten_rust_create_log_config_from_json(
         Ok(log_config_json_str) => log_config_json_str,
         Err(e) => {
             if !err_msg.is_null() {
-                let err_msg_c_str = CString::new(format!(
-                    "Failed to convert log config to JSON: {e:?}"
-                ))
-                .unwrap();
+                let err_msg_c_str =
+                    CString::new(format!("Failed to convert log config to JSON: {e:?}")).unwrap();
                 *err_msg = err_msg_c_str.into_raw();
             }
             return std::ptr::null();
         }
     };
 
-    let log_config: AdvancedLogConfig =
-        match serde_json::from_str(log_config_json_str) {
-            Ok(log_config) => log_config,
-            Err(e) => {
-                if !err_msg.is_null() {
-                    let err_msg_c_str = CString::new(format!(
-                        "Failed to parse log config: {e:?}"
-                    ))
-                    .unwrap();
-                    *err_msg = err_msg_c_str.into_raw();
-                }
-                return std::ptr::null();
+    let log_config: AdvancedLogConfig = match serde_json::from_str(log_config_json_str) {
+        Ok(log_config) => log_config,
+        Err(e) => {
+            if !err_msg.is_null() {
+                let err_msg_c_str =
+                    CString::new(format!("Failed to parse log config: {e:?}")).unwrap();
+                *err_msg = err_msg_c_str.into_raw();
             }
-        };
+            return std::ptr::null();
+        }
+    };
 
     Box::into_raw(Box::new(log_config))
 }
@@ -143,15 +138,22 @@ pub extern "C" fn ten_rust_log_reopen_all(
 pub extern "C" fn ten_rust_log(
     config: *const AdvancedLogConfig,
     category: *const c_char,
+    category_len: usize,
     pid: i64,
     tid: i64,
     level: i32,
     func_name: *const c_char,
+    func_name_len: usize,
     file_name: *const c_char,
+    file_name_len: usize,
     line_no: u32,
     msg: *const c_char,
+    msg_len: usize,
 ) {
     if config.is_null()
+        || func_name_len == 0
+        || file_name_len == 0
+        || msg_len == 0
         || func_name.is_null()
         || file_name.is_null()
         || msg.is_null()
@@ -178,9 +180,13 @@ pub extern "C" fn ten_rust_log(
         Err(_) => return,
     };
 
-    let category_str = match unsafe { CStr::from_ptr(category) }.to_str() {
-        Ok(s) => s,
-        Err(_) => return,
+    let category_str = if category_len == 0 || category.is_null() {
+        ""
+    } else {
+        match unsafe { CStr::from_ptr(category) }.to_str() {
+            Ok(s) => s,
+            Err(_) => return,
+        }
     };
 
     crate::log::ten_log(

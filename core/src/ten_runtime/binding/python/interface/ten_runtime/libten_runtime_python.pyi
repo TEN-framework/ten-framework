@@ -233,6 +233,7 @@ class _TenEnv:
         func_name: str | None,
         file_name: str | None,
         line_no: int,
+        category: str | None,
         msg: str,
     ) -> TenError | None: ...
 
@@ -286,6 +287,7 @@ class _TenEnvTester:
         func_name: str | None,
         file_name: str | None,
         line_no: int,
+        category: str | None,
         msg: str,
     ) -> TenError | None: ...
 

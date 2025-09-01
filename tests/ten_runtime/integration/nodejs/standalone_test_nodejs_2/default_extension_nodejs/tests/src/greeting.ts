@@ -23,16 +23,16 @@ export class GreetingTester extends ExtensionTester {
   }
 
   async onStart(tenEnvTester: TenEnvTester) {
-    console.log("GreetingTester onStart");
+    tenEnvTester.logInfo("GreetingTester onStart");
   }
 
   async onStop(tenEnvTester: TenEnvTester) {
-    console.log("GreetingTester onStop");
+    tenEnvTester.logInfo("GreetingTester onStop");
   }
 
   async onCmd(tenEnvTester: TenEnvTester, cmd: Cmd) {
     const cmdName = cmd.getName();
-    console.log("GreetingTester onCmd: " + cmdName);
+    tenEnvTester.logInfo("GreetingTester onCmd: " + cmdName);
 
     if (cmdName === "greeting") {
       const [actualGreetingMsg, err] = cmd.getPropertyString("greetingMsg");
@@ -57,6 +57,6 @@ export class GreetingTester extends ExtensionTester {
   }
 
   async onDeinit(tenEnvTester: TenEnvTester) {
-    console.log("GreetingTester onDeinit");
+    tenEnvTester.logInfo("GreetingTester onDeinit");
   }
 }

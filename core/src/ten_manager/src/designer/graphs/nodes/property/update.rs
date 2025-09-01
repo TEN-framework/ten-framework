@@ -9,9 +9,8 @@ use std::sync::Arc;
 use actix_web::{web, HttpResponse, Responder};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
-
 use ten_rust::graph::{graph_info::GraphInfo, node::GraphNode};
+use uuid::Uuid;
 
 use crate::{
     designer::{
@@ -19,10 +18,7 @@ use crate::{
         response::{ApiResponse, ErrorResponse, Status},
         DesignerState,
     },
-    graph::{
-        graphs_cache_find_by_id_mut,
-        nodes::validate::validate_extension_property,
-    },
+    graph::{graphs_cache_find_by_id_mut, nodes::validate::validate_extension_property},
 };
 
 #[derive(Serialize, Deserialize)]
@@ -47,17 +43,17 @@ fn update_node_property_in_graph(
     request_payload: &UpdateGraphNodePropertyRequestPayload,
 ) -> Result<()> {
     // Find the node in the graph.
-    let graph_node =
-        graph_info.graph.nodes_mut().iter_mut().find(|node| match node {
-            GraphNode::Extension { content } => {
-                content.name == request_payload.name
-                    && content.addon == request_payload.addon
-                    && content.extension_group
-                        == request_payload.extension_group
-                    && content.app == request_payload.app
-            }
-            _ => false,
-        });
+    let graph_node = graph_info.graph.nodes_mut().iter_mut().find(|node| match node {
+        GraphNode::Extension {
+            content,
+        } => {
+            content.name == request_payload.name
+                && content.addon == request_payload.addon
+                && content.extension_group == request_payload.extension_group
+                && content.app == request_payload.app
+        }
+        _ => false,
+    });
 
     if graph_node.is_none() {
         return Err(anyhow::anyhow!(
@@ -70,7 +66,9 @@ fn update_node_property_in_graph(
 
     // Update the node's property.
     match graph_node.unwrap() {
-        GraphNode::Extension { content } => {
+        GraphNode::Extension {
+            content,
+        } => {
             content.property = request_payload.property.clone();
         }
         _ => return Err(anyhow::anyhow!("Node is not an extension node")),
@@ -89,10 +87,8 @@ pub async fn update_graph_node_property_endpoint(
     let old_graphs_cache = graphs_cache.clone();
 
     // Get the specified graph from graphs_cache.
-    let graph_info = match graphs_cache_find_by_id_mut(
-        &mut graphs_cache,
-        &request_payload.graph_id,
-    ) {
+    let graph_info = match graphs_cache_find_by_id_mut(&mut graphs_cache, &request_payload.graph_id)
+    {
         Some(graph_info) => graph_info,
         None => {
             let error_response = ErrorResponse {
@@ -119,8 +115,7 @@ pub async fn update_graph_node_property_endpoint(
         return Ok(HttpResponse::BadRequest().json(error_response));
     }
 
-    if let Err(e) = update_node_property_in_graph(graph_info, &request_payload)
-    {
+    if let Err(e) = update_node_property_in_graph(graph_info, &request_payload) {
         let error_response = ErrorResponse {
             status: Status::Fail,
             message: format!("Failed to update node property in graph: {e}"),
@@ -145,7 +140,9 @@ pub async fn update_graph_node_property_endpoint(
 
     let response = ApiResponse {
         status: Status::Ok,
-        data: UpdateGraphNodePropertyResponsePayload { success: true },
+        data: UpdateGraphNodePropertyResponsePayload {
+            success: true,
+        },
         meta: None,
     };
     Ok(HttpResponse::Ok().json(response))

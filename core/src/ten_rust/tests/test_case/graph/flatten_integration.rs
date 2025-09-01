@@ -5,9 +5,7 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 use ten_rust::graph::{
-    connection::{
-        GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow,
-    },
+    connection::{GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow},
     node::{GraphContent, GraphNode, GraphNodeType},
     Graph,
 };
@@ -77,8 +75,7 @@ mod tests {
         // Verify the error message contains information about base_dir being
         // None
         let error_msg = result.err().unwrap().to_string();
-        assert!(error_msg
-            .contains("base_dir cannot be None when uri is a relative path"));
+        assert!(error_msg.contains("base_dir cannot be None when uri is a relative path"));
     }
 
     #[tokio::test]
@@ -137,10 +134,7 @@ mod tests {
 
         // The graph should remain unchanged
         assert_eq!(graph.nodes.len(), 2);
-        assert!(graph
-            .nodes
-            .iter()
-            .all(|node| node.get_type() == GraphNodeType::Extension));
+        assert!(graph.nodes.iter().all(|node| node.get_type() == GraphNodeType::Extension));
     }
 
     #[tokio::test]
@@ -215,18 +209,12 @@ mod tests {
         fs::write(subgraph_file_path, subgraph_json).unwrap();
 
         // flatten_graph should return Some since there are subgraphs
-        let result = graph
-            .flatten_graph(Some(temp_dir.path().to_str().unwrap()))
-            .await
-            .unwrap();
+        let result = graph.flatten_graph(Some(temp_dir.path().to_str().unwrap())).await.unwrap();
         assert!(result.is_some());
 
         let flattened = result.unwrap();
         assert_eq!(flattened.nodes.len(), 2); // ext_a + subgraph_1_ext_b
         assert!(flattened.nodes.iter().any(|node| node.get_name() == "ext_a"));
-        assert!(flattened
-            .nodes
-            .iter()
-            .any(|node| node.get_name() == "subgraph_1_ext_b"));
+        assert!(flattened.nodes.iter().any(|node| node.get_name() == "subgraph_1_ext_b"));
     }
 }

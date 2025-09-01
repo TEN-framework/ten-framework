@@ -11,7 +11,6 @@ use clap::{Arg, ArgAction, ArgMatches, Command};
 use console::Emoji;
 use indicatif::HumanDuration;
 use semver::VersionReq;
-
 use ten_rust::pkg_info::{
     manifest::support::ManifestSupport,
     pkg_type::PkgType,
@@ -19,10 +18,8 @@ use ten_rust::pkg_info::{
 };
 
 use crate::{
-    create::create_pkg_in_path,
-    designer::storage::in_memory::TmanStorageInMemory,
-    home::config::TmanConfig, output::TmanOutput,
-    version_utils::parse_pkg_name_version_req,
+    create::create_pkg_in_path, designer::storage::in_memory::TmanStorageInMemory,
+    home::config::TmanConfig, output::TmanOutput, version_utils::parse_pkg_name_version_req,
 };
 
 #[derive(Debug)]
@@ -46,10 +43,7 @@ pub fn create_sub_cmd(args_cfg: &crate::cmd_line::ArgsCfg) -> Command {
         )
         .arg(
             Arg::new("PACKAGE_NAME")
-                .help(
-                    "The name of the package with optional version \
-                     requirement (e.g., foo@1.0.0)",
-                )
+                .help("The name of the package with optional version requirement (e.g., foo@1.0.0)")
                 .required(true),
         )
         .arg(
@@ -76,9 +70,8 @@ pub fn create_sub_cmd(args_cfg: &crate::cmd_line::ArgsCfg) -> Command {
             Arg::new("TEMPLATE_DATA")
                 .long("template-data")
                 .help(
-                    "The placeholders used within the template and their \
-                     corresponding values. The format is key-value pairs, \
-                     e.g., `--template-data key=value`",
+                    "The placeholders used within the template and their corresponding values. \
+                     The format is key-value pairs, e.g., `--template-data key=value`",
                 )
                 .value_name("KEY=VALUE")
                 .action(ArgAction::Append),
@@ -90,23 +83,21 @@ pub fn parse_sub_cmd(sub_cmd_args: &ArgMatches) -> Result<CreateCommand> {
         .get_one::<String>("PACKAGE_TYPE")
         .cloned()
         .ok_or_else(|| anyhow!("Missing required argument: PACKAGE_TYPE"))?;
-    let pkg_type = pkg_type_str
-        .parse::<PkgType>()
-        .context("Invalid PACKAGE_TYPE format")?;
+    let pkg_type = pkg_type_str.parse::<PkgType>().context("Invalid PACKAGE_TYPE format")?;
 
     let pkg_name = sub_cmd_args
         .get_one::<String>("PACKAGE_NAME")
         .cloned()
         .ok_or_else(|| anyhow!("Missing required argument: PACKAGE_NAME"))?;
 
-    let os =
-        sub_cmd_args.get_one::<String>("OS").and_then(|s| s.parse::<Os>().ok());
+    let os = sub_cmd_args.get_one::<String>("OS").and_then(|s| s.parse::<Os>().ok());
 
-    let arch = sub_cmd_args
-        .get_one::<String>("ARCH")
-        .and_then(|s| s.parse::<Arch>().ok());
+    let arch = sub_cmd_args.get_one::<String>("ARCH").and_then(|s| s.parse::<Arch>().ok());
 
-    let support = ManifestSupport { os, arch };
+    let support = ManifestSupport {
+        os,
+        arch,
+    };
 
     let mut cmd = CreateCommand {
         pkg_type,
@@ -130,8 +121,8 @@ pub fn parse_sub_cmd(sub_cmd_args: &ArgMatches) -> Result<CreateCommand> {
 
     if cmd.template_data.contains_key("package_name") {
         return Err(anyhow!(
-            "The 'package_name' is set via the command line as '{}', and \
-             cannot be modified through '--template-data'.",
+            "The 'package_name' is set via the command line as '{}', and cannot be modified \
+             through '--template-data'.",
             cmd.pkg_name
         ));
     }
@@ -143,10 +134,8 @@ pub fn parse_sub_cmd(sub_cmd_args: &ArgMatches) -> Result<CreateCommand> {
         .cloned()
         .ok_or_else(|| anyhow!("Missing required argument: TEMPLATE"))?;
 
-    let (parsed_name, parsed_version_req) =
-        parse_pkg_name_version_req(&template).with_context(|| {
-            format!("Failed to parse template '{template}'")
-        })?;
+    let (parsed_name, parsed_version_req) = parse_pkg_name_version_req(&template)
+        .with_context(|| format!("Failed to parse template '{template}'"))?;
 
     cmd.template_name = parsed_name;
     cmd.template_version_req = parsed_version_req;
@@ -163,8 +152,7 @@ pub async fn execute_cmd(
     let started = Instant::now();
 
     // Retrieve the current working directory.
-    let cwd = std::env::current_dir()
-        .context("Failed to get current working directory")?;
+    let cwd = std::env::current_dir().context("Failed to get current working directory")?;
 
     create_pkg_in_path(
         tman_config,

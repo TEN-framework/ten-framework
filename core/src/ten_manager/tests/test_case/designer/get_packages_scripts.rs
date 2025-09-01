@@ -9,7 +9,6 @@ mod tests {
     use std::{collections::HashMap, sync::Arc};
 
     use actix_web::{http::StatusCode, test, web, App};
-
     use ten_manager::{
         designer::{
             apps::scripts::{
@@ -29,12 +28,8 @@ mod tests {
     async fn test_get_apps_scripts_success() {
         // Set up the designer state with initial data.
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -52,20 +47,16 @@ mod tests {
             )
             .await;
 
-            assert_eq!(
-                pkgs_cache.get("tests/test_data/app_with_uri").unwrap().len(),
-                3
-            );
+            assert_eq!(pkgs_cache.get("tests/test_data/app_with_uri").unwrap().len(), 3);
         }
 
         let designer_state = Arc::new(designer_state);
 
         // Set up the test service.
         let app = test::init_service(
-            App::new().app_data(web::Data::new(designer_state.clone())).route(
-                "/api/designer/v1/apps/scripts",
-                web::post().to(get_app_scripts_endpoint),
-            ),
+            App::new()
+                .app_data(web::Data::new(designer_state.clone()))
+                .route("/api/designer/v1/apps/scripts", web::post().to(get_app_scripts_endpoint)),
         )
         .await;
 
@@ -103,12 +94,8 @@ mod tests {
     async fn test_get_apps_scripts_base_dir_not_found() {
         // Set up the designer state with initial data.
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -119,10 +106,9 @@ mod tests {
 
         // Set up the test service.
         let app = test::init_service(
-            App::new().app_data(web::Data::new(designer_state.clone())).route(
-                "/api/designer/v1/apps/scripts",
-                web::post().to(get_app_scripts_endpoint),
-            ),
+            App::new()
+                .app_data(web::Data::new(designer_state.clone()))
+                .route("/api/designer/v1/apps/scripts", web::post().to(get_app_scripts_endpoint)),
         )
         .await;
 

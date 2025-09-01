@@ -4,23 +4,25 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-use std::fs::{File, Metadata};
-use std::io::{BufRead, BufReader, Seek, SeekFrom};
-use std::path::{Path, PathBuf};
-use std::time::{Duration, Instant};
-
 /// Platform‐specific metadata extensions
 #[cfg(unix)]
 use std::os::unix::fs::MetadataExt;
 #[cfg(windows)]
 use std::os::windows::fs::MetadataExt;
+use std::{
+    fs::{File, Metadata},
+    io::{BufRead, BufReader, Seek, SeekFrom},
+    path::{Path, PathBuf},
+    time::{Duration, Instant},
+};
 
 use anyhow::{anyhow, Result};
-use tokio::sync::mpsc::{self, Receiver, Sender};
-use tokio::sync::oneshot;
+use tokio::sync::{
+    mpsc::{self, Receiver, Sender},
+    oneshot,
+};
 
-use crate::log::process_log_line;
-use crate::log::{GraphResourcesLog, LogLineInfo};
+use crate::log::{process_log_line, GraphResourcesLog, LogLineInfo};
 
 const DEFAULT_TIMEOUT: Duration = Duration::from_secs(60); // 1 minute timeout.
 const DEFAULT_BUFFER_SIZE: usize = 4096; // Default read buffer size.
@@ -37,11 +39,11 @@ pub struct LogFileContentStream {
 
 impl LogFileContentStream {
     /// Create a new FileContentStream.
-    fn new(
-        content_rx: Receiver<Result<LogLineInfo>>,
-        stop_tx: oneshot::Sender<()>,
-    ) -> Self {
-        Self { content_rx, stop_tx: Some(stop_tx) }
+    fn new(content_rx: Receiver<Result<LogLineInfo>>, stop_tx: oneshot::Sender<()>) -> Self {
+        Self {
+            content_rx,
+            stop_tx: Some(stop_tx),
+        }
     }
 
     /// Get the next chunk of text from the file.
@@ -95,8 +97,7 @@ fn is_same_file(a: &Metadata, b: &Metadata) -> bool {
     }
     #[cfg(windows)]
     {
-        a.volume_serial_number() == b.volume_serial_number()
-            && a.file_index() == b.file_index()
+        a.volume_serial_number() == b.volume_serial_number() && a.file_index() == b.file_index()
     }
 }
 
@@ -187,7 +188,10 @@ async fn watch_log_file_task(
         // Process each line.
         let metadata = process_log_line(&line, &mut graph_resources_log);
 
-        let log_line_info = LogLineInfo { line: line.clone(), metadata };
+        let log_line_info = LogLineInfo {
+            line: line.clone(),
+            metadata,
+        };
 
         let _ = content_tx.send(Ok(log_line_info)).await;
         line.clear(); // Clear for the next line.

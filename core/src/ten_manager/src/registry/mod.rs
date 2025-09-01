@@ -17,13 +17,10 @@ use anyhow::{anyhow, Result};
 use found_result::PkgRegistryInfo;
 use semver::{Version, VersionReq};
 use tempfile::NamedTempFile;
-
 use ten_rust::pkg_info::{pkg_type::PkgType, PkgInfo};
 
-use super::constants::DEFAULT;
-use super::home::config::TmanConfig;
-use crate::output::TmanOutput;
-use crate::registry::search::PkgSearchFilter;
+use super::{constants::DEFAULT, home::config::TmanConfig};
+use crate::{output::TmanOutput, registry::search::PkgSearchFilter};
 
 pub async fn upload_package(
     tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
@@ -47,13 +44,7 @@ pub async fn upload_package(
 
     match parsed_registry_url.scheme() {
         "file" => {
-            local::upload_package(
-                &default_registry_url,
-                package_file_path,
-                pkg_info,
-                out,
-            )
-            .await
+            local::upload_package(&default_registry_url, package_file_path, pkg_info, out).await
         }
         "https" => {
             remote::upload_package(
@@ -65,10 +56,7 @@ pub async fn upload_package(
             )
             .await
         }
-        _ => Err(anyhow!(
-            "Unrecognized URL scheme: {}",
-            parsed_registry_url.scheme()
-        )),
+        _ => Err(anyhow!("Unrecognized URL scheme: {}", parsed_registry_url.scheme())),
     }
 }
 
@@ -81,33 +69,16 @@ pub async fn get_package(
     temp_path: &mut NamedTempFile,
     out: Arc<Box<dyn TmanOutput>>,
 ) -> Result<()> {
-    let parsed_url =
-        url::Url::parse(url).map_err(|_| anyhow!("Invalid URL: {}", url))?;
+    let parsed_url = url::Url::parse(url).map_err(|_| anyhow!("Invalid URL: {}", url))?;
 
     match parsed_url.scheme() {
         "file" => {
-            local::get_package(
-                tman_config,
-                pkg_type,
-                pkg_name,
-                pkg_version,
-                url,
-                temp_path,
-                out,
-            )
-            .await
+            local::get_package(tman_config, pkg_type, pkg_name, pkg_version, url, temp_path, out)
+                .await
         }
         "https" => {
-            remote::get_package(
-                tman_config,
-                pkg_type,
-                pkg_name,
-                pkg_version,
-                url,
-                temp_path,
-                out,
-            )
-            .await
+            remote::get_package(tman_config, pkg_type, pkg_name, pkg_version, url, temp_path, out)
+                .await
         }
         _ => Err(anyhow!("Failed to get package to any configured registry.")),
     }
@@ -199,17 +170,13 @@ pub async fn get_package_list(
             .await?
         }
         _ => {
-            return Err(anyhow!(
-                "Unsupported URL scheme: {}",
-                parsed_registry_url.scheme()
-            ));
+            return Err(anyhow!("Unsupported URL scheme: {}", parsed_registry_url.scheme()));
         }
     };
 
     // Sort packages by version in descending order (newer versions first).
     let mut sorted_results = results;
-    sorted_results
-        .sort_by(|a, b| b.basic_info.version.cmp(&a.basic_info.version));
+    sorted_results.sort_by(|a, b| b.basic_info.version.cmp(&a.basic_info.version));
 
     Ok(sorted_results)
 }
@@ -270,10 +237,7 @@ pub async fn search_packages(
             .await?
         }
         _ => {
-            return Err(anyhow!(
-                "Unsupported URL scheme: {}",
-                parsed_registry_url.scheme()
-            ));
+            return Err(anyhow!("Unsupported URL scheme: {}", parsed_registry_url.scheme()));
         }
     };
     Ok(results)
@@ -302,15 +266,7 @@ pub async fn delete_package(
 
     match parsed_registry_url.scheme() {
         "file" => {
-            local::delete_package(
-                &default_registry_url,
-                pkg_type,
-                name,
-                version,
-                hash,
-                out,
-            )
-            .await
+            local::delete_package(&default_registry_url, pkg_type, name, version, hash, out).await
         }
         "https" => {
             remote::delete_package(
@@ -324,9 +280,6 @@ pub async fn delete_package(
             )
             .await
         }
-        _ => Err(anyhow!(
-            "Unsupported URL scheme: {}",
-            parsed_registry_url.scheme()
-        )),
+        _ => Err(anyhow!("Unsupported URL scheme: {}", parsed_registry_url.scheme())),
     }
 }

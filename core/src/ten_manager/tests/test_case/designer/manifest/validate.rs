@@ -7,7 +7,6 @@
 use std::sync::Arc;
 
 use actix_web::{http::StatusCode, test, web, App};
-
 use ten_manager::{
     designer::{
         manifest::validate::{
@@ -27,9 +26,7 @@ async fn test_validate_manifest_valid() {
     // Create the application state.
     let designer_state = Arc::new(DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-            TmanStorageInMemory::default(),
-        )),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: Default::default(),
         graphs_cache: Default::default(),
@@ -37,13 +34,12 @@ async fn test_validate_manifest_valid() {
     });
 
     // Initialize test application with the endpoint.
-    let app = test::init_service(
-        App::new().app_data(web::Data::new(designer_state)).route(
+    let app =
+        test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
             "/api/designer/v1/manifest/validate",
             web::post().to(validate_manifest_endpoint),
-        ),
-    )
-    .await;
+        ))
+        .await;
 
     // Valid manifest JSON.
     let valid_manifest = r#"{
@@ -71,8 +67,7 @@ async fn test_validate_manifest_valid() {
     // Parse the response body.
     let body = test::read_body(resp).await;
     let body_str = std::str::from_utf8(&body).unwrap();
-    let json: ApiResponse<ValidateManifestResponseData> =
-        serde_json::from_str(body_str).unwrap();
+    let json: ApiResponse<ValidateManifestResponseData> = serde_json::from_str(body_str).unwrap();
 
     // Assertions for valid manifest.
     assert_eq!(json.status, Status::Ok);
@@ -85,9 +80,7 @@ async fn test_validate_manifest_with_api() {
     // Create the application state.
     let designer_state = Arc::new(DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-            TmanStorageInMemory::default(),
-        )),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: Default::default(),
         graphs_cache: Default::default(),
@@ -95,13 +88,12 @@ async fn test_validate_manifest_with_api() {
     });
 
     // Initialize test application with the endpoint.
-    let app = test::init_service(
-        App::new().app_data(web::Data::new(designer_state)).route(
+    let app =
+        test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
             "/api/designer/v1/manifest/validate",
             web::post().to(validate_manifest_endpoint),
-        ),
-    )
-    .await;
+        ))
+        .await;
 
     // Valid manifest JSON with API section.
     let valid_manifest = r#"{
@@ -169,8 +161,7 @@ async fn test_validate_manifest_with_api() {
     // Parse the response body.
     let body = test::read_body(resp).await;
     let body_str = std::str::from_utf8(&body).unwrap();
-    let json: ApiResponse<ValidateManifestResponseData> =
-        serde_json::from_str(body_str).unwrap();
+    let json: ApiResponse<ValidateManifestResponseData> = serde_json::from_str(body_str).unwrap();
 
     // Assertions for valid manifest.
     assert_eq!(json.status, Status::Ok);
@@ -183,9 +174,7 @@ async fn test_validate_app_manifest_with_incorrect_api() {
     // Create the application state.
     let designer_state = Arc::new(DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-            TmanStorageInMemory::default(),
-        )),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: Default::default(),
         graphs_cache: Default::default(),
@@ -193,13 +182,12 @@ async fn test_validate_app_manifest_with_incorrect_api() {
     });
 
     // Initialize test application with the endpoint.
-    let app = test::init_service(
-        App::new().app_data(web::Data::new(designer_state)).route(
+    let app =
+        test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
             "/api/designer/v1/manifest/validate",
             web::post().to(validate_manifest_endpoint),
-        ),
-    )
-    .await;
+        ))
+        .await;
 
     // Valid manifest JSON with API section.
     let valid_manifest = r#"{
@@ -267,8 +255,7 @@ async fn test_validate_app_manifest_with_incorrect_api() {
     // Parse the response body.
     let body = test::read_body(resp).await;
     let body_str = std::str::from_utf8(&body).unwrap();
-    let json: ApiResponse<ValidateManifestResponseData> =
-        serde_json::from_str(body_str).unwrap();
+    let json: ApiResponse<ValidateManifestResponseData> = serde_json::from_str(body_str).unwrap();
 
     // Assertions for valid manifest.
     assert_eq!(json.status, Status::Ok);
@@ -283,9 +270,7 @@ async fn test_validate_app_manifest_with_correct_api() {
     // Create the application state.
     let designer_state = Arc::new(DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-            TmanStorageInMemory::default(),
-        )),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: Default::default(),
         graphs_cache: Default::default(),
@@ -293,13 +278,12 @@ async fn test_validate_app_manifest_with_correct_api() {
     });
 
     // Initialize test application with the endpoint.
-    let app = test::init_service(
-        App::new().app_data(web::Data::new(designer_state)).route(
+    let app =
+        test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
             "/api/designer/v1/manifest/validate",
             web::post().to(validate_manifest_endpoint),
-        ),
-    )
-    .await;
+        ))
+        .await;
 
     // Valid manifest JSON with API section.
     let valid_manifest = r#"{
@@ -336,8 +320,7 @@ async fn test_validate_app_manifest_with_correct_api() {
     // Parse the response body.
     let body = test::read_body(resp).await;
     let body_str = std::str::from_utf8(&body).unwrap();
-    let json: ApiResponse<ValidateManifestResponseData> =
-        serde_json::from_str(body_str).unwrap();
+    let json: ApiResponse<ValidateManifestResponseData> = serde_json::from_str(body_str).unwrap();
 
     // Assertions for valid manifest.
     assert_eq!(json.status, Status::Ok);
@@ -350,9 +333,7 @@ async fn test_validate_manifest_missing_required_fields() {
     // Create the application state.
     let designer_state = Arc::new(DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-            TmanStorageInMemory::default(),
-        )),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: Default::default(),
         graphs_cache: Default::default(),
@@ -360,13 +341,12 @@ async fn test_validate_manifest_missing_required_fields() {
     });
 
     // Initialize test application with the endpoint.
-    let app = test::init_service(
-        App::new().app_data(web::Data::new(designer_state)).route(
+    let app =
+        test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
             "/api/designer/v1/manifest/validate",
             web::post().to(validate_manifest_endpoint),
-        ),
-    )
-    .await;
+        ))
+        .await;
 
     // Invalid manifest JSON - missing required fields.
     let invalid_manifest = r#"{
@@ -391,8 +371,7 @@ async fn test_validate_manifest_missing_required_fields() {
     // Parse the response body.
     let body = test::read_body(resp).await;
     let body_str = std::str::from_utf8(&body).unwrap();
-    let json: ApiResponse<ValidateManifestResponseData> =
-        serde_json::from_str(body_str).unwrap();
+    let json: ApiResponse<ValidateManifestResponseData> = serde_json::from_str(body_str).unwrap();
 
     // Assertions for invalid manifest.
     assert_eq!(json.status, Status::Ok);
@@ -410,9 +389,7 @@ async fn test_validate_manifest_invalid_type() {
     // Create the application state.
     let designer_state = Arc::new(DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-            TmanStorageInMemory::default(),
-        )),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: Default::default(),
         graphs_cache: Default::default(),
@@ -420,13 +397,12 @@ async fn test_validate_manifest_invalid_type() {
     });
 
     // Initialize test application with the endpoint.
-    let app = test::init_service(
-        App::new().app_data(web::Data::new(designer_state)).route(
+    let app =
+        test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
             "/api/designer/v1/manifest/validate",
             web::post().to(validate_manifest_endpoint),
-        ),
-    )
-    .await;
+        ))
+        .await;
 
     // Invalid manifest JSON - invalid type value.
     let invalid_manifest = r#"{
@@ -453,8 +429,7 @@ async fn test_validate_manifest_invalid_type() {
     // Parse the response body.
     let body = test::read_body(resp).await;
     let body_str = std::str::from_utf8(&body).unwrap();
-    let json: ApiResponse<ValidateManifestResponseData> =
-        serde_json::from_str(body_str).unwrap();
+    let json: ApiResponse<ValidateManifestResponseData> = serde_json::from_str(body_str).unwrap();
 
     // Assertions for invalid manifest.
     assert_eq!(json.status, Status::Ok);
@@ -472,9 +447,7 @@ async fn test_validate_manifest_invalid_version_format() {
     // Create the application state.
     let designer_state = Arc::new(DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-            TmanStorageInMemory::default(),
-        )),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: Default::default(),
         graphs_cache: Default::default(),
@@ -482,13 +455,12 @@ async fn test_validate_manifest_invalid_version_format() {
     });
 
     // Initialize test application with the endpoint.
-    let app = test::init_service(
-        App::new().app_data(web::Data::new(designer_state)).route(
+    let app =
+        test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
             "/api/designer/v1/manifest/validate",
             web::post().to(validate_manifest_endpoint),
-        ),
-    )
-    .await;
+        ))
+        .await;
 
     // Invalid manifest JSON - invalid version format.
     let invalid_manifest = r#"{
@@ -515,8 +487,7 @@ async fn test_validate_manifest_invalid_version_format() {
     // Parse the response body.
     let body = test::read_body(resp).await;
     let body_str = std::str::from_utf8(&body).unwrap();
-    let json: ApiResponse<ValidateManifestResponseData> =
-        serde_json::from_str(body_str).unwrap();
+    let json: ApiResponse<ValidateManifestResponseData> = serde_json::from_str(body_str).unwrap();
 
     // Assertions for invalid manifest.
     assert_eq!(json.status, Status::Ok);
@@ -534,9 +505,7 @@ async fn test_validate_manifest_invalid_json_syntax() {
     // Create the application state.
     let designer_state = Arc::new(DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-            TmanStorageInMemory::default(),
-        )),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: Default::default(),
         graphs_cache: Default::default(),
@@ -544,13 +513,12 @@ async fn test_validate_manifest_invalid_json_syntax() {
     });
 
     // Initialize test application with the endpoint.
-    let app = test::init_service(
-        App::new().app_data(web::Data::new(designer_state)).route(
+    let app =
+        test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
             "/api/designer/v1/manifest/validate",
             web::post().to(validate_manifest_endpoint),
-        ),
-    )
-    .await;
+        ))
+        .await;
 
     // Invalid JSON syntax.
     let invalid_json = r#"{
@@ -578,8 +546,7 @@ async fn test_validate_manifest_invalid_json_syntax() {
     // Parse the response body.
     let body = test::read_body(resp).await;
     let body_str = std::str::from_utf8(&body).unwrap();
-    let json: ApiResponse<ValidateManifestResponseData> =
-        serde_json::from_str(body_str).unwrap();
+    let json: ApiResponse<ValidateManifestResponseData> = serde_json::from_str(body_str).unwrap();
 
     // Assertions for invalid JSON.
     assert_eq!(json.status, Status::Ok);

@@ -12,6 +12,7 @@ import type { AudioFrame } from "./msg/audio_frame.js";
 import ten_addon from "./ten_addon.js";
 import { LogLevel } from "./log_level.js";
 import type { TenError } from "./error.js";
+import type { Value } from "./value.js";
 
 export class TenEnvTester {
   async sendCmd(
@@ -113,35 +114,53 @@ export class TenEnvTester {
     return ten_addon.ten_nodejs_ten_env_tester_stop_test(this, 0, "");
   }
 
-  logVerbose(message: string): TenError | undefined {
-    return this.log_internal(LogLevel.VERBOSE, message);
+  logDebug(
+    message: string,
+    category: string | undefined = undefined,
+    fields: Value | undefined = undefined,
+  ): TenError | undefined {
+    return this.log_internal(LogLevel.DEBUG, message, category, fields);
   }
 
-  logDebug(message: string): TenError | undefined {
-    return this.log_internal(LogLevel.DEBUG, message);
+  logInfo(
+    message: string,
+    category: string | undefined = undefined,
+    fields: Value | undefined = undefined,
+  ): TenError | undefined {
+    return this.log_internal(LogLevel.INFO, message, category, fields);
   }
 
-  logInfo(message: string): TenError | undefined {
-    return this.log_internal(LogLevel.INFO, message);
+  logWarn(
+    message: string,
+    category: string | undefined = undefined,
+    fields: Value | undefined = undefined,
+  ): TenError | undefined {
+    return this.log_internal(LogLevel.WARN, message, category, fields);
   }
 
-  logWarn(message: string): TenError | undefined {
-    return this.log_internal(LogLevel.WARN, message);
+  logError(
+    message: string,
+    category: string | undefined = undefined,
+    fields: Value | undefined = undefined,
+  ): TenError | undefined {
+    return this.log_internal(LogLevel.ERROR, message, category, fields);
   }
 
-  logError(message: string): TenError | undefined {
-    return this.log_internal(LogLevel.ERROR, message);
+  log(
+    level: LogLevel,
+    message: string,
+    category: string | undefined = undefined,
+    fields: Value | undefined = undefined,
+  ): TenError | undefined {
+    return this.log_internal(level, message, category, fields);
   }
 
-  logFatal(message: string): TenError | undefined {
-    return this.log_internal(LogLevel.FATAL, message);
-  }
-
-  log(level: LogLevel, message: string): TenError | undefined {
-    return this.log_internal(level, message);
-  }
-
-  private log_internal(level: number, message: string): TenError | undefined {
+  private log_internal(
+    level: number,
+    message: string,
+    category: string | undefined,
+    fields: Value | undefined,
+  ): TenError | undefined {
     const _prepareStackTrace = Error.prepareStackTrace;
     Error.prepareStackTrace = (_, stack): NodeJS.CallSite[] => stack;
     const stack_ = new Error().stack as unknown as NodeJS.CallSite[];
@@ -162,6 +181,7 @@ export class TenEnvTester {
       callerFunction,
       callerFile,
       callerLine,
+      category,
       message,
     );
   }

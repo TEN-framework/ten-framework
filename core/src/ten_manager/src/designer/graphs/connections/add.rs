@@ -9,11 +9,8 @@ use std::sync::Arc;
 use actix_web::{web, HttpResponse, Responder};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
+use ten_rust::{graph::msg_conversion::MsgAndResultConversion, pkg_info::message::MsgType};
 use uuid::Uuid;
-
-use ten_rust::{
-    graph::msg_conversion::MsgAndResultConversion, pkg_info::message::MsgType,
-};
 
 use crate::{
     designer::{
@@ -21,8 +18,7 @@ use crate::{
         DesignerState,
     },
     fs::json::patch_property_json_file,
-    graph::connections::add::graph_add_connection,
-    graph::graphs_cache_find_by_id_mut,
+    graph::{connections::add::graph_add_connection, graphs_cache_find_by_id_mut},
     pkg_info::belonging_pkg_info_find_by_graph_info_mut,
 };
 
@@ -54,10 +50,8 @@ pub async fn add_graph_connection_endpoint(
     let old_graphs_cache = graphs_cache.clone();
 
     // Get the specified graph from graphs_cache.
-    let graph_info = match graphs_cache_find_by_id_mut(
-        &mut graphs_cache,
-        &request_payload.graph_id,
-    ) {
+    let graph_info = match graphs_cache_find_by_id_mut(&mut graphs_cache, &request_payload.graph_id)
+    {
         Some(graph_info) => graph_info,
         None => {
             let error_response = ErrorResponse {
@@ -97,12 +91,9 @@ pub async fn add_graph_connection_endpoint(
         // Update property.json file with the updated graph.
         if let Some(property) = &mut pkg_info.property {
             // Update property.json file.
-            if let Err(e) = patch_property_json_file(
-                &pkg_info.url,
-                property,
-                &graphs_cache,
-                &old_graphs_cache,
-            ) {
+            if let Err(e) =
+                patch_property_json_file(&pkg_info.url, property, &graphs_cache, &old_graphs_cache)
+            {
                 eprintln!("Warning: Failed to update property.json file: {e}");
             }
         }
@@ -110,7 +101,9 @@ pub async fn add_graph_connection_endpoint(
 
     let response = ApiResponse {
         status: Status::Ok,
-        data: AddGraphConnectionResponsePayload { success: true },
+        data: AddGraphConnectionResponsePayload {
+            success: true,
+        },
         meta: None,
     };
     Ok(HttpResponse::Ok().json(response))

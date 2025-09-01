@@ -8,11 +8,14 @@
 use anyhow::{anyhow, Context, Result};
 use serde::{Deserialize, Serialize};
 
-use crate::pkg_info::pkg_type::PkgType;
-use crate::utils::path::{get_base_dir_of_uri, get_real_path_from_import_uri};
-use crate::utils::uri::load_content_from_uri;
-
 use super::Graph;
+use crate::{
+    pkg_info::pkg_type::PkgType,
+    utils::{
+        path::{get_base_dir_of_uri, get_real_path_from_import_uri},
+        uri::load_content_from_uri,
+    },
+};
 
 /// Loads graph data from the specified URI with an optional base directory.
 ///
@@ -41,10 +44,8 @@ pub async fn load_graph_from_uri(
     *new_base_dir = Some(get_base_dir_of_uri(&real_path)?);
 
     // Parse the graph file into a Graph structure.
-    let graph: Graph =
-        serde_json::from_str(&graph_content).with_context(|| {
-            format!("Failed to parse graph file from {real_path}")
-        })?;
+    let graph: Graph = serde_json::from_str(&graph_content)
+        .with_context(|| format!("Failed to parse graph file from {real_path}"))?;
 
     Ok(graph)
 }
@@ -73,9 +74,7 @@ impl GraphContent {
     }
 
     /// Get a reference to the connections
-    pub fn connections(
-        &self,
-    ) -> &Option<Vec<crate::graph::connection::GraphConnection>> {
+    pub fn connections(&self) -> &Option<Vec<crate::graph::connection::GraphConnection>> {
         &self.graph.connections
     }
 
@@ -87,23 +86,17 @@ impl GraphContent {
     }
 
     /// Get a reference to the exposed_messages
-    pub fn exposed_messages(
-        &self,
-    ) -> &Option<Vec<crate::graph::GraphExposedMessage>> {
+    pub fn exposed_messages(&self) -> &Option<Vec<crate::graph::GraphExposedMessage>> {
         &self.graph.exposed_messages
     }
 
     /// Get a mutable reference to the exposed_messages
-    pub fn exposed_messages_mut(
-        &mut self,
-    ) -> &mut Option<Vec<crate::graph::GraphExposedMessage>> {
+    pub fn exposed_messages_mut(&mut self) -> &mut Option<Vec<crate::graph::GraphExposedMessage>> {
         &mut self.graph.exposed_messages
     }
 
     /// Get a reference to the exposed_properties
-    pub fn exposed_properties(
-        &self,
-    ) -> &Option<Vec<crate::graph::GraphExposedProperty>> {
+    pub fn exposed_properties(&self) -> &Option<Vec<crate::graph::GraphExposedProperty>> {
         &self.graph.exposed_properties
     }
 
@@ -134,16 +127,14 @@ impl GraphContent {
             // None
             if !self.graph.nodes.is_empty() {
                 return Err(anyhow!(
-                    "When 'import_uri' is specified, 'nodes' field must not \
-                     be present"
+                    "When 'import_uri' is specified, 'nodes' field must not be present"
                 ));
             }
 
             if let Some(connections) = &self.graph.connections {
                 if !connections.is_empty() {
                     return Err(anyhow!(
-                        "When 'import_uri' is specified, 'connections' field \
-                         must not be present"
+                        "When 'import_uri' is specified, 'connections' field must not be present"
                     ));
                 }
             }
@@ -151,8 +142,8 @@ impl GraphContent {
             if let Some(exposed_messages) = &self.graph.exposed_messages {
                 if !exposed_messages.is_empty() {
                     return Err(anyhow!(
-                        "When 'import_uri' is specified, 'exposed_messages' \
-                         field must not be present"
+                        "When 'import_uri' is specified, 'exposed_messages' field must not be \
+                         present"
                     ));
                 }
             }
@@ -160,8 +151,8 @@ impl GraphContent {
             if let Some(exposed_properties) = &self.graph.exposed_properties {
                 if !exposed_properties.is_empty() {
                     return Err(anyhow!(
-                        "When 'import_uri' is specified, 'exposed_properties' \
-                         field must not be present"
+                        "When 'import_uri' is specified, 'exposed_properties' field must not be \
+                         present"
                     ));
                 }
             }
@@ -170,9 +161,7 @@ impl GraphContent {
         // If import_uri is specified, load graph from the URI.
         if let Some(import_uri) = &self.import_uri {
             // Load graph from URI and replace the current graph
-            let graph =
-                load_graph_from_uri(import_uri, current_base_dir, &mut None)
-                    .await?;
+            let graph = load_graph_from_uri(import_uri, current_base_dir, &mut None).await?;
             self.graph = graph;
         }
 
@@ -202,10 +191,7 @@ pub struct GraphInfo {
 }
 
 impl GraphInfo {
-    pub async fn from_str_with_base_dir(
-        s: &str,
-        current_base_dir: Option<&str>,
-    ) -> Result<Self> {
+    pub async fn from_str_with_base_dir(s: &str, current_base_dir: Option<&str>) -> Result<Self> {
         let mut graph_info: GraphInfo = serde_json::from_str(s)?;
         graph_info.app_base_dir = current_base_dir.map(|s| s.to_string());
         graph_info.validate_and_complete_and_flatten().await?;
@@ -214,8 +200,6 @@ impl GraphInfo {
     }
 
     pub async fn validate_and_complete_and_flatten(&mut self) -> Result<()> {
-        self.graph
-            .validate_and_complete_and_flatten(self.app_base_dir.as_deref())
-            .await
+        self.graph.validate_and_complete_and_flatten(self.app_base_dir.as_deref()).await
     }
 }

@@ -24,12 +24,16 @@ type AddonManager struct {
 	// a registerCtx (cHandle) and returns an error.
 	registry map[string]func(cHandle) error
 
+	// Set of registered addons
+	registeredAddons map[string]bool
+
 	registryMutex sync.RWMutex
 }
 
 func newAddonManager() *AddonManager {
 	return &AddonManager{
-		registry: make(map[string]func(cHandle) error),
+		registry:         make(map[string]func(cHandle) error),
+		registeredAddons: make(map[string]bool),
 	}
 }
 
@@ -122,5 +126,14 @@ func tenGoAddonManagerCallRegisterHandler(
 		)
 	}
 
+	// Check if the addon is already registered.
+	if defaultAddonManager.registeredAddons[C.GoString(addonName)] {
+		return
+	}
+
+	// Register the addon.
 	registerHandler(cHandle(registerCtx))
+
+	// Mark the addon as registered.
+	defaultAddonManager.registeredAddons[C.GoString(addonName)] = true
 }

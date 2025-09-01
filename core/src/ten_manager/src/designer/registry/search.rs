@@ -9,11 +9,14 @@ use std::sync::Arc;
 use actix_web::{web, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
 
-use crate::designer::response::{ApiResponse, ErrorResponse, Status};
-use crate::designer::DesignerState;
-use crate::registry;
-use crate::registry::found_result::PkgRegistryInfo;
-use crate::registry::search::PkgSearchFilter;
+use crate::{
+    designer::{
+        response::{ApiResponse, ErrorResponse, Status},
+        DesignerState,
+    },
+    registry,
+    registry::{found_result::PkgRegistryInfo, search::PkgSearchFilter},
+};
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct PkgSearchOptions {
@@ -57,8 +60,10 @@ pub async fn search_packages_endpoint(
     .await
     {
         Ok((total_size, packages)) => {
-            let response_data =
-                SearchPackagesResponseData { total_size, packages };
+            let response_data = SearchPackagesResponseData {
+                total_size,
+                packages,
+            };
 
             Ok(HttpResponse::Ok().json(ApiResponse {
                 status: Status::Ok,
@@ -67,8 +72,7 @@ pub async fn search_packages_endpoint(
             }))
         }
         Err(err) => {
-            let error_response =
-                ErrorResponse::from_error(&err, "Failed to search packages");
+            let error_response = ErrorResponse::from_error(&err, "Failed to search packages");
             Ok(HttpResponse::InternalServerError().json(error_response))
         }
     }

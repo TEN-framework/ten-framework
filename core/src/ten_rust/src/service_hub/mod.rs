@@ -8,20 +8,15 @@ mod api;
 mod bindings;
 mod telemetry;
 
-use std::os::raw::c_char;
-use std::ptr;
-use std::{ffi::CStr, thread};
+use std::{ffi::CStr, os::raw::c_char, ptr, thread};
 
 use actix_web::{web, App, HttpServer};
 use anyhow::Result;
-use futures::channel::oneshot;
-use futures::future::select;
-use futures::FutureExt;
+use futures::{channel::oneshot, future::select, FutureExt};
 use prometheus::Registry;
 
 use crate::constants::{
-    SERVICE_HUB_SERVER_BIND_MAX_RETRIES,
-    SERVICE_HUB_SERVER_BIND_RETRY_INTERVAL_SECS,
+    SERVICE_HUB_SERVER_BIND_MAX_RETRIES, SERVICE_HUB_SERVER_BIND_RETRY_INTERVAL_SECS,
 };
 
 pub struct ServiceHub {
@@ -62,20 +57,15 @@ fn determine_binding_addresses(
     api_endpoint: &Option<String>,
 ) -> Vec<String> {
     // Determine if both endpoints are available and if they are different.
-    let has_both_endpoints =
-        telemetry_endpoint.is_some() && api_endpoint.is_some();
-    let same_endpoint =
-        has_both_endpoints && telemetry_endpoint == api_endpoint;
+    let has_both_endpoints = telemetry_endpoint.is_some() && api_endpoint.is_some();
+    let same_endpoint = has_both_endpoints && telemetry_endpoint == api_endpoint;
 
     if has_both_endpoints && !same_endpoint {
         // Both endpoints are different, bind to both.
-        vec![
-            telemetry_endpoint.as_ref().cloned(),
-            api_endpoint.as_ref().cloned(),
-        ]
-        .into_iter()
-        .flatten()
-        .collect::<Vec<_>>()
+        vec![telemetry_endpoint.as_ref().cloned(), api_endpoint.as_ref().cloned()]
+            .into_iter()
+            .flatten()
+            .collect::<Vec<_>>()
     } else if same_endpoint {
         // Both endpoints are the same, bind to just one.
         telemetry_endpoint.as_ref().map(|e| vec![e.clone()]).unwrap_or_default()
@@ -113,13 +103,11 @@ fn create_server_app(
     if has_both && !same_ep {
         // Both endpoints are provided and they are different. We need to use
         // guards to ensure the right routes are bound to the right endpoints.
-        let telemetry_port = telemetry_endpoint
-            .as_ref()
-            .and_then(|s| s.rsplit(':').next().map(|p| p.to_string()));
+        let telemetry_port =
+            telemetry_endpoint.as_ref().and_then(|s| s.rsplit(':').next().map(|p| p.to_string()));
 
-        let api_port = api_endpoint
-            .as_ref()
-            .and_then(|s| s.rsplit(':').next().map(|p| p.to_string()));
+        let api_port =
+            api_endpoint.as_ref().and_then(|s| s.rsplit(':').next().map(|p| p.to_string()));
 
         app_builder
             // Add telemetry routes with guard.
@@ -128,25 +116,16 @@ fn create_server_app(
                     .guard(actix_web::guard::fn_guard(move |ctx| {
                         if let Some(port) = &telemetry_port {
                             // Get the host/port info from the request.
-                            let host = ctx
-                                .head()
-                                .uri
-                                .authority()
-                                .map(|auth| auth.as_str())
-                                .unwrap_or("");
+                            let host =
+                                ctx.head().uri.authority().map(|auth| auth.as_str()).unwrap_or("");
 
                             // Check if the port matches.
-                            host.rsplit(':')
-                                .next()
-                                .map(|p| p == port)
-                                .unwrap_or(false)
+                            host.rsplit(':').next().map(|p| p == port).unwrap_or(false)
                         } else {
                             false
                         }
                     }))
-                    .configure(|cfg| {
-                        configure_routes(cfg, registry.clone(), true, false)
-                    }),
+                    .configure(|cfg| configure_routes(cfg, registry.clone(), true, false)),
             )
             // Add API routes with guard.
             .service(
@@ -154,25 +133,16 @@ fn create_server_app(
                     .guard(actix_web::guard::fn_guard(move |ctx| {
                         if let Some(port) = &api_port {
                             // Get the host/port info from the request.
-                            let host = ctx
-                                .head()
-                                .uri
-                                .authority()
-                                .map(|auth| auth.as_str())
-                                .unwrap_or("");
+                            let host =
+                                ctx.head().uri.authority().map(|auth| auth.as_str()).unwrap_or("");
 
                             // Check if the port matches.
-                            host.rsplit(':')
-                                .next()
-                                .map(|p| p == port)
-                                .unwrap_or(false)
+                            host.rsplit(':').next().map(|p| p == port).unwrap_or(false)
                         } else {
                             false
                         }
                     }))
-                    .configure(|cfg| {
-                        configure_routes(cfg, registry.clone(), false, true)
-                    }),
+                    .configure(|cfg| configure_routes(cfg, registry.clone(), false, true)),
             )
     } else {
         // Either single endpoint or both endpoints are the same.
@@ -180,9 +150,7 @@ fn create_server_app(
         let is_telemetry = telemetry_endpoint.is_some();
         let is_api = api_endpoint.is_some();
 
-        app_builder.configure(|cfg| {
-            configure_routes(cfg, registry.clone(), is_telemetry, is_api)
-        })
+        app_builder.configure(|cfg| configure_routes(cfg, registry.clone(), is_telemetry, is_api))
     }
 }
 
@@ -207,11 +175,7 @@ fn create_server_and_bind_to_addresses(
     // Create a new server with a factory that uses the create_server_app
     // function
     let server = HttpServer::new(move || {
-        create_server_app(
-            registry_clone.clone(),
-            &telemetry_endpoint_clone,
-            &api_endpoint_clone,
-        )
+        create_server_app(registry_clone.clone(), &telemetry_endpoint_clone, &api_endpoint_clone)
     })
     .shutdown_timeout(0)
     .backlog(1024);
@@ -220,17 +184,12 @@ fn create_server_and_bind_to_addresses(
         // Single address binding is simple.
         match server.bind(&binding_addresses[0]) {
             Ok(server) => {
-                eprintln!(
-                    "Successfully bound to endpoint: {}",
-                    binding_addresses[0]
-                );
+                eprintln!("Successfully bound to endpoint: {}", binding_addresses[0]);
                 Some(server.run())
             }
             Err(e) => {
-                let error_msg = format!(
-                    "Failed to bind to address {}: {:?}",
-                    binding_addresses[0], e
-                );
+                let error_msg =
+                    format!("Failed to bind to address {}: {:?}", binding_addresses[0], e);
                 eprintln!("{error_msg}");
                 bind_errors.push(error_msg);
                 None
@@ -239,10 +198,7 @@ fn create_server_and_bind_to_addresses(
     } else if binding_addresses.len() == 2 {
         // For two addresses, try binding to both.
         let result = server.bind(&binding_addresses[0]).and_then(|server| {
-            eprintln!(
-                "Successfully bound to endpoint: {}",
-                binding_addresses[0]
-            );
+            eprintln!("Successfully bound to endpoint: {}", binding_addresses[0]);
             // Try binding to second address.
             server.bind(&binding_addresses[1])
         });
@@ -250,10 +206,7 @@ fn create_server_and_bind_to_addresses(
         match result {
             Ok(server) => {
                 // Successfully bound to both addresses.
-                eprintln!(
-                    "Successfully bound to endpoint: {}",
-                    binding_addresses[1]
-                );
+                eprintln!("Successfully bound to endpoint: {}", binding_addresses[1]);
                 Some(server.run())
             }
             Err(e) => {
@@ -294,8 +247,7 @@ fn create_service_hub_server_with_retry(
     }
 
     // Determine which addresses to bind to.
-    let binding_addresses =
-        determine_binding_addresses(telemetry_endpoint, api_endpoint);
+    let binding_addresses = determine_binding_addresses(telemetry_endpoint, api_endpoint);
 
     // Try to bind a few times with retry.
     for i in 0..SERVICE_HUB_SERVER_BIND_MAX_RETRIES {
@@ -316,8 +268,7 @@ fn create_service_hub_server_with_retry(
         // return None.
         if i >= SERVICE_HUB_SERVER_BIND_MAX_RETRIES - 1 {
             eprintln!(
-                "Error binding to addresses: {:?} after {} attempts. Errors: \
-                 {:?}",
+                "Error binding to addresses: {:?} after {} attempts. Errors: {:?}",
                 binding_addresses,
                 i + 1,
                 errors
@@ -325,8 +276,8 @@ fn create_service_hub_server_with_retry(
 
             // Provide a helpful message for common issues.
             eprintln!(
-                "Check if another process is using these ports or if you have \
-                 permission to bind to these addresses."
+                "Check if another process is using these ports or if you have permission to bind \
+                 to these addresses."
             );
 
             return None;
@@ -334,16 +285,11 @@ fn create_service_hub_server_with_retry(
 
         // Otherwise, log the error and retry after a delay.
         eprintln!(
-            "Failed to bind to endpoints. Attempt {} of {}. Retrying in {} \
-             second{}...",
+            "Failed to bind to endpoints. Attempt {} of {}. Retrying in {} second{}...",
             i + 1,
             SERVICE_HUB_SERVER_BIND_MAX_RETRIES,
             SERVICE_HUB_SERVER_BIND_RETRY_INTERVAL_SECS,
-            if SERVICE_HUB_SERVER_BIND_RETRY_INTERVAL_SECS == 1 {
-                ""
-            } else {
-                "s"
-            }
+            if SERVICE_HUB_SERVER_BIND_RETRY_INTERVAL_SECS == 1 { "" } else { "s" }
         );
         std::thread::sleep(std::time::Duration::from_secs(
             SERVICE_HUB_SERVER_BIND_RETRY_INTERVAL_SECS,
@@ -445,9 +391,7 @@ pub unsafe extern "C" fn ten_service_hub_create(
 ) -> *mut ServiceHub {
     // Check if both hosts are NULL, if so, return null.
     if telemetry_host.is_null() && api_host.is_null() {
-        eprintln!(
-            "Both telemetry and API hosts are NULL, not starting service hub"
-        );
+        eprintln!("Both telemetry and API hosts are NULL, not starting service hub");
         return ptr::null_mut();
     }
 
@@ -474,19 +418,15 @@ pub unsafe extern "C" fn ten_service_hub_create(
     };
 
     // Format the endpoints if hosts are available.
-    let telemetry_endpoint = telemetry_host_str
-        .as_ref()
-        .map(|host| format!("{host}:{telemetry_port}"));
-    let api_endpoint =
-        api_host_str.as_ref().map(|host| format!("{host}:{api_port}"));
+    let telemetry_endpoint =
+        telemetry_host_str.as_ref().map(|host| format!("{host}:{telemetry_port}"));
+    let api_endpoint = api_host_str.as_ref().map(|host| format!("{host}:{api_port}"));
 
     // If both endpoints are the same and not None, use a single server.
     if telemetry_endpoint.is_some() && api_endpoint.is_some() {
         if telemetry_endpoint == api_endpoint {
             if let Some(endpoint) = telemetry_endpoint.as_ref() {
-                eprintln!(
-                    "Creating combined telemetry/API server at {endpoint}"
-                );
+                eprintln!("Creating combined telemetry/API server at {endpoint}");
 
                 // Create a server with both routes.
                 let registry_clone = registry.clone();
@@ -503,8 +443,7 @@ pub unsafe extern "C" fn ten_service_hub_create(
                     }
                 };
 
-                let (thread_handle, shutdown_tx) =
-                    create_service_hub_server_thread(server);
+                let (thread_handle, shutdown_tx) = create_service_hub_server_thread(server);
 
                 return Box::into_raw(Box::new(ServiceHub {
                     registry,
@@ -542,8 +481,7 @@ pub unsafe extern "C" fn ten_service_hub_create(
                 }
             };
 
-            let (thread_handle, shutdown_tx) =
-                create_service_hub_server_thread(server);
+            let (thread_handle, shutdown_tx) = create_service_hub_server_thread(server);
 
             return Box::into_raw(Box::new(ServiceHub {
                 registry,
@@ -573,8 +511,7 @@ pub unsafe extern "C" fn ten_service_hub_create(
                 }
             };
 
-            let (thread_handle, shutdown_tx) =
-                create_service_hub_server_thread(server);
+            let (thread_handle, shutdown_tx) = create_service_hub_server_thread(server);
 
             return Box::into_raw(Box::new(ServiceHub {
                 registry,
@@ -592,20 +529,16 @@ pub unsafe extern "C" fn ten_service_hub_create(
             // Create API server with retry mechanism.
             let registry_clone = registry.clone();
 
-            let server = match create_service_hub_server_with_retry(
-                &None,
-                &api_endpoint,
-                registry_clone,
-            ) {
-                Some(server) => server,
-                None => {
-                    eprintln!("Failed to bind API server to {endpoint}");
-                    return ptr::null_mut();
-                }
-            };
+            let server =
+                match create_service_hub_server_with_retry(&None, &api_endpoint, registry_clone) {
+                    Some(server) => server,
+                    None => {
+                        eprintln!("Failed to bind API server to {endpoint}");
+                        return ptr::null_mut();
+                    }
+                };
 
-            let (thread_handle, shutdown_tx) =
-                create_service_hub_server_thread(server);
+            let (thread_handle, shutdown_tx) = create_service_hub_server_thread(server);
 
             return Box::into_raw(Box::new(ServiceHub {
                 registry,
@@ -634,9 +567,7 @@ pub unsafe extern "C" fn ten_service_hub_create(
 /// `ten_service_hub_create`. Calling this function with an invalid pointer
 /// will lead to undefined behavior.
 #[no_mangle]
-pub unsafe extern "C" fn ten_service_hub_shutdown(
-    service_hub_ptr: *mut ServiceHub,
-) {
+pub unsafe extern "C" fn ten_service_hub_shutdown(service_hub_ptr: *mut ServiceHub) {
     debug_assert!(!service_hub_ptr.is_null(), "System pointer is null");
     // Early return for null pointers.
     if service_hub_ptr.is_null() {
@@ -655,9 +586,7 @@ pub unsafe extern "C" fn ten_service_hub_shutdown(
         if let Err(e) = shutdown_tx.send(()) {
             eprintln!("Failed to send shutdown signal: {e:?}");
             // Don't panic, just continue with cleanup.
-            eprintln!(
-                "Continuing with cleanup despite shutdown signal failure"
-            );
+            eprintln!("Continuing with cleanup despite shutdown signal failure");
         }
     } else {
         eprintln!("No shutdown channel available for the service hub");
@@ -685,33 +614,23 @@ pub unsafe extern "C" fn ten_service_hub_shutdown(
             });
 
             // Wait with timeout.
-            match rx.recv_timeout(std::time::Duration::from_secs(
-                SHUTDOWN_TIMEOUT_SECS,
-            )) {
+            match rx.recv_timeout(std::time::Duration::from_secs(SHUTDOWN_TIMEOUT_SECS)) {
                 Ok(join_result) => match join_result {
                     Ok(_) => {
-                        eprintln!(
-                            "Service hub server thread joined successfully"
-                        )
+                        eprintln!("Service hub server thread joined successfully")
                     }
-                    Err(e) => eprintln!(
-                        "Error joining service hub server thread: {e:?}"
-                    ),
+                    Err(e) => eprintln!("Error joining service hub server thread: {e:?}"),
                 },
                 Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {
                     eprintln!(
-                        "WARNING: Service hub server thread did not shut down \
-                         within timeout ({SHUTDOWN_TIMEOUT_SECS}s)"
+                        "WARNING: Service hub server thread did not shut down within timeout \
+                         ({SHUTDOWN_TIMEOUT_SECS}s)"
                     );
-                    eprintln!(
-                        "The thread may still be running, potentially leaking \
-                         resources"
-                    );
+                    eprintln!("The thread may still be running, potentially leaking resources");
                 }
                 Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => {
                     eprintln!(
-                        "ERROR: Channel disconnected while waiting for server \
-                         thread to join"
+                        "ERROR: Channel disconnected while waiting for server thread to join"
                     );
                 }
             }

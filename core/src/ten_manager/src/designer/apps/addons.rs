@@ -8,14 +8,11 @@ use std::sync::Arc;
 
 use actix_web::{web, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
-
 use ten_rust::pkg_info::{pkg_type::PkgType, PkgInfo};
 
-use crate::designer::common::{
-    get_designer_api_msg_from_pkg, get_designer_api_property_from_pkg,
-};
-use crate::designer::graphs::nodes::DesignerApi;
 use crate::designer::{
+    common::{get_designer_api_msg_from_pkg, get_designer_api_property_from_pkg},
+    graphs::nodes::DesignerApi,
     response::{ApiResponse, ErrorResponse, Status},
     DesignerState,
 };
@@ -50,10 +47,11 @@ pub struct GetAppAddonsSingleResponseData {
 async fn convert_pkg_info_to_addon(
     pkg_info_with_src: &PkgInfo,
 ) -> Result<GetAppAddonsSingleResponseData, ErrorResponse> {
-    let manifest_api =
-        pkg_info_with_src.manifest.get_flattened_api().await.map_err(|e| {
-            ErrorResponse::from_error(&e, "Failed to flatten API for extension")
-        });
+    let manifest_api = pkg_info_with_src
+        .manifest
+        .get_flattened_api()
+        .await
+        .map_err(|e| ErrorResponse::from_error(&e, "Failed to flatten API for extension"));
 
     if manifest_api.is_err() {
         return Err(manifest_api.err().unwrap());
@@ -71,25 +69,13 @@ async fn convert_pkg_info_to_addon(
                 .as_ref()
                 .map(|prop| get_designer_api_property_from_pkg(prop.clone())),
 
-            cmd_in: api
-                .cmd_in
-                .as_ref()
-                .map(|cmd| get_designer_api_msg_from_pkg(cmd.clone())),
+            cmd_in: api.cmd_in.as_ref().map(|cmd| get_designer_api_msg_from_pkg(cmd.clone())),
 
-            cmd_out: api
-                .cmd_out
-                .as_ref()
-                .map(|cmd| get_designer_api_msg_from_pkg(cmd.clone())),
+            cmd_out: api.cmd_out.as_ref().map(|cmd| get_designer_api_msg_from_pkg(cmd.clone())),
 
-            data_in: api
-                .data_in
-                .as_ref()
-                .map(|data| get_designer_api_msg_from_pkg(data.clone())),
+            data_in: api.data_in.as_ref().map(|data| get_designer_api_msg_from_pkg(data.clone())),
 
-            data_out: api
-                .data_out
-                .as_ref()
-                .map(|data| get_designer_api_msg_from_pkg(data.clone())),
+            data_out: api.data_out.as_ref().map(|data| get_designer_api_msg_from_pkg(data.clone())),
 
             audio_frame_in: api
                 .audio_frame_in
@@ -121,9 +107,7 @@ pub async fn get_app_addons_endpoint(
     let pkgs_cache = state.pkgs_cache.read().await;
 
     // Check if base_dir exists in pkgs_cache.
-    if request_payload.base_dir.is_empty()
-        || !pkgs_cache.contains_key(&request_payload.base_dir)
-    {
+    if request_payload.base_dir.is_empty() || !pkgs_cache.contains_key(&request_payload.base_dir) {
         let error_response = ErrorResponse {
             status: Status::Fail,
             message: "Base directory not found or not specified".to_string(),
@@ -141,17 +125,14 @@ pub async fn get_app_addons_endpoint(
 
         // Only process these packages if no addon_type filter is specified or
         // if it matches "extension"
-        if addon_type_filter.is_none()
-            || addon_type_filter == Some(&PkgType::Extension)
-        {
+        if addon_type_filter.is_none() || addon_type_filter == Some(&PkgType::Extension) {
             // Extract extension packages if they exist.
             if let Some(extensions) = &base_dir_pkg_info.extension_pkgs_info {
                 for ext in extensions {
                     let addon = convert_pkg_info_to_addon(ext).await;
 
                     if addon.is_err() {
-                        return Ok(HttpResponse::InternalServerError()
-                            .json(addon.err().unwrap()));
+                        return Ok(HttpResponse::InternalServerError().json(addon.err().unwrap()));
                     }
 
                     all_addons.push(addon.unwrap());
@@ -161,17 +142,14 @@ pub async fn get_app_addons_endpoint(
 
         // Only process these packages if no addon_type filter is specified or
         // if it matches "protocol"
-        if addon_type_filter.is_none()
-            || addon_type_filter == Some(&PkgType::Protocol)
-        {
+        if addon_type_filter.is_none() || addon_type_filter == Some(&PkgType::Protocol) {
             // Extract protocol packages if they exist.
             if let Some(protocols) = &base_dir_pkg_info.protocol_pkgs_info {
                 for protocol in protocols {
                     let addon = convert_pkg_info_to_addon(protocol).await;
 
                     if addon.is_err() {
-                        return Ok(HttpResponse::InternalServerError()
-                            .json(addon.err().unwrap()));
+                        return Ok(HttpResponse::InternalServerError().json(addon.err().unwrap()));
                     }
 
                     all_addons.push(addon.unwrap());
@@ -181,19 +159,14 @@ pub async fn get_app_addons_endpoint(
 
         // Only process these packages if no addon_type filter is specified or
         // if it matches "addon_loader".
-        if addon_type_filter.is_none()
-            || addon_type_filter == Some(&PkgType::AddonLoader)
-        {
+        if addon_type_filter.is_none() || addon_type_filter == Some(&PkgType::AddonLoader) {
             // Extract addon loader packages if they exist.
-            if let Some(addon_loaders) =
-                &base_dir_pkg_info.addon_loader_pkgs_info
-            {
+            if let Some(addon_loaders) = &base_dir_pkg_info.addon_loader_pkgs_info {
                 for loader in addon_loaders {
                     let addon = convert_pkg_info_to_addon(loader).await;
 
                     if addon.is_err() {
-                        return Ok(HttpResponse::InternalServerError()
-                            .json(addon.err().unwrap()));
+                        return Ok(HttpResponse::InternalServerError().json(addon.err().unwrap()));
                     }
 
                     all_addons.push(addon.unwrap());
@@ -203,17 +176,14 @@ pub async fn get_app_addons_endpoint(
 
         // Only process these packages if no addon_type filter is specified or
         // if it matches "system".
-        if addon_type_filter.is_none()
-            || addon_type_filter == Some(&PkgType::System)
-        {
+        if addon_type_filter.is_none() || addon_type_filter == Some(&PkgType::System) {
             // Extract system packages if they exist.
             if let Some(systems) = &base_dir_pkg_info.system_pkgs_info {
                 for system in systems {
                     let addon = convert_pkg_info_to_addon(system).await;
 
                     if addon.is_err() {
-                        return Ok(HttpResponse::InternalServerError()
-                            .json(addon.err().unwrap()));
+                        return Ok(HttpResponse::InternalServerError().json(addon.err().unwrap()));
                     }
 
                     all_addons.push(addon.unwrap());
@@ -228,8 +198,11 @@ pub async fn get_app_addons_endpoint(
     }
 
     // Return success response even if all_addons is empty.
-    let response =
-        ApiResponse { status: Status::Ok, data: all_addons, meta: None };
+    let response = ApiResponse {
+        status: Status::Ok,
+        data: all_addons,
+        meta: None,
+    };
 
     Ok(HttpResponse::Ok().json(response))
 }

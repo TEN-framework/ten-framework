@@ -6,12 +6,13 @@
 //
 #[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
-use std::path::PathBuf;
-use std::{fs::File, path::Path};
+use std::{
+    fs::File,
+    path::{Path, PathBuf},
+};
 
 use anyhow::{Context, Result};
-use flate2::write::GzEncoder;
-use flate2::Compression;
+use flate2::{write::GzEncoder, Compression};
 use tar::{Builder as TarBuilder, Header};
 
 pub fn tar_gz_files_to_file<P: AsRef<Path>>(
@@ -33,18 +34,18 @@ pub fn tar_gz_files_to_file<P: AsRef<Path>>(
             let metadata = path.symlink_metadata()?;
 
             if metadata.file_type().is_symlink() {
-                let target = path.read_link().with_context(|| {
-                    format!("Failed to read symlink target for {path:?}")
-                })?;
+                let target = path
+                    .read_link()
+                    .with_context(|| format!("Failed to read symlink target for {path:?}"))?;
 
                 let mut header = Header::new_gnu();
                 header.set_size(0); // The size of a symbolic link is 0.
                 header.set_entry_type(tar::EntryType::Symlink);
 
                 // Set the target path of a symbolic link.
-                header.set_link_name(&target).with_context(|| {
-                    format!("Failed to set link name for {path:?}")
-                })?;
+                header
+                    .set_link_name(&target)
+                    .with_context(|| format!("Failed to set link name for {path:?}"))?;
 
                 #[cfg(unix)]
                 {
@@ -60,17 +61,13 @@ pub fn tar_gz_files_to_file<P: AsRef<Path>>(
 
                 tar_builder
                     .append_link(&mut header, &relative_path, &target)
-                    .with_context(|| {
-                    format!("Failed to append symlink {path:?}")
-                })?;
+                    .with_context(|| format!("Failed to append symlink {path:?}"))?;
             } else if path.is_file() {
                 tar_builder.append_path_with_name(path, &relative_path)?;
             } else if metadata.is_dir() {
                 // If it is a directory and not the current one ".", then
                 // package the directory.
-                if !relative_path.as_os_str().is_empty()
-                    && relative_path != PathBuf::from(".")
-                {
+                if !relative_path.as_os_str().is_empty() && relative_path != PathBuf::from(".") {
                     tar_builder.append_dir_all(&relative_path, path)?;
                 }
             }

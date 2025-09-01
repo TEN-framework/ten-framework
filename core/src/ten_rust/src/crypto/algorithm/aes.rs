@@ -6,12 +6,13 @@
 //
 use std::sync::Mutex;
 
-use aes::cipher::StreamCipherSeek;
-use aes::Aes128;
+use aes::{cipher::StreamCipherSeek, Aes128};
 use anyhow::Result;
 use ctr::cipher::{KeyIvInit, StreamCipher};
-use serde::de::{self};
-use serde::{Deserialize, Deserializer};
+use serde::{
+    de::{self},
+    Deserialize, Deserializer,
+};
 
 use crate::crypto::CipherAlgorithm;
 
@@ -29,7 +30,9 @@ pub struct AesCtrCipher {
 pub fn new_aes_ctr_cipher(params: &str) -> Result<AesCtrCipher> {
     let config: AesCtrConfig = serde_json::from_str(params)?;
     let cipher = Aes128Ctr128BE::new(&config.key.into(), &config.nonce.into());
-    Ok(AesCtrCipher { cipher: Mutex::new(cipher) })
+    Ok(AesCtrCipher {
+        cipher: Mutex::new(cipher),
+    })
 }
 
 impl<'de> Deserialize<'de> for AesCtrConfig {
@@ -45,11 +48,8 @@ impl<'de> Deserialize<'de> for AesCtrConfig {
 
         let raw = RawParams::deserialize(deserializer)?;
 
-        let key: [u8; 16] = raw
-            .key
-            .as_bytes()
-            .try_into()
-            .map_err(|_| de::Error::custom("key must be 16 bytes"))?;
+        let key: [u8; 16] =
+            raw.key.as_bytes().try_into().map_err(|_| de::Error::custom("key must be 16 bytes"))?;
 
         let nonce: [u8; 16] = raw
             .nonce
@@ -57,7 +57,10 @@ impl<'de> Deserialize<'de> for AesCtrConfig {
             .try_into()
             .map_err(|_| de::Error::custom("nonce must be 16 bytes"))?;
 
-        Ok(AesCtrConfig { key, nonce })
+        Ok(AesCtrConfig {
+            key,
+            nonce,
+        })
     }
 }
 

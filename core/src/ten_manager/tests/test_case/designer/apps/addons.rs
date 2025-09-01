@@ -6,36 +6,32 @@
 //
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
-    use std::sync::Arc;
+    use std::{collections::HashMap, sync::Arc};
 
     use actix_web::{test, web, App};
-
-    use ten_manager::constants::TEST_DIR;
-    use ten_manager::designer::apps::addons::{
-        get_app_addons_endpoint, GetAppAddonsRequestPayload,
-        GetAppAddonsSingleResponseData,
+    use ten_manager::{
+        constants::TEST_DIR,
+        designer::{
+            apps::addons::{
+                get_app_addons_endpoint, GetAppAddonsRequestPayload, GetAppAddonsSingleResponseData,
+            },
+            response::ApiResponse,
+            storage::in_memory::TmanStorageInMemory,
+            DesignerState,
+        },
+        home::config::TmanConfig,
+        output::cli::TmanOutputCli,
+        pkg_info::get_all_pkgs::get_all_pkgs_in_app,
     };
-    use ten_manager::designer::response::ApiResponse;
-    use ten_manager::designer::storage::in_memory::TmanStorageInMemory;
-    use ten_manager::designer::DesignerState;
-    use ten_manager::home::config::TmanConfig;
-    use ten_manager::output::cli::TmanOutputCli;
-    use ten_manager::pkg_info::get_all_pkgs::get_all_pkgs_in_app;
-    use ten_rust::pkg_info::pkg_type::PkgType;
-    use ten_rust::pkg_info::value_type::ValueType;
+    use ten_rust::pkg_info::{pkg_type::PkgType, value_type::ValueType};
 
     use crate::test_case::common::mock::inject_all_pkgs_for_mock;
 
     #[actix_web::test]
     async fn test_get_addons() {
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -45,44 +41,22 @@ mod tests {
         let all_pkgs_json_str = vec![
             (
                 TEST_DIR.to_string(),
-                include_str!("../../../test_data/app_manifest.json")
-                    .to_string(),
-                include_str!(
-                    "../../../test_data/app_property_without_uri.json"
-                )
-                .to_string(),
+                include_str!("../../../test_data/app_manifest.json").to_string(),
+                include_str!("../../../test_data/app_property_without_uri.json").to_string(),
             ),
             (
-                format!(
-                    "{}{}",
-                    TEST_DIR, "/ten_packages/extension/extension_1"
-                ),
-                include_str!(
-                    "../../../test_data/extension_addon_1_manifest.json"
-                )
-                .to_string(),
+                format!("{}{}", TEST_DIR, "/ten_packages/extension/extension_1"),
+                include_str!("../../../test_data/extension_addon_1_manifest.json").to_string(),
                 "{}".to_string(),
             ),
             (
-                format!(
-                    "{}{}",
-                    TEST_DIR, "/ten_packages/extension/extension_2"
-                ),
-                include_str!(
-                    "../../../test_data/extension_addon_2_manifest.json"
-                )
-                .to_string(),
+                format!("{}{}", TEST_DIR, "/ten_packages/extension/extension_2"),
+                include_str!("../../../test_data/extension_addon_2_manifest.json").to_string(),
                 "{}".to_string(),
             ),
             (
-                format!(
-                    "{}{}",
-                    TEST_DIR, "/ten_packages/extension/extension_3"
-                ),
-                include_str!(
-                    "../../../test_data/extension_addon_3_manifest.json"
-                )
-                .to_string(),
+                format!("{}{}", TEST_DIR, "/ten_packages/extension/extension_3"),
+                include_str!("../../../test_data/extension_addon_3_manifest.json").to_string(),
                 "{}".to_string(),
             ),
         ];
@@ -91,22 +65,18 @@ mod tests {
             let mut pkgs_cache = designer_state.pkgs_cache.write().await;
             let mut graphs_cache = designer_state.graphs_cache.write().await;
 
-            let inject_ret = inject_all_pkgs_for_mock(
-                &mut pkgs_cache,
-                &mut graphs_cache,
-                all_pkgs_json_str,
-            )
-            .await;
+            let inject_ret =
+                inject_all_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, all_pkgs_json_str)
+                    .await;
             assert!(inject_ret.is_ok());
         }
 
         let designer_state = Arc::new(designer_state);
 
         let app = test::init_service(
-            App::new().app_data(web::Data::new(designer_state)).route(
-                "/api/designer/v1/addons",
-                web::post().to(get_app_addons_endpoint),
-            ),
+            App::new()
+                .app_data(web::Data::new(designer_state))
+                .route("/api/designer/v1/addons", web::post().to(get_app_addons_endpoint)),
         )
         .await;
 
@@ -139,12 +109,8 @@ mod tests {
     #[actix_web::test]
     async fn test_get_addons_with_interface() {
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -160,24 +126,20 @@ mod tests {
             let _ = get_all_pkgs_in_app(
                 &mut pkgs_cache,
                 &mut graphs_cache,
-                &"tests/test_data/extension_interface_reference_to_sys_pkg"
-                    .to_string(),
+                &"tests/test_data/extension_interface_reference_to_sys_pkg".to_string(),
             )
             .await;
         }
 
         let app = test::init_service(
-            App::new().app_data(web::Data::new(designer_state)).route(
-                "/api/designer/v1/addons",
-                web::post().to(get_app_addons_endpoint),
-            ),
+            App::new()
+                .app_data(web::Data::new(designer_state))
+                .route("/api/designer/v1/addons", web::post().to(get_app_addons_endpoint)),
         )
         .await;
 
         let request_payload = GetAppAddonsRequestPayload {
-            base_dir: "tests/test_data/\
-                       extension_interface_reference_to_sys_pkg"
-                .to_string(),
+            base_dir: "tests/test_data/extension_interface_reference_to_sys_pkg".to_string(),
             addon_name: None,
             addon_type: None,
         };
@@ -203,13 +165,11 @@ mod tests {
         assert_eq!(response.data.len(), 2);
 
         // Find the extension 'ext_a' in the response.
-        let ext_a =
-            response.data.iter().find(|addon| addon.addon_name == "ext_a");
+        let ext_a = response.data.iter().find(|addon| addon.addon_name == "ext_a");
         assert!(ext_a.is_some());
 
         // Find the system 'sys_a' in the response.
-        let sys_a =
-            response.data.iter().find(|addon| addon.addon_name == "sys_a");
+        let sys_a = response.data.iter().find(|addon| addon.addon_name == "sys_a");
         assert!(sys_a.is_some());
 
         // Verify the extension 'ext_a'.

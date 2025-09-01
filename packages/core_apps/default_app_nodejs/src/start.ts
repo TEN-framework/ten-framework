@@ -6,16 +6,16 @@
 import { App, TenEnv } from "ten-runtime-nodejs";
 
 class DefaultApp extends App {
-  async onConfigure(_tenEnv: TenEnv): Promise<void> {
-    console.log("Default App onConfigure");
+  async onConfigure(tenEnv: TenEnv): Promise<void> {
+    tenEnv.logInfo("Default App onConfigure");
   }
 
-  async onInit(_tenEnv: TenEnv): Promise<void> {
-    console.log("Default App onInit");
+  async onInit(tenEnv: TenEnv): Promise<void> {
+    tenEnv.logInfo("Default App onInit");
   }
 
-  async onDeinit(_tenEnv: TenEnv): Promise<void> {
-    console.log("Default App onDeinit");
+  async onDeinit(tenEnv: TenEnv): Promise<void> {
+    tenEnv.logInfo("Default App onDeinit");
   }
 }
 

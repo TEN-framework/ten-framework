@@ -9,12 +9,11 @@ mod tests {
     use std::{collections::HashMap, sync::Arc};
 
     use actix_web::{http::StatusCode, test, web, App};
-
     use ten_manager::{
         designer::{
             registry::search::{
-                search_packages_endpoint, PkgSearchOptions,
-                SearchPackagesRequestPayload, SearchPackagesResponseData,
+                search_packages_endpoint, PkgSearchOptions, SearchPackagesRequestPayload,
+                SearchPackagesResponseData,
             },
             response::{ApiResponse, Status},
             storage::in_memory::TmanStorageInMemory,
@@ -22,20 +21,14 @@ mod tests {
         },
         home::config::TmanConfig,
         output::cli::TmanOutputCli,
-        registry::search::{
-            AtomicFilter, FilterNode, LogicFilter, PkgSearchFilter,
-        },
+        registry::search::{AtomicFilter, FilterNode, LogicFilter, PkgSearchFilter},
     };
 
     #[actix_rt::test]
     async fn test_search_packages_from_remote_registry() {
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -43,13 +36,12 @@ mod tests {
         };
         let designer_state = Arc::new(designer_state);
 
-        let app = test::init_service(
-            App::new().app_data(web::Data::new(designer_state.clone())).route(
+        let app =
+            test::init_service(App::new().app_data(web::Data::new(designer_state.clone())).route(
                 "/api/designer/v1/registry/packages/search",
                 web::post().to(search_packages_endpoint),
-            ),
-        )
-        .await;
+            ))
+            .await;
 
         let request_payload = SearchPackagesRequestPayload {
             filter: PkgSearchFilter {
@@ -84,12 +76,8 @@ mod tests {
     #[actix_rt::test]
     async fn test_search_packages_from_remote_registry_with_logic_filter() {
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -97,13 +85,12 @@ mod tests {
         };
         let designer_state = Arc::new(designer_state);
 
-        let app = test::init_service(
-            App::new().app_data(web::Data::new(designer_state.clone())).route(
+        let app =
+            test::init_service(App::new().app_data(web::Data::new(designer_state.clone())).route(
                 "/api/designer/v1/registry/packages/search",
                 web::post().to(search_packages_endpoint),
-            ),
-        )
-        .await;
+            ))
+            .await;
 
         let filter = PkgSearchFilter {
             filter: FilterNode::Logic(LogicFilter::And {
@@ -127,8 +114,10 @@ mod tests {
             }),
         };
 
-        let request_payload =
-            SearchPackagesRequestPayload { filter, options: None };
+        let request_payload = SearchPackagesRequestPayload {
+            filter,
+            options: None,
+        };
 
         let req = test::TestRequest::post()
             .uri("/api/designer/v1/registry/packages/search")
@@ -156,9 +145,7 @@ mod tests {
                 verbose: true,
                 ..TmanConfig::default()
             })),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -166,13 +153,12 @@ mod tests {
         };
         let designer_state = Arc::new(designer_state);
 
-        let app = test::init_service(
-            App::new().app_data(web::Data::new(designer_state.clone())).route(
+        let app =
+            test::init_service(App::new().app_data(web::Data::new(designer_state.clone())).route(
                 "/api/designer/v1/registry/packages/search",
                 web::post().to(search_packages_endpoint),
-            ),
-        )
-        .await;
+            ))
+            .await;
 
         let request_payload = SearchPackagesRequestPayload {
             filter: PkgSearchFilter {

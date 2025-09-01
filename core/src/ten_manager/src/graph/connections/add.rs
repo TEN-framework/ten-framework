@@ -7,13 +7,10 @@
 use std::collections::HashMap;
 
 use anyhow::Result;
-
 use ten_rust::{
     base_dir_pkg_info::PkgsInfoInApp,
     graph::{
-        connection::{
-            GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow,
-        },
+        connection::{GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow},
         msg_conversion::MsgAndResultConversion,
         node::GraphNode,
         Graph,
@@ -34,9 +31,7 @@ fn add_to_flow(
 
     // Check if a message flow with the same name already exists.
     let flows = flow_collection.as_mut().unwrap();
-    if let Some(existing_flow) =
-        flows.iter_mut().find(|flow| flow.name == message_flow.name)
-    {
+    if let Some(existing_flow) = flows.iter_mut().find(|flow| flow.name == message_flow.name) {
         // Add the destination to the existing flow if it doesn't already
         // exist.
         if !existing_flow.dest.iter().any(|dest| {
@@ -61,12 +56,8 @@ fn add_message_flow_to_connection(
     match msg_type {
         MsgType::Cmd => add_to_flow(&mut connection.cmd, message_flow),
         MsgType::Data => add_to_flow(&mut connection.data, message_flow),
-        MsgType::AudioFrame => {
-            add_to_flow(&mut connection.audio_frame, message_flow)
-        }
-        MsgType::VideoFrame => {
-            add_to_flow(&mut connection.video_frame, message_flow)
-        }
+        MsgType::AudioFrame => add_to_flow(&mut connection.audio_frame, message_flow),
+        MsgType::VideoFrame => add_to_flow(&mut connection.video_frame, message_flow),
     }
     Ok(())
 }
@@ -84,11 +75,7 @@ fn check_connection_exists(
     if let Some(connections) = &graph.connections {
         for conn in connections.iter() {
             // Check if source matches.
-            if conn
-                .loc
-                .extension
-                .as_ref()
-                .is_some_and(|ext| ext == src_extension)
+            if conn.loc.extension.as_ref().is_some_and(|ext| ext == src_extension)
                 && conn.loc.app == *src_app
             {
                 // Check for duplicate message flows based on message type.
@@ -105,14 +92,12 @@ fn check_connection_exists(
                         if flow.name.as_deref() == Some(msg_name) {
                             // Check if destination already exists.
                             for dest in &flow.dest {
-                                if dest.loc.extension.as_deref()
-                                    == Some(dest_extension)
+                                if dest.loc.extension.as_deref() == Some(dest_extension)
                                     && dest.loc.app == *dest_app
                                 {
                                     return Err(anyhow::anyhow!(
-                                        "Connection already exists: \
-                                         src:({:?}, {}), msg_type:{:?}, \
-                                         msg_name:{}, dest:({:?}, {})",
+                                        "Connection already exists: src:({:?}, {}), \
+                                         msg_type:{:?}, msg_name:{}, dest:({:?}, {})",
                                         src_app,
                                         src_extension,
                                         msg_type,
@@ -141,16 +126,15 @@ fn check_nodes_exist(
 ) -> Result<()> {
     // Validate that source node exists.
     let src_node_exists = graph.nodes.iter().any(|node| match node {
-        GraphNode::Extension { content } => {
-            content.name == src_extension && content.app == *src_app
-        }
+        GraphNode::Extension {
+            content,
+        } => content.name == src_extension && content.app == *src_app,
         _ => false,
     });
 
     if !src_node_exists {
         return Err(anyhow::anyhow!(
-            "Source node with extension '{}' and app '{:?}' not found in the \
-             graph",
+            "Source node with extension '{}' and app '{:?}' not found in the graph",
             src_extension,
             src_app
         ));
@@ -158,16 +142,15 @@ fn check_nodes_exist(
 
     // Validate that destination node exists.
     let dest_node_exists = graph.nodes.iter().any(|node| match node {
-        GraphNode::Extension { content } => {
-            content.name == dest_extension && content.app == *dest_app
-        }
+        GraphNode::Extension {
+            content,
+        } => content.name == dest_extension && content.app == *dest_app,
         _ => false,
     });
 
     if !dest_node_exists {
         return Err(anyhow::anyhow!(
-            "Destination node with extension '{}' and app '{:?}' not found in \
-             the graph",
+            "Destination node with extension '{}' and app '{:?}' not found in the graph",
             dest_extension,
             dest_app
         ));
@@ -194,13 +177,7 @@ pub async fn graph_add_connection(
     let original_graph = graph.clone();
 
     // Check if nodes exist.
-    check_nodes_exist(
-        graph,
-        &src_app,
-        &src_extension,
-        &dest_app,
-        &dest_extension,
-    )?;
+    check_nodes_exist(graph, &src_app, &src_extension, &dest_app, &dest_extension)?;
 
     // Check if connection already exists.
     check_connection_exists(
@@ -247,8 +224,7 @@ pub async fn graph_add_connection(
     }
 
     // Create a message flow.
-    let message_flow =
-        GraphMessageFlow::new(msg_name, vec![destination], vec![]);
+    let message_flow = GraphMessageFlow::new(msg_name, vec![destination], vec![]);
 
     // Get or create a connection for the source node and add the message
     // flow.
@@ -258,8 +234,7 @@ pub async fn graph_add_connection(
         // Find or create connection.
         let connection_idx = if let Some((idx, _)) =
             connections.iter().enumerate().find(|(_, conn)| {
-                (conn.loc.extension.as_ref() == Some(&src_extension))
-                    && conn.loc.app == src_app
+                (conn.loc.extension.as_ref() == Some(&src_extension)) && conn.loc.app == src_app
             }) {
             idx
         } else {

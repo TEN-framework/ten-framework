@@ -12,16 +12,12 @@ use std::{collections::HashMap, sync::Arc};
 
 use actix_web::{http::StatusCode, test, web};
 use serde_json::json;
-
 use ten_manager::{
     designer::{
         response::ApiResponse,
         storage::in_memory::{
             get::{get_in_memory_storage_endpoint, GetMemoryResponseData},
-            set::{
-                set_in_memory_storage_endpoint, SetMemoryRequestPayload,
-                SetMemoryResponseData,
-            },
+            set::{set_in_memory_storage_endpoint, SetMemoryRequestPayload, SetMemoryResponseData},
             TmanStorageInMemory,
         },
         DesignerState,
@@ -35,9 +31,7 @@ async fn test_set_and_get_memory_simple() {
     // Create a clean state with empty config.
     let designer_state = DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-            TmanStorageInMemory::default(),
-        )),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -49,14 +43,8 @@ async fn test_set_and_get_memory_simple() {
     let app = test::init_service(
         actix_web::App::new()
             .app_data(state.clone())
-            .route(
-                "/storage/memory/set",
-                web::post().to(set_in_memory_storage_endpoint),
-            )
-            .route(
-                "/storage/memory/get",
-                web::post().to(get_in_memory_storage_endpoint),
-            ),
+            .route("/storage/memory/set", web::post().to(set_in_memory_storage_endpoint))
+            .route("/storage/memory/get", web::post().to(get_in_memory_storage_endpoint)),
     )
     .await;
 
@@ -67,49 +55,38 @@ async fn test_set_and_get_memory_simple() {
         value: json!({"nodes_geometry": [{"x": 100, "y": 200}]}),
     };
 
-    let set_req = test::TestRequest::post()
-        .uri("/storage/memory/set")
-        .set_json(&set_payload)
-        .to_request();
+    let set_req =
+        test::TestRequest::post().uri("/storage/memory/set").set_json(&set_payload).to_request();
 
     let set_resp = test::call_service(&app, set_req).await;
     assert_eq!(set_resp.status(), StatusCode::OK);
 
     let set_body = test::read_body(set_resp).await;
-    let set_result: ApiResponse<SetMemoryResponseData> =
-        serde_json::from_slice(&set_body).unwrap();
+    let set_result: ApiResponse<SetMemoryResponseData> = serde_json::from_slice(&set_body).unwrap();
     assert!(set_result.data.success);
 
     // Test getting the same value
     let get_payload = json!({"key": "custom_data.test_value"});
 
-    let get_req = test::TestRequest::post()
-        .uri("/storage/memory/get")
-        .set_json(&get_payload)
-        .to_request();
+    let get_req =
+        test::TestRequest::post().uri("/storage/memory/get").set_json(&get_payload).to_request();
 
     let get_resp = test::call_service(&app, get_req).await;
     assert_eq!(get_resp.status(), StatusCode::OK);
 
     let get_body = test::read_body(get_resp).await;
-    let get_result: ApiResponse<GetMemoryResponseData> =
-        serde_json::from_slice(&get_body).unwrap();
+    let get_result: ApiResponse<GetMemoryResponseData> = serde_json::from_slice(&get_body).unwrap();
 
     assert!(get_result.data.value.is_some());
     let returned_value = get_result.data.value.unwrap();
-    assert_eq!(
-        returned_value,
-        json!({"nodes_geometry": [{"x": 100, "y": 200}]})
-    );
+    assert_eq!(returned_value, json!({"nodes_geometry": [{"x": 100, "y": 200}]}));
 }
 
 #[actix_web::test]
 async fn test_set_and_get_memory_array_key() {
     let designer_state = DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-            TmanStorageInMemory::default(),
-        )),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -120,14 +97,8 @@ async fn test_set_and_get_memory_array_key() {
     let app = test::init_service(
         actix_web::App::new()
             .app_data(state.clone())
-            .route(
-                "/storage/memory/set",
-                web::post().to(set_in_memory_storage_endpoint),
-            )
-            .route(
-                "/storage/memory/get",
-                web::post().to(get_in_memory_storage_endpoint),
-            ),
+            .route("/storage/memory/set", web::post().to(set_in_memory_storage_endpoint))
+            .route("/storage/memory/get", web::post().to(get_in_memory_storage_endpoint)),
     )
     .await;
 
@@ -137,10 +108,8 @@ async fn test_set_and_get_memory_array_key() {
         value: json!({"x": 300, "y": 400}),
     };
 
-    let set_req = test::TestRequest::post()
-        .uri("/storage/memory/set")
-        .set_json(&set_payload)
-        .to_request();
+    let set_req =
+        test::TestRequest::post().uri("/storage/memory/set").set_json(&set_payload).to_request();
 
     let set_resp = test::call_service(&app, set_req).await;
     assert_eq!(set_resp.status(), StatusCode::OK);
@@ -148,17 +117,14 @@ async fn test_set_and_get_memory_array_key() {
     // Test getting the value
     let get_payload = json!({"key": "nodes[1].position"});
 
-    let get_req = test::TestRequest::post()
-        .uri("/storage/memory/get")
-        .set_json(&get_payload)
-        .to_request();
+    let get_req =
+        test::TestRequest::post().uri("/storage/memory/get").set_json(&get_payload).to_request();
 
     let get_resp = test::call_service(&app, get_req).await;
     assert_eq!(get_resp.status(), StatusCode::OK);
 
     let get_body = test::read_body(get_resp).await;
-    let get_result: ApiResponse<GetMemoryResponseData> =
-        serde_json::from_slice(&get_body).unwrap();
+    let get_result: ApiResponse<GetMemoryResponseData> = serde_json::from_slice(&get_body).unwrap();
 
     assert!(get_result.data.value.is_some());
     let returned_value = get_result.data.value.unwrap();
@@ -169,86 +135,7 @@ async fn test_set_and_get_memory_array_key() {
 async fn test_get_memory_nonexistent_key() {
     let designer_state = DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-            TmanStorageInMemory::default(),
-        )),
-        out: Arc::new(Box::new(TmanOutputCli)),
-        pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
-        graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
-        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
-    };
-    let state = web::Data::new(Arc::new(designer_state));
-
-    let app = test::init_service(
-        actix_web::App::new().app_data(state.clone()).route(
-            "/storage/memory/get",
-            web::post().to(get_in_memory_storage_endpoint),
-        ),
-    )
-    .await;
-
-    // Test getting a nonexistent key
-    let get_payload = json!({"key": "nonexistent.key"});
-
-    let get_req = test::TestRequest::post()
-        .uri("/storage/memory/get")
-        .set_json(&get_payload)
-        .to_request();
-
-    let get_resp = test::call_service(&app, get_req).await;
-    assert_eq!(get_resp.status(), StatusCode::OK);
-
-    let get_body = test::read_body(get_resp).await;
-    let get_result: ApiResponse<GetMemoryResponseData> =
-        serde_json::from_slice(&get_body).unwrap();
-
-    assert!(get_result.data.value.is_none());
-}
-
-#[actix_web::test]
-async fn test_set_memory_invalid_key() {
-    let designer_state = DesignerState {
-        tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-            TmanStorageInMemory::default(),
-        )),
-        out: Arc::new(Box::new(TmanOutputCli)),
-        pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
-        graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
-        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
-    };
-    let state = web::Data::new(Arc::new(designer_state));
-
-    let app = test::init_service(
-        actix_web::App::new().app_data(state.clone()).route(
-            "/storage/memory/set",
-            web::post().to(set_in_memory_storage_endpoint),
-        ),
-    )
-    .await;
-
-    // Test setting with invalid key (contains uppercase)
-    let set_payload = SetMemoryRequestPayload {
-        key: "Graph_ui.test".to_string(),
-        value: json!("test_value"),
-    };
-
-    let set_req = test::TestRequest::post()
-        .uri("/storage/memory/set")
-        .set_json(&set_payload)
-        .to_request();
-
-    let set_resp = test::call_service(&app, set_req).await;
-    assert_eq!(set_resp.status(), StatusCode::BAD_REQUEST);
-}
-
-#[actix_web::test]
-async fn test_overwrite_existing_key() {
-    let designer_state = DesignerState {
-        tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-            TmanStorageInMemory::default(),
-        )),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -259,14 +146,74 @@ async fn test_overwrite_existing_key() {
     let app = test::init_service(
         actix_web::App::new()
             .app_data(state.clone())
-            .route(
-                "/storage/memory/set",
-                web::post().to(set_in_memory_storage_endpoint),
-            )
-            .route(
-                "/storage/memory/get",
-                web::post().to(get_in_memory_storage_endpoint),
-            ),
+            .route("/storage/memory/get", web::post().to(get_in_memory_storage_endpoint)),
+    )
+    .await;
+
+    // Test getting a nonexistent key
+    let get_payload = json!({"key": "nonexistent.key"});
+
+    let get_req =
+        test::TestRequest::post().uri("/storage/memory/get").set_json(&get_payload).to_request();
+
+    let get_resp = test::call_service(&app, get_req).await;
+    assert_eq!(get_resp.status(), StatusCode::OK);
+
+    let get_body = test::read_body(get_resp).await;
+    let get_result: ApiResponse<GetMemoryResponseData> = serde_json::from_slice(&get_body).unwrap();
+
+    assert!(get_result.data.value.is_none());
+}
+
+#[actix_web::test]
+async fn test_set_memory_invalid_key() {
+    let designer_state = DesignerState {
+        tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
+        out: Arc::new(Box::new(TmanOutputCli)),
+        pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
+        graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
+    };
+    let state = web::Data::new(Arc::new(designer_state));
+
+    let app = test::init_service(
+        actix_web::App::new()
+            .app_data(state.clone())
+            .route("/storage/memory/set", web::post().to(set_in_memory_storage_endpoint)),
+    )
+    .await;
+
+    // Test setting with invalid key (contains uppercase)
+    let set_payload = SetMemoryRequestPayload {
+        key: "Graph_ui.test".to_string(),
+        value: json!("test_value"),
+    };
+
+    let set_req =
+        test::TestRequest::post().uri("/storage/memory/set").set_json(&set_payload).to_request();
+
+    let set_resp = test::call_service(&app, set_req).await;
+    assert_eq!(set_resp.status(), StatusCode::BAD_REQUEST);
+}
+
+#[actix_web::test]
+async fn test_overwrite_existing_key() {
+    let designer_state = DesignerState {
+        tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
+        out: Arc::new(Box::new(TmanOutputCli)),
+        pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
+        graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+        persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
+    };
+    let state = web::Data::new(Arc::new(designer_state));
+
+    let app = test::init_service(
+        actix_web::App::new()
+            .app_data(state.clone())
+            .route("/storage/memory/set", web::post().to(set_in_memory_storage_endpoint))
+            .route("/storage/memory/get", web::post().to(get_in_memory_storage_endpoint)),
     )
     .await;
 
@@ -278,10 +225,8 @@ async fn test_overwrite_existing_key() {
         value: json!("initial_value"),
     };
 
-    let set_req = test::TestRequest::post()
-        .uri("/storage/memory/set")
-        .set_json(&set_payload)
-        .to_request();
+    let set_req =
+        test::TestRequest::post().uri("/storage/memory/set").set_json(&set_payload).to_request();
 
     let set_resp = test::call_service(&app, set_req).await;
     assert_eq!(set_resp.status(), StatusCode::OK);
@@ -292,10 +237,8 @@ async fn test_overwrite_existing_key() {
         value: json!("updated_value"),
     };
 
-    let set_req = test::TestRequest::post()
-        .uri("/storage/memory/set")
-        .set_json(&set_payload)
-        .to_request();
+    let set_req =
+        test::TestRequest::post().uri("/storage/memory/set").set_json(&set_payload).to_request();
 
     let set_resp = test::call_service(&app, set_req).await;
     assert_eq!(set_resp.status(), StatusCode::OK);
@@ -303,17 +246,14 @@ async fn test_overwrite_existing_key() {
     // Get the value and verify it's been updated
     let get_payload = json!({"key": key});
 
-    let get_req = test::TestRequest::post()
-        .uri("/storage/memory/get")
-        .set_json(&get_payload)
-        .to_request();
+    let get_req =
+        test::TestRequest::post().uri("/storage/memory/get").set_json(&get_payload).to_request();
 
     let get_resp = test::call_service(&app, get_req).await;
     assert_eq!(get_resp.status(), StatusCode::OK);
 
     let get_body = test::read_body(get_resp).await;
-    let get_result: ApiResponse<GetMemoryResponseData> =
-        serde_json::from_slice(&get_body).unwrap();
+    let get_result: ApiResponse<GetMemoryResponseData> = serde_json::from_slice(&get_body).unwrap();
 
     assert!(get_result.data.value.is_some());
     assert_eq!(get_result.data.value.unwrap(), json!("updated_value"));

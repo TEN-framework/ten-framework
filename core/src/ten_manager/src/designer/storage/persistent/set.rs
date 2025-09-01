@@ -11,9 +11,11 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use super::{read_persistent_storage, write_persistent_storage};
-use crate::designer::response::{ApiResponse, Status};
-use crate::designer::storage::in_memory::key_parser::set_value_by_key;
-use crate::designer::DesignerState;
+use crate::designer::{
+    response::{ApiResponse, Status},
+    storage::in_memory::key_parser::set_value_by_key,
+    DesignerState,
+};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SetPersistentRequestPayload {
@@ -40,12 +42,12 @@ pub async fn set_persistent_storage_endpoint(
         if let Some(validator) = schema_lock.as_ref() {
             // Create a temporary object to validate the key/value pair
             let mut temp_data = serde_json::json!({});
-            if let Err(_e) =
-                set_value_by_key(&mut temp_data, &key, value.clone())
-            {
+            if let Err(_e) = set_value_by_key(&mut temp_data, &key, value.clone()) {
                 return Ok(HttpResponse::BadRequest().json(ApiResponse {
                     status: Status::Fail,
-                    data: SetPersistentResponseData { success: false },
+                    data: SetPersistentResponseData {
+                        success: false,
+                    },
                     meta: None,
                 }));
             }
@@ -54,19 +56,22 @@ pub async fn set_persistent_storage_endpoint(
             if let Err(_e) = validator.validate(&temp_data) {
                 let mut error_messages = Vec::new();
                 for error in validator.iter_errors(&temp_data) {
-                    error_messages
-                        .push(format!("{} @ {}", error, error.instance_path));
+                    error_messages.push(format!("{} @ {}", error, error.instance_path));
                 }
                 return Ok(HttpResponse::BadRequest().json(ApiResponse {
                     status: Status::Fail,
-                    data: SetPersistentResponseData { success: false },
+                    data: SetPersistentResponseData {
+                        success: false,
+                    },
                     meta: None,
                 }));
             }
         } else {
             return Ok(HttpResponse::BadRequest().json(ApiResponse {
                 status: Status::Fail,
-                data: SetPersistentResponseData { success: false },
+                data: SetPersistentResponseData {
+                    success: false,
+                },
                 meta: None,
             }));
         }
@@ -78,7 +83,9 @@ pub async fn set_persistent_storage_endpoint(
         Err(_e) => {
             return Ok(HttpResponse::InternalServerError().json(ApiResponse {
                 status: Status::Fail,
-                data: SetPersistentResponseData { success: false },
+                data: SetPersistentResponseData {
+                    success: false,
+                },
                 meta: None,
             }));
         }
@@ -88,7 +95,9 @@ pub async fn set_persistent_storage_endpoint(
     if let Err(_e) = set_value_by_key(&mut json_data, &key, value) {
         return Ok(HttpResponse::BadRequest().json(ApiResponse {
             status: Status::Fail,
-            data: SetPersistentResponseData { success: false },
+            data: SetPersistentResponseData {
+                success: false,
+            },
             meta: None,
         }));
     }
@@ -97,14 +106,21 @@ pub async fn set_persistent_storage_endpoint(
     if let Err(_e) = write_persistent_storage(&json_data) {
         return Ok(HttpResponse::InternalServerError().json(ApiResponse {
             status: Status::Fail,
-            data: SetPersistentResponseData { success: false },
+            data: SetPersistentResponseData {
+                success: false,
+            },
             meta: None,
         }));
     }
 
-    let response_data = SetPersistentResponseData { success: true };
-    let response =
-        ApiResponse { status: Status::Ok, data: response_data, meta: None };
+    let response_data = SetPersistentResponseData {
+        success: true,
+    };
+    let response = ApiResponse {
+        status: Status::Ok,
+        data: response_data,
+        meta: None,
+    };
 
     Ok(HttpResponse::Ok().json(response))
 }

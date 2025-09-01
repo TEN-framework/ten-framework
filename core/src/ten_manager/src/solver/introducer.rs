@@ -8,10 +8,9 @@ use std::collections::{HashMap, HashSet};
 
 use anyhow::Result;
 use regex::Regex;
-
-use ten_rust::pkg_info::manifest::dependency::ManifestDependency;
 use ten_rust::pkg_info::{
-    pkg_basic_info::PkgBasicInfo, pkg_type_and_name::PkgTypeAndName, PkgInfo,
+    manifest::dependency::ManifestDependency, pkg_basic_info::PkgBasicInfo,
+    pkg_type_and_name::PkgTypeAndName, PkgInfo,
 };
 
 use crate::dep_and_candidate::get_pkg_info_from_candidates;
@@ -21,15 +20,11 @@ pub fn extract_introducer_relations_from_raw_solver_results(
     results: &[String],
     all_candidates: &HashMap<PkgTypeAndName, HashMap<PkgBasicInfo, PkgInfo>>,
 ) -> Result<HashMap<PkgBasicInfo, (String, Option<PkgInfo>)>> {
-    let re = Regex::new(
-      r#"introducer\("([^"]+)","([^"]+)","([^"]+)","([^"]+)","([^"]*)","([^"]*)"\)"#,
-  )
-  .unwrap();
+    let re =
+        Regex::new(r#"introducer\("([^"]+)","([^"]+)","([^"]+)","([^"]+)","([^"]*)","([^"]*)"\)"#)
+            .unwrap();
 
-    let mut introducer_relations: HashMap<
-        PkgBasicInfo,
-        (String, Option<PkgInfo>),
-    > = HashMap::new();
+    let mut introducer_relations: HashMap<PkgBasicInfo, (String, Option<PkgInfo>)> = HashMap::new();
 
     for result in results.iter() {
         if let Some(caps) = re.captures(result) {
@@ -45,12 +40,8 @@ pub fn extract_introducer_relations_from_raw_solver_results(
             // manifest.json) in the dependency chain is more user-friendly.
             let mut requested_version_str = version_str.to_string();
 
-            let pkg_info = get_pkg_info_from_candidates(
-                pkg_type_str,
-                name,
-                version_str,
-                all_candidates,
-            )?;
+            let pkg_info =
+                get_pkg_info_from_candidates(pkg_type_str, name, version_str, all_candidates)?;
 
             let introducer = if introducer_type_str == "root" {
                 None
@@ -62,26 +53,22 @@ pub fn extract_introducer_relations_from_raw_solver_results(
                     all_candidates,
                 )?;
 
-                let requested_dep_in_introducer = introducer_info
-                    .get_dependency_by_type_and_name(pkg_type_str, name);
-                if let Some(requested_dep_in_introducer) =
-                    requested_dep_in_introducer
-                {
+                let requested_dep_in_introducer =
+                    introducer_info.get_dependency_by_type_and_name(pkg_type_str, name);
+                if let Some(requested_dep_in_introducer) = requested_dep_in_introducer {
                     // The `version` declared in the `dependencies` section in
                     // manifest.json is always present.
                     requested_version_str = match requested_dep_in_introducer {
                         ManifestDependency::RegistryDependency {
-                            version_req,
+                            version_req, ..
+                        } => version_req.as_processed().to_string(),
+                        ManifestDependency::LocalDependency {
                             ..
-                        } => version_req.to_string(),
-                        ManifestDependency::LocalDependency { .. } => {
-                            version_str.to_string()
-                        }
+                        } => version_str.to_string(),
                     };
                 } else {
                     return Err(anyhow::anyhow!(
-                        "Requested dependency [{}]{} not found in introducer, \
-                         should not happen.",
+                        "Requested dependency [{}]{} not found in introducer, should not happen.",
                         pkg_type_str,
                         name
                     ));
@@ -90,10 +77,7 @@ pub fn extract_introducer_relations_from_raw_solver_results(
                 Some(introducer_info.clone())
             };
 
-            introducer_relations.insert(
-                (&pkg_info).into(),
-                (requested_version_str, introducer),
-            );
+            introducer_relations.insert((&pkg_info).into(), (requested_version_str, introducer));
         }
     }
 
@@ -119,10 +103,12 @@ pub fn get_dependency_chain(
         .unwrap();
 
     let version_req_str = match requested_dep_in_introducer {
-        ManifestDependency::RegistryDependency { version_req, .. } => {
-            version_req.to_string()
-        }
-        ManifestDependency::LocalDependency { .. } => {
+        ManifestDependency::RegistryDependency {
+            version_req, ..
+        } => version_req.as_processed().to_string(),
+        ManifestDependency::LocalDependency {
+            ..
+        } => {
             // Use wildcard for local deps.
             "*".to_string()
         }

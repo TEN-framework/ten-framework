@@ -9,11 +9,10 @@ pub mod delete;
 pub mod msg_conversion;
 
 use serde::{Deserialize, Serialize};
-
-use ten_rust::graph::connection::{
-    GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow, GraphSource,
+use ten_rust::graph::{
+    connection::{GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow, GraphSource},
+    msg_conversion::MsgAndResultConversion,
 };
-use ten_rust::graph::msg_conversion::MsgAndResultConversion;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub struct DesignerGraphLoc {
@@ -32,7 +31,12 @@ pub struct DesignerGraphLoc {
 
 impl DesignerGraphLoc {
     pub fn new() -> Self {
-        Self { app: None, extension: None, subgraph: None, selector: None }
+        Self {
+            app: None,
+            extension: None,
+            subgraph: None,
+            selector: None,
+        }
     }
 
     pub fn with_app_and_extension_or_subgraph(
@@ -40,7 +44,12 @@ impl DesignerGraphLoc {
         extension: Option<String>,
         subgraph: Option<String>,
     ) -> Self {
-        Self { app, extension, subgraph, selector: None }
+        Self {
+            app,
+            extension,
+            subgraph,
+            selector: None,
+        }
     }
 }
 
@@ -55,16 +64,8 @@ impl From<DesignerGraphMessageFlow> for GraphMessageFlow {
         GraphMessageFlow {
             name: designer_msg_flow.name,
             names: designer_msg_flow.names,
-            dest: designer_msg_flow
-                .dest
-                .into_iter()
-                .map(|d| d.into())
-                .collect(),
-            source: designer_msg_flow
-                .source
-                .into_iter()
-                .map(|s| s.into())
-                .collect(),
+            dest: designer_msg_flow.dest.into_iter().map(|d| d.into()).collect(),
+            source: designer_msg_flow.source.into_iter().map(|s| s.into()).collect(),
         }
     }
 }
@@ -170,9 +171,7 @@ fn get_designer_destination_from_property(
     destinations.into_iter().map(|v| v.into()).collect()
 }
 
-fn get_designer_source_from_property(
-    sources: Vec<GraphSource>,
-) -> Vec<DesignerGraphSource> {
+fn get_designer_source_from_property(sources: Vec<GraphSource>) -> Vec<DesignerGraphSource> {
     sources.into_iter().map(|v| v.into()).collect()
 }
 
@@ -224,13 +223,9 @@ impl From<GraphConnection> for DesignerGraphConnection {
 
             data: conn.data.map(get_designer_msg_flow_from_property),
 
-            audio_frame: conn
-                .audio_frame
-                .map(get_designer_msg_flow_from_property),
+            audio_frame: conn.audio_frame.map(get_designer_msg_flow_from_property),
 
-            video_frame: conn
-                .video_frame
-                .map(get_designer_msg_flow_from_property),
+            video_frame: conn.video_frame.map(get_designer_msg_flow_from_property),
         }
     }
 }
@@ -245,18 +240,10 @@ impl From<DesignerGraphConnection> for GraphConnection {
                 selector: designer_connection.loc.selector,
             },
 
-            cmd: designer_connection
-                .cmd
-                .map(get_property_msg_flow_from_designer),
-            data: designer_connection
-                .data
-                .map(get_property_msg_flow_from_designer),
-            audio_frame: designer_connection
-                .audio_frame
-                .map(get_property_msg_flow_from_designer),
-            video_frame: designer_connection
-                .video_frame
-                .map(get_property_msg_flow_from_designer),
+            cmd: designer_connection.cmd.map(get_property_msg_flow_from_designer),
+            data: designer_connection.data.map(get_property_msg_flow_from_designer),
+            audio_frame: designer_connection.audio_frame.map(get_property_msg_flow_from_designer),
+            video_frame: designer_connection.video_frame.map(get_property_msg_flow_from_designer),
         }
     }
 }

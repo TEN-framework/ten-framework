@@ -15,8 +15,7 @@ use ten_manager::{
 use super::tman_config::find_config_json;
 
 pub fn create_designer_state() -> Arc<DesignerState> {
-    let tman_config_file_path =
-        find_config_json().map(|p| p.to_string_lossy().into_owned());
+    let tman_config_file_path = find_config_json().map(|p| p.to_string_lossy().into_owned());
 
     let tman_config_file = read_config(&tman_config_file_path).unwrap();
 
@@ -33,9 +32,7 @@ pub fn create_designer_state() -> Arc<DesignerState> {
     // Setup designer state
     let designer_state = DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(tman_config)),
-        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-            TmanStorageInMemory::default(),
-        )),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),

@@ -9,12 +9,6 @@ mod tests {
     use std::{collections::HashMap, sync::Arc};
 
     use actix_web::{test, web, App};
-    use ten_rust::{
-        graph::node::GraphNode,
-        pkg_info::constants::{MANIFEST_JSON_FILENAME, PROPERTY_JSON_FILENAME},
-    };
-    use uuid::Uuid;
-
     use ten_manager::{
         constants::TEST_DIR,
         designer::{
@@ -33,6 +27,11 @@ mod tests {
         home::config::TmanConfig,
         output::cli::TmanOutputCli,
     };
+    use ten_rust::{
+        graph::node::GraphNode,
+        pkg_info::constants::{MANIFEST_JSON_FILENAME, PROPERTY_JSON_FILENAME},
+    };
+    use uuid::Uuid;
 
     use crate::test_case::common::mock::{
         inject_all_pkgs_for_mock, inject_all_standard_pkgs_for_mock,
@@ -41,12 +40,8 @@ mod tests {
     #[actix_web::test]
     async fn test_delete_graph_node_invalid_graph() {
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -57,22 +52,15 @@ mod tests {
             let mut pkgs_cache = designer_state.pkgs_cache.write().await;
             let mut graphs_cache = designer_state.graphs_cache.write().await;
 
-            inject_all_standard_pkgs_for_mock(
-                &mut pkgs_cache,
-                &mut graphs_cache,
-                TEST_DIR,
-            )
-            .await;
+            inject_all_standard_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, TEST_DIR).await;
         }
 
         let designer_state = Arc::new(designer_state);
 
-        let app = test::init_service(
-            App::new().app_data(web::Data::new(designer_state)).route(
-                "/api/designer/v1/graphs/nodes/delete",
-                web::post().to(delete_graph_node_endpoint),
-            ),
-        )
+        let app = test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
+            "/api/designer/v1/graphs/nodes/delete",
+            web::post().to(delete_graph_node_endpoint),
+        ))
         .await;
 
         // Try to delete a node from a non-existent graph.
@@ -105,12 +93,8 @@ mod tests {
     #[actix_web::test]
     async fn test_delete_graph_node_nonexistent_node() {
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -121,35 +105,25 @@ mod tests {
             let mut pkgs_cache = designer_state.pkgs_cache.write().await;
             let mut graphs_cache = designer_state.graphs_cache.write().await;
 
-            inject_all_standard_pkgs_for_mock(
-                &mut pkgs_cache,
-                &mut graphs_cache,
-                TEST_DIR,
-            )
-            .await;
+            inject_all_standard_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, TEST_DIR).await;
         }
 
         let graph_id_clone;
         {
             let graphs_cache = designer_state.graphs_cache.read().await;
 
-            let (graph_id, _) = graphs_cache_find_by_name(
-                &graphs_cache,
-                "default_with_app_uri",
-            )
-            .unwrap();
+            let (graph_id, _) =
+                graphs_cache_find_by_name(&graphs_cache, "default_with_app_uri").unwrap();
 
             graph_id_clone = *graph_id;
         }
 
         let designer_state = Arc::new(designer_state);
 
-        let app = test::init_service(
-            App::new().app_data(web::Data::new(designer_state)).route(
-                "/api/designer/v1/graphs/nodes/delete",
-                web::post().to(delete_graph_node_endpoint),
-            ),
-        )
+        let app = test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
+            "/api/designer/v1/graphs/nodes/delete",
+            web::post().to(delete_graph_node_endpoint),
+        ))
         .await;
 
         // Try to delete a non-existent node from an existing graph.
@@ -188,28 +162,20 @@ mod tests {
         let temp_dir_path = temp_dir.path().to_str().unwrap().to_string();
 
         // Read test data from embedded JSON files.
-        let input_property_json_str =
-            include_str!("../../../../test_data/app_property.json");
-        let input_manifest_json_str =
-            include_str!("../../../../test_data/app_manifest.json");
+        let input_property_json_str = include_str!("../../../../test_data/app_property.json");
+        let input_manifest_json_str = include_str!("../../../../test_data/app_manifest.json");
 
         // Write input files to temp directory.
-        let property_path =
-            std::path::Path::new(&temp_dir_path).join(PROPERTY_JSON_FILENAME);
+        let property_path = std::path::Path::new(&temp_dir_path).join(PROPERTY_JSON_FILENAME);
         std::fs::write(&property_path, input_property_json_str).unwrap();
 
-        let manifest_path =
-            std::path::Path::new(&temp_dir_path).join(MANIFEST_JSON_FILENAME);
+        let manifest_path = std::path::Path::new(&temp_dir_path).join(MANIFEST_JSON_FILENAME);
         std::fs::write(&manifest_path, input_manifest_json_str).unwrap();
 
         // Initialize test state.
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -227,23 +193,16 @@ mod tests {
             let mut pkgs_cache = designer_state.pkgs_cache.write().await;
             let mut graphs_cache = designer_state.graphs_cache.write().await;
 
-            let inject_ret = inject_all_pkgs_for_mock(
-                &mut pkgs_cache,
-                &mut graphs_cache,
-                all_pkgs_json,
-            )
-            .await;
+            let inject_ret =
+                inject_all_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, all_pkgs_json).await;
             assert!(inject_ret.is_ok());
         }
 
         let graph_id_clone;
         {
             let graphs_cache = designer_state.graphs_cache.read().await;
-            let (graph_id, _) = graphs_cache_find_by_name(
-                &graphs_cache,
-                "default_with_app_uri",
-            )
-            .unwrap();
+            let (graph_id, _) =
+                graphs_cache_find_by_name(&graphs_cache, "default_with_app_uri").unwrap();
 
             graph_id_clone = *graph_id;
         }
@@ -252,13 +211,12 @@ mod tests {
 
         // First add a node, then delete it.
         // Setup the add endpoint.
-        let app_add = test::init_service(
-            App::new().app_data(web::Data::new(designer_state.clone())).route(
+        let app_add =
+            test::init_service(App::new().app_data(web::Data::new(designer_state.clone())).route(
                 "/api/designer/v1/graphs/nodes/add",
                 web::post().to(add_graph_node_endpoint),
-            ),
-        )
-        .await;
+            ))
+            .await;
 
         // Add a node to the default graph.
         let add_request_payload = AddGraphNodeRequestPayload {
@@ -281,13 +239,11 @@ mod tests {
         // Ensure add was successful.
         assert_eq!(resp.status(), 200);
 
-        let updated_property_json_str =
-            std::fs::read_to_string(&property_path).unwrap();
+        let updated_property_json_str = std::fs::read_to_string(&property_path).unwrap();
 
         let expected_property_json_str = include_str!(
             "../../../../test_data/\
-             expected_property_after_adding_in_test_delete_graph_node_success.\
-             json"
+             expected_property_after_adding_in_test_delete_graph_node_success.json"
         );
 
         // Parse the contents as JSON for proper comparison.
@@ -303,13 +259,12 @@ mod tests {
         );
 
         // Setup the delete endpoint.
-        let app_delete = test::init_service(
-            App::new().app_data(web::Data::new(designer_state.clone())).route(
+        let app_delete =
+            test::init_service(App::new().app_data(web::Data::new(designer_state.clone())).route(
                 "/api/designer/v1/graphs/nodes/delete",
                 web::post().to(delete_graph_node_endpoint),
-            ),
-        )
-        .await;
+            ))
+            .await;
 
         // Now delete the node we just added.
         let delete_request_payload = DeleteGraphNodeRequestPayload {
@@ -341,25 +296,20 @@ mod tests {
         // Verify the node was actually removed from the data.
         let graphs_cache = designer_state.graphs_cache.read().await;
 
-        if let Some(graph_info) =
-            graphs_cache_find_by_id(&graphs_cache, &graph_id_clone)
-        {
+        if let Some(graph_info) = graphs_cache_find_by_id(&graphs_cache, &graph_id_clone) {
             // Check if the node is gone.
-            let node_exists =
-                graph_info.graph.nodes().iter().any(|node| match node {
-                    GraphNode::Extension { content } => {
-                        content.name == "test_delete_node"
-                            && content.addon == "test_addon"
-                    }
-                    _ => false,
-                });
+            let node_exists = graph_info.graph.nodes().iter().any(|node| match node {
+                GraphNode::Extension {
+                    content,
+                } => content.name == "test_delete_node" && content.addon == "test_addon",
+                _ => false,
+            });
             assert!(!node_exists, "Node should have been deleted");
         } else {
             panic!("Graph 'default_with_app_uri' not found");
         }
 
-        let updated_property_content =
-            std::fs::read_to_string(&property_path).unwrap();
+        let updated_property_content = std::fs::read_to_string(&property_path).unwrap();
 
         // Parse the contents as JSON for proper comparison.
         let updated_property: serde_json::Value =

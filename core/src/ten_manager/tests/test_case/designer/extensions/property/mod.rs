@@ -6,21 +6,23 @@
 //
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
-    use std::sync::Arc;
+    use std::{collections::HashMap, sync::Arc};
 
     use actix_web::{http::StatusCode, test, web, App};
-
-    use ten_manager::constants::TEST_DIR;
-    use ten_manager::designer::extensions::property::{
-        get_extension_property_endpoint, GetExtensionPropertyRequestPayload,
-        GetExtensionPropertyResponseData,
+    use ten_manager::{
+        constants::TEST_DIR,
+        designer::{
+            extensions::property::{
+                get_extension_property_endpoint, GetExtensionPropertyRequestPayload,
+                GetExtensionPropertyResponseData,
+            },
+            response::{ApiResponse, Status},
+            storage::in_memory::TmanStorageInMemory,
+            DesignerState,
+        },
+        home::config::TmanConfig,
+        output::cli::TmanOutputCli,
     };
-    use ten_manager::designer::response::{ApiResponse, Status};
-    use ten_manager::designer::storage::in_memory::TmanStorageInMemory;
-    use ten_manager::designer::DesignerState;
-    use ten_manager::home::config::TmanConfig;
-    use ten_manager::output::cli::TmanOutputCli;
 
     use crate::test_case::common::mock::{
         inject_all_pkgs_for_mock, inject_all_standard_pkgs_for_mock,
@@ -30,12 +32,8 @@ mod tests {
     async fn test_get_extension_property_success() {
         // Set up the designer state with initial data.
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -45,24 +43,13 @@ mod tests {
         let all_pkgs_json_str = vec![
             (
                 TEST_DIR.to_string(),
-                include_str!("../../../../test_data/app_manifest.json")
-                    .to_string(),
-                include_str!("../../../../test_data/app_property.json")
-                    .to_string(),
+                include_str!("../../../../test_data/app_manifest.json").to_string(),
+                include_str!("../../../../test_data/app_property.json").to_string(),
             ),
             (
-                format!(
-                    "{}{}",
-                    TEST_DIR, "/ten_packages/extension/extension_addon_1"
-                ),
-                include_str!(
-                    "../../../../test_data/extension_addon_1_manifest.json"
-                )
-                .to_string(),
-                include_str!(
-                    "../../../../test_data/extension_addon_1_property.json"
-                )
-                .to_string(),
+                format!("{}{}", TEST_DIR, "/ten_packages/extension/extension_addon_1"),
+                include_str!("../../../../test_data/extension_addon_1_manifest.json").to_string(),
+                include_str!("../../../../test_data/extension_addon_1_property.json").to_string(),
             ),
         ];
 
@@ -70,24 +57,19 @@ mod tests {
             let mut pkgs_cache = designer_state.pkgs_cache.write().await;
             let mut graphs_cache = designer_state.graphs_cache.write().await;
 
-            let inject_ret = inject_all_pkgs_for_mock(
-                &mut pkgs_cache,
-                &mut graphs_cache,
-                all_pkgs_json_str,
-            )
-            .await;
+            let inject_ret =
+                inject_all_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, all_pkgs_json_str)
+                    .await;
             assert!(inject_ret.is_ok());
         }
 
         let designer_state = Arc::new(designer_state);
 
         // Set up the test service.
-        let app = test::init_service(
-            App::new().app_data(web::Data::new(designer_state)).route(
-                "/api/designer/v1/extensions/property",
-                web::post().to(get_extension_property_endpoint),
-            ),
-        )
+        let app = test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
+            "/api/designer/v1/extensions/property",
+            web::post().to(get_extension_property_endpoint),
+        ))
         .await;
 
         // Create the request payload.
@@ -119,10 +101,7 @@ mod tests {
 
         // Verify the property is returned correctly.
         assert!(api_response.data.property.is_some());
-        println!(
-            "api_response.data.property: {:?}",
-            api_response.data.property
-        );
+        println!("api_response.data.property: {:?}", api_response.data.property);
 
         let property = api_response.data.property.unwrap();
         assert_eq!(property.get("key1").unwrap().as_str().unwrap(), "value1");
@@ -134,12 +113,8 @@ mod tests {
     async fn test_get_extension_property_app_not_found() {
         // Set up the designer state with empty cache.
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -149,12 +124,10 @@ mod tests {
         let designer_state = Arc::new(designer_state);
 
         // Set up the test service
-        let app = test::init_service(
-            App::new().app_data(web::Data::new(designer_state)).route(
-                "/api/designer/v1/extensions/property",
-                web::post().to(get_extension_property_endpoint),
-            ),
-        )
+        let app = test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
+            "/api/designer/v1/extensions/property",
+            web::post().to(get_extension_property_endpoint),
+        ))
         .await;
 
         // Create the request payload with non-existent app.
@@ -180,12 +153,8 @@ mod tests {
     async fn test_get_extension_property_extension_not_found() {
         // Set up the designer state with initial data.
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -196,23 +165,16 @@ mod tests {
             let mut pkgs_cache = designer_state.pkgs_cache.write().await;
             let mut graphs_cache = designer_state.graphs_cache.write().await;
 
-            inject_all_standard_pkgs_for_mock(
-                &mut pkgs_cache,
-                &mut graphs_cache,
-                TEST_DIR,
-            )
-            .await;
+            inject_all_standard_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, TEST_DIR).await;
         }
 
         let designer_state = Arc::new(designer_state);
 
         // Set up the test service.
-        let app = test::init_service(
-            App::new().app_data(web::Data::new(designer_state)).route(
-                "/api/designer/v1/extensions/property",
-                web::post().to(get_extension_property_endpoint),
-            ),
-        )
+        let app = test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
+            "/api/designer/v1/extensions/property",
+            web::post().to(get_extension_property_endpoint),
+        ))
         .await;
 
         // Create the request payload with non-existent extension.
@@ -238,12 +200,8 @@ mod tests {
     async fn test_get_extension_property_no_property() {
         // Set up the designer state with initial data.
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -254,23 +212,16 @@ mod tests {
             let mut pkgs_cache = designer_state.pkgs_cache.write().await;
             let mut graphs_cache = designer_state.graphs_cache.write().await;
 
-            inject_all_standard_pkgs_for_mock(
-                &mut pkgs_cache,
-                &mut graphs_cache,
-                TEST_DIR,
-            )
-            .await;
+            inject_all_standard_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, TEST_DIR).await;
         }
 
         let designer_state = Arc::new(designer_state);
 
         // Set up the test service.
-        let app = test::init_service(
-            App::new().app_data(web::Data::new(designer_state)).route(
-                "/api/designer/v1/extensions/property",
-                web::post().to(get_extension_property_endpoint),
-            ),
-        )
+        let app = test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
+            "/api/designer/v1/extensions/property",
+            web::post().to(get_extension_property_endpoint),
+        ))
         .await;
 
         // Create the request payload.

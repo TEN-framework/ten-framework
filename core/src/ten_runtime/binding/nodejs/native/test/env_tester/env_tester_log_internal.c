@@ -19,6 +19,7 @@ typedef struct ten_env_tester_notify_log_ctx_t {
   ten_string_t func_name;
   ten_string_t file_name;
   int32_t line_no;
+  ten_string_t category;
   ten_string_t msg;
   ten_event_t *completed;
 } ten_env_tester_notify_log_ctx_t;
@@ -33,6 +34,7 @@ static ten_env_tester_notify_log_ctx_t *ten_env_tester_notify_log_ctx_create(
   TEN_STRING_INIT(ctx->func_name);
   TEN_STRING_INIT(ctx->file_name);
   ctx->line_no = 0;
+  TEN_STRING_INIT(ctx->category);
   TEN_STRING_INIT(ctx->msg);
   ctx->completed = ten_event_create(0, 1);
 
@@ -45,6 +47,7 @@ static void ten_env_tester_notify_log_ctx_destroy(
 
   ten_string_deinit(&ctx->func_name);
   ten_string_deinit(&ctx->file_name);
+  ten_string_deinit(&ctx->category);
   ten_string_deinit(&ctx->msg);
   ten_event_destroy(ctx->completed);
 
@@ -64,16 +67,17 @@ static void ten_env_tester_proxy_notify_log(ten_env_tester_t *ten_env_tester,
   ten_env_tester_log(ten_env_tester, ctx->level,
                      ten_string_get_raw_str(&ctx->func_name),
                      ten_string_get_raw_str(&ctx->file_name), ctx->line_no,
-                     ten_string_get_raw_str(&ctx->msg), NULL);
+                     ten_string_get_raw_str(&ctx->msg),
+                     ten_string_get_raw_str(&ctx->category), NULL, NULL);
 
   ten_event_set(ctx->completed);
 }
 
 napi_value ten_nodejs_ten_env_tester_log_internal(napi_env env,
                                                   napi_callback_info info) {
-  const size_t argc = 6;
-  napi_value
-      args[argc];  // ten_env_tester, level, func_name, file_name, line_no, msg
+  const size_t argc = 7;
+  napi_value args[argc];  // ten_env_tester, level, func_name, file_name,
+                          // line_no, category, msg
   if (!ten_nodejs_get_js_func_args(env, info, args, argc)) {
     napi_fatal_error(NULL, NAPI_AUTO_LENGTH,
                      "Incorrect number of parameters passed.",
@@ -123,8 +127,16 @@ napi_value ten_nodejs_ten_env_tester_log_internal(napi_env env,
   RETURN_UNDEFINED_IF_NAPI_FAIL(rc, "Failed to get file name.");
 
   status = napi_get_value_int32(env, args[4], &notify_info->line_no);
+  RETURN_UNDEFINED_IF_NAPI_FAIL(status == napi_ok,
+                                "Failed to get line number: %d", status);
 
-  rc = ten_nodejs_get_str_from_js(env, args[5], &notify_info->msg);
+  napi_value js_category = args[5];
+  if (is_js_string(env, js_category)) {
+    rc = ten_nodejs_get_str_from_js(env, args[5], &notify_info->category);
+    RETURN_UNDEFINED_IF_NAPI_FAIL(rc, "Failed to get category.");
+  }
+
+  rc = ten_nodejs_get_str_from_js(env, args[6], &notify_info->msg);
   RETURN_UNDEFINED_IF_NAPI_FAIL(rc, "Failed to get message.");
 
   ten_error_t err;

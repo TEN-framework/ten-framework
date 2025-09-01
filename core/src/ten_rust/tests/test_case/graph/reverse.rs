@@ -7,10 +7,7 @@
 #[cfg(test)]
 mod tests {
     use ten_rust::graph::{
-        connection::{
-            GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow,
-            GraphSource,
-        },
+        connection::{GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow, GraphSource},
         Graph,
     };
 
@@ -24,11 +21,9 @@ mod tests {
             exposed_properties: None,
             pre_flatten: None,
         };
-        assert!(Graph::convert_reversed_connections_to_forward_connections(
-            &empty_graph
-        )
-        .unwrap()
-        .is_none());
+        assert!(Graph::convert_reversed_connections_to_forward_connections(&empty_graph)
+            .unwrap()
+            .is_none());
     }
 
     #[test]
@@ -68,19 +63,16 @@ mod tests {
             source: vec![],
         }]);
         graph_no_reverse.connections = Some(vec![conn]);
-        assert!(Graph::convert_reversed_connections_to_forward_connections(
-            &graph_no_reverse
-        )
-        .unwrap()
-        .is_none());
+        assert!(Graph::convert_reversed_connections_to_forward_connections(&graph_no_reverse)
+            .unwrap()
+            .is_none());
     }
 
     #[test]
     fn test_basic_reverse_connection() {
         // Basic reverse connection conversion
         let graph: Graph = serde_json::from_str(include_str!(
-            "../../test_data/graph_with_sources/graph_connection_with_source.\
-             json"
+            "../../test_data/graph_with_sources/graph_connection_with_source.json"
         ))
         .unwrap();
 
@@ -90,29 +82,18 @@ mod tests {
 
         // Verify details of the original connection
         let original_conn = &graph.connections.as_ref().unwrap()[0];
-        assert_eq!(
-            original_conn.loc.extension,
-            Some("some_extension".to_string())
-        );
+        assert_eq!(original_conn.loc.extension, Some("some_extension".to_string()));
 
         let original_flow = &original_conn.cmd.as_ref().unwrap()[0];
         assert_eq!(original_flow.name.as_deref(), Some("hello"));
         assert_eq!(original_flow.source.len(), 1);
-        assert_eq!(
-            original_flow.source[0].loc.extension,
-            Some("another_ext".to_string())
-        );
+        assert_eq!(original_flow.source[0].loc.extension, Some("another_ext".to_string()));
 
         // Convert to forward connections
         let converted =
-            Graph::convert_reversed_connections_to_forward_connections(&graph)
-                .unwrap()
-                .unwrap();
+            Graph::convert_reversed_connections_to_forward_connections(&graph).unwrap().unwrap();
 
-        println!(
-            "converted: {}",
-            serde_json::to_string_pretty(&converted).unwrap()
-        );
+        println!("converted: {}", serde_json::to_string_pretty(&converted).unwrap());
 
         // Verify structure of the converted graph
         assert_eq!(converted.nodes.len(), 2);
@@ -126,10 +107,7 @@ mod tests {
         assert_eq!(forward_flow.name.as_deref(), Some("hello"));
         assert_eq!(forward_flow.source.len(), 0);
         assert_eq!(forward_flow.dest.len(), 1);
-        assert_eq!(
-            forward_flow.dest[0].loc.extension,
-            Some("some_extension".to_string())
-        );
+        assert_eq!(forward_flow.dest[0].loc.extension, Some("some_extension".to_string()));
     }
 
     #[test]
@@ -172,35 +150,21 @@ mod tests {
         conn.video_frame = Some(vec![flow]);
         graph_multi_types.connections = Some(vec![conn]);
         let converted =
-            Graph::convert_reversed_connections_to_forward_connections(
-                &graph_multi_types,
-            )
-            .unwrap()
-            .unwrap();
-        assert_eq!(converted.connections.as_ref().unwrap().len(), 1);
-        assert_eq!(
-            converted.connections.as_ref().unwrap()[0]
-                .cmd
-                .as_ref()
+            Graph::convert_reversed_connections_to_forward_connections(&graph_multi_types)
                 .unwrap()
-                .len(),
-            1
-        );
+                .unwrap();
+        assert_eq!(converted.connections.as_ref().unwrap().len(), 1);
+        assert_eq!(converted.connections.as_ref().unwrap()[0].cmd.as_ref().unwrap().len(), 1);
 
         let forward_conn = &converted.connections.as_ref().unwrap()[0];
         assert_eq!(forward_conn.loc.extension, Some("ext2".to_string()));
         assert_eq!(forward_conn.loc.app, Some("app2".to_string()));
 
-        let forward_flow =
-            &converted.connections.as_ref().unwrap()[0].cmd.as_ref().unwrap()
-                [0];
+        let forward_flow = &converted.connections.as_ref().unwrap()[0].cmd.as_ref().unwrap()[0];
         assert_eq!(forward_flow.name.as_deref(), Some("flow1"));
         assert_eq!(forward_flow.source.len(), 0);
         assert_eq!(forward_flow.dest.len(), 1);
-        assert_eq!(
-            forward_flow.dest[0].loc.extension,
-            Some("ext1".to_string())
-        );
+        assert_eq!(forward_flow.dest[0].loc.extension, Some("ext1".to_string()));
         assert_eq!(forward_flow.dest[0].loc.app, Some("app1".to_string()));
         assert_eq!(forward_flow.dest[0].loc.subgraph, None);
     }
@@ -209,20 +173,14 @@ mod tests {
     fn test_merge_duplicate_connections() {
         // Basic reverse connection conversion
         let graph: Graph = serde_json::from_str(include_str!(
-            "../../test_data/graph_with_sources/\
-             graph_connection_duplicate_with_source.json"
+            "../../test_data/graph_with_sources/graph_connection_duplicate_with_source.json"
         ))
         .unwrap();
 
         let converted =
-            Graph::convert_reversed_connections_to_forward_connections(&graph)
-                .unwrap()
-                .unwrap();
+            Graph::convert_reversed_connections_to_forward_connections(&graph).unwrap().unwrap();
 
-        println!(
-            "converted: {}",
-            serde_json::to_string_pretty(&converted).unwrap()
-        );
+        println!("converted: {}", serde_json::to_string_pretty(&converted).unwrap());
 
         // The converted graph should have 2 nodes and 1 connection.
         // The original reverse connection should be merged into one forward
@@ -232,17 +190,9 @@ mod tests {
             converted.connections.as_ref().unwrap()[0].loc.extension,
             Some("another_ext".to_string())
         );
+        assert_eq!(converted.connections.as_ref().unwrap()[0].cmd.as_ref().unwrap().len(), 1);
         assert_eq!(
-            converted.connections.as_ref().unwrap()[0]
-                .cmd
-                .as_ref()
-                .unwrap()
-                .len(),
-            1
-        );
-        assert_eq!(
-            converted.connections.as_ref().unwrap()[0].cmd.as_ref().unwrap()[0]
-                .dest[0]
+            converted.connections.as_ref().unwrap()[0].cmd.as_ref().unwrap()[0].dest[0]
                 .loc
                 .extension,
             Some("some_extension".to_string())
@@ -258,9 +208,7 @@ mod tests {
         .unwrap();
 
         let converted =
-            Graph::convert_reversed_connections_to_forward_connections(&graph)
-                .unwrap()
-                .unwrap();
+            Graph::convert_reversed_connections_to_forward_connections(&graph).unwrap().unwrap();
 
         println!(
             "converted multiple sources: {}",
@@ -296,20 +244,14 @@ mod tests {
     fn test_mixed_forward_reverse_connections() {
         // Test graph with both forward and reverse connections
         let graph: Graph = serde_json::from_str(include_str!(
-            "../../test_data/graph_with_sources/graph_mixed_forward_reverse.\
-             json"
+            "../../test_data/graph_with_sources/graph_mixed_forward_reverse.json"
         ))
         .unwrap();
 
         let converted =
-            Graph::convert_reversed_connections_to_forward_connections(&graph)
-                .unwrap()
-                .unwrap();
+            Graph::convert_reversed_connections_to_forward_connections(&graph).unwrap().unwrap();
 
-        println!(
-            "converted mixed: {}",
-            serde_json::to_string_pretty(&converted).unwrap()
-        );
+        println!("converted mixed: {}", serde_json::to_string_pretty(&converted).unwrap());
 
         assert_eq!(converted.connections.as_ref().unwrap().len(), 2);
 
@@ -338,10 +280,7 @@ mod tests {
             .iter()
             .find(|f| f.name.as_deref() == Some("forward_cmd"))
             .expect("forward_cmd should exist");
-        assert_eq!(
-            forward_flow.dest[0].loc.extension,
-            Some("ext_b".to_string())
-        );
+        assert_eq!(forward_flow.dest[0].loc.extension, Some("ext_b".to_string()));
 
         // Verify reverse connection is converted
         let reverse_flow = ext_c_conn
@@ -351,25 +290,19 @@ mod tests {
             .iter()
             .find(|f| f.name.as_deref() == Some("reverse_cmd"))
             .expect("reverse_cmd should exist");
-        assert_eq!(
-            reverse_flow.dest[0].loc.extension,
-            Some("ext_a".to_string())
-        );
+        assert_eq!(reverse_flow.dest[0].loc.extension, Some("ext_a".to_string()));
     }
 
     #[test]
     fn test_app_and_subgraph_fields() {
         // Test reverse connections with app and subgraph fields
         let graph: Graph = serde_json::from_str(include_str!(
-            "../../test_data/graph_with_sources/graph_with_app_and_subgraph.\
-             json"
+            "../../test_data/graph_with_sources/graph_with_app_and_subgraph.json"
         ))
         .unwrap();
 
         let converted =
-            Graph::convert_reversed_connections_to_forward_connections(&graph)
-                .unwrap()
-                .unwrap();
+            Graph::convert_reversed_connections_to_forward_connections(&graph).unwrap().unwrap();
 
         println!(
             "converted app and subgraph: {}",
@@ -385,10 +318,7 @@ mod tests {
         let forward_flow = &forward_conn.cmd.as_ref().unwrap()[0];
         assert_eq!(forward_flow.name.as_deref(), Some("subgraph_call"));
         assert_eq!(forward_flow.dest[0].loc.subgraph, None);
-        assert_eq!(
-            forward_flow.dest[0].loc.extension,
-            Some("ext1".to_string())
-        );
+        assert_eq!(forward_flow.dest[0].loc.extension, Some("ext1".to_string()));
     }
 
     #[test]
@@ -396,20 +326,14 @@ mod tests {
         // Test all message types (cmd, data, audio_frame, video_frame) with
         // reverse connections
         let graph: Graph = serde_json::from_str(include_str!(
-            "../../test_data/graph_with_sources/\
-             graph_all_message_types_reverse.json"
+            "../../test_data/graph_with_sources/graph_all_message_types_reverse.json"
         ))
         .unwrap();
 
         let converted =
-            Graph::convert_reversed_connections_to_forward_connections(&graph)
-                .unwrap()
-                .unwrap();
+            Graph::convert_reversed_connections_to_forward_connections(&graph).unwrap().unwrap();
 
-        println!(
-            "converted all types: {}",
-            serde_json::to_string_pretty(&converted).unwrap()
-        );
+        println!("converted all types: {}", serde_json::to_string_pretty(&converted).unwrap());
 
         assert_eq!(converted.connections.as_ref().unwrap().len(), 1);
 
@@ -445,20 +369,14 @@ mod tests {
     fn test_multiple_flows_same_connection() {
         // Test connection with multiple flows, some forward, some reverse
         let graph: Graph = serde_json::from_str(include_str!(
-            "../../test_data/graph_with_sources/\
-             graph_multiple_flows_same_connection.json"
+            "../../test_data/graph_with_sources/graph_multiple_flows_same_connection.json"
         ))
         .unwrap();
 
         let converted =
-            Graph::convert_reversed_connections_to_forward_connections(&graph)
-                .unwrap()
-                .unwrap();
+            Graph::convert_reversed_connections_to_forward_connections(&graph).unwrap().unwrap();
 
-        println!(
-            "converted multiple flows: {}",
-            serde_json::to_string_pretty(&converted).unwrap()
-        );
+        println!("converted multiple flows: {}", serde_json::to_string_pretty(&converted).unwrap());
 
         assert_eq!(converted.connections.as_ref().unwrap().len(), 2);
 
@@ -481,20 +399,12 @@ mod tests {
 
         // Original connection should only have the forward flow
         assert_eq!(dest_conn.cmd.as_ref().unwrap().len(), 1);
-        assert_eq!(
-            dest_conn.cmd.as_ref().unwrap()[0].name.as_deref(),
-            Some("flow_gamma")
-        );
+        assert_eq!(dest_conn.cmd.as_ref().unwrap()[0].name.as_deref(), Some("flow_gamma"));
 
         // New forward connection should have 2 flows (from the 2 reverse flows)
         assert_eq!(src_conn.cmd.as_ref().unwrap().len(), 2);
-        let flow_names: Vec<&str> = src_conn
-            .cmd
-            .as_ref()
-            .unwrap()
-            .iter()
-            .map(|f| f.name.as_deref().unwrap())
-            .collect();
+        let flow_names: Vec<&str> =
+            src_conn.cmd.as_ref().unwrap().iter().map(|f| f.name.as_deref().unwrap()).collect();
         assert!(flow_names.contains(&"flow_alpha"));
         assert!(flow_names.contains(&"flow_beta"));
     }
@@ -508,14 +418,9 @@ mod tests {
         .unwrap();
 
         let converted =
-            Graph::convert_reversed_connections_to_forward_connections(&graph)
-                .unwrap()
-                .unwrap();
+            Graph::convert_reversed_connections_to_forward_connections(&graph).unwrap().unwrap();
 
-        println!(
-            "converted source only: {}",
-            serde_json::to_string_pretty(&converted).unwrap()
-        );
+        println!("converted source only: {}", serde_json::to_string_pretty(&converted).unwrap());
 
         assert_eq!(converted.connections.as_ref().unwrap().len(), 1);
 
@@ -524,10 +429,7 @@ mod tests {
 
         let forward_flow = &forward_conn.cmd.as_ref().unwrap()[0];
         assert_eq!(forward_flow.name.as_deref(), Some("source_only_flow"));
-        assert_eq!(
-            forward_flow.dest[0].loc.extension,
-            Some("empty_dest_ext".to_string())
-        );
+        assert_eq!(forward_flow.dest[0].loc.extension, Some("empty_dest_ext".to_string()));
     }
 
     #[test]
@@ -561,10 +463,8 @@ mod tests {
         graph_empty_sources.connections = Some(vec![conn]);
 
         let result =
-            Graph::convert_reversed_connections_to_forward_connections(
-                &graph_empty_sources,
-            )
-            .unwrap();
+            Graph::convert_reversed_connections_to_forward_connections(&graph_empty_sources)
+                .unwrap();
         assert!(result.is_none());
     }
 
@@ -572,8 +472,7 @@ mod tests {
     fn test_complex_merge_scenario() {
         // Test complex scenario with multiple connections that need merging
         let graph_complex: Graph = serde_json::from_str(include_str!(
-            "../../test_data/graph_with_sources/graph_complex_merge_scenario.\
-             json"
+            "../../test_data/graph_with_sources/graph_complex_merge_scenario.json"
         ))
         .unwrap();
 
@@ -583,31 +482,19 @@ mod tests {
 
         // Verify details of original connections
         let original_connections = graph_complex.connections.as_ref().unwrap();
-        assert!(original_connections.iter().any(|c| c.loc.extension
-            == Some("ext1".to_string())
-            && c.cmd.as_ref().unwrap()[0].name.as_deref()
-                == Some("shared_flow")
-            && c.cmd.as_ref().unwrap()[0].source[0].loc.extension
-                == Some("ext2".to_string())));
-        assert!(original_connections.iter().any(|c| c.loc.extension
-            == Some("ext3".to_string())
-            && c.cmd.as_ref().unwrap()[0].name.as_deref()
-                == Some("shared_flow")
-            && c.cmd.as_ref().unwrap()[0].source[0].loc.extension
-                == Some("ext2".to_string())));
+        assert!(original_connections.iter().any(|c| c.loc.extension == Some("ext1".to_string())
+            && c.cmd.as_ref().unwrap()[0].name.as_deref() == Some("shared_flow")
+            && c.cmd.as_ref().unwrap()[0].source[0].loc.extension == Some("ext2".to_string())));
+        assert!(original_connections.iter().any(|c| c.loc.extension == Some("ext3".to_string())
+            && c.cmd.as_ref().unwrap()[0].name.as_deref() == Some("shared_flow")
+            && c.cmd.as_ref().unwrap()[0].source[0].loc.extension == Some("ext2".to_string())));
 
         // Convert to forward connections
-        let converted =
-            Graph::convert_reversed_connections_to_forward_connections(
-                &graph_complex,
-            )
+        let converted = Graph::convert_reversed_connections_to_forward_connections(&graph_complex)
             .unwrap()
             .unwrap();
 
-        println!(
-            "converted complex merge: {}",
-            serde_json::to_string_pretty(&converted).unwrap()
-        );
+        println!("converted complex merge: {}", serde_json::to_string_pretty(&converted).unwrap());
 
         // Verify structure of the converted graph
         assert_eq!(converted.nodes.len(), 3);
@@ -623,11 +510,8 @@ mod tests {
         assert_eq!(forward_flow.dest.len(), 2);
 
         // Verify both destinations are present
-        let dest_extensions: Vec<&str> = forward_flow
-            .dest
-            .iter()
-            .map(|d| d.loc.extension.as_ref().unwrap().as_str())
-            .collect();
+        let dest_extensions: Vec<&str> =
+            forward_flow.dest.iter().map(|d| d.loc.extension.as_ref().unwrap().as_str()).collect();
         assert!(dest_extensions.contains(&"ext1"));
         assert!(dest_extensions.contains(&"ext3"));
     }
@@ -640,9 +524,7 @@ mod tests {
         .unwrap();
 
         let converted =
-            Graph::convert_reversed_connections_to_forward_connections(&graph)
-                .unwrap()
-                .unwrap();
+            Graph::convert_reversed_connections_to_forward_connections(&graph).unwrap().unwrap();
 
         println!(
             "converted graph with app uri: {}",
@@ -659,8 +541,7 @@ mod tests {
             Some("test_extension_1".to_string())
         );
         assert_eq!(
-            converted.connections.as_ref().unwrap()[0].cmd.as_ref().unwrap()[0]
-                .dest[0]
+            converted.connections.as_ref().unwrap()[0].cmd.as_ref().unwrap()[0].dest[0]
                 .loc
                 .extension,
             Some("test_extension_2".to_string())

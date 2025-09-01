@@ -5,6 +5,7 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 use std::{env, sync::Mutex};
+
 use tempfile::TempDir;
 
 // # Problem
@@ -60,7 +61,10 @@ impl TempHome {
         let temp_dir = TempDir::new().expect("Failed to create temp directory");
         env::set_var("TEN_MANAGER_HOME_INTERNAL_USE_ONLY", temp_dir.path());
 
-        Self { _temp_dir: temp_dir, _guard: guard }
+        Self {
+            _temp_dir: temp_dir,
+            _guard: guard,
+        }
     }
 
     /// Get the path to the temporary home directory

@@ -4,18 +4,15 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-use std::collections::HashMap;
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 use actix_web::{test, web, App};
 use serde_json::json;
-
 use ten_manager::{
     constants::TEST_DIR,
     designer::{
         messages::compatible::{
-            get_compatible_messages_endpoint,
-            GetCompatibleMsgsSingleResponseData,
+            get_compatible_messages_endpoint, GetCompatibleMsgsSingleResponseData,
         },
         response::ApiResponse,
         storage::in_memory::TmanStorageInMemory,
@@ -33,9 +30,7 @@ use crate::test_case::common::mock::inject_all_pkgs_for_mock;
 async fn test_get_compatible_messages_success() {
     let designer_state = DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-            TmanStorageInMemory::default(),
-        )),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -46,25 +41,16 @@ async fn test_get_compatible_messages_success() {
         (
             TEST_DIR.to_string(),
             include_str!("../../../test_data/app_manifest.json").to_string(),
-            include_str!("../../../test_data/app_property_without_uri.json")
-                .to_string(),
+            include_str!("../../../test_data/app_property_without_uri.json").to_string(),
         ),
         (
-            format!(
-                "{}{}",
-                TEST_DIR, "/ten_packages/extension/extension_addon_1"
-            ),
-            include_str!("../../../test_data/extension_addon_1_manifest.json")
-                .to_string(),
+            format!("{}{}", TEST_DIR, "/ten_packages/extension/extension_addon_1"),
+            include_str!("../../../test_data/extension_addon_1_manifest.json").to_string(),
             "{}".to_string(),
         ),
         (
-            format!(
-                "{}{}",
-                TEST_DIR, "/ten_packages/extension/extension_addon_2"
-            ),
-            include_str!("../../../test_data/extension_addon_2_manifest.json")
-                .to_string(),
+            format!("{}{}", TEST_DIR, "/ten_packages/extension/extension_addon_2"),
+            include_str!("../../../test_data/extension_addon_2_manifest.json").to_string(),
             "{}".to_string(),
         ),
     ];
@@ -73,12 +59,8 @@ async fn test_get_compatible_messages_success() {
         let mut pkgs_cache = designer_state.pkgs_cache.write().await;
         let mut graphs_cache = designer_state.graphs_cache.write().await;
 
-        let inject_ret = inject_all_pkgs_for_mock(
-            &mut pkgs_cache,
-            &mut graphs_cache,
-            all_pkgs_json_str,
-        )
-        .await;
+        let inject_ret =
+            inject_all_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, all_pkgs_json_str).await;
         assert!(inject_ret.is_ok());
     }
 
@@ -86,8 +68,7 @@ async fn test_get_compatible_messages_success() {
     let graph_id = {
         let graphs_cache = &designer_state.graphs_cache.read().await;
         let graph_id = graphs_cache.iter().find_map(|(uuid, info)| {
-            if info.name.as_ref().map(|name| name == "default").unwrap_or(false)
-            {
+            if info.name.as_ref().map(|name| name == "default").unwrap_or(false) {
                 Some(*uuid)
             } else {
                 None
@@ -103,12 +84,10 @@ async fn test_get_compatible_messages_success() {
 
     let designer_state = Arc::new(designer_state);
 
-    let app = test::init_service(
-        App::new().app_data(web::Data::new(designer_state)).route(
-            "/api/designer/v1/messages/compatible",
-            web::post().to(get_compatible_messages_endpoint),
-        ),
-    )
+    let app = test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
+        "/api/designer/v1/messages/compatible",
+        web::post().to(get_compatible_messages_endpoint),
+    ))
     .await;
 
     // Define input data.
@@ -157,9 +136,7 @@ async fn test_get_compatible_messages_success() {
 async fn test_get_compatible_messages_fail() {
     let designer_state = DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-            TmanStorageInMemory::default(),
-        )),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -170,25 +147,16 @@ async fn test_get_compatible_messages_fail() {
         (
             TEST_DIR.to_string(),
             include_str!("../../../test_data/app_manifest.json").to_string(),
-            include_str!("../../../test_data/app_property_without_uri.json")
-                .to_string(),
+            include_str!("../../../test_data/app_property_without_uri.json").to_string(),
         ),
         (
-            format!(
-                "{}{}",
-                TEST_DIR, "/ten_packages/extension/extension_addon_1"
-            ),
-            include_str!("../../../test_data/extension_addon_1_manifest.json")
-                .to_string(),
+            format!("{}{}", TEST_DIR, "/ten_packages/extension/extension_addon_1"),
+            include_str!("../../../test_data/extension_addon_1_manifest.json").to_string(),
             "{}".to_string(),
         ),
         (
-            format!(
-                "{}{}",
-                TEST_DIR, "/ten_packages/extension/extension_addon_2"
-            ),
-            include_str!("../../../test_data/extension_addon_2_manifest.json")
-                .to_string(),
+            format!("{}{}", TEST_DIR, "/ten_packages/extension/extension_addon_2"),
+            include_str!("../../../test_data/extension_addon_2_manifest.json").to_string(),
             "{}".to_string(),
         ),
     ];
@@ -197,12 +165,8 @@ async fn test_get_compatible_messages_fail() {
         let mut pkgs_cache = designer_state.pkgs_cache.write().await;
         let mut graphs_cache = designer_state.graphs_cache.write().await;
 
-        let inject_ret = inject_all_pkgs_for_mock(
-            &mut pkgs_cache,
-            &mut graphs_cache,
-            all_pkgs_json_str,
-        )
-        .await;
+        let inject_ret =
+            inject_all_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, all_pkgs_json_str).await;
         assert!(inject_ret.is_ok());
     }
 
@@ -212,12 +176,7 @@ async fn test_get_compatible_messages_fail() {
         graphs_cache
             .iter()
             .find_map(|(uuid, info)| {
-                if info
-                    .name
-                    .as_ref()
-                    .map(|name| name == "default")
-                    .unwrap_or(false)
-                {
+                if info.name.as_ref().map(|name| name == "default").unwrap_or(false) {
                     Some(*uuid)
                 } else {
                     None
@@ -228,12 +187,10 @@ async fn test_get_compatible_messages_fail() {
 
     let designer_state = Arc::new(designer_state);
 
-    let app = test::init_service(
-        App::new().app_data(web::Data::new(designer_state)).route(
-            "/api/designer/v1/messages/compatible",
-            web::post().to(get_compatible_messages_endpoint),
-        ),
-    )
+    let app = test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
+        "/api/designer/v1/messages/compatible",
+        web::post().to(get_compatible_messages_endpoint),
+    ))
     .await;
 
     // Define input data.
@@ -262,9 +219,7 @@ async fn test_get_compatible_messages_fail() {
 async fn test_get_compatible_messages_cmd_has_required_success_1() {
     let designer_state = DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-            TmanStorageInMemory::default(),
-        )),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -275,25 +230,16 @@ async fn test_get_compatible_messages_cmd_has_required_success_1() {
         (
             TEST_DIR.to_string(),
             include_str!("../../../test_data/app_manifest.json").to_string(),
-            include_str!("../../../test_data/app_property_without_uri.json")
-                .to_string(),
+            include_str!("../../../test_data/app_property_without_uri.json").to_string(),
         ),
         (
-            format!(
-                "{}{}",
-                TEST_DIR, "/ten_packages/extension/extension_addon_1"
-            ),
-            include_str!("../../../test_data/extension_addon_1_manifest.json")
-                .to_string(),
+            format!("{}{}", TEST_DIR, "/ten_packages/extension/extension_addon_1"),
+            include_str!("../../../test_data/extension_addon_1_manifest.json").to_string(),
             "{}".to_string(),
         ),
         (
-            format!(
-                "{}{}",
-                TEST_DIR, "/ten_packages/extension/extension_addon_2"
-            ),
-            include_str!("../../../test_data/extension_addon_2_manifest.json")
-                .to_string(),
+            format!("{}{}", TEST_DIR, "/ten_packages/extension/extension_addon_2"),
+            include_str!("../../../test_data/extension_addon_2_manifest.json").to_string(),
             "{}".to_string(),
         ),
     ];
@@ -302,12 +248,8 @@ async fn test_get_compatible_messages_cmd_has_required_success_1() {
         let mut pkgs_cache = designer_state.pkgs_cache.write().await;
         let mut graphs_cache = designer_state.graphs_cache.write().await;
 
-        let inject_ret = inject_all_pkgs_for_mock(
-            &mut pkgs_cache,
-            &mut graphs_cache,
-            all_pkgs_json_str,
-        )
-        .await;
+        let inject_ret =
+            inject_all_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, all_pkgs_json_str).await;
         assert!(inject_ret.is_ok());
     }
 
@@ -317,12 +259,7 @@ async fn test_get_compatible_messages_cmd_has_required_success_1() {
         graphs_cache
             .iter()
             .find_map(|(uuid, info)| {
-                if info
-                    .name
-                    .as_ref()
-                    .map(|name| name == "default")
-                    .unwrap_or(false)
-                {
+                if info.name.as_ref().map(|name| name == "default").unwrap_or(false) {
                     Some(*uuid)
                 } else {
                     None
@@ -333,12 +270,10 @@ async fn test_get_compatible_messages_cmd_has_required_success_1() {
 
     let designer_state = Arc::new(designer_state);
 
-    let app = test::init_service(
-        App::new().app_data(web::Data::new(designer_state)).route(
-            "/api/designer/v1/messages/compatible",
-            web::post().to(get_compatible_messages_endpoint),
-        ),
-    )
+    let app = test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
+        "/api/designer/v1/messages/compatible",
+        web::post().to(get_compatible_messages_endpoint),
+    ))
     .await;
 
     // Define input data. This time we check cmd msg with required_fields.
@@ -390,9 +325,7 @@ async fn test_get_compatible_messages_cmd_has_required_success_1() {
 async fn test_get_compatible_messages_cmd_has_required_success_2() {
     let designer_state = DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-            TmanStorageInMemory::default(),
-        )),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -403,25 +336,16 @@ async fn test_get_compatible_messages_cmd_has_required_success_2() {
         (
             TEST_DIR.to_string(),
             include_str!("../../../test_data/app_manifest.json").to_string(),
-            include_str!("../../../test_data/app_property_without_uri.json")
-                .to_string(),
+            include_str!("../../../test_data/app_property_without_uri.json").to_string(),
         ),
         (
-            format!(
-                "{}{}",
-                TEST_DIR, "/ten_packages/extension/extension_addon_1"
-            ),
-            include_str!("../../../test_data/extension_addon_1_manifest.json")
-                .to_string(),
+            format!("{}{}", TEST_DIR, "/ten_packages/extension/extension_addon_1"),
+            include_str!("../../../test_data/extension_addon_1_manifest.json").to_string(),
             "{}".to_string(),
         ),
         (
-            format!(
-                "{}{}",
-                TEST_DIR, "/ten_packages/extension/extension_addon_2"
-            ),
-            include_str!("../../../test_data/extension_addon_2_manifest.json")
-                .to_string(),
+            format!("{}{}", TEST_DIR, "/ten_packages/extension/extension_addon_2"),
+            include_str!("../../../test_data/extension_addon_2_manifest.json").to_string(),
             "{}".to_string(),
         ),
     ];
@@ -430,12 +354,8 @@ async fn test_get_compatible_messages_cmd_has_required_success_2() {
         let mut pkgs_cache = designer_state.pkgs_cache.write().await;
         let mut graphs_cache = designer_state.graphs_cache.write().await;
 
-        let inject_ret = inject_all_pkgs_for_mock(
-            &mut pkgs_cache,
-            &mut graphs_cache,
-            all_pkgs_json_str,
-        )
-        .await;
+        let inject_ret =
+            inject_all_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, all_pkgs_json_str).await;
         assert!(inject_ret.is_ok());
     }
 
@@ -445,12 +365,7 @@ async fn test_get_compatible_messages_cmd_has_required_success_2() {
         graphs_cache
             .iter()
             .find_map(|(uuid, info)| {
-                if info
-                    .name
-                    .as_ref()
-                    .map(|name| name == "default")
-                    .unwrap_or(false)
-                {
+                if info.name.as_ref().map(|name| name == "default").unwrap_or(false) {
                     Some(*uuid)
                 } else {
                     None
@@ -461,12 +376,10 @@ async fn test_get_compatible_messages_cmd_has_required_success_2() {
 
     let designer_state = Arc::new(designer_state);
 
-    let app = test::init_service(
-        App::new().app_data(web::Data::new(designer_state)).route(
-            "/api/designer/v1/messages/compatible",
-            web::post().to(get_compatible_messages_endpoint),
-        ),
-    )
+    let app = test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
+        "/api/designer/v1/messages/compatible",
+        web::post().to(get_compatible_messages_endpoint),
+    ))
     .await;
 
     // Define input data. This time we check cmd msg with required_fields.
@@ -518,9 +431,7 @@ async fn test_get_compatible_messages_cmd_has_required_success_2() {
 async fn test_get_compatible_messages_cmd_has_required_success_3() {
     let designer_state = DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-            TmanStorageInMemory::default(),
-        )),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -531,25 +442,16 @@ async fn test_get_compatible_messages_cmd_has_required_success_3() {
         (
             TEST_DIR.to_string(),
             include_str!("../../../test_data/app_manifest.json").to_string(),
-            include_str!("../../../test_data/app_property_without_uri.json")
-                .to_string(),
+            include_str!("../../../test_data/app_property_without_uri.json").to_string(),
         ),
         (
-            format!(
-                "{}{}",
-                TEST_DIR, "/ten_packages/extension/extension_addon_1"
-            ),
-            include_str!("../../../test_data/extension_addon_1_manifest.json")
-                .to_string(),
+            format!("{}{}", TEST_DIR, "/ten_packages/extension/extension_addon_1"),
+            include_str!("../../../test_data/extension_addon_1_manifest.json").to_string(),
             "{}".to_string(),
         ),
         (
-            format!(
-                "{}{}",
-                TEST_DIR, "/ten_packages/extension/extension_addon_2"
-            ),
-            include_str!("../../../test_data/extension_addon_2_manifest.json")
-                .to_string(),
+            format!("{}{}", TEST_DIR, "/ten_packages/extension/extension_addon_2"),
+            include_str!("../../../test_data/extension_addon_2_manifest.json").to_string(),
             "{}".to_string(),
         ),
     ];
@@ -558,12 +460,8 @@ async fn test_get_compatible_messages_cmd_has_required_success_3() {
         let mut pkgs_cache = designer_state.pkgs_cache.write().await;
         let mut graphs_cache = designer_state.graphs_cache.write().await;
 
-        let inject_ret = inject_all_pkgs_for_mock(
-            &mut pkgs_cache,
-            &mut graphs_cache,
-            all_pkgs_json_str,
-        )
-        .await;
+        let inject_ret =
+            inject_all_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, all_pkgs_json_str).await;
         assert!(inject_ret.is_ok());
     }
 
@@ -573,12 +471,7 @@ async fn test_get_compatible_messages_cmd_has_required_success_3() {
         graphs_cache
             .iter()
             .find_map(|(uuid, info)| {
-                if info
-                    .name
-                    .as_ref()
-                    .map(|name| name == "default")
-                    .unwrap_or(false)
-                {
+                if info.name.as_ref().map(|name| name == "default").unwrap_or(false) {
                     Some(*uuid)
                 } else {
                     None
@@ -589,12 +482,10 @@ async fn test_get_compatible_messages_cmd_has_required_success_3() {
 
     let designer_state = Arc::new(designer_state);
 
-    let app = test::init_service(
-        App::new().app_data(web::Data::new(designer_state)).route(
-            "/api/designer/v1/messages/compatible",
-            web::post().to(get_compatible_messages_endpoint),
-        ),
-    )
+    let app = test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
+        "/api/designer/v1/messages/compatible",
+        web::post().to(get_compatible_messages_endpoint),
+    ))
     .await;
 
     // Define input data. This time we check cmd msg with required_fields.
@@ -646,9 +537,7 @@ async fn test_get_compatible_messages_cmd_has_required_success_3() {
 async fn test_get_compatible_messages_cmd_has_required_success_4() {
     let designer_state = DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-            TmanStorageInMemory::default(),
-        )),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -659,25 +548,16 @@ async fn test_get_compatible_messages_cmd_has_required_success_4() {
         (
             TEST_DIR.to_string(),
             include_str!("../../../test_data/app_manifest.json").to_string(),
-            include_str!("../../../test_data/app_property_without_uri.json")
-                .to_string(),
+            include_str!("../../../test_data/app_property_without_uri.json").to_string(),
         ),
         (
-            format!(
-                "{}{}",
-                TEST_DIR, "/ten_packages/extension/extension_addon_1"
-            ),
-            include_str!("../../../test_data/extension_addon_1_manifest.json")
-                .to_string(),
+            format!("{}{}", TEST_DIR, "/ten_packages/extension/extension_addon_1"),
+            include_str!("../../../test_data/extension_addon_1_manifest.json").to_string(),
             "{}".to_string(),
         ),
         (
-            format!(
-                "{}{}",
-                TEST_DIR, "/ten_packages/extension/extension_addon_2"
-            ),
-            include_str!("../../../test_data/extension_addon_2_manifest.json")
-                .to_string(),
+            format!("{}{}", TEST_DIR, "/ten_packages/extension/extension_addon_2"),
+            include_str!("../../../test_data/extension_addon_2_manifest.json").to_string(),
             "{}".to_string(),
         ),
     ];
@@ -686,12 +566,8 @@ async fn test_get_compatible_messages_cmd_has_required_success_4() {
         let mut pkgs_cache = designer_state.pkgs_cache.write().await;
         let mut graphs_cache = designer_state.graphs_cache.write().await;
 
-        let inject_ret = inject_all_pkgs_for_mock(
-            &mut pkgs_cache,
-            &mut graphs_cache,
-            all_pkgs_json_str,
-        )
-        .await;
+        let inject_ret =
+            inject_all_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, all_pkgs_json_str).await;
         assert!(inject_ret.is_ok());
     }
 
@@ -701,12 +577,7 @@ async fn test_get_compatible_messages_cmd_has_required_success_4() {
         graphs_cache
             .iter()
             .find_map(|(uuid, info)| {
-                if info
-                    .name
-                    .as_ref()
-                    .map(|name| name == "default")
-                    .unwrap_or(false)
-                {
+                if info.name.as_ref().map(|name| name == "default").unwrap_or(false) {
                     Some(*uuid)
                 } else {
                     None
@@ -717,12 +588,10 @@ async fn test_get_compatible_messages_cmd_has_required_success_4() {
 
     let designer_state = Arc::new(designer_state);
 
-    let app = test::init_service(
-        App::new().app_data(web::Data::new(designer_state)).route(
-            "/api/designer/v1/messages/compatible",
-            web::post().to(get_compatible_messages_endpoint),
-        ),
-    )
+    let app = test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
+        "/api/designer/v1/messages/compatible",
+        web::post().to(get_compatible_messages_endpoint),
+    ))
     .await;
 
     // Define input data. This time we check cmd msg with required_fields.
@@ -761,9 +630,7 @@ async fn test_get_compatible_messages_cmd_has_required_success_4() {
 async fn test_get_compatible_messages_with_interface() {
     let designer_state = DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-            TmanStorageInMemory::default(),
-        )),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -779,8 +646,7 @@ async fn test_get_compatible_messages_with_interface() {
         let _ = get_all_pkgs_in_app(
             &mut pkgs_cache,
             &mut graphs_cache,
-            &"tests/test_data/graph_add_connection_to_extension_with_interface"
-                .to_string(),
+            &"tests/test_data/graph_add_connection_to_extension_with_interface".to_string(),
         )
         .await;
     }
@@ -791,12 +657,7 @@ async fn test_get_compatible_messages_with_interface() {
         graphs_cache
             .iter()
             .find_map(|(uuid, info)| {
-                if info
-                    .name
-                    .as_ref()
-                    .map(|name| name == "default")
-                    .unwrap_or(false)
-                {
+                if info.name.as_ref().map(|name| name == "default").unwrap_or(false) {
                     Some(*uuid)
                 } else {
                     None
@@ -805,12 +666,10 @@ async fn test_get_compatible_messages_with_interface() {
             .expect("Default graph should exist")
     };
 
-    let app = test::init_service(
-        App::new().app_data(web::Data::new(designer_state)).route(
-            "/api/designer/v1/messages/compatible",
-            web::post().to(get_compatible_messages_endpoint),
-        ),
-    )
+    let app = test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
+        "/api/designer/v1/messages/compatible",
+        web::post().to(get_compatible_messages_endpoint),
+    ))
     .await;
 
     // Define input data. This time we check cmd msg with required_fields.
@@ -856,9 +715,7 @@ async fn test_get_compatible_messages_with_interface() {
 async fn test_get_compatible_messages_with_interface_2() {
     let designer_state = DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-            TmanStorageInMemory::default(),
-        )),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -874,8 +731,7 @@ async fn test_get_compatible_messages_with_interface_2() {
         let _ = get_all_pkgs_in_app(
             &mut pkgs_cache,
             &mut graphs_cache,
-            &"tests/test_data/graph_add_connection_to_extension_with_interface"
-                .to_string(),
+            &"tests/test_data/graph_add_connection_to_extension_with_interface".to_string(),
         )
         .await;
     }
@@ -886,12 +742,7 @@ async fn test_get_compatible_messages_with_interface_2() {
         graphs_cache
             .iter()
             .find_map(|(uuid, info)| {
-                if info
-                    .name
-                    .as_ref()
-                    .map(|name| name == "default")
-                    .unwrap_or(false)
-                {
+                if info.name.as_ref().map(|name| name == "default").unwrap_or(false) {
                     Some(*uuid)
                 } else {
                     None
@@ -900,12 +751,10 @@ async fn test_get_compatible_messages_with_interface_2() {
             .expect("Default graph should exist")
     };
 
-    let app = test::init_service(
-        App::new().app_data(web::Data::new(designer_state)).route(
-            "/api/designer/v1/messages/compatible",
-            web::post().to(get_compatible_messages_endpoint),
-        ),
-    )
+    let app = test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
+        "/api/designer/v1/messages/compatible",
+        web::post().to(get_compatible_messages_endpoint),
+    ))
     .await;
 
     // Define input data. This time we check cmd msg with required_fields.

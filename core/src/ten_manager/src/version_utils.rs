@@ -17,20 +17,18 @@ use crate::{
 };
 
 /// Used to parse a pattern like `aaa@3.0.0` and return `aaa` and `3.0.0`.
-pub fn parse_pkg_name_version_req(
-    pkg_name_version: &str,
-) -> Result<(String, VersionReq)> {
+pub fn parse_pkg_name_version_req(pkg_name_version: &str) -> Result<(String, VersionReq)> {
     let parts: Vec<&str> = pkg_name_version.split('@').collect();
     if parts.len() == 2 {
         // Currently, tman uses the Rust semver crate, while the cloud store
         // uses the npm semver package. The semver requirement specifications of
         // these two packages are not completely identical. For example:
         //
-        // - The Rust semver crate uses "," to separate different ranges,
-        //   whereas the npm semver package uses a space (" ") to separate
-        //   different requirement ranges.
-        // - The npm semver package uses "||" to unify different ranges, but the
-        //   Rust semver crate does not support this feature.
+        // - The Rust semver crate uses "," to separate different ranges, whereas the
+        //   npm semver package uses a space (" ") to separate different requirement
+        //   ranges.
+        // - The npm semver package uses "||" to unify different ranges, but the Rust
+        //   semver crate does not support this feature.
         //
         // Since TEN is a cross-language system, it needs to define its own
         // semver requirement specification. This specification could follow
@@ -45,8 +43,8 @@ pub fn parse_pkg_name_version_req(
             || parts[1].contains(",")
         {
             return Err(anyhow!(
-                "Invalid version requirement '{}' in package name version \
-                 string: contains forbidden characters (||, whitespace, or ,)",
+                "Invalid version requirement '{}' in package name version string: contains \
+                 forbidden characters (||, whitespace, or ,)",
                 parts[1]
             ));
         }
@@ -71,35 +69,26 @@ pub async fn check_update() -> Result<(bool, String), String> {
         .await
         .map_err(|e| {
             if e.is_timeout() {
-                "Check for updates timed out. Please try again later."
-                    .to_string()
+                "Check for updates timed out. Please try again later.".to_string()
             } else {
                 format!("Failed to check for updates: {e}")
             }
         })?;
 
     if !response.status().is_success() {
-        return Err(format!(
-            "Failed to check for updates: {}",
-            response.status()
-        ));
+        return Err(format!("Failed to check for updates: {}", response.status()));
     }
 
-    let json: Value = response
-        .json()
-        .await
-        .map_err(|e| format!("Failed to parse update information: {e}"))?;
-    let latest_version =
-        json.get("tag_name").and_then(|v| v.as_str()).unwrap_or("").to_string();
+    let json: Value =
+        response.json().await.map_err(|e| format!("Failed to parse update information: {e}"))?;
+    let latest_version = json.get("tag_name").and_then(|v| v.as_str()).unwrap_or("").to_string();
 
     if latest_version.is_empty() {
         return Err("Failed to get the latest version information.".to_string());
     }
 
-    let current_version =
-        Version::parse(VERSION).unwrap_or(Version::new(0, 0, 0));
-    let latest_semver =
-        Version::parse(&latest_version).unwrap_or(Version::new(0, 0, 0));
+    let current_version = Version::parse(VERSION).unwrap_or(Version::new(0, 0, 0));
+    let latest_semver = Version::parse(&latest_version).unwrap_or(Version::new(0, 0, 0));
 
     Ok((latest_semver > current_version, latest_version))
 }

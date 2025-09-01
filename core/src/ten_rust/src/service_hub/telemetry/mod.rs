@@ -11,19 +11,14 @@ pub mod histogram;
 pub use histogram::*;
 
 pub mod gauge;
-pub use gauge::*;
-
-use std::ffi::CStr;
-use std::os::raw::c_char;
-use std::ptr;
+use std::{ffi::CStr, os::raw::c_char, ptr};
 
 use actix_web::{web, HttpResponse};
-
+pub use gauge::*;
 use prometheus::{Encoder, Registry, TextEncoder};
 
-use crate::constants::METRICS;
-
 use super::ServiceHub;
+use crate::constants::METRICS;
 
 pub enum MetricHandle {
     Counter(prometheus::Counter),
@@ -34,10 +29,7 @@ pub enum MetricHandle {
     HistogramVec(prometheus::HistogramVec),
 }
 
-pub fn configure_telemetry_route(
-    cfg: &mut web::ServiceConfig,
-    registry: Registry,
-) {
+pub fn configure_telemetry_route(cfg: &mut web::ServiceConfig, registry: Registry) {
     cfg.route(
         METRICS,
         web::get().to(move || {
@@ -142,13 +134,11 @@ pub unsafe extern "C" fn ten_metric_create(
         Err(_) => return ptr::null_mut(),
     };
 
-    let label_names_owned =
-        match convert_label_names(label_names_ptr, label_names_len) {
-            Some(v) => v,
-            None => return ptr::null_mut(),
-        };
-    let label_names: Vec<&str> =
-        label_names_owned.iter().map(|s| s.as_str()).collect();
+    let label_names_owned = match convert_label_names(label_names_ptr, label_names_len) {
+        Some(v) => v,
+        None => return ptr::null_mut(),
+    };
+    let label_names: Vec<&str> = label_names_owned.iter().map(|s| s.as_str()).collect();
 
     let metric_handle = match metric_type {
         0 => {
@@ -159,12 +149,7 @@ pub unsafe extern "C" fn ten_metric_create(
                     Err(_) => return ptr::null_mut(),
                 }
             } else {
-                match create_metric_counter_with_labels(
-                    system,
-                    name_str,
-                    help_str,
-                    &label_names,
-                ) {
+                match create_metric_counter_with_labels(system, name_str, help_str, &label_names) {
                     Ok(metric) => metric,
                     Err(_) => return ptr::null_mut(),
                 }
@@ -178,12 +163,7 @@ pub unsafe extern "C" fn ten_metric_create(
                     Err(_) => return ptr::null_mut(),
                 }
             } else {
-                match create_metric_gauge_with_labels(
-                    system,
-                    name_str,
-                    help_str,
-                    &label_names,
-                ) {
+                match create_metric_gauge_with_labels(system, name_str, help_str, &label_names) {
                     Ok(metric) => metric,
                     Err(_) => return ptr::null_mut(),
                 }
@@ -197,12 +177,8 @@ pub unsafe extern "C" fn ten_metric_create(
                     Err(_) => return ptr::null_mut(),
                 }
             } else {
-                match create_metric_histogram_with_labels(
-                    system,
-                    name_str,
-                    help_str,
-                    &label_names,
-                ) {
+                match create_metric_histogram_with_labels(system, name_str, help_str, &label_names)
+                {
                     Ok(metric) => metric,
                     Err(_) => return ptr::null_mut(),
                 }

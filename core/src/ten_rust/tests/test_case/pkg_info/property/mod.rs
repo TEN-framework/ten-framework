@@ -32,15 +32,8 @@ mod tests {
 
         let mut graphs_cache = HashMap::new();
 
-        let property = parse_property_from_str(
-            json_data,
-            &mut graphs_cache,
-            None,
-            None,
-            None,
-        )
-        .await
-        .unwrap();
+        let property =
+            parse_property_from_str(json_data, &mut graphs_cache, None, None, None).await.unwrap();
 
         assert!(property.ten.is_some());
         let ten_in_property = property.ten.unwrap();
@@ -66,15 +59,8 @@ mod tests {
 
         let mut graphs_cache = HashMap::new();
 
-        let property = parse_property_from_str(
-            json_data,
-            &mut graphs_cache,
-            None,
-            None,
-            None,
-        )
-        .await
-        .unwrap();
+        let property =
+            parse_property_from_str(json_data, &mut graphs_cache, None, None, None).await.unwrap();
 
         assert!(property.ten.is_some());
         let ten_in_property = property.ten.unwrap();
@@ -84,12 +70,7 @@ mod tests {
         // Should contain ten and global_field_1.
         assert_eq!(property.other_fields.as_ref().unwrap().len(), 1);
         assert_eq!(
-            property
-                .other_fields
-                .as_ref()
-                .unwrap()
-                .get("global_field_1")
-                .unwrap(),
+            property.other_fields.as_ref().unwrap().get("global_field_1").unwrap(),
             "global_value1"
         );
     }
@@ -100,15 +81,8 @@ mod tests {
 
         let json_str = include_str!("../../../test_data/property.json");
 
-        let property = parse_property_from_str(
-            json_str,
-            &mut graphs_cache,
-            None,
-            None,
-            None,
-        )
-        .await
-        .unwrap();
+        let property =
+            parse_property_from_str(json_str, &mut graphs_cache, None, None, None).await.unwrap();
         assert!(property.ten.is_some());
 
         let graph_info = graphs_cache.values().next().unwrap();
@@ -128,21 +102,12 @@ mod tests {
 
     #[tokio::test]
     async fn test_dump_property_with_msg_conversion() {
-        let prop_str = include_str!(
-            "../../../test_data/dump_property_with_msg_conversion.json"
-        );
+        let prop_str = include_str!("../../../test_data/dump_property_with_msg_conversion.json");
 
         let mut graphs_cache = HashMap::new();
 
-        let property = parse_property_from_str(
-            prop_str,
-            &mut graphs_cache,
-            None,
-            None,
-            None,
-        )
-        .await
-        .unwrap();
+        let property =
+            parse_property_from_str(prop_str, &mut graphs_cache, None, None, None).await.unwrap();
         assert!(property.ten.is_some());
 
         let graph_info = graphs_cache.values().next().unwrap();
@@ -155,8 +120,7 @@ mod tests {
         let cmd_dest = &cmd.first().unwrap().dest;
         assert_eq!(cmd_dest.len(), 1);
 
-        let msg_conversion =
-            cmd_dest.first().unwrap().msg_conversion.as_ref().unwrap();
+        let msg_conversion = cmd_dest.first().unwrap().msg_conversion.as_ref().unwrap();
         assert_eq!(
             msg_conversion.msg.as_ref().unwrap().conversion_type,
             MsgConversionType::PerProperty

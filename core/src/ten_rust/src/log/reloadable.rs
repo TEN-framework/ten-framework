@@ -5,6 +5,7 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 use std::sync::{Arc, Mutex};
+
 use tracing_subscriber::{
     fmt::{self as tracing_fmt},
     layer::SubscriberExt,
@@ -13,8 +14,9 @@ use tracing_subscriber::{
     EnvFilter, Layer, Registry,
 };
 
-use crate::log::file_appender::FileAppenderGuard;
-use crate::log::{create_layer_and_filter, AdvancedLogConfig, LogInitError};
+use crate::log::{
+    create_layer_and_filter, file_appender::FileAppenderGuard, AdvancedLogConfig, LogInitError,
+};
 
 const MAX_HANDLERS: usize = 5;
 
@@ -30,11 +32,12 @@ struct LogLayerHandle {
 }
 
 impl LogLayerHandle {
-    fn new(
-        layer_handle: LayerReloadHandle,
-        filter_handle: FilterReloadHandle,
-    ) -> Self {
-        Self { layer_handle, filter_handle, is_active: false }
+    fn new(layer_handle: LayerReloadHandle, filter_handle: FilterReloadHandle) -> Self {
+        Self {
+            layer_handle,
+            filter_handle,
+            is_active: false,
+        }
     }
 
     fn reload(&self, layer: Option<LogLayer>, filter: EnvFilter) {
@@ -85,11 +88,9 @@ impl LogManager {
             let (filter, filter_handle) = reload::Layer::new(initial_filter);
 
             // Combine layer and filter
-            let combined_layer =
-                Box::new(layer.with_filter(filter)) as LogLayer;
+            let combined_layer = Box::new(layer.with_filter(filter)) as LogLayer;
             layers.push(combined_layer);
-            layer_handles
-                .push(LogLayerHandle::new(layer_handle, filter_handle));
+            layer_handles.push(LogLayerHandle::new(layer_handle, filter_handle));
         }
 
         // Initialize the registry
@@ -98,15 +99,17 @@ impl LogManager {
             .try_init()
             .expect("Failed to initialize registry");
 
-        Self { layer_handles, guards }
+        Self {
+            layer_handles,
+            guards,
+        }
     }
 
     fn update_config(&mut self, config: &AdvancedLogConfig) {
         // Update existing handlers
         for (i, handle) in self.layer_handles.iter_mut().enumerate() {
             if let Some(handler) = config.handlers.get(i) {
-                let (layer_with_guard, filter) =
-                    create_layer_and_filter(handler);
+                let (layer_with_guard, filter) = create_layer_and_filter(handler);
 
                 // Update guard for this handler
                 self.guards[i] = layer_with_guard.guard;
@@ -142,13 +145,11 @@ static LOG_MANAGER: once_cell::sync::Lazy<Arc<Mutex<LogManager>>> =
 /// # Notes
 /// * Supports up to 5 concurrent log handlers
 /// * If more than 5 handlers are configured, extra handlers will be ignored
-pub fn ten_configure_log_reloadable(
-    config: &AdvancedLogConfig,
-) -> Result<(), LogInitError> {
+pub fn ten_configure_log_reloadable(config: &AdvancedLogConfig) -> Result<(), LogInitError> {
     if config.handlers.len() > MAX_HANDLERS {
         tracing::warn!(
-            "Too many log handlers configured. Maximum is {}, but {} were \
-             provided. Extra handlers will be ignored.",
+            "Too many log handlers configured. Maximum is {}, but {} were provided. Extra \
+             handlers will be ignored.",
             MAX_HANDLERS,
             config.handlers.len()
         );
@@ -162,7 +163,9 @@ pub fn ten_configure_log_reloadable(
     if let Ok(mut manager) = LOG_MANAGER.lock() {
         manager.update_config(config);
     } else {
-        return Err(LogInitError { message: "Failed to lock logging manager" });
+        return Err(LogInitError {
+            message: "Failed to lock logging manager",
+        });
     }
 
     Ok(())
@@ -174,9 +177,7 @@ pub fn request_reopen_all_files() {
     if let Ok(manager) = LOG_MANAGER.lock() {
         for guard_opt in manager.guards.iter() {
             if let Some(any_guard) = guard_opt.as_ref() {
-                if let Some(file_guard) =
-                    any_guard.downcast_ref::<FileAppenderGuard>()
-                {
+                if let Some(file_guard) = any_guard.downcast_ref::<FileAppenderGuard>() {
                     file_guard.request_reopen();
                 }
             }

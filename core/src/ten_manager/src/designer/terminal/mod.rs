@@ -6,16 +6,17 @@
 //
 mod pty_manager;
 
-use std::collections::HashMap;
-use std::fmt::Display;
-use std::sync::{Arc, Mutex};
+use std::{
+    collections::HashMap,
+    fmt::Display,
+    sync::{Arc, Mutex},
+};
 
 use actix::{Actor, AsyncContext, Message, StreamHandler};
 use actix_web::{web, Error, HttpRequest, HttpResponse};
 use actix_web_actors::ws;
-use serde::__private::from_utf8_lossy;
-
 use pty_manager::PtyManager;
+use serde::__private::from_utf8_lossy;
 use serde_json::Value;
 
 // The message to/from the pty.
@@ -46,18 +47,16 @@ struct WsProcessor {
 
 impl WsProcessor {
     fn new(path: String) -> Self {
-        Self { pty: Arc::new(Mutex::new(PtyManager::new(path))) }
+        Self {
+            pty: Arc::new(Mutex::new(PtyManager::new(path))),
+        }
     }
 }
 
 impl actix::Handler<PtyMessage> for WsProcessor {
     type Result = ();
 
-    fn handle(
-        &mut self,
-        msg: PtyMessage,
-        ctx: &mut Self::Context,
-    ) -> Self::Result {
+    fn handle(&mut self, msg: PtyMessage, ctx: &mut Self::Context) -> Self::Result {
         // Receive a message from actor (pty), and to interact with the
         // websocket client.
 
@@ -128,11 +127,7 @@ impl Actor for WsProcessor {
 
 // Handle the data received from the websocket.
 impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsProcessor {
-    fn handle(
-        &mut self,
-        msg: Result<ws::Message, ws::ProtocolError>,
-        ctx: &mut Self::Context,
-    ) {
+    fn handle(&mut self, msg: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
         match msg {
             Ok(ws::Message::Ping(msg)) => ctx.pong(&msg),
             Ok(ws::Message::Text(text)) => {
@@ -140,9 +135,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsProcessor {
 
                 // Try to parse the received message as a json.
                 if let Ok(json) = serde_json::from_str::<Value>(&text) {
-                    if let Some(message_type) =
-                        json.get("type").and_then(|v| v.as_str())
-                    {
+                    if let Some(message_type) = json.get("type").and_then(|v| v.as_str()) {
                         match message_type {
                             "resize" => {
                                 if let (Some(cols), Some(rows)) = (
@@ -151,16 +144,14 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsProcessor {
                                 ) {
                                     let cols = cols as u16;
                                     let rows = rows as u16;
-                                    self.pty
-                                        .lock()
-                                        .unwrap()
-                                        .resize_pty(cols, rows)
-                                        .unwrap_or_else(|_| {
+                                    self.pty.lock().unwrap().resize_pty(cols, rows).unwrap_or_else(
+                                        |_| {
                                             println!(
-                                                "Failed to resize PTY to \
-                                                 cols: {cols}, rows: {rows}"
+                                                "Failed to resize PTY to cols: {cols}, rows: \
+                                                 {rows}"
                                             )
-                                        });
+                                        },
+                                    );
                                 }
                             }
                             _ => {
@@ -170,15 +161,9 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsProcessor {
                     } else {
                         // If it's not a control message, treat it as user
                         // input.
-                        self.pty
-                            .lock()
-                            .unwrap()
-                            .write_to_pty(&text)
-                            .unwrap_or_else(|_| {
-                                println!(
-                                    "Failed to write to PTY with data: {text}"
-                                )
-                            });
+                        self.pty.lock().unwrap().write_to_pty(&text).unwrap_or_else(|_| {
+                            println!("Failed to write to PTY with data: {text}")
+                        });
                     }
                 } else {
                     // If it's not JSON, treat it as user input.
@@ -186,9 +171,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsProcessor {
                         .lock()
                         .unwrap()
                         .write_to_pty(&text)
-                        .unwrap_or_else(|_| {
-                            println!("Failed to write to PTY with data: {text}")
-                        });
+                        .unwrap_or_else(|_| println!("Failed to write to PTY with data: {text}"));
                 }
             }
             Ok(ws::Message::Binary(bin)) => ctx.binary(bin),

@@ -12,8 +12,7 @@ mod tests {
     use ten_manager::{
         designer::{
             graphs::update::{
-                update_graph_endpoint, GraphNodeForUpdate,
-                UpdateGraphRequestPayload,
+                update_graph_endpoint, GraphNodeForUpdate, UpdateGraphRequestPayload,
             },
             response::{ErrorResponse, Status},
             storage::in_memory::TmanStorageInMemory,
@@ -25,9 +24,7 @@ mod tests {
     };
     use ten_rust::{
         graph::{
-            connection::{
-                GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow,
-            },
+            connection::{GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow},
             node::GraphNode,
         },
         pkg_info::constants::PROPERTY_JSON_FILENAME,
@@ -40,12 +37,8 @@ mod tests {
     async fn test_update_graph_success() {
         // Create a designer state with an empty graphs cache.
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -64,26 +57,17 @@ mod tests {
             include_str!("../../../test_data/app_property.json").to_string();
 
         // Create the property.json file in the temporary directory.
-        let property_path =
-            std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
+        let property_path = std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
         std::fs::write(&property_path, &app_property_json_str).unwrap();
 
-        let all_pkgs_json = vec![(
-            test_dir.clone(),
-            app_manifest_json_str,
-            app_property_json_str,
-        )];
+        let all_pkgs_json = vec![(test_dir.clone(), app_manifest_json_str, app_property_json_str)];
 
         {
             let mut pkgs_cache = designer_state.pkgs_cache.write().await;
             let mut graphs_cache = designer_state.graphs_cache.write().await;
 
-            let inject_ret = inject_all_pkgs_for_mock(
-                &mut pkgs_cache,
-                &mut graphs_cache,
-                all_pkgs_json,
-            )
-            .await;
+            let inject_ret =
+                inject_all_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, all_pkgs_json).await;
             assert!(inject_ret.is_ok());
         }
 
@@ -91,8 +75,7 @@ mod tests {
         {
             let graphs_cache = &designer_state.graphs_cache.read().await;
             let (graph_id, _) =
-                graphs_cache_find_by_name(graphs_cache, "default_with_app_uri")
-                    .unwrap();
+                graphs_cache_find_by_name(graphs_cache, "default_with_app_uri").unwrap();
 
             graph_id_clone = *graph_id;
         }
@@ -101,10 +84,9 @@ mod tests {
 
         // Create a test app with the update_graph_endpoint.
         let app = test::init_service(
-            App::new().app_data(web::Data::new(designer_state.clone())).route(
-                "/api/designer/v1/graphs/update",
-                web::post().to(update_graph_endpoint),
-            ),
+            App::new()
+                .app_data(web::Data::new(designer_state.clone()))
+                .route("/api/designer/v1/graphs/update", web::post().to(update_graph_endpoint)),
         )
         .await;
 
@@ -128,8 +110,7 @@ mod tests {
             msg_conversion: None,
         };
 
-        let message_flow =
-            GraphMessageFlow::new("test_cmd".to_string(), vec![dest], vec![]);
+        let message_flow = GraphMessageFlow::new("test_cmd".to_string(), vec![dest], vec![]);
 
         let connection = GraphConnection {
             loc: GraphLoc {
@@ -152,7 +133,9 @@ mod tests {
             nodes: nodes
                 .iter()
                 .map(|node| match node {
-                    GraphNode::Extension { content } => GraphNodeForUpdate {
+                    GraphNode::Extension {
+                        content,
+                    } => GraphNodeForUpdate {
                         name: content.name.clone(),
                         addon: content.addon.clone(),
                         extension_group: content.extension_group.clone(),
@@ -184,9 +167,8 @@ mod tests {
         println!("Response body: {body_str}");
 
         // Define expected property.json content after adding the connection.
-        let expected_property_json_str = include_str!(
-            "../../../test_data/exoected_property__update_graph_1.json"
-        );
+        let expected_property_json_str =
+            include_str!("../../../test_data/exoected_property__update_graph_1.json");
 
         // Read the actual property.json file generated during the test.
         let actual_property = std::fs::read_to_string(property_path).unwrap();
@@ -194,15 +176,13 @@ mod tests {
         // Normalize both JSON strings to handle formatting differences.
         let expected_value: serde_json::Value =
             serde_json::from_str(expected_property_json_str).unwrap();
-        let actual_value: serde_json::Value =
-            serde_json::from_str(&actual_property).unwrap();
+        let actual_value: serde_json::Value = serde_json::from_str(&actual_property).unwrap();
 
         // Compare the normalized JSON values.
         assert_eq!(
             expected_value,
             actual_value,
-            "Property file doesn't match expected \
-             content.\nExpected:\n{}\nActual:\n{}",
+            "Property file doesn't match expected content.\nExpected:\n{}\nActual:\n{}",
             serde_json::to_string_pretty(&expected_value).unwrap(),
             serde_json::to_string_pretty(&actual_value).unwrap()
         );
@@ -212,12 +192,8 @@ mod tests {
     async fn test_update_graph_not_found() {
         // Create a designer state with an empty graphs cache.
         let designer_state = Arc::new(DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -226,10 +202,9 @@ mod tests {
 
         // Create a test app with the update_graph_endpoint.
         let app = test::init_service(
-            App::new().app_data(web::Data::new(designer_state)).route(
-                "/api/designer/v1/graphs/update",
-                web::post().to(update_graph_endpoint),
-            ),
+            App::new()
+                .app_data(web::Data::new(designer_state))
+                .route("/api/designer/v1/graphs/update", web::post().to(update_graph_endpoint)),
         )
         .await;
 
@@ -260,8 +235,7 @@ mod tests {
         let body_str = std::str::from_utf8(&body).unwrap();
 
         // Parse the response as an ErrorResponse.
-        let error_response: ErrorResponse =
-            serde_json::from_str(body_str).unwrap();
+        let error_response: ErrorResponse = serde_json::from_str(body_str).unwrap();
 
         // Verify the error response.
         assert_eq!(error_response.status, Status::Fail);
@@ -272,12 +246,8 @@ mod tests {
     async fn test_update_graph_empty_connections() {
         // Create a designer state with an empty graphs cache.
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -296,26 +266,17 @@ mod tests {
             include_str!("../../../test_data/app_property.json").to_string();
 
         // Create the property.json file in the temporary directory.
-        let property_path =
-            std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
+        let property_path = std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
         std::fs::write(&property_path, &app_property_json_str).unwrap();
 
-        let all_pkgs_json = vec![(
-            test_dir.clone(),
-            app_manifest_json_str,
-            app_property_json_str,
-        )];
+        let all_pkgs_json = vec![(test_dir.clone(), app_manifest_json_str, app_property_json_str)];
 
         {
             let mut pkgs_cache = designer_state.pkgs_cache.write().await;
             let mut graphs_cache = designer_state.graphs_cache.write().await;
 
-            let inject_ret = inject_all_pkgs_for_mock(
-                &mut pkgs_cache,
-                &mut graphs_cache,
-                all_pkgs_json,
-            )
-            .await;
+            let inject_ret =
+                inject_all_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, all_pkgs_json).await;
             assert!(inject_ret.is_ok());
         }
 
@@ -323,8 +284,7 @@ mod tests {
         {
             let graphs_cache = &designer_state.graphs_cache.read().await;
             let (graph_id, _) =
-                graphs_cache_find_by_name(graphs_cache, "default_with_app_uri")
-                    .unwrap();
+                graphs_cache_find_by_name(graphs_cache, "default_with_app_uri").unwrap();
 
             graph_id_clone = *graph_id;
         }
@@ -333,10 +293,9 @@ mod tests {
 
         // Create a test app with the update_graph_endpoint.
         let app = test::init_service(
-            App::new().app_data(web::Data::new(designer_state.clone())).route(
-                "/api/designer/v1/graphs/update",
-                web::post().to(update_graph_endpoint),
-            ),
+            App::new()
+                .app_data(web::Data::new(designer_state.clone()))
+                .route("/api/designer/v1/graphs/update", web::post().to(update_graph_endpoint)),
         )
         .await;
 
@@ -357,7 +316,9 @@ mod tests {
             nodes: nodes
                 .iter()
                 .map(|node| match node {
-                    GraphNode::Extension { content } => GraphNodeForUpdate {
+                    GraphNode::Extension {
+                        content,
+                    } => GraphNodeForUpdate {
                         name: content.name.clone(),
                         addon: content.addon.clone(),
                         extension_group: content.extension_group.clone(),
@@ -389,9 +350,8 @@ mod tests {
         println!("Response body: {body_str}");
 
         // Define expected property.json content after adding the connection.
-        let expected_property_json_str = include_str!(
-            "../../../test_data/exoected_property__update_graph.json"
-        );
+        let expected_property_json_str =
+            include_str!("../../../test_data/exoected_property__update_graph.json");
 
         // Read the actual property.json file generated during the test.
         let actual_property = std::fs::read_to_string(property_path).unwrap();
@@ -399,15 +359,13 @@ mod tests {
         // Normalize both JSON strings to handle formatting differences.
         let expected_value: serde_json::Value =
             serde_json::from_str(expected_property_json_str).unwrap();
-        let actual_value: serde_json::Value =
-            serde_json::from_str(&actual_property).unwrap();
+        let actual_value: serde_json::Value = serde_json::from_str(&actual_property).unwrap();
 
         // Compare the normalized JSON values.
         assert_eq!(
             expected_value,
             actual_value,
-            "Property file doesn't match expected \
-             content.\nExpected:\n{}\nActual:\n{}",
+            "Property file doesn't match expected content.\nExpected:\n{}\nActual:\n{}",
             serde_json::to_string_pretty(&expected_value).unwrap(),
             serde_json::to_string_pretty(&actual_value).unwrap()
         );

@@ -58,21 +58,11 @@ mod tests {
         }
         "#;
 
-        let found_result: PkgRegistryInfo =
-            serde_json::from_str(json_str).unwrap();
-        assert_eq!(
-            found_result.basic_info.type_and_name.pkg_type,
-            PkgType::AddonLoader
-        );
-        assert_eq!(
-            found_result.basic_info.type_and_name.name,
-            "python_addon_loader"
-        );
+        let found_result: PkgRegistryInfo = serde_json::from_str(json_str).unwrap();
+        assert_eq!(found_result.basic_info.type_and_name.pkg_type, PkgType::AddonLoader);
+        assert_eq!(found_result.basic_info.type_and_name.name, "python_addon_loader");
         assert_eq!(found_result.dependencies.len(), 2);
-        assert_eq!(
-            found_result.display_name.as_ref().unwrap().locales.len(),
-            5
-        );
+        assert_eq!(found_result.display_name.as_ref().unwrap().locales.len(), 5);
         assert_eq!(
             found_result.hash,
             "9b0c57cb0032857e3c16a5d30b04fbc93bd90f608ffda5d6525de83f10739e85"
@@ -130,21 +120,11 @@ mod tests {
         }
         "#;
 
-        let found_result: PkgRegistryInfo =
-            serde_json::from_str(json_str).unwrap();
-        assert_eq!(
-            found_result.basic_info.type_and_name.pkg_type,
-            PkgType::AddonLoader
-        );
-        assert_eq!(
-            found_result.basic_info.type_and_name.name,
-            "python_addon_loader"
-        );
+        let found_result: PkgRegistryInfo = serde_json::from_str(json_str).unwrap();
+        assert_eq!(found_result.basic_info.type_and_name.pkg_type, PkgType::AddonLoader);
+        assert_eq!(found_result.basic_info.type_and_name.name, "python_addon_loader");
         assert_eq!(found_result.dependencies.len(), 2);
-        assert_eq!(
-            found_result.display_name.as_ref().unwrap().locales.len(),
-            5
-        );
+        assert_eq!(found_result.display_name.as_ref().unwrap().locales.len(), 5);
         assert_eq!(
             found_result.hash,
             "9b0c57cb0032857e3c16a5d30b04fbc93bd90f608ffda5d6525de83f10739e85"

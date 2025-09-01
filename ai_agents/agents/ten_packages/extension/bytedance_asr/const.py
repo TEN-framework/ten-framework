@@ -25,6 +25,7 @@ BYTEDANCE_ERROR_CODES = {
 
 # Error codes that require reconnection
 RECONNECTABLE_ERROR_CODES = [
+    400,  # other errors - retry may help
     1002,  # Access denied - token may be expired, retry may help
     1003,  # Rate limit exceeded - retry with backoff
     1004,  # Quota exceeded - may reset, retry later

@@ -6,20 +6,20 @@
 //
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
-    use std::sync::Arc;
+    use std::{collections::HashMap, sync::Arc};
 
     use actix_web::{test, web, App};
     use tempfile::tempdir;
-
-    use ten_manager::constants::DEFAULT_APP_CPP;
-    use ten_manager::designer::apps::create::{
-        create_app_endpoint, CreateAppRequestPayload,
+    use ten_manager::{
+        constants::DEFAULT_APP_CPP,
+        designer::{
+            apps::create::{create_app_endpoint, CreateAppRequestPayload},
+            storage::in_memory::TmanStorageInMemory,
+            DesignerState,
+        },
+        home::config::TmanConfig,
+        output::cli::TmanOutputCli,
     };
-    use ten_manager::designer::storage::in_memory::TmanStorageInMemory;
-    use ten_manager::designer::DesignerState;
-    use ten_manager::home::config::TmanConfig;
-    use ten_manager::output::cli::TmanOutputCli;
 
     #[actix_web::test]
     async fn test_create_app_success() {
@@ -32,9 +32,7 @@ mod tests {
                 verbose: true,
                 ..Default::default()
             })),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -43,10 +41,9 @@ mod tests {
         let designer_state = Arc::new(designer_state);
 
         let app = test::init_service(
-            App::new().app_data(web::Data::new(designer_state.clone())).route(
-                "/api/designer/v1/apps/create",
-                web::post().to(create_app_endpoint),
-            ),
+            App::new()
+                .app_data(web::Data::new(designer_state.clone()))
+                .route("/api/designer/v1/apps/create", web::post().to(create_app_endpoint)),
         )
         .await;
 
@@ -78,12 +75,8 @@ mod tests {
     #[actix_web::test]
     async fn test_create_app_invalid_dir() {
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -92,10 +85,9 @@ mod tests {
         let designer_state = Arc::new(designer_state);
 
         let app = test::init_service(
-            App::new().app_data(web::Data::new(designer_state.clone())).route(
-                "/api/designer/v1/apps/create",
-                web::post().to(create_app_endpoint),
-            ),
+            App::new()
+                .app_data(web::Data::new(designer_state.clone()))
+                .route("/api/designer/v1/apps/create", web::post().to(create_app_endpoint)),
         )
         .await;
 

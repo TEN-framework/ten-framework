@@ -8,20 +8,17 @@ use std::time::Duration;
 
 use actix_web::web;
 use futures_util::{SinkExt, StreamExt};
+use ten_manager::designer::terminal::ws_terminal_endpoint;
 use tokio::time::sleep;
 use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
-
-use ten_manager::designer::terminal::ws_terminal_endpoint;
 
 use crate::test_case::common::builtin_server::start_test_server;
 
 #[actix_rt::test]
 async fn test_ws_terminal_endpoint() {
     // Start the WebSocket server and get its address.
-    let server_addr = start_test_server("/ws/terminal", || {
-        web::get().to(ws_terminal_endpoint)
-    })
-    .await;
+    let server_addr =
+        start_test_server("/ws/terminal", || web::get().to(ws_terminal_endpoint)).await;
     println!("Server started at: {server_addr}");
 
     // Connect WebSocket client to the server.
@@ -41,11 +38,7 @@ async fn test_ws_terminal_endpoint() {
     while let Some(Ok(message)) = read.next().await {
         match message {
             Message::Text(text) => {
-                println!(
-                    "Received initial message #{}: {}",
-                    message_count + 1,
-                    text
-                );
+                println!("Received initial message #{}: {}", message_count + 1, text);
                 message_count += 1;
                 has_welcome_message = true;
 
@@ -146,10 +139,7 @@ async fn test_ws_terminal_endpoint() {
     }
 
     // Verify that we got responses to our commands.
-    assert!(
-        response_count > 0,
-        "Should have received responses to our commands"
-    );
+    assert!(response_count > 0, "Should have received responses to our commands");
 
     // Verify that we got an exit message or the connection was closed.
     assert!(got_exit_message, "Should have received an exit message");
@@ -158,7 +148,7 @@ async fn test_ws_terminal_endpoint() {
     let _ = write.send(Message::Close(None)).await;
 
     println!(
-        "Test completed successfully with {message_count} initial messages \
-         and {response_count} response messages"
+        "Test completed successfully with {message_count} initial messages and {response_count} \
+         response messages"
     );
 }

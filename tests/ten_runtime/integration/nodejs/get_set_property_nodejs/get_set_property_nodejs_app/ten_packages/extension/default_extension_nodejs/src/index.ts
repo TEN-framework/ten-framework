@@ -24,12 +24,12 @@ class DefaultExtension extends Extension {
     super(name);
   }
 
-  async onConfigure(_tenEnv: TenEnv): Promise<void> {
-    console.log("DefaultExtension onConfigure");
+  async onConfigure(tenEnv: TenEnv): Promise<void> {
+    tenEnv.logInfo("DefaultExtension onConfigure");
   }
 
   async onInit(tenEnv: TenEnv): Promise<void> {
-    console.log("DefaultExtension onInit");
+    tenEnv.logInfo("DefaultExtension onInit");
 
     const aaaExist = await tenEnv.isPropertyExist("aaa");
     const bbbExist = await tenEnv.isPropertyExist("bbb");
@@ -107,16 +107,16 @@ class DefaultExtension extends Extension {
     assert(cmdName === "hello", "cmdName incorrect");
   }
 
-  async onStart(_tenEnv: TenEnv): Promise<void> {
-    console.log("DefaultExtension onStart");
+  async onStart(tenEnv: TenEnv): Promise<void> {
+    tenEnv.logInfo("DefaultExtension onStart");
   }
 
-  async onStop(_tenEnv: TenEnv): Promise<void> {
-    console.log("DefaultExtension onStop");
+  async onStop(tenEnv: TenEnv): Promise<void> {
+    tenEnv.logInfo("DefaultExtension onStop");
   }
 
-  async onDeinit(_tenEnv: TenEnv): Promise<void> {
-    console.log("DefaultExtension onDeinit");
+  async onDeinit(tenEnv: TenEnv): Promise<void> {
+    tenEnv.logInfo("DefaultExtension onDeinit");
   }
 }
 

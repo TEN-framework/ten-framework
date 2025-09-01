@@ -15,9 +15,7 @@ use serde::{Deserialize, Serialize};
 use ten_rust::graph::GraphExposedMessageType;
 use uuid::Uuid;
 
-use crate::designer::graphs::{
-    connections::DesignerGraphConnection, nodes::DesignerGraphNode,
-};
+use crate::designer::graphs::{connections::DesignerGraphConnection, nodes::DesignerGraphNode};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct DesignerGraphInfo {

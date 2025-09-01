@@ -25,7 +25,7 @@ import { Separator } from "@/components/ui/separator";
 import { resetNodesAndEdgesByGraphs } from "@/flow/graph";
 import { calcAbbreviatedBaseDir, cn } from "@/lib/utils";
 import { useAppStore, useFlowStore } from "@/store";
-import type { IGraph } from "@/types/graphs";
+import type { GraphInfo } from "@/types/graphs";
 
 export const GraphSelector = (props: { className?: string }) => {
   const { className } = props;
@@ -160,7 +160,7 @@ export const GraphSelector = (props: { className?: string }) => {
   );
 };
 
-const GraphList = (props: { graphs: IGraph[] }) => {
+const GraphList = (props: { graphs: GraphInfo[] }) => {
   const [isLoading, setIsLoading] = React.useState(false);
 
   const { mutate: mutateGraphs } = useGraphs();
@@ -173,7 +173,7 @@ const GraphList = (props: { graphs: IGraph[] }) => {
     removeSelectedGraphs,
   } = useAppStore();
 
-  const groupedGraphs: { standalone: IGraph[]; [x: string]: IGraph[] } =
+  const groupedGraphs: { standalone: GraphInfo[]; [x: string]: GraphInfo[] } =
     props.graphs.reduce(
       (acc, graph) => {
         const baseDir = graph.base_dir || "standalone";
@@ -183,7 +183,7 @@ const GraphList = (props: { graphs: IGraph[] }) => {
         acc[baseDir].push(graph);
         return acc;
       },
-      {} as { standalone: IGraph[]; [x: string]: IGraph[] }
+      {} as { standalone: GraphInfo[]; [x: string]: GraphInfo[] }
     );
 
   return (

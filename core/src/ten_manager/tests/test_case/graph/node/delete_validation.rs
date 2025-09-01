@@ -9,9 +9,7 @@ mod tests {
     use ten_manager::designer::graphs::nodes::delete::graph_delete_extension_node;
     use ten_rust::{
         graph::{
-            connection::{
-                GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow,
-            },
+            connection::{GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow},
             node::GraphNode,
             Graph,
         },
@@ -55,8 +53,9 @@ mod tests {
         .await;
         assert!(result.is_ok());
         assert_eq!(graph.nodes.len(), 1);
-        if let ten_rust::graph::node::GraphNode::Extension { content } =
-            &graph.nodes[0]
+        if let ten_rust::graph::node::GraphNode::Extension {
+            content,
+        } = &graph.nodes[0]
         {
             assert_eq!(content.name, "test_extension_2");
         } else {
@@ -96,7 +95,9 @@ mod tests {
             let original_nodes_len = graph.nodes.len();
             graph.nodes.retain(|node| {
                 !(match node {
-                    GraphNode::Extension { content } => {
+                    GraphNode::Extension {
+                        content,
+                    } => {
                         content.name == pkg_name
                             && content.addon == addon.clone()
                             && content.app == app
@@ -113,14 +114,17 @@ mod tests {
 
             // Corrupt the remaining node to cause validation failure
             if !graph.nodes.is_empty() {
-                if let ten_rust::graph::node::GraphNode::Extension { content } =
-                    &graph.nodes[0]
+                if let ten_rust::graph::node::GraphNode::Extension {
+                    content,
+                } = &graph.nodes[0]
                 {
                     let mut content = content.clone();
                     content.app = Some(localhost().to_string()); // This will
                                                                  // cause validation
                                                                  // to fail
-                    graph.nodes[0] = GraphNode::Extension { content };
+                    graph.nodes[0] = GraphNode::Extension {
+                        content,
+                    };
                 } else {
                     panic!("Expected Extension node");
                 }
@@ -180,25 +184,21 @@ mod tests {
         // The graph should be restored to its original state.
         assert_eq!(graph.nodes.len(), original_nodes_len);
 
-        if let ten_rust::graph::node::GraphNode::Extension { content } =
-            &graph.nodes[0]
+        if let ten_rust::graph::node::GraphNode::Extension {
+            content,
+        } = &graph.nodes[0]
         {
             assert_eq!(content.name, "test_extension_1");
-            assert_eq!(
-                content.app,
-                Some("http://test-app-uri.com".to_string())
-            );
+            assert_eq!(content.app, Some("http://test-app-uri.com".to_string()));
         } else {
             panic!("Expected Extension node");
         }
-        if let ten_rust::graph::node::GraphNode::Extension { content } =
-            &graph.nodes[1]
+        if let ten_rust::graph::node::GraphNode::Extension {
+            content,
+        } = &graph.nodes[1]
         {
             assert_eq!(content.name, "test_extension_2");
-            assert_eq!(
-                content.app,
-                Some("http://test-app-uri.com".to_string())
-            );
+            assert_eq!(content.app, Some("http://test-app-uri.com".to_string()));
         } else {
             panic!("Expected Extension node");
         }
@@ -265,8 +265,9 @@ mod tests {
 
         assert!(result.is_ok());
         assert_eq!(graph.nodes.len(), 1);
-        if let ten_rust::graph::node::GraphNode::Extension { content } =
-            &graph.nodes[0]
+        if let ten_rust::graph::node::GraphNode::Extension {
+            content,
+        } = &graph.nodes[0]
         {
             assert_eq!(content.name, "source_ext");
         } else {
@@ -274,9 +275,6 @@ mod tests {
         }
 
         // The connections should be cleaned up since the target was removed.
-        assert!(
-            graph.connections.is_none()
-                || graph.connections.as_ref().unwrap().is_empty()
-        );
+        assert!(graph.connections.is_none() || graph.connections.as_ref().unwrap().is_empty());
     }
 }

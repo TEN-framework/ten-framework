@@ -4,33 +4,28 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-use std::collections::HashMap;
-use std::path::Path;
-use std::sync::Arc;
+use std::{collections::HashMap, path::Path, sync::Arc};
 
 use actix_web::{web, HttpResponse, Responder};
 use futures::future::try_join_all;
 use serde::{Deserialize, Serialize};
-
-use ten_rust::base_dir_pkg_info::PkgsInfoInApp;
-use ten_rust::graph::{
-    connection::GraphConnection, graph_info::GraphInfo, node::GraphNode, Graph,
-    GraphExposedMessage, GraphExposedProperty,
-};
-use ten_rust::pkg_info::get_pkg_info_for_extension_addon;
-
-use crate::designer::common::{
-    get_designer_api_msg_from_pkg, get_designer_api_property_from_pkg,
-};
-use crate::designer::graphs::nodes::{DesignerApi, DesignerGraphNode};
-use crate::designer::graphs::DesignerGraphInfo;
-use crate::designer::response::ErrorResponse;
-use crate::designer::{
-    graphs::{
-        DesignerGraph, DesignerGraphExposedMessage,
-        DesignerGraphExposedProperty,
+use ten_rust::{
+    base_dir_pkg_info::PkgsInfoInApp,
+    graph::{
+        connection::GraphConnection, graph_info::GraphInfo, node::GraphNode, Graph,
+        GraphExposedMessage, GraphExposedProperty,
     },
-    response::{ApiResponse, Status},
+    pkg_info::get_pkg_info_for_extension_addon,
+};
+
+use crate::designer::{
+    common::{get_designer_api_msg_from_pkg, get_designer_api_property_from_pkg},
+    graphs::{
+        nodes::{DesignerApi, DesignerGraphNode},
+        DesignerGraph, DesignerGraphExposedMessage, DesignerGraphExposedProperty,
+        DesignerGraphInfo,
+    },
+    response::{ApiResponse, ErrorResponse, Status},
     DesignerState,
 };
 
@@ -66,13 +61,14 @@ fn resolve_subgraph_imports(
     base_dir: &Option<String>,
 ) -> DesignerGraph {
     for node in &mut designer_graph.nodes {
-        if let DesignerGraphNode::Subgraph { content } = node {
+        if let DesignerGraphNode::Subgraph {
+            content,
+        } = node
+        {
             if content.graph.graph.is_none() {
                 // Load the graph from import_uri
-                content.graph.graph = load_graph_from_import_uri(
-                    &content.graph.import_uri,
-                    base_dir,
-                );
+                content.graph.graph =
+                    load_graph_from_import_uri(&content.graph.import_uri, base_dir);
             }
         }
     }
@@ -154,12 +150,14 @@ async fn extract_designer_graph_from_graph_info(
         });
 
     // Resolve subgraph imports
-    designer_graph =
-        resolve_subgraph_imports(designer_graph, &graph_info.app_base_dir);
+    designer_graph = resolve_subgraph_imports(designer_graph, &graph_info.app_base_dir);
 
     // Update the api and installation status of the nodes
     for node in &mut designer_graph.nodes {
-        if let DesignerGraphNode::Extension { content } = node {
+        if let DesignerGraphNode::Extension {
+            content,
+        } = node
+        {
             let pkg_info = get_pkg_info_for_extension_addon(
                 pkgs_cache,
                 &graph_info.app_base_dir,
@@ -184,9 +182,7 @@ async fn extract_designer_graph_from_graph_info(
                             .property
                             .as_ref()
                             .filter(|p| !p.is_empty())
-                            .map(|p| {
-                                get_designer_api_property_from_pkg(p.clone())
-                            }),
+                            .map(|p| get_designer_api_property_from_pkg(p.clone())),
 
                         cmd_in: api
                             .cmd_in
@@ -259,11 +255,8 @@ pub async fn get_graphs_endpoint(
         .map(|(uuid, graph_info)| {
             let pkgs_cache_inner = pkgs_cache_clone.clone();
             async move {
-                let graph_result = extract_designer_graph_from_graph_info(
-                    graph_info,
-                    &pkgs_cache_inner,
-                )
-                .await?;
+                let graph_result =
+                    extract_designer_graph_from_graph_info(graph_info, &pkgs_cache_inner).await?;
 
                 Ok::<_, actix_web::Error>(DesignerGraphInfo {
                     graph_id: *uuid,
@@ -278,7 +271,11 @@ pub async fn get_graphs_endpoint(
 
     let graphs = try_join_all(graph_futures).await?;
 
-    let response = ApiResponse { status: Status::Ok, data: graphs, meta: None };
+    let response = ApiResponse {
+        status: Status::Ok,
+        data: graphs,
+        meta: None,
+    };
 
     Ok(HttpResponse::Ok().json(response))
 }

@@ -11,6 +11,7 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+use super::update_graph_node_in_property_json_file;
 use crate::{
     designer::{
         response::{ApiResponse, ErrorResponse, Status},
@@ -18,14 +19,9 @@ use crate::{
     },
     graph::{
         graphs_cache_find_by_id_mut,
-        nodes::{
-            add::graph_add_extension_node,
-            validate::validate_extension_property,
-        },
+        nodes::{add::graph_add_extension_node, validate::validate_extension_property},
     },
 };
-
-use super::update_graph_node_in_property_json_file;
 
 #[derive(Serialize, Deserialize)]
 pub struct AddGraphNodeRequestPayload {
@@ -56,10 +52,8 @@ pub async fn add_graph_node_endpoint(
     let old_graphs_cache = graphs_cache.clone();
 
     // Get the specified graph from graphs_cache.
-    let graph_info = match graphs_cache_find_by_id_mut(
-        &mut graphs_cache,
-        &request_payload.graph_id,
-    ) {
+    let graph_info = match graphs_cache_find_by_id_mut(&mut graphs_cache, &request_payload.graph_id)
+    {
         Some(graph_info) => graph_info,
         None => {
             let error_response = ErrorResponse {
@@ -120,7 +114,9 @@ pub async fn add_graph_node_endpoint(
 
     let response = ApiResponse {
         status: Status::Ok,
-        data: AddGraphNodeResponsePayload { success: true },
+        data: AddGraphNodeResponsePayload {
+            success: true,
+        },
         meta: None,
     };
     Ok(HttpResponse::Ok().json(response))

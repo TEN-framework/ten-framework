@@ -80,9 +80,6 @@ mod tests {
         });
 
         let result = validate_tman_config(&config_json);
-        assert!(
-            result.is_err(),
-            "Should fail when designer section has invalid values"
-        );
+        assert!(result.is_err(), "Should fail when designer section has invalid values");
     }
 }

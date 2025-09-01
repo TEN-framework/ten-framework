@@ -7,12 +7,9 @@
 use std::collections::HashMap;
 
 use anyhow::Result;
-
 use ten_rust::{
     base_dir_pkg_info::PkgsInfoInApp,
-    graph::msg_conversion::{
-        MsgAndResultConversion, MsgConversionMode, MsgConversionRule,
-    },
+    graph::msg_conversion::{MsgAndResultConversion, MsgConversionMode, MsgConversionRule},
     pkg_info::{
         get_pkg_info_for_extension_addon,
         manifest::api::{
@@ -47,9 +44,9 @@ fn navigate_property_path_mut<'a>(
             let index_str = &part[bracket_pos + 1..part.len() - 1];
 
             // Parse the index.
-            let index = index_str.parse::<usize>().map_err(|_| {
-                anyhow::anyhow!("Invalid array index in path: {}", part)
-            })?;
+            let index = index_str
+                .parse::<usize>()
+                .map_err(|_| anyhow::anyhow!("Invalid array index in path: {}", part))?;
 
             (name, Some(index))
         } else {
@@ -82,21 +79,17 @@ fn navigate_property_path_mut<'a>(
             if index.is_some() {
                 // Make sure it's an array type.
                 if prop.prop_type != ValueType::Array {
-                    return Err(anyhow::anyhow!(
-                        "Property {} is not an array",
-                        name
-                    ));
+                    return Err(anyhow::anyhow!("Property {} is not an array", name));
                 }
 
                 // Make sure items is defined.
                 if prop.items.is_none() {
-                    prop.items =
-                        Some(Box::new(ManifestApiPropertyAttributes {
-                            prop_type: ValueType::Object,
-                            items: None,
-                            properties: None,
-                            required: None,
-                        }));
+                    prop.items = Some(Box::new(ManifestApiPropertyAttributes {
+                        prop_type: ValueType::Object,
+                        items: None,
+                        properties: None,
+                        required: None,
+                    }));
                 }
 
                 // We can't actually index into the array here because arrays
@@ -114,11 +107,7 @@ fn navigate_property_path_mut<'a>(
             current_props.insert(
                 name.to_string(),
                 ManifestApiPropertyAttributes {
-                    prop_type: if index.is_some() {
-                        ValueType::Array
-                    } else {
-                        ValueType::Object
-                    },
+                    prop_type: if index.is_some() { ValueType::Array } else { ValueType::Object },
                     items: None,
                     properties: Some(HashMap::new()),
                     required: None,
@@ -132,10 +121,7 @@ fn navigate_property_path_mut<'a>(
         if index.is_some() {
             // Make sure it's an array type.
             if prop.prop_type != ValueType::Array {
-                return Err(anyhow::anyhow!(
-                    "Property {} is not an array",
-                    name
-                ));
+                return Err(anyhow::anyhow!("Property {} is not an array", name));
             }
 
             // Make sure items is defined.
@@ -159,10 +145,7 @@ fn navigate_property_path_mut<'a>(
         } else {
             // Make sure it's an object type.
             if prop.prop_type != ValueType::Object {
-                return Err(anyhow::anyhow!(
-                    "Property {} is not an object",
-                    name
-                ));
+                return Err(anyhow::anyhow!("Property {} is not an object", name));
             }
 
             // Make sure properties is defined.
@@ -254,8 +237,7 @@ fn navigate_property_path<'a>(
             curr_props = properties;
         } else {
             // Navigate into object properties.
-            if prop.prop_type != ValueType::Object || prop.properties.is_none()
-            {
+            if prop.prop_type != ValueType::Object || prop.properties.is_none() {
                 return None;
             }
 
@@ -271,9 +253,7 @@ fn navigate_property_path<'a>(
 fn convert_rules_to_schema_properties(
     conversion_rules: &[MsgConversionRule],
     ten_name_rule_index: Option<usize>,
-    src_schema_properties: Option<
-        &HashMap<String, ManifestApiPropertyAttributes>,
-    >,
+    src_schema_properties: Option<&HashMap<String, ManifestApiPropertyAttributes>>,
     src_schema_required: Option<&Vec<String>>,
     dest_schema_properties: &mut HashMap<String, ManifestApiPropertyAttributes>,
     dest_schema_required: &mut Option<Vec<String>>,
@@ -313,10 +293,7 @@ fn convert_rules_to_schema_properties(
                         } else if value.is_string() {
                             prop_type = ValueType::String;
                         } else {
-                            return Err(anyhow::anyhow!(
-                                "Unsupported value type: {}",
-                                value
-                            ));
+                            return Err(anyhow::anyhow!("Unsupported value type: {}", value));
                         }
 
                         // Parse the path and get a mutable reference to the
@@ -324,15 +301,10 @@ fn convert_rules_to_schema_properties(
                         let path = &rule.path;
 
                         // Create/replace the property at the path.
-                        let property_attrs = if path.contains(".")
-                            || path.contains("[")
-                        {
+                        let property_attrs = if path.contains(".") || path.contains("[") {
                             // For complex paths, navigate to the location and
                             // get property.
-                            match navigate_property_path_mut(
-                                dest_schema_properties,
-                                path,
-                            ) {
+                            match navigate_property_path_mut(dest_schema_properties, path) {
                                 Ok(prop) => prop,
                                 Err(e) => {
                                     return Err(anyhow::anyhow!(
@@ -355,20 +327,17 @@ fn convert_rules_to_schema_properties(
                             if dest_schema_required.is_none() {
                                 *dest_schema_required = Some(Vec::new());
                             }
-                            dest_schema_required
-                                .as_mut()
-                                .unwrap()
-                                .push(path.to_string());
+                            dest_schema_required.as_mut().unwrap().push(path.to_string());
 
-                            dest_schema_properties
-                                .entry(path.clone())
-                                .or_insert(ManifestApiPropertyAttributes {
+                            dest_schema_properties.entry(path.clone()).or_insert(
+                                ManifestApiPropertyAttributes {
                                     // Will be replaced based on value.
                                     prop_type: ValueType::Object,
                                     items: None,
                                     properties: None,
                                     required: None,
-                                })
+                                },
+                            )
                         };
 
                         property_attrs.prop_type = prop_type;
@@ -387,26 +356,20 @@ fn convert_rules_to_schema_properties(
                         // For FromOriginal mode, we need to copy a property
                         // from the source schema.
 
-                        if let Some((src_prop, is_required)) =
-                            navigate_property_path(
-                                src_schema_properties,
-                                &src_schema_required,
-                                original_path,
-                            )
-                        {
+                        if let Some((src_prop, is_required)) = navigate_property_path(
+                            src_schema_properties,
+                            &src_schema_required,
+                            original_path,
+                        ) {
                             // Create/replace the property at the destination
                             // path.
                             let dest_path = &rule.path;
 
                             // For complex paths, we need to navigate and set
                             // the property.
-                            if dest_path.contains(".")
-                                || dest_path.contains("[")
-                            {
-                                match navigate_property_path_mut(
-                                    dest_schema_properties,
-                                    dest_path,
-                                ) {
+                            if dest_path.contains(".") || dest_path.contains("[") {
+                                match navigate_property_path_mut(dest_schema_properties, dest_path)
+                                {
                                     Ok(dest_prop) => {
                                         // Copy the source property
                                         // attributes
@@ -415,8 +378,7 @@ fn convert_rules_to_schema_properties(
                                     }
                                     Err(e) => {
                                         return Err(anyhow::anyhow!(
-                                            "Failed to navigate to \
-                                             destination path {}: {}",
+                                            "Failed to navigate to destination path {}: {}",
                                             dest_path,
                                             e
                                         ));
@@ -425,22 +387,16 @@ fn convert_rules_to_schema_properties(
                             } else {
                                 // For top-level properties, simply set or
                                 // replace the entry.
-                                if dest_schema_properties
-                                    .contains_key(dest_path)
-                                {
+                                if dest_schema_properties.contains_key(dest_path) {
                                     dest_schema_properties.remove(dest_path);
                                 }
 
-                                dest_schema_properties.insert(
-                                    dest_path.clone(),
-                                    src_prop.clone(),
-                                );
+                                dest_schema_properties.insert(dest_path.clone(), src_prop.clone());
 
                                 if let Some(is_required) = is_required {
                                     if is_required {
                                         if dest_schema_required.is_none() {
-                                            *dest_schema_required =
-                                                Some(Vec::new());
+                                            *dest_schema_required = Some(Vec::new());
                                         }
                                         dest_schema_required
                                             .as_mut()
@@ -453,8 +409,7 @@ fn convert_rules_to_schema_properties(
                     }
                     None => {
                         return Err(anyhow::anyhow!(
-                            "FromOriginal mode at index {} has no original \
-                             path",
+                            "FromOriginal mode at index {} has no original path",
                             index
                         ));
                     }
@@ -477,12 +432,8 @@ async fn get_msg_schema(
     msg_name: &str,
 ) -> Result<Option<ManifestApiMsg>> {
     let msg_schema = if let Some(extension_pkg_info) =
-        get_pkg_info_for_extension_addon(
-            pkgs_cache,
-            graph_app_base_dir,
-            app,
-            extension_addon,
-        ) {
+        get_pkg_info_for_extension_addon(pkgs_cache, graph_app_base_dir, app, extension_addon)
+    {
         extension_pkg_info
             .manifest
             .get_flattened_api()
@@ -503,9 +454,7 @@ async fn get_msg_schema(
                     MsgType::VideoFrame => api.video_frame_in.as_ref(),
                 },
             })
-            .and_then(|msg_out| {
-                msg_out.iter().find(|msg| msg.name == *msg_name).cloned()
-            })
+            .and_then(|msg_out| msg_out.iter().find(|msg| msg.name == *msg_name).cloned())
     } else {
         None
     };
@@ -539,10 +488,7 @@ pub async fn msg_conversion_get_final_target_schema(
     )
     .await?;
 
-    eprintln!(
-        "src_msg_schema: {}",
-        serde_json::to_string_pretty(&src_msg_schema).unwrap()
-    );
+    eprintln!("src_msg_schema: {}", serde_json::to_string_pretty(&src_msg_schema).unwrap());
 
     let mut converted_schema: Option<ManifestApiMsg> = None;
 
@@ -576,20 +522,22 @@ pub async fn msg_conversion_get_final_target_schema(
         }
 
         // Process each conversion rule.
-        let src_properties = src_msg_schema.as_ref().and_then(|schema| {
-            schema.property.as_ref().and_then(|p| p.properties())
-        });
-        let src_required = src_msg_schema.as_ref().and_then(|schema| {
-            schema.property.as_ref().and_then(|p| p.required.as_ref())
-        });
+        let src_properties = src_msg_schema
+            .as_ref()
+            .and_then(|schema| schema.property.as_ref().and_then(|p| p.properties()));
+        let src_required = src_msg_schema
+            .as_ref()
+            .and_then(|schema| schema.property.as_ref().and_then(|p| p.required.as_ref()));
 
         if let Some(property) = &mut converted_schema_real.property {
             if property.properties.is_none() {
                 property.properties = Some(HashMap::new());
             }
 
-            let ManifestApiProperty { ref mut properties, ref mut required } =
-                property;
+            let ManifestApiProperty {
+                ref mut properties,
+                ref mut required,
+            } = property;
             convert_rules_to_schema_properties(
                 &msg_conversion.rules.rules,
                 ten_name_rule_index,
@@ -607,17 +555,17 @@ pub async fn msg_conversion_get_final_target_schema(
 
     if let Some(result_conversion) = &msg_conversion.result {
         // Create a new message schema to store the converted properties.
-        let mut converted_result_schema_real =
-            ManifestApiCmdResult { property: Some(ManifestApiProperty::new()) };
+        let mut converted_result_schema_real = ManifestApiCmdResult {
+            property: Some(ManifestApiProperty::new()),
+        };
 
         // If keep_original flag is true, start with the source message schema.
         if let Some(keep_original) = result_conversion.rules.keep_original {
             if keep_original {
                 // If source message schema exists and has a result schema, use
                 // it
-                let src_result_schema = src_msg_schema
-                    .as_ref()
-                    .and_then(|schema| schema.result.as_ref());
+                let src_result_schema =
+                    src_msg_schema.as_ref().and_then(|schema| schema.result.as_ref());
 
                 if let Some(result_schema) = src_result_schema {
                     converted_result_schema_real = result_schema.clone();
@@ -630,8 +578,7 @@ pub async fn msg_conversion_get_final_target_schema(
 
         // Ensure property map exists.
         if converted_result_schema_real.property.is_none() {
-            converted_result_schema_real.property =
-                Some(ManifestApiProperty::new());
+            converted_result_schema_real.property = Some(ManifestApiProperty::new());
         }
 
         let dest_msg_schema = get_msg_schema(
@@ -645,10 +592,7 @@ pub async fn msg_conversion_get_final_target_schema(
         )
         .await?;
 
-        eprintln!(
-            "dest_msg_schema: {}",
-            serde_json::to_string_pretty(&dest_msg_schema).unwrap(),
-        );
+        eprintln!("dest_msg_schema: {}", serde_json::to_string_pretty(&dest_msg_schema).unwrap(),);
 
         let dest_properties = dest_msg_schema
             .as_ref()
@@ -666,8 +610,10 @@ pub async fn msg_conversion_get_final_target_schema(
                 property.properties = Some(HashMap::new());
             }
 
-            let ManifestApiProperty { ref mut properties, ref mut required } =
-                property;
+            let ManifestApiProperty {
+                ref mut properties,
+                ref mut required,
+            } = property;
             convert_rules_to_schema_properties(
                 &result_conversion.rules.rules,
                 None,
@@ -700,8 +646,7 @@ pub fn msg_conversion_get_dest_msg_name(
             {
                 if let Some(value) = &rule.value {
                     if value.is_string() {
-                        dest_msg_name =
-                            value.as_str().unwrap_or(src_msg_name).to_string();
+                        dest_msg_name = value.as_str().unwrap_or(src_msg_name).to_string();
                         ten_name_rule_index = Some(index);
                         break;
                     }

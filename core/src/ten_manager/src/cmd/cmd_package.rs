@@ -10,7 +10,6 @@ use anyhow::Result;
 use clap::{Arg, ArgMatches, Command};
 use console::Emoji;
 use indicatif::HumanDuration;
-
 use ten_rust::pkg_info::get_pkg_info_from_path;
 
 use crate::{
@@ -40,27 +39,24 @@ pub fn create_sub_cmd(_args_cfg: &crate::cmd_line::ArgsCfg) -> Command {
         .arg(
             Arg::new("GET_IDENTITY")
                 .long("get-identity")
-                .help(
-                    "Output the package identity (type, name, version, hash) \
-                     to stdout and exit",
-                )
+                .help("Output the package identity (type, name, version, hash) to stdout and exit")
                 .action(clap::ArgAction::SetTrue)
                 .hide(true)
                 .required(false),
         )
         .after_help(
-            "Switch to the base directory of the TEN package you want to \
-             package, then simply run 'tman package' directly in that \
-             directory.",
+            "Switch to the base directory of the TEN package you want to package, then simply run \
+             'tman package' directly in that directory.",
         )
 }
 
-pub fn parse_sub_cmd(
-    sub_cmd_args: &ArgMatches,
-) -> Result<crate::cmd::cmd_package::PackageCommand> {
+pub fn parse_sub_cmd(sub_cmd_args: &ArgMatches) -> Result<crate::cmd::cmd_package::PackageCommand> {
     let output_path = sub_cmd_args.get_one::<String>("OUTPUT_PATH").cloned();
     let get_identity = sub_cmd_args.get_flag("GET_IDENTITY");
-    Ok(crate::cmd::cmd_package::PackageCommand { output_path, get_identity })
+    Ok(crate::cmd::cmd_package::PackageCommand {
+        output_path,
+        get_identity,
+    })
 }
 
 pub async fn execute_cmd(
@@ -78,8 +74,7 @@ pub async fn execute_cmd(
 
     if command_data.get_identity {
         // Get the package info and output identity information.
-        let pkg_info =
-            get_pkg_info_from_path(&cwd, true, false, &mut None, None).await?;
+        let pkg_info = get_pkg_info_from_path(&cwd, true, false, &mut None, None).await?;
         let hash = pkg_info.gen_hash_hex();
 
         let pkg_type = &pkg_info.manifest.type_and_name.pkg_type;
@@ -100,8 +95,7 @@ pub async fn execute_cmd(
         // Use the default output path, which is located in the `.ten/`
         // directory, ensuring that under normal circumstances, it will not be
         // uploaded to the git repository.
-        let pkg_info =
-            get_pkg_info_from_path(&cwd, true, false, &mut None, None).await?;
+        let pkg_info = get_pkg_info_from_path(&cwd, true, false, &mut None, None).await?;
         let output_pkg_file_name = get_tpkg_file_name(&pkg_info)?;
 
         // Create the output directory.
@@ -117,13 +111,8 @@ pub async fn execute_cmd(
         std::fs::remove_file(&output_path)?;
     }
 
-    let output_path_str = create_package_tar_gz_file(
-        tman_config,
-        &output_path,
-        &cwd,
-        out.clone(),
-    )
-    .await?;
+    let output_path_str =
+        create_package_tar_gz_file(tman_config, &output_path, &cwd, out.clone()).await?;
 
     out.normal_line(&format!(
         "{}  Pack package to {:?} in {}",

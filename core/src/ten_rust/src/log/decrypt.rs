@@ -17,11 +17,7 @@ use crate::crypto::{new_cipher, Cipher, CipherAlgorithm};
 ///
 /// This function validates magic and parity, decrypts each record, and
 /// concatenates all plaintexts in order.
-pub fn decrypt_records_bytes(
-    algorithm: &str,
-    params_json: &str,
-    input: &[u8],
-) -> Result<Vec<u8>> {
+pub fn decrypt_records_bytes(algorithm: &str, params_json: &str, input: &[u8]) -> Result<Vec<u8>> {
     let mut cipher: Cipher = new_cipher(algorithm, params_json)?;
     let mut pos: usize = 0;
     let mut out: Vec<u8> = Vec::new();
@@ -32,12 +28,7 @@ pub fn decrypt_records_bytes(
             return Err(anyhow!("invalid magic header at pos {pos}"));
         }
         let parity_bit = (header[2] >> 7) & 1;
-        let calc = (header[0]
-            ^ header[1]
-            ^ (header[2] & 0x7F)
-            ^ header[3]
-            ^ header[4])
-            & 1;
+        let calc = (header[0] ^ header[1] ^ (header[2] & 0x7F) ^ header[3] ^ header[4]) & 1;
         if parity_bit != calc {
             return Err(anyhow!("parity mismatch at pos {pos}"));
         }

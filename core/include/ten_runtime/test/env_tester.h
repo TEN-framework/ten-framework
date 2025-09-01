@@ -61,11 +61,10 @@ TEN_RUNTIME_API bool ten_env_tester_stop_test(ten_env_tester_t *self,
                                               ten_error_t *test_result,
                                               ten_error_t *error);
 
-TEN_RUNTIME_API bool ten_env_tester_log(ten_env_tester_t *self,
-                                        TEN_LOG_LEVEL level,
-                                        const char *func_name,
-                                        const char *file_name, size_t line_no,
-                                        const char *msg, ten_error_t *error);
+TEN_RUNTIME_API bool ten_env_tester_log(
+    ten_env_tester_t *self, TEN_LOG_LEVEL level, const char *func_name,
+    const char *file_name, size_t line_no, const char *msg,
+    const char *category, ten_value_t *fields, ten_error_t *error);
 
 TEN_RUNTIME_API bool ten_env_tester_set_msg_source(
     ten_env_tester_t *self, ten_shared_ptr_t *msg, const char *app_uri,

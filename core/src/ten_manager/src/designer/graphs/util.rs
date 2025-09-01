@@ -11,8 +11,7 @@ use ten_rust::{
 
 /// Finds the app package in the list of packages
 pub fn find_app_package(pkgs: &mut [PkgInfo]) -> Option<&mut PkgInfo> {
-    pkgs.iter_mut()
-        .find(|pkg| pkg.manifest.type_and_name.pkg_type == PkgType::App)
+    pkgs.iter_mut().find(|pkg| pkg.manifest.type_and_name.pkg_type == PkgType::App)
 }
 
 /// Finds the app package directly from PkgsInfoInApp.

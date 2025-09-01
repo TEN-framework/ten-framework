@@ -25,12 +25,8 @@ mod tests {
     async fn test_get_apps_with_uri() {
         // Set up the designer state with initial data.
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -48,26 +44,20 @@ mod tests {
             )
             .await;
 
-            assert_eq!(
-                pkgs_cache.get("tests/test_data/app_with_uri").unwrap().len(),
-                3
-            );
+            assert_eq!(pkgs_cache.get("tests/test_data/app_with_uri").unwrap().len(), 3);
         }
 
         let designer_state = Arc::new(designer_state);
 
         // Set up the test service.
         let app = test::init_service(
-            App::new().app_data(web::Data::new(designer_state.clone())).route(
-                "/test_get_apps_with_uri",
-                web::get().to(get_apps_endpoint),
-            ),
+            App::new()
+                .app_data(web::Data::new(designer_state.clone()))
+                .route("/test_get_apps_with_uri", web::get().to(get_apps_endpoint)),
         )
         .await;
 
-        let req = test::TestRequest::get()
-            .uri("/test_get_apps_with_uri")
-            .to_request();
+        let req = test::TestRequest::get().uri("/test_get_apps_with_uri").to_request();
 
         // Send the request and get the response.
         let resp = test::call_service(&app, req).await;
@@ -82,10 +72,7 @@ mod tests {
             serde_json::from_str(body_str).unwrap();
         assert_eq!(api_response.status, Status::Ok);
         assert_eq!(api_response.data.app_info.len(), 1);
-        assert_eq!(
-            api_response.data.app_info[0].base_dir,
-            "tests/test_data/app_with_uri"
-        );
+        assert_eq!(api_response.data.app_info[0].base_dir, "tests/test_data/app_with_uri");
         assert_eq!(
             api_response.data.app_info[0].app_uri,
             Some("msgpack://localhost:8000".to_string())
@@ -96,12 +83,8 @@ mod tests {
     async fn test_get_apps_without_uri() {
         // Set up the designer state with initial data.
         let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(
-                TmanConfig::default(),
-            )),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-                TmanStorageInMemory::default(),
-            )),
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
             out: Arc::new(Box::new(TmanOutputCli)),
             pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
             graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -119,29 +102,20 @@ mod tests {
             )
             .await;
 
-            assert_eq!(
-                pkgs_cache
-                    .get("tests/test_data/app_without_uri")
-                    .unwrap()
-                    .len(),
-                3
-            );
+            assert_eq!(pkgs_cache.get("tests/test_data/app_without_uri").unwrap().len(), 3);
         }
 
         let designer_state = Arc::new(designer_state);
 
         // Set up the test service.
         let app = test::init_service(
-            App::new().app_data(web::Data::new(designer_state.clone())).route(
-                "/test_get_apps_without_uri",
-                web::get().to(get_apps_endpoint),
-            ),
+            App::new()
+                .app_data(web::Data::new(designer_state.clone()))
+                .route("/test_get_apps_without_uri", web::get().to(get_apps_endpoint)),
         )
         .await;
 
-        let req = test::TestRequest::get()
-            .uri("/test_get_apps_without_uri")
-            .to_request();
+        let req = test::TestRequest::get().uri("/test_get_apps_without_uri").to_request();
 
         // Send the request and get the response.
         let resp = test::call_service(&app, req).await;
@@ -156,10 +130,7 @@ mod tests {
             serde_json::from_str(body_str).unwrap();
         assert_eq!(api_response.status, Status::Ok);
         assert_eq!(api_response.data.app_info.len(), 1);
-        assert_eq!(
-            api_response.data.app_info[0].base_dir,
-            "tests/test_data/app_without_uri"
-        );
+        assert_eq!(api_response.data.app_info[0].base_dir, "tests/test_data/app_without_uri");
         assert_eq!(api_response.data.app_info[0].app_uri, None);
     }
 }

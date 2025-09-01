@@ -9,21 +9,17 @@ mod msg;
 mod run_script;
 
 // Re-export only the types that should be public API
-pub use msg::{InboundMsg, OutboundMsg};
-
-use std::process::Child;
-use std::sync::Arc;
+use std::{process::Child, sync::Arc};
 
 use actix::{Actor, AsyncContext, Handler, Message, StreamHandler};
 use actix_web::{web, Error, HttpRequest, HttpResponse};
 use actix_web_actors::ws;
-use anyhow::Context;
-use anyhow::Result;
-
-use crate::designer::DesignerState;
-use crate::log::LogLineInfo;
+use anyhow::{Context, Result};
 use cmd_run::ShutdownSenders;
+pub use msg::{InboundMsg, OutboundMsg};
 use run_script::extract_command_from_manifest;
+
+use crate::{designer::DesignerState, log::LogLineInfo};
 
 // The output (stdout, stderr) and exit status from the child process.
 #[derive(Message)]
@@ -46,9 +42,8 @@ pub type CmdParser = Box<
             &str,
         ) -> std::pin::Pin<
             Box<
-                dyn std::future::Future<
-                        Output = Result<(String, Option<String>, bool, bool)>,
-                    > + Send,
+                dyn std::future::Future<Output = Result<(String, Option<String>, bool, bool)>>
+                    + Send,
             >,
         > + Send
         + Sync,
@@ -98,36 +93,40 @@ impl Handler<RunCmdOutput> for WsRunCmd {
 
     // Handles the output (stderr, stdout) and exit status from the child
     // process.
-    fn handle(
-        &mut self,
-        msg: RunCmdOutput,
-        ctx: &mut Self::Context,
-    ) -> Self::Result {
+    fn handle(&mut self, msg: RunCmdOutput, ctx: &mut Self::Context) -> Self::Result {
         match msg {
             RunCmdOutput::StdOutNormal(line) => {
                 // Send the line to the client.
-                let msg_out = OutboundMsg::StdOutNormal { data: line };
+                let msg_out = OutboundMsg::StdOutNormal {
+                    data: line,
+                };
                 let out_str = serde_json::to_string(&msg_out).unwrap();
 
                 // Sends a text message to the WebSocket client.
                 ctx.text(out_str);
             }
             RunCmdOutput::StdOutLog(log_line) => {
-                let msg_out = OutboundMsg::StdOutLog { data: log_line };
+                let msg_out = OutboundMsg::StdOutLog {
+                    data: log_line,
+                };
                 let out_str = serde_json::to_string(&msg_out).unwrap();
 
                 // Sends a text message to the WebSocket client.
                 ctx.text(out_str);
             }
             RunCmdOutput::StdErrNormal(line) => {
-                let msg_out = OutboundMsg::StdErrNormal { data: line };
+                let msg_out = OutboundMsg::StdErrNormal {
+                    data: line,
+                };
                 let out_str = serde_json::to_string(&msg_out).unwrap();
 
                 // Sends a text message to the WebSocket client.
                 ctx.text(out_str);
             }
             RunCmdOutput::StdErrLog(log_line) => {
-                let msg_out = OutboundMsg::StdErrLog { data: log_line };
+                let msg_out = OutboundMsg::StdErrLog {
+                    data: log_line,
+                };
                 let out_str = serde_json::to_string(&msg_out).unwrap();
 
                 // Sends a text message to the WebSocket client.
@@ -135,7 +134,9 @@ impl Handler<RunCmdOutput> for WsRunCmd {
             }
             RunCmdOutput::Exit(code) => {
                 // Send it to the client.
-                let msg_out = OutboundMsg::Exit { code };
+                let msg_out = OutboundMsg::Exit {
+                    code,
+                };
                 let out_str = serde_json::to_string(&msg_out).unwrap();
 
                 // Sends a text message to the WebSocket client.
@@ -153,11 +154,7 @@ impl Handler<RunCmdOutput> for WsRunCmd {
 impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsRunCmd {
     // Handles messages from WebSocket clients, including text messages, Ping,
     // Close, and more.
-    fn handle(
-        &mut self,
-        item: Result<ws::Message, ws::ProtocolError>,
-        ctx: &mut Self::Context,
-    ) {
+    fn handle(&mut self, item: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
         match item {
             Ok(ws::Message::Text(text)) => {
                 println!("Received text: {text}");
@@ -167,12 +164,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsRunCmd {
 
                 actix::spawn(async move {
                     match fut.await {
-                        Ok((
-                            cmd,
-                            working_directory,
-                            stdout_is_log,
-                            stderr_is_log,
-                        )) => {
+                        Ok((cmd, working_directory, stdout_is_log, stderr_is_log)) => {
                             actor_addr.do_send(ProcessCommand {
                                 cmd,
                                 working_directory,
@@ -181,10 +173,10 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsRunCmd {
                             });
                         }
                         Err(e) => {
-                            let err_out =
-                                OutboundMsg::Error { msg: e.to_string() };
-                            let out_str =
-                                serde_json::to_string(&err_out).unwrap();
+                            let err_out = OutboundMsg::Error {
+                                msg: e.to_string(),
+                            };
+                            let out_str = serde_json::to_string(&err_out).unwrap();
                             actor_addr.do_send(SendText(out_str));
                             actor_addr.do_send(CloseConnection);
                         }
@@ -222,11 +214,7 @@ struct CloseConnection;
 impl Handler<SendText> for WsRunCmd {
     type Result = ();
 
-    fn handle(
-        &mut self,
-        msg: SendText,
-        ctx: &mut Self::Context,
-    ) -> Self::Result {
+    fn handle(&mut self, msg: SendText, ctx: &mut Self::Context) -> Self::Result {
         ctx.text(msg.0);
     }
 }
@@ -234,11 +222,7 @@ impl Handler<SendText> for WsRunCmd {
 impl Handler<CloseConnection> for WsRunCmd {
     type Result = ();
 
-    fn handle(
-        &mut self,
-        _: CloseConnection,
-        ctx: &mut Self::Context,
-    ) -> Self::Result {
+    fn handle(&mut self, _: CloseConnection, ctx: &mut Self::Context) -> Self::Result {
         ctx.close(None);
     }
 }
@@ -246,11 +230,7 @@ impl Handler<CloseConnection> for WsRunCmd {
 impl Handler<ProcessCommand> for WsRunCmd {
     type Result = ();
 
-    fn handle(
-        &mut self,
-        msg: ProcessCommand,
-        ctx: &mut Self::Context,
-    ) -> Self::Result {
+    fn handle(&mut self, msg: ProcessCommand, ctx: &mut Self::Context) -> Self::Result {
         if let Some(dir) = msg.working_directory {
             self.working_directory = Some(dir);
         }
@@ -279,9 +259,7 @@ pub async fn exec_endpoint(
         Box::pin(async move {
             // Attempt to parse the JSON text from client.
             let inbound = serde_json::from_str::<InboundMsg>(&text_owned)
-                .with_context(|| {
-                    format!("Failed to parse {text_owned} into JSON")
-                })?;
+                .with_context(|| format!("Failed to parse {text_owned} into JSON"))?;
 
             match inbound {
                 InboundMsg::ExecCmd {
@@ -296,12 +274,8 @@ pub async fn exec_endpoint(
                     stdout_is_log,
                     stderr_is_log,
                 } => {
-                    let cmd = extract_command_from_manifest(
-                        &base_dir,
-                        &name,
-                        state_clone_inner,
-                    )
-                    .await?;
+                    let cmd =
+                        extract_command_from_manifest(&base_dir, &name, state_clone_inner).await?;
                     Ok((cmd, Some(base_dir), stdout_is_log, stderr_is_log))
                 }
             }

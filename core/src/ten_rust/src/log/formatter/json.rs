@@ -5,10 +5,13 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 use std::fmt;
+
 use tracing::{Event, Level, Subscriber};
-use tracing_subscriber::field::Visit;
-use tracing_subscriber::fmt::{format, FmtContext, FormatEvent, FormatFields};
-use tracing_subscriber::registry::LookupSpan;
+use tracing_subscriber::{
+    field::Visit,
+    fmt::{format, FmtContext, FormatEvent, FormatFields},
+    registry::LookupSpan,
+};
 
 // ANSI color codes
 const COLOR_RESET: &str = "\x1b[0m";
@@ -31,11 +34,7 @@ struct FieldVisitor {
 }
 
 impl Visit for FieldVisitor {
-    fn record_debug(
-        &mut self,
-        field: &tracing::field::Field,
-        value: &dyn fmt::Debug,
-    ) {
+    fn record_debug(&mut self, field: &tracing::field::Field, value: &dyn fmt::Debug) {
         match field.name() {
             "pid" => {
                 if let Ok(pid) = format!("{value:?}").parse::<i64>() {
@@ -48,12 +47,10 @@ impl Visit for FieldVisitor {
                 }
             }
             "func_name" => {
-                self.func_name =
-                    Some(format!("{value:?}").trim_matches('"').to_string());
+                self.func_name = Some(format!("{value:?}").trim_matches('"').to_string());
             }
             "file_name" => {
-                self.file_name =
-                    Some(format!("{value:?}").trim_matches('"').to_string());
+                self.file_name = Some(format!("{value:?}").trim_matches('"').to_string());
             }
             "line_no" => {
                 if let Ok(line) = format!("{value:?}").parse::<u32>() {
@@ -61,8 +58,7 @@ impl Visit for FieldVisitor {
                 }
             }
             "target" => {
-                self.target =
-                    Some(format!("{value:?}").trim_matches('"').to_string());
+                self.target = Some(format!("{value:?}").trim_matches('"').to_string());
             }
             "message" => {
                 if !self.message.is_empty() {
@@ -76,8 +72,7 @@ impl Visit for FieldVisitor {
                     if !self.message.is_empty() {
                         self.message.push(' ');
                     }
-                    self.message
-                        .push_str(format!("{value:?}").trim_matches('"'));
+                    self.message.push_str(format!("{value:?}").trim_matches('"'));
                 }
             }
         }
@@ -176,7 +171,9 @@ pub struct JsonFormatter {
 
 impl JsonFormatter {
     pub fn new(config: JsonConfig) -> Self {
-        Self { config }
+        Self {
+            config,
+        }
     }
 
     fn get_level_color(&self, level: &Level) -> &'static str {
@@ -224,11 +221,7 @@ where
             if self.config.ansi { COLOR_BLUE } else { "" }
         )?;
         self.format_time(&mut writer)?;
-        write!(
-            writer,
-            "{}\"",
-            if self.config.ansi { COLOR_RESET } else { "" }
-        )?;
+        write!(writer, "{}\"", if self.config.ansi { COLOR_RESET } else { "" })?;
 
         // Level
         let level_color = self.get_level_color(metadata.level());

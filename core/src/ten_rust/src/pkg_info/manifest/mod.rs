@@ -10,32 +10,37 @@ pub mod interface;
 pub mod publish;
 pub mod support;
 
-use std::collections::{HashMap, HashSet};
-use std::sync::Arc;
-use std::{fmt, fs, path::Path, str::FromStr};
+use std::{
+    collections::{HashMap, HashSet},
+    fmt, fs,
+    path::Path,
+    str::FromStr,
+    sync::Arc,
+};
 
 use anyhow::{anyhow, Context, Result};
+use api::ManifestApi;
+use dependency::ManifestDependency;
 use once_cell::sync::Lazy;
+use publish::PackageConfig;
 use regex::Regex;
 use semver::Version;
 use serde::{Deserialize, Serialize, Serializer};
 use serde_json::{Map, Value};
-
-use crate::json_schema;
-use crate::json_schema::ten_validate_manifest_json_string;
-use crate::pkg_info::constants::MANIFEST_JSON_FILENAME;
-use crate::pkg_info::manifest::interface::flatten_manifest_api;
-use crate::pkg_info::pkg_type::PkgType;
-use crate::utils::fs::read_file_to_string;
-use crate::utils::path::get_real_path_from_import_uri;
-use crate::utils::uri::load_content_from_uri;
-use api::ManifestApi;
-use dependency::ManifestDependency;
-use publish::PackageConfig;
 use support::ManifestSupport;
 
-use super::constants::TEN_STR_TAGS;
-use super::pkg_type_and_name::PkgTypeAndName;
+use super::{constants::TEN_STR_TAGS, pkg_type_and_name::PkgTypeAndName};
+use crate::{
+    json_schema,
+    json_schema::ten_validate_manifest_json_string,
+    pkg_info::{
+        constants::MANIFEST_JSON_FILENAME, manifest::interface::flatten_manifest_api,
+        pkg_type::PkgType,
+    },
+    utils::{
+        fs::read_file_to_string, path::get_real_path_from_import_uri, uri::load_content_from_uri,
+    },
+};
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct LocaleContent {
@@ -74,9 +79,7 @@ impl Serialize for LocaleContent {
         } else {
             // This should not happen based on validation, but handle it
             // gracefully
-            Err(serde::ser::Error::custom(
-                "LocaleContent must have either content or import_uri",
-            ))
+            Err(serde::ser::Error::custom("LocaleContent must have either content or import_uri"))
         }
     }
 }
@@ -95,25 +98,19 @@ impl LocaleContent {
 
         // If content is None, try to load from import_uri
         if let Some(import_uri) = &self.import_uri {
-            let real_path = get_real_path_from_import_uri(
-                import_uri,
-                self.base_dir.as_deref(),
-            )?;
+            let real_path = get_real_path_from_import_uri(import_uri, self.base_dir.as_deref())?;
 
             // Load content from URI
             load_content_from_uri(&real_path).await.with_context(|| {
                 format!(
-                    "Failed to load content from import_uri '{import_uri}' \
-                     with base_dir '{:?}'",
+                    "Failed to load content from import_uri '{import_uri}' with base_dir '{:?}'",
                     self.base_dir
                 )
             })
         } else {
             // Both content and import_uri are None, this should not happen
             // as it's validated during parsing
-            Err(anyhow!(
-                "LocaleContent must have either 'content' or 'import_uri'"
-            ))
+            Err(anyhow!("LocaleContent must have either 'content' or 'import_uri'"))
         }
     }
 }
@@ -142,19 +139,99 @@ pub struct Manifest {
     pub package: Option<PackageConfig>,
     pub scripts: Option<HashMap<String, String>>,
 
-    /// All fields from manifest.json, stored with order preserved.
-    pub all_fields: Map<String, Value>,
-
     /// The flattened API.
     pub flattened_api: Arc<tokio::sync::RwLock<Option<ManifestApi>>>,
 }
 
+/// Serialize the Manifest to a JSON string, but not resolve the content of the
+/// LocaleContent fields. Use `serialize_with_resolved_content` if you want to
+/// resolve description, display_name, and readme fields.
 impl Serialize for Manifest {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
     {
-        self.all_fields.serialize(serializer)
+        use serde_json::Map;
+        let mut map = Map::new();
+
+        // Serialize type and name
+        map.insert(
+            "type".to_string(),
+            serde_json::to_value(self.type_and_name.pkg_type).map_err(serde::ser::Error::custom)?,
+        );
+        map.insert(
+            "name".to_string(),
+            serde_json::to_value(&self.type_and_name.name).map_err(serde::ser::Error::custom)?,
+        );
+        // Serialize version
+        map.insert(
+            "version".to_string(),
+            serde_json::to_value(&self.version).map_err(serde::ser::Error::custom)?,
+        );
+        // Option fields
+        if let Some(ref dependencies) = self.dependencies {
+            map.insert(
+                "dependencies".to_string(),
+                serde_json::to_value(dependencies).map_err(serde::ser::Error::custom)?,
+            );
+        }
+        if let Some(ref dev_dependencies) = self.dev_dependencies {
+            map.insert(
+                "dev_dependencies".to_string(),
+                serde_json::to_value(dev_dependencies).map_err(serde::ser::Error::custom)?,
+            );
+        }
+        if let Some(ref tags) = self.tags {
+            map.insert(
+                "tags".to_string(),
+                serde_json::to_value(tags).map_err(serde::ser::Error::custom)?,
+            );
+        }
+        if let Some(ref supports) = self.supports {
+            map.insert(
+                "supports".to_string(),
+                serde_json::to_value(supports).map_err(serde::ser::Error::custom)?,
+            );
+        }
+        if let Some(ref api) = self.api {
+            map.insert(
+                "api".to_string(),
+                serde_json::to_value(api).map_err(serde::ser::Error::custom)?,
+            );
+        }
+        if let Some(ref package) = self.package {
+            map.insert(
+                "package".to_string(),
+                serde_json::to_value(package).map_err(serde::ser::Error::custom)?,
+            );
+        }
+        if let Some(ref scripts) = self.scripts {
+            map.insert(
+                "scripts".to_string(),
+                serde_json::to_value(scripts).map_err(serde::ser::Error::custom)?,
+            );
+        }
+        // The following fields may contain async content (e.g., import_uri),
+        // but here we only serialize their in-memory structure.
+        if let Some(ref description) = self.description {
+            map.insert(
+                "description".to_string(),
+                serde_json::to_value(description).map_err(serde::ser::Error::custom)?,
+            );
+        }
+        if let Some(ref display_name) = self.display_name {
+            map.insert(
+                "display_name".to_string(),
+                serde_json::to_value(display_name).map_err(serde::ser::Error::custom)?,
+            );
+        }
+        if let Some(ref readme) = self.readme {
+            map.insert(
+                "readme".to_string(),
+                serde_json::to_value(readme).map_err(serde::ser::Error::custom)?,
+            );
+        }
+        map.serialize(serializer)
     }
 }
 
@@ -163,35 +240,29 @@ impl<'de> Deserialize<'de> for Manifest {
     where
         D: serde::Deserializer<'de>,
     {
-        let all_fields = Map::deserialize(deserializer)?;
+        let temp_all_fields = Map::deserialize(deserializer)?;
 
-        // Now extract the fields from all_fields.
-        let type_and_name = extract_type_and_name(&all_fields)
-            .map_err(serde::de::Error::custom)?;
-        let version =
-            extract_version(&all_fields).map_err(serde::de::Error::custom)?;
+        // Now extract the fields from temp_all_fields.
+        let type_and_name =
+            extract_type_and_name(&temp_all_fields).map_err(serde::de::Error::custom)?;
+        let version = extract_version(&temp_all_fields).map_err(serde::de::Error::custom)?;
 
-        let description = extract_description(&all_fields)
-            .map_err(serde::de::Error::custom)?;
-        let display_name = extract_display_name(&all_fields)
-            .map_err(serde::de::Error::custom)?;
-        let readme =
-            extract_readme(&all_fields).map_err(serde::de::Error::custom)?;
+        let description =
+            extract_description(&temp_all_fields).map_err(serde::de::Error::custom)?;
+        let display_name =
+            extract_display_name(&temp_all_fields).map_err(serde::de::Error::custom)?;
+        let readme = extract_readme(&temp_all_fields).map_err(serde::de::Error::custom)?;
 
-        let dependencies = extract_dependencies(&all_fields)
-            .map_err(serde::de::Error::custom)?;
-        let dev_dependencies = extract_dev_dependencies(&all_fields)
-            .map_err(serde::de::Error::custom)?;
+        let dependencies =
+            extract_dependencies(&temp_all_fields).map_err(serde::de::Error::custom)?;
+        let dev_dependencies =
+            extract_dev_dependencies(&temp_all_fields).map_err(serde::de::Error::custom)?;
 
-        let tags =
-            extract_tags(&all_fields).map_err(serde::de::Error::custom)?;
-        let supports =
-            extract_supports(&all_fields).map_err(serde::de::Error::custom)?;
-        let api = extract_api(&all_fields).map_err(serde::de::Error::custom)?;
-        let package =
-            extract_package(&all_fields).map_err(serde::de::Error::custom)?;
-        let scripts =
-            extract_scripts(&all_fields).map_err(serde::de::Error::custom)?;
+        let tags = extract_tags(&temp_all_fields).map_err(serde::de::Error::custom)?;
+        let supports = extract_supports(&temp_all_fields).map_err(serde::de::Error::custom)?;
+        let api = extract_api(&temp_all_fields).map_err(serde::de::Error::custom)?;
+        let package = extract_package(&temp_all_fields).map_err(serde::de::Error::custom)?;
+        let scripts = extract_scripts(&temp_all_fields).map_err(serde::de::Error::custom)?;
 
         Ok(Manifest {
             type_and_name,
@@ -206,7 +277,6 @@ impl<'de> Deserialize<'de> for Manifest {
             api,
             package,
             scripts,
-            all_fields,
             flattened_api: Arc::new(tokio::sync::RwLock::new(None)),
         })
     }
@@ -214,13 +284,6 @@ impl<'de> Deserialize<'de> for Manifest {
 
 impl Default for Manifest {
     fn default() -> Self {
-        let mut all_fields = Map::new();
-        all_fields
-            .insert("type".to_string(), Value::String("invalid".to_string()));
-        all_fields.insert("name".to_string(), Value::String(String::new()));
-        all_fields
-            .insert("version".to_string(), Value::String("0.0.0".to_string()));
-
         Self {
             type_and_name: PkgTypeAndName {
                 pkg_type: PkgType::Invalid,
@@ -237,7 +300,6 @@ impl Default for Manifest {
             api: None,
             package: None,
             scripts: None,
-            all_fields,
             flattened_api: Arc::new(tokio::sync::RwLock::new(None)),
         }
     }
@@ -248,26 +310,26 @@ impl Manifest {
         ten_validate_manifest_json_string(s)?;
 
         let value: serde_json::Value = serde_json::from_str(s)?;
-        let all_fields = match value {
+        let temp_all_fields = match value {
             Value::Object(map) => map,
             _ => return Err(anyhow!("Expected JSON object")),
         };
 
         // Extract key fields into the struct fields for easier access.
-        let type_and_name = extract_type_and_name(&all_fields)?;
-        let version = extract_version(&all_fields)?;
+        let type_and_name = extract_type_and_name(&temp_all_fields)?;
+        let version = extract_version(&temp_all_fields)?;
 
-        let description = extract_description(&all_fields)?;
-        let display_name = extract_display_name(&all_fields)?;
-        let readme = extract_readme(&all_fields)?;
-        let dependencies = extract_dependencies(&all_fields)?;
-        let dev_dependencies = extract_dev_dependencies(&all_fields)?;
+        let description = extract_description(&temp_all_fields)?;
+        let display_name = extract_display_name(&temp_all_fields)?;
+        let readme = extract_readme(&temp_all_fields)?;
+        let dependencies = extract_dependencies(&temp_all_fields)?;
+        let dev_dependencies = extract_dev_dependencies(&temp_all_fields)?;
 
-        let tags = extract_tags(&all_fields)?;
-        let supports = extract_supports(&all_fields)?;
-        let api = extract_api(&all_fields)?;
-        let package = extract_package(&all_fields)?;
-        let scripts = extract_scripts(&all_fields)?;
+        let tags = extract_tags(&temp_all_fields)?;
+        let supports = extract_supports(&temp_all_fields)?;
+        let api = extract_api(&temp_all_fields)?;
+        let package = extract_package(&temp_all_fields)?;
+        let scripts = extract_scripts(&temp_all_fields)?;
 
         // Create manifest with all fields.
         let manifest = Manifest {
@@ -283,7 +345,6 @@ impl Manifest {
             api,
             package,
             scripts,
-            all_fields,
             flattened_api: Arc::new(tokio::sync::RwLock::new(None)),
         };
 
@@ -292,7 +353,39 @@ impl Manifest {
 
     /// Async serialization method that resolves LocaleContent fields
     pub async fn serialize_with_resolved_content(&self) -> Result<String> {
-        let mut serialized_fields = self.all_fields.clone();
+        let mut serialized_fields = Map::new();
+
+        // break type_and_name into type and name
+        serialized_fields
+            .insert("type".to_string(), serde_json::to_value(self.type_and_name.pkg_type)?);
+        serialized_fields
+            .insert("name".to_string(), serde_json::to_value(&self.type_and_name.name)?);
+
+        // other simple fields
+        serialized_fields.insert("version".to_string(), serde_json::to_value(&self.version)?);
+        if let Some(dependencies) = &self.dependencies {
+            serialized_fields
+                .insert("dependencies".to_string(), serde_json::to_value(dependencies)?);
+        }
+        if let Some(dev_dependencies) = &self.dev_dependencies {
+            serialized_fields
+                .insert("dev_dependencies".to_string(), serde_json::to_value(dev_dependencies)?);
+        }
+        if let Some(tags) = &self.tags {
+            serialized_fields.insert("tags".to_string(), serde_json::to_value(tags)?);
+        }
+        if let Some(supports) = &self.supports {
+            serialized_fields.insert("supports".to_string(), serde_json::to_value(supports)?);
+        }
+        if let Some(api) = &self.api {
+            serialized_fields.insert("api".to_string(), serde_json::to_value(api)?);
+        }
+        if let Some(package) = &self.package {
+            serialized_fields.insert("package".to_string(), serde_json::to_value(package)?);
+        }
+        if let Some(scripts) = &self.scripts {
+            serialized_fields.insert("scripts".to_string(), serde_json::to_value(scripts)?);
+        }
 
         // Resolve description field
         if let Some(description) = &self.description {
@@ -300,18 +393,12 @@ impl Manifest {
             for (locale, locale_content) in &description.locales {
                 let content = locale_content.get_content().await?;
                 let mut locale_obj = Map::new();
-                locale_obj
-                    .insert("content".to_string(), Value::String(content));
-                resolved_locales
-                    .insert(locale.clone(), Value::Object(locale_obj));
+                locale_obj.insert("content".to_string(), Value::String(content));
+                resolved_locales.insert(locale.clone(), Value::Object(locale_obj));
             }
             let mut description_obj = Map::new();
-            description_obj
-                .insert("locales".to_string(), Value::Object(resolved_locales));
-            serialized_fields.insert(
-                "description".to_string(),
-                Value::Object(description_obj),
-            );
+            description_obj.insert("locales".to_string(), Value::Object(resolved_locales));
+            serialized_fields.insert("description".to_string(), Value::Object(description_obj));
         }
 
         // Resolve display_name field
@@ -320,18 +407,12 @@ impl Manifest {
             for (locale, locale_content) in &display_name.locales {
                 let content = locale_content.get_content().await?;
                 let mut locale_obj = Map::new();
-                locale_obj
-                    .insert("content".to_string(), Value::String(content));
-                resolved_locales
-                    .insert(locale.clone(), Value::Object(locale_obj));
+                locale_obj.insert("content".to_string(), Value::String(content));
+                resolved_locales.insert(locale.clone(), Value::Object(locale_obj));
             }
             let mut display_name_obj = Map::new();
-            display_name_obj
-                .insert("locales".to_string(), Value::Object(resolved_locales));
-            serialized_fields.insert(
-                "display_name".to_string(),
-                Value::Object(display_name_obj),
-            );
+            display_name_obj.insert("locales".to_string(), Value::Object(resolved_locales));
+            serialized_fields.insert("display_name".to_string(), Value::Object(display_name_obj));
         }
 
         // Resolve readme field
@@ -340,16 +421,12 @@ impl Manifest {
             for (locale, locale_content) in &readme.locales {
                 let content = locale_content.get_content().await?;
                 let mut locale_obj = Map::new();
-                locale_obj
-                    .insert("content".to_string(), Value::String(content));
-                resolved_locales
-                    .insert(locale.clone(), Value::Object(locale_obj));
+                locale_obj.insert("content".to_string(), Value::String(content));
+                resolved_locales.insert(locale.clone(), Value::Object(locale_obj));
             }
             let mut readme_obj = Map::new();
-            readme_obj
-                .insert("locales".to_string(), Value::Object(resolved_locales));
-            serialized_fields
-                .insert("readme".to_string(), Value::Object(readme_obj));
+            readme_obj.insert("locales".to_string(), Value::Object(resolved_locales));
+            serialized_fields.insert("readme".to_string(), Value::Object(readme_obj));
         }
 
         serde_json::to_string_pretty(&serialized_fields)
@@ -370,7 +447,10 @@ fn extract_type_and_name(map: &Map<String, Value>) -> Result<PkgTypeAndName> {
         return Err(anyhow!("Missing or invalid 'name' field"));
     };
 
-    Ok(PkgTypeAndName { pkg_type, name })
+    Ok(PkgTypeAndName {
+        pkg_type,
+        name,
+    })
 }
 
 fn extract_version(map: &Map<String, Value>) -> Result<Version> {
@@ -387,8 +467,7 @@ fn extract_localized_field(
     field_name: &str,
 ) -> Result<Option<LocalizedField>> {
     // Lazy static initialization of regex that validates the locale format.
-    static LOCALE_REGEX: Lazy<Regex> =
-        Lazy::new(|| Regex::new(r"^[a-z]{2}(-[A-Z]{2})?$").unwrap());
+    static LOCALE_REGEX: Lazy<Regex> = Lazy::new(|| Regex::new(r"^[a-z]{2}(-[A-Z]{2})?$").unwrap());
 
     if let Some(Value::Object(field_obj)) = map.get(field_name) {
         if let Some(Value::Object(locales_obj)) = field_obj.get("locales") {
@@ -397,8 +476,8 @@ fn extract_localized_field(
                 // Validate locale string format.
                 if !LOCALE_REGEX.is_match(locale) {
                     return Err(anyhow!(
-                        "Invalid locale format: '{}'. Locales must be in \
-                         format 'xx' or 'xx-YY' (BCP47 format)",
+                        "Invalid locale format: '{}'. Locales must be in format 'xx' or 'xx-YY' \
+                         (BCP47 format)",
                         locale
                     ));
                 }
@@ -410,47 +489,33 @@ fn extract_localized_field(
                         base_dir: None,
                     };
 
-                    if let Some(Value::String(content_str)) =
-                        content_obj.get("content")
-                    {
+                    if let Some(Value::String(content_str)) = content_obj.get("content") {
                         if content_str.is_empty() {
-                            return Err(anyhow!(
-                                "Content for locale '{}' cannot be empty",
-                                locale
-                            ));
+                            return Err(anyhow!("Content for locale '{}' cannot be empty", locale));
                         }
                         locale_content.content = Some(content_str.clone());
                     }
 
-                    if let Some(Value::String(import_uri_str)) =
-                        content_obj.get("import_uri")
-                    {
+                    if let Some(Value::String(import_uri_str)) = content_obj.get("import_uri") {
                         if import_uri_str.is_empty() {
                             return Err(anyhow!(
                                 "Import URI for locale '{}' cannot be empty",
                                 locale
                             ));
                         }
-                        locale_content.import_uri =
-                            Some(import_uri_str.clone());
+                        locale_content.import_uri = Some(import_uri_str.clone());
                     }
 
-                    if locale_content.content.is_none()
-                        && locale_content.import_uri.is_none()
-                    {
+                    if locale_content.content.is_none() && locale_content.import_uri.is_none() {
                         return Err(anyhow!(
-                            "Locale '{}' must have either 'content' or \
-                             'import_uri'",
+                            "Locale '{}' must have either 'content' or 'import_uri'",
                             locale
                         ));
                     }
 
-                    if locale_content.content.is_some()
-                        && locale_content.import_uri.is_some()
-                    {
+                    if locale_content.content.is_some() && locale_content.import_uri.is_some() {
                         return Err(anyhow!(
-                            "Locale '{}' cannot have both 'content' and \
-                             'import_uri'",
+                            "Locale '{}' cannot have both 'content' and 'import_uri'",
                             locale
                         ));
                     }
@@ -468,12 +533,11 @@ fn extract_localized_field(
                 ));
             }
 
-            Ok(Some(LocalizedField { locales }))
+            Ok(Some(LocalizedField {
+                locales,
+            }))
         } else {
-            Err(anyhow!(
-                "'{}' field must contain a 'locales' object",
-                field_name
-            ))
+            Err(anyhow!("'{}' field must contain a 'locales' object", field_name))
         }
     } else if map.contains_key(field_name) {
         Err(anyhow!("'{}' field is not an object", field_name))
@@ -482,15 +546,11 @@ fn extract_localized_field(
     }
 }
 
-fn extract_description(
-    map: &Map<String, Value>,
-) -> Result<Option<LocalizedField>> {
+fn extract_description(map: &Map<String, Value>) -> Result<Option<LocalizedField>> {
     extract_localized_field(map, "description")
 }
 
-fn extract_display_name(
-    map: &Map<String, Value>,
-) -> Result<Option<LocalizedField>> {
+fn extract_display_name(map: &Map<String, Value>) -> Result<Option<LocalizedField>> {
     extract_localized_field(map, "display_name")
 }
 
@@ -498,16 +558,13 @@ fn extract_readme(map: &Map<String, Value>) -> Result<Option<LocalizedField>> {
     extract_localized_field(map, "readme")
 }
 
-fn extract_dependencies(
-    map: &Map<String, Value>,
-) -> Result<Option<Vec<ManifestDependency>>> {
+fn extract_dependencies(map: &Map<String, Value>) -> Result<Option<Vec<ManifestDependency>>> {
     if let Some(Value::Array(deps)) = map.get("dependencies") {
         let mut result = Vec::new();
         let mut seen_registry_deps = HashSet::new();
 
         for dep in deps {
-            let dep_value: ManifestDependency =
-                serde_json::from_value(dep.clone())?;
+            let dep_value: ManifestDependency = serde_json::from_value(dep.clone())?;
 
             // Check for duplicate registry dependencies (type + name)
             // Only check for registry dependencies, skip local dependencies
@@ -539,16 +596,13 @@ fn extract_dependencies(
     }
 }
 
-fn extract_dev_dependencies(
-    map: &Map<String, Value>,
-) -> Result<Option<Vec<ManifestDependency>>> {
+fn extract_dev_dependencies(map: &Map<String, Value>) -> Result<Option<Vec<ManifestDependency>>> {
     if let Some(Value::Array(deps)) = map.get("dev_dependencies") {
         let mut result = Vec::new();
         let mut seen_registry_deps = HashSet::new();
 
         for dep in deps {
-            let dep_value: ManifestDependency =
-                serde_json::from_value(dep.clone())?;
+            let dep_value: ManifestDependency = serde_json::from_value(dep.clone())?;
 
             // Check for duplicate registry dependencies (type + name)
             // Only check for registry dependencies, skip local dependencies
@@ -580,9 +634,7 @@ fn extract_dev_dependencies(
     }
 }
 
-fn extract_supports(
-    map: &Map<String, Value>,
-) -> Result<Option<Vec<ManifestSupport>>> {
+fn extract_supports(map: &Map<String, Value>) -> Result<Option<Vec<ManifestSupport>>> {
     if let Some(Value::Array(supports)) = map.get("supports") {
         let mut result = Vec::new();
         for support in supports {
@@ -615,9 +667,7 @@ fn extract_package(map: &Map<String, Value>) -> Result<Option<PackageConfig>> {
     }
 }
 
-fn extract_scripts(
-    map: &Map<String, Value>,
-) -> Result<Option<HashMap<String, String>>> {
+fn extract_scripts(map: &Map<String, Value>) -> Result<Option<HashMap<String, String>>> {
     if let Some(Value::Object(scripts_map)) = map.get("scripts") {
         let mut result = HashMap::new();
         for (key, value) in scripts_map {
@@ -647,10 +697,9 @@ fn extract_tags(map: &Map<String, Value>) -> Result<Option<Vec<String>>> {
                 // Validate tag string format.
                 if !TAG_REGEX.is_match(tag_str) {
                     return Err(anyhow!(
-                        "Invalid tag format: '{}'. Tags must contain only \
-                         alphanumeric characters and underscores, must not \
-                         start with a digit, and can only have 'ten:' as \
-                         prefix",
+                        "Invalid tag format: '{}'. Tags must contain only alphanumeric characters \
+                         and underscores, must not start with a digit, and can only have 'ten:' \
+                         as prefix",
                         tag_str
                     ));
                 }
@@ -669,7 +718,7 @@ fn extract_tags(map: &Map<String, Value>) -> Result<Option<Vec<String>>> {
 
 impl fmt::Display for Manifest {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match serde_json::to_string_pretty(&self.all_fields) {
+        match serde_json::to_string_pretty(&self) {
             Ok(json_str) => write!(f, "{json_str}"),
             Err(_) => write!(f, "Failed to serialize manifest"),
         }
@@ -692,19 +741,16 @@ impl Manifest {
             // names within the same directory.
             if self.type_and_name.name != addon_folder_name {
                 return Err(anyhow!(format!(
-                    "the name of the folder '{}' and the package '{}' are \
-                     different",
+                    "the name of the folder '{}' and the package '{}' are different",
                     addon_folder_name, self.type_and_name.name
                 )));
             }
         }
 
         if let Some(addon_type_folder_name) = addon_type_folder_name {
-            if self.type_and_name.pkg_type.to_string() != addon_type_folder_name
-            {
+            if self.type_and_name.pkg_type.to_string() != addon_type_folder_name {
                 return Err(anyhow!(format!(
-                    "The folder name '{}' does not match the expected package \
-                     type '{}'",
+                    "The folder name '{}' does not match the expected package type '{}'",
                     addon_type_folder_name,
                     self.type_and_name.pkg_type.to_string(),
                 )));
@@ -729,9 +775,7 @@ impl Manifest {
     pub async fn get_flattened_api(&self) -> Result<Option<ManifestApi>> {
         // If the api contains no interfaces, return api directly.
         if let Some(api) = &self.api {
-            if api.interface.is_none()
-                || api.interface.as_ref().unwrap().is_empty()
-            {
+            if api.interface.is_none() || api.interface.as_ref().unwrap().is_empty() {
                 return Ok(Some(api.clone()));
             } else {
                 // If the api contains interfaces, try to flatten it.
@@ -778,27 +822,27 @@ fn update_manifest_base_dirs<P: AsRef<Path>>(
 ) -> Result<()> {
     // Get the parent directory of the manifest file to use as base_dir for
     // local dependencies.
-    let manifest_folder_path =
-        manifest_file_path.as_ref().parent().ok_or_else(|| {
-            anyhow::anyhow!(
-                "Failed to determine the parent directory of '{}'",
-                manifest_file_path.as_ref().display()
-            )
-        })?;
+    let manifest_folder_path = manifest_file_path.as_ref().parent().ok_or_else(|| {
+        anyhow::anyhow!(
+            "Failed to determine the parent directory of '{}'",
+            manifest_file_path.as_ref().display()
+        )
+    })?;
 
     // Convert manifest_folder_path to string once for reuse
     let base_dir_str = manifest_folder_path
         .to_str()
-        .ok_or_else(|| {
-            anyhow::anyhow!("Failed to convert folder path to string")
-        })?
+        .ok_or_else(|| anyhow::anyhow!("Failed to convert folder path to string"))?
         .to_string();
 
     // Update the base_dir for all local dependencies to be the manifest's
     // parent directory.
     if let Some(dependencies) = &mut manifest.dependencies {
         for dep in dependencies.iter_mut() {
-            if let ManifestDependency::LocalDependency { base_dir, .. } = dep {
+            if let ManifestDependency::LocalDependency {
+                base_dir, ..
+            } = dep
+            {
                 *base_dir = Some(base_dir_str.clone());
             }
         }
@@ -843,9 +887,7 @@ fn update_manifest_base_dirs<P: AsRef<Path>>(
 /// This function reads the contents of the specified manifest file,
 /// deserializes it into a Manifest struct, and updates any local dependency
 /// paths to use the manifest file's parent directory as the base directory.
-pub async fn parse_manifest_from_file<P: AsRef<Path>>(
-    manifest_file_path: P,
-) -> Result<Manifest> {
+pub async fn parse_manifest_from_file<P: AsRef<Path>>(manifest_file_path: P) -> Result<Manifest> {
     // Check if the manifest file exists.
     if !manifest_file_path.as_ref().exists() {
         return Err(anyhow::anyhow!(
@@ -857,17 +899,15 @@ pub async fn parse_manifest_from_file<P: AsRef<Path>>(
     // Validate the manifest schema first.
     // This ensures the file conforms to the TEN manifest schema before
     // attempting to parse it.
-    json_schema::ten_validate_manifest_json_file(
-        manifest_file_path.as_ref().to_str().ok_or_else(|| {
+    json_schema::ten_validate_manifest_json_file(manifest_file_path.as_ref().to_str().ok_or_else(
+        || {
             anyhow::anyhow!(
                 "Failed to convert path to string: {}",
                 manifest_file_path.as_ref().display()
             )
-        })?,
-    )
-    .with_context(|| {
-        format!("Failed to validate {}.", manifest_file_path.as_ref().display())
-    })?;
+        },
+    )?)
+    .with_context(|| format!("Failed to validate {}.", manifest_file_path.as_ref().display()))?;
 
     // Read the contents of the manifest.json file.
     let content = read_file_to_string(&manifest_file_path)?;
@@ -900,10 +940,9 @@ pub async fn parse_manifest_in_folder(folder_path: &Path) -> Result<Manifest> {
 
     // Read and parse the manifest.json file.
     // This also handles setting the base_dir for local dependencies.
-    let manifest =
-        parse_manifest_from_file(&manifest_path).await.with_context(|| {
-            format!("Failed to load {}.", manifest_path.display())
-        })?;
+    let manifest = parse_manifest_from_file(&manifest_path)
+        .await
+        .with_context(|| format!("Failed to load {}.", manifest_path.display()))?;
 
     Ok(manifest)
 }

@@ -13,20 +13,26 @@ use std::collections::HashMap;
 
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
+use ten_rust::{
+    base_dir_pkg_info::PkgsInfoInApp,
+    graph::{
+        graph_info::GraphInfo,
+        node::{AtomicFilter, Filter, FilterOperator, GraphNode},
+    },
+    pkg_info::{
+        manifest::api::{
+            ManifestApiCmdResult, ManifestApiMsg, ManifestApiProperty,
+            ManifestApiPropertyAttributes,
+        },
+        value_type::ValueType,
+    },
+};
 use uuid::Uuid;
 
-use ten_rust::base_dir_pkg_info::PkgsInfoInApp;
-use ten_rust::graph::graph_info::GraphInfo;
-use ten_rust::graph::node::{AtomicFilter, Filter, FilterOperator, GraphNode};
-use ten_rust::pkg_info::manifest::api::ManifestApiMsg;
-use ten_rust::pkg_info::manifest::api::{
-    ManifestApiCmdResult, ManifestApiProperty, ManifestApiPropertyAttributes,
+use crate::{
+    designer::graphs::DesignerGraph, fs::json::patch_property_json_file,
+    pkg_info::belonging_pkg_info_find_by_graph_info,
 };
-use ten_rust::pkg_info::value_type::ValueType;
-
-use crate::designer::graphs::DesignerGraph;
-use crate::fs::json::patch_property_json_file;
-use crate::pkg_info::belonging_pkg_info_find_by_graph_info;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct DesignerApiProperty {
@@ -40,19 +46,12 @@ pub struct DesignerApiProperty {
 impl From<ManifestApiProperty> for DesignerApiProperty {
     fn from(manifest_property: ManifestApiProperty) -> Self {
         let properties_map = manifest_property.properties().map(|properties| {
-            properties
-                .iter()
-                .map(|(k, v)| (k.clone(), v.clone().into()))
-                .collect()
+            properties.iter().map(|(k, v)| (k.clone(), v.clone().into())).collect()
         });
 
         DesignerApiProperty {
             properties: properties_map,
-            required: manifest_property
-                .required
-                .as_ref()
-                .filter(|req| !req.is_empty())
-                .cloned(),
+            required: manifest_property.required.as_ref().filter(|req| !req.is_empty()).cloned(),
         }
     }
 }
@@ -121,9 +120,9 @@ impl From<ManifestApiPropertyAttributes> for DesignerPropertyAttributes {
         DesignerPropertyAttributes {
             prop_type: api_property.prop_type,
             items: api_property.items.map(|items| Box::new((*items).into())),
-            properties: api_property.properties.map(|props| {
-                props.into_iter().map(|(k, v)| (k, v.into())).collect()
-            }),
+            properties: api_property
+                .properties
+                .map(|props| props.into_iter().map(|(k, v)| (k, v.into())).collect()),
             required: api_property.required,
         }
     }
@@ -137,7 +136,9 @@ pub struct DesignerCmdResult {
 
 impl From<ManifestApiCmdResult> for DesignerCmdResult {
     fn from(cmd_result: ManifestApiCmdResult) -> Self {
-        DesignerCmdResult { property: cmd_result.property.map(Into::into) }
+        DesignerCmdResult {
+            property: cmd_result.property.map(Into::into),
+        }
     }
 }
 
@@ -260,10 +261,14 @@ impl From<Filter> for DesignerFilter {
     fn from(filter: Filter) -> Self {
         match filter {
             Filter::Atomic(atomic) => DesignerFilter::Atomic(atomic.into()),
-            Filter::And { and } => DesignerFilter::And {
+            Filter::And {
+                and,
+            } => DesignerFilter::And {
                 and: and.into_iter().map(|f| f.into()).collect(),
             },
-            Filter::Or { or } => DesignerFilter::Or {
+            Filter::Or {
+                or,
+            } => DesignerFilter::Or {
                 or: or.into_iter().map(|f| f.into()).collect(),
             },
         }
@@ -294,9 +299,15 @@ impl DesignerGraphNode {
     /// Get the name of the node regardless of its type.
     pub fn get_name(&self) -> &str {
         match self {
-            DesignerGraphNode::Extension { content } => &content.name,
-            DesignerGraphNode::Subgraph { content } => &content.name,
-            DesignerGraphNode::Selector { content } => &content.name,
+            DesignerGraphNode::Extension {
+                content,
+            } => &content.name,
+            DesignerGraphNode::Subgraph {
+                content,
+            } => &content.name,
+            DesignerGraphNode::Selector {
+                content,
+            } => &content.name,
         }
     }
 }
@@ -306,20 +317,22 @@ impl TryFrom<GraphNode> for DesignerGraphNode {
 
     fn try_from(node: GraphNode) -> Result<Self, Self::Error> {
         match node {
-            GraphNode::Extension { content } => {
-                Ok(DesignerGraphNode::Extension {
-                    content: Box::new(DesignerExtensionNode {
-                        addon: content.addon,
-                        name: content.name,
-                        extension_group: content.extension_group,
-                        app: content.app,
-                        api: None,
-                        property: content.property,
-                        is_installed: false,
-                    }),
-                })
-            }
-            GraphNode::Subgraph { content } => {
+            GraphNode::Extension {
+                content,
+            } => Ok(DesignerGraphNode::Extension {
+                content: Box::new(DesignerExtensionNode {
+                    addon: content.addon,
+                    name: content.name,
+                    extension_group: content.extension_group,
+                    app: content.app,
+                    api: None,
+                    property: content.property,
+                    is_installed: false,
+                }),
+            }),
+            GraphNode::Subgraph {
+                content,
+            } => {
                 Ok(DesignerGraphNode::Subgraph {
                     content: Box::new(DesignerSubgraphNode {
                         name: content.name,
@@ -332,14 +345,14 @@ impl TryFrom<GraphNode> for DesignerGraphNode {
                     }),
                 })
             }
-            GraphNode::Selector { content } => {
-                Ok(DesignerGraphNode::Selector {
-                    content: Box::new(DesignerSelectorNode {
-                        name: content.name,
-                        filter: DesignerFilter::from(content.filter),
-                    }),
-                })
-            }
+            GraphNode::Selector {
+                content,
+            } => Ok(DesignerGraphNode::Selector {
+                content: Box::new(DesignerSelectorNode {
+                    name: content.name,
+                    filter: DesignerFilter::from(content.filter),
+                }),
+            }),
         }
     }
 }
@@ -354,10 +367,7 @@ pub fn get_nodes_in_graph<'a>(
         // Collect all extension nodes from the graph.
         Ok(graph_info.graph.nodes())
     } else {
-        Err(anyhow::anyhow!(
-            "Graph with ID '{}' not found in graph caches",
-            graph_id
-        ))
+        Err(anyhow::anyhow!("Graph with ID '{}' not found in graph caches", graph_id))
     }
 }
 
@@ -369,17 +379,12 @@ pub fn update_graph_node_in_property_json_file(
     old_graphs_cache: &HashMap<Uuid, GraphInfo>,
 ) -> Result<()> {
     let graph_info = graphs_cache.get(graph_id).unwrap();
-    if let Ok(Some(pkg_info)) =
-        belonging_pkg_info_find_by_graph_info(pkgs_cache, graph_info)
-    {
+    if let Ok(Some(pkg_info)) = belonging_pkg_info_find_by_graph_info(pkgs_cache, graph_info) {
         // Update property.json file with the graph node.
         if let Some(property) = &pkg_info.property {
-            if let Err(e) = patch_property_json_file(
-                &pkg_info.url,
-                property,
-                graphs_cache,
-                old_graphs_cache,
-            ) {
+            if let Err(e) =
+                patch_property_json_file(&pkg_info.url, property, graphs_cache, old_graphs_cache)
+            {
                 eprintln!("Warning: Failed to update property.json file: {e}");
             }
         }

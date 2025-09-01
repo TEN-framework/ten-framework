@@ -5,9 +5,10 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 
-use crate::registry::found_result::PkgRegistryInfo;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+
+use crate::registry::found_result::PkgRegistryInfo;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct PkgSearchFilter {
@@ -49,27 +50,22 @@ pub fn matches_filter(info: &PkgRegistryInfo, node: &FilterNode) -> bool {
             };
             match atomic.field.as_str() {
                 "name" => re.is_match(&info.basic_info.type_and_name.name),
-                "tag" => info
-                    .tags
-                    .as_ref()
-                    .is_some_and(|tags| tags.iter().any(|t| re.is_match(t))),
-                "display_name" => {
-                    info.display_name.as_ref().is_some_and(|dn| {
-                        dn.locales.iter().any(|(_, v)| {
-                            re.is_match(&v.content.clone().unwrap_or_default())
-                        })
-                    })
-                }
+                "tag" => info.tags.as_ref().is_some_and(|tags| tags.iter().any(|t| re.is_match(t))),
+                "display_name" => info.display_name.as_ref().is_some_and(|dn| {
+                    dn.locales
+                        .iter()
+                        .any(|(_, v)| re.is_match(&v.content.clone().unwrap_or_default()))
+                }),
                 _ => false,
             }
         }
         FilterNode::Logic(logic) => match logic {
-            LogicFilter::And { and } => {
-                and.iter().all(|n| matches_filter(info, n))
-            }
-            LogicFilter::Or { or } => {
-                or.iter().any(|n| matches_filter(info, n))
-            }
+            LogicFilter::And {
+                and,
+            } => and.iter().all(|n| matches_filter(info, n)),
+            LogicFilter::Or {
+                or,
+            } => or.iter().any(|n| matches_filter(info, n)),
         },
     }
 }

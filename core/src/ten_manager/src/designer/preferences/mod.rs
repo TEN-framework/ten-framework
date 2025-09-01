@@ -9,12 +9,11 @@ pub mod logviewer_line_size;
 
 use serde::{Deserialize, Serialize};
 
+use super::locale::Locale;
 use crate::{
     constants::DESIGNER_FRONTEND_DEFAULT_LOGVIEWER_LINE_SIZE,
     home::config::{TmanConfig, TmanConfigFile},
 };
-
-use super::locale::Locale;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct Designer {
@@ -30,9 +29,7 @@ pub fn default_designer() -> Designer {
 }
 
 /// Helper function to save config to file.
-pub fn save_config_to_file(
-    tman_config: &mut TmanConfig,
-) -> Result<(), actix_web::Error> {
+pub fn save_config_to_file(tman_config: &mut TmanConfig) -> Result<(), actix_web::Error> {
     if let Some(config_file) = &tman_config.config_file {
         // Create TmanConfigFile structure for serialization.
         let config_file_content = TmanConfigFile {

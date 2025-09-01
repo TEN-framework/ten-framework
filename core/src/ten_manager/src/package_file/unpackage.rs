@@ -4,25 +4,30 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-use std::fs::{self, File};
-use std::io::{self, BufWriter};
 #[cfg(unix)]
 use std::os::unix::fs::symlink;
 #[cfg(windows)]
 use std::os::windows::fs::{symlink_dir, symlink_file};
-use std::path::Path;
+use std::{
+    fs::{self, File},
+    io::{self, BufWriter},
+    path::Path,
+};
 
 use anyhow::{anyhow, Context, Result};
 use flate2::read::GzDecoder;
 use tar::Archive as TarArchive;
 use zip::ZipArchive;
 
-use crate::constants::BUF_WRITER_BUF_SIZE;
-use crate::fs::file_type::detect_file_type;
-use crate::install::installed_paths::{sort_installed_paths, InstalledPaths};
-use crate::install::template::{
-    extract_and_process_tar_gz_template_part,
-    extract_and_process_zip_template_part,
+use crate::{
+    constants::BUF_WRITER_BUF_SIZE,
+    fs::file_type::detect_file_type,
+    install::{
+        installed_paths::{sort_installed_paths, InstalledPaths},
+        template::{
+            extract_and_process_tar_gz_template_part, extract_and_process_zip_template_part,
+        },
+    },
 };
 
 fn create_symlink(target: &str, link: &Path, output_dir: &str) -> Result<()> {
@@ -31,33 +36,24 @@ fn create_symlink(target: &str, link: &Path, output_dir: &str) -> Result<()> {
         // Dummy usage to silence Clippy on non-Windows platforms.
         let _ = output_dir;
 
-        symlink(target, link).with_context(|| {
-            format!("Failed to create symlink {link:?} -> {target:?}")
-        })?;
+        symlink(target, link)
+            .with_context(|| format!("Failed to create symlink {link:?} -> {target:?}"))?;
     }
 
     #[cfg(windows)]
     {
         // Determine the absolute path of the target.
         let target_path = Path::new(output_dir).join(target);
-        let target_metadata =
-            fs::metadata(&target_path).with_context(|| {
-                format!("Failed to get metadata for target {:?}", target_path)
-            })?;
+        let target_metadata = fs::metadata(&target_path)
+            .with_context(|| format!("Failed to get metadata for target {:?}", target_path))?;
 
         if target_metadata.is_dir() {
             symlink_dir(target, link).with_context(|| {
-                format!(
-                    "Failed to create directory symlink {:?} -> {:?}",
-                    link, target
-                )
+                format!("Failed to create directory symlink {:?} -> {:?}", link, target)
             })?;
         } else {
             symlink_file(target, link).with_context(|| {
-                format!(
-                    "Failed to create file symlink {:?} -> {:?}",
-                    link, target
-                )
+                format!("Failed to create file symlink {:?} -> {:?}", link, target)
             })?;
         }
     }
@@ -65,15 +61,14 @@ fn create_symlink(target: &str, link: &Path, output_dir: &str) -> Result<()> {
     Ok(())
 }
 
-fn extract_and_process_zip_normal_part(
-    zip_path: &str,
-    output_dir: &str,
-) -> Result<InstalledPaths> {
+fn extract_and_process_zip_normal_part(zip_path: &str, output_dir: &str) -> Result<InstalledPaths> {
     // Open the ZIP file.
     let file = File::open(zip_path)?;
     let mut archive = ZipArchive::new(file)?;
 
-    let mut installed_paths = InstalledPaths { paths: Vec::new() };
+    let mut installed_paths = InstalledPaths {
+        paths: Vec::new(),
+    };
 
     // Iterate through each entry in the ZIP.
     for i in 0..archive.len() {
@@ -97,8 +92,7 @@ fn extract_and_process_zip_normal_part(
             }
 
             let out_file = File::create(&out_path)?;
-            let mut buffered_writer =
-                BufWriter::with_capacity(BUF_WRITER_BUF_SIZE, out_file);
+            let mut buffered_writer = BufWriter::with_capacity(BUF_WRITER_BUF_SIZE, out_file);
             io::copy(&mut file, &mut buffered_writer)?;
 
             #[cfg(unix)]
@@ -108,16 +102,12 @@ fn extract_and_process_zip_normal_part(
 
                 // Set file permissions if it's a Unix system.
                 if let Some(mode) = file.unix_mode() {
-                    fs::set_permissions(
-                        &out_path,
-                        fs::Permissions::from_mode(mode),
-                    )?;
+                    fs::set_permissions(&out_path, fs::Permissions::from_mode(mode))?;
                 }
             }
         }
 
-        let relative_path =
-            out_path.strip_prefix(output_dir)?.to_str().unwrap().to_string();
+        let relative_path = out_path.strip_prefix(output_dir)?.to_str().unwrap().to_string();
         installed_paths.paths.push(relative_path);
     }
 
@@ -129,23 +119,14 @@ fn extract_and_process_zip(
     output_dir: &str,
     template_ctx: Option<&serde_json::Value>,
 ) -> Result<InstalledPaths> {
-    let mut installed_paths =
-        extract_and_process_zip_normal_part(zip_path, output_dir)?;
+    let mut installed_paths = extract_and_process_zip_normal_part(zip_path, output_dir)?;
 
     if let Some(template_ctx) = template_ctx {
         // In the 'template' mode.
-        extract_and_process_zip_template_part(
-            zip_path,
-            output_dir,
-            template_ctx,
-        )?;
+        extract_and_process_zip_template_part(zip_path, output_dir, template_ctx)?;
 
-        let rtet_paths: Vec<_> = installed_paths
-            .paths
-            .iter()
-            .filter(|p| p.ends_with(".tent"))
-            .cloned()
-            .collect();
+        let rtet_paths: Vec<_> =
+            installed_paths.paths.iter().filter(|p| p.ends_with(".tent")).cloned().collect();
 
         for rtet_path in rtet_paths {
             installed_paths.paths.retain(|p| p != &rtet_path);
@@ -171,7 +152,9 @@ fn extract_and_process_tar_gz_normal_part(
     let file = File::open(tar_gz_path)?;
     let mut archive = TarArchive::new(GzDecoder::new(file));
 
-    let mut installed_paths = InstalledPaths { paths: Vec::new() };
+    let mut installed_paths = InstalledPaths {
+        paths: Vec::new(),
+    };
 
     // Iterate through each entry in the package file.
     for entry_result in archive.entries()? {
@@ -193,34 +176,22 @@ fn extract_and_process_tar_gz_normal_part(
             // Recreate the symbolic link.
             let target = entry
                 .link_name()
-                .with_context(|| {
-                    format!(
-                        "Symlink entry {entry_path:?} does not have a target"
-                    )
-                })?
-                .ok_or_else(|| {
-                    anyhow!(
-                        "Symlink entry {:?} does not have a target",
-                        entry_path
-                    )
-                })?
+                .with_context(|| format!("Symlink entry {entry_path:?} does not have a target"))?
+                .ok_or_else(|| anyhow!("Symlink entry {:?} does not have a target", entry_path))?
                 .to_string_lossy()
                 .to_string();
 
             // Ensure the parent directory exists.
             if let Some(p) = out_path.parent() {
                 fs::create_dir_all(p).with_context(|| {
-                    format!(
-                        "Failed to create parent directory for {out_path:?}"
-                    )
+                    format!("Failed to create parent directory for {out_path:?}")
                 })?;
             }
 
             if out_path.exists() {
                 fs::remove_file(&out_path).with_context(|| {
                     format!(
-                        "Failed to remove existing file at {out_path:?} before \
-                         creating symlink"
+                        "Failed to remove existing file at {out_path:?} before creating symlink"
                     )
                 })?;
             }
@@ -240,8 +211,7 @@ fn extract_and_process_tar_gz_normal_part(
             }
 
             let out_file = File::create(&out_path)?;
-            let mut buffered_writer =
-                BufWriter::with_capacity(BUF_WRITER_BUF_SIZE, out_file);
+            let mut buffered_writer = BufWriter::with_capacity(BUF_WRITER_BUF_SIZE, out_file);
             io::copy(&mut entry, &mut buffered_writer)?;
 
             #[cfg(unix)]
@@ -251,16 +221,12 @@ fn extract_and_process_tar_gz_normal_part(
 
                 // Set file permissions if it's a Unix system.
                 if let Ok(mode) = entry.header().mode() {
-                    fs::set_permissions(
-                        &out_path,
-                        fs::Permissions::from_mode(mode),
-                    )?;
+                    fs::set_permissions(&out_path, fs::Permissions::from_mode(mode))?;
                 }
             }
         }
 
-        let relative_path =
-            out_path.strip_prefix(output_dir)?.to_str().unwrap().to_string();
+        let relative_path = out_path.strip_prefix(output_dir)?.to_str().unwrap().to_string();
         installed_paths.paths.push(relative_path);
     }
 
@@ -272,23 +238,14 @@ fn extract_and_process_tar_gz(
     output_dir: &str,
     template_ctx: Option<&serde_json::Value>,
 ) -> Result<InstalledPaths> {
-    let mut installed_paths =
-        extract_and_process_tar_gz_normal_part(tar_gz_path, output_dir)?;
+    let mut installed_paths = extract_and_process_tar_gz_normal_part(tar_gz_path, output_dir)?;
 
     if let Some(template_ctx) = template_ctx {
         // In the 'template' mode.
-        extract_and_process_tar_gz_template_part(
-            tar_gz_path,
-            output_dir,
-            template_ctx,
-        )?;
+        extract_and_process_tar_gz_template_part(tar_gz_path, output_dir, template_ctx)?;
 
-        let tent_paths: Vec<_> = installed_paths
-            .paths
-            .iter()
-            .filter(|p| p.ends_with(".tent"))
-            .cloned()
-            .collect();
+        let tent_paths: Vec<_> =
+            installed_paths.paths.iter().filter(|p| p.ends_with(".tent")).cloned().collect();
 
         for tent_path in tent_paths {
             installed_paths.paths.retain(|p| p != &tent_path);
@@ -312,16 +269,12 @@ pub fn extract_and_process_tpkg_file(
     template_ctx: Option<&serde_json::Value>,
 ) -> Result<InstalledPaths> {
     let installed_paths = match detect_file_type(tpkg_path)? {
-        crate::fs::file_type::FileType::TarGz => extract_and_process_tar_gz(
-            &tpkg_path.to_string_lossy(),
-            output_dir,
-            template_ctx,
-        )?,
-        crate::fs::file_type::FileType::Zip => extract_and_process_zip(
-            &tpkg_path.to_string_lossy(),
-            output_dir,
-            template_ctx,
-        )?,
+        crate::fs::file_type::FileType::TarGz => {
+            extract_and_process_tar_gz(&tpkg_path.to_string_lossy(), output_dir, template_ctx)?
+        }
+        crate::fs::file_type::FileType::Zip => {
+            extract_and_process_zip(&tpkg_path.to_string_lossy(), output_dir, template_ctx)?
+        }
     };
 
     Ok(installed_paths)

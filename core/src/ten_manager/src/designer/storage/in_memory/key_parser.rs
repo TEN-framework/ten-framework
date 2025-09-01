@@ -21,8 +21,8 @@ pub fn parse_key(key: &str) -> Result<Vec<KeySegment>> {
     let valid_key_regex = Regex::new(r"^[a-z0-9_.\[\]]+$").unwrap();
     if !valid_key_regex.is_match(key) {
         return Err(anyhow!(
-            "Key contains invalid characters. Only lowercase letters, \
-             numbers, underscore, dots and brackets are allowed"
+            "Key contains invalid characters. Only lowercase letters, numbers, underscore, dots \
+             and brackets are allowed"
         ));
     }
 
@@ -40,10 +40,8 @@ pub fn parse_key(key: &str) -> Result<Vec<KeySegment>> {
             let field_name = captures.get(1).unwrap().as_str().to_string();
 
             if let Some(index_match) = captures.get(2) {
-                let index: usize = index_match
-                    .as_str()
-                    .parse()
-                    .map_err(|_| anyhow!("Invalid array index"))?;
+                let index: usize =
+                    index_match.as_str().parse().map_err(|_| anyhow!("Invalid array index"))?;
                 segments.push(KeySegment::Array(field_name, index));
             } else {
                 segments.push(KeySegment::Object(field_name));
@@ -100,11 +98,7 @@ pub fn get_value_by_key(data: &Value, key: &str) -> Result<Option<Value>> {
     Ok(Some(current.clone()))
 }
 
-pub fn set_value_by_key(
-    data: &mut Value,
-    key: &str,
-    value: Value,
-) -> Result<()> {
+pub fn set_value_by_key(data: &mut Value, key: &str, value: Value) -> Result<()> {
     let segments = parse_key(key)?;
 
     // Ensure root is an object
@@ -140,9 +134,7 @@ fn set_value_recursive(
                     // Look ahead to see if next segment is array
                     if let Some(next_segment) = segments.get(index + 1) {
                         match next_segment {
-                            KeySegment::Array(_, _) => {
-                                Value::Object(Map::new())
-                            }
+                            KeySegment::Array(_, _) => Value::Object(Map::new()),
                             KeySegment::Object(_) => Value::Object(Map::new()),
                         }
                     } else {
@@ -154,9 +146,8 @@ fn set_value_recursive(
         }
         KeySegment::Array(field, array_index) => {
             if let Some(obj) = current.as_object_mut() {
-                let arr_entry = obj
-                    .entry(field.clone())
-                    .or_insert_with(|| Value::Array(Vec::new()));
+                let arr_entry =
+                    obj.entry(field.clone()).or_insert_with(|| Value::Array(Vec::new()));
 
                 if let Some(arr) = arr_entry.as_array_mut() {
                     // Extend array if necessary

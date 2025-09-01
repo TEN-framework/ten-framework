@@ -7,7 +7,6 @@
 use std::{collections::HashMap, sync::Arc};
 
 use actix_web::{http::StatusCode, test, web, App};
-
 use ten_manager::{
     designer::{
         graphs::{
@@ -28,9 +27,7 @@ use crate::test_case::common::mock::inject_all_pkgs_for_mock;
 async fn test_cmd_designer_graphs_app_property_not_exist() {
     let designer_state = DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-            TmanStorageInMemory::default(),
-        )),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -39,33 +36,31 @@ async fn test_cmd_designer_graphs_app_property_not_exist() {
 
     let all_pkgs_json_str = vec![
         (
-            "tests/test_data/cmd_designer_graphs_app_property_not_exist"
-                .to_string(),
+            "tests/test_data/cmd_designer_graphs_app_property_not_exist".to_string(),
             include_str!(
-                "../../test_data/cmd_designer_graphs_app_property_not_exist/\
-                 manifest.json"
+                "../../test_data/cmd_designer_graphs_app_property_not_exist/manifest.json"
             )
             .to_string(),
             "{}".to_string(),
         ),
         (
-            "tests/test_data/cmd_designer_graphs_app_property_not_exist/\
-             ten_packages/extension/addon_a"
+            "tests/test_data/cmd_designer_graphs_app_property_not_exist/ten_packages/extension/\
+             addon_a"
                 .to_string(),
             include_str!(
-                "../../test_data/cmd_designer_graphs_app_property_not_exist/\
-                 ten_packages/extension/addon_a/manifest.json"
+                "../../test_data/cmd_designer_graphs_app_property_not_exist/ten_packages/\
+                 extension/addon_a/manifest.json"
             )
             .to_string(),
             "{}".to_string(),
         ),
         (
-            "tests/test_data/cmd_designer_graphs_app_property_not_exist/\
-             ten_packages/extension/addon_b"
+            "tests/test_data/cmd_designer_graphs_app_property_not_exist/ten_packages/extension/\
+             addon_b"
                 .to_string(),
             include_str!(
-                "../../test_data/cmd_designer_graphs_app_property_not_exist/\
-                 ten_packages/extension/addon_b/manifest.json"
+                "../../test_data/cmd_designer_graphs_app_property_not_exist/ten_packages/\
+                 extension/addon_b/manifest.json"
             )
             .to_string(),
             "{}".to_string(),
@@ -76,21 +71,16 @@ async fn test_cmd_designer_graphs_app_property_not_exist() {
         let mut pkgs_cache = designer_state.pkgs_cache.write().await;
         let mut graphs_cache = designer_state.graphs_cache.write().await;
 
-        let inject_ret = inject_all_pkgs_for_mock(
-            &mut pkgs_cache,
-            &mut graphs_cache,
-            all_pkgs_json_str,
-        )
-        .await;
+        let inject_ret =
+            inject_all_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, all_pkgs_json_str).await;
         assert!(inject_ret.is_ok());
     }
 
     let designer_state = Arc::new(designer_state);
     let app = test::init_service(
-        App::new().app_data(web::Data::new(designer_state)).route(
-            "/api/designer/v1/graphs",
-            web::post().to(get_graphs_endpoint),
-        ),
+        App::new()
+            .app_data(web::Data::new(designer_state))
+            .route("/api/designer/v1/graphs", web::post().to(get_graphs_endpoint)),
     )
     .await;
 
@@ -105,8 +95,7 @@ async fn test_cmd_designer_graphs_app_property_not_exist() {
 
     let body = test::read_body(resp).await;
     let body_str = std::str::from_utf8(&body).unwrap();
-    let json: ApiResponse<Vec<DesignerGraphInfo>> =
-        serde_json::from_str(body_str).unwrap();
+    let json: ApiResponse<Vec<DesignerGraphInfo>> = serde_json::from_str(body_str).unwrap();
 
     let pretty_json = serde_json::to_string_pretty(&json).unwrap();
     println!("Response body: {pretty_json}");
@@ -118,9 +107,7 @@ async fn test_cmd_designer_graphs_app_property_not_exist() {
 async fn test_cmd_designer_connections_has_msg_conversion() {
     let designer_state = DesignerState {
         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-        storage_in_memory: Arc::new(tokio::sync::RwLock::new(
-            TmanStorageInMemory::default(),
-        )),
+        storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
         out: Arc::new(Box::new(TmanOutputCli)),
         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
@@ -129,37 +116,34 @@ async fn test_cmd_designer_connections_has_msg_conversion() {
 
     let all_pkgs_json_str = vec![
         (
-            "tests/test_data/cmd_designer_connections_has_msg_conversion"
-                .to_string(),
+            "tests/test_data/cmd_designer_connections_has_msg_conversion".to_string(),
             include_str!(
-                "../../test_data/cmd_designer_connections_has_msg_conversion/\
-                 manifest.json"
+                "../../test_data/cmd_designer_connections_has_msg_conversion/manifest.json"
             )
             .to_string(),
             include_str!(
-                "../../test_data/cmd_designer_connections_has_msg_conversion/\
-                 property.json"
+                "../../test_data/cmd_designer_connections_has_msg_conversion/property.json"
             )
             .to_string(),
         ),
         (
-            "tests/test_data/cmd_designer_connections_has_msg_conversion/\
-             ten_packages/extension/addon_a"
+            "tests/test_data/cmd_designer_connections_has_msg_conversion/ten_packages/extension/\
+             addon_a"
                 .to_string(),
             include_str!(
-                "../../test_data/cmd_designer_connections_has_msg_conversion/\
-                 ten_packages/extension/addon_a/manifest.json"
+                "../../test_data/cmd_designer_connections_has_msg_conversion/ten_packages/\
+                 extension/addon_a/manifest.json"
             )
             .to_string(),
             "{}".to_string(),
         ),
         (
-            "tests/test_data/cmd_designer_connections_has_msg_conversion/\
-             ten_packages/extension/addon_b"
+            "tests/test_data/cmd_designer_connections_has_msg_conversion/ten_packages/extension/\
+             addon_b"
                 .to_string(),
             include_str!(
-                "../../test_data/cmd_designer_connections_has_msg_conversion/\
-                 ten_packages/extension/addon_b/manifest.json"
+                "../../test_data/cmd_designer_connections_has_msg_conversion/ten_packages/\
+                 extension/addon_b/manifest.json"
             )
             .to_string(),
             "{}".to_string(),
@@ -170,12 +154,8 @@ async fn test_cmd_designer_connections_has_msg_conversion() {
         let mut pkgs_cache = designer_state.pkgs_cache.write().await;
         let mut graphs_cache = designer_state.graphs_cache.write().await;
 
-        let inject_ret = inject_all_pkgs_for_mock(
-            &mut pkgs_cache,
-            &mut graphs_cache,
-            all_pkgs_json_str,
-        )
-        .await;
+        let inject_ret =
+            inject_all_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, all_pkgs_json_str).await;
         assert!(inject_ret.is_ok());
     }
 
@@ -197,10 +177,9 @@ async fn test_cmd_designer_connections_has_msg_conversion() {
 
     let designer_state = Arc::new(designer_state);
     let app = test::init_service(
-        App::new().app_data(web::Data::new(designer_state.clone())).route(
-            "/api/designer/v1/graphs",
-            web::post().to(get_graphs_endpoint),
-        ),
+        App::new()
+            .app_data(web::Data::new(designer_state.clone()))
+            .route("/api/designer/v1/graphs", web::post().to(get_graphs_endpoint)),
     )
     .await;
 

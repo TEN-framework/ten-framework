@@ -11,11 +11,11 @@ mod tests {
     use ten_manager::registry::found_result::{
         get_pkg_registry_info_from_manifest, PkgRegistryInfo,
     };
-    use ten_rust::pkg_info::manifest::{
-        LocaleContent, LocalizedField, Manifest,
+    use ten_rust::pkg_info::{
+        manifest::{LocaleContent, LocalizedField, Manifest},
+        pkg_basic_info::PkgBasicInfo,
+        PkgInfo,
     };
-    use ten_rust::pkg_info::pkg_basic_info::PkgBasicInfo;
-    use ten_rust::pkg_info::PkgInfo;
 
     #[tokio::test]
     async fn test_pkg_registry_info_with_readme() {
@@ -35,14 +35,11 @@ mod tests {
             }
         }"#;
 
-        let manifest: Manifest =
-            Manifest::create_from_str(manifest_json).unwrap();
-        let pkg_registry_info = get_pkg_registry_info_from_manifest(
-            "https://example.com/test.tar.gz",
-            &manifest,
-        )
-        .await
-        .unwrap();
+        let manifest: Manifest = Manifest::create_from_str(manifest_json).unwrap();
+        let pkg_registry_info =
+            get_pkg_registry_info_from_manifest("https://example.com/test.tar.gz", &manifest)
+                .await
+                .unwrap();
 
         assert!(pkg_registry_info.readme.is_some());
         let readme = pkg_registry_info.readme.unwrap();
@@ -89,8 +86,7 @@ mod tests {
             }
         }"#;
 
-        let mut manifest: Manifest =
-            Manifest::create_from_str(manifest_json).unwrap();
+        let mut manifest: Manifest = Manifest::create_from_str(manifest_json).unwrap();
 
         // Set base_dir for readme locale contents
         let base_dir_str = temp_path.to_string_lossy().to_string();
@@ -100,12 +96,10 @@ mod tests {
             }
         }
 
-        let pkg_registry_info = get_pkg_registry_info_from_manifest(
-            "https://example.com/test.tar.gz",
-            &manifest,
-        )
-        .await
-        .unwrap();
+        let pkg_registry_info =
+            get_pkg_registry_info_from_manifest("https://example.com/test.tar.gz", &manifest)
+                .await
+                .unwrap();
 
         assert!(pkg_registry_info.readme.is_some());
         let readme = pkg_registry_info.readme.unwrap();
@@ -144,14 +138,11 @@ mod tests {
             "version": "1.0.0"
         }"#;
 
-        let manifest: Manifest =
-            Manifest::create_from_str(manifest_json).unwrap();
-        let pkg_registry_info = get_pkg_registry_info_from_manifest(
-            "https://example.com/test.tar.gz",
-            &manifest,
-        )
-        .await
-        .unwrap();
+        let manifest: Manifest = Manifest::create_from_str(manifest_json).unwrap();
+        let pkg_registry_info =
+            get_pkg_registry_info_from_manifest("https://example.com/test.tar.gz", &manifest)
+                .await
+                .unwrap();
 
         assert!(pkg_registry_info.readme.is_none());
     }
@@ -171,14 +162,11 @@ mod tests {
             }
         }"#;
 
-        let manifest: Manifest =
-            Manifest::create_from_str(manifest_json).unwrap();
-        let pkg_registry_info = get_pkg_registry_info_from_manifest(
-            "https://example.com/test.tar.gz",
-            &manifest,
-        )
-        .await
-        .unwrap();
+        let manifest: Manifest = Manifest::create_from_str(manifest_json).unwrap();
+        let pkg_registry_info =
+            get_pkg_registry_info_from_manifest("https://example.com/test.tar.gz", &manifest)
+                .await
+                .unwrap();
 
         // Convert back to PkgInfo
         let pkg_info: PkgInfo = (&pkg_registry_info).into();
@@ -205,12 +193,10 @@ mod tests {
 
         let pkg_registry_info = PkgRegistryInfo {
             basic_info: PkgBasicInfo {
-                type_and_name:
-                    ten_rust::pkg_info::pkg_type_and_name::PkgTypeAndName {
-                        pkg_type:
-                            ten_rust::pkg_info::pkg_type::PkgType::Extension,
-                        name: "test_extension".to_string(),
-                    },
+                type_and_name: ten_rust::pkg_info::pkg_type_and_name::PkgTypeAndName {
+                    pkg_type: ten_rust::pkg_info::pkg_type::PkgType::Extension,
+                    name: "test_extension".to_string(),
+                },
                 version: semver::Version::parse("1.0.0").unwrap(),
                 supports: vec![],
             },
@@ -221,7 +207,9 @@ mod tests {
             tags: None,
             description: None,
             display_name: None,
-            readme: Some(LocalizedField { locales }),
+            readme: Some(LocalizedField {
+                locales,
+            }),
         };
 
         let serialized = serde_json::to_string(&pkg_registry_info).unwrap();
@@ -229,19 +217,10 @@ mod tests {
         assert!(serialized.contains("Test README"));
 
         // Test deserialization
-        let deserialized: PkgRegistryInfo =
-            serde_json::from_str(&serialized).unwrap();
+        let deserialized: PkgRegistryInfo = serde_json::from_str(&serialized).unwrap();
         assert!(deserialized.readme.is_some());
         assert_eq!(
-            deserialized
-                .readme
-                .unwrap()
-                .locales
-                .get("en-US")
-                .unwrap()
-                .content
-                .as_ref()
-                .unwrap(),
+            deserialized.readme.unwrap().locales.get("en-US").unwrap().content.as_ref().unwrap(),
             "Test README"
         );
     }
@@ -250,12 +229,10 @@ mod tests {
     fn test_pkg_registry_info_serialization_without_readme() {
         let pkg_registry_info = PkgRegistryInfo {
             basic_info: PkgBasicInfo {
-                type_and_name:
-                    ten_rust::pkg_info::pkg_type_and_name::PkgTypeAndName {
-                        pkg_type:
-                            ten_rust::pkg_info::pkg_type::PkgType::Extension,
-                        name: "test_extension".to_string(),
-                    },
+                type_and_name: ten_rust::pkg_info::pkg_type_and_name::PkgTypeAndName {
+                    pkg_type: ten_rust::pkg_info::pkg_type::PkgType::Extension,
+                    name: "test_extension".to_string(),
+                },
                 version: semver::Version::parse("1.0.0").unwrap(),
                 supports: vec![],
             },
@@ -276,8 +253,7 @@ mod tests {
         assert!(!serialized.contains("readme"));
 
         // Test deserialization
-        let deserialized: PkgRegistryInfo =
-            serde_json::from_str(&serialized).unwrap();
+        let deserialized: PkgRegistryInfo = serde_json::from_str(&serialized).unwrap();
         assert!(deserialized.readme.is_none());
     }
 
@@ -303,12 +279,10 @@ mod tests {
 
         let pkg_registry_info = PkgRegistryInfo {
             basic_info: PkgBasicInfo {
-                type_and_name:
-                    ten_rust::pkg_info::pkg_type_and_name::PkgTypeAndName {
-                        pkg_type:
-                            ten_rust::pkg_info::pkg_type::PkgType::Extension,
-                        name: "test_extension".to_string(),
-                    },
+                type_and_name: ten_rust::pkg_info::pkg_type_and_name::PkgTypeAndName {
+                    pkg_type: ten_rust::pkg_info::pkg_type::PkgType::Extension,
+                    name: "test_extension".to_string(),
+                },
                 version: semver::Version::parse("1.0.0").unwrap(),
                 supports: vec![],
             },
@@ -319,12 +293,13 @@ mod tests {
             tags: None,
             description: None,
             display_name: None,
-            readme: Some(LocalizedField { locales }),
+            readme: Some(LocalizedField {
+                locales,
+            }),
         };
 
         let serialized = serde_json::to_string(&pkg_registry_info).unwrap();
-        let deserialized: PkgRegistryInfo =
-            serde_json::from_str(&serialized).unwrap();
+        let deserialized: PkgRegistryInfo = serde_json::from_str(&serialized).unwrap();
 
         let readme = deserialized.readme.unwrap();
         assert_eq!(

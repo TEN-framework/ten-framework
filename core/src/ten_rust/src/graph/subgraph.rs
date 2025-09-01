@@ -8,14 +8,13 @@ use std::collections::HashMap;
 
 use anyhow::Result;
 
-use crate::graph::graph_info::load_graph_from_uri;
-use crate::graph::node::{ExtensionNode, SubgraphNode};
-
-use super::connection::GraphLoc;
-use super::node::GraphNode;
 use super::{
-    Graph, GraphConnection, GraphExposedMessage, GraphExposedMessageType,
-    GraphMessageFlow, GraphNodeType,
+    connection::GraphLoc, node::GraphNode, Graph, GraphConnection, GraphExposedMessage,
+    GraphExposedMessageType, GraphMessageFlow, GraphNodeType,
+};
+use crate::graph::{
+    graph_info::load_graph_from_uri,
+    node::{ExtensionNode, SubgraphNode},
 };
 
 impl Graph {
@@ -28,9 +27,8 @@ impl Graph {
 
         if loc.subgraph.is_some() {
             panic!(
-                "Should not happen, when flattening a subgraph, the subgraphs \
-                 inside it should have already been flattened, so we should \
-                 not see any subgraph inside."
+                "Should not happen, when flattening a subgraph, the subgraphs inside it should \
+                 have already been flattened, so we should not see any subgraph inside."
             );
         }
     }
@@ -52,10 +50,7 @@ impl Graph {
         let update_destinations = |flows: &mut Vec<GraphMessageFlow>| {
             for flow in flows {
                 for dest in &mut flow.dest {
-                    Self::flatten_graph_loc_in_subgraph(
-                        &mut dest.loc,
-                        subgraph_name,
-                    );
+                    Self::flatten_graph_loc_in_subgraph(&mut dest.loc, subgraph_name);
                 }
             }
         };
@@ -84,25 +79,23 @@ impl Graph {
         msg_type: GraphExposedMessageType,
     ) -> Result<String> {
         if let Some(exposed_messages) = &subgraph.exposed_messages {
-            let matching_exposed = exposed_messages.iter().find(|exposed| {
-                exposed.msg_type == msg_type && exposed.name == flow_name
-            });
+            let matching_exposed = exposed_messages
+                .iter()
+                .find(|exposed| exposed.msg_type == msg_type && exposed.name == flow_name);
 
             if let Some(exposed) = matching_exposed {
                 if let Some(ref extension_name) = exposed.extension {
                     Ok(format!("{subgraph_name}_{extension_name}"))
                 } else {
                     Err(anyhow::anyhow!(
-                        "Exposed message '{}' in subgraph '{}' does not \
-                         specify an extension",
+                        "Exposed message '{}' in subgraph '{}' does not specify an extension",
                         flow_name,
                         subgraph_name
                     ))
                 }
             } else {
                 Err(anyhow::anyhow!(
-                    "Message '{}' of type '{:?}' is not exposed by subgraph \
-                     '{}'",
+                    "Message '{}' of type '{:?}' is not exposed by subgraph '{}'",
                     flow_name,
                     msg_type,
                     subgraph_name
@@ -134,14 +127,13 @@ impl Graph {
         for flow in flows {
             // After flatten_graph processing, name should be Some and names
             // should be None
-            let flow_name = flow.name.as_ref().expect(
-                "name field should be Some after flatten_graph processing",
-            );
+            let flow_name = flow
+                .name
+                .as_ref()
+                .expect("name field should be Some after flatten_graph processing");
 
             if flow.names.is_some() {
-                panic!(
-                    "names field should be None after flatten_graph processing"
-                );
+                panic!("names field should be None after flatten_graph processing");
             }
 
             let extension_name = Self::resolve_subgraph_to_extension(
@@ -151,9 +143,8 @@ impl Graph {
                 msg_type.clone(),
             )?;
 
-            let entry = extension_flows
-                .entry(extension_name.clone())
-                .or_insert_with(|| GraphConnection {
+            let entry =
+                extension_flows.entry(extension_name.clone()).or_insert_with(|| GraphConnection {
                     loc: GraphLoc {
                         app: base_connection.loc.app.clone(),
                         extension: Some(extension_name),
@@ -217,17 +208,12 @@ impl Graph {
         if let Some(ref subgraph_name) = loc.subgraph.take() {
             // Handle subgraph field - resolve to actual extension based on
             // exposed_messages
-            let subgraph =
-                subgraph_mappings.get(subgraph_name).ok_or_else(|| {
-                    anyhow::anyhow!("Subgraph '{subgraph_name}' not found")
-                })?;
+            let subgraph = subgraph_mappings
+                .get(subgraph_name)
+                .ok_or_else(|| anyhow::anyhow!("Subgraph '{subgraph_name}' not found"))?;
 
-            let extension_name = Self::resolve_subgraph_to_extension(
-                subgraph_name,
-                subgraph,
-                flow_name,
-                msg_type,
-            )?;
+            let extension_name =
+                Self::resolve_subgraph_to_extension(subgraph_name, subgraph, flow_name, msg_type)?;
 
             loc.extension = Some(extension_name);
             // subgraph field is already cleared by take()
@@ -251,14 +237,12 @@ impl Graph {
         // Check if we have a subgraph field that needs to be resolved
         if base_connection.loc.subgraph.is_some() {
             let subgraph_name = base_connection.loc.subgraph.as_ref().unwrap();
-            let subgraph =
-                subgraph_mappings.get(subgraph_name).ok_or_else(|| {
-                    anyhow::anyhow!("Subgraph '{}' not found", subgraph_name)
-                })?;
+            let subgraph = subgraph_mappings
+                .get(subgraph_name)
+                .ok_or_else(|| anyhow::anyhow!("Subgraph '{}' not found", subgraph_name))?;
 
             // Use a HashMap to group flows by their resolved extension names
-            let mut extension_flows: HashMap<String, GraphConnection> =
-                HashMap::new();
+            let mut extension_flows: HashMap<String, GraphConnection> = HashMap::new();
 
             // Process cmd flows
             if let Some(ref cmd_flows) = base_connection.cmd {
@@ -343,39 +327,34 @@ impl Graph {
         connection: &mut GraphConnection,
         subgraph_mappings: &HashMap<String, Graph>,
     ) -> Result<()> {
-        let update_destinations = |flows: &mut Vec<GraphMessageFlow>,
-                                   msg_type: &str|
-         -> Result<()> {
-            for flow in flows {
-                // After flatten_graph processing, name should be Some and names
-                // should be None
-                let flow_name = flow.name.as_ref().expect(
-                    "name field should be Some after flatten_graph processing",
-                );
+        let update_destinations =
+            |flows: &mut Vec<GraphMessageFlow>, msg_type: &str| -> Result<()> {
+                for flow in flows {
+                    // After flatten_graph processing, name should be Some and names
+                    // should be None
+                    let flow_name = flow
+                        .name
+                        .as_ref()
+                        .expect("name field should be Some after flatten_graph processing");
 
-                if flow.names.is_some() {
-                    panic!(
-                        "names field should be None after flatten_graph \
-                         processing"
-                    );
-                }
+                    if flow.names.is_some() {
+                        panic!("names field should be None after flatten_graph processing");
+                    }
 
-                for dest in &mut flow.dest {
-                    let exposed_msg_type =
-                        Self::get_exposed_message_type_for_dest_subgraph(
-                            msg_type,
+                    for dest in &mut flow.dest {
+                        let exposed_msg_type =
+                            Self::get_exposed_message_type_for_dest_subgraph(msg_type)?;
+
+                        Self::process_dest_location_for_subgraph_resolution(
+                            &mut dest.loc,
+                            subgraph_mappings,
+                            flow_name,
+                            exposed_msg_type,
                         )?;
-
-                    Self::process_dest_location_for_subgraph_resolution(
-                        &mut dest.loc,
-                        subgraph_mappings,
-                        flow_name,
-                        exposed_msg_type,
-                    )?;
+                    }
                 }
-            }
-            Ok(())
-        };
+                Ok(())
+            };
 
         if let Some(ref mut cmd) = connection.cmd {
             update_destinations(cmd, "cmd")?;
@@ -403,65 +382,53 @@ impl Graph {
     ) -> Result<()> {
         // Apply properties from subgraph node reference based on
         // exposed_properties mapping
-        if let Some(serde_json::Value::Object(ref_obj)) =
-            &subgraph_node.property
-        {
+        if let Some(serde_json::Value::Object(ref_obj)) = &subgraph_node.property {
             // Process each property specified in the subgraph node
             for (property_name, property_value) in ref_obj {
                 // Find the corresponding exposed property by name
                 if let Some(exposed_properties) = &subgraph.exposed_properties {
-                    if let Some(exposed_prop) = exposed_properties
-                        .iter()
-                        .find(|ep| &ep.name == property_name)
+                    if let Some(exposed_prop) =
+                        exposed_properties.iter().find(|ep| &ep.name == property_name)
                     {
                         // Check if this exposed property applies to the current
                         // extension
-                        if let Some(ref target_extension) =
-                            exposed_prop.extension
-                        {
+                        if let Some(ref target_extension) = exposed_prop.extension {
                             if target_extension == &sub_node.name {
                                 // Initialize property object if it doesn't
                                 // exist
                                 if flattened_node.property.is_none() {
                                     flattened_node.property =
-                                        Some(serde_json::Value::Object(
-                                            serde_json::Map::new(),
-                                        ));
+                                        Some(serde_json::Value::Object(serde_json::Map::new()));
                                 }
 
                                 // Apply the property value to the target
                                 // property name
-                                if let Some(serde_json::Value::Object(
-                                    node_obj,
-                                )) = &mut flattened_node.property
+                                if let Some(serde_json::Value::Object(node_obj)) =
+                                    &mut flattened_node.property
                                 {
-                                    node_obj.insert(
-                                        exposed_prop.name.clone(),
-                                        property_value.clone(),
-                                    );
+                                    node_obj
+                                        .insert(exposed_prop.name.clone(), property_value.clone());
                                 }
                             }
                         } else {
                             panic!(
-                                "Property '{property_name}' specified in \
-                                 subgraph node '{}' is not exposed by the \
-                                 subgraph",
+                                "Property '{property_name}' specified in subgraph node '{}' is \
+                                 not exposed by the subgraph",
                                 subgraph_node.name
                             );
                         }
                     } else {
                         return Err(anyhow::anyhow!(
-                            "Property '{}' specified in subgraph node '{}' is \
-                             not exposed by the subgraph",
+                            "Property '{}' specified in subgraph node '{}' is not exposed by the \
+                             subgraph",
                             property_name,
                             subgraph_node.name
                         ));
                     }
                 } else {
                     return Err(anyhow::anyhow!(
-                        "Subgraph '{}' does not have exposed_properties \
-                         defined, but properties are specified in the \
-                         subgraph node",
+                        "Subgraph '{}' does not have exposed_properties defined, but properties \
+                         are specified in the subgraph node",
                         subgraph_node.name
                     ));
                 }
@@ -512,8 +479,7 @@ impl Graph {
         for sub_node in subgraph_nodes {
             let mut flattened_node = sub_node.clone();
             // Add subgraph name as prefix
-            flattened_node.name =
-                format!("{}_{}", subgraph_name, sub_node.name);
+            flattened_node.name = format!("{}_{}", subgraph_name, sub_node.name);
 
             // Apply properties from subgraph node reference based on
             // exposed_properties mapping
@@ -541,19 +507,13 @@ impl Graph {
     ) -> Result<()> {
         // Recursively flatten the loaded subgraph first to handle nested
         // subgraphs. This ensures depth-first processing.
-        let flattened_subgraph = Box::pin(Self::flatten_subgraphs(
-            loaded_subgraph,
-            current_base_dir,
-            true,
-        ))
-        .await?;
+        let flattened_subgraph =
+            Box::pin(Self::flatten_subgraphs(loaded_subgraph, current_base_dir, true)).await?;
 
         // If the subgraph doesn't need flattening, use the original
-        let flattened_subgraph =
-            flattened_subgraph.unwrap_or_else(|| loaded_subgraph.clone());
+        let flattened_subgraph = flattened_subgraph.unwrap_or_else(|| loaded_subgraph.clone());
 
-        subgraph_mappings
-            .insert(subgraph_node.name.clone(), flattened_subgraph.clone());
+        subgraph_mappings.insert(subgraph_node.name.clone(), flattened_subgraph.clone());
 
         // Flatten subgraph nodes (now all should be extensions after recursive
         // flattening)
@@ -562,12 +522,13 @@ impl Graph {
             .nodes
             .iter()
             .map(|node| {
-                if let GraphNode::Extension { content } = node {
+                if let GraphNode::Extension {
+                    content,
+                } = node
+                {
                     content.clone()
                 } else {
-                    panic!(
-                        "Unexpected non-extension node in flattened subgraph"
-                    );
+                    panic!("Unexpected non-extension node in flattened subgraph");
                 }
             })
             .collect::<Vec<ExtensionNode>>();
@@ -609,12 +570,7 @@ impl Graph {
         }
 
         let mut new_base_dir: Option<String> = None;
-        let subgraph = load_graph_from_uri(
-            import_uri,
-            current_base_dir,
-            &mut new_base_dir,
-        )
-        .await?;
+        let subgraph = load_graph_from_uri(import_uri, current_base_dir, &mut new_base_dir).await?;
 
         Self::process_loaded_subgraph(
             subgraph_node,
@@ -637,10 +593,7 @@ impl Graph {
         for connection in connections {
             // Expand connection source if it references a subgraph element
             let expanded_connections =
-                Self::flatten_connection_source_for_subgraph(
-                    connection,
-                    subgraph_mappings,
-                )?;
+                Self::flatten_connection_source_for_subgraph(connection, subgraph_mappings)?;
 
             for mut flattened_connection in expanded_connections {
                 // Update all message flow destinations
@@ -667,10 +620,14 @@ impl Graph {
         // Process all nodes in the graph
         for node in &graph.nodes {
             match node {
-                GraphNode::Extension { content } => {
+                GraphNode::Extension {
+                    content,
+                } => {
                     flattened_nodes.push(content.clone());
                 }
-                GraphNode::Subgraph { content } => {
+                GraphNode::Subgraph {
+                    content,
+                } => {
                     Self::process_subgraph_node(
                         content,
                         current_base_dir,
@@ -680,7 +637,9 @@ impl Graph {
                     )
                     .await?;
                 }
-                GraphNode::Selector { .. } => {
+                GraphNode::Selector {
+                    ..
+                } => {
                     // Skip selector nodes
                     continue;
                 }
@@ -689,11 +648,7 @@ impl Graph {
 
         // Process connections from the graph
         if let Some(connections) = &graph.connections {
-            Self::process_graph_connections(
-                connections,
-                subgraph_mappings,
-                flattened_connections,
-            )?;
+            Self::process_graph_connections(connections, subgraph_mappings, flattened_connections)?;
         }
 
         Ok(())
@@ -713,15 +668,14 @@ impl Graph {
                 match (&exposed.extension, &exposed.subgraph) {
                     (Some(_), Some(_)) => {
                         panic!(
-                            "Both extension and subgraph fields are specified \
-                             in exposed message. Only one should be present."
+                            "Both extension and subgraph fields are specified in exposed message. \
+                             Only one should be present."
                         );
                     }
                     (None, None) => {
                         panic!(
-                            "Neither extension nor subgraph field is \
-                             specified in exposed message. One must be \
-                             present."
+                            "Neither extension nor subgraph field is specified in exposed \
+                             message. One must be present."
                         );
                     }
                     (Some(_), None) => {
@@ -730,32 +684,28 @@ impl Graph {
                     }
                     (None, Some(ref subgraph_name)) => {
                         // Subgraph field is present - expand it
-                        let flattened_subgraph = subgraph_mappings
-                            .get(subgraph_name)
-                            .unwrap_or_else(|| {
+                        let flattened_subgraph =
+                            subgraph_mappings.get(subgraph_name).unwrap_or_else(|| {
                                 panic!(
-                                    "Subgraph '{subgraph_name}' referenced in \
-                                     exposed message not found in subgraph \
-                                     mappings"
+                                    "Subgraph '{subgraph_name}' referenced in exposed message not \
+                                     found in subgraph mappings"
                                 );
                             });
 
                         // Find matching exposed messages in the flattened
                         // subgraph
-                        if let Some(nested_exposed_messages) =
-                            &flattened_subgraph.exposed_messages
+                        if let Some(nested_exposed_messages) = &flattened_subgraph.exposed_messages
                         {
                             for nested_exposed in nested_exposed_messages {
                                 if nested_exposed.msg_type == exposed.msg_type
                                     && nested_exposed.name == exposed.name
                                 {
-                                    if let Some(ref nested_extension) =
-                                        nested_exposed.extension
-                                    {
+                                    if let Some(ref nested_extension) = nested_exposed.extension {
                                         // Create a new exposed message with the
                                         // flattened extension name
                                         let mut new_exposed = exposed.clone();
-                                        new_exposed.extension = Some(format!("{subgraph_name}_{nested_extension}"));
+                                        new_exposed.extension =
+                                            Some(format!("{subgraph_name}_{nested_extension}"));
                                         // Clear subgraph field
                                         new_exposed.subgraph = None;
                                         updated.push(new_exposed);
@@ -790,15 +740,14 @@ impl Graph {
                 match (&exposed.extension, &exposed.subgraph) {
                     (Some(_), Some(_)) => {
                         panic!(
-                            "Both extension and subgraph fields are specified \
-                             in exposed property. Only one should be present."
+                            "Both extension and subgraph fields are specified in exposed \
+                             property. Only one should be present."
                         );
                     }
                     (None, None) => {
                         panic!(
-                            "Neither extension nor subgraph field is \
-                             specified in exposed property. One must be \
-                             present."
+                            "Neither extension nor subgraph field is specified in exposed \
+                             property. One must be present."
                         );
                     }
                     (Some(_), None) => {
@@ -807,13 +756,11 @@ impl Graph {
                     }
                     (None, Some(ref subgraph_name)) => {
                         // Subgraph field is present - expand it
-                        let flattened_subgraph = subgraph_mappings
-                            .get(subgraph_name)
-                            .unwrap_or_else(|| {
+                        let flattened_subgraph =
+                            subgraph_mappings.get(subgraph_name).unwrap_or_else(|| {
                                 panic!(
-                                    "Subgraph '{subgraph_name}' referenced in \
-                                     exposed property not found in subgraph \
-                                     mappings"
+                                    "Subgraph '{subgraph_name}' referenced in exposed property \
+                                     not found in subgraph mappings"
                                 );
                             });
 
@@ -824,13 +771,12 @@ impl Graph {
                         {
                             for nested_exposed in nested_exposed_properties {
                                 if nested_exposed.name == exposed.name {
-                                    if let Some(ref nested_extension) =
-                                        nested_exposed.extension
-                                    {
+                                    if let Some(ref nested_extension) = nested_exposed.extension {
                                         // Create a new exposed property with
                                         // the flattened extension name
                                         let mut new_exposed = exposed.clone();
-                                        new_exposed.extension = Some(format!("{subgraph_name}_{nested_extension}"));
+                                        new_exposed.extension =
+                                            Some(format!("{subgraph_name}_{nested_extension}"));
                                         // Clear subgraph field
                                         new_exposed.subgraph = None;
                                         updated.push(new_exposed);
@@ -865,10 +811,8 @@ impl Graph {
         preserve_exposed_info: bool,
     ) -> Result<Option<Graph>> {
         // Check if this graph contains any subgraphs
-        let has_subgraphs = graph
-            .nodes
-            .iter()
-            .any(|node| node.get_type() == GraphNodeType::Subgraph);
+        let has_subgraphs =
+            graph.nodes.iter().any(|node| node.get_type() == GraphNodeType::Subgraph);
 
         if !has_subgraphs {
             // No subgraphs, return None to indicate no flattening needed
@@ -891,26 +835,27 @@ impl Graph {
 
         // Handle exposed_messages and exposed_properties based on
         // preserve_exposed_info flag
-        let (updated_exposed_messages, updated_exposed_properties) =
-            if preserve_exposed_info {
-                (
-                    Self::update_exposed_messages_after_flattening(
-                        &graph.exposed_messages,
-                        &subgraph_mappings,
-                    ),
-                    Self::update_exposed_properties_after_flattening(
-                        &graph.exposed_properties,
-                        &subgraph_mappings,
-                    ),
-                )
-            } else {
-                (None, None)
-            };
+        let (updated_exposed_messages, updated_exposed_properties) = if preserve_exposed_info {
+            (
+                Self::update_exposed_messages_after_flattening(
+                    &graph.exposed_messages,
+                    &subgraph_mappings,
+                ),
+                Self::update_exposed_properties_after_flattening(
+                    &graph.exposed_properties,
+                    &subgraph_mappings,
+                ),
+            )
+        } else {
+            (None, None)
+        };
 
         Ok(Some(Graph {
             nodes: flattened_nodes
                 .into_iter()
-                .map(|node| GraphNode::Extension { content: node })
+                .map(|node| GraphNode::Extension {
+                    content: node,
+                })
                 .collect(),
             connections: if flattened_connections.is_empty() {
                 None

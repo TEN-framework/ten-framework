@@ -11,11 +11,11 @@ mod tests {
     use ten_manager::registry::found_result::{
         get_pkg_registry_info_from_manifest, PkgRegistryInfo,
     };
-    use ten_rust::pkg_info::manifest::{
-        LocaleContent, LocalizedField, Manifest,
+    use ten_rust::pkg_info::{
+        manifest::{LocaleContent, LocalizedField, Manifest},
+        pkg_basic_info::PkgBasicInfo,
+        PkgInfo,
     };
-    use ten_rust::pkg_info::pkg_basic_info::PkgBasicInfo;
-    use ten_rust::pkg_info::PkgInfo;
 
     #[tokio::test]
     async fn test_pkg_registry_info_with_description() {
@@ -38,14 +38,11 @@ mod tests {
             }
         }"#;
 
-        let manifest: Manifest =
-            Manifest::create_from_str(manifest_json).unwrap();
-        let pkg_registry_info = get_pkg_registry_info_from_manifest(
-            "https://example.com/test.tar.gz",
-            &manifest,
-        )
-        .await
-        .unwrap();
+        let manifest: Manifest = Manifest::create_from_str(manifest_json).unwrap();
+        let pkg_registry_info =
+            get_pkg_registry_info_from_manifest("https://example.com/test.tar.gz", &manifest)
+                .await
+                .unwrap();
 
         assert!(pkg_registry_info.description.is_some());
         let description = pkg_registry_info.description.unwrap();
@@ -54,10 +51,7 @@ mod tests {
             description.locales.get("en-US").unwrap().content.as_ref().unwrap(),
             "English description"
         );
-        assert_eq!(
-            description.locales.get("zh-CN").unwrap().content.as_ref().unwrap(),
-            "中文描述"
-        );
+        assert_eq!(description.locales.get("zh-CN").unwrap().content.as_ref().unwrap(), "中文描述");
         assert_eq!(
             description.locales.get("es-ES").unwrap().content.as_ref().unwrap(),
             "Descripción en español"
@@ -72,14 +66,11 @@ mod tests {
             "version": "1.0.0"
         }"#;
 
-        let manifest: Manifest =
-            Manifest::create_from_str(manifest_json).unwrap();
-        let pkg_registry_info = get_pkg_registry_info_from_manifest(
-            "https://example.com/test.tar.gz",
-            &manifest,
-        )
-        .await
-        .unwrap();
+        let manifest: Manifest = Manifest::create_from_str(manifest_json).unwrap();
+        let pkg_registry_info =
+            get_pkg_registry_info_from_manifest("https://example.com/test.tar.gz", &manifest)
+                .await
+                .unwrap();
 
         assert!(pkg_registry_info.description.is_none());
     }
@@ -104,16 +95,16 @@ mod tests {
             },
         );
 
-        let description = LocalizedField { locales };
+        let description = LocalizedField {
+            locales,
+        };
 
         let pkg_registry_info = PkgRegistryInfo {
             basic_info: PkgBasicInfo {
-                type_and_name:
-                    ten_rust::pkg_info::pkg_type_and_name::PkgTypeAndName {
-                        pkg_type:
-                            ten_rust::pkg_info::pkg_type::PkgType::Extension,
-                        name: "test_extension".to_string(),
-                    },
+                type_and_name: ten_rust::pkg_info::pkg_type_and_name::PkgTypeAndName {
+                    pkg_type: ten_rust::pkg_info::pkg_type::PkgType::Extension,
+                    name: "test_extension".to_string(),
+                },
                 version: semver::Version::parse("1.0.0").unwrap(),
                 supports: vec![],
             },
@@ -134,30 +125,24 @@ mod tests {
         assert!(serialized.contains("测试描述"));
 
         // Test deserialization
-        let deserialized: PkgRegistryInfo =
-            serde_json::from_str(&serialized).unwrap();
+        let deserialized: PkgRegistryInfo = serde_json::from_str(&serialized).unwrap();
         assert!(deserialized.description.is_some());
         let desc = deserialized.description.unwrap();
         assert_eq!(
             desc.locales.get("en-US").unwrap().content.as_ref().unwrap(),
             "Test description"
         );
-        assert_eq!(
-            desc.locales.get("zh-CN").unwrap().content.as_ref().unwrap(),
-            "测试描述"
-        );
+        assert_eq!(desc.locales.get("zh-CN").unwrap().content.as_ref().unwrap(), "测试描述");
     }
 
     #[test]
     fn test_pkg_registry_info_serialization_without_description() {
         let pkg_registry_info = PkgRegistryInfo {
             basic_info: PkgBasicInfo {
-                type_and_name:
-                    ten_rust::pkg_info::pkg_type_and_name::PkgTypeAndName {
-                        pkg_type:
-                            ten_rust::pkg_info::pkg_type::PkgType::Extension,
-                        name: "test_extension".to_string(),
-                    },
+                type_and_name: ten_rust::pkg_info::pkg_type_and_name::PkgTypeAndName {
+                    pkg_type: ten_rust::pkg_info::pkg_type::PkgType::Extension,
+                    name: "test_extension".to_string(),
+                },
                 version: semver::Version::parse("1.0.0").unwrap(),
                 supports: vec![],
             },
@@ -178,8 +163,7 @@ mod tests {
         assert!(!serialized.contains("description"));
 
         // Test deserialization
-        let deserialized: PkgRegistryInfo =
-            serde_json::from_str(&serialized).unwrap();
+        let deserialized: PkgRegistryInfo = serde_json::from_str(&serialized).unwrap();
         assert!(deserialized.description.is_none());
     }
 
@@ -203,16 +187,16 @@ mod tests {
             },
         );
 
-        let description = LocalizedField { locales };
+        let description = LocalizedField {
+            locales,
+        };
 
         let pkg_registry_info = PkgRegistryInfo {
             basic_info: PkgBasicInfo {
-                type_and_name:
-                    ten_rust::pkg_info::pkg_type_and_name::PkgTypeAndName {
-                        pkg_type:
-                            ten_rust::pkg_info::pkg_type::PkgType::Extension,
-                        name: "test_extension".to_string(),
-                    },
+                type_and_name: ten_rust::pkg_info::pkg_type_and_name::PkgTypeAndName {
+                    pkg_type: ten_rust::pkg_info::pkg_type::PkgType::Extension,
+                    name: "test_extension".to_string(),
+                },
                 version: semver::Version::parse("1.0.0").unwrap(),
                 supports: vec![],
             },
@@ -231,43 +215,11 @@ mod tests {
         assert!(pkg_info.manifest.description.is_some());
         let converted_description = pkg_info.manifest.description.unwrap();
         assert_eq!(
-            converted_description
-                .locales
-                .get("en-US")
-                .unwrap()
-                .content
-                .as_ref()
-                .unwrap(),
+            converted_description.locales.get("en-US").unwrap().content.as_ref().unwrap(),
             "Test description"
         );
         assert_eq!(
-            converted_description
-                .locales
-                .get("fr")
-                .unwrap()
-                .content
-                .as_ref()
-                .unwrap(),
-            "Description de test"
-        );
-
-        // Check that description is properly added to all_fields
-        let all_fields = &pkg_info.manifest.all_fields;
-        assert!(all_fields.contains_key("description"));
-
-        let desc_value = &all_fields["description"];
-        assert!(desc_value.is_object());
-        let desc_obj = desc_value.as_object().unwrap();
-        assert!(desc_obj.contains_key("locales"));
-        let locales_obj = desc_obj.get("locales").unwrap().as_object().unwrap();
-        let en_obj = locales_obj.get("en-US").unwrap().as_object().unwrap();
-        assert_eq!(
-            en_obj.get("content").unwrap().as_str().unwrap(),
-            "Test description"
-        );
-        let fr_obj = locales_obj.get("fr").unwrap().as_object().unwrap();
-        assert_eq!(
-            fr_obj.get("content").unwrap().as_str().unwrap(),
+            converted_description.locales.get("fr").unwrap().content.as_ref().unwrap(),
             "Description de test"
         );
     }

@@ -17,18 +17,16 @@ use clap::{Arg, ArgMatches, Command};
 use console::Emoji;
 use indicatif::HumanDuration;
 use inquire::Confirm;
-
-use semver::VersionReq;
 use ten_rust::pkg_info::{
     constants::{BUILD_GN_FILENAME, MANIFEST_JSON_FILENAME},
-    manifest::support::ManifestSupport,
+    get_pkg_info_from_path,
     manifest::{
-        dependency::ManifestDependency, parse_manifest_in_folder, Manifest,
+        dependency::{ManifestDependency, TenVersionReq},
+        parse_manifest_in_folder,
+        support::ManifestSupport,
+        Manifest,
     },
     pkg_basic_info::PkgBasicInfo,
-};
-use ten_rust::pkg_info::{
-    get_pkg_info_from_path,
     pkg_type::PkgType,
     pkg_type_and_name::PkgTypeAndName,
     supports::{Arch, Os},
@@ -45,10 +43,8 @@ use crate::{
     fs::find_nearest_app_dir,
     home::config::{is_verbose, TmanConfig},
     install::{
-        compare_solver_results_with_installed_pkgs,
-        filter_compatible_pkgs_to_candidates,
-        write_installing_pkg_into_manifest_file,
-        write_pkgs_into_manifest_lock_file,
+        compare_solver_results_with_installed_pkgs, filter_compatible_pkgs_to_candidates,
+        write_installing_pkg_into_manifest_file, write_pkgs_into_manifest_lock_file,
     },
     manifest_lock::parse_manifest_lock_in_folder,
     output::TmanOutput,
@@ -58,8 +54,7 @@ use crate::{
         solve::{solve_all, DependencyRelationship},
         solver_error::{parse_error_statement, print_conflict_info},
         solver_result::{
-            extract_solver_results_from_raw_solver_results,
-            filter_solver_results_by_type_and_name,
+            extract_solver_results_from_raw_solver_results, filter_solver_results_by_type_and_name,
             install_solver_results_in_app_folder,
         },
     },
@@ -104,17 +99,10 @@ pub struct InstallCommand {
 pub fn create_sub_cmd(args_cfg: &crate::cmd_line::ArgsCfg) -> Command {
     Command::new("install")
         .about("Install a package")
-        .arg(
-            Arg::new("PACKAGE_TYPE")
-                .help("The type of the package")
-                .required(false),
-        )
+        .arg(Arg::new("PACKAGE_TYPE").help("The type of the package").required(false))
         .arg(
             Arg::new("PACKAGE_NAME")
-                .help(
-                    "The name of the package with optional version \
-                     requirement (e.g., foo@1.0.0)",
-                )
+                .help("The name of the package with optional version requirement (e.g., foo@1.0.0)")
                 .required(false),
         )
         .arg(
@@ -149,8 +137,7 @@ pub fn create_sub_cmd(args_cfg: &crate::cmd_line::ArgsCfg) -> Command {
         .arg(
             Arg::new("PRODUCTION")
                 .long("production")
-                .help("Install in production mode, dev_dependencies will be \
-                      ignored")
+                .help("Install in production mode, dev_dependencies will be ignored")
                 .action(clap::ArgAction::SetTrue)
                 .required(false),
         )
@@ -178,12 +165,8 @@ pub fn parse_sub_cmd(sub_cmd_args: &ArgMatches) -> Result<InstallCommand> {
         package_type: None,
         package_name: None,
         support: ManifestSupport {
-            os: sub_cmd_args
-                .get_one::<String>("OS")
-                .and_then(|s| s.parse::<Os>().ok()),
-            arch: sub_cmd_args
-                .get_one::<String>("ARCH")
-                .and_then(|s| s.parse::<Arch>().ok()),
+            os: sub_cmd_args.get_one::<String>("OS").and_then(|s| s.parse::<Os>().ok()),
+            arch: sub_cmd_args.get_one::<String>("ARCH").and_then(|s| s.parse::<Arch>().ok()),
         },
         local_install_mode: LocalInstallMode::Invalid,
         standalone: false,
@@ -203,9 +186,7 @@ pub fn parse_sub_cmd(sub_cmd_args: &ArgMatches) -> Result<InstallCommand> {
     }
 
     // Set max_latest_versions if provided.
-    if let Some(max_versions) =
-        sub_cmd_args.get_one::<i32>("MAX_LATEST_VERSIONS")
-    {
+    if let Some(max_versions) = sub_cmd_args.get_one::<i32>("MAX_LATEST_VERSIONS") {
         cmd.max_latest_versions = *max_versions;
     }
 
@@ -231,8 +212,7 @@ pub fn parse_sub_cmd(sub_cmd_args: &ArgMatches) -> Result<InstallCommand> {
 
             if sub_cmd_args.get_one::<String>("PACKAGE_NAME").is_some() {
                 return Err(anyhow::anyhow!(
-                    "PACKAGE_NAME is not required when a local path is \
-                     specified."
+                    "PACKAGE_NAME is not required when a local path is specified."
                 ));
             }
         } else {
@@ -242,9 +222,7 @@ pub fn parse_sub_cmd(sub_cmd_args: &ArgMatches) -> Result<InstallCommand> {
             // Check if PACKAGE_TYPE is an allowed value.
             let allowed_package_types: &[&str] =
                 &["system", "protocol", "addon_loader", "extension"];
-            if !allowed_package_types
-                .contains(&first_arg_str.to_lowercase().as_str())
-            {
+            if !allowed_package_types.contains(&first_arg_str.to_lowercase().as_str()) {
                 return Err(anyhow::anyhow!(
                     "Invalid PACKAGE_TYPE: {}. Allowed values are: {}",
                     first_arg_str,
@@ -254,9 +232,7 @@ pub fn parse_sub_cmd(sub_cmd_args: &ArgMatches) -> Result<InstallCommand> {
 
             cmd.package_type = Some(first_arg.clone());
 
-            if let Some(second_arg) =
-                sub_cmd_args.get_one::<String>("PACKAGE_NAME")
-            {
+            if let Some(second_arg) = sub_cmd_args.get_one::<String>("PACKAGE_NAME") {
                 cmd.package_name = Some(second_arg.clone());
             } else {
                 return Err(anyhow::anyhow!(
@@ -266,8 +242,7 @@ pub fn parse_sub_cmd(sub_cmd_args: &ArgMatches) -> Result<InstallCommand> {
         }
     }
 
-    if let Some(mode_str) = sub_cmd_args.get_one::<String>("LOCAL_INSTALL_MODE")
-    {
+    if let Some(mode_str) = sub_cmd_args.get_one::<String>("LOCAL_INSTALL_MODE") {
         cmd.local_install_mode = mode_str.parse()?;
     }
 
@@ -287,17 +262,11 @@ fn get_locked_pkgs(app_dir: &Path) -> Option<HashMap<PkgTypeAndName, PkgInfo>> {
 fn add_pkg_to_initial_pkg_to_find_candidates_and_all_candidates(
     pkg: &PkgInfo,
     initial_pkgs_to_find_candidates: &mut Vec<PkgInfo>,
-    all_candidates: &mut HashMap<
-        PkgTypeAndName,
-        HashMap<PkgBasicInfo, PkgInfo>,
-    >,
+    all_candidates: &mut HashMap<PkgTypeAndName, HashMap<PkgBasicInfo, PkgInfo>>,
 ) -> Result<()> {
     initial_pkgs_to_find_candidates.push(pkg.clone());
 
-    all_candidates
-        .entry(pkg.into())
-        .or_default()
-        .insert(pkg.into(), pkg.clone());
+    all_candidates.entry(pkg.into()).or_default().insert(pkg.into(), pkg.clone());
 
     Ok(())
 }
@@ -324,8 +293,7 @@ fn prepare_basic_standalone_app_dir(
     extension_dir: &Path,
     extension_manifest: &Manifest,
 ) -> Result<PathBuf> {
-    let dot_ten_app_dir =
-        extension_dir.join(DOT_TEN_DIR).join(APP_DIR_IN_DOT_TEN_DIR);
+    let dot_ten_app_dir = extension_dir.join(DOT_TEN_DIR).join(APP_DIR_IN_DOT_TEN_DIR);
     if !dot_ten_app_dir.exists() {
         fs::create_dir_all(&dot_ten_app_dir)?;
     }
@@ -341,13 +309,11 @@ fn prepare_basic_standalone_app_dir(
     // If the manifest.json already exists, it will be overwritten.
 
     // Serialize dev_dependencies from extension_manifest
-    let dev_dependencies_json =
-        if let Some(dev_deps) = &extension_manifest.dev_dependencies {
-            serde_json::to_value(dev_deps)
-                .unwrap_or(serde_json::Value::Array(vec![]))
-        } else {
-            serde_json::Value::Array(vec![])
-        };
+    let dev_dependencies_json = if let Some(dev_deps) = &extension_manifest.dev_dependencies {
+        serde_json::to_value(dev_deps).unwrap_or(serde_json::Value::Array(vec![]))
+    } else {
+        serde_json::Value::Array(vec![])
+    };
 
     // Create the manifest JSON structure
     let manifest_content = serde_json::json!({
@@ -374,11 +340,8 @@ async fn prepare_standalone_app_dir(
     extension_dir: &Path,
     extension_manifest: &Manifest,
 ) -> Result<PathBuf> {
-    let dot_ten_app_dir = prepare_basic_standalone_app_dir(
-        tman_config.clone(),
-        extension_dir,
-        extension_manifest,
-    )?;
+    let dot_ten_app_dir =
+        prepare_basic_standalone_app_dir(tman_config.clone(), extension_dir, extension_manifest)?;
 
     let build_gn_path = extension_dir.join("BUILD.gn");
     if build_gn_path.exists() {
@@ -397,14 +360,11 @@ async fn determine_app_dir_to_work_with(
     if standalone {
         let manifest = parse_manifest_in_folder(specified_cwd).await?;
         if manifest.type_and_name.pkg_type == PkgType::App {
-            return Err(anyhow!(
-                "App does not support standalone install mode."
-            ));
+            return Err(anyhow!("App does not support standalone install mode."));
         }
 
         let dot_ten_app_dir_path =
-            prepare_standalone_app_dir(tman_config, specified_cwd, &manifest)
-                .await?;
+            prepare_standalone_app_dir(tman_config, specified_cwd, &manifest).await?;
 
         Ok(dot_ten_app_dir_path)
     } else {
@@ -440,17 +400,18 @@ async fn filter_packages_for_production_mode<'a>(
         .collect::<HashMap<PkgTypeAndName, &PkgInfo>>();
 
     let mut pkgs_to_be_installed: Vec<&PkgInfo> = vec![];
-    let mut visited: std::collections::HashSet<PkgTypeAndName> =
-        std::collections::HashSet::new();
+    let mut visited: std::collections::HashSet<PkgTypeAndName> = std::collections::HashSet::new();
 
     // Add all the dependencies of the app to the list of packages to be
     // installed.
     // Note: This needs to be converted to async iteration
     for dep in app_pkg_dependencies.iter() {
         if let Some((pkg_type, name)) = dep.get_type_and_name().await {
-            let type_and_name = PkgTypeAndName { pkg_type, name };
-            if let Some(pkg) = remaining_solver_results_map.get(&type_and_name)
-            {
+            let type_and_name = PkgTypeAndName {
+                pkg_type,
+                name,
+            };
+            if let Some(pkg) = remaining_solver_results_map.get(&type_and_name) {
                 if !visited.contains(&type_and_name) {
                     pkgs_to_be_installed.push(pkg);
                     visited.insert(type_and_name);
@@ -466,10 +427,11 @@ async fn filter_packages_for_production_mode<'a>(
         if let Some(dependencies) = &pkg.manifest.dependencies {
             for dep in dependencies {
                 if let Some((pkg_type, name)) = dep.get_type_and_name().await {
-                    let type_and_name = PkgTypeAndName { pkg_type, name };
-                    if let Some(dep_pkg) =
-                        remaining_solver_results_map.get(&type_and_name)
-                    {
+                    let type_and_name = PkgTypeAndName {
+                        pkg_type,
+                        name,
+                    };
+                    if let Some(dep_pkg) = remaining_solver_results_map.get(&type_and_name) {
                         if !visited.contains(&type_and_name) {
                             pkgs_to_be_installed.push(dep_pkg);
                             visited.insert(type_and_name);
@@ -545,10 +507,8 @@ pub async fn execute_cmd(
     // those addons (extensions, ...) installed in the app directory are all
     // considered initial_pkgs_to_find_candidates.
     let mut initial_pkgs_to_find_candidates = vec![];
-    let mut all_candidates: HashMap<
-        PkgTypeAndName,
-        HashMap<PkgBasicInfo, PkgInfo>,
-    > = HashMap::new();
+    let mut all_candidates: HashMap<PkgTypeAndName, HashMap<PkgBasicInfo, PkgInfo>> =
+        HashMap::new();
 
     // 'all_installed_pkgs' contains all the packages which are already located
     // in the `app` directory, including the `app` itself, and all the
@@ -565,41 +525,27 @@ pub async fn execute_cmd(
     // the dependency tree, then users will be questioned whether to overwrite
     // them with the new packages or quit the installation.
     let all_installed_pkgs: Vec<PkgInfo>;
-    let mut all_compatible_installed_pkgs: HashMap<
-        PkgTypeAndName,
-        HashMap<PkgBasicInfo, PkgInfo>,
-    > = HashMap::new();
+    let mut all_compatible_installed_pkgs: HashMap<PkgTypeAndName, HashMap<PkgBasicInfo, PkgInfo>> =
+        HashMap::new();
 
-    let mut dep_relationship_from_cmd_line: Option<DependencyRelationship> =
-        None;
+    let mut dep_relationship_from_cmd_line: Option<DependencyRelationship> = None;
 
     let mut installing_pkg_type: Option<PkgType> = None;
     let mut installing_pkg_name: Option<String> = None;
 
-    let mut app_pkg_to_work_with = get_pkg_info_from_path(
-        &app_dir_to_work_with,
-        true,
-        false,
-        &mut None,
-        None,
-    )
-    .await?;
+    let mut app_pkg_to_work_with =
+        get_pkg_info_from_path(&app_dir_to_work_with, true, false, &mut None, None).await?;
 
     let app_pkg_dependencies =
         app_pkg_to_work_with.manifest.dependencies.clone().unwrap_or_default();
-    let app_pkg_dev_dependencies = app_pkg_to_work_with
-        .manifest
-        .dev_dependencies
-        .clone()
-        .unwrap_or_default();
+    let app_pkg_dev_dependencies =
+        app_pkg_to_work_with.manifest.dev_dependencies.clone().unwrap_or_default();
 
     // We will include the `dev_dependencies` of the app in the dependency
     // calculation (even in production mode), but when actually installing, we
     // will determine whether to install only for dev packages based on whether
     // it is in production mode.
-    if let Some(dev_dependencies) =
-        app_pkg_to_work_with.manifest.dev_dependencies.clone()
-    {
+    if let Some(dev_dependencies) = app_pkg_to_work_with.manifest.dev_dependencies.clone() {
         let mut dependencies = app_pkg_dependencies.clone();
         dependencies.extend(dev_dependencies);
         app_pkg_to_work_with.manifest.dependencies = Some(dependencies);
@@ -613,10 +559,7 @@ pub async fn execute_cmd(
         &mut all_candidates,
     )?;
 
-    out.normal_line(&format!(
-        "{}  Get all installed packages...",
-        Emoji("📦", "")
-    ));
+    out.normal_line(&format!("{}  Get all installed packages...", Emoji("📦", "")));
 
     all_installed_pkgs = tman_get_all_installed_pkgs_info_of_app(
         tman_config.clone(),
@@ -625,10 +568,7 @@ pub async fn execute_cmd(
     )
     .await?;
 
-    out.normal_line(&format!(
-        "{}  Filter compatible packages...",
-        Emoji("🔍", "")
-    ));
+    out.normal_line(&format!("{}  Filter compatible packages...", Emoji("🔍", "")));
 
     filter_compatible_pkgs_to_candidates(
         tman_config.clone(),
@@ -645,21 +585,17 @@ pub async fn execute_cmd(
         // Parse the `manifest.json` inside the local_path.
         let local_path_str = command_data.local_path.clone().unwrap();
         let local_path = Path::new(&local_path_str);
-        let local_path = local_path.canonicalize().with_context(|| {
-            format!("Failed to find the specified local path {local_path_str}")
-        })?;
+        let local_path = local_path
+            .canonicalize()
+            .with_context(|| format!("Failed to find the specified local path {local_path_str}"))?;
 
         let local_manifest_dir = if local_path.is_dir() {
             local_path.clone()
         } else {
-            return Err(anyhow!(
-                "The specified local path is not a folder.: {}",
-                local_path_str
-            ));
+            return Err(anyhow!("The specified local path is not a folder.: {}", local_path_str));
         };
 
-        let manifest_json_path =
-            local_manifest_dir.join(MANIFEST_JSON_FILENAME);
+        let manifest_json_path = local_manifest_dir.join(MANIFEST_JSON_FILENAME);
         if !manifest_json_path.exists() {
             return Err(anyhow!(
                 "No manifest.json found in the specified local path: {}",
@@ -669,29 +605,21 @@ pub async fn execute_cmd(
 
         // Read the `manifest.json` of the local package to obtain its `type`,
         // `name`, and `version`.
-        let local_pkg_info = get_pkg_info_from_path(
-            &local_manifest_dir,
-            false,
-            false,
-            &mut None,
-            None,
-        )
-        .await?;
+        let local_pkg_info =
+            get_pkg_info_from_path(&local_manifest_dir, false, false, &mut None, None).await?;
 
-        installing_pkg_type =
-            Some(local_pkg_info.manifest.type_and_name.pkg_type);
-        installing_pkg_name =
-            Some(local_pkg_info.manifest.type_and_name.name.clone());
+        installing_pkg_type = Some(local_pkg_info.manifest.type_and_name.pkg_type);
+        installing_pkg_name = Some(local_pkg_info.manifest.type_and_name.name.clone());
 
         // Currently, tman uses the Rust semver crate, while the cloud store
         // uses the npm semver package. The semver requirement specifications of
         // these two packages are not completely identical. For example:
         //
-        // - The Rust semver crate uses "," to separate different ranges,
-        //   whereas the npm semver package uses a space (" ") to separate
-        //   different requirement ranges.
-        // - The npm semver package uses "||" to unify different ranges, but the
-        //   Rust semver crate does not support this feature.
+        // - The Rust semver crate uses "," to separate different ranges, whereas the
+        //   npm semver package uses a space (" ") to separate different requirement
+        //   ranges.
+        // - The npm semver package uses "||" to unify different ranges, but the Rust
+        //   semver crate does not support this feature.
         //
         // Since TEN is a cross-language system, it needs to define its own
         // semver requirement specification. This specification could follow
@@ -707,12 +635,11 @@ pub async fn execute_cmd(
             || local_version_str.contains(",")
         {
             return Err(anyhow!(
-                "Invalid version requirement '{}' in local package manifest: \
-                 contains forbidden characters (||, whitespace, or ,)",
+                "Invalid version requirement '{}' in local package manifest: contains forbidden \
+                 characters (||, whitespace, or ,)",
                 local_version_str
             ));
         }
-        let installing_pkg_version_req = VersionReq::parse(&local_version_str)?;
 
         dep_relationship_from_cmd_line = Some(DependencyRelationship {
             type_and_name: PkgTypeAndName {
@@ -723,7 +650,7 @@ pub async fn execute_cmd(
             dependency: ManifestDependency::RegistryDependency {
                 pkg_type: installing_pkg_type.unwrap(),
                 name: installing_pkg_name.clone().unwrap(),
-                version_req: installing_pkg_version_req,
+                version_req: TenVersionReq::new(local_version_str.clone()).unwrap(),
             },
         });
 
@@ -744,10 +671,27 @@ pub async fn execute_cmd(
         // tman install <package_type> <package_name>
         let installing_pkg_type_: PkgType = package_type_str.parse()?;
 
-        let (installing_pkg_name_, installing_pkg_version_req_) =
-            parse_pkg_name_version_req(
-                command_data.package_name.as_ref().unwrap(),
-            )?;
+        let (installing_pkg_name_, _) =
+            parse_pkg_name_version_req(command_data.package_name.as_ref().unwrap())?;
+
+        // get installing_pkg_version_req
+        let parts: Vec<&str> = command_data.package_name.as_ref().unwrap().split('@').collect();
+        let mut _installing_pkg_version_req = TenVersionReq::new("*".to_string()).unwrap();
+        if parts.len() == 2 {
+            if parts[1].contains("||")
+                || parts[1].chars().any(|c| c.is_whitespace())
+                || parts[1].contains(",")
+            {
+                return Err(anyhow!(
+                    "Invalid version requirement '{}' in package name version string: contains \
+                     forbidden characters (||, whitespace, or ,)",
+                    parts[1]
+                ));
+            }
+            _installing_pkg_version_req = TenVersionReq::new(parts[1].to_string()).unwrap();
+        } else {
+            _installing_pkg_version_req = TenVersionReq::new("*".to_string()).unwrap();
+        }
 
         installing_pkg_type = Some(installing_pkg_type_);
         installing_pkg_name = Some(installing_pkg_name_.clone());
@@ -761,24 +705,20 @@ pub async fn execute_cmd(
             dependency: ManifestDependency::RegistryDependency {
                 pkg_type: installing_pkg_type_,
                 name: installing_pkg_name_.clone(),
-                version_req: installing_pkg_version_req_.clone(),
+                version_req: _installing_pkg_version_req,
             },
         });
     }
 
     out.normal_line(&format!(
-        "{}  Attempting to retrieve information about locked packages from \
-         manifest-lock.json...",
+        "{}  Attempting to retrieve information about locked packages from manifest-lock.json...",
         Emoji("📜", "")
     ));
 
     // Get the locked pkgs from the lock file in the app folder.
     let locked_pkgs = get_locked_pkgs(&app_dir_to_work_with);
 
-    out.normal_line(&format!(
-        "{}  Collect all candidate packages...",
-        Emoji("📦", "")
-    ));
+    out.normal_line(&format!("{}  Collect all candidate packages...", Emoji("📦", "")));
 
     // Get all possible candidates according to the input packages and extra
     // dependencies.
@@ -798,8 +738,7 @@ pub async fn execute_cmd(
 
     // Find an answer (a dependency tree) that satisfies all dependencies.
     // Implement retry mechanism with increasing max_latest_versions.
-    let mut current_max_latest_versions =
-        DEFAULT_INIT_LATEST_VERSIONS_WHEN_INSTALL;
+    let mut current_max_latest_versions = DEFAULT_INIT_LATEST_VERSIONS_WHEN_INSTALL;
     let mut usable_model = None;
     let mut final_non_usable_models = Vec::new();
     let mut retry_attempt = 0;
@@ -835,16 +774,14 @@ pub async fn execute_cmd(
                     final_non_usable_models = current_non_usable_models;
 
                     retry_attempt += 1;
-                    current_max_latest_versions +=
-                        DEFAULT_INIT_LATEST_VERSIONS_WHEN_INSTALL;
+                    current_max_latest_versions += DEFAULT_INIT_LATEST_VERSIONS_WHEN_INSTALL;
 
-                    if current_max_latest_versions
-                        < command_data.max_latest_versions
+                    if current_max_latest_versions < command_data.max_latest_versions
                         && is_verbose(tman_config.clone()).await
                     {
                         out.normal_line(&format!(
-                            "{}  Dependency resolution failed, increasing \
-                             search space and retrying...",
+                            "{}  Dependency resolution failed, increasing search space and \
+                             retrying...",
                             Emoji("⚠️", "")
                         ));
                     }
@@ -853,16 +790,13 @@ pub async fn execute_cmd(
             Err(error) => {
                 retry_attempt += 1;
 
-                current_max_latest_versions +=
-                    DEFAULT_INIT_LATEST_VERSIONS_WHEN_INSTALL;
+                current_max_latest_versions += DEFAULT_INIT_LATEST_VERSIONS_WHEN_INSTALL;
 
-                if current_max_latest_versions
-                    < command_data.max_latest_versions
-                {
+                if current_max_latest_versions < command_data.max_latest_versions {
                     if is_verbose(tman_config.clone()).await {
                         out.normal_line(&format!(
-                            "{}  Dependency resolution failed, increasing \
-                             search space and retrying...",
+                            "{}  Dependency resolution failed, increasing search space and \
+                             retrying...",
                             Emoji("⚠️", "")
                         ));
                     }
@@ -895,10 +829,8 @@ pub async fn execute_cmd(
 
     if let Some(ref usable_model) = usable_model {
         // Get the information of the resultant packages.
-        let solver_results = extract_solver_results_from_raw_solver_results(
-            usable_model,
-            &all_candidates,
-        )?;
+        let solver_results =
+            extract_solver_results_from_raw_solver_results(usable_model, &all_candidates)?;
 
         // Install all the dependencies which the app depends on.
         //
@@ -924,8 +856,7 @@ pub async fn execute_cmd(
             if out.is_interactive() {
                 // "y" for continuing to install, "n" for stopping.
                 let ans = Confirm::new(
-                    "Warning!!! Some local packages will be overwritten, do \
-                     you want to continue?",
+                    "Warning!!! Some local packages will be overwritten, do you want to continue?",
                 )
                 .with_default(false)
                 .prompt();
@@ -989,14 +920,8 @@ pub async fn execute_cmd(
             // tman install <local_path>
 
             if installing_pkg_type.is_some() && installing_pkg_name.is_some() {
-                let mut origin_cwd_pkg = get_pkg_info_from_path(
-                    &specified_cwd,
-                    true,
-                    false,
-                    &mut None,
-                    None,
-                )
-                .await?;
+                let mut origin_cwd_pkg =
+                    get_pkg_info_from_path(&specified_cwd, true, false, &mut None, None).await?;
 
                 write_installing_pkg_into_manifest_file(
                     &mut origin_cwd_pkg,
@@ -1011,14 +936,8 @@ pub async fn execute_cmd(
             // tman install <package_type> <package_name>
 
             if installing_pkg_type.is_some() && installing_pkg_name.is_some() {
-                let mut origin_cwd_pkg = get_pkg_info_from_path(
-                    &specified_cwd,
-                    true,
-                    false,
-                    &mut None,
-                    None,
-                )
-                .await?;
+                let mut origin_cwd_pkg =
+                    get_pkg_info_from_path(&specified_cwd, true, false, &mut None, None).await?;
 
                 write_installing_pkg_into_manifest_file(
                     &mut origin_cwd_pkg,
@@ -1112,8 +1031,6 @@ pub async fn execute_cmd(
 
         // If there are no error models or unable to parse, return a generic
         // error.
-        Err(anyhow!(
-            "Dependency resolution failed without specific error details."
-        ))
+        Err(anyhow!("Dependency resolution failed without specific error details."))
     }
 }
