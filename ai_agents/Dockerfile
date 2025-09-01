@@ -1,8 +1,4 @@
-<<<<<<< .merge_file_lPtwV8
-FROM ghcr.io/ten-framework/ten_agent_build:0.6.20 AS builder
-=======
 FROM ghcr.io/ten-framework/ten_agent_build:0.7.0 AS builder
->>>>>>> .merge_file_QTDnmY
 
 ARG SESSION_CONTROL_CONF=session_control.conf
 # Add a new argument for USE_AGENT (defaulting to 'agents/examples/default')
