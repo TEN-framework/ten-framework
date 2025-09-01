@@ -19,21 +19,17 @@ export const DesignerAtomicFilter = z.object({
 export type DesignerAtomicFilter = z.infer<typeof DesignerAtomicFilter>;
 
 export type DesignerFilter =
-  | { Atomic: DesignerAtomicFilter }
-  | { And: { and: DesignerFilter[] } }
-  | { Or: { or: DesignerFilter[] } };
+  | DesignerAtomicFilter
+  | { and: DesignerFilter[] }
+  | { or: DesignerFilter[] };
 export const DesignerFilter: z.ZodType<DesignerFilter> = z.lazy(() =>
   z.union([
-    z.object({ Atomic: DesignerAtomicFilter }),
+    DesignerAtomicFilter,
     z.object({
-      And: z.object({
-        and: z.array(z.lazy(() => DesignerFilter)),
-      }),
+      and: z.array(z.lazy(() => DesignerFilter)),
     }),
     z.object({
-      Or: z.object({
-        or: z.array(z.lazy(() => DesignerFilter)),
-      }),
+      or: z.array(z.lazy(() => DesignerFilter)),
     }),
   ])
 );
