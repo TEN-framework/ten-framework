@@ -67,6 +67,7 @@ class AgoraGenericRecorder:
         self.websocket_task = None
         self.heartbeat_task = None
         self._should_reconnect = True
+        self._connection_broken = False  # Flag to trigger reconnection
 
         self._speak_end_timer_task: asyncio.Task | None = None
         self._speak_end_event = asyncio.Event()
@@ -289,6 +290,8 @@ class AgoraGenericRecorder:
                 break
             except Exception as e:
                 self.ten_env.log_error(f"Heartbeat error: {e}")
+                # Mark connection as broken to trigger reconnection
+                self._connection_broken = True
 
     async def _connect_websocket_loop(self):
         attempt = 0
@@ -311,6 +314,7 @@ class AgoraGenericRecorder:
                 # Use additional_headers for WebSocket authentication (websockets 10.4)
                 async with websockets.connect(self.realtime_endpoint, additional_headers=headers) as websocket:
                     self.websocket = websocket
+                    self._connection_broken = False  # Reset broken flag
                     attempt = 0  # Reset attempt counter on successful connection
                     self.ten_env.log_info("WebSocket connected successfully with headers")
 
@@ -338,8 +342,9 @@ class AgoraGenericRecorder:
                     # Start listening for messages
                     asyncio.create_task(self._listen_for_messages())
 
-                    # Wait forever unless cancelled or connection drops
-                    await asyncio.Future()
+                    # Wait for connection to be broken or cancelled
+                    while not self._connection_broken and self._should_reconnect:
+                        await asyncio.sleep(1)
 
             except websockets.exceptions.ConnectionClosed as e:
                 attempt += 1
@@ -403,6 +408,8 @@ class AgoraGenericRecorder:
                 await self._handle_websocket_message(message)
         except Exception as e:
             self.ten_env.log_error(f"Error listening to WebSocket messages: {e}")
+            # Mark connection as broken to trigger reconnection
+            self._connection_broken = True
 
     async def _handle_websocket_message(self, message: str) -> None:
         """Handle incoming WebSocket messages."""
@@ -517,6 +524,8 @@ class AgoraGenericRecorder:
             return True
         except Exception as e:
             self.ten_env.log_error(f"Failed to send message: {e}")
+            # Mark connection as broken to trigger reconnection
+            self._connection_broken = True
             return False
 
     async def _handle_error(self, message: str, code: int = 0) -> None:
@@ -541,4 +550,9 @@ class AgoraGenericRecorder:
             pass
 
     def ws_connected(self):
-        return self.websocket is not None
+        try:
+            return (self.websocket is not None and
+                    hasattr(self.websocket, 'state') and
+                    self.websocket.state.name == 'OPEN')
+        except:
+            return False
