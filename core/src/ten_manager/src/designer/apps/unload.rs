@@ -39,10 +39,7 @@ pub async fn unload_app_endpoint(
     if !pkgs_cache.contains_key(&request_payload.base_dir) {
         let error_response = ErrorResponse {
             status: Status::Fail,
-            message: format!(
-                "App with base_dir '{}' is not loaded",
-                request_payload.base_dir
-            ),
+            message: format!("App with base_dir '{}' is not loaded", request_payload.base_dir),
             error: None,
         };
         return Ok(HttpResponse::BadRequest().json(error_response));

@@ -4,12 +4,10 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-use std::collections::HashMap;
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 use actix_web::{test, web, App};
 use serde_json::json;
-
 use ten_manager::{
     constants::TEST_DIR,
     designer::{
@@ -46,18 +44,12 @@ async fn test_get_compatible_messages_success() {
             include_str!("../../../test_data/app_property_without_uri.json").to_string(),
         ),
         (
-            format!(
-                "{}{}",
-                TEST_DIR, "/ten_packages/extension/extension_addon_1"
-            ),
+            format!("{}{}", TEST_DIR, "/ten_packages/extension/extension_addon_1"),
             include_str!("../../../test_data/extension_addon_1_manifest.json").to_string(),
             "{}".to_string(),
         ),
         (
-            format!(
-                "{}{}",
-                TEST_DIR, "/ten_packages/extension/extension_addon_2"
-            ),
+            format!("{}{}", TEST_DIR, "/ten_packages/extension/extension_addon_2"),
             include_str!("../../../test_data/extension_addon_2_manifest.json").to_string(),
             "{}".to_string(),
         ),
@@ -76,12 +68,7 @@ async fn test_get_compatible_messages_success() {
     let graph_id = {
         let graphs_cache = &designer_state.graphs_cache.read().await;
         let graph_id = graphs_cache.iter().find_map(|(uuid, info)| {
-            if info
-                .name
-                .as_ref()
-                .map(|name| name == "default")
-                .unwrap_or(false)
-            {
+            if info.name.as_ref().map(|name| name == "default").unwrap_or(false) {
                 Some(*uuid)
             } else {
                 None
@@ -163,18 +150,12 @@ async fn test_get_compatible_messages_fail() {
             include_str!("../../../test_data/app_property_without_uri.json").to_string(),
         ),
         (
-            format!(
-                "{}{}",
-                TEST_DIR, "/ten_packages/extension/extension_addon_1"
-            ),
+            format!("{}{}", TEST_DIR, "/ten_packages/extension/extension_addon_1"),
             include_str!("../../../test_data/extension_addon_1_manifest.json").to_string(),
             "{}".to_string(),
         ),
         (
-            format!(
-                "{}{}",
-                TEST_DIR, "/ten_packages/extension/extension_addon_2"
-            ),
+            format!("{}{}", TEST_DIR, "/ten_packages/extension/extension_addon_2"),
             include_str!("../../../test_data/extension_addon_2_manifest.json").to_string(),
             "{}".to_string(),
         ),
@@ -195,12 +176,7 @@ async fn test_get_compatible_messages_fail() {
         graphs_cache
             .iter()
             .find_map(|(uuid, info)| {
-                if info
-                    .name
-                    .as_ref()
-                    .map(|name| name == "default")
-                    .unwrap_or(false)
-                {
+                if info.name.as_ref().map(|name| name == "default").unwrap_or(false) {
                     Some(*uuid)
                 } else {
                     None
@@ -257,18 +233,12 @@ async fn test_get_compatible_messages_cmd_has_required_success_1() {
             include_str!("../../../test_data/app_property_without_uri.json").to_string(),
         ),
         (
-            format!(
-                "{}{}",
-                TEST_DIR, "/ten_packages/extension/extension_addon_1"
-            ),
+            format!("{}{}", TEST_DIR, "/ten_packages/extension/extension_addon_1"),
             include_str!("../../../test_data/extension_addon_1_manifest.json").to_string(),
             "{}".to_string(),
         ),
         (
-            format!(
-                "{}{}",
-                TEST_DIR, "/ten_packages/extension/extension_addon_2"
-            ),
+            format!("{}{}", TEST_DIR, "/ten_packages/extension/extension_addon_2"),
             include_str!("../../../test_data/extension_addon_2_manifest.json").to_string(),
             "{}".to_string(),
         ),
@@ -289,12 +259,7 @@ async fn test_get_compatible_messages_cmd_has_required_success_1() {
         graphs_cache
             .iter()
             .find_map(|(uuid, info)| {
-                if info
-                    .name
-                    .as_ref()
-                    .map(|name| name == "default")
-                    .unwrap_or(false)
-                {
+                if info.name.as_ref().map(|name| name == "default").unwrap_or(false) {
                     Some(*uuid)
                 } else {
                     None
@@ -374,18 +339,12 @@ async fn test_get_compatible_messages_cmd_has_required_success_2() {
             include_str!("../../../test_data/app_property_without_uri.json").to_string(),
         ),
         (
-            format!(
-                "{}{}",
-                TEST_DIR, "/ten_packages/extension/extension_addon_1"
-            ),
+            format!("{}{}", TEST_DIR, "/ten_packages/extension/extension_addon_1"),
             include_str!("../../../test_data/extension_addon_1_manifest.json").to_string(),
             "{}".to_string(),
         ),
         (
-            format!(
-                "{}{}",
-                TEST_DIR, "/ten_packages/extension/extension_addon_2"
-            ),
+            format!("{}{}", TEST_DIR, "/ten_packages/extension/extension_addon_2"),
             include_str!("../../../test_data/extension_addon_2_manifest.json").to_string(),
             "{}".to_string(),
         ),
@@ -406,12 +365,7 @@ async fn test_get_compatible_messages_cmd_has_required_success_2() {
         graphs_cache
             .iter()
             .find_map(|(uuid, info)| {
-                if info
-                    .name
-                    .as_ref()
-                    .map(|name| name == "default")
-                    .unwrap_or(false)
-                {
+                if info.name.as_ref().map(|name| name == "default").unwrap_or(false) {
                     Some(*uuid)
                 } else {
                     None
@@ -491,18 +445,12 @@ async fn test_get_compatible_messages_cmd_has_required_success_3() {
             include_str!("../../../test_data/app_property_without_uri.json").to_string(),
         ),
         (
-            format!(
-                "{}{}",
-                TEST_DIR, "/ten_packages/extension/extension_addon_1"
-            ),
+            format!("{}{}", TEST_DIR, "/ten_packages/extension/extension_addon_1"),
             include_str!("../../../test_data/extension_addon_1_manifest.json").to_string(),
             "{}".to_string(),
         ),
         (
-            format!(
-                "{}{}",
-                TEST_DIR, "/ten_packages/extension/extension_addon_2"
-            ),
+            format!("{}{}", TEST_DIR, "/ten_packages/extension/extension_addon_2"),
             include_str!("../../../test_data/extension_addon_2_manifest.json").to_string(),
             "{}".to_string(),
         ),
@@ -523,12 +471,7 @@ async fn test_get_compatible_messages_cmd_has_required_success_3() {
         graphs_cache
             .iter()
             .find_map(|(uuid, info)| {
-                if info
-                    .name
-                    .as_ref()
-                    .map(|name| name == "default")
-                    .unwrap_or(false)
-                {
+                if info.name.as_ref().map(|name| name == "default").unwrap_or(false) {
                     Some(*uuid)
                 } else {
                     None
@@ -608,18 +551,12 @@ async fn test_get_compatible_messages_cmd_has_required_success_4() {
             include_str!("../../../test_data/app_property_without_uri.json").to_string(),
         ),
         (
-            format!(
-                "{}{}",
-                TEST_DIR, "/ten_packages/extension/extension_addon_1"
-            ),
+            format!("{}{}", TEST_DIR, "/ten_packages/extension/extension_addon_1"),
             include_str!("../../../test_data/extension_addon_1_manifest.json").to_string(),
             "{}".to_string(),
         ),
         (
-            format!(
-                "{}{}",
-                TEST_DIR, "/ten_packages/extension/extension_addon_2"
-            ),
+            format!("{}{}", TEST_DIR, "/ten_packages/extension/extension_addon_2"),
             include_str!("../../../test_data/extension_addon_2_manifest.json").to_string(),
             "{}".to_string(),
         ),
@@ -640,12 +577,7 @@ async fn test_get_compatible_messages_cmd_has_required_success_4() {
         graphs_cache
             .iter()
             .find_map(|(uuid, info)| {
-                if info
-                    .name
-                    .as_ref()
-                    .map(|name| name == "default")
-                    .unwrap_or(false)
-                {
+                if info.name.as_ref().map(|name| name == "default").unwrap_or(false) {
                     Some(*uuid)
                 } else {
                     None
@@ -725,12 +657,7 @@ async fn test_get_compatible_messages_with_interface() {
         graphs_cache
             .iter()
             .find_map(|(uuid, info)| {
-                if info
-                    .name
-                    .as_ref()
-                    .map(|name| name == "default")
-                    .unwrap_or(false)
-                {
+                if info.name.as_ref().map(|name| name == "default").unwrap_or(false) {
                     Some(*uuid)
                 } else {
                     None
@@ -815,12 +742,7 @@ async fn test_get_compatible_messages_with_interface_2() {
         graphs_cache
             .iter()
             .find_map(|(uuid, info)| {
-                if info
-                    .name
-                    .as_ref()
-                    .map(|name| name == "default")
-                    .unwrap_or(false)
-                {
+                if info.name.as_ref().map(|name| name == "default").unwrap_or(false) {
                     Some(*uuid)
                 } else {
                     None

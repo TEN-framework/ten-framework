@@ -6,19 +6,17 @@
 //
 use actix_web::web;
 use futures_util::{SinkExt, StreamExt};
-use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
-
 use ten_manager::designer::builtin_function::{builtin_function_endpoint, msg::InboundMsg};
+use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
 
 use crate::test_case::common::builtin_server::start_test_server;
 
 #[actix_rt::test]
 async fn test_ws_builtin_function_install() {
     // Start the WebSocket server and get its address.
-    let server_addr = start_test_server("/ws/builtin-function", || {
-        web::get().to(builtin_function_endpoint)
-    })
-    .await;
+    let server_addr =
+        start_test_server("/ws/builtin-function", || web::get().to(builtin_function_endpoint))
+            .await;
     println!("Server started at: {server_addr}");
 
     // Connect WebSocket client.
@@ -39,10 +37,7 @@ async fn test_ws_builtin_function_install() {
     let json_msg = serde_json::to_string(&install_msg).unwrap();
 
     // Send the message.
-    write
-        .send(Message::Text(json_msg.clone().into()))
-        .await
-        .unwrap();
+    write.send(Message::Text(json_msg.clone().into())).await.unwrap();
     println!("Sent Install message: {json_msg}");
 
     // Wait for all response messages until server disconnects.
@@ -70,10 +65,7 @@ async fn test_ws_builtin_function_install() {
     }
 
     // Make sure we received at least one message.
-    assert!(
-        message_count > 0,
-        "Should have received at least one message"
-    );
+    assert!(message_count > 0, "Should have received at least one message");
 
     // Check if the last message matches the expected exit message.
     let expected_exit_message = r#"{"type":"exit","code":0,"error_message":null}"#;

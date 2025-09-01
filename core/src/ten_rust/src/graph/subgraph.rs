@@ -8,14 +8,13 @@ use std::collections::HashMap;
 
 use anyhow::Result;
 
-use crate::graph::graph_info::load_graph_from_uri;
-use crate::graph::node::{ExtensionNode, SubgraphNode};
-
-use super::connection::GraphLoc;
-use super::node::GraphNode;
 use super::{
-    Graph, GraphConnection, GraphExposedMessage, GraphExposedMessageType, GraphMessageFlow,
-    GraphNodeType,
+    connection::GraphLoc, node::GraphNode, Graph, GraphConnection, GraphExposedMessage,
+    GraphExposedMessageType, GraphMessageFlow, GraphNodeType,
+};
+use crate::graph::{
+    graph_info::load_graph_from_uri,
+    node::{ExtensionNode, SubgraphNode},
 };
 
 impl Graph {
@@ -28,9 +27,8 @@ impl Graph {
 
         if loc.subgraph.is_some() {
             panic!(
-                "Should not happen, when flattening a subgraph, the subgraphs \
-                 inside it should have already been flattened, so we should \
-                 not see any subgraph inside."
+                "Should not happen, when flattening a subgraph, the subgraphs inside it should \
+                 have already been flattened, so we should not see any subgraph inside."
             );
         }
     }
@@ -90,16 +88,14 @@ impl Graph {
                     Ok(format!("{subgraph_name}_{extension_name}"))
                 } else {
                     Err(anyhow::anyhow!(
-                        "Exposed message '{}' in subgraph '{}' does not \
-                         specify an extension",
+                        "Exposed message '{}' in subgraph '{}' does not specify an extension",
                         flow_name,
                         subgraph_name
                     ))
                 }
             } else {
                 Err(anyhow::anyhow!(
-                    "Message '{}' of type '{:?}' is not exposed by subgraph \
-                     '{}'",
+                    "Message '{}' of type '{:?}' is not exposed by subgraph '{}'",
                     flow_name,
                     msg_type,
                     subgraph_name
@@ -147,9 +143,8 @@ impl Graph {
                 msg_type.clone(),
             )?;
 
-            let entry = extension_flows
-                .entry(extension_name.clone())
-                .or_insert_with(|| GraphConnection {
+            let entry =
+                extension_flows.entry(extension_name.clone()).or_insert_with(|| GraphConnection {
                     loc: GraphLoc {
                         app: base_connection.loc.app.clone(),
                         extension: Some(extension_name),
@@ -343,10 +338,7 @@ impl Graph {
                         .expect("name field should be Some after flatten_graph processing");
 
                     if flow.names.is_some() {
-                        panic!(
-                            "names field should be None after flatten_graph \
-                         processing"
-                        );
+                        panic!("names field should be None after flatten_graph processing");
                     }
 
                     for dest in &mut flow.dest {
@@ -395,9 +387,8 @@ impl Graph {
             for (property_name, property_value) in ref_obj {
                 // Find the corresponding exposed property by name
                 if let Some(exposed_properties) = &subgraph.exposed_properties {
-                    if let Some(exposed_prop) = exposed_properties
-                        .iter()
-                        .find(|ep| &ep.name == property_name)
+                    if let Some(exposed_prop) =
+                        exposed_properties.iter().find(|ep| &ep.name == property_name)
                     {
                         // Check if this exposed property applies to the current
                         // extension
@@ -421,25 +412,23 @@ impl Graph {
                             }
                         } else {
                             panic!(
-                                "Property '{property_name}' specified in \
-                                 subgraph node '{}' is not exposed by the \
-                                 subgraph",
+                                "Property '{property_name}' specified in subgraph node '{}' is \
+                                 not exposed by the subgraph",
                                 subgraph_node.name
                             );
                         }
                     } else {
                         return Err(anyhow::anyhow!(
-                            "Property '{}' specified in subgraph node '{}' is \
-                             not exposed by the subgraph",
+                            "Property '{}' specified in subgraph node '{}' is not exposed by the \
+                             subgraph",
                             property_name,
                             subgraph_node.name
                         ));
                     }
                 } else {
                     return Err(anyhow::anyhow!(
-                        "Subgraph '{}' does not have exposed_properties \
-                         defined, but properties are specified in the \
-                         subgraph node",
+                        "Subgraph '{}' does not have exposed_properties defined, but properties \
+                         are specified in the subgraph node",
                         subgraph_node.name
                     ));
                 }
@@ -518,12 +507,8 @@ impl Graph {
     ) -> Result<()> {
         // Recursively flatten the loaded subgraph first to handle nested
         // subgraphs. This ensures depth-first processing.
-        let flattened_subgraph = Box::pin(Self::flatten_subgraphs(
-            loaded_subgraph,
-            current_base_dir,
-            true,
-        ))
-        .await?;
+        let flattened_subgraph =
+            Box::pin(Self::flatten_subgraphs(loaded_subgraph, current_base_dir, true)).await?;
 
         // If the subgraph doesn't need flattening, use the original
         let flattened_subgraph = flattened_subgraph.unwrap_or_else(|| loaded_subgraph.clone());
@@ -537,7 +522,10 @@ impl Graph {
             .nodes
             .iter()
             .map(|node| {
-                if let GraphNode::Extension { content } = node {
+                if let GraphNode::Extension {
+                    content,
+                } = node
+                {
                     content.clone()
                 } else {
                     panic!("Unexpected non-extension node in flattened subgraph");
@@ -632,10 +620,14 @@ impl Graph {
         // Process all nodes in the graph
         for node in &graph.nodes {
             match node {
-                GraphNode::Extension { content } => {
+                GraphNode::Extension {
+                    content,
+                } => {
                     flattened_nodes.push(content.clone());
                 }
-                GraphNode::Subgraph { content } => {
+                GraphNode::Subgraph {
+                    content,
+                } => {
                     Self::process_subgraph_node(
                         content,
                         current_base_dir,
@@ -645,7 +637,9 @@ impl Graph {
                     )
                     .await?;
                 }
-                GraphNode::Selector { .. } => {
+                GraphNode::Selector {
+                    ..
+                } => {
                     // Skip selector nodes
                     continue;
                 }
@@ -674,15 +668,14 @@ impl Graph {
                 match (&exposed.extension, &exposed.subgraph) {
                     (Some(_), Some(_)) => {
                         panic!(
-                            "Both extension and subgraph fields are specified \
-                             in exposed message. Only one should be present."
+                            "Both extension and subgraph fields are specified in exposed message. \
+                             Only one should be present."
                         );
                     }
                     (None, None) => {
                         panic!(
-                            "Neither extension nor subgraph field is \
-                             specified in exposed message. One must be \
-                             present."
+                            "Neither extension nor subgraph field is specified in exposed \
+                             message. One must be present."
                         );
                     }
                     (Some(_), None) => {
@@ -694,9 +687,8 @@ impl Graph {
                         let flattened_subgraph =
                             subgraph_mappings.get(subgraph_name).unwrap_or_else(|| {
                                 panic!(
-                                    "Subgraph '{subgraph_name}' referenced in \
-                                     exposed message not found in subgraph \
-                                     mappings"
+                                    "Subgraph '{subgraph_name}' referenced in exposed message not \
+                                     found in subgraph mappings"
                                 );
                             });
 
@@ -748,15 +740,14 @@ impl Graph {
                 match (&exposed.extension, &exposed.subgraph) {
                     (Some(_), Some(_)) => {
                         panic!(
-                            "Both extension and subgraph fields are specified \
-                             in exposed property. Only one should be present."
+                            "Both extension and subgraph fields are specified in exposed \
+                             property. Only one should be present."
                         );
                     }
                     (None, None) => {
                         panic!(
-                            "Neither extension nor subgraph field is \
-                             specified in exposed property. One must be \
-                             present."
+                            "Neither extension nor subgraph field is specified in exposed \
+                             property. One must be present."
                         );
                     }
                     (Some(_), None) => {
@@ -768,9 +759,8 @@ impl Graph {
                         let flattened_subgraph =
                             subgraph_mappings.get(subgraph_name).unwrap_or_else(|| {
                                 panic!(
-                                    "Subgraph '{subgraph_name}' referenced in \
-                                     exposed property not found in subgraph \
-                                     mappings"
+                                    "Subgraph '{subgraph_name}' referenced in exposed property \
+                                     not found in subgraph mappings"
                                 );
                             });
 
@@ -821,10 +811,8 @@ impl Graph {
         preserve_exposed_info: bool,
     ) -> Result<Option<Graph>> {
         // Check if this graph contains any subgraphs
-        let has_subgraphs = graph
-            .nodes
-            .iter()
-            .any(|node| node.get_type() == GraphNodeType::Subgraph);
+        let has_subgraphs =
+            graph.nodes.iter().any(|node| node.get_type() == GraphNodeType::Subgraph);
 
         if !has_subgraphs {
             // No subgraphs, return None to indicate no flattening needed
@@ -865,7 +853,9 @@ impl Graph {
         Ok(Some(Graph {
             nodes: flattened_nodes
                 .into_iter()
-                .map(|node| GraphNode::Extension { content: node })
+                .map(|node| GraphNode::Extension {
+                    content: node,
+                })
                 .collect(),
             connections: if flattened_connections.is_empty() {
                 None

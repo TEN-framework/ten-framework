@@ -8,14 +8,14 @@ pub mod file_type;
 pub mod json;
 pub mod log_file_watcher;
 
-use std::env;
-use std::path::{Path, PathBuf};
+use std::{
+    env,
+    path::{Path, PathBuf},
+};
 
 use anyhow::{anyhow, Result};
 use fs_extra::dir::CopyOptions;
-
-use ten_rust::pkg_info::constants::MANIFEST_JSON_FILENAME;
-use ten_rust::pkg_info::pkg_type::PkgType;
+use ten_rust::pkg_info::{constants::MANIFEST_JSON_FILENAME, pkg_type::PkgType};
 
 pub fn copy_folder_recursively(src_dir_path: &String, dest_dir_path: &String) -> Result<()> {
     let mut options = CopyOptions::new();
@@ -88,7 +88,5 @@ pub async fn find_nearest_app_dir(mut start_dir: PathBuf) -> Result<PathBuf> {
         }
     }
 
-    Err(anyhow!(
-        "Cannot find a TEN app directory in current or parent directories."
-    ))
+    Err(anyhow!("Cannot find a TEN app directory in current or parent directories."))
 }

@@ -21,10 +21,7 @@ impl Graph {
         ) -> Result<()> {
             for flow in msg_flows {
                 if flow.dest.iter().any(|dest| {
-                    dest.msg_conversion
-                        .as_ref()
-                        .and_then(|conv| conv.result.as_ref())
-                        .is_some()
+                    dest.msg_conversion.as_ref().and_then(|conv| conv.result.as_ref()).is_some()
                 }) {
                     return Err(anyhow::anyhow!(
                         "result conversion is not allowed for {} out msg",

@@ -33,15 +33,12 @@ class test_extension : public ten::extension_t {
     log_thread_ = std::thread([this, ten_env_proxy]() {
       while (!stop_log_.load()) {
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
-        ten_env_proxy->notify([](ten::ten_env_t &ten_env) {
-          for (int i = 0; i < 10; ++i) {
-            auto log_msg =
-                std::string("log message ") + std::to_string(++g_log_count);
-#if !defined(OS_WINDOWS)
-            (void)dprintf(STDERR_FILENO, "log_msg: %s\n", log_msg.c_str());
-#endif
-            TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_INFO, log_msg.c_str());
-          }
+
+        auto log_msg =
+            std::string("log message ") + std::to_string(++g_log_count);
+
+        ten_env_proxy->notify([log_msg](ten::ten_env_t &ten_env) {
+          TEN_ENV_LOG_INFO(ten_env, log_msg.c_str());
         });
       }
 
@@ -53,8 +50,8 @@ class test_extension : public ten::extension_t {
 
   void on_cmd(ten::ten_env_t &ten_env,
               std::unique_ptr<ten::cmd_t> cmd) override {
-    TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_DEBUG,
-                (std::string("on_cmd ") + cmd->get_name()).c_str());
+    TEN_ENV_LOG_DEBUG(ten_env,
+                      (std::string("on_cmd ") + cmd->get_name()).c_str());
 
     if (cmd->get_name() == "hello_world") {
       auto cmd_result = ten::cmd_result_t::create(TEN_STATUS_CODE_OK, *cmd);
@@ -87,26 +84,9 @@ class test_app : public ten::app_t {
                  R"({
                       "ten": {
                         "uri": "msgpack://127.0.0.1:8001/",
-                        "advanced_log": {
-                          "handlers": [
-                            {
-                              "matchers": [
-                                {
-                                  "level": "debug"
-                                }
-                              ],
-                              "formatter": {
-                                "type": "json",
-                                "colored": false
-                              },
-                              "emitter": {
-                                "type": "file",
-                                "config": {
-                                  "path": "aaa/log_advanced_file_reopen.log"
-                                }
-                              }
-                            }
-                          ]
+                        "deprecated_log": {
+                          "level": 2,
+                          "file": "aaa/log_file_reload.log"
                         }
                       }
                     })"
@@ -127,14 +107,14 @@ void *test_app_thread_main(TEN_UNUSED void *args) {
   return nullptr;
 }
 
-TEN_CPP_REGISTER_ADDON_AS_EXTENSION(log_advanced_file_reopen__test_extension,
+TEN_CPP_REGISTER_ADDON_AS_EXTENSION(log_file_reload__test_extension,
                                     test_extension);
 
 }  // namespace
 
-TEST(AdvancedLogTest, LogAdvancedFileReopen) {  // NOLINT
+TEST(LogTest, DISABLED_LogFileReload) {  // NOLINT
   // Remove the log file if it already exists.
-  std::string log_file_path = "aaa/log_advanced_file_reopen.log";
+  std::string log_file_path = "aaa/log_file_reload.log";
   std::ifstream check_file(log_file_path);
   if (check_file.good()) {
     check_file.close();
@@ -154,7 +134,7 @@ TEST(AdvancedLogTest, LogAdvancedFileReopen) {  // NOLINT
            "nodes": [{
                 "type": "extension",
                 "name": "test_extension",
-                "addon": "log_advanced_file_reopen__test_extension",
+                "addon": "log_file_reload__test_extension",
                 "extension_group": "test_extension_group",
                 "app": "msgpack://127.0.0.1:8001/"
              }]
@@ -192,11 +172,9 @@ TEST(AdvancedLogTest, LogAdvancedFileReopen) {  // NOLINT
 
   ten_thread_join(app_thread, -1);
 
-  ten_log_global_deinit_advanced_log();
-
 #ifndef _WIN32
   // Check the log file content.
-  std::ifstream log_file("aaa/log_advanced_file_reopen.log");
+  std::ifstream log_file("aaa/log_file_reload.log");
   EXPECT_TRUE(log_file.good());
 
   // Make sure the log content contains "log message 1" to "log message
@@ -226,22 +204,6 @@ TEST(AdvancedLogTest, LogAdvancedFileReopen) {  // NOLINT
   if (total_found != g_log_count) {
     std::cout << "Expected " << g_log_count << " messages, but found "
               << total_found << '\n';
-
-    std::cout << "\nlog file content:\n";
-    log_file.clear();
-    log_file.seekg(0);
-    std::string content;
-    while (std::getline(log_file, content)) {
-      std::cout << content << '\n';
-    }
-
-    std::cout << "\nmissing message numbers:\n";
-    for (int i = 0; i < g_log_count; ++i) {
-      if (!found[i]) {
-        std::cout << "log message " << (i + 1) << '\n';
-      }
-    }
-
     FAIL();
   }
 #endif

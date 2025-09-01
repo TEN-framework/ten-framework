@@ -11,10 +11,14 @@ use semver::VersionReq;
 use serde::{Deserialize, Serialize};
 use ten_rust::pkg_info::pkg_type::PkgType;
 
-use crate::designer::response::{ApiResponse, ErrorResponse, Status};
-use crate::designer::DesignerState;
-use crate::registry;
-use crate::registry::found_result::PkgRegistryInfo;
+use crate::{
+    designer::{
+        response::{ApiResponse, ErrorResponse, Status},
+        DesignerState,
+    },
+    registry,
+    registry::found_result::PkgRegistryInfo,
+};
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct GetPackagesRequestPayload {
@@ -93,7 +97,9 @@ pub async fn get_packages_endpoint(
     .await
     {
         Ok(packages) => {
-            let response_data = GetPackagesResponseData { packages };
+            let response_data = GetPackagesResponseData {
+                packages,
+            };
 
             Ok(HttpResponse::Ok().json(ApiResponse {
                 status: Status::Ok,

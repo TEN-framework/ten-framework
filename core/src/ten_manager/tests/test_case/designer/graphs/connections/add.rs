@@ -70,35 +70,19 @@ mod tests {
         let empty_property = r#"{"ten":{}}"#.to_string();
 
         let all_pkgs_json = vec![
+            (test_dir.clone(), app_manifest_json_str, app_property_json_str),
             (
-                test_dir.clone(),
-                app_manifest_json_str,
-                app_property_json_str,
-            ),
-            (
-                format!(
-                    "{}{}",
-                    test_dir.clone(),
-                    "/ten_packages/extension/extension_addon_1"
-                ),
+                format!("{}{}", test_dir.clone(), "/ten_packages/extension/extension_addon_1"),
                 ext1_manifest,
                 empty_property.clone(),
             ),
             (
-                format!(
-                    "{}{}",
-                    test_dir.clone(),
-                    "/ten_packages/extension/extension_addon_2"
-                ),
+                format!("{}{}", test_dir.clone(), "/ten_packages/extension/extension_addon_2"),
                 ext2_manifest,
                 empty_property.clone(),
             ),
             (
-                format!(
-                    "{}{}",
-                    test_dir.clone(),
-                    "/ten_packages/extension/extension_addon_3"
-                ),
+                format!("{}{}", test_dir.clone(), "/ten_packages/extension/extension_addon_3"),
                 ext3_manifest,
                 empty_property.clone(),
             ),
@@ -165,8 +149,7 @@ mod tests {
 
         // Define expected property.json content after adding the connection.
         let expected_property_json_str = include_str!(
-            "../../../../test_data/\
-             expected_json__test_add_graph_connection_success.json"
+            "../../../../test_data/expected_json__test_add_graph_connection_success.json"
         );
 
         // Read the actual property.json file generated during the test.
@@ -182,8 +165,7 @@ mod tests {
         assert_eq!(
             expected_value,
             actual_value,
-            "Property file doesn't match expected \
-             content.\nExpected:\n{}\nActual:\n{}",
+            "Property file doesn't match expected content.\nExpected:\n{}\nActual:\n{}",
             serde_json::to_string_pretty(&expected_value).unwrap(),
             serde_json::to_string_pretty(&actual_value).unwrap()
         );
@@ -249,44 +231,24 @@ mod tests {
         let empty_property = r#"{}"#.to_string();
 
         let all_pkgs_json = vec![
+            (test_dir.clone(), app_manifest_json_str, app_property_json_str),
             (
-                test_dir.clone(),
-                app_manifest_json_str,
-                app_property_json_str,
-            ),
-            (
-                format!(
-                    "{}{}",
-                    test_dir.clone(),
-                    "/ten_packages/extension/extension_1"
-                ),
+                format!("{}{}", test_dir.clone(), "/ten_packages/extension/extension_1"),
                 ext1_manifest,
                 empty_property.clone(),
             ),
             (
-                format!(
-                    "{}{}",
-                    test_dir.clone(),
-                    "/ten_packages/extension/extension_2"
-                ),
+                format!("{}{}", test_dir.clone(), "/ten_packages/extension/extension_2"),
                 ext2_manifest,
                 empty_property.clone(),
             ),
             (
-                format!(
-                    "{}{}",
-                    test_dir.clone(),
-                    "/ten_packages/extension/extension_3"
-                ),
+                format!("{}{}", test_dir.clone(), "/ten_packages/extension/extension_3"),
                 ext3_manifest,
                 empty_property.clone(),
             ),
             (
-                format!(
-                    "{}{}",
-                    test_dir.clone(),
-                    "/ten_packages/extension/extension_4"
-                ),
+                format!("{}{}", test_dir.clone(), "/ten_packages/extension/extension_4"),
                 ext4_manifest,
                 empty_property.clone(),
             ),
@@ -366,8 +328,7 @@ mod tests {
         assert_eq!(
             expected_value,
             actual_value,
-            "Property file doesn't match expected \
-             content.\nExpected:\n{}\nActual:\n{}",
+            "Property file doesn't match expected content.\nExpected:\n{}\nActual:\n{}",
             serde_json::to_string_pretty(&expected_value).unwrap(),
             serde_json::to_string_pretty(&actual_value).unwrap()
         );
@@ -397,11 +358,8 @@ mod tests {
 
         // Create the property.json file in the temporary directory.
         let property_path = std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
-        std::fs::write(
-            &property_path,
-            include_str!("../../../../test_data/app_property.json"),
-        )
-        .unwrap();
+        std::fs::write(&property_path, include_str!("../../../../test_data/app_property.json"))
+            .unwrap();
 
         {
             let mut pkgs_cache = designer_state.pkgs_cache.write().await;
@@ -481,35 +439,19 @@ mod tests {
         let empty_property = r#"{"ten":{}}"#.to_string();
 
         let all_pkgs_json = vec![
+            (test_dir.clone(), app_manifest_json_str, app_property_json_str),
             (
-                test_dir.clone(),
-                app_manifest_json_str,
-                app_property_json_str,
-            ),
-            (
-                format!(
-                    "{}{}",
-                    test_dir.clone(),
-                    "/ten_packages/extension/extension_addon_1"
-                ),
+                format!("{}{}", test_dir.clone(), "/ten_packages/extension/extension_addon_1"),
                 ext1_manifest,
                 empty_property.clone(),
             ),
             (
-                format!(
-                    "{}{}",
-                    test_dir.clone(),
-                    "/ten_packages/extension/extension_addon_2"
-                ),
+                format!("{}{}", test_dir.clone(), "/ten_packages/extension/extension_addon_2"),
                 ext2_manifest,
                 empty_property.clone(),
             ),
             (
-                format!(
-                    "{}{}",
-                    test_dir.clone(),
-                    "/ten_packages/extension/extension_addon_3"
-                ),
+                format!("{}{}", test_dir.clone(), "/ten_packages/extension/extension_addon_3"),
                 ext3_manifest,
                 empty_property.clone(),
             ),
@@ -536,12 +478,10 @@ mod tests {
         let designer_state_arc = Arc::new(designer_state);
 
         let app = test::init_service(
-            App::new()
-                .app_data(web::Data::new(designer_state_arc.clone()))
-                .route(
-                    "/api/designer/v1/graphs/connections/add",
-                    web::post().to(add_graph_connection_endpoint),
-                ),
+            App::new().app_data(web::Data::new(designer_state_arc.clone())).route(
+                "/api/designer/v1/graphs/connections/add",
+                web::post().to(add_graph_connection_endpoint),
+            ),
         )
         .await;
 
@@ -587,8 +527,7 @@ mod tests {
 
         // Define expected property.json content after adding both connections.
         let expected_property_json_str = include_str!(
-            "../../../../test_data/\
-             expected_json__test_add_graph_connection_preserves_order.json"
+            "../../../../test_data/expected_json__test_add_graph_connection_preserves_order.json"
         );
 
         // Read the actual property.json file generated during the test.
@@ -604,8 +543,7 @@ mod tests {
         assert_eq!(
             expected_value,
             actual_value,
-            "Property file doesn't match expected \
-             content.\nExpected:\n{}\nActual:\n{}",
+            "Property file doesn't match expected content.\nExpected:\n{}\nActual:\n{}",
             serde_json::to_string_pretty(&expected_value).unwrap(),
             serde_json::to_string_pretty(&actual_value).unwrap()
         );
@@ -651,35 +589,19 @@ mod tests {
         let empty_property = r#"{"ten":{}}"#.to_string();
 
         let all_pkgs_json = vec![
+            (test_dir.clone(), app_manifest_json_str, app_property_json_str),
             (
-                test_dir.clone(),
-                app_manifest_json_str,
-                app_property_json_str,
-            ),
-            (
-                format!(
-                    "{}{}",
-                    test_dir.clone(),
-                    "/ten_packages/extension/extension_addon_1"
-                ),
+                format!("{}{}", test_dir.clone(), "/ten_packages/extension/extension_addon_1"),
                 ext1_manifest,
                 empty_property.clone(),
             ),
             (
-                format!(
-                    "{}{}",
-                    test_dir.clone(),
-                    "/ten_packages/extension/extension_addon_2"
-                ),
+                format!("{}{}", test_dir.clone(), "/ten_packages/extension/extension_addon_2"),
                 ext2_manifest,
                 empty_property.clone(),
             ),
             (
-                format!(
-                    "{}{}",
-                    test_dir.clone(),
-                    "/ten_packages/extension/extension_addon_3"
-                ),
+                format!("{}{}", test_dir.clone(), "/ten_packages/extension/extension_addon_3"),
                 ext3_manifest,
                 empty_property.clone(),
             ),
@@ -706,12 +628,10 @@ mod tests {
         let designer_state_arc = Arc::new(designer_state);
 
         let app = test::init_service(
-            App::new()
-                .app_data(web::Data::new(designer_state_arc.clone()))
-                .route(
-                    "/api/designer/v1/graphs/connections/add",
-                    web::post().to(add_graph_connection_endpoint),
-                ),
+            App::new().app_data(web::Data::new(designer_state_arc.clone())).route(
+                "/api/designer/v1/graphs/connections/add",
+                web::post().to(add_graph_connection_endpoint),
+            ),
         )
         .await;
 
@@ -757,8 +677,7 @@ mod tests {
 
         // Define expected property.json content after adding both connections.
         let expected_property_json_str = include_str!(
-            "../../../../test_data/\
-             expected_json__test_add_graph_connection_file_comparison.json"
+            "../../../../test_data/expected_json__test_add_graph_connection_file_comparison.json"
         );
 
         // Read the actual property.json file generated during the test.
@@ -774,8 +693,7 @@ mod tests {
         assert_eq!(
             expected_value,
             actual_value,
-            "Property file doesn't match expected \
-             content.\nExpected:\n{}\nActual:\n{}",
+            "Property file doesn't match expected content.\nExpected:\n{}\nActual:\n{}",
             serde_json::to_string_pretty(&expected_value).unwrap(),
             serde_json::to_string_pretty(&actual_value).unwrap()
         );
@@ -818,26 +736,14 @@ mod tests {
         let empty_property = r#"{"ten":{}}"#.to_string();
 
         let all_pkgs_json = vec![
+            (test_dir.clone(), app_manifest_json_str, app_property_json_str),
             (
-                test_dir.clone(),
-                app_manifest_json_str,
-                app_property_json_str,
-            ),
-            (
-                format!(
-                    "{}{}",
-                    test_dir.clone(),
-                    "/ten_packages/extension/extension_addon_1"
-                ),
+                format!("{}{}", test_dir.clone(), "/ten_packages/extension/extension_addon_1"),
                 ext1_manifest,
                 empty_property.clone(),
             ),
             (
-                format!(
-                    "{}{}",
-                    test_dir.clone(),
-                    "/ten_packages/extension/extension_addon_2"
-                ),
+                format!("{}{}", test_dir.clone(), "/ten_packages/extension/extension_addon_2"),
                 ext2_manifest,
                 empty_property,
             ),
@@ -864,12 +770,10 @@ mod tests {
         let designer_state_arc = Arc::new(designer_state);
 
         let app = test::init_service(
-            App::new()
-                .app_data(web::Data::new(designer_state_arc.clone()))
-                .route(
-                    "/api/designer/v1/graphs/connections/add",
-                    web::post().to(add_graph_connection_endpoint),
-                ),
+            App::new().app_data(web::Data::new(designer_state_arc.clone())).route(
+                "/api/designer/v1/graphs/connections/add",
+                web::post().to(add_graph_connection_endpoint),
+            ),
         )
         .await;
 
@@ -903,8 +807,7 @@ mod tests {
 
         // Define expected property.json content after adding the connection.
         let expected_property_json_str = include_str!(
-            "../../../../test_data/\
-             expected_json__test_add_graph_connection_data_type.json"
+            "../../../../test_data/expected_json__test_add_graph_connection_data_type.json"
         );
 
         // Read the actual property.json file generated during the test.
@@ -920,8 +823,7 @@ mod tests {
         assert_eq!(
             expected_value,
             actual_value,
-            "Property file doesn't match expected \
-             content.\nExpected:\n{}\nActual:\n{}",
+            "Property file doesn't match expected content.\nExpected:\n{}\nActual:\n{}",
             serde_json::to_string_pretty(&expected_value).unwrap(),
             serde_json::to_string_pretty(&actual_value).unwrap()
         );
@@ -964,26 +866,14 @@ mod tests {
         let empty_property = r#"{"ten":{}}"#.to_string();
 
         let all_pkgs_json = vec![
+            (test_dir.clone(), app_manifest_json_str, app_property_json_str),
             (
-                test_dir.clone(),
-                app_manifest_json_str,
-                app_property_json_str,
-            ),
-            (
-                format!(
-                    "{}{}",
-                    test_dir.clone(),
-                    "/ten_packages/extension/extension_addon_1"
-                ),
+                format!("{}{}", test_dir.clone(), "/ten_packages/extension/extension_addon_1"),
                 ext1_manifest,
                 empty_property.clone(),
             ),
             (
-                format!(
-                    "{}{}",
-                    test_dir.clone(),
-                    "/ten_packages/extension/extension_addon_2"
-                ),
+                format!("{}{}", test_dir.clone(), "/ten_packages/extension/extension_addon_2"),
                 ext2_manifest,
                 empty_property,
             ),
@@ -1010,12 +900,10 @@ mod tests {
         let designer_state_arc = Arc::new(designer_state);
 
         let app = test::init_service(
-            App::new()
-                .app_data(web::Data::new(designer_state_arc.clone()))
-                .route(
-                    "/api/designer/v1/graphs/connections/add",
-                    web::post().to(add_graph_connection_endpoint),
-                ),
+            App::new().app_data(web::Data::new(designer_state_arc.clone())).route(
+                "/api/designer/v1/graphs/connections/add",
+                web::post().to(add_graph_connection_endpoint),
+            ),
         )
         .await;
 
@@ -1061,8 +949,7 @@ mod tests {
 
         // Define expected property.json content after adding both connections.
         let expected_property_json_str = include_str!(
-            "../../../../test_data/\
-             expected_json__test_add_graph_connection_frame_types.json"
+            "../../../../test_data/expected_json__test_add_graph_connection_frame_types.json"
         );
 
         // Read the actual property.json file generated during the test.
@@ -1078,8 +965,7 @@ mod tests {
         assert_eq!(
             expected_value,
             actual_value,
-            "Property file doesn't match expected \
-             content.\nExpected:\n{}\nActual:\n{}",
+            "Property file doesn't match expected content.\nExpected:\n{}\nActual:\n{}",
             serde_json::to_string_pretty(&expected_value).unwrap(),
             serde_json::to_string_pretty(&actual_value).unwrap()
         );
@@ -1124,35 +1010,19 @@ mod tests {
         let empty_property = r#"{"ten":{}}"#.to_string();
 
         let all_pkgs_json = vec![
+            (test_dir.clone(), app_manifest_json_str, app_property_json_str),
             (
-                test_dir.clone(),
-                app_manifest_json_str,
-                app_property_json_str,
-            ),
-            (
-                format!(
-                    "{}{}",
-                    test_dir.clone(),
-                    "/ten_packages/extension/extension_addon_1"
-                ),
+                format!("{}{}", test_dir.clone(), "/ten_packages/extension/extension_addon_1"),
                 ext1_manifest,
                 empty_property.clone(),
             ),
             (
-                format!(
-                    "{}{}",
-                    test_dir.clone(),
-                    "/ten_packages/extension/extension_addon_2"
-                ),
+                format!("{}{}", test_dir.clone(), "/ten_packages/extension/extension_addon_2"),
                 ext2_manifest,
                 empty_property.clone(),
             ),
             (
-                format!(
-                    "{}{}",
-                    test_dir.clone(),
-                    "/ten_packages/extension/extension_addon_3"
-                ),
+                format!("{}{}", test_dir.clone(), "/ten_packages/extension/extension_addon_3"),
                 ext3_manifest,
                 empty_property,
             ),
@@ -1179,12 +1049,10 @@ mod tests {
         let designer_state_arc = Arc::new(designer_state);
 
         let app = test::init_service(
-            App::new()
-                .app_data(web::Data::new(designer_state_arc.clone()))
-                .route(
-                    "/api/designer/v1/graphs/connections/add",
-                    web::post().to(add_graph_connection_endpoint),
-                ),
+            App::new().app_data(web::Data::new(designer_state_arc.clone())).route(
+                "/api/designer/v1/graphs/connections/add",
+                web::post().to(add_graph_connection_endpoint),
+            ),
         )
         .await;
 
@@ -1252,8 +1120,7 @@ mod tests {
         // connections.
         let expected_property_json_str = include_str!(
             "../../../../test_data/\
-             expected_json__test_add_multiple_connections_preservation_order.\
-             json"
+             expected_json__test_add_multiple_connections_preservation_order.json"
         );
 
         // Read the actual property.json file generated during the test.
@@ -1269,8 +1136,7 @@ mod tests {
         assert_eq!(
             expected_value,
             actual_value,
-            "Property file doesn't match expected \
-             content.\nExpected:\n{}\nActual:\n{}",
+            "Property file doesn't match expected content.\nExpected:\n{}\nActual:\n{}",
             serde_json::to_string_pretty(&expected_value).unwrap(),
             serde_json::to_string_pretty(&actual_value).unwrap()
         );
@@ -1545,8 +1411,7 @@ mod tests {
             serde_json::from_str(&actual_property).unwrap();
 
         let expected_property_json_str = include_str!(
-            "../../../../test_data/graph_add_connection_to_multi_dests/\
-             expected_property.json"
+            "../../../../test_data/graph_add_connection_to_multi_dests/expected_property.json"
         )
         .to_string();
 

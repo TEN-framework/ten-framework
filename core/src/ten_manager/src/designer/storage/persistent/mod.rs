@@ -8,13 +8,15 @@ pub mod get;
 pub mod schema;
 pub mod set;
 
+use std::{
+    fs::{self, OpenOptions},
+    io::{BufWriter, Write},
+};
+
 use anyhow::Result;
 use serde_json::Value;
-use std::fs::{self, OpenOptions};
-use std::io::{BufWriter, Write};
 
-use crate::constants::BUF_WRITER_BUF_SIZE;
-use crate::home::data::get_home_data_path;
+use crate::{constants::BUF_WRITER_BUF_SIZE, home::data::get_home_data_path};
 
 /// Read the persistent storage data from disk
 pub fn read_persistent_storage() -> Result<Value> {
@@ -39,11 +41,7 @@ pub fn write_persistent_storage(data: &Value) -> Result<()> {
         fs::create_dir_all(parent)?;
     }
 
-    let file = OpenOptions::new()
-        .write(true)
-        .create(true)
-        .truncate(true)
-        .open(&path)?;
+    let file = OpenOptions::new().write(true).create(true).truncate(true).open(&path)?;
 
     let mut buf_writer = BufWriter::with_capacity(BUF_WRITER_BUF_SIZE, file);
 

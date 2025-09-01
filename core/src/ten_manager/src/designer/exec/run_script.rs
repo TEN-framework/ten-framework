@@ -23,9 +23,7 @@ pub async fn extract_command_from_manifest(
     let app_pkg = match &base_dir_pkg_info.app_pkg_info {
         Some(app_pkg) => app_pkg,
         None => {
-            return Err(anyhow::anyhow!(
-                "There should be exactly one app package, found 0"
-            ));
+            return Err(anyhow::anyhow!("There should be exactly one app package, found 0"));
         }
     };
 
@@ -39,10 +37,7 @@ pub async fn extract_command_from_manifest(
     {
         Some(cmd) => cmd.clone(),
         None => {
-            return Err(anyhow::anyhow!(
-                "Script '{}' not found in app manifest",
-                name
-            ));
+            return Err(anyhow::anyhow!("Script '{}' not found in app manifest", name));
         }
     };
 

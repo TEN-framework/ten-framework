@@ -7,12 +7,14 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
-use crate::constants::ERR_MSG_GRAPH_LOCALHOST_FORBIDDEN_IN_MULTI_APP_MODE;
-use crate::constants::ERR_MSG_GRAPH_LOCALHOST_FORBIDDEN_IN_SINGLE_APP_MODE;
-use crate::graph::AppUriDeclarationState;
-
-use crate::graph::is_app_default_loc_or_none;
-use crate::pkg_info::localhost;
+use crate::{
+    constants::{
+        ERR_MSG_GRAPH_LOCALHOST_FORBIDDEN_IN_MULTI_APP_MODE,
+        ERR_MSG_GRAPH_LOCALHOST_FORBIDDEN_IN_SINGLE_APP_MODE,
+    },
+    graph::{is_app_default_loc_or_none, AppUriDeclarationState},
+    pkg_info::localhost,
+};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "lowercase")]
@@ -90,14 +92,18 @@ impl Filter {
 
     pub fn as_and_filter(&self) -> Option<&[Filter]> {
         match self {
-            Filter::And { and } => Some(and),
+            Filter::And {
+                and,
+            } => Some(and),
             _ => None,
         }
     }
 
     pub fn as_or_filter(&self) -> Option<&[Filter]> {
         match self {
-            Filter::Or { or } => Some(or),
+            Filter::Or {
+                or,
+            } => Some(or),
             _ => None,
         }
     }
@@ -177,7 +183,9 @@ impl GraphNode {
         app_uri_declaration_state: &AppUriDeclarationState,
     ) -> Result<()> {
         match self {
-            GraphNode::Extension { content } => {
+            GraphNode::Extension {
+                content,
+            } => {
                 // Validate app URI if provided
                 if let Some(app) = &content.app {
                     // Disallow 'localhost' as an app URI in graph definitions.
@@ -192,58 +200,92 @@ impl GraphNode {
                 }
                 Ok(())
             }
-            GraphNode::Subgraph { .. } => Ok(()),
-            GraphNode::Selector { .. } => Ok(()),
+            GraphNode::Subgraph {
+                ..
+            } => Ok(()),
+            GraphNode::Selector {
+                ..
+            } => Ok(()),
         }
     }
 
     pub fn get_app_uri(&self) -> &Option<String> {
         match self {
-            GraphNode::Extension { content } => &content.app,
-            GraphNode::Subgraph { .. } => &None,
-            GraphNode::Selector { .. } => &None,
+            GraphNode::Extension {
+                content,
+            } => &content.app,
+            GraphNode::Subgraph {
+                ..
+            } => &None,
+            GraphNode::Selector {
+                ..
+            } => &None,
         }
     }
 
     pub fn get_type(&self) -> GraphNodeType {
         match self {
-            GraphNode::Extension { .. } => GraphNodeType::Extension,
-            GraphNode::Subgraph { .. } => GraphNodeType::Subgraph,
-            GraphNode::Selector { .. } => GraphNodeType::Selector,
+            GraphNode::Extension {
+                ..
+            } => GraphNodeType::Extension,
+            GraphNode::Subgraph {
+                ..
+            } => GraphNodeType::Subgraph,
+            GraphNode::Selector {
+                ..
+            } => GraphNodeType::Selector,
         }
     }
 
     pub fn get_name(&self) -> &str {
         match self {
-            GraphNode::Extension { content } => &content.name,
-            GraphNode::Subgraph { content } => &content.name,
-            GraphNode::Selector { content } => &content.name,
+            GraphNode::Extension {
+                content,
+            } => &content.name,
+            GraphNode::Subgraph {
+                content,
+            } => &content.name,
+            GraphNode::Selector {
+                content,
+            } => &content.name,
         }
     }
 
     pub fn set_name(&mut self, name: String) {
         match self {
-            GraphNode::Extension { content } => content.name = name,
-            GraphNode::Subgraph { content } => content.name = name,
-            GraphNode::Selector { content } => content.name = name,
+            GraphNode::Extension {
+                content,
+            } => content.name = name,
+            GraphNode::Subgraph {
+                content,
+            } => content.name = name,
+            GraphNode::Selector {
+                content,
+            } => content.name = name,
         }
     }
 
     pub fn get_field(&self, field: &str) -> Option<&str> {
         match self {
-            GraphNode::Extension { content } => match field {
+            GraphNode::Extension {
+                content,
+            } => match field {
                 "name" => Some(&content.name),
                 "type" => Some("extension"),
                 "app" => content.app.as_deref(),
                 "addon" => Some(&content.addon),
                 _ => None,
             },
-            GraphNode::Subgraph { content } => match field {
+            GraphNode::Subgraph {
+                content,
+            } => match field {
                 "name" => Some(&content.name),
                 "type" => Some("subgraph"),
                 _ => None,
             },
-            GraphNode::Selector { content } => match field {
+            GraphNode::Selector {
+                content,
+            } => match field {
                 "name" => Some(&content.name),
                 "type" => Some("selector"),
                 _ => None,
@@ -253,21 +295,27 @@ impl GraphNode {
 
     pub fn as_selector_node(&self) -> Option<&SelectorNode> {
         match self {
-            GraphNode::Selector { content } => Some(content),
+            GraphNode::Selector {
+                content,
+            } => Some(content),
             _ => None,
         }
     }
 
     pub fn as_extension_node(&self) -> Option<&ExtensionNode> {
         match self {
-            GraphNode::Extension { content } => Some(content),
+            GraphNode::Extension {
+                content,
+            } => Some(content),
             _ => None,
         }
     }
 
     pub fn as_subgraph_node(&self) -> Option<&SubgraphNode> {
         match self {
-            GraphNode::Subgraph { content } => Some(content),
+            GraphNode::Subgraph {
+                content,
+            } => Some(content),
             _ => None,
         }
     }

@@ -27,9 +27,11 @@ void ten_encrypt_log_deinit(void *user_data) {
 }
 
 void ten_log_rust_log_func(ten_log_t *self, TEN_LOG_LEVEL level,
-                           const char *category, const char *func_name,
-                           const char *file_name, size_t line_no,
-                           const char *msg) {
+                           const char *category, size_t category_len,
+                           const char *func_name, size_t func_name_len,
+                           const char *file_name, size_t file_name_len,
+                           size_t line_no, const char *msg, size_t msg_len,
+                           ten_value_t *fields) {
 #if defined(TEN_ENABLE_TEN_RUST_APIS)
   TEN_ASSERT(self, "Invalid argument.");
   TEN_ASSERT(self->advanced_impl.impl, "Invalid argument.");
@@ -38,8 +40,9 @@ void ten_log_rust_log_func(ten_log_t *self, TEN_LOG_LEVEL level,
   int64_t pid = 0;
   int64_t tid = 0;
   ten_get_pid_tid(&pid, &tid);
-  ten_rust_log(self->advanced_impl.config, category, pid, tid, level, func_name,
-               file_name, line_no, msg);
+  ten_rust_log(self->advanced_impl.config, category, category_len, pid, tid,
+               level, func_name, func_name_len, file_name, file_name_len,
+               line_no, msg, msg_len);
 #endif
 }
 

@@ -14,10 +14,7 @@ mod tests {
         let config_json = serde_json::json!({});
 
         let result = validate_tman_config(&config_json);
-        assert!(
-            result.is_ok(),
-            "Empty config should be valid now: {result:?}"
-        );
+        assert!(result.is_ok(), "Empty config should be valid now: {result:?}");
     }
 
     // Test minimal valid config.
@@ -32,10 +29,7 @@ mod tests {
         });
 
         let result = validate_tman_config(&config_json);
-        assert!(
-            result.is_ok(),
-            "Should validate a minimal config: {result:?}"
-        );
+        assert!(result.is_ok(), "Should validate a minimal config: {result:?}");
     }
 
     // Test full valid config.
@@ -86,9 +80,6 @@ mod tests {
         });
 
         let result = validate_tman_config(&config_json);
-        assert!(
-            result.is_err(),
-            "Should fail when designer section has invalid values"
-        );
+        assert!(result.is_err(), "Should fail when designer section has invalid values");
     }
 }

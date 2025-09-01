@@ -6,19 +6,19 @@
 //
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
-    use std::sync::Arc;
+    use std::{collections::HashMap, sync::Arc};
 
     use actix_web::{test, web, App};
-
-    use ten_manager::designer::apps::load::{
-        load_app_endpoint, LoadAppRequestPayload, LoadAppResponseData,
+    use ten_manager::{
+        designer::{
+            apps::load::{load_app_endpoint, LoadAppRequestPayload, LoadAppResponseData},
+            response::ApiResponse,
+            storage::in_memory::TmanStorageInMemory,
+            DesignerState,
+        },
+        home::config::TmanConfig,
+        output::cli::TmanOutputCli,
     };
-    use ten_manager::designer::response::ApiResponse;
-    use ten_manager::designer::storage::in_memory::TmanStorageInMemory;
-    use ten_manager::designer::DesignerState;
-    use ten_manager::home::config::TmanConfig;
-    use ten_manager::output::cli::TmanOutputCli;
 
     #[actix_web::test]
     async fn test_load_app_fail() {

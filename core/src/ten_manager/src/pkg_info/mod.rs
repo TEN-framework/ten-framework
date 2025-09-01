@@ -11,15 +11,15 @@ pub mod property;
 use std::{collections::HashMap, path::Path, sync::Arc};
 
 use anyhow::{anyhow, Result};
-
-use crate::{
-    home::config::{is_verbose, TmanConfig},
-    output::TmanOutput,
-};
 use ten_rust::{
     base_dir_pkg_info::PkgsInfoInApp,
     graph::graph_info::GraphInfo,
     pkg_info::{get_app_installed_pkgs, pkg_type::PkgType, PkgInfo},
+};
+
+use crate::{
+    home::config::{is_verbose, TmanConfig},
+    output::TmanOutput,
 };
 
 /// Retrieves information about all installed packages for the specified

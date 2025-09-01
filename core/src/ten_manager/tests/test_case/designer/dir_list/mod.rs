@@ -6,20 +6,21 @@
 //
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
-    use std::fs::{self, File};
-    use std::io::Write;
-    use std::sync::Arc;
+    use std::{
+        collections::HashMap,
+        fs::{self, File},
+        io::Write,
+        sync::Arc,
+    };
 
     use actix_web::{test, web, App};
     use serde::{Deserialize, Serialize};
     use tempfile::tempdir;
-
-    use ten_manager::designer::storage::in_memory::TmanStorageInMemory;
     use ten_manager::{
         designer::{
             dir_list::list_dir_endpoint,
             response::{ApiResponse, Status},
+            storage::in_memory::TmanStorageInMemory,
             DesignerState,
         },
         home::config::TmanConfig,
@@ -62,10 +63,11 @@ mod tests {
         }));
 
         // Configure the `list_dir` route.
-        let app = test::init_service(App::new().app_data(state.clone()).route(
-            "/api/designer/v1/dir-list",
-            web::post().to(list_dir_endpoint),
-        ))
+        let app = test::init_service(
+            App::new()
+                .app_data(state.clone())
+                .route("/api/designer/v1/dir-list", web::post().to(list_dir_endpoint)),
+        )
         .await;
 
         // Construct the request.
@@ -73,7 +75,9 @@ mod tests {
 
         let req = test::TestRequest::post()
             .uri("/api/designer/v1/dir-list")
-            .set_json(ListDirRequestPayload { path: req_path })
+            .set_json(ListDirRequestPayload {
+                path: req_path,
+            })
             .to_request();
 
         let resp = test::call_service(&app, req).await;
@@ -114,17 +118,20 @@ mod tests {
         }));
 
         // Configure the `list_dir` route.
-        let app = test::init_service(App::new().app_data(state.clone()).route(
-            "/api/designer/v1/dir-list",
-            web::post().to(list_dir_endpoint),
-        ))
+        let app = test::init_service(
+            App::new()
+                .app_data(state.clone())
+                .route("/api/designer/v1/dir-list", web::post().to(list_dir_endpoint)),
+        )
         .await;
 
         // Construct the request.
         let req_path = dir.path().to_string_lossy().to_string();
         let req = test::TestRequest::post()
             .uri("/api/designer/v1/dir-list")
-            .set_json(ListDirRequestPayload { path: req_path })
+            .set_json(ListDirRequestPayload {
+                path: req_path,
+            })
             .to_request();
         let resp = test::call_service(&app, req).await;
 
@@ -157,10 +164,11 @@ mod tests {
             persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
         }));
 
-        let app = test::init_service(App::new().app_data(state.clone()).route(
-            "/api/designer/v1/dir-list",
-            web::post().to(list_dir_endpoint),
-        ))
+        let app = test::init_service(
+            App::new()
+                .app_data(state.clone())
+                .route("/api/designer/v1/dir-list", web::post().to(list_dir_endpoint)),
+        )
         .await;
 
         // Construct an invalid path.

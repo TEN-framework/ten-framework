@@ -8,12 +8,11 @@ use std::sync::Arc;
 
 use actix_web::{web, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
-
 use ten_rust::pkg_info::{pkg_type::PkgType, PkgInfo};
 
-use crate::designer::common::{get_designer_api_msg_from_pkg, get_designer_api_property_from_pkg};
-use crate::designer::graphs::nodes::DesignerApi;
 use crate::designer::{
+    common::{get_designer_api_msg_from_pkg, get_designer_api_property_from_pkg},
+    graphs::nodes::DesignerApi,
     response::{ApiResponse, ErrorResponse, Status},
     DesignerState,
 };
@@ -70,25 +69,13 @@ async fn convert_pkg_info_to_addon(
                 .as_ref()
                 .map(|prop| get_designer_api_property_from_pkg(prop.clone())),
 
-            cmd_in: api
-                .cmd_in
-                .as_ref()
-                .map(|cmd| get_designer_api_msg_from_pkg(cmd.clone())),
+            cmd_in: api.cmd_in.as_ref().map(|cmd| get_designer_api_msg_from_pkg(cmd.clone())),
 
-            cmd_out: api
-                .cmd_out
-                .as_ref()
-                .map(|cmd| get_designer_api_msg_from_pkg(cmd.clone())),
+            cmd_out: api.cmd_out.as_ref().map(|cmd| get_designer_api_msg_from_pkg(cmd.clone())),
 
-            data_in: api
-                .data_in
-                .as_ref()
-                .map(|data| get_designer_api_msg_from_pkg(data.clone())),
+            data_in: api.data_in.as_ref().map(|data| get_designer_api_msg_from_pkg(data.clone())),
 
-            data_out: api
-                .data_out
-                .as_ref()
-                .map(|data| get_designer_api_msg_from_pkg(data.clone())),
+            data_out: api.data_out.as_ref().map(|data| get_designer_api_msg_from_pkg(data.clone())),
 
             audio_frame_in: api
                 .audio_frame_in

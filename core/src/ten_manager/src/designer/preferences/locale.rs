@@ -9,10 +9,11 @@ use std::sync::Arc;
 use actix_web::{web, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
 
-use crate::designer::response::{ApiResponse, Status};
-use crate::designer::DesignerState;
-
 use super::{super::locale::Locale, save_config_to_file};
+use crate::designer::{
+    response::{ApiResponse, Status},
+    DesignerState,
+};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GetLocaleResponseData {
@@ -30,7 +31,9 @@ pub async fn get_locale_endpoint(
 ) -> Result<impl Responder, actix_web::Error> {
     let locale = state.tman_config.read().await.designer.locale;
 
-    let response_data = GetLocaleResponseData { locale };
+    let response_data = GetLocaleResponseData {
+        locale,
+    };
     let response = ApiResponse {
         status: Status::Ok,
         data: response_data,

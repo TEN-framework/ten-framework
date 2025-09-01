@@ -7,6 +7,7 @@
 #[cfg(test)]
 mod tests {
     use std::fs;
+
     use tempfile::tempdir;
     use ten_rust::graph::graph_info::load_graph_from_uri;
     use url::Url;

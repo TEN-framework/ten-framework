@@ -11,10 +11,7 @@ mod tests {
     #[tokio::test]
     async fn test_graph_with_selector() {
         let graph = Graph::from_str_with_base_dir(
-            include_str!(
-                "../../test_data/graph_with_selector/graph_with_selector_1.\
-                 json"
-            ),
+            include_str!("../../test_data/graph_with_selector/graph_with_selector_1.json"),
             None,
         )
         .await
@@ -44,10 +41,7 @@ mod tests {
         assert_eq!(data.len(), 1);
         assert_eq!(data[0].name.as_deref(), Some("hi"));
         assert_eq!(data[0].dest.len(), 1);
-        assert_eq!(
-            data[0].dest[0].loc.extension,
-            Some("test_extension_4".to_string())
-        );
+        assert_eq!(data[0].dest[0].loc.extension, Some("test_extension_4".to_string()));
 
         let connection = graph
             .connections
@@ -61,10 +55,7 @@ mod tests {
         assert_eq!(data.len(), 1);
         assert_eq!(data[0].name.as_deref(), Some("hi"));
         assert_eq!(data[0].dest.len(), 1);
-        assert_eq!(
-            data[0].dest[0].loc.extension,
-            Some("test_extension_4".to_string())
-        );
+        assert_eq!(data[0].dest[0].loc.extension, Some("test_extension_4".to_string()));
 
         let connection = graph
             .connections
@@ -93,9 +84,6 @@ mod tests {
         assert_eq!(data.len(), 1);
         assert_eq!(data[0].name.as_deref(), Some("hi"));
         assert_eq!(data[0].dest.len(), 1);
-        assert_eq!(
-            data[0].dest[0].loc.extension,
-            Some("test_extension_4".to_string())
-        );
+        assert_eq!(data[0].dest[0].loc.extension, Some("test_extension_4".to_string()));
     }
 }

@@ -10,7 +10,6 @@ use anyhow::Result;
 use clap::{Arg, ArgMatches, Command};
 use console::Emoji;
 use indicatif::HumanDuration;
-
 use ten_rust::pkg_info::get_pkg_info_from_path;
 
 use crate::{
@@ -40,18 +39,14 @@ pub fn create_sub_cmd(_args_cfg: &crate::cmd_line::ArgsCfg) -> Command {
         .arg(
             Arg::new("GET_IDENTITY")
                 .long("get-identity")
-                .help(
-                    "Output the package identity (type, name, version, hash) \
-                     to stdout and exit",
-                )
+                .help("Output the package identity (type, name, version, hash) to stdout and exit")
                 .action(clap::ArgAction::SetTrue)
                 .hide(true)
                 .required(false),
         )
         .after_help(
-            "Switch to the base directory of the TEN package you want to \
-             package, then simply run 'tman package' directly in that \
-             directory.",
+            "Switch to the base directory of the TEN package you want to package, then simply run \
+             'tman package' directly in that directory.",
         )
 }
 

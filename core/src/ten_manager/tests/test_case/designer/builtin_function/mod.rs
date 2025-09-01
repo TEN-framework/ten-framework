@@ -12,7 +12,6 @@ use actix_web::{
     http::{header, StatusCode},
     test, web, App,
 };
-
 use ten_manager::{
     designer::{
         builtin_function::builtin_function_endpoint, storage::in_memory::TmanStorageInMemory,
@@ -36,10 +35,11 @@ async fn test_cmd_builtin_function_websocket_connection() {
     let designer_state = Arc::new(designer_state);
 
     // Initialize the test service with the WebSocket endpoint.
-    let app = test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
-        "/ws/builtin-function",
-        web::get().to(builtin_function_endpoint),
-    ))
+    let app = test::init_service(
+        App::new()
+            .app_data(web::Data::new(designer_state))
+            .route("/ws/builtin-function", web::get().to(builtin_function_endpoint)),
+    )
     .await;
 
     // Create a test request with proper WebSocket headers.
@@ -71,23 +71,15 @@ async fn test_cmd_builtin_function_websocket_connection() {
     );
 
     // Check for key WebSocket response headers.
-    assert!(
-        resp.headers().contains_key("Sec-WebSocket-Accept"),
-        "Missing WebSocket Accept header"
-    );
+    assert!(resp.headers().contains_key("Sec-WebSocket-Accept"), "Missing WebSocket Accept header");
     assert_eq!(
-        resp.headers()
-            .get(header::UPGRADE)
-            .unwrap()
-            .to_str()
-            .unwrap()
-            .to_lowercase(),
+        resp.headers().get(header::UPGRADE).unwrap().to_str().unwrap().to_lowercase(),
         "websocket",
         "Incorrect upgrade header value"
     );
 
     println!(
-        "WebSocket connection was successfully established (validated by \
-         checking response status and headers)"
+        "WebSocket connection was successfully established (validated by checking response status \
+         and headers)"
     );
 }

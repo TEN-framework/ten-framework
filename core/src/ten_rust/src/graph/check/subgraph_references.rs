@@ -26,8 +26,7 @@ impl Graph {
 
         if !all_subgraphs.contains(&subgraph_identifier) {
             return Err(anyhow::anyhow!(
-                "The subgraph '{subgraph_name}' {error_context} is not \
-                 defined in nodes.",
+                "The subgraph '{subgraph_name}' {error_context} is not defined in nodes.",
             ));
         }
 
@@ -50,9 +49,8 @@ impl Graph {
 
                 if !all_subgraphs.contains(&subgraph_identifier) {
                     return Err(anyhow::anyhow!(
-                        "The subgraph '{subgraph_name}' {error_context} (from \
-                         extension '{extension_name}') is not defined in \
-                         nodes.",
+                        "The subgraph '{subgraph_name}' {error_context} (from extension \
+                         '{extension_name}') is not defined in nodes.",
                     ));
                 }
             }
@@ -73,8 +71,7 @@ impl Graph {
                 if let Some(subgraph_name) = &dest.loc.subgraph {
                     let error_context = format!(
                         "referenced in \
-                         connections[{conn_idx}].{msg_type}[{flow_idx}].\
-                         dest[{dest_idx}]",
+                         connections[{conn_idx}].{msg_type}[{flow_idx}].dest[{dest_idx}]",
                     );
 
                     Self::validate_direct_subgraph_reference(
@@ -90,8 +87,7 @@ impl Graph {
                 if let Some(extension_name) = &dest.loc.extension {
                     let error_context = format!(
                         "referenced in \
-                         connections[{conn_idx}].{msg_type}[{flow_idx}].\
-                         dest[{dest_idx}]",
+                         connections[{conn_idx}].{msg_type}[{flow_idx}].dest[{dest_idx}]",
                     );
 
                     Self::validate_extension_namespace_subgraph_reference(

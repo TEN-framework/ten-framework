@@ -30,10 +30,7 @@ mod tests {
         let req = VersionReq::parse(req_str).expect("Failed to parse version requirement");
         let version = Version::parse(version_str).expect("Failed to parse version");
 
-        assert!(
-            req.matches(&version),
-            "Version {version:?} does not match requirement {req_str}"
-        );
+        assert!(req.matches(&version), "Version {version:?} does not match requirement {req_str}");
     }
 
     #[test]
@@ -44,9 +41,6 @@ mod tests {
         let req = VersionReq::parse(req_str).expect("Failed to parse version requirement");
         let version = Version::parse(version_str).expect("Failed to parse version");
 
-        assert!(
-            req.matches(&version),
-            "Version {version:?} does not match requirement {req_str}"
-        );
+        assert!(req.matches(&version), "Version {version:?} does not match requirement {req_str}");
     }
 }

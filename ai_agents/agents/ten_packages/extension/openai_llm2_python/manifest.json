@@ -42,6 +42,9 @@
         },
         "proxy_url": {
           "type": "string"
+        },
+        "prompt": {
+          "type": "string"
         }
       }
     }

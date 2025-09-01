@@ -14,7 +14,8 @@ use semver::Version;
 use serde::{Deserialize, Serialize};
 
 use super::{
-    manifest::support::ManifestSupport, manifest::Manifest, pkg_type_and_name::PkgTypeAndName,
+    manifest::{support::ManifestSupport, Manifest},
+    pkg_type_and_name::PkgTypeAndName,
     PkgInfo,
 };
 
@@ -79,10 +80,7 @@ impl Ord for PkgBasicInfo {
     fn cmp(&self, other: &Self) -> Ordering {
         // Compare pkg_type.
         if self.type_and_name.pkg_type != other.type_and_name.pkg_type {
-            return self
-                .type_and_name
-                .pkg_type
-                .cmp(&other.type_and_name.pkg_type);
+            return self.type_and_name.pkg_type.cmp(&other.type_and_name.pkg_type);
         }
 
         // Compare name.

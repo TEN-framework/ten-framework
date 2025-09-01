@@ -4,9 +4,10 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
+use std::fmt;
+
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use std::fmt;
 
 use crate::{
     env::get_env,

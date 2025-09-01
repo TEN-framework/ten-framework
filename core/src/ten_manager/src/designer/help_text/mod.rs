@@ -4,20 +4,20 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-use std::sync::Arc;
+use std::{
+    fmt,
+    sync::{Arc, OnceLock},
+};
 
 use actix_web::{web, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
-use std::fmt;
-use std::sync::OnceLock;
 
+use super::locale::Locale;
 use crate::designer::{
     response::{ApiResponse, ErrorResponse, Status},
     DesignerState,
 };
-
-use super::locale::Locale;
 
 // Supported languages.
 const DEFAULT_LOCALE: Locale = Locale::EnUs;

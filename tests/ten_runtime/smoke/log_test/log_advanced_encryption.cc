@@ -21,14 +21,14 @@ class test_extension : public ten::extension_t {
   explicit test_extension(const char *name) : ten::extension_t(name) {}
 
   void on_init(ten::ten_env_t &ten_env) override {
-    TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_INFO, "check log encryption on_init");
+    TEN_ENV_LOG_INFO(ten_env, "check log advanced on_init");
     ten_env.on_init_done();
   }
 
   void on_cmd(ten::ten_env_t &ten_env,
               std::unique_ptr<ten::cmd_t> cmd) override {
-    TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_DEBUG,
-                (std::string("on_cmd ") + cmd->get_name()).c_str());
+    TEN_ENV_LOG_DEBUG(ten_env,
+                      (std::string("on_cmd ") + cmd->get_name()).c_str());
 
     if (cmd->get_name() == "hello_world") {
       auto cmd_result = ten::cmd_result_t::create(TEN_STATUS_CODE_OK, *cmd);
@@ -38,7 +38,7 @@ class test_extension : public ten::extension_t {
   }
 
   void on_deinit(ten::ten_env_t &ten_env) override {
-    TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_INFO, "check log encryption on_deinit");
+    TEN_ENV_LOG_INFO(ten_env, "check log advanced on_deinit");
     ten_env.on_deinit_done();
   }
 };
@@ -52,16 +52,33 @@ class test_app : public ten::app_t {
              "ten": {
                "uri": "msgpack://127.0.0.1:8001/",
                "log": {
-                   "level": 2,
-                   "file": "log_file.log",
-                   "encryption": {
-                     "enabled": true,
-                     "algorithm": "AES-CTR",
-                     "params": {
-                       "key": "0123456789012345",
-                       "nonce": "0123456789012345"
+                 "handlers": [
+                   {
+                     "matchers": [
+                       {
+                         "level": "info"
+                       }
+                     ],
+                     "formatter": {
+                       "type": "json",
+                       "colored": false
+                     },
+                     "emitter": {
+                       "type": "file",
+                       "config": {
+                         "path": "advanced_log_encryption_file.log",
+                         "encryption": {
+                           "enabled": true,
+                           "algorithm": "AES-CTR",
+                           "params": {
+                             "key": "0123456789012345",
+                             "nonce": "0123456789012345"
+                           }
+                         }
+                       }
                      }
                    }
+                 ]
                }
              }
            })"
@@ -82,12 +99,12 @@ void *test_app_thread_main(TEN_UNUSED void *args) {
   return nullptr;
 }
 
-TEN_CPP_REGISTER_ADDON_AS_EXTENSION(log_encryption__test_extension,
+TEN_CPP_REGISTER_ADDON_AS_EXTENSION(log_advanced_encryption__test_extension,
                                     test_extension);
 
 }  // namespace
 
-TEST(LogTest, LogEncryption) {  // NOLINT
+TEST(AdvancedLogTest, LogAdvancedEncryption) {  // NOLINT
   auto *app_thread =
       ten_thread_create("app thread", test_app_thread_main, nullptr);
 
@@ -100,7 +117,7 @@ TEST(LogTest, LogEncryption) {  // NOLINT
            "nodes": [{
                 "type": "extension",
                 "name": "test_extension",
-                "addon": "log_encryption__test_extension",
+                "addon": "log_advanced_encryption__test_extension",
                 "extension_group": "test_extension_group",
                 "app": "msgpack://127.0.0.1:8001/"
              }]
@@ -122,13 +139,6 @@ TEST(LogTest, LogEncryption) {  // NOLINT
   ten_thread_join(app_thread, -1);
 
   // Check the log file exists.
-  std::ifstream log_file("log_file.log");
+  std::ifstream log_file("advanced_log_encryption_file.log");
   EXPECT_TRUE(log_file.good());
-
-  // We need to call this encryption deinit function separately here to disable
-  // the encryption settings. Otherwise, the logs for subsequent test cases will
-  // be encrypted, making them unreadable and difficult to debug. In the normal
-  // operation of the TEN app, this function is already called, so there is no
-  // need for special handling like in this case.
-  ten_log_global_deinit_encryption();
 }

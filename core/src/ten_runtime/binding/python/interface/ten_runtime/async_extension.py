@@ -260,11 +260,11 @@ class AsyncExtension(_Extension):
         traceback_info = traceback.format_exc()
 
         err = async_ten_env.log(
-            LogLevel.FATAL,
+            LogLevel.ERROR,
             f"Uncaught exception: {e} \ntraceback: {traceback_info}",
         )
         if err is not None:
-            # If the log_fatal API fails, print the error message to the
+            # If the log_error API fails, print the error message to the
             # console.
             print(f"Uncaught exception: {e} \ntraceback: {traceback_info}")
 

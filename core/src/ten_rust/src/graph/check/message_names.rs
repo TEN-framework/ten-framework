@@ -66,8 +66,7 @@ impl Graph {
                 // If name field exists, use it
                 if let Some(idx) = msg_names.get(flow_name) {
                     errors.push(format!(
-                        "'{flow_name}' is defined in flow[{idx}] and \
-                         flow[{flow_idx}]."
+                        "'{flow_name}' is defined in flow[{idx}] and flow[{flow_idx}]."
                     ));
                 } else {
                     // Record the first occurrence of the message name.
@@ -78,8 +77,7 @@ impl Graph {
                 for name in flow_names {
                     if let Some(idx) = msg_names.get(name) {
                         errors.push(format!(
-                            "'{name}' is defined in flow[{idx}] and \
-                             flow[{flow_idx}]."
+                            "'{name}' is defined in flow[{idx}] and flow[{flow_idx}]."
                         ));
                     } else {
                         // Record the first occurrence of the message name.

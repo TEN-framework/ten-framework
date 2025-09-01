@@ -9,10 +9,10 @@ use std::sync::Arc;
 use actix_web::{web, HttpResponse, Responder};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
+use ten_rust::graph::{node::GraphNode, Graph};
 use uuid::Uuid;
 
-use ten_rust::graph::{node::GraphNode, Graph};
-
+use super::update_graph_node_in_property_json_file;
 use crate::{
     designer::{
         response::{ApiResponse, ErrorResponse, Status},
@@ -20,8 +20,6 @@ use crate::{
     },
     graph::graphs_cache_find_by_id_mut,
 };
-
-use super::update_graph_node_in_property_json_file;
 
 #[derive(Serialize, Deserialize)]
 pub struct DeleteGraphNodeRequestPayload {
@@ -54,7 +52,9 @@ pub async fn graph_delete_extension_node(
     let original_nodes_len = graph.nodes.len();
     graph.nodes.retain(|node| {
         let extension_node = match node {
-            GraphNode::Extension { content } => content,
+            GraphNode::Extension {
+                content,
+            } => content,
             _ => return true, // Keep other node types.
         };
 
@@ -208,7 +208,9 @@ pub async fn delete_graph_node_endpoint(
     // Return success response
     let response = ApiResponse {
         status: Status::Ok,
-        data: DeleteGraphNodeResponsePayload { success: true },
+        data: DeleteGraphNodeResponsePayload {
+            success: true,
+        },
         meta: None,
     };
     Ok(HttpResponse::Ok().json(response))

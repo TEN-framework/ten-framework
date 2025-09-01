@@ -8,9 +8,8 @@ use std::os::raw::c_char;
 
 use anyhow::Result;
 
-use crate::service_hub::telemetry::convert_label_values;
-
 use super::{MetricHandle, ServiceHub};
+use crate::service_hub::telemetry::convert_label_values;
 
 pub fn create_metric_histogram(
     system: &mut ServiceHub,
@@ -91,10 +90,7 @@ pub unsafe extern "C" fn ten_metric_histogram_observe(
     label_values_ptr: *const *const c_char,
     label_values_len: usize,
 ) {
-    apply_to_histogram(
-        metric_ptr,
-        label_values_ptr,
-        label_values_len,
-        |histogram| histogram.observe(value),
-    );
+    apply_to_histogram(metric_ptr, label_values_ptr, label_values_len, |histogram| {
+        histogram.observe(value)
+    });
 }

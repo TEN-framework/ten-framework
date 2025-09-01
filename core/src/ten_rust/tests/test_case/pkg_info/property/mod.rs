@@ -32,9 +32,8 @@ mod tests {
 
         let mut graphs_cache = HashMap::new();
 
-        let property = parse_property_from_str(json_data, &mut graphs_cache, None, None, None)
-            .await
-            .unwrap();
+        let property =
+            parse_property_from_str(json_data, &mut graphs_cache, None, None, None).await.unwrap();
 
         assert!(property.ten.is_some());
         let ten_in_property = property.ten.unwrap();
@@ -60,9 +59,8 @@ mod tests {
 
         let mut graphs_cache = HashMap::new();
 
-        let property = parse_property_from_str(json_data, &mut graphs_cache, None, None, None)
-            .await
-            .unwrap();
+        let property =
+            parse_property_from_str(json_data, &mut graphs_cache, None, None, None).await.unwrap();
 
         assert!(property.ten.is_some());
         let ten_in_property = property.ten.unwrap();
@@ -72,12 +70,7 @@ mod tests {
         // Should contain ten and global_field_1.
         assert_eq!(property.other_fields.as_ref().unwrap().len(), 1);
         assert_eq!(
-            property
-                .other_fields
-                .as_ref()
-                .unwrap()
-                .get("global_field_1")
-                .unwrap(),
+            property.other_fields.as_ref().unwrap().get("global_field_1").unwrap(),
             "global_value1"
         );
     }
@@ -88,9 +81,8 @@ mod tests {
 
         let json_str = include_str!("../../../test_data/property.json");
 
-        let property = parse_property_from_str(json_str, &mut graphs_cache, None, None, None)
-            .await
-            .unwrap();
+        let property =
+            parse_property_from_str(json_str, &mut graphs_cache, None, None, None).await.unwrap();
         assert!(property.ten.is_some());
 
         let graph_info = graphs_cache.values().next().unwrap();
@@ -101,9 +93,7 @@ mod tests {
 
         let dir = tempdir().unwrap();
         let file_path = dir.path().join("property.json");
-        property
-            .dump_property_to_file(&file_path, &graphs_cache)
-            .unwrap();
+        property.dump_property_to_file(&file_path, &graphs_cache).unwrap();
 
         let saved_content = fs::read_to_string(file_path).unwrap();
         eprintln!("{saved_content}");
@@ -116,9 +106,8 @@ mod tests {
 
         let mut graphs_cache = HashMap::new();
 
-        let property = parse_property_from_str(prop_str, &mut graphs_cache, None, None, None)
-            .await
-            .unwrap();
+        let property =
+            parse_property_from_str(prop_str, &mut graphs_cache, None, None, None).await.unwrap();
         assert!(property.ten.is_some());
 
         let graph_info = graphs_cache.values().next().unwrap();
@@ -149,9 +138,7 @@ mod tests {
         let dir = tempdir().unwrap();
         let file_path = dir.path().join("property.json");
 
-        property
-            .dump_property_to_file(&file_path, &graphs_cache)
-            .unwrap();
+        property.dump_property_to_file(&file_path, &graphs_cache).unwrap();
 
         let saved_content = fs::read_to_string(file_path).unwrap();
         eprintln!("{saved_content}");

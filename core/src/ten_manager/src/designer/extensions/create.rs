@@ -10,6 +10,7 @@ use actix_web::{web, HttpResponse, Responder};
 use anyhow::{anyhow, Result};
 use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
+use ten_rust::pkg_info::pkg_type::PkgType;
 
 use crate::{
     create::create_pkg_in_path,
@@ -20,8 +21,6 @@ use crate::{
     fs::check_is_valid_dir,
     pkg_info::get_all_pkgs::get_all_pkgs_in_app,
 };
-
-use ten_rust::pkg_info::pkg_type::PkgType;
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct CreateExtensionRequestPayload {

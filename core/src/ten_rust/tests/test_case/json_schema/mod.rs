@@ -880,8 +880,7 @@ mod tests {
 
         let msg = result.unwrap_err().to_string();
         assert!(msg.contains(
-            "Additional properties are not allowed ('status' was unexpected) \
-             @ /api/cmd_in/0"
+            "Additional properties are not allowed ('status' was unexpected) @ /api/cmd_in/0"
         ));
     }
 
@@ -994,10 +993,7 @@ mod tests {
         let result = ten_validate_manifest_json_string(manifest);
         assert!(result.is_err());
 
-        assert!(result
-            .unwrap_err()
-            .to_string()
-            .contains("Additional properties are not allowed"));
+        assert!(result.unwrap_err().to_string().contains("Additional properties are not allowed"));
     }
 
     #[test]
@@ -1136,10 +1132,7 @@ mod tests {
         let result = ten_validate_manifest_json_string(manifest);
         assert!(result.is_err());
 
-        assert!(result
-            .unwrap_err()
-            .to_string()
-            .contains("Additional properties are not allowed"));
+        assert!(result.unwrap_err().to_string().contains("Additional properties are not allowed"));
     }
 
     #[test]
@@ -1161,10 +1154,7 @@ mod tests {
         let result = ten_validate_manifest_json_string(manifest);
         assert!(result.is_err());
 
-        assert!(result
-            .unwrap_err()
-            .to_string()
-            .contains("is a required property"));
+        assert!(result.unwrap_err().to_string().contains("is a required property"));
     }
 
     #[test]
@@ -1277,8 +1267,25 @@ mod tests {
         {
           "ten": {
             "log": {
-              "level": 2,
-              "file": "api.log"
+              "handlers": [
+                {
+                  "matchers": [
+                    {
+                      "level": "info"
+                    }
+                  ],
+                  "formatter": {
+                    "type": "json",
+                    "colored": false
+                  },
+                  "emitter": {
+                    "type": "file",
+                    "config": {
+                      "path": "api.log"
+                    }
+                  }
+                }
+              ]
             }
           },
           "a": 1,
@@ -2991,9 +2998,6 @@ mod tests {
                           }"#;
         let result = ten_validate_property_json_string(property);
         assert!(result.is_err());
-        assert!(result
-            .unwrap_err()
-            .to_string()
-            .contains("Additional properties are not allowed"));
+        assert!(result.unwrap_err().to_string().contains("Additional properties are not allowed"));
     }
 }

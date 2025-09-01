@@ -31,19 +31,18 @@ pub fn create_sub_cmd(_args_cfg: &crate::cmd_line::ArgsCfg) -> Command {
                 .help("The shell to generate completion for"),
         )
         .after_help(
-            "Generate completion scripts for your shell. Example usage:\n\n  \
-             tman completion bash > /etc/bash_completion.d/tman\n  tman \
-             completion bash > ~/.local/share/bash-completion/completions/tman",
+            "Generate completion scripts for your shell. Example usage:\n\n  tman completion bash \
+             > /etc/bash_completion.d/tman\n  tman completion bash > \
+             ~/.local/share/bash-completion/completions/tman",
         )
 }
 
 pub fn parse_sub_cmd(sub_cmd_args: &ArgMatches) -> Result<CompletionCommand> {
-    let shell = sub_cmd_args
-        .get_one::<String>("SHELL")
-        .expect("SHELL is required")
-        .to_string();
+    let shell = sub_cmd_args.get_one::<String>("SHELL").expect("SHELL is required").to_string();
 
-    Ok(CompletionCommand { shell })
+    Ok(CompletionCommand {
+        shell,
+    })
 }
 
 pub async fn execute_cmd(
@@ -98,12 +97,7 @@ fn create_command_for_completion() -> Command {
                 .help("The location of config.json")
                 .default_value(None),
         )
-        .arg(
-            Arg::new("USER_TOKEN")
-                .long("user-token")
-                .help("The user token")
-                .default_value(None),
-        )
+        .arg(Arg::new("USER_TOKEN").long("user-token").help("The user token").default_value(None))
         .arg(
             Arg::new("VERBOSE")
                 .long("verbose")

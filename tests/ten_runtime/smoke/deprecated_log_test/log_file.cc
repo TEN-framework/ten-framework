@@ -4,7 +4,6 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-#include <fstream>
 #include <nlohmann/json.hpp>
 #include <string>
 
@@ -20,26 +19,16 @@ class test_extension : public ten::extension_t {
  public:
   explicit test_extension(const char *name) : ten::extension_t(name) {}
 
-  void on_init(ten::ten_env_t &ten_env) override {
-    TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_INFO, "check log advanced on_init");
-    ten_env.on_init_done();
-  }
-
   void on_cmd(ten::ten_env_t &ten_env,
               std::unique_ptr<ten::cmd_t> cmd) override {
-    TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_DEBUG,
-                (std::string("on_cmd ") + cmd->get_name()).c_str());
+    TEN_ENV_LOG_DEBUG(ten_env,
+                      (std::string("on_cmd ") + cmd->get_name()).c_str());
 
     if (cmd->get_name() == "hello_world") {
       auto cmd_result = ten::cmd_result_t::create(TEN_STATUS_CODE_OK, *cmd);
       cmd_result->set_property("detail", "hello world, too");
       ten_env.return_result(std::move(cmd_result));
     }
-  }
-
-  void on_deinit(ten::ten_env_t &ten_env) override {
-    TEN_ENV_LOG(ten_env, TEN_LOG_LEVEL_INFO, "check log advanced on_deinit");
-    ten_env.on_deinit_done();
   }
 };
 
@@ -48,49 +37,15 @@ class test_app : public ten::app_t {
   void on_configure(ten::ten_env_t &ten_env) override {
     bool rc = ten_env.init_property_from_json(
         // clang-format off
-        R"({
-             "ten": {
-               "uri": "msgpack://127.0.0.1:8001/",
-               "advanced_log": {
-                 "handlers": [
-                   {
-                     "matchers": [
-                       {
-                         "level": "info"
-                       }
-                     ],
-                     "formatter": {
-                       "type": "json",
-                       "colored": false
-                     },
-                     "emitter": {
-                       "type": "file",
-                       "config": {
-                         "path": "advanced_log_file_multi_handlers.log"
-                       }
-                     }
-                   },
-                   {
-                     "matchers": [
-                       {
-                         "level": "info"
-                       }
-                     ],
-                     "formatter": {
-                       "type": "plain",
-                       "colored": true
-                     },
-                     "emitter": {
-                       "type": "console",
-                       "config": {
-                         "stream": "stdout"
-                       }
-                     }
-                   }
-                 ]
-               }
-             }
-           })"
+                 R"({
+                      "ten": {
+                        "uri": "msgpack://127.0.0.1:8001/",
+                        "deprecated_log": {
+                          "level": 2,
+                          "file": "aaa/log_file.log"
+                        }
+                      }
+                    })"
         // clang-format on
         ,
         nullptr);
@@ -108,12 +63,11 @@ void *test_app_thread_main(TEN_UNUSED void *args) {
   return nullptr;
 }
 
-TEN_CPP_REGISTER_ADDON_AS_EXTENSION(log_advanced_multi_handlers__test_extension,
-                                    test_extension);
+TEN_CPP_REGISTER_ADDON_AS_EXTENSION(log_file__test_extension, test_extension);
 
 }  // namespace
 
-TEST(AdvancedLogTest, LogAdvancedMultiHandlers) {  // NOLINT
+TEST(LogTest, DISABLED_LogFile) {  // NOLINT
   auto *app_thread =
       ten_thread_create("app thread", test_app_thread_main, nullptr);
 
@@ -126,7 +80,7 @@ TEST(AdvancedLogTest, LogAdvancedMultiHandlers) {  // NOLINT
            "nodes": [{
                 "type": "extension",
                 "name": "test_extension",
-                "addon": "log_advanced_multi_handlers__test_extension",
+                "addon": "log_file__test_extension",
                 "extension_group": "test_extension_group",
                 "app": "msgpack://127.0.0.1:8001/"
              }]
@@ -146,10 +100,4 @@ TEST(AdvancedLogTest, LogAdvancedMultiHandlers) {  // NOLINT
   delete client;
 
   ten_thread_join(app_thread, -1);
-
-  // Check the log file exists.
-  std::ifstream log_file("advanced_log_file_multi_handlers.log");
-  EXPECT_TRUE(log_file.good());
-
-  ten_log_global_deinit_advanced_log();
 }

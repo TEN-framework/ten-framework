@@ -26,9 +26,7 @@ pub fn create_sub_cmd(args_cfg: &crate::cmd_line::ArgsCfg) -> Command {
         .about("Modify something in the TEN framework")
         .subcommand_required(true)
         .arg_required_else_help(true)
-        .subcommand(crate::cmd::cmd_modify::cmd_modify_graph::create_sub_cmd(
-            args_cfg,
-        ))
+        .subcommand(crate::cmd::cmd_modify::cmd_modify_graph::create_sub_cmd(args_cfg))
 }
 
 pub fn parse_sub_cmd(sub_cmd_args: &ArgMatches) -> Result<ModifyCommandData> {

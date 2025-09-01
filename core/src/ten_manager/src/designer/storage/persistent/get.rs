@@ -11,9 +11,11 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use super::read_persistent_storage;
-use crate::designer::response::{ApiResponse, Status};
-use crate::designer::storage::in_memory::key_parser::get_value_by_key;
-use crate::designer::DesignerState;
+use crate::designer::{
+    response::{ApiResponse, Status},
+    storage::in_memory::key_parser::get_value_by_key,
+    DesignerState,
+};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GetPersistentRequestPayload {
@@ -38,7 +40,9 @@ pub async fn get_persistent_storage_endpoint(
         if schema_lock.is_none() {
             return Ok(HttpResponse::BadRequest().json(ApiResponse {
                 status: Status::Fail,
-                data: GetPersistentResponseData { value: None },
+                data: GetPersistentResponseData {
+                    value: None,
+                },
                 meta: None,
             }));
         }
@@ -50,7 +54,9 @@ pub async fn get_persistent_storage_endpoint(
         Err(_e) => {
             return Ok(HttpResponse::InternalServerError().json(ApiResponse {
                 status: Status::Fail,
-                data: GetPersistentResponseData { value: None },
+                data: GetPersistentResponseData {
+                    value: None,
+                },
                 meta: None,
             }));
         }
@@ -62,13 +68,17 @@ pub async fn get_persistent_storage_endpoint(
         Err(_e) => {
             return Ok(HttpResponse::BadRequest().json(ApiResponse {
                 status: Status::Fail,
-                data: GetPersistentResponseData { value: None },
+                data: GetPersistentResponseData {
+                    value: None,
+                },
                 meta: None,
             }));
         }
     };
 
-    let response_data = GetPersistentResponseData { value };
+    let response_data = GetPersistentResponseData {
+        value,
+    };
     let response = ApiResponse {
         status: Status::Ok,
         data: response_data,

@@ -12,20 +12,10 @@ use crate::log::LogLineInfo;
 #[serde(tag = "type")]
 pub enum InboundMsg {
     #[serde(rename = "exec_cmd")]
-    ExecCmd {
-        base_dir: String,
-        cmd: String,
-        stdout_is_log: bool,
-        stderr_is_log: bool,
-    },
+    ExecCmd { base_dir: String, cmd: String, stdout_is_log: bool, stderr_is_log: bool },
 
     #[serde(rename = "run_script")]
-    RunScript {
-        base_dir: String,
-        name: String,
-        stdout_is_log: bool,
-        stderr_is_log: bool,
-    },
+    RunScript { base_dir: String, name: String, stdout_is_log: bool, stderr_is_log: bool },
 }
 
 #[derive(Serialize, Deserialize, Debug)]

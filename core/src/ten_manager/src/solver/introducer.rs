@@ -8,10 +8,9 @@ use std::collections::{HashMap, HashSet};
 
 use anyhow::Result;
 use regex::Regex;
-
-use ten_rust::pkg_info::manifest::dependency::ManifestDependency;
 use ten_rust::pkg_info::{
-    pkg_basic_info::PkgBasicInfo, pkg_type_and_name::PkgTypeAndName, PkgInfo,
+    manifest::dependency::ManifestDependency, pkg_basic_info::PkgBasicInfo,
+    pkg_type_and_name::PkgTypeAndName, PkgInfo,
 };
 
 use crate::dep_and_candidate::get_pkg_info_from_candidates;
@@ -60,15 +59,16 @@ pub fn extract_introducer_relations_from_raw_solver_results(
                     // The `version` declared in the `dependencies` section in
                     // manifest.json is always present.
                     requested_version_str = match requested_dep_in_introducer {
-                        ManifestDependency::RegistryDependency { version_req, .. } => {
-                            version_req.to_string()
-                        }
-                        ManifestDependency::LocalDependency { .. } => version_str.to_string(),
+                        ManifestDependency::RegistryDependency {
+                            version_req, ..
+                        } => version_req.as_processed().to_string(),
+                        ManifestDependency::LocalDependency {
+                            ..
+                        } => version_str.to_string(),
                     };
                 } else {
                     return Err(anyhow::anyhow!(
-                        "Requested dependency [{}]{} not found in introducer, \
-                         should not happen.",
+                        "Requested dependency [{}]{} not found in introducer, should not happen.",
                         pkg_type_str,
                         name
                     ));
@@ -103,8 +103,12 @@ pub fn get_dependency_chain(
         .unwrap();
 
     let version_req_str = match requested_dep_in_introducer {
-        ManifestDependency::RegistryDependency { version_req, .. } => version_req.to_string(),
-        ManifestDependency::LocalDependency { .. } => {
+        ManifestDependency::RegistryDependency {
+            version_req, ..
+        } => version_req.as_processed().to_string(),
+        ManifestDependency::LocalDependency {
+            ..
+        } => {
             // Use wildcard for local deps.
             "*".to_string()
         }

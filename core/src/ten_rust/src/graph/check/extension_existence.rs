@@ -16,10 +16,8 @@ impl Graph {
     /// - `Err` with descriptive message if no extensions are found
     pub fn check_extension_existence(&self) -> Result<()> {
         // Check if any node in the graph is an extension.
-        let extension_exists = self
-            .nodes
-            .iter()
-            .any(|node| node.get_type() == GraphNodeType::Extension);
+        let extension_exists =
+            self.nodes.iter().any(|node| node.get_type() == GraphNodeType::Extension);
 
         if !extension_exists {
             return Err(anyhow::anyhow!("No extension node is defined in graph."));

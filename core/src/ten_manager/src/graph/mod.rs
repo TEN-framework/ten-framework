@@ -12,25 +12,23 @@ pub mod nodes;
 use std::collections::HashMap;
 
 use anyhow::{anyhow, Result};
-use ten_rust::graph::{GraphExposedMessage, GraphExposedProperty};
+use ten_rust::{
+    graph::{
+        connection::GraphConnection, graph_info::GraphInfo, node::GraphNode, Graph,
+        GraphExposedMessage, GraphExposedProperty,
+    },
+    pkg_info::property::Property,
+};
 use uuid::Uuid;
 
 use crate::fs::json::patch_property_json_file;
-use ten_rust::graph::graph_info::GraphInfo;
-use ten_rust::graph::{connection::GraphConnection, node::GraphNode, Graph};
-use ten_rust::pkg_info::property::Property;
 
 pub fn graphs_cache_find_by_name<'a>(
     graphs_cache: &'a HashMap<Uuid, GraphInfo>,
     graph_name: &str,
 ) -> Option<(&'a Uuid, &'a GraphInfo)> {
     graphs_cache.iter().find_map(|(uuid, graph_info)| {
-        if graph_info
-            .name
-            .as_ref()
-            .map(|name| name == graph_name)
-            .unwrap_or(false)
-        {
+        if graph_info.name.as_ref().map(|name| name == graph_name).unwrap_or(false) {
             Some((uuid, graph_info))
         } else {
             None

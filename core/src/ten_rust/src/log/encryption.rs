@@ -66,7 +66,10 @@ pub(super) struct EncryptWriter<W: io::Write> {
 
 impl<W: io::Write> EncryptWriter<W> {
     fn new(inner: W, cipher: Option<Cipher>) -> Self {
-        Self { inner, cipher }
+        Self {
+            inner,
+            cipher,
+        }
     }
 
     fn write_encrypted_block(&mut self, payload: &[u8]) -> io::Result<()> {

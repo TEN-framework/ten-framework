@@ -5,6 +5,7 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 use std::sync::{Arc, Mutex};
+
 use tracing_subscriber::{
     fmt::{self as tracing_fmt},
     layer::SubscriberExt,
@@ -13,8 +14,9 @@ use tracing_subscriber::{
     EnvFilter, Layer, Registry,
 };
 
-use crate::log::file_appender::FileAppenderGuard;
-use crate::log::{create_layer_and_filter, AdvancedLogConfig, LogInitError};
+use crate::log::{
+    create_layer_and_filter, file_appender::FileAppenderGuard, AdvancedLogConfig, LogInitError,
+};
 
 const MAX_HANDLERS: usize = 5;
 
@@ -146,8 +148,8 @@ static LOG_MANAGER: once_cell::sync::Lazy<Arc<Mutex<LogManager>>> =
 pub fn ten_configure_log_reloadable(config: &AdvancedLogConfig) -> Result<(), LogInitError> {
     if config.handlers.len() > MAX_HANDLERS {
         tracing::warn!(
-            "Too many log handlers configured. Maximum is {}, but {} were \
-             provided. Extra handlers will be ignored.",
+            "Too many log handlers configured. Maximum is {}, but {} were provided. Extra \
+             handlers will be ignored.",
             MAX_HANDLERS,
             config.handlers.len()
         );

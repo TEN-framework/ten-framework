@@ -16,7 +16,6 @@ ten_utils_glob("unit") {
     "ten_file_test.cc",
     "ten_list_test.cc",
     "ten_lock_test.cc",
-    "ten_log_test.cc",
     "ten_macro_test.cc",
     "ten_manifest_test.cc",
     "ten_path_test.cc",

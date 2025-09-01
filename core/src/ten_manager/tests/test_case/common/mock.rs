@@ -7,14 +7,12 @@
 use std::collections::HashMap;
 
 use anyhow::Result;
+use ten_rust::{
+    base_dir_pkg_info::PkgsInfoInApp,
+    graph::graph_info::GraphInfo,
+    pkg_info::{manifest::Manifest, pkg_type::PkgType, property::parse_property_from_str, PkgInfo},
+};
 use uuid::Uuid;
-
-use ten_rust::base_dir_pkg_info::PkgsInfoInApp;
-use ten_rust::graph::graph_info::GraphInfo;
-use ten_rust::pkg_info::manifest::Manifest;
-use ten_rust::pkg_info::pkg_type::PkgType;
-use ten_rust::pkg_info::property::parse_property_from_str;
-use ten_rust::pkg_info::PkgInfo;
 
 pub async fn inject_all_pkgs_for_mock(
     pkgs_cache: &mut HashMap<String, PkgsInfoInApp>,
@@ -85,11 +83,7 @@ pub async fn inject_all_pkgs_for_mock(
         } else {
             Some(addon_loader_pkg_info)
         },
-        system_pkgs_info: if system_pkg_info.is_empty() {
-            None
-        } else {
-            Some(system_pkg_info)
-        },
+        system_pkgs_info: if system_pkg_info.is_empty() { None } else { Some(system_pkg_info) },
     };
 
     pkgs_cache.insert(app_base_dir, base_dir_pkg_info);
@@ -109,34 +103,22 @@ pub async fn inject_all_standard_pkgs_for_mock(
             include_str!("../../test_data/app_property.json").to_string(),
         ),
         (
-            format!(
-                "{}{}",
-                app_base_dir, "/ten_packages/extension/extension_addon_1"
-            ),
+            format!("{}{}", app_base_dir, "/ten_packages/extension/extension_addon_1"),
             include_str!("../../test_data/extension_addon_1_manifest.json").to_string(),
             "{}".to_string(),
         ),
         (
-            format!(
-                "{}{}",
-                app_base_dir, "/ten_packages/extension/extension_addon_2"
-            ),
+            format!("{}{}", app_base_dir, "/ten_packages/extension/extension_addon_2"),
             include_str!("../../test_data/extension_addon_2_manifest.json").to_string(),
             "{}".to_string(),
         ),
         (
-            format!(
-                "{}{}",
-                app_base_dir, "/ten_packages/extension/extension_addon_3"
-            ),
+            format!("{}{}", app_base_dir, "/ten_packages/extension/extension_addon_3"),
             include_str!("../../test_data/extension_addon_3_manifest.json").to_string(),
             "{}".to_string(),
         ),
         (
-            format!(
-                "{}{}",
-                app_base_dir, "/ten_packages/extension/extension_addon_4"
-            ),
+            format!("{}{}", app_base_dir, "/ten_packages/extension/extension_addon_4"),
             include_str!("../../test_data/extension_addon_4_manifest.json").to_string(),
             "{}".to_string(),
         ),

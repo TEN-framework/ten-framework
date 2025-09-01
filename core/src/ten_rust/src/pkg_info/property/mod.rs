@@ -159,8 +159,8 @@ fn ensure_unique_predefined_graph_names(graphs: &[GraphInfo]) -> Result<()> {
             // Note: We're storing references to graph names, which is correct.
             if !seen_graph_names.insert(name) {
                 return Err(anyhow::anyhow!(
-                    "Duplicate predefined graph name detected: '{}'. Each \
-                     predefined_graph must have a unique 'name'.",
+                    "Duplicate predefined graph name detected: '{}'. Each predefined_graph must \
+                     have a unique 'name'.",
                     name
                 ));
             }
@@ -233,10 +233,8 @@ impl Property {
                     }
                 }
             }
-            json_map.insert(
-                TEN_STR_PREDEFINED_GRAPHS.to_string(),
-                serde_json::to_value(graphs_array)?,
-            );
+            json_map
+                .insert(TEN_STR_PREDEFINED_GRAPHS.to_string(), serde_json::to_value(graphs_array)?);
         }
 
         Ok(json_map)
@@ -258,10 +256,7 @@ impl Property {
 
         if self.ten.is_some() {
             let ten_json_map = self.property_ten_to_json_map(graphs_cache)?;
-            json_map.insert(
-                TEN_FIELD_IN_PROPERTY.to_string(),
-                serde_json::to_value(ten_json_map)?,
-            );
+            json_map.insert(TEN_FIELD_IN_PROPERTY.to_string(), serde_json::to_value(ten_json_map)?);
         }
 
         Ok(json_map)
@@ -320,10 +315,7 @@ async fn parse_property_from_file<P: AsRef<Path>>(
 
     // Validate the property schema only if it is present.
     json_schema::ten_validate_property_json_file(&property_file_path).with_context(|| {
-        format!(
-            "Failed to validate {}.",
-            property_file_path.as_ref().display()
-        )
+        format!("Failed to validate {}.", property_file_path.as_ref().display())
     })?;
 
     // Read the contents of the property.json file.

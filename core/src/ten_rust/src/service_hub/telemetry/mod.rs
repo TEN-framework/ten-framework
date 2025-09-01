@@ -11,19 +11,14 @@ pub mod histogram;
 pub use histogram::*;
 
 pub mod gauge;
-pub use gauge::*;
-
-use std::ffi::CStr;
-use std::os::raw::c_char;
-use std::ptr;
+use std::{ffi::CStr, os::raw::c_char, ptr};
 
 use actix_web::{web, HttpResponse};
-
+pub use gauge::*;
 use prometheus::{Encoder, Registry, TextEncoder};
 
-use crate::constants::METRICS;
-
 use super::ServiceHub;
+use crate::constants::METRICS;
 
 pub enum MetricHandle {
     Counter(prometheus::Counter),

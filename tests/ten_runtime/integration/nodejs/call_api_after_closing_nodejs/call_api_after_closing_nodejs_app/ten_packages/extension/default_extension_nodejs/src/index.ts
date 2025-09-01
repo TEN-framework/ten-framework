@@ -29,16 +29,16 @@ class DefaultExtension extends Extension {
     super(name);
   }
 
-  async onConfigure(_tenEnv: TenEnv): Promise<void> {
-    console.log("DefaultExtension onConfigure");
+  async onConfigure(tenEnv: TenEnv): Promise<void> {
+    tenEnv.logInfo("DefaultExtension onConfigure");
   }
 
-  async onInit(_tenEnv: TenEnv): Promise<void> {
-    console.log("DefaultExtension onInit");
+  async onInit(tenEnv: TenEnv): Promise<void> {
+    tenEnv.logInfo("DefaultExtension onInit");
   }
 
-  async onStart(_tenEnv: TenEnv): Promise<void> {
-    console.log("DefaultExtension onStart");
+  async onStart(tenEnv: TenEnv): Promise<void> {
+    tenEnv.logInfo("DefaultExtension onStart");
 
     const testData = Data.Create("testData");
     testData.allocBuf(10);
@@ -57,18 +57,15 @@ class DefaultExtension extends Extension {
     assert(copiedView[2] === 3, "copiedView[2] incorrect");
   }
 
-  async onStop(_tenEnv: TenEnv): Promise<void> {
-    console.log("DefaultExtension onStop");
+  async onStop(tenEnv: TenEnv): Promise<void> {
+    tenEnv.logInfo("DefaultExtension onStop");
   }
 
   async onDeinit(tenEnv: TenEnv): Promise<void> {
     // Create a new promise but not await it
     const promise = new Promise((resolve, reject) => {
       setTimeout(async () => {
-        const err = tenEnv.log(
-          LogLevel.INFO,
-          "Promise done after on deinit done",
-        );
+        const err = tenEnv.logInfo("Promise done after on deinit done");
         assert(err !== undefined, "log() should return an error");
 
         const newCmd = Cmd.Create("test");
@@ -137,27 +134,26 @@ class DefaultExtension extends Extension {
           "initPropertyFromJson() should return an error",
         );
 
-        console.log("promise done");
+        tenEnv.logInfo("promise done");
 
         resolve("done");
       }, 1000);
     });
 
-    console.log("DefaultExtension onDeinit");
+    tenEnv.logInfo("DefaultExtension onDeinit");
   }
 
   async onCmd(tenEnv: TenEnv, cmd: Cmd): Promise<void> {
-    tenEnv.log(LogLevel.DEBUG, "DefaultExtension onCmd");
+    tenEnv.logInfo("DefaultExtension onCmd");
 
     const cmdName = cmd.getName();
-    tenEnv.log(LogLevel.VERBOSE, "cmdName:" + cmdName);
+    tenEnv.logInfo("cmdName:" + cmdName);
 
     const testCmd = Cmd.Create("test");
     const [result, _] = await tenEnv.sendCmd(testCmd);
     assert(result !== undefined, "result is undefined");
 
-    tenEnv.log(
-      LogLevel.INFO,
+    tenEnv.logInfo(
       "received result detail:" + result?.getPropertyToJson("detail"),
     );
 
@@ -168,7 +164,7 @@ class DefaultExtension extends Extension {
     );
 
     const [detailJson, err] = cmdResult.getPropertyToJson("detail");
-    tenEnv.log(LogLevel.INFO, "detailJson:" + detailJson);
+    tenEnv.logInfo("detailJson:" + detailJson);
 
     tenEnv.returnResult(cmdResult);
   }

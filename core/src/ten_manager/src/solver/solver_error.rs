@@ -9,7 +9,6 @@ use std::{collections::HashMap, sync::Arc};
 use anyhow::{anyhow, Result};
 use console::Emoji;
 use regex::Regex;
-
 use ten_rust::pkg_info::{
     pkg_basic_info::PkgBasicInfo, pkg_type_and_name::PkgTypeAndName, PkgInfo,
 };
@@ -127,9 +126,7 @@ fn print_dependency_chain(
     version: &str,
     out: Arc<Box<dyn TmanOutput>>,
 ) {
-    out.normal_line(&format!(
-        "Dependency chain leading to [{pkg_type}]{pkg_name}@{version}:"
-    ));
+    out.normal_line(&format!("Dependency chain leading to [{pkg_type}]{pkg_name}@{version}:"));
     for (i, pkg) in chain.iter().enumerate() {
         out.normal_line(&format!(
             "{:indent$}└─ [{}]{}@{}",
@@ -149,11 +146,7 @@ pub fn print_conflict_info(
     all_candidates: &HashMap<PkgTypeAndName, HashMap<PkgBasicInfo, PkgInfo>>,
     out: Arc<Box<dyn TmanOutput>>,
 ) -> Result<()> {
-    out.normal_line(&format!(
-        "{}  Error: {}",
-        Emoji("🔴", ":-("),
-        conflict_info.error_message
-    ));
+    out.normal_line(&format!("{}  Error: {}", Emoji("🔴", ":-("), conflict_info.error_message));
     out.normal_line("");
 
     // Get PkgInfo for both introducer packages.
@@ -178,16 +171,10 @@ pub fn print_conflict_info(
     };
 
     // Get dependency chains.
-    let chain1 = get_dependency_chain(
-        &introducer_pkg_info_1,
-        &conflict_pkg_identity,
-        introducer_relations,
-    );
-    let chain2 = get_dependency_chain(
-        &introducer_pkg_info_2,
-        &conflict_pkg_identity,
-        introducer_relations,
-    );
+    let chain1 =
+        get_dependency_chain(&introducer_pkg_info_1, &conflict_pkg_identity, introducer_relations);
+    let chain2 =
+        get_dependency_chain(&introducer_pkg_info_2, &conflict_pkg_identity, introducer_relations);
 
     print_dependency_chain(
         &chain1,

@@ -56,7 +56,7 @@ static void ten_env_proxy_notify_log(ten_env_t *ten_env, void *user_data) {
   TEN_ASSERT(ctx, "Should not happen.");
 
   ten_env_log(ten_env, ctx->level, ctx->func_name, ctx->file_name, ctx->line_no,
-              ctx->msg);
+              ctx->msg, NULL, NULL);
 
   ten_event_set(ctx->completed);
 }
@@ -66,7 +66,7 @@ PyObject *ten_py_ten_env_log(PyObject *self, PyObject *args) {
   TEN_ASSERT(py_ten_env && ten_py_ten_env_check_integrity(py_ten_env),
              "Invalid argument.");
 
-  if (PyTuple_GET_SIZE(args) != 5) {
+  if (PyTuple_GET_SIZE(args) != 6) {
     return ten_py_raise_py_value_error_exception(
         "Invalid argument count when ten_env.log.");
   }
@@ -76,8 +76,10 @@ PyObject *ten_py_ten_env_log(PyObject *self, PyObject *args) {
   const char *file_name = NULL;
   size_t line_no = 0;
   const char *msg = NULL;
-  if (!PyArg_ParseTuple(args, "izzis", &level, &func_name, &file_name, &line_no,
-                        &msg)) {
+  const char *category = NULL;
+
+  if (!PyArg_ParseTuple(args, "izzizs", &level, &func_name, &file_name,
+                        &line_no, &category, &msg)) {
     return ten_py_raise_py_value_error_exception(
         "Failed to parse argument when ten_env.log.");
   }
@@ -129,7 +131,7 @@ PyObject *ten_py_ten_env_log(PyObject *self, PyObject *args) {
 
     ten_env_log_without_check_thread(py_ten_env->c_ten_env, ctx->level,
                                      ctx->func_name, ctx->file_name,
-                                     ctx->line_no, ctx->msg);
+                                     ctx->line_no, ctx->msg, NULL, NULL);
   }
 
   ten_error_deinit(&err);

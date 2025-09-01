@@ -8,6 +8,7 @@ use std::collections::HashMap;
 
 use anyhow::{Context, Ok, Result};
 
+use super::runtime_interface::{create_schema_from_json, TenSchema};
 use crate::pkg_info::{
     manifest::{
         api::{ManifestApi, ManifestApiMsg, ManifestApiProperty},
@@ -16,8 +17,6 @@ use crate::pkg_info::{
     message::{MsgDirection, MsgType},
     PkgInfo,
 };
-
-use super::runtime_interface::{create_schema_from_json, TenSchema};
 
 /// Represents the schema for a command and its result.
 ///
@@ -111,9 +110,7 @@ impl SchemaStore {
             }
 
             let schema = create_schema_from_json(
-                serde_json::to_value(property_schema_object)
-                    .as_ref()
-                    .unwrap(),
+                serde_json::to_value(property_schema_object).as_ref().unwrap(),
             )?;
             self.property = Some(schema);
         }
@@ -180,10 +177,7 @@ fn parse_msgs_schema_from_manifest(
         if let Some(schema) = msg_schema {
             let present = target_map.insert(msg_name.clone(), schema);
             if present.is_some() {
-                return Err(anyhow::anyhow!(
-                    "duplicated schema definition for cmd {}.",
-                    msg_name
-                ));
+                return Err(anyhow::anyhow!("duplicated schema definition for cmd {}.", msg_name));
             }
         }
     }
@@ -226,10 +220,8 @@ pub fn create_c_schema_from_properties_and_required(
                 property_json_object.insert(key.clone(), serde_json::to_value(attr).unwrap());
             });
 
-            property_schema_object.insert(
-                "properties".to_string(),
-                serde_json::to_value(property_json_object)?,
-            );
+            property_schema_object
+                .insert("properties".to_string(), serde_json::to_value(property_json_object)?);
         }
 
         if let Some(required) = &property.required {
@@ -238,9 +230,7 @@ pub fn create_c_schema_from_properties_and_required(
     }
 
     Ok(Some(create_schema_from_json(
-        serde_json::to_value(property_schema_object)
-            .as_ref()
-            .unwrap(),
+        serde_json::to_value(property_schema_object).as_ref().unwrap(),
     )?))
 }
 

@@ -7,7 +7,6 @@
 use std::{collections::HashMap, sync::Arc};
 
 use actix_web::{http::StatusCode, test, web, App};
-
 use ten_manager::{
     designer::{
         response::{ApiResponse, Status},
@@ -38,10 +37,7 @@ async fn test_get_template_app_typescript() {
     let app = test::init_service(
         App::new()
             .app_data(web::Data::new(designer_state.clone()))
-            .route(
-                "/api/designer/v1/template-pkgs",
-                web::post().to(get_template_endpoint),
-            ),
+            .route("/api/designer/v1/template-pkgs", web::post().to(get_template_endpoint)),
     )
     .await;
 
@@ -76,10 +72,7 @@ async fn test_get_template_extension_cpp() {
     let app = test::init_service(
         App::new()
             .app_data(web::Data::new(designer_state.clone()))
-            .route(
-                "/api/designer/v1/template-pkgs",
-                web::post().to(get_template_endpoint),
-            ),
+            .route("/api/designer/v1/template-pkgs", web::post().to(get_template_endpoint)),
     )
     .await;
 
@@ -114,10 +107,7 @@ async fn test_get_template_unsupported() {
     let app = test::init_service(
         App::new()
             .app_data(web::Data::new(designer_state.clone()))
-            .route(
-                "/api/designer/v1/template-pkgs",
-                web::post().to(get_template_endpoint),
-            ),
+            .route("/api/designer/v1/template-pkgs", web::post().to(get_template_endpoint)),
     )
     .await;
 

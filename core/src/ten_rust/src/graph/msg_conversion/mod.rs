@@ -21,9 +21,7 @@ impl FromStr for MsgConversionType {
     fn from_str(s: &str) -> Result<Self> {
         match s {
             "per_property" => Ok(MsgConversionType::PerProperty),
-            _ => Err(anyhow::Error::msg(format!(
-                "Unsupported message conversion type: {s}."
-            ))),
+            _ => Err(anyhow::Error::msg(format!("Unsupported message conversion type: {s}."))),
         }
     }
 }
@@ -44,9 +42,7 @@ impl FromStr for MsgConversionMode {
         match s {
             "fixed_value" => Ok(MsgConversionMode::FixedValue),
             "from_original" => Ok(MsgConversionMode::FromOriginal),
-            _ => Err(anyhow::Error::msg(format!(
-                "Unsupported message conversion mode: {s}."
-            ))),
+            _ => Err(anyhow::Error::msg(format!("Unsupported message conversion mode: {s}."))),
         }
     }
 }
@@ -75,16 +71,14 @@ impl MsgConversionRule {
             MsgConversionMode::FixedValue => {
                 if self.value.is_none() {
                     return Err(anyhow::anyhow!(
-                        "'value' field is required for the fixed_value \
-                         conversion mode"
+                        "'value' field is required for the fixed_value conversion mode"
                     ));
                 }
             }
             MsgConversionMode::FromOriginal => {
                 if self.original_path.is_none() {
                     return Err(anyhow::anyhow!(
-                        "'original_path' field is required for the \
-                         from_original conversion mode"
+                        "'original_path' field is required for the from_original conversion mode"
                     ));
                 }
 
@@ -136,8 +130,7 @@ impl MsgConversionRules {
         }
 
         for (idx, rule) in self.rules.iter().enumerate() {
-            rule.validate()
-                .map_err(|e| anyhow::anyhow!("rule[{}]: {}", idx, e))?;
+            rule.validate().map_err(|e| anyhow::anyhow!("rule[{}]: {}", idx, e))?;
         }
 
         Ok(())
@@ -174,15 +167,12 @@ impl MsgAndResultConversion {
     pub fn validate(&self) -> Result<()> {
         // Validate the message conversion configuration.
         if let Some(msg) = &self.msg {
-            msg.validate()
-                .map_err(|e| anyhow::anyhow!("invalid message conversion: {}", e))?;
+            msg.validate().map_err(|e| anyhow::anyhow!("invalid message conversion: {}", e))?;
         }
 
         // Validate the result conversion configuration if present.
         if let Some(result) = &self.result {
-            result
-                .validate()
-                .map_err(|e| anyhow::anyhow!("invalid result conversion: {}", e))?;
+            result.validate().map_err(|e| anyhow::anyhow!("invalid result conversion: {}", e))?;
         }
 
         Ok(())

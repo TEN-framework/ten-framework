@@ -4,12 +4,14 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-use std::fs::{File, OpenOptions};
-use std::io::{self, Write};
-use std::path::{Path, PathBuf};
-use std::sync::{
-    atomic::{AtomicBool, Ordering},
-    Arc, RwLock,
+use std::{
+    fs::{File, OpenOptions},
+    io::{self, Write},
+    path::{Path, PathBuf},
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc, RwLock,
+    },
 };
 
 // Registry for all reloadable file appenders so we can trigger reopen globally
@@ -30,10 +32,7 @@ impl Inner {
             }
         }
 
-        let file = OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open(&self.path)?;
+        let file = OpenOptions::new().create(true).append(true).open(&self.path)?;
         let mut guard = self.file.write().unwrap();
         *guard = file;
         Ok(())
@@ -73,7 +72,9 @@ impl ReloadableFileAppender {
             reload: AtomicBool::new(false), // already opened
         });
 
-        Self { inner }
+        Self {
+            inner,
+        }
     }
 
     /// Request this appender to reopen the file on next write.

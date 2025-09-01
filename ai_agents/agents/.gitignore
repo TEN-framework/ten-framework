@@ -47,3 +47,4 @@ xdump_config
 /property.json
 build/
 *.tsbuildinfo
+azure_tts_log.txt

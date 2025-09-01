@@ -14,8 +14,12 @@ group("core_extensions") {
 
   if (ten_enable_python_binding) {
     deps += [
+      "default_asr_extension_python",
       "default_async_extension_python",
       "default_extension_python",
+      "default_llm_extension_python",
+      "default_mllm_extension_python",
+      "default_tts_extension_python",
     ]
   }
 

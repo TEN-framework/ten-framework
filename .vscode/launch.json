@@ -359,6 +359,32 @@
       ]
     },
     {
+      "name": "tman install ext_a (lldb, test-equivalent)",
+      "type": "lldb",
+      "request": "launch",
+      "program": "${workspaceFolder}/out/linux/x64/ten_manager/bin/tman",
+      "cwd": "${workspaceFolder}/out/linux/x64/tests/ten_manager/install/mock_app_with_dev_deps/mock_app_with_dev_deps",
+      "args": [
+        "--config-file=${workspaceFolder}/out/linux/x64/tests/local_registry/config.json",
+        "--yes",
+        "install",
+        "extension",
+        "ext_a",
+        "--os=linux",
+        "--arch=x64"
+      ],
+      "env": {
+        "LSAN_OPTIONS": "detect_leaks=0",
+        "LD_LIBRARY_PATH": "${workspaceFolder}/out/linux/x64/gen/cmake/clingo/install/lib/:${workspaceFolder}/out/linux/x64/ten_manager/lib/",
+        "RUST_BACKTRACE": "full",
+        "TEN_ENABLE_MEMORY_TRACKING": "true",
+        "ASAN_OPTIONS": "abort_on_error=1"
+      },
+      "preRunCommands": [
+        "script import pathlib;import subprocess;import lldb;rustc_sysroot = subprocess.getoutput(\"rustc --print sysroot\");rustlib_etc = pathlib.Path(rustc_sysroot) / \"lib\" / \"rustlib\" / \"etc\";lldb.debugger.HandleCommand(f'command script import \"{rustlib_etc / \"lldb_lookup.py\"}\"');lldb.debugger.HandleCommand(f'command source -s 0 \"{rustlib_etc / \"lldb_commands\"}\"')"
+      ]
+    },
+    {
       "name": "tman install_protocol_mock (lldb)",
       "type": "lldb",
       "request": "launch",

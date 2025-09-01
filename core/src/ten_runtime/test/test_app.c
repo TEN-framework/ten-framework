@@ -29,18 +29,6 @@ static void test_app_on_configure(TEN_UNUSED ten_app_t *app,
     rc = ten_env_init_property_from_json(
         ten_env, ten_string_get_raw_str(&tester->test_app_property_json), NULL);
     TEN_ASSERT(rc, "Should not happen.");
-  } else {
-    // The default property.json content of the test app.
-    rc = ten_env_init_property_from_json(ten_env,
-                                         "{\
-                                               \"ten\": {\
-                                                 \"log\": {\
-                                                   \"level\": 2\
-                                                 }\
-                                               }\
-                                             }",
-                                         NULL);
-    TEN_ASSERT(rc, "Should not happen.");
   }
 
   rc = ten_env_on_configure_done(ten_env, NULL);

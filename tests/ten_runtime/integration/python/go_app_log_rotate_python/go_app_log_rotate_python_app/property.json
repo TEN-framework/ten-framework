@@ -1,8 +1,25 @@
 {
   "ten": {
     "log": {
-      "level": 2,
-      "file": "test.log"
+      "handlers": [
+        {
+          "matchers": [
+            {
+              "level": "debug"
+            }
+          ],
+          "formatter": {
+            "type": "plain",
+            "colored": true
+          },
+          "emitter": {
+            "type": "file",
+            "config": {
+              "path": "test.log"
+            }
+          }
+        }
+      ]
     },
     "predefined_graphs": [
       {

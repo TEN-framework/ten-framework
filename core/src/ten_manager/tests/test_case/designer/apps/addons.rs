@@ -6,23 +6,24 @@
 //
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
-    use std::sync::Arc;
+    use std::{collections::HashMap, sync::Arc};
 
     use actix_web::{test, web, App};
-
-    use ten_manager::constants::TEST_DIR;
-    use ten_manager::designer::apps::addons::{
-        get_app_addons_endpoint, GetAppAddonsRequestPayload, GetAppAddonsSingleResponseData,
+    use ten_manager::{
+        constants::TEST_DIR,
+        designer::{
+            apps::addons::{
+                get_app_addons_endpoint, GetAppAddonsRequestPayload, GetAppAddonsSingleResponseData,
+            },
+            response::ApiResponse,
+            storage::in_memory::TmanStorageInMemory,
+            DesignerState,
+        },
+        home::config::TmanConfig,
+        output::cli::TmanOutputCli,
+        pkg_info::get_all_pkgs::get_all_pkgs_in_app,
     };
-    use ten_manager::designer::response::ApiResponse;
-    use ten_manager::designer::storage::in_memory::TmanStorageInMemory;
-    use ten_manager::designer::DesignerState;
-    use ten_manager::home::config::TmanConfig;
-    use ten_manager::output::cli::TmanOutputCli;
-    use ten_manager::pkg_info::get_all_pkgs::get_all_pkgs_in_app;
-    use ten_rust::pkg_info::pkg_type::PkgType;
-    use ten_rust::pkg_info::value_type::ValueType;
+    use ten_rust::pkg_info::{pkg_type::PkgType, value_type::ValueType};
 
     use crate::test_case::common::mock::inject_all_pkgs_for_mock;
 
@@ -72,10 +73,11 @@ mod tests {
 
         let designer_state = Arc::new(designer_state);
 
-        let app = test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
-            "/api/designer/v1/addons",
-            web::post().to(get_app_addons_endpoint),
-        ))
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(designer_state))
+                .route("/api/designer/v1/addons", web::post().to(get_app_addons_endpoint)),
+        )
         .await;
 
         let request_payload = GetAppAddonsRequestPayload {
@@ -129,16 +131,15 @@ mod tests {
             .await;
         }
 
-        let app = test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
-            "/api/designer/v1/addons",
-            web::post().to(get_app_addons_endpoint),
-        ))
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(designer_state))
+                .route("/api/designer/v1/addons", web::post().to(get_app_addons_endpoint)),
+        )
         .await;
 
         let request_payload = GetAppAddonsRequestPayload {
-            base_dir: "tests/test_data/\
-                       extension_interface_reference_to_sys_pkg"
-                .to_string(),
+            base_dir: "tests/test_data/extension_interface_reference_to_sys_pkg".to_string(),
             addon_name: None,
             addon_type: None,
         };
@@ -164,17 +165,11 @@ mod tests {
         assert_eq!(response.data.len(), 2);
 
         // Find the extension 'ext_a' in the response.
-        let ext_a = response
-            .data
-            .iter()
-            .find(|addon| addon.addon_name == "ext_a");
+        let ext_a = response.data.iter().find(|addon| addon.addon_name == "ext_a");
         assert!(ext_a.is_some());
 
         // Find the system 'sys_a' in the response.
-        let sys_a = response
-            .data
-            .iter()
-            .find(|addon| addon.addon_name == "sys_a");
+        let sys_a = response.data.iter().find(|addon| addon.addon_name == "sys_a");
         assert!(sys_a.is_some());
 
         // Verify the extension 'ext_a'.
@@ -188,33 +183,15 @@ mod tests {
         let ext_a_api = ext_a.unwrap().api.as_ref().unwrap();
         assert_eq!(ext_a_api.property.as_ref().unwrap().len(), 3);
         assert_eq!(
-            ext_a_api
-                .property
-                .as_ref()
-                .unwrap()
-                .get("foo")
-                .unwrap()
-                .prop_type,
+            ext_a_api.property.as_ref().unwrap().get("foo").unwrap().prop_type,
             ValueType::Bool
         );
         assert_eq!(
-            ext_a_api
-                .property
-                .as_ref()
-                .unwrap()
-                .get("a")
-                .unwrap()
-                .prop_type,
+            ext_a_api.property.as_ref().unwrap().get("a").unwrap().prop_type,
             ValueType::String
         );
         assert_eq!(
-            ext_a_api
-                .property
-                .as_ref()
-                .unwrap()
-                .get("b")
-                .unwrap()
-                .prop_type,
+            ext_a_api.property.as_ref().unwrap().get("b").unwrap().prop_type,
             ValueType::Int64
         );
 

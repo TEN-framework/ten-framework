@@ -11,12 +11,11 @@ use std::{
 
 use anyhow::{Ok, Result};
 
-use crate::pkg_info::value_type::ValueType;
-
 use super::bindings::{
     ten_schema_adjust_and_validate_json_str_proxy, ten_schema_create_from_json_str_proxy,
     ten_schema_destroy_proxy, ten_schema_is_compatible_proxy, ten_schema_t,
 };
+use crate::pkg_info::value_type::ValueType;
 
 pub struct TenSchemaOfField {
     pub field_type: ValueType,

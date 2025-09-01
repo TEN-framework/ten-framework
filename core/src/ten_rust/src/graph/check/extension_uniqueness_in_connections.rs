@@ -62,9 +62,8 @@ impl Graph {
 
                 if let Some(idx) = extensions.get(&unique_key) {
                     errors.push(format!(
-                        "extension '{extension_name}' is defined in \
-                         connection[{idx}] and connection[{conn_idx}], merge \
-                         them into one section."
+                        "extension '{extension_name}' is defined in connection[{idx}] and \
+                         connection[{conn_idx}], merge them into one section."
                     ));
                 } else {
                     // Record the first occurrence of the extension.

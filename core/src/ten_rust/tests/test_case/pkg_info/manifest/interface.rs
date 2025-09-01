@@ -8,8 +8,10 @@
 mod tests {
     use std::path::Path;
 
-    use ten_rust::pkg_info::manifest::{parse_manifest_from_file, Manifest};
-    use ten_rust::pkg_info::value_type::ValueType;
+    use ten_rust::pkg_info::{
+        manifest::{parse_manifest_from_file, Manifest},
+        value_type::ValueType,
+    };
 
     #[tokio::test]
     async fn test_extension_manifest_with_interface_from_str() {
@@ -51,8 +53,8 @@ mod tests {
     }
 
     #[tokio::test]
-    #[ignore = "Temporarily disable this test as it depends on external \
-                network which may cause timeout"]
+    #[ignore = "Temporarily disable this test as it depends on external network which may cause \
+                timeout"]
     async fn test_extension_manifest_with_interface_remote_path() {
         let manifest_file_path =
             Path::new("tests/test_data/extension_manifest_with_remote_interface.json");
@@ -112,10 +114,8 @@ mod tests {
 
         let interface_uri = format!("file://{}", foo_1_file_path.display());
 
-        let manifest_str = include_str!(
-            "../../../test_data/extension_manifest_with_local_file_interface.\
-             json"
-        );
+        let manifest_str =
+            include_str!("../../../test_data/extension_manifest_with_local_file_interface.json");
 
         let mut manifest: Manifest = Manifest::create_from_str(manifest_str).unwrap();
 
@@ -157,10 +157,8 @@ mod tests {
         let interface_uri = format!("file://{}", foo_1_file_path.display());
 
         // Create a manifest with a non-existing interface.
-        let manifest_str = include_str!(
-            "../../../test_data/extension_manifest_with_local_file_interface.\
-             json"
-        );
+        let manifest_str =
+            include_str!("../../../test_data/extension_manifest_with_local_file_interface.json");
 
         let mut manifest: Manifest = Manifest::create_from_str(manifest_str).unwrap();
 

@@ -8,9 +8,8 @@ use std::os::raw::c_char;
 
 use anyhow::Result;
 
-use crate::service_hub::telemetry::convert_label_values;
-
 use super::{MetricHandle, ServiceHub};
+use crate::service_hub::telemetry::convert_label_values;
 
 pub fn create_metric_gauge(
     system: &mut ServiceHub,
@@ -91,9 +90,7 @@ pub unsafe extern "C" fn ten_metric_gauge_set(
     label_values_ptr: *const *const c_char,
     label_values_len: usize,
 ) {
-    apply_to_gauge(metric_ptr, label_values_ptr, label_values_len, |gauge| {
-        gauge.set(value)
-    });
+    apply_to_gauge(metric_ptr, label_values_ptr, label_values_len, |gauge| gauge.set(value));
 }
 
 #[no_mangle]
@@ -103,9 +100,7 @@ pub unsafe extern "C" fn ten_metric_gauge_inc(
     label_values_ptr: *const *const c_char,
     label_values_len: usize,
 ) {
-    apply_to_gauge(metric_ptr, label_values_ptr, label_values_len, |gauge| {
-        gauge.inc()
-    });
+    apply_to_gauge(metric_ptr, label_values_ptr, label_values_len, |gauge| gauge.inc());
 }
 
 #[no_mangle]
@@ -115,9 +110,7 @@ pub unsafe extern "C" fn ten_metric_gauge_dec(
     label_values_ptr: *const *const c_char,
     label_values_len: usize,
 ) {
-    apply_to_gauge(metric_ptr, label_values_ptr, label_values_len, |gauge| {
-        gauge.dec()
-    });
+    apply_to_gauge(metric_ptr, label_values_ptr, label_values_len, |gauge| gauge.dec());
 }
 
 #[no_mangle]
@@ -128,9 +121,7 @@ pub unsafe extern "C" fn ten_metric_gauge_add(
     label_values_ptr: *const *const c_char,
     label_values_len: usize,
 ) {
-    apply_to_gauge(metric_ptr, label_values_ptr, label_values_len, |gauge| {
-        gauge.add(value)
-    });
+    apply_to_gauge(metric_ptr, label_values_ptr, label_values_len, |gauge| gauge.add(value));
 }
 
 #[no_mangle]
@@ -141,7 +132,5 @@ pub unsafe extern "C" fn ten_metric_gauge_sub(
     label_values_ptr: *const *const c_char,
     label_values_len: usize,
 ) {
-    apply_to_gauge(metric_ptr, label_values_ptr, label_values_len, |gauge| {
-        gauge.sub(value)
-    });
+    apply_to_gauge(metric_ptr, label_values_ptr, label_values_len, |gauge| gauge.sub(value));
 }
