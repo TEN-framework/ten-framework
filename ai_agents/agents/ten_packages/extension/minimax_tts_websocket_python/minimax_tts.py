@@ -9,7 +9,8 @@ import json
 import ssl
 import time
 import websockets
-from typing import AsyncIterator
+from typing import AsyncIterator, Union
+from datetime import datetime
 
 from ten_runtime import AsyncTenEnv
 from .config import MinimaxTTSWebsocketConfig
@@ -20,6 +21,7 @@ EVENT_TTSSentenceEnd = 351
 EVENT_TTSResponse = 352
 EVENT_TTSTaskFinished = 353
 EVENT_TTSFlush = 354
+EVENT_TTS_TTFB_METRIC = 355
 
 
 class MinimaxTTSTaskFailedException(Exception):
@@ -48,6 +50,7 @@ class MinimaxTTSWebsocket:
 
         self.stopping: bool = False
         self.discarding: bool = False
+        self.first_chunk_processed: bool = False
         self.ws: websockets.ClientConnection | None = None
         self.session_id: str = ""
         self.session_trace_id: str = ""
@@ -66,6 +69,7 @@ class MinimaxTTSWebsocket:
     async def stop(self):
         """Stop and cleanup websocket connection"""
         self.stopping = True
+        self.first_chunk_processed = False
         await self.cancel()
         # Wait for processor to exit
         await self.stopped_event.wait()
@@ -79,14 +83,15 @@ class MinimaxTTSWebsocket:
             return  # Already cancelling
 
         self.discarding = True
+        self.first_chunk_processed = False
 
         # Wait for WS resource to be released
         await self.ws_released_event.wait()
 
     async def get(
         self, text: str
-    ) -> AsyncIterator[tuple[bytes | None, int | None]]:
-        """Generate TTS audio for the given text, returns (audio_data, event_status)"""
+    ) -> AsyncIterator[tuple[Union[bytes, int, None], int | None]]:
+        """Generate TTS audio for the given text, returns (data, event_status)"""
         if not text or text.strip() == "":
             return
 
@@ -124,7 +129,7 @@ class MinimaxTTSWebsocket:
 
     async def _process_single_tts(
         self, text: str
-    ) -> AsyncIterator[tuple[bytes | None, int | None]]:
+    ) -> AsyncIterator[tuple[Union[bytes, int, None], int | None]]:
         """Process a single TTS request"""
         if not self.ws:
             return
@@ -135,6 +140,7 @@ class MinimaxTTSWebsocket:
             self.ten_env.log_debug(f"websocket sending task_continue: {ws_req}")
 
         try:
+            send_time = datetime.now()
             await self.ws.send(json.dumps(ws_req))
         except (
             websockets.exceptions.ConnectionClosed,
@@ -160,12 +166,12 @@ class MinimaxTTSWebsocket:
                 tts_response = json.loads(tts_response_bytes)
 
                 # Log response without data field
-                tts_response_for_print = tts_response.copy()
-                tts_response_for_print.pop("data", None)
-                if self.ten_env:
-                    self.ten_env.log_debug(
-                        f"recv from websocket: {tts_response_for_print}"
-                    )
+                # tts_response_for_print = tts_response.copy()
+                # tts_response_for_print.pop("data", None)
+                # if self.ten_env:
+                #     self.ten_env.log_debug(
+                #         f"recv from websocket: {tts_response_for_print}"
+                #     )
 
                 tts_response_event = tts_response.get("event")
                 if tts_response_event == "task_failed":
@@ -195,10 +201,18 @@ class MinimaxTTSWebsocket:
                     audio = tts_response["data"]["audio"]
                     audio_bytes = bytes.fromhex(audio)
 
-                    if self.ten_env:
-                        self.ten_env.log_debug(
-                            f"audio chunk #{chunk_counter}, hex bytes: {len(audio)}, audio bytes: {len(audio_bytes)}"
+                    # if self.ten_env:
+                    #     self.ten_env.log_info(
+                    #         f"audio chunk #{chunk_counter}, hex bytes: {len(audio)}, audio bytes: {len(audio_bytes)}"
+                    #     )
+
+                    if not self.first_chunk_processed:
+                        first_byte_time = datetime.now()
+                        ttfb_ms = int(
+                            (first_byte_time - send_time).total_seconds() * 1000
                         )
+                        yield ttfb_ms, EVENT_TTS_TTFB_METRIC
+                        self.first_chunk_processed = True
 
                     chunk_counter += 1
                     if len(audio_bytes) > 0:
