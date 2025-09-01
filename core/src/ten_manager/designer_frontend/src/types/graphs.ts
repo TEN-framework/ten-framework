@@ -8,6 +8,36 @@ import { z } from "zod";
 
 import { stringToJSONSchema } from "@/utils";
 
+export const DesignerFilterOperator = z.enum(["exact", "regex"]);
+export type DesignerFilterOperator = z.infer<typeof DesignerFilterOperator>;
+
+export const DesignerAtomicFilter = z.object({
+  field: z.string(),
+  operator: DesignerFilterOperator,
+  value: z.string(),
+});
+export type DesignerAtomicFilter = z.infer<typeof DesignerAtomicFilter>;
+
+export type DesignerFilter =
+  | { Atomic: DesignerAtomicFilter }
+  | { And: { and: DesignerFilter[] } }
+  | { Or: { or: DesignerFilter[] } };
+export const DesignerFilter: z.ZodType<DesignerFilter> = z.lazy(() =>
+  z.union([
+    z.object({ Atomic: DesignerAtomicFilter }),
+    z.object({
+      And: z.object({
+        and: z.array(z.lazy(() => DesignerFilter)),
+      }),
+    }),
+    z.object({
+      Or: z.object({
+        or: z.array(z.lazy(() => DesignerFilter)),
+      }),
+    }),
+  ])
+);
+
 export const BackendNodeExtension = z.object({
   addon: z.string(),
   name: z.string(),
@@ -23,7 +53,7 @@ export type BackendNodeExtension = z.infer<typeof BackendNodeExtension>;
 export const BackendNodeSelector = z.object({
   name: z.string(),
   type: z.literal("selector"),
-  filter: z.any().nullish(), // todo: selector&subgraph
+  filter: DesignerFilter,
 });
 export type BackendNodeSelector = z.infer<typeof BackendNodeSelector>;
 

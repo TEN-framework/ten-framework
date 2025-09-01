@@ -50,7 +50,9 @@ export const retrieveGraphs = async () => {
     graph: {
       ...item.graph,
       nodes:
-        item.graph.nodes?.filter((node) => node.type === "extension") || [],
+        item.graph.nodes?.filter((node) =>
+          ["extension", "selector"].includes(node.type)
+        ) || [],
     } as Graph,
   })) as GraphInfo[];
 
