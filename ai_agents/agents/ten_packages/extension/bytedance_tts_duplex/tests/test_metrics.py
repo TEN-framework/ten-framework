@@ -111,12 +111,21 @@ def test_ttfb_metric_is_sent(MockBytedanceV3Client):
         mock_instance.response_msgs = response_msgs
 
         async def populate_queue():
-            EVENT_TTSResponse = 352
-            EVENT_SessionFinished = 152
+            # Import event constants used in the mock
+            from bytedance_tts_duplex.bytedance_tts import (
+                EVENT_TTSResponse,
+                EVENT_SessionFinished,
+                EVENT_TTS_TTFB_METRIC,
+            )
 
             # Simulate network latency before the first byte
             await asyncio.sleep(0.2)
+            mock_ttfb_value = 250  # Mocked TTFB value in ms
 
+            # Simulate the client sending the pre-calculated TTFB metric first
+            await response_msgs.put((EVENT_TTS_TTFB_METRIC, mock_ttfb_value))
+
+            # Then send the actual audio data and session end event
             await response_msgs.put((EVENT_TTSResponse, b"\x11\x22\x33"))
             await response_msgs.put((EVENT_SessionFinished, b""))
 
@@ -144,11 +153,10 @@ def test_ttfb_metric_is_sent(MockBytedanceV3Client):
     assert tester.audio_end_received, "Did not receive the tts_audio_end event."
     assert tester.ttfb_received, "TTFB metric was not received."
 
-    # Check if the TTFB value is reasonable.
-    # It should be slightly more than the 0.2s delay we introduced.
+    # Check if the TTFB value is exactly what the mock sent.
     print(f"TTFB value: {tester.ttfb_value}")
     assert (
-        tester.ttfb_value >= 200
-    ), f"Expected TTFB to be >= 200ms, but got {tester.ttfb_value}ms."
+        tester.ttfb_value == 250
+    ), f"Expected TTFB to be exactly 250ms, but got {tester.ttfb_value}ms."
 
     print(f"✅ TTFB metric test passed. Received TTFB: {tester.ttfb_value}ms.")

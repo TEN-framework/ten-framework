@@ -26,6 +26,7 @@ from .bytedance_tts import (
     BytedanceV3Client,
     EVENT_SessionFinished,
     EVENT_TTSResponse,
+    EVENT_TTS_TTFB_METRIC,
 )
 from ten_runtime import (
     AsyncTenEnv,
@@ -36,17 +37,16 @@ from ten_runtime import (
 class BytedanceTTSDuplexExtension(AsyncTTS2BaseExtension):
     def __init__(self, name: str) -> None:
         super().__init__(name)
-        self.config: BytedanceTTSDuplexConfig = None
-        self.client: BytedanceV3Client = None
-        self.current_request_id: str = None
+        self.config: BytedanceTTSDuplexConfig | None = None
+        self.client: BytedanceV3Client | None = None
+        self.current_request_id: str | None = None
         self.current_turn_id: int = -1
-        self.stop_event: asyncio.Event = None
-        self.msg_polling_task: asyncio.Task = None
-        self.recorder: PCMWriter = None
+        self.stop_event: asyncio.Event | None = None
+        self.msg_polling_task: asyncio.Task | None = None
+        self.recorder: PCMWriter | None = None
         self.request_start_ts: datetime | None = None
-        self.request_ttfb: int | None = None
-        self.request_total_audio_duration: int | None = None
-        self.response_msgs = asyncio.Queue[Tuple[int, bytes]]()
+        self.request_total_audio_duration: int = 0
+        self.response_msgs = asyncio.Queue[Tuple[int, bytes | int]]()
         self.recorder_map: dict[str, PCMWriter] = {}
         self.last_completed_request_id: str | None = None
         self.last_completed_has_reset_synthesizer = True
@@ -123,16 +123,35 @@ class BytedanceTTSDuplexExtension(AsyncTTS2BaseExtension):
     async def _loop(self) -> None:
         while True:
             try:
-                event, audio_data = await self.client.response_msgs.get()
+                event, data = await self.response_msgs.get()
 
-                if event == EVENT_TTSResponse:
+                if event == EVENT_TTS_TTFB_METRIC:
+                    ttfb_ms = data
+                    # This is the most accurate start time for the whole request duration.
+                    self.request_start_ts = datetime.now()
+                    if self.current_request_id:
+                        self.ten_env.log_info(
+                            f"KEYPOINT Sent TTSAudioStart for request ID: {self.current_request_id}"
+                        )
+                        await self.send_tts_audio_start(self.current_request_id)
+                        await self.send_tts_ttfb_metrics(
+                            self.current_request_id,
+                            ttfb_ms,
+                            self.current_turn_id,
+                        )
+                        self.ten_env.log_info(
+                            f"KEYPOINT Sent TTFB metrics for request ID: {self.current_request_id}, elapsed time: {ttfb_ms}ms"
+                        )
+                elif event == EVENT_TTSResponse:
+                    audio_data = data
                     if audio_data is not None:
                         self.ten_env.log_info(
                             f"KEYPOINT Received audio data for request ID: {self.current_request_id}, audio_data_len: {len(audio_data)}"
                         )
 
                         if (
-                            self.config.dump
+                            self.config
+                            and self.config.dump
                             and self.current_request_id
                             and self.current_request_id in self.recorder_map
                         ):
@@ -140,31 +159,6 @@ class BytedanceTTSDuplexExtension(AsyncTTS2BaseExtension):
                                 self.recorder_map[
                                     self.current_request_id
                                 ].write(audio_data)
-                            )
-                        if (
-                            self.request_start_ts is not None
-                            and self.request_ttfb is None
-                        ):
-                            self.ten_env.log_info(
-                                f"KEYPOINT Sent TTSAudioStart for request ID: {self.current_request_id}"
-                            )
-                            await self.send_tts_audio_start(
-                                self.current_request_id
-                            )
-                            elapsed_time = int(
-                                (
-                                    datetime.now() - self.request_start_ts
-                                ).total_seconds()
-                                * 1000
-                            )
-                            await self.send_tts_ttfb_metrics(
-                                self.current_request_id,
-                                elapsed_time,
-                                self.current_turn_id,
-                            )
-                            self.request_ttfb = elapsed_time
-                            self.ten_env.log_info(
-                                f"KEYPOINT Sent TTFB metrics for request ID: {self.current_request_id}, elapsed time: {elapsed_time}ms"
                             )
                         self.request_total_audio_duration += (
                             self.calculate_audio_duration(
@@ -183,7 +177,7 @@ class BytedanceTTSDuplexExtension(AsyncTTS2BaseExtension):
                     self.ten_env.log_info(
                         f"KEYPOINT Session finished for request ID: {self.current_request_id}"
                     )
-                    if self.request_start_ts is not None:
+                    if self.request_start_ts:
                         request_event_interval = int(
                             (
                                 datetime.now() - self.request_start_ts
@@ -244,7 +238,6 @@ class BytedanceTTSDuplexExtension(AsyncTTS2BaseExtension):
                     self.session_id = t.metadata.get("session_id", "")
                     self.current_turn_id = t.metadata.get("turn_id", -1)
                 self.request_start_ts = datetime.now()
-                self.request_ttfb = None
                 self.request_total_audio_duration = 0
 
                 if self.config.dump:
@@ -343,9 +336,12 @@ class BytedanceTTSDuplexExtension(AsyncTTS2BaseExtension):
 
             ten_env.log_info(f"Received tts_flush data: {name}")
 
-            request_event_interval = int(
-                (datetime.now() - self.request_start_ts).total_seconds() * 1000
-            )
+            request_event_interval = 0
+            if self.request_start_ts:
+                request_event_interval = int(
+                    (datetime.now() - self.request_start_ts).total_seconds()
+                    * 1000
+                )
             await self.send_tts_audio_end(
                 self.current_request_id,
                 request_event_interval,

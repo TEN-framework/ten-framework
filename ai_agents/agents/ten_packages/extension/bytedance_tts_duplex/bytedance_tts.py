@@ -9,6 +9,7 @@ from pydantic import BaseModel
 import websockets
 from websockets.legacy.client import WebSocketClientProtocol
 from websockets.protocol import State
+from datetime import datetime
 
 from ten_ai_base.message import (
     ModuleErrorVendorInfo,
@@ -76,9 +77,8 @@ EVENT_TTSSentenceEnd = 351
 
 EVENT_TTSResponse = 352
 
-# TODO all received
-# TODO all sent
-# TODO key points
+# Custom event for TTFB metric
+EVENT_TTS_TTFB_METRIC = 888
 
 
 class Header:
@@ -245,7 +245,7 @@ class BytedanceV3Synthesizer:
         config: BytedanceTTSDuplexConfig,
         ten_env: AsyncTenEnv,
         vendor: str,
-        response_msgs: asyncio.Queue[Tuple[int, bytes]],
+        response_msgs: asyncio.Queue[Tuple[int, bytes | int]],
     ):
         self.config = config
         self.app_id = config.app_id
@@ -256,7 +256,7 @@ class BytedanceV3Synthesizer:
         self.stop_event = asyncio.Event()
         self.ten_env: AsyncTenEnv = ten_env
         self.vendor = vendor
-        self.response_msgs: asyncio.Queue[Tuple[int, bytes, bool]] | None = (
+        self.response_msgs: asyncio.Queue[Tuple[int, bytes | int]] | None = (
             response_msgs
         )
 
@@ -266,6 +266,11 @@ class BytedanceV3Synthesizer:
         self.websocket_task = None
         self.channel_tasks = []
         self._session_started = False
+
+        # Store sent timestamp for TTFB calculation for the current session
+        self.sent_ts: datetime | None = None
+        # Flag to ensure TTFB is sent only once per synthesizer instance
+        self.ttfb_sent: bool = False
 
         # Queue for pending text to be sent
         self.text_queue = asyncio.Queue()
@@ -511,6 +516,16 @@ class BytedanceV3Synthesizer:
             self._session_event.set()
         elif message.event == EVENT_TTSResponse:
             if message.payload and self.response_msgs is not None:
+                # First audio chunk for a session, calculate and send TTFB
+                if self.sent_ts and not self.ttfb_sent:
+                    ttfb_ms = int(
+                        (datetime.now() - self.sent_ts).total_seconds() * 1000
+                    )
+                    await self.response_msgs.put(
+                        (EVENT_TTS_TTFB_METRIC, ttfb_ms)
+                    )
+                    self.ttfb_sent = True
+
                 await self.response_msgs.put((message.event, message.payload))
             else:
                 self.ten_env.log_error(
@@ -545,6 +560,9 @@ class BytedanceV3Synthesizer:
         payload = self.get_payload_bytes(
             event=EVENT_TaskRequest, text=text, speaker=self.speaker
         )
+        # Record the exact send time for TTFB calculation, only if not already sent
+        if not self.ttfb_sent:
+            self.sent_ts = datetime.now()
         await self.send_event(ws, header, optional, payload)
 
     async def send_event(
@@ -809,7 +827,7 @@ class BytedanceV3Client:
         config: BytedanceTTSDuplexConfig,
         ten_env: AsyncTenEnv,
         vendor: str,
-        response_msgs: asyncio.Queue[Tuple[int, bytes]],
+        response_msgs: asyncio.Queue[Tuple[int, bytes | int]],
     ):
         self.config = config
         self.ten_env = ten_env
