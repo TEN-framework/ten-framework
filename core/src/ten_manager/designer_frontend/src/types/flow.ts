@@ -65,6 +65,7 @@ export type TCustomEdgeData = {
   connectionType: EConnectionType;
   app?: string;
   name: string;
+  names?: string[];
   graph: GraphInfo;
   source: {
     type: ECustomNodeType;

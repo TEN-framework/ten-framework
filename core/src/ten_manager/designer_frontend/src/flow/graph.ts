@@ -264,6 +264,7 @@ export const generateRawEdgesFromGraph = (
               data: {
                 graph: graphInfo,
                 name: typedConnectionBaseName,
+                names: names || undefined,
                 connectionType: connectionType as EConnectionType,
                 source: {
                   type: sourceNode.type,
@@ -338,6 +339,7 @@ export const generateRawEdgesFromGraph = (
               data: {
                 graph: graphInfo,
                 name: typedConnectionBaseName,
+                names: names || undefined,
                 connectionType: connectionType as EConnectionType,
                 source: {
                   type: sourceNode.type,
