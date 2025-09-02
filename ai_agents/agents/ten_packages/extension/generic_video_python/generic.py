@@ -26,7 +26,7 @@ ERROR_CODE_REQUEST_HTTP_ERROR = -1006
 
 # Constants
 HEARTBEAT_INTERVAL = 10  # seconds - WebSocket heartbeat interval
-MAX_RECONNECT_ATTEMPTS = -1  # -1 means unlimited attempts
+MAX_RECONNECT_ATTEMPTS = 15  # Stop after ~1 minute of attempts
 RECONNECT_DELAY = 1  # seconds
 SPEAK_END_TIMEOUT = 0.5  # seconds
 
@@ -376,6 +376,30 @@ class AgoraGenericRecorder:
             )
             self._should_reconnect = False
             return
+
+        # After 3 failed attempts, try creating a new session
+        if attempt >= 3:
+            self.ten_env.log_info(f"Multiple connection failures (attempt {attempt}). Creating new session...")
+            try:
+                # Clear old session cache
+                self._clear_session_id_cache()
+
+                # Create a new session
+                await self._create_session()
+                self._save_session_id(self.session_id)
+
+                self.ten_env.log_info(f"New session created: {self.session_id}")
+                # Continue with normal delay logic instead of immediate retry
+
+            except Exception as session_error:
+                self.ten_env.log_error(f"Failed to create new session: {session_error}")
+
+                # If session creation fails multiple times, increase delay significantly
+                if attempt >= 6:  # After 3 session creation attempts
+                    actual_delay = 30  # Wait 30 seconds before trying again
+                    self.ten_env.log_error(f"Multiple session creation failures. Waiting {actual_delay}s before retry.")
+                    await asyncio.sleep(actual_delay)
+                    return
 
         # Delay for first 5 attempts, then exponential backoff with jitter
         if attempt < 5:
