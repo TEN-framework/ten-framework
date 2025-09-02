@@ -27,6 +27,7 @@ from ten_ai_base.struct import TTSTextInput
 from minimax_tts_websocket_python.minimax_tts import (
     EVENT_TTSSentenceEnd,
     EVENT_TTSResponse,
+    EVENT_TTS_TTFB_METRIC,
 )
 
 
@@ -102,6 +103,7 @@ def test_ttfb_metric_is_sent(MockMinimaxTTSWebsocket):
     async def mock_get_audio_with_delay(text: str):
         # Simulate network latency or processing time before the first byte
         await asyncio.sleep(0.2)
+        yield (255, EVENT_TTS_TTFB_METRIC)
         yield (b"\x11\x22\x33", EVENT_TTSResponse)
         # Simulate the end of the stream
         yield (None, EVENT_TTSSentenceEnd)
@@ -133,7 +135,7 @@ def test_ttfb_metric_is_sent(MockMinimaxTTSWebsocket):
     # Check if the TTFB value is reasonable. It should be slightly more than
     # the 0.2s delay we introduced. We check for >= 200ms.
     assert (
-        tester.ttfb_value >= 200
-    ), f"Expected TTFB to be >= 200ms, but got {tester.ttfb_value}ms."
+        tester.ttfb_value == 255
+    ), f"Expected TTFB to be 255ms, but got {tester.ttfb_value}ms."
 
     print(f"✅ TTFB metric test passed. Received TTFB: {tester.ttfb_value}ms.")

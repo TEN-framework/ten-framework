@@ -130,7 +130,11 @@ def test_dump_functionality(MockElevenLabsTTS2Client):
 
     # Mock the client constructor to properly handle the response_msgs queue
     def mock_client_init(
-        config, ten_env, error_callback=None, response_msgs=None
+        config,
+        ten_env,
+        error_callback=None,
+        response_msgs=None,
+        ttfb_metrics_callback=None,
     ):
         # Store the real queue passed by the extension - this should be a real asyncio.Queue
         mock_instance.response_msgs = (
@@ -147,11 +151,11 @@ def test_dump_functionality(MockElevenLabsTTS2Client):
         async def populate_queue():
             await asyncio.sleep(0.01)  # Small delay to let the extension start
             await mock_instance.response_msgs.put(
-                (fake_audio_chunk_1, False, "")
+                (fake_audio_chunk_1, False, "", 123)
             )
             await asyncio.sleep(0.01)
             await mock_instance.response_msgs.put(
-                (fake_audio_chunk_2, True, "hello word, hello agora")
+                (fake_audio_chunk_2, True, "hello word, hello agora", None)
             )
 
         # Start the population task
@@ -337,7 +341,11 @@ def test_flush_logic(MockElevenLabsTTS2Client):
 
     # Mock the client constructor
     def mock_client_init(
-        config, ten_env, error_callback=None, response_msgs=None
+        config,
+        ten_env,
+        error_callback=None,
+        response_msgs=None,
+        ttfb_metrics_callback=None,
     ):
         # Use the real queue passed by the extension
         mock_instance.response_msgs = (
@@ -358,13 +366,18 @@ def test_flush_logic(MockElevenLabsTTS2Client):
                     return
 
                 await mock_instance.response_msgs.put(
-                    (b"\x11\x22\x33" * 100, False, "")
+                    (b"\x11\x22\x33" * 100, False, "", 123)
                 )
                 await asyncio.sleep(0.1)
 
             # This part is only reached if not cancelled
             await mock_instance.response_msgs.put(
-                (b"\x44\x55\x66", True, "This is a very long text designed")
+                (
+                    b"\x44\x55\x66",
+                    True,
+                    "This is a very long text designed",
+                    None,
+                )
             )
 
         asyncio.create_task(populate_queue())
