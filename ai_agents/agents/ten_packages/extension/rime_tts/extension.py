@@ -23,6 +23,7 @@ from .config import RimeTTSConfig
 from .rime_tts import (
     EVENT_TTS_END,
     EVENT_TTS_RESPONSE,
+    EVENT_TTS_TTFB_METRIC,
     RimeTTSClient,
 )
 from ten_runtime import (
@@ -44,14 +45,14 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
         self.request_start_ts: datetime | None = None
         self.request_ttfb: int | None = None
         self.request_total_audio_duration: int = 0
-        self.response_msgs = asyncio.Queue[tuple[int, bytes]]()
+        self.response_msgs = asyncio.Queue[tuple[int, bytes | int]]()
         self.recorder_map: dict[str, PCMWriter] = (
             {}
         )  # 存储不同 request_id 对应的 PCMWriter
         self.last_completed_request_id: str | None = (
             None  # 最新完成的 request_id
         )
-        self.is_reconnecting = False
+        self.last_completed_has_reset_synthesizer = True
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         try:
@@ -129,12 +130,12 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
     async def _loop(self) -> None:
         while True:
             try:
-                event, audio_data = await self.client.response_msgs.get()
+                event, data = await self.client.response_msgs.get()
 
                 if event == EVENT_TTS_RESPONSE:  # Audio data event
-                    if audio_data is not None:
+                    if data is not None and isinstance(data, bytes):
                         self.ten_env.log_info(
-                            f"KEYPOINT Received audio data for request ID: {self.current_request_id}, audio_data_len: {len(audio_data)}"
+                            f"KEYPOINT Received audio data for request ID: {self.current_request_id}, audio_data_len: {len(data)}"
                         )
 
                         if (
@@ -145,45 +146,34 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                             asyncio.create_task(
                                 self.recorder_map[
                                     self.current_request_id
-                                ].write(audio_data)
-                            )
-                        if (
-                            self.request_start_ts is not None
-                            and self.request_ttfb is None
-                        ):
-                            self.ten_env.log_info(
-                                f"KEYPOINT Sent TTSAudioStart for request ID: {self.current_request_id}"
-                            )
-                            await self.send_tts_audio_start(
-                                self.current_request_id
-                            )
-                            elapsed_time = int(
-                                (
-                                    datetime.now() - self.request_start_ts
-                                ).total_seconds()
-                                * 1000
-                            )
-                            await self.send_tts_ttfb_metrics(
-                                self.current_request_id,
-                                elapsed_time,
-                                self.current_turn_id,
-                            )
-                            self.request_ttfb = elapsed_time
-                            self.ten_env.log_info(
-                                f"KEYPOINT Sent TTFB metrics for request ID: {self.current_request_id}, elapsed time: {elapsed_time}ms"
+                                ].write(data)
                             )
                         self.request_total_audio_duration += (
                             self.calculate_audio_duration(
-                                len(audio_data),
+                                len(data),
                                 self.synthesize_audio_sample_rate(),
                                 self.synthesize_audio_channels(),
                                 self.synthesize_audio_sample_width(),
                             )
                         )
-                        await self.send_tts_audio_data(audio_data)
+                        await self.send_tts_audio_data(data)
                     else:
                         self.ten_env.log_error(
                             "Received empty payload for TTS response"
+                        )
+                elif event == EVENT_TTS_TTFB_METRIC:
+                    if data is not None and isinstance(data, int):
+                        self.request_start_ts = datetime.now()
+                        ttfb = data
+                        await self.send_tts_audio_start(self.current_request_id)
+                        await self.send_tts_ttfb_metrics(
+                            self.current_request_id,
+                            ttfb,
+                            self.current_turn_id,
+                        )
+
+                        self.ten_env.log_info(
+                            f"KEYPOINT Sent TTS audio start and TTFB metrics: {ttfb}ms"
                         )
                 elif event == EVENT_TTS_END:
                     self.ten_env.log_info(
@@ -246,12 +236,15 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                 self.ten_env.log_info(
                     f"KEYPOINT New TTS request with ID: {t.request_id}"
                 )
+                if not self.last_completed_has_reset_synthesizer:
+                    self.client.reset_synthesizer()
+                self.last_completed_has_reset_synthesizer = False
+
                 self.current_request_id = t.request_id
                 if t.metadata is not None:
                     self.session_id = t.metadata.get("session_id", "")
                     self.current_turn_id = t.metadata.get("turn_id", -1)
                 self.request_start_ts = datetime.now()
-                self.request_ttfb = None
                 self.request_total_audio_duration = 0
 
                 # 为新 request_id 创建新的 PCMWriter，并清理旧的
@@ -300,10 +293,13 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                     f"Updated last completed request_id to: {t.request_id}"
                 )
 
-                # await self.client
-
                 self.stop_event = asyncio.Event()
                 await self.stop_event.wait()
+
+                # session finished, connection will be re-established for next request
+                if not self.last_completed_has_reset_synthesizer:
+                    self.client.reset_synthesizer()
+                    self.last_completed_has_reset_synthesizer = True
 
         except ModuleVendorException as e:
             self.ten_env.log_error(
@@ -338,6 +334,7 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
             # Cancel current connection (maintain original flush disconnect behavior)
             if self.client:
                 self.client.cancel()
+                self.last_completed_has_reset_synthesizer = True
 
             # If there's a waiting stop_event, set it to release request_tts waiting
             if self.stop_event:
@@ -345,17 +342,18 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                 self.stop_event = None
 
             ten_env.log_info(f"Received tts_flush data: {name}")
-
-            request_event_interval = int(
-                (datetime.now() - self.request_start_ts).total_seconds() * 1000
-            )
-            await self.send_tts_audio_end(
-                self.current_request_id,
-                request_event_interval,
-                self.request_total_audio_duration,
-                self.current_turn_id,
-                TTSAudioEndReason.INTERRUPTED,
-            )
+            if self.request_start_ts is not None:
+                request_event_interval = int(
+                    (datetime.now() - self.request_start_ts).total_seconds()
+                    * 1000
+                )
+                await self.send_tts_audio_end(
+                    self.current_request_id,
+                    request_event_interval,
+                    self.request_total_audio_duration,
+                    self.current_turn_id,
+                    TTSAudioEndReason.INTERRUPTED,
+                )
             ten_env.log_info(
                 f"Sent tts_audio_end with INTERRUPTED reason for request_id: {self.current_request_id}"
             )

@@ -15,26 +15,19 @@ if project_root not in sys.path:
 #
 from pathlib import Path
 import json
-from typing import Any
-from unittest.mock import patch, AsyncMock, MagicMock
-import tempfile
-import os
+from unittest.mock import patch, AsyncMock
 import asyncio
-import filecmp
-import shutil
-import threading
-import base64
 
 from ten_runtime import (
     ExtensionTester,
     TenEnvTester,
     Data,
-    TenError,
 )
-from ten_ai_base.struct import TTSTextInput, TTSFlush
+from ten_ai_base.struct import TTSTextInput
 from cartesia_tts2.cartesia_tts import (
     EVENT_TTS_RESPONSE,
     EVENT_TTS_END,
+    EVENT_TTS_TTFB_METRIC,
 )
 
 
@@ -111,6 +104,7 @@ def test_ttfb_metric_is_sent(MockCartesiaTTSClient):
     async def mock_get_audio_with_delay(text: str):
         # Simulate network latency or processing time before the first byte
         await asyncio.sleep(0.2)
+        yield (255, EVENT_TTS_TTFB_METRIC)
         yield (b"\x11\x22\x33", EVENT_TTS_RESPONSE)
         # Simulate the end of the stream
         yield (None, EVENT_TTS_END)
@@ -139,7 +133,7 @@ def test_ttfb_metric_is_sent(MockCartesiaTTSClient):
     # Check if the TTFB value is reasonable. It should be slightly more than
     # the 0.2s delay we introduced. We check for >= 200ms.
     assert (
-        tester.ttfb_value >= 200
-    ), f"Expected TTFB to be >= 200ms, but got {tester.ttfb_value}ms."
+        tester.ttfb_value == 255
+    ), f"Expected TTFB to be 255ms, but got {tester.ttfb_value}ms."
 
     print(f"✅ TTFB metric test passed. Received TTFB: {tester.ttfb_value}ms.")
