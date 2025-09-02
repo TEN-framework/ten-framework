@@ -173,7 +173,11 @@ def test_invalid_params_fatal_error(MockElevenLabsTTS2Client):
 
     # Mock the client constructor to properly handle the response_msgs queue
     def mock_client_init(
-        config, ten_env, error_callback=None, response_msgs=None
+        config,
+        ten_env,
+        error_callback=None,
+        response_msgs=None,
+        ttfb_metrics_callback=None,
     ):
         # Store the real queue passed by the extension
         mock_instance.response_msgs = response_msgs

@@ -47,10 +47,13 @@ import {
 } from "@/components/ui/table";
 import { CustomNodeConnectionButton } from "@/flow/edge/button";
 import { resetNodesAndEdgesByGraphs } from "@/flow/graph";
-import { identifier2data, type TCustomNodeData } from "@/lib/identifier";
+import {
+  type IdentifierCustomNodeData,
+  identifier2data,
+} from "@/lib/identifier";
 import { cn } from "@/lib/utils";
 import { useDialogStore, useFlowStore } from "@/store";
-import type { TCustomEdge } from "@/types/flow";
+import { ECustomNodeType, type TCustomEdge } from "@/types/flow";
 import { EConnectionType, type GraphInfo } from "@/types/graphs";
 
 export type TConnection = {
@@ -166,6 +169,10 @@ export const ActionDropdownMenu = (props: { edge: TCustomEdge }) => {
     </DropdownMenuItem>
     <DropdownMenuSeparator /> */}
         <DropdownMenuItem
+          disabled={
+            edge.data?.source?.type === ECustomNodeType.SELECTOR ||
+            edge.data?.target?.type === ECustomNodeType.SELECTOR
+          }
           onClick={() => {
             const dialogId =
               edge.source +
@@ -190,11 +197,11 @@ export const ActionDropdownMenu = (props: { edge: TCustomEdge }) => {
                   await postDeleteConnection({
                     graph_id: edge.data.graph.graph_id,
                     src_app: edge.data.app,
-                    src_extension: edge.source,
+                    src_extension: edge.data.source.name,
                     msg_type: edge.data.connectionType,
                     msg_name: edge.data.name,
                     dest_app: edge.data.app,
-                    dest_extension: edge.target,
+                    dest_extension: edge.data.target.name,
                   });
                   toast.success(t("action.deleteConnectionSuccess"));
                   const { nodes, edges } =
@@ -282,13 +289,18 @@ export const extensionConnectionColumns1: ColumnDef<TConnection>[] = [
             variant="outline"
             size="sm"
             data={{
-              source: identifier2data<TCustomNodeData>(downstream).name,
+              source: {
+                name: identifier2data<IdentifierCustomNodeData>(downstream)
+                  .name,
+                type: identifier2data<IdentifierCustomNodeData>(downstream)
+                  .type,
+              },
               graph: row.original.graph,
             }}
           >
             <PuzzleIcon className="me-1 h-3 w-3" />
             <span className="text-xs">
-              {identifier2data<TCustomNodeData>(downstream).name}
+              {identifier2data<IdentifierCustomNodeData>(downstream).name}
             </span>
           </CustomNodeConnectionButton>
         </div>
@@ -330,13 +342,16 @@ export const extensionConnectionColumns2: ColumnDef<TConnection>[] = [
             variant="outline"
             size="sm"
             data={{
-              source: identifier2data<TCustomNodeData>(upstream).name,
+              source: {
+                name: identifier2data<IdentifierCustomNodeData>(upstream).name,
+                type: identifier2data<IdentifierCustomNodeData>(upstream).type,
+              },
               graph: row.original.graph,
             }}
           >
             <PuzzleIcon className="me-1 h-3 w-3" />
             <span className="text-xs">
-              {identifier2data<TCustomNodeData>(upstream).name}
+              {identifier2data<IdentifierCustomNodeData>(upstream).name}
             </span>
           </CustomNodeConnectionButton>
           <ArrowBigRightDashIcon className="ms-1 h-4 w-4" />

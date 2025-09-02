@@ -19,7 +19,6 @@ mod tests {
             connections: None,
             exposed_messages: None,
             exposed_properties: None,
-            pre_flatten: None,
         };
         assert!(Graph::convert_reversed_connections_to_forward_connections(&empty_graph)
             .unwrap()
@@ -34,7 +33,6 @@ mod tests {
             connections: None,
             exposed_messages: None,
             exposed_properties: None,
-            pre_flatten: None,
         };
         let mut conn = GraphConnection {
             loc: GraphLoc {
@@ -117,7 +115,6 @@ mod tests {
             connections: None,
             exposed_messages: None,
             exposed_properties: None,
-            pre_flatten: None,
         };
         let mut conn = GraphConnection {
             loc: GraphLoc {
@@ -440,7 +437,6 @@ mod tests {
             connections: None,
             exposed_messages: None,
             exposed_properties: None,
-            pre_flatten: None,
         };
         let mut conn = GraphConnection {
             loc: GraphLoc {

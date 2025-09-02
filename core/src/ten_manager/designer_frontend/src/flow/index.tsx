@@ -23,16 +23,22 @@ import { CustomEdge } from "@/flow/edge";
 import { syncGraphNodeGeometry } from "@/flow/graph";
 import { ExtensionNode } from "@/flow/node";
 import { GraphNode } from "@/flow/node/graph";
+import { SelectorNode } from "@/flow/node/selector";
 import { cn } from "@/lib/utils";
 import { useFlowStore } from "@/store";
-import type { TCustomEdge, TExtensionNode } from "@/types/flow";
+import {
+  ECustomNodeType,
+  type TCustomEdge,
+  type TCustomNode,
+} from "@/types/flow";
 
 import "@xyflow/react/dist/style.css"; // Import react-flow style.
 import "@/flow/reactflow.css"; // Import react-flow style.
 
 const nodeTypes = {
-  extensionNode: ExtensionNode,
-  graphNode: GraphNode,
+  [ECustomNodeType.EXTENSION]: ExtensionNode,
+  [ECustomNodeType.GRAPH]: GraphNode,
+  [ECustomNodeType.SELECTOR]: SelectorNode,
 };
 
 export const FlowCanvas = (props: { className?: string }) => {
@@ -65,7 +71,7 @@ export const FlowCanvas = (props: { className?: string }) => {
   //   );
 
   const onNodesChange = React.useCallback(
-    (changes: NodeChange<TExtensionNode>[]) => {
+    (changes: NodeChange<TCustomNode>[]) => {
       const newNodes = applyNodeChanges(changes, displayedNodes);
       const positionChanges = changes.filter(
         (change) => change.type === "position" && change.dragging === false
@@ -112,7 +118,7 @@ export const FlowCanvas = (props: { className?: string }) => {
     >
       <ReactFlow
         colorMode={theme}
-        nodes={displayedNodes as TExtensionNode[]}
+        nodes={displayedNodes}
         edges={displayedEdges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
@@ -123,11 +129,6 @@ export const FlowCanvas = (props: { className?: string }) => {
         }}
         onEdgeContextMenu={(event, edge) => {
           event.preventDefault();
-          // console.log("Edge context menu", {
-          //   edge,
-          //   x: event.clientX,
-          //   y: event.clientY,
-          // });
           setContextMenu({
             visible: true,
             x: event.clientX,

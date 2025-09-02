@@ -7,92 +7,108 @@
 
 /** biome-ignore-all lint/suspicious/noExplicitAny: <ignore> */
 
-import type { ECustomNodeType } from "@/types/flow";
-import type { EConnectionType } from "@/types/graphs";
+import * as z from "zod";
+import { ECustomNodeType } from "@/types/flow";
+import { EConnectionType } from "@/types/graphs";
 
 export enum EFlowElementIdentifier {
   EDGE = "edge",
   HANDLE = "handle",
   CUSTOM_NODE = "custom-node",
 }
-export type TEdgeData = {
-  name: string;
-  src: string;
-  target: string;
-  graph: string;
-  connectionType: EConnectionType;
-};
 
-export const data2EdgeId = (
-  //   identifier: EFlowElementIdentifier.EDGE,
-  data: TEdgeData
-): string => {
-  const sortedKeys: Array<keyof TEdgeData> = [
-    "name",
-    "src",
-    "target",
-    "graph",
-    "connectionType",
-  ];
+export const IdentifierEdgeData = z.object({
+  name: z.string(),
+  names: z
+    .array(z.string())
+    .nullish()
+    .transform((i) => {
+      return i?.sort()?.join(",") || i;
+    }),
+  sourceNode: z.string(),
+  sourceNodeType: z.enum(ECustomNodeType),
+  targetNode: z.string(),
+  targetNodeType: z.enum(ECustomNodeType),
+  graph: z.string(),
+  connectionType: z.enum(EConnectionType),
+  isReversed: z.boolean(),
+});
+export type IdentifierEdgeData = z.infer<typeof IdentifierEdgeData>;
+
+export const data2EdgeId = (data: IdentifierEdgeData): string => {
+  const sortedKeys = Object.keys(IdentifierEdgeData.shape).sort();
   return (
     `identifier:${EFlowElementIdentifier.EDGE};` +
-    sortedKeys.map((keyName) => `${keyName}:${data[keyName]}`).join(";")
+    sortedKeys
+      .map(
+        (keyName) => `${keyName}:${data[keyName as keyof IdentifierEdgeData]}`
+      )
+      .join(";")
   );
 };
 
-export type THandleData = {
-  type: "source" | "target";
-  extension: string;
-  graph: string;
-  connectionType: EConnectionType;
-};
+export const IdentifierHandleData = z.object({
+  type: z.enum(["source", "target"]),
+  nodeName: z.string(),
+  nodeType: z.enum(ECustomNodeType),
+  graph: z.string(),
+  connectionType: z.enum(EConnectionType),
+});
+export type IdentifierHandleData = z.infer<typeof IdentifierHandleData>;
 
-export const data2HandleId = (
-  //   identifier: EFlowElementIdentifier.HANDLE,
-  data: THandleData
-): string => {
-  const sortedKeys: Array<keyof THandleData> = [
-    "type",
-    "extension",
-    "graph",
-    "connectionType",
-  ];
+export const data2HandleId = (data: IdentifierHandleData): string => {
+  const sortedKeys = Object.keys(IdentifierHandleData.shape).sort();
   return (
     `identifier:${EFlowElementIdentifier.HANDLE};` +
-    sortedKeys.map((keyName) => `${keyName}:${data[keyName]}`).join(";")
+    sortedKeys
+      .map(
+        (keyName) => `${keyName}:${data[keyName as keyof IdentifierHandleData]}`
+      )
+      .join(";")
   );
 };
 
-export type TCustomNodeData = {
-  type: ECustomNodeType;
-  graph: string;
-  name: string;
-};
+export const IdentifierCustomNodeData = z.object({
+  type: z.enum(ECustomNodeType),
+  graph: z.string(),
+  name: z.string(),
+});
+export type IdentifierCustomNodeData = z.infer<typeof IdentifierCustomNodeData>;
 
-export const data2ExtensionNodeId = (data: TCustomNodeData): string => {
-  const sortedKeys: Array<keyof TCustomNodeData> = ["type", "graph", "name"];
+export const data2ExtensionNodeId = (
+  data: IdentifierCustomNodeData
+): string => {
+  const sortedKeys = Object.keys(IdentifierCustomNodeData.shape).sort();
   return (
     `identifier:${EFlowElementIdentifier.CUSTOM_NODE};` +
-    sortedKeys.map((keyName) => `${keyName}:${data[keyName]}`).join(";")
+    sortedKeys
+      .map(
+        (keyName) =>
+          `${keyName}:${data[keyName as keyof IdentifierCustomNodeData]}`
+      )
+      .join(";")
   );
 };
 
 export const data2identifier = (
   identifier: EFlowElementIdentifier,
-  data: TEdgeData | THandleData | TCustomNodeData
+  data: IdentifierEdgeData | IdentifierHandleData | IdentifierCustomNodeData
 ) => {
   if (identifier === EFlowElementIdentifier.EDGE) {
-    return data2EdgeId(data as TEdgeData);
+    return data2EdgeId(data as IdentifierEdgeData);
   } else if (identifier === EFlowElementIdentifier.HANDLE) {
-    return data2HandleId(data as THandleData);
+    return data2HandleId(data as IdentifierHandleData);
   } else if (identifier === EFlowElementIdentifier.CUSTOM_NODE) {
-    return data2ExtensionNodeId(data as TCustomNodeData);
+    return data2ExtensionNodeId(data as IdentifierCustomNodeData);
   }
   throw new Error(`Unknown identifier type: ${identifier}`);
 };
 
 export const identifier2data = <
-  T extends TEdgeData | THandleData | TCustomNodeData,
+  T extends
+    | IdentifierEdgeData
+    | IdentifierHandleData
+    | IdentifierCustomNodeData,
 >(
   identifier: string
 ): T => {
@@ -107,21 +123,21 @@ export const identifier2data = <
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       if (key !== "identifier") (acc as any)[key] = value;
       return acc;
-    }, {} as TEdgeData) as T;
+    }, {} as IdentifierEdgeData) as T;
   } else if (type === EFlowElementIdentifier.HANDLE) {
     return parts.reduce((acc, part) => {
       const [key, value] = part.split(":");
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       if (key !== "identifier") (acc as any)[key] = value;
       return acc;
-    }, {} as THandleData) as T;
+    }, {} as IdentifierHandleData) as T;
   } else if (type === EFlowElementIdentifier.CUSTOM_NODE) {
     return parts.reduce((acc, part) => {
       const [key, value] = part.split(":");
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       if (key !== "identifier") (acc as any)[key] = value;
       return acc;
-    }, {} as TCustomNodeData) as T;
+    }, {} as IdentifierCustomNodeData) as T;
   }
   throw new Error(`Unknown identifier type: ${type}`);
 };

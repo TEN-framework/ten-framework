@@ -18,8 +18,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CustomNodeConnectionButton } from "@/flow/edge/button";
-import { identifier2data, type TCustomNodeData } from "@/lib/identifier";
+import {
+  type IdentifierCustomNodeData,
+  identifier2data,
+} from "@/lib/identifier";
 import { useFlowStore } from "@/store/flow";
+import type { ECustomNodeType } from "@/types/flow";
 import type { EConnectionType, GraphInfo } from "@/types/graphs";
 import type {
   ICustomConnectionWidget,
@@ -82,8 +86,8 @@ export interface CustomNodeConnPopupProps extends ICustomConnectionWidgetData {
 }
 
 function EdgeInfoContent(props: {
-  source: string;
-  target: string;
+  source: { type: ECustomNodeType; name: string };
+  target: { type: ECustomNodeType; name: string };
   filters?: {
     type?: EConnectionType;
     source?: boolean;
@@ -106,15 +110,17 @@ function EdgeInfoContent(props: {
 
   const [, rowsMemo] = React.useMemo(() => {
     const relatedEdges = edges.filter(
-      (e) => e.source === source && e.target === target
+      (e) =>
+        e.data?.source.name === source.name &&
+        e.data?.target.name === target?.name
     );
     const rows = relatedEdges
       .map((e) => ({
         id: e.id,
         type: e.data?.connectionType,
         name: e.data?.name,
-        source: identifier2data<TCustomNodeData>(e.source).name,
-        target: identifier2data<TCustomNodeData>(e.target).name,
+        source: identifier2data<IdentifierCustomNodeData>(e.source).name,
+        target: identifier2data<IdentifierCustomNodeData>(e.target).name,
         _meta: e,
         graph: e.data?.graph,
       }))
@@ -128,12 +134,6 @@ function EdgeInfoContent(props: {
       });
     return [relatedEdges, rows];
   }, [edges, source, target, filters]);
-  const [prettySource, prettyTarget] = React.useMemo(() => {
-    return [
-      identifier2data<TCustomNodeData>(source).name,
-      identifier2data<TCustomNodeData>(target).name,
-    ];
-  }, [source, target]);
 
   const handleRemoveFilter = (label: string) => {
     setFilters(filters.filter((f) => f.label !== label));
@@ -146,24 +146,24 @@ function EdgeInfoContent(props: {
           variant="outline"
           size="lg"
           data={{
-            source: prettySource,
+            source,
             graph,
           }}
         >
           <PuzzleIcon className="h-4 w-4" />
-          <span>{prettySource}</span>
+          <span>{source.name}</span>
         </CustomNodeConnectionButton>
         <ArrowBigRightDashIcon className="h-6 w-6" />
         <CustomNodeConnectionButton
           variant="outline"
           size="lg"
           data={{
-            source: prettyTarget,
+            source: target,
             graph,
           }}
         >
           <PuzzleIcon className="h-4 w-4" />
-          <span>{prettyTarget}</span>
+          <span>{target?.name}</span>
         </CustomNodeConnectionButton>
       </div>
       <Filters
@@ -180,7 +180,10 @@ function EdgeInfoContent(props: {
 }
 
 function CustomNodeConnContent(props: {
-  source: string;
+  source: {
+    name: string;
+    type: ECustomNodeType;
+  };
   filters?: {
     type?: EConnectionType;
     source?: boolean;
@@ -215,8 +218,10 @@ function CustomNodeConnContent(props: {
       .filter((e) => e.data?.graph?.graph_id === graph.graph_id)
       ?.filter((e) =>
         flowDirection === "upstream"
-          ? identifier2data<TCustomNodeData>(e.target).name === source
-          : identifier2data<TCustomNodeData>(e.source).name === source
+          ? identifier2data<IdentifierCustomNodeData>(e.target).name ===
+            source.name
+          : identifier2data<IdentifierCustomNodeData>(e.source).name ===
+            source.name
       );
     const rows = relatedEdges
       .map((e) => ({

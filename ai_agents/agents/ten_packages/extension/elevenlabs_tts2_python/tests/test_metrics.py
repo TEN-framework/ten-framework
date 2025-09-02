@@ -77,9 +77,8 @@ class ExtensionTesterMetrics(ExtensionTester):
         elif name == "tts_audio_end":
             self.audio_end_received = True
             # Stop the test only after both TTFB and audio end are received
-            if self.ttfb_received:
-                ten_env.log_info("Received tts_audio_end, stopping test.")
-                ten_env.stop_test()
+            ten_env.log_info("Received tts_audio_end, stopping test.")
+            ten_env.stop_test()
 
     def on_audio_frame(self, ten_env: TenEnvTester, audio_frame):
         """Receives audio frames and confirms the stream is working."""
@@ -112,9 +111,9 @@ def test_ttfb_metric_is_sent(MockElevenLabsTTS2Client):
             await asyncio.sleep(0.2)
 
             # Put audio data and final response in the queue
-            await response_msgs.put((b"\x11\x22\x33", False, ""))
+            await response_msgs.put((b"\x11\x22\x33", False, "", 123))
             await response_msgs.put(
-                (b"\x44\x55\x66", True, "hello, this is a metrics test.")
+                (b"\x44\x55\x66", True, "hello, this is a metrics test.", None)
             )
 
         # Set up the queue get method
@@ -151,6 +150,7 @@ def test_ttfb_metric_is_sent(MockElevenLabsTTS2Client):
     assert tester.audio_frame_received, "Did not receive any audio frame."
     assert tester.audio_end_received, "Did not receive the tts_audio_end event."
     assert tester.ttfb_received, "TTFB metric was not received."
+    assert tester.ttfb_value == 123, "TTFB value is not 123."
 
     # Check if the TTFB value is reasonable.
     # It should be slightly more than the 0.2s delay we introduced.

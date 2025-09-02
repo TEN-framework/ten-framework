@@ -6,16 +6,18 @@
 //
 #[cfg(test)]
 mod tests {
-    use ten_rust::graph::Graph;
+    use ten_rust::graph::graph_info::GraphContent;
 
     #[tokio::test]
     async fn test_graph_with_selector() {
-        let graph = Graph::from_str_with_base_dir(
-            include_str!("../../test_data/graph_with_selector/graph_with_selector_1.json"),
-            None,
-        )
-        .await
+        let mut graph_content = serde_json::from_str::<GraphContent>(include_str!(
+            "../../test_data/graph_with_selector/graph_with_selector_1.json"
+        ))
         .unwrap();
+
+        graph_content.validate_and_complete_and_flatten(None).await.unwrap();
+
+        let graph = graph_content.flattened_graph.as_ref().unwrap();
 
         // test_extension_1,2,3 --data--> test_extension_4
         // test_extension_3     --cmd --> test_extension_1,2

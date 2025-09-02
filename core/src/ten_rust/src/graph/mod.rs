@@ -181,9 +181,6 @@ pub struct Graph {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub exposed_properties: Option<Vec<GraphExposedProperty>>,
-
-    #[serde(skip)]
-    pub pre_flatten: Option<Box<Graph>>,
 }
 
 impl Graph {
@@ -205,7 +202,7 @@ impl Graph {
     pub async fn from_str_with_base_dir(s: &str, current_base_dir: Option<&str>) -> Result<Self> {
         let mut graph: Graph = serde_json::from_str(s)?;
 
-        graph.validate_and_complete_and_flatten(current_base_dir).await?;
+        graph.validate_and_complete(current_base_dir)?;
 
         // Return the parsed data.
         Ok(graph)
@@ -289,7 +286,7 @@ impl Graph {
 
     /// Validates and completes the graph by ensuring all nodes and connections
     /// follow the app declaration rules and other validation requirements.
-    fn validate_and_complete(&mut self, _current_base_dir: Option<&str>) -> Result<()> {
+    pub fn validate_and_complete(&mut self, _current_base_dir: Option<&str>) -> Result<()> {
         // Determine the app URI declaration state by examining all nodes.
         let app_uri_declaration_state = self.analyze_app_uri_declaration_state()?;
 
@@ -327,34 +324,6 @@ impl Graph {
                 }
             }
         }
-
-        Ok(())
-    }
-
-    pub async fn validate_and_complete_and_flatten(
-        &mut self,
-        current_base_dir: Option<&str>,
-    ) -> Result<()> {
-        // Step 1: Initial validation and completion
-        self.validate_and_complete(current_base_dir)?;
-
-        // Step 1.1: Store the pre-flatten graph
-        self.pre_flatten = Some(Box::new(self.clone()));
-
-        // Step 2: Attempt to flatten the graph
-        // Always attempt to flatten the graph, regardless of current_base_dir
-        // If there are subgraphs that need current_base_dir but it's None,
-        // the flatten_graph method will return an appropriate error.
-        if let Some(flattened) = self.flatten_graph(current_base_dir).await? {
-            // Replace current graph with flattened version
-            *self = flattened;
-        }
-
-        // Step 3: Final validation after flattening
-        // After flattening, there should basically be no logic that requires
-        // current_base_dir, so passing None here should not cause
-        // errors, and we can use this for validation.
-        self.validate_and_complete(None)?;
 
         Ok(())
     }

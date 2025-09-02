@@ -67,7 +67,10 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                     "Configuration is empty. Required parameter 'credentials' is missing."
                 )
 
-            self.client = GoogleTTS(config=self.config, ten_env=ten_env)
+            self.client = GoogleTTS(
+                config=self.config,
+                ten_env=ten_env,
+            )
         except ValueError as e:
             ten_env.log_error(f"on_init failed: {traceback.format_exc()}")
             await self.send_tts_error(
@@ -263,7 +266,7 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                     await self.handle_completed_request(
                         TTSAudioEndReason.INTERRUPTED
                     )
-                    await self.client.clean()
+                    self.client.clean()
                     await self.client.reset()
 
                 # Create new PCMWriter for new request_id and clean up old ones
@@ -299,9 +302,6 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                             f"Created PCMWriter for request_id: {t.request_id}, file: {dump_file_path}"
                         )
 
-                # Process the TTS request
-                self.sent_ts = datetime.now()
-
             # Initialize variables for all cases
             first_chunk = True
             cur_duration_bytes = 0
@@ -311,32 +311,26 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
             )
 
             # Process audio chunks
-            audio_generator = self.client.get(t.text)
+            audio_generator = self.client.get(t.text, t.request_id)
             try:
-                async for audio_chunk, event in audio_generator:
+                async for audio_chunk, event, ttfb_ms in audio_generator:
 
                     if event == EVENT_TTS_RESPONSE and audio_chunk:
                         self.total_audio_bytes += len(audio_chunk)
                         cur_duration_bytes += len(audio_chunk)
 
-                        if (
-                            first_chunk
-                            and self.sent_ts
-                            and self.current_request_id
-                        ):
-                            start_datetime = datetime.now()
-                            ttfb = int(
-                                (start_datetime - self.sent_ts).total_seconds()
-                                * 1000
-                            )
+                        if first_chunk and self.current_request_id:
+                            self.sent_ts = datetime.now()
+
                             await self.send_tts_audio_start(
                                 self.current_request_id
                             )
-                            await self.send_tts_ttfb_metrics(
-                                self.current_request_id,
-                                ttfb,
-                                self.current_turn_id,
-                            )
+                            if ttfb_ms is not None:
+                                await self.send_tts_ttfb_metrics(
+                                    self.current_request_id,
+                                    ttfb_ms,
+                                    self.current_turn_id,
+                                )
                             first_chunk = False
 
                         if (
@@ -413,7 +407,7 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                     self.ten_env.log_info(
                         "Resetting Google TTS client since request id changed and old connection already sent request"
                     )
-                    await self.client.clean()
+                    self.client.clean()
                     await self.client.reset()
 
             # Ensure all async operations are completed
