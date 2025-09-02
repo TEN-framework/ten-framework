@@ -18,7 +18,7 @@ import {
   TerminalIcon,
   VideoIcon,
 } from "lucide-react";
-import React from "react";
+import * as React from "react";
 import { useTranslation } from "react-i18next";
 // eslint-disable-next-line max-len
 import { CustomNodeConnPopupTitle } from "@/components/popup/custom-node-connection";
@@ -46,7 +46,7 @@ import { NODE_CONFIG_MAPPING } from "@/flow/node/base";
 import { ContextMenuItems } from "@/flow/node/extension/context-menu";
 import { data2identifier, EFlowElementIdentifier } from "@/lib/identifier";
 import { cn } from "@/lib/utils";
-import { useWidgetStore } from "@/store";
+import { useFlowStore, useWidgetStore } from "@/store";
 import type { IExtensionNodeData, TExtensionNode } from "@/types/flow";
 import { EConnectionType, type GraphInfo } from "@/types/graphs";
 import { EWidgetCategory, EWidgetDisplayType } from "@/types/widgets";
@@ -240,6 +240,7 @@ export const HandleGroupItem = (props: {
   const { data, isConnectable, onConnect, connectionType } = props;
 
   const { appendWidget } = useWidgetStore();
+  const { edges } = useFlowStore();
 
   const handleLaunchConnPopup = (data: {
     source: string;
@@ -269,6 +270,50 @@ export const HandleGroupItem = (props: {
     });
   };
 
+  const connectionsInfo: {
+    input: Record<EConnectionType, number>;
+    output: Record<EConnectionType, number>;
+  } = React.useMemo(() => {
+    const initData: {
+      input: Record<EConnectionType, number>;
+      output: Record<EConnectionType, number>;
+    } = {
+      input: {
+        data: 0,
+        cmd: 0,
+        audio_frame: 0,
+        video_frame: 0,
+      },
+      output: {
+        data: 0,
+        cmd: 0,
+        audio_frame: 0,
+        video_frame: 0,
+      },
+    };
+    const filteredEdges = edges.filter(
+      (edge) => edge.data?.graph?.graph_id === data.graph.graph_id
+    );
+
+    const outputEdges = filteredEdges.filter(
+      (edge) =>
+        edge.data?.source?.name === data.name &&
+        edge.data?.source?.type === data._type &&
+        edge.data?.connectionType === connectionType
+    );
+    const inputEdges = filteredEdges.filter(
+      (edge) =>
+        edge.data?.target?.name === data.name &&
+        edge.data?.target?.type === data._type &&
+        edge.data?.connectionType === connectionType
+    );
+
+    initData.input[connectionType] = inputEdges.length;
+    initData.output[connectionType] = outputEdges.length;
+
+    return initData;
+  }, [edges, data, connectionType]);
+
   return (
     <div
       className={cn(
@@ -281,7 +326,6 @@ export const HandleGroupItem = (props: {
           key={`target-${data.name}-${connectionType}`}
           type="target"
           position={Position.Left}
-          // id={`target-${data.name}-${connectionType}`}
           id={data2identifier(EFlowElementIdentifier.HANDLE, {
             type: "target",
             graph: data.graph.graph_id,
@@ -306,19 +350,7 @@ export const HandleGroupItem = (props: {
             },
           }}
         >
-          todo
-          {/* {connectionType === EConnectionType.CMD && (
-            <span>{data.src[connectionType]?.length || 0}</span>
-          )}
-          {connectionType === EConnectionType.DATA && (
-            <span>{data.src[connectionType]?.length || 0}</span>
-          )}
-          {connectionType === EConnectionType.AUDIO_FRAME && (
-            <span>{data.src[connectionType]?.length || 0}</span>
-          )}
-          {connectionType === EConnectionType.VIDEO_FRAME && (
-            <span>{data.src[connectionType]?.length || 0}</span>
-          )} */}
+          <span>{connectionsInfo.input[connectionType]}</span>
         </ConnectionCount>
       </div>
 
@@ -374,19 +406,7 @@ export const HandleGroupItem = (props: {
             },
           }}
         >
-          todo
-          {/* {connectionType === EConnectionType.CMD && (
-            <span>{data.target[connectionType]?.length || 0}</span>
-          )}
-          {connectionType === EConnectionType.DATA && (
-            <span>{data.target[connectionType]?.length || 0}</span>
-          )}
-          {connectionType === EConnectionType.AUDIO_FRAME && (
-            <span>{data.target[connectionType]?.length || 0}</span>
-          )}
-          {connectionType === EConnectionType.VIDEO_FRAME && (
-            <span>{data.target[connectionType]?.length || 0}</span>
-          )} */}
+          <span>{connectionsInfo.output[connectionType]}</span>
         </ConnectionCount>
         <BaseHandle
           key={`source-${data.name}-${connectionType}`}

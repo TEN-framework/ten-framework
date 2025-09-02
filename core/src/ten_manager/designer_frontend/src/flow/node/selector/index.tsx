@@ -12,6 +12,7 @@ import {
   TerminalIcon,
   VideoIcon,
 } from "lucide-react";
+import * as React from "react";
 import { Button } from "@/components/ui/button";
 import {
   ContextMenu,
@@ -24,6 +25,7 @@ import { Separator } from "@/components/ui/separator";
 import { NODE_CONFIG_MAPPING } from "@/flow/node/base";
 import { data2identifier, EFlowElementIdentifier } from "@/lib/identifier";
 import { cn } from "@/lib/utils";
+import { useFlowStore } from "@/store";
 import type { ISelectorNodeData, TSelectorNode } from "@/types/flow";
 import { EConnectionType } from "@/types/graphs";
 
@@ -101,6 +103,52 @@ const HandleGroupItem = (props: {
 }) => {
   const { data, connectionType } = props;
 
+  const { edges } = useFlowStore();
+
+  const connectionsInfo: {
+    input: Record<EConnectionType, number>;
+    output: Record<EConnectionType, number>;
+  } = React.useMemo(() => {
+    const initData: {
+      input: Record<EConnectionType, number>;
+      output: Record<EConnectionType, number>;
+    } = {
+      input: {
+        data: 0,
+        cmd: 0,
+        audio_frame: 0,
+        video_frame: 0,
+      },
+      output: {
+        data: 0,
+        cmd: 0,
+        audio_frame: 0,
+        video_frame: 0,
+      },
+    };
+    const filteredEdges = edges.filter(
+      (edge) => edge.data?.graph?.graph_id === data.graph.graph_id
+    );
+
+    const outputEdges = filteredEdges.filter(
+      (edge) =>
+        edge.data?.source?.name === data.name &&
+        edge.data?.source?.type === data._type &&
+        edge.data?.connectionType === connectionType
+    );
+    const inputEdges = filteredEdges.filter(
+      (edge) =>
+        edge.data?.target?.name === data.name &&
+        edge.data?.target?.type === data._type &&
+        edge.data?.connectionType === connectionType
+    );
+
+    initData.input[connectionType] = inputEdges.length;
+    initData.output[connectionType] = outputEdges.length;
+
+    return initData;
+  }, [edges, data, connectionType]);
+
   return (
     <div
       className={cn(
@@ -131,7 +179,7 @@ const HandleGroupItem = (props: {
             "cursor-pointer"
           )}
         >
-          todo
+          <span>{connectionsInfo.input[connectionType]}</span>
         </Button>
       </div>
 
@@ -171,7 +219,7 @@ const HandleGroupItem = (props: {
             "cursor-pointer"
           )}
         >
-          todo
+          <span>{connectionsInfo.output[connectionType]}</span>
         </Button>
         <BaseHandle
           key={`source-${data.name}-${connectionType}`}
