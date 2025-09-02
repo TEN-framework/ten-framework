@@ -6,7 +6,8 @@
 //
 use ten_rust::graph::{
     connection::{GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow},
-    node::{GraphContent, GraphNode, GraphNodeType},
+    graph_info::GraphContent,
+    node::{GraphNode, GraphNodeType, GraphResource},
     Graph,
 };
 
@@ -21,50 +22,53 @@ mod tests {
     #[tokio::test]
     async fn test_validate_and_complete_and_flatten_with_subgraphs() {
         // Create a main graph with subgraph nodes
-        let mut main_graph = Graph {
-            nodes: vec![
-                GraphNode::new_extension_node(
-                    "ext_a".to_string(),
-                    "addon_a".to_string(),
-                    None,
-                    None,
-                    None,
-                ),
-                GraphNode::new_subgraph_node(
-                    "subgraph_1".to_string(),
-                    None,
-                    GraphContent {
-                        import_uri: "./test_subgraph.json".to_string(),
-                    },
-                ),
-            ],
-            connections: Some(vec![GraphConnection {
-                loc: GraphLoc {
-                    app: None,
-                    extension: Some("ext_a".to_string()),
-                    subgraph: None,
-                    selector: None,
-                },
-                cmd: Some(vec![GraphMessageFlow::new(
-                    "test_cmd".to_string(),
-                    vec![GraphDestination {
-                        loc: GraphLoc {
-                            app: None,
-                            extension: Some("subgraph_1:ext_b".to_string()),
-                            subgraph: None,
-                            selector: None,
+        let mut main_graph = GraphContent {
+            graph: Graph {
+                nodes: vec![
+                    GraphNode::new_extension_node(
+                        "ext_a".to_string(),
+                        "addon_a".to_string(),
+                        None,
+                        None,
+                        None,
+                    ),
+                    GraphNode::new_subgraph_node(
+                        "subgraph_1".to_string(),
+                        None,
+                        GraphResource {
+                            import_uri: "./test_subgraph.json".to_string(),
                         },
-                        msg_conversion: None,
-                    }],
-                    vec![],
-                )]),
-                data: None,
-                audio_frame: None,
-                video_frame: None,
-            }]),
-            exposed_messages: None,
-            exposed_properties: None,
-            pre_flatten: None,
+                    ),
+                ],
+                connections: Some(vec![GraphConnection {
+                    loc: GraphLoc {
+                        app: None,
+                        extension: Some("ext_a".to_string()),
+                        subgraph: None,
+                        selector: None,
+                    },
+                    cmd: Some(vec![GraphMessageFlow::new(
+                        "test_cmd".to_string(),
+                        vec![GraphDestination {
+                            loc: GraphLoc {
+                                app: None,
+                                extension: Some("subgraph_1:ext_b".to_string()),
+                                subgraph: None,
+                                selector: None,
+                            },
+                            msg_conversion: None,
+                        }],
+                        vec![],
+                    )]),
+                    data: None,
+                    audio_frame: None,
+                    video_frame: None,
+                }]),
+                exposed_messages: None,
+                exposed_properties: None,
+            },
+            import_uri: None,
+            flattened_graph: None,
         };
 
         // Test with current_base_dir as None - should fail because subgraph has
@@ -81,50 +85,53 @@ mod tests {
     #[tokio::test]
     async fn test_validate_and_complete_and_flatten_without_subgraphs() {
         // Create a graph without subgraph nodes
-        let mut graph = Graph {
-            nodes: vec![
-                GraphNode::new_extension_node(
-                    "ext_a".to_string(),
-                    "addon_a".to_string(),
-                    None,
-                    None,
-                    None,
-                ),
-                GraphNode::new_extension_node(
-                    "ext_b".to_string(),
-                    "addon_b".to_string(),
-                    None,
-                    None,
-                    None,
-                ),
-            ],
-            connections: Some(vec![GraphConnection {
-                loc: GraphLoc {
-                    app: None,
-                    extension: Some("ext_a".to_string()),
-                    subgraph: None,
-                    selector: None,
-                },
-                cmd: Some(vec![GraphMessageFlow::new(
-                    "test_cmd".to_string(),
-                    vec![GraphDestination {
-                        loc: GraphLoc {
-                            app: None,
-                            extension: Some("ext_b".to_string()),
-                            subgraph: None,
-                            selector: None,
-                        },
-                        msg_conversion: None,
-                    }],
-                    vec![],
-                )]),
-                data: None,
-                audio_frame: None,
-                video_frame: None,
-            }]),
-            exposed_messages: None,
-            exposed_properties: None,
-            pre_flatten: None,
+        let mut graph = GraphContent {
+            graph: Graph {
+                nodes: vec![
+                    GraphNode::new_extension_node(
+                        "ext_a".to_string(),
+                        "addon_a".to_string(),
+                        None,
+                        None,
+                        None,
+                    ),
+                    GraphNode::new_extension_node(
+                        "ext_b".to_string(),
+                        "addon_b".to_string(),
+                        None,
+                        None,
+                        None,
+                    ),
+                ],
+                connections: Some(vec![GraphConnection {
+                    loc: GraphLoc {
+                        app: None,
+                        extension: Some("ext_a".to_string()),
+                        subgraph: None,
+                        selector: None,
+                    },
+                    cmd: Some(vec![GraphMessageFlow::new(
+                        "test_cmd".to_string(),
+                        vec![GraphDestination {
+                            loc: GraphLoc {
+                                app: None,
+                                extension: Some("ext_b".to_string()),
+                                subgraph: None,
+                                selector: None,
+                            },
+                            msg_conversion: None,
+                        }],
+                        vec![],
+                    )]),
+                    data: None,
+                    audio_frame: None,
+                    video_frame: None,
+                }]),
+                exposed_messages: None,
+                exposed_properties: None,
+            },
+            import_uri: None,
+            flattened_graph: None,
         };
 
         // Test with current_base_dir as None - should work fine since no
@@ -133,8 +140,8 @@ mod tests {
         assert!(result.is_ok());
 
         // The graph should remain unchanged
-        assert_eq!(graph.nodes.len(), 2);
-        assert!(graph.nodes.iter().all(|node| node.get_type() == GraphNodeType::Extension));
+        assert_eq!(graph.graph.nodes.len(), 2);
+        assert!(graph.graph.nodes.iter().all(|node| node.get_type() == GraphNodeType::Extension));
     }
 
     #[tokio::test]
@@ -151,7 +158,6 @@ mod tests {
             connections: None,
             exposed_messages: None,
             exposed_properties: None,
-            pre_flatten: None,
         };
 
         // flatten_graph should return None since there are no subgraphs
@@ -178,7 +184,7 @@ mod tests {
                 GraphNode::new_subgraph_node(
                     "subgraph_1".to_string(),
                     None,
-                    GraphContent {
+                    GraphResource {
                         import_uri: "./test_subgraph.json".to_string(),
                     },
                 ),
@@ -186,7 +192,6 @@ mod tests {
             connections: None,
             exposed_messages: None,
             exposed_properties: None,
-            pre_flatten: None,
         };
 
         // Create a simple subgraph
@@ -201,7 +206,6 @@ mod tests {
             connections: None,
             exposed_messages: None,
             exposed_properties: None,
-            pre_flatten: None,
         };
 
         // Write the subgraph to a file

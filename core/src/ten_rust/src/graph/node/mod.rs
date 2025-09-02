@@ -51,11 +51,11 @@ pub struct SubgraphNode {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub property: Option<serde_json::Value>,
 
-    pub graph: GraphContent,
+    pub graph: GraphResource,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct GraphContent {
+pub struct GraphResource {
     pub import_uri: String,
 }
 
@@ -158,7 +158,7 @@ impl GraphNode {
     pub fn new_subgraph_node(
         name: String,
         property: Option<serde_json::Value>,
-        graph: GraphContent,
+        graph: GraphResource,
     ) -> Self {
         Self::Subgraph {
             content: SubgraphNode {
