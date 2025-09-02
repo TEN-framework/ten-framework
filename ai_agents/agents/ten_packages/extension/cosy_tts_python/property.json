@@ -3,8 +3,8 @@
     "dump_path": "./",
     "params": {
         "api_key": "${env:COSY_TTS_API_KEY|}",
-        "model": "cosyvoice-v1",
+        "model": "cosyvoice-v2",
         "sample_rate": 16000,
-        "voice": "longxiaochun"
+        "voice": "loongluna_v2"
     }
 }
