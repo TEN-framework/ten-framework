@@ -78,7 +78,7 @@ TEN è una collezione di progetti open-source per costruire agenti vocali conver
 | ---------------- | ------- |
 | [![Follow on X](https://img.shields.io/twitter/follow/TenFramework?logo=X&color=%20%23f5f5f5)](https://twitter.com/intent/follow?screen_name=TenFramework) | Segui TEN Framework su X per aggiornamenti e annunci |
 | [![Follow on LinkedIn](https://custom-icon-badges.demolab.com/badge/LinkedIn-TEN_Framework-0A66C2?logo=linkedin-white&logoColor=fff)](https://www.linkedin.com/company/ten-framework) | Segui TEN Framework su LinkedIn per aggiornamenti e annunci |
-| [![Discord TEN Community](https://dcbadge.vercel.app/api/server/VnPftUzAMJ?&style=flat&theme=light&color=lightgray)](https://discord.gg/VnPftUzAMJ) | Unisciti alla nostra community Discord per connetterti con gli sviluppatori |
+| [![Discord TEN Community](https://img.shields.io/badge/Discord-Join%20TEN%20Community-5865F2?style=flat&logo=discord&logoColor=white)](https://discord.gg/VnPftUzAMJ) | Unisciti alla nostra community Discord per connetterti con gli sviluppatori |
 | [![Hugging Face Space](https://img.shields.io/badge/Hugging%20Face-TEN%20Framework-yellow?style=flat&logo=huggingface)](https://huggingface.co/TEN-framework) | Unisciti alla nostra community Hugging Face per esplorare i nostri spazi e modelli |
 | [![WeChat](https://img.shields.io/badge/TEN_Framework-WeChat_Group-%2307C160?logo=wechat&labelColor=darkgreen&color=gray)](https://github.com/TEN-framework/ten-agent/discussions/170) | Unisciti al nostro gruppo WeChat per discussioni nella community cinese |
 
