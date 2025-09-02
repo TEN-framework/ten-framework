@@ -7,7 +7,7 @@ import asyncio
 import json
 import os
 import time
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Tuple
 
 from ten_ai_base.asr import (
     ASRBufferConfig,
@@ -30,6 +30,7 @@ from .websocket import (
     SonioxFinToken,
     SonioxTranscriptToken,
     SonioxTranslationToken,
+    SonioxToken,
     SonioxWebsocketClient,
     SonioxWebsocketEvents,
 )
@@ -237,9 +238,7 @@ class SonioxASRExtension(AsyncASRBaseExtension):
 
     async def _handle_transcript(
         self,
-        tokens: List[
-            Union[SonioxTranscriptToken, SonioxTranslationToken, SonioxFinToken]
-        ],
+        tokens: List[SonioxToken],
         unused_final_audio_proc_ms: int,
         unused_total_audio_proc_ms: int,
     ):
@@ -270,9 +269,7 @@ class SonioxASRExtension(AsyncASRBaseExtension):
 
     def _group_tokens(
         self,
-        tokens: List[
-            Union[SonioxTranscriptToken, SonioxTranslationToken, SonioxFinToken]
-        ],
+        tokens: List[SonioxToken],
     ) -> Tuple[List[SonioxTranscriptToken], List[SonioxTranslationToken], bool]:
         transcript_tokens = []
         translation_tokens = []
@@ -285,6 +282,7 @@ class SonioxASRExtension(AsyncASRBaseExtension):
                 translation_tokens.append(token)
             elif isinstance(token, SonioxFinToken):
                 fin = True
+            # ignore end token
 
         return transcript_tokens, translation_tokens, fin
 
