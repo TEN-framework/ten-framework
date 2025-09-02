@@ -22,7 +22,7 @@ import ContextMenu, {
 } from "@/flow/context-menu/base";
 import { resetNodesAndEdgesByGraphs } from "@/flow/graph";
 import { useDialogStore, useFlowStore, useWidgetStore } from "@/store";
-import type { TCustomEdge } from "@/types/flow";
+import { ECustomNodeType, type TCustomEdge } from "@/types/flow";
 import { EWidgetCategory, EWidgetDisplayType } from "@/types/widgets";
 
 interface EdgeContextMenuProps {
@@ -74,9 +74,22 @@ const EdgeContextMenu: React.FC<EdgeContextMenuProps> = ({
           title: <CustomNodeConnPopupTitle source={source} target={target} />,
           metadata: {
             id,
-            source,
-            target,
+            source: {
+              type: data.source.type,
+              name: data.source.name,
+            },
+            target: {
+              type: data.target.type,
+              name: data.target.name,
+            },
             graph: data.graph,
+          },
+
+          popup: {
+            height: 0.8,
+            width: 0.6,
+            maxHeight: 0.8,
+            maxWidth: 0.6,
           },
         });
 
@@ -95,6 +108,9 @@ const EdgeContextMenu: React.FC<EdgeContextMenuProps> = ({
       _type: EContextMenuItemType.BUTTON,
       label: t("action.delete"),
       icon: <TrashIcon />,
+      disabled:
+        edge.data?.source?.type === ECustomNodeType.SELECTOR ||
+        edge.data?.target?.type === ECustomNodeType.SELECTOR, // tmp disable
       onClick: () => {
         const dialogId =
           edge.source +

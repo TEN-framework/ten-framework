@@ -53,7 +53,7 @@ import {
 } from "@/lib/identifier";
 import { cn } from "@/lib/utils";
 import { useDialogStore, useFlowStore } from "@/store";
-import type { TCustomEdge } from "@/types/flow";
+import { ECustomNodeType, type TCustomEdge } from "@/types/flow";
 import { EConnectionType, type GraphInfo } from "@/types/graphs";
 
 export type TConnection = {
@@ -169,6 +169,10 @@ export const ActionDropdownMenu = (props: { edge: TCustomEdge }) => {
     </DropdownMenuItem>
     <DropdownMenuSeparator /> */}
         <DropdownMenuItem
+          disabled={
+            edge.data?.source?.type === ECustomNodeType.SELECTOR ||
+            edge.data?.target?.type === ECustomNodeType.SELECTOR
+          }
           onClick={() => {
             const dialogId =
               edge.source +
@@ -285,8 +289,12 @@ export const extensionConnectionColumns1: ColumnDef<TConnection>[] = [
             variant="outline"
             size="sm"
             data={{
-              source:
-                identifier2data<IdentifierCustomNodeData>(downstream).name,
+              source: {
+                name: identifier2data<IdentifierCustomNodeData>(downstream)
+                  .name,
+                type: identifier2data<IdentifierCustomNodeData>(downstream)
+                  .type,
+              },
               graph: row.original.graph,
             }}
           >
@@ -334,7 +342,10 @@ export const extensionConnectionColumns2: ColumnDef<TConnection>[] = [
             variant="outline"
             size="sm"
             data={{
-              source: identifier2data<IdentifierCustomNodeData>(upstream).name,
+              source: {
+                name: identifier2data<IdentifierCustomNodeData>(upstream).name,
+                type: identifier2data<IdentifierCustomNodeData>(upstream).type,
+              },
               graph: row.original.graph,
             }}
           >

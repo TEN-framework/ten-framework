@@ -47,7 +47,11 @@ import { ContextMenuItems } from "@/flow/node/extension/context-menu";
 import { data2identifier, EFlowElementIdentifier } from "@/lib/identifier";
 import { cn } from "@/lib/utils";
 import { useFlowStore, useWidgetStore } from "@/store";
-import type { IExtensionNodeData, TExtensionNode } from "@/types/flow";
+import type {
+  ECustomNodeType,
+  IExtensionNodeData,
+  TExtensionNode,
+} from "@/types/flow";
 import { EConnectionType, type GraphInfo } from "@/types/graphs";
 import { EWidgetCategory, EWidgetDisplayType } from "@/types/widgets";
 
@@ -243,8 +247,14 @@ export const HandleGroupItem = (props: {
   const { edges } = useFlowStore();
 
   const handleLaunchConnPopup = (data: {
-    source: string;
-    target?: string;
+    source: {
+      name: string;
+      type: ECustomNodeType;
+    };
+    target?: {
+      name: string;
+      type: ECustomNodeType;
+    };
     graph: GraphInfo;
     metadata?: {
       filters?: {
@@ -265,8 +275,17 @@ export const HandleGroupItem = (props: {
       category: EWidgetCategory.CustomConnection,
       display_type: EWidgetDisplayType.Popup,
 
-      title: <CustomNodeConnPopupTitle source={source} target={target} />,
+      title: (
+        <CustomNodeConnPopupTitle source={source.name} target={target?.name} />
+      ),
       metadata: { id, source, target, filters, graph },
+
+      popup: {
+        height: 0.8,
+        width: 0.6,
+        maxHeight: 0.8,
+        maxWidth: 0.6,
+      },
     });
   };
 
@@ -339,7 +358,7 @@ export const HandleGroupItem = (props: {
         />
         <ConnectionCount
           data={{
-            source: data.name,
+            source: { name: data.name, type: data._type },
             target: undefined,
             graph: data.graph,
             metadata: {
@@ -364,7 +383,10 @@ export const HandleGroupItem = (props: {
         )}
         onClick={() => {
           handleLaunchConnPopup({
-            source: data.name,
+            source: {
+              name: data.name,
+              type: data._type,
+            },
             target: undefined,
             graph: data.graph,
             metadata: {
@@ -395,7 +417,10 @@ export const HandleGroupItem = (props: {
       <div className="flex items-center gap-x-2">
         <ConnectionCount
           data={{
-            source: data.name,
+            source: {
+              name: data.name,
+              type: data._type,
+            },
             target: undefined,
             graph: data.graph,
             metadata: {
@@ -431,8 +456,14 @@ export const HandleGroupItem = (props: {
 export const ConnectionCount = (props: {
   children: React.ReactNode;
   data: {
-    source: string;
-    target?: string;
+    source: {
+      name: string;
+      type: ECustomNodeType;
+    };
+    target?: {
+      name: string;
+      type: ECustomNodeType;
+    };
     graph: GraphInfo;
     metadata?: {
       filters?: {
