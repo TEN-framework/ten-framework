@@ -93,17 +93,19 @@ export const MsgAndResultConversion = z.object({
 });
 export type MsgAndResultConversion = z.infer<typeof MsgAndResultConversion>;
 
-export const GraphDestination = z.object({
-  loc: GraphLoc.nullish(),
+export const GraphDestination = GraphLoc.extend({
   msg_conversion: MsgAndResultConversion.nullish(),
 });
 export type GraphDestination = z.infer<typeof GraphDestination>;
+
+export const GraphSource = GraphLoc.extend({});
+export type GraphSource = z.infer<typeof GraphSource>;
 
 export const GraphMessageFlow = z.object({
   name: z.string().nullish(),
   names: z.array(z.string()).nullish(),
   dest: z.array(GraphDestination).nullish(),
-  source: z.array(GraphDestination).nullish(),
+  source: z.array(GraphSource).nullish(),
 });
 export type GraphMessageFlow = z.infer<typeof GraphMessageFlow>;
 
@@ -114,13 +116,13 @@ export enum EConnectionType {
   VIDEO_FRAME = "video_frame",
 }
 
-export const GraphConnection = z.object({
-  loc: GraphLoc.nullish(),
+export const GraphConnection = GraphLoc.extend({
   [EConnectionType.CMD]: z.array(GraphMessageFlow).nullish(),
   [EConnectionType.DATA]: z.array(GraphMessageFlow).nullish(),
   [EConnectionType.AUDIO_FRAME]: z.array(GraphMessageFlow).nullish(),
   [EConnectionType.VIDEO_FRAME]: z.array(GraphMessageFlow).nullish(),
 });
+export type GraphConnection = z.infer<typeof GraphConnection>;
 
 export const GraphExposedMessageType = z.enum([
   "cmd_in",

@@ -113,12 +113,12 @@ const HandleGroupItem = (props: {
           key={`target-${data.name}-${connectionType}`}
           type="target"
           position={Position.Left}
-          // id={`target-${data.name}-${connectionType}`}
           id={data2identifier(EFlowElementIdentifier.HANDLE, {
             type: "target",
-            extension: data.name,
             graph: data.graph.graph_id,
             connectionType,
+            nodeName: data.name,
+            nodeType: data._type,
           })}
           isConnectable={false}
           className={cn("size-3")}
@@ -179,9 +179,10 @@ const HandleGroupItem = (props: {
           position={Position.Right}
           id={data2identifier(EFlowElementIdentifier.HANDLE, {
             type: "source",
-            extension: data.name,
             graph: data.graph.graph_id,
             connectionType,
+            nodeName: data.name,
+            nodeType: data._type,
           })}
           isConnectable={false}
           className={cn("size-3")}

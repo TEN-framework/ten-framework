@@ -17,14 +17,12 @@ export enum ECustomNodeType {
   GRAPH = "graph",
   EXTENSION = "extension",
   SELECTOR = "selector",
-  SUB_GRAPH = "sub-graph",
+  SUB_GRAPH = "subgraph",
 }
 
 export interface IExtensionNodeData extends BackendNodeExtension {
   _type: ECustomNodeType.EXTENSION;
   graph: GraphInfo;
-  src: Record<EConnectionType, TCustomEdgeAddressData[]>;
-  target: Record<EConnectionType, TCustomEdgeAddressData[]>;
   url?: string; // ? need to be removed(ws)
   [key: string]: unknown;
 }
@@ -62,33 +60,23 @@ export type TCustomNode =
   | TSelectorNode
   | TSubGraphNode;
 
-export type TCustomEdgeAddress = {
-  extension: string;
-  app?: string;
-};
-
 export type TCustomEdgeData = {
   labelOffsetX: number;
   labelOffsetY: number;
   connectionType: EConnectionType;
   app?: string;
-  extension: string;
-  src: TCustomEdgeAddress;
-  target: TCustomEdgeAddress;
   name: string;
   graph: GraphInfo;
+  source: {
+    type: ECustomNodeType;
+    name: string;
+    app?: string | null;
+  };
+  target: {
+    type: ECustomNodeType;
+    name: string;
+    app?: string | null;
+  };
 };
-
-export type TCustomEdgeAddressData = {
-  src: TCustomEdgeAddress;
-  target: TCustomEdgeAddress;
-  name: string;
-  graph: GraphInfo;
-};
-
-export type TCustomEdgeAddressMap = Record<
-  EConnectionType,
-  TCustomEdgeAddressData[]
->;
 
 export type TCustomEdge = Edge<TCustomEdgeData, "customEdge">;

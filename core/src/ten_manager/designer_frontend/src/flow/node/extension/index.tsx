@@ -284,9 +284,10 @@ export const HandleGroupItem = (props: {
           // id={`target-${data.name}-${connectionType}`}
           id={data2identifier(EFlowElementIdentifier.HANDLE, {
             type: "target",
-            extension: data.name,
             graph: data.graph.graph_id,
             connectionType,
+            nodeName: data.name,
+            nodeType: data._type,
           })}
           isConnectable={isConnectable}
           onConnect={onConnect}
@@ -305,7 +306,8 @@ export const HandleGroupItem = (props: {
             },
           }}
         >
-          {connectionType === EConnectionType.CMD && (
+          todo
+          {/* {connectionType === EConnectionType.CMD && (
             <span>{data.src[connectionType]?.length || 0}</span>
           )}
           {connectionType === EConnectionType.DATA && (
@@ -316,7 +318,7 @@ export const HandleGroupItem = (props: {
           )}
           {connectionType === EConnectionType.VIDEO_FRAME && (
             <span>{data.src[connectionType]?.length || 0}</span>
-          )}
+          )} */}
         </ConnectionCount>
       </div>
 
@@ -372,7 +374,8 @@ export const HandleGroupItem = (props: {
             },
           }}
         >
-          {connectionType === EConnectionType.CMD && (
+          todo
+          {/* {connectionType === EConnectionType.CMD && (
             <span>{data.target[connectionType]?.length || 0}</span>
           )}
           {connectionType === EConnectionType.DATA && (
@@ -383,7 +386,7 @@ export const HandleGroupItem = (props: {
           )}
           {connectionType === EConnectionType.VIDEO_FRAME && (
             <span>{data.target[connectionType]?.length || 0}</span>
-          )}
+          )} */}
         </ConnectionCount>
         <BaseHandle
           key={`source-${data.name}-${connectionType}`}
@@ -392,9 +395,10 @@ export const HandleGroupItem = (props: {
           // id={`source-${data.name}-${connectionType}`}
           id={data2identifier(EFlowElementIdentifier.HANDLE, {
             type: "source",
-            extension: data.name,
             graph: data.graph.graph_id,
             connectionType,
+            nodeName: data.name,
+            nodeType: data._type,
           })}
           isConnectable={isConnectable}
           className={cn("size-3")}

@@ -18,7 +18,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CustomNodeConnectionButton } from "@/flow/edge/button";
-import { identifier2data, type TCustomNodeData } from "@/lib/identifier";
+import {
+  type IdentifierCustomNodeData,
+  identifier2data,
+} from "@/lib/identifier";
 import { useFlowStore } from "@/store/flow";
 import type { EConnectionType, GraphInfo } from "@/types/graphs";
 import type {
@@ -113,8 +116,8 @@ function EdgeInfoContent(props: {
         id: e.id,
         type: e.data?.connectionType,
         name: e.data?.name,
-        source: identifier2data<TCustomNodeData>(e.source).name,
-        target: identifier2data<TCustomNodeData>(e.target).name,
+        source: identifier2data<IdentifierCustomNodeData>(e.source).name,
+        target: identifier2data<IdentifierCustomNodeData>(e.target).name,
         _meta: e,
         graph: e.data?.graph,
       }))
@@ -130,8 +133,8 @@ function EdgeInfoContent(props: {
   }, [edges, source, target, filters]);
   const [prettySource, prettyTarget] = React.useMemo(() => {
     return [
-      identifier2data<TCustomNodeData>(source).name,
-      identifier2data<TCustomNodeData>(target).name,
+      identifier2data<IdentifierCustomNodeData>(source).name,
+      identifier2data<IdentifierCustomNodeData>(target).name,
     ];
   }, [source, target]);
 
@@ -215,8 +218,8 @@ function CustomNodeConnContent(props: {
       .filter((e) => e.data?.graph?.graph_id === graph.graph_id)
       ?.filter((e) =>
         flowDirection === "upstream"
-          ? identifier2data<TCustomNodeData>(e.target).name === source
-          : identifier2data<TCustomNodeData>(e.source).name === source
+          ? identifier2data<IdentifierCustomNodeData>(e.target).name === source
+          : identifier2data<IdentifierCustomNodeData>(e.source).name === source
       );
     const rows = relatedEdges
       .map((e) => ({

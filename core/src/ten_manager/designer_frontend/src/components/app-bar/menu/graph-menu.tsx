@@ -42,7 +42,7 @@ import {
 } from "@/types/widgets";
 
 export function GraphMenu(props: {
-  onAutoLayout: () => void;
+  onAutoLayout?: () => void;
   disableMenuClick?: boolean;
   idx: number;
   triggerListRef?: React.RefObject<HTMLButtonElement[]>;
@@ -141,17 +141,22 @@ export function GraphMenu(props: {
       <NavigationMenuContent
         className={cn("flex flex-col items-center gap-1.5 px-1 py-1.5")}
       >
-        <NavigationMenuLink asChild>
-          <Button
-            className="w-full justify-start"
-            variant="ghost"
-            onClick={onAutoLayout}
-          >
-            <MoveIcon />
-            {t("header.menuGraph.autoLayout")}
-          </Button>
-        </NavigationMenuLink>
-        <Separator className="w-full" />
+        {onAutoLayout && (
+          <>
+            <NavigationMenuLink asChild>
+              <Button
+                className="w-full justify-start"
+                variant="ghost"
+                onClick={onAutoLayout}
+              >
+                <MoveIcon />
+                {t("header.menuGraph.autoLayout")}
+              </Button>
+            </NavigationMenuLink>
+            <Separator className="w-full" />
+          </>
+        )}
+
         <NavigationMenuLink asChild>
           <Button
             className="w-full justify-start"

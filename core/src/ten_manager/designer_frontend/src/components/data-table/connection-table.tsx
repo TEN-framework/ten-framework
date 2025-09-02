@@ -47,7 +47,10 @@ import {
 } from "@/components/ui/table";
 import { CustomNodeConnectionButton } from "@/flow/edge/button";
 import { resetNodesAndEdgesByGraphs } from "@/flow/graph";
-import { identifier2data, type TCustomNodeData } from "@/lib/identifier";
+import {
+  type IdentifierCustomNodeData,
+  identifier2data,
+} from "@/lib/identifier";
 import { cn } from "@/lib/utils";
 import { useDialogStore, useFlowStore } from "@/store";
 import type { TCustomEdge } from "@/types/flow";
@@ -282,13 +285,14 @@ export const extensionConnectionColumns1: ColumnDef<TConnection>[] = [
             variant="outline"
             size="sm"
             data={{
-              source: identifier2data<TCustomNodeData>(downstream).name,
+              source:
+                identifier2data<IdentifierCustomNodeData>(downstream).name,
               graph: row.original.graph,
             }}
           >
             <PuzzleIcon className="me-1 h-3 w-3" />
             <span className="text-xs">
-              {identifier2data<TCustomNodeData>(downstream).name}
+              {identifier2data<IdentifierCustomNodeData>(downstream).name}
             </span>
           </CustomNodeConnectionButton>
         </div>
@@ -330,13 +334,13 @@ export const extensionConnectionColumns2: ColumnDef<TConnection>[] = [
             variant="outline"
             size="sm"
             data={{
-              source: identifier2data<TCustomNodeData>(upstream).name,
+              source: identifier2data<IdentifierCustomNodeData>(upstream).name,
               graph: row.original.graph,
             }}
           >
             <PuzzleIcon className="me-1 h-3 w-3" />
             <span className="text-xs">
-              {identifier2data<TCustomNodeData>(upstream).name}
+              {identifier2data<IdentifierCustomNodeData>(upstream).name}
             </span>
           </CustomNodeConnectionButton>
           <ArrowBigRightDashIcon className="ms-1 h-4 w-4" />

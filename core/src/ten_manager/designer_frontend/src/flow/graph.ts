@@ -5,8 +5,6 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 import { MarkerType } from "@xyflow/react";
-import dagre from "dagre";
-
 import { retrieveAddons } from "@/api/services/addons";
 import {
   postGetGraphNodeGeometry,
@@ -17,7 +15,6 @@ import type { IExtensionAddon } from "@/types/apps";
 import {
   ECustomNodeType,
   type TCustomEdge,
-  type TCustomEdgeAddressMap,
   type TCustomNode,
   type TExtensionNode,
   type TGraphNode,
@@ -26,7 +23,11 @@ import {
 import {
   type BackendNode,
   EConnectionType,
+  type GraphConnection,
+  type GraphDestination,
   type GraphInfo,
+  type GraphMessageFlow,
+  type GraphSource,
 } from "@/types/graphs";
 
 const NODE_WIDTH = 384;
@@ -132,18 +133,6 @@ export const generateRawNodes = (
             ...n,
             _type: ECustomNodeType.EXTENSION,
             graph: graph,
-            src: {
-              [EConnectionType.CMD]: [],
-              [EConnectionType.DATA]: [],
-              [EConnectionType.AUDIO_FRAME]: [],
-              [EConnectionType.VIDEO_FRAME]: [],
-            },
-            target: {
-              [EConnectionType.CMD]: [],
-              [EConnectionType.DATA]: [],
-              [EConnectionType.AUDIO_FRAME]: [],
-              [EConnectionType.VIDEO_FRAME]: [],
-            },
           },
         } as TExtensionNode;
       }
@@ -173,23 +162,11 @@ export const generateRawNodes = (
             ...n,
             _type: ECustomNodeType.SELECTOR,
             graph: graph,
-            // src: {
-            //   [EConnectionType.CMD]: [],
-            //   [EConnectionType.DATA]: [],
-            //   [EConnectionType.AUDIO_FRAME]: [],
-            //   [EConnectionType.VIDEO_FRAME]: [],
-            // },
-            // target: {
-            //   [EConnectionType.CMD]: [],
-            //   [EConnectionType.DATA]: [],
-            //   [EConnectionType.AUDIO_FRAME]: [],
-            //   [EConnectionType.VIDEO_FRAME]: [],
-            // },
           },
         };
       }
 
-      // sub-graph node
+      // subgraph node
       // todo
     });
 
@@ -206,161 +183,204 @@ export const generateRawNodes = (
   };
 };
 
-export const generateRawEdges = (
-  graph: GraphInfo,
-  options?: {
-    // Optional default edges to include
-    defaultEdges?: TCustomEdge[];
-    // Optional default edge address map
-    defaultEdgeAddressMap?: TCustomEdgeAddressMap;
-  }
-): [TCustomEdge[], TCustomEdgeAddressMap] => {
-  const edgeAddressMap: TCustomEdgeAddressMap =
-    options?.defaultEdgeAddressMap ?? {
-      [EConnectionType.CMD]: [],
-      [EConnectionType.DATA]: [],
-      [EConnectionType.AUDIO_FRAME]: [],
-      [EConnectionType.VIDEO_FRAME]: [],
+export const inferNodeTypeFromConnection = (
+  connection: GraphConnection | GraphDestination | GraphSource
+): { type: ECustomNodeType; name: string; app?: string } => {
+  if (connection.selector) {
+    return {
+      type: ECustomNodeType.SELECTOR,
+      name: connection.selector,
+      app: connection.app || undefined,
     };
-  const edges: TCustomEdge[] = options?.defaultEdges ?? [];
-
-  graph?.graph?.connections?.forEach((connection) => {
-    const extension = connection.loc?.extension;
-    const app = connection.loc?.app;
-    if (!extension || !app) return;
-    const TYPES = [
-      EConnectionType.CMD,
-      EConnectionType.DATA,
-      EConnectionType.AUDIO_FRAME,
-      EConnectionType.VIDEO_FRAME,
-    ];
-    TYPES.forEach((connectionType) => {
-      if (!connection?.[connectionType]) {
-        return;
-      }
-      connection[connectionType].forEach((connectionItem) => {
-        const name = connectionItem?.name;
-        const dest = connectionItem?.dest || [];
-        if (!name) return;
-        dest.forEach((connectionItemDest) => {
-          const targetExtension = connectionItemDest.loc?.extension;
-          const targetApp = connectionItemDest.loc?.app;
-          if (!targetExtension || !targetApp) return;
-          const edgeId = data2identifier(EFlowElementIdentifier.EDGE, {
-            name,
-            src: extension,
-            target: targetExtension,
-            graph: graph.graph_id,
-            connectionType,
-          });
-          // const edgeId = `edge-${extension}-${name}-${targetExtension}`;
-          const edgeAddress = {
-            extension: targetExtension,
-            app: targetApp,
-          };
-          edgeAddressMap[connectionType].push({
-            src: {
-              extension,
-              app,
-            },
-            target: edgeAddress,
-            name,
-            graph,
-          });
-          edges.push({
-            id: edgeId,
-            // source: extension,
-            // target: targetExtension,
-            source: data2identifier(EFlowElementIdentifier.CUSTOM_NODE, {
-              type: ECustomNodeType.EXTENSION,
-              graph: graph.graph_id,
-              name: extension,
-            }),
-            target: data2identifier(EFlowElementIdentifier.CUSTOM_NODE, {
-              type: ECustomNodeType.EXTENSION,
-              graph: graph.graph_id,
-              name: targetExtension,
-            }),
-            data: {
-              graph,
-              name,
-              connectionType,
-              extension,
-              src: {
-                extension,
-                app,
-              },
-              target: edgeAddress,
-              labelOffsetX: 0,
-              labelOffsetY: 0,
-            },
-            type: "customEdge",
-            label: name,
-            sourceHandle: data2identifier(EFlowElementIdentifier.HANDLE, {
-              type: "source",
-              extension,
-              graph: graph.graph_id,
-              connectionType: connectionType,
-            }),
-            targetHandle: data2identifier(EFlowElementIdentifier.HANDLE, {
-              type: "target",
-              extension: targetExtension,
-              graph: graph.graph_id,
-              connectionType: connectionType,
-            }),
-            markerEnd: {
-              type: MarkerType.ArrowClosed,
-              width: 20,
-              height: 20,
-              color: "#FF0072",
-            },
-          });
-        });
-      });
-    });
-  });
-
-  return [edges, edgeAddressMap];
+  }
+  if (connection.subgraph) {
+    return {
+      type: ECustomNodeType.SUB_GRAPH,
+      name: connection.subgraph,
+      app: connection.app || undefined,
+    };
+  }
+  if (connection.extension) {
+    return {
+      type: ECustomNodeType.EXTENSION,
+      name: connection.extension,
+      app: connection.app || undefined,
+    };
+  }
+  throw new Error("Unknown connection type");
 };
 
-export const updateNodesWithConnections = (
-  nodes: TCustomNode[],
-  edgeAddressMap: TCustomEdgeAddressMap
-): TCustomNode[] => {
-  // const extensionNodeNames: TExtensionNode[] = nodes.filter(
-  //   (node) => node.data._type === ECustomNodeType.EXTENSION
-  // );
-  const results: TCustomNode[] = [];
-  for (const node of nodes) {
-    if (node.data._type === ECustomNodeType.EXTENSION) {
-      [
-        EConnectionType.CMD,
-        EConnectionType.DATA,
-        EConnectionType.AUDIO_FRAME,
-        EConnectionType.VIDEO_FRAME,
-      ].forEach((connectionType) => {
-        const srcConnections = edgeAddressMap[connectionType].filter(
-          (edge) =>
-            edge.target.extension === node.data.name &&
-            edge.graph.graph_id === node.data.graph.graph_id
-        );
-        const targetConnections = edgeAddressMap[connectionType].filter(
-          (edge) =>
-            edge.src.extension === node.data.name &&
-            edge.graph.graph_id === node.data.graph.graph_id
-        );
-        (node as TExtensionNode).data.src[connectionType].push(
-          ...srcConnections
-        );
-        (node as TExtensionNode).data.target[connectionType].push(
-          ...targetConnections
-        );
-      });
+export const generateRawEdgesFromGraph = (
+  graphInfo: GraphInfo
+): TCustomEdge[] => {
+  const edges: TCustomEdge[] = [];
+  const connections = graphInfo.graph?.connections || [];
+  for (const connection of connections) {
+    for (const connectionType of Object.values(EConnectionType)) {
+      const typedConnections =
+        (connection?.[
+          connectionType as keyof typeof connection
+        ] as GraphMessageFlow[]) || [];
+
+      for (const typedConnection of typedConnections) {
+        // source only or destination only
+        const { name, names, source, dest } = typedConnection;
+        const typedConnectionBaseName = name
+          ? name
+          : [...(names || [])].sort().join(",");
+        // handle `dest` first
+        // if `dest` exists, `connection` -> `dest`
+        if (dest && dest.length > 0) {
+          for (const d of dest) {
+            const targetNode = inferNodeTypeFromConnection(
+              d as GraphDestination
+            );
+            const sourceNode = inferNodeTypeFromConnection(
+              connection as GraphSource
+            );
+            const edgeId = data2identifier(EFlowElementIdentifier.EDGE, {
+              name: typedConnectionBaseName,
+              names,
+              sourceNode: sourceNode.name,
+              sourceNodeType: sourceNode.type,
+              targetNode: targetNode.name,
+              targetNodeType: targetNode.type,
+              graph: graphInfo.graph_id,
+              connectionType: connectionType as EConnectionType,
+              isReversed: false,
+            });
+            edges.push({
+              id: edgeId,
+              source: data2identifier(EFlowElementIdentifier.CUSTOM_NODE, {
+                type: sourceNode.type,
+                graph: graphInfo.graph_id,
+                name: sourceNode.name,
+              }),
+              target: data2identifier(EFlowElementIdentifier.CUSTOM_NODE, {
+                type: targetNode.type,
+                graph: graphInfo.graph_id,
+                name: targetNode.name,
+              }),
+              data: {
+                graph: graphInfo,
+                name: typedConnectionBaseName,
+                connectionType: connectionType as EConnectionType,
+                source: {
+                  type: sourceNode.type,
+                  app: sourceNode.app,
+                  name: sourceNode.name,
+                },
+                target: {
+                  type: targetNode.type,
+                  app: targetNode.app,
+                  name: targetNode.name,
+                },
+                labelOffsetX: 0,
+                labelOffsetY: 0,
+              },
+              type: "customEdge",
+              label: name,
+              sourceHandle: data2identifier(EFlowElementIdentifier.HANDLE, {
+                type: "source",
+                graph: graphInfo.graph_id,
+                connectionType: connectionType as EConnectionType,
+                nodeName: sourceNode.name,
+                nodeType: sourceNode.type,
+              }),
+              targetHandle: data2identifier(EFlowElementIdentifier.HANDLE, {
+                type: "target",
+                graph: graphInfo.graph_id,
+                connectionType: connectionType as EConnectionType,
+                nodeName: targetNode.name,
+                nodeType: targetNode.type,
+              }),
+              markerEnd: {
+                type: MarkerType.ArrowClosed,
+                width: 20,
+                height: 20,
+                color: "#FF0072",
+              },
+            });
+          }
+        }
+        // otherwise handle `source`
+        // `source` -> `connection`
+        else if (source && source.length > 0) {
+          for (const s of source) {
+            const targetNode = inferNodeTypeFromConnection(
+              connection as GraphConnection
+            );
+            const sourceNode = inferNodeTypeFromConnection(s as GraphSource);
+            const edgeId = data2identifier(EFlowElementIdentifier.EDGE, {
+              name: typedConnectionBaseName,
+              names,
+              sourceNode: sourceNode.name,
+              sourceNodeType: sourceNode.type,
+              targetNode: targetNode.name,
+              targetNodeType: targetNode.type,
+              graph: graphInfo.graph_id,
+              connectionType: connectionType as EConnectionType,
+              isReversed: true,
+            });
+            edges.push({
+              id: edgeId,
+              source: data2identifier(EFlowElementIdentifier.CUSTOM_NODE, {
+                type: sourceNode.type,
+                graph: graphInfo.graph_id,
+                name: sourceNode.name,
+              }),
+              target: data2identifier(EFlowElementIdentifier.CUSTOM_NODE, {
+                type: targetNode.type,
+                graph: graphInfo.graph_id,
+                name: targetNode.name,
+              }),
+              data: {
+                graph: graphInfo,
+                name: typedConnectionBaseName,
+                connectionType: connectionType as EConnectionType,
+                source: {
+                  type: sourceNode.type,
+                  app: sourceNode.app,
+                  name: sourceNode.name,
+                },
+                target: {
+                  type: targetNode.type,
+                  app: targetNode.app,
+                  name: targetNode.name,
+                },
+                labelOffsetX: 0,
+                labelOffsetY: 0,
+              },
+              type: "customEdge",
+              label: name,
+              sourceHandle: data2identifier(EFlowElementIdentifier.HANDLE, {
+                type: "source",
+                graph: graphInfo.graph_id,
+                connectionType: connectionType as EConnectionType,
+                nodeName: sourceNode.name,
+                nodeType: sourceNode.type,
+              }),
+              targetHandle: data2identifier(EFlowElementIdentifier.HANDLE, {
+                type: "target",
+                graph: graphInfo.graph_id,
+                connectionType: connectionType as EConnectionType,
+                nodeName: targetNode.name,
+                nodeType: targetNode.type,
+              }),
+              markerEnd: {
+                type: MarkerType.ArrowClosed,
+                width: 20,
+                height: 20,
+                color: "#FF0072",
+              },
+            });
+          }
+        }
+      }
     }
-    results.push(node);
   }
 
-  return results;
+  return edges;
 };
 
 export const updateNodesWithAddonInfo = async (
@@ -402,94 +422,6 @@ export const updateNodesWithAddonInfo = async (
   }
 
   return nodes;
-};
-
-/** @deprecated */
-export const generateNodesAndEdges = (
-  inputNodes: TCustomNode[],
-  inputEdges: TCustomEdge[]
-): { nodes: TCustomNode[]; edges: TCustomEdge[] } => {
-  const dagreGraph = new dagre.graphlib.Graph();
-  dagreGraph.setDefaultEdgeLabel(() => ({}));
-
-  // Find all bidirectional pairs
-  const nodePairs = new Map<string, Set<string>>();
-  inputEdges.forEach((edge) => {
-    const hasReverse = inputEdges.some(
-      (e) => e.source === edge.target && e.target === edge.source
-    );
-    if (hasReverse) {
-      if (!nodePairs.has(edge.source)) {
-        nodePairs.set(edge.source, new Set());
-      }
-      nodePairs.get(edge.source)?.add(edge.target);
-    }
-  });
-
-  // Set graph to flow top to bottom-right
-  dagreGraph.setGraph({
-    rankdir: "TB",
-    nodesep: NODE_WIDTH * 2,
-    ranksep: NODE_HEIGHT * 2,
-  });
-
-  // Add nodes to graph
-  inputNodes.forEach((node) => {
-    dagreGraph.setNode(node.id, { width: NODE_WIDTH, height: NODE_HEIGHT });
-  });
-
-  // Process pairs in order of first appearance
-  const processedPairs = new Set<string>();
-  let currentX = 0;
-  const nodeXPositions = new Map<string, number>();
-
-  inputEdges.forEach((edge) => {
-    dagreGraph.setEdge(edge.source, edge.target);
-
-    // Check if this forms a pair and hasn't been processed
-    const pairKey = [edge.source, edge.target].sort().join("-");
-    if (
-      nodePairs.has(edge.source) &&
-      nodePairs.get(edge.source)?.has(edge.target) &&
-      !processedPairs.has(pairKey)
-    ) {
-      processedPairs.add(pairKey);
-      nodeXPositions.set(edge.source, currentX);
-      nodeXPositions.set(edge.target, currentX + NODE_WIDTH * 2);
-      currentX += NODE_WIDTH * 4;
-    }
-  });
-
-  dagre.layout(dagreGraph);
-
-  const layoutedNodes = inputNodes.map((node) => {
-    const nodeWithPosition = dagreGraph.node(node.id);
-    const xPos = nodeXPositions.has(node.id)
-      ? nodeXPositions.get(node.id)
-      : nodeWithPosition.x;
-
-    return {
-      ...node,
-      position: {
-        x: (xPos ?? nodeWithPosition.x) - NODE_WIDTH / 2,
-        y: nodeWithPosition.y - NODE_HEIGHT / 2,
-      },
-    };
-  });
-
-  const edgesWithNewHandles = inputEdges.map((edge) => {
-    const type = edge.data?.connectionType;
-    if (type) {
-      return {
-        ...edge,
-        sourceHandle: `source-${edge.source}-${type}`,
-        targetHandle: `target-${edge.target}-${type}`,
-      };
-    }
-    return edge;
-  });
-
-  return { nodes: layoutedNodes, edges: edgesWithNewHandles };
 };
 
 export const syncGraphNodeGeometry = async (
@@ -591,32 +523,20 @@ export const syncGraphNodeGeometry = async (
 };
 
 export const resetNodesAndEdgesByGraphs = async (graphs: GraphInfo[]) => {
-  const backendConnections = graphs.map((graph) => ({
-    graph,
-    connections: graph.graph?.connections || [],
-  }));
   const rawNodes = generateRawNodesFromGraphs(graphs);
-  let rawEdges: TCustomEdge[] = [];
-  let rawEdgeAddressMap: TCustomEdgeAddressMap = {
-    [EConnectionType.CMD]: [],
-    [EConnectionType.DATA]: [],
-    [EConnectionType.AUDIO_FRAME]: [],
-    [EConnectionType.VIDEO_FRAME]: [],
-  };
-  backendConnections.forEach((set) => {
-    const [edges, edgeAddressMap] = generateRawEdges(set.graph, {
-      defaultEdges: rawEdges,
-      defaultEdgeAddressMap: rawEdgeAddressMap,
-    });
-    rawEdges = edges;
-    rawEdgeAddressMap = edgeAddressMap;
-  });
-  const nodesWithConnections = updateNodesWithConnections(
-    rawNodes,
-    rawEdgeAddressMap
-  );
-  const nodesWithAddonInfo =
-    await updateNodesWithAddonInfo(nodesWithConnections);
+  const rawEdges: TCustomEdge[] = [];
+
+  for (const graph of graphs) {
+    const rawEdgesSlice = generateRawEdgesFromGraph(graph);
+    rawEdges.push(...rawEdgesSlice);
+  }
+
+  const nodesWithAddonInfo = await updateNodesWithAddonInfo(rawNodes);
   const nodesWithGeometry = await syncGraphNodeGeometry(nodesWithAddonInfo);
+  // todo: remove
+  console.log("resetNodesAndEdgesByGraphs", {
+    nodes: nodesWithGeometry,
+    edges: rawEdges,
+  });
   return { nodes: nodesWithGeometry, edges: rawEdges };
 };
