@@ -38,6 +38,7 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
         self.current_request_id: str | None = None
         self.current_turn_id: int = -1
         self.sent_ts: datetime | None = None
+        self.request_ts: datetime | None = None
         self.current_request_finished: bool = False
         self.total_audio_bytes: int = 0
         self.first_chunk: bool = False
@@ -118,9 +119,9 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
                         f"Current request {self.current_request_id} is being flushed. Sending INTERRUPTED."
                     )
                     self.client.cancel()
-                    if self.sent_ts:
+                    if self.request_ts:
                         request_event_interval = int(
-                            (datetime.now() - self.sent_ts).total_seconds()
+                            (datetime.now() - self.request_ts).total_seconds()
                             * 1000
                         )
                         duration_ms = self._calculate_audio_duration_ms()
@@ -228,6 +229,7 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
 
                         # Send TTS audio start on first chunk
                         if self.first_chunk:
+                            self.request_ts = datetime.now()
                             if self.sent_ts:
                                 await self.send_tts_audio_start(
                                     self.current_request_id
@@ -270,10 +272,12 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
                         self.ten_env.log_error(
                             "Received empty payload for TTS response"
                         )
-                        if t.text_input_end:
+                        if self.request_ts and t.text_input_end:
                             duration_ms = self._calculate_audio_duration_ms()
                             request_event_interval = int(
-                                (datetime.now() - self.sent_ts).total_seconds()
+                                (
+                                    datetime.now() - self.request_ts
+                                ).total_seconds()
                                 * 1000
                             )
                             await self.send_tts_audio_end(
@@ -290,9 +294,9 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
                         "Received TTS_END event from Fish Audio TTS"
                     )
                     # Send TTS audio end event
-                    if self.sent_ts and t.text_input_end:
+                    if self.request_ts and t.text_input_end:
                         request_event_interval = int(
-                            (datetime.now() - self.sent_ts).total_seconds()
+                            (datetime.now() - self.request_ts).total_seconds()
                             * 1000
                         )
                         duration_ms = self._calculate_audio_duration_ms()

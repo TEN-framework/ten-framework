@@ -31,12 +31,13 @@ from ten_runtime import (
     StatusCode,
     Data,
 )
-from ten_ai_base.struct import TTSTextInput, TTSFlush
+from ten_ai_base.struct import TTSTextInput
 from ten_ai_base.message import ModuleVendorException, ModuleErrorVendorInfo
 
 from rime_tts.rime_tts import (
     EVENT_TTS_RESPONSE,
     EVENT_TTS_END,
+    EVENT_TTS_TTFB_METRIC,
 )
 
 
@@ -159,6 +160,9 @@ def test_reconnect_after_connection_drop(MockRimeTTSClient):
             # On the second call, populate the queue with audio data
             # to simulate successful TTS response
             async def populate_queue():
+                await mock_instance.response_msgs.put(
+                    (EVENT_TTS_TTFB_METRIC, 255)
+                )
                 await mock_instance.response_msgs.put(
                     (EVENT_TTS_RESPONSE, b"\x44\x55\x66")
                 )

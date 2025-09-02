@@ -26,6 +26,7 @@ from ten_ai_base.struct import TTSTextInput
 from cartesia_tts2.cartesia_tts import (
     EVENT_TTS_END,
     EVENT_TTS_RESPONSE,
+    EVENT_TTS_TTFB_METRIC,
 )
 
 
@@ -122,6 +123,7 @@ def test_reconnect_after_connection_drop(MockCartesiaTTSClient):
             raise ConnectionRefusedError("Simulated connection drop from test")
         else:
             # On the second call, simulate a successful audio stream
+            yield (255, EVENT_TTS_TTFB_METRIC)
             yield (b"\x44\x55\x66", EVENT_TTS_RESPONSE)
             yield (None, EVENT_TTS_END)
 

@@ -14,28 +14,19 @@ if project_root not in sys.path:
 # Refer to the "LICENSE" file in the root directory for more information.
 #
 import json
-from typing import Any
 from unittest.mock import patch, AsyncMock
-import tempfile
-import os
 import asyncio
-import filecmp
-import shutil
-import threading
 
 from ten_runtime import (
     ExtensionTester,
     TenEnvTester,
-    Cmd,
-    CmdResult,
-    StatusCode,
     Data,
 )
-from ten_ai_base.struct import TTSTextInput, TTSFlush
-from ten_ai_base.message import ModuleVendorException, ModuleErrorVendorInfo
+from ten_ai_base.struct import TTSTextInput
 from rime_tts.rime_tts import (
     EVENT_TTS_RESPONSE,
     EVENT_TTS_END,
+    EVENT_TTS_TTFB_METRIC,
 )
 
 
@@ -113,6 +104,7 @@ def test_ttfb_metric_is_sent(MockRimeTTSClient):
         async def populate_queue():
             # Simulate network latency before the first byte
             await asyncio.sleep(0.2)
+            await response_msgs.put((EVENT_TTS_TTFB_METRIC, 255))
 
             await response_msgs.put((EVENT_TTS_RESPONSE, b"\x11\x22\x33"))
             await response_msgs.put((EVENT_TTS_END, b""))
@@ -144,7 +136,7 @@ def test_ttfb_metric_is_sent(MockRimeTTSClient):
     # It should be slightly more than the 0.2s delay we introduced.
     print(f"TTFB value: {tester.ttfb_value}")
     assert (
-        tester.ttfb_value >= 200
-    ), f"Expected TTFB to be >= 200ms, but got {tester.ttfb_value}ms."
+        tester.ttfb_value == 255
+    ), f"Expected TTFB to be 255ms, but got {tester.ttfb_value}ms."
 
     print(f"✅ TTFB metric test passed. Received TTFB: {tester.ttfb_value}ms.")

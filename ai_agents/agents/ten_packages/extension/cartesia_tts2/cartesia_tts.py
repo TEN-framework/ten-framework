@@ -1,5 +1,6 @@
 import asyncio
 from collections.abc import Callable
+from datetime import datetime
 from time import time
 from typing import AsyncGenerator, AsyncIterator
 import uuid
@@ -15,6 +16,7 @@ EVENT_TTS_RESPONSE = 1
 EVENT_TTS_END = 2
 EVENT_TTS_ERROR = 3
 EVENT_TTS_FLUSH = 4
+EVENT_TTS_TTFB_METRIC = 5
 
 
 class CartesiaTTSConnectionException(Exception):
@@ -43,6 +45,9 @@ class CartesiaTTSClient:
         self.ws: AsyncTtsWebsocket | None = None
         self.send_fatal_tts_error = send_fatal_tts_error
         self.send_non_fatal_tts_error = send_non_fatal_tts_error
+
+        self.sent_ts: datetime | None = None
+        self.ttfb_sent: bool = False
 
     async def start(self) -> None:
         """Preheating: establish websocket connection during initialization"""
@@ -97,10 +102,16 @@ class CartesiaTTSClient:
         self._is_cancelled = True
         if self.ws:
             await self.ws.close()
+            self.reset_ttfb()
+
+    def reset_ttfb(self):
+        self.sent_ts = None
+        self.ttfb_sent = False
+        self.ten_env.log_info("CartesiaTTS: reset TTFB")
 
     async def get(
         self, text: str
-    ) -> AsyncIterator[tuple[bytes | None, int | None]]:
+    ) -> AsyncIterator[tuple[bytes | int | None, int | None]]:
         """Generate TTS audio for the given text, returns (audio_data, event_status)"""
 
         self.ten_env.log_debug(f"KEYPOINT generate_TTS for '{text}' ")
@@ -125,7 +136,7 @@ class CartesiaTTSClient:
 
     async def _process_single_tts(
         self, text: str
-    ) -> AsyncIterator[tuple[bytes | None, int | None]]:
+    ) -> AsyncIterator[tuple[bytes | int | None, int | None]]:
         """Process a single TTS request in serial manner"""
         if not self.ws:
             self.ten_env.log_error("Cartesia websocket not connected")
@@ -134,6 +145,8 @@ class CartesiaTTSClient:
         self.ten_env.log_info(f"process_single_tts,text:{text}")
 
         context_id = uuid.uuid4().hex
+        if not self.ttfb_sent:
+            self.sent_ts = datetime.now()
         output_generator: AsyncGenerator[WebSocketTtsOutput, None] = (
             await self.ws.send(
                 transcript=text,
@@ -159,6 +172,17 @@ class CartesiaTTSClient:
                     break
                 # Process audio data
                 if output.audio:
+                    # First audio chunk for a session, calculate and send TTFB
+                    if self.sent_ts and not self.ttfb_sent:
+                        ttfb_ms = int(
+                            (datetime.now() - self.sent_ts).total_seconds()
+                            * 1000
+                        )
+                        yield ttfb_ms, EVENT_TTS_TTFB_METRIC
+                        self.ttfb_sent = True
+                        self.ten_env.log_info(
+                            f"CartesiaTTS: TTFB metric sent: {ttfb_ms}ms"
+                        )
                     self.ten_env.log_info(
                         f"CartesiaTTS: sending EVENT_TTS_RESPONSE, length: {len(output.audio)}"
                     )
