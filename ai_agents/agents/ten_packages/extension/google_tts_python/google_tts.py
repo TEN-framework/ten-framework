@@ -5,6 +5,7 @@ from ten_runtime import AsyncTenEnv
 from .config import GoogleTTSConfig
 from google.oauth2 import service_account
 import json
+import time
 
 # Custom event types to communicate status back to the extension
 EVENT_TTS_RESPONSE = 1
@@ -15,13 +16,18 @@ EVENT_TTS_FLUSH = 5
 
 
 class GoogleTTS:
-    def __init__(self, config: GoogleTTSConfig, ten_env: AsyncTenEnv):
+    def __init__(
+        self,
+        config: GoogleTTSConfig,
+        ten_env: AsyncTenEnv,
+    ):
         self.config = config
         self.ten_env = ten_env
         self.client = None
         self._initialize_client()
         self.credentials = None
         self.send_text_in_connection = False
+        self.cur_request_id = ""
 
     def _initialize_client(self):
         """Initialize Google TTS client with credentials"""
@@ -103,7 +109,9 @@ class GoogleTTS:
             ssml_gender.upper(), texttospeech.SsmlVoiceGender.NEUTRAL
         )
 
-    async def get(self, text: str) -> AsyncIterator[tuple[bytes | None, int]]:
+    async def get(
+        self, text: str, request_id: str
+    ) -> AsyncIterator[tuple[bytes | None, int, int | None]]:
         """Generate TTS audio for the given text"""
 
         self.ten_env.log_debug(f"Generating TTS for text: '{text[:50]}...'")
@@ -170,6 +178,10 @@ class GoogleTTS:
                     audio_config.effects_profile_id = audio_params.get(
                         "effects_profile_id"
                     )
+                start_ts = None
+                if request_id != self.cur_request_id:
+                    start_ts = time.time()
+                    self.cur_request_id = request_id
 
                 # Perform the text-to-speech request
                 response = self.client.synthesize_speech(
@@ -177,17 +189,20 @@ class GoogleTTS:
                     voice=voice,
                     audio_config=audio_config,
                 )
+                ttfb_ms = None
+                if start_ts is not None:
+                    ttfb_ms = int((time.time() - start_ts) * 1000)
                 self.send_text_in_connection = True
 
                 # The response's audio_content is binary
                 audio_content = response.audio_content
                 if audio_content:
-                    yield audio_content, EVENT_TTS_RESPONSE
-                    yield None, EVENT_TTS_REQUEST_END
+                    yield audio_content, EVENT_TTS_RESPONSE, ttfb_ms
+                    yield None, EVENT_TTS_REQUEST_END, ttfb_ms
                     return  # Success, exit retry loop
                 else:
                     error_msg = "No audio content received from Google TTS"
-                    yield error_msg.encode("utf-8"), EVENT_TTS_ERROR
+                    yield error_msg.encode("utf-8"), EVENT_TTS_ERROR, ttfb_ms
                     return
 
             except Exception as e:
@@ -230,7 +245,7 @@ class GoogleTTS:
                     ):
                         yield error_message.encode(
                             "utf-8"
-                        ), EVENT_TTS_INVALID_KEY_ERROR
+                        ), EVENT_TTS_INVALID_KEY_ERROR, ttfb_ms
                     # Check if it's a network error
                     elif (
                         (
@@ -242,9 +257,13 @@ class GoogleTTS:
                         or ("network" in error_message.lower())
                     ):
                         network_error = f"Network connection failed after {max_retries} attempts: {error_message}. Please check your internet connection and Google Cloud service availability."
-                        yield network_error.encode("utf-8"), EVENT_TTS_ERROR
+                        yield network_error.encode(
+                            "utf-8"
+                        ), EVENT_TTS_ERROR, ttfb_ms
                     else:
-                        yield error_message.encode("utf-8"), EVENT_TTS_ERROR
+                        yield error_message.encode(
+                            "utf-8"
+                        ), EVENT_TTS_ERROR, ttfb_ms
                     return
 
     def clean(self):
