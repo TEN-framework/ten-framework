@@ -193,11 +193,11 @@ export const ActionDropdownMenu = (props: { edge: TCustomEdge }) => {
                   await postDeleteConnection({
                     graph_id: edge.data.graph.graph_id,
                     src_app: edge.data.app,
-                    src_extension: edge.source,
+                    src_extension: edge.data.source.name,
                     msg_type: edge.data.connectionType,
                     msg_name: edge.data.name,
                     dest_app: edge.data.app,
-                    dest_extension: edge.target,
+                    dest_extension: edge.data.target.name,
                   });
                   toast.success(t("action.deleteConnectionSuccess"));
                   const { nodes, edges } =
