@@ -3,7 +3,6 @@ import json
 import base64
 import time
 from datetime import datetime
-from typing import Optional, Tuple
 
 import websockets
 from websockets.legacy.client import WebSocketClientProtocol
