@@ -11,6 +11,7 @@ import {
   getSmoothStepPath,
   Position,
 } from "@xyflow/react";
+import * as React from "react";
 import type { TCustomEdge } from "@/types/flow";
 
 export function CustomEdge({
@@ -22,6 +23,7 @@ export function CustomEdge({
   style,
   selected,
   markerEnd,
+  data,
 }: EdgeProps<TCustomEdge>) {
   const [path] = getSmoothStepPath({
     sourceX: sourceX,
@@ -32,12 +34,16 @@ export function CustomEdge({
     targetPosition: Position.Left,
   });
 
+  const isNames = React.useMemo(() => {
+    return data?.names?.length && data?.names?.length > 0;
+  }, [data?.names?.length]);
+
   return (
     <>
       <BaseEdge
         id={id}
         path={path}
-        style={{ ...style, strokeWidth: 2 }}
+        style={{ ...style, strokeWidth: isNames ? 3 : 2 }}
         markerEnd={markerEnd}
       />
 
@@ -48,7 +54,7 @@ export function CustomEdge({
           fill="none"
           strokeDasharray="5,5"
           stroke="url(#edge-gradient)"
-          strokeWidth="2"
+          strokeWidth={isNames ? 3 : 2}
           opacity="0.75"
         >
           <animate

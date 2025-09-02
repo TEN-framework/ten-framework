@@ -7,6 +7,8 @@
 import type { Edge, Node } from "@xyflow/react";
 import type {
   BackendNodeExtension,
+  BackendNodeSelector,
+  BackendNodeSubGraph,
   EConnectionType,
   GraphInfo,
 } from "@/types/graphs";
@@ -15,41 +17,41 @@ export enum ECustomNodeType {
   GRAPH = "graph",
   EXTENSION = "extension",
   SELECTOR = "selector",
-  SUB_GRAPH = "sub-graph",
+  SUB_GRAPH = "subgraph",
 }
 
 export interface IExtensionNodeData extends BackendNodeExtension {
   _type: ECustomNodeType.EXTENSION;
   graph: GraphInfo;
-  src: Record<EConnectionType, TCustomEdgeAddressData[]>;
-  target: Record<EConnectionType, TCustomEdgeAddressData[]>;
   url?: string; // ? need to be removed(ws)
   [key: string]: unknown;
 }
-export type TExtensionNode = Node<IExtensionNodeData, "extensionNode">;
+export type TExtensionNode = Node<
+  IExtensionNodeData,
+  ECustomNodeType.EXTENSION
+>;
 
 export interface IGraphNodeData {
   _type: ECustomNodeType.GRAPH;
   graph: GraphInfo;
   [key: string]: unknown;
 }
-export type TGraphNode = Node<IGraphNodeData, "graphNode">;
+export type TGraphNode = Node<IGraphNodeData, ECustomNodeType.GRAPH>;
 
-// todo: refine it
-export interface ISelectorNodeData {
+export interface ISelectorNodeData extends BackendNodeSelector {
   _type: ECustomNodeType.SELECTOR;
   graph: GraphInfo;
   [key: string]: unknown;
 }
-export type TSelectorNode = Node<ISelectorNodeData, "selectorNode">;
+export type TSelectorNode = Node<ISelectorNodeData, ECustomNodeType.SELECTOR>;
 
 // todo: refine it
-export interface ISubGraphNodeData {
+export interface ISubGraphNodeData extends BackendNodeSubGraph {
   _type: ECustomNodeType.SUB_GRAPH;
   graph: GraphInfo;
   [key: string]: unknown;
 }
-export type TSubGraphNode = Node<ISubGraphNodeData, "subGraphNode">;
+export type TSubGraphNode = Node<ISubGraphNodeData, ECustomNodeType.SUB_GRAPH>;
 
 export type TCustomNode =
   | TGraphNode
@@ -57,33 +59,25 @@ export type TCustomNode =
   | TSelectorNode
   | TSubGraphNode;
 
-export type TCustomEdgeAddress = {
-  extension: string;
-  app?: string;
-};
-
 export type TCustomEdgeData = {
   labelOffsetX: number;
   labelOffsetY: number;
   connectionType: EConnectionType;
   app?: string;
-  extension: string;
-  src: TCustomEdgeAddress;
-  target: TCustomEdgeAddress;
   name: string;
+  names?: string[];
   graph: GraphInfo;
+  source: {
+    type: ECustomNodeType;
+    name: string;
+    app?: string | null;
+  };
+  target: {
+    type: ECustomNodeType;
+    name: string;
+    app?: string | null;
+  };
+  isReversed: boolean;
 };
-
-export type TCustomEdgeAddressData = {
-  src: TCustomEdgeAddress;
-  target: TCustomEdgeAddress;
-  name: string;
-  graph: GraphInfo;
-};
-
-export type TCustomEdgeAddressMap = Record<
-  EConnectionType,
-  TCustomEdgeAddressData[]
->;
 
 export type TCustomEdge = Edge<TCustomEdgeData, "customEdge">;

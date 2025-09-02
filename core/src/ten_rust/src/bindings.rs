@@ -131,9 +131,10 @@ pub unsafe extern "C" fn ten_rust_predefined_graph_validate_complete_flatten(
         Some(current_base_dir_rust_str)
     };
 
+    let rt = Runtime::new().unwrap();
+
     // Parse the JSON string into a Graph
-    let graph_info = {
-        let rt = Runtime::new().unwrap();
+    let mut graph_info = {
         match rt.block_on(GraphInfo::from_str_with_base_dir(
             json_str_rust_str,
             current_base_dir_rust_str,
@@ -150,7 +151,7 @@ pub unsafe extern "C" fn ten_rust_predefined_graph_validate_complete_flatten(
     };
 
     // Serialize the graph back to JSON
-    let json_output = match serde_json::to_string(&graph_info) {
+    let json_output = match rt.block_on(graph_info.to_json_with_flattened_graph()) {
         Ok(json) => json,
         Err(e) => {
             if !err_msg.is_null() {

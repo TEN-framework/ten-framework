@@ -39,7 +39,6 @@ mod tests {
             connections: None,
             exposed_messages: None,
             exposed_properties: None,
-            pre_flatten: None,
         };
 
         // Test case 1: Delete a valid node - should succeed.
@@ -131,7 +130,7 @@ mod tests {
             }
 
             // Validate the graph.
-            match graph.validate_and_complete_and_flatten(None).await {
+            match graph.validate_and_complete(None) {
                 Ok(_) => Ok(()),
                 Err(e) => {
                     // Restore the original graph if validation fails.
@@ -161,7 +160,6 @@ mod tests {
             connections: None,
             exposed_messages: None,
             exposed_properties: None,
-            pre_flatten: None,
         };
 
         // Store the original state.
@@ -250,7 +248,6 @@ mod tests {
             }]),
             exposed_messages: None,
             exposed_properties: None,
-            pre_flatten: None,
         };
 
         // Delete the target extension.
