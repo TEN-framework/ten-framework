@@ -136,6 +136,11 @@ class CosyTTSClient:
     def start(self) -> None:
         """Start the TTS client and initialize components."""
 
+        # Initialize audio data queue
+        self._callback = AsyncIteratorCallback(
+            self.ten_env, self._receive_queue
+        )
+
         # Create synthesizer with configuration
         self.synthesizer = SpeechSynthesizer(
             callback=self._callback,
@@ -166,7 +171,7 @@ class CosyTTSClient:
         """
         if self.synthesizer:
             try:
-                self.synthesizer.streaming_complete()
+                self.synthesizer.async_streaming_complete()
                 self.ten_env.log_info("TTS operation completed")
             except Exception as e:
                 self.ten_env.log_error(f"Error completing TTS: {e}")
@@ -184,11 +189,6 @@ class CosyTTSClient:
             f"Starting TTS synthesis, text: {text}, input_end: {text_input_end}"
         )
 
-        # Initialize audio data queue
-        self._callback = AsyncIteratorCallback(
-            self.ten_env, self._receive_queue
-        )
-
         # Start synthesizer if not initialized
         if self.synthesizer is None:
             self.ten_env.log_info(
@@ -198,12 +198,6 @@ class CosyTTSClient:
 
         # Start streaming TTS synthesis
         self.synthesizer.streaming_call(text)
-
-        # Complete streaming if this is the end
-        if text_input_end:
-            self.complete()
-
-        self.ten_env.log_info(f"TTS synthesis initiated for text: {text}")
 
     async def get_audio_data(self):
         """

@@ -69,13 +69,13 @@ def test_error_debug_information(MockGoogleTTS):
     mock_client_instance = AsyncMock()
 
     # Mock the get method to raise a detailed error
-    async def mock_get(text):
+    async def mock_get(text, request_id):
         # Raise exception before yielding anything
         raise Exception(
             "Detailed error message: Authentication failed with code 401, please check your credentials"
         )
         # This line will never be reached
-        yield b"", 0
+        yield b"", 0, None
 
     # Set up all required attributes and methods
     mock_client_instance.get = mock_get
@@ -131,14 +131,14 @@ def test_error_debug_stack_trace(MockGoogleTTS):
     mock_client_instance = AsyncMock()
 
     # Mock the get method to raise an error
-    async def mock_get(text):
+    async def mock_get(text, request_id):
         try:
             # Simulate a deeper error
             raise ValueError("Invalid parameter")
         except ValueError as e:
             raise Exception(f"Google TTS error: {str(e)}") from e
         # This line will never be reached
-        yield b"", 0
+        yield b"", 0, None
 
     # Set up all required attributes and methods
     mock_client_instance.get = mock_get
@@ -194,13 +194,13 @@ def test_error_debug_request_context(MockGoogleTTS):
     mock_client_instance = AsyncMock()
 
     # Mock the get method to raise an error
-    async def mock_get(text):
+    async def mock_get(text, request_id):
         # Raise exception before yielding anything
         raise Exception(
             f"Error processing text: '{text[:50]}...' (length: {len(text)})"
         )
         # This line will never be reached
-        yield b"", 0
+        yield b"", 0, None
 
     # Set up all required attributes and methods
     mock_client_instance.get = mock_get

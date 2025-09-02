@@ -160,13 +160,19 @@ def test_reconnect_after_connection_drop(MockElevenLabsTTS2Client):
             # to simulate successful TTS response
             async def populate_queue():
                 await mock_instance.response_msgs.put(
-                    (b"fake_audio_data", False, "This request should succeed")
+                    (
+                        b"fake_audio_data",
+                        False,
+                        "This request should succeed",
+                        123,
+                    )
                 )
                 await mock_instance.response_msgs.put(
                     (
                         b"fake_audio_data",
                         True,
                         "This request should succeed after reconnection.",
+                        None,
                     )
                 )
 
@@ -176,7 +182,11 @@ def test_reconnect_after_connection_drop(MockElevenLabsTTS2Client):
 
     # Mock the client constructor
     def mock_client_init(
-        config, ten_env, error_callback=None, response_msgs=None
+        config,
+        ten_env,
+        error_callback=None,
+        response_msgs=None,
+        ttfb_metrics_callback=None,
     ):
         mock_instance.response_msgs = response_msgs
         return mock_instance
