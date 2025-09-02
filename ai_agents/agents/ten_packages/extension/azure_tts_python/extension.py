@@ -3,6 +3,7 @@
 # Licensed under the Apache License, Version 2.0.
 # See the LICENSE file for more information.
 #
+import asyncio
 import time
 import traceback
 from pathlib import Path
@@ -59,8 +60,10 @@ class AzureTTSExtension(AsyncTTS2BaseExtension):
             self.client = AzureTTS(
                 self.config.params, chunk_size=self.config.chunk_size
             )
-            await self.client.start_connection(
-                pre_connect=self.config.pre_connect
+            asyncio.create_task(
+                self.client.start_connection(
+                    pre_connect=self.config.pre_connect
+                )
             )
             ten_env.log_info("KEYPOINT tts connect successfully")
         except Exception as e:
@@ -75,6 +78,15 @@ class AzureTTSExtension(AsyncTTS2BaseExtension):
                     message=str(e),
                 ),
             )
+
+    async def _wait_until_connected(self, timeout: float = 30.0) -> None:
+        start_time = time.time()
+        while not self.client.is_connected:
+            await asyncio.sleep(0.1)
+            if time.time() - start_time > timeout:
+                raise TimeoutError(
+                    f"wait for connected to the speech service timeout: {timeout}s"
+                )
 
     @override
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
@@ -225,14 +237,16 @@ class AzureTTSExtension(AsyncTTS2BaseExtension):
 
     @override
     async def request_tts(self, t: TTSTextInput) -> None:
-        if self.client is None or not self.client.is_connected:
-            self.ten_env.log_error(
-                "KEYPOINT tts client is not initialized, ignoring TTS request"
-            )
-            return
         self.ten_env.log_info(
             f"KEYPOINT Requesting tts for text: {t.text}, text_input_end: {t.text_input_end} request ID: {t.request_id}"
         )
+        try:
+            await self._wait_until_connected()
+        except Exception:
+            self.ten_env.log_error(
+                "KEYPOINT tts client connection failed, ignoring TTS request"
+            )
+            return
         # check if request_id is in flush_request_ids
         if t.request_id in self.flush_request_ids:
             error_msg = (
@@ -263,8 +277,6 @@ class AzureTTSExtension(AsyncTTS2BaseExtension):
             )
             return
 
-        # create a new task to synthesize the audio
-        # asyncio.create_task(self._async_synthesize(t))
         await self._async_synthesize(t)
 
     def synthesize_audio_sample_rate(self) -> int:
