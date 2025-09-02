@@ -9,7 +9,7 @@ import type { editor as MonacoEditor } from "monaco-editor";
 import { z } from "zod";
 import type { EDocLinkKey } from "@/types/doc";
 import type { ETenPackageType } from "@/types/extension";
-import type { TCustomNode } from "@/types/flow";
+import type { ECustomNodeType, TCustomNode } from "@/types/flow";
 import type { EConnectionType, EGraphActions, GraphInfo } from "@/types/graphs";
 
 export enum EWidgetDisplayType {
@@ -118,8 +118,14 @@ export interface IEditorWidget extends IWidgetBase<IEditorWidgetData> {
 // 3. Custom Connection Widget
 export interface ICustomConnectionWidgetData {
   id: string;
-  source: string;
-  target?: string;
+  source: {
+    type: ECustomNodeType;
+    name: string;
+  };
+  target?: {
+    type: ECustomNodeType;
+    name: string;
+  };
   filters?: {
     type?: EConnectionType;
     source?: boolean;

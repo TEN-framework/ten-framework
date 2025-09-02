@@ -26,11 +26,10 @@ import { TEN_FRAMEWORK_GH_OWNER, TEN_FRAMEWORK_GH_REPO } from "@/constants";
 import { cn } from "@/lib/utils";
 
 interface AppBarProps {
-  onAutoLayout: () => void;
   className?: string;
 }
 
-export default function AppBar({ onAutoLayout, className }: AppBarProps) {
+export default function AppBar({ className }: AppBarProps) {
   // init disable state
   const [disableMenuClick, setDisableMenuClick] = React.useState(false);
 
@@ -117,7 +116,6 @@ export default function AppBar({ onAutoLayout, className }: AppBarProps) {
             disableMenuClick={disableMenuClick}
             idx={2}
             triggerListRef={targetMenuListRef}
-            onAutoLayout={onAutoLayout}
           />
           <ExtensionMenu
             disableMenuClick={disableMenuClick}
