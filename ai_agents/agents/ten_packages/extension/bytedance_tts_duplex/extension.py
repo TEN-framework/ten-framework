@@ -237,7 +237,7 @@ class BytedanceTTSDuplexExtension(AsyncTTS2BaseExtension):
                 if t.metadata is not None:
                     self.session_id = t.metadata.get("session_id", "")
                     self.current_turn_id = t.metadata.get("turn_id", -1)
-                self.request_start_ts = None
+                self.request_start_ts = datetime.now()
                 self.request_total_audio_duration = 0
 
                 if self.config.dump:

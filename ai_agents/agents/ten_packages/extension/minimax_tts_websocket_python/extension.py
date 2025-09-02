@@ -216,7 +216,7 @@ class MinimaxTTSWebsocketExtension(AsyncTTS2BaseExtension):
                 self.ten_env.log_info(
                     f"KEYPOINT New TTS request with ID: {t.request_id}"
                 )
-                self.sent_ts = None  # Reset for new request
+                self.sent_ts = datetime.now()  # Reset for new request
                 self.current_request_id = t.request_id
                 self.current_request_finished = False
                 self.client.first_chunk_processed = False
