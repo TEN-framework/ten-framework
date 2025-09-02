@@ -537,10 +537,5 @@ export const resetNodesAndEdgesByGraphs = async (graphs: GraphInfo[]) => {
 
   const nodesWithAddonInfo = await updateNodesWithAddonInfo(rawNodes);
   const nodesWithGeometry = await syncGraphNodeGeometry(nodesWithAddonInfo);
-  // todo: remove
-  console.log("resetNodesAndEdgesByGraphs", {
-    nodes: nodesWithGeometry,
-    edges: rawEdges,
-  });
   return { nodes: nodesWithGeometry, edges: rawEdges };
 };
