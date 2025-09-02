@@ -203,144 +203,6 @@ def test_dump_functionality(MockBytedanceV3Client):
             shutil.rmtree(DUMP_PATH)
 
 
-# # ================ test text_input_end ================
-# class ExtensionTesterTextInputEnd(ExtensionTester):
-#     def __init__(self):
-#         super().__init__()
-#         self.ten_env: TenEnvTester | None = None
-#         self.first_request_audio_end_received = False
-#         self.second_request_error_received = False
-#         self.error_code = None
-#         self.error_message = None
-
-#     def on_start(self, ten_env_tester: TenEnvTester) -> None:
-#         self.ten_env = ten_env_tester
-#         ten_env_tester.log_info(
-#             "TextInputEnd test started, sending first TTS request."
-#         )
-
-#         # 1. Send first request with text_input_end=True
-#         tts_input_1 = TTSTextInput(
-#             request_id="tts_request_1",
-#             text="hello word, hello agora",
-#             text_input_end=True,
-#         )
-#         data = Data.create("tts_text_input")
-#         data.set_property_from_json(None, tts_input_1.model_dump_json())
-#         ten_env_tester.send_data(data)
-#         ten_env_tester.on_start_done()
-
-#     def send_second_request(self):
-#         """Sends the second TTS request that should be ignored."""
-#         if self.ten_env is None:
-#             return
-
-#         self.ten_env.log_info("Sending second TTS request, expecting an error.")
-#         # 2. Send second request with text_input_end=False
-#         tts_input_2 = TTSTextInput(
-#             request_id="tts_request_1",
-#             text="this should be ignored",
-#             text_input_end=False,
-#         )
-#         data = Data.create("tts_text_input")
-#         data.set_property_from_json(None, tts_input_2.model_dump_json())
-#         self.ten_env.send_data(data)
-
-#     def on_data(self, ten_env: TenEnvTester, data) -> None:
-#         name = data.get_name()
-#         json_str, _ = data.get_property_to_json(None)
-#         payload = json.loads(json_str) if json_str else {}
-#         request_id = payload.get("id")
-
-#         if name == "tts_audio_end":
-#             if not self.first_request_audio_end_received:
-#                 ten_env.log_info(
-#                     "Received tts_audio_end for the first request."
-#                 )
-#                 self.first_request_audio_end_received = True
-#                 self.send_second_request()
-#             return
-
-#         if name == "error" and request_id == "tts_request_1":
-#             ten_env.log_info(
-#                 f"Received expected error for the second request: {payload}"
-#             )
-#             self.second_request_error_received = True
-#             self.error_code = payload.get("code")
-#             self.error_message = payload.get("message")
-#             ten_env.stop_test()
-
-
-# @patch("bytedance_tts_duplex.extension.BytedanceV3Client")
-# def test_text_input_end_logic(MockBytedanceV3Client):
-#     """
-#     Tests that after a request with text_input_end=True is processed,
-#     subsequent requests with the same request_id are ignored and trigger an error.
-#     """
-#     print("Starting test_text_input_end_logic with mock...")
-
-#     # --- Mock Configuration ---
-#     mock_instance = MockBytedanceV3Client.return_value
-#     mock_instance.connect = AsyncMock()
-#     mock_instance.start_connection = AsyncMock()
-#     mock_instance.start_session = AsyncMock()
-#     mock_instance.send_text = AsyncMock()
-#     mock_instance.finish_session = AsyncMock()
-#     mock_instance.finish_connection = AsyncMock()
-#     mock_instance.close = AsyncMock()
-
-#     # Mock the client constructor to handle the response queue
-#     def mock_client_init(config, ten_env, vendor, response_msgs):
-#         mock_instance.response_msgs = response_msgs
-
-#         # Store the original send_text method to add our logic
-#         original_send_text = mock_instance.send_text
-
-#         async def mock_send_text_with_queue_population(text: str):
-#             # Call the original mocked send_text first
-#             await original_send_text(text)
-
-#             # Then populate the queue with audio data
-#             async def populate_queue():
-#                 EVENT_TTSResponse = 352
-#                 EVENT_SessionFinished = 152
-#                 await response_msgs.put((EVENT_TTSResponse, b"\x11\x22\x33"))
-#                 await response_msgs.put((EVENT_SessionFinished, b""))
-
-#             asyncio.create_task(populate_queue())
-
-#         # Replace the send_text method
-#         mock_instance.send_text = AsyncMock(
-#             side_effect=mock_send_text_with_queue_population
-#         )
-
-#         return mock_instance
-
-#     MockBytedanceV3Client.side_effect = mock_client_init
-
-#     # --- Test Setup ---
-#     config = {"params": {"appid": "a_valid_appid", "token": "a_valid_token"}}
-#     tester = ExtensionTesterTextInputEnd()
-#     tester.set_test_mode_single("bytedance_tts_duplex", json.dumps(config))
-
-#     print("Running text_input_end logic test...")
-#     tester.run()
-#     print("text_input_end logic test completed.")
-
-#     # --- Assertions ---
-#     assert (
-#         tester.first_request_audio_end_received
-#     ), "Did not receive tts_audio_end for the first request."
-#     assert (
-#         tester.second_request_error_received
-#     ), "Did not receive the expected error for the second request."
-#     assert (
-#         tester.error_code == 1000
-#     ), f"Expected error code 1000, but got {tester.error_code}"
-
-#     print("✅ Text input end logic test passed successfully.")
-
-
 # ================ test flush ================
 class ExtensionTesterFlush(ExtensionTester):
     def __init__(self):
@@ -467,8 +329,11 @@ def test_flush_logic(MockBytedanceV3Client):
         mock_instance.response_msgs = response_msgs
 
         async def populate_queue():
+            EVENT_TTSMetric = 888
             EVENT_TTSResponse = 352
             EVENT_SessionFinished = 152
+
+            await asyncio.sleep(0.5)
 
             # Continuously send audio chunks until cancelled
             for _ in range(20):
@@ -478,6 +343,10 @@ def test_flush_logic(MockBytedanceV3Client):
                     await response_msgs.put((EVENT_SessionFinished, b""))
                     return
 
+                # send metric event
+                await response_msgs.put((EVENT_TTSMetric, b""))
+
+                # send audio chunk
                 await response_msgs.put(
                     (EVENT_TTSResponse, b"\x11\x22\x33" * 100)
                 )
