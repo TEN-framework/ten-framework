@@ -51,8 +51,8 @@ pub async fn load_graph_from_uri(
 }
 
 /// Represents the content of a graph field in predefined_graphs.
-/// This can either contain an import_uri or direct graph content (nodes,
-/// connections, etc.).
+/// This can either contain an import_uri or direct graph content (both original
+/// and flattened).
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GraphContent {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -60,6 +60,9 @@ pub struct GraphContent {
 
     #[serde(flatten)]
     pub graph: Graph,
+
+    #[serde(skip)]
+    pub flattened_graph: Option<Graph>,
 }
 
 impl GraphContent {
@@ -165,7 +168,11 @@ impl GraphContent {
             self.graph = graph;
         }
 
-        self.graph.validate_and_complete_and_flatten(current_base_dir).await
+        self.graph.validate_and_complete(current_base_dir)?;
+
+        self.flattened_graph = self.graph.flatten_graph(current_base_dir).await?;
+
+        Ok(())
     }
 }
 
@@ -201,5 +208,14 @@ impl GraphInfo {
 
     pub async fn validate_and_complete_and_flatten(&mut self) -> Result<()> {
         self.graph.validate_and_complete_and_flatten(self.app_base_dir.as_deref()).await
+    }
+
+    pub async fn to_json_with_flattened_graph(&mut self) -> Result<String> {
+        self.validate_and_complete_and_flatten().await?;
+        let mut graph_info = self.clone();
+        // Replace the graph with the flattened graph
+        graph_info.graph.graph = self.graph.flattened_graph.as_ref().unwrap().clone();
+        let json = serde_json::to_string(&graph_info)?;
+        Ok(json)
     }
 }

@@ -25,6 +25,7 @@ mod tests {
             ERR_MSG_GRAPH_LOCALHOST_FORBIDDEN_IN_SINGLE_APP_MODE,
         },
         graph::{
+            graph_info::GraphContent,
             node::{FilterOperator, GraphNode},
             Graph,
         },
@@ -413,11 +414,13 @@ mod tests {
         let graph_str =
             include_str!("../../test_data/graph_with_sources/graph_connection_with_source.json");
 
-        let graph = Graph::from_str_with_base_dir(graph_str, None).await;
+        let mut graph_content = serde_json::from_str::<GraphContent>(graph_str).unwrap();
 
-        assert!(graph.is_ok());
+        let _ = graph_content.validate_and_complete_and_flatten(None).await;
 
-        let connections = graph.unwrap().connections.unwrap();
+        let graph = graph_content.flattened_graph.as_ref().unwrap();
+
+        let connections = graph.connections.as_ref().unwrap();
         let loc = &connections.first().unwrap().loc;
         assert_eq!(loc.extension, Some("another_ext".to_string()));
 

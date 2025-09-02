@@ -139,7 +139,7 @@ pub async fn graph_delete_extension_node(
     }
 
     // Validate the graph.
-    match graph.validate_and_complete_and_flatten(None).await {
+    match graph.validate_and_complete(None) {
         Ok(_) => Ok(()),
         Err(e) => {
             // Restore the original graph if validation fails.
