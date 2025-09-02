@@ -38,7 +38,6 @@ export interface IGraphNodeData {
 }
 export type TGraphNode = Node<IGraphNodeData, ECustomNodeType.GRAPH>;
 
-// todo: refine it
 export interface ISelectorNodeData extends BackendNodeSelector {
   _type: ECustomNodeType.SELECTOR;
   graph: GraphInfo;
@@ -77,6 +76,7 @@ export type TCustomEdgeData = {
     name: string;
     app?: string | null;
   };
+  isReversed: boolean;
 };
 
 export type TCustomEdge = Edge<TCustomEdgeData, "customEdge">;

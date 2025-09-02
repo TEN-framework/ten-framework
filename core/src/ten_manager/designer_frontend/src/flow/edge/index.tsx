@@ -48,7 +48,7 @@ export function CustomEdge({
           fill="none"
           strokeDasharray="5,5"
           stroke="url(#edge-gradient)"
-          strokeWidth="2"
+          strokeWidth={2}
           opacity="0.75"
         >
           <animate
