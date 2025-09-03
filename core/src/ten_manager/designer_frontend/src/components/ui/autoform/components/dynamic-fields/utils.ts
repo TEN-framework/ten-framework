@@ -200,7 +200,10 @@ const convertPropertyToZod = (property: TPropertyDefinition): z.ZodType => {
         const objectSchema: Record<string, z.ZodType> = {};
 
         for (const [key, value] of Object.entries(properties)) {
-          objectSchema[key] = convertPropertyToZod(value);
+          // Make nested properties optional by default so that
+          // fields starting from the second level are not required
+          // unless explicitly enforced elsewhere.
+          objectSchema[key] = convertPropertyToZod(value).optional();
         }
 
         zodType = z.object(objectSchema);

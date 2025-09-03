@@ -652,23 +652,25 @@ export const GraphConnectionCreationWidget = (props: {
   }, [compatibleMessages]);
 
   const [srcNodes, destNodes] = React.useMemo(() => {
-    return nodes.reduce(
-      (prev, cur) => {
-        if (cur.data.name === src_node?.data.name) {
-          prev[0].push(cur);
+    return nodes
+      .filter((n) => n.data.graph.graph_id === graph_id)
+      .reduce(
+        (prev, cur) => {
+          if (cur.data.name === src_node?.data.name) {
+            prev[0].push(cur);
+            return prev;
+          }
+          if (cur.data.name === dest_node?.data.name) {
+            prev[1].push(cur);
+            return prev;
+          }
+          const targetArray = src_node ? prev[1] : prev[0];
+          targetArray.push(cur);
           return prev;
-        }
-        if (cur.data.name === dest_node?.data.name) {
-          prev[1].push(cur);
-          return prev;
-        }
-        const targetArray = src_node ? prev[1] : prev[0];
-        targetArray.push(cur);
-        return prev;
-      },
-      [[], []] as [TCustomNode[], TCustomNode[]]
-    );
-  }, [nodes, src_node, dest_node?.data.name]);
+        },
+        [[], []] as [TCustomNode[], TCustomNode[]]
+      );
+  }, [nodes, graph_id, src_node, dest_node?.data.name]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: <ignore>
   React.useEffect(() => {
