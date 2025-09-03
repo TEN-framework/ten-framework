@@ -22,7 +22,7 @@ permissions:
 
 jobs:
   call-check-pr-status:
-    uses: ./.github/workflows/utils/check_pr_status.yml
+    uses: ./.github/workflows/_check_pr_status.yml
 
   codeql:
     needs: call-check-pr-status

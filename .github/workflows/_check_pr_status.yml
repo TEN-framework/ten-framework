@@ -19,8 +19,8 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            // Set default value first
-            core.setOutput('should_continue', 'true');
+            console.log('Event name:', context.eventName);
+            console.log('Payload keys:', Object.keys(context.payload));
 
             // Only check for PR events
             if (context.eventName !== 'pull_request') {
@@ -29,8 +29,17 @@ jobs:
               return;
             }
 
+            // Ensure we have PR data
+            if (!context.payload.pull_request) {
+              console.log('No pull_request data in payload, continuing...');
+              core.setOutput('should_continue', 'true');
+              return;
+            }
+
             const { owner, repo } = context.repo;
             const prNumber = context.payload.pull_request.number;
+
+            console.log(`Checking PR #${prNumber} status...`);
 
             try {
               const pr = await github.rest.pulls.get({
@@ -38,6 +47,8 @@ jobs:
                 repo,
                 pull_number: prNumber,
               });
+
+              console.log(`PR #${prNumber} state: ${pr.data.state}, merged: ${pr.data.merged}`);
 
               if (pr.data.state === 'closed') {
                 if (pr.data.merged) {
@@ -51,6 +62,8 @@ jobs:
                 core.setOutput('should_continue', 'true');
               }
             } catch (error) {
-              console.log(`Error checking PR status: ${error.message}. Continuing workflow.`);
+              console.error(`Error checking PR status: ${error.message}`);
+              console.log('Error details:', error);
+              console.log('Continuing workflow due to error...');
               core.setOutput('should_continue', 'true');
             }

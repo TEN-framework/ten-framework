@@ -26,7 +26,7 @@ concurrency:
 
 jobs:
   call-check-pr-status:
-    uses: ./.github/workflows/utils/check_pr_status.yml
+    uses: ./.github/workflows/_check_pr_status.yml
 
   # Building ten_runtime without the ten_rust library (i.e., ten_enable_ten_rust_apis=false).
   build:
