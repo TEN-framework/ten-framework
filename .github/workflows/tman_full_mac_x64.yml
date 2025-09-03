@@ -19,7 +19,12 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  call-check-pr-status:
+    uses: ./.github/workflows/utils/check_pr_status.yml
+
   build:
+    needs: call-check-pr-status
+    if: ${{ needs.call-check-pr-status.outputs.should_continue == 'true' }}
     runs-on: macos-13
     strategy:
       matrix:

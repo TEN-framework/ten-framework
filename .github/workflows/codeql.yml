@@ -21,7 +21,12 @@ permissions:
   contents: read
 
 jobs:
+  call-check-pr-status:
+    uses: ./.github/workflows/utils/check_pr_status.yml
+
   codeql:
+    needs: call-check-pr-status
+    if: ${{ needs.call-check-pr-status.outputs.should_continue == 'true' }}
     name: Analyze (${{ matrix.language }})
     runs-on: ${{ (matrix.language == 'swift' && 'macos-latest') || 'ubuntu-latest' }}
     container:

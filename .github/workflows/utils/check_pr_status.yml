@@ -19,6 +19,9 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
+            // Set default value first
+            core.setOutput('should_continue', 'true');
+
             // Only check for PR events
             if (context.eventName !== 'pull_request') {
               console.log('Not a PR event, continuing...');
