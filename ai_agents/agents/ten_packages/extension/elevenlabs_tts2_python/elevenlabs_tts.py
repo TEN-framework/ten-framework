@@ -22,6 +22,7 @@ from ten_ai_base.message import (
 from ten_ai_base import ModuleType
 from ten_runtime import AsyncTenEnv
 from .config import ElevenLabsTTS2Config
+import time
 
 
 class ElevenLabsTTS2Synthesizer:
@@ -58,7 +59,10 @@ class ElevenLabsTTS2Synthesizer:
         # record whether to send text in connection
         self.send_text_in_connection = False
         self.query_params = "?"
+        self.receive_count = 0
 
+        self.cur_request_id = ""
+        self.request_start_ts = None
         # generate query parameters
         if self.config and self.config.params:
             param_map = [
@@ -239,7 +243,7 @@ class ElevenLabsTTS2Synthesizer:
                     self.ten_env.log_debug(
                         "No new text input, sending space text to keep alive."
                     )
-                    await ws.send(json.dumps({"text": " ", "flush": True}))
+                    await ws.send(json.dumps({"text": " "}))
                 if text_data is None:
                     self.ten_env.log_debug(
                         "Received None from queue, ending send loop"
@@ -247,12 +251,13 @@ class ElevenLabsTTS2Synthesizer:
                     continue
                 self.send_text_in_connection = True
                 if text_data.text.strip() != "":
-                    await ws.send(
-                        json.dumps({"text": text_data.text, "flush": True})
-                    )
+                    await ws.send(json.dumps({"text": text_data.text}))
                     self.ten_env.log_debug(
                         f"Sent text to WebSocket: {text_data.text[:50]}..."
                     )
+                    if self.cur_request_id != text_data.request_id:
+                        self.cur_request_id = text_data.request_id
+                        self.request_start_ts = time.time()
 
                 if text_data.text_input_end == True:
                     await ws.send(json.dumps({"text": ""}))
@@ -274,12 +279,8 @@ class ElevenLabsTTS2Synthesizer:
             # Mark receive loop as ready
             self._receive_ready_event.set()
 
-            async for message in ws:
-                if self._session_closing:
-                    self.ten_env.log_warn(
-                        "Session is closing, break receive loop."
-                    )
-                    break
+            while self._session_closing == False:
+                message = await ws.recv()
 
                 try:
                     data = json.loads(message)
@@ -301,12 +302,27 @@ class ElevenLabsTTS2Synthesizer:
                     if data.get("isFinal"):
                         isFinal = data.get("isFinal")
 
+                    elapsed_time = None
                     if data.get("audio"):
                         audio_data = base64.b64decode(data["audio"])
+                        self.receive_count += 1
+                        if (
+                            self.request_start_ts is not None
+                            and self.cur_request_id != ""
+                        ):
+                            elapsed_time = int(
+                                (time.time() - self.request_start_ts) * 1000
+                            )
+
+                            self.request_start_ts = None
 
                     if self.response_msgs is not None:
+                        self.ten_env.log_debug(
+                            f"Received audio data from WebSocket count: {self.receive_count}"
+                        )
+                        self.receive_count += 1
                         await self.response_msgs.put(
-                            (audio_data, isFinal, text)
+                            (audio_data, isFinal, text, elapsed_time)
                         )
 
                     if isFinal:
@@ -446,7 +462,6 @@ class ElevenLabsTTS2Client:
         self.ten_env = ten_env
         self.error_callback = error_callback
         self.response_msgs = response_msgs
-
         # Current active synthesizer
         self.synthesizer: ElevenLabsTTS2Synthesizer = self._create_synthesizer()
 

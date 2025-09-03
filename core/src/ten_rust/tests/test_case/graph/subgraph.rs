@@ -11,7 +11,7 @@ mod tests {
     use tempfile::tempdir;
     use ten_rust::graph::{
         connection::{self, GraphConnection},
-        node::{GraphContent, GraphNode, GraphNodeType},
+        node::{GraphNode, GraphNodeType, GraphResource},
         Graph, GraphExposedMessage, GraphExposedMessageType, GraphExposedProperty,
     };
 
@@ -34,7 +34,7 @@ mod tests {
                 GraphNode::new_subgraph_node(
                     "subgraph_1".to_string(),
                     Some(serde_json::json!({"app_id": "${env:AGORA_APP_ID}"})),
-                    GraphContent {
+                    GraphResource {
                         import_uri: format!("file://{}", subgraph_file_path.to_str().unwrap()),
                     },
                 ),
@@ -65,7 +65,6 @@ mod tests {
             }]),
             exposed_messages: Some(vec![]),
             exposed_properties: Some(vec![]),
-            pre_flatten: None,
         };
 
         // Create a subgraph to be loaded
@@ -116,7 +115,6 @@ mod tests {
                 name: "app_id".to_string(),
                 subgraph: None,
             }]),
-            pre_flatten: None,
         };
 
         // Write the subgraph to a file
@@ -202,7 +200,7 @@ mod tests {
                 GraphNode::new_subgraph_node(
                     "subgraph_2".to_string(),
                     None,
-                    GraphContent {
+                    GraphResource {
                         import_uri: format!("file://{}", subgraph_file_path.to_str().unwrap()),
                     },
                 ),
@@ -267,7 +265,6 @@ mod tests {
                 name: "app_id".to_string(),
                 subgraph: None,
             }]),
-            pre_flatten: None,
         };
 
         // Create a subgraph with exposed_messages
@@ -304,7 +301,6 @@ mod tests {
                 },
             ]),
             exposed_properties: None,
-            pre_flatten: None,
         };
 
         // Write the subgraph to a file
@@ -384,7 +380,7 @@ mod tests {
                 GraphNode::new_subgraph_node(
                     "subgraph_2".to_string(),
                     None,
-                    GraphContent {
+                    GraphResource {
                         import_uri: format!("file://{}", subgraph_file_path.to_str().unwrap()),
                     },
                 ),
@@ -415,7 +411,6 @@ mod tests {
             }]),
             exposed_messages: None,
             exposed_properties: None,
-            pre_flatten: None,
         };
 
         // Create a subgraph with exposed_messages that doesn't include the
@@ -436,7 +431,6 @@ mod tests {
                 subgraph: Some("subgraph_2".to_string()),
             }]),
             exposed_properties: None,
-            pre_flatten: None,
         };
 
         // Write the subgraph to a file
@@ -470,7 +464,7 @@ mod tests {
                 GraphNode::new_subgraph_node(
                     "subgraph_2".to_string(),
                     None,
-                    GraphContent {
+                    GraphResource {
                         import_uri: format!("file://{}", subgraph_file_path.to_str().unwrap()),
                     },
                 ),
@@ -501,7 +495,6 @@ mod tests {
             }]),
             exposed_messages: None,
             exposed_properties: None,
-            pre_flatten: None,
         };
 
         // Create a subgraph without exposed_messages
@@ -516,7 +509,6 @@ mod tests {
             connections: None,
             exposed_messages: None,
             exposed_properties: None,
-            pre_flatten: None,
         };
 
         // Write the subgraph to a file
@@ -552,7 +544,7 @@ mod tests {
                 GraphNode::new_subgraph_node(
                     "subgraph_1".to_string(),
                     None,
-                    GraphContent {
+                    GraphResource {
                         import_uri: format!("file://{}", subgraph1_file_path.to_str().unwrap()),
                     },
                 ),
@@ -583,7 +575,6 @@ mod tests {
             }]),
             exposed_messages: None,
             exposed_properties: None,
-            pre_flatten: None,
         };
 
         // Create a subgraph that contains another subgraph (nested)
@@ -599,7 +590,7 @@ mod tests {
                 GraphNode::new_subgraph_node(
                     "subgraph_2".to_string(),
                     None,
-                    GraphContent {
+                    GraphResource {
                         import_uri: format!("file://{}", subgraph2_file_path.to_str().unwrap()),
                     },
                 ),
@@ -630,7 +621,6 @@ mod tests {
             }]),
             exposed_messages: None,
             exposed_properties: None,
-            pre_flatten: None,
         };
 
         // Create the innermost subgraph
@@ -677,7 +667,6 @@ mod tests {
             }]),
             exposed_messages: None,
             exposed_properties: None,
-            pre_flatten: None,
         };
 
         // Write the subgraphs to files
@@ -775,7 +764,7 @@ mod tests {
                 GraphNode::new_subgraph_node(
                     "subgraph_1".to_string(),
                     None,
-                    GraphContent {
+                    GraphResource {
                         import_uri: format!("file://{}", subgraph1_file_path.to_str().unwrap()),
                     },
                 ),
@@ -806,7 +795,6 @@ mod tests {
             }]),
             exposed_messages: None,
             exposed_properties: None,
-            pre_flatten: None,
         };
 
         // Create a subgraph that contains another subgraph (nested)
@@ -822,7 +810,7 @@ mod tests {
                 GraphNode::new_subgraph_node(
                     "subgraph_2".to_string(),
                     None,
-                    GraphContent {
+                    GraphResource {
                         import_uri: format!("file://{}", subgraph2_file_path.to_str().unwrap()),
                     },
                 ),
@@ -835,7 +823,6 @@ mod tests {
                 subgraph: Some("subgraph_2".to_string()),
             }]),
             exposed_properties: None,
-            pre_flatten: None,
         };
 
         // Create the innermost subgraph
@@ -864,7 +851,6 @@ mod tests {
                 extension: Some("ext_z".to_string()),
             }]),
             exposed_properties: None,
-            pre_flatten: None,
         };
 
         // Write the subgraphs to files
@@ -913,14 +899,13 @@ mod tests {
             nodes: vec![GraphNode::new_subgraph_node(
                 "subgraph_1".to_string(),
                 None,
-                GraphContent {
+                GraphResource {
                     import_uri: "".to_string(), // Missing import_uri
                 },
             )],
             connections: None,
             exposed_messages: None,
             exposed_properties: None,
-            pre_flatten: None,
         };
 
         let result = main_graph.flatten_graph(None).await;
@@ -951,7 +936,7 @@ mod tests {
                 GraphNode::new_subgraph_node(
                     "subgraph_3".to_string(),
                     None,
-                    GraphContent {
+                    GraphResource {
                         import_uri: format!("file://{}", subgraph_file_path.to_str().unwrap()),
                     },
                 ),
@@ -1082,7 +1067,6 @@ mod tests {
             ]),
             exposed_messages: None,
             exposed_properties: None,
-            pre_flatten: None,
         };
 
         // Create a subgraph with exposed_messages for all message types
@@ -1157,7 +1141,6 @@ mod tests {
                 },
             ]),
             exposed_properties: None,
-            pre_flatten: None,
         };
 
         // Write the subgraph to a file
@@ -1255,7 +1238,7 @@ mod tests {
                 GraphNode::new_subgraph_node(
                     "subgraph_1".to_string(),
                     None,
-                    GraphContent {
+                    GraphResource {
                         import_uri: format!("file://{}", subgraph_file_path.to_str().unwrap()),
                     },
                 ),
@@ -1276,7 +1259,6 @@ mod tests {
                     subgraph: Some("subgraph_1".to_string()),
                 },
             ]),
-            pre_flatten: None,
         };
 
         // Create a subgraph with exposed_properties
@@ -1304,7 +1286,6 @@ mod tests {
                 name: "config_b".to_string(),
                 subgraph: None,
             }]),
-            pre_flatten: None,
         };
 
         // Write the subgraph to a file

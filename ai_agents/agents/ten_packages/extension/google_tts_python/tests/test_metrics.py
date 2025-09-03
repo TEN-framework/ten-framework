@@ -76,12 +76,12 @@ def test_ttfb_metrics(MockGoogleTTS):
     mock_client_instance = AsyncMock()
 
     # Mock the get method to return audio data with delay
-    async def mock_get(text):
+    async def mock_get(text, request_id):
         # Add delay to ensure TTFB calculation works
         await asyncio.sleep(0.01)
         # Return audio data in the expected format
-        yield b"fake_audio_data", 1  # EVENT_TTS_RESPONSE
-        yield None, 2  # EVENT_TTS_REQUEST_END
+        yield b"fake_audio_data", 1, 123  # EVENT_TTS_RESPONSE
+        yield None, 2, None  # EVENT_TTS_REQUEST_END
 
     mock_client_instance.get = mock_get
     mock_client_instance.cancel = AsyncMock()
@@ -135,12 +135,12 @@ def test_audio_timing_metrics(MockGoogleTTS):
     mock_client_instance = AsyncMock()
 
     # Mock the get method to return audio data
-    async def mock_get(text):
+    async def mock_get(tex, request_id):
         # Add delay to ensure TTFB calculation works
         await asyncio.sleep(0.01)
         # Return audio data in the expected format
-        yield b"fake_audio_data", 1  # EVENT_TTS_RESPONSE
-        yield None, 2  # EVENT_TTS_REQUEST_END
+        yield b"fake_audio_data", 1, 123  # EVENT_TTS_RESPONSE
+        yield None, 2, None  # EVENT_TTS_REQUEST_END
 
     mock_client_instance.get = mock_get
     mock_client_instance.cancel = AsyncMock()
@@ -184,13 +184,13 @@ def test_metrics_with_long_text(MockGoogleTTS):
     mock_client_instance = AsyncMock()
 
     # Mock the get method to return audio data with multiple chunks
-    async def mock_get(text):
+    async def mock_get(text, request_id):
         # Add delay to ensure TTFB calculation works
         await asyncio.sleep(0.01)
         # Return multiple audio chunks to simulate long text
         for i in range(5):
-            yield f"fake_audio_data_{i}".encode(), 1  # EVENT_TTS_RESPONSE
-        yield None, 2  # EVENT_TTS_REQUEST_END
+            yield f"fake_audio_data_{i}".encode(), 1, 123  # EVENT_TTS_RESPONSE
+        yield None, 2, None  # EVENT_TTS_REQUEST_END
 
     mock_client_instance.get = mock_get
     mock_client_instance.cancel = AsyncMock()
@@ -241,12 +241,12 @@ def test_metrics_with_fast_response(MockGoogleTTS):
     mock_client_instance = AsyncMock()
 
     # Mock the get method to return audio data immediately
-    async def mock_get(text):
+    async def mock_get(text, request_id):
         # Add delay to ensure TTFB calculation works
         await asyncio.sleep(0.01)
         # Return audio data immediately (no delay)
-        yield b"fake_audio_data", 1  # EVENT_TTS_RESPONSE
-        yield None, 2  # EVENT_TTS_REQUEST_END
+        yield b"fake_audio_data", 1, 123  # EVENT_TTS_RESPONSE
+        yield None, 2, None  # EVENT_TTS_REQUEST_END
 
     mock_client_instance.get = mock_get
     mock_client_instance.cancel = AsyncMock()
@@ -300,11 +300,11 @@ def test_metrics_with_flush(MockGoogleTTS):
     mock_client_instance = AsyncMock()
 
     # Mock the get method to return audio data
-    async def mock_get(text):
+    async def mock_get(text, request_id):
         # Add delay to ensure TTFB calculation works
         await asyncio.sleep(0.01)
         # Return audio data in the expected format
-        yield b"fake_audio_data", 1  # EVENT_TTS_RESPONSE
+        yield b"fake_audio_data", 1, 123  # EVENT_TTS_RESPONSE
         # After flush, should not continue
 
     mock_client_instance.get = mock_get
