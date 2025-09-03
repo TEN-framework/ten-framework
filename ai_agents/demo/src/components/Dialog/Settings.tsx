@@ -39,7 +39,7 @@ import { useForm } from "react-hook-form"
 import { z } from "zod"
 import { toast } from "sonner"
 import { useAppDispatch, useAppSelector } from "@/common/hooks"
-import { DEFAULT_DIFY_SETTINGS, ECozeBaseUrl } from "@/common/constant"
+import { DEFAULT_DIFY_SETTINGS, DEFAULT_OCEAN_BASE_SETTINGS, ECozeBaseUrl } from "@/common/constant"
 import {
   setAgentSettings,
   setCozeSettings,
@@ -47,6 +47,8 @@ import {
   resetDifySettings,
   setGlobalSettingsDialog,
   setDifySettings,
+  setOceanBaseSettings,
+  resetOceanBaseSettings,
 } from "@/store/reducers/global"
 
 const TABS_OPTIONS = [
@@ -75,6 +77,10 @@ export const useSettingsTabs = () => {
 
   const enableDifySettingsMemo = React.useMemo(() => {
     return isDifyGraph(graphName)
+  }, [graphName])
+
+  const enableOceanBaseSettingsMemo = React.useMemo(() => {
+    return isOceanBaseGraph(graphName)
   }, [graphName])
 
   const enableGreetingsOrPromptMemo: { greeting: boolean, prompt: boolean } = React.useMemo(() => {
@@ -118,10 +124,17 @@ export const useSettingsTabs = () => {
           { label: "Dify", value: "dify" },
         ]
       )
+    } else if (enableOceanBaseSettingsMemo) {
+      setTabs((prev) =>
+        [
+          { label: "Agent", value: "agent" },
+          { label: "OceanBase", value: "oceanbase" },
+        ]
+      )
     } else {
-      setTabs((prev) => prev.filter((tab) => tab.value !== "coze" && tab.value !== "dify"))
+      setTabs((prev) => prev.filter((tab) => tab.value !== "coze" && tab.value !== "dify" && tab.value !== "oceanbase"))
     }
-  }, [enableCozeSettingsMemo, enableDifySettingsMemo])
+  }, [enableCozeSettingsMemo, enableDifySettingsMemo, enableOceanBaseSettingsMemo])
 
   return {
     tabs,
@@ -190,6 +203,12 @@ export default function SettingsDialog() {
           </TabsContent>
           <TabsContent value="dify">
             <DifySettingsTab
+              handleClose={handleClose}
+              handleSubmit={handleClose}
+            />
+          </TabsContent>
+          <TabsContent value="oceanbase">
+            <OceanBaseSettingsTab
               handleClose={handleClose}
               handleSubmit={handleClose}
             />
@@ -498,6 +517,144 @@ export function DifySettingsTab(props: {
             </Button>
             <Button type="submit" disabled={!form.formState.isValid}>
               Save Dify Settings
+            </Button>
+          </div>
+          <Label className="flex select-none items-center gap-1 pt-2 text-right text-xs text-muted-foreground">
+            <ShieldCheckIcon className="me-1 size-3" />
+            Settings are saved in your browser only
+          </Label>
+        </div>
+      </form>
+    </Form>
+  )
+}
+
+
+export const isOceanBaseGraph = (graphName: string) => {
+  return graphName.toLowerCase().includes("oceanbase")
+}
+
+
+export const oceanbaseSettingsFormSchema = z.object({
+  api_key: z
+    .string({
+      message: "API Key is required",
+    })
+    .min(1),
+  base_url: z
+    .string({
+      message: "Base URL is required",
+    })
+    .min(1),
+  db_name: z
+    .string({
+      message: "Database name is required",
+    })
+    .min(1),
+  collection_id: z
+    .string({
+      message: "Collection ID is required",
+    })
+    .min(1),
+})
+
+export function OceanBaseSettingsTab(props: {
+  handleClose?: () => void
+  handleSubmit?: (values: z.infer<typeof oceanbaseSettingsFormSchema>) => void
+}) {
+  const { handleSubmit } = props
+
+  const dispatch = useAppDispatch()
+  const oceanbaseSettings = useAppSelector((state) => state.global.oceanbaseSettings)
+
+  const form = useForm<z.infer<typeof oceanbaseSettingsFormSchema>>({
+    resolver: zodResolver(oceanbaseSettingsFormSchema),
+    values: {
+      api_key: oceanbaseSettings.api_key,
+      base_url: oceanbaseSettings.base_url,
+      db_name: oceanbaseSettings.db_name,
+      collection_id: oceanbaseSettings.collection_id,
+    },
+  })
+
+  function onSubmit(values: z.infer<typeof oceanbaseSettingsFormSchema>) {
+    console.log("OceanBase Form Values:", values)
+    dispatch(setOceanBaseSettings(values))
+    handleSubmit?.(values)
+  }
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        <FormField
+          control={form.control}
+          name="api_key"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>API Key*</FormLabel>
+              <FormControl>
+                <Input placeholder="Enter your OceanBase API Key" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="base_url"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Base URL*</FormLabel>
+              <FormControl>
+                <Input placeholder="Enter your OceanBase API base URL" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="db_name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Database Name*</FormLabel>
+              <FormControl>
+                <Input placeholder="Enter your OceanBase database name" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="collection_id"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Collection ID*</FormLabel>
+              <FormControl>
+                <Input placeholder="Enter your OceanBase collection ID" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <div className="flex flex-col items-end">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="destructive"
+              size="icon"
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                form.reset(DEFAULT_OCEAN_BASE_SETTINGS)
+                dispatch(resetOceanBaseSettings())
+                toast.success("OceanBase settings reset")
+              }}
+            >
+              <EraserIcon />
+            </Button>
+            <Button type="submit" disabled={!form.formState.isValid}>
+              Save OceanBase Settings
             </Button>
           </div>
           <Label className="flex select-none items-center gap-1 pt-2 text-right text-xs text-muted-foreground">

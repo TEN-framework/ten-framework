@@ -20,11 +20,6 @@
     },
     {
       "type": "system",
-      "name": "azure_speech_sdk",
-      "version": "1.38.0"
-    },
-    {
-      "type": "system",
       "name": "ten_ai_base",
       "version": "0.7"
     }

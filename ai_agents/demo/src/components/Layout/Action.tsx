@@ -26,7 +26,9 @@ import SettingsDialog, {
   cozeSettingsFormSchema,
   isDifyGraph,
   difySettingsFormSchema,
+  oceanbaseSettingsFormSchema,
 } from "@/components/Dialog/Settings"
+import { IOceanBaseSettings } from "@/types"
 
 let intervalId: NodeJS.Timeout | null = null
 
@@ -42,6 +44,7 @@ export default function Action(props: { className?: string }) {
   const agentSettings = useAppSelector((state) => state.global.agentSettings)
   const cozeSettings = useAppSelector((state) => state.global.cozeSettings)
   const difySettings = useAppSelector((state) => state.global.difySettings)
+  const oceanbaseSettings = useAppSelector((state) => state.global.oceanbaseSettings)
   const mobileActiveTab = useAppSelector(
     (state) => state.global.mobileActiveTab,
   )
@@ -119,6 +122,26 @@ export default function Action(props: { className?: string }) {
           }
           startServicePayload.dify_api_key = difySettingsResult.data.api_key
           startServicePayload.dify_base_url = difySettingsResult.data.base_url
+        } else if (graphName.includes("oceanbase")) {
+          const oceanBaseSettingsResult = oceanbaseSettingsFormSchema.safeParse(oceanbaseSettings)
+          if (!oceanBaseSettingsResult.success) {
+            dispatch(
+              setGlobalSettingsDialog({
+                open: true,
+                tab: "oceanbase",
+              }),
+            )
+            throw new Error(
+              "Invalid OceanBase settings. Please check your settings.",
+            )
+          }
+          const settings: IOceanBaseSettings = {
+            api_key: oceanBaseSettingsResult.data.api_key,
+            base_url: oceanBaseSettingsResult.data.base_url,
+            db_name: oceanBaseSettingsResult.data.db_name,
+            collection_id: oceanBaseSettingsResult.data.collection_id,
+          }
+          startServicePayload.oceanbase_settings = settings
         }
         // common -- start service
         const res = await apiStartService(startServicePayload)

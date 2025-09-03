@@ -25,5 +25,36 @@
       "requirements.txt"
     ]
   },
-  "api": {}
+  "api": {
+    "property": {
+      "properties": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "subscription": {
+              "type": "string"
+            },
+            "region": {
+              "type": "string"
+            },
+            "speech_recognition_language": {
+              "type": "string"
+            },
+            "output_format": {
+              "type": "string"
+            },
+            "propertys": {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
 }

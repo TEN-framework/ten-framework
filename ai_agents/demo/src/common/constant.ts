@@ -3,6 +3,7 @@ import type {
   GraphOptionItem,
   ICozeSettings,
   IDifySettings,
+  IOceanBaseSettings,
   IOptions,
   LanguageOptionItem,
   VoiceOptionItem,
@@ -14,6 +15,8 @@ export const OPTIONS_KEY = "__options__";
 export const AGENT_SETTINGS_KEY = "__agent_settings__";
 export const COZE_SETTINGS_KEY = "__coze_settings__";
 export const DIFY_SETTINGS_KEY = "__dify_settings__";
+export const OCEANBASE_SETTINGS_KEY = "__oceanbase_settings__";
+
 export const DEFAULT_OPTIONS: IOptions = {
   channel: "",
   userName: "",
@@ -41,6 +44,13 @@ export const DEFAULT_COZE_SETTINGS: ICozeSettings = {
 export const DEFAULT_DIFY_SETTINGS: IDifySettings = {
   api_key: "",
   base_url: "https://api.dify.ai/v1",
+};
+
+export const DEFAULT_OCEAN_BASE_SETTINGS: IOceanBaseSettings = {
+  api_key: "",
+  base_url: "",
+  db_name: "",
+  collection_id: "",
 };
 
 export const DESCRIPTION = "A Realtime Conversational AI Agent powered by TEN";
@@ -89,20 +99,20 @@ export const GROUPED_GRAPH_OPTIONS = {
     //   value: "deepseek_v3_1",
     // },
   ],
-  "Multimodal Voice AI": [
-    {
-      label: "Gemini 2.0 Flash Live",
-      value: "va_gemini_v2v",
-    },
+  // "Multimodal Voice AI": [
     // {
     //   label: "Nova Multimodal",
     //   value: "va_nova_multimodal_aws",
     // },
-  ],
+  // ],
   "Speech to Speech Voice AI": [
     {
       label: "OpenAI GPT Realtime",
       value: "va_openai_v2v",
+    },
+    {
+      label: "Gemini 2.0 Flash Live",
+      value: "va_gemini_v2v",
     },
     {
       label: "Gemini 2.5 Flash Native Audio",
@@ -114,6 +124,10 @@ export const GROUPED_GRAPH_OPTIONS = {
     },
   ],
   "AI Platform Integrations": [
+    {
+      label: "OceanBase PowerRAG",
+      value: "va_oceanbase_rag",
+    },
     {
       label: "Dify Agent",
       value: "va_dify_azure",

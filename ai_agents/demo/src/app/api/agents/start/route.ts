@@ -31,9 +31,10 @@ export async function POST(request: NextRequest) {
       coze_base_url,
       dify_api_key,
       dify_base_url,
+      oceanbase_settings
     } = body;
 
-    let properties: any = getGraphProperties(graph_name, language, voice_type, prompt, greeting);
+    let properties: any = getGraphProperties(graph_name, language, voice_type, prompt, greeting, oceanbase_settings);
     if (graph_name.includes("coze")) {
       properties["llm"]["token"] = coze_token;
       properties["llm"]["bot_id"] = coze_bot_id;

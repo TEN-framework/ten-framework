@@ -14,6 +14,7 @@ import {
   setAgentSettings,
   setCozeSettings,
   setDifySettings,
+  setOceanBaseSettings,
 } from "@/store/reducers/global"
 
 interface AuthInitializerProps {
@@ -33,6 +34,7 @@ const AuthInitializer = (props: AuthInitializerProps) => {
         dispatch(setAgentSettings(data.settings))
         dispatch(setCozeSettings(data.cozeSettings))
         dispatch(setDifySettings(data.difySettings))
+        dispatch(setOceanBaseSettings(data.oceanbaseSettings))
       } else {
         const newOptions = {
           userName: genRandomString(8),
