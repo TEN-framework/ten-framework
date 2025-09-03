@@ -4,14 +4,14 @@ on:
   workflow_dispatch:
     inputs:
       extension:
-        description: 'Extension name(s), use comma to separate multiple (required)'
+        description: "Extension name(s), use comma to separate multiple (required)"
         required: true
         type: string
       branch:
-        description: 'Branch to publish (optional, defaults to main branch)'
+        description: "Branch to publish (optional, defaults to main branch)"
         required: false
         type: string
-        default: 'main'
+        default: "main"
 
 permissions:
   contents: read
@@ -20,7 +20,7 @@ jobs:
   publish-extension:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/ten-framework/ten_agent_build:0.6.15
+      image: ghcr.io/ten-framework/ten_agent_build:0.7.3
 
     steps:
       - name: Checkout code

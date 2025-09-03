@@ -64,7 +64,7 @@ export default function Action(props: { className?: string }) {
       stopPing();
     } else {
       const selectedGraph = graphList.find(
-        (graph) => graph.uuid === selectedGraphId
+        (graph) => graph.graph_id === selectedGraphId
       );
       if (!selectedGraph) {
         toast.error("Please select a graph first");

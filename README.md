@@ -306,6 +306,10 @@ task use AGENT=agents/examples/demo
 ##### 6. Start the web server
 
 ```bash
+
+# run task build if you changed any local source code, this is necessary if you are working on languages which require compilation like TypeScript or Golang.
+task build
+
 task run
 ```
 

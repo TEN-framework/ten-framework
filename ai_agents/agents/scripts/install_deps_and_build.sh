@@ -51,6 +51,35 @@ build_cxx_extensions() {
   done
 }
 
+install_node_dependencies() {
+  local app_dir="${1:-$PWD}"  # default to current working dir (symlink aware)
+
+  # install in app root if package.json exists
+  if [[ -f "$app_dir/package.json" ]]; then
+    echo "Installing deps in $app_dir"
+    (cd "$app_dir" && npm install)
+  fi
+
+  # traverse ten_packages/extension
+  if [[ -d "$app_dir/ten_packages/extension" ]]; then
+    for d in "$app_dir/ten_packages/extension"/*; do
+      [[ -d "$d" && -f "$d/package.json" ]] || continue
+      echo "Installing deps in $d"
+      (cd "$d" && npm install)
+    done
+  fi
+
+  # traverse ten_packages/system
+  if [[ -d "$app_dir/ten_packages/system" ]]; then
+    for d in "$app_dir/ten_packages/system"/*; do
+      [[ -d "$d" && -f "$d/package.json" ]] || continue
+      echo "Installing deps in $d"
+      (cd "$d" && npm install)
+    done
+  fi
+}
+
+
 install_python_requirements() {
   local app_dir=$1
 
@@ -136,6 +165,8 @@ main() {
   build_go_app $APP_HOME
   echo "install_python_requirements..."
   install_python_requirements $APP_HOME
+  echo "install_node_dependencies..."
+  install_node_dependencies $APP_HOME
 }
 
 main "$@"
