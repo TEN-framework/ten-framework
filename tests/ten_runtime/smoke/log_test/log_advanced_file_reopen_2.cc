@@ -216,7 +216,9 @@ TEST(AdvancedLogTest, LogAdvancedFileReopen2) {  // NOLINT
 
   ten_thread_join(app_thread, -1);
 
-  // Sleep 3 seconds to wait for the log file to be flushed.
+  // Sleep 3 seconds to wait for the log file to be flushed. For example, in mac
+  // (release) build, if not sleep 3 seconds, the operating system may not have
+  // written the log, the test case may start to check the log.
   ten_sleep_ms(3000);
 
 #ifndef _WIN32
