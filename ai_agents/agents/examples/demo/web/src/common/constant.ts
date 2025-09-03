@@ -71,10 +71,10 @@ export const GROUPED_GRAPH_OPTIONS = {
       label: "Qwen 3 Reasoning",
       value: "qwen3",
     },
-    {
-      label: "Grok 4 Reasoning",
-      value: "grok4",
-    },
+    // {
+    //   label: "Grok 4 Reasoning",
+    //   value: "grok4",
+    // },
     {
       label: "Llama 4",
       value: "va_llama4",
@@ -170,6 +170,34 @@ export const VOICE_OPTIONS: VoiceOptionItem[] = [
   {
     label: "Female",
     value: "female",
+  },
+];
+
+// Theme color presets for the UI palette
+export const COLOR_LIST: import("@/types").ColorItem[] = [
+  {
+    active: "#0888FF",
+    default: "#143354",
+  },
+  {
+    active: "#563FD8",
+    default: "#2C2553",
+  },
+  {
+    active: "#18A957",
+    default: "#173526",
+  },
+  {
+    active: "#FFAB08",
+    default: "#423115",
+  },
+  {
+    active: "#FD5C63",
+    default: "#462629",
+  },
+  {
+    active: "#E225B2",
+    default: "#481C3F",
   },
 ];
 

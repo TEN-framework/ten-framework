@@ -36,7 +36,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={cn("dark", "antialiased", roboto.variable)}>
         <StoreProvider>{children}</StoreProvider>
         <Toaster richColors closeButton theme="dark" />

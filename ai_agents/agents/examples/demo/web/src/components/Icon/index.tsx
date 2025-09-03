@@ -744,14 +744,17 @@ export const MetaIcon = (props: React.SVGProps<SVGSVGElement>) => {
   return (
     <svg
       viewBox="0 0 24 24"
-      fill="none"
+      fill="currentColor"
       xmlns="http://www.w3.org/2000/svg"
       {...props}
     >
-      <path
-        d="M17.526 5.116c-3.5-1.5-6.526 0-8.526 3-2-3-5.026-4.5-8.526-3C-.526 6.616-.026 9.616 2.474 12.116c2.5 2.5 8.026 8.5 9.526 8.5s7.026-6 9.526-8.5c2.5-2.5 3-5.5 0-7z"
-        fill="currentColor"
-      />
+      <title>Meta</title>
+      {/* Center-scale to add padding, then widen horizontally without clipping */}
+      <g transform="translate(12 12) scale(0.97) translate(-12 -12)">
+        <g transform="translate(12 12) scale(1.12,0.94) translate(-12 -12)">
+          <path d="M18.3 6c-2.9 0-4.7 2.8-6.3 5.5C10.4 8.9 8.6 6 5.7 6 3 6 1 8.2 1 11c0 3.1 2.2 7 4.7 7 1.8 0 3.1-1.9 4.7-4.5 1.6 2.6 2.9 4.5 4.7 4.5 2.5 0 4.7-3.9 4.7-7 0-2.8-2-5-4.5-5zm-12.6 2c2 0 3.5 3.1 4.9 5.6-1.4 2.3-2.7 3.9-3.9 3.9-1.6 0-3-2.8-3-5 0-2.3 1.1-4.5 2-4.5zm12.6 0c.9 0 2 2.2 2 4.5 0 2.2-1.4 5-3 5-1.2 0-2.5-1.6-3.9-3.9 1.4-2.5 2.9-5.6 4.9-5.6z"/>
+        </g>
+      </g>
     </svg>
   )
 }
