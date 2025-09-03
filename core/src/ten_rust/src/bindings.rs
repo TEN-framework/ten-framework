@@ -383,7 +383,7 @@ pub unsafe extern "C" fn ten_rust_validate_graph_json_string(
         return false;
     }
 
-    let result = result.unwrap().static_check();
+    let result = result.unwrap().static_check_for_pre_flatten_graph();
     if result.is_err() {
         if !err_msg.is_null() {
             let err_msg_c_str = CString::new(result.err().unwrap().to_string()).unwrap();
