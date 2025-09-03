@@ -370,6 +370,14 @@ impl Graph {
         Ok(())
     }
 
+    pub fn static_check_for_pre_flatten_graph(&self) -> Result<()> {
+        self.check_extension_uniqueness()?;
+        self.check_connection_extensions_exist()?;
+        self.check_subgraph_references_exist()?;
+
+        Ok(())
+    }
+
     pub fn get_addon_name_of_extension(
         &self,
         app: &Option<String>,
