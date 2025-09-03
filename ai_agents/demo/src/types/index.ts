@@ -31,6 +31,13 @@ export interface IDifySettings {
   base_url: string
 }
 
+export interface IOceanBaseSettings {
+  api_key: string
+  base_url: string
+  db_name: string
+  collection_id: string
+}
+
 export enum EMessageType {
   AGENT = "agent",
   USER = "user",

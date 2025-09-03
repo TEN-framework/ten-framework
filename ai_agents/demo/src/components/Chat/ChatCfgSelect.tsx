@@ -32,6 +32,7 @@ import {
   QwenIcon,
   DifyIcon,
   CozeIcon,
+  OceanBaseIcon,
 } from "@/components/Icon"
 import type { Language } from "@/types"
 import { setGraphName, setLanguage } from "@/store/reducers/global"
@@ -64,6 +65,7 @@ const getBrandIcon = (label: string) => {
   if (label.includes("Qwen") || label.includes("QwQ")) return QwenIcon
   if (label.includes("Dify")) return DifyIcon
   if (label.includes("Coze")) return CozeIcon
+  if (label.includes("OceanBase")) return OceanBaseIcon
   // Default fallback
   return () => <span className="w-3 h-3 rounded-full bg-current opacity-50" />
 }
