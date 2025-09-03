@@ -116,7 +116,9 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
 
             self.client = deepgram.AsyncListenWebSocketClient(
                 config=DeepgramClientOptions(
-                    api_key=self.config.api_key, options={"keepalive": "true"}
+                    url=self.config.url,
+                    api_key=self.config.key or self.config.api_key,
+                    options={"keepalive": "true"},
                 )
             )
 
