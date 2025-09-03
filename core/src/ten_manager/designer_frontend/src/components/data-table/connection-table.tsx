@@ -51,7 +51,7 @@ import {
   identifier2data,
 } from "@/lib/identifier";
 import { cn } from "@/lib/utils";
-import { useDialogStore, useFlowStore } from "@/store";
+import { useDialogStore } from "@/store";
 import { ECustomNodeType, type TCustomEdge } from "@/types/flow";
 import { EConnectionType, type GraphInfo } from "@/types/graphs";
 
@@ -127,9 +127,8 @@ export const ActionDropdownMenu = (props: { edge: TCustomEdge }) => {
   const { t } = useTranslation();
 
   const { appendDialog, removeDialog } = useDialogStore();
-  const { setNodesAndEdges } = useFlowStore();
 
-  const { data: graphs = [], mutate: mutateGraphs } = useGraphs();
+  const { mutate: mutateGraphs } = useGraphs();
 
   return (
     <DropdownMenu>

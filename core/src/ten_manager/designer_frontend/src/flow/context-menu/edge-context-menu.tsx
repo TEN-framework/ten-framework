@@ -20,7 +20,7 @@ import ContextMenu, {
   EContextMenuItemType,
   type IContextMenuItem,
 } from "@/flow/context-menu/base";
-import { useDialogStore, useFlowStore, useWidgetStore } from "@/store";
+import { useDialogStore, useWidgetStore } from "@/store";
 import { ECustomNodeType, type TCustomEdge } from "@/types/flow";
 import { EWidgetCategory, EWidgetDisplayType } from "@/types/widgets";
 
@@ -43,10 +43,9 @@ const EdgeContextMenu: React.FC<EdgeContextMenuProps> = ({
   const { t } = useTranslation();
 
   const { appendDialog, removeDialog } = useDialogStore();
-  const { setNodesAndEdges } = useFlowStore();
   const { appendWidget } = useWidgetStore();
 
-  const { data: graphs = [], mutate: mutateGraphs } = useGraphs();
+  const { mutate: mutateGraphs } = useGraphs();
 
   const items: IContextMenuItem[] = [
     {

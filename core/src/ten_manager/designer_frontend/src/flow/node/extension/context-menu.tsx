@@ -36,7 +36,7 @@ import {
   ERightClickContextMenuItemType,
   RightClickContextMenuItem,
 } from "@/flow/context-menu/base";
-import { useDialogStore, useFlowStore, useWidgetStore } from "@/store";
+import { useDialogStore, useWidgetStore } from "@/store";
 import type { IExtensionNodeData, TExtensionNode } from "@/types/flow";
 import { EGraphActions } from "@/types/graphs";
 import {
@@ -60,7 +60,6 @@ export const ContextMenuItems = (props: {
   const { appendWidget, removeBackstageWidget, removeLogViewerHistory } =
     useWidgetStore();
   const { appendDialog, removeDialog } = useDialogStore();
-  const { setNodesAndEdges } = useFlowStore();
 
   const { data: graphs, mutate: mutateGraphs } = useGraphs();
 

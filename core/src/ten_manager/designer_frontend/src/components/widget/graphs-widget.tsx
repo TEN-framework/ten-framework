@@ -450,9 +450,7 @@ export const GraphUpdateNodePropertyWidget = (props: {
 
   const { t } = useTranslation();
 
-  const { setNodesAndEdges } = useFlowStore();
-
-  const { data: graphs, mutate: mutateGraphs } = useGraphs();
+  const { mutate: mutateGraphs } = useGraphs();
 
   React.useEffect(() => {
     const fetchSchema = async () => {
@@ -564,7 +562,7 @@ export const GraphConnectionCreationWidget = (props: {
   >([]);
 
   const { t } = useTranslation();
-  const { nodes, setNodesAndEdges } = useFlowStore();
+  const { nodes } = useFlowStore();
   const {
     data: graphs,
     isLoading: isGraphsLoading,
