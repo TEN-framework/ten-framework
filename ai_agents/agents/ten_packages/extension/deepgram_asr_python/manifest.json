@@ -1,7 +1,7 @@
 {
     "type": "extension",
     "name": "deepgram_asr_python",
-    "version": "0.1.3",
+    "version": "0.1.4",
     "dependencies": [
         {
             "type": "system",
@@ -25,6 +25,12 @@
                 "params": {
                     "type": "object",
                     "properties": {
+                        "url": {
+                            "type": "string"
+                        },
+                        "key": {
+                            "type": "string"
+                        },
                         "api_key": {
                             "type": "string"
                         },

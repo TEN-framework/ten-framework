@@ -1,7 +1,7 @@
 {
     "type": "extension",
     "name": "xfyun_asr_bigmodel_python",
-    "version": "0.1.3",
+    "version": "0.1.4",
     "dependencies": [
         {
             "type": "system",
@@ -35,6 +35,12 @@
                             "type": "string"
                         },
                         "lang": {
+                            "type": "string"
+                        },
+                        "accent": {
+                            "type": "string"
+                        },
+                        "domain": {
                             "type": "string"
                         },
                         "sample_rate": {
