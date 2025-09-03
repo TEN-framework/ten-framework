@@ -38,6 +38,20 @@ class SonioxFinToken:
     is_final: bool
 
 
+@dataclass
+class SonioxEndToken:
+    text: str
+    is_final: bool
+
+
+SonioxToken = (
+    SonioxTranscriptToken
+    | SonioxTranslationToken
+    | SonioxFinToken
+    | SonioxEndToken
+)
+
+
 class SonioxWebsocketEvents(Enum):
     EXCEPTION = "exception"
     OPEN = "open"
@@ -225,17 +239,15 @@ class SonioxWebsocketClient:
                     total_audio_proc_ms,
                 )
 
-    def _parse_tokens(
-        self, tokens: list[dict]
-    ) -> list[SonioxTranscriptToken | SonioxTranslationToken | SonioxFinToken]:
+    def _parse_tokens(self, tokens: list[dict]) -> list[SonioxToken]:
         return [self._parse_token(token) for token in tokens]
 
-    def _parse_token(
-        self, token: dict
-    ) -> SonioxTranscriptToken | SonioxTranslationToken | SonioxFinToken:
+    def _parse_token(self, token: dict) -> SonioxToken:
         match token:
             case {"text": "<fin>", "is_final": True}:
                 return SonioxFinToken("<fin>", True)
+            case {"text": "<end>", "is_final": True}:
+                return SonioxEndToken("<end>", True)
             case {
                 "text": text,
                 "translation_status": translation_status,
@@ -303,7 +315,7 @@ class SonioxWebsocketClient:
             - final_audio_proc_ms: int
             - total_audio_proc_ms: int
         TRANSCRIPT:
-            - tokens: list[SonioxTranscriptToken | SonioxTranslationToken | SonioxFinToken]
+            - tokens: list[SonioxToken]
             - final_audio_proc_ms: int
             - total_audio_proc_ms: int
         """
