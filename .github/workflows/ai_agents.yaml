@@ -32,7 +32,12 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  call-check-pr-status:
+    uses: ./.github/workflows/utils/check_pr_status.yml
+
   ci:
+    needs: call-check-pr-status
+    if: ${{ needs.call-check-pr-status.outputs.should_continue == 'true' }}
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/ten-framework/ten_agent_build:0.7.3

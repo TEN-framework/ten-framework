@@ -15,15 +15,13 @@ jobs:
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
-      # Wait a moment to ensure that all the CI actions we want to cancel have
-      # been initiated. In the future, consider whether a more precise mechanism
-      # is needed to ensure that all actions that should be canceled can be
-      # properly canceled.
+      # Wait longer to ensure that all the CI actions we want to cancel have
+      # been initiated, especially for complex CI pipelines with dependencies.
       - name: Wait for workflows to be initiated
-        run: sleep 30
+        run: sleep 60
 
       - name: Cancel Related Workflow Runs
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -37,40 +35,61 @@ jobs:
 
             console.log(`Cancelling workflows related to PR #${prNumber} (SHA: ${headSha})`);
 
-            // Retrieve all workflow runs associated with the head SHA of the PR.
-
-            // Query and cancel workflows in the in_progress status.
-            const inProgressRuns = await github.rest.actions.listWorkflowRunsForRepo({
-              owner,
-              repo,
-              head_sha: headSha,
-              status: 'in_progress',
-            });
-
-            // Query and cancel workflows in the queued status.
-            const queuedRuns = await github.rest.actions.listWorkflowRunsForRepo({
-              owner,
-              repo,
-              head_sha: headSha,
-              status: 'queued',
-            });
-
-            // Merge the two results and then proceed with cancellation.
-            const runsToCancel = [...inProgressRuns.data.workflow_runs, ...queuedRuns.data.workflow_runs];
-
-            // Cancel all related workflow runs.
-            for (const run of runsToCancel) {
-              if (run.id.toString() === currentRunId) {
-                console.log(`Skipping current run: ${run.id} (${run.name})`);
-                continue;
+            // Function to cancel workflows with retry mechanism
+            const cancelWorkflowWithRetry = async (runId, runName, maxRetries = 3) => {
+              for (let attempt = 1; attempt <= maxRetries; attempt++) {
+                try {
+                  console.log(`Cancelling workflow run (attempt ${attempt}): ${runId} (${runName})`);
+                  await github.rest.actions.cancelWorkflowRun({
+                    owner,
+                    repo,
+                    run_id: runId,
+                  });
+                  console.log(`Successfully cancelled: ${runId} (${runName})`);
+                  return;
+                } catch (error) {
+                  console.log(`Attempt ${attempt} failed for ${runId}: ${error.message}`);
+                  if (attempt === maxRetries) {
+                    console.log(`Failed to cancel ${runId} after ${maxRetries} attempts`);
+                  } else {
+                    await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds before retry
+                  }
+                }
               }
+            };
 
-              console.log(`Cancelling workflow run: ${run.id} (${run.name})`);
-              await github.rest.actions.cancelWorkflowRun({
-                owner,
-                repo,
-                run_id: run.id,
-              });
+            // Query workflows in different statuses
+            const statuses = ['in_progress', 'queued', 'waiting', 'requested', 'pending'];
+            let allRuns = [];
+
+            for (const status of statuses) {
+              try {
+                const runs = await github.rest.actions.listWorkflowRunsForRepo({
+                  owner,
+                  repo,
+                  head_sha: headSha,
+                  status: status,
+                });
+                console.log(`Found ${runs.data.workflow_runs.length} runs with status: ${status}`);
+                allRuns.push(...runs.data.workflow_runs);
+              } catch (error) {
+                console.log(`Failed to query ${status} runs: ${error.message}`);
+              }
             }
 
-            console.log('All related workflow runs have been canceled.');
+            // Remove duplicates and filter out current run
+            const uniqueRuns = allRuns.filter((run, index, self) =>
+              run.id.toString() !== currentRunId &&
+              self.findIndex(r => r.id === run.id) === index
+            );
+
+            console.log(`Total unique runs to cancel: ${uniqueRuns.length}`);
+
+            // Cancel all related workflow runs with retry
+            const cancelPromises = uniqueRuns.map(run =>
+              cancelWorkflowWithRetry(run.id, run.name)
+            );
+
+            await Promise.allSettled(cancelPromises);
+
+            console.log('Workflow cancellation process completed.');

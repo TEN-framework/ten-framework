@@ -25,8 +25,13 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  call-check-pr-status:
+    uses: ./.github/workflows/utils/check_pr_status.yml
+
   # Building ten_runtime without the ten_rust library (i.e., ten_enable_ten_rust_apis=false).
   build:
+    needs: call-check-pr-status
+    if: ${{ needs.call-check-pr-status.outputs.should_continue == 'true' }}
     runs-on: macos-latest
     strategy:
       matrix:

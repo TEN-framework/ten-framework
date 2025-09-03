@@ -1,0 +1,56 @@
+name: Check PR Status (Reusable)
+
+on:
+  workflow_call:
+    outputs:
+      should_continue:
+        description: "Whether the workflow should continue"
+        value: ${{ jobs.check_pr_status.outputs.should_continue }}
+
+jobs:
+  check_pr_status:
+    runs-on: ubuntu-latest
+    outputs:
+      should_continue: ${{ steps.check.outputs.should_continue }}
+    steps:
+      - name: Check if PR is still open
+        id: check
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            // Set default value first
+            core.setOutput('should_continue', 'true');
+
+            // Only check for PR events
+            if (context.eventName !== 'pull_request') {
+              console.log('Not a PR event, continuing...');
+              core.setOutput('should_continue', 'true');
+              return;
+            }
+
+            const { owner, repo } = context.repo;
+            const prNumber = context.payload.pull_request.number;
+
+            try {
+              const pr = await github.rest.pulls.get({
+                owner,
+                repo,
+                pull_number: prNumber,
+              });
+
+              if (pr.data.state === 'closed') {
+                if (pr.data.merged) {
+                  console.log(`PR #${prNumber} has been merged. Stopping workflow.`);
+                } else {
+                  console.log(`PR #${prNumber} has been closed. Stopping workflow.`);
+                }
+                core.setOutput('should_continue', 'false');
+              } else {
+                console.log(`PR #${prNumber} is still open. Continuing workflow.`);
+                core.setOutput('should_continue', 'true');
+              }
+            } catch (error) {
+              console.log(`Error checking PR status: ${error.message}. Continuing workflow.`);
+              core.setOutput('should_continue', 'true');
+            }
