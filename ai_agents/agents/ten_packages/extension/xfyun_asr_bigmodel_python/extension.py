@@ -66,7 +66,6 @@ class XfyunBigmodelASRExtension(AsyncASRBaseExtension):
         self.audio_dumper: Optional[Dumper] = None
         self.sent_user_audio_duration_ms_before_last_reset: int = 0
         self.last_finalize_timestamp: int = 0
-        self.is_finalize_disconnect: bool = False
 
         # WPGS mode status variables
         self.wpgs_buffer: Dict[int, Dict[str, Any]] = (
@@ -218,7 +217,6 @@ class XfyunBigmodelASRExtension(AsyncASRBaseExtension):
             # Start recognition (now async)
             success = await self.recognition.start()
             if success:
-                self.is_finalize_disconnect = False
                 self.ten_env.log_info(
                     "Xfyun ASR connection started successfully"
                 )
@@ -359,11 +357,11 @@ class XfyunBigmodelASRExtension(AsyncASRBaseExtension):
 
             # Handle sentence final result
             if result_data.get("sub_end") is True:
-                is_final = False
+                is_final = True
                 self.ten_env.log_debug(
                     f"Xfyun ASR sub sentence end: {result_to_send}"
                 )
-                # self.wpgs_buffer.clear()
+                self.wpgs_buffer.clear()
 
             if status == 2:
                 is_final = True
@@ -388,8 +386,6 @@ class XfyunBigmodelASRExtension(AsyncASRBaseExtension):
                     else duration_ms
                 )
                 self.wpgs_buffer.clear()
-                if self.recognition:
-                    await self.recognition.close()
 
             self.ten_env.log_debug(
                 f"Xfyun ASR result: {result_to_send}, status: {status}"
@@ -417,6 +413,10 @@ class XfyunBigmodelASRExtension(AsyncASRBaseExtension):
                     "Cannot handle ASR result: config is None"
                 )
 
+            if status == 2:
+                if self.recognition:
+                    await self.recognition.close()
+
         except Exception as e:
             self.ten_env.log_error(f"Error processing Xfyun ASR result: {e}")
 
@@ -427,7 +427,6 @@ class XfyunBigmodelASRExtension(AsyncASRBaseExtension):
         self.ten_env.log_error(
             f"Xfyun ASR error: {error_msg} code: {error_code}"
         )
-        await self._handle_reconnect()
 
         # Send error information
         await self.send_asr_error(
@@ -451,7 +450,7 @@ class XfyunBigmodelASRExtension(AsyncASRBaseExtension):
         # Clear WPGS status variables
         self.wpgs_buffer.clear()
 
-        if self.is_finalize_disconnect:
+        if not self.stopped:
             self.ten_env.log_warn(
                 "Xfyun ASR connection closed unexpectedly. Reconnecting..."
             )
@@ -504,7 +503,6 @@ class XfyunBigmodelASRExtension(AsyncASRBaseExtension):
     async def _handle_finalize_disconnect(self):
         """Handle disconnect mode finalization"""
         if self.recognition:
-            self.is_finalize_disconnect = True
             await self.recognition.stop()
             self.ten_env.log_debug("Xfyun ASR finalize disconnect completed")
 
@@ -579,7 +577,6 @@ class XfyunBigmodelASRExtension(AsyncASRBaseExtension):
             self.connected
             and self.recognition is not None
             and self.recognition.is_connected()
-            and not self.is_finalize_disconnect
         )
         # self.ten_env.log_debug(f"Xfyun ASR is_connected: {is_connected}")
         return is_connected
@@ -620,13 +617,11 @@ class XfyunBigmodelASRExtension(AsyncASRBaseExtension):
 
             # Use audio buffer manager to handle audio data
             if self.audio_buffer_manager:
-                # Check if this is a finalization call
-                force_send = self.is_finalize_disconnect
                 # Push audio data to buffer and send if threshold is reached or forced
                 await self.audio_buffer_manager.push_audio(
                     audio_data=audio_data,
                     send_callback=self.recognition.send_audio_frame,
-                    force_send=force_send,
+                    force_send=False,
                 )
             else:
                 # Fallback to direct sending if buffer manager is not available
