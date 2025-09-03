@@ -46,13 +46,12 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { CustomNodeConnectionButton } from "@/flow/edge/button";
-import { resetNodesAndEdgesByGraphs } from "@/flow/graph";
 import {
   type IdentifierCustomNodeData,
   identifier2data,
 } from "@/lib/identifier";
 import { cn } from "@/lib/utils";
-import { useDialogStore, useFlowStore } from "@/store";
+import { useDialogStore } from "@/store";
 import { ECustomNodeType, type TCustomEdge } from "@/types/flow";
 import { EConnectionType, type GraphInfo } from "@/types/graphs";
 
@@ -128,9 +127,8 @@ export const ActionDropdownMenu = (props: { edge: TCustomEdge }) => {
   const { t } = useTranslation();
 
   const { appendDialog, removeDialog } = useDialogStore();
-  const { setNodesAndEdges } = useFlowStore();
 
-  const { data: graphs = [] } = useGraphs();
+  const { mutate: mutateGraphs } = useGraphs();
 
   return (
     <DropdownMenu>
@@ -204,9 +202,7 @@ export const ActionDropdownMenu = (props: { edge: TCustomEdge }) => {
                     dest_extension: edge.data.target.name,
                   });
                   toast.success(t("action.deleteConnectionSuccess"));
-                  const { nodes, edges } =
-                    await resetNodesAndEdgesByGraphs(graphs);
-                  setNodesAndEdges(nodes, edges);
+                  await mutateGraphs();
                 } catch (error) {
                   console.error(error);
                   toast.error(t("action.deleteConnectionFailed"), {
