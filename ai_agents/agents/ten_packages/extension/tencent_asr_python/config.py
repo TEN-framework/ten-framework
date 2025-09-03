@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, ConfigDict, model_validator
-from typing_extensions import Self
+from typing_extensions import Self, Any
 from enum import Enum
 from pathlib import Path
 from .tencent_asr_client import RequestParams
@@ -64,6 +64,21 @@ class Params(BaseModel):
     model_config = ConfigDict(extra="allow", populate_by_name=True)
 
     _encrypt_fields = encrypting_serializer("appid", "secretkey", "secretid")
+
+    @model_validator(mode="before")
+    @classmethod
+    def compatible_config(cls, data: dict[str, Any]) -> Any:
+        if "app_id" in data:
+            data["appid"] = data.pop("app_id")
+        if "secret_key" in data:
+            data["secretkey"] = data.pop("secret_key")
+        if "key" in data:
+            data["secretkey"] = data.pop("key")
+        if "secret_id" in data:
+            data["secretid"] = data.pop("secret_id")
+        if "secret" in data:
+            data["secretid"] = data.pop("secret")
+        return data
 
     @model_validator(mode="after")
     def check_mute_pkg_duration_ms(self) -> Self:
