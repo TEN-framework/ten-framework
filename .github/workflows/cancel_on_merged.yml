@@ -15,11 +15,6 @@ jobs:
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
-      # Wait longer to ensure that all the CI actions we want to cancel have
-      # been initiated, especially for complex CI pipelines with dependencies.
-      - name: Wait for workflows to be initiated
-        run: sleep 60
-
       - name: Cancel Related Workflow Runs
         uses: actions/github-script@v7
         with:
