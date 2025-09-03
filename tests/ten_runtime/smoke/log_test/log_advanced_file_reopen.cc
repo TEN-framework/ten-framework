@@ -196,11 +196,10 @@ TEST(AdvancedLogTest, LogAdvancedFileReopen) {  // NOLINT
 
   ten_thread_join(app_thread, -1);
 
-#ifndef _WIN32
-  // Send a signal to flush the log file.
-  auto rc = raise(SIGHUP);
-  ASSERT_EQ(rc, 0);
-#endif
+  // Sleep 3 seconds to wait for the log file to be flushed. For example, in mac
+  // (release) build, if not sleep 3 seconds, the operating system may not have
+  // written the log, the test case may start to check the log.
+  ten_sleep_ms(3000);
 
 #ifndef _WIN32
   // Check the log file content.
