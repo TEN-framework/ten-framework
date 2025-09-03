@@ -20,7 +20,6 @@ import ContextMenu, {
   EContextMenuItemType,
   type IContextMenuItem,
 } from "@/flow/context-menu/base";
-import { resetNodesAndEdgesByGraphs } from "@/flow/graph";
 import { useDialogStore, useFlowStore, useWidgetStore } from "@/store";
 import { ECustomNodeType, type TCustomEdge } from "@/types/flow";
 import { EWidgetCategory, EWidgetDisplayType } from "@/types/widgets";
@@ -47,7 +46,7 @@ const EdgeContextMenu: React.FC<EdgeContextMenuProps> = ({
   const { setNodesAndEdges } = useFlowStore();
   const { appendWidget } = useWidgetStore();
 
-  const { data: graphs = [] } = useGraphs();
+  const { data: graphs = [], mutate: mutateGraphs } = useGraphs();
 
   const items: IContextMenuItem[] = [
     {
@@ -142,8 +141,7 @@ const EdgeContextMenu: React.FC<EdgeContextMenuProps> = ({
                 dest_extension: edge.data.target.name,
               });
               toast.success(t("action.deleteConnectionSuccess"));
-              const { nodes, edges } = await resetNodesAndEdgesByGraphs(graphs);
-              setNodesAndEdges(nodes, edges);
+              await mutateGraphs();
             } catch (error) {
               console.error(error);
               toast.error(t("action.deleteConnectionFailed"), {

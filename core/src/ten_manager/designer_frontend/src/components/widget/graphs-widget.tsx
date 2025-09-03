@@ -56,7 +56,6 @@ import {
   convertExtensionPropertySchema2ZodSchema,
   type TExtPropertySchema,
 } from "@/components/widget/utils";
-import { resetNodesAndEdgesByGraphs } from "@/flow/graph";
 import { cn } from "@/lib/utils";
 import { useDialogStore, useFlowStore } from "@/store";
 import type { TCustomNode } from "@/types/flow";
@@ -212,12 +211,12 @@ export const GraphAddNodeWidget = (props: {
   >(undefined);
 
   const { t } = useTranslation();
-  const { setNodesAndEdges } = useFlowStore();
 
   const {
     data: graphs,
     isLoading: isGraphsLoading,
     error: graphError,
+    mutate: mutateGraphs,
   } = useGraphs();
   const {
     data: addons,
@@ -245,13 +244,8 @@ export const GraphAddNodeWidget = (props: {
       } else {
         await postAddNode(data);
       }
-      if (graph_id === data.graph_id || isReplaceNode) {
-        const { nodes, edges } = await resetNodesAndEdgesByGraphs(
-          graphs?.filter((g) => g.graph_id === data.graph_id) || []
-        );
-        setNodesAndEdges(nodes, edges);
-        postAddNodeActions?.();
-      }
+      await mutateGraphs();
+      postAddNodeActions?.();
       toast.success(
         isReplaceNode
           ? t("popup.graph.replaceNodeSuccess")
@@ -458,7 +452,7 @@ export const GraphUpdateNodePropertyWidget = (props: {
 
   const { setNodesAndEdges } = useFlowStore();
 
-  const { data: graphs } = useGraphs();
+  const { data: graphs, mutate: mutateGraphs } = useGraphs();
 
   React.useEffect(() => {
     const fetchSchema = async () => {
@@ -513,15 +507,7 @@ export const GraphUpdateNodePropertyWidget = (props: {
                 property: JSON.stringify(data, null, 2),
               });
               await postUpdateNodeProperty(nodeData);
-              const targetGraph = graphs?.find(
-                (g) => g.graph_id === nodeData.graph_id
-              );
-              if (targetGraph) {
-                const { nodes, edges } = await resetNodesAndEdgesByGraphs([
-                  targetGraph,
-                ]);
-                setNodesAndEdges(nodes, edges);
-              }
+              await mutateGraphs();
               toast.success(t("popup.graph.updateNodePropertySuccess"), {
                 description: `${node.data.name}`,
               });
@@ -583,6 +569,7 @@ export const GraphConnectionCreationWidget = (props: {
     data: graphs,
     isLoading: isGraphsLoading,
     error: graphError,
+    mutate: mutateGraphs,
   } = useGraphs();
   const {
     data: extSchema,
@@ -624,14 +611,8 @@ export const GraphConnectionCreationWidget = (props: {
         throw new Error(t("popup.graph.sameNodeError"));
       }
       await postAddConnection(payload);
-      const targetGraph = graphs?.find((g) => g.graph_id === data.graph_id);
-      if (graph_id === data.graph_id && targetGraph) {
-        const { nodes, edges } = await resetNodesAndEdgesByGraphs([
-          targetGraph,
-        ]);
-        setNodesAndEdges(nodes, edges);
-        postAddConnectionActions?.();
-      }
+      await mutateGraphs();
+      postAddConnectionActions?.();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Unknown error");
       console.error(error);
