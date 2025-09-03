@@ -36,8 +36,7 @@ import {
   ERightClickContextMenuItemType,
   RightClickContextMenuItem,
 } from "@/flow/context-menu/base";
-import { resetNodesAndEdgesByGraphs } from "@/flow/graph";
-import { useDialogStore, useFlowStore, useWidgetStore } from "@/store";
+import { useDialogStore, useWidgetStore } from "@/store";
 import type { IExtensionNodeData, TExtensionNode } from "@/types/flow";
 import { EGraphActions } from "@/types/graphs";
 import {
@@ -61,9 +60,8 @@ export const ContextMenuItems = (props: {
   const { appendWidget, removeBackstageWidget, removeLogViewerHistory } =
     useWidgetStore();
   const { appendDialog, removeDialog } = useDialogStore();
-  const { setNodesAndEdges } = useFlowStore();
 
-  const { data: graphs } = useGraphs();
+  const { data: graphs, mutate: mutateGraphs } = useGraphs();
 
   const editorRefMappings = React.useRef<
     Record<string, React.RefObject<IEditorWidgetRef>>
@@ -416,10 +414,7 @@ export const ContextMenuItems = (props: {
               if (!graph) {
                 throw new Error("Graph not found");
               }
-              const { nodes, edges } = await resetNodesAndEdgesByGraphs([
-                graph,
-              ]);
-              setNodesAndEdges(nodes, edges);
+              await mutateGraphs();
             } catch (error: unknown) {
               toast.error(t("action.deleteNodeFailed"), {
                 description:
