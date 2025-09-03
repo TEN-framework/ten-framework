@@ -166,6 +166,7 @@ impl GraphContent {
             // Load graph from URI and replace the current graph
             let graph = load_graph_from_uri(import_uri, current_base_dir, &mut None).await?;
             self.graph = graph;
+            self.import_uri = None;
         }
 
         self.graph.validate_and_complete(current_base_dir)?;
@@ -213,8 +214,10 @@ impl GraphInfo {
     pub async fn to_json_with_flattened_graph(&mut self) -> Result<String> {
         self.validate_and_complete_and_flatten().await?;
         let mut graph_info = self.clone();
-        // Replace the graph with the flattened graph
-        graph_info.graph.graph = self.graph.flattened_graph.as_ref().unwrap().clone();
+        // Replace the graph with the flattened graph if the flattened graph exists.
+        if let Some(flattened_graph) = self.graph.flattened_graph.as_ref() {
+            graph_info.graph.graph = flattened_graph.clone();
+        }
         let json = serde_json::to_string(&graph_info)?;
         Ok(json)
     }
