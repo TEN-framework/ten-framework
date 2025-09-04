@@ -73,16 +73,16 @@ def test_compatible_config3():
     property_json = {
         "params": {
             "language": "en-US",
-            "secret_id": "fake_secretid",
+            "secret": "fake_secret_key",
             "voice_format": 1,
             "word_info": 2,
             "app_id": "fake_app_id",
-            "key": "fake_secret_key",
+            "key": "fake_secretid",
             "finalize_mode": "mute_pkg",
             "vad_silence_time": 900,
             "log_level": "DEBUG",
             "max_speak_time": 80000,
-            "hotword_list": "aaa|5,bbb|5",
+            "hotword_list": ["aaa|5", "bbb|5"],
         },
         "vad_silence_time": 0,  # ignore
         "max_speak_time": 0,  # ignore

@@ -269,13 +269,9 @@ class RequestParams(BaseModel):
 
     @field_validator("hotword_list", mode="after")
     @classmethod
-    def _validate_hotword_list(
-        cls, value: str | list[str] | None
-    ) -> str | None:
+    def _validate_hotword_list(cls, value: str | None) -> str | None:
         if value is None:
             return None
-        if isinstance(value, list):
-            value = ",".join(value)
         if len(value) == 0:
             return None
         _words = value.split(",")
