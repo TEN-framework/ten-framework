@@ -78,6 +78,18 @@ class Params(BaseModel):
             data["secretid"] = data.pop("secret_id")
         if "secret" in data:
             data["secretid"] = data.pop("secret")
+        if "language" in data and "engine_model_type" not in data:
+            language_model_map = {
+                "zh-CN": "16k_zh",
+                "en-US": "16k_en",
+                "es-ES": "16k_es",
+                "ja-JP": "16k_ja",
+                "ko-KR": "16k_ko",
+                "ar-AE": "16k_ar",
+                "hi-IN": "16k_hi",
+            }
+            data["engine_model_type"] = language_model_map[data.pop("language")]
+
         return data
 
     @model_validator(mode="after")
@@ -119,3 +131,10 @@ class TencentASRConfig(BaseModel):
         description="Tencent ASR dump path",
     )
     params: Params = Field(..., description="Tencent ASR params")
+
+    @model_validator(mode="before")
+    @classmethod
+    def compatible_config(cls, data: dict[str, Any]) -> Any:
+        if "language" in data:
+            data["params"]["language"] = data.pop("language")
+        return data

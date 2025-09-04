@@ -42,7 +42,7 @@ class PollyTTSExtension(AsyncTTS2BaseExtension):
 
     @override
     def vendor(self) -> str:
-        return "aws_polly"
+        return "amazon"
 
     @override
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
