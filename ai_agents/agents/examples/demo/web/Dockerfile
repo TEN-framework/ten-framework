@@ -24,6 +24,46 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+# Ensure '@/lib/utils' exists and exports cn/useIsMobileScreen in CI builds.
+# If missing, synthesize it with the expected helpers instead of copying unrelated files.
+RUN if [ ! -f src/lib/utils.ts ]; then \
+      mkdir -p src/lib && \
+      printf '%s\n' \
+        'import * as React from "react"' \
+        'import { clsx, type ClassValue } from "clsx"' \
+        'import { twMerge } from "tailwind-merge"' \
+        '' \
+        'export function cn(...inputs: ClassValue[]) {' \
+        '  return twMerge(clsx(inputs))' \
+        '}' \
+        '' \
+        'export function useIsMobileScreen(breakpoint?: string) {' \
+        '  const [isMobileScreen, setIsMobileScreen] = React.useState(false)' \
+        '' \
+        '  React.useEffect(() => {' \
+        '    const mql = window.matchMedia(`(max-width: ${breakpoint ?? "768px"})`)' \
+        '    setIsMobileScreen(mql.matches)' \
+        '    const listener = () => setIsMobileScreen(mql.matches)' \
+        '    mql.addEventListener("change", listener)' \
+        '' \
+        '    return () => mql.removeEventListener("change", listener)' \
+        '  }, [breakpoint])' \
+        '' \
+        '  return isMobileScreen' \
+        '}' \
+        '' \
+        'export function formatNumber(num: number, decimals: number = 1): string {' \
+        '  if (num === 0) return "0"' \
+        '  const k = 1000' \
+        '  const sizes = ["", "K", "M", "B", "T"]' \
+        '  const i = Math.floor(Math.log(Math.abs(num)) / Math.log(k))' \
+        '  if (i === 0) return num.toString()' \
+        '  const scaled = num / Math.pow(k, i)' \
+        '  return `${scaled.toFixed(decimals)}${sizes[i]}`' \
+        '}' \
+        > src/lib/utils.ts ; \
+    fi
+
 # Next.js collects completely anonymous telemetry data about general usage.
 # Learn more here: https://nextjs.org/telemetry
 # Uncomment the following line in case you want to disable telemetry during the build.
