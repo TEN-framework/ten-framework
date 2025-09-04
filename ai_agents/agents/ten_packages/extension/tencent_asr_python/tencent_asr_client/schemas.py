@@ -250,7 +250,7 @@ class RequestParams(BaseModel):
         le=1,
         description="Noise parameter threshold, range [-1,1]. default: 0.0",
     )
-    hotword_list: str | None = Field(
+    hotword_list: str | list[str] | None = Field(
         default=None, description="Temporary hot word table"
     )
     input_sample_rate: int | None = Field(
@@ -269,7 +269,9 @@ class RequestParams(BaseModel):
 
     @field_validator("hotword_list", mode="after")
     @classmethod
-    def _validate_hotword_list(cls, value: str) -> str | None:
+    def _validate_hotword_list(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
         if len(value) == 0:
             return None
         _words = value.split(",")
