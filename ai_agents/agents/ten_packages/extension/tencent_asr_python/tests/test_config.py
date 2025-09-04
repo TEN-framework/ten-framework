@@ -82,6 +82,7 @@ def test_compatible_config3():
             "vad_silence_time": 900,
             "log_level": "DEBUG",
             "max_speak_time": 80000,
+            "hotword_list": "aaa|5,bbb|5",
         },
         "vad_silence_time": 0,  # ignore
         "max_speak_time": 0,  # ignore
@@ -93,3 +94,4 @@ def test_compatible_config3():
     assert config.params.appid == "fake_app_id"
     assert config.params.vad_silence_time == 900
     assert config.params.max_speak_time == 80000
+    assert config.params.hotword_list == "aaa|5,bbb|5"

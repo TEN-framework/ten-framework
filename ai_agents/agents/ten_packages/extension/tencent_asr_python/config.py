@@ -72,12 +72,14 @@ class Params(BaseModel):
             data["appid"] = data.pop("app_id")
         if "secret_key" in data:
             data["secretkey"] = data.pop("secret_key")
-        if "key" in data:
-            data["secretkey"] = data.pop("key")
         if "secret_id" in data:
             data["secretid"] = data.pop("secret_id")
+
+        # compatible old config, it's not recommended.
+        if "key" in data:
+            data["secretid"] = data.pop("key")
         if "secret" in data:
-            data["secretid"] = data.pop("secret")
+            data["secretkey"] = data.pop("secret")
         if "language" in data and "engine_model_type" not in data:
             language_model_map = {
                 "zh-CN": "16k_zh",
