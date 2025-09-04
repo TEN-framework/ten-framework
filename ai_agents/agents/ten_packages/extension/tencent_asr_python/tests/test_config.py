@@ -83,9 +83,13 @@ def test_compatible_config3():
             "log_level": "DEBUG",
             "max_speak_time": 80000,
         },
+        "vad_silence_time": 0,  # ignore
+        "max_speak_time": 0,  # ignore
     }
     config = TencentASRConfig.model_validate(property_json)
     assert config.params.engine_model_type == "16k_en"
     assert config.params.secretid == "fake_secretid"
     assert config.params.secretkey == "fake_secret_key"
     assert config.params.appid == "fake_app_id"
+    assert config.params.vad_silence_time == 900
+    assert config.params.max_speak_time == 80000

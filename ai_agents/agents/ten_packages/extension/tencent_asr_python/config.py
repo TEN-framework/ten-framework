@@ -131,6 +131,7 @@ class TencentASRConfig(BaseModel):
         description="Tencent ASR dump path",
     )
     params: Params = Field(..., description="Tencent ASR params")
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
 
     @model_validator(mode="before")
     @classmethod
