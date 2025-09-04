@@ -42,7 +42,7 @@ class PollyTTSExtension(AsyncTTS2BaseExtension):
 
     @override
     def vendor(self) -> str:
-        return "aws_polly"
+        return "amazon"
 
     @override
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
@@ -70,7 +70,7 @@ class PollyTTSExtension(AsyncTTS2BaseExtension):
                 ...
         except Exception as e:
             ten_env.log_error(f"invalid property: {e}")
-            self.config = None
+            self.client = None
             await self.send_tts_error(
                 self.current_request_id,
                 ModuleError(

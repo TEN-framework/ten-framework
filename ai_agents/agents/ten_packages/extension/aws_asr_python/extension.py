@@ -48,7 +48,7 @@ class AWSASRExtension(AsyncASRBaseExtension):
 
     @override
     def vendor(self) -> str:
-        return "aws"
+        return "amazon"
 
     @override
     async def on_init(self, ten_env: AsyncTenEnv) -> None:

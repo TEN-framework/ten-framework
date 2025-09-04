@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "aws_asr_python",
-  "version": "0.1.5",
+  "version": "0.2.1",
   "display_name": {
     "locales": {
       "en-US": {
