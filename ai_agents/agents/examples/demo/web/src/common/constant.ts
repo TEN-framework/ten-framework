@@ -73,9 +73,9 @@ export const LANGUAGE_OPTIONS: LanguageOptionItem[] = [
   },
 ];
 export const GROUPED_GRAPH_OPTIONS = {
-  "Chained Voice AI": [
+  "Voice AI (STT + LLM + TTS)": [
     {
-      label: "OpenAI (STT + LLM + TTS)",
+      label: "OpenAI GPT 5",
       value: "va_openai_azure",
     },
     // {
@@ -87,7 +87,7 @@ export const GROUPED_GRAPH_OPTIONS = {
       value: "va_llama4",
     },
     {
-      label: "Qwen 3",
+      label: "Qwen 3 Reasoning",
       value: "qwen3",
     },
     // {
