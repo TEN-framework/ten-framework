@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "default_tts_python",
-  "version": "0.11.3",
+  "version": "0.11.4",
   "display_name": {
     "locales": {
       "en-US": {
@@ -68,12 +68,12 @@
     {
       "type": "system",
       "name": "ten_runtime_python",
-      "version": "0.11.3"
+      "version": "0.11.4"
     },
     {
       "type": "system",
       "name": "ten_ai_base",
-      "version": "0.6"
+      "version": "0.7"
     }
   ],
   "api": {

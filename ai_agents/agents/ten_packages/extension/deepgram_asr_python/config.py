@@ -7,6 +7,8 @@ from ten_ai_base.utils import encrypt
 @dataclass
 class DeepgramASRConfig(BaseModel):
     api_key: str = ""
+    url: str = "wss://api.deepgram.com/v1/listen"
+    key: str = ""
     language: str = "en-US"
     language_list: List[str] = Field(default_factory=lambda: ["en-US"])
     model: str = "nova-2"

@@ -1,4 +1,5 @@
 import { LanguageMap } from "@/common/constant";
+import { IOceanBaseSettings } from "@/types";
 
 const OPENAI_REALTIME_MODEL = "gpt-realtime"
 
@@ -121,7 +122,8 @@ export const getGraphProperties = (
     language: string,
     voiceType: string,
     prompt: string | undefined,
-    greeting: string | undefined
+    greeting: string | undefined,
+    oceanbaseSettings: IOceanBaseSettings | undefined
 ) => {
     let localizationOptions = {
         "greeting": "Hey, I\'m TEN Agent, I can speak, see, and reason from a knowledge base, ask me anything!",
@@ -357,6 +359,30 @@ export const getGraphProperties = (
             },
             "main_control": {
                 "greeting": combined_greeting
+            }
+        }
+    } else if (graphName === "va_oceanbase_rag") {
+        return {
+            "stt": {
+                "params": {
+                    "language": language
+                },
+            },
+            "llm": {
+                "api_key": oceanbaseSettings?.api_key,
+                "base_url": oceanbaseSettings?.base_url,
+                "ai_database_name": oceanbaseSettings?.db_name,
+                "collection_id": oceanbaseSettings?.collection_id
+            },
+            "main_control": {
+                "greeting": combined_greeting
+            },
+            "tts": {
+                "params": {
+                    "propertys": [
+                        ["SpeechServiceConnection_SynthVoice", voiceNameMap[language]["azure"][voiceType]]
+                    ]
+                }
             }
         }
     }

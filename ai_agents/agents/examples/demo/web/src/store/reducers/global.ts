@@ -6,6 +6,7 @@ import {
   IAgentSettings,
   ICozeSettings,
   IDifySettings,
+  IOceanBaseSettings,
 } from "@/types"
 import { createSlice, PayloadAction } from "@reduxjs/toolkit"
 import {
@@ -13,7 +14,6 @@ import {
   DEFAULT_OPTIONS,
   COLOR_LIST,
   setOptionsToLocal,
-  genRandomChatList,
   DEFAULT_AGENT_SETTINGS,
   DEFAULT_COZE_SETTINGS,
   setAgentSettingsToLocal,
@@ -22,6 +22,9 @@ import {
   DEFAULT_DIFY_SETTINGS,
   setDifySettingsToLocal,
   resetDifySettings as resetDifySettingsLocal,
+  DEFAULT_OCEAN_BASE_SETTINGS,
+  setOceanBaseSettingsToLocal,
+  resetOceanBaseSettings as resetOceanBaseSettingsLocal,
 } from "@/common"
 
 export interface InitialState {
@@ -37,6 +40,7 @@ export interface InitialState {
   agentSettings: IAgentSettings
   cozeSettings: ICozeSettings
   difySettings: IDifySettings
+  oceanbaseSettings: IOceanBaseSettings
   mobileActiveTab: EMobileActiveTab
   globalSettingsDialog: {
     open?: boolean
@@ -58,6 +62,7 @@ const getInitialState = (): InitialState => {
     agentSettings: DEFAULT_AGENT_SETTINGS,
     cozeSettings: DEFAULT_COZE_SETTINGS,
     difySettings: DEFAULT_DIFY_SETTINGS,
+    oceanbaseSettings: DEFAULT_OCEAN_BASE_SETTINGS,
     mobileActiveTab: EMobileActiveTab.AGENT,
     globalSettingsDialog: { open: false },
   }
@@ -165,6 +170,10 @@ export const globalSlice = createSlice({
       state.difySettings = { ...state.difySettings, ...action.payload }
       setDifySettingsToLocal(state.difySettings)
     },
+    setOceanBaseSettings: (state, action: PayloadAction<Partial<IOceanBaseSettings>>) => {
+      state.oceanbaseSettings = { ...state.oceanbaseSettings, ...action.payload }
+      setOceanBaseSettingsToLocal(state.oceanbaseSettings)
+    },
     resetCozeSettings: (state) => {
       state.cozeSettings = DEFAULT_COZE_SETTINGS
       resetCozeSettingsLocal()
@@ -172,6 +181,10 @@ export const globalSlice = createSlice({
     resetDifySettings: (state) => {
       state.difySettings = DEFAULT_DIFY_SETTINGS
       resetDifySettingsLocal()
+    },
+    resetOceanBaseSettings: (state) => {
+      state.oceanbaseSettings = DEFAULT_OCEAN_BASE_SETTINGS
+      resetOceanBaseSettingsLocal()
     },
     setVoiceType: (state, action: PayloadAction<VoiceType>) => {
       state.voiceType = action.payload
@@ -214,6 +227,8 @@ export const {
   resetCozeSettings,
   setDifySettings,
   resetDifySettings,
+  setOceanBaseSettings,
+  resetOceanBaseSettings,
   setMobileActiveTab,
   setGlobalSettingsDialog,
 } = globalSlice.actions

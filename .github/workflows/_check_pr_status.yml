@@ -1,0 +1,69 @@
+name: Check PR Status (Reusable)
+
+on:
+  workflow_call:
+    outputs:
+      should_continue:
+        description: "Whether the workflow should continue"
+        value: ${{ jobs.check_pr_status.outputs.should_continue }}
+
+jobs:
+  check_pr_status:
+    runs-on: ubuntu-latest
+    outputs:
+      should_continue: ${{ steps.check.outputs.should_continue }}
+    steps:
+      - name: Check if PR is still open
+        id: check
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            console.log('Event name:', context.eventName);
+            console.log('Payload keys:', Object.keys(context.payload));
+
+            // Only check for PR events
+            if (context.eventName !== 'pull_request') {
+              console.log('Not a PR event, continuing...');
+              core.setOutput('should_continue', 'true');
+              return;
+            }
+
+            // Ensure we have PR data
+            if (!context.payload.pull_request) {
+              console.log('No pull_request data in payload, continuing...');
+              core.setOutput('should_continue', 'true');
+              return;
+            }
+
+            const { owner, repo } = context.repo;
+            const prNumber = context.payload.pull_request.number;
+
+            console.log(`Checking PR #${prNumber} status...`);
+
+            try {
+              const pr = await github.rest.pulls.get({
+                owner,
+                repo,
+                pull_number: prNumber,
+              });
+
+              console.log(`PR #${prNumber} state: ${pr.data.state}, merged: ${pr.data.merged}`);
+
+              if (pr.data.state === 'closed') {
+                if (pr.data.merged) {
+                  console.log(`PR #${prNumber} has been merged. Stopping workflow.`);
+                } else {
+                  console.log(`PR #${prNumber} has been closed. Stopping workflow.`);
+                }
+                core.setOutput('should_continue', 'false');
+              } else {
+                console.log(`PR #${prNumber} is still open. Continuing workflow.`);
+                core.setOutput('should_continue', 'true');
+              }
+            } catch (error) {
+              console.error(`Error checking PR status: ${error.message}`);
+              console.log('Error details:', error);
+              console.log('Continuing workflow due to error...');
+              core.setOutput('should_continue', 'true');
+            }

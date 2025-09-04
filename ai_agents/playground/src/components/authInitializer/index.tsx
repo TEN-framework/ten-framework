@@ -37,7 +37,7 @@ const AuthInitializer = (props: AuthInitializerProps) => {
 
   useEffect(() => {
     if (selectedGraphId) {
-      const graph = graphList.find((g) => g.uuid === selectedGraphId)
+      const graph = graphList.find((g) => g.graph_id === selectedGraphId)
       if (!graph) {
         return
       }
