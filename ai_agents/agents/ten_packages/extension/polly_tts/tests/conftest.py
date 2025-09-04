@@ -3,8 +3,8 @@
 # Licensed under the Apache License, Version 2.0.
 # See the LICENSE file for more information.
 #
-import threading
 import json
+import threading
 from typing_extensions import override
 import pytest
 from ten_runtime import (
@@ -27,6 +27,7 @@ class FakeApp(App):
     # timing, the earliest point is within the `on_init()` function of the upper
     # TEN app. Therefore, we release the testing fixture lock within the user
     # layer's `on_init()` of the TEN app.
+    @override
     def on_init(self, ten_env: TenEnv) -> None:
         assert self.event
         self.event.set()
