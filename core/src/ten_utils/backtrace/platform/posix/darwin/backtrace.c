@@ -13,6 +13,7 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "include_internal/ten_rust/ten_rust.h"
 #include "include_internal/ten_utils/backtrace/common.h"
 #include "include_internal/ten_utils/backtrace/platform/posix/darwin/internal.h"
 #include "include_internal/ten_utils/backtrace/platform/posix/internal.h"
@@ -87,6 +88,13 @@ void ten_backtrace_dump(ten_backtrace_t *self, size_t skip) {
     return;
   }
 
+#if defined(TEN_ENABLE_TEN_RUST_APIS)
+  ten_backtrace_common_t *common = (ten_backtrace_common_t *)self;
+
+  // call Rust side frame by frame parsing and output through callback.
+  (void)ten_rust_backtrace_dump(self, common->on_dump_file_line,
+                                common->on_error, (uintptr_t)skip);
+#else
   // NOTE: Currently, the only way to get detailed backtrace via
   // 'ten_backtrace_dump_using_libgcc' is to create .dsym for each executable
   // and libraries. Otherwise, it will show
@@ -95,4 +103,5 @@ void ten_backtrace_dump(ten_backtrace_t *self, size_t skip) {
   //
   // Therefore, we use the glibc builtin method (backtrace_symbols) for now.
   ten_backtrace_dump_using_glibc(self, skip);
+#endif
 }

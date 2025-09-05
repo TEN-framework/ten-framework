@@ -20,6 +20,8 @@ ten_utils_test("ten_utils_unit_test") {
   public_deps = [
     "unit",
     "//core/src/ten_utils/backtrace",
+    "//core/src/ten_rust:ten_rust_binding",
+    "//core/src/ten_runtime/app/service_hub/api",
     "//core/src/ten_utils/container",
     "//core/src/ten_utils/io",
     "//core/src/ten_utils/io/general/loops",
