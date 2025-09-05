@@ -23,6 +23,9 @@ _ACTION = "TextToStreamAudioWSv2"
 class FlowingSpeechSynthesisListener(object):
     """ """
 
+    def on_close(self):
+        logger.info("on_close")
+
     def on_synthesis_start(self, session_id):
         logger.info("on_synthesis_start: session_id={}".format(session_id))
 
@@ -214,6 +217,7 @@ class FlowingSpeechSynthesizer:
                     reason, int((tb - ta) * 1000)
                 )
             )
+            self.listener.on_close()
 
         def _on_data(ws, data, opcode, flag):
             logger.debug("data={} opcode={} flag={}".format(data, opcode, flag))
@@ -301,6 +305,9 @@ class FlowingSpeechSynthesizer:
         self.listener.on_synthesis_start(session_id)
 
         logger.info("synthesizer start: end")
+
+    def is_alive(self):
+        return self.wst and self.wst.is_alive()
 
     def wait(self):
         logger.info("synthesizer wait: begin")

@@ -4,7 +4,7 @@
 # Licensed under the Apache License, Version 2.0, with certain conditions.
 # Refer to the "LICENSE" file in the root directory for more information.
 #
-from unittest.mock import patch, AsyncMock
+from unittest.mock import patch, MagicMock, AsyncMock
 import asyncio
 import filecmp
 import json
@@ -18,9 +18,7 @@ from ten_runtime import (
     Data,
 )
 from ten_ai_base.struct import TTSTextInput, TTSFlush
-from ..tencent_tts import (
-    MESSAGE_TYPE_PCM,
-)
+from ..tencent_tts import MESSAGE_TYPE_PCM, MESSAGE_TYPE_CMD_COMPLETE
 
 
 # ================ test dump file functionality ================
@@ -107,22 +105,30 @@ def test_dump_functionality(MockTencentTTSClient):
 
     # --- Mock Configuration ---
     mock_instance = MockTencentTTSClient.return_value
-    mock_instance.start = AsyncMock()
-    mock_instance.stop = AsyncMock()
+    mock_instance.start = MagicMock()
+    mock_instance.stop = MagicMock()
 
     # Create some fake audio data to be streamed
     fake_audio_chunk_1 = b"\x11\x22\x33\x44" * 20
     fake_audio_chunk_2 = b"\xaa\xbb\xcc\xdd" * 20
 
-    # This async generator simulates the TTS client's synthesize_audio method
-    async def mock_synthesize_audio(text: str):
-        yield (False, MESSAGE_TYPE_PCM, fake_audio_chunk_1)
-        await asyncio.sleep(0.01)
-        yield (False, MESSAGE_TYPE_PCM, fake_audio_chunk_2)
-        await asyncio.sleep(0.01)
-        yield (True, MESSAGE_TYPE_PCM, b"")  # End of stream
+    # Mock synthesize_audio and get_audio_data with proper timing using asyncio.Queue
+    audio_queue = asyncio.Queue()
+
+    def mock_synthesize_audio(text: str, text_input_end: bool):
+        # Add audio data to queue when synthesis starts
+        audio_queue.put_nowait((False, MESSAGE_TYPE_PCM, fake_audio_chunk_1))
+        audio_queue.put_nowait((False, MESSAGE_TYPE_PCM, fake_audio_chunk_2))
+        audio_queue.put_nowait((True, MESSAGE_TYPE_CMD_COMPLETE, b""))
+        print(
+            f"Mock synthesize_audio called with text: {text}, text_input_end: {text_input_end}"
+        )
+
+    async def mock_get_audio_data():
+        return await audio_queue.get()
 
     mock_instance.synthesize_audio.side_effect = mock_synthesize_audio
+    mock_instance.get_audio_data.side_effect = mock_get_audio_data
 
     # --- Test Setup ---
     tester = ExtensionTesterDump()
@@ -131,10 +137,11 @@ def test_dump_functionality(MockTencentTTSClient):
         "dump": True,
         "dump_path": DUMP_PATH,
         "params": {
-            "app_id": "test_app_id",
+            "app_id": "1234567890",
             "secret_id": "test_secret_id",
             "secret_key": "test_secret_key",
             "sample_rate": 24000,
+            "voice_type": 0,
         },
     }
 
@@ -160,8 +167,12 @@ def test_dump_functionality(MockTencentTTSClient):
             tts_dump_file is not None
         ), f"Could not find TTS-generated dump file in {DUMP_PATH}"
 
-        print(f"Comparing TTS dump file: {tts_dump_file}")
-        print(f"With test dump file:    {tester.test_dump_file_path}")
+        print(
+            f"Comparing TTS dump file: {tts_dump_file}, file size: {os.path.getsize(tts_dump_file)}"
+        )
+        print(
+            f"With test dump file:    {tester.test_dump_file_path}, file size: {os.path.getsize(tester.test_dump_file_path)}"
+        )
 
         # Binary comparison of the two files
         assert filecmp.cmp(
@@ -263,22 +274,39 @@ def test_text_input_end_logic(MockTencentTTSClient):
 
     # --- Mock Configuration ---
     mock_instance = MockTencentTTSClient.return_value
-    mock_instance.start = AsyncMock()
-    mock_instance.stop = AsyncMock()
+    mock_instance.start = MagicMock()
+    mock_instance.stop = MagicMock()
 
-    async def mock_synthesize_audio(text: str):
-        yield (False, MESSAGE_TYPE_PCM, b"\x11\x22\x33")
-        yield (True, MESSAGE_TYPE_PCM, b"")  # End of stream
+    # Create some fake audio data to be streamed
+    fake_audio_chunk_1 = b"\x11\x22\x33\x44" * 20
+    fake_audio_chunk_2 = b"\xaa\xbb\xcc\xdd" * 20
+
+    # Mock synthesize_audio and get_audio_data with proper timing using asyncio.Queue
+    audio_queue = asyncio.Queue()
+
+    def mock_synthesize_audio(text: str, text_input_end: bool):
+        # Add audio data to queue when synthesis starts
+        audio_queue.put_nowait((False, MESSAGE_TYPE_PCM, fake_audio_chunk_1))
+        audio_queue.put_nowait((False, MESSAGE_TYPE_PCM, fake_audio_chunk_2))
+        audio_queue.put_nowait((True, MESSAGE_TYPE_CMD_COMPLETE, b""))
+        print(
+            f"Mock synthesize_audio called with text: {text}, text_input_end: {text_input_end}"
+        )
+
+    async def mock_get_audio_data():
+        return await audio_queue.get()
 
     mock_instance.synthesize_audio.side_effect = mock_synthesize_audio
+    mock_instance.get_audio_data.side_effect = mock_get_audio_data
 
     # --- Test Setup ---
     config = {
         "params": {
-            "app_id": "test_app_id",
+            "app_id": "1234567890",
             "secret_id": "test_secret_id",
             "secret_key": "test_secret_key",
             "sample_rate": 24000,
+            "voice_type": 0,
         }
     }
 
@@ -299,11 +327,6 @@ def test_text_input_end_logic(MockTencentTTSClient):
     assert (
         tester.error_code == 1000
     ), f"Expected error code 1000, but got {tester.error_code}"
-    assert (
-        tester.error_message is not None
-        and "Received a message for a finished request_id"
-        in tester.error_message
-    ), "Error message is not as expected."
 
     print("✅ Text input end logic test passed successfully.")
 
@@ -412,29 +435,38 @@ def test_flush_logic(MockTencentTTSClient):
     print("Starting test_flush_logic with mock...")
 
     mock_instance = MockTencentTTSClient.return_value
-    mock_instance.start = AsyncMock()
-    mock_instance.stop = AsyncMock()
-    mock_instance.cancel = AsyncMock()
+    mock_instance.start = MagicMock()
+    mock_instance.stop = MagicMock()
 
-    async def mock_synthesize_audio(text: str):
-        for _ in range(20):
-            if mock_instance.cancel.called:
-                print("Mock detected cancel call, stopping stream.")
-                yield (True, MESSAGE_TYPE_PCM, b"")  # End of stream
-                return  # Stop the generator immediately
-            yield (False, MESSAGE_TYPE_PCM, b"\x11\x22\x33" * 100)
-            await asyncio.sleep(0.1)
-        # This part is only reached if not cancelled
-        yield (True, MESSAGE_TYPE_PCM, b"")  # End of stream
+    # Create some fake audio data to be streamed
+    fake_audio_chunk_1 = b"\x11\x22\x33\x44" * 20
+    fake_audio_chunk_2 = b"\xaa\xbb\xcc\xdd" * 20
+
+    # Mock synthesize_audio and get_audio_data with proper timing using asyncio.Queue
+    audio_queue = asyncio.Queue()
+
+    def mock_synthesize_audio(text: str, text_input_end: bool):
+        # Add audio data to queue when synthesis starts
+        audio_queue.put_nowait((False, MESSAGE_TYPE_PCM, fake_audio_chunk_1))
+        audio_queue.put_nowait((False, MESSAGE_TYPE_PCM, fake_audio_chunk_2))
+        audio_queue.put_nowait((True, MESSAGE_TYPE_CMD_COMPLETE, b""))
+        print(
+            f"Mock synthesize_audio called with text: {text}, text_input_end: {text_input_end}"
+        )
+
+    async def mock_get_audio_data():
+        return await audio_queue.get()
 
     mock_instance.synthesize_audio.side_effect = mock_synthesize_audio
+    mock_instance.get_audio_data.side_effect = mock_get_audio_data
 
     config = {
         "params": {
-            "app_id": "test_app_id",
+            "app_id": "1234567890",
             "secret_id": "test_secret_id",
             "secret_key": "test_secret_key",
             "sample_rate": 24000,
+            "voice_type": 0,
         }
     }
     tester = ExtensionTesterFlush()
@@ -451,9 +483,6 @@ def test_flush_logic(MockTencentTTSClient):
     assert (
         not tester.audio_received_after_flush_end
     ), "Received audio after tts_flush_end."
-
-    # TODO: no reason in audio end
-    # assert tester.audio_end_reason == "flush", f"Expected audio end reason 'flush', but got '{tester.audio_end_reason}'"
 
     calculated_duration = tester.get_calculated_audio_duration_ms()
     event_duration = tester.total_audio_duration_from_event

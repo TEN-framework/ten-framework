@@ -7,6 +7,7 @@
 from typing import Any
 from unittest.mock import patch, AsyncMock
 import json
+import asyncio
 
 from ten_ai_base.struct import TTSTextInput
 from ten_runtime import (
@@ -16,6 +17,7 @@ from ten_runtime import (
 )
 from ..tencent_tts import (
     MESSAGE_TYPE_PCM,
+    MESSAGE_TYPE_CMD_COMPLETE,
 )
 
 
@@ -111,8 +113,14 @@ def test_reconnect_after_connection_drop(MockTencentTTSClient):
         else:
             # On the second call, simulate a successful audio stream
             yield (False, MESSAGE_TYPE_PCM, b"\x44\x55\x66")
-            yield (True, MESSAGE_TYPE_PCM, b"")
+            yield (True, MESSAGE_TYPE_CMD_COMPLETE, b"")
 
+    audio_queue = asyncio.Queue()
+
+    async def mock_get_audio_data():
+        return await audio_queue.get()
+
+    mock_instance.get_audio_data.side_effect = mock_get_audio_data
     mock_instance.synthesize_audio.side_effect = mock_synthesize_audio_stateful
 
     # --- Test Setup ---
