@@ -7,12 +7,12 @@
 #include <limits.h>
 #include <stdint.h>
 
+#include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <functional>
 #include <mutex>
 #include <thread>
-#include <unordered_map>
 #include <vector>
 
 #include "common/test_utils.h"
@@ -79,19 +79,22 @@ static void RunRWLockTest(ten_rwlock_t *lut, const std::string &impl,
   std::atomic<bool> stop = {false};
   std::atomic<int32_t> read_concurr = {0};
   std::atomic<int32_t> write_concurr = {0};
-  std::unordered_map<std::thread::id, int> writer_actives;
+  std::vector<int> writer_actives;
   std::mutex writer_actives_lock;
-  std::unordered_map<std::thread::id, int> reader_actives;
+  std::vector<int> reader_actives;
   std::mutex reader_actives_lock;
 
   std::srand(static_cast<unsigned>(time(NULL)));
 
   auto writer_op = [&start_event, &lut, &stop, &read_concurr, &write_concurr,
-                    &stats, &writer_actives, &writer_actives_lock, perf] {
+                    &stats, &writer_actives, &writer_actives_lock,
+                    perf](int thread_idx) {
     int *actives = nullptr;
     {
       std::lock_guard<std::mutex> _(writer_actives_lock);
-      actives = &writer_actives[std::this_thread::get_id()];
+      if (thread_idx < writer_actives.size()) {
+        actives = &writer_actives[thread_idx];
+      }
     }
 
     // int id = writer_id++;
@@ -142,13 +145,16 @@ static void RunRWLockTest(ten_rwlock_t *lut, const std::string &impl,
   };
 
   auto reader_op = [&start_event, &lut, &stop, &read_concurr, &write_concurr,
-                    &stats, &reader_actives, &reader_actives_lock, perf] {
+                    &stats, &reader_actives, &reader_actives_lock,
+                    perf](int thread_idx) {
     // int id = reader_id++;
     // AGO_LOG("[reader] % 2d: waiting for start event", id);
     int *actives = nullptr;
     {
       std::lock_guard<std::mutex> _(reader_actives_lock);
-      actives = &reader_actives[std::this_thread::get_id()];
+      if (thread_idx < reader_actives.size()) {
+        actives = &reader_actives[thread_idx];
+      }
     }
 
     ten_event_wait(start_event, -1);
@@ -195,13 +201,15 @@ static void RunRWLockTest(ten_rwlock_t *lut, const std::string &impl,
 
   // prepare
   writers.reserve(write_threads);
+  writer_actives.resize(write_threads, 0);
   for (int i = 0; i < write_threads; i++) {
-    writers.emplace_back(std::thread(writer_op));
+    writers.emplace_back(std::thread(writer_op, i));
   }
 
   readers.reserve(read_threads);
+  reader_actives.resize(read_threads, 0);
   for (int i = 0; i < read_threads; i++) {
-    readers.emplace_back(std::thread(reader_op));
+    readers.emplace_back(std::thread(reader_op, i));
   }
 
   // go
@@ -220,9 +228,9 @@ static void RunRWLockTest(ten_rwlock_t *lut, const std::string &impl,
   ThreadBalancerStatistic balancer;
   int total = 0;
   for (auto &c : writer_actives) {
-    if (balancer.Writer.min > c.second) balancer.Writer.min = c.second;
-    if (balancer.Writer.max < c.second) balancer.Writer.max = c.second;
-    total += c.second;
+    balancer.Writer.min = std::min(balancer.Writer.min, c);
+    balancer.Writer.max = std::max(balancer.Writer.max, c);
+    total += c;
   }
   if (balancer.Writer.min == INT_MAX) balancer.Writer.min = 0;
   if (!writer_actives.empty()) {
@@ -231,9 +239,9 @@ static void RunRWLockTest(ten_rwlock_t *lut, const std::string &impl,
 
   total = 0;
   for (auto &c : reader_actives) {
-    if (balancer.Reader.min > c.second) balancer.Reader.min = c.second;
-    if (balancer.Reader.max < c.second) balancer.Reader.max = c.second;
-    total += c.second;
+    balancer.Reader.min = std::min(balancer.Reader.min, c);
+    balancer.Reader.max = std::max(balancer.Reader.max, c);
+    total += c;
   }
   if (balancer.Reader.min == INT_MAX) balancer.Reader.min = 0;
   if (!reader_actives.empty()) {
