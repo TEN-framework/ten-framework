@@ -285,7 +285,9 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                         if self.request_ts and t.text_input_end:
                             duration_ms = self._calculate_audio_duration_ms()
                             request_event_interval = int(
-                                (datetime.now() - self.request_ts).total_seconds()
+                                (
+                                    datetime.now() - self.request_ts
+                                ).total_seconds()
                                 * 1000
                             )
                             await self.send_tts_audio_end(
