@@ -16,9 +16,12 @@
 #include "ten_utils/container/list.h"
 #include "ten_utils/lib/alloc.h"
 #include "ten_utils/lib/signature.h"
-#include "ten_utils/log/log.h"
 #include "ten_utils/macro/check.h"
 #include "ten_utils/macro/memory.h"
+
+#if !defined(OS_WINDOWS)
+#include <unistd.h>
+#endif
 
 #if defined(_WIN32) || defined(_WIN64)
 #define strtok_r strtok_s
@@ -310,10 +313,13 @@ void ten_string_reserve(ten_string_t *self, size_t extra) {
 
   size_t required_size = self->first_unused_idx + extra;
   if (required_size > (size_t)MAX_BUFFER_SIZE) {
-    TEN_LOGW(
+#if !defined(OS_WINDOWS)
+    (void)dprintf(
+        STDERR_FILENO,
         "Buffer size exceeds the maximum limit when ten_string_reserve, "
-        "required_size: %zu",
+        "required_size: %zu\n",
         required_size);
+#endif
   }
 
   if (self->buf_size < required_size) {

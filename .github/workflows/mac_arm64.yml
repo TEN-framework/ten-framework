@@ -121,7 +121,7 @@ jobs:
       - name: Install tools and dependencies
         run: |
           brew install llvm
-          rustup default nightly-2025-08-10
+          rustup default nightly-2025-09-04
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2
@@ -251,7 +251,7 @@ jobs:
       - name: Install tools and dependencies
         run: |
           brew install llvm
-          rustup default nightly-2025-08-10
+          rustup default nightly-2025-09-04
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2
@@ -406,7 +406,7 @@ jobs:
       - name: Install tools and dependencies
         run: |
           brew install llvm
-          rustup default nightly-2025-08-10
+          rustup default nightly-2025-09-04
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2
@@ -498,7 +498,7 @@ jobs:
       - name: Install tools and dependencies
         run: |
           brew install llvm
-          rustup default nightly-2025-08-10
+          rustup default nightly-2025-09-04
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2
@@ -598,7 +598,7 @@ jobs:
       - name: Install tools and dependencies
         run: |
           brew install llvm
-          rustup default nightly-2025-08-10
+          rustup default nightly-2025-09-04
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2
@@ -698,7 +698,7 @@ jobs:
       - name: Install tools and dependencies
         run: |
           brew install llvm
-          rustup default nightly-2025-08-10
+          rustup default nightly-2025-09-04
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2
