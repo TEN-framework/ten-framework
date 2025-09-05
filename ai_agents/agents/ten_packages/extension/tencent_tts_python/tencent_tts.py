@@ -137,7 +137,7 @@ class TencentTTSClient:
         synthesizer.set_voice_type(self.config.voice_type)
         synthesizer.set_codec(self.config.codec)
         synthesizer.set_sample_rate(self.config.sample_rate)
-        synthesizer.set_enable_subtitle(self.config.enable_words)
+        synthesizer.set_enable_subtitle(self.config.enable_subtitle)
         synthesizer.set_speed(self.config.speed)
         synthesizer.set_volume(self.config.volume)
         synthesizer.set_emotion_category(self.config.emotion_category)

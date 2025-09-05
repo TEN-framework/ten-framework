@@ -171,7 +171,7 @@ def test_invalid_params_fatal_error(MockTencentTTSClient):
     # to the request_tts call where the mock will be triggered.
     invalid_params_config = {
         "params": {
-            "app_id": "test_app_id",
+            "app_id": "1234567890",
             "secret_id": "test_secret_id",
             "secret_key": "invalid_secret_key",
         },

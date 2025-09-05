@@ -114,7 +114,7 @@ def test_ttfb_metric_is_sent(MockTencentTTSClient):
     # A minimal config is needed for the extension to initialize correctly.
     metrics_config = {
         "params": {
-            "app_id": "test_app_id",
+            "app_id": "1234567890",
             "secret_id": "test_secret_id",
             "secret_key": "test_secret_key",
         }

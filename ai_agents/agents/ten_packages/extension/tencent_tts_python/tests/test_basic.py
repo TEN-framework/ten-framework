@@ -137,11 +137,11 @@ def test_dump_functionality(MockTencentTTSClient):
         "dump": True,
         "dump_path": DUMP_PATH,
         "params": {
-            "app_id": "test_app_id",
+            "app_id": "1234567890",
             "secret_id": "test_secret_id",
             "secret_key": "test_secret_key",
             "sample_rate": 24000,
-            "voice_type": "0",
+            "voice_type": 0,
         },
     }
 
@@ -302,11 +302,11 @@ def test_text_input_end_logic(MockTencentTTSClient):
     # --- Test Setup ---
     config = {
         "params": {
-            "app_id": "test_app_id",
+            "app_id": "1234567890",
             "secret_id": "test_secret_id",
             "secret_key": "test_secret_key",
             "sample_rate": 24000,
-            "voice_type": "0",
+            "voice_type": 0,
         }
     }
 
@@ -462,11 +462,11 @@ def test_flush_logic(MockTencentTTSClient):
 
     config = {
         "params": {
-            "app_id": "test_app_id",
+            "app_id": "1234567890",
             "secret_id": "test_secret_id",
             "secret_key": "test_secret_key",
             "sample_rate": 24000,
-            "voice_type": "0",
+            "voice_type": 0,
         }
     }
     tester = ExtensionTesterFlush()

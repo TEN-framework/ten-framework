@@ -71,10 +71,10 @@ def test_params_passthrough(MockTencentTTSClient):
     # Define a configuration with custom parameters inside 'params'.
     # These are the parameters we expect to be "passed through".
     real_params = {
-        "app_id": "a_test_app_id",
+        "app_id": "1234567890",
         "secret_id": "a_test_secret_id",
         "secret_key": "a_test_secret_key",
-        "voice_type": "1008",
+        "voice_type": 1008,
     }
 
     real_config = {
@@ -82,11 +82,11 @@ def test_params_passthrough(MockTencentTTSClient):
     }
 
     passthrough_params = {
-        "app_id": "a_test_app_id",
+        "app_id": "1234567890",
         "sample_rate": 16000,
         "secret_id": "a_test_secret_id",
         "secret_key": "a_test_secret_key",
-        "voice_type": "1008",
+        "voice_type": 1008,
     }
 
     tester = ExtensionTesterForPassthrough()

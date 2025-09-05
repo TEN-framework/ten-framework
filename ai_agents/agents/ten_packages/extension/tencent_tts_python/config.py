@@ -16,10 +16,10 @@ class TencentTTSConfig(BaseModel):
     codec: str = "pcm"  # Audio codec
     emotion_category: str = ""  # Emotion category
     emotion_intensity: int = 0  # Emotion intensity
-    enable_words: bool = False  # Enable word-level timing
+    enable_subtitle: bool = False  # Enable subtitle
     sample_rate: int = 24000  # Audio sample rate
     speed: float = 0  # Speed range [-2.0, 6.0]
-    voice_type: str = "0"  # Voice type ID
+    voice_type: int = 0  # Voice type ID
     volume: float = 0  # Volume range [-10, 10]
 
     # Debug and dump settings
@@ -74,9 +74,9 @@ class TencentTTSConfig(BaseModel):
 
     def validate_params(self) -> None:
         """Validate required configuration parameters."""
-        if not self.voice_type.isdigit():
+        if not self.app_id.isdigit():
             raise ValueError(
-                f"voice_type value must be an integer: params.voice_type={self.voice_type}"
+                f"app_id value must be an integer: params.app_id={self.app_id}"
             )
         required_fields = [
             "app_id",
