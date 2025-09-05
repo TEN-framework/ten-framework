@@ -4,8 +4,9 @@
 # Licensed under the Apache License, Version 2.0, with certain conditions.
 # Refer to the "LICENSE" file in the root directory for more information.
 #
-from unittest.mock import patch, AsyncMock
+from unittest.mock import patch, MagicMock
 import json
+import asyncio
 
 from ten_runtime import (
     Cmd,
@@ -49,51 +50,65 @@ class ExtensionTesterForPassthrough(ExtensionTester):
 def test_params_passthrough(MockTencentTTSClient):
     """
     Tests that custom parameters passed in the configuration are correctly
-    forwarded to the TencentTTSClient client constructor.
+    forwarded to the RimeTTSClient constructor.
     """
     print("Starting test_params_passthrough with mock...")
 
     # --- Mock Configuration ---
     mock_instance = MockTencentTTSClient.return_value
-    mock_instance.start = AsyncMock()
-    mock_instance.stop = AsyncMock()  # Required for clean shutdown in on_stop
+    mock_instance.start = MagicMock()
+    mock_instance.stop = MagicMock()
+    mock_instance.synthesize_audio = MagicMock()
+    # Mock synthesize_audio and get_audio_data with proper timing using asyncio.Queue
+    audio_queue = asyncio.Queue()
+
+    async def mock_get_audio_data():
+        return await audio_queue.get()
+
+    mock_instance.get_audio_data.side_effect = mock_get_audio_data
 
     # --- Test Setup ---
-    # Define a configuration with custom, arbitrary parameters inside 'params'.
+    # Define a configuration with custom parameters inside 'params'.
     # These are the parameters we expect to be "passed through".
-    passthrough_params = {
-        "app_id": "test_app_id",
-        "secret_id": "test_secret_id",
-        "secret_key": "test_secret_key",
-        "model": "tts_v2",
-        "audio_setting": {"format": "pcm", "sample_rate": 16000, "channels": 1},
-        "voice_setting": {"voice_id": "male-qn-qingse"},
+    real_params = {
+        "app_id": "1234567890",
+        "secret_id": "a_test_secret_id",
+        "secret_key": "a_test_secret_key",
+        "voice_type": 1008,
     }
-    passthrough_config = {
-        "params": passthrough_params,
+
+    real_config = {
+        "params": real_params,
+    }
+
+    passthrough_params = {
+        "app_id": "1234567890",
+        "sample_rate": 16000,
+        "secret_id": "a_test_secret_id",
+        "secret_key": "a_test_secret_key",
+        "voice_type": 1008,
     }
 
     tester = ExtensionTesterForPassthrough()
-    tester.set_test_mode_single(
-        "tencent_tts_python", json.dumps(passthrough_config)
-    )
+    tester.set_test_mode_single("tencent_tts_python", json.dumps(real_config))
 
     print("Running passthrough test...")
     tester.run()
     print("Passthrough test completed.")
 
     # --- Assertions ---
-    # Check that the TencentTTSClient client was instantiated exactly once.
+    # Check that the RimeTTSClient client was instantiated exactly once.
     MockTencentTTSClient.assert_called_once()
 
     # Get the arguments that the mock was called with.
-    # The constructor signature is (self, config, ten_env, vendor),
-    # so we inspect the 'config' object at index 1 of the call arguments.
-    call_args, call_kwargs = MockTencentTTSClient.call_args
+    # The constructor is called with keyword arguments like config=...
+    # so we inspect the keyword arguments dictionary.
+    call_args, _ = MockTencentTTSClient.call_args
     called_config = call_args[0]
 
     # Verify that the 'params' dictionary in the config object passed to the
     # client constructor is identical to the one we defined in our test config.
+    print(f"called_config: {called_config.params}")
     assert (
         called_config.params == passthrough_params
     ), f"Expected params to be {passthrough_params}, but got {called_config.params}"
