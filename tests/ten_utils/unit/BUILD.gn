@@ -12,6 +12,7 @@ ten_utils_glob("unit") {
 
   file_list = [
     "backtrace_sort_test.cc",
+    "backtrace_rust_ffi_test.cc",
     "ten_base64_test.cc",
     "ten_file_test.cc",
     "ten_list_test.cc",

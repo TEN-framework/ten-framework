@@ -5,6 +5,7 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 pub mod base_dir_pkg_info;
+pub mod backtrace;
 pub mod bindings;
 pub mod constants;
 pub mod crypto;

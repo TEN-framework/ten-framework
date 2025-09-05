@@ -98,13 +98,20 @@ void ten_backtrace_dump(ten_backtrace_t *self, size_t skip) {
     // Return early to avoid dereferencing NULL pointer.
     return;
   }
+#if defined(TEN_ENABLE_TEN_RUST_APIS)
+  ten_backtrace_common_t *common = (ten_backtrace_common_t *)self;
 
+  // call Rust side frame by frame parsing and output through callback.
+  (void)ten_rust_backtrace_dump(self, common->on_dump_file_line,
+                                common->on_error, (uintptr_t)skip);
+#else
   // First try glibc's backtrace which provides basic symbol information
   ten_backtrace_dump_using_glibc(self, skip);
 
   // Then try libgcc's unwinder which can provide more detailed information
   // when debug symbols are available
   ten_backtrace_dump_using_libgcc(self, skip);
+#endif
 }
 
 /**
