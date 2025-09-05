@@ -4,6 +4,6 @@
     "secret_id": "invalid",
     "secret_key": "invalid",
     "sample_rate": 16000,
-    "voice_type": "invalid"
+    "voice_type": 0
   }
 }

@@ -1,4 +1,3 @@
 aiohttp
 pydantic
-websockets
 websocket-client==1.8.0
