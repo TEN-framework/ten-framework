@@ -15,6 +15,7 @@ from ten_runtime import (
     LogLevel,
 )
 
+
 class Params(BaseModel):
     key: str = ""
     model: str = ""
