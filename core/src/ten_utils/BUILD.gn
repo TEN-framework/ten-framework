@@ -51,10 +51,7 @@ shared_library("ten_utils_shared") {
 
   deps = [ ":ten_utils_files" ]
 
-  configs += [
-    "//build/ten_utils:utils_private_config",
-    "//build/ten_utils:utils_shared_library_config",
-  ]
+  configs += [ "//build/ten_utils:utils_private_config" ]
 
   if (is_linux) {
     configs += [ "//.gnfiles/build/platform/linux:specific_c" ]
