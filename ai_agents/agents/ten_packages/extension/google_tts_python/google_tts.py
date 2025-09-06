@@ -128,6 +128,7 @@ class GoogleTTS:
 
         # Retry loop for network issues
         for attempt in range(max_retries):
+            ttfb_ms = None
             try:
                 # Set the text input to be synthesized
                 synthesis_input = texttospeech.SynthesisInput(text=text)
@@ -189,7 +190,6 @@ class GoogleTTS:
                     voice=voice,
                     audio_config=audio_config,
                 )
-                ttfb_ms = None
                 if start_ts is not None:
                     ttfb_ms = int((time.time() - start_ts) * 1000)
                 self.send_text_in_connection = True
