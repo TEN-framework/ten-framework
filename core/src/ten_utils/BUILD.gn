@@ -50,7 +50,6 @@ shared_library("ten_utils_shared") {
   output_name = "ten_utils"
 
   deps = [ ":ten_utils_files" ]
-
   configs += [ "//build/ten_utils:utils_private_config" ]
 
   public_deps = [ "//third_party/yyjson" ]
