@@ -31,11 +31,11 @@ ten_target("ten_runtime_library") {
   }
 
   if (is_linux) {
-    config = [ "//.gnfiles/build/platform/linux:specific_c" ]
+    configs = [ "//.gnfiles/build/platform/linux:specific_c" ]
   } else if (is_mac) {
-    config = [ "//.gnfiles/build/platform/mac:specific_c" ]
+    configs = [ "//.gnfiles/build/platform/mac:specific_c" ]
   } else if (is_win) {
-    config = [ "//.gnfiles/build/platform/win:specific_c" ]
+    configs = [ "//.gnfiles/build/platform/win:specific_c" ]
   }
 
   public_configs = [ ":ten_runtime_config" ]
