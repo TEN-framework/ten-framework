@@ -1335,7 +1335,7 @@
               "name": "v2v",
               "addon": "openai_mllm_python",
               "property": {
-                "api_key": "${env:OPENAI_REALTIME_API_KEY}",
+                "api_key": "${env:OPENAI_API_KEY}",
                 "temperature": 0.9,
                 "model": "gpt-realtime",
                 "max_tokens": 2048,
