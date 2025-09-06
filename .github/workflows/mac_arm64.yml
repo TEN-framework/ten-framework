@@ -120,9 +120,6 @@ jobs:
 
       - name: Install tools and dependencies
         run: |
-          # Because of this issue: https://github.com/llvm/llvm-project/issues/155606,
-          # we need to stick to the old version of LLVM. We can remove this once the issue is resolved.
-          brew install llvm@20
           rustup default nightly-2025-08-10
 
           brew install tree
@@ -133,9 +130,6 @@ jobs:
 
       - name: Build
         run: |
-          if [ ${{ matrix.build_type }} == "debug" ]; then
-            export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
-          fi
           export PATH=$(pwd)/core/ten_gn:$PATH
           echo $PATH
 
@@ -252,9 +246,6 @@ jobs:
 
       - name: Install tools and dependencies
         run: |
-          # Because of this issue: https://github.com/llvm/llvm-project/issues/155606,
-          # we need to stick to the old version of LLVM. We can remove this once the issue is resolved.
-          brew install llvm@20
           rustup default nightly-2025-08-10
 
           brew install tree
@@ -409,9 +400,6 @@ jobs:
 
       - name: Install tools and dependencies
         run: |
-          # Because of this issue: https://github.com/llvm/llvm-project/issues/155606,
-          # we need to stick to the old version of LLVM. We can remove this once the issue is resolved.
-          brew install llvm@20
           rustup default nightly-2025-08-10
 
           brew install tree
@@ -503,9 +491,6 @@ jobs:
 
       - name: Install tools and dependencies
         run: |
-          # Because of this issue: https://github.com/llvm/llvm-project/issues/155606,
-          # we need to stick to the old version of LLVM. We can remove this once the issue is resolved.
-          brew install llvm@20
           rustup default nightly-2025-08-10
 
           brew install tree
@@ -542,9 +527,6 @@ jobs:
           TEN_ENABLE_BACKTRACE_DUMP: "true"
           GOTRACEBACK: crash
         run: |
-          if [ ${{ matrix.build_type }} == "debug" ]; then
-            export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
-          fi
           export PATH=$(pwd)/core/ten_gn:$PATH
           cd out/mac/arm64/
           pytest -s tests/ten_runtime/integration/cpp/
@@ -605,9 +587,6 @@ jobs:
 
       - name: Install tools and dependencies
         run: |
-          # Because of this issue: https://github.com/llvm/llvm-project/issues/155606,
-          # we need to stick to the old version of LLVM. We can remove this once the issue is resolved.
-          brew install llvm@20
           rustup default nightly-2025-08-10
 
           brew install tree
@@ -644,9 +623,6 @@ jobs:
           TEN_ENABLE_BACKTRACE_DUMP: "true"
           GOTRACEBACK: crash
         run: |
-          if [ ${{ matrix.build_type }} == "debug" ]; then
-            export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
-          fi
           export PATH=$(pwd)/core/ten_gn:$PATH
           cd out/mac/arm64/
           pytest -s tests/ten_runtime/integration/go/
@@ -707,9 +683,6 @@ jobs:
 
       - name: Install tools and dependencies
         run: |
-          # Because of this issue: https://github.com/llvm/llvm-project/issues/155606,
-          # we need to stick to the old version of LLVM. We can remove this once the issue is resolved.
-          brew install llvm@20
           rustup default nightly-2025-08-10
 
           brew install tree
@@ -746,9 +719,6 @@ jobs:
           TEN_ENABLE_BACKTRACE_DUMP: "true"
           GOTRACEBACK: crash
         run: |
-          if [ ${{ matrix.build_type }} == "debug" ]; then
-            export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
-          fi
           export PATH=$(pwd)/core/ten_gn:$PATH
           cd out/mac/arm64/
           pytest -s tests/ten_runtime/integration/python/
