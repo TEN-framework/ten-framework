@@ -167,6 +167,7 @@ if __name__ == "__main__":
             cmd = [
                 "cargo",
                 "build",
+                "-vv",
                 "--target-dir",
                 args.target_path,
                 "--target",
