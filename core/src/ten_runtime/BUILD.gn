@@ -30,14 +30,6 @@ ten_target("ten_runtime_library") {
     type = "static_library"
   }
 
-  if (is_linux) {
-    configs = [ "//.gnfiles/build/platform/linux:specific_c" ]
-  } else if (is_mac) {
-    configs = [ "//.gnfiles/build/platform/mac:specific_c" ]
-  } else if (is_win) {
-    configs = [ "//.gnfiles/build/platform/win:specific_c" ]
-  }
-
   public_configs = [ ":ten_runtime_config" ]
 
   public_deps = [
