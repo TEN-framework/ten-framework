@@ -104,6 +104,20 @@ config("utils_private_config") {
     ]
   }
 
+  # Note: Symbol visibility control is intentionally omitted here
+  # because this config is used by both shared libraries and executables.
+  # Executables (like tests) should not have restricted symbol visibility.
+  if (is_win) {
+    ldflags += [ "/ignore:4099" ]
+  } else {
+    ldflags += [ "-Wl,-w" ]
+  }
+}
+
+# Separate config for shared libraries that need symbol visibility control
+config("utils_shared_library_config") {
+  ldflags = []
+
   if (is_linux) {
     ldflags += [
       "-Wl,--version-script=" +
@@ -116,9 +130,6 @@ config("utils_private_config") {
       "-exported_symbols_list",
       "-Xlinker",
       rebase_path("//build/ten_utils/ld_script/mac"),
-      "-Wl,-w",
     ]
-  } else if (is_win) {
-    ldflags += [ "/ignore:4099" ]
   }
 }
