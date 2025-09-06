@@ -6,6 +6,6 @@
     "secret_id": "${env:TENCENT_TTS_SECRET_ID}",
     "secret_key": "${env:TENCENT_TTS_SECRET_KEY}",
     "sample_rate": 16000,
-    "voice_type": "${env:TENCENT_TTS_VOICE_TYPE}"
+    "voice_type": 0
   }
 }

@@ -108,12 +108,14 @@ class WeatherToolExtension(AsyncLLMToolBaseExtension):
         self.config = await WeatherToolConfig.create_async(ten_env=ten_env)
         ten_env.log_info(f"config: {self.config}")
         if self.config.api_key:
+            # Key present: register tools as usual.
             await super().on_start(ten_env)
         else:
-            ten_env.log_error(
-                "API key is missing, cannot start WeatherToolExtension."
+            # Key missing: keep extension loaded but disabled; do not register tools.
+            # This makes the weather tool optional and avoids failing app startup.
+            ten_env.log_info(
+                "WeatherToolExtension disabled: WEATHERAPI_API_KEY not set (optional)."
             )
-            raise ValueError("API key is required for WeatherToolExtension.")
 
         self.ten_env = ten_env
 
