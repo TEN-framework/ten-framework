@@ -1,0 +1,6 @@
+{
+  "params": {
+    "key": "${env:ENV_VAR_1_KEY|default}",
+    "model": "${env:ENV_VAR_1_MODEL|default}"
+  }
+}

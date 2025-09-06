@@ -120,8 +120,7 @@ jobs:
 
       - name: Install tools and dependencies
         run: |
-          brew install llvm
-          rustup default nightly-2025-08-10
+          rustup default stable
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2
@@ -131,9 +130,6 @@ jobs:
 
       - name: Build
         run: |
-          if [ ${{ matrix.build_type }} == "debug" ]; then
-            export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
-          fi
           export PATH=$(pwd)/core/ten_gn:$PATH
           echo $PATH
 
@@ -250,8 +246,7 @@ jobs:
 
       - name: Install tools and dependencies
         run: |
-          brew install llvm
-          rustup default nightly-2025-08-10
+          rustup default stable
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2
@@ -313,9 +308,10 @@ jobs:
           out/mac/arm64/tests/standalone/ten_runtime_smoke_test
 
           df -h .
-      #   continue-on-error: true
-      # - name: Setup tmate session
-      #   uses: mxschmitt/action-tmate@v3
+        continue-on-error: true
+
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
 
       - name: Run Tests (ten_rust standalone tests)
         env:
@@ -405,8 +401,7 @@ jobs:
 
       - name: Install tools and dependencies
         run: |
-          brew install llvm
-          rustup default nightly-2025-08-10
+          rustup default stable
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2
@@ -497,8 +492,7 @@ jobs:
 
       - name: Install tools and dependencies
         run: |
-          brew install llvm
-          rustup default nightly-2025-08-10
+          rustup default stable
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2
@@ -534,9 +528,6 @@ jobs:
           TEN_ENABLE_BACKTRACE_DUMP: "true"
           GOTRACEBACK: crash
         run: |
-          if [ ${{ matrix.build_type }} == "debug" ]; then
-            export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
-          fi
           export PATH=$(pwd)/core/ten_gn:$PATH
           cd out/mac/arm64/
           pytest -s tests/ten_runtime/integration/cpp/
@@ -597,8 +588,7 @@ jobs:
 
       - name: Install tools and dependencies
         run: |
-          brew install llvm
-          rustup default nightly-2025-08-10
+          rustup default stable
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2
@@ -634,9 +624,6 @@ jobs:
           TEN_ENABLE_BACKTRACE_DUMP: "true"
           GOTRACEBACK: crash
         run: |
-          if [ ${{ matrix.build_type }} == "debug" ]; then
-            export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
-          fi
           export PATH=$(pwd)/core/ten_gn:$PATH
           cd out/mac/arm64/
           pytest -s tests/ten_runtime/integration/go/
@@ -697,8 +684,7 @@ jobs:
 
       - name: Install tools and dependencies
         run: |
-          brew install llvm
-          rustup default nightly-2025-08-10
+          rustup default stable
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2
@@ -734,9 +720,6 @@ jobs:
           TEN_ENABLE_BACKTRACE_DUMP: "true"
           GOTRACEBACK: crash
         run: |
-          if [ ${{ matrix.build_type }} == "debug" ]; then
-            export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
-          fi
           export PATH=$(pwd)/core/ten_gn:$PATH
           cd out/mac/arm64/
           pytest -s tests/ten_runtime/integration/python/
