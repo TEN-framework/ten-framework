@@ -109,7 +109,7 @@ config("utils_private_config") {
   # Executables (like tests) should not have restricted symbol visibility.
   if (is_win) {
     ldflags += [ "/ignore:4099" ]
-  } else {
+  } else if (is_mac) {
     ldflags += [ "-Wl,-w" ]
   }
 }
