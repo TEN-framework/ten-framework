@@ -120,8 +120,7 @@ jobs:
 
       - name: Install tools and dependencies
         run: |
-          brew install llvm
-          rustup default nightly-2025-08-10
+          rustup default stable
 
           brew install tree
           brew install gettext
@@ -135,9 +134,6 @@ jobs:
 
       - name: Build
         run: |
-          if [ ${{ matrix.build_type }} == "debug" ]; then
-            export PATH="/usr/local/opt/llvm/bin:$PATH"
-          fi
           export PATH=$(pwd)/core/ten_gn:$PATH
           echo $PATH
 
@@ -248,8 +244,7 @@ jobs:
 
       - name: Install tools and dependencies
         run: |
-          brew install llvm
-          rustup default nightly-2025-08-10
+          rustup default stable
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2
@@ -396,8 +391,6 @@ jobs:
 
       - name: Install tools and dependencies
         run: |
-          brew install llvm
-
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2
           go install golang.org/dl/go1.24.3@latest && go1.24.3 download
@@ -491,8 +484,6 @@ jobs:
 
       - name: Install tools and dependencies
         run: |
-          brew install llvm
-
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2
           go install golang.org/dl/go1.24.3@latest && go1.24.3 download
@@ -527,9 +518,6 @@ jobs:
           TEN_ENABLE_BACKTRACE_DUMP: "true"
           GOTRACEBACK: crash
         run: |
-          if [ ${{ matrix.build_type }} == "debug" ]; then
-            export PATH="/usr/local/opt/llvm/bin:$PATH"
-          fi
           export PATH=$(pwd)/core/ten_gn:$PATH
           cd out/mac/x64/
           pytest -s tests/ten_runtime/integration/cpp/
@@ -594,8 +582,6 @@ jobs:
 
       - name: Install tools and dependencies
         run: |
-          brew install llvm
-
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2
           go install golang.org/dl/go1.24.3@latest && go1.24.3 download
@@ -630,9 +616,6 @@ jobs:
           TEN_ENABLE_BACKTRACE_DUMP: "true"
           GOTRACEBACK: crash
         run: |
-          if [ ${{ matrix.build_type }} == "debug" ]; then
-            export PATH="/usr/local/opt/llvm/bin:$PATH"
-          fi
           export PATH=$(pwd)/core/ten_gn:$PATH
           cd out/mac/x64/
           pytest -s tests/ten_runtime/integration/go/
@@ -697,8 +680,6 @@ jobs:
 
       - name: Install tools and dependencies
         run: |
-          brew install llvm
-
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2
           go install golang.org/dl/go1.24.3@latest && go1.24.3 download
@@ -733,9 +714,6 @@ jobs:
           TEN_ENABLE_BACKTRACE_DUMP: "true"
           GOTRACEBACK: crash
         run: |
-          if [ ${{ matrix.build_type }} == "debug" ]; then
-            export PATH="/usr/local/opt/llvm/bin:$PATH"
-          fi
           export PATH=$(pwd)/core/ten_gn:$PATH
           cd out/mac/x64/
           pytest -s tests/ten_runtime/integration/python/
