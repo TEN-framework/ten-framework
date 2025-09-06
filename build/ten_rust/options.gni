@@ -10,7 +10,7 @@ declare_args() {
   #
   # rustc finds the asan runtime library in ~/.rustup/toolchains/<target_cpu>/
   # lib/rustlib/<target_cpu>/lib/librustc-nightly_rt.asan.a
-  ten_rust_enable_asan = is_mac || (is_linux && target_cpu == "x64")
+  ten_rust_enable_asan = is_linux && target_cpu == "x64"
 
   # The rust projects (i.e., ten_rust and ten_manager) depend on the C static
   # library (ex: ten_utils), thus the rust projects must be compiled with asan
