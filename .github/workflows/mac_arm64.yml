@@ -132,28 +132,7 @@ jobs:
       - name: Build
         run: |
           if [ ${{ matrix.build_type }} == "debug" ]; then
-            export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
-            export CC="/opt/homebrew/opt/llvm/bin/clang"
-            export CXX="/opt/homebrew/opt/llvm/bin/clang++"
-            export LDFLAGS="-L/opt/homebrew/opt/llvm/lib"
-            export CPPFLAGS="-I/opt/homebrew/opt/llvm/include"
-
-            echo 'export PATH="/opt/homebrew/opt/llvm/bin:$PATH"' >> ~/.zshrc
-            echo 'export CC="/opt/homebrew/opt/llvm/bin/clang"' >> ~/.zshrc
-            echo 'export CXX="/opt/homebrew/opt/llvm/bin/clang++"' >> ~/.zshrc
-            echo 'export LDFLAGS="-L/opt/homebrew/opt/llvm/lib"' >> ~/.zshrc
-            echo 'export CPPFLAGS="-I/opt/homebrew/opt/llvm/include"' >> ~/.zshrc
-            echo 'export PATH="/opt/homebrew/opt/llvm/bin:$PATH"' >> ~/.bashrc
-            echo 'export CC="/opt/homebrew/opt/llvm/bin/clang"' >> ~/.bashrc
-            echo 'export CXX="/opt/homebrew/opt/llvm/bin/clang++"' >> ~/.bashrc
-            echo 'export LDFLAGS="-L/opt/homebrew/opt/llvm/lib"' >> ~/.bashrc
-            echo 'export CPPFLAGS="-I/opt/homebrew/opt/llvm/include"' >> ~/.bashrc
-            echo 'export PATH="/opt/homebrew/opt/llvm/bin:$PATH"' >> ~/.bash_profile
-            echo 'export CC="/opt/homebrew/opt/llvm/bin/clang"' >> ~/.bash_profile
-            echo 'export CXX="/opt/homebrew/opt/llvm/bin/clang++"' >> ~/.bash_profile
-            echo 'export LDFLAGS="-L/opt/homebrew/opt/llvm/lib"' >> ~/.bash_profile
-            echo 'export CPPFLAGS="-I/opt/homebrew/opt/llvm/include"' >> ~/.bash_profile
-            echo 'export PATH="/opt/homebrew/opt/llvm/bin:$PATH"' >> ~/.bash_profile
+            export PATH="$(brew --prefix llvm@20)/bin:$PATH"
           fi
 
           export PATH=$(pwd)/core/ten_gn:$PATH
@@ -557,7 +536,7 @@ jobs:
           GOTRACEBACK: crash
         run: |
           if [ ${{ matrix.build_type }} == "debug" ]; then
-            export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
+            export PATH="$(brew --prefix llvm@20)/bin:$PATH"
           fi
           export PATH=$(pwd)/core/ten_gn:$PATH
           cd out/mac/arm64/
@@ -657,7 +636,7 @@ jobs:
           GOTRACEBACK: crash
         run: |
           if [ ${{ matrix.build_type }} == "debug" ]; then
-            export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
+            export PATH="$(brew --prefix llvm@20)/bin:$PATH"
           fi
           export PATH=$(pwd)/core/ten_gn:$PATH
           cd out/mac/arm64/
@@ -757,7 +736,7 @@ jobs:
           GOTRACEBACK: crash
         run: |
           if [ ${{ matrix.build_type }} == "debug" ]; then
-            export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
+            export PATH="$(brew --prefix llvm@20)/bin:$PATH"
           fi
           export PATH=$(pwd)/core/ten_gn:$PATH
           cd out/mac/arm64/
