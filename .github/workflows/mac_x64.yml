@@ -167,7 +167,7 @@ jobs:
       - name: Upload tests relevant artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: tests-artifacts-${{ matrix.build_type }}
+          name: tests-artifacts-mac-x64-${{ matrix.build_type }}
           path: tests-artifacts.tar.gz
           if-no-files-found: ignore
 
@@ -255,7 +255,7 @@ jobs:
       - name: Download build artifacts (tar archive)
         uses: actions/download-artifact@v4
         with:
-          name: tests-artifacts-${{ matrix.build_type }}
+          name: tests-artifacts-mac-x64-${{ matrix.build_type }}
           path: out/mac/x64
 
       - name: Extract tests artifacts preserving permissions
@@ -399,7 +399,7 @@ jobs:
       - name: Download build artifacts (tar archive)
         uses: actions/download-artifact@v4
         with:
-          name: tests-artifacts-${{ matrix.build_type }}
+          name: tests-artifacts-mac-x64-${{ matrix.build_type }}
           path: out/mac/x64
 
       - name: Extract tests artifacts preserving permissions
@@ -492,7 +492,7 @@ jobs:
       - name: Download build artifacts (tar archive)
         uses: actions/download-artifact@v4
         with:
-          name: tests-artifacts-${{ matrix.build_type }}
+          name: tests-artifacts-mac-x64-${{ matrix.build_type }}
           path: out/mac/x64
 
       - name: Extract tests artifacts preserving permissions
@@ -590,7 +590,7 @@ jobs:
       - name: Download build artifacts (tar archive)
         uses: actions/download-artifact@v4
         with:
-          name: tests-artifacts-${{ matrix.build_type }}
+          name: tests-artifacts-mac-x64-${{ matrix.build_type }}
           path: out/mac/x64
 
       - name: Extract tests artifacts preserving permissions
@@ -688,7 +688,7 @@ jobs:
       - name: Download build artifacts (tar archive)
         uses: actions/download-artifact@v4
         with:
-          name: tests-artifacts-${{ matrix.build_type }}
+          name: tests-artifacts-mac-x64-${{ matrix.build_type }}
           path: out/mac/x64
 
       - name: Extract tests artifacts preserving permissions
