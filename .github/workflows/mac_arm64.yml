@@ -31,9 +31,7 @@ jobs:
   build:
     needs: call-check-pr-status
     if: ${{ needs.call-check-pr-status.outputs.should_continue == 'true' }}
-    # Due to https://github.com/llvm/llvm-project/issues/155606, we need to use
-    # macOS 14 currently, and will switch to macos-latest when it is solved.
-    runs-on: macos-14
+    runs-on: macos-latest
     strategy:
       matrix:
         build_type: [debug, release]
@@ -135,7 +133,29 @@ jobs:
         run: |
           if [ ${{ matrix.build_type }} == "debug" ]; then
             export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
+            export CC="/opt/homebrew/opt/llvm/bin/clang"
+            export CXX="/opt/homebrew/opt/llvm/bin/clang++"
+            export LDFLAGS="-L/opt/homebrew/opt/llvm/lib"
+            export CPPFLAGS="-I/opt/homebrew/opt/llvm/include"
+
+            echo 'export PATH="/opt/homebrew/opt/llvm/bin:$PATH"' >> ~/.zshrc
+            echo 'export CC="/opt/homebrew/opt/llvm/bin/clang"' >> ~/.zshrc
+            echo 'export CXX="/opt/homebrew/opt/llvm/bin/clang++"' >> ~/.zshrc
+            echo 'export LDFLAGS="-L/opt/homebrew/opt/llvm/lib"' >> ~/.zshrc
+            echo 'export CPPFLAGS="-I/opt/homebrew/opt/llvm/include"' >> ~/.zshrc
+            echo 'export PATH="/opt/homebrew/opt/llvm/bin:$PATH"' >> ~/.bashrc
+            echo 'export CC="/opt/homebrew/opt/llvm/bin/clang"' >> ~/.bashrc
+            echo 'export CXX="/opt/homebrew/opt/llvm/bin/clang++"' >> ~/.bashrc
+            echo 'export LDFLAGS="-L/opt/homebrew/opt/llvm/lib"' >> ~/.bashrc
+            echo 'export CPPFLAGS="-I/opt/homebrew/opt/llvm/include"' >> ~/.bashrc
+            echo 'export PATH="/opt/homebrew/opt/llvm/bin:$PATH"' >> ~/.bash_profile
+            echo 'export CC="/opt/homebrew/opt/llvm/bin/clang"' >> ~/.bash_profile
+            echo 'export CXX="/opt/homebrew/opt/llvm/bin/clang++"' >> ~/.bash_profile
+            echo 'export LDFLAGS="-L/opt/homebrew/opt/llvm/lib"' >> ~/.bash_profile
+            echo 'export CPPFLAGS="-I/opt/homebrew/opt/llvm/include"' >> ~/.bash_profile
+            echo 'export PATH="/opt/homebrew/opt/llvm/bin:$PATH"' >> ~/.bash_profile
           fi
+
           export PATH=$(pwd)/core/ten_gn:$PATH
           echo $PATH
 
@@ -199,9 +219,7 @@ jobs:
 
   test-standalone:
     needs: build
-    # Due to https://github.com/llvm/llvm-project/issues/155606, we need to use
-    # macOS 14 currently, and will switch to macos-latest when it is solved.
-    runs-on: macos-14
+    runs-on: macos-latest
     strategy:
       matrix:
         build_type: [debug, release]
@@ -359,9 +377,7 @@ jobs:
 
   test-integration-ten-manager:
     needs: build
-    # Due to https://github.com/llvm/llvm-project/issues/155606, we need to use
-    # macOS 14 currently, and will switch to macos-latest when it is solved.
-    runs-on: macos-14
+    runs-on: macos-latest
     strategy:
       matrix:
         build_type: [debug, release]
@@ -453,9 +469,7 @@ jobs:
 
   test-integration-cpp:
     needs: build
-    # Due to https://github.com/llvm/llvm-project/issues/155606, we need to use
-    # macOS 14 currently, and will switch to macos-latest when it is solved.
-    runs-on: macos-14
+    runs-on: macos-latest
     strategy:
       matrix:
         build_type: [debug, release]
@@ -555,9 +569,7 @@ jobs:
 
   test-integration-go:
     needs: build
-    # Due to https://github.com/llvm/llvm-project/issues/155606, we need to use
-    # macOS 14 currently, and will switch to macos-latest when it is solved.
-    runs-on: macos-14
+    runs-on: macos-latest
     strategy:
       matrix:
         build_type: [debug, release]
@@ -657,9 +669,7 @@ jobs:
 
   test-integration-python:
     needs: build
-    # Due to https://github.com/llvm/llvm-project/issues/155606, we need to use
-    # macOS 14 currently, and will switch to macos-latest when it is solved.
-    runs-on: macos-14
+    runs-on: macos-latest
     strategy:
       matrix:
         build_type: [release]
