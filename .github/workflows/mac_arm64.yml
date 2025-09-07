@@ -122,7 +122,7 @@ jobs:
 
       - name: Install tools and dependencies
         run: |
-          brew install llvm
+          brew install llvm@20
           rustup default nightly-2025-08-10
 
           brew install tree
@@ -254,7 +254,7 @@ jobs:
 
       - name: Install tools and dependencies
         run: |
-          brew install llvm
+          brew install llvm@20
           rustup default nightly-2025-08-10
 
           brew install tree
@@ -411,7 +411,7 @@ jobs:
 
       - name: Install tools and dependencies
         run: |
-          brew install llvm
+          brew install llvm@20
           rustup default nightly-2025-08-10
 
           brew install tree
@@ -505,7 +505,7 @@ jobs:
 
       - name: Install tools and dependencies
         run: |
-          brew install llvm
+          brew install llvm@20
           rustup default nightly-2025-08-10
 
           brew install tree
@@ -607,7 +607,7 @@ jobs:
 
       - name: Install tools and dependencies
         run: |
-          brew install llvm
+          brew install llvm@20
           rustup default nightly-2025-08-10
 
           brew install tree
@@ -709,7 +709,7 @@ jobs:
 
       - name: Install tools and dependencies
         run: |
-          brew install llvm
+          brew install llvm@20
           rustup default nightly-2025-08-10
 
           brew install tree
