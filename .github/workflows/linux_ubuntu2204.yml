@@ -202,7 +202,7 @@ jobs:
       - name: Upload tests relevant artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: tests-artifacts-${{ matrix.compiler }}-${{ matrix.build_type }}-${{ matrix.arch }}
+          name: tests-artifacts-linux-ubuntu2204-${{ matrix.compiler }}-${{ matrix.build_type }}-${{ matrix.arch }}
           path: tests-artifacts.tar.gz
           if-no-files-found: ignore
 
@@ -389,7 +389,7 @@ jobs:
       - name: Download build artifacts (tar archive)
         uses: actions/download-artifact@v4
         with:
-          name: tests-artifacts-${{ matrix.compiler }}-${{ matrix.build_type }}-${{ matrix.arch }}
+          name: tests-artifacts-linux-ubuntu2204-${{ matrix.compiler }}-${{ matrix.build_type }}-${{ matrix.arch }}
           path: out/linux/${{ matrix.arch }}
 
       - name: Extract tests artifacts preserving permissions
@@ -626,7 +626,7 @@ jobs:
       - name: Download build artifacts (tar archive)
         uses: actions/download-artifact@v4
         with:
-          name: tests-artifacts-${{ matrix.compiler }}-${{ matrix.build_type }}-${{ matrix.arch }}
+          name: tests-artifacts-linux-ubuntu2204-${{ matrix.compiler }}-${{ matrix.build_type }}-${{ matrix.arch }}
           path: out/linux/${{ matrix.arch }}
 
       - name: Extract tests artifacts preserving permissions
@@ -783,7 +783,7 @@ jobs:
       - name: Download build artifacts (tar archive)
         uses: actions/download-artifact@v4
         with:
-          name: tests-artifacts-${{ matrix.compiler }}-${{ matrix.build_type }}-${{ matrix.arch }}
+          name: tests-artifacts-linux-ubuntu2204-${{ matrix.compiler }}-${{ matrix.build_type }}-${{ matrix.arch }}
           path: out/linux/${{ matrix.arch }}
 
       - name: Extract tests artifacts preserving permissions
@@ -930,7 +930,7 @@ jobs:
       - name: Download build artifacts (tar archive)
         uses: actions/download-artifact@v4
         with:
-          name: tests-artifacts-${{ matrix.compiler }}-${{ matrix.build_type }}-${{ matrix.arch }}
+          name: tests-artifacts-linux-ubuntu2204-${{ matrix.compiler }}-${{ matrix.build_type }}-${{ matrix.arch }}
           path: out/linux/${{ matrix.arch }}
 
       - name: Extract tests artifacts preserving permissions
@@ -1077,7 +1077,7 @@ jobs:
       - name: Download build artifacts (tar archive)
         uses: actions/download-artifact@v4
         with:
-          name: tests-artifacts-${{ matrix.compiler }}-${{ matrix.build_type }}-${{ matrix.arch }}
+          name: tests-artifacts-linux-ubuntu2204-${{ matrix.compiler }}-${{ matrix.build_type }}-${{ matrix.arch }}
           path: out/linux/${{ matrix.arch }}
 
       - name: Extract tests artifacts preserving permissions
@@ -1244,7 +1244,7 @@ jobs:
       - name: Download build artifacts (tar archive)
         uses: actions/download-artifact@v4
         with:
-          name: tests-artifacts-${{ matrix.compiler }}-${{ matrix.build_type }}-${{ matrix.arch }}
+          name: tests-artifacts-linux-ubuntu2204-${{ matrix.compiler }}-${{ matrix.build_type }}-${{ matrix.arch }}
           path: out/linux/${{ matrix.arch }}
 
       - name: Extract tests artifacts preserving permissions
