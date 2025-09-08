@@ -32,6 +32,7 @@ group("python") {
         "call_api_during_closing_python",
         "cpp_app_multi_process_python",
         "cpp_app_python",
+        "env_var_1_python",
         "get_set_prop_1_python",
         "get_set_prop_2_python",
         "go_app_async_extension_python",
