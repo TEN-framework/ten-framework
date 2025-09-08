@@ -69,7 +69,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
     @override
     def vendor(self) -> str:
         """Get the name of the ASR vendor."""
-        return "volcengine_asr_llm"
+        return "bytedance_llm_based_asr"
 
     @override
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
@@ -107,7 +107,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                     message=str(e),
                 ),
                 ModuleErrorVendorInfo(
-                    vendor="volcengine_asr_llm",
+                    vendor="bytedance_llm_based_asr",
                     code="CONFIG_ERROR",
                     message=f"Configuration validation failed: {str(e)}",
                 ),
@@ -295,7 +295,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                     message=str(error),
                 ),
                 ModuleErrorVendorInfo(
-                    vendor="volcengine_asr_llm",
+                    vendor="bytedance_llm_based_asr",
                     code=str(error_code),
                     message=str(error),
                 ),
@@ -348,7 +348,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                         message=error_message,
                     ),
                     ModuleErrorVendorInfo(
-                        vendor="volcengine_asr_llm",
+                        vendor="bytedance_llm_based_asr",
                         code=str(result.code),
                         message=error_message,
                     ),
@@ -408,7 +408,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
             )
             # Create ModuleErrorVendorInfo object
             vendor_info = ModuleErrorVendorInfo(
-                vendor="volcengine_asr_llm",
+                vendor="bytedance_llm_based_asr",
                 code=str(error_code),
                 message=error_message,
             )

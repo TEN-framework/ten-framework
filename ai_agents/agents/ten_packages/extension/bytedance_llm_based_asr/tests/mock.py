@@ -15,9 +15,7 @@ import json
 def patch_volcengine_ws():
     """Mock Volcengine ASR WebSocket client and related components."""
 
-    patch_target = (
-        "ten_packages.extension.bytedance_asr_llm.extension.VolcengineASRClient"
-    )
+    patch_target = "ten_packages.extension.bytedance_llm_based_asr.extension.VolcengineASRClient"
 
     def _fake_ctor(url, app_key, access_key, config, ten_env=None):
         class _FakeClient:
@@ -77,10 +75,10 @@ def patch_volcengine_ws():
                     if self.on_result_callback:
                         print("[mock] About to emit interim result")
                         try:
-                            from ten_packages.extension.bytedance_asr_llm.volcengine_asr_client import (
+                            from ten_packages.extension.bytedance_llm_based_asr.volcengine_asr_client import (
                                 ASRResponse,
                             )
-                            from ten_packages.extension.bytedance_asr_llm.volcengine_asr_client import (
+                            from ten_packages.extension.bytedance_llm_based_asr.volcengine_asr_client import (
                                 Utterance,
                             )
 

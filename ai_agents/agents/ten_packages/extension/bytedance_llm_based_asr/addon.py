@@ -12,7 +12,7 @@ from ten_runtime import (
 from .extension import BytedanceASRLLMExtension
 
 
-@register_addon_as_extension("bytedance_asr_llm")
+@register_addon_as_extension("bytedance_llm_based_asr")
 class BytedanceASRLLMExtensionAddon(Addon):
     def on_create_instance(
         self, ten_env: TenEnv, name: str, context: object

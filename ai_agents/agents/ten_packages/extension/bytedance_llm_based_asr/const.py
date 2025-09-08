@@ -1,7 +1,7 @@
 # Constants for Volcengine ASR LLM Extension
 
 # File names
-DUMP_FILE_NAME = "volcengine_asr_llm_in.pcm"
+DUMP_FILE_NAME = "bytedance_llm_based_asr_in.pcm"
 
 # Protocol version
 PROTOCOL_VERSION = 0b0001

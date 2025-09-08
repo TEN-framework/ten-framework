@@ -157,7 +157,9 @@ def test_asr_result(patch_volcengine_ws):  # type: ignore
     }
 
     tester = BytedanceASRLLMExtensionTester()
-    tester.set_test_mode_single("bytedance_asr_llm", json.dumps(property_json))
+    tester.set_test_mode_single(
+        "bytedance_llm_based_asr", json.dumps(property_json)
+    )
     err = tester.run()
     if err is not None:
         # Print readable error for debugging
