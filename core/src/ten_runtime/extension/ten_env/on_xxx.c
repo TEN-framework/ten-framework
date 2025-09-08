@@ -135,15 +135,15 @@ bool ten_extension_on_configure_done(ten_env_t *self) {
     exit(EXIT_FAILURE);
   }
 
-  rc = ten_extension_resolve_properties_in_graph(extension, &err);
+  ten_extension_merge_properties_from_graph(extension);
+
+  rc = ten_extension_resolve_properties(extension, &err);
   if (!rc) {
     TEN_LOGW(
         "Failed to resolve properties in graph: %s, use the raw property data "
         "instead.",
         ten_error_message(&err));
   }
-
-  ten_extension_merge_properties_from_graph(extension);
 
   rc = ten_extension_handle_ten_namespace_properties(
       extension, extension->extension_context);
