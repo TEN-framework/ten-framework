@@ -4,7 +4,8 @@
 # Licensed under the Apache License, Version 2.0, with certain conditions.
 # Refer to the "LICENSE" file in the root directory for more information.
 #
-from pydantic import BaseModel
+import json
+from typing import Any
 from ten_runtime import (
     Extension,
     TenEnv,
@@ -16,9 +17,17 @@ from ten_runtime import (
 )
 
 
-class Params(BaseModel):
-    key: str = ""
-    model: str = ""
+class Params:
+    def __init__(self, key: str = "", model: str = ""):
+        self.key: str = key
+        self.model: str = model
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "Params":
+        params_data: dict[str, Any] = data.get("params", {})
+        return cls(
+            key=params_data.get("key", ""), model=params_data.get("model", "")
+        )
 
 
 class DefaultExtension(Extension):
@@ -28,8 +37,13 @@ class DefaultExtension(Extension):
         property_json, _ = ten_env.get_property_to_json()
         ten_env.log_info(f"property_json: {property_json}")
 
-        # Deserialize the property json to a mapping
-        params: Params = Params.model_validate_json(property_json)
+        # Deserialize the property json to Params
+        try:
+            property_data: dict[str, Any] = json.loads(property_json)
+            params = Params.from_dict(property_data)
+        except (json.JSONDecodeError, KeyError) as e:
+            ten_env.log_error(f"Failed to deserialize property_json: {e}")
+            params = Params()
 
         key = params.key
         model = params.model

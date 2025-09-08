@@ -20,7 +20,6 @@ ten_package_test_prepare_app("env_var_1_python_app") {
   replace_paths_after_install_all = [
     "env_var_1_python_app/ten_packages/extension/default_extension_python/extension.py",
     "env_var_1_python_app/ten_packages/extension/default_extension_python/property.json",
-    "env_var_1_python_app/ten_packages/extension/default_extension_python/requirements.txt",
   ]
 
   if (ten_enable_ten_manager) {
