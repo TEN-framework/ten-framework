@@ -1,1 +1,7 @@
-{}
+{
+    "greeting": "Hello! I'm your AI assistant with memory. I can remember our previous conversations to provide more personalized help.",
+    "agent_id": "voice_assistant_agent",
+    "agent_name": "Voice Assistant with Memory",
+    "memu_base_url": "https://api.memu.so",
+    "memu_api_key": ""
+}

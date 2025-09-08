@@ -29,6 +29,18 @@
       "properties": {
         "greeting": {
           "type": "string"
+        },
+        "agent_id": {
+          "type": "string"
+        },
+        "agent_name": {
+          "type": "string"
+        },
+        "memu_base_url": {
+          "type": "string"
+        },
+        "memu_api_key": {
+          "type": "string"
         }
       }
     }

@@ -1,6 +1,7 @@
 import asyncio
 import json
 import time
+import os
 from typing import Literal
 
 from .agent.decorators import agent_event_handler
@@ -24,6 +25,9 @@ from .config import MainControlConfig  # assume extracted from your base model
 
 import uuid
 
+# Memory store abstraction
+from .memory import MemoryStore, MemuSdkMemoryStore, MemuHttpMemoryStore
+
 
 class MainControlExtension(AsyncExtension):
     """
@@ -43,6 +47,9 @@ class MainControlExtension(AsyncExtension):
         self.turn_id: int = 0
         self.session_id: str = "0"
 
+        # Memory related attributes (named memu_client by request)
+        self.memu_client: MemoryStore | None = None
+
     def _current_metadata(self) -> dict:
         return {"session_id": self.session_id, "turn_id": self.turn_id}
 
@@ -53,7 +60,22 @@ class MainControlExtension(AsyncExtension):
         config_json, _ = await ten_env.get_property_to_json(None)
         self.config = MainControlConfig.model_validate_json(config_json)
 
+        # Initialize memory store per config toggle
+        if self.config.self_hosting:
+            self.memu_client = MemuHttpMemoryStore(
+                base_url=self.config.memu_base_url,
+                api_key=self.config.memu_api_key,
+            )
+        else:
+            self.memu_client = MemuSdkMemoryStore(
+                base_url=self.config.memu_base_url,
+                api_key=self.config.memu_api_key,
+            )
+
         self.agent = Agent(ten_env)
+
+        # Load memory summary and write into LLM context
+        await self._load_memory_to_context()
 
         # Now auto-register decorated methods
         for attr_name in dir(self):
@@ -106,6 +128,10 @@ class MainControlExtension(AsyncExtension):
             remaining_text = self.sentence_fragment or ""
             self.sentence_fragment = ""
             await self._send_to_tts(remaining_text, True)
+
+            # Memorize every two rounds (when turn_id is even)
+            if self.turn_id % 2 == 0:
+                await self._memorize_conversation()
 
         await self._send_transcript(
             "assistant",
@@ -211,3 +237,117 @@ class MainControlExtension(AsyncExtension):
         )
         await _send_cmd(self.ten_env, "flush", "agora_rtc")
         self.ten_env.log_info("[MainControlExtension] Interrupt signal sent")
+
+    # === Memory related methods ===
+
+    async def _retrieve_memory(self, user_id: str = None) -> str:
+        """Retrieve conversation memory from configured store"""
+        if not self.memu_client:
+            return ""
+
+        try:
+            user_id = user_id or self.session_id
+            resp = await self.memu_client.retrieve_default_categories(self.ten_env, user_id=user_id)
+            normalized = self.memu_client.parse_default_categories(resp)
+            return self._extract_summary_text(normalized)
+        except Exception as e:
+            self.ten_env.log_error(f"[MainControlExtension] Failed to retrieve memory: {e}")
+            return ""
+
+    def _parse_memory_summary(self, data) -> dict:
+        """Parse memory data and create summary"""
+        summary = {
+            "basic_stats": {
+                "total_categories": len(data.categories),
+                "total_memories": sum(cat.memory_count or 0 for cat in data.categories),
+                "user_id": data.categories[0].user_id if data.categories else None,
+                "agent_id": data.categories[0].agent_id if data.categories else None
+            },
+            "categories": []
+        }
+
+        for category in data.categories:
+            cat_summary = {
+                "name": category.name,
+                "type": category.type,
+                "memory_count": category.memory_count,
+                "is_active": category.is_active,
+                "recent_memories": [],
+                "summary": category.summary
+            }
+
+            if category.memories:
+                recent = sorted(category.memories, key=lambda x: x.happened_at, reverse=True)
+                for memory in recent:
+                    cat_summary["recent_memories"].append({
+                        "date": memory.happened_at.strftime('%Y-%m-%d %H:%M'),
+                        "content": memory.content
+                    })
+
+            summary["categories"].append(cat_summary)
+
+        return summary
+
+    def _extract_summary_text(self, summary: dict) -> str:
+        """Extract summary text from parsed memory data"""
+        summary_text = ""
+        for category in summary["categories"]:
+            if category["summary"]:
+                summary_text += category["summary"] + "\n"
+        return summary_text.strip()
+
+    async def _memorize_conversation(self, user_id: str = None, user_name: str = None):
+        """Memorize the current conversation via configured store"""
+        if not self.memu_client:
+            return
+
+        try:
+            user_id = user_id or self.session_id
+            user_name = user_name or self.session_id
+
+            # Read context directly from llm_exec
+            llm_context = self.agent.llm_exec.get_context() if self.agent and self.agent.llm_exec else []
+            conversation_for_memory = []
+            for m in llm_context:
+                role = getattr(m, "role", None)
+                content = getattr(m, "content", None)
+                if role in ["user", "assistant"] and isinstance(content, str):
+                    conversation_for_memory.append({"role": role, "content": content})
+
+            if not conversation_for_memory:
+                return
+
+            await self.memu_client.memorize(
+                self.ten_env,
+                conversation=conversation_for_memory,
+                user_id=user_id,
+                user_name=user_name,
+                agent_id=self.config.agent_id,
+                agent_name=self.config.agent_name,
+            )
+
+        except Exception as e:
+            self.ten_env.log_error(f"[MainControlExtension] Failed to memorize conversation: {e}")
+
+    # Removed: _build_conversation_context (no longer keeping a separate context)
+
+    async def _load_memory_to_context(self):
+        """Load memory summary into LLM context at startup (as a system message)."""
+        if not self.memu_client:
+            return
+
+        try:
+            memory_summary = await self._retrieve_memory()
+            if memory_summary and self.agent and self.agent.llm_exec:
+                # Reset and write memory summary into context as a normal message (no system role handling)
+                self.agent.llm_exec.clear_context()
+                await self.agent.llm_exec.write_context(
+                    self.ten_env,
+                    "assistant",
+                    "Memory summary of previous conversations:\n\n" + memory_summary,
+                )
+                self.ten_env.log_info("[MainControlExtension] Memory summary written into LLM context")
+        except Exception as e:
+            self.ten_env.log_error(f"[MainControlExtension] Failed to load memory to context: {e}")
+
+    # Removed: _update_llm_context and _sync_context_from_llM (no separate context to sync)

@@ -79,7 +79,10 @@
               "addon": "main_python",
               "extension_group": "control",
               "property": {
-                "greeting": "TEN Agent connected. How can I help you today?"
+                "greeting": "TEN Agent connected. How can I help you today?",
+                "agent_id": "voice_assistant_agent",
+                "memu_base_url": "http://host.docker.internal:8000",
+                "agent_name": "voice_assistant_agent"
               }
             },
             {

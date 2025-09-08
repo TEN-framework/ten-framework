@@ -88,6 +88,21 @@ class LLMExec:
         if self.current_task:
             self.current_task.cancel()
 
+    def clear_context(self) -> None:
+        """
+        Clear the current conversation context.
+        """
+        self.contexts.clear()
+
+    def get_context(self) -> list[LLMMessage]:
+        """
+        Get the current conversation context.
+        """
+        return self.contexts.copy()
+
+    # set_context removed per new API; use write_context incrementally instead
+
+
     async def register_tool(self, tool: LLMToolMetadata, source: str) -> None:
         """
         Register tools with the LLM.
@@ -133,7 +148,7 @@ class LLMExec:
         ten_env.log_info(f"_queue_context: {new_message}")
         self.contexts.append(new_message)
 
-    async def _write_context(
+    async def write_context(
         self,
         ten_env: AsyncTenEnv,
         role: Literal["user", "assistant"],
@@ -190,7 +205,7 @@ class LLMExec:
                 if delta and self.on_response:
                     await self.on_response(self.ten_env, delta, text, False)
                 if text:
-                    await self._write_context(self.ten_env, "assistant", text)
+                    await self.write_context(self.ten_env, "assistant", text)
             case LLMResponseMessageDone():
                 text = llm_output.content
                 self.current_text = None
