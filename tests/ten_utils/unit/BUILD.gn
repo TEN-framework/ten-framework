@@ -12,7 +12,6 @@ ten_utils_glob("unit") {
 
   file_list = [
     "backtrace_sort_test.cc",
-    "backtrace_rust_ffi_test.cc",
     "ten_base64_test.cc",
     "ten_file_test.cc",
     "ten_list_test.cc",
@@ -47,6 +46,11 @@ ten_utils_glob("unit") {
     "//third_party/googletest",
     "//third_party/nlohmann_json",
   ]
+
+  if (ten_enable_ten_rust) {
+    file_list += [ "backtrace_rust_ffi_test.cc" ]
+    public_deps += [ "//core/src/ten_rust:ten_rust_binding" ]
+  }
 
   deps = [ "//tests/ten_utils/common" ]
 
