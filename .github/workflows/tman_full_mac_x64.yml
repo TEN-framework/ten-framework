@@ -127,7 +127,7 @@ jobs:
             brew install llvm@18
             rustup default nightly-2024-07-19
           else
-            rustup default nightly-2025-09-04
+            rustup default nightly-2025-09-07
           fi
 
           brew install tree
