@@ -209,6 +209,10 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
         self.ten_env.log_info(
             f"KEYPOINT on_asr_start: {response.model_dump_json()}"
         )
+        self.sent_user_audio_duration_ms_before_last_reset += (
+            self.audio_timeline.get_total_user_audio_duration()
+        )
+        self.audio_timeline.reset()
 
     @override
     async def on_asr_fail(self, response: ResponseData):
@@ -301,7 +305,6 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
 
         language = self._get_language()
 
-        # TODO: add words info
         asr_result = ASRResult(
             id=message_id,
             text=result.voice_text_str,
@@ -310,6 +313,9 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
             duration_ms=duration_ms,
             language=language,
             words=[],
+        )
+        self.ten_env.log_debug(
+            f"KEYPOINT asr_result: {asr_result.model_dump_json()}"
         )
 
         await self.send_asr_result(asr_result)
