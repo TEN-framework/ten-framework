@@ -138,6 +138,10 @@ def test_ttfb_metric_is_sent(MockBytedanceV3Client):
     metrics_config = {
         "appid": "a_valid_appid",
         "token": "a_valid_token",
+        "params": {
+            "app_id": "a_valid_appid",
+            "token": "a_valid_token",
+        },
     }
     tester = ExtensionTesterMetrics()
     tester.set_test_mode_single(

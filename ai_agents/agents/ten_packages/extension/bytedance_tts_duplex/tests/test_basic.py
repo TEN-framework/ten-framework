@@ -159,6 +159,10 @@ def test_dump_functionality(MockBytedanceV3Client):
     tester = ExtensionTesterDump()
 
     dump_config = {
+        "params": {
+            "app_id": "valid_appid_for_test",
+            "token": "valid_token_for_test",
+        },
         "appid": "valid_appid_for_test",
         "token": "valid_token_for_test",
         "dump": True,
@@ -361,7 +365,14 @@ def test_flush_logic(MockBytedanceV3Client):
     MockBytedanceV3Client.side_effect = mock_client_init
 
     # --- Test Setup ---
-    config = {"appid": "a_valid_appid", "token": "a_valid_token"}
+    config = {
+        "appid": "a_valid_appid",
+        "token": "a_valid_token",
+        "params": {
+            "app_id": "a_valid_appid",
+            "token": "a_valid_token",
+        },
+    }
     tester = ExtensionTesterFlush()
     tester.set_test_mode_single("bytedance_tts_duplex", json.dumps(config))
 
