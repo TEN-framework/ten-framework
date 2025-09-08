@@ -472,7 +472,7 @@ pub unsafe extern "C" fn ten_rust_graph_validate_complete_flatten(
     // Parse the JSON string into a Graph
     let graph = {
         let rt = Runtime::new().unwrap();
-        match rt
+        let graph = match rt
             .block_on(Graph::from_str_with_base_dir(json_str_rust_str, current_base_dir_rust_str))
         {
             Ok(g) => g,
@@ -482,6 +482,24 @@ pub unsafe extern "C" fn ten_rust_graph_validate_complete_flatten(
                     *err_msg = err_msg_c_str.into_raw();
                 }
                 return std::ptr::null(); // Parsing failed
+            }
+        };
+
+        // Flatten the graph
+        match rt.block_on(graph.flatten_graph(current_base_dir_rust_str)) {
+            Ok(g) => {
+                if let Some(g) = g {
+                    g
+                } else {
+                    graph
+                }
+            }
+            Err(e) => {
+                if !err_msg.is_null() {
+                    let err_msg_c_str = CString::new(e.to_string()).unwrap();
+                    *err_msg = err_msg_c_str.into_raw();
+                }
+                return std::ptr::null(); // Flattening failed
             }
         }
     };
