@@ -30,6 +30,12 @@
         "greeting": {
           "type": "string"
         },
+        "user_id": {
+          "type": "string"
+        },
+        "user_name": {
+          "type": "string"
+        },
         "agent_id": {
           "type": "string"
         },
@@ -41,6 +47,12 @@
         },
         "memu_api_key": {
           "type": "string"
+        },
+        "self_hosting": {
+          "type": "bool"
+        },
+        "enable_memorization": {
+          "type": "bool"
         }
       }
     }

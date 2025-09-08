@@ -63,11 +63,13 @@ class MainControlExtension(AsyncExtension):
         # Initialize memory store per config toggle
         if self.config.self_hosting:
             self.memu_client = MemuHttpMemoryStore(
+                env=ten_env,
                 base_url=self.config.memu_base_url,
                 api_key=self.config.memu_api_key,
             )
         else:
             self.memu_client = MemuSdkMemoryStore(
+                env=ten_env,
                 base_url=self.config.memu_base_url,
                 api_key=self.config.memu_api_key,
             )
@@ -129,8 +131,8 @@ class MainControlExtension(AsyncExtension):
             self.sentence_fragment = ""
             await self._send_to_tts(remaining_text, True)
 
-            # Memorize every two rounds (when turn_id is even)
-            if self.turn_id % 2 == 0:
+            # Memorize every two rounds (when turn_id is even) if memorization is enabled
+            if self.turn_id % 2 == 0 and self.config.enable_memorization:
                 await self._memorize_conversation()
 
         await self._send_transcript(
@@ -246,8 +248,9 @@ class MainControlExtension(AsyncExtension):
             return ""
 
         try:
-            user_id = user_id or self.session_id
-            resp = await self.memu_client.retrieve_default_categories(self.ten_env, user_id=user_id)
+            user_id = self.config.user_id
+            agent_id = self.config.agent_id
+            resp = await self.memu_client.retrieve_default_categories(user_id=user_id, agent_id=agent_id)
             normalized = self.memu_client.parse_default_categories(resp)
             return self._extract_summary_text(normalized)
         except Exception as e:
@@ -292,9 +295,16 @@ class MainControlExtension(AsyncExtension):
         """Extract summary text from parsed memory data"""
         summary_text = ""
         for category in summary["categories"]:
-            if category["summary"]:
+            if category.get("summary"):
                 summary_text += category["summary"] + "\n"
-        return summary_text.strip()
+            elif category.get("recent_memories"):
+                # If no summary, extract content from recent memories
+                for memory in category["recent_memories"]:
+                    if memory.get("content"):
+                        summary_text += f"- {memory['content']}\n"
+        result = summary_text.strip()
+        self.ten_env.log_info(f"[MainControlExtension] _extract_summary_text result: '{result}'")
+        return result
 
     async def _memorize_conversation(self, user_id: str = None, user_name: str = None):
         """Memorize the current conversation via configured store"""
@@ -302,8 +312,8 @@ class MainControlExtension(AsyncExtension):
             return
 
         try:
-            user_id = user_id or self.session_id
-            user_name = user_name or self.session_id
+            user_id = self.config.user_id
+            user_name = self.config.user_name
 
             # Read context directly from llm_exec
             llm_context = self.agent.llm_exec.get_context() if self.agent and self.agent.llm_exec else []
@@ -318,7 +328,6 @@ class MainControlExtension(AsyncExtension):
                 return
 
             await self.memu_client.memorize(
-                self.ten_env,
                 conversation=conversation_for_memory,
                 user_id=user_id,
                 user_name=user_name,
@@ -337,7 +346,8 @@ class MainControlExtension(AsyncExtension):
             return
 
         try:
-            memory_summary = await self._retrieve_memory()
+            memory_summary = await self._retrieve_memory(self.config.user_id)
+            self.ten_env.log_info(f"[MainControlExtension] Memory summary: {memory_summary}")
             if memory_summary and self.agent and self.agent.llm_exec:
                 # Reset and write memory summary into context as a normal message (no system role handling)
                 self.agent.llm_exec.clear_context()

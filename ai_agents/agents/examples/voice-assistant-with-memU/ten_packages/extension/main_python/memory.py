@@ -9,12 +9,15 @@ from ten_runtime import AsyncTenEnv
 
 
 class MemoryStore(ABC):
+    def __init__(self, env: AsyncTenEnv):
+        self.env = env
+
     @abstractmethod
-    async def memorize(self, env: AsyncTenEnv, conversation: list[dict], user_id: str, user_name: str, agent_id: str, agent_name: str) -> None:
+    async def memorize(self, conversation: list[dict], user_id: str, user_name: str, agent_id: str, agent_name: str) -> None:
         ...
 
     @abstractmethod
-    async def retrieve_default_categories(self, env: AsyncTenEnv, user_id: str) -> Any:
+    async def retrieve_default_categories(self, user_id: str, agent_id: str) -> Any:
         ...
 
     @abstractmethod
@@ -32,12 +35,13 @@ class MemoryStore(ABC):
 
 
 class MemuSdkMemoryStore(MemoryStore):
-    def __init__(self, base_url: str, api_key: str):
+    def __init__(self, env: AsyncTenEnv, base_url: str, api_key: str):
+        super().__init__(env)
         from memu.sdk.python import MemuClient
 
         self.client = MemuClient(base_url=base_url, api_key=api_key)
 
-    async def memorize(self, env: AsyncTenEnv, conversation: list[dict], user_id: str, user_name: str, agent_id: str, agent_name: str) -> None:
+    async def memorize(self, conversation: list[dict], user_id: str, user_name: str, agent_id: str, agent_name: str) -> None:
         resp = self.client.memorize_conversation(
             conversation=conversation,
             user_id=user_id,
@@ -52,8 +56,8 @@ class MemuSdkMemoryStore(MemoryStore):
                 break
             await asyncio.sleep(2)
 
-    async def retrieve_default_categories(self, env: AsyncTenEnv, user_id: str) -> Any:
-        return self.client.retrieve_default_categories(user_id=user_id)
+    async def retrieve_default_categories(self, user_id: str, agent_id: str) -> Any:
+        return self.client.retrieve_default_categories(user_id=user_id, agent_id=agent_id)
 
     def parse_default_categories(self, data: Any) -> dict:
         # Assume SDK already returns a summary-like object with attributes or dict-compatible
@@ -96,7 +100,8 @@ class MemuSdkMemoryStore(MemoryStore):
 
 
 class MemuHttpMemoryStore(MemoryStore):
-    def __init__(self, base_url: str, api_key: str | None = ""):
+    def __init__(self, env: AsyncTenEnv, base_url: str, api_key: str | None = ""):
+        super().__init__(env)
         import aiohttp
 
         self.base_url = base_url.rstrip("/")
@@ -108,7 +113,7 @@ class MemuHttpMemoryStore(MemoryStore):
             headers["Authorization"] = f"Bearer {self.api_key}"
         return headers
 
-    async def memorize(self, env: AsyncTenEnv, conversation: list[dict], user_id: str, user_name: str, agent_id: str, agent_name: str) -> None:
+    async def memorize(self, conversation: list[dict], user_id: str, user_name: str, agent_id: str, agent_name: str) -> None:
         import aiohttp
 
         payload = {
@@ -134,10 +139,10 @@ class MemuHttpMemoryStore(MemoryStore):
                         break
                 await asyncio.sleep(2)
 
-    async def retrieve_default_categories(self, env: AsyncTenEnv, user_id: str) -> Any:
+    async def retrieve_default_categories(self, user_id: str, agent_id: str) -> Any:
         import aiohttp
 
-        payload = {"user_id": user_id}
+        payload = {"user_id": user_id, "agent_id": agent_id}
         async with aiohttp.ClientSession() as session:
             async with session.post(f"{self.base_url}/api/v1/memory/retrieve/default-categories", headers=await self._headers(), data=json.dumps(payload)) as r:
                 r.raise_for_status()
@@ -147,6 +152,9 @@ class MemuHttpMemoryStore(MemoryStore):
         # HTTP returns raw categories with memories. Normalize to summary schema.
         if not isinstance(data, dict):
             return {"basic_stats": {"total_categories": 0, "total_memories": 0}, "categories": []}
+
+        self.env.log_info(f"MemuHttpMemoryStore: parse_default_categories: {data}")
+
         categories = data.get("categories", [])
         total_memories = 0
         out_categories = []
