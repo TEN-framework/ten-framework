@@ -70,6 +70,7 @@ class SpeechmaticsASRExtension(AsyncASRBaseExtension):
 
         try:
             self.config = SpeechmaticsASRConfig.model_validate_json(config_json)
+
             ten_env.log_info(f"Speechmatics ASR config: {self.config}")
             self.config.update(self.config.params)
             ten_env.log_info(

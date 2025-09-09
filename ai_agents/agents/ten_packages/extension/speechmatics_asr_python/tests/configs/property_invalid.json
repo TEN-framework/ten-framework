@@ -1,5 +1,6 @@
 {
     "params": {
+        "uri": "wss://eu2.rt.speechmatics.com/v2",
         "key": "invalid",
         "language": "invalid",
         "sample_rate": 16000
