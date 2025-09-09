@@ -28,7 +28,7 @@ class DefaultAsyncExtension(AsyncExtension):
         self.assert_goodbye_result_success = None
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
-        ten_env.log(LogLevel.DEBUG, "on_init")
+        ten_env.log_debug("on_init", "key_point")
         self.send_goodbye_cmd, err = await ten_env.get_property_bool(
             "send_goodbye_cmd"
         )
@@ -64,14 +64,14 @@ class DefaultAsyncExtension(AsyncExtension):
             self.assert_goodbye_result_success = False
 
     async def on_start(self, ten_env: AsyncTenEnv) -> None:
-        ten_env.log(LogLevel.DEBUG, "on_start")
+        ten_env.log_debug("on_start", "key_point")
 
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
-        ten_env.log(LogLevel.DEBUG, "on_deinit")
+        ten_env.log_debug("on_deinit", "key_point")
 
     async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
         cmd_name = cmd.get_name()
-        ten_env.log(LogLevel.DEBUG, "on_cmd name {}".format(cmd_name))
+        ten_env.log_debug("on_cmd name {}".format(cmd_name), "key_point")
 
         if cmd_name == "query_weather":
             # Send a command to query weather.
@@ -97,22 +97,22 @@ class DefaultAsyncExtension(AsyncExtension):
 
     async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
         data_name = data.get_name()
-        ten_env.log(LogLevel.DEBUG, "on_data name {}".format(data_name))
+        ten_env.log_debug("on_data name {}".format(data_name), "key_point")
 
     async def on_audio_frame(
         self, ten_env: AsyncTenEnv, audio_frame: AudioFrame
     ) -> None:
         audio_frame_name = audio_frame.get_name()
-        ten_env.log(
-            LogLevel.DEBUG, "on_audio_frame name {}".format(audio_frame_name)
+        ten_env.log_debug(
+            "on_audio_frame name {}".format(audio_frame_name), "key_point"
         )
 
     async def on_video_frame(
         self, ten_env: AsyncTenEnv, video_frame: VideoFrame
     ) -> None:
         video_frame_name = video_frame.get_name()
-        ten_env.log(
-            LogLevel.DEBUG, "on_video_frame name {}".format(video_frame_name)
+        ten_env.log_debug(
+            "on_video_frame name {}".format(video_frame_name), "key_point"
         )
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
@@ -132,9 +132,9 @@ class DefaultAsyncExtension(AsyncExtension):
                 assert result.get_status_code() == StatusCode.OK
 
             cost_time = time.time() - current_time
-            ten_env.log(
-                LogLevel.INFO,
+            ten_env.log_info(
                 "goodbye cost time {} ms".format(cost_time * 1000),
+                "key_point",
             )
 
             # To rule out that the result reply was triggered by path_timeout,
