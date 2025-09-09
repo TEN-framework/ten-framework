@@ -152,6 +152,9 @@ def test_dump_functionality(MockRimeTTSClient):
     tester = ExtensionTesterDump()
 
     dump_config = {
+        "params": {
+            "api_key": "a_valid_api_key",
+        },
         "dump": True,
         "dump_path": DUMP_PATH,
     }
@@ -306,7 +309,7 @@ def test_text_input_end_logic(MockRimeTTSClient):
     # --- Test Setup ---
     config = {
         "params": {
-            "app_key": "a_valid_app_key",
+            "api_key": "a_valid_api_key",
         },
     }
     tester = ExtensionTesterTextInputEnd()
@@ -480,7 +483,7 @@ def test_flush_logic(MockRimeTTSClient):
     # --- Test Setup ---
     config = {
         "params": {
-            "app_key": "a_valid_app_key",
+            "api_key": "a_valid_api_key",
         },
     }
     tester = ExtensionTesterFlush()
