@@ -48,11 +48,16 @@ func main() {
 		os.Exit(1)
 	}
 
-	workerQuitTimeoutSeconds, err := strconv.Atoi(os.Getenv("WORKER_QUIT_TIMEOUT_SECONDES"))
-	if err != nil || workerQuitTimeoutSeconds <= 0 {
-		slog.Error("environment WORKER_QUIT_TIMEOUT_SECONDES invalid")
-		os.Exit(1)
-	}
+    // Read worker quit timeout with support for legacy misspelled var
+    workerQuitTimeoutEnv := os.Getenv("WORKER_QUIT_TIMEOUT_SECONDS")
+    if workerQuitTimeoutEnv == "" {
+        workerQuitTimeoutEnv = os.Getenv("WORKER_QUIT_TIMEOUT_SECONDES")
+    }
+    workerQuitTimeoutSeconds, err := strconv.Atoi(workerQuitTimeoutEnv)
+    if err != nil || workerQuitTimeoutSeconds <= 0 {
+        slog.Error("environment WORKER_QUIT_TIMEOUT_SECONDS invalid")
+        os.Exit(1)
+    }
 
 	// Set up signal handler to clean up all workers on Ctrl+C
 	sigs := make(chan os.Signal, 1)
