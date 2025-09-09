@@ -93,10 +93,17 @@ def test_params_passthrough(MockBytedanceV3Client):
         "audio_params": {"format": "pcm", "sample_rate": 48000},
         "voice_params": {"speed": 1.2, "pitch": 2},
     }
+
+    params = {
+        "app_id": "a_valid_appid",
+        "token": "a_valid_token",
+        **passthrough_params,
+    }
+
     passthrough_config = {
         "appid": "a_valid_appid",
         "token": "a_valid_token",
-        "params": passthrough_params,
+        "params": params,
     }
 
     tester = ExtensionTesterForPassthrough()
