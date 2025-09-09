@@ -1,7 +1,7 @@
 {
     "type": "extension",
     "name": "speechmatics_asr_python",
-    "version": "0.2.0",
+    "version": "0.2.2",
     "dependencies": [
         {
             "type": "system",
@@ -25,6 +25,9 @@
                 "params": {
                     "type": "object",
                     "properties": {
+                        "uri": {
+                            "type": "string"
+                        },
                         "key": {
                             "type": "string"
                         },

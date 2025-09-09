@@ -69,7 +69,15 @@ class SpeechmaticsASRExtension(AsyncASRBaseExtension):
         config_json, _ = await ten_env.get_property_to_json("")
 
         try:
-            self.config = SpeechmaticsASRConfig.model_validate_json(config_json)
+            temp_config = SpeechmaticsASRConfig.model_validate_json(config_json)
+            ten_env.log_info(f"Speechmatics ASR temp_config: {temp_config}")
+            if temp_config.uri == "":
+                temp_config.uri = "wss://eu2.rt.speechmatics.com/v2"
+                ten_env.log_info(
+                    f"URI is empty, set to default: {temp_config.uri}"
+                )
+
+            self.config = temp_config
             ten_env.log_info(f"Speechmatics ASR config: {self.config}")
             self.config.update(self.config.params)
             ten_env.log_info(
