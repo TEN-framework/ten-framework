@@ -13,6 +13,7 @@ from libten_runtime_python import (
 from .log_level import LogLevel
 from .error import TenError
 from .value import Value
+from .log_option import TenLogOption, DefaultLogOption
 
 
 class TenEnvTesterBase:
@@ -32,36 +33,36 @@ class TenEnvTesterBase:
         msg: str,
         category: str | None = None,
         fields: Value | None = None,
-        skip: int = 2,
+        option: TenLogOption = DefaultLogOption,
     ) -> TenError | None:
-        return self._log_internal(LogLevel.DEBUG, msg, category, fields, skip)
+        return self._log_internal(LogLevel.DEBUG, msg, category, fields, option)
 
     def log_info(
         self,
         msg: str,
         category: str | None = None,
         fields: Value | None = None,
-        skip: int = 2,
+        option: TenLogOption = DefaultLogOption,
     ) -> TenError | None:
-        return self._log_internal(LogLevel.INFO, msg, category, fields, skip)
+        return self._log_internal(LogLevel.INFO, msg, category, fields, option)
 
     def log_warn(
         self,
         msg: str,
         category: str | None = None,
         fields: Value | None = None,
-        skip: int = 2,
+        option: TenLogOption = DefaultLogOption,
     ) -> TenError | None:
-        return self._log_internal(LogLevel.WARN, msg, category, fields, skip)
+        return self._log_internal(LogLevel.WARN, msg, category, fields, option)
 
     def log_error(
         self,
         msg: str,
         category: str | None = None,
         fields: Value | None = None,
-        skip: int = 2,
+        option: TenLogOption = DefaultLogOption,
     ) -> TenError | None:
-        return self._log_internal(LogLevel.ERROR, msg, category, fields, skip)
+        return self._log_internal(LogLevel.ERROR, msg, category, fields, option)
 
     def log(
         self,
@@ -69,9 +70,9 @@ class TenEnvTesterBase:
         msg: str,
         category: str | None = None,
         fields: Value | None = None,
-        skip: int = 2,
+        option: TenLogOption = DefaultLogOption,
     ) -> TenError | None:
-        return self._log_internal(level, msg, category, fields, skip)
+        return self._log_internal(level, msg, category, fields, option)
 
     def _log_internal(
         self,
@@ -79,14 +80,14 @@ class TenEnvTesterBase:
         msg: str,
         category: str | None,
         fields: Value | None,
-        skip: int,
+        option: TenLogOption,
     ) -> TenError | None:
         # Get the current frame.
         frame = inspect.currentframe()
         if frame is not None:
             try:
                 # Skip the specified number of frames.
-                for _ in range(skip):
+                for _ in range(option.skip):
                     if frame is not None:
                         frame = frame.f_back
                     else:

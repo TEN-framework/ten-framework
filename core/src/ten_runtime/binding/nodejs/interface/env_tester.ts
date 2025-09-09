@@ -13,6 +13,8 @@ import ten_addon from "./ten_addon.js";
 import { LogLevel } from "./log_level.js";
 import type { TenError } from "./error.js";
 import type { Value } from "./value.js";
+import type { TenLogOption } from "./log_option.js";
+import { DefaultLogOption } from "./log_option.js";
 
 export class TenEnvTester {
   async sendCmd(
@@ -118,32 +120,36 @@ export class TenEnvTester {
     message: string,
     category: string | undefined = undefined,
     fields: Value | undefined = undefined,
+    option: TenLogOption = DefaultLogOption,
   ): TenError | undefined {
-    return this.log_internal(LogLevel.DEBUG, message, category, fields);
+    return this.log_internal(LogLevel.DEBUG, message, category, fields, option);
   }
 
   logInfo(
     message: string,
     category: string | undefined = undefined,
     fields: Value | undefined = undefined,
+    option: TenLogOption = DefaultLogOption,
   ): TenError | undefined {
-    return this.log_internal(LogLevel.INFO, message, category, fields);
+    return this.log_internal(LogLevel.INFO, message, category, fields, option);
   }
 
   logWarn(
     message: string,
     category: string | undefined = undefined,
     fields: Value | undefined = undefined,
+    option: TenLogOption = DefaultLogOption,
   ): TenError | undefined {
-    return this.log_internal(LogLevel.WARN, message, category, fields);
+    return this.log_internal(LogLevel.WARN, message, category, fields, option);
   }
 
   logError(
     message: string,
     category: string | undefined = undefined,
     fields: Value | undefined = undefined,
+    option: TenLogOption = DefaultLogOption,
   ): TenError | undefined {
-    return this.log_internal(LogLevel.ERROR, message, category, fields);
+    return this.log_internal(LogLevel.ERROR, message, category, fields, option);
   }
 
   log(
@@ -151,8 +157,9 @@ export class TenEnvTester {
     message: string,
     category: string | undefined = undefined,
     fields: Value | undefined = undefined,
+    option: TenLogOption = DefaultLogOption,
   ): TenError | undefined {
-    return this.log_internal(level, message, category, fields);
+    return this.log_internal(level, message, category, fields, option);
   }
 
   private log_internal(
@@ -160,6 +167,7 @@ export class TenEnvTester {
     message: string,
     category: string | undefined,
     fields: Value | undefined,
+    option: TenLogOption,
   ): TenError | undefined {
     const _prepareStackTrace = Error.prepareStackTrace;
     Error.prepareStackTrace = (_, stack): NodeJS.CallSite[] => stack;
@@ -167,9 +175,10 @@ export class TenEnvTester {
     const stack = stack_.slice(1);
     Error.prepareStackTrace = _prepareStackTrace;
 
-    const _callerFile = stack[1].getFileName();
-    const _callerLine = stack[1].getLineNumber();
-    const _callerFunction = stack[1].getFunctionName();
+    const skipIndex = Math.min(option.skip - 1, stack.length - 1);
+    const _callerFile = stack[skipIndex].getFileName();
+    const _callerLine = stack[skipIndex].getLineNumber();
+    const _callerFunction = stack[skipIndex].getFunctionName();
 
     const callerFile = _callerFile ? _callerFile : "unknown";
     const callerLine = _callerLine ? _callerLine : 0;
