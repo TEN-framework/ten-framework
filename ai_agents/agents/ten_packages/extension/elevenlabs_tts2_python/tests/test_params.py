@@ -150,11 +150,12 @@ def test_default_params(MockElevenLabsTTS2Client):
 
     # --- Test Setup ---
     tester = ExtensionTesterDefaultParams()
-    tester.set_test_mode_single("elevenlabs_tts2_python", {
-        "params": {
-            "key": "valid_api_key_for_test"
+    tester.set_test_mode_single(
+        "elevenlabs_tts2_python",
+        {
+            "params": {"key": "valid_api_key_for_test"},
         },
-    })
+    )
 
     print("Running default params test...")
     tester.run()
