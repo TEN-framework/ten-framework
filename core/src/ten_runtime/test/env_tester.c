@@ -886,7 +886,8 @@ static void test_extension_ten_env_log(ten_env_t *self, void *user_data) {
 
   ten_env_log(self, ctx->level, ten_string_get_raw_str(&ctx->func_name),
               ten_string_get_raw_str(&ctx->file_name), ctx->line_no,
-              ten_string_get_raw_str(&ctx->msg), NULL, NULL);
+              ten_string_get_raw_str(&ctx->msg),
+              ten_string_get_raw_str(&ctx->category), NULL);
 
   ten_env_tester_notify_log_ctx_destroy(ctx);
 }
