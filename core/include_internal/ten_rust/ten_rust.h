@@ -5,8 +5,9 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 #pragma once
-#include <include_internal/ten_rust/ten_rust.h>
+
 #include <include_internal/ten_rust/ten_config.h>
+#include <include_internal/ten_rust/ten_rust.h>
 #include <include_internal/ten_utils/log/log.h>
 #include <include_internal/ten_utils/schema/bindings/rust/schema_proxy.h>
 #include <include_internal/ten_utils/value/bindings/rust/value_proxy.h>
@@ -21,7 +22,7 @@ typedef struct ten_app_t ten_app_t;
 typedef struct AdvancedLogConfig AdvancedLogConfig;
 
 /**
- *This function is a wrapper for the backtrace::trace and backtrace::resolve
+ * This function is a wrapper for the backtrace::trace and backtrace::resolve
  * functions. It is used to dump the backtrace of the current function. It is
  * called by the C function ten_rust_backtrace_dump.
  */

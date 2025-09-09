@@ -10,9 +10,9 @@
 #include <atomic>
 #include <chrono>
 #include <functional>
-#include <map>
 #include <mutex>
 #include <thread>
+#include <unordered_map>
 #include <vector>
 
 #include "common/test_utils.h"
@@ -79,9 +79,9 @@ static void RunRWLockTest(ten_rwlock_t *lut, const std::string &impl,
   std::atomic<bool> stop = {false};
   std::atomic<int32_t> read_concurr = {0};
   std::atomic<int32_t> write_concurr = {0};
-  std::map<std::thread::id, int> writer_actives;
+  std::unordered_map<std::thread::id, int> writer_actives;
   std::mutex writer_actives_lock;
-  std::map<std::thread::id, int> reader_actives;
+  std::unordered_map<std::thread::id, int> reader_actives;
   std::mutex reader_actives_lock;
 
   std::srand(static_cast<unsigned>(time(NULL)));

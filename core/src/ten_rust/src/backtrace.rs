@@ -4,34 +4,34 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-use backtrace;
 use core::ffi::{c_char, c_int, c_void};
-use std::ffi::CString;
-use std::ptr;
+use std::{ffi::CString, ptr};
 
-///This function is a wrapper for the backtrace::trace and backtrace::resolve functions.
-///It is used to dump the backtrace of the current function.
-///It is called by the C function ten_rust_backtrace_dump.
+use backtrace;
+
+/// This function is a wrapper for the backtrace::trace and backtrace::resolve
+/// functions. It is used to dump the backtrace of the current function.
+/// It is called by the C function ten_rust_backtrace_dump.
 #[no_mangle]
 pub extern "C" fn ten_rust_backtrace_dump(
     ctx: *mut c_void,
-    on_dump: Option<extern "C" fn(
-        ctx: *mut c_void,
-        pc: usize,
-        filename: *const c_char,
-        lineno_c: c_int,
-        function: *const c_char,
-        data: *mut c_void,
-    ) -> c_int>,
-    on_error: Option<extern "C" fn(
-        ctx: *mut c_void,
-        msg: *const c_char,
-        errnum: c_int,
-        data: *mut c_void,
-    )>,
+    on_dump: Option<
+        extern "C" fn(
+            ctx: *mut c_void,
+            pc: usize,
+            filename: *const c_char,
+            lineno_c: c_int,
+            function: *const c_char,
+            data: *mut c_void,
+        ) -> c_int,
+    >,
+    on_error: Option<
+        extern "C" fn(ctx: *mut c_void, msg: *const c_char, errnum: c_int, data: *mut c_void),
+    >,
     skip: usize,
 ) -> c_int {
-    // on_dump is a required parameter: without it, we cannot call the callback for each frame to the C side
+    // on_dump is a required parameter: without it, we cannot call the callback for
+    // each frame to the C side
     let on_dump_cb = match on_dump {
         Some(cb) => cb,
         None => {
@@ -43,7 +43,8 @@ pub extern "C" fn ten_rust_backtrace_dump(
         }
     };
 
-    // due to the additional stack frames introduced by FFI bridge, we skip them here to avoid printing the frames of Rust/FFI itself
+    // due to the additional stack frames introduced by FFI bridge, we skip them
+    // here to avoid printing the frames of Rust/FFI itself
     let additional_skip: usize = 2;
     let total_skip = skip.saturating_add(additional_skip);
 
@@ -65,7 +66,6 @@ pub extern "C" fn ten_rust_backtrace_dump(
         let mut lineno_c: c_int = 0;
 
         backtrace::resolve(frame.ip(), |symbol| {
-
             if function_c.is_none() {
                 if let Some(name) = symbol.name() {
                     // to_string() will do demangle, get the readable function name

@@ -8,17 +8,15 @@
 #include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>
+
 #include "include_internal/ten_rust/ten_rust.h"
-#include "include_internal/ten_utils/backtrace/common.h"
-#include "include_internal/ten_utils/backtrace/platform/posix/darwin/internal.h"
-#include "include_internal/ten_utils/backtrace/platform/posix/internal.h"
 
 namespace {
 
 int g_frame_count = 0;
 
-int OnDump(void *ctx, uintptr_t pc, const char *filename, int lineno,
-           const char *function, void *data) {
+int on_dump(void *ctx, uintptr_t pc, const char *filename, int lineno,
+            const char *function, void *data) {
   (void)ctx;
   (void)data;
   // record frame count and output one line, return 0 to continue
@@ -29,7 +27,7 @@ int OnDump(void *ctx, uintptr_t pc, const char *filename, int lineno,
   return 0;
 }
 
-void OnError(void *ctx, const char *msg, int errnum, void *data) {
+void on_error(void *ctx, const char *msg, int errnum, void *data) {
   (void)ctx;
   (void)data;
   (void)fprintf(stderr, "on_error err=%d msg=%s\n", errnum,
@@ -38,7 +36,7 @@ void OnError(void *ctx, const char *msg, int errnum, void *data) {
 
 TEST(BacktraceRustFfiSmoke, DumpFrames) {  // NOLINT
   g_frame_count = 0;
-  int rc = ten_rust_backtrace_dump(nullptr, OnDump, OnError, 0);
+  int rc = ten_rust_backtrace_dump(nullptr, on_dump, on_error, 0);
   // rc 0 means not interrupted
   EXPECT_EQ(rc, 0);
   // expect at least some frames (different platforms have different numbers,
