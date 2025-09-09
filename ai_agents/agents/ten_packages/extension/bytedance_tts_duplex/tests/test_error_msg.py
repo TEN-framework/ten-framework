@@ -184,7 +184,11 @@ def test_invalid_params_fatal_error(MockBytedanceV3Client):
     invalid_params_config = {
         "appid": "valid_appid_for_test",
         "token": "valid_token_for_test",
-        "params": {"voice_type": "invalid_voice_type"},
+        "params": {
+            "voice_type": "invalid_voice_type",
+            "app_id": "valid_appid_for_test",
+            "token": "valid_token_for_test",
+        },
     }
 
     tester = ExtensionTesterInvalidParams()

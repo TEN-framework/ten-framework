@@ -140,7 +140,16 @@ def test_ttfb_metric_is_sent(MockElevenLabsTTS2Client):
 
     # --- Test Setup ---
     tester = ExtensionTesterMetrics()
-    tester.set_test_mode_single("elevenlabs_tts2_python")
+    tester.set_test_mode_single(
+        "elevenlabs_tts2_python",
+        json.dumps(
+            {
+                "params": {
+                    "key": "valid_api_key",
+                },
+            }
+        ),
+    )
 
     print("Running TTFB metrics test...")
     tester.run()
