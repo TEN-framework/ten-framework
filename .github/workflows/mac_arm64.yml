@@ -136,6 +136,7 @@ jobs:
           if [ ${{ matrix.build_type }} == "debug" ]; then
             export PATH="$(brew --prefix llvm@20)/bin:$PATH"
           fi
+
           export PATH=$(pwd)/core/ten_gn:$PATH
           echo $PATH
 
