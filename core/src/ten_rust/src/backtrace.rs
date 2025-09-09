@@ -31,20 +31,19 @@ pub extern "C" fn ten_rust_backtrace_dump(
     )>,
     skip: usize,
 ) -> c_int {
-    // on_dump 为必须参数：没有它就无法把每一帧回调给 C 侧
+    // on_dump is a required parameter: without it, we cannot call the callback for each frame to the C side
     let on_dump_cb = match on_dump {
         Some(cb) => cb,
         None => {
             if let Some(err_cb) = on_error {
                 let msg = CString::new("ten_rust_backtrace_dump: on_dump is NULL").unwrap();
-                // errnum 传 0，以表明非系统错误码
                 err_cb(ctx, msg.as_ptr(), 0, ptr::null_mut());
             }
             return -1;
         }
     };
 
-    // 由于 FFI 桥接会额外引入若干栈帧，这里做一个额外跳过，避免把 Rust/FFI 自身的帧打印出来
+    // due to the additional stack frames introduced by FFI bridge, we skip them here to avoid printing the frames of Rust/FFI itself
     let additional_skip: usize = 2;
     let total_skip = skip.saturating_add(additional_skip);
 
@@ -52,15 +51,15 @@ pub extern "C" fn ten_rust_backtrace_dump(
     let mut status: c_int = 0;
 
     backtrace::trace(|frame| {
-        // 跳过开头若干帧
+        // skip the first several frames
         if frame_index < total_skip {
             frame_index += 1;
-            return true; // 继续下一帧
+            return true; // continue to the next frame
         }
 
         let ip = frame.ip() as usize;
 
-        // 解析符号信息：函数名、文件名与行号
+        // parse symbol information: function name, file name and line number
         let mut function_c: Option<CString> = None;
         let mut filename_c: Option<CString> = None;
         let mut lineno_c: c_int = 0;
@@ -69,7 +68,7 @@ pub extern "C" fn ten_rust_backtrace_dump(
 
             if function_c.is_none() {
                 if let Some(name) = symbol.name() {
-                    // to_string() 会做 demangle，得到可读的函数名
+                    // to_string() will do demangle, get the readable function name
                     if let Ok(s) = CString::new(name.to_string()) {
                         function_c = Some(s);
                     }
@@ -96,14 +95,13 @@ pub extern "C" fn ten_rust_backtrace_dump(
         let filename_ptr = filename_c.as_ref().map(|s| s.as_ptr()).unwrap_or(ptr::null());
         let function_ptr = function_c.as_ref().map(|s| s.as_ptr()).unwrap_or(ptr::null());
 
-        // data 传 NULL；如需传递上下文，可在 C 侧通过 self->... 扩展
         let rc = on_dump_cb(ctx, ip, filename_ptr, lineno_c, function_ptr, ptr::null_mut());
         if rc != 0 {
             status = rc;
-            return false; // 非 0 表示回调希望中断遍历
+            return false;
         }
 
-        true // 继续遍历下一帧
+        true // continue to iterate the next frame
     });
 
     status
