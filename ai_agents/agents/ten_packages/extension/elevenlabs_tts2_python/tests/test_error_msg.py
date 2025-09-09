@@ -190,7 +190,10 @@ def test_invalid_params_fatal_error(MockElevenLabsTTS2Client):
     invalid_params_config = {
         "key": "valid_key_for_test",
         "voice_id": "valid_voice_id_for_test",
-        "params": {"voice_id": "invalid_voice_id"},
+        "params": {
+            "voice_id": "invalid_voice_id",
+            "key": "valid_key_for_test",
+        },
     }
 
     tester = ExtensionTesterInvalidParams()

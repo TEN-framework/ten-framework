@@ -13,7 +13,7 @@ class Params(BaseModel):
         VENDOR_DEFINED = "vendor_defined"
 
     finalize_mode: FinalizeMode = Field(
-        default=FinalizeMode.VENDOR_DEFINED,
+        default=FinalizeMode.MUTE_PKG,
         description="Tencent ASR finalize mode",
     )
 

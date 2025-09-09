@@ -202,7 +202,7 @@ jobs:
       - name: Upload tests relevant artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: tests-artifacts-${{ matrix.build_type }}
+          name: tests-artifacts-win-${{ matrix.build_type }}
           path: tests-artifacts.zip
           if-no-files-found: ignore
 
@@ -274,7 +274,7 @@ jobs:
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: tests-artifacts-${{ matrix.build_type }}
+          name: tests-artifacts-win-${{ matrix.build_type }}
           path: out/win/x64
 
       - name: Extract tests artifacts preserving permissions
@@ -399,7 +399,7 @@ jobs:
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: tests-artifacts-${{ matrix.build_type }}
+          name: tests-artifacts-win-${{ matrix.build_type }}
           path: out/win/x64
 
       - name: Extract tests artifacts preserving permissions
@@ -484,7 +484,7 @@ jobs:
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: tests-artifacts-${{ matrix.build_type }}
+          name: tests-artifacts-win-${{ matrix.build_type }}
           path: out/win/x64
 
       - name: Extract tests artifacts preserving permissions
