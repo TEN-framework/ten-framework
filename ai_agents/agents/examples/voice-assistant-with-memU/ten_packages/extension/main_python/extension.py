@@ -327,13 +327,13 @@ class MainControlExtension(AsyncExtension):
             if not conversation_for_memory:
                 return
 
-            await self.memu_client.memorize(
+            asyncio.create_task(self.memu_client.memorize(
                 conversation=conversation_for_memory,
                 user_id=user_id,
                 user_name=user_name,
                 agent_id=self.config.agent_id,
                 agent_name=self.config.agent_name,
-            )
+            ))
 
         except Exception as e:
             self.ten_env.log_error(f"[MainControlExtension] Failed to memorize conversation: {e}")

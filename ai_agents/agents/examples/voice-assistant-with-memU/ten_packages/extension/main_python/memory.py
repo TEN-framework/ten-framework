@@ -57,7 +57,7 @@ class MemuSdkMemoryStore(MemoryStore):
             await asyncio.sleep(2)
 
     async def retrieve_default_categories(self, user_id: str, agent_id: str) -> Any:
-        return self.client.retrieve_default_categories(user_id=user_id, agent_id=agent_id)
+        return self.client.retrieve_default_categories(user_id=user_id)
 
     def parse_default_categories(self, data: Any) -> dict:
         # Assume SDK already returns a summary-like object with attributes or dict-compatible
