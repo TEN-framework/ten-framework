@@ -53,6 +53,28 @@ class TestPollyTTSParams(unittest.TestCase):
         self.assertEqual(params.lang_code, "en-US")
         self.assertEqual(params.audio_format, "pcm")
 
+    def test_coerce_numbers_to_str(self):
+        """test valid params"""
+        params = PollyTTSParams(
+            aws_access_key_id="test_key",
+            aws_secret_access_key="test_secret",
+            region_name="us-west-2",
+            engine="neural",
+            voice="Joanna",
+            sample_rate=16000,
+            lang_code="en-US",
+            audio_format="pcm",
+        )
+
+        self.assertEqual(params.aws_access_key_id, "test_key")
+        self.assertEqual(params.aws_secret_access_key, "test_secret")
+        self.assertEqual(params.region_name, "us-west-2")
+        self.assertEqual(params.engine, "neural")
+        self.assertEqual(params.voice, "Joanna")
+        self.assertEqual(params.sample_rate, "16000")
+        self.assertEqual(params.lang_code, "en-US")
+        self.assertEqual(params.audio_format, "pcm")
+
     def test_default_params(self):
         """test default params"""
         params = PollyTTSParams(
