@@ -343,6 +343,7 @@ class XfyunWSRecognition:
             # Send end frame as text message
             end_message = json.dumps({"end": True})
             await self.websocket.send(end_message)
+            self.is_started = False
             self._log_debug("Stop signal sent")
 
         except ConnectionClosed:
