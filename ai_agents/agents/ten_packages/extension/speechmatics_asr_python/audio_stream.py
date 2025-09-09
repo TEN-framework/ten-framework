@@ -71,7 +71,7 @@ class AudioStream:
 
             data.extend(frame)
 
-        self.ten_env.log_verbose(
+        self.ten_env.log_debug(
             f"AudioStream read, chunk_size: {chunk_size}, data_size: {len(data)}"
         )
 
