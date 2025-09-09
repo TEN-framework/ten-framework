@@ -120,8 +120,10 @@ jobs:
 
       - name: Install tools and dependencies
         run: |
-          brew install llvm
-          rustup default nightly-2025-09-07
+          # Due to https://github.com/llvm/llvm-project/issues/155531, we need
+          # to use llvm@20 currently, and will switch to llvm when it is solved.
+          brew install llvm@20
+          rustup default nightly-2025-08-10
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2
@@ -132,7 +134,7 @@ jobs:
       - name: Build
         run: |
           if [ ${{ matrix.build_type }} == "debug" ]; then
-            export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
+            export PATH="$(brew --prefix llvm@20)/bin:$PATH"
           fi
           export PATH=$(pwd)/core/ten_gn:$PATH
           echo $PATH
@@ -170,7 +172,7 @@ jobs:
       - name: Upload tests relevant artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: tests-artifacts-${{ matrix.build_type }}
+          name: tests-artifacts-mac-arm64-${{ matrix.build_type }}
           path: tests-artifacts.tar.gz
           if-no-files-found: ignore
 
@@ -250,8 +252,10 @@ jobs:
 
       - name: Install tools and dependencies
         run: |
-          brew install llvm
-          rustup default nightly-2025-09-07
+          # Due to https://github.com/llvm/llvm-project/issues/155531, we need
+          # to use llvm@20 currently, and will switch to llvm when it is solved.
+          brew install llvm@20
+          rustup default nightly-2025-08-10
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2
@@ -262,7 +266,7 @@ jobs:
       - name: Download build artifacts (tar archive)
         uses: actions/download-artifact@v4
         with:
-          name: tests-artifacts-${{ matrix.build_type }}
+          name: tests-artifacts-mac-arm64-${{ matrix.build_type }}
           path: out/mac/arm64
 
       - name: Extract tests artifacts preserving permissions
@@ -405,8 +409,10 @@ jobs:
 
       - name: Install tools and dependencies
         run: |
-          brew install llvm
-          rustup default nightly-2025-09-07
+          # Due to https://github.com/llvm/llvm-project/issues/155531, we need
+          # to use llvm@20 currently, and will switch to llvm when it is solved.
+          brew install llvm@20
+          rustup default nightly-2025-08-10
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2
@@ -417,7 +423,7 @@ jobs:
       - name: Download build artifacts (tar archive)
         uses: actions/download-artifact@v4
         with:
-          name: tests-artifacts-${{ matrix.build_type }}
+          name: tests-artifacts-mac-arm64-${{ matrix.build_type }}
           path: out/mac/arm64
 
       - name: Extract tests artifacts preserving permissions
@@ -497,8 +503,10 @@ jobs:
 
       - name: Install tools and dependencies
         run: |
-          brew install llvm
-          rustup default nightly-2025-09-07
+          # Due to https://github.com/llvm/llvm-project/issues/155531, we need
+          # to use llvm@20 currently, and will switch to llvm when it is solved.
+          brew install llvm@20
+          rustup default nightly-2025-08-10
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2
@@ -509,7 +517,7 @@ jobs:
       - name: Download build artifacts (tar archive)
         uses: actions/download-artifact@v4
         with:
-          name: tests-artifacts-${{ matrix.build_type }}
+          name: tests-artifacts-mac-arm64-${{ matrix.build_type }}
           path: out/mac/arm64
 
       - name: Extract tests artifacts preserving permissions
@@ -535,7 +543,7 @@ jobs:
           GOTRACEBACK: crash
         run: |
           if [ ${{ matrix.build_type }} == "debug" ]; then
-            export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
+            export PATH="$(brew --prefix llvm@20)/bin:$PATH"
           fi
           export PATH=$(pwd)/core/ten_gn:$PATH
           cd out/mac/arm64/
@@ -597,8 +605,10 @@ jobs:
 
       - name: Install tools and dependencies
         run: |
-          brew install llvm
-          rustup default nightly-2025-09-07
+          # Due to https://github.com/llvm/llvm-project/issues/155531, we need
+          # to use llvm@20 currently, and will switch to llvm when it is solved.
+          brew install llvm@20
+          rustup default nightly-2025-08-10
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2
@@ -609,7 +619,7 @@ jobs:
       - name: Download build artifacts (tar archive)
         uses: actions/download-artifact@v4
         with:
-          name: tests-artifacts-${{ matrix.build_type }}
+          name: tests-artifacts-mac-arm64-${{ matrix.build_type }}
           path: out/mac/arm64
 
       - name: Extract tests artifacts preserving permissions
@@ -635,7 +645,7 @@ jobs:
           GOTRACEBACK: crash
         run: |
           if [ ${{ matrix.build_type }} == "debug" ]; then
-            export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
+            export PATH="$(brew --prefix llvm@20)/bin:$PATH"
           fi
           export PATH=$(pwd)/core/ten_gn:$PATH
           cd out/mac/arm64/
@@ -697,8 +707,10 @@ jobs:
 
       - name: Install tools and dependencies
         run: |
-          brew install llvm
-          rustup default nightly-2025-09-07
+          # Due to https://github.com/llvm/llvm-project/issues/155531, we need
+          # to use llvm@20 currently, and will switch to llvm when it is solved.
+          brew install llvm@20
+          rustup default nightly-2025-08-10
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2
@@ -709,7 +721,7 @@ jobs:
       - name: Download build artifacts (tar archive)
         uses: actions/download-artifact@v4
         with:
-          name: tests-artifacts-${{ matrix.build_type }}
+          name: tests-artifacts-mac-arm64-${{ matrix.build_type }}
           path: out/mac/arm64
 
       - name: Extract tests artifacts preserving permissions
@@ -735,7 +747,7 @@ jobs:
           GOTRACEBACK: crash
         run: |
           if [ ${{ matrix.build_type }} == "debug" ]; then
-            export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
+            export PATH="$(brew --prefix llvm@20)/bin:$PATH"
           fi
           export PATH=$(pwd)/core/ten_gn:$PATH
           cd out/mac/arm64/
