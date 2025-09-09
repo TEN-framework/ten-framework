@@ -69,14 +69,14 @@ def test_network_error(MockGoogleTTS):
     mock_client_instance = AsyncMock()
 
     # Mock the get method to raise a network error
-    async def mock_get(text):
+    async def mock_get(text, request_id):
         print(f"Mock get called with text: {text}")
         # Raise exception immediately to simulate network error
         raise Exception(
             "503 failed to connect to all addresses; last error: UNAVAILABLE: ipv4:142.251.215.234:443: Socket closed"
         )
         # This line will never be reached
-        yield b"", 0
+        yield b"", 0, None
 
     # Set up all required attributes and methods
     mock_client_instance.get = mock_get
@@ -135,12 +135,12 @@ def test_authentication_error(MockGoogleTTS):
     mock_client_instance = AsyncMock()
 
     # Mock the get method to raise an authentication error
-    async def mock_get(text):
+    async def mock_get(text, request_id):
         print(f"Mock get called with text: {text}")
         # Raise exception immediately to simulate authentication error
         raise Exception("401 Unauthorized: Invalid credentials")
         # This line will never be reached
-        yield b"", 0
+        yield b"", 0, None
 
     # Set up all required attributes and methods
     mock_client_instance.get = mock_get
@@ -200,12 +200,12 @@ def test_quota_exceeded_error(MockGoogleTTS):
     mock_client_instance = AsyncMock()
 
     # Mock the get method to raise a quota exceeded error
-    async def mock_get(text):
+    async def mock_get(text, request_id):
         print(f"Mock get called with text: {text}")
         # Raise exception immediately to simulate quota error
         raise Exception("429 Quota exceeded for quota group 'default'")
         # This line will never be reached
-        yield b"", 0
+        yield b"", 0, None
 
     # Set up all required attributes and methods
     mock_client_instance.get = mock_get
@@ -263,12 +263,12 @@ def test_invalid_text_error(MockGoogleTTS):
     mock_client_instance = AsyncMock()
 
     # Mock the get method to raise an invalid text error
-    async def mock_get(text):
+    async def mock_get(text, request_id):
         print(f"Mock get called with text: {text}")
         # Raise exception immediately to simulate invalid text error
         raise Exception("400 Bad Request: Invalid text input")
         # This line will never be reached
-        yield b"", 0
+        yield b"", 0, None
 
     # Set up all required attributes and methods
     mock_client_instance.get = mock_get
@@ -327,12 +327,12 @@ def test_timeout_error(MockGoogleTTS):
     mock_client_instance = AsyncMock()
 
     # Mock the get method to raise a timeout error
-    async def mock_get(text):
+    async def mock_get(text, request_id):
         print(f"Mock get called with text: {text}")
         # Raise exception immediately to simulate timeout error
         raise Exception("504 Gateway Timeout: Request timed out")
         # This line will never be reached
-        yield b"", 0
+        yield b"", 0, None
 
     # Set up all required attributes and methods
     mock_client_instance.get = mock_get
@@ -391,12 +391,12 @@ def test_generic_error(MockGoogleTTS):
     mock_client_instance = AsyncMock()
 
     # Mock the get method to raise a generic error
-    async def mock_get(text):
+    async def mock_get(text, request_id):
         print(f"Mock get called with text: {text}")
         # Raise exception immediately to simulate generic error
         raise Exception("500 Internal Server Error: Something went wrong")
         # This line will never be reached
-        yield b"", 0
+        yield b"", 0, None
 
     # Set up all required attributes and methods
     mock_client_instance.get = mock_get
@@ -455,13 +455,13 @@ def test_empty_text_error(MockGoogleTTS):
     mock_client_instance = AsyncMock()
 
     # Mock the get method to return audio data
-    async def mock_get(text):
+    async def mock_get(text, request_id):
         print(f"Mock get called with text: {text}")
         if not text or text.strip() == "":
             raise Exception("Empty text provided")
         # Return audio data in the expected format
-        yield b"fake_audio_data", 1  # EVENT_TTS_RESPONSE
-        yield None, 2  # EVENT_TTS_REQUEST_END
+        yield b"fake_audio_data", 1, 123  # EVENT_TTS_RESPONSE
+        yield None, 2, None  # EVENT_TTS_REQUEST_END
 
     # Set up all required attributes and methods
     mock_client_instance.get = mock_get
@@ -517,12 +517,12 @@ def test_unsupported_language_error(MockGoogleTTS):
     mock_client_instance = AsyncMock()
 
     # Mock the get method to raise an unsupported language error
-    async def mock_get(text):
+    async def mock_get(text, request_id):
         print(f"Mock get called with text: {text}")
         # Raise exception immediately to simulate unsupported language error
         raise Exception("400 Bad Request: Unsupported language code")
         # This line will never be reached
-        yield b"", 0
+        yield b"", 0, None
 
     # Set up all required attributes and methods
     mock_client_instance.get = mock_get
@@ -584,12 +584,12 @@ def test_simple_mock_verification(MockGoogleTTS):
     mock_client_instance = AsyncMock()
 
     # Mock the get method
-    async def mock_get(text):
+    async def mock_get(text, request_id):
         print(f"Mock get called with text: {text}")
         # Raise exception immediately to simulate test exception
         raise Exception("Test exception from mock")
         # This line will never be reached
-        yield b"", 0
+        yield b"", 0, None
 
     mock_client_instance.get = mock_get
     mock_client_instance.cancel = AsyncMock()

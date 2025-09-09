@@ -15,25 +15,10 @@ import type {
   AddNodePayloadSchema,
   DeleteConnectionPayloadSchema,
   DeleteNodePayloadSchema,
-  Graph,
-  GraphInfo,
   GraphUiNodeGeometrySchema,
   SetGraphUiPayloadSchema,
   UpdateNodePropertyPayloadSchema,
 } from "@/types/graphs";
-
-export const retrieveGraphConnections = async (graphId: string) => {
-  const template = ENDPOINT_GRAPHS.graphs[ENDPOINT_METHOD.POST];
-  const req = makeAPIRequest(template, {
-    body: { graph_id: graphId },
-  });
-  const res = await req;
-  const data = template.responseSchema.parse(res).data;
-
-  // Find the graph with matching graph_id and return its connections
-  const targetGraph = data.find((graph) => graph.graph_id === graphId);
-  return targetGraph?.graph.connections || [];
-};
 
 export const retrieveGraphs = async () => {
   const template = ENDPOINT_GRAPHS.graphs[ENDPOINT_METHOD.POST];
@@ -44,17 +29,7 @@ export const retrieveGraphs = async () => {
 
   const resp = await template.responseSchema.parseAsync(res);
 
-  // todo: need to support selector & subgraph
-  const filtered = resp.data.map((item) => ({
-    ...item,
-    graph: {
-      ...item.graph,
-      nodes:
-        item.graph.nodes?.filter((node) => node.type === "extension") || [],
-    } as Graph,
-  })) as GraphInfo[];
-
-  return filtered;
+  return resp.data;
 };
 
 export const useGraphs = () => {

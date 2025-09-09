@@ -44,6 +44,7 @@ typedef struct ten_app_on_addon_loader_deinit_done_ctx_t {
   void *cb_data;
 } ten_app_on_addon_loader_deinit_done_ctx_t;
 
+// Register an addon loader.
 TEN_RUNTIME_API ten_addon_host_t *ten_addon_register_addon_loader(
     const char *name, const char *base_dir, ten_addon_t *addon,
     void *register_ctx);

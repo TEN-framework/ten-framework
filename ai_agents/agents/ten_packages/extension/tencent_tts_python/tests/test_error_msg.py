@@ -5,7 +5,7 @@
 # Refer to the "LICENSE" file in the root directory for more information.
 #
 import json
-from unittest.mock import patch, AsyncMock
+from unittest.mock import patch, MagicMock
 
 from ten_runtime import (
     ExtensionTester,
@@ -15,7 +15,7 @@ from ten_runtime import (
 from ten_ai_base.struct import TTSTextInput
 from ..tencent_tts import (
     TencentTTSTaskFailedException,
-    ERROR_CODE_AUTHORIZATION_FAILED,
+    MESSAGE_TYPE_CMD_ERROR,
 )
 
 
@@ -61,7 +61,13 @@ def test_empty_params_fatal_error():
     print("Starting test_empty_params_fatal_error...")
 
     # Empty params configuration
-    empty_params_config = {"params": {}}
+    empty_params_config = {
+        "params": {
+            "app_id": "",
+            "secret_id": "",
+            "secret_key": "",
+        },
+    }
 
     tester = ExtensionTesterEmptyParams()
     tester.set_test_mode_single(
@@ -145,28 +151,27 @@ def test_invalid_params_fatal_error(MockTencentTTSClient):
     # --- Mock Configuration ---
     mock_instance = MockTencentTTSClient.return_value
     # Mock the async methods called on the client instance
-    mock_instance.start = AsyncMock()
-    mock_instance.stop = AsyncMock()
+    mock_instance.start = MagicMock()
+    mock_instance.stop = MagicMock()
 
-    # Define an async generator that raises the exception we want to test
-    async def mock_synthesize_audio_error(text: str):
-        # This should be an async generator, but we want to test error handling
-        # So we'll yield one item then raise the exception
-        yield (False, 0, b"")  # Yield one item first
-        raise TencentTTSTaskFailedException(
-            error_msg="AuthorizationFailed:Please check http header 'Authorization' field or request parameter",
-            error_code=ERROR_CODE_AUTHORIZATION_FAILED,
-        )
+    async def mock_get_audio_data():
+        return [
+            False,
+            MESSAGE_TYPE_CMD_ERROR,
+            TencentTTSTaskFailedException(
+                10003,
+                "鉴权失败(AuthorizationFailed:Please check http header 'Authorization' field or request parameter)",
+            ),
+        ]
 
-    # When extension calls self.client.synthesize_audio(), it will receive our faulty generator
-    mock_instance.synthesize_audio.side_effect = mock_synthesize_audio_error
+    mock_instance.get_audio_data.side_effect = mock_get_audio_data
 
     # --- Test Setup ---
     # Config with valid credentials so on_init passes and can proceed
     # to the request_tts call where the mock will be triggered.
     invalid_params_config = {
         "params": {
-            "app_id": "test_app_id",
+            "app_id": "1234567890",
             "secret_id": "test_secret_id",
             "secret_key": "invalid_secret_key",
         },
@@ -184,11 +189,8 @@ def test_invalid_params_fatal_error(MockTencentTTSClient):
     # --- Assertions ---
     assert tester.error_received, "Expected to receive error message"
     assert (
-        tester.error_code == -1000
-    ), f"Expected error code -1000 (FATAL_ERROR), got {tester.error_code}"
-    # The module field seems to be empty in the error message, this might be a framework-level issue.
-    # Commenting out for now to focus on core logic validation.
-    # assert tester.error_module == "tts", f"Expected module 'tts', got {tester.error_module}"
+        tester.error_code == 1000
+    ), f"Expected error code 1000, got {tester.error_code}"
     assert tester.error_message is not None, "Error message should not be None"
     assert len(tester.error_message) > 0, "Error message should not be empty"
 

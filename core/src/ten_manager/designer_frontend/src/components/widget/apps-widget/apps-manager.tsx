@@ -305,10 +305,10 @@ const TabLoadedApps = (props: { className?: string }) => {
               </TableCell>
             </TableRow>
           </TableFooter>
+          <TableCaption className="mt-auto select-none">
+            {t("popup.apps.tableCaption")}
+          </TableCaption>
         </Table>
-        <TableCaption className="mt-auto select-none">
-          {t("popup.apps.tableCaption")}
-        </TableCaption>
       </div>
     </TooltipProvider>
   );

@@ -6,7 +6,6 @@
 //
 
 import type { NodeProps } from "@xyflow/react";
-import { NetworkIcon } from "lucide-react";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -16,9 +15,12 @@ import {
   GroupNode,
   GroupNodeLabel,
 } from "@/components/ui/react-flow/labeled-group-node";
+import { NODE_CONFIG_MAPPING } from "@/flow/node/base";
 import { ContextMenuItems } from "@/flow/node/graph/context-menu";
 import { cn } from "@/lib/utils";
 import type { TGraphNode } from "@/types/flow";
+
+const CONFIG = NODE_CONFIG_MAPPING.graph;
 
 export const GraphNode = (props: NodeProps<TGraphNode>) => {
   const { data } = props;
@@ -34,7 +36,7 @@ export const GraphNode = (props: NodeProps<TGraphNode>) => {
             <GroupNodeLabel
               className={cn("rounded-br-sm", "flex items-center gap-2")}
             >
-              <NetworkIcon className="size-4" />
+              <CONFIG.Icon className="size-4" />
               {data.graph.name}
             </GroupNodeLabel>
           }

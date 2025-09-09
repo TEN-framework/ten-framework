@@ -1,0 +1,22 @@
+#!/bin/bash
+
+set -e
+
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+
+#print the current directory
+echo "Current directory: $(pwd)"
+
+npm install
+
+npm run build
+
+export NODE_PATH=../.ten/app/ten_packages/system/ten_runtime_nodejs/lib:$NODE_PATH
+
+# Check if -asan argument is provided
+if [[ "$*" == *"-asan"* ]]; then
+  export LD_PRELOAD=../.ten/app/ten_packages/system/ten_runtime/lib/libasan.so
+  export LSAN_OPTIONS=suppressions=lsan.suppressions
+fi
+
+npm test

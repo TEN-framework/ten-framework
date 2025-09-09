@@ -171,6 +171,7 @@ def test_invalid_params_fatal_error(MockRimeTTSClient):
     # Config with valid appid and token so on_init passes
     invalid_params_config = {
         "params": {
+            "api_key": "invalid_api_key_for_test",
             "appid": "invalid_appid_for_test",
             "token": "invalid_token_for_test",
         },

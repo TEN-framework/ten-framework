@@ -25,7 +25,12 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  call-check-pr-status:
+    uses: ./.github/workflows/_check_pr_status.yml
+
   build:
+    needs: call-check-pr-status
+    if: ${{ needs.call-check-pr-status.outputs.should_continue == 'true' }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -42,6 +47,57 @@ jobs:
     container:
       image: ghcr.io/ten-framework/ten_building_ubuntu2204
     steps:
+      - name: Check PR status before matrix execution
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            console.log('Event name:', context.eventName);
+            console.log('Matrix:', ${{ toJson(matrix) }});
+
+            // Only check for PR events
+            if (context.eventName !== 'pull_request') {
+              console.log('Not a PR event, continuing...');
+              return;
+            }
+
+            // Ensure we have PR data
+            if (!context.payload.pull_request) {
+              console.log('No pull_request data in payload, continuing...');
+              return;
+            }
+
+            const { owner, repo } = context.repo;
+            const prNumber = context.payload.pull_request.number;
+
+            console.log(`Checking PR #${prNumber} status for matrix: compiler=${{ matrix.compiler }}, build_type=${{ matrix.build_type }}, arch=${{ matrix.arch }}...`);
+
+            try {
+              const pr = await github.rest.pulls.get({
+                owner,
+                repo,
+                pull_number: prNumber,
+              });
+
+              console.log(`PR #${prNumber} state: ${pr.data.state}, merged: ${pr.data.merged}`);
+
+              if (pr.data.state === 'closed') {
+                if (pr.data.merged) {
+                  console.log(`PR #${prNumber} has been merged. Stopping matrix execution.`);
+                  core.setFailed('PR has been merged, stopping execution to save resources.');
+                } else {
+                  console.log(`PR #${prNumber} has been closed. Stopping matrix execution.`);
+                  core.setFailed('PR has been closed, stopping execution to save resources.');
+                }
+              } else {
+                console.log(`PR #${prNumber} is still open. Continuing matrix execution.`);
+              }
+            } catch (error) {
+              console.error(`Error checking PR status: ${error.message}`);
+              console.log('Error details:', error);
+              console.log('Continuing matrix execution due to error...');
+            }
+
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -146,7 +202,7 @@ jobs:
       - name: Upload tests relevant artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: tests-artifacts-${{ matrix.compiler }}-${{ matrix.build_type }}-${{ matrix.arch }}
+          name: tests-artifacts-linux-ubuntu2204-${{ matrix.compiler }}-${{ matrix.build_type }}-${{ matrix.arch }}
           path: tests-artifacts.tar.gz
           if-no-files-found: ignore
 
@@ -279,10 +335,61 @@ jobs:
     container:
       image: ghcr.io/ten-framework/ten_building_ubuntu2204
     steps:
+      - name: Check PR status before matrix execution
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            console.log('Event name:', context.eventName);
+            console.log('Matrix:', ${{ toJson(matrix) }});
+
+            // Only check for PR events
+            if (context.eventName !== 'pull_request') {
+              console.log('Not a PR event, continuing...');
+              return;
+            }
+
+            // Ensure we have PR data
+            if (!context.payload.pull_request) {
+              console.log('No pull_request data in payload, continuing...');
+              return;
+            }
+
+            const { owner, repo } = context.repo;
+            const prNumber = context.payload.pull_request.number;
+
+            console.log(`Checking PR #${prNumber} status for test-standalone matrix: compiler=${{ matrix.compiler }}, build_type=${{ matrix.build_type }}, arch=${{ matrix.arch }}...`);
+
+            try {
+              const pr = await github.rest.pulls.get({
+                owner,
+                repo,
+                pull_number: prNumber,
+              });
+
+              console.log(`PR #${prNumber} state: ${pr.data.state}, merged: ${pr.data.merged}`);
+
+              if (pr.data.state === 'closed') {
+                if (pr.data.merged) {
+                  console.log(`PR #${prNumber} has been merged. Stopping matrix execution.`);
+                  core.setFailed('PR has been merged, stopping execution to save resources.');
+                } else {
+                  console.log(`PR #${prNumber} has been closed. Stopping matrix execution.`);
+                  core.setFailed('PR has been closed, stopping execution to save resources.');
+                }
+              } else {
+                console.log(`PR #${prNumber} is still open. Continuing matrix execution.`);
+              }
+            } catch (error) {
+              console.error(`Error checking PR status: ${error.message}`);
+              console.log('Error details:', error);
+              console.log('Continuing matrix execution due to error...');
+            }
+
       - name: Download build artifacts (tar archive)
         uses: actions/download-artifact@v4
         with:
-          name: tests-artifacts-${{ matrix.compiler }}-${{ matrix.build_type }}-${{ matrix.arch }}
+          name: tests-artifacts-linux-ubuntu2204-${{ matrix.compiler }}-${{ matrix.build_type }}-${{ matrix.arch }}
           path: out/linux/${{ matrix.arch }}
 
       - name: Extract tests artifacts preserving permissions
@@ -445,6 +552,57 @@ jobs:
     container:
       image: ghcr.io/ten-framework/ten_building_ubuntu2204
     steps:
+      - name: Check PR status before matrix execution
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            console.log('Event name:', context.eventName);
+            console.log('Matrix:', ${{ toJson(matrix) }});
+
+            // Only check for PR events
+            if (context.eventName !== 'pull_request') {
+              console.log('Not a PR event, continuing...');
+              return;
+            }
+
+            // Ensure we have PR data
+            if (!context.payload.pull_request) {
+              console.log('No pull_request data in payload, continuing...');
+              return;
+            }
+
+            const { owner, repo } = context.repo;
+            const prNumber = context.payload.pull_request.number;
+
+            console.log(`Checking PR #${prNumber} status for test-integration-ten-manager matrix: compiler=${{ matrix.compiler }}, build_type=${{ matrix.build_type }}, arch=${{ matrix.arch }}...`);
+
+            try {
+              const pr = await github.rest.pulls.get({
+                owner,
+                repo,
+                pull_number: prNumber,
+              });
+
+              console.log(`PR #${prNumber} state: ${pr.data.state}, merged: ${pr.data.merged}`);
+
+              if (pr.data.state === 'closed') {
+                if (pr.data.merged) {
+                  console.log(`PR #${prNumber} has been merged. Stopping matrix execution.`);
+                  core.setFailed('PR has been merged, stopping execution to save resources.');
+                } else {
+                  console.log(`PR #${prNumber} has been closed. Stopping matrix execution.`);
+                  core.setFailed('PR has been closed, stopping execution to save resources.');
+                }
+              } else {
+                console.log(`PR #${prNumber} is still open. Continuing matrix execution.`);
+              }
+            } catch (error) {
+              console.error(`Error checking PR status: ${error.message}`);
+              console.log('Error details:', error);
+              console.log('Continuing matrix execution due to error...');
+            }
+
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -468,7 +626,7 @@ jobs:
       - name: Download build artifacts (tar archive)
         uses: actions/download-artifact@v4
         with:
-          name: tests-artifacts-${{ matrix.compiler }}-${{ matrix.build_type }}-${{ matrix.arch }}
+          name: tests-artifacts-linux-ubuntu2204-${{ matrix.compiler }}-${{ matrix.build_type }}-${{ matrix.arch }}
           path: out/linux/${{ matrix.arch }}
 
       - name: Extract tests artifacts preserving permissions
@@ -551,6 +709,57 @@ jobs:
     container:
       image: ghcr.io/ten-framework/ten_building_ubuntu2204
     steps:
+      - name: Check PR status before matrix execution
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            console.log('Event name:', context.eventName);
+            console.log('Matrix:', ${{ toJson(matrix) }});
+
+            // Only check for PR events
+            if (context.eventName !== 'pull_request') {
+              console.log('Not a PR event, continuing...');
+              return;
+            }
+
+            // Ensure we have PR data
+            if (!context.payload.pull_request) {
+              console.log('No pull_request data in payload, continuing...');
+              return;
+            }
+
+            const { owner, repo } = context.repo;
+            const prNumber = context.payload.pull_request.number;
+
+            console.log(`Checking PR #${prNumber} status for test-integration-cpp matrix: compiler=${{ matrix.compiler }}, build_type=${{ matrix.build_type }}, arch=${{ matrix.arch }}...`);
+
+            try {
+              const pr = await github.rest.pulls.get({
+                owner,
+                repo,
+                pull_number: prNumber,
+              });
+
+              console.log(`PR #${prNumber} state: ${pr.data.state}, merged: ${pr.data.merged}`);
+
+              if (pr.data.state === 'closed') {
+                if (pr.data.merged) {
+                  console.log(`PR #${prNumber} has been merged. Stopping matrix execution.`);
+                  core.setFailed('PR has been merged, stopping execution to save resources.');
+                } else {
+                  console.log(`PR #${prNumber} has been closed. Stopping matrix execution.`);
+                  core.setFailed('PR has been closed, stopping execution to save resources.');
+                }
+              } else {
+                console.log(`PR #${prNumber} is still open. Continuing matrix execution.`);
+              }
+            } catch (error) {
+              console.error(`Error checking PR status: ${error.message}`);
+              console.log('Error details:', error);
+              console.log('Continuing matrix execution due to error...');
+            }
+
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -574,7 +783,7 @@ jobs:
       - name: Download build artifacts (tar archive)
         uses: actions/download-artifact@v4
         with:
-          name: tests-artifacts-${{ matrix.compiler }}-${{ matrix.build_type }}-${{ matrix.arch }}
+          name: tests-artifacts-linux-ubuntu2204-${{ matrix.compiler }}-${{ matrix.build_type }}-${{ matrix.arch }}
           path: out/linux/${{ matrix.arch }}
 
       - name: Extract tests artifacts preserving permissions
@@ -647,6 +856,57 @@ jobs:
     container:
       image: ghcr.io/ten-framework/ten_building_ubuntu2204
     steps:
+      - name: Check PR status before matrix execution
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            console.log('Event name:', context.eventName);
+            console.log('Matrix:', ${{ toJson(matrix) }});
+
+            // Only check for PR events
+            if (context.eventName !== 'pull_request') {
+              console.log('Not a PR event, continuing...');
+              return;
+            }
+
+            // Ensure we have PR data
+            if (!context.payload.pull_request) {
+              console.log('No pull_request data in payload, continuing...');
+              return;
+            }
+
+            const { owner, repo } = context.repo;
+            const prNumber = context.payload.pull_request.number;
+
+            console.log(`Checking PR #${prNumber} status for test-integration-go matrix: compiler=${{ matrix.compiler }}, build_type=${{ matrix.build_type }}, arch=${{ matrix.arch }}...`);
+
+            try {
+              const pr = await github.rest.pulls.get({
+                owner,
+                repo,
+                pull_number: prNumber,
+              });
+
+              console.log(`PR #${prNumber} state: ${pr.data.state}, merged: ${pr.data.merged}`);
+
+              if (pr.data.state === 'closed') {
+                if (pr.data.merged) {
+                  console.log(`PR #${prNumber} has been merged. Stopping matrix execution.`);
+                  core.setFailed('PR has been merged, stopping execution to save resources.');
+                } else {
+                  console.log(`PR #${prNumber} has been closed. Stopping matrix execution.`);
+                  core.setFailed('PR has been closed, stopping execution to save resources.');
+                }
+              } else {
+                console.log(`PR #${prNumber} is still open. Continuing matrix execution.`);
+              }
+            } catch (error) {
+              console.error(`Error checking PR status: ${error.message}`);
+              console.log('Error details:', error);
+              console.log('Continuing matrix execution due to error...');
+            }
+
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -670,7 +930,7 @@ jobs:
       - name: Download build artifacts (tar archive)
         uses: actions/download-artifact@v4
         with:
-          name: tests-artifacts-${{ matrix.compiler }}-${{ matrix.build_type }}-${{ matrix.arch }}
+          name: tests-artifacts-linux-ubuntu2204-${{ matrix.compiler }}-${{ matrix.build_type }}-${{ matrix.arch }}
           path: out/linux/${{ matrix.arch }}
 
       - name: Extract tests artifacts preserving permissions
@@ -743,6 +1003,57 @@ jobs:
     container:
       image: ghcr.io/ten-framework/ten_building_ubuntu2204
     steps:
+      - name: Check PR status before matrix execution
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            console.log('Event name:', context.eventName);
+            console.log('Matrix:', ${{ toJson(matrix) }});
+
+            // Only check for PR events
+            if (context.eventName !== 'pull_request') {
+              console.log('Not a PR event, continuing...');
+              return;
+            }
+
+            // Ensure we have PR data
+            if (!context.payload.pull_request) {
+              console.log('No pull_request data in payload, continuing...');
+              return;
+            }
+
+            const { owner, repo } = context.repo;
+            const prNumber = context.payload.pull_request.number;
+
+            console.log(`Checking PR #${prNumber} status for test-integration-python matrix: compiler=${{ matrix.compiler }}, build_type=${{ matrix.build_type }}, arch=${{ matrix.arch }}...`);
+
+            try {
+              const pr = await github.rest.pulls.get({
+                owner,
+                repo,
+                pull_number: prNumber,
+              });
+
+              console.log(`PR #${prNumber} state: ${pr.data.state}, merged: ${pr.data.merged}`);
+
+              if (pr.data.state === 'closed') {
+                if (pr.data.merged) {
+                  console.log(`PR #${prNumber} has been merged. Stopping matrix execution.`);
+                  core.setFailed('PR has been merged, stopping execution to save resources.');
+                } else {
+                  console.log(`PR #${prNumber} has been closed. Stopping matrix execution.`);
+                  core.setFailed('PR has been closed, stopping execution to save resources.');
+                }
+              } else {
+                console.log(`PR #${prNumber} is still open. Continuing matrix execution.`);
+              }
+            } catch (error) {
+              console.error(`Error checking PR status: ${error.message}`);
+              console.log('Error details:', error);
+              console.log('Continuing matrix execution due to error...');
+            }
+
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -766,7 +1077,7 @@ jobs:
       - name: Download build artifacts (tar archive)
         uses: actions/download-artifact@v4
         with:
-          name: tests-artifacts-${{ matrix.compiler }}-${{ matrix.build_type }}-${{ matrix.arch }}
+          name: tests-artifacts-linux-ubuntu2204-${{ matrix.compiler }}-${{ matrix.build_type }}-${{ matrix.arch }}
           path: out/linux/${{ matrix.arch }}
 
       - name: Extract tests artifacts preserving permissions
@@ -859,6 +1170,57 @@ jobs:
     container:
       image: ghcr.io/ten-framework/ten_building_ubuntu2204
     steps:
+      - name: Check PR status before matrix execution
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            console.log('Event name:', context.eventName);
+            console.log('Matrix:', ${{ toJson(matrix) }});
+
+            // Only check for PR events
+            if (context.eventName !== 'pull_request') {
+              console.log('Not a PR event, continuing...');
+              return;
+            }
+
+            // Ensure we have PR data
+            if (!context.payload.pull_request) {
+              console.log('No pull_request data in payload, continuing...');
+              return;
+            }
+
+            const { owner, repo } = context.repo;
+            const prNumber = context.payload.pull_request.number;
+
+            console.log(`Checking PR #${prNumber} status for test-integration-nodejs matrix: compiler=${{ matrix.compiler }}, build_type=${{ matrix.build_type }}, arch=${{ matrix.arch }}...`);
+
+            try {
+              const pr = await github.rest.pulls.get({
+                owner,
+                repo,
+                pull_number: prNumber,
+              });
+
+              console.log(`PR #${prNumber} state: ${pr.data.state}, merged: ${pr.data.merged}`);
+
+              if (pr.data.state === 'closed') {
+                if (pr.data.merged) {
+                  console.log(`PR #${prNumber} has been merged. Stopping matrix execution.`);
+                  core.setFailed('PR has been merged, stopping execution to save resources.');
+                } else {
+                  console.log(`PR #${prNumber} has been closed. Stopping matrix execution.`);
+                  core.setFailed('PR has been closed, stopping execution to save resources.');
+                }
+              } else {
+                console.log(`PR #${prNumber} is still open. Continuing matrix execution.`);
+              }
+            } catch (error) {
+              console.error(`Error checking PR status: ${error.message}`);
+              console.log('Error details:', error);
+              console.log('Continuing matrix execution due to error...');
+            }
+
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -882,7 +1244,7 @@ jobs:
       - name: Download build artifacts (tar archive)
         uses: actions/download-artifact@v4
         with:
-          name: tests-artifacts-${{ matrix.compiler }}-${{ matrix.build_type }}-${{ matrix.arch }}
+          name: tests-artifacts-linux-ubuntu2204-${{ matrix.compiler }}-${{ matrix.build_type }}-${{ matrix.arch }}
           path: out/linux/${{ matrix.arch }}
 
       - name: Extract tests artifacts preserving permissions

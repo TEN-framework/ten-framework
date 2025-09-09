@@ -1,17 +1,17 @@
 {
   "type": "extension",
   "name": "humeai_tts_python",
-  "version": "0.1.4",
+  "version": "0.2.0",
   "dependencies": [
     {
       "type": "system",
       "name": "ten_runtime_python",
-      "version": "0.10"
+      "version": "0.11"
     },
     {
       "type": "system",
       "name": "ten_ai_base",
-      "version": "0.6"
+      "version": "0.7"
     }
   ],
   "package": {

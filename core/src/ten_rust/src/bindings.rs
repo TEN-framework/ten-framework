@@ -131,9 +131,10 @@ pub unsafe extern "C" fn ten_rust_predefined_graph_validate_complete_flatten(
         Some(current_base_dir_rust_str)
     };
 
+    let rt = Runtime::new().unwrap();
+
     // Parse the JSON string into a Graph
-    let graph_info = {
-        let rt = Runtime::new().unwrap();
+    let mut graph_info = {
         match rt.block_on(GraphInfo::from_str_with_base_dir(
             json_str_rust_str,
             current_base_dir_rust_str,
@@ -150,7 +151,7 @@ pub unsafe extern "C" fn ten_rust_predefined_graph_validate_complete_flatten(
     };
 
     // Serialize the graph back to JSON
-    let json_output = match serde_json::to_string(&graph_info) {
+    let json_output = match rt.block_on(graph_info.to_json_with_flattened_graph()) {
         Ok(json) => json,
         Err(e) => {
             if !err_msg.is_null() {
@@ -382,7 +383,7 @@ pub unsafe extern "C" fn ten_rust_validate_graph_json_string(
         return false;
     }
 
-    let result = result.unwrap().static_check();
+    let result = result.unwrap().static_check_for_pre_flatten_graph();
     if result.is_err() {
         if !err_msg.is_null() {
             let err_msg_c_str = CString::new(result.err().unwrap().to_string()).unwrap();
@@ -471,7 +472,7 @@ pub unsafe extern "C" fn ten_rust_graph_validate_complete_flatten(
     // Parse the JSON string into a Graph
     let graph = {
         let rt = Runtime::new().unwrap();
-        match rt
+        let graph = match rt
             .block_on(Graph::from_str_with_base_dir(json_str_rust_str, current_base_dir_rust_str))
         {
             Ok(g) => g,
@@ -481,6 +482,24 @@ pub unsafe extern "C" fn ten_rust_graph_validate_complete_flatten(
                     *err_msg = err_msg_c_str.into_raw();
                 }
                 return std::ptr::null(); // Parsing failed
+            }
+        };
+
+        // Flatten the graph
+        match rt.block_on(graph.flatten_graph(current_base_dir_rust_str)) {
+            Ok(g) => {
+                if let Some(g) = g {
+                    g
+                } else {
+                    graph
+                }
+            }
+            Err(e) => {
+                if !err_msg.is_null() {
+                    let err_msg_c_str = CString::new(e.to_string()).unwrap();
+                    *err_msg = err_msg_c_str.into_raw();
+                }
+                return std::ptr::null(); // Flattening failed
             }
         }
     };

@@ -114,11 +114,11 @@ def test_dump_functionality(MockGoogleTTS):
     mock_client_instance = AsyncMock()
 
     # Mock the get method to return audio data as async generator
-    async def mock_get(text):
+    async def mock_get(text, request_id):
         # Return audio data in the expected format
-        yield b"fake_audio_data_1", 1  # EVENT_TTS_RESPONSE
-        yield b"fake_audio_data_2", 1  # EVENT_TTS_RESPONSE
-        yield None, 2  # EVENT_TTS_REQUEST_END
+        yield b"fake_audio_data_1", 1, 123  # EVENT_TTS_RESPONSE
+        yield b"fake_audio_data_2", 1, None  # EVENT_TTS_RESPONSE
+        yield None, 2, None  # EVENT_TTS_REQUEST_END
 
     # Set the mock method
     mock_client_instance.get = mock_get
@@ -223,10 +223,10 @@ def test_text_input_end(MockGoogleTTS):
     mock_client_instance = AsyncMock()
 
     # Mock the get method to return audio data for both requests
-    async def mock_get(text):
+    async def mock_get(text, request_id):
         # Return audio data in the expected format
-        yield b"fake_audio_data", 1  # EVENT_TTS_RESPONSE
-        yield None, 2  # EVENT_TTS_REQUEST_END
+        yield b"fake_audio_data", 1, 123  # EVENT_TTS_RESPONSE
+        yield None, 2, None  # EVENT_TTS_REQUEST_END
 
     mock_client_instance.get = mock_get
     mock_client_instance.cancel = AsyncMock()
@@ -312,9 +312,9 @@ def test_flush_functionality(MockGoogleTTS):
     mock_client_instance = AsyncMock()
 
     # Mock the get method to return audio data
-    async def mock_get(text):
+    async def mock_get(text, request_id):
         # Return audio data in the expected format
-        yield b"fake_audio_data", 1  # EVENT_TTS_RESPONSE
+        yield b"fake_audio_data", 1, 123  # EVENT_TTS_RESPONSE
         # After flush, should not continue
 
     mock_client_instance.get = mock_get
@@ -389,7 +389,7 @@ def test_error_handling(MockGoogleTTS):
     mock_client_instance = AsyncMock()
 
     # Mock the get method to raise an exception
-    async def mock_get(text):
+    async def mock_get(text, request_id):
         raise Exception("Test error")
 
     mock_client_instance.get = mock_get
@@ -462,10 +462,10 @@ def test_basic_functionality(MockGoogleTTS):
     mock_client_instance = AsyncMock()
 
     # Mock the get method to return audio data
-    async def mock_get(text):
+    async def mock_get(text, request_id):
         # Return audio data in the expected format
-        yield b"fake_audio_data", 1  # EVENT_TTS_RESPONSE
-        yield None, 2  # EVENT_TTS_REQUEST_END
+        yield b"fake_audio_data", 1, 123  # EVENT_TTS_RESPONSE
+        yield None, 2, None  # EVENT_TTS_REQUEST_END
 
     mock_client_instance.get = mock_get
     mock_client_instance.cancel = AsyncMock()

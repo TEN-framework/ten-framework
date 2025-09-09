@@ -2,7 +2,7 @@ import asyncio
 import json
 import base64
 import time
-from typing import Optional, Tuple
+from datetime import datetime
 
 import websockets
 from websockets.legacy.client import WebSocketClientProtocol
@@ -24,6 +24,7 @@ RIME_MESSAGE_TYPE_DONE = "done"
 
 EVENT_TTS_RESPONSE = 1
 EVENT_TTS_END = 2
+EVENT_TTS_TTFB_METRIC = 3
 
 
 class RimeTTSynthesizer:
@@ -32,15 +33,14 @@ class RimeTTSynthesizer:
         config: RimeTTSConfig,
         ten_env: AsyncTenEnv,
         vendor: str,
-        response_msgs: asyncio.Queue[tuple[int, bytes]],
+        response_msgs: asyncio.Queue[tuple[int, bytes | int]],
     ):
         self.config = config
         self.api_key = config.api_key
         self.ws: WebSocketClientProtocol | None = None
-        self.stop_event = asyncio.Event()
         self.ten_env: AsyncTenEnv = ten_env
         self.vendor = vendor
-        self.response_msgs: asyncio.Queue[tuple[int, bytes]] | None = (
+        self.response_msgs: asyncio.Queue[tuple[int, bytes | int]] | None = (
             response_msgs
         )
 
@@ -60,6 +60,10 @@ class RimeTTSynthesizer:
 
         # Start websocket connection monitoring
         self.websocket_task = asyncio.create_task(self._process_websocket())
+
+        # Flag to ensure TTFB is sent only once per
+        self.sent_ts: datetime | None = None
+        self.ttfb_sent: bool = False
 
     def _build_websocket_url(self) -> str:
         """Build RIME TTS WebSocket URL with query parameters"""
@@ -248,6 +252,18 @@ class RimeTTSynthesizer:
                     f"KEYPOINT Received audio chunk, context_id: {context_id}, length: {len(audio_data)}"
                 )
                 if self.response_msgs:
+                    if self.sent_ts and not self.ttfb_sent:
+                        ttfb_ms = int(
+                            (datetime.now() - self.sent_ts).total_seconds()
+                            * 1000
+                        )
+                        await self.response_msgs.put(
+                            (EVENT_TTS_TTFB_METRIC, ttfb_ms)
+                        )
+                        self.ttfb_sent = True
+                        self.ten_env.log_info(
+                            f"RIME TTS: TTFB metric sent: {ttfb_ms}ms"
+                        )
                     await self.response_msgs.put(
                         (EVENT_TTS_RESPONSE, audio_data)
                     )
@@ -303,6 +319,8 @@ class RimeTTSynthesizer:
         self.ten_env.log_info(
             f"KEYPOINT Sending text to RIME TTS: {message_json}"
         )
+        if not self.ttfb_sent:
+            self.sent_ts = datetime.now()
 
         await ws.send(message_json)
 
@@ -357,7 +375,7 @@ class RimeTTSynthesizer:
         if self.ws:
             await self.ws.close()
             self.ws = None
-        self.response_msgs: Optional[asyncio.Queue[Tuple[int, bytes]]] = None
+        self.response_msgs: asyncio.Queue[tuple[int, bytes | int]] | None = None
 
 
 class RimeTTSClient:
@@ -366,7 +384,7 @@ class RimeTTSClient:
         config: RimeTTSConfig,
         ten_env: AsyncTenEnv,
         vendor: str,
-        response_msgs: asyncio.Queue[Tuple[int, bytes]],
+        response_msgs: asyncio.Queue[tuple[int, bytes | int]],
     ):
         self.config = config
         self.ten_env = ten_env
@@ -442,6 +460,15 @@ class RimeTTSClient:
     async def finish_connection(self):
         """Finish RIME TTS connection"""
         await self.synthesizer.finish_connection()
+
+    def reset_synthesizer(self):
+        """Reset synthesizer"""
+        if self.synthesizer:
+            self.cancelled_synthesizers.append(self.synthesizer)
+            self.synthesizer.cancel()
+
+        self.synthesizer = self._create_synthesizer()
+        self.ten_env.log_info("Synthesizer reset successfully")
 
     async def close(self):
         """Close RIME TTS client"""

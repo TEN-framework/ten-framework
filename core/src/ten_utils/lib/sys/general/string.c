@@ -16,6 +16,7 @@
 #include "ten_utils/container/list.h"
 #include "ten_utils/lib/alloc.h"
 #include "ten_utils/lib/signature.h"
+#include "ten_utils/log/log.h"
 #include "ten_utils/macro/check.h"
 #include "ten_utils/macro/memory.h"
 
@@ -309,8 +310,10 @@ void ten_string_reserve(ten_string_t *self, size_t extra) {
 
   size_t required_size = self->first_unused_idx + extra;
   if (required_size > (size_t)MAX_BUFFER_SIZE) {
-    TEN_ASSERT(0, "Buffer size exceeds the maximum limit.");
-    return;
+    TEN_LOGW(
+        "Buffer size exceeds the maximum limit when ten_string_reserve, "
+        "required_size: %zu",
+        required_size);
   }
 
   if (self->buf_size < required_size) {

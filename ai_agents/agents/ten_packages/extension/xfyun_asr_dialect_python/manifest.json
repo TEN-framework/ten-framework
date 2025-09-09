@@ -1,17 +1,17 @@
 {
     "type": "extension",
     "name": "xfyun_asr_dialect_python",
-    "version": "0.1.3",
+    "version": "0.2.2",
     "dependencies": [
         {
             "type": "system",
             "name": "ten_runtime_python",
-            "version": "0.10"
+            "version": "0.11"
         },
         {
             "type": "system",
             "name": "ten_ai_base",
-            "version": "0.6"
+            "version": "0.7"
         }
     ],
     "api": {

@@ -15,11 +15,10 @@ import {
   AudioLinesIcon,
   ChevronDownIcon,
   DatabaseIcon,
-  PuzzleIcon,
   TerminalIcon,
   VideoIcon,
 } from "lucide-react";
-import React from "react";
+import * as React from "react";
 import { useTranslation } from "react-i18next";
 // eslint-disable-next-line max-len
 import { CustomNodeConnPopupTitle } from "@/components/popup/custom-node-connection";
@@ -43,13 +42,20 @@ import {
   GROUP_CUSTOM_CONNECTION_ID,
 } from "@/constants/widgets";
 import { CustomNodeConnectionButton } from "@/flow/edge/button";
+import { NODE_CONFIG_MAPPING } from "@/flow/node/base";
 import { ContextMenuItems } from "@/flow/node/extension/context-menu";
 import { data2identifier, EFlowElementIdentifier } from "@/lib/identifier";
 import { cn } from "@/lib/utils";
-import { useWidgetStore } from "@/store";
-import type { IExtensionNodeData, TExtensionNode } from "@/types/flow";
+import { useFlowStore, useWidgetStore } from "@/store";
+import type {
+  ECustomNodeType,
+  IExtensionNodeData,
+  TExtensionNode,
+} from "@/types/flow";
 import { EConnectionType, type GraphInfo } from "@/types/graphs";
 import { EWidgetCategory, EWidgetDisplayType } from "@/types/widgets";
+
+const CONFIG = NODE_CONFIG_MAPPING.extension;
 
 export function ExtensionNode(props: NodeProps<TExtensionNode>) {
   const { data, isConnectable } = props;
@@ -186,7 +192,7 @@ const ExtensionNodeHeader = (props: {
         </Tooltip>
       </TooltipProvider>
       {/* Extension type icon */}
-      <PuzzleIcon
+      <CONFIG.Icon
         className={cn("size-4", { "text-foreground/50": !isInstalled })}
       />
 
@@ -229,7 +235,7 @@ const ExtensionNodeHeader = (props: {
   );
 };
 
-const HandleGroupItem = (props: {
+export const HandleGroupItem = (props: {
   data: IExtensionNodeData;
   isConnectable: boolean;
   onConnect?: (params: Connection | Edge) => void;
@@ -238,10 +244,17 @@ const HandleGroupItem = (props: {
   const { data, isConnectable, onConnect, connectionType } = props;
 
   const { appendWidget } = useWidgetStore();
+  const { edges } = useFlowStore();
 
   const handleLaunchConnPopup = (data: {
-    source: string;
-    target?: string;
+    source: {
+      name: string;
+      type: ECustomNodeType;
+    };
+    target?: {
+      name: string;
+      type: ECustomNodeType;
+    };
     graph: GraphInfo;
     metadata?: {
       filters?: {
@@ -262,10 +275,63 @@ const HandleGroupItem = (props: {
       category: EWidgetCategory.CustomConnection,
       display_type: EWidgetDisplayType.Popup,
 
-      title: <CustomNodeConnPopupTitle source={source} target={target} />,
+      title: (
+        <CustomNodeConnPopupTitle source={source.name} target={target?.name} />
+      ),
       metadata: { id, source, target, filters, graph },
+
+      popup: {
+        height: 0.8,
+        width: 0.6,
+        maxHeight: 0.8,
+        maxWidth: 0.6,
+      },
     });
   };
+
+  const connectionsInfo: {
+    input: Record<EConnectionType, number>;
+    output: Record<EConnectionType, number>;
+  } = React.useMemo(() => {
+    const initData: {
+      input: Record<EConnectionType, number>;
+      output: Record<EConnectionType, number>;
+    } = {
+      input: {
+        data: 0,
+        cmd: 0,
+        audio_frame: 0,
+        video_frame: 0,
+      },
+      output: {
+        data: 0,
+        cmd: 0,
+        audio_frame: 0,
+        video_frame: 0,
+      },
+    };
+    const filteredEdges = edges.filter(
+      (edge) => edge.data?.graph?.graph_id === data.graph.graph_id
+    );
+
+    const outputEdges = filteredEdges.filter(
+      (edge) =>
+        edge.data?.source?.name === data.name &&
+        edge.data?.source?.type === data._type &&
+        edge.data?.connectionType === connectionType
+    );
+    const inputEdges = filteredEdges.filter(
+      (edge) =>
+        edge.data?.target?.name === data.name &&
+        edge.data?.target?.type === data._type &&
+        edge.data?.connectionType === connectionType
+    );
+
+    initData.input[connectionType] = inputEdges.length;
+    initData.output[connectionType] = outputEdges.length;
+
+    return initData;
+  }, [edges, data, connectionType]);
 
   return (
     <div
@@ -279,12 +345,12 @@ const HandleGroupItem = (props: {
           key={`target-${data.name}-${connectionType}`}
           type="target"
           position={Position.Left}
-          // id={`target-${data.name}-${connectionType}`}
           id={data2identifier(EFlowElementIdentifier.HANDLE, {
             type: "target",
-            extension: data.name,
             graph: data.graph.graph_id,
             connectionType,
+            nodeName: data.name,
+            nodeType: data._type,
           })}
           isConnectable={isConnectable}
           onConnect={onConnect}
@@ -292,7 +358,7 @@ const HandleGroupItem = (props: {
         />
         <ConnectionCount
           data={{
-            source: data.name,
+            source: { name: data.name, type: data._type },
             target: undefined,
             graph: data.graph,
             metadata: {
@@ -303,18 +369,7 @@ const HandleGroupItem = (props: {
             },
           }}
         >
-          {connectionType === EConnectionType.CMD && (
-            <span>{data.src[connectionType]?.length || 0}</span>
-          )}
-          {connectionType === EConnectionType.DATA && (
-            <span>{data.src[connectionType]?.length || 0}</span>
-          )}
-          {connectionType === EConnectionType.AUDIO_FRAME && (
-            <span>{data.src[connectionType]?.length || 0}</span>
-          )}
-          {connectionType === EConnectionType.VIDEO_FRAME && (
-            <span>{data.src[connectionType]?.length || 0}</span>
-          )}
+          <span>{connectionsInfo.input[connectionType]}</span>
         </ConnectionCount>
       </div>
 
@@ -328,7 +383,10 @@ const HandleGroupItem = (props: {
         )}
         onClick={() => {
           handleLaunchConnPopup({
-            source: data.name,
+            source: {
+              name: data.name,
+              type: data._type,
+            },
             target: undefined,
             graph: data.graph,
             metadata: {
@@ -359,7 +417,10 @@ const HandleGroupItem = (props: {
       <div className="flex items-center gap-x-2">
         <ConnectionCount
           data={{
-            source: data.name,
+            source: {
+              name: data.name,
+              type: data._type,
+            },
             target: undefined,
             graph: data.graph,
             metadata: {
@@ -370,18 +431,7 @@ const HandleGroupItem = (props: {
             },
           }}
         >
-          {connectionType === EConnectionType.CMD && (
-            <span>{data.target[connectionType]?.length || 0}</span>
-          )}
-          {connectionType === EConnectionType.DATA && (
-            <span>{data.target[connectionType]?.length || 0}</span>
-          )}
-          {connectionType === EConnectionType.AUDIO_FRAME && (
-            <span>{data.target[connectionType]?.length || 0}</span>
-          )}
-          {connectionType === EConnectionType.VIDEO_FRAME && (
-            <span>{data.target[connectionType]?.length || 0}</span>
-          )}
+          <span>{connectionsInfo.output[connectionType]}</span>
         </ConnectionCount>
         <BaseHandle
           key={`source-${data.name}-${connectionType}`}
@@ -390,9 +440,10 @@ const HandleGroupItem = (props: {
           // id={`source-${data.name}-${connectionType}`}
           id={data2identifier(EFlowElementIdentifier.HANDLE, {
             type: "source",
-            extension: data.name,
             graph: data.graph.graph_id,
             connectionType,
+            nodeName: data.name,
+            nodeType: data._type,
           })}
           isConnectable={isConnectable}
           className={cn("size-3")}
@@ -402,11 +453,17 @@ const HandleGroupItem = (props: {
   );
 };
 
-const ConnectionCount = (props: {
+export const ConnectionCount = (props: {
   children: React.ReactNode;
   data: {
-    source: string;
-    target?: string;
+    source: {
+      name: string;
+      type: ECustomNodeType;
+    };
+    target?: {
+      name: string;
+      type: ECustomNodeType;
+    };
     graph: GraphInfo;
     metadata?: {
       filters?: {

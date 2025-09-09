@@ -121,33 +121,17 @@ fn create_designer_graph(
     }
 }
 
-/// Extracts a DesignerGraph from GraphInfo, preferring pre_flatten data if
-/// available, otherwise falling back to the main graph data.
+/// Extracts a DesignerGraph from GraphInfo.
 async fn extract_designer_graph_from_graph_info(
     graph_info: &GraphInfo,
     pkgs_cache: &HashMap<String, PkgsInfoInApp>,
 ) -> Result<DesignerGraph, ErrorResponse> {
-    let mut designer_graph = graph_info
-        .graph
-        .graph
-        .pre_flatten
-        .as_ref()
-        .map(|pre_flatten| {
-            create_designer_graph(
-                &pre_flatten.nodes,
-                &pre_flatten.connections,
-                &pre_flatten.exposed_messages,
-                &pre_flatten.exposed_properties,
-            )
-        })
-        .unwrap_or_else(|| {
-            create_designer_graph(
-                &graph_info.graph.graph.nodes,
-                &graph_info.graph.graph.connections,
-                &graph_info.graph.graph.exposed_messages,
-                &graph_info.graph.graph.exposed_properties,
-            )
-        });
+    let mut designer_graph = create_designer_graph(
+        &graph_info.graph.graph.nodes,
+        &graph_info.graph.graph.connections,
+        &graph_info.graph.graph.exposed_messages,
+        &graph_info.graph.graph.exposed_properties,
+    );
 
     // Resolve subgraph imports
     designer_graph = resolve_subgraph_imports(designer_graph, &graph_info.app_base_dir);

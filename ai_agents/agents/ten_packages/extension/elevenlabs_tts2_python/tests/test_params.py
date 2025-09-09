@@ -124,7 +124,11 @@ def test_default_params(MockElevenLabsTTS2Client):
 
     # Mock the client constructor to properly handle the response_msgs queue
     def mock_client_init(
-        config, ten_env, error_callback=None, response_msgs=None
+        config,
+        ten_env,
+        error_callback=None,
+        response_msgs=None,
+        ttfb_metrics_callback=None,
     ):
         # Use the real queue passed by the extension
         mock_instance.response_msgs = (
@@ -135,7 +139,7 @@ def test_default_params(MockElevenLabsTTS2Client):
         async def populate_queue():
             await asyncio.sleep(0.01)  # Small delay to let the extension start
             await mock_instance.response_msgs.put(
-                (b"fake_audio_data", True, "hello word, hello agora")
+                (b"fake_audio_data", True, "hello word, hello agora", 123)
             )
 
         # Start the population task
@@ -146,7 +150,14 @@ def test_default_params(MockElevenLabsTTS2Client):
 
     # --- Test Setup ---
     tester = ExtensionTesterDefaultParams()
-    tester.set_test_mode_single("elevenlabs_tts2_python")
+    tester.set_test_mode_single(
+        "elevenlabs_tts2_python",
+        json.dumps(
+            {
+                "params": {"key": "valid_api_key_for_test"},
+            }
+        ),
+    )
 
     print("Running default params test...")
     tester.run()

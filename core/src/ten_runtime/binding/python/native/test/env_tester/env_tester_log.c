@@ -20,11 +20,12 @@ typedef struct ten_env_tester_notify_log_ctx_t {
   ten_string_t file_name;
   size_t line_no;
   ten_string_t msg;
+  ten_string_t category;
 } ten_env_tester_notify_log_ctx_t;
 
 static ten_env_tester_notify_log_ctx_t *ten_env_tester_notify_log_ctx_create(
     int32_t level, const char *func_name, const char *file_name, size_t line_no,
-    const char *msg) {
+    const char *msg, const char *category) {
   ten_env_tester_notify_log_ctx_t *ctx =
       TEN_MALLOC(sizeof(ten_env_tester_notify_log_ctx_t));
   TEN_ASSERT(ctx, "Failed to allocate memory.");
@@ -46,10 +47,18 @@ static ten_env_tester_notify_log_ctx_t *ten_env_tester_notify_log_ctx_create(
   }
 
   ctx->line_no = line_no;
+
   if (msg) {
     ten_string_init_from_c_str_with_size(&ctx->msg, msg, strlen(msg));
   } else {
     TEN_STRING_INIT(ctx->msg);
+  }
+
+  if (category) {
+    ten_string_init_from_c_str_with_size(&ctx->category, category,
+                                         strlen(category));
+  } else {
+    TEN_STRING_INIT(ctx->category);
   }
 
   return ctx;
@@ -62,6 +71,7 @@ static void ten_env_tester_notify_log_ctx_destroy(
   ten_string_deinit(&ctx->func_name);
   ten_string_deinit(&ctx->file_name);
   ten_string_deinit(&ctx->msg);
+  ten_string_deinit(&ctx->category);
 
   TEN_FREE(ctx);
 }
@@ -74,7 +84,8 @@ static void ten_py_ten_env_tester_log_proxy_notify(
   ten_env_tester_log(ten_env_tester, ctx->level,
                      ten_string_get_raw_str(&ctx->func_name),
                      ten_string_get_raw_str(&ctx->file_name), ctx->line_no,
-                     ten_string_get_raw_str(&ctx->msg), NULL, NULL, NULL);
+                     ten_string_get_raw_str(&ctx->msg),
+                     ten_string_get_raw_str(&ctx->category), NULL, NULL);
 
   ten_env_tester_notify_log_ctx_destroy(ctx);
 }
@@ -115,7 +126,7 @@ PyObject *ten_py_ten_env_tester_log(PyObject *self, TEN_UNUSED PyObject *args) {
   }
 
   ten_env_tester_notify_log_ctx_t *ctx = ten_env_tester_notify_log_ctx_create(
-      level, func_name, file_name, line_no, msg);
+      level, func_name, file_name, line_no, msg, category);
 
   if (!ten_env_tester_proxy_notify(py_ten_env_tester->c_ten_env_tester_proxy,
                                    ten_py_ten_env_tester_log_proxy_notify, ctx,

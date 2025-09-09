@@ -20,9 +20,8 @@ import ContextMenu, {
   EContextMenuItemType,
   type IContextMenuItem,
 } from "@/flow/context-menu/base";
-import { resetNodesAndEdgesByGraphs } from "@/flow/graph";
-import { useDialogStore, useFlowStore, useWidgetStore } from "@/store";
-import type { TCustomEdge } from "@/types/flow";
+import { useDialogStore, useWidgetStore } from "@/store";
+import { ECustomNodeType, type TCustomEdge } from "@/types/flow";
 import { EWidgetCategory, EWidgetDisplayType } from "@/types/widgets";
 
 interface EdgeContextMenuProps {
@@ -44,10 +43,9 @@ const EdgeContextMenu: React.FC<EdgeContextMenuProps> = ({
   const { t } = useTranslation();
 
   const { appendDialog, removeDialog } = useDialogStore();
-  const { setNodesAndEdges } = useFlowStore();
   const { appendWidget } = useWidgetStore();
 
-  const { data: graphs = [] } = useGraphs();
+  const { mutate: mutateGraphs } = useGraphs();
 
   const items: IContextMenuItem[] = [
     {
@@ -74,9 +72,22 @@ const EdgeContextMenu: React.FC<EdgeContextMenuProps> = ({
           title: <CustomNodeConnPopupTitle source={source} target={target} />,
           metadata: {
             id,
-            source,
-            target,
+            source: {
+              type: data.source.type,
+              name: data.source.name,
+            },
+            target: {
+              type: data.target.type,
+              name: data.target.name,
+            },
             graph: data.graph,
+          },
+
+          popup: {
+            height: 0.8,
+            width: 0.6,
+            maxHeight: 0.8,
+            maxWidth: 0.6,
           },
         });
 
@@ -95,6 +106,9 @@ const EdgeContextMenu: React.FC<EdgeContextMenuProps> = ({
       _type: EContextMenuItemType.BUTTON,
       label: t("action.delete"),
       icon: <TrashIcon />,
+      disabled:
+        edge.data?.source?.type === ECustomNodeType.SELECTOR ||
+        edge.data?.target?.type === ECustomNodeType.SELECTOR, // tmp disable
       onClick: () => {
         const dialogId =
           edge.source +
@@ -119,15 +133,14 @@ const EdgeContextMenu: React.FC<EdgeContextMenuProps> = ({
               await postDeleteConnection({
                 graph_id: edge?.data?.graph?.graph_id,
                 src_app: edge.data.app,
-                src_extension: edge.source,
+                src_extension: edge.data.source.name,
                 msg_type: edge.data.connectionType,
                 msg_name: edge.data.name,
                 dest_app: edge.data.app,
-                dest_extension: edge.target,
+                dest_extension: edge.data.target.name,
               });
               toast.success(t("action.deleteConnectionSuccess"));
-              const { nodes, edges } = await resetNodesAndEdgesByGraphs(graphs);
-              setNodesAndEdges(nodes, edges);
+              await mutateGraphs();
             } catch (error) {
               console.error(error);
               toast.error(t("action.deleteConnectionFailed"), {
