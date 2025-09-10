@@ -105,9 +105,16 @@ void ten_backtrace_dump(ten_backtrace_t *self, size_t skip) {
 #if defined(TEN_ENABLE_TEN_RUST_APIS)
   ten_backtrace_common_t *common = (ten_backtrace_common_t *)self;
 
-  // call Rust side frame by frame parsing and output through callback.
-  (void)ten_rust_backtrace_dump(self, common->on_dump_file_line,
-                                common->on_error, (uintptr_t)skip);
+  // Call Rust side frame by frame parsing and output through callback.
+  // Cast the callback function pointer types to match the Rust FFI signature
+  // (void* ctx) to avoid incompatible function pointer types on some compilers.
+  (void)ten_rust_backtrace_dump(
+      self,
+      (int (*)(void *, uintptr_t, const char *, int, const char *,
+               void *))common->on_dump_file_line,
+      (void (*)(void *, const char *, int, void *))common->on_error,
+      (uintptr_t)skip);
+
 #else
   // First try glibc's backtrace which provides basic symbol information
   ten_backtrace_dump_using_glibc(self, skip);
