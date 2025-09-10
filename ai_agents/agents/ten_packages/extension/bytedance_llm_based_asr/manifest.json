@@ -1,0 +1,57 @@
+{
+  "type": "extension",
+  "name": "bytedance_llm_based_asr",
+  "version": "0.2.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.11"
+    },
+    {
+      "type": "system",
+      "name": "ten_ai_base",
+      "version": "0.7"
+    }
+  ],
+  "api": {
+    "interface": [
+      {
+        "import_uri": "../../system/ten_ai_base/api/asr-interface.json"
+      }
+    ],
+    "property": {
+      "properties": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "app_key": {
+              "type": "string"
+            },
+            "access_key": {
+              "type": "string"
+            },
+            "language": {
+              "type": "string"
+            },
+            "resource_id": {
+              "type": "string"
+            },
+            "model_version": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  },
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "**.py",
+      "requirements.txt",
+      "docs/**"
+    ]
+  }
+}
