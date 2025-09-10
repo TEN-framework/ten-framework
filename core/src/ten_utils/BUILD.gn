@@ -50,6 +50,16 @@ shared_library("ten_utils_shared") {
   output_name = "ten_utils"
 
   deps = [ ":ten_utils_files" ]
+
+  if (ten_enable_ten_rust) {
+    # Link the Rust static library into the shared lib when TEN Rust APIs are enabled,
+    # so macOS can resolve symbols like `ten_rust_backtrace_dump` at link time.
+    deps += [
+      "//core/src/ten_runtime/app/service_hub/api:api",
+      "//core/src/ten_rust:ten_rust_binding",
+    ]
+  }
+
   configs += [ "//build/ten_utils:utils_private_config" ]
 
   public_deps = [ "//third_party/yyjson" ]

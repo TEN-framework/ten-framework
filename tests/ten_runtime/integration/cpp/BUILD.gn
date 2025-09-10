@@ -41,7 +41,7 @@ group("cpp") {
     ]
   }
 
-  if (ten_enable_ten_rust && ten_enable_ten_rust_apis) {
+  if (ten_enable_ten_rust) {
     # This case will start an invalid graph, and it will be failed without
     # graph checking.
     deps += [ "multi_apps" ]

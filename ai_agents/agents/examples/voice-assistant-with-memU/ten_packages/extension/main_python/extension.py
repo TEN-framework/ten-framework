@@ -352,7 +352,6 @@ class MainControlExtension(AsyncExtension):
 
             if not conversation_for_memory:
                 return
-
             asyncio.create_task(
                 self.memu_client.memorize(
                     conversation=conversation_for_memory,

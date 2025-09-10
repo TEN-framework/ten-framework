@@ -28,7 +28,7 @@ jobs:
   call-check-pr-status:
     uses: ./.github/workflows/_check_pr_status.yml
 
-  # Building ten_runtime without the ten_rust library (i.e., ten_enable_ten_rust_apis=false).
+  # Building ten_runtime without the ten_rust library (i.e., ten_enable_ten_rust=false).
   build:
     needs: call-check-pr-status
     if: ${{ needs.call-check-pr-status.outputs.should_continue == 'true' }}
@@ -122,7 +122,7 @@ jobs:
 
           df -h .
 
-          tgn gen mac arm64 ${{ matrix.build_type }} -- log_level=1 enable_serialized_actions=true ten_enable_serialized_rust_action=true ten_rust_enable_gen_cargo_config=false ten_enable_ten_rust=false ten_enable_ten_rust_apis=false ten_enable_rust_incremental_build=false ten_manager_enable_frontend=false ten_enable_integration_tests_prebuilt=false ten_enable_nodejs_binding=false ten_enable_python_binding=false
+          tgn gen mac arm64 ${{ matrix.build_type }} -- log_level=1 enable_serialized_actions=true ten_enable_serialized_rust_action=true ten_rust_enable_gen_cargo_config=false ten_enable_ten_rust=false ten_enable_rust_incremental_build=false ten_manager_enable_frontend=false ten_enable_integration_tests_prebuilt=false ten_enable_nodejs_binding=false ten_enable_python_binding=false
 
           tgn build mac arm64 ${{ matrix.build_type }}
 

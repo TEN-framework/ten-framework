@@ -56,6 +56,7 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "json", "std"] }
 tracing-appender = "0.2"
 serial_test = "3.2.0"
+backtrace = "0.3"
 
 [build-dependencies]
 bindgen = { version = "0.72", optional = true }

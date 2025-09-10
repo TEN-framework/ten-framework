@@ -199,7 +199,7 @@ class MemuHttpMemoryStore(MemoryStore):
         import aiohttp
 
         payload = {"user_id": user_id, "agent_id": agent_id}
-        async with aiohttp.ClientSession() as session:
+        async with aiohttp.ClientSession() as session
             async with session.post(
                 f"{self.base_url}/api/v1/memory/retrieve/default-categories",
                 headers=await self._headers(),
