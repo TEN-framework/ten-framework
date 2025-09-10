@@ -13,12 +13,19 @@ class MemoryStore(ABC):
         self.env = env
 
     @abstractmethod
-    async def memorize(self, conversation: list[dict], user_id: str, user_name: str, agent_id: str, agent_name: str) -> None:
-        ...
+    async def memorize(
+        self,
+        conversation: list[dict],
+        user_id: str,
+        user_name: str,
+        agent_id: str,
+        agent_name: str,
+    ) -> None: ...
 
     @abstractmethod
-    async def retrieve_default_categories(self, user_id: str, agent_id: str) -> Any:
-        ...
+    async def retrieve_default_categories(
+        self, user_id: str, agent_id: str
+    ) -> Any: ...
 
     @abstractmethod
     def parse_default_categories(self, data: Any) -> dict:
@@ -41,7 +48,14 @@ class MemuSdkMemoryStore(MemoryStore):
 
         self.client = MemuClient(base_url=base_url, api_key=api_key)
 
-    async def memorize(self, conversation: list[dict], user_id: str, user_name: str, agent_id: str, agent_name: str) -> None:
+    async def memorize(
+        self,
+        conversation: list[dict],
+        user_id: str,
+        user_name: str,
+        agent_id: str,
+        agent_name: str,
+    ) -> None:
         resp = self.client.memorize_conversation(
             conversation=conversation,
             user_id=user_id,
@@ -56,7 +70,9 @@ class MemuSdkMemoryStore(MemoryStore):
                 break
             await asyncio.sleep(2)
 
-    async def retrieve_default_categories(self, user_id: str, agent_id: str) -> Any:
+    async def retrieve_default_categories(
+        self, user_id: str, agent_id: str
+    ) -> Any:
         return self.client.retrieve_default_categories(user_id=user_id)
 
     def parse_default_categories(self, data: Any) -> dict:
@@ -68,9 +84,19 @@ class MemuSdkMemoryStore(MemoryStore):
         summary = {
             "basic_stats": {
                 "total_categories": len(categories),
-                "total_memories": sum(getattr(cat, "memory_count", 0) or 0 for cat in categories),
-                "user_id": getattr(categories[0], "user_id", None) if categories else None,
-                "agent_id": getattr(categories[0], "agent_id", None) if categories else None,
+                "total_memories": sum(
+                    getattr(cat, "memory_count", 0) or 0 for cat in categories
+                ),
+                "user_id": (
+                    getattr(categories[0], "user_id", None)
+                    if categories
+                    else None
+                ),
+                "agent_id": (
+                    getattr(categories[0], "agent_id", None)
+                    if categories
+                    else None
+                ),
             },
             "categories": [],
         }
@@ -90,17 +116,25 @@ class MemuSdkMemoryStore(MemoryStore):
                 happened = getattr(memory, "happened_at", None)
                 date_str = None
                 try:
-                    date_str = happened.strftime('%Y-%m-%d %H:%M') if hasattr(happened, 'strftime') else str(happened)
+                    date_str = (
+                        happened.strftime("%Y-%m-%d %H:%M")
+                        if hasattr(happened, "strftime")
+                        else str(happened)
+                    )
                 except Exception:
                     date_str = str(happened)
                 content = getattr(memory, "content", None)
-                cat_summary["recent_memories"].append({"date": date_str, "content": content})
+                cat_summary["recent_memories"].append(
+                    {"date": date_str, "content": content}
+                )
             summary["categories"].append(cat_summary)
         return summary
 
 
 class MemuHttpMemoryStore(MemoryStore):
-    def __init__(self, env: AsyncTenEnv, base_url: str, api_key: str | None = ""):
+    def __init__(
+        self, env: AsyncTenEnv, base_url: str, api_key: str | None = ""
+    ):
         super().__init__(env)
         import aiohttp
 
@@ -113,7 +147,14 @@ class MemuHttpMemoryStore(MemoryStore):
             headers["Authorization"] = f"Bearer {self.api_key}"
         return headers
 
-    async def memorize(self, conversation: list[dict], user_id: str, user_name: str, agent_id: str, agent_name: str) -> None:
+    async def memorize(
+        self,
+        conversation: list[dict],
+        user_id: str,
+        user_name: str,
+        agent_id: str,
+        agent_name: str,
+    ) -> None:
         import aiohttp
 
         payload = {
@@ -124,36 +165,60 @@ class MemuHttpMemoryStore(MemoryStore):
             "agent_name": agent_name,
         }
         async with aiohttp.ClientSession() as session:
-            async with session.post(f"{self.base_url}/api/v1/memory/memorize", headers=await self._headers(), data=json.dumps(payload)) as r:
+            async with session.post(
+                f"{self.base_url}/api/v1/memory/memorize",
+                headers=await self._headers(),
+                data=json.dumps(payload),
+            ) as r:
                 r.raise_for_status()
                 data = await r.json()
                 task_id = data.get("task_id")
         # poll
         async with aiohttp.ClientSession() as session:
             while True:
-                async with session.get(f"{self.base_url}/api/v1/memory/memorize/status/{task_id}", headers=await self._headers()) as r:
+                async with session.get(
+                    f"{self.base_url}/api/v1/memory/memorize/status/{task_id}",
+                    headers=await self._headers(),
+                ) as r:
                     r.raise_for_status()
                     data = await r.json()
                     status = data.get("status") or data.get("state")
-                    if status in ["SUCCESS", "FAILURE", "REVOKED", "DONE", "ERROR"]:
+                    if status in [
+                        "SUCCESS",
+                        "FAILURE",
+                        "REVOKED",
+                        "DONE",
+                        "ERROR",
+                    ]:
                         break
                 await asyncio.sleep(2)
 
-    async def retrieve_default_categories(self, user_id: str, agent_id: str) -> Any:
+    async def retrieve_default_categories(
+        self, user_id: str, agent_id: str
+    ) -> Any:
         import aiohttp
 
         payload = {"user_id": user_id, "agent_id": agent_id}
-        async with aiohttp.ClientSession() as session:
-            async with session.post(f"{self.base_url}/api/v1/memory/retrieve/default-categories", headers=await self._headers(), data=json.dumps(payload)) as r:
+        async with aiohttp.ClientSession() as session
+            async with session.post(
+                f"{self.base_url}/api/v1/memory/retrieve/default-categories",
+                headers=await self._headers(),
+                data=json.dumps(payload),
+            ) as r:
                 r.raise_for_status()
                 return await r.json()
 
     def parse_default_categories(self, data: Any) -> dict:
         # HTTP returns raw categories with memories. Normalize to summary schema.
         if not isinstance(data, dict):
-            return {"basic_stats": {"total_categories": 0, "total_memories": 0}, "categories": []}
+            return {
+                "basic_stats": {"total_categories": 0, "total_memories": 0},
+                "categories": [],
+            }
 
-        self.env.log_info(f"MemuHttpMemoryStore: parse_default_categories: {data}")
+        self.env.log_info(
+            f"MemuHttpMemoryStore: parse_default_categories: {data}"
+        )
 
         categories = data.get("categories", [])
         total_memories = 0
@@ -170,10 +235,12 @@ class MemuHttpMemoryStore(MemoryStore):
                 "summary": None,
             }
             for m in memories:
-                out_cat["recent_memories"].append({
-                    "date": str(m.get("happened_at")),
-                    "content": m.get("content"),
-                })
+                out_cat["recent_memories"].append(
+                    {
+                        "date": str(m.get("happened_at")),
+                        "content": m.get("content"),
+                    }
+                )
             out_categories.append(out_cat)
         return {
             "basic_stats": {

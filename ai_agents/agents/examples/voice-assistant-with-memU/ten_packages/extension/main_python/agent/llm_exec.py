@@ -102,7 +102,6 @@ class LLMExec:
 
     # set_context removed per new API; use write_context incrementally instead
 
-
     async def register_tool(self, tool: LLMToolMetadata, source: str) -> None:
         """
         Register tools with the LLM.
