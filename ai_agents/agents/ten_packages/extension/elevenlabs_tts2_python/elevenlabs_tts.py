@@ -20,6 +20,7 @@ from ten_ai_base.message import (
     ModuleVendorException,
 )
 from ten_ai_base import ModuleType
+from ten_ai_base.const import LOG_CATEGORY_VENDOR
 from ten_runtime import AsyncTenEnv
 from .config import ElevenLabsTTS2Config
 import time
@@ -120,7 +121,10 @@ class ElevenLabsTTS2Synthesizer:
     async def _process_websocket(self) -> None:
         """Main websocket connection monitoring and reconnection logic"""
         try:
-            self.ten_env.log_info("Starting websocket connection process")
+            self.ten_env.log_debug(
+                f"vendor_status:  start websocket connection to: 	{self.uri}",
+                category=LOG_CATEGORY_VENDOR,
+            )
             # Use websockets.connect's automatic reconnection mechanism
             async for ws in websockets.connect(
                 uri=self.uri,
@@ -130,7 +134,10 @@ class ElevenLabsTTS2Synthesizer:
                 self.ws = ws
                 self.send_text_in_connection = False
                 try:
-                    self.ten_env.log_info("Websocket connected successfully")
+                    self.ten_env.log_debug(
+                        f"vendor_status:  connect to: 	{self.uri} successfully",
+                        category=LOG_CATEGORY_VENDOR,
+                    )
                     if self._session_closing:
                         self.ten_env.log_info("Session is closing, break.")
                         return
@@ -148,6 +155,10 @@ class ElevenLabsTTS2Synthesizer:
                     await self._await_channel_tasks()
 
                 except websockets.ConnectionClosed as e:
+                    self.ten_env.log_debug(
+                        f"vendor_status:  connection closed as {e}",
+                        category=LOG_CATEGORY_VENDOR,
+                    )
                     self.ten_env.log_info(f"Websocket connection closed: {e}.")
                     if not self._session_closing:
                         self.ten_env.log_info(
@@ -170,11 +181,17 @@ class ElevenLabsTTS2Synthesizer:
                         continue
 
         except Exception as e:
-            self.ten_env.log_error(f"Exception in websocket process: {e}")
+            self.ten_env.log_debug(
+                f"vendor_status:  connection closed as {e}",
+                category=LOG_CATEGORY_VENDOR,
+            )
         finally:
             if self.ws:
                 await self.ws.close()
-            self.ten_env.log_info("Websocket connection process ended.")
+            self.ten_env.log_debug(
+                "vendor_status:  connection end",
+                category=LOG_CATEGORY_VENDOR,
+            )
 
     async def _await_channel_tasks(self) -> None:
         """Wait for channel tasks to complete"""
@@ -252,8 +269,10 @@ class ElevenLabsTTS2Synthesizer:
                 self.send_text_in_connection = True
                 if text_data.text.strip() != "":
                     await ws.send(json.dumps({"text": text_data.text}))
+
                     self.ten_env.log_debug(
-                        f"Sent text to WebSocket: {text_data.text[:50]}..."
+                        f"send_text_to_tts_server:  {text_data.text} of request_id: {text_data.request_id}",
+                        category=LOG_CATEGORY_VENDOR,
                     )
                     if self.cur_request_id != text_data.request_id:
                         self.cur_request_id = text_data.request_id
@@ -267,9 +286,16 @@ class ElevenLabsTTS2Synthesizer:
             self.ten_env.log_info("websocket connection closed")
 
         except asyncio.CancelledError:
-            self.ten_env.log_info("send_loop task cancelled")
+            self.ten_env.log_debug(
+                "vendor_status: send_loop task cancelled",
+                category=LOG_CATEGORY_VENDOR,
+            )
             raise
         except Exception as e:
+            self.ten_env.log_debug(
+                f"vendor_status: Exception in send_loop: {e}",
+                category=LOG_CATEGORY_VENDOR,
+            )
             self.ten_env.log_error(f"Exception in send_loop: {e}")
             raise e
 
@@ -340,7 +366,10 @@ class ElevenLabsTTS2Synthesizer:
                         error_code = ModuleErrorCode.NON_FATAL_ERROR
                         if data.get("code") == 1008:
                             error_code = ModuleErrorCode.FATAL_ERROR
-
+                        self.ten_env.log_error(
+                            f"vendor_error: code: {data.get('code') } reason: {data.get('error')}",
+                            category=LOG_CATEGORY_VENDOR,
+                        )
                         if self.error_callback:
                             module_error = ModuleError(
                                 message=data["error"],
@@ -359,10 +388,16 @@ class ElevenLabsTTS2Synthesizer:
                     continue
 
         except asyncio.CancelledError:
-            self.ten_env.log_debug("receive_loop cancelled")
+            self.ten_env.log_debug(
+                "vendor_status: receive_loop cancelled",
+                category=LOG_CATEGORY_VENDOR,
+            )
             raise
         except Exception as e:
-            self.ten_env.log_error(f"Exception in receive_loop: {e}")
+            self.ten_env.log_debug(
+                f"vendor_status: Exception in receive_loop: {e}",
+                category=LOG_CATEGORY_VENDOR,
+            )
             raise e
 
     async def start_connection(self):
