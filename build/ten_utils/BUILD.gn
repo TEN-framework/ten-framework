@@ -46,6 +46,10 @@ config("utils_private_config") {
     defines += [ "TEN_ENABLE_MEMORY_CHECK" ]
   }
 
+  if (ten_enable_ten_rust) {
+    defines += [ "TEN_ENABLE_TEN_RUST_APIS" ]
+  }
+
   cflags = []
   ldflags = []
 

@@ -331,6 +331,7 @@ class XfyunWSRecognition:
                 }
             }
             await self.websocket.send(json.dumps(d))
+            self.is_started = False
             self._log_debug("Stop signal sent")
 
         except websockets.exceptions.ConnectionClosed:

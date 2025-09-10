@@ -3,6 +3,12 @@ import json
 import os
 
 from typing_extensions import override
+
+from ten_ai_base.const import (
+    LOG_CATEGORY_VENDOR,
+    LOG_CATEGORY_KEY_POINT,
+)
+
 from .const import (
     FINALIZE_MODE_DISCONNECT,
     FINALIZE_MODE_MUTE_PKG,
@@ -64,7 +70,8 @@ class AzureASRExtension(AsyncASRBaseExtension):
             self.config = AzureASRConfig.model_validate_json(config_json)
             self.config.update(self.config.params)
             ten_env.log_info(
-                f"KEYPOINT vendor_config: {self.config.to_json(sensitive_handling=True)}"
+                f"config: {self.config.to_json(sensitive_handling=True)}",
+                category=LOG_CATEGORY_KEY_POINT,
             )
 
             if self.config.dump:
@@ -74,7 +81,9 @@ class AzureASRExtension(AsyncASRBaseExtension):
                 self.audio_dumper = Dumper(dump_file_path)
                 await self.audio_dumper.start()
         except Exception as e:
-            ten_env.log_error(f"invalid property: {e}")
+            ten_env.log_error(
+                f"invalid property: {e}", category=LOG_CATEGORY_KEY_POINT
+            )
             self.config = AzureASRConfig.model_validate_json("{}")
             await self.send_asr_error(
                 ModuleError(
@@ -102,7 +111,8 @@ class AzureASRExtension(AsyncASRBaseExtension):
             )
         except Exception as e:
             self.ten_env.log_error(
-                f"KEYPOINT start_connection failed: invalid vendor config: {e}"
+                f"vendor_error: start_connection failed: invalid vendor config: {e}",
+                category=LOG_CATEGORY_VENDOR,
             )
             await self.send_asr_error(
                 ModuleError(
@@ -146,10 +156,16 @@ class AzureASRExtension(AsyncASRBaseExtension):
                     self.config.advanced_params_json
                 )
                 for key, value in params.items():
-                    self.ten_env.log_debug(f"set azure param: {key} = {value}")
+                    self.ten_env.log_debug(
+                        f"set azure param: {key} = {value}",
+                        category=LOG_CATEGORY_VENDOR,
+                    )
                     speech_config.set_property_by_name(key, value)
             except Exception as e:
-                self.ten_env.log_error(f"set azure param failed: {e}")
+                self.ten_env.log_error(
+                    f"vendor_error: set azure param failed: {e}",
+                    category=LOG_CATEGORY_VENDOR,
+                )
 
         if len(self.config.language_list) > 1:
             self.client = speechsdk.SpeechRecognizer(
@@ -175,15 +191,15 @@ class AzureASRExtension(AsyncASRBaseExtension):
 
         await self._register_azure_event_handlers()
         self.client.start_continuous_recognition()
-        self.ten_env.log_info("start_connection completed")
+        self.ten_env.log_debug("start_connection completed")
 
     @override
     async def finalize(self, session_id: str | None) -> None:
         assert self.config is not None
 
         self.last_finalize_timestamp = int(datetime.now().timestamp() * 1000)
-        _ = self.ten_env.log_debug(
-            f"KEYPOINT finalize start at {self.last_finalize_timestamp}]"
+        _ = self.ten_env.log_info(
+            f"finalize start at {self.last_finalize_timestamp}]",
         )
         if self.config.finalize_mode == FINALIZE_MODE_DISCONNECT:
             await self._handle_finalize_disconnect()
@@ -301,16 +317,19 @@ class AzureASRExtension(AsyncASRBaseExtension):
                     language = language_in_result
             except Exception as e:
                 self.ten_env.log_error(
-                    f"get language from result json failed: {e}"
+                    f"get language from result json failed: {e}",
+                    category=LOG_CATEGORY_VENDOR,
                 )
 
         if evt.result.no_match_details:
             self.ten_env.log_error(
-                f"azure event callback on_recognizing: no match details: {evt.result.no_match_details}"
+                f"vendor_error: azure event callback on_recognizing: no match details: {evt.result.no_match_details}",
+                category=LOG_CATEGORY_VENDOR,
             )
 
         self.ten_env.log_debug(
-            f"azure event callback on_recognizing: {text}, language: {language}, full_json: {evt.result.json}"
+            f"vendor_result: on_recognizing: {text}, language: {language}, full_json: {evt.result.json}",
+            category=LOG_CATEGORY_VENDOR,
         )
 
         await self._handle_asr_result(
@@ -345,16 +364,19 @@ class AzureASRExtension(AsyncASRBaseExtension):
                     language = language_in_result
             except Exception as e:
                 self.ten_env.log_error(
-                    f"get language from result json failed: {e}"
+                    f"get language from result json failed: {e}",
+                    category=LOG_CATEGORY_VENDOR,
                 )
 
         if evt.result.no_match_details:
             self.ten_env.log_error(
-                f"azure event callback on_recognized: no match details: {evt.result.no_match_details}"
+                f"vendor_error: azure event callback on_recognized: no match details: {evt.result.no_match_details}",
+                category=LOG_CATEGORY_VENDOR,
             )
 
         self.ten_env.log_debug(
-            f"azure event callback on_recognized: {text}, language: {language}, full_json: {evt.result.json}"
+            f"vendor_result: on_recognized: {text}, language: {language}, full_json: {evt.result.json}",
+            category=LOG_CATEGORY_VENDOR,
         )
         await self._handle_asr_result(
             text,
@@ -381,14 +403,16 @@ class AzureASRExtension(AsyncASRBaseExtension):
         self, evt: speechsdk.SessionEventArgs
     ):
         """Handle the session stopped event from Azure ASR."""
-        self.ten_env.log_debug(
-            f"azure event callback on_session_stopped, session_id: {evt.session_id}"
+        self.ten_env.log_info(
+            f"vendor_status_changed: on_session_stopped, session_id: {evt.session_id}",
+            category=LOG_CATEGORY_VENDOR,
         )
         self.connected = False
 
         if not self.stopped:
             self.ten_env.log_warn(
-                "azure session stopped unexpectedly. Reconnecting..."
+                "vendor_error: azure session stopped unexpectedly. Reconnecting...",
+                category=LOG_CATEGORY_VENDOR,
             )
             await self._handle_reconnect()
 
@@ -399,7 +423,8 @@ class AzureASRExtension(AsyncASRBaseExtension):
 
         cancellation_details = evt.cancellation_details
         self.ten_env.log_error(
-            f"KEYPOINT vendor_error, code: {cancellation_details.code}, reason: {cancellation_details.reason}, error_details: {cancellation_details.error_details}"
+            f"vendor_error: code: {cancellation_details.code}, reason: {cancellation_details.reason}, error_details: {cancellation_details.error_details}",
+            category=LOG_CATEGORY_VENDOR,
         )
         await self.send_asr_error(
             ModuleError(
@@ -419,7 +444,8 @@ class AzureASRExtension(AsyncASRBaseExtension):
     ):
         """Handle the speech start detected event from Azure ASR."""
         self.ten_env.log_debug(
-            f"azure event callback on_speech_start_detected, session_id: {evt.session_id}"
+            f"azure event callback on_speech_start_detected, session_id: {evt.session_id}",
+            category=LOG_CATEGORY_VENDOR,
         )
 
     async def _azure_event_handler_on_speech_end_detected(
@@ -427,15 +453,17 @@ class AzureASRExtension(AsyncASRBaseExtension):
     ):
         """Handle the speech end detected event from Azure ASR."""
         self.ten_env.log_debug(
-            f"azure event callback on_speech_end_detected, session_id: {evt.session_id}"
+            f"azure event callback on_speech_end_detected, session_id: {evt.session_id}",
+            category=LOG_CATEGORY_VENDOR,
         )
 
     async def _azure_event_handler_on_connected(
         self, evt: speechsdk.ConnectionEventArgs
     ):
         """Handle the connected event from Azure ASR."""
-        self.ten_env.log_debug(
-            f"azure event callback on_connected, session_id: {evt.session_id}"
+        self.ten_env.log_info(
+            f"vendor_status_changed: on_connected, session_id: {evt.session_id}",
+            category=LOG_CATEGORY_VENDOR,
         )
 
         # Notify reconnect manager that connection is successful
@@ -446,8 +474,9 @@ class AzureASRExtension(AsyncASRBaseExtension):
         self, evt: speechsdk.ConnectionEventArgs
     ):
         """Handle the disconnected event from Azure ASR."""
-        self.ten_env.log_debug(
-            f"azure event callback on_disconnected, session_id: {evt.session_id}"
+        self.ten_env.log_info(
+            f"vendor_status_changed: on_disconnected, session_id: {evt.session_id}",
+            category=LOG_CATEGORY_VENDOR,
         )
 
     async def _handle_finalize_disconnect(self):
@@ -519,8 +548,8 @@ class AzureASRExtension(AsyncASRBaseExtension):
         if self.last_finalize_timestamp != 0:
             timestamp = int(datetime.now().timestamp() * 1000)
             latency = timestamp - self.last_finalize_timestamp
-            self.ten_env.log_debug(
-                f"KEYPOINT finalize end at {timestamp}, counter: {latency}"
+            self.ten_env.log_info(
+                f"finalize end at {timestamp}, counter: {latency}"
             )
             self.last_finalize_timestamp = 0
             await self.send_asr_finalize_end()

@@ -217,77 +217,104 @@ class OpenaiTTSExtension(AsyncTTS2BaseExtension):
                 )
                 self.current_request_finished = True
 
-            # Get audio stream from Openai TTS
-            self.ten_env.log_info(f"Calling client.get() with text: {t.text}")
-            data = self.client.get(t.text)
+            if t.text.strip() != "":
+                # Get audio stream from Openai TTS
+                self.ten_env.log_info(
+                    f"Calling client.get() with text: {t.text}"
+                )
+                data = self.client.get(t.text)
+                self.ten_env.log_info(
+                    "Starting async for loop to process audio chunks"
+                )
+                chunk_count = 0
 
-            self.ten_env.log_info(
-                "Starting async for loop to process audio chunks"
-            )
-            chunk_count = 0
+                async for audio_chunk, event_status in data:
+                    if event_status == EVENT_TTS_RESPONSE:
+                        if audio_chunk is not None and len(audio_chunk) > 0:
+                            chunk_count += 1
+                            self.total_audio_bytes += len(audio_chunk)
+                            self.ten_env.log_info(
+                                f"[tts] Received audio chunk #{chunk_count}, size: {len(audio_chunk)} bytes"
+                            )
 
-            async for audio_chunk, event_status in data:
-                if event_status == EVENT_TTS_RESPONSE:
-                    if audio_chunk is not None and len(audio_chunk) > 0:
-                        chunk_count += 1
-                        self.total_audio_bytes += len(audio_chunk)
-                        self.ten_env.log_info(
-                            f"[tts] Received audio chunk #{chunk_count}, size: {len(audio_chunk)} bytes"
-                        )
+                            # Send TTS audio start on first chunk
+                            if self.first_chunk:
+                                self.request_ts = datetime.now()
+                                if self.sent_ts:
+                                    await self.send_tts_audio_start(
+                                        self.current_request_id
+                                    )
+                                    ttfb = int(
+                                        (
+                                            datetime.now() - self.sent_ts
+                                        ).total_seconds()
+                                        * 1000
+                                    )
+                                    await self.send_tts_ttfb_metrics(
+                                        self.current_request_id,
+                                        ttfb,
+                                        self.current_turn_id,
+                                    )
+                                    self.ten_env.log_info(
+                                        f"KEYPOINT Sent TTS audio start and TTFB metrics: {ttfb}ms"
+                                    )
+                                self.first_chunk = False
 
-                        # Send TTS audio start on first chunk
-                        if self.first_chunk:
-                            self.request_ts = datetime.now()
-                            if self.sent_ts:
-                                await self.send_tts_audio_start(
-                                    self.current_request_id
+                            # Write to dump file if enabled
+                            if (
+                                self.config
+                                and self.config.dump
+                                and self.current_request_id
+                                and self.current_request_id in self.recorder_map
+                            ):
+                                self.ten_env.log_info(
+                                    f"KEYPOINT Writing audio chunk to dump file, dump url: {self.config.dump_path}"
                                 )
-                                ttfb = int(
+                                asyncio.create_task(
+                                    self.recorder_map[
+                                        self.current_request_id
+                                    ].write(audio_chunk)
+                                )
+
+                            # Send audio data
+                            await self.send_tts_audio_data(audio_chunk)
+                        else:
+                            self.ten_env.log_error(
+                                "Received empty payload for TTS response"
+                            )
+                            if self.request_ts and t.text_input_end:
+                                duration_ms = (
+                                    self._calculate_audio_duration_ms()
+                                )
+                                request_event_interval = int(
                                     (
-                                        datetime.now() - self.sent_ts
+                                        datetime.now() - self.request_ts
                                     ).total_seconds()
                                     * 1000
                                 )
-                                await self.send_tts_ttfb_metrics(
+                                await self.send_tts_audio_end(
                                     self.current_request_id,
-                                    ttfb,
+                                    request_event_interval,
+                                    duration_ms,
                                     self.current_turn_id,
                                 )
                                 self.ten_env.log_info(
-                                    f"KEYPOINT Sent TTS audio start and TTFB metrics: {ttfb}ms"
+                                    f"KEYPOINT Sent TTS audio end event, interval: {request_event_interval}ms, duration: {duration_ms}ms"
                                 )
-                            self.first_chunk = False
 
-                        # Write to dump file if enabled
-                        if (
-                            self.config
-                            and self.config.dump
-                            and self.current_request_id
-                            and self.current_request_id in self.recorder_map
-                        ):
-                            self.ten_env.log_info(
-                                f"KEYPOINT Writing audio chunk to dump file, dump url: {self.config.dump_path}"
-                            )
-                            asyncio.create_task(
-                                self.recorder_map[
-                                    self.current_request_id
-                                ].write(audio_chunk)
-                            )
-
-                        # Send audio data
-                        await self.send_tts_audio_data(audio_chunk)
-                    else:
-                        self.ten_env.log_error(
-                            "Received empty payload for TTS response"
+                    elif event_status == EVENT_TTS_END:
+                        self.ten_env.log_info(
+                            "Received TTS_END event from Openai TTS"
                         )
+                        # Send TTS audio end event
                         if self.request_ts and t.text_input_end:
-                            duration_ms = self._calculate_audio_duration_ms()
                             request_event_interval = int(
                                 (
                                     datetime.now() - self.request_ts
                                 ).total_seconds()
                                 * 1000
                             )
+                            duration_ms = self._calculate_audio_duration_ms()
                             await self.send_tts_audio_end(
                                 self.current_request_id,
                                 request_event_interval,
@@ -297,59 +324,52 @@ class OpenaiTTSExtension(AsyncTTS2BaseExtension):
                             self.ten_env.log_info(
                                 f"KEYPOINT Sent TTS audio end event, interval: {request_event_interval}ms, duration: {duration_ms}ms"
                             )
+                        break
 
-                elif event_status == EVENT_TTS_END:
-                    self.ten_env.log_info(
-                        "Received TTS_END event from Openai TTS"
-                    )
-                    # Send TTS audio end event
-                    if self.request_ts and t.text_input_end:
-                        request_event_interval = int(
-                            (datetime.now() - self.request_ts).total_seconds()
-                            * 1000
+                    elif event_status == EVENT_TTS_INVALID_KEY_ERROR:
+                        error_msg = (
+                            audio_chunk.decode("utf-8")
+                            if audio_chunk
+                            else "Unknown API key error"
                         )
-                        duration_ms = self._calculate_audio_duration_ms()
-                        await self.send_tts_audio_end(
-                            self.current_request_id,
-                            request_event_interval,
-                            duration_ms,
-                            self.current_turn_id,
-                        )
-                        self.ten_env.log_info(
-                            f"KEYPOINT Sent TTS audio end event, interval: {request_event_interval}ms, duration: {duration_ms}ms"
-                        )
-                    break
-
-                elif event_status == EVENT_TTS_INVALID_KEY_ERROR:
-                    error_msg = (
-                        audio_chunk.decode("utf-8")
-                        if audio_chunk
-                        else "Unknown API key error"
-                    )
-                    await self.send_tts_error(
-                        self.current_request_id or t.request_id,
-                        ModuleError(
-                            message=error_msg,
-                            module=ModuleType.TTS,
-                            code=ModuleErrorCode.FATAL_ERROR,
-                            vendor_info=ModuleErrorVendorInfo(
-                                vendor=self.vendor()
+                        await self.send_tts_error(
+                            self.current_request_id or t.request_id,
+                            ModuleError(
+                                message=error_msg,
+                                module=ModuleType.TTS,
+                                code=ModuleErrorCode.FATAL_ERROR,
+                                vendor_info=ModuleErrorVendorInfo(
+                                    vendor=self.vendor()
+                                ),
                             ),
-                        ),
-                    )
-                    return
+                        )
+                        return
 
-                elif event_status == EVENT_TTS_ERROR:
-                    error_msg = (
-                        audio_chunk.decode("utf-8")
-                        if audio_chunk
-                        else "Unknown client error"
-                    )
-                    raise RuntimeError(error_msg)
+                    elif event_status == EVENT_TTS_ERROR:
+                        error_msg = (
+                            audio_chunk.decode("utf-8")
+                            if audio_chunk
+                            else "Unknown client error"
+                        )
+                        raise RuntimeError(error_msg)
 
-            self.ten_env.log_info(
-                f"TTS processing completed, total chunks: {chunk_count}"
-            )
+                self.ten_env.log_info(
+                    f"TTS processing completed, total chunks: {chunk_count}"
+                )
+            elif self.request_ts and t.text_input_end:
+                duration_ms = self._calculate_audio_duration_ms()
+                request_event_interval = int(
+                    (datetime.now() - self.request_ts).total_seconds() * 1000
+                )
+                await self.send_tts_audio_end(
+                    self.current_request_id,
+                    request_event_interval,
+                    duration_ms,
+                    self.current_turn_id,
+                )
+                self.ten_env.log_info(
+                    f"KEYPOINT Sent TTS audio end event, interval: {request_event_interval}ms, duration: {duration_ms}ms"
+                )
 
         except Exception as e:
             self.ten_env.log_error(

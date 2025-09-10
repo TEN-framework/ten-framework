@@ -11,52 +11,73 @@ use tracing_subscriber::{
     layer::SubscriberExt,
     reload,
     util::SubscriberInitExt,
-    EnvFilter, Layer, Registry,
+    Layer, Registry,
 };
 
 use crate::log::{
-    create_layer_and_filter, file_appender::FileAppenderGuard, AdvancedLogConfig, LogInitError,
+    create_layer_with_dynamic_filter, file_appender::FileAppenderGuard, AdvancedLogConfig,
+    AdvancedLogHandler, LogInitError,
 };
 
 const MAX_HANDLERS: usize = 5;
 
 type LogLayer = Box<dyn Layer<Registry> + Send + Sync>;
 type LayerReloadHandle = reload::Handle<LogLayer, Registry>;
-type FilterReloadHandle = reload::Handle<EnvFilter, Registry>;
 
 /// Handle for a reloadable logging layer
 struct LogLayerHandle {
     layer_handle: LayerReloadHandle,
-    filter_handle: FilterReloadHandle,
+    /// Store the current handler configuration for rebuilding the layer
+    current_handler: Option<AdvancedLogHandler>,
     is_active: bool,
 }
 
 impl LogLayerHandle {
-    fn new(layer_handle: LayerReloadHandle, filter_handle: FilterReloadHandle) -> Self {
+    fn new(layer_handle: LayerReloadHandle) -> Self {
         Self {
             layer_handle,
-            filter_handle,
+            current_handler: None,
             is_active: false,
         }
     }
 
-    fn reload(&self, layer: Option<LogLayer>, filter: EnvFilter) {
-        // Update layer
-        if let Some(layer) = layer {
-            let err = self.filter_handle.modify(|f| *f = filter);
+    fn reload(
+        &mut self,
+        handler: Option<AdvancedLogHandler>,
+        guard: &mut Option<Box<dyn std::any::Any + Send + Sync>>,
+    ) {
+        if let Some(handler) = handler {
+            // Create new layer with the updated handler configuration
+            let layer_with_guard = create_layer_with_dynamic_filter(&handler);
+
+            // Update the guard
+            *guard = layer_with_guard.guard;
+
+            // Reload the layer
+            let err = self.layer_handle.modify(|l| *l = layer_with_guard.layer);
             if let Err(e) = err {
-                println!("Failed to reload filter: {e}");
+                tracing::error!("Failed to reload layer: {e}");
             }
 
-            let err = self.layer_handle.modify(|l| *l = layer);
-            if let Err(e) = err {
-                println!("Failed to reload layer: {e}");
-            }
+            // Store the current handler configuration
+            self.current_handler = Some(handler);
+            self.is_active = true;
         } else {
-            let err = self.filter_handle.modify(|f| *f = filter);
+            // Disable this layer by providing a dummy layer that filters out everything
+            use crate::log::dynamic_filter::DynamicTargetFilterLayer;
+            let dummy_layer: LogLayer = Box::new(DynamicTargetFilterLayer::new(
+                Box::new(tracing_fmt::Layer::new()),
+                vec![], // No matchers means it will filter out everything
+            ));
+            let err = self.layer_handle.modify(|l| *l = dummy_layer);
             if let Err(e) = err {
-                println!("Failed to reload filter: {e}");
+                tracing::error!("Failed to disable layer: {e}");
             }
+
+            // Clear the guard and handler
+            *guard = None;
+            self.current_handler = None;
+            self.is_active = false;
         }
     }
 }
@@ -79,18 +100,18 @@ impl LogManager {
 
         // Initialize all layer handles
         for _ in 0..MAX_HANDLERS {
-            // Create initial layer and filter
-            let initial_layer: LogLayer = Box::new(tracing_fmt::Layer::new());
-            let initial_filter = EnvFilter::new("off");
+            // Create initial disabled layer using our custom filter
+            use crate::log::dynamic_filter::DynamicTargetFilterLayer;
+            let initial_layer: LogLayer = Box::new(DynamicTargetFilterLayer::new(
+                Box::new(tracing_fmt::Layer::new()),
+                vec![], // No matchers means it will filter out everything
+            ));
 
-            // Create reloadable layer and filter
+            // Create reloadable layer
             let (layer, layer_handle) = reload::Layer::new(initial_layer);
-            let (filter, filter_handle) = reload::Layer::new(initial_filter);
 
-            // Combine layer and filter
-            let combined_layer = Box::new(layer.with_filter(filter)) as LogLayer;
-            layers.push(combined_layer);
-            layer_handles.push(LogLayerHandle::new(layer_handle, filter_handle));
+            layers.push(Box::new(layer) as LogLayer);
+            layer_handles.push(LogLayerHandle::new(layer_handle));
         }
 
         // Initialize the registry
@@ -109,19 +130,11 @@ impl LogManager {
         // Update existing handlers
         for (i, handle) in self.layer_handles.iter_mut().enumerate() {
             if let Some(handler) = config.handlers.get(i) {
-                let (layer_with_guard, filter) = create_layer_and_filter(handler);
-
-                // Update guard for this handler
-                self.guards[i] = layer_with_guard.guard;
-
-                handle.reload(Some(layer_with_guard.layer), filter);
-                handle.is_active = true;
+                handle.reload(Some(handler.clone()), &mut self.guards[i]);
             } else {
                 // If the number of handlers in the config is less than
                 // MAX_HANDLERS, turn off the excess layers
-                self.guards[i] = None; // Clear any existing guard
-                handle.reload(None, EnvFilter::new("off"));
-                handle.is_active = false;
+                handle.reload(None, &mut self.guards[i]);
             }
         }
     }

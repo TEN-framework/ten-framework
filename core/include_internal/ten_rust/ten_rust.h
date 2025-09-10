@@ -7,6 +7,7 @@
 #pragma once
 
 #include <include_internal/ten_rust/ten_config.h>
+#include <include_internal/ten_rust/ten_rust.h>
 #include <include_internal/ten_utils/log/log.h>
 #include <include_internal/ten_utils/schema/bindings/rust/schema_proxy.h>
 #include <include_internal/ten_utils/value/bindings/rust/value_proxy.h>
@@ -19,6 +20,18 @@ typedef struct MetricHandle MetricHandle;
 typedef struct ServiceHub ServiceHub;
 typedef struct ten_app_t ten_app_t;
 typedef struct AdvancedLogConfig AdvancedLogConfig;
+
+/**
+ * This function is a wrapper for the backtrace::trace and backtrace::resolve
+ * functions. It is used to dump the backtrace of the current function. It is
+ * called by the C function ten_rust_backtrace_dump.
+ */
+TEN_RUST_PRIVATE_API int ten_rust_backtrace_dump(
+    void *ctx,
+    int (*on_dump)(void *ctx, uintptr_t pc, const char *filename, int lineno_c,
+                   const char *function, void *data),
+    void (*on_error)(void *ctx, const char *msg, int errnum, void *data),
+    uintptr_t skip);
 
 /**
  * @brief Frees a C string that was allocated by Rust.

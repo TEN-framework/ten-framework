@@ -108,9 +108,14 @@ class AliyunASRBigmodelExtension(AsyncASRBaseExtension):
         config_json, _ = await ten_env.get_property_to_json("")
 
         try:
-            self.config = AliyunASRBigmodelConfig.model_validate_json(
+            temp_config = AliyunASRBigmodelConfig.model_validate_json(
                 config_json
             )
+
+            if temp_config.model == "":
+                temp_config.model = "paraformer-realtime-v2"
+
+            self.config = temp_config
             self.config.update(self.config.params)
             ten_env.log_info(
                 f"Aliyun ASR config: {self.config.to_json(sensitive_handling=True)}"
