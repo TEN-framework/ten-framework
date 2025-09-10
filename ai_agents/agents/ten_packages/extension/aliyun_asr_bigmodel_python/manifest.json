@@ -1,7 +1,7 @@
 {
     "type": "extension",
     "name": "aliyun_asr_bigmodel_python",
-    "version": "0.2.0",
+    "version": "0.2.1",
     "dependencies": [
         {
             "type": "system",
@@ -33,6 +33,9 @@
                             "items": {
                                 "type": "string"
                             }
+                        },
+                        "model": {
+                            "type": "string"
                         },
                         "finalize_mode": {
                             "type": "string"
