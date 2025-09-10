@@ -14,7 +14,7 @@ ten_runtime_glob("extension_thread") {
     "service_hub",
   ]
 
-  if (ten_enable_ten_rust && ten_enable_ten_rust_apis) {
+  if (ten_enable_ten_rust) {
     deps += [ "//core/src/ten_rust:ten_rust_binding" ]
   }
 }

@@ -45,7 +45,13 @@ pub extern "C" fn ten_rust_backtrace_dump(
 
     // due to the additional stack frames introduced by FFI bridge, we skip them
     // here to avoid printing the frames of Rust/FFI itself
-    let additional_skip: usize = 2;
+    // skip 5 frames: (1 and 2 comes from extern crate backtrace)
+    // 1. _Unwind_Backtrace() from backtrace::backtrace::libunwind::trace
+    // 2. trace_unsynchronized() from backtrace::backtrace::trace
+    // 3. ten_rust_backtrace_dump()
+    // 4. ten_backtrace_dump()
+    // 5. ten_backtrace_dump_global()
+    let additional_skip: usize = 5;
     let total_skip = skip.saturating_add(additional_skip);
 
     let mut frame_index: usize = 0;
