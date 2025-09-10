@@ -277,7 +277,6 @@ class MainControlExtension(AsyncExtension):
                 ),
             },
             "categories": [],
-
         }
 
         for category in data.categories:
@@ -303,7 +302,6 @@ class MainControlExtension(AsyncExtension):
                             "content": memory.content,
                         }
                     )
-
 
             summary["categories"].append(cat_summary)
 
