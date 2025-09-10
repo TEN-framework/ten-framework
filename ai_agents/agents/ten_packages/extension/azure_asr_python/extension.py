@@ -3,12 +3,16 @@ import json
 import os
 
 from typing_extensions import override
+
+from ten_ai_base.const import (
+    LOG_CATEGORY_VENDOR,
+    LOG_CATEGORY_KEY_POINT,
+)
+
 from .const import (
     FINALIZE_MODE_DISCONNECT,
     FINALIZE_MODE_MUTE_PKG,
     DUMP_FILE_NAME,
-    LOG_CATEGORY_KEY_POINT,
-    LOG_CATEGORY_VENDOR,
     MODULE_NAME_ASR,
 )
 from ten_ai_base.asr import (
