@@ -46,11 +46,11 @@ type TenEnv interface {
 	iProperty
 	InitPropertyFromJSONBytes(value []byte) error
 
-	LogDebug(msg string, option ...TenLogOption) error
-	LogInfo(msg string, option ...TenLogOption) error
-	LogWarn(msg string, option ...TenLogOption) error
-	LogError(msg string, option ...TenLogOption) error
-	Log(level LogLevel, msg string, category *string, fields *Value, option ...TenLogOption) error
+	LogDebug(msg string) error
+	LogInfo(msg string) error
+	LogWarn(msg string) error
+	LogError(msg string) error
+	Log(level LogLevel, msg string, category *string, fields *Value, option *TenLogOption) error
 }
 
 // Making a compile-time assertion which indicates that if 'ten' type doesn't
@@ -343,47 +343,31 @@ func (p *tenEnv) String() string {
 	return C.GoString(cString)
 }
 
-func (p *tenEnv) LogDebug(msg string, option ...TenLogOption) error {
-	logOpt := DefaultLogOption
-	if len(option) > 0 {
-		logOpt = option[0]
-	}
-	return p.logInternal(LogLevelDebug, msg, nil, nil, logOpt)
+func (p *tenEnv) LogDebug(msg string) error {
+	return p.logInternal(LogLevelDebug, msg, nil, nil, nil)
 }
 
-func (p *tenEnv) LogInfo(msg string, option ...TenLogOption) error {
-	logOpt := DefaultLogOption
-	if len(option) > 0 {
-		logOpt = option[0]
-	}
-	return p.logInternal(LogLevelInfo, msg, nil, nil, logOpt)
+func (p *tenEnv) LogInfo(msg string) error {
+	return p.logInternal(LogLevelInfo, msg, nil, nil, nil)
 }
 
-func (p *tenEnv) LogWarn(msg string, option ...TenLogOption) error {
-	logOpt := DefaultLogOption
-	if len(option) > 0 {
-		logOpt = option[0]
-	}
-	return p.logInternal(LogLevelWarn, msg, nil, nil, logOpt)
+func (p *tenEnv) LogWarn(msg string) error {
+	return p.logInternal(LogLevelWarn, msg, nil, nil, nil)
 }
 
-func (p *tenEnv) LogError(msg string, option ...TenLogOption) error {
-	logOpt := DefaultLogOption
-	if len(option) > 0 {
-		logOpt = option[0]
-	}
-	return p.logInternal(LogLevelError, msg, nil, nil, logOpt)
+func (p *tenEnv) LogError(msg string) error {
+	return p.logInternal(LogLevelError, msg, nil, nil, nil)
 }
 
-func (p *tenEnv) Log(level LogLevel, msg string, category *string, fields *Value, option ...TenLogOption) error {
-	logOpt := DefaultLogOption
-	if len(option) > 0 {
-		logOpt = option[0]
-	}
-	return p.logInternal(level, msg, category, fields, logOpt)
+func (p *tenEnv) Log(level LogLevel, msg string, category *string, fields *Value, option *TenLogOption) error {
+	return p.logInternal(level, msg, category, fields, option)
 }
 
-func (p *tenEnv) logInternal(level LogLevel, msg string, category *string, fields *Value, option TenLogOption) error {
+func (p *tenEnv) logInternal(level LogLevel, msg string, category *string, fields *Value, option *TenLogOption) error {
+	if option == nil {
+		option = &DefaultLogOption
+	}
+
 	// Get caller info.
 	pc, fileName, lineNo, ok := runtime.Caller(option.Skip)
 	funcName := "unknown"
