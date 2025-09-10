@@ -159,6 +159,7 @@ class ElevenLabsTTS2Synthesizer:
                         f"vendor_status:  connection closed as {e}",
                         category=LOG_CATEGORY_VENDOR,
                     )
+                    self.ten_env.log_info(f"Websocket connection closed: {e}.")
                     if not self._session_closing:
                         self.ten_env.log_debug(
                             "Websocket connection closed, will reconnect."

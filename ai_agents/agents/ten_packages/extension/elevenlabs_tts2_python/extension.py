@@ -166,6 +166,10 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                 self.get_audio_count += 1
 
                 if audio_data is not None:
+                    self.ten_env.log_info(
+                        f"Received audio data for request ID: {self.current_request_id}, audio_data_len: {len(audio_data)}"
+                    )
+
                     # new request_id, send TTSAudioStart event
                     if (
                         self.current_request_id
@@ -254,7 +258,7 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                 self.current_request_id is None
                 or t.request_id != self.current_request_id
             ):
-                self.ten_env.log_debug(
+                self.ten_env.log_info(
                     f"New TTS request with ID: {t.request_id}"
                 )
                 self.current_request_id = t.request_id
