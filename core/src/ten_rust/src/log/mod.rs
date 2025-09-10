@@ -6,6 +6,7 @@
 //
 pub mod bindings;
 pub mod decrypt;
+pub mod dynamic_filter;
 pub mod encryption;
 pub mod file_appender;
 pub mod formatter;
@@ -27,6 +28,7 @@ use tracing_subscriber::{
 };
 
 use crate::log::{
+    dynamic_filter::DynamicTargetFilterLayer,
     encryption::{EncryptMakeWriter, EncryptionConfig},
     file_appender::FileAppenderGuard,
     formatter::{JsonConfig, JsonFieldNames, JsonFormatter, PlainFormatter},
@@ -170,43 +172,17 @@ impl AdvancedLogConfig {
     }
 }
 
-/// Creates a layer and filter separately from the handler configuration
+/// Creates a layer with dynamic category filtering from the handler
+/// configuration
 ///
-/// This function is similar to `create_layer_from_handler` but returns the
-/// layer and filter separately, allowing more flexibility in how they are
-/// combined.
+/// This function creates a layer that can filter based on the category field
+/// in log event fields, not just the static category.
 ///
-/// Returns a tuple containing:
-/// - A boxed Layer that hasn't had any filter applied
-/// - An EnvFilter configured according to the handler's matchers
-fn create_layer_and_filter(
-    handler: &AdvancedLogHandler,
-) -> (LayerWithGuard, tracing_subscriber::EnvFilter) {
-    // Create filter
-    let mut filter_directive = String::new();
-
-    // Build filter rules based on matchers
-    for (i, matcher) in handler.matchers.iter().enumerate() {
-        if i > 0 {
-            filter_directive.push(',');
-        }
-
-        let level_str = matcher.level.to_string();
-
-        if let Some(category) = &matcher.category {
-            filter_directive.push_str(&format!("{category}={level_str}"));
-        } else {
-            filter_directive.push_str(&level_str);
-        }
-    }
-
-    let filter = tracing_subscriber::EnvFilter::try_new(&filter_directive).unwrap_or_else(|_| {
-        tracing_subscriber::EnvFilter::new("info") // Default fallback to
-                                                   // info level
-    });
-
-    // Create corresponding layer based on emitter type
-    let layer_with_guard = match &handler.emitter {
+/// Returns:
+/// - A LayerWithGuard containing the filtering layer
+fn create_layer_with_dynamic_filter(handler: &AdvancedLogHandler) -> LayerWithGuard {
+    // Create base layer based on emitter type (without filtering)
+    let base_layer_with_guard = match &handler.emitter {
         AdvancedLogEmitter::Console(console_config) => {
             let layer = match (&console_config.stream, &handler.formatter.formatter_type) {
                 (StreamType::Stdout, FormatterType::Plain) => {
@@ -352,7 +328,14 @@ fn create_layer_and_filter(
         }
     };
 
-    (layer_with_guard, filter)
+    // Wrap the base layer with our dynamic category filter
+    let filtered_layer =
+        DynamicTargetFilterLayer::new(base_layer_with_guard.layer, handler.matchers.clone());
+
+    LayerWithGuard {
+        layer: Box::new(filtered_layer),
+        guard: base_layer_with_guard.guard,
+    }
 }
 
 /// A wrapper for a logging layer that may have an associated guard
@@ -386,11 +369,11 @@ fn ten_configure_log_non_reloadable(config: &mut AdvancedLogConfig) -> Result<()
     {
         let handlers = &config.handlers;
         for handler in handlers {
-            let (layer_with_guard, filter) = create_layer_and_filter(handler);
+            let layer_with_guard = create_layer_with_dynamic_filter(handler);
             if let Some(guard) = layer_with_guard.guard {
                 guards.push(guard);
             }
-            layers.push(layer_with_guard.layer.with_filter(filter).boxed());
+            layers.push(layer_with_guard.layer);
         }
     }
 
@@ -468,7 +451,7 @@ pub fn ten_log(
     match tracing_level {
         tracing::Level::TRACE => {
             tracing::trace!(
-                target = category,
+                category = category,
                 pid = pid,
                 tid = tid,
                 func_name = func_name,
@@ -480,7 +463,7 @@ pub fn ten_log(
         }
         tracing::Level::DEBUG => {
             tracing::debug!(
-                target = category,
+                category = category,
                 pid = pid,
                 tid = tid,
                 func_name = func_name,
@@ -492,7 +475,7 @@ pub fn ten_log(
         }
         tracing::Level::INFO => {
             tracing::info!(
-                target = category,
+                category = category,
                 pid = pid,
                 tid = tid,
                 func_name = func_name,
@@ -504,7 +487,7 @@ pub fn ten_log(
         }
         tracing::Level::WARN => {
             tracing::warn!(
-                target = category,
+                category = category,
                 pid = pid,
                 tid = tid,
                 func_name = func_name,
@@ -516,7 +499,7 @@ pub fn ten_log(
         }
         tracing::Level::ERROR => {
             tracing::error!(
-                target = category,
+                category = category,
                 pid = pid,
                 tid = tid,
                 func_name = func_name,

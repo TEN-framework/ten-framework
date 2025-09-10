@@ -79,6 +79,7 @@ mod tests {
             exposed_properties: vec![],
         };
 
+        #[allow(clippy::useless_vec)]
         let expected_graphs = vec![
             DesignerGraphInfo {
                 graph_id: Uuid::parse_str("default").unwrap_or_else(|_| Uuid::new_v4()),
