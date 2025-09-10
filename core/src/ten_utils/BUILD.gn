@@ -54,7 +54,10 @@ shared_library("ten_utils_shared") {
   if (ten_enable_ten_rust) {
     # Link the Rust static library into the shared lib when TEN Rust APIs are enabled,
     # so macOS can resolve symbols like `ten_rust_backtrace_dump` at link time.
-    deps += [ "//core/src/ten_rust:ten_rust_binding" ]
+    deps += [
+      "//core/src/ten_rust:ten_rust_binding",
+      "//core/src/ten_runtime/app/service_hub/api:api",
+    ]
   }
   configs += [ "//build/ten_utils:utils_private_config" ]
 
