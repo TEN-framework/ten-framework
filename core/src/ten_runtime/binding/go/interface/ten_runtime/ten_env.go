@@ -50,7 +50,13 @@ type TenEnv interface {
 	LogInfo(msg string) error
 	LogWarn(msg string) error
 	LogError(msg string) error
-	Log(level LogLevel, msg string, category *string, fields *Value, option *TenLogOption) error
+	Log(
+		level LogLevel,
+		msg string,
+		category *string,
+		fields *Value,
+		option *LogOption,
+	) error
 }
 
 // Making a compile-time assertion which indicates that if 'ten' type doesn't
@@ -359,11 +365,23 @@ func (p *tenEnv) LogError(msg string) error {
 	return p.logInternal(LogLevelError, msg, nil, nil, nil)
 }
 
-func (p *tenEnv) Log(level LogLevel, msg string, category *string, fields *Value, option *TenLogOption) error {
+func (p *tenEnv) Log(
+	level LogLevel,
+	msg string,
+	category *string,
+	fields *Value,
+	option *LogOption,
+) error {
 	return p.logInternal(level, msg, category, fields, option)
 }
 
-func (p *tenEnv) logInternal(level LogLevel, msg string, category *string, fields *Value, option *TenLogOption) error {
+func (p *tenEnv) logInternal(
+	level LogLevel,
+	msg string,
+	category *string,
+	fields *Value,
+	option *LogOption,
+) error {
 	if option == nil {
 		option = &DefaultLogOption
 	}

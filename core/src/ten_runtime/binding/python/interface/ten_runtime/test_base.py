@@ -13,7 +13,7 @@ from libten_runtime_python import (
 from .log_level import LogLevel
 from .error import TenError
 from .value import Value
-from .log_option import TenLogOption, DefaultLogOption
+from .log_option import LogOption, DefaultLogOption
 
 
 class TenEnvTesterBase:
@@ -33,7 +33,7 @@ class TenEnvTesterBase:
         msg: str,
         category: str | None = None,
         fields: Value | None = None,
-        option: TenLogOption = DefaultLogOption,
+        option: LogOption = DefaultLogOption,
     ) -> TenError | None:
         return self._log_internal(LogLevel.DEBUG, msg, category, fields, option)
 
@@ -42,7 +42,7 @@ class TenEnvTesterBase:
         msg: str,
         category: str | None = None,
         fields: Value | None = None,
-        option: TenLogOption = DefaultLogOption,
+        option: LogOption = DefaultLogOption,
     ) -> TenError | None:
         return self._log_internal(LogLevel.INFO, msg, category, fields, option)
 
@@ -51,7 +51,7 @@ class TenEnvTesterBase:
         msg: str,
         category: str | None = None,
         fields: Value | None = None,
-        option: TenLogOption = DefaultLogOption,
+        option: LogOption = DefaultLogOption,
     ) -> TenError | None:
         return self._log_internal(LogLevel.WARN, msg, category, fields, option)
 
@@ -60,7 +60,7 @@ class TenEnvTesterBase:
         msg: str,
         category: str | None = None,
         fields: Value | None = None,
-        option: TenLogOption = DefaultLogOption,
+        option: LogOption = DefaultLogOption,
     ) -> TenError | None:
         return self._log_internal(LogLevel.ERROR, msg, category, fields, option)
 
@@ -70,7 +70,7 @@ class TenEnvTesterBase:
         msg: str,
         category: str | None = None,
         fields: Value | None = None,
-        option: TenLogOption = DefaultLogOption,
+        option: LogOption = DefaultLogOption,
     ) -> TenError | None:
         return self._log_internal(level, msg, category, fields, option)
 
@@ -80,7 +80,7 @@ class TenEnvTesterBase:
         msg: str,
         category: str | None,
         fields: Value | None,
-        option: TenLogOption,
+        option: LogOption,
     ) -> TenError | None:
         # Get the current frame.
         frame = inspect.currentframe()

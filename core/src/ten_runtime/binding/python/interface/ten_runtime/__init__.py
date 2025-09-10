@@ -15,7 +15,7 @@ from .async_extension import AsyncExtension
 from .async_ten_env import AsyncTenEnv
 from .ten_env import TenEnv
 from .log_level import LogLevel
-from .log_option import TenLogOption, DefaultLogOption
+from .log_option import LogOption, DefaultLogOption
 from .error import TenError, TenErrorCode
 from .value import Value, ValueType
 from .test import ExtensionTester, TenEnvTester
@@ -52,7 +52,7 @@ __all__ = [
     "PixelFmt",
     "AudioFrameDataFmt",
     "LogLevel",
-    "TenLogOption",
+    "LogOption",
     "DefaultLogOption",
     "ExtensionTester",
     "TenEnvTester",

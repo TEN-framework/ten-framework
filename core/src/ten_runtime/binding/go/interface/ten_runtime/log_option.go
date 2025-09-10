@@ -7,13 +7,15 @@
 
 package ten_runtime
 
-// TenLogOption represents configuration options for logging, including skip parameter for extensibility
-type TenLogOption struct {
-	// Skip is the number of stack frames to skip when determining caller information
+// LogOption represents configuration options for logging, including skip
+// parameter for extensibility
+type LogOption struct {
+	// Skip is the number of stack frames to skip when determining caller
+	// information
 	Skip int
 }
 
 // DefaultLogOption is the default log option instance with Skip=2
-var DefaultLogOption = TenLogOption{
+var DefaultLogOption = LogOption{
 	Skip: 2,
 }
