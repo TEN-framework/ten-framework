@@ -40,6 +40,7 @@ class PollyTTSParams(BaseModel):
         default="16000",
         description="Sample rate to use for speech synthesis",
         alias="SampleRate",
+        coerce_numbers_to_str=True,
     )
     lang_code: str = Field(
         default="en-US",
