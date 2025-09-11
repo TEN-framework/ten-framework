@@ -37,7 +37,7 @@ tasks:
   use:
     desc: use agent, default 'agents/examples/voice-assistant'
     vars:
-      AGENT: '{{.AGENT| default "agents/examples/voice-assistant"}}'
+      AGENT: '{{if contains "/" .AGENT}}{{.AGENT}}{{else}}agents/examples/{{.AGENT}}{{end}}{{if not .AGENT}}agents/examples/voice-assistant{{end}}'
     cmds:
       - ln -sf {{.USER_WORKING_DIR}}/{{.AGENT}}/manifest.json ./agents/
       - ln -sf {{.USER_WORKING_DIR}}/{{.AGENT}}/property.json ./agents/
