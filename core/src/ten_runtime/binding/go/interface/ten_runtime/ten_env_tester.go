@@ -39,16 +39,16 @@ type TenEnvTester interface {
 
 	StopTest(testResult *TenError) error
 
-	LogDebug(msg string, option ...LogOption) error
-	LogInfo(msg string, option ...LogOption) error
-	LogWarn(msg string, option ...LogOption) error
-	LogError(msg string, option ...LogOption) error
+	LogDebug(msg string) error
+	LogInfo(msg string) error
+	LogWarn(msg string) error
+	LogError(msg string) error
 	Log(
 		level LogLevel,
 		msg string,
 		category *string,
 		fields *Value,
-		option ...LogOption,
+		option *LogOption,
 	) error
 }
 
@@ -314,36 +314,20 @@ func (p *tenEnvTester) stopTest(testResult *TenError) error {
 	return withCGoError(&cStatus)
 }
 
-func (p *tenEnvTester) LogDebug(msg string, option ...LogOption) error {
-	logOpt := DefaultLogOption
-	if len(option) > 0 {
-		logOpt = option[0]
-	}
-	return p.logInternal(LogLevelDebug, msg, nil, nil, logOpt)
+func (p *tenEnvTester) LogDebug(msg string) error {
+	return p.logInternal(LogLevelDebug, msg, nil, nil, nil)
 }
 
-func (p *tenEnvTester) LogInfo(msg string, option ...LogOption) error {
-	logOpt := DefaultLogOption
-	if len(option) > 0 {
-		logOpt = option[0]
-	}
-	return p.logInternal(LogLevelInfo, msg, nil, nil, logOpt)
+func (p *tenEnvTester) LogInfo(msg string) error {
+	return p.logInternal(LogLevelInfo, msg, nil, nil, nil)
 }
 
-func (p *tenEnvTester) LogWarn(msg string, option ...LogOption) error {
-	logOpt := DefaultLogOption
-	if len(option) > 0 {
-		logOpt = option[0]
-	}
-	return p.logInternal(LogLevelWarn, msg, nil, nil, logOpt)
+func (p *tenEnvTester) LogWarn(msg string) error {
+	return p.logInternal(LogLevelWarn, msg, nil, nil, nil)
 }
 
-func (p *tenEnvTester) LogError(msg string, option ...LogOption) error {
-	logOpt := DefaultLogOption
-	if len(option) > 0 {
-		logOpt = option[0]
-	}
-	return p.logInternal(LogLevelError, msg, nil, nil, logOpt)
+func (p *tenEnvTester) LogError(msg string) error {
+	return p.logInternal(LogLevelError, msg, nil, nil, nil)
 }
 
 func (p *tenEnvTester) Log(
@@ -351,13 +335,9 @@ func (p *tenEnvTester) Log(
 	msg string,
 	category *string,
 	fields *Value,
-	option ...LogOption,
+	option *LogOption,
 ) error {
-	logOpt := DefaultLogOption
-	if len(option) > 0 {
-		logOpt = option[0]
-	}
-	return p.logInternal(level, msg, category, fields, logOpt)
+	return p.logInternal(level, msg, category, fields, option)
 }
 
 func (p *tenEnvTester) logInternal(
@@ -365,8 +345,12 @@ func (p *tenEnvTester) logInternal(
 	msg string,
 	category *string,
 	fields *Value,
-	option LogOption,
+	option *LogOption,
 ) error {
+	if option == nil {
+		option = &DefaultLogOption
+	}
+
 	// Get caller info.
 	pc, fileName, lineNo, ok := runtime.Caller(option.Skip)
 	funcName := "unknown"
