@@ -9,6 +9,10 @@ import os
 import time
 from typing import List, Optional, Tuple
 
+from ten_ai_base.const import (
+    LOG_CATEGORY_VENDOR,
+    LOG_CATEGORY_KEY_POINT,
+)
 from ten_ai_base.asr import (
     ASRBufferConfig,
     ASRBufferConfigModeKeep,
@@ -60,7 +64,8 @@ class SonioxASRExtension(AsyncASRBaseExtension):
             self.config = SonioxASRConfig.model_validate_json(config_json)
             self.config.update(self.config.params)
             ten_env.log_info(
-                f"KEYPOINT vendor_config: {self.config.to_str(sensitive_handling=True)}"
+                f"config: {self.config.to_str(sensitive_handling=True)}",
+                category=LOG_CATEGORY_KEY_POINT,
             )
 
             if self.config.dump:
@@ -180,7 +185,10 @@ class SonioxASRExtension(AsyncASRBaseExtension):
 
     @override
     async def finalize(self, session_id: Optional[str]) -> None:
-        self.ten_env.log_info("finalize")
+        self.ten_env.log_info(
+            "vendor_cmd: finalize",
+            category=LOG_CATEGORY_VENDOR,
+        )
         self.last_finalize_timestamp = int(time.time() * 1000)
         if self.websocket:
             await self.websocket.finalize()
@@ -198,7 +206,10 @@ class SonioxASRExtension(AsyncASRBaseExtension):
 
     # WebSocket event handlers
     async def _handle_open(self):
-        self.ten_env.log_info("soniox connection opened")
+        self.ten_env.log_info(
+            "vendor_status_changed: connection opened",
+            category=LOG_CATEGORY_VENDOR,
+        )
         self.sent_user_audio_duration_ms_before_last_reset += (
             self.audio_timeline.get_total_user_audio_duration()
         )
@@ -206,16 +217,24 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         self.connected = True
 
     async def _handle_close(self):
-        self.ten_env.log_info("soniox connection closed")
+        self.ten_env.log_info(
+            "vendor_status_changed: connection closed",
+            category=LOG_CATEGORY_VENDOR,
+        )
         self.connected = False
 
     async def _handle_exception(self, e: Exception):
-        self.ten_env.log_error(f"soniox connection error: {e}")
+        self.ten_env.log_error(
+            f"soniox connection exception: {type(e)} {str(e)}"
+        )
         await self._handle_error(-1, str(e))
 
     async def _handle_error(self, error_code: int, error_message: str):
+        self.ten_env.log_error(
+            f"vendor_error: code: {error_code}, message: {error_message}",
+            category=LOG_CATEGORY_VENDOR,
+        )
         error_msg = f"soniox error {error_code}: {error_message}"
-        self.ten_env.log_error(error_msg)
         await self.send_asr_error(
             ModuleError(
                 module=MODULE_NAME_ASR,
@@ -242,7 +261,10 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         unused_final_audio_proc_ms: int,
         unused_total_audio_proc_ms: int,
     ):
-        self.ten_env.log_debug(f"soniox transcript: {tokens}")
+        self.ten_env.log_debug(
+            f"vender_result: transcript: {tokens}",
+            category=LOG_CATEGORY_VENDOR,
+        )
         try:
             transcript_tokens, unused_translation_tokens, fin = (
                 self._group_tokens(tokens)
