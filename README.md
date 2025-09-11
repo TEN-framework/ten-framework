@@ -129,16 +129,6 @@ Check out [this blog](https://theten.ai/blog/tman-designer-of-ten-framework) for
 
 </div>
 
-<!-- ## 🧩 Extensions
-
-![Ready-to-use Extensions](https://ten-framework-assets.s3.us-east-1.amazonaws.com/extensions.jpg)
-
-<div align="right">
-
-[![][back-to-top]](#readme-top)
-
-</div> -->
-
 <br>
 
 ## ✨ Features
@@ -296,17 +286,16 @@ docker exec -it ten_agent_dev bash
 check the `/examples` folder for more examples
 
 ```bash
-# use the default agent
-task use
+# use the chained voice assistant
+task use AGENT=voice-assistant
 
-# or use the demo agent
-task use AGENT=agents/examples/demo
+# or use the speech-to-speech voice assistant realtime
+task use AGENT=voice-assistant-realtime
 ```
 
 ##### 6. Start the web server
 
 ```bash
-
 # run task build if you changed any local source code, this is necessary if you are working on languages which require compilation like TypeScript or Golang.
 task build
 
@@ -318,10 +307,11 @@ task run
 #### Step ⓷ - Customize your agent with TMAN Designer
 
  1. Open [localhost:49483](http://localhost:49483).
- 2. Right click to load the corresponding graph (e.g., Voice Assistant).
- 3. Enter API keys and set preferences for each extension.
- 4. Right click and Select 'Manage Apps' to open the Apps Manager.
- 5. Click the ▶ to run App.
+ 2. Right-click on the STT, LLM, and TTS extensions.
+ 3. Open their properties and enter APIs respectively.
+ 4. Right-click the canvas and select 'Manage Apps' to open the Apps Manager.
+ 5. Right under the Actions, click the ▶ to run the App.
+ 6. Check the 'Run with TEN Agent' option and click the Run button.
 
 <div align="right">
 
@@ -348,19 +338,6 @@ Check out [this guide](https://theten.ai/docs/ten_agent/setup_development_env/se
 
 <br>
 
-<!-- ## 👀 TEN Agent Demo
-
-Playground and Demo server different purposes, in a nut shell, think it as Playground is for you to customize you agent, and Demo is for you to deploy your agent.
-
-Check out [this guide](https://theten.ai/docs/ten_agent/demo) for more details.
-<div align="right">
-
-[![][back-to-top]](#readme-top)
-
-</div>
-
-<br> -->
-
 ## 🛳️ TEN Agent Self Hosting
 
 #### 🅰️ Deploying with Docker
@@ -382,30 +359,6 @@ Read the [Deployment Guide](https://theten.ai/docs/ten_agent/deploy_ten_agent/de
 </div>
 
 <br>
-
-<!--
-## 🏗️ TEN Agent Architecture
-
-1️⃣ **TEN Agent App**: Core application that manages extensions and data flow based on graph configuration
-
-2️⃣ **Dev Server**: `port:49480`- local server for development purposes.
-
-3️⃣ **Web Server**: `port:8080`- Golang server handling HTTP requests and agent process management
-
-4️⃣ **Front-end UI**:
-
-- `port:3000` Playground - To customize and test your agent configurations.
-- `port:3002` Demo - To deploy your agent without module picker.
-
-![Components Diagram](https://ten-framework-assets.s3.us-east-1.amazonaws.com/diagram.jpg)
-
-<div align="right">
-
-[![][back-to-top]](#readme-top)
-
-</div>
-
-<br> -->
 
 ## 🌍 TEN Ecosystem
 
