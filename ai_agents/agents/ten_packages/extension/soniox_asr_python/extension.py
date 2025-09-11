@@ -206,7 +206,7 @@ class SonioxASRExtension(AsyncASRBaseExtension):
     # WebSocket event handlers
     async def _handle_open(self):
         self.ten_env.log_info(
-            f"vendor_status_changed: connection opened",
+            "vendor_status_changed: connection opened",
             category=LOG_CATEGORY_VENDOR,
         )
         self.sent_user_audio_duration_ms_before_last_reset += (
@@ -217,7 +217,7 @@ class SonioxASRExtension(AsyncASRBaseExtension):
 
     async def _handle_close(self):
         self.ten_env.log_info(
-            f"vendor_status_changed: connection closed",
+            "vendor_status_changed: connection closed",
             category=LOG_CATEGORY_VENDOR,
         )
         self.connected = False
