@@ -153,6 +153,7 @@ export const FlowCanvas = (props: { className?: string }) => {
         fitView
         nodesDraggable
         edgesFocusable
+        deleteKeyCode={null}
         style={{ width: "100%", height: "100%" }}
       >
         <Controls />
