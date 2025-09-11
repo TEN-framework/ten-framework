@@ -1,0 +1,11 @@
+{
+    "dump": true,
+    "dump_path": "./tests/keep_dump_output/",
+    "params": {
+        "output_format": "pcm_44100",
+        "language": "en",
+        "voice_id": "NHRgOEwqx5WZNClv5sat",
+        "model_id": "eleven_turbo_v2_5",
+        "key": "${env:ELEVENLABS_TTS_KEY}"
+    }
+}
