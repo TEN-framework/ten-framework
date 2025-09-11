@@ -122,7 +122,7 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
         for request_id, recorder in self.recorder_map.items():
             try:
                 await recorder.flush()
-                ten_env.log_info(
+                ten_env.log_debug(
                     f"Flushed PCMWriter for request_id: {request_id}"
                 )
             except Exception as e:
@@ -166,10 +166,6 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                 self.get_audio_count += 1
 
                 if audio_data is not None:
-                    self.ten_env.log_info(
-                        f"Received audio data for request ID: {self.current_request_id}, audio_data_len: {len(audio_data)}"
-                    )
-
                     # new request_id, send TTSAudioStart event
                     if (
                         self.current_request_id
@@ -258,7 +254,7 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                 self.current_request_id is None
                 or t.request_id != self.current_request_id
             ):
-                self.ten_env.log_info(
+                self.ten_env.log_debug(
                     f"New TTS request with ID: {t.request_id}"
                 )
                 self.current_request_id = t.request_id
@@ -267,7 +263,7 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                     and self.client.synthesizer
                     and self.client.synthesizer.send_text_in_connection == True
                 ):
-                    self.ten_env.log_info(
+                    self.ten_env.log_debug(
                         "request id is changed, but connection is not reset, reset it now"
                     )
                     self.client.cancel()
@@ -292,7 +288,7 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                         try:
                             await self.recorder_map[old_rid].flush()
                             del self.recorder_map[old_rid]
-                            self.ten_env.log_info(
+                            self.ten_env.log_debug(
                                 f"Cleaned up old PCMWriter for request_id: {old_rid}"
                             )
                         except Exception as e:
@@ -396,7 +392,7 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
 
         name = data.get_name()
         if name == "tts_flush":
-            ten_env.log_info(f"Received tts_flush data: {name}")
+            ten_env.log_debug(f"Received tts_flush data: {name}")
 
             # Wait for initialization to complete with timeout
             if not self.init_complete.is_set():
@@ -475,7 +471,7 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
         ):
             try:
                 await self.recorder_map[self.current_request_id].flush()
-                self.ten_env.log_info(
+                self.ten_env.log_debug(
                     f"Flushed PCMWriter for completed request_id: {self.current_request_id}"
                 )
             except Exception as e:
@@ -502,7 +498,7 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
             self.current_turn_id,
             reason,
         )
-        self.ten_env.log_info(
+        self.ten_env.log_debug(
             f"Sent tts_audio_end with {reason.name} reason for request_id: {self.current_request_id}"
         )
         self.request_start_ts = None
