@@ -22,6 +22,10 @@ from ten_runtime import (
     AsyncTenEnv,
     AudioFrame,
 )
+from ten_ai_base.const import (
+    LOG_CATEGORY_VENDOR,
+    LOG_CATEGORY_KEY_POINT,
+)
 
 from ten_ai_base.dumper import Dumper
 from .reconnect_manager import ReconnectManager
@@ -47,6 +51,10 @@ class AliyunRecognitionCallback(RecognitionCallback):
 
     def on_open(self) -> None:
         """Callback when connection is established"""
+        self.ten_env.log_info(
+            "vendor_status_changed: on_open",
+            category=LOG_CATEGORY_VENDOR,
+        )
         self.loop.create_task(self.extension.on_asr_open())
 
     def on_complete(self) -> None:
@@ -55,6 +63,10 @@ class AliyunRecognitionCallback(RecognitionCallback):
 
     def on_error(self, result: RecognitionResult) -> None:
         """Error handling callback"""
+        self.ten_env.log_error(
+            f"vendor_error: code: {result.status_code}, reason: {result.message}",
+            category=LOG_CATEGORY_VENDOR,
+        )
         self.loop.create_task(self.extension.on_asr_error(result))
 
     def on_event(self, result: RecognitionResult) -> None:
@@ -63,6 +75,10 @@ class AliyunRecognitionCallback(RecognitionCallback):
 
     def on_close(self) -> None:
         """Callback when connection is closed"""
+        self.ten_env.log_info(
+            "vendor_status_changed: on_close",
+            category=LOG_CATEGORY_VENDOR,
+        )
         self.loop.create_task(self.extension.on_asr_close())
 
 
@@ -118,7 +134,8 @@ class AliyunASRBigmodelExtension(AsyncASRBaseExtension):
             self.config = temp_config
             self.config.update(self.config.params)
             ten_env.log_info(
-                f"Aliyun ASR config: {self.config.to_json(sensitive_handling=True)}"
+                f"Aliyun ASR config: {self.config.to_json(sensitive_handling=True)}",
+                category=LOG_CATEGORY_KEY_POINT,
             )
             # Initialize Dashscope with API key
             dashscope.api_key = self.config.api_key
@@ -255,6 +272,11 @@ class AliyunASRBigmodelExtension(AsyncASRBaseExtension):
             if self.reconnect_manager and self.connected:
                 self.reconnect_manager.mark_connection_successful()
 
+            self.ten_env.log_debug(
+                f"vendor_result: on_event: {result}",
+                category=LOG_CATEGORY_VENDOR,
+            )
+
             sentence = result.get_sentence()
             if (
                 isinstance(sentence, dict)
@@ -326,8 +348,9 @@ class AliyunASRBigmodelExtension(AsyncASRBaseExtension):
         assert self.config is not None
 
         self.last_finalize_timestamp = int(datetime.now().timestamp() * 1000)
-        self.ten_env.log_debug(
-            f"Aliyun ASR finalize start at {self.last_finalize_timestamp}"
+        self.ten_env.log_info(
+            f"vendor_cmd: finalize start at {self.last_finalize_timestamp}",
+            category=LOG_CATEGORY_VENDOR,
         )
 
         if self.config.finalize_mode == "disconnect":
@@ -365,9 +388,6 @@ class AliyunASRBigmodelExtension(AsyncASRBaseExtension):
         if self.recognition:
             if self.is_connected():
                 self.recognition.stop()
-                self.ten_env.log_debug(
-                    "Aliyun ASR finalize disconnect completed"
-                )
             else:
                 self.ten_env.log_debug(
                     "Aliyun ASR finalize disconnect completed, but not connected"

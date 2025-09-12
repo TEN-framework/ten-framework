@@ -12,6 +12,9 @@ from time import mktime
 import json
 from .const import TIMEOUT_CODE
 from websockets.protocol import State
+from ten_ai_base.const import (
+    LOG_CATEGORY_VENDOR,
+)
 
 STATUS_FIRST_FRAME = 0  # First frame identifier
 STATUS_CONTINUE_FRAME = 1  # Middle frame identifier
@@ -65,8 +68,8 @@ class XfyunWSRecognition:
         # Set default configuration
         default_config = {
             "host": "ist-api.xfyun.cn",
-            "domain": "ist_ed_open",
-            "language": "zh_cn",
+            "domain": "ist_cbm_mix",
+            "language": "mix",
             "accent": "mandarin",
             "dwa": "wpgs",
         }
@@ -86,7 +89,12 @@ class XfyunWSRecognition:
         self.business_args = {}
 
         # Required business parameters
-        required_business_params = ["domain", "language", "accent"]
+        required_business_params = [
+            "domain",
+            "language",
+            "accent",
+            "language_name",
+        ]
         for param in required_business_params:
             if param in self.config:
                 self.business_args[param] = self.config[param]
@@ -122,6 +130,8 @@ class XfyunWSRecognition:
         for param in optional_business_params:
             if param in self.config:
                 self.business_args[param] = self.config[param]
+
+        self._log_debug(f"Business arguments: {self.business_args}")
 
         self.websocket = None
         self.is_started = False
@@ -172,6 +182,12 @@ class XfyunWSRecognition:
             sid = message_data.get("sid")
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
             self._log_debug(f"[{timestamp}] message: {message}")
+
+            if self.ten_env:
+                self.ten_env.log_debug(
+                    f"vendor_result: on_recognized: {message}",
+                    category=LOG_CATEGORY_VENDOR,
+                )
 
             if code != 0:
                 error_msg = message_data.get("message")
@@ -332,7 +348,11 @@ class XfyunWSRecognition:
             }
             await self.websocket.send(json.dumps(d))
             self.is_started = False
-            self._log_debug("Stop signal sent")
+            if self.ten_env:
+                self.ten_env.log_info(
+                    f"vendor_cmd: ${json.dumps(d)}",
+                    category=LOG_CATEGORY_VENDOR,
+                )
 
         except websockets.exceptions.ConnectionClosed:
             self._log_debug("WebSocket connection already closed")
@@ -343,10 +363,6 @@ class XfyunWSRecognition:
 
     async def close(self):
         """Close WebSocket connection"""
-        if not self.is_started:
-            self._log_debug("Recognition not started")
-            return
-
         if self.websocket:
             try:
                 if self.websocket.state == State.OPEN:

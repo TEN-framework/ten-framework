@@ -22,6 +22,10 @@ from ten_runtime import (
     AsyncTenEnv,
     AudioFrame,
 )
+from ten_ai_base.const import (
+    LOG_CATEGORY_KEY_POINT,
+    LOG_CATEGORY_VENDOR,
+)
 
 import asyncio
 from deepgram import (
@@ -73,7 +77,8 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
             self.config = DeepgramASRConfig.model_validate_json(config_json)
             self.config.update(self.config.params)
             ten_env.log_info(
-                f"KEYPOINT vendor_config: {self.config.to_json(sensitive_handling=True)}"
+                f"KEYPOINT vendor_config: {self.config.to_json(sensitive_handling=True)}",
+                category=LOG_CATEGORY_KEY_POINT,
             )
 
             if self.config.dump:
@@ -98,20 +103,6 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
         self.ten_env.log_info("start_connection")
 
         try:
-            if not self.config.api_key or self.config.api_key.strip() == "":
-                error_msg = (
-                    "Deepgram API key is required but not provided or is empty"
-                )
-                self.ten_env.log_error(error_msg)
-                await self.send_asr_error(
-                    ModuleError(
-                        module=MODULE_NAME_ASR,
-                        code=ModuleErrorCode.FATAL_ERROR.value,
-                        message=error_msg,
-                    ),
-                )
-                return
-
             await self.stop_connection()
 
             self.client = deepgram.AsyncListenWebSocketClient(
@@ -188,15 +179,15 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
         assert self.config is not None
 
         self.last_finalize_timestamp = int(datetime.now().timestamp() * 1000)
-        self.ten_env.log_debug(
-            f"KEYPOINT finalize start at {self.last_finalize_timestamp}]"
+        self.ten_env.log_info(
+            f"vendor_cmd: finalize start at {self.last_finalize_timestamp}",
+            category=LOG_CATEGORY_VENDOR,
         )
         await self._handle_finalize_api()
 
     async def _register_deepgram_event_handlers(self):
         """Register event handlers for Deepgram WebSocket client."""
         assert self.client is not None
-        # print("Registering Deepgram event handlers...")
         self.client.on(
             LiveTranscriptionEvents.Open, self._deepgram_event_handler_on_open
         )
@@ -233,12 +224,14 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
             language=language,
             words=[],
         )
-        # print(f"send_asr_result: {asr_result}")
         await self.send_asr_result(asr_result)
 
     async def _deepgram_event_handler_on_open(self, _, event):
         """Handle the open event from Deepgram."""
-        self.ten_env.log_debug(f"deepgram event callback on_open: {event}")
+        self.ten_env.log_info(
+            f"vendor_status_changed: on_open event: {event}",
+            category=LOG_CATEGORY_VENDOR,
+        )
         self.sent_user_audio_duration_ms_before_last_reset += (
             self.audio_timeline.get_total_user_audio_duration()
         )
@@ -251,8 +244,9 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
 
     async def _deepgram_event_handler_on_close(self, *args, **kwargs):
         """Handle the close event from Deepgram."""
-        self.ten_env.log_debug(
-            f"deepgram event callback on_close: {args}, {kwargs}"
+        self.ten_env.log_info(
+            f"vendor_status_changed: on_close, args: {args}, kwargs: {kwargs}",
+            category=LOG_CATEGORY_VENDOR,
         )
         self.connected = False
 
@@ -264,16 +258,18 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
 
     async def _deepgram_event_handler_on_transcript(self, _, result):
         """Handle the transcript event from Deepgram."""
-        print("deepgram event callback on_transcript")
         assert self.config is not None
 
         # SimpleNamespace
         try:
             result_json = result.to_json()
-            print(f"deepgram event callback on_transcript: {result_json}")
+            self.ten_env.log_debug(
+                f"vendor_result: on_transcript: {result_json}",
+                category=LOG_CATEGORY_VENDOR,
+            )
         except AttributeError:
             # SimpleNamespace no have to_json
-            print(
+            self.ten_env.log_error(
                 "deepgram event callback on_transcript: SimpleNamespace object (no to_json method)"
             )
 
@@ -313,7 +309,10 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
 
     async def _deepgram_event_handler_on_error(self, _, error):
         """Handle the error event from Deepgram."""
-        self.ten_env.log_error(f"KEYPOINT vendor_error: {error.to_json()}")
+        self.ten_env.log_error(
+            f"vendor_error: {error.to_json()}",
+            category=LOG_CATEGORY_VENDOR,
+        )
 
         await self.send_asr_error(
             ModuleError(
@@ -341,7 +340,10 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
             return
 
         await self.client.finalize()
-        _ = self.ten_env.log_debug("finalize api completed")
+        self.ten_env.log_info(
+            "vendor_cmd: finalize api completed",
+            category=LOG_CATEGORY_VENDOR,
+        )
 
     async def _handle_reconnect(self):
         """
