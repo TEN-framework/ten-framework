@@ -270,9 +270,6 @@ class AsrWsClient:
                                 if utterance.get("definite", False):
                                     self._finalize_completed = True
                                     self._finalize_event.set()
-                                    self.ten_env.log_info(
-                                        "Received final ASR result"
-                                    )
 
                                     # Reset finalize state after receiving final result
                                     self._finalize_requested = False

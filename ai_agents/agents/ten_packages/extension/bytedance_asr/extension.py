@@ -17,6 +17,11 @@ from ten_ai_base.message import (
     ModuleErrorCode,
 )
 
+from ten_ai_base.const import (
+    LOG_CATEGORY_VENDOR,
+    LOG_CATEGORY_KEY_POINT,
+)
+
 from ten_runtime import (
     AsyncTenEnv,
     Cmd,
@@ -84,7 +89,8 @@ class BytedanceASRExtension(AsyncASRBaseExtension):
             self.config = BytedanceASRConfig.model_validate_json(config_json)
             self.config.update(self.config.params)
             ten_env.log_info(
-                f"KEYPOINT vendor_config: {self.config.to_json(sensitive_handling=True)}"
+                f"config: {self.config.to_json(sensitive_handling=True)}",
+                category=LOG_CATEGORY_KEY_POINT,
             )
 
             # Set reconnection parameters from config
@@ -208,6 +214,12 @@ class BytedanceASRExtension(AsyncASRBaseExtension):
             sentence = result[0]["text"]
             start_ms = result[0]["utterances"][0].get("start_time", 0)
             end_ms = result[0]["utterances"][0].get("end_time", 0)
+            language = self.config.language if self.config else "zh-CN"
+
+            self.ten_env.log_debug(
+                f"vendor_result: on_recognized: {sentence}, language: {language}, full_json: {result[0]}",
+                category=LOG_CATEGORY_VENDOR,
+            )
 
             if len(sentence) == 0:
                 return
@@ -230,7 +242,7 @@ class BytedanceASRExtension(AsyncASRBaseExtension):
                 final=is_final,
                 start_ms=start_ms,
                 duration_ms=end_ms - start_ms,
-                language=self.config.language if self.config else "zh-CN",
+                language=language,
                 words=[],
             )
 
@@ -238,7 +250,10 @@ class BytedanceASRExtension(AsyncASRBaseExtension):
 
         async def on_error(error_code: int, error_msg: str):
             """Callback function to handle ASR error codes"""
-            self.ten_env.log_error(f"ASR error: {error_code} - {error_msg}")
+            self.ten_env.log_error(
+                f"vendor_error: code: {error_code}, reason: {error_msg}",
+                category=LOG_CATEGORY_VENDOR,
+            )
             error_message = ModuleError(
                 module=ModuleType.ASR,
                 code=int(ModuleErrorCode.NON_FATAL_ERROR),
@@ -538,8 +553,9 @@ class BytedanceASRExtension(AsyncASRBaseExtension):
             not hasattr(self, "_last_logged_state")
             or self._last_logged_state != current_state
         ):
-            self.ten_env.log_debug(
-                f"Connection state changed: self.connected={self.connected}, websocket_connected={websocket_connected}"
+            self.ten_env.log_info(
+                f"vendor_status_changed: self.connected={self.connected}, websocket_connected={websocket_connected}, session_id: {self.session_id}",
+                category=LOG_CATEGORY_VENDOR,
             )
             self._last_logged_state = current_state
 

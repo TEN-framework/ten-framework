@@ -18,7 +18,7 @@ def patch_google_asr_client():
 
     def _fake_ctor(config, ten_env, on_result_callback, on_error_callback):
         class _FakeClient:
-            async def start(self):
+            async def start(self, session_id: str | None):
                 print("[mock] GoogleASRClient.start called")
 
                 async def _emit_result_later():

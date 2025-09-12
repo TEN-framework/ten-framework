@@ -8,6 +8,11 @@ from google.cloud.speech_v2.types import (
     StreamingRecognitionConfig,
     StreamingRecognizeRequest,
 )
+
+from ten_ai_base.const import (
+    LOG_CATEGORY_VENDOR,
+)
+
 from google.api_core import exceptions as gcp_exceptions
 from google.api_core.client_options import ClientOptions
 import grpc
@@ -58,7 +63,7 @@ class GoogleASRClient:
             return "zh-CN"
         return lowered
 
-    async def start(self) -> None:
+    async def start(self, session_id: str | None) -> None:
         """Initializes the client and starts the recognition stream."""
         self.ten_env.log_info("Starting Google ASR client...")
         try:
@@ -68,7 +73,10 @@ class GoogleASRClient:
             self._recognition_task = asyncio.create_task(
                 self._run_recognition()
             )
-            self.ten_env.log_info("Google ASR client started successfully.")
+            self.ten_env.log_info(
+                f"vendor_status_changed: start, session_id: {session_id}",
+                category=LOG_CATEGORY_VENDOR,
+            )
         except Exception as e:
             self.ten_env.log_error(f"Failed to start Google ASR client: {e}")
             await self.on_error_callback(
@@ -185,7 +193,7 @@ class GoogleASRClient:
             )
             raise
 
-    async def stop(self) -> None:
+    async def stop(self, session_id: str | None) -> None:
         """Stops the recognition stream and cleans up resources."""
         self.ten_env.log_info("Stopping Google ASR client...")
         self._restarting = (
@@ -208,7 +216,10 @@ class GoogleASRClient:
                 )
                 self._recognition_task.cancel()
         self.speech_client = None
-        self.ten_env.log_info("Google ASR client stopped.")
+        self.ten_env.log_info(
+            f"vendor_status_changed: stoped, session_id: {session_id}",
+            category=LOG_CATEGORY_VENDOR,
+        )
 
     async def send_audio(self, chunk: bytes) -> None:
         """Adds an audio chunk to the processing queue."""
@@ -350,16 +361,9 @@ class GoogleASRClient:
         self, response: speech.StreamingRecognizeResponse
     ) -> None:
         """Process a streaming recognition response and trigger callbacks."""
-        if getattr(self.config, "enable_detailed_logging", False):
-            self.ten_env.log_info(
-                f"Processing response with {len(response.results)} results"
-            )
         for result in response.results:
             if not result.alternatives:
-                if getattr(self.config, "enable_detailed_logging", False):
-                    self.ten_env.log_debug(
-                        "Skipping result with no alternatives"
-                    )
+                self.ten_env.log_debug("Skipping result with no alternatives")
                 continue
 
             # We'll use the first alternative as the primary result.
@@ -388,20 +392,22 @@ class GoogleASRClient:
                     self.config.language
                 )
 
+            self.ten_env.log_debug(
+                f"vendor_result: on_recognized: {first_alt.transcript}, language: {normalized_lang}, full_json: {first_alt}",
+                category=LOG_CATEGORY_VENDOR,
+            )
+
             asr_result = ASRResult(
                 final=result.is_final,
                 text=first_alt.transcript,
                 words=words,
                 confidence=first_alt.confidence,
                 language=normalized_lang,
-                start_ms=(int(words[0].start_ms) if words else 0),
+                start_ms=(int(words[0].duration_ms) if words else 0),
                 duration_ms=(
-                    int(
-                        words[-1].start_ms
-                        + words[-1].duration_ms
-                        - words[0].start_ms
-                    )
-                    if words
+                    int(result.result_end_offset.total_seconds() * 1000)
+                    if hasattr(result, "result_end_offset")
+                    and result.result_end_offset
                     else 0
                 ),
             )

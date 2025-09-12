@@ -17,6 +17,12 @@ from ten_ai_base.asr import (
     ASRBufferConfigModeKeep,
     ASRResult,
 )
+
+from ten_ai_base.const import (
+    LOG_CATEGORY_VENDOR,
+    LOG_CATEGORY_KEY_POINT,
+)
+
 from ten_ai_base.dumper import Dumper
 from ten_ai_base.message import (
     ModuleType,
@@ -81,8 +87,9 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         try:
             self.config = BytedanceASRLLMConfig.model_validate_json(config_json)
             self.config.update(self.config.params)
-            self.ten_env.log_info(
-                f"Configuration loaded: {self.config.to_json(sensitive_handling=True)}"
+            ten_env.log_info(
+                f"config: {self.config.to_json(sensitive_handling=True)}",
+                category=LOG_CATEGORY_KEY_POINT,
             )
 
             # Set reconnection parameters from config
@@ -358,6 +365,10 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
             # Create ASR result data for successful response
             # Use utterances[0].definite to determine if this is the final result
             # If no utterances, default to false (non-final)
+            self.ten_env.log_debug(
+                f"vendor_result: on_recognized: {result.text}, language: {result.language}, full_json: {result}",
+                category=LOG_CATEGORY_VENDOR,
+            )
             is_final = False
             if result.utterances and len(result.utterances) > 0:
                 is_final = result.utterances[0].definite
@@ -394,7 +405,10 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
 
     async def _on_asr_error(self, error_code: int, error_message: str) -> None:
         """Handle ASR error from client."""
-        self.ten_env.log_error(f"ASR error {error_code}: {error_message}")
+        self.ten_env.log_error(
+            f"vendor_error: code: {error_code}, reason: {error_message}",
+            category=LOG_CATEGORY_VENDOR,
+        )
 
         # Check if error is reconnectable
         if error_code in RECONNECTABLE_ERROR_CODES and not self.stopped:
@@ -420,9 +434,6 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         # Connection error handling logic
         error_message = str(exception)
 
-        # Log the connection error for debugging
-        self.ten_env.log_error(f"WebSocket connection error: {error_message}")
-
         # Extract HTTP error code directly from exception message if available
         error_code = 0  # Default to 0 for unknown errors
 
@@ -444,24 +455,24 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
             # This is a server error response (like ServerErrorResponse)
             # Keep the original error code for proper retry logic
             error_code = getattr(
-                exception, "code", ModuleErrorCode.FATAL_ERROR.value
+                exception, "code", ModuleErrorCode.NON_FATAL_ERROR.value
             )
             error_message = str(exception)
         elif isinstance(exception, websockets.exceptions.ConnectionClosed):
             # Connection closed - this might be retryable depending on context
-            error_code = ModuleErrorCode.FATAL_ERROR.value
+            error_code = ModuleErrorCode.NON_FATAL_ERROR.value
             error_message = str(exception)
         elif isinstance(exception, websockets.exceptions.InvalidMessage):
-            # Invalid message format - usually not retryable
-            error_code = ModuleErrorCode.FATAL_ERROR.value
+            # Invalid message format - umight be retryable
+            error_code = ModuleErrorCode.NON_FATAL_ERROR.value
             error_message = str(exception)
         elif isinstance(exception, websockets.exceptions.WebSocketException):
             # General WebSocket error - might be retryable
-            error_code = ModuleErrorCode.FATAL_ERROR.value
+            error_code = ModuleErrorCode.NON_FATAL_ERROR.value
             error_message = str(exception)
         else:
-            # Unknown exception - default to fatal
-            error_code = ModuleErrorCode.FATAL_ERROR.value
+            # Unknown exception - default to non fatal
+            error_code = ModuleErrorCode.NON_FATAL_ERROR.value
             error_message = str(exception)
 
         asyncio.create_task(self._on_asr_error(error_code, error_message))
@@ -486,12 +497,17 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
 
     def _on_connected(self) -> None:
         """Handle connection established."""
-        self.ten_env.log_info("ASR client connected")
+        self.ten_env.log_info(
+            f"vendor_status_changed: session_id: {self.session_id}",
+            category=LOG_CATEGORY_VENDOR,
+        )
 
     def _on_disconnected(self) -> None:
         """Handle connection lost."""
-        if self.ten_env:
-            self.ten_env.log(LogLevel.WARN, "ASR client disconnected")
+        self.ten_env.log_info(
+            f"vendor_status_changed: session_id: {self.session_id}",
+            category=LOG_CATEGORY_VENDOR,
+        )
         self.connected = False
 
     async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
