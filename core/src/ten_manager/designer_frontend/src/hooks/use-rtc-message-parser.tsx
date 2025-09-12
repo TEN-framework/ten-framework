@@ -28,8 +28,8 @@ export function useRTCMessageParser(
   // biome-ignore lint/correctness/noUnusedFunctionParameters: <ignore>
   useClientEvent(client, "stream-message", (uid: UID, payload: Uint8Array) => {
     // Handle incoming stream messages
-    const decoded = new TextDecoder("utf-8").decode(payload);
-    handleChunk(decoded);
+    const ascii = String.fromCharCode(...new Uint8Array(payload));
+    handleChunk(ascii);
   });
 
   const reconstructMessage = (chunks: TextDataChunk[]) => {
@@ -37,6 +37,15 @@ export function useRTCMessageParser(
       .sort((a, b) => a.part_index - b.part_index)
       .map((chunk) => chunk.content)
       .join("");
+  };
+
+  const base64ToUtf8 =  (base64: string): string => {
+    const binaryString = atob(base64); // Latin-1 形式的二进制字符串
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    return new TextDecoder('utf-8').decode(bytes);
   };
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: <ignore>
@@ -72,7 +81,7 @@ export function useRTCMessageParser(
         if (messageCache.current[message_id].length === total_parts) {
           const complete = reconstructMessage(messageCache.current[message_id]);
           const { stream_id, is_final, text, text_ts, data_type } = JSON.parse(
-            atob(complete)
+            base64ToUtf8(complete)
           );
           const isAgent = Number(stream_id) !== Number(userId);
 
