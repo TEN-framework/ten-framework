@@ -23,6 +23,12 @@ from ten_ai_base.asr import (
     ASRBufferConfig,
     ASRBufferConfigModeKeep,
 )
+
+from ten_ai_base.const import (
+    LOG_CATEGORY_VENDOR,
+    LOG_CATEGORY_KEY_POINT,
+)
+
 from ten_ai_base.struct import ASRWord
 from ten_ai_base.dumper import Dumper
 
@@ -58,7 +64,8 @@ class AWSASRExtension(AsyncASRBaseExtension):
         try:
             self.config = AWSASRConfig.model_validate_json(config_json)
             ten_env.log_info(
-                f"KEYPOINT vendor_config: {self.config.model_dump_json()}"
+                f"config: {self.config.model_dump_json()}",
+                category=LOG_CATEGORY_KEY_POINT,
             )
 
             if self.config.dump:
@@ -69,7 +76,9 @@ class AWSASRExtension(AsyncASRBaseExtension):
                 self.audio_dumper = Dumper(str(dump_file_path))
                 await self.audio_dumper.start()
         except Exception as e:
-            ten_env.log_error(f"invalid property: {e}")
+            ten_env.log_error(
+                f"invalid property: {e}", category=LOG_CATEGORY_KEY_POINT
+            )
             self.config = None
             await self.send_asr_error(
                 ModuleError(
@@ -92,14 +101,20 @@ class AWSASRExtension(AsyncASRBaseExtension):
             self.client = TranscribeStreamingClient(
                 **self.config.params.to_client_params()
             )
-            self.ten_env.log_info("AWS ASR client started")
+            self.ten_env.log_info(
+                "vendor_status_changed: AWS ASR client started",
+                category=LOG_CATEGORY_VENDOR,
+            )
             self.sent_user_audio_duration_ms_before_last_reset += (
                 self.audio_timeline.get_total_user_audio_duration()
             )
             self.audio_timeline.reset()
             self.last_finalize_timestamp = 0
         except Exception as e:
-            self.ten_env.log_error(f"failed to create AWS ASR client: {e}")
+            self.ten_env.log_error(
+                f"vendor_error: failed to create AWS ASR client {e}",
+                category=LOG_CATEGORY_VENDOR,
+            )
             await self.send_asr_error(
                 ModuleError(
                     module="asr",
@@ -117,7 +132,10 @@ class AWSASRExtension(AsyncASRBaseExtension):
             if self.reconnect_manager:
                 self.reconnect_manager.mark_connection_successful()
         except Exception as e:
-            self.ten_env.log_error(f"failed to start stream transcription: {e}")
+            self.ten_env.log_error(
+                f"vendor_error: failed to start stream transcription {e}",
+                category=LOG_CATEGORY_VENDOR,
+            )
             self.config = None
             await self.send_asr_error(
                 ModuleError(
@@ -142,7 +160,8 @@ class AWSASRExtension(AsyncASRBaseExtension):
                             await self._handle_transcript_event(event)
                         except Exception as e:
                             self.ten_env.log_error(
-                                f"failed to handle transcript event: {e}"
+                                f"vendor_error: failed to handle transcript event {e}",
+                                category=LOG_CATEGORY_VENDOR,
                             )
                             await self.send_asr_error(
                                 ModuleError(
@@ -152,11 +171,12 @@ class AWSASRExtension(AsyncASRBaseExtension):
                                 ),
                             )
             except Exception as e:
+                self.ten_env.log_info(
+                    f"vendor_status_changed: stream closed, exception: {e}",
+                    category=LOG_CATEGORY_VENDOR,
+                )
                 self.connected = False
                 await self._reconnect_aws()
-                self.ten_env.log_error(
-                    f"failed to handle transcript event: {e}"
-                )
 
         asyncio.create_task(_handle_events())
 
@@ -196,12 +216,18 @@ class AWSASRExtension(AsyncASRBaseExtension):
             )
         except IOError as e:
             # when the stream is closed, it will raise IOError, we need to reconnect
-            self.ten_env.log_error(f"failed to send audio: {e}")
+            self.ten_env.log_error(
+                f"vendor_error: failed to send audio {e}",
+                category=LOG_CATEGORY_VENDOR,
+            )
             self.connected = False
             await self._reconnect_aws()
             return False
         except Exception as e:
-            self.ten_env.log_error(f"failed to send audio: {e}")
+            self.ten_env.log_error(
+                f"vendor_error: failed to send audio {e}",
+                category=LOG_CATEGORY_VENDOR,
+            )
             return False
 
         finally:
@@ -219,7 +245,7 @@ class AWSASRExtension(AsyncASRBaseExtension):
 
         self.last_finalize_timestamp = int(time.time() * 1000)
         _ = self.ten_env.log_debug(
-            f"KEYPOINT finalize start at {self.last_finalize_timestamp}]"
+            f"finalize start at {self.last_finalize_timestamp}]"
         )
         if self.config.params.finalize_mode == "disconnect":
             await self._handle_finalize_disconnect()
@@ -236,6 +262,10 @@ class AWSASRExtension(AsyncASRBaseExtension):
 
     async def _handle_transcript_event(self, transcript_event: TranscriptEvent):
         results = transcript_event.transcript.results
+        self.ten_env.log_debug(
+            f"vendor_result: transcript_event: {results}",
+            category=LOG_CATEGORY_VENDOR,
+        )
         assert self.config is not None
         for result in results:
             if (
@@ -250,7 +280,7 @@ class AWSASRExtension(AsyncASRBaseExtension):
                 timestamp = int(time.time() * 1000)
                 latency = timestamp - self.last_finalize_timestamp
                 self.ten_env.log_debug(
-                    f"KEYPOINT finalize end at {timestamp}, counter: {latency}"
+                    f"finalize end at {timestamp}, counter: {latency}"
                 )
                 self.last_finalize_timestamp = 0
                 await self.send_asr_finalize_end()
