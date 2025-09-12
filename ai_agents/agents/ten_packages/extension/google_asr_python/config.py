@@ -90,7 +90,7 @@ class GoogleASRConfig(BaseModel):
 
     def is_black_list_params(self, key: str) -> bool:
         """Check if a parameter key is in the blacklist."""
-        return key in self.black_list_params
+        return key in list(self.black_list_params)
 
     def update(self, params: dict[str, Any]) -> None:
         """Update configuration with provided parameters."""
