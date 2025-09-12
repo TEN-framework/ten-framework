@@ -1,7 +1,7 @@
 {
     "type": "extension",
     "name": "xfyun_asr_bigmodel_python",
-    "version": "0.2.1",
+    "version": "0.2.2",
     "dependencies": [
         {
             "type": "system",
@@ -34,7 +34,10 @@
                         "api_secret": {
                             "type": "string"
                         },
-                        "lang": {
+                        "language_name": {
+                            "type": "string"
+                        },
+                        "language": {
                             "type": "string"
                         },
                         "accent": {

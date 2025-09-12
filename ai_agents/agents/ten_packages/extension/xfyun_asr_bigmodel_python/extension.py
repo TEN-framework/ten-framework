@@ -22,7 +22,10 @@ from ten_runtime import (
     AsyncTenEnv,
     AudioFrame,
 )
-
+from ten_ai_base.const import (
+    LOG_CATEGORY_KEY_POINT,
+    LOG_CATEGORY_VENDOR,
+)
 from ten_ai_base.dumper import Dumper
 from .reconnect_manager import ReconnectManager
 from .audio_buffer_manager import AudioBufferManager
@@ -40,6 +43,10 @@ class XfyunRecognitionCallback(XfyunWSRecognitionCallback):
 
     async def on_open(self) -> None:
         """Callback when connection is established"""
+        self.ten_env.log_info(
+            "vendor_status_changed: on_open",
+            category=LOG_CATEGORY_VENDOR,
+        )
         await self.extension.on_asr_open()
 
     async def on_result(self, message_data):
@@ -48,10 +55,18 @@ class XfyunRecognitionCallback(XfyunWSRecognitionCallback):
 
     async def on_error(self, error_msg, error_code=None) -> None:
         """Error handling callback"""
+        self.ten_env.log_error(
+            f"vendor_error: code: {error_code}, reason: {error_msg}",
+            category=LOG_CATEGORY_VENDOR,
+        )
         await self.extension.on_asr_error(error_msg, error_code)
 
     async def on_close(self) -> None:
         """Callback when connection is closed"""
+        self.ten_env.log_info(
+            "vendor_status_changed: on_close",
+            category=LOG_CATEGORY_VENDOR,
+        )
         await self.extension.on_asr_close()
 
 
@@ -109,7 +124,8 @@ class XfyunBigmodelASRExtension(AsyncASRBaseExtension):
             self.config = XfyunASRConfig.model_validate_json(config_json)
             self.config.update(self.config.params)
             ten_env.log_info(
-                f"Xfyun ASR config: {self.config.to_json(sensitive_handling=True)}"
+                f"Xfyun ASR config: {self.config.to_json(sensitive_handling=True)}",
+                category=LOG_CATEGORY_KEY_POINT,
             )
             if self.config.dump:
                 dump_file_path = os.path.join(
@@ -182,7 +198,8 @@ class XfyunBigmodelASRExtension(AsyncASRBaseExtension):
                 return
 
             # Stop existing connection
-            await self.stop_connection()
+            if self.is_connected():
+                await self.stop_connection()
             # Start audio dumper
             if self.audio_dumper:
                 await self.audio_dumper.start()
@@ -195,6 +212,7 @@ class XfyunBigmodelASRExtension(AsyncASRBaseExtension):
                 "host": self.config.host,
                 "domain": self.config.domain,
                 "language": self.config.language,
+                "language_name": self.config.language_name,
                 "accent": self.config.accent,
                 "dwa": self.config.dwa,
                 "eos": self.config.eos,
@@ -364,6 +382,7 @@ class XfyunBigmodelASRExtension(AsyncASRBaseExtension):
                 self.wpgs_buffer.clear()
 
             if status == 2:
+
                 is_final = True
                 self.ten_env.log_debug(
                     f"Xfyun ASR complete result: {result_to_send}"
@@ -399,14 +418,14 @@ class XfyunBigmodelASRExtension(AsyncASRBaseExtension):
 
             # Process ASR result
             if self.config is not None:
-
-                await self._handle_asr_result(
-                    text=result_to_send,
-                    final=is_final,
-                    start_ms=actual_start_ms,
-                    duration_ms=duration_ms,
-                    language=self.config.normalized_language,
-                )
+                if result_to_send != "":
+                    await self._handle_asr_result(
+                        text=result_to_send,
+                        final=is_final,
+                        start_ms=actual_start_ms,
+                        duration_ms=duration_ms,
+                        language=self.config.normalized_language,
+                    )
 
             else:
                 self.ten_env.log_error(

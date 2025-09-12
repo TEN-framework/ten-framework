@@ -8,6 +8,8 @@ import time
 from typing import Any
 from typing_extensions import override
 from pathlib import Path
+import samplerate
+import numpy as np
 
 from ten_runtime import (
     AudioFrame,
@@ -48,6 +50,7 @@ class OpenAIASRExtension(AsyncASRBaseExtension, AsyncOpenAIAsrListener):
         self.last_finalize_timestamp: int = 0
         self.audio_dumper: Dumper | None = None
         self.incompleted_transcript: str = ""
+        self.resampler = samplerate.Resampler("sinc_best")
 
     @override
     def vendor(self) -> str:
@@ -140,7 +143,8 @@ class OpenAIASRExtension(AsyncASRBaseExtension, AsyncOpenAIAsrListener):
 
     @override
     def input_audio_sample_rate(self) -> int:
-        return 24000
+        assert self.config is not None
+        return self.config.params.sample_rate
 
     @override
     async def send_audio(
@@ -149,15 +153,25 @@ class OpenAIASRExtension(AsyncASRBaseExtension, AsyncOpenAIAsrListener):
         if not self.is_connected():
             return False
         assert self.client is not None
-
         try:
+            # openai only supports 24000hz
             buf = frame.lock_buf()
+            if self.input_audio_sample_rate() != 24000:
+                input_data = np.frombuffer(buf, dtype=np.int16).astype(
+                    np.float32
+                )
+                ratio = 24000 / self.input_audio_sample_rate()
+                resampled_data = self.resampler.process(input_data, ratio)
+                output_buffer = resampled_data.astype(np.int16).tobytes()
+            else:
+                output_buffer = bytes(buf)
+
             if self.audio_dumper:
                 await self.audio_dumper.push_bytes(bytes(buf))
             self.audio_timeline.add_user_audio(
                 int(len(buf) / (self.input_audio_sample_rate() / 1000 * 2))
             )
-            await self.client.send_pcm_data(bytes(buf))
+            await self.client.send_pcm_data(output_buffer)
         except Exception as e:
             self.ten_env.log_error(f"failed to send audio: {e}")
             return False
@@ -184,6 +198,10 @@ class OpenAIASRExtension(AsyncASRBaseExtension, AsyncOpenAIAsrListener):
         self.ten_env.log_info(
             f"KEYPOINT on_asr_start: {response.model_dump_json()}"
         )
+        self.sent_user_audio_duration_ms_before_last_reset += (
+            self.audio_timeline.get_total_user_audio_duration()
+        )
+        self.audio_timeline.reset()
 
     @override
     async def on_asr_server_error(self, response: Session[Error]):

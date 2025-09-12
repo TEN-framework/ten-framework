@@ -22,7 +22,10 @@ from ten_runtime import (
     AsyncTenEnv,
     AudioFrame,
 )
-
+from ten_ai_base.const import (
+    LOG_CATEGORY_VENDOR,
+    LOG_CATEGORY_KEY_POINT,
+)
 from ten_ai_base.dumper import Dumper
 from .reconnect_manager import ReconnectManager
 from .recognition import XfyunWSRecognition, XfyunWSRecognitionCallback
@@ -40,6 +43,10 @@ class XfyunRecognitionCallback(XfyunWSRecognitionCallback):
 
     async def on_open(self):
         """Callback when connection is established"""
+        self.ten_env.log_info(
+            "vendor_status_changed: on_open",
+            category=LOG_CATEGORY_VENDOR,
+        )
         await self.extension.on_asr_open()
 
     async def on_result(self, message_data):
@@ -48,10 +55,18 @@ class XfyunRecognitionCallback(XfyunWSRecognitionCallback):
 
     async def on_error(self, error_msg, error_code=None) -> None:
         """Error handling callback"""
+        self.ten_env.log_error(
+            f"vendor_error: code: {error_code}, reason: {error_msg}",
+            category=LOG_CATEGORY_VENDOR,
+        )
         await self.extension.on_asr_error(error_msg, error_code)
 
     async def on_close(self) -> None:
         """Callback when connection is closed"""
+        self.ten_env.log_info(
+            "vendor_status_changed: on_close",
+            category=LOG_CATEGORY_VENDOR,
+        )
         await self.extension.on_asr_close()
 
 
@@ -109,7 +124,8 @@ class XfyunDialectASRExtension(AsyncASRBaseExtension):
             self.config = XfyunDialectASRConfig.model_validate_json(config_json)
             self.config.update(self.config.params)
             ten_env.log_info(
-                f"Xfyun ASR config: {self.config.to_json(sensitive_handling=True)}"
+                f"Xfyun ASR config: {self.config.to_json(sensitive_handling=True)}",
+                category=LOG_CATEGORY_KEY_POINT,
             )
             if self.config.dump:
                 dump_file_path = os.path.join(
@@ -181,7 +197,9 @@ class XfyunDialectASRExtension(AsyncASRBaseExtension):
                 return
 
             # Stop existing connection
-            await self.stop_connection()
+            if self.is_connected():
+                await self.stop_connection()
+
             # Start audio dumper
             if self.audio_dumper:
                 await self.audio_dumper.start()
