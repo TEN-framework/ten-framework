@@ -4,7 +4,7 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-import { test, expect } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
 const BASE_URL = process.env.CI
   ? "http://127.0.0.1:49483"

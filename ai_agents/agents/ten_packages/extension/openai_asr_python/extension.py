@@ -26,6 +26,12 @@ from ten_ai_base.asr import (
     ASRBufferConfig,
     ASRBufferConfigModeKeep,
 )
+
+from ten_ai_base.const import (
+    LOG_CATEGORY_VENDOR,
+    LOG_CATEGORY_KEY_POINT,
+)
+
 from .openai_asr_client import (
     OpenAIAsrClient,
     AsyncOpenAIAsrListener,
@@ -67,7 +73,8 @@ class OpenAIASRExtension(AsyncASRBaseExtension, AsyncOpenAIAsrListener):
                 self.config.params.to_transcription_param()
             )
             ten_env.log_info(
-                f"KEYPOINT vendor_config: {self.config.model_dump_json()}"
+                f"config: {self.config.model_dump_json()}",
+                category=LOG_CATEGORY_KEY_POINT,
             )
 
             if self.config.dump:
@@ -78,7 +85,9 @@ class OpenAIASRExtension(AsyncASRBaseExtension, AsyncOpenAIAsrListener):
                 self.audio_dumper = Dumper(str(dump_file_path))
                 await self.audio_dumper.start()
         except Exception as e:
-            ten_env.log_error(f"invalid property: {e}")
+            ten_env.log_error(
+                f"invalid property: {e}", category=LOG_CATEGORY_KEY_POINT
+            )
             self.config = None
             await self.send_asr_error(
                 ModuleError(
@@ -105,12 +114,18 @@ class OpenAIASRExtension(AsyncASRBaseExtension, AsyncOpenAIAsrListener):
                 log_level=self.config.params.log_level,
                 log_path=log_path,
             )
-            ten_env.log_info("OpenAI ASR client started")
+            self.ten_env.log_info(
+                "vendor_status_changed: OpenAI ASR client started",
+                category=LOG_CATEGORY_VENDOR,
+            )
             self.audio_timeline.reset()
             self.sent_user_audio_duration_ms_before_last_reset = 0
             self.last_finalize_timestamp = 0
         except Exception as e:
-            ten_env.log_error(f"failed to create OpenAIAsrClient: {e}")
+            ten_env.log_error(
+                f"vendor_error: failed to create OpenAIAsrClient {e}",
+                category=LOG_CATEGORY_VENDOR,
+            )
             self.config = None
             await self.send_asr_error(
                 ModuleError(
@@ -188,7 +203,7 @@ class OpenAIASRExtension(AsyncASRBaseExtension, AsyncOpenAIAsrListener):
 
         self.last_finalize_timestamp = int(time.time() * 1000)
         _ = self.ten_env.log_debug(
-            f"KEYPOINT finalize start at {self.last_finalize_timestamp}]"
+            f"finalize start at {self.last_finalize_timestamp}]"
         )
         await self.client.send_end_of_stream()
 
@@ -196,7 +211,8 @@ class OpenAIASRExtension(AsyncASRBaseExtension, AsyncOpenAIAsrListener):
     @override
     async def on_asr_start(self, response: Session[TranscriptionParam]):
         self.ten_env.log_info(
-            f"KEYPOINT on_asr_start: {response.model_dump_json()}"
+            f"vendor_status_changed: on_asr_start {response.model_dump_json()}",
+            category=LOG_CATEGORY_VENDOR,
         )
         self.sent_user_audio_duration_ms_before_last_reset += (
             self.audio_timeline.get_total_user_audio_duration()
@@ -206,8 +222,10 @@ class OpenAIASRExtension(AsyncASRBaseExtension, AsyncOpenAIAsrListener):
     @override
     async def on_asr_server_error(self, response: Session[Error]):
         self.ten_env.log_error(
-            f"KEYPOINT on_asr_server_error: {response.model_dump_json()}"
+            f"vendor_error: on_asr_server_error {response.model_dump_json()}",
+            category=LOG_CATEGORY_VENDOR,
         )
+
         await self.send_asr_error(
             ModuleError(
                 module="asr",
@@ -225,7 +243,11 @@ class OpenAIASRExtension(AsyncASRBaseExtension, AsyncOpenAIAsrListener):
     async def on_asr_client_error(
         self, response: Any, error: Exception | None = None
     ):
-        self.ten_env.log_error(f"KEYPOINT on_asr_error: {str(error)}")
+        self.ten_env.log_error(
+            f"vendor_error: on_asr_client_error {str(error)}",
+            category=LOG_CATEGORY_VENDOR,
+        )
+
         await self.send_asr_error(
             ModuleError(
                 module="asr",
@@ -253,7 +275,8 @@ class OpenAIASRExtension(AsyncASRBaseExtension, AsyncOpenAIAsrListener):
     @override
     async def on_asr_delta(self, response: TranscriptionResultDelta):
         self.ten_env.log_info(
-            f"KEYPOINT on_asr_delta: {response.model_dump_json()}"
+            f"vendor_result: on_asr_delta: {response.model_dump_json()}",
+            category=LOG_CATEGORY_VENDOR,
         )
         self.incompleted_transcript += response.delta
 
@@ -272,11 +295,15 @@ class OpenAIASRExtension(AsyncASRBaseExtension, AsyncOpenAIAsrListener):
 
     @override
     async def on_asr_completed(self, response: TranscriptionResultCompleted):
+        self.ten_env.log_debug(
+            f"vendor_result: on_asr_completed: {response.model_dump_json()}",
+            category=LOG_CATEGORY_VENDOR,
+        )
         if self.last_finalize_timestamp != 0:
             timestamp = int(time.time() * 1000)
             latency = timestamp - self.last_finalize_timestamp
             self.ten_env.log_debug(
-                f"KEYPOINT finalize end at {timestamp}, counter: {latency}"
+                f"finalize end at {timestamp}, counter: {latency}"
             )
             self.last_finalize_timestamp = 0
             await self.send_asr_finalize_end()
@@ -303,13 +330,18 @@ class OpenAIASRExtension(AsyncASRBaseExtension, AsyncOpenAIAsrListener):
     @override
     async def on_asr_committed(self, response: TranscriptionResultCommitted):
         self.ten_env.log_info(
-            f"KEYPOINT on_asr_committed: {response.model_dump_json()}"
+            f"vendor_result: on_asr_committed: {response.model_dump_json()}",
+            category=LOG_CATEGORY_VENDOR,
         )
+
         self.incompleted_transcript = ""
 
     @override
     async def on_other_event(self, response: dict):
-        self.ten_env.log_info(f"KEYPOINT on_other_event: {response}")
+        self.ten_env.log_info(
+            f"vendor_result: on_other_event: {response}",
+            category=LOG_CATEGORY_VENDOR,
+        )
 
     @override
     def buffer_strategy(self) -> ASRBufferConfig:

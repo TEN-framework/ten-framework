@@ -5,6 +5,7 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 
+import { useReactFlow } from "@xyflow/react";
 import { Maximize2Icon, Minimize2Icon } from "lucide-react";
 import * as React from "react";
 import { useTranslation } from "react-i18next";
@@ -164,6 +165,7 @@ const GraphList = (props: { graphs: GraphInfo[] }) => {
   const [isLoading, setIsLoading] = React.useState(false);
 
   const { mutate: mutateGraphs } = useGraphs();
+  const { fitView } = useReactFlow();
 
   const { t } = useTranslation();
   const {
@@ -315,6 +317,7 @@ const GraphList = (props: { graphs: GraphInfo[] }) => {
                     )}
                     onClick={() => {
                       setSelectedGraphs([graph]);
+                      fitView();
                     }}
                   >
                     {t("graph.select-only")}

@@ -208,7 +208,9 @@ const convertPropertyToZod = (property: TPropertyDefinition): z.ZodType => {
 
         zodType = z.object(objectSchema);
       } else {
-        zodType = z.record(z.string(), z.unknown());
+        // When an object has no properties, render it as an empty object
+        // so the UI shows only the section title without stray inputs.
+        zodType = z.object({});
       }
       break;
 

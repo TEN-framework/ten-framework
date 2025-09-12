@@ -1,17 +1,17 @@
 {
   "name": "designer_frontend",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.11.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
+    "check": "biome check --write",
     "preview": "vite preview",
     "test:prepare": "playwright install",
     "test:e2e": "playwright test",
-    "test:show-report": "playwright show-report",
-    "check": "biome check --write"
+    "test:show-report": "playwright show-report"
   },
   "dependencies": {
     "@autoform/react": "^4.0.0",

@@ -7,6 +7,7 @@
 
 import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { ReactFlowProvider } from "@xyflow/react";
 import * as React from "react";
 import { toast } from "sonner";
 import {
@@ -140,7 +141,7 @@ const Main = () => {
   }
 
   return (
-    <>
+    <ReactFlowProvider>
       <AppBar className="z-9997" />
 
       <ResizablePanelGroup
@@ -193,6 +194,6 @@ const Main = () => {
       <GraphSelector />
 
       <StatusBar className="z-9997" />
-    </>
+    </ReactFlowProvider>
   );
 };

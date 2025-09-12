@@ -23,6 +23,12 @@ from ten_ai_base.asr import (
     ASRBufferConfig,
     ASRBufferConfigModeKeep,
 )
+
+from ten_ai_base.const import (
+    LOG_CATEGORY_VENDOR,
+    LOG_CATEGORY_KEY_POINT,
+)
+
 from .tencent_asr_client import (
     TencentAsrClient,
     AsyncTencentAsrListener,
@@ -57,10 +63,8 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
             self.config = TencentASRConfig.model_validate_json(config_json)
             self.request_params = self.config.params.to_request_params()
             ten_env.log_info(
-                f"KEYPOINT extension_config: {self.config.model_dump_json()}"
-            )
-            ten_env.log_info(
-                f"KEYPOINT vendor_config: {self.request_params.model_dump_json()}"
+                f"config: {self.config.model_dump_json()}",
+                category=LOG_CATEGORY_KEY_POINT,
             )
 
             if self.config.dump:
@@ -71,7 +75,9 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
                 self.audio_dumper = Dumper(str(dump_file_path))
                 await self.audio_dumper.start()
         except Exception as e:
-            ten_env.log_error(f"invalid property: {e}")
+            ten_env.log_error(
+                f"invalid property: {e}", category=LOG_CATEGORY_KEY_POINT
+            )
             self.config = None
             await self.send_asr_error(
                 ModuleError(
@@ -96,12 +102,18 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
                 log_level=self.config.params.log_level,
                 log_path=log_path,
             )
-            ten_env.log_info("Tencent ASR client started")
+            self.ten_env.log_info(
+                "vendor_status_changed: Tencent ASR client started",
+                category=LOG_CATEGORY_VENDOR,
+            )
             self.audio_timeline.reset()
             self.sent_user_audio_duration_ms_before_last_reset = 0
             self.last_finalize_timestamp = 0
         except Exception as e:
-            ten_env.log_error(f"failed to create TencentAsrClient: {e}")
+            self.ten_env.log_error(
+                f"vendor_error: failed to create TencentAsrClient {e}",
+                category=LOG_CATEGORY_VENDOR,
+            )
             self.config = None
             await self.send_asr_error(
                 ModuleError(
@@ -207,7 +219,8 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
     @override
     async def on_asr_start(self, response: ResponseData):
         self.ten_env.log_info(
-            f"KEYPOINT on_asr_start: {response.model_dump_json()}"
+            f"vendor_status_changed: on_asr_start {response.model_dump_json()}",
+            category=LOG_CATEGORY_VENDOR,
         )
         self.sent_user_audio_duration_ms_before_last_reset += (
             self.audio_timeline.get_total_user_audio_duration()
@@ -220,7 +233,8 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
         response.result is tencent asr server error.
         """
         self.ten_env.log_error(
-            f"KEYPOINT on_asr_fail: {response.model_dump_json()}"
+            f"vendor_error: on_asr_fail {response.model_dump_json()}",
+            category=LOG_CATEGORY_VENDOR,
         )
         await self.send_asr_error(
             ModuleError(
@@ -246,7 +260,8 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
         response.result is the Exception instance.
         """
         self.ten_env.log_error(
-            f"KEYPOINT on_asr_error: {response.model_dump_json()}"
+            f"vendor_error: on_asr_error {response.model_dump_json()}",
+            category=LOG_CATEGORY_VENDOR,
         )
         await self.send_asr_error(
             ModuleError(
@@ -290,7 +305,7 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
             timestamp = int(time.time() * 1000)
             latency = timestamp - self.last_finalize_timestamp
             self.ten_env.log_debug(
-                f"KEYPOINT finalize end at {timestamp}, counter: {latency}"
+                f"finalize end at {timestamp}, counter: {latency}"
             )
             self.last_finalize_timestamp = 0
             await self.send_asr_finalize_end()
@@ -314,9 +329,7 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
             language=language,
             words=[],
         )
-        self.ten_env.log_debug(
-            f"KEYPOINT asr_result: {asr_result.model_dump_json()}"
-        )
+        self.ten_env.log_debug(f"asr_result: {asr_result.model_dump_json()}")
 
         await self.send_asr_result(asr_result)
 
@@ -328,11 +341,12 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
         response.result is the RecoginizeResult instance.
         response.result.slice_type is SliceType.START.
         """
-        self.ten_env.log_info(
-            f"KEYPOINT on_asr_sentence_start: {response.model_dump_json()}"
-        )
         if response.result is None:
             return
+        self.ten_env.log_debug(
+            f"vendor_result: on_asr_sentence_start {response.model_dump_json()}",
+            category=LOG_CATEGORY_VENDOR,
+        )
         await self._handle_asr_result(response.result, response.message_id)
 
     @override
@@ -343,11 +357,12 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
         response.result is the RecoginizeResult instance.
         response.result.slice_type is SliceType.PROCESSING.
         """
-        self.ten_env.log_info(
-            f"KEYPOINT on_asr_sentence_change: {response.model_dump_json()}"
-        )
         if response.result is None:
             return
+        self.ten_env.log_debug(
+            f"vendor_result: on_asr_sentence_change {response.model_dump_json()}",
+            category=LOG_CATEGORY_VENDOR,
+        )
         await self._handle_asr_result(response.result, response.message_id)
 
     @override
@@ -358,11 +373,12 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
         response.result is the RecoginizeResult instance.
         response.result.slice_type is SliceType.END.
         """
-        self.ten_env.log_info(
-            f"KEYPOINT on_asr_sentence_end: {response.model_dump_json()}"
-        )
         if response.result is None:
             return
+        self.ten_env.log_debug(
+            f"vendor_result: on_asr_sentence_end {response.model_dump_json()}",
+            category=LOG_CATEGORY_VENDOR,
+        )
         await self._handle_asr_result(response.result, response.message_id)
 
     @override
@@ -372,6 +388,10 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
         """
         if response.result is None:
             return
+        self.ten_env.log_debug(
+            f"vendor_result: on_asr_complete {response.model_dump_json()}",
+            category=LOG_CATEGORY_VENDOR,
+        )
         await self._handle_asr_result(response.result, response.message_id)
 
     @override
