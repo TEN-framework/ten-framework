@@ -49,7 +49,7 @@ tasks:
   run-server:
     desc: run backend http server
     cmds:
-      - source .env && /app/server/bin/api
+      - source /app/agents/scripts/load_env.sh .env && /app/server/bin/api
 
   run-gd-server:
     desc: run tman dev http server for TMAN Designer

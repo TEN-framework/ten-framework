@@ -4,8 +4,6 @@ set -e
 
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
-source $(pwd)/scripts/load_env.sh $(pwd)/../.env
-
 #export TEN_ENABLE_PYTHON_DEBUG=true
 #export TEN_PYTHON_DEBUG_PORT=5678
 export PYTHONPATH=$(pwd)/ten_packages/system/ten_ai_base/interface:$PYTHONPATH
