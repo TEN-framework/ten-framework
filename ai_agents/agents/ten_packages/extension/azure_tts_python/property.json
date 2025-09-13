@@ -6,7 +6,7 @@
         "output_format": "Raw16Khz16BitMonoPcm",
         "propertys": [
             ["Speech_LogFilename", "azure_tts_log.txt"],
-            ["SpeechServiceConnection_SynthVoice", "en-US-AriaNeural"]
+            ["SpeechServiceConnection_SynthVoice", "en-US-AndrewMultilingualNeural"]
         ]
     }
 }
