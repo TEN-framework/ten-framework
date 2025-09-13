@@ -1,0 +1,83 @@
+{
+    "type": "extension",
+    "name": "twilio_dial_python",
+    "version": "0.1.0",
+    "dependencies": [
+        {
+            "type": "system",
+            "name": "ten_runtime_python",
+            "version": "0.11"
+        },
+        {
+            "type": "system",
+            "name": "ten_ai_base",
+            "version": "0.7"
+        }
+    ],
+    "package": {
+        "include": [
+            "manifest.json",
+            "property.json",
+            "BUILD.gn",
+            "**.tent",
+            "**.py",
+            "README.md",
+            "requirements.txt"
+        ]
+    },
+    "api": {
+        "property": {
+            "properties": {
+                "account_sid": {
+                    "type": "string"
+                },
+                "auth_token": {
+                    "type": "string"
+                },
+                "from_number": {
+                    "type": "string"
+                }
+            }
+        },
+        "cmd_in": [
+            {
+                "name": "tool_call",
+                "property": {
+                    "properties": {
+                        "name": {
+                            "type": "string"
+                        },
+                        "args": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "name"
+                    ]
+                }
+            }
+        ],
+        "cmd_out": [
+            {
+                "name": "make_call",
+                "property": {
+                    "properties": {
+                        "phone_number": {
+                            "type": "string"
+                        },
+                        "message": {
+                            "type": "string"
+                        },
+                        "call_sid": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "phone_number",
+                        "message"
+                    ]
+                }
+            }
+        ]
+    }
+}
