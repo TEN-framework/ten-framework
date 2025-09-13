@@ -299,8 +299,9 @@ class RequestParams(BaseModel):
         endpoint = f"{endpoint}/{self.appid}"
         query_dict = self._query_params_without_signature()
         query_dict = dict(sorted(query_dict.items(), key=lambda d: d[0]))
-        query = urllib.parse.urlencode(query_dict)
-        signstr = f"{endpoint}?{query}"
+        # Query parameters for signing must not be URL-encoded.
+        querystr = "&".join([f"{k}={v}" for k, v in query_dict.items()])
+        signstr = f"{endpoint}?{querystr}"
         secretkey = str(self.secretkey).encode("utf-8")
         hmacstr = hmac.new(
             secretkey, signstr.encode("utf-8"), hashlib.sha1
