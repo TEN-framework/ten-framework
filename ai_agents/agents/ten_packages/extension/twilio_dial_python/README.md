@@ -1,14 +1,15 @@
 # Twilio Dial Extension
 
-This extension provides dial call functionality using Twilio's Voice API. It currently supports outbound calls with custom messages through the TEN framework, with inbound call support planned for future releases.
+This extension provides real-time voice call functionality using Twilio's Voice API with WebSocket streaming. It establishes WebSocket connections for real-time audio streaming and integrates with the TEN framework for ASR/TTS processing.
 
 ## Features
 
+- Real-time bidirectional audio streaming via WebSocket
 - Make outbound calls to any phone number
-- Send custom messages during calls
-- Support for cmd_out commands to notify the system about call events
-- Integration with TEN framework's LLM tool system
-- Future: Inbound call handling and webhook support
+- Support for cmd_in commands to receive call requests
+- Return call results via CmdResult
+- Integration with TEN framework for ASR/TTS processing
+- WebSocket server for Twilio audio streaming
 
 ## Configuration
 
@@ -17,31 +18,38 @@ The extension requires the following environment variables:
 - `TWILIO_ACCOUNT_SID`: Your Twilio Account SID
 - `TWILIO_AUTH_TOKEN`: Your Twilio Auth Token
 - `TWILIO_FROM_NUMBER`: Your Twilio phone number (must be verified in Twilio console)
+- `TWILIO_WEBHOOK_URL`: Your public webhook URL for Twilio to connect to
 
 ## Usage
 
-The extension provides a tool called `make_outbound_call` that can be used by LLM agents:
+The extension receives `make_call` commands via cmd_in and returns results via CmdResult:
 
+#### cmd_in: make_call
+Send a command to initiate an outbound call:
 ```json
 {
-  "name": "make_outbound_call",
-  "description": "Make an outbound call to a phone number with a message",
-  "parameters": {
-    "phone_number": "+1234567890",
-    "message": "Hello, this is a test call from the AI assistant."
-  }
+  "name": "make_call",
+  "phone_number": "+1234567890",
+  "message": "Hello, this is a test call from the AI assistant."
 }
 ```
 
 ## Commands
 
-### cmd_out: make_call
+### cmd_in: make_call
 
-When a call is initiated, the extension sends a `make_call` command with the following properties:
+The extension processes `make_call` commands and returns results via CmdResult:
 
-- `phone_number`: The destination phone number
-- `message`: The message being spoken
-- `call_sid`: Twilio's unique call identifier
+**Success Response:**
+- Status: OK
+- Properties:
+  - `call_sid`: Twilio's unique call identifier
+  - `phone_number`: The destination phone number
+  - `status`: Call status from Twilio
+
+**Error Response:**
+- Status: ERROR
+- Message: Error description
 
 ## Requirements
 

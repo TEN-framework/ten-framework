@@ -5,46 +5,39 @@
 #
 import json
 import asyncio
-from typing import Any, Dict
+import websockets
+import base64
+from typing import Any, Dict, Optional
 
-from ten_runtime import Cmd, CmdResult, StatusCode
+from ten_runtime import Cmd, CmdResult, StatusCode, AsyncExtension, Data, AudioFrame
 from ten_runtime.async_ten_env import AsyncTenEnv
 from pydantic import BaseModel, Field
-from ten_ai_base.llm_tool import AsyncLLMToolBaseExtension
-from ten_ai_base.types import (
-    LLMToolMetadata,
-    LLMToolMetadataParameter,
-    LLMToolResult,
-    LLMToolResultLLMResult,
-)
 
 # Twilio SDK
 from twilio.rest import Client
-from twilio.twiml import VoiceResponse
+from twilio.twiml.voice_response import VoiceResponse
 
 # Command constants
-CMD_OUT_MAKE_CALL = "make_call"
 CMD_PROPERTY_PHONE_NUMBER = "phone_number"
 CMD_PROPERTY_MESSAGE = "message"
-CMD_PROPERTY_WEBHOOK_URL = "webhook_url"
-
-# Tool constants
-TOOL_NAME = "make_outbound_call"
-TOOL_DESCRIPTION = "Make an outbound call to a phone number with a message"
 
 
 class TwilioConfig(BaseModel):
     account_sid: str = Field(default="", description="Twilio Account SID")
     auth_token: str = Field(default="", description="Twilio Auth Token")
     from_number: str = Field(default="", description="Twilio phone number to call from")
+    webhook_url: str = Field(default="", description="Webhook URL for Twilio to connect to")
 
 
-class TwilioDialExtension(AsyncLLMToolBaseExtension):
+class TwilioDialExtension(AsyncExtension):
     def __init__(self, name: str) -> None:
         super().__init__(name)
         self.config: TwilioConfig | None = None
         self.twilio_client: Client | None = None
         self.ten_env: AsyncTenEnv | None = None
+        self.websocket: Optional[websockets.WebSocketServerProtocol] = None
+        self.current_call_sid: Optional[str] = None
+        self.audio_queue: asyncio.Queue[bytes] = asyncio.Queue()
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_debug("TwilioDialExtension on_init")
@@ -75,7 +68,6 @@ class TwilioDialExtension(AsyncLLMToolBaseExtension):
         try:
             self.twilio_client = Client(self.config.account_sid, self.config.auth_token)
             ten_env.log_info("Twilio client initialized successfully")
-            await super().on_start(ten_env)
         except Exception as e:
             ten_env.log_error(f"Failed to initialize Twilio client: {e}")
             self.twilio_client = None
@@ -88,63 +80,58 @@ class TwilioDialExtension(AsyncLLMToolBaseExtension):
         ten_env.log_debug("TwilioDialExtension on_deinit")
         await super().on_deinit(ten_env)
 
-    def get_tool_metadata(self, ten_env: AsyncTenEnv) -> list[LLMToolMetadata]:
-        return [
-            LLMToolMetadata(
-                name=TOOL_NAME,
-                description=TOOL_DESCRIPTION,
-                parameters=[
-                    LLMToolMetadataParameter(
-                        name="phone_number",
-                        type="string",
-                        description="The phone number to call (e.g., +1234567890)",
-                        required=True,
-                    ),
-                    LLMToolMetadataParameter(
-                        name="message",
-                        type="string",
-                        description="The message to speak during the call",
-                        required=True,
-                    ),
-                ],
-            ),
-        ]
+    async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
+        """Handle incoming commands"""
+        cmd_name = cmd.get_name()
+        ten_env.log_info(f"TwilioDialExtension received cmd: {cmd_name}")
 
-    async def run_tool(
-        self, ten_env: AsyncTenEnv, name: str, args: dict
-    ) -> LLMToolResult | None:
-        ten_env.log_info(f"TwilioDialExtension run_tool: {name}, args: {args}")
-
-        if name == TOOL_NAME:
-            phone_number = args.get("phone_number")
-            message = args.get("message")
+        if cmd_name == "make_call":
+            # Handle make_call command
+            phone_number, _ = cmd.get_property_string(CMD_PROPERTY_PHONE_NUMBER)
+            message, _ = cmd.get_property_string(CMD_PROPERTY_MESSAGE)
 
             if not phone_number or not message:
-                return LLMToolResultLLMResult(
-                    type="llmresult",
-                    content=json.dumps({"error": "phone_number and message are required"}),
-                )
+                ten_env.log_error("make_call cmd missing required properties: phone_number and message")
+                cmd_result = CmdResult.create(StatusCode.ERROR, cmd, "Missing required properties: phone_number and message")
+                await ten_env.return_result(cmd_result)
+                return
 
             result = await self._make_outbound_call(phone_number, message, ten_env)
-            return LLMToolResultLLMResult(
-                type="llmresult",
-                content=json.dumps(result),
-            )
+            ten_env.log_info(f"Call result: {result}")
 
-        return None
+            # Return success result with call information
+            if result.get("success"):
+                cmd_result = CmdResult.create(StatusCode.OK, cmd)
+                cmd_result.set_property_string("call_sid", result.get("call_sid", ""))
+                cmd_result.set_property_string("phone_number", result.get("phone_number", ""))
+                cmd_result.set_property_string("status", result.get("status", ""))
+                await ten_env.return_result(cmd_result)
+            else:
+                error_msg = result.get("error", "Unknown error occurred")
+                cmd_result = CmdResult.create(StatusCode.ERROR, cmd, error_msg)
+                await ten_env.return_result(cmd_result)
+        else:
+            ten_env.log_warn(f"Unknown command: {cmd_name}")
+            cmd_result = CmdResult.create(StatusCode.ERROR, cmd, f"Unknown command: {cmd_name}")
+            await ten_env.return_result(cmd_result)
 
     async def _make_outbound_call(
         self, phone_number: str, message: str, ten_env: AsyncTenEnv
     ) -> Dict[str, Any]:
-        """Make an outbound call using Twilio"""
+        """Make an outbound call using Twilio with WebSocket streaming"""
         try:
             if not self.twilio_client:
                 return {"error": "Twilio client not initialized"}
 
-            # Create TwiML response for the call
+            if not self.config.webhook_url:
+                return {"error": "Webhook URL not configured"}
+
+            # Create TwiML response for the call with WebSocket streaming
             twiml_response = VoiceResponse()
             twiml_response.say(message, voice='alice')
-            twiml_response.hangup()
+            # Add WebSocket streaming
+            twiml_response.start().stream(url=f"wss://{self.config.webhook_url}/ws")
+            twiml_response.pause(length=30)  # Keep call open for 30 seconds
 
             # Make the call
             call = self.twilio_client.calls.create(
@@ -153,10 +140,11 @@ class TwilioDialExtension(AsyncLLMToolBaseExtension):
                 twiml=str(twiml_response)
             )
 
+            self.current_call_sid = call.sid
             ten_env.log_info(f"Call initiated: SID={call.sid}, To={phone_number}, From={self.config.from_number}")
 
-            # Send cmd_out to notify the system about the call
-            await self._send_make_call_cmd(ten_env, phone_number, message, call.sid)
+            # Start WebSocket server for audio streaming
+            await self._start_websocket_server(ten_env)
 
             return {
                 "success": True,
@@ -174,18 +162,94 @@ class TwilioDialExtension(AsyncLLMToolBaseExtension):
                 "message": message
             }
 
-    async def _send_make_call_cmd(
-        self, ten_env: AsyncTenEnv, phone_number: str, message: str, call_sid: str
-    ) -> None:
-        """Send cmd_out to notify the system about the outbound call"""
+    async def _start_websocket_server(self, ten_env: AsyncTenEnv):
+        """Start WebSocket server for Twilio audio streaming"""
         try:
-            cmd = Cmd.create(CMD_OUT_MAKE_CALL)
-            cmd.set_property_string(CMD_PROPERTY_PHONE_NUMBER, phone_number)
-            cmd.set_property_string(CMD_PROPERTY_MESSAGE, message)
-            cmd.set_property_string("call_sid", call_sid)
+            # Start WebSocket server in background
+            asyncio.create_task(self._websocket_handler(ten_env))
+            ten_env.log_info("WebSocket server started for audio streaming")
+        except Exception as e:
+            ten_env.log_error(f"Failed to start WebSocket server: {e}")
 
-            ten_env.log_info(f"Sending cmd_out: {CMD_OUT_MAKE_CALL}")
-            await ten_env.send_cmd(cmd)
+    async def _websocket_handler(self, ten_env: AsyncTenEnv):
+        """Handle WebSocket connections from Twilio"""
+        try:
+            # This would typically be handled by the FastAPI server
+            # For now, we'll simulate the WebSocket connection
+            ten_env.log_info("WebSocket handler started")
+
+            # Start audio processing task
+            asyncio.create_task(self._process_audio_stream(ten_env))
 
         except Exception as e:
-            ten_env.log_error(f"Failed to send make_call cmd: {e}")
+            ten_env.log_error(f"WebSocket handler error: {e}")
+
+    async def _process_audio_stream(self, ten_env: AsyncTenEnv):
+        """Process incoming audio stream from Twilio"""
+        try:
+            while self.current_call_sid:
+                # Simulate receiving audio data from Twilio
+                # In real implementation, this would come from WebSocket
+                await asyncio.sleep(0.1)  # Simulate audio chunks
+
+                # Process audio data and send to TEN framework
+                # This would be real audio data from Twilio
+                audio_data = b"fake_audio_data"  # Replace with real audio
+
+                # Create audio frame and send to TEN framework
+                audio_frame = AudioFrame.create("audio_in")
+                audio_frame.set_buf(audio_data)
+                audio_frame.set_sample_rate(8000)  # Twilio uses 8kHz
+                audio_frame.set_channels(1)  # Mono
+                audio_frame.set_sample_width(2)  # 16-bit
+
+                await ten_env.send_audio_frame(audio_frame)
+
+        except Exception as e:
+            ten_env.log_error(f"Audio stream processing error: {e}")
+
+    async def on_audio_frame(self, ten_env: AsyncTenEnv, audio_frame: AudioFrame) -> None:
+        """Handle outgoing audio frames from TEN framework"""
+        try:
+            if self.websocket and self.current_call_sid:
+                # Get audio data from frame
+                audio_data = audio_frame.get_buf()
+
+                # Convert to base64 for Twilio WebSocket
+                audio_base64 = base64.b64encode(audio_data).decode('utf-8')
+
+                # Send to Twilio via WebSocket
+                message = {
+                    "event": "media",
+                    "streamSid": self.current_call_sid,
+                    "media": {
+                        "payload": audio_base64
+                    }
+                }
+
+                await self.websocket.send(json.dumps(message))
+                ten_env.log_debug(f"Sent audio frame to Twilio: {len(audio_data)} bytes")
+
+        except Exception as e:
+            ten_env.log_error(f"Failed to send audio frame to Twilio: {e}")
+
+    async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
+        """Handle data messages"""
+        data_name = data.get_name()
+        ten_env.log_debug(f"Received data: {data_name}")
+
+        # Handle different types of data messages
+        if data_name == "text_data":
+            # Handle text data from ASR
+            text, _ = data.get_property_string("text")
+            is_final, _ = data.get_property_bool("is_final")
+            ten_env.log_info(f"Received text: {text} (final: {is_final})")
+
+            # Process text and generate response
+            # This would typically involve LLM processing
+            response_text = f"AI Response to: {text}"
+
+            # Send response back as audio (would go through TTS)
+            response_data = Data.create("tts_request")
+            response_data.set_property_string("text", response_text)
+            await ten_env.send_data(response_data)

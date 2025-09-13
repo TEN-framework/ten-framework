@@ -7,11 +7,6 @@
             "type": "system",
             "name": "ten_runtime_python",
             "version": "0.11"
-        },
-        {
-            "type": "system",
-            "name": "ten_ai_base",
-            "version": "0.7"
         }
     ],
     "package": {
@@ -36,28 +31,13 @@
                 },
                 "from_number": {
                     "type": "string"
+                },
+                "webhook_url": {
+                    "type": "string"
                 }
             }
         },
         "cmd_in": [
-            {
-                "name": "tool_call",
-                "property": {
-                    "properties": {
-                        "name": {
-                            "type": "string"
-                        },
-                        "args": {
-                            "type": "string"
-                        }
-                    },
-                    "required": [
-                        "name"
-                    ]
-                }
-            }
-        ],
-        "cmd_out": [
             {
                 "name": "make_call",
                 "property": {
@@ -66,9 +46,6 @@
                             "type": "string"
                         },
                         "message": {
-                            "type": "string"
-                        },
-                        "call_sid": {
                             "type": "string"
                         }
                     },
