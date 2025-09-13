@@ -1,0 +1,32 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Node/Next
+node_modules/
+.next/
+.next/cache/
+out/
+dist/
+build/
+.turbo/
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor
+.idea/
+.vscode/
+
+# Misc
+.vercel/
+coverage/
+
