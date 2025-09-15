@@ -283,7 +283,9 @@ class RequestParams(BaseModel):
                 if len(word[0]) == 0 or len(word[0]) > 30:
                     raise ValueError(f"invalid hotword: {word}")
                 if not ((word[1] >= 1 and word[1] <= 11) or word[1] == 100):
-                    raise ValueError(f"invalid hotword weight: {word[0]}|{word[1]}")
+                    raise ValueError(
+                        f"invalid hotword weight: {word[0]}|{word[1]}"
+                    )
             return value
         except Exception:
             raise ValueError(f"invalid hotword list: {value}")
