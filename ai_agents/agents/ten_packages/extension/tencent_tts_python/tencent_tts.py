@@ -156,29 +156,27 @@ class TencentTTSClient:
 
     def stop(self) -> None:
         """Stop the TTS client and clean up resources."""
-        if self.synthesizer:
-            if self.synthesizer.is_alive():
-                self.synthesizer.complete()
-            else:
-                self.ten_env.log_info(
-                    "Synthesizer is not alive, skipping complete"
-                )
-            self.synthesizer = None
-        self.ten_env.log_info("Tencent TTS client stopped")
+        self.close()
 
     def cancel(self) -> None:
         """
         Cancel current TTS operation.
         """
+        self.close()
+
+    def close(self) -> None:
+        """
+        Close the TTS client and clean up resources.
+        """
         if self.synthesizer:
             try:
                 if self.synthesizer.is_alive():
-                    self.synthesizer.complete()
+                    self.synthesizer.close()
                 else:
                     self.ten_env.log_info(
-                        "Synthesizer is not alive, skipping complete"
+                        "Synthesizer is not alive, skipping close"
                     )
-                self.ten_env.log_info("TTS operation cancelled")
+                self.ten_env.log_info("TTS operation closed")
             except Exception as e:
                 self.ten_env.log_error(f"Error cancelling TTS: {e}")
 

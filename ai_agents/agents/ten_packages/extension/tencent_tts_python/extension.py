@@ -451,4 +451,4 @@ class TencentTTSExtension(AsyncTTS2BaseExtension):
             self.ten_env.log_info(
                 f"Flushing TTS for request ID: {self.current_request_id}"
             )
-            self.client.cancel()
+            self.client.close()
