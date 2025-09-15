@@ -288,6 +288,7 @@ class TwilioServer:
             from ten_runtime import AudioFrame
 
             audio_frame = AudioFrame.create("pcm_frame")
+            audio_frame.alloc_buf(len(audio_data))
             buf = audio_frame.lock_buf()
             buf[:] = audio_data
             audio_frame.unlock_buf(buf)
@@ -374,38 +375,47 @@ class TwilioServer:
                 )
 
             try:
-                # Receive start event
-                start_data = await websocket.recv()
-                start_data = json.loads(start_data)
+                # Wait for start event (may receive connected event first)
+                while True:
+                    message = await websocket.recv()
+                    message = json.loads(message)
 
-                # Check if this is a start event
-                if "start" in start_data:
-                    stream_sid = start_data["start"]["streamSid"]
-                    call_sid = start_data["start"]["callSid"]
+                    if message.get("event") == "connected":
+                        if self.ten_env:
+                            self.ten_env.log_info(
+                                f"WebSocket connected: {message}"
+                            )
+                        continue  # Wait for start event
 
-                    if self.ten_env:
-                        self.ten_env.log_info(
-                            f"Received start event for streamSid: {stream_sid}, callSid: {call_sid}"
-                        )
+                    elif "start" in message:
+                        stream_sid = message["start"]["streamSid"]
+                        call_sid = message["start"]["callSid"]
 
-                    # Store WebSocket connection in active session
-                    if call_sid in self.active_call_sessions:
-                        self.active_call_sessions[call_sid][
-                            "websocket"
-                        ] = websocket
+                        if self.ten_env:
+                            self.ten_env.log_info(
+                                f"Received start event for streamSid: {stream_sid}, callSid: {call_sid}"
+                            )
+
+                        # Store WebSocket connection in active session
+                        if call_sid in self.active_call_sessions:
+                            self.active_call_sessions[call_sid][
+                                "websocket"
+                            ] = websocket
+                        else:
+                            if self.ten_env:
+                                self.ten_env.log_warn(
+                                    f"Call SID {call_sid} not found in active sessions."
+                                )
+                        break  # Exit the start event waiting loop
+
                     else:
                         if self.ten_env:
                             self.ten_env.log_warn(
-                                f"Call SID {call_sid} not found in active sessions."
+                                f"Received unexpected event while waiting for start: {message}"
                             )
-                else:
-                    if self.ten_env:
-                        self.ten_env.log_warn(
-                            f"Received non-start event: {start_data}"
-                        )
-                    return
+                        return
 
-                # Process incoming messages
+                # Process incoming messages after start event
                 while True:
                     message = await websocket.recv()
                     message = json.loads(message)

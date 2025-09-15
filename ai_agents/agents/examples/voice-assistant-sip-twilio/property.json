@@ -12,6 +12,7 @@
               "addon": "deepgram_asr_python",
               "extension_group": "stt",
               "property": {
+                "sample_rate": 8000,
                 "params": {
                   "api_key": "${env:DEEPGRAM_API_KEY}",
                   "language": "en-US"
