@@ -33,6 +33,7 @@ from cartesia_tts2.cartesia_tts import (
     EVENT_TTS_RESPONSE,
     EVENT_TTS_END,
     EVENT_TTS_FLUSH,
+    EVENT_TTS_TTFB_METRIC,
 )
 
 
@@ -129,6 +130,7 @@ def test_dump_functionality(MockCartesiaTTSClient):
 
     # This async generator simulates the TTS client's get() method
     async def mock_get_audio_stream(text: str):
+        yield (255, EVENT_TTS_TTFB_METRIC)
         yield (fake_audio_chunk_1, EVENT_TTS_RESPONSE)
         await asyncio.sleep(0.01)
         yield (fake_audio_chunk_2, EVENT_TTS_RESPONSE)
@@ -299,6 +301,7 @@ def test_flush_logic(MockCartesiaTTSClient):
     mock_instance.cancel = AsyncMock()
 
     async def mock_get_long_audio_stream(text: str):
+        ttfb_sent = False
         for _ in range(20):
             # In a real scenario, the cancel() call would set a flag.
             # We simulate this by checking the mock's 'called' status.
@@ -306,6 +309,9 @@ def test_flush_logic(MockCartesiaTTSClient):
                 print("Mock detected cancel call, sending EVENT_TTS_FLUSH.")
                 yield (None, EVENT_TTS_FLUSH)
                 return  # Stop the generator immediately after flush
+            if not ttfb_sent:
+                yield (255, EVENT_TTS_TTFB_METRIC)
+                ttfb_sent = True
             yield (b"\x11\x22\x33" * 100, EVENT_TTS_RESPONSE)
             await asyncio.sleep(0.1)
 

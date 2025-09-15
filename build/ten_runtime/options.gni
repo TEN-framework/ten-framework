@@ -39,9 +39,6 @@ declare_args() {
   # The go lint only depends on GO SDK which is platform independent, so only
   # one CI node is enough to run the lint.
   ten_enable_go_lint = false
-
-  # Whether to call apis in the ten_rust library from ten_runtime.
-  ten_enable_ten_rust_apis = true
 }
 
 declare_args() {
@@ -63,7 +60,7 @@ if (ten_enable_memory_check) {
   ten_runtime_common_defines += [ "TEN_ENABLE_MEMORY_CHECK" ]
 }
 
-if (ten_enable_ten_rust && ten_enable_ten_rust_apis) {
+if (ten_enable_ten_rust) {
   ten_runtime_common_defines += [ "TEN_ENABLE_TEN_RUST_APIS" ]
 }
 

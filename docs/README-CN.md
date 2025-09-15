@@ -81,7 +81,7 @@ TEN 包括 [TEN 架构](https://github.com/ten-framework/ten-framework), [TEN �
 | ---------------- |--------------------------------------|
 | [![Follow on X](https://img.shields.io/twitter/follow/TenFramework?logo=X&color=%20%23f5f5f5)](https://twitter.com/intent/follow?screen_name=TenFramework) | 关注X社区，可以获得关于TEN Framework的更新和公告      |
 | [![Follow on LinkedIn](https://custom-icon-badges.demolab.com/badge/LinkedIn-TEN_Framework-0A66C2?logo=linkedin-white&logoColor=fff)](https://www.linkedin.com/company/ten-framework) | 关注LinkedIn，可以获得关于TEN Framework的更新和公告 |
-| [![Discord TEN Community](https://dcbadge.vercel.app/api/server/VnPftUzAMJ?&style=flat&theme=light&color=lightgray)](https://discord.gg/VnPftUzAMJ) | 加入我们的 Discord 社区与开发者联系               |
+| [![Discord TEN Community](https://img.shields.io/badge/Discord-Join%20TEN%20Community-5865F2?style=flat&logo=discord&logoColor=white)](https://discord.gg/VnPftUzAMJ) | 加入我们的 Discord 社区与开发者联系               |
 | [![Hugging Face Space](https://img.shields.io/badge/Hugging%20Face-TEN%20Framework-yellow?style=flat&logo=huggingface)](https://huggingface.co/TEN-framework) | 加入我们的 Hugging Face 社区，探索我们的空间和模型     |
 | [![WeChat](https://img.shields.io/badge/TEN_Framework-WeChat_Group-%2307C160?logo=wechat&labelColor=darkgreen&color=gray)](https://github.com/TEN-framework/ten-agent/discussions/170) | 加入我们的 微信 中文社区讨论群                     |
 

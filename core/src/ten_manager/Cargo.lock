@@ -3332,6 +3332,7 @@ dependencies = [
  "actix-web",
  "aes",
  "anyhow",
+ "backtrace",
  "chrono",
  "ctr",
  "futures",

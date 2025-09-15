@@ -1,17 +1,17 @@
 {
   "type": "extension",
   "name": "tencent_tts_python",
-  "version": "0.1.1",
+  "version": "0.2.1",
   "dependencies": [
     {
       "name": "ten_runtime_python",
       "type": "system",
-      "version": "0.10"
+      "version": "0.11"
     },
     {
       "type": "system",
       "name": "ten_ai_base",
-      "version": "0.6"
+      "version": "0.7"
     }
   ],
   "package": {
@@ -23,7 +23,8 @@
       "**.py",
       "README.md",
       "src/**",
-      "tests/**"
+      "tests/**",
+      "requirements.txt"
     ]
   },
   "api": {
@@ -36,41 +37,7 @@
       "properties": {
         "params": {
           "type": "object",
-          "properties": {
-            "app_id": {
-              "type": "string"
-            },
-            "codec": {
-              "type": "string"
-            },
-            "emotion_category": {
-              "type": "string"
-            },
-            "emotion_intensity": {
-              "type": "int64"
-            },
-            "enable_words": {
-              "type": "bool"
-            },
-            "sample_rate": {
-              "type": "int64"
-            },
-            "secret_id": {
-              "type": "string"
-            },
-            "secret_key": {
-              "type": "string"
-            },
-            "speed": {
-              "type": "float32"
-            },
-            "voice_type": {
-              "type": "string"
-            },
-            "volume": {
-              "type": "float32"
-            }
-          }
+          "properties": {}
         }
       }
     }

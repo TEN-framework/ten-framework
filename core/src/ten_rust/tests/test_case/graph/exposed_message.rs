@@ -77,7 +77,6 @@ mod tests {
                 },
             ]),
             exposed_properties: None,
-            pre_flatten: None,
         };
 
         // Serialize to JSON.

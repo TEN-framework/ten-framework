@@ -13,14 +13,21 @@ import {
   GROUP_CUSTOM_CONNECTION_ID,
 } from "@/constants/widgets";
 import { useWidgetStore } from "@/store";
+import type { ECustomNodeType } from "@/types/flow";
 import type { EConnectionType, GraphInfo } from "@/types/graphs";
 import { EWidgetCategory, EWidgetDisplayType } from "@/types/widgets";
 
 export const CustomNodeConnectionButton = (
   props: ButtonProps & {
     data: {
-      source: string;
-      target?: string;
+      source: {
+        name: string;
+        type: ECustomNodeType;
+      };
+      target?: {
+        name: string;
+        type: ECustomNodeType;
+      };
       graph: GraphInfo;
       metadata?: {
         filters?: {
@@ -48,8 +55,17 @@ export const CustomNodeConnectionButton = (
       category: EWidgetCategory.CustomConnection,
       display_type: EWidgetDisplayType.Popup,
 
-      title: <CustomNodeConnPopupTitle source={source} target={target} />,
+      title: (
+        <CustomNodeConnPopupTitle source={source.name} target={target?.name} />
+      ),
       metadata: { id, source, target, filters, graph },
+
+      popup: {
+        height: 0.8,
+        width: 0.6,
+        maxHeight: 0.8,
+        maxWidth: 0.6,
+      },
     });
     onClick?.(event);
   };

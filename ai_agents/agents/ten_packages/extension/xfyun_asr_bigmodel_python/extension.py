@@ -22,7 +22,10 @@ from ten_runtime import (
     AsyncTenEnv,
     AudioFrame,
 )
-
+from ten_ai_base.const import (
+    LOG_CATEGORY_KEY_POINT,
+    LOG_CATEGORY_VENDOR,
+)
 from ten_ai_base.dumper import Dumper
 from .reconnect_manager import ReconnectManager
 from .audio_buffer_manager import AudioBufferManager
@@ -40,6 +43,10 @@ class XfyunRecognitionCallback(XfyunWSRecognitionCallback):
 
     async def on_open(self) -> None:
         """Callback when connection is established"""
+        self.ten_env.log_info(
+            "vendor_status_changed: on_open",
+            category=LOG_CATEGORY_VENDOR,
+        )
         await self.extension.on_asr_open()
 
     async def on_result(self, message_data):
@@ -48,10 +55,18 @@ class XfyunRecognitionCallback(XfyunWSRecognitionCallback):
 
     async def on_error(self, error_msg, error_code=None) -> None:
         """Error handling callback"""
+        self.ten_env.log_error(
+            f"vendor_error: code: {error_code}, reason: {error_msg}",
+            category=LOG_CATEGORY_VENDOR,
+        )
         await self.extension.on_asr_error(error_msg, error_code)
 
     async def on_close(self) -> None:
         """Callback when connection is closed"""
+        self.ten_env.log_info(
+            "vendor_status_changed: on_close",
+            category=LOG_CATEGORY_VENDOR,
+        )
         await self.extension.on_asr_close()
 
 
@@ -66,7 +81,6 @@ class XfyunBigmodelASRExtension(AsyncASRBaseExtension):
         self.audio_dumper: Optional[Dumper] = None
         self.sent_user_audio_duration_ms_before_last_reset: int = 0
         self.last_finalize_timestamp: int = 0
-        self.is_finalize_disconnect: bool = False
 
         # WPGS mode status variables
         self.wpgs_buffer: Dict[int, Dict[str, Any]] = (
@@ -110,7 +124,8 @@ class XfyunBigmodelASRExtension(AsyncASRBaseExtension):
             self.config = XfyunASRConfig.model_validate_json(config_json)
             self.config.update(self.config.params)
             ten_env.log_info(
-                f"Xfyun ASR config: {self.config.to_json(sensitive_handling=True)}"
+                f"Xfyun ASR config: {self.config.to_json(sensitive_handling=True)}",
+                category=LOG_CATEGORY_KEY_POINT,
             )
             if self.config.dump:
                 dump_file_path = os.path.join(
@@ -183,7 +198,8 @@ class XfyunBigmodelASRExtension(AsyncASRBaseExtension):
                 return
 
             # Stop existing connection
-            await self.stop_connection()
+            if self.is_connected():
+                await self.stop_connection()
             # Start audio dumper
             if self.audio_dumper:
                 await self.audio_dumper.start()
@@ -196,6 +212,7 @@ class XfyunBigmodelASRExtension(AsyncASRBaseExtension):
                 "host": self.config.host,
                 "domain": self.config.domain,
                 "language": self.config.language,
+                "language_name": self.config.language_name,
                 "accent": self.config.accent,
                 "dwa": self.config.dwa,
                 "eos": self.config.eos,
@@ -218,7 +235,6 @@ class XfyunBigmodelASRExtension(AsyncASRBaseExtension):
             # Start recognition (now async)
             success = await self.recognition.start()
             if success:
-                self.is_finalize_disconnect = False
                 self.ten_env.log_info(
                     "Xfyun ASR connection started successfully"
                 )
@@ -359,13 +375,14 @@ class XfyunBigmodelASRExtension(AsyncASRBaseExtension):
 
             # Handle sentence final result
             if result_data.get("sub_end") is True:
-                is_final = False
+                is_final = True
                 self.ten_env.log_debug(
                     f"Xfyun ASR sub sentence end: {result_to_send}"
                 )
-                # self.wpgs_buffer.clear()
+                self.wpgs_buffer.clear()
 
             if status == 2:
+
                 is_final = True
                 self.ten_env.log_debug(
                     f"Xfyun ASR complete result: {result_to_send}"
@@ -388,8 +405,6 @@ class XfyunBigmodelASRExtension(AsyncASRBaseExtension):
                     else duration_ms
                 )
                 self.wpgs_buffer.clear()
-                if self.recognition:
-                    await self.recognition.close()
 
             self.ten_env.log_debug(
                 f"Xfyun ASR result: {result_to_send}, status: {status}"
@@ -403,19 +418,23 @@ class XfyunBigmodelASRExtension(AsyncASRBaseExtension):
 
             # Process ASR result
             if self.config is not None:
-
-                await self._handle_asr_result(
-                    text=result_to_send,
-                    final=is_final,
-                    start_ms=actual_start_ms,
-                    duration_ms=duration_ms,
-                    language=self.config.normalized_language,
-                )
+                if result_to_send != "":
+                    await self._handle_asr_result(
+                        text=result_to_send,
+                        final=is_final,
+                        start_ms=actual_start_ms,
+                        duration_ms=duration_ms,
+                        language=self.config.normalized_language,
+                    )
 
             else:
                 self.ten_env.log_error(
                     "Cannot handle ASR result: config is None"
                 )
+
+            if status == 2:
+                if self.recognition:
+                    await self.recognition.close()
 
         except Exception as e:
             self.ten_env.log_error(f"Error processing Xfyun ASR result: {e}")
@@ -427,7 +446,6 @@ class XfyunBigmodelASRExtension(AsyncASRBaseExtension):
         self.ten_env.log_error(
             f"Xfyun ASR error: {error_msg} code: {error_code}"
         )
-        await self._handle_reconnect()
 
         # Send error information
         await self.send_asr_error(
@@ -451,7 +469,7 @@ class XfyunBigmodelASRExtension(AsyncASRBaseExtension):
         # Clear WPGS status variables
         self.wpgs_buffer.clear()
 
-        if self.is_finalize_disconnect:
+        if not self.stopped:
             self.ten_env.log_warn(
                 "Xfyun ASR connection closed unexpectedly. Reconnecting..."
             )
@@ -504,7 +522,6 @@ class XfyunBigmodelASRExtension(AsyncASRBaseExtension):
     async def _handle_finalize_disconnect(self):
         """Handle disconnect mode finalization"""
         if self.recognition:
-            self.is_finalize_disconnect = True
             await self.recognition.stop()
             self.ten_env.log_debug("Xfyun ASR finalize disconnect completed")
 
@@ -579,7 +596,6 @@ class XfyunBigmodelASRExtension(AsyncASRBaseExtension):
             self.connected
             and self.recognition is not None
             and self.recognition.is_connected()
-            and not self.is_finalize_disconnect
         )
         # self.ten_env.log_debug(f"Xfyun ASR is_connected: {is_connected}")
         return is_connected
@@ -620,13 +636,11 @@ class XfyunBigmodelASRExtension(AsyncASRBaseExtension):
 
             # Use audio buffer manager to handle audio data
             if self.audio_buffer_manager:
-                # Check if this is a finalization call
-                force_send = self.is_finalize_disconnect
                 # Push audio data to buffer and send if threshold is reached or forced
                 await self.audio_buffer_manager.push_audio(
                     audio_data=audio_data,
                     send_callback=self.recognition.send_audio_frame,
-                    force_send=force_send,
+                    force_send=False,
                 )
             else:
                 # Fallback to direct sending if buffer manager is not available

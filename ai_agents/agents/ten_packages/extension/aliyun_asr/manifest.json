@@ -1,17 +1,17 @@
 {
   "type": "extension",
   "name": "aliyun_asr",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "dependencies": [
     {
       "type": "system",
       "name": "ten_runtime_python",
-      "version": "0.10"
+      "version": "0.11"
     },
     {
       "type": "system",
       "name": "ten_ai_base",
-      "version": "0.6"
+      "version": "0.7"
     }
   ],
   "api": {

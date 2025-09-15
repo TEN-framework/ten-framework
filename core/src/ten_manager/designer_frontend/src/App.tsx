@@ -7,6 +7,7 @@
 
 import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { ReactFlowProvider } from "@xyflow/react";
 import * as React from "react";
 import { toast } from "sonner";
 import {
@@ -31,9 +32,8 @@ import {
 import { BackstageWidgets } from "@/components/widget/backstage-widgets";
 import { PERSISTENT_DEFAULTS } from "@/constants/persistent";
 import { FlowCanvas } from "@/flow";
-import { generateNodesAndEdges } from "@/flow/graph";
 import { cn } from "@/lib/utils";
-import { useAppStore, useFlowStore, useWidgetStore } from "@/store";
+import { useAppStore, useWidgetStore } from "@/store";
 import { PREFERENCES_SCHEMA_LOG } from "@/types/apps";
 import { EWidgetDisplayType } from "@/types/widgets";
 
@@ -51,7 +51,7 @@ export default function App() {
 }
 
 const Main = () => {
-  const { nodes, edges, setNodesAndEdges } = useFlowStore();
+  // const { nodes, edges, setNodesAndEdges } = useFlowStore();
   const [resizablePanelMode] = React.useState<"left" | "bottom" | "right">(
     "bottom"
   );
@@ -75,11 +75,11 @@ const Main = () => {
     [widgets]
   );
 
-  const performAutoLayout = React.useCallback(() => {
-    const { nodes: layoutedNodes, edges: layoutedEdges } =
-      generateNodesAndEdges(nodes, edges);
-    setNodesAndEdges(layoutedNodes, layoutedEdges);
-  }, [nodes, edges, setNodesAndEdges]);
+  // const performAutoLayout = React.useCallback(() => {
+  //   const { nodes: layoutedNodes, edges: layoutedEdges } =
+  //     generateNodesAndEdges(nodes, edges);
+  //   setNodesAndEdges(layoutedNodes, layoutedEdges);
+  // }, [nodes, edges, setNodesAndEdges]);
 
   // init preferences
   React.useEffect(() => {
@@ -141,8 +141,8 @@ const Main = () => {
   }
 
   return (
-    <>
-      <AppBar onAutoLayout={performAutoLayout} className="z-9997" />
+    <ReactFlowProvider>
+      <AppBar className="z-9997" />
 
       <ResizablePanelGroup
         key={`resizable-panel-group-${resizablePanelMode}`}
@@ -194,6 +194,6 @@ const Main = () => {
       <GraphSelector />
 
       <StatusBar className="z-9997" />
-    </>
+    </ReactFlowProvider>
   );
 };

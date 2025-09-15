@@ -1,12 +1,19 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.1.2/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.1.4/schema.json",
   "vcs": {
-    "enabled": false,
+    "enabled": true,
     "clientKind": "git",
-    "useIgnoreFile": false
+    "useIgnoreFile": true
   },
   "files": {
-    "ignoreUnknown": false
+    "ignoreUnknown": true,
+    "includes": [
+      "**",
+      "!node_modules",
+      "!.next",
+      "!dist",
+      "!build"
+    ]
   },
   "formatter": {
     "enabled": true,
@@ -21,6 +28,13 @@
     "expand": "auto",
     "useEditorconfig": true
   },
+  "json": {
+    "formatter": {
+      "indentStyle": "space",
+      "indentWidth": 2,
+      "lineEnding": "lf"
+    }
+  },
   "linter": {
     "enabled": true,
     "rules": {
@@ -34,7 +48,9 @@
               "className"
             ],
             "functions": [
-              "cn"
+              "cn",
+              "clsx",
+              "cva"
             ]
           }
         }

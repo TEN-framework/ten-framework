@@ -60,23 +60,27 @@ The extension implements the standard ASR interface and outputs `asr_result` dat
 ### Build
 
 The extension requires Python 3.8+ and the following dependencies:
+
 - pydantic>=2.0.0
 - websockets>=11.0.0
 
 ### Unit test
 
 Run the tests using:
+
 ```bash
 cd tests
 ./bin/start
 ```
 
-## Migration Notes
+## Notes
 
-This extension has been migrated from the old ASR interface to the new standardized ASR interface. Key changes include:
+The endpoint detection is not supported:
 
-- Updated to use `AsyncASRBaseExtension` base class
-- Standardized output format using `asr_result`
-- Modern error handling with `ModuleError`
-- Updated runtime imports (`ten_runtime`, `ten_ai_base`)
-- Improved configuration management
+```json
+{
+  "enable_endpoint_detection": true
+}
+```
+
+because it is not included in the standard asr interface.

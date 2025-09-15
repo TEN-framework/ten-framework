@@ -639,8 +639,12 @@ func (s *HttpServer) processProperty(req *StartReq) (propertyJsonFile string, lo
 		}
 	}
 
-	// Validate environment variables in the "nodes" section
-	envPattern := regexp.MustCompile(`\${env:([^}|]+)}`)
+    // Validate environment variables in the "nodes" section
+    // Support optional env placeholder with default: ${env:VAR|default}
+    // Capture groups:
+    //  1) variable name
+    //  2) optional default part starting with '|', may be empty string like '|'
+    envPattern := regexp.MustCompile(`\${env:([^}|]+)(\|[^}]*)?}`)
 	for _, graph := range newGraphs {
 		graphMap, _ := graph.(map[string]interface{})
 		graphData, _ := graphMap["graph"].(map[string]interface{})
@@ -664,22 +668,29 @@ func (s *HttpServer) processProperty(req *StartReq) (propertyJsonFile string, lo
 				// Log the property value being processed
 				// slog.Info("Processing property", "key", key, "value", strVal)
 
-				matches := envPattern.FindAllStringSubmatch(strVal, -1)
+                matches := envPattern.FindAllStringSubmatch(strVal, -1)
 				// if len(matches) == 0 {
 				// 	slog.Info("No environment variable patterns found in property", "key", key, "value", strVal)
 				// }
 
-				for _, match := range matches {
-					if len(match) < 2 {
-						continue
-					}
-					variable := match[1]
-					exists := os.Getenv(variable) != ""
-					// slog.Info("Checking environment variable", "variable", variable, "exists", exists)
-					if !exists {
-						slog.Error("Environment variable not found", "variable", variable, "property", key, "requestId", req.RequestId, logTag)
-					}
-				}
+                for _, match := range matches {
+                    if len(match) < 2 {
+                        continue
+                    }
+                    variable := match[1]
+                    // match[2] contains the optional default part (e.g., "|some-default" or just "|")
+                    hasDefault := len(match) >= 3 && match[2] != ""
+                    exists := os.Getenv(variable) != ""
+                    // slog.Info("Checking environment variable", "variable", variable, "exists", exists, "hasDefault", hasDefault)
+                    if !exists {
+                        if hasDefault {
+                            // Optional env not set; skip error logging
+                            slog.Info("Optional environment variable not set; using default", "variable", variable, "property", key, "requestId", req.RequestId, logTag)
+                        } else {
+                            slog.Error("Environment variable not found", "variable", variable, "property", key, "requestId", req.RequestId, logTag)
+                        }
+                    }
+                }
 			}
 
 		}

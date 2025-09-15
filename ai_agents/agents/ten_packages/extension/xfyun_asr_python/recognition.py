@@ -12,6 +12,9 @@ from time import mktime
 import json
 from .const import TIMEOUT_CODE
 from websockets.protocol import State
+from ten_ai_base.const import (
+    LOG_CATEGORY_VENDOR,
+)
 
 
 STATUS_FIRST_FRAME = 0  # First frame identifier
@@ -123,7 +126,7 @@ class XfyunWSRecognition:
     def _log_debug(self, message):
         """Unified logging method, use ten_env.log_debug if available"""
         if self.ten_env:
-            self.ten_env.log_debug(message)
+            self.ten_env.log_info(message)
 
     def _create_url(self):
         """Generate WebSocket connection URL"""
@@ -164,6 +167,12 @@ class XfyunWSRecognition:
             sid = message_data.get("sid")
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
             self._log_debug(f"[{timestamp}] message: {message}")
+
+            if self.ten_env:
+                self.ten_env.log_debug(
+                    f"vendor_result: on_recognized: {message}",
+                    category=LOG_CATEGORY_VENDOR,
+                )
 
             if code != 0:
                 error_msg = message_data.get("message")
@@ -320,7 +329,12 @@ class XfyunWSRecognition:
                 }
             }
             await self.websocket.send(json.dumps(d))
-            self._log_debug("Stop signal sent")
+            self.is_started = False
+            if self.ten_env:
+                self.ten_env.log_info(
+                    f"vendor_cmd: ${json.dumps(d)}",
+                    category=LOG_CATEGORY_VENDOR,
+                )
 
         except websockets.exceptions.ConnectionClosed:
             self._log_debug("WebSocket connection already closed")
@@ -331,10 +345,6 @@ class XfyunWSRecognition:
 
     async def close(self):
         """Close WebSocket connection"""
-        if not self.is_started:
-            self._log_debug("Recognition not started")
-            return
-
         if self.websocket:
             try:
                 if self.websocket.state == State.OPEN:

@@ -25,13 +25,67 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Building ten_runtime without the ten_rust library (i.e., ten_enable_ten_rust_apis=false).
+  call-check-pr-status:
+    uses: ./.github/workflows/_check_pr_status.yml
+
+  # Building ten_runtime without the ten_rust library (i.e., ten_enable_ten_rust=false).
   build:
+    needs: call-check-pr-status
+    if: ${{ needs.call-check-pr-status.outputs.should_continue == 'true' }}
     runs-on: macos-latest
     strategy:
       matrix:
         build_type: [debug]
     steps:
+      - name: Check PR status before matrix execution
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            console.log('Event name:', context.eventName);
+            console.log('Matrix:', ${{ toJson(matrix) }});
+
+            // Only check for PR events
+            if (context.eventName !== 'pull_request') {
+              console.log('Not a PR event, continuing...');
+              return;
+            }
+
+            // Ensure we have PR data
+            if (!context.payload.pull_request) {
+              console.log('No pull_request data in payload, continuing...');
+              return;
+            }
+
+            const { owner, repo } = context.repo;
+            const prNumber = context.payload.pull_request.number;
+
+            try {
+              const pr = await github.rest.pulls.get({
+                owner,
+                repo,
+                pull_number: prNumber,
+              });
+
+              console.log(`PR #${prNumber} state: ${pr.data.state}, merged: ${pr.data.merged}`);
+
+              if (pr.data.state === 'closed') {
+                if (pr.data.merged) {
+                  console.log(`PR #${prNumber} has been merged. Stopping matrix execution.`);
+                  core.setFailed('PR has been merged, stopping execution to save resources.');
+                } else {
+                  console.log(`PR #${prNumber} has been closed. Stopping matrix execution.`);
+                  core.setFailed('PR has been closed, stopping execution to save resources.');
+                }
+              } else {
+                console.log(`PR #${prNumber} is still open. Continuing matrix execution.`);
+              }
+            } catch (error) {
+              console.error(`Error checking PR status: ${error.message}`);
+              console.log('Error details:', error);
+              console.log('Continuing matrix execution due to error...');
+            }
+
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -68,7 +122,7 @@ jobs:
 
           df -h .
 
-          tgn gen mac arm64 ${{ matrix.build_type }} -- log_level=1 enable_serialized_actions=true ten_enable_serialized_rust_action=true ten_rust_enable_gen_cargo_config=false ten_enable_ten_rust=false ten_enable_ten_rust_apis=false ten_enable_rust_incremental_build=false ten_manager_enable_frontend=false ten_enable_integration_tests_prebuilt=false ten_enable_nodejs_binding=false ten_enable_python_binding=false
+          tgn gen mac arm64 ${{ matrix.build_type }} -- log_level=1 enable_serialized_actions=true ten_enable_serialized_rust_action=true ten_rust_enable_gen_cargo_config=false ten_enable_ten_rust=false ten_enable_rust_incremental_build=false ten_manager_enable_frontend=false ten_enable_integration_tests_prebuilt=false ten_enable_nodejs_binding=false ten_enable_python_binding=false
 
           tgn build mac arm64 ${{ matrix.build_type }}
 
@@ -93,7 +147,7 @@ jobs:
       - name: Upload tests relevant artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: tests-artifacts-${{ matrix.build_type }}
+          name: tests-artifacts-mac-arm64-without-rust-${{ matrix.build_type }}
           path: tests-artifacts.tar.gz
           if-no-files-found: ignore
 
@@ -136,7 +190,7 @@ jobs:
       - name: Download build artifacts (tar archive)
         uses: actions/download-artifact@v4
         with:
-          name: tests-artifacts-${{ matrix.build_type }}
+          name: tests-artifacts-mac-arm64-without-rust-${{ matrix.build_type }}
           path: out/mac/arm64
 
       - name: Extract tests artifacts preserving permissions

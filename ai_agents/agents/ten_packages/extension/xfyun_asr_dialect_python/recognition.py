@@ -11,9 +11,12 @@ from datetime import datetime
 import json
 from .const import TIMEOUT_CODE
 from collections import OrderedDict
-
+from ten_ai_base.const import (
+    LOG_CATEGORY_VENDOR,
+)
 from websockets.exceptions import ConnectionClosed
 from websockets.protocol import State
+
 
 STATUS_FIRST_FRAME = 0  # First frame identifier
 STATUS_CONTINUE_FRAME = 1  # Middle frame identifier
@@ -204,6 +207,11 @@ class XfyunWSRecognition:
             message_data = json.loads(message)
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
             self._log_debug(f"[{timestamp}] message: {message}")
+            if self.ten_env:
+                self.ten_env.log_debug(
+                    f"vendor_result: on_recognized: {message}",
+                    category=LOG_CATEGORY_VENDOR,
+                )
 
             msg_type = message_data.get("msg_type")
 
@@ -343,7 +351,12 @@ class XfyunWSRecognition:
             # Send end frame as text message
             end_message = json.dumps({"end": True})
             await self.websocket.send(end_message)
-            self._log_debug("Stop signal sent")
+            self.is_started = False
+            if self.ten_env:
+                self.ten_env.log_info(
+                    f"vendor_cmd: ${end_message}",
+                    category=LOG_CATEGORY_VENDOR,
+                )
 
         except ConnectionClosed:
             self._log_debug("WebSocket connection already closed")
@@ -354,10 +367,6 @@ class XfyunWSRecognition:
 
     async def close(self):
         """Close WebSocket connection"""
-        if not self.is_started:
-            self._log_debug("Recognition not started")
-            return
-
         if self.websocket:
             try:
                 if self.websocket.state == State.OPEN:

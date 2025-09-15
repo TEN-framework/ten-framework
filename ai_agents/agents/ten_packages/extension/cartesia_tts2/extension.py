@@ -23,6 +23,7 @@ from .config import CartesiaTTSConfig
 from .cartesia_tts import (
     EVENT_TTS_END,
     EVENT_TTS_RESPONSE,
+    EVENT_TTS_TTFB_METRIC,
     CartesiaTTSClient,
     CartesiaTTSConnectionException,
 )
@@ -39,7 +40,6 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
         self.sent_ts: datetime | None = None
         self.current_request_finished: bool = False
         self.total_audio_bytes: int = 0
-        self.first_chunk: bool = False
         self.recorder_map: dict[str, PCMWriter] = (
             {}
         )  # Store PCMWriter instances for different request_ids
@@ -175,8 +175,7 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                 self.ten_env.log_info(
                     f"KEYPOINT New TTS request with ID: {t.request_id}"
                 )
-                self.first_chunk = True
-                self.sent_ts = datetime.now()
+                self.client.reset_ttfb()
                 self.current_request_id = t.request_id
                 self.current_request_finished = False
                 self.total_audio_bytes = 0  # Reset for new request
@@ -235,38 +234,19 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                 "Starting async for loop to process audio chunks"
             )
             chunk_count = 0
-            async for audio_chunk, event_status in data:
+            async for data_msg, event_status in data:
                 self.ten_env.log_info(f"Received event_status: {event_status}")
                 if event_status == EVENT_TTS_RESPONSE:
-                    if audio_chunk is not None and len(audio_chunk) > 0:
+                    if (
+                        data_msg is not None
+                        and isinstance(data_msg, bytes)
+                        and len(data_msg) > 0
+                    ):
                         chunk_count += 1
-                        self.total_audio_bytes += len(audio_chunk)
+                        self.total_audio_bytes += len(data_msg)
                         self.ten_env.log_info(
-                            f"[tts] Received audio chunk #{chunk_count}, size: {len(audio_chunk)} bytes"
+                            f"[tts] Received audio chunk #{chunk_count}, size: {len(data_msg)} bytes"
                         )
-
-                        # Send TTS audio start on first chunk
-                        if self.first_chunk:
-                            if self.sent_ts:
-                                await self.send_tts_audio_start(
-                                    self.current_request_id
-                                )
-                                ttfb = int(
-                                    (
-                                        datetime.now() - self.sent_ts
-                                    ).total_seconds()
-                                    * 1000
-                                )
-                                await self.send_tts_ttfb_metrics(
-                                    self.current_request_id,
-                                    ttfb,
-                                    self.current_turn_id,
-                                )
-                                self.ten_env.log_info(
-                                    f"KEYPOINT Sent TTS audio start and TTFB metrics: {ttfb}ms"
-                                )
-                            self.first_chunk = False
-
                         # Write to dump file if enabled
                         if (
                             self.config
@@ -280,11 +260,11 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                             asyncio.create_task(
                                 self.recorder_map[
                                     self.current_request_id
-                                ].write(audio_chunk)
+                                ].write(data_msg)
                             )
 
                         # Send audio data
-                        await self.send_tts_audio_data(audio_chunk)
+                        await self.send_tts_audio_data(data_msg)
                     else:
                         self.ten_env.log_error(
                             "Received empty payload for TTS response"
@@ -304,7 +284,20 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                             self.ten_env.log_info(
                                 f"KEYPOINT Sent TTS audio end event, interval: {request_event_interval}ms, duration: {duration_ms}ms"
                             )
+                elif event_status == EVENT_TTS_TTFB_METRIC:
+                    if data_msg is not None and isinstance(data_msg, int):
+                        self.sent_ts = datetime.now()
+                        ttfb = data_msg
+                        await self.send_tts_audio_start(self.current_request_id)
+                        await self.send_tts_ttfb_metrics(
+                            self.current_request_id,
+                            ttfb,
+                            self.current_turn_id,
+                        )
 
+                        self.ten_env.log_info(
+                            f"KEYPOINT Sent TTS audio start and TTFB metrics: {ttfb}ms"
+                        )
                 elif event_status == EVENT_TTS_END:
                     self.ten_env.log_info(
                         "Received TTS_END event from Cartesia TTS"

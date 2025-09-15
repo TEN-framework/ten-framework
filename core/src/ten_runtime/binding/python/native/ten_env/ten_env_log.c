@@ -20,12 +20,13 @@ typedef struct ten_env_notify_log_ctx_t {
   const char *file_name;
   size_t line_no;
   const char *msg;
+  const char *category;
   ten_event_t *completed;
 } ten_env_notify_log_ctx_t;
 
 static ten_env_notify_log_ctx_t *ten_env_notify_log_ctx_create(
     int32_t level, const char *func_name, const char *file_name, size_t line_no,
-    const char *msg) {
+    const char *msg, const char *category) {
   ten_env_notify_log_ctx_t *ctx = TEN_MALLOC(sizeof(ten_env_notify_log_ctx_t));
   TEN_ASSERT(ctx, "Failed to allocate memory.");
 
@@ -34,6 +35,7 @@ static ten_env_notify_log_ctx_t *ten_env_notify_log_ctx_create(
   ctx->file_name = file_name;
   ctx->line_no = line_no;
   ctx->msg = msg;
+  ctx->category = category;
   ctx->completed = ten_event_create(0, 1);
 
   return ctx;
@@ -56,7 +58,7 @@ static void ten_env_proxy_notify_log(ten_env_t *ten_env, void *user_data) {
   TEN_ASSERT(ctx, "Should not happen.");
 
   ten_env_log(ten_env, ctx->level, ctx->func_name, ctx->file_name, ctx->line_no,
-              ctx->msg, NULL, NULL);
+              ctx->msg, ctx->category, NULL);
 
   ten_event_set(ctx->completed);
 }
@@ -96,8 +98,8 @@ PyObject *ten_py_ten_env_log(PyObject *self, PyObject *args) {
     return result;
   }
 
-  ten_env_notify_log_ctx_t *ctx =
-      ten_env_notify_log_ctx_create(level, func_name, file_name, line_no, msg);
+  ten_env_notify_log_ctx_t *ctx = ten_env_notify_log_ctx_create(
+      level, func_name, file_name, line_no, msg, category);
 
   if (py_ten_env->c_ten_env_proxy) {
     if (!ten_env_proxy_notify(py_ten_env->c_ten_env_proxy,
@@ -129,9 +131,9 @@ PyObject *ten_py_ten_env_log(PyObject *self, PyObject *args) {
     TEN_ASSERT(py_ten_env->c_ten_env->attach_to == TEN_ENV_ATTACH_TO_ADDON,
                "Should not happen.");
 
-    ten_env_log_without_check_thread(py_ten_env->c_ten_env, ctx->level,
-                                     ctx->func_name, ctx->file_name,
-                                     ctx->line_no, ctx->msg, NULL, NULL);
+    ten_env_log_without_check_thread(
+        py_ten_env->c_ten_env, ctx->level, ctx->func_name, ctx->file_name,
+        ctx->line_no, ctx->msg, ctx->category, NULL);
   }
 
   ten_error_deinit(&err);

@@ -6,10 +6,7 @@
 //
 #[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
-use std::{
-    fs::File,
-    path::{Path, PathBuf},
-};
+use std::{fs::File, path::Path};
 
 use anyhow::{Context, Result};
 use flate2::{write::GzEncoder, Compression};
@@ -67,7 +64,7 @@ pub fn tar_gz_files_to_file<P: AsRef<Path>>(
             } else if metadata.is_dir() {
                 // If it is a directory and not the current one ".", then
                 // package the directory.
-                if !relative_path.as_os_str().is_empty() && relative_path != PathBuf::from(".") {
+                if !relative_path.as_os_str().is_empty() && relative_path != Path::new(".") {
                     tar_builder.append_dir_all(&relative_path, path)?;
                 }
             }

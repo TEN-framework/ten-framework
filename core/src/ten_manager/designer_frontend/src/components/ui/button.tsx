@@ -14,7 +14,7 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium text-sm transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
@@ -37,8 +37,8 @@ const buttonVariants = cva(
         xl: "h-[var(--size-xl)] rounded-md px-8",
         icon: "h-8 w-8",
         status:
-          "h-5 w-fit px-2 [&_svg]:size-3 cursor-pointer rounded-none text-xs gap-1",
-        th: "h-[var(--size-sm)] text-sm [_svg]:size-3 font-normal px-3",
+          "h-5 w-fit cursor-pointer gap-1 rounded-none px-2 text-xs [&_svg]:size-3",
+        th: "h-[var(--size-sm)] px-3 font-normal text-sm [_svg]:size-3",
       },
     },
     defaultVariants: {

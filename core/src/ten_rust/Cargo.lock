@@ -2228,6 +2228,7 @@ dependencies = [
  "actix-web",
  "aes",
  "anyhow",
+ "backtrace",
  "bindgen",
  "chrono",
  "ctr",

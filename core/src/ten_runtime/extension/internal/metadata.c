@@ -170,8 +170,9 @@ static ten_value_t *ten_extension_get_ten_namespace_properties(
   return ten_value_object_peek(&self->property, TEN_STR_TEN);
 }
 
-static bool ten_extension_graph_property_resolve_placeholders(
-    ten_extension_t *self, ten_value_t *curr_value, ten_error_t *err) {
+static bool ten_extension_property_resolve_placeholders(ten_extension_t *self,
+                                                        ten_value_t *curr_value,
+                                                        ten_error_t *err) {
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_extension_check_integrity(self, true), "Should not happen.");
 
@@ -223,8 +224,7 @@ static bool ten_extension_graph_property_resolve_placeholders(
       TEN_ASSERT(kv && ten_value_kv_check_integrity(kv), "Should not happen.");
 
       ten_value_t *kv_value = ten_value_kv_get_value(kv);
-      if (!ten_extension_graph_property_resolve_placeholders(self, kv_value,
-                                                             err)) {
+      if (!ten_extension_property_resolve_placeholders(self, kv_value, err)) {
         return false;
       }
     }
@@ -237,8 +237,8 @@ static bool ten_extension_graph_property_resolve_placeholders(
       TEN_ASSERT(array_value && ten_value_check_integrity(array_value),
                  "Should not happen.");
 
-      if (!ten_extension_graph_property_resolve_placeholders(self, array_value,
-                                                             err)) {
+      if (!ten_extension_property_resolve_placeholders(self, array_value,
+                                                       err)) {
         return false;
       }
     }
@@ -252,32 +252,23 @@ static bool ten_extension_graph_property_resolve_placeholders(
   TEN_ASSERT(0, "Should not happen.");
 }
 
-bool ten_extension_resolve_properties_in_graph(ten_extension_t *self,
-                                               ten_error_t *err) {
+bool ten_extension_resolve_properties(ten_extension_t *self, ten_error_t *err) {
   TEN_ASSERT(self, "Should not happen.");
   TEN_ASSERT(ten_extension_check_integrity(self, true), "Should not happen.");
 
-  if (!self->extension_info) {
-    return true;
-  }
+  ten_value_t *property = &self->property;
 
-  ten_value_t *graph_property = self->extension_info->property;
-  if (!graph_property) {
-    return true;
-  }
-
-  if (!ten_value_is_valid(graph_property)) {
+  if (!ten_value_is_valid(property)) {
     if (err) {
       ten_error_set(err, TEN_ERROR_CODE_GENERIC,
-                    "The property in graph is invalid.");
+                    "The property of the extension is invalid.");
     }
     return false;
   }
 
-  TEN_ASSERT(ten_value_is_object(graph_property), "Should not happen.");
+  TEN_ASSERT(ten_value_is_object(property), "Should not happen.");
 
-  return ten_extension_graph_property_resolve_placeholders(self, graph_property,
-                                                           err);
+  return ten_extension_property_resolve_placeholders(self, property, err);
 }
 
 void ten_extension_merge_properties_from_graph(ten_extension_t *self) {

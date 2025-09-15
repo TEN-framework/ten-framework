@@ -15,7 +15,7 @@ ten_runtime_glob("app") {
     "ten_env",
   ]
 
-  if (ten_enable_ten_rust && ten_enable_ten_rust_apis) {
+  if (ten_enable_ten_rust) {
     public_deps = [ "//core/src/ten_rust:ten_rust_binding" ]
   }
 }

@@ -115,10 +115,10 @@ def test_concurrent_requests(MockGoogleTTS):
     mock_client_instance = AsyncMock()
 
     # Mock the get method to return audio data
-    async def mock_get(text):
+    async def mock_get(text, request_id):
         # Return audio data in the expected format
-        yield b"fake_audio_data", 1  # EVENT_TTS_RESPONSE
-        yield None, 2  # EVENT_TTS_REQUEST_END
+        yield b"fake_audio_data", 1, 123  # EVENT_TTS_RESPONSE
+        yield None, 2, None  # EVENT_TTS_REQUEST_END
 
     mock_client_instance.get = mock_get
     mock_client_instance.cancel = AsyncMock()
@@ -163,10 +163,10 @@ def test_rapid_requests(MockGoogleTTS):
     mock_client_instance = AsyncMock()
 
     # Mock the get method to return audio data
-    async def mock_get(text):
+    async def mock_get(text, request_id):
         # Return audio data in the expected format
-        yield b"fake_audio_data", 1  # EVENT_TTS_RESPONSE
-        yield None, 2  # EVENT_TTS_REQUEST_END
+        yield b"fake_audio_data", 1, 123  # EVENT_TTS_RESPONSE
+        yield None, 2, None  # EVENT_TTS_REQUEST_END
 
     mock_client_instance.get = mock_get
     mock_client_instance.cancel = AsyncMock()
@@ -210,11 +210,11 @@ def test_large_text_requests(MockGoogleTTS):
     mock_client_instance = AsyncMock()
 
     # Mock the get method to return audio data
-    async def mock_get(text):
+    async def mock_get(text, request_id):
         # Return multiple audio chunks for large text
         for i in range(10):
-            yield f"fake_audio_data_{i}".encode(), 1  # EVENT_TTS_RESPONSE
-        yield None, 2  # EVENT_TTS_REQUEST_END
+            yield f"fake_audio_data_{i}".encode(), 1, 123  # EVENT_TTS_RESPONSE
+        yield None, 2, None  # EVENT_TTS_REQUEST_END
 
     mock_client_instance.get = mock_get
     mock_client_instance.cancel = AsyncMock()
@@ -260,15 +260,15 @@ def test_network_retry_robustness(MockGoogleTTS):
     # Mock the get method to fail with network error
     call_count = 0
 
-    async def mock_get(text):
+    async def mock_get(text, request_id):
         nonlocal call_count
         call_count += 1
 
         # Always fail with network error
         error_data = "503 failed to connect to all addresses".encode("utf-8")
-        yield error_data, 3  # EVENT_TTS_ERROR
+        yield error_data, 3, None  # EVENT_TTS_ERROR
         # Also yield the end signal to ensure proper completion
-        yield None, 2  # EVENT_TTS_REQUEST_END
+        yield None, 2, None  # EVENT_TTS_REQUEST_END
         return
 
     mock_client_instance.get = mock_get
@@ -316,11 +316,11 @@ def test_memory_robustness(MockGoogleTTS):
     mock_client_instance = AsyncMock()
 
     # Mock the get method to return large audio data
-    async def mock_get(text):
+    async def mock_get(text, request_id):
         # Return large audio data to test memory handling
         large_audio_data = b"x" * 1024 * 1024  # 1MB of data
-        yield large_audio_data, 1  # EVENT_TTS_RESPONSE
-        yield None, 2  # EVENT_TTS_REQUEST_END
+        yield large_audio_data, 1, 123  # EVENT_TTS_RESPONSE
+        yield None, 2, None  # EVENT_TTS_REQUEST_END
 
     mock_client_instance.get = mock_get
     mock_client_instance.cancel = AsyncMock()
@@ -364,10 +364,10 @@ def test_cancellation_robustness(MockGoogleTTS):
     mock_client_instance = AsyncMock()
 
     # Mock the get method to return audio data
-    async def mock_get(text):
+    async def mock_get(text, request_id):
         # Return audio data in the expected format
-        yield b"fake_audio_data", 1  # EVENT_TTS_RESPONSE
-        yield None, 2  # EVENT_TTS_REQUEST_END
+        yield b"fake_audio_data", 1, 123  # EVENT_TTS_RESPONSE
+        yield None, 2, None  # EVENT_TTS_REQUEST_END
 
     mock_client_instance.get = mock_get
     mock_client_instance.cancel = AsyncMock()

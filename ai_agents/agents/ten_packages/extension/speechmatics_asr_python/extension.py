@@ -21,6 +21,10 @@ from ten_runtime import (
     AsyncTenEnv,
     AudioFrame,
 )
+from ten_ai_base.const import (
+    LOG_CATEGORY_VENDOR,
+    LOG_CATEGORY_KEY_POINT,
+)
 
 from ten_ai_base.dumper import Dumper
 from .reconnect_manager import ReconnectManager
@@ -69,8 +73,19 @@ class SpeechmaticsASRExtension(AsyncASRBaseExtension):
         config_json, _ = await ten_env.get_property_to_json("")
 
         try:
-            self.config = SpeechmaticsASRConfig.model_validate_json(config_json)
-            ten_env.log_info(f"Speechmatics ASR config: {self.config}")
+            temp_config = SpeechmaticsASRConfig.model_validate_json(config_json)
+            ten_env.log_info(f"Speechmatics ASR temp_config: {temp_config}")
+            if temp_config.uri == "":
+                temp_config.uri = "wss://eu2.rt.speechmatics.com/v2"
+                ten_env.log_info(
+                    f"URI is empty, set to default: {temp_config.uri}"
+                )
+
+            self.config = temp_config
+            ten_env.log_info(
+                f"Speechmatics ASR config: {self.config}",
+                category=LOG_CATEGORY_KEY_POINT,
+            )
             self.config.update(self.config.params)
             ten_env.log_info(
                 f"Speechmatics ASR config: {self.config.to_json(sensitive_handling=True)}"
@@ -144,7 +159,10 @@ class SpeechmaticsASRExtension(AsyncASRBaseExtension):
 
     async def on_asr_open(self) -> None:
         """Handle callback when connection is established"""
-        self.ten_env.log_info("Speechmatics ASR connection opened")
+        self.ten_env.log_info(
+            "vendor_status_changed: on_open",
+            category=LOG_CATEGORY_VENDOR,
+        )
         self.connected = True
 
         # Notify reconnect manager of successful connection
@@ -159,7 +177,10 @@ class SpeechmaticsASRExtension(AsyncASRBaseExtension):
 
     async def on_asr_result(self, message_data: ASRResult) -> None:
         """Handle recognition result callback"""
-        self.ten_env.log_info(f"Speechmatics ASR result: {message_data}")
+        self.ten_env.log_debug(
+            f"vendor_result: on_result: {message_data}",
+            category=LOG_CATEGORY_VENDOR,
+        )
 
         await self._handle_asr_result(
             text=message_data.text,
@@ -174,7 +195,8 @@ class SpeechmaticsASRExtension(AsyncASRBaseExtension):
     ) -> None:
         """Handle error callback"""
         self.ten_env.log_error(
-            f"Speechmatics ASR error: {error_msg} code: {error_code}"
+            f"vendor_error: {error_msg} code: {error_code}",
+            category=LOG_CATEGORY_VENDOR,
         )
         await self._handle_reconnect()
 
@@ -194,7 +216,10 @@ class SpeechmaticsASRExtension(AsyncASRBaseExtension):
 
     async def on_asr_close(self) -> None:
         """Handle callback when connection is closed"""
-        self.ten_env.log_debug("Speechmatics ASR connection closed")
+        self.ten_env.log_info(
+            "vendor_status_changed: on_close",
+            category=LOG_CATEGORY_VENDOR,
+        )
         self.connected = False
 
         if self.client:
@@ -209,8 +234,9 @@ class SpeechmaticsASRExtension(AsyncASRBaseExtension):
         assert self.config is not None
 
         self.last_finalize_timestamp = int(datetime.now().timestamp() * 1000)
-        self.ten_env.log_debug(
-            f"Speechmatics ASR finalize start at {self.last_finalize_timestamp}"
+        self.ten_env.log_info(
+            f"vendor_cmd: finalize start timestamp: {self.last_finalize_timestamp}",
+            category=LOG_CATEGORY_VENDOR,
         )
 
         if self.config.drain_mode == "mute_pkg":

@@ -13,7 +13,7 @@ mod tests {
         graph::{
             connection::{GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow},
             graph_info::GraphInfo,
-            node::{GraphContent, GraphNode},
+            node::{GraphNode, GraphResource},
             Graph,
         },
         pkg_info::get_app_installed_pkgs,
@@ -210,7 +210,7 @@ mod tests {
                 GraphNode::new_subgraph_node(
                     "subgraph_1".to_string(),
                     None,
-                    GraphContent {
+                    GraphResource {
                         import_uri: "/tmp/subgraph.json".to_string(),
                     },
                 ),
@@ -241,7 +241,6 @@ mod tests {
             }]),
             exposed_messages: None,
             exposed_properties: None,
-            pre_flatten: None,
         };
 
         let pkgs_cache: HashMap<String, PkgsInfoInApp> = HashMap::new();

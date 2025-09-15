@@ -12,6 +12,11 @@ from ten_runtime import (
     AsyncTenEnv,
 )
 
+from ten_ai_base.const import (
+    LOG_CATEGORY_VENDOR,
+    LOG_CATEGORY_KEY_POINT,
+)
+
 from typing_extensions import override
 from ten_ai_base.asr import (
     AsyncASRBaseExtension,
@@ -57,6 +62,10 @@ class GoogleASRExtension(AsyncASRBaseExtension):
 
     async def _on_asr_error(self, code: int, message: str):
         """Callback for handling errors from the client."""
+        self.ten_env.log_error(
+            f"vendor_error: code: {code}, reason: {message}",
+            category=LOG_CATEGORY_VENDOR,
+        )
         severity = self._map_to_module_error_code(code, message)
         await self.send_asr_error(
             ModuleError(
@@ -78,17 +87,16 @@ class GoogleASRExtension(AsyncASRBaseExtension):
             try:
                 # Skip reconnect for client-side normal shutdowns
                 if (code == 1) or ("CANCELLED" in (message or "").upper()):
-                    if self.ten_env:
-                        self.ten_env.log_debug(
-                            "Non-fatal CANCELLED received; skip reconnect."
-                        )
+                    self.ten_env.log_debug(
+                        "Non-fatal CANCELLED received; skip reconnect."
+                    )
                     return
 
                 # Mark as disconnected and stop client before reconnecting
                 self.connected = False
                 if self.client:
                     try:
-                        await self.client.stop()
+                        await self.client.stop(self.session_id)
                     except Exception:
                         ...
                     self.client = None
@@ -211,6 +219,10 @@ class GoogleASRExtension(AsyncASRBaseExtension):
 
             # Initialize reconnect manager
             self.reconnect_manager = ReconnectManager(logger=ten_env)
+            ten_env.log_info(
+                f"config: {self.config.to_json(sensitive_handling=True)}",
+                category=LOG_CATEGORY_KEY_POINT,
+            )
         except Exception as e:
             ten_env.log_error(f"Error during Google ASR initialization: {e}")
             self.config = GoogleASRConfig.model_validate_json("{}")
@@ -246,7 +258,7 @@ class GoogleASRExtension(AsyncASRBaseExtension):
                 on_result_callback=self._on_asr_result,
                 on_error_callback=self._on_asr_error,
             )
-            await self.client.start()
+            await self.client.start(self.session_id)
             self.connected = True
             self.ten_env.log_info("Google ASR connection started successfully.")
             if self.reconnect_manager:
@@ -267,7 +279,7 @@ class GoogleASRExtension(AsyncASRBaseExtension):
 
         self.ten_env.log_info("Stopping Google ASR connection...")
         if self.client:
-            await self.client.stop()
+            await self.client.stop(self.session_id)
         self.client = None
         self.connected = False
         if self.audio_dumper:

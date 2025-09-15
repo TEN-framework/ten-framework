@@ -288,6 +288,11 @@ if __name__ == "__main__":
             chunk_time_ms = 50
             chunk_size = int(chunk_time_ms * sample_rate / 1000 * 2)
             cnt = 0
+            if sample_rate != 24000:
+                import numpy as np
+                import samplerate
+
+                resampler = samplerate.Resampler("sinc_best")
             while not client.is_ready():
                 await asyncio.sleep(0.1)
             while True:
@@ -295,6 +300,14 @@ if __name__ == "__main__":
                 if not chunk:
                     await client.send_end_of_stream()
                     break
+                if sample_rate != 24000:
+                    input_data = np.frombuffer(chunk, dtype=np.int16).astype(
+                        np.float32
+                    )
+                    ratio = 24000 / sample_rate
+                    resampled_data = resampler.process(input_data, ratio)
+                    chunk = resampled_data.astype(np.int16).tobytes()
+
                 await client.send_pcm_data(chunk)
                 await asyncio.sleep(chunk_time_ms / 1000)
                 cnt += chunk_time_ms

@@ -14,9 +14,7 @@ if project_root not in sys.path:
 # Refer to the "LICENSE" file in the root directory for more information.
 #
 import json
-from typing import Any
 from unittest.mock import patch, AsyncMock
-import tempfile
 import os
 import asyncio
 import filecmp
@@ -26,16 +24,13 @@ import threading
 from ten_runtime import (
     ExtensionTester,
     TenEnvTester,
-    Cmd,
-    CmdResult,
-    StatusCode,
     Data,
 )
 from ten_ai_base.struct import TTSTextInput, TTSFlush
-from ten_ai_base.message import ModuleVendorException, ModuleErrorVendorInfo
 from rime_tts.rime_tts import (
     EVENT_TTS_RESPONSE,
     EVENT_TTS_END,
+    EVENT_TTS_TTFB_METRIC,
 )
 
 
@@ -157,6 +152,9 @@ def test_dump_functionality(MockRimeTTSClient):
     tester = ExtensionTesterDump()
 
     dump_config = {
+        "params": {
+            "api_key": "a_valid_api_key",
+        },
         "dump": True,
         "dump_path": DUMP_PATH,
     }
@@ -311,7 +309,7 @@ def test_text_input_end_logic(MockRimeTTSClient):
     # --- Test Setup ---
     config = {
         "params": {
-            "app_key": "a_valid_app_key",
+            "api_key": "a_valid_api_key",
         },
     }
     tester = ExtensionTesterTextInputEnd()
@@ -457,11 +455,17 @@ def test_flush_logic(MockRimeTTSClient):
         mock_instance.response_msgs = response_msgs
 
         async def populate_queue():
+            ttfb_sent = False
             await asyncio.sleep(1)
             # Continuously send audio chunks until cancelled
             for _ in range(20):
                 if cancel_event.is_set():
                     return
+
+                # First audio chunk for a session, calculate and send TTFB
+                if not ttfb_sent:
+                    await response_msgs.put((EVENT_TTS_TTFB_METRIC, 255))
+                    ttfb_sent = True
 
                 await response_msgs.put(
                     (EVENT_TTS_RESPONSE, b"\x11\x22\x33" * 100)
@@ -479,7 +483,7 @@ def test_flush_logic(MockRimeTTSClient):
     # --- Test Setup ---
     config = {
         "params": {
-            "app_key": "a_valid_app_key",
+            "api_key": "a_valid_api_key",
         },
     }
     tester = ExtensionTesterFlush()

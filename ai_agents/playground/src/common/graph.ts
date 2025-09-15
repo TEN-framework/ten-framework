@@ -37,7 +37,7 @@ export namespace AddonDef {
   }
 
   export type Api = {
-    property?: {properties: Record<string, Attribute>}
+    property?: { properties: Record<string, Attribute> }
     cmd_in?: Command[]
     cmd_out?: Command[]
     data_in?: ApiEndpoint[]
@@ -113,7 +113,7 @@ type Connection = {
 }
 
 type Graph = {
-  uuid: string
+  graph_id: string
   name: string
   autoStart: boolean
   nodes: Node[]

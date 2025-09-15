@@ -25,12 +25,66 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  call-check-pr-status:
+    uses: ./.github/workflows/_check_pr_status.yml
+
   build:
+    needs: call-check-pr-status
+    if: ${{ needs.call-check-pr-status.outputs.should_continue == 'true' }}
     runs-on: macos-13
     strategy:
       matrix:
         build_type: [release]
     steps:
+      - name: Check PR status before matrix execution
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            console.log('Event name:', context.eventName);
+            console.log('Matrix:', ${{ toJson(matrix) }});
+
+            // Only check for PR events
+            if (context.eventName !== 'pull_request') {
+              console.log('Not a PR event, continuing...');
+              return;
+            }
+
+            // Ensure we have PR data
+            if (!context.payload.pull_request) {
+              console.log('No pull_request data in payload, continuing...');
+              return;
+            }
+
+            const { owner, repo } = context.repo;
+            const prNumber = context.payload.pull_request.number;
+
+            try {
+              const pr = await github.rest.pulls.get({
+                owner,
+                repo,
+                pull_number: prNumber,
+              });
+
+              console.log(`PR #${prNumber} state: ${pr.data.state}, merged: ${pr.data.merged}`);
+
+              if (pr.data.state === 'closed') {
+                if (pr.data.merged) {
+                  console.log(`PR #${prNumber} has been merged. Stopping matrix execution.`);
+                  core.setFailed('PR has been merged, stopping execution to save resources.');
+                } else {
+                  console.log(`PR #${prNumber} has been closed. Stopping matrix execution.`);
+                  core.setFailed('PR has been closed, stopping execution to save resources.');
+                }
+              } else {
+                console.log(`PR #${prNumber} is still open. Continuing matrix execution.`);
+              }
+            } catch (error) {
+              console.error(`Error checking PR status: ${error.message}`);
+              console.log('Error details:', error);
+              console.log('Continuing matrix execution due to error...');
+            }
+
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -117,7 +171,7 @@ jobs:
       - name: Upload tests relevant artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: tests-artifacts-${{ matrix.build_type }}
+          name: tests-artifacts-mac-x64-${{ matrix.build_type }}
           path: tests-artifacts.tar.gz
           if-no-files-found: ignore
 
@@ -206,7 +260,7 @@ jobs:
       - name: Download build artifacts (tar archive)
         uses: actions/download-artifact@v4
         with:
-          name: tests-artifacts-${{ matrix.build_type }}
+          name: tests-artifacts-mac-x64-${{ matrix.build_type }}
           path: out/mac/x64
 
       - name: Extract tests artifacts preserving permissions
@@ -352,7 +406,7 @@ jobs:
       - name: Download build artifacts (tar archive)
         uses: actions/download-artifact@v4
         with:
-          name: tests-artifacts-${{ matrix.build_type }}
+          name: tests-artifacts-mac-x64-${{ matrix.build_type }}
           path: out/mac/x64
 
       - name: Extract tests artifacts preserving permissions
@@ -447,7 +501,7 @@ jobs:
       - name: Download build artifacts (tar archive)
         uses: actions/download-artifact@v4
         with:
-          name: tests-artifacts-${{ matrix.build_type }}
+          name: tests-artifacts-mac-x64-${{ matrix.build_type }}
           path: out/mac/x64
 
       - name: Extract tests artifacts preserving permissions
@@ -550,7 +604,7 @@ jobs:
       - name: Download build artifacts (tar archive)
         uses: actions/download-artifact@v4
         with:
-          name: tests-artifacts-${{ matrix.build_type }}
+          name: tests-artifacts-mac-x64-${{ matrix.build_type }}
           path: out/mac/x64
 
       - name: Extract tests artifacts preserving permissions
@@ -653,7 +707,7 @@ jobs:
       - name: Download build artifacts (tar archive)
         uses: actions/download-artifact@v4
         with:
-          name: tests-artifacts-${{ matrix.build_type }}
+          name: tests-artifacts-mac-x64-${{ matrix.build_type }}
           path: out/mac/x64
 
       - name: Extract tests artifacts preserving permissions

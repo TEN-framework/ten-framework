@@ -17,6 +17,9 @@
 
 #include "include_internal/ten_utils/backtrace/backtrace.h"
 #include "include_internal/ten_utils/backtrace/common.h"
+#if defined(TEN_ENABLE_TEN_RUST_APIS)
+#include "include_internal/ten_rust/ten_rust.h"
+#endif
 
 /**
  * @brief Dynamically loads and retrieves function pointers for Windows
@@ -173,6 +176,19 @@ void ten_backtrace_dump(ten_backtrace_t *self, size_t skip) {
     return;
   }
 
+#if defined(TEN_ENABLE_TEN_RUST_APIS)
+  ten_backtrace_common_t *common = (ten_backtrace_common_t *)self;
+
+  // Call Rust side frame by frame parsing and output through callback.
+  // Cast the callback function pointer types to match the Rust FFI signature
+  // (void* ctx) to avoid incompatible function pointer types on some compilers.
+  (void)ten_rust_backtrace_dump(
+      self,
+      (int (*)(void *, uintptr_t, const char *, int, const char *,
+               void *))common->on_dump_file_line,
+      (void (*)(void *, const char *, int, void *))common->on_error,
+      (uintptr_t)skip);
+#else
   ten_backtrace_win_t *self_win = (ten_backtrace_win_t *)self;
 
   // Check if we have all required function pointers.
@@ -263,4 +279,5 @@ void ten_backtrace_dump(ten_backtrace_t *self, size_t skip) {
   // Clean up.
   free(symbol);
   self_win->SymCleanup(process);
+#endif
 }

@@ -14,6 +14,9 @@ class Params(BaseModel):
         default=None, description="OpenAI websocket base url"
     )
     log_level: str = Field(default="INFO", description="OpenAI ASR log level")
+    sample_rate: int = Field(
+        default=16000, description="Set the extension input audio sample rate"
+    )
 
     model_config = ConfigDict(extra="allow")
 
@@ -31,6 +34,7 @@ class Params(BaseModel):
                     "project",
                     "websocket_base_url",
                     "log_level",
+                    "sample_rate",
                 },
             ),
         )

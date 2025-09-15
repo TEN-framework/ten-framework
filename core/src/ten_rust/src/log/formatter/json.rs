@@ -30,7 +30,7 @@ struct FieldVisitor {
     file_name: Option<String>,
     line_no: Option<u32>,
     message: String,
-    target: Option<String>,
+    category: Option<String>,
 }
 
 impl Visit for FieldVisitor {
@@ -57,8 +57,8 @@ impl Visit for FieldVisitor {
                     self.line_no = Some(line);
                 }
             }
-            "target" => {
-                self.target = Some(format!("{value:?}").trim_matches('"').to_string());
+            "category" => {
+                self.category = Some(format!("{value:?}").trim_matches('"').to_string());
             }
             "message" => {
                 if !self.message.is_empty() {
@@ -86,8 +86,8 @@ impl Visit for FieldVisitor {
             "file_name" => {
                 self.file_name = Some(value.to_string());
             }
-            "target" => {
-                self.target = Some(value.to_string());
+            "category" => {
+                self.category = Some(value.to_string());
             }
             "message" => {
                 if !self.message.is_empty() {
@@ -141,7 +141,7 @@ pub struct JsonFieldNames {
     pub level: String,
     pub pid: String,
     pub tid: String,
-    pub target: String,
+    pub category: String,
     pub function: String,
     pub file: String,
     pub line: String,
@@ -155,7 +155,7 @@ impl Default for JsonFieldNames {
             level: "level".to_string(),
             pid: "pid".to_string(),
             tid: "tid".to_string(),
-            target: "category".to_string(),
+            category: "category".to_string(),
             function: "function".to_string(),
             file: "file".to_string(),
             line: "line".to_string(),
@@ -234,14 +234,14 @@ where
             if self.config.ansi { COLOR_RESET } else { "" }
         )?;
 
-        // Target
-        let target = visitor.target.as_ref().map_or(metadata.target(), |v| v);
+        // Category
+        let category = visitor.category.as_ref().map_or(metadata.target(), |v| v);
         write!(
             writer,
             ",\"{}\":\"{}{}{}\"",
-            self.config.field_names.target,
+            self.config.field_names.category,
             if self.config.ansi { COLOR_MAGENTA } else { "" },
-            target,
+            category,
             if self.config.ansi { COLOR_RESET } else { "" }
         )?;
 

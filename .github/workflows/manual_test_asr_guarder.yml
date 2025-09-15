@@ -19,10 +19,10 @@ on:
         type: string
         default: ""
       env_vars:
-        description: 'Environment variable keys (use semicolon to separate multiple keys, format: KEY1;KEY2;KEY3). Values will be read from GitHub Secrets.'
+        description: "Environment variable keys (use semicolon to separate multiple keys, format: KEY1;KEY2;KEY3). Values will be read from GitHub Secrets."
         required: false
         type: string
-        default: ''
+        default: ""
 
 permissions:
   contents: read
@@ -31,7 +31,7 @@ jobs:
   asr-guarder-test:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/ten-framework/ten_agent_build:0.6.15
+      image: ghcr.io/ten-framework/ten_agent_build:0.7.3
 
     env:
       # Import all secrets as environment variables for dynamic access

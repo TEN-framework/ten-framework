@@ -4,9 +4,10 @@
 # Licensed under the Apache License, Version 2.0, with certain conditions.
 # Refer to the "LICENSE" file in the root directory for more information.
 #
-from unittest.mock import patch, AsyncMock
+from unittest.mock import patch, MagicMock
 import asyncio
 import json
+import time
 
 from ten_ai_base.struct import TTSTextInput
 from ten_runtime import (
@@ -16,6 +17,7 @@ from ten_runtime import (
 )
 from ..tencent_tts import (
     MESSAGE_TYPE_PCM,
+    MESSAGE_TYPE_CMD_COMPLETE,
 )
 
 
@@ -82,27 +84,37 @@ def test_ttfb_metric_is_sent(MockTencentTTSClient):
 
     # --- Mock Configuration ---
     mock_instance = MockTencentTTSClient.return_value
-    mock_instance.start = AsyncMock()
-    mock_instance.stop = AsyncMock()
+    mock_instance.start = MagicMock()
+    mock_instance.stop = MagicMock()
 
-    # This async generator simulates the TTS client's get() method with a delay
-    # to produce a measurable TTFB.
-    async def mock_synthesize_audio_with_delay(text: str):
-        # Simulate network latency or processing time before the first byte
-        await asyncio.sleep(0.2)
-        yield (False, MESSAGE_TYPE_PCM, b"\x11\x22\x33")
-        # Simulate the end of the stream
-        yield (True, MESSAGE_TYPE_PCM, b"")
+    # Create some fake audio data to be streamed
+    fake_audio_chunk_1 = b"\x11\x22\x33\x44" * 20
+    fake_audio_chunk_2 = b"\xaa\xbb\xcc\xdd" * 20
 
-    mock_instance.synthesize_audio.side_effect = (
-        mock_synthesize_audio_with_delay
-    )
+    # Mock synthesize_audio and get_audio_data with proper timing using asyncio.Queue
+    audio_queue = asyncio.Queue()
+
+    def mock_synthesize_audio(text: str, text_input_end: bool):
+        time.sleep(0.2)
+        # Add audio data to queue when synthesis starts
+        audio_queue.put_nowait((False, MESSAGE_TYPE_PCM, fake_audio_chunk_1))
+        audio_queue.put_nowait((False, MESSAGE_TYPE_PCM, fake_audio_chunk_2))
+        audio_queue.put_nowait((True, MESSAGE_TYPE_CMD_COMPLETE, b""))
+        print(
+            f"Mock synthesize_audio called with text: {text}, text_input_end: {text_input_end}"
+        )
+
+    async def mock_get_audio_data():
+        return await audio_queue.get()
+
+    mock_instance.synthesize_audio.side_effect = mock_synthesize_audio
+    mock_instance.get_audio_data.side_effect = mock_get_audio_data
 
     # --- Test Setup ---
     # A minimal config is needed for the extension to initialize correctly.
     metrics_config = {
         "params": {
-            "app_id": "test_app_id",
+            "app_id": "1234567890",
             "secret_id": "test_secret_id",
             "secret_key": "test_secret_key",
         }
