@@ -9,7 +9,7 @@ use std::sync::Arc;
 use actix_web::{web, HttpResponse, Responder};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use ten_rust::{graph::msg_conversion::MsgAndResultConversion, pkg_info::message::MsgType};
+use ten_rust::{graph::{connection::GraphLoc, msg_conversion::MsgAndResultConversion}, pkg_info::message::MsgType};
 use uuid::Uuid;
 
 use crate::{
@@ -26,12 +26,11 @@ use crate::{
 pub struct AddGraphConnectionRequestPayload {
     pub graph_id: Uuid,
 
-    pub src_app: Option<String>,
-    pub src_extension: String,
+    pub src: GraphLoc,
+    pub dest: GraphLoc,
+
     pub msg_type: MsgType,
-    pub msg_name: String,
-    pub dest_app: Option<String>,
-    pub dest_extension: String,
+    pub msg_name: Vec<String>,
 
     pub msg_conversion: Option<MsgAndResultConversion>,
 }
@@ -66,13 +65,11 @@ pub async fn add_graph_connection_endpoint(
     if let Err(e) = graph_add_connection(
         graph_info.graph.graph_mut(),
         &graph_info.app_base_dir,
-        request_payload.src_app.clone(),
-        request_payload.src_extension.clone(),
+        &pkgs_cache,
+        request_payload.src.clone(),
+        request_payload.dest.clone(),
         request_payload.msg_type.clone(),
         request_payload.msg_name.clone(),
-        request_payload.dest_app.clone(),
-        request_payload.dest_extension.clone(),
-        &pkgs_cache,
         request_payload.msg_conversion.clone(),
     )
     .await

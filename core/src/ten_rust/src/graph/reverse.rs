@@ -34,6 +34,7 @@ impl Graph {
                     src.loc.app.clone(),
                     src.loc.extension.clone(),
                     src.loc.subgraph.clone(),
+                    src.loc.selector.clone(),
                 );
 
                 // Create a new message flow with the current destinations

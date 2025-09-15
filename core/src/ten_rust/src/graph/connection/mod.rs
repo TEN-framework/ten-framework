@@ -43,16 +43,41 @@ impl GraphLoc {
         }
     }
 
-    pub fn with_app_and_extension_or_subgraph(
+    pub fn with_app_and_extension_or_subgraph_or_selector(
         app: Option<String>,
         extension: Option<String>,
         subgraph: Option<String>,
+        selector: Option<String>,
     ) -> Self {
         Self {
             app,
             extension,
             subgraph,
-            selector: None,
+            selector,
+        }
+    }
+
+    pub fn get_node_kind(&self) -> Result<&str> {
+        if self.extension.is_some() {
+            Ok("extension")
+        } else if self.subgraph.is_some() {
+            Ok("subgraph")
+        } else if self.selector.is_some() {
+            Ok("selector")
+        } else {
+            Err(anyhow::anyhow!("ERR_MSG_GRAPH_LOC_MUST_HAVE_ONE_OF_EXTENSION_SUBGRAPH_SELECTOR"))
+        }
+    }
+
+    pub fn get_node_name(&self) -> Result<&str> {
+        if self.extension.is_some() {
+            Ok(self.extension.as_ref().unwrap())
+        } else if self.subgraph.is_some() {
+            Ok(self.subgraph.as_ref().unwrap())
+        } else if self.selector.is_some() {
+            Ok(self.selector.as_ref().unwrap())
+        } else {
+            Err(anyhow::anyhow!("ERR_MSG_GRAPH_LOC_MUST_HAVE_ONE_OF_EXTENSION_SUBGRAPH_SELECTOR"))
         }
     }
 
@@ -95,6 +120,7 @@ impl GraphLoc {
 
         Ok(())
     }
+
 }
 
 impl Default for GraphLoc {
@@ -119,9 +145,9 @@ pub struct GraphConnection {
 }
 
 impl GraphConnection {
-    pub fn new(app: Option<String>, extension: Option<String>, subgraph: Option<String>) -> Self {
+    pub fn new(app: Option<String>, extension: Option<String>, subgraph: Option<String>, selector: Option<String>) -> Self {
         Self {
-            loc: GraphLoc::with_app_and_extension_or_subgraph(app, extension, subgraph),
+            loc: GraphLoc::with_app_and_extension_or_subgraph_or_selector(app, extension, subgraph, selector),
             cmd: None,
             data: None,
             audio_frame: None,
@@ -265,9 +291,9 @@ pub struct GraphDestination {
 }
 
 impl GraphDestination {
-    pub fn new(app: Option<String>, extension: Option<String>, subgraph: Option<String>) -> Self {
+    pub fn new(app: Option<String>, extension: Option<String>, subgraph: Option<String>, selector: Option<String>) -> Self {
         Self {
-            loc: GraphLoc::with_app_and_extension_or_subgraph(app, extension, subgraph),
+            loc: GraphLoc::with_app_and_extension_or_subgraph_or_selector(app, extension, subgraph, selector),
             msg_conversion: None,
         }
     }

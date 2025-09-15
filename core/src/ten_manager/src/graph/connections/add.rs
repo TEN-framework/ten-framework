@@ -62,21 +62,35 @@ fn add_message_flow_to_connection(
     Ok(())
 }
 
+fn node_matches(loc: &GraphLoc, node_type: &str, node_name: &str, node_app: &Option<String>) -> bool {
+    if node_type == "extension" {
+        return loc.extension.as_ref().is_some_and(|ext| ext == node_name) && loc.app == *node_app;
+    }
+    else if node_type == "subgraph" {
+        return loc.subgraph.as_ref().is_some_and(|subgraph| subgraph == node_name);
+    }
+    else if node_type == "selector" {
+        return loc.selector.as_ref().is_some_and(|selector| selector == node_name);
+    }
+    return false;
+}
+
 /// Checks if the connection already exists.
 fn check_connection_exists(
     graph: &Graph,
-    src_app: &Option<String>,
-    src_extension: &str,
+    src_node_type: &str,
+    src_node_name: &str,
+    src_node_app: &Option<String>,
     msg_type: &MsgType,
-    msg_name: &str,
-    dest_app: &Option<String>,
-    dest_extension: &str,
+    msg_name: &Vec<String>,
+    dest_node_type: &str,
+    dest_node_name: &str,
+    dest_node_app: &Option<String>,
 ) -> Result<()> {
     if let Some(connections) = &graph.connections {
         for conn in connections.iter() {
             // Check if source matches.
-            if conn.loc.extension.as_ref().is_some_and(|ext| ext == src_extension)
-                && conn.loc.app == *src_app
+            if node_matches(&conn.loc, src_node_type, src_node_name, src_node_app)
             {
                 // Check for duplicate message flows based on message type.
                 let msg_flows = match msg_type {
@@ -89,22 +103,23 @@ fn check_connection_exists(
                 if let Some(flows) = msg_flows {
                     for flow in flows {
                         // Check if message name matches.
-                        if flow.name.as_deref() == Some(msg_name) {
-                            // Check if destination already exists.
-                            for dest in &flow.dest {
-                                if dest.loc.extension.as_deref() == Some(dest_extension)
-                                    && dest.loc.app == *dest_app
-                                {
-                                    return Err(anyhow::anyhow!(
-                                        "Connection already exists: src:({:?}, {}), \
-                                         msg_type:{:?}, msg_name:{}, dest:({:?}, {})",
-                                        src_app,
-                                        src_extension,
-                                        msg_type,
-                                        msg_name,
-                                        dest_app,
-                                        dest_extension
-                                    ));
+                        for name in msg_name.iter() {
+                            if flow.name.as_deref() == Some(name) {
+                                // Check if destination already exists.
+                                for dest in &flow.dest {
+                                    node_matches(&dest.loc, dest_node_type, dest_node_name, dest_node_app)
+                                    {
+                                        return Err(anyhow::anyhow!(
+                                            "Connection already exists: src: {:?} '{}', \
+                                            msg_type:{:?}, msg_name:{}, dest: {:?} '{}'",
+                                            src_node_type,
+                                            src_node_name,
+                                            msg_type,
+                                            name,
+                                            dest_node_type,
+                                            dest_node_name,
+                                        ));
+                                    }
                                 }
                             }
                         }
@@ -117,42 +132,46 @@ fn check_connection_exists(
 }
 
 /// Checks if source and destination nodes exist in the graph.
-fn check_nodes_exist(
+fn check_node_exists(
     graph: &Graph,
-    src_app: &Option<String>,
-    src_extension: &str,
-    dest_app: &Option<String>,
-    dest_extension: &str,
+    node_type: &str,
+    node_name: &str,
+    node_app: &Option<String>,
 ) -> Result<()> {
-    // Validate that source node exists.
-    let src_node_exists = graph.nodes.iter().any(|node| match node {
-        GraphNode::Extension {
-            content,
-        } => content.name == src_extension && content.app == *src_app,
-        _ => false,
-    });
-
-    if !src_node_exists {
-        return Err(anyhow::anyhow!(
-            "Source node with extension '{}' and app '{:?}' not found in the graph",
-            src_extension,
-            src_app
-        ));
+    let mut node_exists = false;
+    if node_type == "extension" {
+        node_exists = graph.nodes.iter().any(|node| match node {
+            GraphNode::Extension {
+                content,
+            } => content.name == node_name && content.app == *node_app,
+            _ => false,
+        });
+    }
+    else if node_type == "subgraph" {
+        node_exists = graph.nodes.iter().any(|node| match node {
+            GraphNode::Subgraph {
+                content,
+            } => content.name == node_name,
+            _ => false,
+        })
+    }
+    else if node_type == "selector" {
+        node_exists = graph.nodes.iter().any(|node| match node {
+            GraphNode::Selector {
+                content,
+            } => content.name == node_name,
+            _ => false,
+        })
+    }
+    else {
+        return Err(anyhow::anyhow!("Invalid node type: {}", node_type));
     }
 
-    // Validate that destination node exists.
-    let dest_node_exists = graph.nodes.iter().any(|node| match node {
-        GraphNode::Extension {
-            content,
-        } => content.name == dest_extension && content.app == *dest_app,
-        _ => false,
-    });
-
-    if !dest_node_exists {
+    if !node_exists {
         return Err(anyhow::anyhow!(
-            "Destination node with extension '{}' and app '{:?}' not found in the graph",
-            dest_extension,
-            dest_app
+            "Node with {} '{}' not found in the graph",
+            node_type,
+            node_name,
         ));
     }
 
@@ -164,30 +183,37 @@ fn check_nodes_exist(
 pub async fn graph_add_connection(
     graph: &mut Graph,
     graph_app_base_dir: &Option<String>,
-    src_app: Option<String>,
-    src_extension: String,
-    msg_type: MsgType,
-    msg_name: String,
-    dest_app: Option<String>,
-    dest_extension: String,
     pkgs_cache: &HashMap<String, PkgsInfoInApp>,
+    src: GraphLoc,
+    dest: GraphLoc,
+    msg_type: MsgType,
+    msg_name: Vec<String>,
     msg_conversion: Option<MsgAndResultConversion>,
 ) -> Result<()> {
     // Store the original state in case validation fails.
     let original_graph = graph.clone();
 
+    //store node_type: extension, subgraph, selector
+    let src_node_type = src.get_node_kind()?;
+    let dest_node_type = dest.get_node_kind()?;
+    let src_node_name = src.get_node_name()?;
+    let dest_node_name = dest.get_node_name()?;
+
     // Check if nodes exist.
-    check_nodes_exist(graph, &src_app, &src_extension, &dest_app, &dest_extension)?;
+    check_node_exists(graph, src_node_type, src_node_name, &src.app)?;
+    check_node_exists(graph, dest_node_type, dest_node_name, &src.app)?;
 
     // Check if connection already exists.
     check_connection_exists(
         graph,
-        &src_app,
-        &src_extension,
+        src_node_type,
+        src_node_name,
+        &src.app,
         &msg_type,
         &msg_name,
-        &dest_app,
-        &dest_extension,
+        dest_node_type,
+        dest_node_name,
+        &dest.app,
     )?;
 
     // Validate connection schema.
@@ -243,7 +269,7 @@ pub async fn graph_add_connection(
                 loc: GraphLoc {
                     app: src_app.clone(),
                     extension: Some(src_extension),
-                    subgraph: None,
+                    subgraph: None, //TODO add here
                     selector: None,
                 },
                 cmd: None,
