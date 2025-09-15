@@ -393,7 +393,7 @@ class GoogleASRClient:
                 )
 
             self.ten_env.log_debug(
-                f"vendor_result: on_recognized: {first_alt.transcript}, language: {normalized_lang}, full_json: {first_alt}",
+                f"vendor_result: on_recognized: {first_alt.transcript}, language: {normalized_lang}, full_json: {result}",
                 category=LOG_CATEGORY_VENDOR,
             )
 
@@ -403,7 +403,7 @@ class GoogleASRClient:
                 words=words,
                 confidence=first_alt.confidence,
                 language=normalized_lang,
-                start_ms=(int(words[0].duration_ms) if words else 0),
+                start_ms=(int(words[0].start_ms) if words else 0),
                 duration_ms=(
                     int(result.result_end_offset.total_seconds() * 1000)
                     if hasattr(result, "result_end_offset")
