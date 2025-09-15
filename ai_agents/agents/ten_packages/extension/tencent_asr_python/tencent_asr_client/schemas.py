@@ -287,8 +287,8 @@ class RequestParams(BaseModel):
                         f"invalid hotword weight: {word[0]}|{word[1]}"
                     )
             return value
-        except Exception:
-            raise ValueError(f"invalid hotword list: {value}")
+        except Exception as e:
+            raise ValueError(f"invalid hotword list: {value}") from e
 
     def _query_params_without_signature(self) -> dict[str, Any]:
         # update timestamp and expired
