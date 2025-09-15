@@ -29,6 +29,24 @@
       "properties": {
         "greeting": {
           "type": "string"
+        },
+        "twilio_account_sid": {
+          "type": "string"
+        },
+        "twilio_auth_token": {
+          "type": "string"
+        },
+        "twilio_from_number": {
+          "type": "string"
+        },
+        "twilio_webhook_url": {
+          "type": "string"
+        },
+        "http_port": {
+          "type": "int32"
+        },
+        "websocket_port": {
+          "type": "int32"
         }
       }
     }

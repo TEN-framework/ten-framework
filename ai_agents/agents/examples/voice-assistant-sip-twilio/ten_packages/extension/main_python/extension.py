@@ -9,6 +9,7 @@ from ten_runtime import (
     AsyncTenEnv,
     Cmd,
     Data,
+    AudioFrame,
 )
 
 from .agent.agent import Agent
@@ -20,7 +21,8 @@ from .agent.events import (
     UserLeftEvent,
 )
 from .helper import _send_cmd, _send_data, parse_sentences
-from .config import MainControlConfig  # assume extracted from your base model
+from .config import MainControlConfig
+from .server import TwilioServer
 
 import uuid
 
@@ -36,6 +38,7 @@ class MainControlExtension(AsyncExtension):
         self.ten_env: AsyncTenEnv = None
         self.agent: Agent = None
         self.config: MainControlConfig = None
+        self.twilio_server: TwilioServer = None
 
         self.stopped: bool = False
         self._rtc_user_count: int = 0
@@ -118,6 +121,19 @@ class MainControlExtension(AsyncExtension):
     async def on_start(self, ten_env: AsyncTenEnv):
         ten_env.log_info("[MainControlExtension] on_start")
 
+        # Initialize and start Twilio server
+        if self.config:
+            self.twilio_server = TwilioServer(self.config, ten_env)
+
+            # Start HTTP server in background
+            asyncio.create_task(self.twilio_server.start_server())
+            ten_env.log_info(f"HTTP server started on port {self.config.http_port}")
+
+            # Start WebSocket server in background
+            asyncio.create_task(self.twilio_server.start_websocket_server())
+            ten_env.log_info(f"WebSocket server started on port {self.config.websocket_port}")
+
+
     async def on_stop(self, ten_env: AsyncTenEnv):
         ten_env.log_info("[MainControlExtension] on_stop")
         self.stopped = True
@@ -128,6 +144,17 @@ class MainControlExtension(AsyncExtension):
 
     async def on_data(self, ten_env: AsyncTenEnv, data: Data):
         await self.agent.on_data(data)
+
+    async def on_audio_frame(self, ten_env: AsyncTenEnv, audio_frame: AudioFrame) -> None:
+        """Handle outgoing audio frames from TEN framework"""
+        try:
+            if self.twilio_server and audio_frame.get_name() == "audio_out":
+                audio_data = audio_frame.get_buf()
+                # Send audio to all active Twilio calls
+                for call_sid in self.twilio_server.active_call_sessions.keys():
+                    await self.twilio_server.send_audio_to_twilio(audio_data, call_sid)
+        except Exception as e:
+            ten_env.log_error(f"Failed to handle audio frame: {e}")
 
     # === helpers ===
     async def _send_transcript(
