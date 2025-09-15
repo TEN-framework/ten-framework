@@ -39,14 +39,14 @@
         "twilio_from_number": {
           "type": "string"
         },
-        "twilio_webhook_url": {
+        "twilio_server_webhook_http_port": {
+          "type": "int32"
+        },
+        "twilio_server_media_ws_port": {
+          "type": "int32"
+        },
+        "twilio_client_media_ws_url": {
           "type": "string"
-        },
-        "http_port": {
-          "type": "int32"
-        },
-        "websocket_port": {
-          "type": "int32"
         }
       }
     }

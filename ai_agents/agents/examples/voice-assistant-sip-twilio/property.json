@@ -8,23 +8,6 @@
           "nodes": [
             {
               "type": "extension",
-              "name": "agora_rtc",
-              "addon": "agora_rtc",
-              "extension_group": "default",
-              "property": {
-                "app_id": "${env:AGORA_APP_ID}",
-                "app_certificate": "${env:AGORA_APP_CERTIFICATE|}",
-                "channel": "ten_agent_test",
-                "stream_id": 1234,
-                "remote_stream_id": 123,
-                "subscribe_audio": true,
-                "publish_audio": true,
-                "publish_data": true,
-                "enable_agora_asr": false
-              }
-            },
-            {
-              "type": "extension",
               "name": "stt",
               "addon": "deepgram_asr_python",
               "extension_group": "stt",
@@ -41,6 +24,7 @@
               "addon": "openai_llm2_python",
               "extension_group": "chatgpt",
               "property": {
+                "max_memory_length": 10,
                 "base_url": "https://api.openai.com/v1",
                 "api_key": "${env:OPENAI_API_KEY}",
                 "frequency_penalty": 0.9,
@@ -48,8 +32,7 @@
                 "max_tokens": 512,
                 "prompt": "",
                 "proxy_url": "${env:OPENAI_PROXY_URL|}",
-                "greeting": "TEN Agent connected. How can I help you today?",
-                "max_memory_length": 10
+                "greeting": "TEN Agent connected. How can I help you today?"
               }
             },
             {
@@ -58,14 +41,14 @@
               "addon": "elevenlabs_tts2_python",
               "extension_group": "tts",
               "property": {
-                "dump": false,
-                "dump_path": "./",
                 "params": {
                   "key": "${env:ELEVENLABS_TTS_KEY}",
                   "model_id": "eleven_multilingual_v2",
                   "voice_id": "pNInz6obpgDQGcFmaJgB",
                   "output_format": "pcm_16000"
-                }
+                },
+                "dump_path": "./",
+                "dump": false
               }
             },
             {
@@ -74,7 +57,13 @@
               "addon": "main_python",
               "extension_group": "control",
               "property": {
-                "greeting": "TEN Agent connected. How can I help you today?"
+                "greeting": "TEN Agent connected. How can I help you today?",
+                "twilio_account_sid": "${env:TWILIO_ACCOUNT_SID}",
+                "twilio_auth_token": "${env:TWILIO_AUTH_TOKEN}",
+                "twilio_from_number": "${env:TWILIO_FROM_NUMBER}",
+                "twilio_server_webhook_http_port": 9000,
+                "twilio_server_media_ws_port": 9001,
+                "twilio_client_media_ws_url": "${env:TWILIO_CLIENT_MEDIA_WS_URL}"
               }
             },
             {
@@ -101,73 +90,6 @@
             }
           ],
           "connections": [
-            {
-              "extension": "main_control",
-              "cmd": [
-                {
-                  "names": [
-                    "on_user_joined",
-                    "on_user_left"
-                  ],
-                  "source": [
-                    {
-                      "extension": "agora_rtc"
-                    }
-                  ]
-                },
-                {
-                  "names": [
-                    "tool_register"
-                  ],
-                  "source": [
-                    {
-                      "extension": "weatherapi_tool_python"
-                    }
-                  ]
-                }
-              ],
-              "data": [
-                {
-                  "name": "asr_result",
-                  "source": [
-                    {
-                      "extension": "stt"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "extension": "agora_rtc",
-              "audio_frame": [
-                {
-                  "name": "pcm_frame",
-                  "dest": [
-                    {
-                      "extension": "streamid_adapter"
-                    }
-                  ]
-                },
-                {
-                  "name": "pcm_frame",
-                  "source": [
-                    {
-                      "extension": "tts"
-                    }
-                  ]
-                }
-              ],
-              "data": [
-                {
-                  "name": "data",
-                  "source": [
-                    {
-                      "extension": "message_collector"
-                    }
-                  ]
-                }
-              ]
-            },
             {
               "extension": "streamid_adapter",
               "audio_frame": [
