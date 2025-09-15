@@ -280,11 +280,11 @@ class SonioxASRExtension(AsyncASRBaseExtension):
                 self._group_transcript_tokens_by_final(transcript_tokens)
             )
 
-            if non_final_tokens:
-                await self._send_tokens(non_final_tokens, is_final=False)
-
             if final_tokens:
                 await self._send_tokens(final_tokens, is_final=True)
+
+            if non_final_tokens:
+                await self._send_tokens(non_final_tokens, is_final=False)
 
         except Exception as e:
             self.ten_env.log_error(f"Error handling transcript: {e}")
