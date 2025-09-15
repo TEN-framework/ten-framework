@@ -274,16 +274,19 @@ class RequestParams(BaseModel):
             return None
         if len(value) == 0:
             return None
-        _words = value.split(",")
-        _words = [word.split("|") for word in _words]
-        _words = [(word[0], int(word[1])) for word in _words]
+        try:
+            _words = value.split(",")
+            _words = [word.split("|") for word in _words]
+            _words = [(word[0], int(word[1])) for word in _words]
 
-        for word in _words:
-            if len(word[0]) == 0 or len(word[0]) > 30:
-                raise ValueError(f"invalid hotword: {word}")
-            if not ((word[1] >= 1 and word[1] <= 11) or word[1] == 100):
-                raise ValueError(f"invalid hotword weight: {word[0]}|{word[1]}")
-        return value
+            for word in _words:
+                if len(word[0]) == 0 or len(word[0]) > 30:
+                    raise ValueError(f"invalid hotword: {word}")
+                if not ((word[1] >= 1 and word[1] <= 11) or word[1] == 100):
+                    raise ValueError(f"invalid hotword weight: {word[0]}|{word[1]}")
+            return value
+        except Exception:
+            raise ValueError(f"invalid hotword list: {value}")
 
     def _query_params_without_signature(self) -> dict[str, Any]:
         # update timestamp and expired
