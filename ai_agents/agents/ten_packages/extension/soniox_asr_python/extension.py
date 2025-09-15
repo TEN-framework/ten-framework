@@ -262,7 +262,7 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         unused_total_audio_proc_ms: int,
     ):
         self.ten_env.log_debug(
-            f"vender_result: transcript: {tokens}",
+            f"vendor_result: transcript: {tokens}",
             category=LOG_CATEGORY_VENDOR,
         )
         try:
