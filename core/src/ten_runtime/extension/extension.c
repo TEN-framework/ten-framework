@@ -127,6 +127,11 @@ ten_extension_t *ten_extension_create(
 
   self->is_standalone_test_extension = false;
 
+  // Initialize manual trigger life cycle configuration
+  for (int i = 0; i < TEN_MANUAL_TRIGGER_STAGE_MAX; i++) {
+    self->manual_trigger_life_cycle.stages[i] = false;
+  }
+
   self->user_data = user_data;
 
   self->engine = NULL;

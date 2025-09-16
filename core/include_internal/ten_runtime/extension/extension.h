@@ -101,6 +101,22 @@ typedef enum TEN_EXTENSION_STATE {
   TEN_EXTENSION_STATE_ON_DEINIT_DONE,
 } TEN_EXTENSION_STATE;
 
+// Manual trigger life cycle stage enumeration
+typedef enum TEN_MANUAL_TRIGGER_STAGE {
+  TEN_MANUAL_TRIGGER_STAGE_CONFIGURE,
+  TEN_MANUAL_TRIGGER_STAGE_INIT,
+  TEN_MANUAL_TRIGGER_STAGE_START,
+  TEN_MANUAL_TRIGGER_STAGE_STOP,
+  TEN_MANUAL_TRIGGER_STAGE_DEINIT,
+  TEN_MANUAL_TRIGGER_STAGE_MAX
+} TEN_MANUAL_TRIGGER_STAGE;
+
+// Manual trigger life cycle configuration
+typedef struct ten_manual_trigger_life_cycle_t {
+  bool stages[TEN_MANUAL_TRIGGER_STAGE_MAX];  // true if stage should be
+                                              // manually triggered
+} ten_manual_trigger_life_cycle_t;
+
 struct ten_extension_t {
   ten_binding_handle_t binding_handle;
 
@@ -235,6 +251,9 @@ struct ten_extension_t {
   ten_hashtable_t msg_not_connected_count_map;
 
   bool is_standalone_test_extension;
+
+  // Manual trigger life cycle configuration
+  ten_manual_trigger_life_cycle_t manual_trigger_life_cycle;
 
   void *user_data;
 };
