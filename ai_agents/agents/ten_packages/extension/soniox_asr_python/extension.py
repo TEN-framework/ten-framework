@@ -258,23 +258,17 @@ class SonioxASRExtension(AsyncASRBaseExtension):
     async def _handle_transcript(
         self,
         tokens: List[SonioxToken],
-        unused_final_audio_proc_ms: int,
-        unused_total_audio_proc_ms: int,
+        final_audio_proc_ms: int,
+        total_audio_proc_ms: int,
     ):
         self.ten_env.log_debug(
-            f"vendor_result: transcript: {tokens}",
+            f"vendor_result: transcript: {tokens}, final_audio_proc_ms: {final_audio_proc_ms}, total_audio_proc_ms: {total_audio_proc_ms}",
             category=LOG_CATEGORY_VENDOR,
         )
         try:
             transcript_tokens, unused_translation_tokens, fin = (
                 self._group_tokens(tokens)
             )
-
-            if fin:
-                await self._finalize_end()
-
-            if not transcript_tokens:
-                return
 
             final_tokens, non_final_tokens = (
                 self._group_transcript_tokens_by_final(transcript_tokens)
@@ -285,6 +279,9 @@ class SonioxASRExtension(AsyncASRBaseExtension):
 
             if non_final_tokens:
                 await self._send_tokens(non_final_tokens, is_final=False)
+
+            if fin:
+                await self._finalize_end()
 
         except Exception as e:
             self.ten_env.log_error(f"Error handling transcript: {e}")
