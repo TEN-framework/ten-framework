@@ -6,6 +6,7 @@ from .config import GoogleTTSConfig
 from google.oauth2 import service_account
 import json
 import time
+from ten_ai_base.const import LOG_CATEGORY_VENDOR
 
 # Custom event types to communicate status back to the extension
 EVENT_TTS_RESPONSE = 1
@@ -85,7 +86,7 @@ class GoogleTTS:
             self.client = texttospeech.TextToSpeechClient(
                 credentials=credentials
             )
-            self.ten_env.log_info("Google TTS client initialized successfully")
+            self.ten_env.log_debug("Google TTS client initialized successfully")
 
         except Exception as e:
             self.ten_env.log_error(
@@ -113,8 +114,6 @@ class GoogleTTS:
         self, text: str, request_id: str
     ) -> AsyncIterator[tuple[bytes | None, int, int | None]]:
         """Generate TTS audio for the given text"""
-
-        self.ten_env.log_debug(f"Generating TTS for text: '{text[:50]}...'")
 
         if not self.client:
             error_msg = "Google TTS client not initialized"
@@ -207,6 +206,10 @@ class GoogleTTS:
 
             except Exception as e:
                 error_message = str(e)
+                self.ten_env.log_error(
+                    f"vendor_error: reason: {error_message}",
+                    category=LOG_CATEGORY_VENDOR,
+                )
 
                 # Check if it's a retryable network error
                 is_retryable = (
@@ -217,10 +220,10 @@ class GoogleTTS:
                 )
 
                 if is_retryable and attempt < max_retries - 1:
-                    self.ten_env.log_warn(
+                    self.ten_env.log_debug(
                         f"Network error (attempt {attempt + 1}/{max_retries}): {error_message}"
                     )
-                    self.ten_env.log_info(
+                    self.ten_env.log_debug(
                         f"Retrying in {retry_delay} seconds..."
                     )
                     await asyncio.sleep(retry_delay)
@@ -271,11 +274,11 @@ class GoogleTTS:
         self.ten_env.log_info("GoogleTTS: clean() called.")
         if self.client:
             self.client = None
-            self.ten_env.log_info("Google TTS client cleaned")
+            self.ten_env.log_debug("Google TTS client cleaned")
 
     async def reset(self):
         """Reset the client"""
         self.ten_env.log_info("Resetting Google TTS client")
         self.client = None
         self._initialize_client()
-        self.ten_env.log_info("Google TTS client reset completed")
+        self.ten_env.log_debug("Google TTS client reset completed")

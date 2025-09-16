@@ -172,7 +172,9 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                         and self.request_start_ts is None
                     ):
                         self.request_start_ts = datetime.now()
-                        await self.send_tts_audio_start(self.current_request_id)
+                        await self.send_tts_audio_start(
+                            self.current_request_id, self.current_turn_id
+                        )
 
                     if (
                         self.config.dump
