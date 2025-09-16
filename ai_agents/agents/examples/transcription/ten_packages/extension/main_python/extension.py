@@ -80,17 +80,21 @@ class MainControlExtension(AsyncExtension):
         stream_id = int(self.session_id)
         if not event.text:
             return
-        
+
         # For transcription-only mode, just send the raw transcript
         await self._send_transcript("user", event.text, event.final, stream_id)
-        
-        # Optionally process with LLM for correction (uncomment if needed):
-        # if event.final:
-        #     self.turn_id += 1
-        #     await self.agent.queue_llm_input(f"Please correct any errors in this transcription: {event.text}")
+
+        if event.final and self.config.enable_llm_correction:
+            self.turn_id += 1
+            prompt = self.config.correction_prompt.replace("{text}", event.text)
+            # Flush any in-flight response so each utterance is handled independently
+            await self.agent.flush_llm()
+            await self.agent.queue_llm_input(prompt)
 
     @agent_event_handler(LLMResponseEvent)
     async def _on_llm_response(self, event: LLMResponseEvent):
+        if not event.text:
+            return
         # Send LLM corrected text as assistant transcript (if LLM processing is enabled)
         await self._send_transcript(
             "assistant",
