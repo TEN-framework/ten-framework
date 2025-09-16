@@ -103,7 +103,7 @@ def test_params_passthrough(MockHumeAiTTS):
         AsyncMock()
     )  # Required for clean shutdown in on_flush
 
-    async def mock_get_audio_stream(text: str):
+    async def mock_get_audio_stream(text: str, request_id: str):
         yield (b"\x11\x22\x33", EVENT_TTS_RESPONSE)
         yield (None, EVENT_TTS_END)
 
