@@ -17,6 +17,7 @@ from ten_ai_base.message import (
 )
 from ten_ai_base.struct import TTSTextInput, TTSTextResult
 from ten_ai_base.tts2 import AsyncTTS2BaseExtension
+from ten_ai_base.const import LOG_CATEGORY_KEY_POINT, LOG_CATEGORY_VENDOR
 from ten_runtime import (
     AsyncTenEnv,
     Data,
@@ -51,7 +52,8 @@ class PollyTTSExtension(AsyncTTS2BaseExtension):
         try:
             self.config = PollyTTSConfig.model_validate_json(config_json)
             ten_env.log_info(
-                f"KEYPOINT vendor_config: {self.config.model_dump_json()}"
+                f"config: {self.config.model_dump_json()}",
+                category=LOG_CATEGORY_KEY_POINT,
             )
 
             if self.config.dump:
@@ -68,8 +70,15 @@ class PollyTTSExtension(AsyncTTS2BaseExtension):
             # this can effectively reduce latency.
             async for _chunk in self.client.async_synthesize_speech("P"):
                 ...
+            self.ten_env.log_debug(
+                "vendor_status: tts connect successfully",
+                category=LOG_CATEGORY_VENDOR,
+            )
         except Exception as e:
-            ten_env.log_error(f"invalid property: {e}")
+            ten_env.log_error(
+                f"vendor_status: tts on_init error: {e}",
+                category=LOG_CATEGORY_VENDOR,
+            )
             self.client = None
             await self.send_tts_error(
                 self.current_request_id,
@@ -83,7 +92,9 @@ class PollyTTSExtension(AsyncTTS2BaseExtension):
     @override
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
         await super().on_stop(ten_env)
-        ten_env.log_debug("on_stop")
+        ten_env.log_debug(
+            "vendor_status: on_stop", category=LOG_CATEGORY_VENDOR
+        )
         if self.client:
             self.client.close()
         if isinstance(self.audio_dumper, Dumper):
@@ -96,15 +107,10 @@ class PollyTTSExtension(AsyncTTS2BaseExtension):
     async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
         name = data.get_name()
         if name == "tts_flush":
-            ten_env.log_info(f"Received tts_flush data: {name}")
-
             # get flush_id and record to flush_request_ids
             flush_id, _ = data.get_property_string("flush_id")
             if flush_id:
                 self.flush_request_ids.add(flush_id)
-                ten_env.log_info(
-                    f"Added request_id {flush_id} to flush_request_ids set"
-                )
 
             # if current request is flushed, send audio_end
             if (
@@ -122,24 +128,18 @@ class PollyTTSExtension(AsyncTTS2BaseExtension):
                     self.current_turn_id,
                     TTSAudioEndReason.INTERRUPTED,
                 )
-                ten_env.log_info(
-                    f"Sent tts_audio_end with INTERRUPTED reason for request_id: {self.current_request_id}"
-                )
         await super().on_data(ten_env, data)
 
     @override
     async def request_tts(self, t: TTSTextInput) -> None:
         if self.client is None:
             return
-        self.ten_env.log_info(
-            f"KEYPOINT Requesting TTS for text: {t.text}, text_input_end: {t.text_input_end} request ID: {t.request_id}"
-        )
         # check if request_id is in flush_request_ids
         if t.request_id in self.flush_request_ids:
             error_msg = (
                 f"Request ID {t.request_id} was flushed, ignoring TTS request"
             )
-            self.ten_env.log_warn(error_msg)
+            self.ten_env.log_debug(error_msg)
             await self.send_tts_error(
                 t.request_id,
                 ModuleError(
@@ -151,9 +151,6 @@ class PollyTTSExtension(AsyncTTS2BaseExtension):
             return
 
         if t.request_id in self.last_end_request_ids:
-            self.ten_env.log_info(
-                f"KEYPOINT end request ID: {t.request_id} is already ended, ignoring TTS request"
-            )
             await self.send_tts_error(
                 t.request_id,
                 ModuleError(
@@ -166,9 +163,6 @@ class PollyTTSExtension(AsyncTTS2BaseExtension):
 
         text = t.text
         if t.request_id != self.current_request_id:
-            self.ten_env.log_info(
-                f"KEYPOINT New TTS request with ID: {t.request_id}"
-            )
             if (
                 self.current_request_id is not None
                 and self.request_start_ts is not None
@@ -209,21 +203,22 @@ class PollyTTSExtension(AsyncTTS2BaseExtension):
                         await self.send_tts_ttfb_metrics(
                             t.request_id, elapsed_time, self.current_turn_id
                         )
-                        self.ten_env.log_info(
-                            f"KEYPOINT Sent TTFB metrics for request ID: {t.request_id}, elapsed time: {elapsed_time}ms"
-                        )
 
                 if self.current_request_id in self.flush_request_ids:
                     continue
 
                 # calculate audio duration
-                self.request_total_audio_duration += (
-                    self._calculate_audio_duration(
-                        len(chunk),
-                        self.synthesize_audio_sample_rate(),
-                        self.synthesize_audio_channels(),
-                        self.synthesize_audio_sample_width(),
-                    )
+                duration = self._calculate_audio_duration(
+                    len(chunk),
+                    self.synthesize_audio_sample_rate(),
+                    self.synthesize_audio_channels(),
+                    self.synthesize_audio_sample_width(),
+                )
+                self.request_total_audio_duration += duration
+
+                self.ten_env.log_debug(
+                    f"receive_audio: duration: {duration}ms of request_id: {self.current_request_id}",
+                    category=LOG_CATEGORY_VENDOR,
                 )
 
                 # send audio data to output
@@ -276,15 +271,15 @@ class PollyTTSExtension(AsyncTTS2BaseExtension):
                         self.current_turn_id,
                         reason,
                     )
-                    self.ten_env.log_info(
-                        f"KEYPOINT Sent TTS audio end for request ID: {self.current_request_id} reason: {reason}"
-                    )
                     self.current_request_id = None
                     self.request_start_ts = None
                     self.request_total_audio_duration = 0
                     self.current_turn_id = -1
         except NoCredentialsError as e:
-            self.ten_env.log_error(f"invalid credentials: {e}")
+            self.ten_env.log_error(
+                f"vendor_status: invalid credentials {e}",
+                category=LOG_CATEGORY_VENDOR,
+            )
             await self.send_tts_error(
                 self.current_request_id,
                 ModuleError(
@@ -300,7 +295,8 @@ class PollyTTSExtension(AsyncTTS2BaseExtension):
             )
         except Exception as e:
             self.ten_env.log_error(
-                f"Error in request_tts: {traceback.format_exc()}. text: {t.text}"
+                f"vendor_status: Error in request_tts: {traceback.format_exc()}. text: {t.text}",
+                category=LOG_CATEGORY_VENDOR,
             )
             await self.send_tts_error(
                 self.current_request_id,

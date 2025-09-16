@@ -15,6 +15,11 @@ from websockets.protocol import State
 from ten_ai_base.const import (
     LOG_CATEGORY_VENDOR,
 )
+from ten_ai_base.timeline import AudioTimeline
+from ten_runtime import (
+    AsyncTenEnv,
+)
+from .audio_buffer_manager import AudioBufferManager
 
 STATUS_FIRST_FRAME = 0  # First frame identifier
 STATUS_CONTINUE_FRAME = 1  # Middle frame identifier
@@ -45,24 +50,28 @@ class XfyunWSRecognition:
 
     def __init__(
         self,
-        app_id,
-        api_key,
-        api_secret,
-        ten_env=None,
-        config=None,
-        callback=None,
+        app_id: str,
+        api_key: str,
+        api_secret: str,
+        audio_timeline: AudioTimeline,
+        ten_env: AsyncTenEnv,
+        config: dict,
+        callback: XfyunWSRecognitionCallback,
     ):
         """
         Initialize WebSocket speech recognition
         :param app_id: Application ID
         :param api_key: API key
         :param api_secret: API secret
+        :param audio_timeline: Audio timeline manager
         :param ten_env: Ten environment object for logging
         :param config: Configuration parameter dictionary, including the following optional parameters
+        :param callback: Callback function instance
         """
         self.app_id = app_id
         self.api_key = api_key
         self.api_secret = api_secret
+        self.audio_timeline = audio_timeline
         self.ten_env = ten_env
 
         # Set default configuration
@@ -137,11 +146,15 @@ class XfyunWSRecognition:
         self.is_started = False
         self.is_first_frame = True
         self._message_task = None
+        self._consumer_task = None
+
+        self.audio_buffer = AudioBufferManager(
+            ten_env=self.ten_env, threshold=1280
+        )
 
     def _log_debug(self, message):
-        """Unified logging method, use ten_env.log_debug if available"""
-        if self.ten_env:
-            self.ten_env.log_debug(message)
+        """Unified logging method"""
+        self.ten_env.log_debug(message)
 
     def _create_url(self):
         """Generate WebSocket connection URL"""
@@ -263,6 +276,9 @@ class XfyunWSRecognition:
             # Start message handler task
             self._message_task = asyncio.create_task(self._message_handler())
 
+            # Start consumer task for sending audio from buffer
+            self._consumer_task = asyncio.create_task(self._consume_and_send())
+
             if self.callback:
                 await self.callback.on_open()
 
@@ -284,75 +300,104 @@ class XfyunWSRecognition:
 
     async def send_audio_frame(self, audio_data):
         """
-        Send audio frame data
-        :param audio_data: Audio data (bytes format)
+        Producer side: push audio bytes into buffer.
+        :param audio_data: Audio data (bytes)
         """
-        if not self.is_started or not self.websocket:
-            self._log_debug("Recognition not started")
-            return
-
         try:
-            if self.is_first_frame:
-                # First frame data, needs to include business parameters
-                d = {
-                    "common": self.common_args,
-                    "business": self.business_args,
-                    "data": {
-                        "status": STATUS_FIRST_FRAME,
-                        "format": f"audio/L16;rate={self.config.get('sample_rate', 16000)}",
-                        "audio": str(base64.b64encode(audio_data), "utf-8"),
-                        "encoding": "raw",
-                    },
-                }
-                self.is_first_frame = False
-            else:
-                # Middle frame data
-                d = {
-                    "data": {
-                        "status": STATUS_CONTINUE_FRAME,
-                        "format": f"audio/L16;rate={self.config.get('sample_rate', 16000)}",
-                        "audio": str(base64.b64encode(audio_data), "utf-8"),
-                        "encoding": "raw",
+            await self.audio_buffer.push_audio(audio_data)
+        except Exception as e:
+            self._log_debug(f"Failed to enqueue audio frame: {e}")
+            if self.callback:
+                await self.callback.on_error(
+                    f"Failed to enqueue audio frame: {e}"
+                )
+
+    async def _consume_and_send(self):
+        """Consumer loop: pull chunks from buffer and send over websocket."""
+        sample_rate = self.config.get("samplerate", 16000)
+        try:
+            while True:
+                chunk = await self.audio_buffer.pull_chunk()
+                if chunk == b"":
+                    # EOF after close and buffer drained
+                    break
+
+                # Build payload based on frame status
+                if self.is_first_frame:
+                    # First frame data, needs to include business parameters
+                    d = {
+                        "common": self.common_args,
+                        "business": self.business_args,
+                        "data": {
+                            "status": STATUS_FIRST_FRAME,
+                            "format": f"audio/L16;rate={sample_rate}",
+                            "audio": str(base64.b64encode(chunk), "utf-8"),
+                            "encoding": "raw",
+                        },
                     }
-                }
+                    self.is_first_frame = False
+                else:
+                    # Middle frame data
+                    d = {
+                        "data": {
+                            "status": STATUS_CONTINUE_FRAME,
+                            "format": f"audio/L16;rate={sample_rate}",
+                            "audio": str(base64.b64encode(chunk), "utf-8"),
+                            "encoding": "raw",
+                        }
+                    }
 
-            await self.websocket.send(json.dumps(d))
+                # Update timeline based on actual sent bytes
+                duration_ms = int(len(chunk) / (int(sample_rate) / 1000 * 2))
+                self.audio_timeline.add_user_audio(duration_ms)
 
+                if self.websocket is None:
+                    break
+                await self.websocket.send(json.dumps(d))
         except websockets.exceptions.ConnectionClosed:
             self._log_debug(
-                "WebSocket connection closed while sending audio frame"
+                "WebSocket connection closed while consuming audio frames"
             )
             self.is_started = False
         except Exception as e:
-            self._log_debug(f"Failed to send audio frame: {e}")
+            self._log_debug(f"Consumer loop error: {e}")
             if self.callback:
-                await self.callback.on_error(f"Failed to send audio frame: {e}")
+                await self.callback.on_error(f"Consumer loop error: {e}")
 
     async def stop(self):
         """
         Stop speech recognition
         """
-        if not self.is_started or not self.websocket:
+        if not self.is_connected():
             self._log_debug("Recognition not started")
             return
 
         try:
+            # Close producer buffer so consumer drains remaining bytes and exits
+            self.audio_buffer.close()
+            if self._consumer_task:
+                try:
+                    await self._consumer_task
+                except asyncio.CancelledError:
+                    pass
+
             # Send end identifier
             d = {
                 "data": {
                     "status": STATUS_LAST_FRAME,
-                    "format": f"audio/L16;rate={self.config.get('sample_rate', 16000)}",
+                    "format": f"audio/L16;rate={self.config.get('samplerate', 16000)}",
                     "audio": "",
                     "encoding": "raw",
                 }
             }
-            await self.websocket.send(json.dumps(d))
+            ws = self.websocket
+            if ws is not None:
+                await ws.send(json.dumps(d))
             self.is_started = False
-            if self.ten_env:
-                self.ten_env.log_info(
-                    f"vendor_cmd: ${json.dumps(d)}",
-                    category=LOG_CATEGORY_VENDOR,
-                )
+            self.ten_env.log_info(
+                f"vendor_cmd: ${json.dumps(d)}",
+                category=LOG_CATEGORY_VENDOR,
+            )
 
         except websockets.exceptions.ConnectionClosed:
             self._log_debug("WebSocket connection already closed")
@@ -360,6 +405,15 @@ class XfyunWSRecognition:
             self._log_debug(f"Failed to stop recognition: {e}")
             if self.callback:
                 await self.callback.on_error(f"Failed to stop recognition: {e}")
+
+    async def stop_consumer(self):
+        """Stop consumer task"""
+        if self._consumer_task and not self._consumer_task.done():
+            self._consumer_task.cancel()
+            try:
+                await self._consumer_task
+            except asyncio.CancelledError:
+                pass
 
     async def close(self):
         """Close WebSocket connection"""
@@ -369,6 +423,8 @@ class XfyunWSRecognition:
                     await self.websocket.close()
             except Exception as e:
                 self._log_debug(f"Error closing websocket: {e}")
+
+        await self.stop_consumer()
 
         if self._message_task and not self._message_task.done():
             self._message_task.cancel()
