@@ -1,3 +1,4 @@
+from abc import abstractmethod
 import asyncio
 import websockets
 import datetime
@@ -12,9 +13,14 @@ from time import mktime
 import json
 from .const import TIMEOUT_CODE
 from websockets.protocol import State
+from ten_ai_base.timeline import AudioTimeline
 from ten_ai_base.const import (
     LOG_CATEGORY_VENDOR,
 )
+from ten_runtime import (
+    AsyncTenEnv,
+)
+from .audio_buffer_manager import AudioBufferManager
 
 
 STATUS_FIRST_FRAME = 0  # First frame identifier
@@ -25,18 +31,22 @@ STATUS_LAST_FRAME = 2  # Last frame identifier
 class XfyunWSRecognitionCallback:
     """WebSocket Speech Recognition Callback Interface"""
 
+    @abstractmethod
     async def on_open(self):
         """Called when connection is established"""
 
+    @abstractmethod
     async def on_result(self, message_data):
         """
         Recognition result callback
         :param message_data: Complete recognition result data
         """
 
+    @abstractmethod
     async def on_error(self, error_msg, error_code=None):
         """Error callback"""
 
+    @abstractmethod
     async def on_close(self):
         """Called when connection is closed"""
 
@@ -46,12 +56,13 @@ class XfyunWSRecognition:
 
     def __init__(
         self,
-        app_id,
-        api_key,
-        api_secret,
-        ten_env=None,
-        config=None,
-        callback=None,
+        app_id: str,
+        api_key: str,
+        api_secret: str,
+        audio_timeline: AudioTimeline,
+        ten_env: AsyncTenEnv,
+        config: dict,
+        callback: XfyunWSRecognitionCallback,
     ):
         """
         Initialize WebSocket speech recognition
@@ -65,6 +76,7 @@ class XfyunWSRecognition:
         self.api_key = api_key
         self.api_secret = api_secret
         self.ten_env = ten_env
+        self.audio_timeline = audio_timeline
 
         self.config = config
 
@@ -122,11 +134,11 @@ class XfyunWSRecognition:
         self.is_started = False
         self.is_first_frame = True
         self._message_task = None
+        self._consumer_task = None
 
-    def _log_debug(self, message):
-        """Unified logging method, use ten_env.log_debug if available"""
-        if self.ten_env:
-            self.ten_env.log_info(message)
+        self.audio_buffer = AudioBufferManager(
+            ten_env=self.ten_env, threshold=1280
+        )
 
     def _create_url(self):
         """Generate WebSocket connection URL"""
@@ -166,7 +178,7 @@ class XfyunWSRecognition:
             code = message_data.get("code")
             sid = message_data.get("sid")
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
-            self._log_debug(f"[{timestamp}] message: {message}")
+            self.ten_env.log_info(f"[{timestamp}] message: {message}")
 
             if self.ten_env:
                 self.ten_env.log_debug(
@@ -176,54 +188,50 @@ class XfyunWSRecognition:
 
             if code != 0:
                 error_msg = message_data.get("message")
-                self._log_debug(
+                self.ten_env.log_info(
                     f"[{timestamp}] sid: {sid} call error: {error_msg}, code: {code}"
                 )
-                if self.callback:
-                    self._log_debug(f"[{timestamp}] Calling callback.on_error")
-                    await self.callback.on_error(error_msg, code)
+                await self.callback.on_error(error_msg, code)
             else:
-                if self.callback:
-                    self._log_debug(f"[{timestamp}] Calling callback.on_result")
-                    await self.callback.on_result(message_data)
+                await self.callback.on_result(message_data)
 
         except Exception as e:
             error_msg = f"Error processing message: {e}"
-            self._log_debug(
+            self.ten_env.log_info(
                 f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {error_msg}"
             )
-            if self.callback:
-                await self.callback.on_error(error_msg)
+            await self.callback.on_error(error_msg)
 
     async def _message_handler(self):
         """Handle incoming WebSocket messages"""
         try:
-            async for message in self.websocket:
+            if self.websocket is None:
+                return
+            ws = self.websocket
+            async for message in ws:
                 await self._handle_message(message)
         except websockets.exceptions.ConnectionClosed:
-            self._log_debug("WebSocket connection closed")
+            self.ten_env.log_info("WebSocket connection closed")
         except Exception as e:
             error_msg = f"WebSocket message handler error: {e}"
-            self._log_debug(f"### {error_msg} ###")
-            if self.callback:
-                await self.callback.on_error(error_msg)
+            self.ten_env.log_info(f"### {error_msg} ###")
+            await self.callback.on_error(error_msg)
         finally:
             self.is_started = False
-            if self.callback:
-                await self.callback.on_close()
+            await self.callback.on_close()
 
     async def start(self, timeout=10):
         """
         Start speech recognition service
         :param timeout: Connection timeout in seconds, default 10 seconds
         """
-        if self.is_started:
-            self._log_debug("Recognition already started")
+        if self.is_connected():
+            self.ten_env.log_info("Recognition already started")
             return True
 
         try:
             ws_url = self._create_url()
-            self._log_debug(f"Connecting to: {ws_url}")
+            self.ten_env.log_info(f"Connecting to: {ws_url}")
 
             # Create SSL context that doesn't verify certificates (similar to original)
             ssl_context = ssl.create_default_context()
@@ -235,90 +243,109 @@ class XfyunWSRecognition:
                 ws_url, ssl=ssl_context, open_timeout=timeout
             )
 
-            self._log_debug("### WebSocket opened ###")
+            self.ten_env.log_info("### WebSocket opened ###")
             self.is_first_frame = True
             self.is_started = True
 
             # Start message handler task
             self._message_task = asyncio.create_task(self._message_handler())
 
-            if self.callback:
-                await self.callback.on_open()
+            # Start consumer task for sending audio from buffer
+            self._consumer_task = asyncio.create_task(self._consume_and_send())
 
-            self._log_debug("Recognition started successfully")
+            await self.callback.on_open()
+
+            self.ten_env.log_info("Recognition started successfully")
             return True
-
         except asyncio.TimeoutError:
             error_msg = f"Connection timeout after {timeout} seconds"
-            self._log_debug(f"Failed to start recognition: {error_msg}")
-            if self.callback:
-                await self.callback.on_error(error_msg, TIMEOUT_CODE)
+            self.ten_env.log_error(f"Failed to start recognition: {error_msg}")
+            await self.callback.on_error(error_msg, TIMEOUT_CODE)
             return False
         except Exception as e:
             error_msg = f"Failed to start recognition: {e}"
-            self._log_debug(error_msg)
-            if self.callback:
-                await self.callback.on_error(error_msg)
+            self.ten_env.log_error(error_msg)
+            await self.callback.on_error(error_msg)
             return False
 
     async def send_audio_frame(self, audio_data):
         """
-        Send audio frame data
-        :param audio_data: Audio data (bytes format)
+        Producer side: push audio bytes into buffer.
+        :param audio_data: Audio data (bytes)
         """
-        if not self.is_started or not self.websocket:
-            self._log_debug("Recognition not started")
-            return
-
         try:
-            if self.is_first_frame:
-                # First frame data, needs to include business parameters
-                self._log_debug(
-                    f"Sending first frame data: {self.business_args}"
-                )
-                d = {
-                    "common": self.common_args,
-                    "business": self.business_args,
-                    "data": {
-                        "status": STATUS_FIRST_FRAME,
-                        "format": f"audio/L16;rate={self.config.get('sample_rate', 16000)}",
-                        "audio": str(base64.b64encode(audio_data), "utf-8"),
-                        "encoding": "raw",
-                    },
-                }
-                self.is_first_frame = False
-            else:
-                # Middle frame data
-                d = {
-                    "data": {
-                        "status": STATUS_CONTINUE_FRAME,
-                        "format": f"audio/L16;rate={self.config.get('sample_rate', 16000)}",
-                        "audio": str(base64.b64encode(audio_data), "utf-8"),
-                        "encoding": "raw",
+            await self.audio_buffer.push_audio(audio_data)
+        except Exception as e:
+            self.ten_env.log_info(f"Failed to enqueue audio frame: {e}")
+            await self.callback.on_error(f"Failed to enqueue audio frame: {e}")
+
+    async def _consume_and_send(self):
+        """Consumer loop: pull chunks from buffer and send over websocket."""
+        sample_rate = self.config.get("sample_rate", 16000)
+        try:
+            while True:
+                chunk = await self.audio_buffer.pull_chunk()
+                if chunk == b"":
+                    # EOF after close and buffer drained
+                    break
+
+                # Build payload
+                if self.is_first_frame:
+                    self.ten_env.log_info(
+                        f"Sending first frame data: {self.business_args}"
+                    )
+                    d = {
+                        "common": self.common_args,
+                        "business": self.business_args,
+                        "data": {
+                            "status": STATUS_FIRST_FRAME,
+                            "format": f"audio/L16;rate={sample_rate}",
+                            "audio": str(base64.b64encode(chunk), "utf-8"),
+                            "encoding": "raw",
+                        },
                     }
-                }
+                    self.is_first_frame = False
+                else:
+                    d = {
+                        "data": {
+                            "status": STATUS_CONTINUE_FRAME,
+                            "format": f"audio/L16;rate={sample_rate}",
+                            "audio": str(base64.b64encode(chunk), "utf-8"),
+                            "encoding": "raw",
+                        }
+                    }
 
-            await self.websocket.send(json.dumps(d))
-
+                # Update timeline based on actual sent bytes
+                duration_ms = int(len(chunk) / (sample_rate / 1000 * 2))
+                self.audio_timeline.add_user_audio(duration_ms)
+                if self.websocket is None:
+                    break
+                await self.websocket.send(json.dumps(d))
         except websockets.exceptions.ConnectionClosed:
-            self._log_debug(
-                "WebSocket connection closed while sending audio frame"
+            self.ten_env.log_info(
+                "WebSocket connection closed while consuming audio frames"
             )
             self.is_started = False
         except Exception as e:
-            self._log_debug(f"Failed to send audio frame: {e}")
-            if self.callback:
-                await self.callback.on_error(f"Failed to send audio frame: {e}")
+            self.ten_env.log_info(f"Consumer loop error: {e}")
+            await self.callback.on_error(f"Consumer loop error: {e}")
 
     async def stop(self):
         """
         Stop speech recognition
         """
-        if not self.is_started or not self.websocket:
-            self._log_debug("Recognition not started")
+        if not self.is_connected():
+            self.ten_env.log_info("Recognition not started")
             return
 
         try:
+            # Close producer buffer so consumer drains remaining bytes and exits
+            self.audio_buffer.close()
+            if self._consumer_task:
+                try:
+                    await self._consumer_task
+                except asyncio.CancelledError:
+                    pass
             # Send end identifier
             d = {
                 "data": {
@@ -328,7 +355,9 @@ class XfyunWSRecognition:
                     "encoding": "raw",
                 }
             }
-            await self.websocket.send(json.dumps(d))
+            ws = self.websocket
+            if ws is not None:
+                await ws.send(json.dumps(d))
             self.is_started = False
             if self.ten_env:
                 self.ten_env.log_info(
@@ -337,11 +366,19 @@ class XfyunWSRecognition:
                 )
 
         except websockets.exceptions.ConnectionClosed:
-            self._log_debug("WebSocket connection already closed")
+            self.ten_env.log_info("WebSocket connection already closed")
         except Exception as e:
-            self._log_debug(f"Failed to stop recognition: {e}")
-            if self.callback:
-                await self.callback.on_error(f"Failed to stop recognition: {e}")
+            self.ten_env.log_info(f"Failed to stop recognition: {e}")
+            await self.callback.on_error(f"Failed to stop recognition: {e}")
+
+    async def stop_consumer(self):
+        """Stop consumer task"""
+        if self._consumer_task and not self._consumer_task.done():
+            self._consumer_task.cancel()
+            try:
+                await self._consumer_task
+            except asyncio.CancelledError:
+                pass
 
     async def close(self):
         """Close WebSocket connection"""
@@ -350,7 +387,9 @@ class XfyunWSRecognition:
                 if self.websocket.state == State.OPEN:
                     await self.websocket.close()
             except Exception as e:
-                self._log_debug(f"Error closing websocket: {e}")
+                self.ten_env.log_info(f"Error closing websocket: {e}")
+
+        await self.stop_consumer()
 
         if self._message_task and not self._message_task.done():
             self._message_task.cancel()
@@ -361,7 +400,7 @@ class XfyunWSRecognition:
 
         self.is_started = False
         self.is_first_frame = True
-        self._log_debug("WebSocket connection closed")
+        self.ten_env.log_info("WebSocket connection closed")
 
     def is_connected(self) -> bool:
         """Check if WebSocket connection is established"""
