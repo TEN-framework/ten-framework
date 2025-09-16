@@ -25,7 +25,7 @@ from ten_ai_base.message import (
     ModuleErrorCode,
     ModuleErrorVendorInfo,
 )
-from ten_runtime import AsyncTenEnv, AudioFrame
+from ten_runtime import AsyncTenEnv, AudioFrame, Data
 from typing_extensions import override
 
 from .config import SonioxASRConfig
@@ -185,13 +185,36 @@ class SonioxASRExtension(AsyncASRBaseExtension):
 
     @override
     async def finalize(self, session_id: Optional[str]) -> None:
+        # NOTE: This is an empty method, actual finalize logic is handled in on_data.
+        pass
+
+    @override
+    async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
+        await super().on_data(ten_env, data)
+        if data.get_name() == "asr_finalize":
+            # NOTE: We need this extra parameter for manual finalization in order to achieve lower finalization latency.
+            # Refer to: https://soniox.com/docs/stt/rt/manual-finalization#trailing-silence
+            #
+            # This property is not in the asr api, but will be included in the future.
+            # The upstream can set this property if it knows the trailing silence duration.
+            silence_duration_ms, err = data.get_property_int(
+                "silence_duration_ms"
+            )
+            if err:
+                await self._real_finalize()
+            else:
+                await self._real_finalize(silence_duration_ms)
+
+    async def _real_finalize(
+        self, silence_duration_ms: int | None = None
+    ) -> None:
         self.ten_env.log_info(
-            "vendor_cmd: finalize",
+            f"vendor_cmd: finalize, silence_duration_ms: {silence_duration_ms}",
             category=LOG_CATEGORY_VENDOR,
         )
         self.last_finalize_timestamp = int(time.time() * 1000)
         if self.websocket:
-            await self.websocket.finalize()
+            await self.websocket.finalize(silence_duration_ms)
 
     async def _finalize_end(self) -> None:
         self.ten_env.log_info("finalize end")

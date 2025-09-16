@@ -136,7 +136,7 @@ def test_vendor_authentication_error(patch_soniox_ws):
     async def fake_send_audio(_audio_data):
         await asyncio.sleep(0)
 
-    async def fake_finalize():
+    async def fake_finalize(trailing_silence_ms=None):
         await asyncio.sleep(0)
 
     async def fake_stop():
@@ -182,7 +182,7 @@ def test_vendor_quota_exceeded_error(patch_soniox_ws):
     async def fake_send_audio(_audio_data):
         await asyncio.sleep(0)
 
-    async def fake_finalize():
+    async def fake_finalize(trailing_silence_ms=None):
         await asyncio.sleep(0)
 
     async def fake_stop():
@@ -228,7 +228,7 @@ def test_vendor_unsupported_format_error(patch_soniox_ws):
     async def fake_send_audio(_audio_data):
         await asyncio.sleep(0)
 
-    async def fake_finalize():
+    async def fake_finalize(trailing_silence_ms=None):
         await asyncio.sleep(0)
 
     async def fake_stop():
@@ -272,7 +272,7 @@ def test_vendor_service_unavailable_error(patch_soniox_ws):
     async def fake_send_audio(_audio_data):
         await asyncio.sleep(0)
 
-    async def fake_finalize():
+    async def fake_finalize(trailing_silence_ms=None):
         await asyncio.sleep(0)
 
     async def fake_stop():
