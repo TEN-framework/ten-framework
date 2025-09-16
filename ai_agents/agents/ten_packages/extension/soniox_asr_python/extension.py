@@ -198,8 +198,9 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         if self.last_finalize_timestamp != 0:
             timestamp = int(time.time() * 1000)
             latency = timestamp - self.last_finalize_timestamp
-            self.ten_env.log_debug(
-                f"KEYPOINT finalize end at {timestamp}, counter: {latency}"
+            self.ten_env.log_info(
+                f"finalize end at {timestamp}, latency: {latency}",
+                category=LOG_CATEGORY_KEY_POINT,
             )
             self.last_finalize_timestamp = 0
             await self.send_asr_finalize_end()
