@@ -13,6 +13,16 @@ type ChatItem = {
 
 type TextChunk = { message_id: string; part_index: number; total_parts: number; content: string }
 
+const generateUserId = () => {
+  if (typeof window !== 'undefined' && window.crypto?.getRandomValues) {
+    const array = new Uint32Array(1)
+    window.crypto.getRandomValues(array)
+    return 100000 + (array[0] % 900000)
+  }
+  const fallback = Date.now() % 900000
+  return 100000 + fallback
+}
+
 export default function HomePage() {
   const [mounted, setMounted] = useState(false)
   const [channel, setChannel] = useState<string>('ten_transcription')
@@ -122,7 +132,7 @@ export default function HomePage() {
     setMounted(true)
     if (!userId) {
       const saved = Number(localStorage.getItem('uid') || '0')
-      const id = saved || Math.floor(100000 + Math.random() * 900000)
+      const id = saved || generateUserId()
       setUserId(id)
       localStorage.setItem('uid', String(id))
     }
