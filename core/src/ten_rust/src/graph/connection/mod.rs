@@ -7,14 +7,14 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
-use super::{msg_conversion::MsgAndResultConversion, AppUriDeclarationState};
+use super::{msg_conversion::MsgAndResultConversion, AppUriDeclarationState, node::GraphNodeType};
 use crate::{
     constants::{
         ERR_MSG_GRAPH_APP_FIELD_SHOULD_BE_DECLARED, ERR_MSG_GRAPH_APP_FIELD_SHOULD_NOT_BE_DECLARED,
         ERR_MSG_GRAPH_LOCALHOST_FORBIDDEN_IN_MULTI_APP_MODE,
         ERR_MSG_GRAPH_LOCALHOST_FORBIDDEN_IN_SINGLE_APP_MODE,
     },
-    graph::is_app_default_loc_or_none,
+    graph::{is_app_default_loc_or_none, Graph},
     pkg_info::localhost,
 };
 
@@ -57,7 +57,19 @@ impl GraphLoc {
         }
     }
 
-    pub fn get_node_kind(&self) -> Result<&str> {
+    pub fn get_node_type(&self) -> Result<GraphNodeType> {
+        if self.extension.is_some() {
+            Ok(GraphNodeType::Extension)
+        } else if self.subgraph.is_some() {
+            Ok(GraphNodeType::Subgraph)
+        } else if self.selector.is_some() {
+            Ok(GraphNodeType::Selector)
+        } else {
+            Err(anyhow::anyhow!("ERR_MSG_GRAPH_LOC_MUST_HAVE_ONE_OF_EXTENSION_SUBGRAPH_SELECTOR"))
+        }
+    }
+
+    pub fn get_node_type_str(&self) -> Result<&str> {
         if self.extension.is_some() {
             Ok("extension")
         } else if self.subgraph.is_some() {
@@ -69,7 +81,7 @@ impl GraphLoc {
         }
     }
 
-    pub fn get_node_name(&self) -> Result<&str> {
+    pub fn get_node_name(&self) -> Result<&String> {
         if self.extension.is_some() {
             Ok(self.extension.as_ref().unwrap())
         } else if self.subgraph.is_some() {
@@ -83,6 +95,10 @@ impl GraphLoc {
 
     pub fn get_app_uri(&self) -> &Option<String> {
         &self.app
+    }
+
+    pub fn matches(&self, other: &GraphLoc) -> bool {
+        self.app == other.app && self.extension == other.extension && self.subgraph == other.subgraph && self.selector == other.selector
     }
 
     /// Validates the app field according to the graph's app declaration rules.
@@ -121,6 +137,23 @@ impl GraphLoc {
         Ok(())
     }
 
+    /// Checks if a node exists in the graph.
+    pub fn check_node_exists(&self, graph: &Graph) -> Result<()> {
+        let node_name = self.get_node_name().unwrap();
+        let node_type = self.get_node_type().unwrap();
+
+        let exists = graph.nodes.iter().any(|node| {
+            node.get_name() == node_name && node.get_type() == node_type
+        });
+
+        if !exists {
+            return Err(anyhow::anyhow!(
+                "{} node '{}' not found in graph",
+                self.get_node_type_str().unwrap(), node_name
+            ));
+        }
+        Ok(())
+    }
 }
 
 impl Default for GraphLoc {
@@ -271,10 +304,10 @@ impl GraphMessageFlow {
         Ok(())
     }
 
-    pub fn new(name: String, dest: Vec<GraphDestination>, source: Vec<GraphSource>) -> Self {
+    pub fn new(name: Option<String>, names: Option<Vec<String>>, dest: Vec<GraphDestination>, source: Vec<GraphSource>) -> Self {
         Self {
-            name: Some(name),
-            names: None,
+            name,
+            names,
             dest,
             source,
         }
