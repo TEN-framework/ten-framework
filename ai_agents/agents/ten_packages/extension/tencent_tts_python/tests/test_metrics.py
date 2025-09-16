@@ -18,6 +18,7 @@ from ten_runtime import (
 from ..tencent_tts import (
     MESSAGE_TYPE_PCM,
     MESSAGE_TYPE_CMD_COMPLETE,
+    MESSAGE_TYPE_CMD_METRIC,
 )
 
 
@@ -97,6 +98,7 @@ def test_ttfb_metric_is_sent(MockTencentTTSClient):
     def mock_synthesize_audio(text: str, text_input_end: bool):
         time.sleep(0.2)
         # Add audio data to queue when synthesis starts
+        audio_queue.put_nowait((False, MESSAGE_TYPE_CMD_METRIC, 200))
         audio_queue.put_nowait((False, MESSAGE_TYPE_PCM, fake_audio_chunk_1))
         audio_queue.put_nowait((False, MESSAGE_TYPE_PCM, fake_audio_chunk_2))
         audio_queue.put_nowait((True, MESSAGE_TYPE_CMD_COMPLETE, b""))
