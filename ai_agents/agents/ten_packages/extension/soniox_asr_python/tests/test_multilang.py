@@ -164,7 +164,7 @@ def test_english_recognition(patch_soniox_ws):
     async def fake_send_audio(_audio_data):
         await asyncio.sleep(0)
 
-    async def fake_finalize():
+    async def fake_finalize(trailing_silence_ms=None):
         await asyncio.sleep(0)
 
     async def fake_stop():
@@ -230,7 +230,7 @@ def test_spanish_recognition(patch_soniox_ws):
     async def fake_send_audio(_audio_data):
         await asyncio.sleep(0)
 
-    async def fake_finalize():
+    async def fake_finalize(trailing_silence_ms=None):
         await asyncio.sleep(0)
 
     async def fake_stop():
@@ -305,7 +305,7 @@ def test_multilang_hints(patch_soniox_ws):
     async def fake_send_audio(_audio_data):
         await asyncio.sleep(0)
 
-    async def fake_finalize():
+    async def fake_finalize(trailing_silence_ms=None):
         await asyncio.sleep(0)
 
     async def fake_stop():
