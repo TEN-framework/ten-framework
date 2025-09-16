@@ -92,7 +92,7 @@ class Params(BaseModel):
             }
             data["engine_model_type"] = language_model_map[data.pop("language")]
 
-        if "hotword_list" in data:
+        if "hotword_list" in data and isinstance(data["hotword_list"], list):
             data["hotword_list"] = ",".join(data.pop("hotword_list"))
 
         return data
