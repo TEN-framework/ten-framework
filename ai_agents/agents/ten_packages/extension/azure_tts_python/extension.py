@@ -68,10 +68,6 @@ class AzureTTSExtension(AsyncTTS2BaseExtension):
                     pre_connect=self.config.pre_connect
                 )
             )
-            self.ten_env.log_debug(
-                "vendor_status: tts connect successfully",
-                category=LOG_CATEGORY_VENDOR,
-            )
         except Exception as e:
             ten_env.log_error(
                 f"vendor_status: tts on_init error: {e}",
@@ -256,7 +252,7 @@ class AzureTTSExtension(AsyncTTS2BaseExtension):
             error_msg = (
                 f"Request ID {t.request_id} was flushed, ignoring TTS request"
             )
-            self.ten_env.log_debug(error_msg, category=LOG_CATEGORY_VENDOR)
+            self.ten_env.log_debug(error_msg)
             await self.send_tts_error(
                 t.request_id,
                 ModuleError(
