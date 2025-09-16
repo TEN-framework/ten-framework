@@ -25,7 +25,7 @@ from .google_tts import (
     EVENT_TTS_ERROR,
     EVENT_TTS_INVALID_KEY_ERROR,
 )
-
+from ten_ai_base.const import LOG_CATEGORY_KEY_POINT, LOG_CATEGORY_VENDOR
 from ten_runtime import AsyncTenEnv
 
 
@@ -58,9 +58,9 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
 
             self.config = GoogleTTSConfig.model_validate_json(config_json_str)
             self.config.update_params()
-
             ten_env.log_info(
-                f"config: {self.config.to_str(sensitive_handling=True)}"
+                f"LOG_CATEGORY_KEY_POINT: {self.config.to_str(sensitive_handling=True)}",
+                category=LOG_CATEGORY_KEY_POINT,
             )
             if not self.config.credentials:
                 raise ValueError(
@@ -95,13 +95,12 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
             )
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
-        ten_env.log_info("GoogleTTS extension on_stop started")
+        ten_env.log_debug("GoogleTTS extension on_stop started")
 
         # Clean up client
         if self.client:
             try:
                 self.client.clean()
-                ten_env.log_info("GoogleTTS client cleaned successfully")
             except Exception as e:
                 ten_env.log_error(f"Error cleaning GoogleTTS client: {e}")
             finally:
@@ -111,7 +110,7 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
         for request_id, recorder in self.recorder_map.items():
             try:
                 await recorder.flush()
-                ten_env.log_info(
+                ten_env.log_debug(
                     f"Flushed PCMWriter for request_id: {request_id}"
                 )
             except Exception as e:
@@ -123,14 +122,11 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
         self.recorder_map.clear()
         self.completed_request_ids.clear()
 
-        ten_env.log_info("GoogleTTS extension on_stop completed")
         await super().on_stop(ten_env)
         ten_env.log_debug("on_stop")
 
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
-        ten_env.log_info("GoogleTTS extension on_deinit started")
         await super().on_deinit(ten_env)
-        ten_env.log_info("GoogleTTS extension on_deinit completed")
         ten_env.log_debug("on_deinit")
 
     def vendor(self) -> str:
@@ -171,13 +167,8 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                         "Flushing Google TTS client - cleaning old connection"
                     )
                     self.client.clean()  # Clean up old connection first
-                    ten_env.log_info(
-                        "Flushing Google TTS client - initializing new connection"
-                    )
+
                     await self.client.reset()  # Initialize new connection
-                    ten_env.log_info(
-                        "Google TTS client flush completed successfully"
-                    )
                 else:
                     ten_env.log_warning(
                         "Client is not initialized, skipping reset"
@@ -216,7 +207,7 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
     async def handle_completed_request(self, reason: TTSAudioEndReason):
         # update request_id
         self.completed_request_ids.add(self.current_request_id)
-        self.ten_env.log_info(
+        self.ten_env.log_debug(
             f"add completed request_id to: {self.current_request_id}"
         )
         # send audio_end
@@ -232,7 +223,7 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
             self.current_turn_id,
             reason,
         )
-        self.ten_env.log_info(
+        self.ten_env.log_debug(
             f"Sent tts_audio_end with INTERRUPTED reason for request_id: {self.current_request_id}"
         )
 
@@ -246,7 +237,7 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                 self.completed_request_ids
                 and t.request_id in self.completed_request_ids
             ):
-                self.ten_env.log_warn(
+                self.ten_env.log_debug(
                     f"Request ID {t.request_id} has already been completed, ignoring TTS request"
                 )
                 return
@@ -260,7 +251,7 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
 
                 # reset connection if needed
                 if self.client and self.client.send_text_in_connection == True:
-                    self.ten_env.log_info(
+                    self.ten_env.log_debug(
                         "Resetting Google TTS client since request id changed and old connection already sent request"
                     )
                     await self.handle_completed_request(
@@ -281,7 +272,7 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                         try:
                             await self.recorder_map[old_rid].flush()
                             del self.recorder_map[old_rid]
-                            self.ten_env.log_info(
+                            self.ten_env.log_debug(
                                 f"Cleaned up old PCMWriter for request_id: {old_rid}"
                             )
                         except Exception as e:
@@ -305,9 +296,9 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
             # Initialize variables for all cases
             first_chunk = True
             cur_duration_bytes = 0
-
-            self.ten_env.log_info(
-                f"Processing TTS request for text: '{t.text[:50]}...'"
+            self.ten_env.log_debug(
+                f"send_text_to_tts_server:  {t.text} of request_id: {t.request_id}",
+                category=LOG_CATEGORY_VENDOR,
             )
 
             # Process audio chunks
@@ -318,12 +309,22 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                     if event == EVENT_TTS_RESPONSE and audio_chunk:
                         self.total_audio_bytes += len(audio_chunk)
                         cur_duration_bytes += len(audio_chunk)
+                        duration_ms = (
+                            self.total_audio_bytes
+                            / (self.synthesize_audio_sample_rate() * 2 * 1)
+                            * 1000
+                        )
+
+                        self.ten_env.log_debug(
+                            f"receive_audio:  duration: {duration_ms} of request id: {t.request_id}",
+                            category=LOG_CATEGORY_VENDOR,
+                        )
 
                         if first_chunk and self.current_request_id:
                             self.sent_ts = datetime.now()
 
                             await self.send_tts_audio_start(
-                                self.current_request_id
+                                self.current_request_id, self.current_turn_id
                             )
                             if ttfb_ms is not None:
                                 await self.send_tts_ttfb_metrics(
@@ -393,7 +394,9 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                 try:
                     await audio_generator.aclose()
                 except Exception as e:
-                    self.ten_env.log_warn(f"Error closing audio generator: {e}")
+                    self.ten_env.log_error(
+                        f"Error closing audio generator: {e}"
+                    )
 
             # Handle end of request (only if no error occurred)
             if t.text_input_end:
@@ -404,14 +407,14 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                 )
                 # reset connection if needed
                 if self.client and self.client.send_text_in_connection == True:
-                    self.ten_env.log_info(
+                    self.ten_env.log_debug(
                         "Resetting Google TTS client since request id changed and old connection already sent request"
                     )
                     self.client.clean()
                     await self.client.reset()
 
             # Ensure all async operations are completed
-            self.ten_env.log_info(
+            self.ten_env.log_debug(
                 f"TTS request {t.request_id} processing completed"
             )
 
