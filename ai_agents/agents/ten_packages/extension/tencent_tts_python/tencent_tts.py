@@ -13,6 +13,7 @@ from .src.common import credential
 MESSAGE_TYPE_PCM = 1
 MESSAGE_TYPE_CMD_COMPLETE = 2
 MESSAGE_TYPE_CMD_ERROR = 3
+MESSAGE_TYPE_CMD_METRIC = 4
 
 
 class TencentTTSTaskFailedException(Exception):
@@ -31,13 +32,24 @@ class AsyncIteratorCallback(FlowingSpeechSynthesisListener):
         self,
         ten_env: AsyncTenEnv,
         queue: asyncio.Queue[
-            tuple[bool, int, str | bytes | TencentTTSTaskFailedException | None]
+            tuple[
+                bool,
+                int,
+                str | bytes | TencentTTSTaskFailedException | int | None,
+            ]
         ],
     ) -> None:
         self.ten_env = ten_env
 
         self._loop = asyncio.get_event_loop()
         self._queue = queue
+        self.sent_ts: datetime | None = None
+        self.ttfb_sent: bool = False
+
+    def set_sent_ts(self):
+        if self.sent_ts:
+            return
+        self.sent_ts = datetime.now()
 
     def on_close(self):
         super().on_close()
@@ -58,6 +70,15 @@ class AsyncIteratorCallback(FlowingSpeechSynthesisListener):
 
     def on_audio_result(self, audio_bytes):
         super().on_audio_result(audio_bytes)
+        if self.sent_ts and not self.ttfb_sent:
+            ttfb_ms = int(
+                (datetime.now() - self.sent_ts).total_seconds() * 1000
+            )
+            self.ttfb_sent = True
+            asyncio.run_coroutine_threadsafe(
+                self._queue.put((False, MESSAGE_TYPE_CMD_METRIC, ttfb_ms)),
+                self._loop,
+            )
         self.ten_env.log_info(f"Received audio data: {len(audio_bytes)} bytes")
         # Send audio data to queue
         asyncio.run_coroutine_threadsafe(
@@ -67,7 +88,6 @@ class AsyncIteratorCallback(FlowingSpeechSynthesisListener):
     def on_synthesis_fail(self, response):
         super().on_synthesis_fail(response)
 
-        # TODO 合成失败，添加错误处理逻辑
         err_code = response["code"]
         message = response["message"]
         self.ten_env.log_error(
@@ -112,10 +132,13 @@ class TencentTTSClient:
         # TTS synthesizer
         self._callback: AsyncIteratorCallback | None = None
         self.synthesizer: FlowingSpeechSynthesizer | None = None
-
         # Communication queue for audio data
         self._receive_queue: asyncio.Queue[
-            tuple[bool, int, str | bytes | TencentTTSTaskFailedException | None]
+            tuple[
+                bool,
+                int,
+                str | bytes | TencentTTSTaskFailedException | int | None,
+            ]
         ] = asyncio.Queue()
 
     def start(self) -> None:
@@ -205,11 +228,6 @@ class TencentTTSClient:
             f"Starting TTS synthesis, text: {text}, input_end: {text_input_end}"
         )
 
-        # Initialize audio data queue
-        self._callback = AsyncIteratorCallback(
-            self.ten_env, self._receive_queue
-        )
-
         # Start synthesizer if not initialized
         if self.synthesizer is None or not self.synthesizer.is_alive():
             self.ten_env.log_info(
@@ -218,6 +236,7 @@ class TencentTTSClient:
             self.start()
 
         # Start streaming TTS synthesis
+        self._callback.set_sent_ts()
         self.synthesizer.process(text)
 
         # Complete streaming if this is the end

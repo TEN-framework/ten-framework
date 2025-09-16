@@ -18,7 +18,11 @@ from ten_runtime import (
     Data,
 )
 from ten_ai_base.struct import TTSTextInput, TTSFlush
-from ..tencent_tts import MESSAGE_TYPE_PCM, MESSAGE_TYPE_CMD_COMPLETE
+from ..tencent_tts import (
+    MESSAGE_TYPE_PCM,
+    MESSAGE_TYPE_CMD_COMPLETE,
+    MESSAGE_TYPE_CMD_METRIC,
+)
 
 
 # ================ test dump file functionality ================
@@ -117,6 +121,7 @@ def test_dump_functionality(MockTencentTTSClient):
 
     def mock_synthesize_audio(text: str, text_input_end: bool):
         # Add audio data to queue when synthesis starts
+        audio_queue.put_nowait((False, MESSAGE_TYPE_CMD_METRIC, 200))
         audio_queue.put_nowait((False, MESSAGE_TYPE_PCM, fake_audio_chunk_1))
         audio_queue.put_nowait((False, MESSAGE_TYPE_PCM, fake_audio_chunk_2))
         audio_queue.put_nowait((True, MESSAGE_TYPE_CMD_COMPLETE, b""))
@@ -286,6 +291,7 @@ def test_text_input_end_logic(MockTencentTTSClient):
 
     def mock_synthesize_audio(text: str, text_input_end: bool):
         # Add audio data to queue when synthesis starts
+        audio_queue.put_nowait((False, MESSAGE_TYPE_CMD_METRIC, 200))
         audio_queue.put_nowait((False, MESSAGE_TYPE_PCM, fake_audio_chunk_1))
         audio_queue.put_nowait((False, MESSAGE_TYPE_PCM, fake_audio_chunk_2))
         audio_queue.put_nowait((True, MESSAGE_TYPE_CMD_COMPLETE, b""))
@@ -447,6 +453,7 @@ def test_flush_logic(MockTencentTTSClient):
 
     def mock_synthesize_audio(text: str, text_input_end: bool):
         # Add audio data to queue when synthesis starts
+        audio_queue.put_nowait((False, MESSAGE_TYPE_CMD_METRIC, 200))
         audio_queue.put_nowait((False, MESSAGE_TYPE_PCM, fake_audio_chunk_1))
         audio_queue.put_nowait((False, MESSAGE_TYPE_PCM, fake_audio_chunk_2))
         audio_queue.put_nowait((True, MESSAGE_TYPE_CMD_COMPLETE, b""))
