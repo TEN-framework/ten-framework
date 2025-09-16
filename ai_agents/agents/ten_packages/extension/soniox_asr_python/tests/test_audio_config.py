@@ -176,7 +176,7 @@ def test_16khz_audio(patch_soniox_ws):
     async def fake_send_audio(_audio_data):
         await asyncio.sleep(0)
 
-    async def fake_finalize():
+    async def fake_finalize(trailing_silence_ms=None):
         await asyncio.sleep(0)
 
     async def fake_stop():
@@ -228,7 +228,7 @@ def test_48khz_audio(patch_soniox_ws):
     async def fake_send_audio(_audio_data):
         await asyncio.sleep(0)
 
-    async def fake_finalize():
+    async def fake_finalize(trailing_silence_ms=None):
         await asyncio.sleep(0)
 
     async def fake_stop():
@@ -286,7 +286,7 @@ def test_audio_dump_functionality(patch_soniox_ws):
         async def fake_send_audio(_audio_data):
             await asyncio.sleep(0)
 
-        async def fake_finalize():
+        async def fake_finalize(trailing_silence_ms=None):
             await asyncio.sleep(0)
 
         async def fake_stop():
