@@ -4,7 +4,7 @@ import random
 import time
 from dataclasses import dataclass
 from enum import Enum
-from typing import Callable, Optional
+from typing import Callable, Optional, Any
 
 import websockets
 
@@ -277,8 +277,13 @@ class SonioxWebsocketClient:
     async def _handle_send(self, ws, message: str):
         await ws.send(message)
 
-    async def finalize(self):
-        await self._send_queue.put(json.dumps({"type": "finalize"}))
+    async def finalize(self, trailing_silence_ms: int | None = None):
+        q: dict[str, Any] = {
+            "type": "finalize",
+        }
+        if trailing_silence_ms is not None:
+            q["trailing_silence_ms"] = trailing_silence_ms
+        await self._send_queue.put(json.dumps(q))
 
     async def stop(self, wait: bool = True):
         self.state = self.State.STOPPING
