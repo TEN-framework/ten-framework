@@ -285,7 +285,7 @@ class TencentTTSExtension(AsyncTTS2BaseExtension):
                                     f"KEYPOINT Sent TTSAudioStart for request ID: {self.current_request_id}"
                                 )
                                 await self.send_tts_audio_start(
-                                    self.current_request_id
+                                    self.current_request_id,
                                     self.current_turn_id,
                                 )
                                 elapsed_time = int(
