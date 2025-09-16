@@ -217,6 +217,7 @@ class TencentTTSExtension(AsyncTTS2BaseExtension):
                 self.ten_env.log_info(
                     f"Updated last completed request_id to: {t.request_id}"
                 )
+                self.client.complete()
 
         except Exception as e:
             self.ten_env.log_error(
