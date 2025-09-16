@@ -165,7 +165,10 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                     if data is not None and isinstance(data, int):
                         self.request_start_ts = datetime.now()
                         ttfb = data
-                        await self.send_tts_audio_start(self.current_request_id)
+                        await self.send_tts_audio_start(
+                            self.current_request_id,
+                            self.current_turn_id,
+                        )
                         await self.send_tts_ttfb_metrics(
                             self.current_request_id,
                             ttfb,
