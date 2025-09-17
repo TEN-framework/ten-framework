@@ -12,7 +12,6 @@ use ten_rust::{
     graph::{
         connection::{GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow},
         msg_conversion::MsgAndResultConversion,
-        node::GraphNodeType,
         Graph,
     },
     pkg_info::message::MsgType,
@@ -62,38 +61,20 @@ fn add_message_flow_to_connection(
     Ok(())
 }
 
-fn node_matches(loc: &GraphLoc, node_type: &GraphNodeType, node_name: &str, node_app: &Option<String>) -> bool {
-    if *node_type == GraphNodeType::Extension {
-        return loc.extension.as_ref().is_some_and(|ext| ext == node_name) && loc.app == *node_app;
-    }
-    else if *node_type == GraphNodeType::Subgraph {
-        return loc.subgraph.as_ref().is_some_and(|subgraph| subgraph == node_name);
-    }
-    else if *node_type == GraphNodeType::Selector {
-        return loc.selector.as_ref().is_some_and(|selector| selector == node_name);
-    }
-
-    false
-}
-
 /// Checks if the connection already exists.
 #[allow(clippy::too_many_arguments)]
 #[allow(clippy::ptr_arg)]
 fn check_connection_exists(
     graph: &Graph,
-    src_node_type: &GraphNodeType,
-    src_node_name: &String,
-    src_node_app: &Option<String>,
+    src: &GraphLoc,
+    dest: &GraphLoc,
     msg_type: &MsgType,
     msg_name: &Vec<String>,
-    dest_node_type: &GraphNodeType,
-    dest_node_name: &String,
-    dest_node_app: &Option<String>,
 ) -> Result<()> {
     if let Some(connections) = &graph.connections {
         for conn in connections.iter() {
             // Check if source matches.
-            if node_matches(&conn.loc, src_node_type, src_node_name, src_node_app)
+            if conn.loc.matches(src)
             {
                 // Check for duplicate message flows based on message type.
                 let msg_flows = match msg_type {
@@ -109,18 +90,18 @@ fn check_connection_exists(
                         for name in msg_name.iter() {
                             if flow.name.as_deref() == Some(name) {
                                 // Check if destination already exists.
-                                for dest in &flow.dest {
-                                    if node_matches(&dest.loc, dest_node_type, dest_node_name, dest_node_app)
+                                for dest_item in &flow.dest {
+                                    if dest_item.loc.matches(dest)
                                     {
                                         return Err(anyhow::anyhow!(
                                             "Connection already exists: src: {:?} '{}', \
                                             msg_type:{:?}, msg_name:{}, dest: {:?} '{}'",
-                                            src_node_type,
-                                            src_node_name,
+                                            src.get_node_type()?,
+                                            src.get_node_name()?,
                                             msg_type,
                                             name,
-                                            dest_node_type,
-                                            dest_node_name,
+                                            dest.get_node_type()?,
+                                            dest.get_node_name()?,
                                         ));
                                     }
                                 }
@@ -150,12 +131,6 @@ pub async fn graph_add_connection(
     // Store the original state in case validation fails.
     let original_graph = graph.clone();
 
-    //store node_type: extension, subgraph, selector
-    let src_node_type = src.get_node_type()?;
-    let dest_node_type = dest.get_node_type()?;
-    let src_node_name = src.get_node_name()?;
-    let dest_node_name = dest.get_node_name()?;
-
     // Check if nodes exist.
     GraphLoc::check_node_exists(&src, graph)?;
     GraphLoc::check_node_exists(&dest, graph)?;
@@ -163,36 +138,26 @@ pub async fn graph_add_connection(
     // Check if connection already exists.
     check_connection_exists(
         graph,
-        &src_node_type,
-        src_node_name,
-        &src.app,
+        &src,
+        &dest,
         &msg_type,
         &msg_name,
-        &dest_node_type,
-        dest_node_name,
-        &dest.app,
     )?;
-
-    // Validate connection schema ONLY for Extension nodes
-    //TODO：Validation for Extension and Selector nodes
-    if src_node_type == GraphNodeType::Extension && dest_node_type == GraphNodeType::Extension {
-        validate_connection_schema(
-            pkgs_cache,
-            graph,
-            graph_app_base_dir,
-            &MsgConversionValidateInfo {
-                src_app: &src.app,
-                src_extension: src_node_name,
-                msg_type: &msg_type,
-                msg_name: &msg_name[0],
-                dest_app: &dest.app,
-                dest_extension: dest_node_name,
-                msg_conversion: &msg_conversion,
-            },
-        )
-        .await?;
-    }
-
+/*
+    validate_connection_schema(
+        pkgs_cache,
+        graph,
+        graph_app_base_dir,
+        &MsgConversionValidateInfo {
+            src: &src,
+            dest: &dest,
+            msg_type: &msg_type,
+            msg_name: &msg_name,
+            msg_conversion: &msg_conversion,
+        },
+    )
+    .await?;
+*/
     // Create destination object.
     let destination = GraphDestination {
         loc: dest,

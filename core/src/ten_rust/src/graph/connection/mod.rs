@@ -44,6 +44,7 @@ impl GraphLoc {
         }
     }
 
+    #[allow(unreachable_patterns)]
     pub fn with_app_and_type_and_name(
         app: Option<String>,
         node_type: GraphNodeType,
@@ -203,14 +204,14 @@ pub struct GraphConnection {
 }
 
 impl GraphConnection {
-    pub fn new(app: Option<String>, node_type: GraphNodeType, node_name: String) -> Result<Self> {
-        Ok(Self {
-            loc: GraphLoc::with_app_and_type_and_name(app, node_type, node_name).unwrap(),
+    pub fn new(loc: GraphLoc) -> Self {
+        Self {
+            loc,
             cmd: None,
             data: None,
             audio_frame: None,
             video_frame: None,
-        })
+        }
     }
 
     /// Validates and completes a graph connection by ensuring it follows the
