@@ -27,5 +27,5 @@ pub const ERR_MSG_GRAPH_APP_FIELD_SHOULD_NOT_BE_DECLARED: &str =
 pub const ERR_MSG_GRAPH_APP_FIELD_SHOULD_BE_DECLARED: &str =
     "the 'app' field should be declared, as it has been declared in nodes";
 
-pub const ERR_MSG_GRAPH_LOC_MUST_HAVE_ONE_OF_EXTENSION_SUBGRAPH_SELECTOR: &str =
-    "GraphLoc must have one of extension/subgraph/selector";
+pub const ERR_MSG_TYPE_OF_NODE: &str =
+    "the type of the node must be one of extension/subgraph/selector";
