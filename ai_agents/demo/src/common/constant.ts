@@ -110,10 +110,10 @@ export const GRAPH_OPTIONS: GraphOptionItem[] = [
   //   label: "Voice Agent / STT + Nova Multimodal + TTS",
   //   value: "va_nova_multimodal_aws",
   // },
-  {
-    label: "Shisa",
-    value: "Shisa",
-  },
+  // {
+  //   label: "Shisa",
+  //   value: "Shisa",
+  // },
   {
     label: "With TEN Turn Detection",
     value: "with_ten_turn_detection",
