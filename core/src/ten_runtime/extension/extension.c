@@ -1160,9 +1160,7 @@ static void ten_extension_handle_trigger_start_life_cycle(
   }
 
   // Store the command for later response
-  ten_shared_ptr_t *cmd_clone = ten_shared_ptr_clone(cmd);
-  ten_list_push_ptr_back(&self->pending_trigger_life_cycle_cmds, cmd_clone,
-                         NULL);
+  ten_list_push_smart_ptr_back(&self->pending_trigger_life_cycle_cmds, cmd);
 
   // If extension is in ON_INIT_DONE state, trigger on_start immediately
   if (current_state == TEN_EXTENSION_STATE_ON_INIT_DONE) {
@@ -1227,9 +1225,7 @@ static void ten_extension_handle_trigger_stop_life_cycle(
   }
 
   // Store the command for later response regardless of current state
-  ten_shared_ptr_t *cmd_clone = ten_shared_ptr_clone(cmd);
-  ten_list_push_ptr_back(&self->pending_trigger_life_cycle_cmds, cmd_clone,
-                         NULL);
+  ten_list_push_smart_ptr_back(&self->pending_trigger_life_cycle_cmds, cmd);
 
   // Check if current state allows immediate triggering of stop
   if (current_state < TEN_EXTENSION_STATE_ON_START_DONE) {
@@ -1265,7 +1261,7 @@ bool ten_extension_has_pending_trigger_life_cycle_cmds(ten_extension_t *self,
   }
 
   ten_list_foreach (&self->pending_trigger_life_cycle_cmds, iter) {
-    ten_shared_ptr_t *cmd = ten_ptr_listnode_get(iter.node);
+    ten_shared_ptr_t *cmd = ten_smart_ptr_listnode_get(iter.node);
     const char *cmd_stage = ten_cmd_trigger_life_cycle_get_stage(cmd);
 
     if (cmd_stage && ten_c_string_is_equal(cmd_stage, stage)) {
@@ -1295,25 +1291,27 @@ void ten_extension_reply_pending_trigger_life_cycle_cmds_by_stage(
   ten_list_t commands_to_reply;
   ten_list_init(&commands_to_reply);
 
+  ten_list_t commands_left;
+  ten_list_init(&commands_left);
+
   // First, collect commands for the specified stage
   ten_list_foreach (&self->pending_trigger_life_cycle_cmds, iter) {
-    ten_shared_ptr_t *cmd = ten_ptr_listnode_get(iter.node);
+    ten_shared_ptr_t *cmd = ten_smart_ptr_listnode_get(iter.node);
     const char *cmd_stage = ten_cmd_trigger_life_cycle_get_stage(cmd);
 
     if (cmd_stage && ten_c_string_is_equal(cmd_stage, stage)) {
-      ten_list_push_ptr_back(&commands_to_reply, cmd, NULL);
+      ten_list_push_smart_ptr_back(&commands_to_reply, cmd);
+    } else {
+      ten_list_push_smart_ptr_back(&commands_left, cmd);
     }
   }
 
-  // Remove the collected commands from the pending list
-  ten_list_foreach (&commands_to_reply, iter) {
-    ten_shared_ptr_t *cmd = ten_ptr_listnode_get(iter.node);
-    ten_list_remove_ptr(&self->pending_trigger_life_cycle_cmds, cmd);
-  }
+  // Replace the pending list with the commands left
+  ten_list_swap(&self->pending_trigger_life_cycle_cmds, &commands_left);
 
   // Reply to the collected commands
   ten_list_foreach (&commands_to_reply, iter) {
-    ten_shared_ptr_t *cmd = ten_ptr_listnode_get(iter.node);
+    ten_shared_ptr_t *cmd = ten_smart_ptr_listnode_get(iter.node);
 
     ten_shared_ptr_t *cmd_result =
         ten_cmd_result_create_from_cmd(status_code, cmd);
@@ -1330,6 +1328,7 @@ void ten_extension_reply_pending_trigger_life_cycle_cmds_by_stage(
 
   // Clean up the temporary list
   ten_list_clear(&commands_to_reply);
+  ten_list_clear(&commands_left);
 }
 
 void ten_extension_trigger_stop_if_needed(ten_extension_t *self) {

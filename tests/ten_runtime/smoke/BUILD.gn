@@ -51,6 +51,7 @@ ten_executable("ten_runtime_smoke_test") {
     "graph_name",
     "graph_test",
     "lock",
+    "manual_trigger_life_cycle",
     "msg_conversion",
     "msg_property",
     "msg_test",

@@ -73,6 +73,7 @@
 #define TEN_STR_START_GRAPH "start_graph"
 #define TEN_STR_TIMER "timer"
 #define TEN_STR_TIMEOUT "timeout"
+#define TEN_STR_TRIGGER_LIFE_CYCLE "trigger_life_cycle"
 
 // Graph relevant.
 #define TEN_STR_PREDEFINED_GRAPHS "predefined_graphs"
