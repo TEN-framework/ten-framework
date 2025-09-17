@@ -12,6 +12,7 @@
 #include "include_internal/ten_runtime/addon/addon_host.h"
 #include "include_internal/ten_runtime/addon/extension/extension.h"
 #include "include_internal/ten_runtime/addon/extension_group/extension_group.h"
+#include "include_internal/ten_runtime/common/constant_str.h"
 #include "include_internal/ten_runtime/common/loc.h"
 #include "include_internal/ten_runtime/engine/engine.h"
 #include "include_internal/ten_runtime/engine/on_xxx.h"
@@ -163,16 +164,8 @@ void ten_extension_thread_stop_life_cycle_of_all_extensions(
       if (state == TEN_EXTENSION_STATE_ON_CONFIGURE_DONE ||
           state == TEN_EXTENSION_STATE_ON_INIT_DONE ||
           state == TEN_EXTENSION_STATE_ON_START_DONE) {
-        // Only trigger on_stop automatically if not manually controlled
-        if (!extension->manual_trigger_life_cycle
-                 .stages[TEN_MANUAL_TRIGGER_STAGE_STOP]) {
-          ten_extension_on_stop(extension);
-        } else {
-          TEN_LOGD(
-              "[%s] on_stop stage is manually controlled, waiting for manual "
-              "trigger",
-              ten_extension_get_name(extension, true));
-        }
+        // Use unified method to determine if we should trigger stop
+        ten_extension_trigger_stop_if_needed(extension);
       }
 
       // If the extension is in the TEN_EXTENSION_STATE_ON_XXX state, we need

@@ -17,6 +17,7 @@
 #include "include_internal/ten_runtime/path/result_return_policy.h"
 #include "include_internal/ten_runtime/schema_store/store.h"
 #include "ten_runtime/binding/common.h"
+#include "ten_runtime/common/status_code.h"
 #include "ten_runtime/extension/extension.h"
 #include "ten_utils/container/hash_handle.h"
 #include "ten_utils/container/list.h"
@@ -252,6 +253,10 @@ struct ten_extension_t {
   // Manual trigger life cycle configuration
   ten_manual_trigger_life_cycle_t manual_trigger_life_cycle;
 
+  // List of pending trigger_life_cycle commands waiting for response
+  // Contains ten_shared_ptr_t* of trigger_life_cycle commands
+  ten_list_t pending_trigger_life_cycle_cmds;
+
   void *user_data;
 };
 
@@ -299,6 +304,19 @@ TEN_RUNTIME_PRIVATE_API bool ten_extension_validate_msg_schema(
 
 TEN_RUNTIME_PRIVATE_API ten_extension_t *ten_extension_from_smart_ptr(
     ten_smart_ptr_t *extension_smart_ptr);
+
+TEN_RUNTIME_PRIVATE_API void ten_extension_handle_trigger_life_cycle_cmd(
+    ten_extension_t *self, ten_shared_ptr_t *cmd);
+
+TEN_RUNTIME_PRIVATE_API bool ten_extension_has_pending_trigger_life_cycle_cmds(
+    ten_extension_t *self, const char *stage);
+
+TEN_RUNTIME_PRIVATE_API void
+ten_extension_reply_pending_trigger_life_cycle_cmds_by_stage(
+    ten_extension_t *self, const char *stage, TEN_STATUS_CODE status_code);
+
+TEN_RUNTIME_PRIVATE_API void ten_extension_trigger_stop_if_needed(
+    ten_extension_t *self);
 
 TEN_RUNTIME_API void ten_extension_set_me_in_target_lang(
     ten_extension_t *self, void *me_in_target_lang);

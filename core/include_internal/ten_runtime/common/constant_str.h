@@ -65,6 +65,7 @@
 #define TEN_STR_MSG_NAME_TEN_RESULT "ten:result"
 #define TEN_STR_MSG_NAME_TEN_TIMEOUT "ten:timeout"
 #define TEN_STR_MSG_NAME_TEN_TIMER "ten:timer"
+#define TEN_STR_MSG_NAME_TEN_TRIGGER_LIFE_CYCLE "ten:trigger_life_cycle"
 
 // Special command.
 #define TEN_STR_STOP_GRAPH "stop_graph"
