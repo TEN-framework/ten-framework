@@ -277,7 +277,8 @@ class AzureTTSExtension(AsyncTTS2BaseExtension):
         await self._async_synthesize(t)
 
     def synthesize_audio_sample_rate(self) -> int:
-        assert self.config is not None
+        if self.config is None:
+            return 16000
         if (
             self.config.params.output_format
             == speechsdk.SpeechSynthesisOutputFormat.Raw8Khz16BitMonoPcm
