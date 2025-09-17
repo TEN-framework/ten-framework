@@ -18,6 +18,7 @@ from ten_runtime import (
 from ..tencent_tts import (
     MESSAGE_TYPE_PCM,
     MESSAGE_TYPE_CMD_COMPLETE,
+    MESSAGE_TYPE_CMD_METRIC,
 )
 
 
@@ -112,6 +113,7 @@ def test_reconnect_after_connection_drop(MockTencentTTSClient):
             raise ConnectionRefusedError("Simulated connection drop from test")
         else:
             # On the second call, simulate a successful audio stream
+            yield (False, MESSAGE_TYPE_CMD_METRIC, 200)
             yield (False, MESSAGE_TYPE_PCM, b"\x44\x55\x66")
             yield (True, MESSAGE_TYPE_CMD_COMPLETE, b"")
 

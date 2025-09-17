@@ -288,7 +288,10 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                     if data_msg is not None and isinstance(data_msg, int):
                         self.sent_ts = datetime.now()
                         ttfb = data_msg
-                        await self.send_tts_audio_start(self.current_request_id)
+                        await self.send_tts_audio_start(
+                            self.current_request_id,
+                            self.current_turn_id,
+                        )
                         await self.send_tts_ttfb_metrics(
                             self.current_request_id,
                             ttfb,
