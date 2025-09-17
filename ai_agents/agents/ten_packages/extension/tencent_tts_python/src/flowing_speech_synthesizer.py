@@ -309,6 +309,40 @@ class FlowingSpeechSynthesizer:
     def is_alive(self):
         return self.wst and self.wst.is_alive()
 
+    def close(self):
+        """
+        Force close the WebSocket connection and clean up resources immediately.
+        This method should be called when the synthesizer is no longer needed.
+        No waiting for graceful shutdown - immediate termination.
+        """
+        logger.info("synthesizer close: begin (force close)")
+
+        if self.status == CLOSED:
+            logger.info("synthesizer already closed")
+            return
+
+        # Set status to CLOSED to prevent further operations
+        self.status = CLOSED
+
+        # Force close WebSocket connection if it exists
+        if self.ws:
+            try:
+                self.ws.close()
+                logger.info("WebSocket connection force closed")
+            except Exception as e:
+                logger.error("Error force closing WebSocket: {}".format(e))
+
+        # Reset ready state immediately
+        self.ready = False
+
+        # Note: We don't wait for the WebSocket thread to finish
+        # The thread will be cleaned up when the process exits
+        # or when the daemon thread naturally terminates
+        if self.wst and self.wst.is_alive():
+            logger.info("WebSocket thread will be terminated as daemon thread")
+
+        logger.info("synthesizer close: end (force close completed)")
+
     def wait(self):
         logger.info("synthesizer wait: begin")
         if self.ws:

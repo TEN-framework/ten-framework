@@ -242,7 +242,8 @@ class OpenaiTTSExtension(AsyncTTS2BaseExtension):
                                 self.request_ts = datetime.now()
                                 if self.sent_ts:
                                     await self.send_tts_audio_start(
-                                        self.current_request_id
+                                        self.current_request_id,
+                                        self.current_turn_id,
                                     )
                                     ttfb = int(
                                         (
