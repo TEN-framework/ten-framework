@@ -274,16 +274,21 @@ class RequestParams(BaseModel):
             return None
         if len(value) == 0:
             return None
-        _words = value.split(",")
-        _words = [word.split("|") for word in _words]
-        _words = [(word[0], int(word[1])) for word in _words]
+        try:
+            _words = value.split(",")
+            _words = [word.split("|") for word in _words]
+            _words = [(word[0], int(word[1])) for word in _words]
 
-        for word in _words:
-            if len(word[0]) == 0 or len(word[0]) > 30:
-                raise ValueError(f"invalid hotword: {word}")
-            if not ((word[1] >= 1 and word[1] <= 11) or word[1] == 100):
-                raise ValueError(f"invalid hotword weight: {word[0]}|{word[1]}")
-        return value
+            for word in _words:
+                if len(word[0]) == 0 or len(word[0]) > 30:
+                    raise ValueError(f"invalid hotword: {word}")
+                if not ((word[1] >= 1 and word[1] <= 11) or word[1] == 100):
+                    raise ValueError(
+                        f"invalid hotword weight: {word[0]}|{word[1]}"
+                    )
+            return value
+        except Exception as e:
+            raise ValueError(f"invalid hotword list: {value}") from e
 
     def _query_params_without_signature(self) -> dict[str, Any]:
         # update timestamp and expired
@@ -299,8 +304,9 @@ class RequestParams(BaseModel):
         endpoint = f"{endpoint}/{self.appid}"
         query_dict = self._query_params_without_signature()
         query_dict = dict(sorted(query_dict.items(), key=lambda d: d[0]))
-        query = urllib.parse.urlencode(query_dict)
-        signstr = f"{endpoint}?{query}"
+        # Query parameters for signing must not be URL-encoded.
+        querystr = "&".join([f"{k}={v}" for k, v in query_dict.items()])
+        signstr = f"{endpoint}?{querystr}"
         secretkey = str(self.secretkey).encode("utf-8")
         hmacstr = hmac.new(
             secretkey, signstr.encode("utf-8"), hashlib.sha1

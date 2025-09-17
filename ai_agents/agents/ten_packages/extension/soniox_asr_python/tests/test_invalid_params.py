@@ -104,7 +104,7 @@ def test_invalid_params_empty_config(patch_soniox_ws):
     async def fake_send_audio(_audio_data):
         await asyncio.sleep(0)
 
-    async def fake_finalize():
+    async def fake_finalize(trailing_silence_ms=None):
         await asyncio.sleep(0)
 
     async def fake_stop():
@@ -135,7 +135,7 @@ def test_invalid_params_missing_api_key(patch_soniox_ws):
     async def fake_send_audio(_audio_data):
         await asyncio.sleep(0)
 
-    async def fake_finalize():
+    async def fake_finalize(trailing_silence_ms=None):
         await asyncio.sleep(0)
 
     async def fake_stop():

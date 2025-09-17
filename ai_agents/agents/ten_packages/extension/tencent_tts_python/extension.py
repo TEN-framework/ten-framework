@@ -24,6 +24,7 @@ from .config import TencentTTSConfig
 from .tencent_tts import (
     MESSAGE_TYPE_PCM,
     MESSAGE_TYPE_CMD_ERROR,
+    MESSAGE_TYPE_CMD_METRIC,
     TencentTTSClient,
     TencentTTSTaskFailedException,
 )
@@ -42,7 +43,7 @@ class TencentTTSExtension(AsyncTTS2BaseExtension):
         self.recorder_map: dict[str, PCMWriter] = {}
         self.request_start_ts: datetime | None = None
         self.request_total_audio_duration = 0
-        self.request_ttfb: int | None = None
+        self.request_first_received: bool = True
         self.last_completed_request_id: str | None = None
         self.audio_processor_task: asyncio.Task | None = None
 
@@ -168,9 +169,8 @@ class TencentTTSExtension(AsyncTTS2BaseExtension):
                 self.current_request_id = t.request_id
                 if t.metadata is not None:
                     self.current_turn_id = t.metadata.get("turn_id", -1)
-                self.request_start_ts = datetime.now()
-                self.request_ttfb = None
                 self.request_total_audio_duration = 0
+                self.request_first_received = True
 
                 # 为新 request_id 创建新的 PCMWriter，并清理旧的
                 if self.config.dump:
@@ -217,6 +217,7 @@ class TencentTTSExtension(AsyncTTS2BaseExtension):
                 self.ten_env.log_info(
                     f"Updated last completed request_id to: {t.request_id}"
                 )
+                self.client.complete()
 
         except Exception as e:
             self.ten_env.log_error(
@@ -257,12 +258,14 @@ class TencentTTSExtension(AsyncTTS2BaseExtension):
                     # Process PCM audio chunks
                     if message_type == MESSAGE_TYPE_PCM:
                         audio_data = data
-
                         if (
                             audio_data is not None
-                            and len(audio_data) > 0
                             and isinstance(audio_data, bytes)
+                            and len(audio_data) > 0
                         ):
+                            if self.request_first_received:
+                                self.request_start_ts = datetime.now()
+                                self.request_first_received = False
                             self.ten_env.log_info(
                                 f"KEYPOINT Received audio data for request ID: {self.current_request_id}, audio_data_len: {len(audio_data)}"
                             )
@@ -275,32 +278,6 @@ class TencentTTSExtension(AsyncTTS2BaseExtension):
                                     self.recorder_map[
                                         self.current_request_id
                                     ].write(audio_data)
-                                )
-
-                            if (
-                                self.request_start_ts is not None
-                                and self.request_ttfb is None
-                            ):
-                                self.ten_env.log_info(
-                                    f"KEYPOINT Sent TTSAudioStart for request ID: {self.current_request_id}"
-                                )
-                                await self.send_tts_audio_start(
-                                    self.current_request_id
-                                )
-                                elapsed_time = int(
-                                    (
-                                        datetime.now() - self.request_start_ts
-                                    ).total_seconds()
-                                    * 1000
-                                )
-                                await self.send_tts_ttfb_metrics(
-                                    self.current_request_id,
-                                    elapsed_time,
-                                    self.current_turn_id,
-                                )
-                                self.request_ttfb = elapsed_time
-                                self.ten_env.log_info(
-                                    f"KEYPOINT Sent TTFB metrics for request ID: {self.current_request_id}, elapsed time: {elapsed_time}ms"
                                 )
                             self.request_total_audio_duration += (
                                 self.calculate_audio_duration(
@@ -333,6 +310,21 @@ class TencentTTSExtension(AsyncTTS2BaseExtension):
                                         message=data.error_message,
                                     ),
                                 ),
+                            )
+
+                    elif message_type == MESSAGE_TYPE_CMD_METRIC:
+                        if data is not None and isinstance(data, int):
+                            await self.send_tts_audio_start(
+                                self.current_request_id,
+                                self.current_turn_id,
+                            )
+                            await self.send_tts_ttfb_metrics(
+                                self.current_request_id,
+                                data,
+                                self.current_turn_id,
+                            )
+                            self.ten_env.log_info(
+                                f"KEYPOINT Sent TTFB metrics for request ID: {self.current_request_id}, elapsed time: {data}ms"
                             )
 
                     # Handle TTS audio end - this is when we should stop
@@ -451,4 +443,4 @@ class TencentTTSExtension(AsyncTTS2BaseExtension):
             self.ten_env.log_info(
                 f"Flushing TTS for request ID: {self.current_request_id}"
             )
-            self.client.cancel()
+            self.client.close()
