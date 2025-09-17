@@ -4,11 +4,18 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
+#[cfg(unix)]
+use std::os::unix::process::CommandExt;
 use std::{path::Path, process::Command, thread};
 
 use actix::AsyncContext;
 use actix_web_actors::ws::WebsocketContext;
 use crossbeam_channel::{bounded, Sender};
+
+#[cfg(unix)]
+extern "C" {
+    fn killpg(pgrp: libc::pid_t, sig: libc::c_int) -> libc::c_int;
+}
 
 use super::{msg::OutboundMsg, WsRunCmd};
 use crate::{
@@ -72,6 +79,11 @@ impl WsRunCmd {
                 )
                 .stdout(std::process::Stdio::piped())
                 .stderr(std::process::Stdio::piped());
+
+            // Create a new process group for Unix systems to ensure all child processes
+            // can be terminated together when needed
+            #[cfg(unix)]
+            command.process_group(0);
         }
 
         if let Some(ref dir) = self.working_directory {
@@ -244,8 +256,25 @@ impl WsRunCmd {
                 let exit_code = loop {
                     let exit_status = crossbeam_channel::select! {
                         recv(shutdown_rx) -> _ => {
-                            // Termination requested, kill the process.
-                            let _ = child.kill();
+                            // Termination requested, kill the process group to ensure all child processes are terminated
+                            #[cfg(unix)]
+                            {
+                                // Try to kill the entire process group first
+                                if let Ok(pid) = child.id().try_into() {
+                                    unsafe {
+                                        let _ = killpg(pid, libc::SIGTERM);
+                                        // Give processes a chance to terminate gracefully
+                                        std::thread::sleep(std::time::Duration::from_millis(100));
+                                        // If still running, force kill
+                                        let _ = killpg(pid, libc::SIGKILL);
+                                    }
+                                }
+                            }
+                            #[cfg(not(unix))]
+                            {
+                                let _ = child.kill();
+                            }
+
                             match child.wait(){
                                 Ok(status) => Some(status.code().unwrap_or(-1)),
                                 Err(_) => Some(-1),
@@ -302,8 +331,25 @@ impl WsRunCmd {
         }
 
         // Force kill child process if it exists.
-        if let Some(mut child) = self.child.take() {
-            let _ = child.kill();
+        if let Some(child) = self.child.take() {
+            #[cfg(unix)]
+            {
+                // Try to kill the entire process group first to ensure all child processes are
+                // terminated
+                if let Ok(pid) = child.id().try_into() {
+                    unsafe {
+                        let _ = killpg(pid, libc::SIGTERM);
+                        // Give processes a chance to terminate gracefully
+                        std::thread::sleep(std::time::Duration::from_millis(100));
+                        // If still running, force kill
+                        let _ = killpg(pid, libc::SIGKILL);
+                    }
+                }
+            }
+            #[cfg(not(unix))]
+            {
+                let _ = child.kill();
+            }
         }
     }
 }
