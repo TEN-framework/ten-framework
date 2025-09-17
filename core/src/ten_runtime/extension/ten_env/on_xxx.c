@@ -273,13 +273,21 @@ bool ten_extension_on_init_done(ten_env_t *self) {
 
   ten_extension_flush_all_pending_msgs_received_in_init_stage(extension);
 
-  // Trigger on_start of extension.
-  int rc = ten_runloop_post_task_tail(
-      ten_extension_get_attached_runloop(extension),
-      ten_extension_trigger_on_start_task, extension, NULL);
-  if (rc) {
-    TEN_LOGW("Failed to post task to extension's runloop: %d", rc);
-    TEN_ASSERT(0, "Should not happen.");
+  // Trigger on_start of extension only if not manually controlled.
+  if (!extension->manual_trigger_life_cycle
+           .stages[TEN_MANUAL_TRIGGER_STAGE_START]) {
+    int rc = ten_runloop_post_task_tail(
+        ten_extension_get_attached_runloop(extension),
+        ten_extension_trigger_on_start_task, extension, NULL);
+    if (rc) {
+      TEN_LOGW("Failed to post task to extension's runloop: %d", rc);
+      TEN_ASSERT(0, "Should not happen.");
+    }
+  } else {
+    TEN_LOGD(
+        "[%s] on_start stage is manually controlled, waiting for manual "
+        "trigger",
+        ten_extension_get_name(extension, true));
   }
 
   return true;

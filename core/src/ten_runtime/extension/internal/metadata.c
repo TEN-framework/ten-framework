@@ -90,16 +90,10 @@ static bool ten_extension_determine_ten_namespace_properties(
                 // Convert stage string to enum and set in extension
                 TEN_MANUAL_TRIGGER_STAGE stage = TEN_MANUAL_TRIGGER_STAGE_MAX;
 
-                if (ten_c_string_is_equal(stage_str, TEN_STR_CONFIGURE)) {
-                  stage = TEN_MANUAL_TRIGGER_STAGE_CONFIGURE;
-                } else if (ten_c_string_is_equal(stage_str, TEN_STR_INIT)) {
-                  stage = TEN_MANUAL_TRIGGER_STAGE_INIT;
-                } else if (ten_c_string_is_equal(stage_str, TEN_STR_START)) {
+                if (ten_c_string_is_equal(stage_str, TEN_STR_START)) {
                   stage = TEN_MANUAL_TRIGGER_STAGE_START;
                 } else if (ten_c_string_is_equal(stage_str, TEN_STR_STOP)) {
                   stage = TEN_MANUAL_TRIGGER_STAGE_STOP;
-                } else if (ten_c_string_is_equal(stage_str, TEN_STR_DEINIT)) {
-                  stage = TEN_MANUAL_TRIGGER_STAGE_DEINIT;
                 }
 
                 if (stage < TEN_MANUAL_TRIGGER_STAGE_MAX) {

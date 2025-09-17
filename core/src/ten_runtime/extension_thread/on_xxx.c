@@ -163,7 +163,16 @@ void ten_extension_thread_stop_life_cycle_of_all_extensions(
       if (state == TEN_EXTENSION_STATE_ON_CONFIGURE_DONE ||
           state == TEN_EXTENSION_STATE_ON_INIT_DONE ||
           state == TEN_EXTENSION_STATE_ON_START_DONE) {
-        ten_extension_on_stop(extension);
+        // Only trigger on_stop automatically if not manually controlled
+        if (!extension->manual_trigger_life_cycle
+                 .stages[TEN_MANUAL_TRIGGER_STAGE_STOP]) {
+          ten_extension_on_stop(extension);
+        } else {
+          TEN_LOGD(
+              "[%s] on_stop stage is manually controlled, waiting for manual "
+              "trigger",
+              ten_extension_get_name(extension, true));
+        }
       }
 
       // If the extension is in the TEN_EXTENSION_STATE_ON_XXX state, we need

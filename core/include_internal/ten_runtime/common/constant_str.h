@@ -185,8 +185,5 @@
 #define TEN_STR_MANIFEST_JSON "manifest.json"
 #define TEN_STR_MANUAL_TRIGGER_LIFE_CYCLE "manual_trigger_life_cycle"
 #define TEN_STR_STAGE "stage"
-#define TEN_STR_CONFIGURE "configure"
-#define TEN_STR_INIT "init"
 #define TEN_STR_START "start"
 #define TEN_STR_STOP "stop"
-#define TEN_STR_DEINIT "deinit"
