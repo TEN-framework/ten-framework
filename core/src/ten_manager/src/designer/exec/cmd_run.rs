@@ -12,10 +12,16 @@ use actix::AsyncContext;
 use actix_web_actors::ws::WebsocketContext;
 use crossbeam_channel::{bounded, Sender};
 
+// Define system calls for Unix process group management
 #[cfg(unix)]
 extern "C" {
-    fn killpg(pgrp: libc::pid_t, sig: libc::c_int) -> libc::c_int;
+    fn killpg(pgrp: i32, sig: i32) -> i32;
 }
+
+#[cfg(unix)]
+const SIGTERM: i32 = 15;
+#[cfg(unix)]
+const SIGKILL: i32 = 9;
 
 use super::{msg::OutboundMsg, WsRunCmd};
 use crate::{
@@ -262,11 +268,11 @@ impl WsRunCmd {
                                 // Try to kill the entire process group first
                                 if let Ok(pid) = child.id().try_into() {
                                     unsafe {
-                                        let _ = killpg(pid, libc::SIGTERM);
+                                        let _ = killpg(pid, SIGTERM);
                                         // Give processes a chance to terminate gracefully
                                         std::thread::sleep(std::time::Duration::from_millis(100));
                                         // If still running, force kill
-                                        let _ = killpg(pid, libc::SIGKILL);
+                                        let _ = killpg(pid, SIGKILL);
                                     }
                                 }
                             }
@@ -331,18 +337,19 @@ impl WsRunCmd {
         }
 
         // Force kill child process if it exists.
-        if let Some(child) = self.child.take() {
+        #[allow(unused_mut)]
+        if let Some(mut child) = self.child.take() {
             #[cfg(unix)]
             {
                 // Try to kill the entire process group first to ensure all child processes are
                 // terminated
                 if let Ok(pid) = child.id().try_into() {
                     unsafe {
-                        let _ = killpg(pid, libc::SIGTERM);
+                        let _ = killpg(pid, SIGTERM);
                         // Give processes a chance to terminate gracefully
                         std::thread::sleep(std::time::Duration::from_millis(100));
                         // If still running, force kill
-                        let _ = killpg(pid, libc::SIGKILL);
+                        let _ = killpg(pid, SIGKILL);
                     }
                 }
             }
