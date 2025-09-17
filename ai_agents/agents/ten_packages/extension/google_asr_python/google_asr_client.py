@@ -227,10 +227,31 @@ class GoogleASRClient:
             await self._audio_queue.put(chunk)
 
     async def finalize(self) -> None:
-        """Signals that the current utterance is complete."""
-        self.ten_env.log_debug("Finalizing utterance.")
+        """Signals that the current utterance is complete by sending silence packets."""
+        self.ten_env.log_debug("Finalizing utterance with silence packets.")
         self.is_finalizing = True
-        await self._audio_queue.put(None)  # Signal end of audio stream
+
+        # Generate silence packets to trigger final recognition
+        silence_duration = (
+            self.config.finalize_grace_seconds
+        )  # Default 0.5 seconds
+        sample_rate = self.config.sample_rate
+        channels = self.config.channels
+
+        # Calculate number of samples needed for silence duration
+        samples_needed = int(silence_duration * sample_rate)
+
+        # Generate silence data (16-bit PCM, 0 amplitude)
+        silence_data = b"\x00\x00" * samples_needed * channels
+
+        # Send silence packets in chunks to simulate natural audio flow
+        chunk_size = int(sample_rate * 0.1) * channels * 2  # 100ms chunks
+        for i in range(0, len(silence_data), chunk_size):
+            chunk = silence_data[i : i + chunk_size]
+            if not self._stop_event.is_set():
+                await self._audio_queue.put(chunk)
+                # Small delay between chunks to simulate real audio timing
+                await asyncio.sleep(0.01)
 
     async def _audio_generator(self):
         """Yields audio chunks from the queue for the gRPC stream."""
