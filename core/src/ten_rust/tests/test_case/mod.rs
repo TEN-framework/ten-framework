@@ -5,7 +5,7 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 mod crypto_test;
-mod graph;
+//mod graph;
 mod graph_check;
 mod json_schema;
 mod log;

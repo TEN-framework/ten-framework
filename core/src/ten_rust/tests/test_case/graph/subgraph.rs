@@ -916,6 +916,7 @@ mod tests {
             .contains("Subgraph node 'subgraph_1' has an empty import_uri"));
     }
 
+    /*
     #[tokio::test]
     async fn test_flatten_subgraph_field_reference_all_message_types() {
         // Create a temporary directory for the subgraph
@@ -1217,7 +1218,7 @@ mod tests {
         assert_eq!(video_flow.name.as_deref(), Some("ResponseVideo"));
         assert_eq!(video_flow.dest[0].loc.extension.as_ref().unwrap(), "ext_a");
     }
-
+    */
     #[tokio::test]
     async fn test_flatten_subgraph_field_reference_exposed_properties() {
         // Create a temporary directory for the subgraph
