@@ -63,12 +63,16 @@ class MainControlExtension(AsyncExtension):
     @agent_event_handler(UserJoinedEvent)
     async def _on_user_joined(self, event: UserJoinedEvent):
         self._rtc_user_count += 1
-        self.ten_env.log_info(f"[MainControlExtension] User joined. Total users: {self._rtc_user_count}")
+        self.ten_env.log_info(
+            f"[MainControlExtension] User joined. Total users: {self._rtc_user_count}"
+        )
 
     @agent_event_handler(UserLeftEvent)
     async def _on_user_left(self, event: UserLeftEvent):
         self._rtc_user_count -= 1
-        self.ten_env.log_info(f"[MainControlExtension] User left. Total users: {self._rtc_user_count}")
+        self.ten_env.log_info(
+            f"[MainControlExtension] User left. Total users: {self._rtc_user_count}"
+        )
 
     @agent_event_handler(ToolRegisterEvent)
     async def _on_tool_register(self, event: ToolRegisterEvent):
@@ -108,7 +112,9 @@ class MainControlExtension(AsyncExtension):
         ten_env.log_info("[MainControlExtension] Transcription control started")
 
     async def on_stop(self, ten_env: AsyncTenEnv):
-        ten_env.log_info("[MainControlExtension] Transcription control stopping")
+        ten_env.log_info(
+            "[MainControlExtension] Transcription control stopping"
+        )
         self.stopped = True
         await self.agent.stop()
 
