@@ -18,6 +18,7 @@ from ten_ai_base.message import (
 )
 from ten_ai_base.struct import TTSTextInput
 from ten_ai_base.tts2 import AsyncTTS2BaseExtension
+from ten_ai_base.const import LOG_CATEGORY_VENDOR, LOG_CATEGORY_KEY_POINT
 from .config import CartesiaTTSConfig
 
 from .cartesia_tts import (
@@ -57,8 +58,11 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
 
             self.config = CartesiaTTSConfig.model_validate_json(config_json_str)
             self.config.update_params()
+            ten_env.log_info(
+                f"LOG_CATEGORY_KEY_POINT: {self.config.to_str(sensitive_handling=True)}",
+                category=LOG_CATEGORY_KEY_POINT,
+            )
 
-            ten_env.log_info(f"config: {self.config.to_str()}")
             if not self.config.api_key:
                 raise ValueError("API key is required")
 
@@ -69,7 +73,7 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                 send_non_fatal_tts_error=self.send_non_fatal_tts_error,
             )
             asyncio.create_task(self.client.start())
-            ten_env.log_info(
+            ten_env.log_debug(
                 "CartesiaTTSWebsocket client initialized successfully"
             )
         except Exception as e:
@@ -93,7 +97,7 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
         for request_id, recorder in self.recorder_map.items():
             try:
                 await recorder.flush()
-                ten_env.log_info(
+                ten_env.log_debug(
                     f"Flushed PCMWriter for request_id: {request_id}"
                 )
             except Exception as e:
@@ -115,9 +119,9 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
         if data_name == "tts_flush":
             flush_id, _ = data.get_property_string("flush_id")
             if flush_id:
-                ten_env.log_info(f"Received flush request for ID: {flush_id}")
+                ten_env.log_debug(f"Received flush request for ID: {flush_id}")
                 if self.current_request_id:
-                    ten_env.log_info(
+                    ten_env.log_debug(
                         f"Current request {self.current_request_id} is being flushed. Sending INTERRUPTED."
                     )
                     await self.client.cancel()
@@ -150,12 +154,12 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
         """
         try:
             self.ten_env.log_info(
-                f"KEYPOINT Requesting TTS for text: {t.text}, text_input_end: {t.text_input_end} request ID: {t.request_id}"
+                f"Requesting TTS for text: {t.text}, text_input_end: {t.text_input_end} request ID: {t.request_id}",
             )
             # If client is None, it means the connection was dropped or never initialized.
             # Attempt to re-establish the connection.
             if self.client is None:
-                self.ten_env.log_info(
+                self.ten_env.log_debug(
                     "TTS client is not initialized, attempting to reconnect..."
                 )
                 self.client = CartesiaTTSClient(
@@ -165,15 +169,15 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                     send_non_fatal_tts_error=self.send_non_fatal_tts_error,
                 )
                 asyncio.create_task(self.client.start())
-                self.ten_env.log_info("TTS client reconnected successfully.")
+                self.ten_env.log_debug("TTS client reconnected successfully.")
 
-            self.ten_env.log_info(
+            self.ten_env.log_debug(
                 f"current_request_id: {self.current_request_id}, new request_id: {t.request_id}, current_request_finished: {self.current_request_finished}"
             )
 
             if t.request_id != self.current_request_id:
-                self.ten_env.log_info(
-                    f"KEYPOINT New TTS request with ID: {t.request_id}"
+                self.ten_env.log_debug(
+                    f"New TTS request with ID: {t.request_id}"
                 )
                 self.client.reset_ttfb()
                 self.current_request_id = t.request_id
@@ -194,7 +198,7 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                         try:
                             await self.recorder_map[old_rid].flush()
                             del self.recorder_map[old_rid]
-                            self.ten_env.log_info(
+                            self.ten_env.log_debug(
                                 f"Cleaned up old PCMWriter for request_id: {old_rid}"
                             )
                         except Exception as e:
@@ -211,7 +215,7 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                         self.recorder_map[t.request_id] = PCMWriter(
                             dump_file_path
                         )
-                        self.ten_env.log_info(
+                        self.ten_env.log_debug(
                             f"Created PCMWriter for request_id: {t.request_id}, file: {dump_file_path}"
                         )
             elif self.current_request_finished:
@@ -221,24 +225,22 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                 return
 
             if t.text_input_end:
-                self.ten_env.log_info(
+                self.ten_env.log_debug(
                     f"KEYPOINT finish session for request ID: {t.request_id}"
                 )
                 self.current_request_finished = True
 
             if t.text.strip() != "":
                 # Get audio stream from Cartesia TTS
-                self.ten_env.log_info(
-                    f"Calling client.get() with text: {t.text}"
+                self.ten_env.log_debug(
+                    f"send_text_to_tts_server:  {t.text} of request_id: {t.request_id}",
+                    category=LOG_CATEGORY_VENDOR,
                 )
                 data = self.client.get(t.text)
 
-                self.ten_env.log_info(
-                    "Starting async for loop to process audio chunks"
-                )
                 chunk_count = 0
                 async for data_msg, event_status in data:
-                    self.ten_env.log_info(
+                    self.ten_env.log_debug(
                         f"Received event_status: {event_status}"
                     )
                     if event_status == EVENT_TTS_RESPONSE:
@@ -250,7 +252,7 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                             chunk_count += 1
                             self.total_audio_bytes += len(data_msg)
                             self.ten_env.log_info(
-                                f"[tts] Received audio chunk #{chunk_count}, size: {len(data_msg)} bytes"
+                                f"Received audio chunk #{chunk_count}, size: {len(data_msg)} bytes"
                             )
                             # Write to dump file if enabled
                             if (
@@ -259,8 +261,8 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                                 and self.current_request_id
                                 and self.current_request_id in self.recorder_map
                             ):
-                                self.ten_env.log_info(
-                                    f"KEYPOINT Writing audio chunk to dump file, dump url: {self.config.dump_path}"
+                                self.ten_env.log_debug(
+                                    f"Writing audio chunk to dump file, dump url: {self.config.dump_path}"
                                 )
                                 asyncio.create_task(
                                     self.recorder_map[
@@ -271,10 +273,10 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                             # Send audio data
                             await self.send_tts_audio_data(data_msg)
                         else:
-                            self.ten_env.log_error(
+                            self.ten_env.log_debug(
                                 "Received empty payload for TTS response"
                             )
-                            if t.text_input_end:
+                            if self.sent_ts and t.text_input_end:
                                 duration_ms = (
                                     self._calculate_audio_duration_ms()
                                 )
@@ -290,8 +292,8 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                                     duration_ms,
                                     self.current_turn_id,
                                 )
-                                self.ten_env.log_info(
-                                    f"KEYPOINT Sent TTS audio end event, interval: {request_event_interval}ms, duration: {duration_ms}ms"
+                                self.ten_env.log_debug(
+                                    f"Sent TTS audio end event, interval: {request_event_interval}ms, duration: {duration_ms}ms"
                                 )
                     elif event_status == EVENT_TTS_TTFB_METRIC:
                         if data_msg is not None and isinstance(data_msg, int):
@@ -306,8 +308,8 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                                 self.current_turn_id,
                             )
 
-                            self.ten_env.log_info(
-                                f"KEYPOINT Sent TTS audio start and TTFB metrics: {ttfb}ms"
+                            self.ten_env.log_debug(
+                                f"Sent TTS audio start and TTFB metrics: {ttfb}ms"
                             )
                     elif event_status == EVENT_TTS_END:
                         self.ten_env.log_info(
@@ -326,12 +328,12 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                                 duration_ms,
                                 self.current_turn_id,
                             )
-                            self.ten_env.log_info(
-                                f"KEYPOINT Sent TTS audio end event, interval: {request_event_interval}ms, duration: {duration_ms}ms"
+                            self.ten_env.log_debug(
+                                f"Sent TTS audio end event, interval: {request_event_interval}ms, duration: {duration_ms}ms"
                             )
                         break
 
-                self.ten_env.log_info(
+                self.ten_env.log_debug(
                     f"TTS processing completed, total chunks: {chunk_count}"
                 )
             elif self.sent_ts and t.text_input_end:
@@ -345,8 +347,8 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                     duration_ms,
                     self.current_turn_id,
                 )
-                self.ten_env.log_info(
-                    f"KEYPOINT Sent TTS audio end event, interval: {request_event_interval}ms, duration: {duration_ms}ms"
+                self.ten_env.log_debug(
+                    f"Sent TTS audio end event, interval: {request_event_interval}ms, duration: {duration_ms}ms"
                 )
 
         except CartesiaTTSConnectionException as e:
@@ -401,7 +403,7 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
             if isinstance(e, ConnectionRefusedError) and self.client:
                 await self.client.stop()
                 self.client = None
-                self.ten_env.log_info(
+                self.ten_env.log_debug(
                     "Client connection dropped, instance destroyed. Will attempt to reconnect on next request."
                 )
 

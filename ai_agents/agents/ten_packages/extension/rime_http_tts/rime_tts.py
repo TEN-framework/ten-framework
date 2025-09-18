@@ -3,6 +3,7 @@ from httpx import AsyncClient, Timeout, Limits
 
 from .config import RimeTTSConfig
 from ten_runtime import AsyncTenEnv
+from ten_ai_base.const import LOG_CATEGORY_VENDOR
 
 # Custom event types to communicate status back to the extension
 EVENT_TTS_RESPONSE = 1
@@ -46,7 +47,7 @@ class RimeTTSClient:
     async def stop(self):
         # Stop the client if it exists
         if self.client:
-            self.ten_env.log_info("stop the client")
+            self.ten_env.log_debug("stop the client")
             self.client = None
 
     def cancel(self):
@@ -73,13 +74,13 @@ class RimeTTSClient:
             ) as response:
                 async for chunk in response.aiter_bytes(chunk_size=4096):
                     if self._is_cancelled:
-                        self.ten_env.log_info(
+                        self.ten_env.log_debug(
                             "Cancellation flag detected, sending flush event and stopping TTS stream."
                         )
                         yield None, EVENT_TTS_FLUSH
                         break
 
-                    self.ten_env.log_info(
+                    self.ten_env.log_debug(
                         f"RimeTTS: sending EVENT_TTS_RESPONSE, length: {len(chunk)}"
                     )
 
@@ -89,14 +90,15 @@ class RimeTTSClient:
                         yield None, EVENT_TTS_END
 
             if not self._is_cancelled:
-                self.ten_env.log_info("RimeTTS: sending EVENT_TTS_END")
+                self.ten_env.log_debug("RimeTTS: sending EVENT_TTS_END")
                 yield None, EVENT_TTS_END
 
         except Exception as e:
             # Check if it's an API key authentication error
             error_message = str(e)
             self.ten_env.log_error(
-                f"Rime TTS streaming httpx.HTTPStatusError failed: {e}"
+                f"vendor_error: {error_message}",
+                category=LOG_CATEGORY_VENDOR,
             )
             if "401" in error_message:
                 yield error_message.encode("utf-8"), EVENT_TTS_INVALID_KEY_ERROR
