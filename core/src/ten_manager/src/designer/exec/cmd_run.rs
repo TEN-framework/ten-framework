@@ -11,23 +11,62 @@ use std::{path::Path, process::Command, thread};
 use actix::AsyncContext;
 use actix_web_actors::ws::WebsocketContext;
 use crossbeam_channel::{bounded, Sender};
-
-// Define system calls for Unix process group management
-#[cfg(unix)]
-extern "C" {
-    fn killpg(pgrp: i32, sig: i32) -> i32;
-}
-
-#[cfg(unix)]
-const SIGTERM: i32 = 15;
-#[cfg(unix)]
-const SIGKILL: i32 = 9;
+use sysinfo::System;
 
 use super::{msg::OutboundMsg, WsRunCmd};
 use crate::{
     designer::exec::RunCmdOutput,
     log::{process_log_line, GraphResourcesLog, LogLineInfo},
 };
+
+/// Cross-platform function to kill a process tree
+/// This will attempt to kill the main process and all its children
+fn kill_process_tree(pid: u32) {
+    let mut system = System::new();
+    system.refresh_all();
+
+    // Find all child processes recursively
+    let mut processes_to_kill = Vec::new();
+    collect_child_processes(&system, pid, &mut processes_to_kill);
+
+    // Add the main process
+    processes_to_kill.push(pid);
+
+    // Kill all processes (children first, then parent)
+    for &process_pid in &processes_to_kill {
+        if let Some(process) = system.process(sysinfo::Pid::from_u32(process_pid)) {
+            // Try graceful termination first
+            process.kill_with(sysinfo::Signal::Term);
+        }
+    }
+
+    // Give processes time to terminate gracefully
+    std::thread::sleep(std::time::Duration::from_millis(100));
+
+    // Force kill any remaining processes
+    system.refresh_all();
+    for &process_pid in &processes_to_kill {
+        if let Some(process) = system.process(sysinfo::Pid::from_u32(process_pid)) {
+            process.kill_with(sysinfo::Signal::Kill);
+        }
+    }
+}
+
+/// Recursively collect all child processes
+fn collect_child_processes(system: &System, parent_pid: u32, result: &mut Vec<u32>) {
+    let parent_pid_sys = sysinfo::Pid::from_u32(parent_pid);
+
+    for (pid, process) in system.processes() {
+        if let Some(ppid) = process.parent() {
+            if ppid == parent_pid_sys {
+                let child_pid = pid.as_u32();
+                // Recursively collect grandchildren
+                collect_child_processes(system, child_pid, result);
+                result.push(child_pid);
+            }
+        }
+    }
+}
 
 // Add this struct to store shutdown senders.
 pub struct ShutdownSenders {
@@ -263,23 +302,8 @@ impl WsRunCmd {
                     let exit_status = crossbeam_channel::select! {
                         recv(shutdown_rx) -> _ => {
                             // Termination requested, kill the process group to ensure all child processes are terminated
-                            #[cfg(unix)]
-                            {
-                                // Try to kill the entire process group first
-                                if let Ok(pid) = child.id().try_into() {
-                                    unsafe {
-                                        let _ = killpg(pid, SIGTERM);
-                                        // Give processes a chance to terminate gracefully
-                                        std::thread::sleep(std::time::Duration::from_millis(100));
-                                        // If still running, force kill
-                                        let _ = killpg(pid, SIGKILL);
-                                    }
-                                }
-                            }
-                            #[cfg(not(unix))]
-                            {
-                                let _ = child.kill();
-                            }
+                            kill_process_tree(child.id());
+                            let _ = child.kill();
 
                             match child.wait(){
                                 Ok(status) => Some(status.code().unwrap_or(-1)),
@@ -339,24 +363,8 @@ impl WsRunCmd {
         // Force kill child process if it exists.
         #[allow(unused_mut)]
         if let Some(mut child) = self.child.take() {
-            #[cfg(unix)]
-            {
-                // Try to kill the entire process group first to ensure all child processes are
-                // terminated
-                if let Ok(pid) = child.id().try_into() {
-                    unsafe {
-                        let _ = killpg(pid, SIGTERM);
-                        // Give processes a chance to terminate gracefully
-                        std::thread::sleep(std::time::Duration::from_millis(100));
-                        // If still running, force kill
-                        let _ = killpg(pid, SIGKILL);
-                    }
-                }
-            }
-            #[cfg(not(unix))]
-            {
-                let _ = child.kill();
-            }
+            kill_process_tree(child.id());
+            let _ = child.kill();
         }
     }
 }
