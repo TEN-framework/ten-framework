@@ -72,11 +72,11 @@ mod tests {
         let src = GraphLoc::with_app_and_type_and_name(
             Some("http://example.com:8000".to_string()),
             GraphNodeType::Extension,
-            "ext_1".to_string()).unwrap();
+            "ext1".to_string()).unwrap();
         let dest = GraphLoc::with_app_and_type_and_name(
             Some("http://example.com:8000".to_string()),
             GraphNodeType::Extension,
-            "ext_2".to_string()).unwrap();
+            "ext2".to_string()).unwrap();
         // Test adding a connection with msg_conversion.
         let result = graph_add_connection(
             &mut graph,
@@ -178,11 +178,11 @@ mod tests {
         let src = GraphLoc::with_app_and_type_and_name(
             Some("http://example.com:8000".to_string()),
             GraphNodeType::Extension,
-            "ext_1".to_string()).unwrap();
+            "ext1".to_string()).unwrap();
         let dest = GraphLoc::with_app_and_type_and_name(
             Some("http://example.com:8000".to_string()),
             GraphNodeType::Extension,
-            "ext_2".to_string()).unwrap();
+            "ext2".to_string()).unwrap();
         // Test adding a connection with msg_conversion.
         let result = graph_add_connection(
             &mut graph,
@@ -237,11 +237,11 @@ mod tests {
         let src = GraphLoc::with_app_and_type_and_name(
             Some("http://example.com:8000".to_string()),
             GraphNodeType::Extension,
-            "ext_1".to_string()).unwrap();
+            "ext1".to_string()).unwrap();
         let dest = GraphLoc::with_app_and_type_and_name(
             Some("http://example.com:8000".to_string()),
             GraphNodeType::Extension,
-            "ext_2".to_string()).unwrap();
+            "ext2".to_string()).unwrap();
         // Test adding a connection with msg_conversion.
         let result = graph_add_connection(
             &mut graph,
@@ -297,11 +297,11 @@ mod tests {
         let src = GraphLoc::with_app_and_type_and_name(
             Some("http://example.com:8000".to_string()),
             GraphNodeType::Extension,
-            "ext_1".to_string()).unwrap();
+            "ext1".to_string()).unwrap();
         let dest = GraphLoc::with_app_and_type_and_name(
             Some("http://example.com:8000".to_string()),
             GraphNodeType::Extension,
-            "ext_2".to_string()).unwrap();
+            "ext2".to_string()).unwrap();
         // Test adding a connection with msg_conversion.
         let result = graph_add_connection(
             &mut graph,
@@ -356,11 +356,11 @@ mod tests {
         let src = GraphLoc::with_app_and_type_and_name(
             Some("http://example.com:8000".to_string()),
             GraphNodeType::Extension,
-            "ext_1".to_string()).unwrap();
+            "ext1".to_string()).unwrap();
         let dest = GraphLoc::with_app_and_type_and_name(
             Some("http://example.com:8000".to_string()),
             GraphNodeType::Extension,
-            "ext_2".to_string()).unwrap();
+            "ext2".to_string()).unwrap();
         // Test adding a connection with msg_conversion.
         let result = graph_add_connection(
             &mut graph,
@@ -452,11 +452,11 @@ mod tests {
         let src = GraphLoc::with_app_and_type_and_name(
             Some("http://example.com:8000".to_string()),
             GraphNodeType::Extension,
-            "ext_1".to_string()).unwrap();
+            "ext1".to_string()).unwrap();
         let dest = GraphLoc::with_app_and_type_and_name(
             Some("http://example.com:8000".to_string()),
             GraphNodeType::Extension,
-            "ext_2".to_string()).unwrap();
+            "ext2".to_string()).unwrap();
         // Test adding a connection with msg_conversion.
         let result = graph_add_connection(
             &mut graph,
@@ -525,11 +525,11 @@ mod tests {
         let src = GraphLoc::with_app_and_type_and_name(
             Some("http://example.com:8000".to_string()),
             GraphNodeType::Extension,
-            "ext_1".to_string()).unwrap();
+            "ext1".to_string()).unwrap();
         let dest = GraphLoc::with_app_and_type_and_name(
             Some("http://example.com:8000".to_string()),
             GraphNodeType::Extension,
-            "ext_2".to_string()).unwrap();
+            "ext2".to_string()).unwrap();
         // Test adding a connection with invalid msg_conversion.
         let result = graph_add_connection(
             &mut graph,
@@ -673,11 +673,11 @@ mod tests {
         let src = GraphLoc::with_app_and_type_and_name(
             Some("http://example.com:8000".to_string()),
             GraphNodeType::Extension,
-            "ext_1".to_string()).unwrap();
+            "ext1".to_string()).unwrap();
         let dest = GraphLoc::with_app_and_type_and_name(
             Some("http://example.com:8000".to_string()),
             GraphNodeType::Extension,
-            "ext_2".to_string()).unwrap();
+            "ext2".to_string()).unwrap();
         // Test adding a connection with invalid msg_conversion.
         let result = graph_add_connection(
             &mut graph,

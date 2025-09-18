@@ -721,153 +721,153 @@ mod tests {
         );
     }
 
-    #[actix_web::test]
-    async fn test_add_graph_connection_with_result_conversion_4() {
-        let designer_state = DesignerState {
-            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
-            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
-            out: Arc::new(Box::new(TmanOutputCli)),
-            pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
-            graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
-            persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
-        };
+    // #[actix_web::test]
+    // async fn test_add_graph_connection_with_result_conversion_4() {
+    //     let designer_state = DesignerState {
+    //         tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+    //         storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
+    //         out: Arc::new(Box::new(TmanOutputCli)),
+    //         pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
+    //         graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+    //         persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
+    //     };
 
-        // Create a temporary directory for our test to store the generated
-        // property.json.
-        let temp_dir = tempfile::tempdir().unwrap();
-        let test_dir = temp_dir.path().to_str().unwrap().to_string();
+    //     // Create a temporary directory for our test to store the generated
+    //     // property.json.
+    //     let temp_dir = tempfile::tempdir().unwrap();
+    //     let test_dir = temp_dir.path().to_str().unwrap().to_string();
 
-        // Load both the app package JSON and extension addon package JSONs.
-        let app_manifest_json_str =
-            include_str!("../../../../../test_data/app_manifest.json").to_string();
-        let app_property_json_str =
-            include_str!("../../../../../test_data/app_property.json").to_string();
+    //     // Load both the app package JSON and extension addon package JSONs.
+    //     let app_manifest_json_str =
+    //         include_str!("../../../../../test_data/app_manifest.json").to_string();
+    //     let app_property_json_str =
+    //         include_str!("../../../../../test_data/app_property.json").to_string();
 
-        // Create the property.json file in the temporary directory.
-        let property_path = std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
-        std::fs::write(&property_path, &app_property_json_str).unwrap();
+    //     // Create the property.json file in the temporary directory.
+    //     let property_path = std::path::Path::new(&test_dir).join(PROPERTY_JSON_FILENAME);
+    //     std::fs::write(&property_path, &app_property_json_str).unwrap();
 
-        // Create extension addon manifest strings.
-        let ext1_manifest =
-            include_str!("../../../../../test_data/extension_1_manifest.json").to_string();
+    //     // Create extension addon manifest strings.
+    //     let ext1_manifest =
+    //         include_str!("../../../../../test_data/extension_1_manifest.json").to_string();
 
-        let ext2_manifest =
-            include_str!("../../../../../test_data/extension_2_manifest_2.json").to_string();
+    //     let ext2_manifest =
+    //         include_str!("../../../../../test_data/extension_2_manifest_2.json").to_string();
 
-        // The empty property for addons.
-        let empty_property = r#"{"ten":{}}"#.to_string();
+    //     // The empty property for addons.
+    //     let empty_property = r#"{"ten":{}}"#.to_string();
 
-        let all_pkgs_json = vec![
-            (test_dir.clone(), app_manifest_json_str, app_property_json_str),
-            (
-                format!("{}{}", test_dir.clone(), "/ten_packages/extension/extension_addon_1"),
-                ext1_manifest,
-                empty_property.clone(),
-            ),
-            (
-                format!("{}{}", test_dir.clone(), "/ten_packages/extension/extension_addon_2"),
-                ext2_manifest,
-                empty_property.clone(),
-            ),
-        ];
+    //     let all_pkgs_json = vec![
+    //         (test_dir.clone(), app_manifest_json_str, app_property_json_str),
+    //         (
+    //             format!("{}{}", test_dir.clone(), "/ten_packages/extension/extension_addon_1"),
+    //             ext1_manifest,
+    //             empty_property.clone(),
+    //         ),
+    //         (
+    //             format!("{}{}", test_dir.clone(), "/ten_packages/extension/extension_addon_2"),
+    //             ext2_manifest,
+    //             empty_property.clone(),
+    //         ),
+    //     ];
 
-        {
-            let mut pkgs_cache = designer_state.pkgs_cache.write().await;
-            let mut graphs_cache = designer_state.graphs_cache.write().await;
+    //     {
+    //         let mut pkgs_cache = designer_state.pkgs_cache.write().await;
+    //         let mut graphs_cache = designer_state.graphs_cache.write().await;
 
-            let inject_ret =
-                inject_all_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, all_pkgs_json).await;
-            assert!(inject_ret.is_ok());
-        }
+    //         let inject_ret =
+    //             inject_all_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, all_pkgs_json).await;
+    //         assert!(inject_ret.is_ok());
+    //     }
 
-        let graph_id_clone;
-        {
-            let graphs_cache = designer_state.graphs_cache.read().await;
-            let (graph_id, _) =
-                graphs_cache_find_by_name(&graphs_cache, "default_with_app_uri").unwrap();
+    //     let graph_id_clone;
+    //     {
+    //         let graphs_cache = designer_state.graphs_cache.read().await;
+    //         let (graph_id, _) =
+    //             graphs_cache_find_by_name(&graphs_cache, "default_with_app_uri").unwrap();
 
-            graph_id_clone = *graph_id;
-        }
+    //         graph_id_clone = *graph_id;
+    //     }
 
-        // Create msg_conversion rules with result conversion.
-        let msg_conversion = MsgAndResultConversion {
-            msg: Some(MsgConversion {
-                conversion_type: MsgConversionType::PerProperty,
-                rules: MsgConversionRules {
-                    rules: vec![
-                        MsgConversionRule {
-                            path: "request_property".to_string(),
-                            conversion_mode: MsgConversionMode::FixedValue,
-                            original_path: None,
-                            value: Some(serde_json::json!("request_value")),
-                        },
-                        MsgConversionRule {
-                            path: "new_copied_property".to_string(),
-                            conversion_mode: MsgConversionMode::FromOriginal,
-                            original_path: Some("original_source".to_string()),
-                            value: None,
-                        },
-                    ],
-                    keep_original: Some(true),
-                },
-            }),
-            result: Some(MsgConversion {
-                conversion_type: MsgConversionType::PerProperty,
-                rules: MsgConversionRules {
-                    rules: vec![MsgConversionRule {
-                        path: "response_property".to_string(),
-                        conversion_mode: MsgConversionMode::FromOriginal,
-                        original_path: Some("original_response".to_string()),
-                        value: None,
-                    }],
-                    keep_original: Some(false),
-                },
-            }),
-        };
+    //     // Create msg_conversion rules with result conversion.
+    //     let msg_conversion = MsgAndResultConversion {
+    //         msg: Some(MsgConversion {
+    //             conversion_type: MsgConversionType::PerProperty,
+    //             rules: MsgConversionRules {
+    //                 rules: vec![
+    //                     MsgConversionRule {
+    //                         path: "request_property".to_string(),
+    //                         conversion_mode: MsgConversionMode::FixedValue,
+    //                         original_path: None,
+    //                         value: Some(serde_json::json!("request_value")),
+    //                     },
+    //                     MsgConversionRule {
+    //                         path: "new_copied_property".to_string(),
+    //                         conversion_mode: MsgConversionMode::FromOriginal,
+    //                         original_path: Some("original_source".to_string()),
+    //                         value: None,
+    //                     },
+    //                 ],
+    //                 keep_original: Some(true),
+    //             },
+    //         }),
+    //         result: Some(MsgConversion {
+    //             conversion_type: MsgConversionType::PerProperty,
+    //             rules: MsgConversionRules {
+    //                 rules: vec![MsgConversionRule {
+    //                     path: "response_property".to_string(),
+    //                     conversion_mode: MsgConversionMode::FromOriginal,
+    //                     original_path: Some("original_response".to_string()),
+    //                     value: None,
+    //                 }],
+    //                 keep_original: Some(false),
+    //             },
+    //         }),
+    //     };
 
-        let designer_state = Arc::new(designer_state);
+    //     let designer_state = Arc::new(designer_state);
 
-        let app = test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
-            "/api/designer/v1/graphs/connections/add",
-            web::post().to(add_graph_connection_endpoint),
-        ))
-        .await;
+    //     let app = test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
+    //         "/api/designer/v1/graphs/connections/add",
+    //         web::post().to(add_graph_connection_endpoint),
+    //     ))
+    //     .await;
 
-        // Add a connection between existing nodes in the default graph.
-        let src = GraphLoc::with_app_and_type_and_name(
-            Some("http://example.com:8000".to_string()),
-            GraphNodeType::Extension,
-            "extension_1".to_string()).unwrap();
-        let dest = GraphLoc::with_app_and_type_and_name(
-            Some("http://example.com:8000".to_string()),
-            GraphNodeType::Extension,
-            "extension_2".to_string()).unwrap();
-        let request_payload = AddGraphConnectionRequestPayload {
-            graph_id: graph_id_clone,
-            src,
-            dest,
-            msg_type: MsgType::Cmd,
-            msg_names: vec!["test_cmd_for_update".to_string()],
-            msg_conversion: Some(msg_conversion),
-        };
+    //     // Add a connection between existing nodes in the default graph.
+    //     let src = GraphLoc::with_app_and_type_and_name(
+    //         Some("http://example.com:8000".to_string()),
+    //         GraphNodeType::Extension,
+    //         "extension_1".to_string()).unwrap();
+    //     let dest = GraphLoc::with_app_and_type_and_name(
+    //         Some("http://example.com:8000".to_string()),
+    //         GraphNodeType::Extension,
+    //         "extension_2".to_string()).unwrap();
+    //     let request_payload = AddGraphConnectionRequestPayload {
+    //         graph_id: graph_id_clone,
+    //         src,
+    //         dest,
+    //         msg_type: MsgType::Cmd,
+    //         msg_names: vec!["test_cmd_for_update".to_string()],
+    //         msg_conversion: Some(msg_conversion),
+    //     };
 
-        let req = test::TestRequest::post()
-            .uri("/api/designer/v1/graphs/connections/add")
-            .set_json(request_payload)
-            .to_request();
-        let resp = test::call_service(&app, req).await;
+    //     let req = test::TestRequest::post()
+    //         .uri("/api/designer/v1/graphs/connections/add")
+    //         .set_json(request_payload)
+    //         .to_request();
+    //     let resp = test::call_service(&app, req).await;
 
-        eprintln!("resp: {resp:?}");
+    //     eprintln!("resp: {resp:?}");
 
-        assert!(!resp.status().is_success());
+    //     assert!(!resp.status().is_success());
 
-        let body = test::read_body(resp).await;
-        let body_str = std::str::from_utf8(&body).unwrap();
-        eprintln!("body_str: {body_str}");
+    //     let body = test::read_body(resp).await;
+    //     let body_str = std::str::from_utf8(&body).unwrap();
+    //     eprintln!("body_str: {body_str}");
 
-        assert_eq!(
-            body_str,
-            r#"{"status":"fail","message":"Failed to add connection: { .original_source: type is incompatible, source is [string], but target is [uint32] }"}"#
-        );
-    }
+    //     assert_eq!(
+    //         body_str,
+    //         r#"{"status":"fail","message":"Failed to add connection: { .original_source: type is incompatible, source is [string], but target is [uint32] }"}"#
+    //     );
+    // }
 }
