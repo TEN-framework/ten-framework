@@ -1,7 +1,7 @@
 {
   "type": "extension",
-  "name": "groq_tts_python",
-  "version": "0.2.2",
+  "name": "main_python",
+  "version": "0.1.0",
   "dependencies": [
     {
       "type": "system",
@@ -18,12 +18,19 @@
     "include": [
       "manifest.json",
       "property.json",
-      "BUILD.gn",
       "**.tent",
       "**.py",
       "README.md",
-      "requirements.txt"
+      "tests/**"
     ]
   },
-  "api": {}
+  "api": {
+    "property": {
+      "properties": {
+        "greeting": {
+          "type": "string"
+        }
+      }
+    }
+  }
 }

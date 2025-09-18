@@ -75,7 +75,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
     @override
     def vendor(self) -> str:
         """Get the name of the ASR vendor."""
-        return "bytedance_llm_based_asr"
+        return "bytedance_bigmodel"
 
     @override
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
