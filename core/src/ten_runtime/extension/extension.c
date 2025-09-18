@@ -656,7 +656,7 @@ static void ten_extension_on_configure(ten_env_t *ten_env) {
   TEN_ASSERT(ten_extension_check_integrity(self, true),
              "Invalid use of extension %p.", self);
 
-  if (self->state >= TEN_EXTENSION_STATE_ON_STOP) {
+  if (self->state >= TEN_EXTENSION_STATE_PREPARE_TO_STOP) {
     // The extension has already entered the close flow, so do not continue with
     // the start flow.
     TEN_LOGI(
@@ -694,7 +694,7 @@ void ten_extension_on_init(ten_extension_t *self) {
   TEN_ASSERT(ten_extension_check_integrity(self, true),
              "Invalid use of extension %p.", self);
 
-  if (self->state >= TEN_EXTENSION_STATE_ON_STOP) {
+  if (self->state >= TEN_EXTENSION_STATE_PREPARE_TO_STOP) {
     // The extension has already entered the close flow, so do not continue with
     // the start flow.
     TEN_LOGI("[%s] on_init() skipped: Extension is already in the close flow",
@@ -726,7 +726,7 @@ void ten_extension_on_start(ten_extension_t *self) {
   TEN_ASSERT(ten_extension_check_integrity(self, true),
              "Invalid use of extension %p.", self);
 
-  if (self->state >= TEN_EXTENSION_STATE_ON_STOP) {
+  if (self->state >= TEN_EXTENSION_STATE_PREPARE_TO_STOP) {
     // The extension has already entered the close flow, so do not continue with
     // the start flow.
     TEN_LOGI("[%s] on_start() skipped: Extension is already in the close flow",
@@ -1228,17 +1228,18 @@ static void ten_extension_handle_trigger_stop_life_cycle(
   ten_list_push_smart_ptr_back(&self->pending_trigger_life_cycle_cmds, cmd);
 
   // Check if current state allows immediate triggering of stop
-  if (current_state < TEN_EXTENSION_STATE_ON_START_DONE) {
+  if (current_state < TEN_EXTENSION_STATE_PREPARE_TO_STOP) {
     TEN_LOGD(
-        "[%s] trigger_life_cycle stop command received before start_done "
+        "[%s] trigger_life_cycle stop command received before prepare to stop "
         "(state: %d), will trigger stop when appropriate",
         ten_extension_get_name(self, true), current_state);
     return;
   }
 
-  // If extension is in ON_START_DONE state, trigger on_stop immediately
-  if (current_state == TEN_EXTENSION_STATE_ON_START_DONE) {
-    TEN_LOGD("[%s] Extension is in ON_START_DONE state, triggering on_stop",
+  // If extension is in TEN_EXTENSION_STATE_PREPARE_TO_STOP state, trigger
+  // on_stop immediately
+  if (current_state == TEN_EXTENSION_STATE_PREPARE_TO_STOP) {
+    TEN_LOGD("[%s] Extension is in PREPARE_TO_STOP state, triggering on_stop",
              ten_extension_get_name(self, true));
 
     // Directly call on_stop since we're already in the extension's runloop
@@ -1334,6 +1335,8 @@ void ten_extension_reply_pending_trigger_life_cycle_cmds_by_stage(
 void ten_extension_trigger_stop_if_needed(ten_extension_t *self) {
   TEN_ASSERT(self, "Invalid argument.");
   TEN_ASSERT(ten_extension_check_integrity(self, true), "Invalid argument.");
+
+  self->state = TEN_EXTENSION_STATE_PREPARE_TO_STOP;
 
   // Check if extension is configured for manual stop control
   if (!self->manual_trigger_life_cycle.stages[TEN_MANUAL_TRIGGER_STAGE_STOP]) {

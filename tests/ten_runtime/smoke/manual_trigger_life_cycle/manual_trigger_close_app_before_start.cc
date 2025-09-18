@@ -27,67 +27,12 @@ class test_extension_a : public ten::extension_t {
                  std::chrono::system_clock::now().time_since_epoch())
                  .count());
 
-    // Sleep 1 second
-    std::this_thread::sleep_for(std::chrono::seconds(1));
+    ten_env.on_start_done();
 
-    // Send a cmd to extension B to check whether it is started
-    auto check_start_cmd = ten::cmd_t::create("check_start");
-    check_start_cmd->set_dests({{"", "", "test_extension_b"}});
-    ten_env.send_cmd(
-        std::move(check_start_cmd),
-        [](ten::ten_env_t &ten_env,
-           std::unique_ptr<ten::cmd_result_t> cmd_result, ten::error_t *err) {
-          ten_test::check_status_code(cmd_result, TEN_STATUS_CODE_OK);
-          bool started = cmd_result->get_property_bool("started");
-          // Extension B should not be started yet as it has not been manually
-          // triggered by extension A
-          ASSERT_EQ(started, false);
-
-          // Sleep 1 second then send trigger_life_cycle start command to
-          // extension B
-          std::this_thread::sleep_for(std::chrono::seconds(1));
-
-          auto trigger_cmd = ten::trigger_life_cycle_cmd_t::create();
-          trigger_cmd->set_stage("start");
-          trigger_cmd->set_dests({{"", "", "test_extension_b"}});
-
-          TEN_LOGI("Extension A sending start trigger command at: %ld",
-                   std::chrono::duration_cast<std::chrono::milliseconds>(
-                       std::chrono::system_clock::now().time_since_epoch())
-                       .count());
-
-          ten_env.send_cmd(
-              std::move(trigger_cmd),
-              [](ten::ten_env_t &ten_env,
-                 std::unique_ptr<ten::cmd_result_t> cmd_result,
-                 ten::error_t *err) {
-                TEN_ENV_LOG_INFO(ten_env,
-                                 "start trigger command "
-                                 "received");
-                ten_test::check_status_code(cmd_result, TEN_STATUS_CODE_OK);
-
-                // Check whether extension B is started
-                auto check_start_cmd = ten::cmd_t::create("check_start");
-                check_start_cmd->set_dests({{"", "", "test_extension_b"}});
-                ten_env.send_cmd(
-                    std::move(check_start_cmd),
-                    [](ten::ten_env_t &ten_env,
-                       std::unique_ptr<ten::cmd_result_t> cmd_result,
-                       ten::error_t *err) {
-                      ten_test::check_status_code(cmd_result,
-                                                  TEN_STATUS_CODE_OK);
-                      bool started = cmd_result->get_property_bool("started");
-                      ASSERT_EQ(started, true);
-
-                      ten_env.on_start_done();
-
-                      // Close app to stop the test
-                      auto close_app_cmd = ten::close_app_cmd_t::create();
-                      close_app_cmd->set_dests({{""}});
-                      ten_env.send_cmd(std::move(close_app_cmd));
-                    });
-              });
-        });
+    // Close app to stop the test.
+    auto close_app_cmd = ten::close_app_cmd_t::create();
+    close_app_cmd->set_dests({{""}});
+    ten_env.send_cmd(std::move(close_app_cmd));
   }
 
   void on_stop(ten::ten_env_t &ten_env) override {
@@ -135,11 +80,31 @@ class test_extension_b : public ten::extension_t {
  public:
   explicit test_extension_b(const char *name) : ten::extension_t(name) {}
 
+  void on_init(ten::ten_env_t &ten_env) override {
+    TEN_LOGI("Extension B on_init: %ld",
+             std::chrono::duration_cast<std::chrono::milliseconds>(
+                 std::chrono::system_clock::now().time_since_epoch())
+                 .count());
+
+    auto *ten_env_proxy = ten::ten_env_proxy_t::create(ten_env);
+
+    // Create a thread to notify the start event
+    thread_ = std::thread([ten_env_proxy]() {
+      std::this_thread::sleep_for(std::chrono::seconds(1));
+
+      ten_env_proxy->notify([](ten::ten_env_t &ten_env,
+                               void *user_data) { ten_env.on_init_done(); },
+                            nullptr);
+      delete ten_env_proxy;
+    });
+  }
+
   void on_start(ten::ten_env_t &ten_env) override {
     TEN_LOGI("Extension B on_start (manually triggered): %ld",
              std::chrono::duration_cast<std::chrono::milliseconds>(
                  std::chrono::system_clock::now().time_since_epoch())
                  .count());
+
     started_ = true;
 
     ten_env.on_start_done();
@@ -150,6 +115,7 @@ class test_extension_b : public ten::extension_t {
              std::chrono::duration_cast<std::chrono::milliseconds>(
                  std::chrono::system_clock::now().time_since_epoch())
                  .count());
+    thread_.join();
     stopped_ = true;
 
     ten_env.on_stop_done();
@@ -175,6 +141,8 @@ class test_extension_b : public ten::extension_t {
  private:
   bool started_{false};
   bool stopped_{false};
+
+  std::thread thread_;
 };
 
 class test_app : public ten::app_t {
@@ -224,14 +192,14 @@ void *test_app_thread_main(TEN_UNUSED void *args) {
   return nullptr;
 }
 
-TEN_CPP_REGISTER_ADDON_AS_EXTENSION(manual_trigger_start_stop__test_extension_a,
-                                    test_extension_a);
-TEN_CPP_REGISTER_ADDON_AS_EXTENSION(manual_trigger_start_stop__test_extension_b,
-                                    test_extension_b);
+TEN_CPP_REGISTER_ADDON_AS_EXTENSION(
+    manual_trigger_close_app_before_start__test_extension_a, test_extension_a);
+TEN_CPP_REGISTER_ADDON_AS_EXTENSION(
+    manual_trigger_close_app_before_start__test_extension_b, test_extension_b);
 
 }  // namespace
 
-TEST(ManualTriggerLifeCycleTest, StartStop) {  // NOLINT
+TEST(ManualTriggerLifeCycleTest, CloseAppBeforeStart) {  // NOLINT
   // Start app.
   auto *app_thread =
       ten_thread_create("app thread", test_app_thread_main, nullptr);
@@ -245,13 +213,13 @@ TEST(ManualTriggerLifeCycleTest, StartStop) {  // NOLINT
            "nodes": [{
                 "type": "extension",
                 "name": "test_extension_a",
-                "addon": "manual_trigger_start_stop__test_extension_a",
+                "addon": "manual_trigger_close_app_before_start__test_extension_a",
                 "extension_group": "a",
                 "app": "msgpack://127.0.0.1:8001/"
              },{
                 "type": "extension",
                 "name": "test_extension_b",
-                "addon": "manual_trigger_start_stop__test_extension_b",
+                "addon": "manual_trigger_close_app_before_start__test_extension_b",
                 "extension_group": "b",
                 "app": "msgpack://127.0.0.1:8001/",
                 "property": {

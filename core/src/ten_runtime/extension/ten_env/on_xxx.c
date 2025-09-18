@@ -80,7 +80,7 @@ bool ten_extension_on_configure_done(ten_env_t *self) {
              "Invalid use of extension %p.", extension);
 
   if (extension->state != TEN_EXTENSION_STATE_ON_CONFIGURE) {
-    if (extension->state >= TEN_EXTENSION_STATE_ON_STOP) {
+    if (extension->state >= TEN_EXTENSION_STATE_PREPARE_TO_STOP) {
       TEN_LOGI(
           "[%s] on_configure_done() skipped: Extension is already in the close "
           "flow",
@@ -238,7 +238,7 @@ bool ten_extension_on_init_done(ten_env_t *self) {
              "Invalid use of extension %p.", extension);
 
   if (extension->state != TEN_EXTENSION_STATE_ON_INIT) {
-    if (extension->state >= TEN_EXTENSION_STATE_ON_STOP) {
+    if (extension->state >= TEN_EXTENSION_STATE_PREPARE_TO_STOP) {
       TEN_LOGI(
           "[%s] on_init_done() skipped: Extension is already in the close flow",
           ten_extension_get_name(extension, true));
@@ -323,7 +323,7 @@ bool ten_extension_on_start_done(ten_env_t *self) {
              "Invalid use of extension %p.", extension);
 
   if (extension->state != TEN_EXTENSION_STATE_ON_START) {
-    if (extension->state >= TEN_EXTENSION_STATE_ON_STOP) {
+    if (extension->state >= TEN_EXTENSION_STATE_PREPARE_TO_STOP) {
       TEN_LOGI(
           "[%s] on_start_done() skipped: Extension is already in the close "
           "flow",

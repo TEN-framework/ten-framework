@@ -89,6 +89,9 @@ typedef enum TEN_EXTENSION_STATE {
   // on_start_done() is completed.
   TEN_EXTENSION_STATE_ON_START_DONE,
 
+  // The extension is preparing to stop.
+  TEN_EXTENSION_STATE_PREPARE_TO_STOP,
+
   // on_stop() is called.
   TEN_EXTENSION_STATE_ON_STOP,
 
