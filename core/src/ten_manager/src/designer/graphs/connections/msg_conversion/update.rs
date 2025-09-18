@@ -36,7 +36,7 @@ pub struct UpdateGraphConnectionMsgConversionRequestPayload {
     pub src: GraphLoc,
     pub dest: GraphLoc,
     pub msg_type: MsgType,
-    pub msg_name: Vec<String>,
+    pub msg_names: Vec<String>,
 
     pub msg_conversion: Option<MsgAndResultConversion>,
 }
@@ -68,7 +68,7 @@ async fn update_graph_info(
                     MsgType::VideoFrame => &mut connection.video_frame,
                 };
 
-                if request_payload.msg_name.len() > 1 {
+                if request_payload.msg_names.len() > 1 {
                     // Restore the original graph
                     graph_info.graph = original_graph;
                     return Err(anyhow::anyhow!("Multiple message names are not supported for updating conversion"));
@@ -78,7 +78,7 @@ async fn update_graph_info(
                 // message flow by name.
                 if let Some(msg_flows) = msg_flow_vec {
                     for msg_flow in msg_flows.iter_mut() {
-                        if msg_flow.name.as_ref() == Some(&request_payload.msg_name[0]) {
+                        if msg_flow.name.as_ref() == Some(&request_payload.msg_names[0]) {
                             // Find the matching destination
                             for dest in msg_flow.dest.iter_mut() {
                                 if dest.loc.matches(&request_payload.dest)
@@ -155,7 +155,7 @@ pub async fn update_graph_connection_msg_conversion_endpoint(
             src: &request_payload.src,
             dest: &request_payload.dest,
             msg_type: &request_payload.msg_type,
-            msg_name: &request_payload.msg_name,
+            msg_names: &request_payload.msg_names,
             msg_conversion: &request_payload.msg_conversion,
         },
     )

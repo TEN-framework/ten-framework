@@ -129,7 +129,7 @@ mod tests {
             src,
             dest,
             msg_type: MsgType::Cmd,
-            msg_name: vec!["test_cmd".to_string()],
+            msg_names: vec!["test_cmd".to_string()],
             msg_conversion: None,
         };
 
@@ -300,7 +300,7 @@ mod tests {
             src,
             dest,
             msg_type: MsgType::Cmd,
-            msg_name: vec!["c1".to_string()],
+            msg_names: vec!["c1".to_string()],
             msg_conversion: None,
         };
 
@@ -406,7 +406,7 @@ mod tests {
             src,
             dest,
             msg_type: MsgType::Cmd,
-            msg_name: vec!["test_cmd".to_string()],
+            msg_names: vec!["test_cmd".to_string()],
             msg_conversion: None,
         };
 
@@ -524,7 +524,7 @@ mod tests {
             src: ext1.clone(),
             dest: ext2,
             msg_type: MsgType::Cmd,
-            msg_name: vec!["test_cmd1".to_string()],
+            msg_names: vec!["test_cmd1".to_string()],
             msg_conversion: None,
         };
 
@@ -542,7 +542,7 @@ mod tests {
             src: ext1,
             dest: ext3,
             msg_type: MsgType::Cmd,
-            msg_name: vec!["test_cmd2".to_string()],
+            msg_names: vec!["test_cmd2".to_string()],
             msg_conversion: None,
         };
 
@@ -671,7 +671,7 @@ mod tests {
             src,
             dest,
             msg_type: MsgType::Data,
-            msg_name: vec!["test_data".to_string()],
+            msg_names: vec!["test_data".to_string()],
             msg_conversion: None,
         };
 
@@ -808,7 +808,7 @@ mod tests {
             src: src.clone(),
             dest: dest.clone(),
             msg_type: MsgType::AudioFrame,
-            msg_name: vec!["audio_stream".to_string()],
+            msg_names: vec!["audio_stream".to_string()],
             msg_conversion: None,
         };
 
@@ -826,7 +826,7 @@ mod tests {
             src,
             dest,
             msg_type: MsgType::VideoFrame,
-            msg_name: vec!["video_stream".to_string()],
+            msg_names: vec!["video_stream".to_string()],
             msg_conversion: None,
         };
 
@@ -966,7 +966,7 @@ mod tests {
             src: ext1.clone(),
             dest: ext2.clone(),
             msg_type: MsgType::Cmd,
-            msg_name: vec!["cmd_1".to_string()],
+            msg_names: vec!["cmd_1".to_string()],
             msg_conversion: None,
         };
 
@@ -984,7 +984,7 @@ mod tests {
             src: ext1.clone(),
             dest: ext3,
             msg_type: MsgType::Cmd,
-            msg_name: vec!["cmd_2".to_string()],
+            msg_names: vec!["cmd_2".to_string()],
             msg_conversion: None,
         };
 
@@ -1002,7 +1002,7 @@ mod tests {
             src: ext1,
             dest: ext2,
             msg_type: MsgType::Cmd,
-            msg_name: vec!["cmd_3".to_string()],
+            msg_names: vec!["cmd_3".to_string()],
             msg_conversion: None,
         };
 
@@ -1120,7 +1120,7 @@ mod tests {
             src: ext_b.clone(),
             dest: ext_a.clone(),
             msg_type: MsgType::Cmd,
-            msg_name: vec!["hello".to_string()],
+            msg_names: vec!["hello".to_string()],
             msg_conversion: None,
         };
 
@@ -1146,7 +1146,7 @@ mod tests {
             src: ext_a.clone(),
             dest: ext_b.clone(),
             msg_type: MsgType::Cmd,
-            msg_name: vec!["cmd_out_b".to_string()],
+            msg_names: vec!["cmd_out_b".to_string()],
             msg_conversion: None,
         };
 
@@ -1171,7 +1171,7 @@ mod tests {
             src: ext_b,
             dest: ext_a,
             msg_type: MsgType::Data,
-            msg_name: vec!["data".to_string()],
+            msg_names: vec!["data".to_string()],
             msg_conversion: None,
         };
 
@@ -1266,7 +1266,7 @@ mod tests {
             src: ext_b.clone(),
             dest: ext_a.clone(),
             msg_type: MsgType::Data,
-            msg_name: vec!["data".to_string()],
+            msg_names: vec!["data".to_string()],
             msg_conversion: None,
         };
 
@@ -1292,7 +1292,7 @@ mod tests {
             src: ext_b.clone(),
             dest: ext_c.clone(),
             msg_type: MsgType::Data,
-            msg_name: vec!["data".to_string()],
+            msg_names: vec!["data".to_string()],
             msg_conversion: None,
         };
 

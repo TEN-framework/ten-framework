@@ -154,7 +154,7 @@ mod tests {
             src,
             dest,
             msg_type: MsgType::Cmd,
-            msg_name: vec!["test_cmd".to_string()],
+            msg_names: vec!["test_cmd".to_string()],
             msg_conversion: Some(msg_conversion),
         };
 
@@ -321,7 +321,7 @@ mod tests {
             src,
             dest,
             msg_type: MsgType::Cmd,
-            msg_name: vec!["test_cmd_with_result".to_string()],
+            msg_names: vec!["test_cmd_with_result".to_string()],
             msg_conversion: Some(msg_conversion),
         };
 
@@ -496,7 +496,7 @@ mod tests {
             src,
             dest,
             msg_type: MsgType::Cmd,
-            msg_name: vec!["test_cmd_for_update".to_string()],
+            msg_names: vec!["test_cmd_for_update".to_string()],
             msg_conversion: Some(msg_conversion),
         };
 
@@ -670,7 +670,7 @@ mod tests {
             src,
             dest,
             msg_type: MsgType::Cmd,
-            msg_name: vec!["test_cmd_for_update".to_string()],
+            msg_names: vec!["test_cmd_for_update".to_string()],
             msg_conversion: Some(msg_conversion),
         };
 
@@ -845,7 +845,7 @@ mod tests {
             src,
             dest,
             msg_type: MsgType::Cmd,
-            msg_name: vec!["test_cmd_for_update".to_string()],
+            msg_names: vec!["test_cmd_for_update".to_string()],
             msg_conversion: Some(msg_conversion),
         };
 

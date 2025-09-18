@@ -34,7 +34,7 @@ pub struct MsgConversionValidateInfo<'a> {
     pub src: &'a GraphLoc,
     pub dest: &'a GraphLoc,
     pub msg_type: &'a MsgType,
-    pub msg_name: &'a Vec<String>,
+    pub msg_names: &'a Vec<String>,
 
     pub msg_conversion: &'a Option<MsgAndResultConversion>,
 }

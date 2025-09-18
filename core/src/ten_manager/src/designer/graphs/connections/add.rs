@@ -30,7 +30,7 @@ pub struct AddGraphConnectionRequestPayload {
     pub dest: GraphLoc,
 
     pub msg_type: MsgType,
-    pub msg_name: Vec<String>,
+    pub msg_names: Vec<String>,
 
     pub msg_conversion: Option<MsgAndResultConversion>,
 }
@@ -69,7 +69,7 @@ pub async fn add_graph_connection_endpoint(
         request_payload.src.clone(),
         request_payload.dest.clone(),
         request_payload.msg_type.clone(),
-        request_payload.msg_name.clone(),
+        request_payload.msg_names.clone(),
         request_payload.msg_conversion.clone(),
     )
     .await
