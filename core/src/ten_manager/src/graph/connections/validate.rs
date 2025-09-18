@@ -9,7 +9,12 @@ use std::collections::HashMap;
 use anyhow::Result;
 use ten_rust::{
     base_dir_pkg_info::PkgsInfoInApp,
-    graph::{connection::GraphLoc, msg_conversion::MsgAndResultConversion, Graph, node::GraphNodeType},
+    graph::{
+        connection::GraphLoc,
+        Graph,
+        msg_conversion::MsgAndResultConversion,
+        node::GraphNodeType,
+    },
     pkg_info::{
         find_pkgs_cache_entry_by_app_uri, get_pkg_info_for_extension_addon,
         manifest::api::{ManifestApiProperty, ManifestApiPropertyAttributes},

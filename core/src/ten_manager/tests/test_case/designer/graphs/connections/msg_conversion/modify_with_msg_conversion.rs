@@ -28,12 +28,14 @@ mod tests {
         output::cli::TmanOutputCli,
     };
     use ten_rust::{
-        graph::msg_conversion::{
-            MsgAndResultConversion, MsgConversion, MsgConversionMode, MsgConversionRule,
-            MsgConversionRules, MsgConversionType,
+        graph::{
+            connection::GraphLoc,
+            msg_conversion::{
+                MsgAndResultConversion, MsgConversion, MsgConversionMode, MsgConversionRule,
+                MsgConversionRules, MsgConversionType,
+            },
+            node::GraphNodeType,
         },
-        graph::connection::GraphLoc,
-        graph::node::GraphNodeType,
         pkg_info::{constants::PROPERTY_JSON_FILENAME, message::MsgType},
     };
 

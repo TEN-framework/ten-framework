@@ -9,7 +9,10 @@ mod tests {
     use std::collections::HashMap;
 
     use ten_manager::{constants::TEST_DIR, graph::connections::add::graph_add_connection};
-    use ten_rust::{graph::{connection::GraphLoc, node::GraphNodeType, Graph}, pkg_info::message::MsgType};
+    use ten_rust::{
+        graph::{connection::GraphLoc, node::GraphNodeType, Graph},
+        pkg_info::message::MsgType,
+    };
 
     use crate::test_case::{
         common::mock::inject_all_standard_pkgs_for_mock, graph::connection::create_test_node,

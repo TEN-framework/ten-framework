@@ -25,7 +25,16 @@ mod tests {
         output::cli::TmanOutputCli,
         pkg_info::get_all_pkgs::get_all_pkgs_in_app,
     };
-    use ten_rust::{graph::{node::GraphNodeType, connection::GraphLoc}, pkg_info::{constants::PROPERTY_JSON_FILENAME, message::MsgType}};
+    use ten_rust::{
+        graph::{
+            connection::GraphLoc,
+            node::GraphNodeType,
+        },
+        pkg_info::{
+            constants::PROPERTY_JSON_FILENAME,
+            message::MsgType,
+        },
+    };
     use uuid::Uuid;
 
     use crate::test_case::common::mock::inject_all_pkgs_for_mock;
