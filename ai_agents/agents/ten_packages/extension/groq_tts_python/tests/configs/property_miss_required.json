@@ -1,5 +1,6 @@
 {
     "params": {
+        "api_key": "",
         "voice": "Arista-PlayAI",
         "sample_rate": 16000
     }
