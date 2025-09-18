@@ -68,6 +68,9 @@ class AudioStream:
                 self.timeline.add_user_audio(
                     len(frame) / (self.config.sample_rate / 1000 * 2)
                 )
+                # self.ten_env.log_debug(
+                #     f"self.timeline: {self.timeline.get_total_user_audio_duration()}"
+                # )
 
             data.extend(frame)
 

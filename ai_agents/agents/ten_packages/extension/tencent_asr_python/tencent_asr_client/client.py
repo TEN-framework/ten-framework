@@ -145,7 +145,7 @@ class TencentAsrClient(WebSocketClient):
             self.logger.error(f"💥 An error occurred: {response.message}")
             await self._call_listener(self._listener.on_asr_fail, response)
 
-            if response.code in (4001, 4002, 4003, 4004, 4005, 4006):
+            if response.code in (4001, 4002, 4003, 4004, 4005):
                 # fatal error, stop the client
                 await self.stop()
                 raise RuntimeError(response.message)
