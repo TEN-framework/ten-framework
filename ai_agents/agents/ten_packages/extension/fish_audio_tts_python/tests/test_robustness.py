@@ -48,7 +48,6 @@ class ExtensionTesterRobustness(ExtensionTester):
         tts_input_1 = TTSTextInput(
             request_id="tts_request_to_fail",
             text="This request will trigger a simulated connection drop.",
-            text_input_end=True,
         )
         data = Data.create("tts_text_input")
         data.set_property_from_json(None, tts_input_1.model_dump_json())
@@ -66,7 +65,7 @@ class ExtensionTesterRobustness(ExtensionTester):
         tts_input_2 = TTSTextInput(
             request_id="tts_request_to_succeed",
             text="This request should succeed after reconnection.",
-            text_input_end=True,
+            text_input_end=True,  # Set to True to trigger session finish
         )
         data = Data.create("tts_text_input")
         data.set_property_from_json(None, tts_input_2.model_dump_json())
@@ -75,7 +74,12 @@ class ExtensionTesterRobustness(ExtensionTester):
     def on_data(self, ten_env: TenEnvTester, data) -> None:
         name = data.get_name()
         json_str, _ = data.get_property_to_json(None)
-        payload = json.loads(json_str)
+        payload = json.loads(json_str) if json_str else {}
+
+        # Add debug logging for all events
+        ten_env.log_info(
+            f"DEBUG: Received event '{name}' with payload: {payload}"
+        )
 
         if name == "error" and payload.get("id") == "tts_request_to_fail":
             ten_env.log_info(
@@ -85,14 +89,27 @@ class ExtensionTesterRobustness(ExtensionTester):
             # After receiving the error for the first request, immediately send the second one.
             self.send_second_request()
 
-        # Use a separate 'if' to ensure this check happens independently of the error check.
-        if payload.get("id") == "tts_request_to_succeed":
+        elif (
+            name == "tts_audio_end"
+            and payload.get("request_id") == "tts_request_to_succeed"
+        ):
             ten_env.log_info(
                 "Received tts_audio_end for the second request. Test successful."
             )
             self.second_request_successful = True
             # We can now safely stop the test.
             ten_env.stop_test()
+
+        # Also check for tts_audio_end without specific request_id filtering
+        elif name == "tts_audio_end":
+            ten_env.log_info(
+                f"Received tts_audio_end for request_id: {payload.get('id')}, but expected 'tts_request_to_succeed'"
+            )
+            # If this is the second request, consider it successful anyway
+            if payload.get("id") == "tts_request_to_succeed":
+                ten_env.log_info("Actually this matches! Stopping test.")
+                self.second_request_successful = True
+                ten_env.stop_test()
 
 
 @patch("fish_audio_tts_python.extension.FishAudioTTSClient")
