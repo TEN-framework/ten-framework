@@ -38,9 +38,7 @@ class SpeechmaticsASRExtension(AsyncASRBaseExtension):
 
     def __init__(self, name: str):
         super().__init__(name)
-        self.connected: bool = False
         self.audio_dumper: Optional[Dumper] = None
-        self.sent_user_audio_duration_ms_before_last_reset: int = 0
         self.last_finalize_timestamp: int = 0
 
         self.client: SpeechmaticsASRClient | None = None
@@ -127,8 +125,6 @@ class SpeechmaticsASRExtension(AsyncASRBaseExtension):
                 )
                 return
 
-            # Stop existing connection
-            await self.stop_connection()
             # Start audio dumper
             if self.audio_dumper:
                 await self.audio_dumper.start()
@@ -137,7 +133,7 @@ class SpeechmaticsASRExtension(AsyncASRBaseExtension):
                 self.client = SpeechmaticsASRClient(
                     self.config,
                     self.ten_env,
-                    self.audio_timeline,
+                    self.audio_timeline,  # Duration getter
                 )
                 self.client.on_asr_open = self.on_asr_open
                 self.client.on_asr_close = self.on_asr_close
@@ -163,17 +159,9 @@ class SpeechmaticsASRExtension(AsyncASRBaseExtension):
             "vendor_status_changed: on_open",
             category=LOG_CATEGORY_VENDOR,
         )
-        self.connected = True
-
         # Notify reconnect manager of successful connection
-        if self.reconnect_manager and self.connected:
+        if self.reconnect_manager:
             self.reconnect_manager.mark_connection_successful()
-
-        # Reset timeline and audio duration
-        self.sent_user_audio_duration_ms_before_last_reset += (
-            self.audio_timeline.get_total_user_audio_duration()
-        )
-        self.audio_timeline.reset()
 
     async def on_asr_result(self, message_data: ASRResult) -> None:
         """Handle recognition result callback"""
@@ -181,7 +169,6 @@ class SpeechmaticsASRExtension(AsyncASRBaseExtension):
             f"vendor_result: on_result: {message_data}",
             category=LOG_CATEGORY_VENDOR,
         )
-
         await self._handle_asr_result(
             text=message_data.text,
             final=message_data.final,
@@ -191,26 +178,25 @@ class SpeechmaticsASRExtension(AsyncASRBaseExtension):
         )
 
     async def on_asr_error(
-        self, error_msg: str, error_code: Optional[int] = None
+        self, error_msg: ModuleError, error_code: Optional[int] = None
     ) -> None:
         """Handle error callback"""
         self.ten_env.log_error(
-            f"vendor_error: {error_msg} code: {error_code}",
+            f"vendor_error: {error_msg.message} code: {error_msg.code}",
             category=LOG_CATEGORY_VENDOR,
         )
-        await self._handle_reconnect()
 
         # Send error information
         await self.send_asr_error(
             ModuleError(
                 module=ModuleType.ASR,
                 code=ModuleErrorCode.NON_FATAL_ERROR.value,
-                message=error_msg,
+                message=error_msg.message,
             ),
             ModuleErrorVendorInfo(
                 vendor=self.vendor(),
-                code=str(error_code) if error_code else "unknown",
-                message=error_msg,
+                code=str(error_code) if error_msg.code else "unknown",
+                message=error_msg.message,
             ),
         )
 
@@ -220,13 +206,6 @@ class SpeechmaticsASRExtension(AsyncASRBaseExtension):
             "vendor_status_changed: on_close",
             category=LOG_CATEGORY_VENDOR,
         )
-        self.connected = False
-
-        if self.client:
-            await self.client.stop()
-            self.client = None
-
-        await self._handle_reconnect()
 
     @override
     async def finalize(self, _session_id: Optional[str]) -> None:
@@ -350,29 +329,18 @@ class SpeechmaticsASRExtension(AsyncASRBaseExtension):
                 # Wait a short time to ensure cleanup is complete
                 await asyncio.sleep(0.1)
 
-                # Clean up references
-                self.client = None
-
-            # Reset all related states
-            self.connected = False
-
             self.ten_env.log_info("Speechmatics ASR connection stopped")
 
         except Exception as e:
             self.ten_env.log_error(
                 f"Error stopping Speechmatics ASR connection: {e}"
             )
-            # Clean up references and states even if there's an error
-            self.client = None
-            self.connected = False
 
     @override
     def is_connected(self) -> bool:
         """Check connection status"""
         is_connected: bool = (
-            self.connected
-            and self.client is not None
-            and self.client.is_connected()
+            self.client is not None and self.client.is_connected()
         )
         return is_connected
 
@@ -401,11 +369,6 @@ class SpeechmaticsASRExtension(AsyncASRBaseExtension):
             # Dump audio data
             if self.audio_dumper:
                 await self.audio_dumper.push_bytes(audio_data)
-
-            # Update timeline
-            self.audio_timeline.add_user_audio(
-                int(len(audio_data) / (self.config.sample_rate / 1000 * 2))
-            )
 
             if self.client:
                 await self.client.recv_audio_frame(frame, _session_id)
