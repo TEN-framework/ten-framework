@@ -15,6 +15,8 @@ mod tests {
                 MsgAndResultConversion, MsgConversion, MsgConversionMode, MsgConversionRule,
                 MsgConversionRules, MsgConversionType,
             },
+            connection::GraphLoc,
+            node::GraphNodeType,
             Graph,
         },
         pkg_info::message::MsgType,
@@ -67,17 +69,23 @@ mod tests {
             result: None,
         };
 
+        let src = GraphLoc::with_app_and_type_and_name(
+            Some("http://example.com:8000".to_string()),
+            GraphNodeType::Extension,
+            "ext_1".to_string()).unwrap();
+        let dest = GraphLoc::with_app_and_type_and_name(
+            Some("http://example.com:8000".to_string()),
+            GraphNodeType::Extension,
+            "ext_2".to_string()).unwrap();
         // Test adding a connection with msg_conversion.
         let result = graph_add_connection(
             &mut graph,
             &Some(TEST_DIR.to_string()),
-            Some("http://example.com:8000".to_string()),
-            "ext1".to_string(),
-            MsgType::Cmd,
-            "cmd1".to_string(),
-            Some("http://example.com:8000".to_string()),
-            "ext2".to_string(),
             &pkgs_cache,
+            src,
+            dest,
+            MsgType::Cmd,
+            vec!["cmd1".to_string()],
             Some(msg_conversion.clone()),
         )
         .await;
@@ -167,17 +175,23 @@ mod tests {
             result: None,
         };
 
+        let src = GraphLoc::with_app_and_type_and_name(
+            Some("http://example.com:8000".to_string()),
+            GraphNodeType::Extension,
+            "ext_1".to_string()).unwrap();
+        let dest = GraphLoc::with_app_and_type_and_name(
+            Some("http://example.com:8000".to_string()),
+            GraphNodeType::Extension,
+            "ext_2".to_string()).unwrap();
         // Test adding a connection with msg_conversion.
         let result = graph_add_connection(
             &mut graph,
             &Some(TEST_DIR.to_string()),
-            Some("http://example.com:8000".to_string()),
-            "ext1".to_string(),
-            MsgType::Cmd,
-            "cmd6".to_string(),
-            Some("http://example.com:8000".to_string()),
-            "ext2".to_string(),
             &pkgs_cache,
+            src,
+            dest,
+            MsgType::Cmd,
+            vec!["cmd6".to_string()],
             Some(msg_conversion.clone()),
         )
         .await;
@@ -220,17 +234,23 @@ mod tests {
             }),
         };
 
+        let src = GraphLoc::with_app_and_type_and_name(
+            Some("http://example.com:8000".to_string()),
+            GraphNodeType::Extension,
+            "ext_1".to_string()).unwrap();
+        let dest = GraphLoc::with_app_and_type_and_name(
+            Some("http://example.com:8000".to_string()),
+            GraphNodeType::Extension,
+            "ext_2".to_string()).unwrap();
         // Test adding a connection with msg_conversion.
         let result = graph_add_connection(
             &mut graph,
             &Some(TEST_DIR.to_string()),
-            Some("http://example.com:8000".to_string()),
-            "ext1".to_string(),
-            MsgType::Cmd,
-            "cmd8".to_string(),
-            Some("http://example.com:8000".to_string()),
-            "ext2".to_string(),
             &pkgs_cache,
+            src,
+            dest,
+            MsgType::Cmd,
+           vec!["cmd8".to_string()],
             Some(msg_conversion),
         )
         .await;
@@ -274,17 +294,23 @@ mod tests {
             result: None,
         };
 
+        let src = GraphLoc::with_app_and_type_and_name(
+            Some("http://example.com:8000".to_string()),
+            GraphNodeType::Extension,
+            "ext_1".to_string()).unwrap();
+        let dest = GraphLoc::with_app_and_type_and_name(
+            Some("http://example.com:8000".to_string()),
+            GraphNodeType::Extension,
+            "ext_2".to_string()).unwrap();
         // Test adding a connection with msg_conversion.
         let result = graph_add_connection(
             &mut graph,
             &Some(TEST_DIR.to_string()),
-            Some("http://example.com:8000".to_string()),
-            "ext1".to_string(),
-            MsgType::Cmd,
-            "cmd6".to_string(),
-            Some("http://example.com:8000".to_string()),
-            "ext2".to_string(),
             &pkgs_cache,
+            src,
+            dest,
+            MsgType::Cmd,
+            vec!["cmd6".to_string()],
             Some(msg_conversion.clone()),
         )
         .await;
@@ -327,17 +353,23 @@ mod tests {
             result: None,
         };
 
+        let src = GraphLoc::with_app_and_type_and_name(
+            Some("http://example.com:8000".to_string()),
+            GraphNodeType::Extension,
+            "ext_1".to_string()).unwrap();
+        let dest = GraphLoc::with_app_and_type_and_name(
+            Some("http://example.com:8000".to_string()),
+            GraphNodeType::Extension,
+            "ext_2".to_string()).unwrap();
         // Test adding a connection with msg_conversion.
         let result = graph_add_connection(
             &mut graph,
             &Some(TEST_DIR.to_string()),
-            Some("http://example.com:8000".to_string()),
-            "ext1".to_string(),
-            MsgType::Cmd,
-            "cmd1".to_string(),
-            Some("http://example.com:8000".to_string()),
-            "ext2".to_string(),
             &pkgs_cache,
+            src,
+            dest,
+            MsgType::Cmd,
+            vec!["cmd1".to_string()],
             Some(msg_conversion),
         )
         .await;
@@ -417,17 +449,23 @@ mod tests {
             }),
         };
 
+        let src = GraphLoc::with_app_and_type_and_name(
+            Some("http://example.com:8000".to_string()),
+            GraphNodeType::Extension,
+            "ext_1".to_string()).unwrap();
+        let dest = GraphLoc::with_app_and_type_and_name(
+            Some("http://example.com:8000".to_string()),
+            GraphNodeType::Extension,
+            "ext_2".to_string()).unwrap();
         // Test adding a connection with msg_conversion.
         let result = graph_add_connection(
             &mut graph,
             &Some(TEST_DIR.to_string()),
-            Some("http://example.com:8000".to_string()),
-            "ext1".to_string(),
-            MsgType::Cmd,
-            "cmd1".to_string(),
-            Some("http://example.com:8000".to_string()),
-            "ext2".to_string(),
             &pkgs_cache,
+            src,
+            dest,
+            MsgType::Cmd,
+            vec!["cmd1".to_string()],
             Some(msg_conversion),
         )
         .await;
@@ -484,17 +522,23 @@ mod tests {
             result: None,
         };
 
+        let src = GraphLoc::with_app_and_type_and_name(
+            Some("http://example.com:8000".to_string()),
+            GraphNodeType::Extension,
+            "ext_1".to_string()).unwrap();
+        let dest = GraphLoc::with_app_and_type_and_name(
+            Some("http://example.com:8000".to_string()),
+            GraphNodeType::Extension,
+            "ext_2".to_string()).unwrap();
         // Test adding a connection with invalid msg_conversion.
         let result = graph_add_connection(
             &mut graph,
             &Some(TEST_DIR.to_string()),
-            Some("http://example.com:8000".to_string()),
-            "ext1".to_string(),
-            MsgType::Cmd,
-            "cmd1".to_string(),
-            Some("http://example.com:8000".to_string()),
-            "ext2".to_string(),
             &pkgs_cache,
+            src,
+            dest,
+            MsgType::Cmd,
+            vec!["cmd1".to_string()],
             Some(msg_conversion),
         )
         .await;
@@ -552,17 +596,23 @@ mod tests {
             }),
         };
 
+        let src = GraphLoc::with_app_and_type_and_name(
+            Some("http://example.com:8000".to_string()),
+            GraphNodeType::Extension,
+            "ext_1".to_string()).unwrap();
+        let dest = GraphLoc::with_app_and_type_and_name(
+            Some("http://example.com:8000".to_string()),
+            GraphNodeType::Extension,
+            "ext_2".to_string()).unwrap();
         // Test adding a connection with invalid msg_conversion.
         let result = graph_add_connection(
             &mut graph,
             &Some(TEST_DIR.to_string()),
-            Some("http://example.com:8000".to_string()),
-            "ext1".to_string(),
-            MsgType::Cmd,
-            "cmd1".to_string(),
-            Some("http://example.com:8000".to_string()),
-            "ext2".to_string(),
             &pkgs_cache,
+            src,
+            dest,
+            MsgType::Cmd,
+            vec!["cmd1".to_string()],
             Some(msg_conversion),
         )
         .await;
@@ -620,17 +670,23 @@ mod tests {
             }),
         };
 
+        let src = GraphLoc::with_app_and_type_and_name(
+            Some("http://example.com:8000".to_string()),
+            GraphNodeType::Extension,
+            "ext_1".to_string()).unwrap();
+        let dest = GraphLoc::with_app_and_type_and_name(
+            Some("http://example.com:8000".to_string()),
+            GraphNodeType::Extension,
+            "ext_2".to_string()).unwrap();
         // Test adding a connection with invalid msg_conversion.
         let result = graph_add_connection(
             &mut graph,
             &Some(TEST_DIR.to_string()),
-            Some("http://example.com:8000".to_string()),
-            "ext1".to_string(),
-            MsgType::Cmd,
-            "cmd1".to_string(),
-            Some("http://example.com:8000".to_string()),
-            "ext2".to_string(),
             &pkgs_cache,
+            src,
+            dest,
+            MsgType::Cmd,
+            vec!["cmd1".to_string()],
             Some(msg_conversion),
         )
         .await;
@@ -687,17 +743,23 @@ mod tests {
             }),
         };
 
+        let src = GraphLoc::with_app_and_type_and_name(
+            Some("http://example.com:8000".to_string()),
+            GraphNodeType::Extension,
+            "ext_1".to_string()).unwrap();
+        let dest = GraphLoc::with_app_and_type_and_name(
+            Some("http://example.com:8000".to_string()),
+            GraphNodeType::Extension,
+            "ext_2".to_string()).unwrap();
         // Test adding a connection with invalid msg_conversion.
         let result = graph_add_connection(
             &mut graph,
             &Some(TEST_DIR.to_string()),
-            Some("http://example.com:8000".to_string()),
-            "ext1".to_string(),
-            MsgType::Cmd,
-            "cmd1".to_string(),
-            Some("http://example.com:8000".to_string()),
-            "ext2".to_string(),
             &pkgs_cache,
+            src,
+            dest,
+            MsgType::Cmd,
+            vec!["cmd1".to_string()],
             Some(msg_conversion),
         )
         .await;
@@ -743,17 +805,23 @@ mod tests {
             result: None,
         };
 
+        let src = GraphLoc::with_app_and_type_and_name(
+            Some("http://example.com:8000".to_string()),
+            GraphNodeType::Extension,
+            "ext_1".to_string()).unwrap();
+        let dest = GraphLoc::with_app_and_type_and_name(
+            Some("http://example.com:8000".to_string()),
+            GraphNodeType::Extension,
+            "ext_2".to_string()).unwrap();
         // Test adding a connection with invalid msg_conversion.
         let result = graph_add_connection(
             &mut graph,
             &Some(TEST_DIR.to_string()),
-            Some("http://example.com:8000".to_string()),
-            "ext1".to_string(),
-            MsgType::Cmd,
-            "cmd2".to_string(),
-            Some("http://example.com:8000".to_string()),
-            "ext2".to_string(),
             &pkgs_cache,
+            src,
+            dest,
+            MsgType::Cmd,
+            vec!["cmd2".to_string()],
             Some(msg_conversion),
         )
         .await;
