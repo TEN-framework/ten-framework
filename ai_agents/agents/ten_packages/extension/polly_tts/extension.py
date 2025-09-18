@@ -15,8 +15,9 @@ from ten_ai_base.message import (
     ModuleErrorVendorInfo,
     TTSAudioEndReason,
 )
-from ten_ai_base.struct import TTSTextInput, TTSTextResult
+from ten_ai_base.struct import TTSTextInput
 from ten_ai_base.tts2 import AsyncTTS2BaseExtension
+from ten_ai_base.const import LOG_CATEGORY_KEY_POINT, LOG_CATEGORY_VENDOR
 from ten_runtime import (
     AsyncTenEnv,
     Data,
@@ -51,7 +52,8 @@ class PollyTTSExtension(AsyncTTS2BaseExtension):
         try:
             self.config = PollyTTSConfig.model_validate_json(config_json)
             ten_env.log_info(
-                f"KEYPOINT vendor_config: {self.config.model_dump_json()}"
+                f"config: {self.config.model_dump_json()}",
+                category=LOG_CATEGORY_KEY_POINT,
             )
 
             if self.config.dump:
@@ -68,8 +70,15 @@ class PollyTTSExtension(AsyncTTS2BaseExtension):
             # this can effectively reduce latency.
             async for _chunk in self.client.async_synthesize_speech("P"):
                 ...
+            self.ten_env.log_debug(
+                "vendor_status: tts connect successfully",
+                category=LOG_CATEGORY_VENDOR,
+            )
         except Exception as e:
-            ten_env.log_error(f"invalid property: {e}")
+            ten_env.log_error(
+                f"vendor_status: tts on_init error: {e}",
+                category=LOG_CATEGORY_VENDOR,
+            )
             self.client = None
             await self.send_tts_error(
                 self.current_request_id,
@@ -83,7 +92,9 @@ class PollyTTSExtension(AsyncTTS2BaseExtension):
     @override
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
         await super().on_stop(ten_env)
-        ten_env.log_debug("on_stop")
+        ten_env.log_debug(
+            "vendor_status: on_stop", category=LOG_CATEGORY_VENDOR
+        )
         if self.client:
             self.client.close()
         if isinstance(self.audio_dumper, Dumper):
@@ -96,15 +107,10 @@ class PollyTTSExtension(AsyncTTS2BaseExtension):
     async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
         name = data.get_name()
         if name == "tts_flush":
-            ten_env.log_info(f"Received tts_flush data: {name}")
-
             # get flush_id and record to flush_request_ids
             flush_id, _ = data.get_property_string("flush_id")
             if flush_id:
                 self.flush_request_ids.add(flush_id)
-                ten_env.log_info(
-                    f"Added request_id {flush_id} to flush_request_ids set"
-                )
 
             # if current request is flushed, send audio_end
             if (
@@ -122,24 +128,18 @@ class PollyTTSExtension(AsyncTTS2BaseExtension):
                     self.current_turn_id,
                     TTSAudioEndReason.INTERRUPTED,
                 )
-                ten_env.log_info(
-                    f"Sent tts_audio_end with INTERRUPTED reason for request_id: {self.current_request_id}"
-                )
         await super().on_data(ten_env, data)
 
     @override
     async def request_tts(self, t: TTSTextInput) -> None:
         if self.client is None:
             return
-        self.ten_env.log_info(
-            f"KEYPOINT Requesting TTS for text: {t.text}, text_input_end: {t.text_input_end} request ID: {t.request_id}"
-        )
         # check if request_id is in flush_request_ids
         if t.request_id in self.flush_request_ids:
             error_msg = (
                 f"Request ID {t.request_id} was flushed, ignoring TTS request"
             )
-            self.ten_env.log_warn(error_msg)
+            self.ten_env.log_debug(error_msg)
             await self.send_tts_error(
                 t.request_id,
                 ModuleError(
@@ -151,9 +151,6 @@ class PollyTTSExtension(AsyncTTS2BaseExtension):
             return
 
         if t.request_id in self.last_end_request_ids:
-            self.ten_env.log_info(
-                f"KEYPOINT end request ID: {t.request_id} is already ended, ignoring TTS request"
-            )
             await self.send_tts_error(
                 t.request_id,
                 ModuleError(
@@ -165,79 +162,54 @@ class PollyTTSExtension(AsyncTTS2BaseExtension):
             return
 
         text = t.text
-        if t.request_id != self.current_request_id:
-            self.ten_env.log_info(
-                f"KEYPOINT New TTS request with ID: {t.request_id}"
-            )
-            if (
-                self.current_request_id is not None
-                and self.request_start_ts is not None
-            ):
-                request_event_interval = int(
-                    (time.time() - self.request_start_ts) * 1000
-                )
-                reason = TTSAudioEndReason.REQUEST_END
-                if self.current_request_id in self.flush_request_ids:
-                    reason = TTSAudioEndReason.INTERRUPTED
-                    self.flush_request_ids.remove(self.current_request_id)
-                await self.send_tts_audio_end(
-                    self.current_request_id,
-                    request_event_interval,
-                    self.request_total_audio_duration,
-                    self.current_turn_id,
-                    reason,
-                )
+        request_id = t.request_id
+        turn_id = t.metadata.get("turn_id", -1)
+        text_input_end = t.text_input_end
 
-            self.current_request_id = t.request_id
-            if t.metadata is not None:
-                self.current_turn_id = t.metadata.get("turn_id", -1)
-            self.request_start_ts = time.time()
-            self.request_total_audio_duration = 0
+        is_new_request = self.current_request_id != request_id
+        self.current_request_id = request_id
+        self.request_total_audio_duration = 0
+        self.request_start_ts = time.time()
 
-        first_chunk = False
         try:
+            received_first_chunk = False
+            if len(text.strip()) == 0:
+                raise ValueError("text is empty")
             async for chunk in self.client.async_synthesize_speech(text):
-                if not first_chunk:
-                    first_chunk = True
-                    if self.request_start_ts is not None:
-                        await self.send_tts_audio_start(
-                            t.request_id, self.current_turn_id
-                        )
+                # calculate audio duration
+                duration = self._calculate_audio_duration(
+                    len(chunk),
+                    self.synthesize_audio_sample_rate(),
+                    self.synthesize_audio_channels(),
+                    self.synthesize_audio_sample_width(),
+                )
+                self.ten_env.log_debug(
+                    f"receive_audio: duration: {duration}ms of request_id: {self.current_request_id}",
+                    category=LOG_CATEGORY_VENDOR,
+                )
+
+                if not received_first_chunk:
+                    received_first_chunk = True
+                    await self.send_tts_audio_start(request_id, turn_id)
+                    if is_new_request:
+                        # send ttfb metrics for new request
                         elapsed_time = int(
                             (time.time() - self.request_start_ts) * 1000
                         )
                         await self.send_tts_ttfb_metrics(
-                            t.request_id, elapsed_time, self.current_turn_id
-                        )
-                        self.ten_env.log_info(
-                            f"KEYPOINT Sent TTFB metrics for request ID: {t.request_id}, elapsed time: {elapsed_time}ms"
+                            request_id, elapsed_time, turn_id
                         )
 
-                if self.current_request_id in self.flush_request_ids:
-                    continue
-
-                # calculate audio duration
-                self.request_total_audio_duration += (
-                    self._calculate_audio_duration(
-                        len(chunk),
-                        self.synthesize_audio_sample_rate(),
-                        self.synthesize_audio_channels(),
-                        self.synthesize_audio_sample_width(),
-                    )
-                )
-
+                if request_id in self.flush_request_ids:
+                    # flush request, break current synthesize task
+                    break
+                self.request_total_audio_duration += duration
                 # send audio data to output
-                await self.send_tts_audio_data(chunk)
-                await self.send_tts_text_result(
-                    TTSTextResult(
-                        request_id=self.current_request_id or "",
-                        text="",
-                        start_ms=0,
-                        duration_ms=self.request_total_audio_duration,
-                        words=[],
-                        metadata={},
-                    )
+                self.ten_env.log_debug(
+                    f"vendor_status: Sending audio data for request ID: {request_id}",
+                    category=LOG_CATEGORY_VENDOR,
                 )
+                await self.send_tts_audio_data(chunk)
 
                 # dump audio data to file
                 assert self.config is not None
@@ -256,35 +228,13 @@ class PollyTTSExtension(AsyncTTS2BaseExtension):
                         await _dumper.start()
                         await _dumper.push_bytes(chunk)
                         self.audio_dumper[t.request_id] = _dumper
-
-            if t.text_input_end:
-                self.last_end_request_ids.add(t.request_id)
-                if (
-                    self.current_request_id is not None
-                    and self.request_start_ts is not None
-                ):
-                    reason = TTSAudioEndReason.REQUEST_END
-                    if self.current_request_id in self.flush_request_ids:
-                        reason = TTSAudioEndReason.INTERRUPTED
-                    request_event_interval = int(
-                        (time.time() - self.request_start_ts) * 1000
-                    )
-                    await self.send_tts_audio_end(
-                        self.current_request_id,
-                        request_event_interval,
-                        self.request_total_audio_duration,
-                        self.current_turn_id,
-                        reason,
-                    )
-                    self.ten_env.log_info(
-                        f"KEYPOINT Sent TTS audio end for request ID: {self.current_request_id} reason: {reason}"
-                    )
-                    self.current_request_id = None
-                    self.request_start_ts = None
-                    self.request_total_audio_duration = 0
-                    self.current_turn_id = -1
+        except ValueError:
+            pass
         except NoCredentialsError as e:
-            self.ten_env.log_error(f"invalid credentials: {e}")
+            self.ten_env.log_error(
+                f"vendor_status: invalid credentials {e}",
+                category=LOG_CATEGORY_VENDOR,
+            )
             await self.send_tts_error(
                 self.current_request_id,
                 ModuleError(
@@ -300,7 +250,8 @@ class PollyTTSExtension(AsyncTTS2BaseExtension):
             )
         except Exception as e:
             self.ten_env.log_error(
-                f"Error in request_tts: {traceback.format_exc()}. text: {t.text}"
+                f"vendor_status: Error in request_tts: {traceback.format_exc()}. text: {t.text}",
+                category=LOG_CATEGORY_VENDOR,
             )
             await self.send_tts_error(
                 self.current_request_id,
@@ -309,6 +260,22 @@ class PollyTTSExtension(AsyncTTS2BaseExtension):
                     module="tts",
                     code=ModuleErrorCode.NON_FATAL_ERROR.value,
                 ),
+            )
+
+        if text_input_end:
+            self.last_end_request_ids.add(request_id)
+            reason = TTSAudioEndReason.REQUEST_END
+            if request_id in self.flush_request_ids:
+                reason = TTSAudioEndReason.INTERRUPTED
+            request_event_interval = int(
+                (time.time() - self.request_start_ts) * 1000
+            )
+            await self.send_tts_audio_end(
+                request_id,
+                request_event_interval,
+                self.request_total_audio_duration,
+                turn_id,
+                reason,
             )
 
     def synthesize_audio_sample_rate(self) -> int:

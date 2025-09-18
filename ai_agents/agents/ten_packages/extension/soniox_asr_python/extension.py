@@ -25,7 +25,7 @@ from ten_ai_base.message import (
     ModuleErrorCode,
     ModuleErrorVendorInfo,
 )
-from ten_runtime import AsyncTenEnv, AudioFrame
+from ten_runtime import AsyncTenEnv, AudioFrame, Data
 from typing_extensions import override
 
 from .config import SonioxASRConfig
@@ -185,21 +185,45 @@ class SonioxASRExtension(AsyncASRBaseExtension):
 
     @override
     async def finalize(self, session_id: Optional[str]) -> None:
+        # NOTE: This is an empty method, actual finalize logic is handled in on_data.
+        pass
+
+    @override
+    async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
+        await super().on_data(ten_env, data)
+        if data.get_name() == "asr_finalize":
+            # NOTE: We need this extra parameter for manual finalization in order to achieve lower finalization latency.
+            # Refer to: https://soniox.com/docs/stt/rt/manual-finalization#trailing-silence
+            #
+            # This property is not in the asr api, but will be included in the future.
+            # The upstream can set this property if it knows the trailing silence duration.
+            silence_duration_ms, err = data.get_property_int(
+                "silence_duration_ms"
+            )
+            if err:
+                await self._real_finalize()
+            else:
+                await self._real_finalize(silence_duration_ms)
+
+    async def _real_finalize(
+        self, silence_duration_ms: int | None = None
+    ) -> None:
         self.ten_env.log_info(
-            "vendor_cmd: finalize",
+            f"vendor_cmd: finalize, silence_duration_ms: {silence_duration_ms}",
             category=LOG_CATEGORY_VENDOR,
         )
         self.last_finalize_timestamp = int(time.time() * 1000)
         if self.websocket:
-            await self.websocket.finalize()
+            await self.websocket.finalize(silence_duration_ms)
 
     async def _finalize_end(self) -> None:
         self.ten_env.log_info("finalize end")
         if self.last_finalize_timestamp != 0:
             timestamp = int(time.time() * 1000)
             latency = timestamp - self.last_finalize_timestamp
-            self.ten_env.log_debug(
-                f"KEYPOINT finalize end at {timestamp}, counter: {latency}"
+            self.ten_env.log_info(
+                f"finalize end at {timestamp}, latency: {latency}",
+                category=LOG_CATEGORY_KEY_POINT,
             )
             self.last_finalize_timestamp = 0
             await self.send_asr_finalize_end()
@@ -258,11 +282,11 @@ class SonioxASRExtension(AsyncASRBaseExtension):
     async def _handle_transcript(
         self,
         tokens: List[SonioxToken],
-        unused_final_audio_proc_ms: int,
-        unused_total_audio_proc_ms: int,
+        final_audio_proc_ms: int,
+        total_audio_proc_ms: int,
     ):
         self.ten_env.log_debug(
-            f"vender_result: transcript: {tokens}",
+            f"vendor_result: transcript: {tokens}, final_audio_proc_ms: {final_audio_proc_ms}, total_audio_proc_ms: {total_audio_proc_ms}",
             category=LOG_CATEGORY_VENDOR,
         )
         try:
@@ -270,21 +294,18 @@ class SonioxASRExtension(AsyncASRBaseExtension):
                 self._group_tokens(tokens)
             )
 
-            if fin:
-                await self._finalize_end()
-
-            if not transcript_tokens:
-                return
-
             final_tokens, non_final_tokens = (
                 self._group_transcript_tokens_by_final(transcript_tokens)
             )
 
+            if final_tokens:
+                await self._send_tokens(final_tokens, is_final=True)
+
             if non_final_tokens:
                 await self._send_tokens(non_final_tokens, is_final=False)
 
-            if final_tokens:
-                await self._send_tokens(final_tokens, is_final=True)
+            if fin:
+                await self._finalize_end()
 
         except Exception as e:
             self.ten_env.log_error(f"Error handling transcript: {e}")

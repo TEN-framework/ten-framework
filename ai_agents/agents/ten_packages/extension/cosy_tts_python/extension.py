@@ -9,6 +9,7 @@ import os
 import traceback
 
 from websocket import WebSocketConnectionClosedException
+from ten_ai_base.const import LOG_CATEGORY_KEY_POINT, LOG_CATEGORY_VENDOR
 from ten_ai_base.helper import generate_file_name, PCMWriter
 from ten_ai_base.message import (
     ModuleError,
@@ -77,7 +78,8 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
                 self.config.validate_params()
 
                 self.ten_env.log_info(
-                    f"KEYPOINT config: {self.config.to_str(sensitive_handling=True)}"
+                    f"config: {self.config.to_str(sensitive_handling=True)}",
+                    category=LOG_CATEGORY_KEY_POINT,
                 )
 
             # Initialize Cosy TTS client
@@ -127,9 +129,9 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
                 f"Received flush request, current_request_id: {self.current_request_id}"
             )
             await self._flush()
-            self.current_request_finished = True
-            if self.request_start_ts:
+            if self.request_start_ts and self.current_request_id:
                 await self._handle_tts_audio_end(TTSAudioEndReason.INTERRUPTED)
+                self.current_request_finished = True
 
         await super().on_data(ten_env, data)
 
@@ -175,8 +177,9 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
                 return
 
             # Get audio stream from Cosy TTS
-            self.ten_env.log_info(
-                f"Calling client.synthesize_audio() with text: {t.text}, current_request_id: {self.current_request_id}"
+            self.ten_env.log_debug(
+                f"send_text_to_tts_server: {t.text} of request_id: {t.request_id}",
+                category=LOG_CATEGORY_VENDOR,
             )
 
             # Start audio synthesis (returns immediately)
@@ -243,8 +246,13 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
                         ):
                             self.chunk_count += 1
                             self.total_audio_bytes += len(audio_chunk)
-                            self.ten_env.log_info(
-                                f"[tts] Received audio chunk #{self.chunk_count}, size: {len(audio_chunk)} bytes, current_request_id: {self.current_request_id}, current_turn_id: {self.current_turn_id}, first_chunk: {self.first_chunk}"
+                            # Calculate audio duration for this chunk
+                            chunk_duration_ms = self._calculate_audio_duration(
+                                len(audio_chunk), self.config.sample_rate
+                            )
+                            self.ten_env.log_debug(
+                                f"receive_audio: duration: {chunk_duration_ms}ms of request_id: {self.current_request_id}",
+                                category=LOG_CATEGORY_VENDOR,
                             )
 
                             # Send TTS audio start on first chunk
@@ -263,7 +271,8 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
                             )
                     elif message_type == MESSAGE_TYPE_CMD_ERROR:
                         self.ten_env.log_error(
-                            f"Received error message from client: {data}"
+                            f"vendor_error: {data}",
+                            category=LOG_CATEGORY_VENDOR,
                         )
                         await self._send_tts_error(
                             str(data),
@@ -284,6 +293,7 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
                             f"All pcm received done, current_request_id: {self.current_request_id}, current_turn_id: {self.current_turn_id}"
                         )
                         await self._handle_tts_audio_end()
+                        self.current_request_id = None
 
                 except asyncio.CancelledError:
                     self.ten_env.log_info("Audio consumer task was cancelled.")
@@ -459,6 +469,8 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
                 self.current_turn_id,
                 reason,
             )
+
+            self.current_request_id = None
 
             self.ten_env.log_info(
                 f"KEYPOINT Sent TTS audio end event, interval: {request_event_interval}ms, duration: {self.request_total_audio_duration_ms}ms, current_request_id: {self.current_request_id}, current_turn_id: {self.current_turn_id}"

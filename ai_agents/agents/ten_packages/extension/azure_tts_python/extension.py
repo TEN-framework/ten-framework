@@ -17,10 +17,12 @@ from ten_ai_base.message import (
 )
 from ten_ai_base.struct import TTSTextInput, TTSTextResult
 from ten_ai_base.tts2 import AsyncTTS2BaseExtension
+from ten_ai_base.const import LOG_CATEGORY_KEY_POINT, LOG_CATEGORY_VENDOR
 from ten_runtime import (
     AsyncTenEnv,
     Data,
 )
+
 import azure.cognitiveservices.speech as speechsdk
 from .config import AzureTTSConfig
 from .azure_tts import AzureTTS
@@ -51,7 +53,8 @@ class AzureTTSExtension(AsyncTTS2BaseExtension):
         try:
             self.config = AzureTTSConfig.model_validate_json(config_json)
             ten_env.log_info(
-                f"KEYPOINT tts vendor_config: {self.config.model_dump_json()}"
+                f"config: {self.config.model_dump_json()}",
+                category=LOG_CATEGORY_KEY_POINT,
             )
 
             if self.config.dump:
@@ -65,9 +68,11 @@ class AzureTTSExtension(AsyncTTS2BaseExtension):
                     pre_connect=self.config.pre_connect
                 )
             )
-            ten_env.log_info("KEYPOINT tts connect successfully")
         except Exception as e:
-            ten_env.log_error(f"KEYPOINT tts on_init error: {e}")
+            ten_env.log_error(
+                f"vendor_status: tts on_init error: {e}",
+                category=LOG_CATEGORY_VENDOR,
+            )
             self.config = None
             self.client = None
             await self.send_tts_error(
@@ -91,7 +96,9 @@ class AzureTTSExtension(AsyncTTS2BaseExtension):
     @override
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
         await super().on_stop(ten_env)
-        ten_env.log_debug("on_stop")
+        ten_env.log_debug(
+            "vendor_status: on_stop", category=LOG_CATEGORY_VENDOR
+        )
         if self.client:
             await self.client.stop_connection()
         if isinstance(self.audio_dumper, Dumper):
@@ -104,15 +111,10 @@ class AzureTTSExtension(AsyncTTS2BaseExtension):
     async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
         name = data.get_name()
         if name == "tts_flush":
-            ten_env.log_info(f"KEYPOINT tts Received tts_flush data: {name}")
-
             # get flush_id and record to flush_request_ids
             flush_id, _ = data.get_property_string("flush_id")
             if flush_id:
                 self.flush_request_ids.add(flush_id)
-                ten_env.log_info(
-                    f"KEYPOINT tts Added request_id {flush_id} to flush_request_ids set"
-                )
             if (
                 self.request_start_ts is not None
                 and self.current_request_id is not None
@@ -142,8 +144,9 @@ class AzureTTSExtension(AsyncTTS2BaseExtension):
             request_start_ts = time.time()
             self.request_start_ts = request_start_ts
             self.current_request_id = request_id
-            self.ten_env.log_info(
-                f"KEYPOINT ttsSynthesizing audio for request ID: {request_id}, text: {text}"
+            self.ten_env.log_debug(
+                f"vendor_status: send_text_to_tts_server:  {text} of request_id: {request_id}",
+                category=LOG_CATEGORY_VENDOR,
             )
             async for chunk in await self.client.synthesize_with_retry(
                 text, max_retries=5, retry_delay=1.0
@@ -155,22 +158,23 @@ class AzureTTSExtension(AsyncTTS2BaseExtension):
                     await self.send_tts_ttfb_metrics(
                         request_id, elapsed_time, turn_id
                     )
-                    self.ten_env.log_info(
-                        f"KEYPOINT tts Sent TTFB metrics for request ID: {request_id}, elapsed time: {elapsed_time}ms"
-                    )
 
                 if request_id in self.flush_request_ids:
                     # flush request, break current synthesize task
                     break
 
                 # calculate audio duration
-                self.request_total_audio_duration += (
-                    self._calculate_audio_duration(
-                        len(chunk),
-                        self.synthesize_audio_sample_rate(),
-                        self.synthesize_audio_channels(),
-                        self.synthesize_audio_sample_width(),
-                    )
+                duration = self._calculate_audio_duration(
+                    len(chunk),
+                    self.synthesize_audio_sample_rate(),
+                    self.synthesize_audio_channels(),
+                    self.synthesize_audio_sample_width(),
+                )
+                self.request_total_audio_duration += duration
+
+                self.ten_env.log_debug(
+                    f"receive_audio: duration: {duration}ms of request_id: {request_id}",
+                    category=LOG_CATEGORY_VENDOR,
                 )
 
                 # send audio data to output
@@ -219,12 +223,10 @@ class AzureTTSExtension(AsyncTTS2BaseExtension):
                     turn_id,
                     reason,
                 )
-                self.ten_env.log_info(
-                    f"KEYPOINT tts Sent TTS audio end for request ID: {request_id} reason: {reason}"
-                )
         except Exception as e:
             self.ten_env.log_error(
-                f"Error in request_tts: {traceback.format_exc()}. text: {text}"
+                f"vendor_status: Error in request_tts: {traceback.format_exc()}. text: {text}",
+                category=LOG_CATEGORY_VENDOR,
             )
             await self.send_tts_error(
                 request_id,
@@ -237,14 +239,12 @@ class AzureTTSExtension(AsyncTTS2BaseExtension):
 
     @override
     async def request_tts(self, t: TTSTextInput) -> None:
-        self.ten_env.log_info(
-            f"KEYPOINT Requesting tts for text: {t.text}, text_input_end: {t.text_input_end} request ID: {t.request_id}"
-        )
         try:
             await self._wait_until_connected()
         except Exception:
             self.ten_env.log_error(
-                "KEYPOINT tts client connection failed, ignoring TTS request"
+                "vendor_status: tts client connection failed, ignoring TTS request",
+                category=LOG_CATEGORY_VENDOR,
             )
             return
         # check if request_id is in flush_request_ids
@@ -252,7 +252,7 @@ class AzureTTSExtension(AsyncTTS2BaseExtension):
             error_msg = (
                 f"Request ID {t.request_id} was flushed, ignoring TTS request"
             )
-            self.ten_env.log_warn(error_msg)
+            self.ten_env.log_debug(error_msg)
             await self.send_tts_error(
                 t.request_id,
                 ModuleError(
@@ -264,9 +264,6 @@ class AzureTTSExtension(AsyncTTS2BaseExtension):
             return
 
         if t.request_id in self.last_end_request_ids:
-            self.ten_env.log_info(
-                f"KEYPOINT tts end request ID: {t.request_id} is already ended, ignoring TTS request"
-            )
             await self.send_tts_error(
                 t.request_id,
                 ModuleError(
@@ -280,7 +277,8 @@ class AzureTTSExtension(AsyncTTS2BaseExtension):
         await self._async_synthesize(t)
 
     def synthesize_audio_sample_rate(self) -> int:
-        assert self.config is not None
+        if self.config is None:
+            return 16000
         if (
             self.config.params.output_format
             == speechsdk.SpeechSynthesisOutputFormat.Raw8Khz16BitMonoPcm

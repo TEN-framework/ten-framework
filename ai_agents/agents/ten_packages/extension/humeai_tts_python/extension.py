@@ -18,6 +18,7 @@ from ten_ai_base.message import (
 )
 from ten_ai_base.struct import TTSTextInput
 from ten_ai_base.tts2 import AsyncTTS2BaseExtension
+from ten_ai_base.const import LOG_CATEGORY_KEY_POINT, LOG_CATEGORY_VENDOR
 
 from .config import HumeAiTTSConfig
 from .humeTTS import (
@@ -55,7 +56,8 @@ class HumeaiTTSExtension(AsyncTTS2BaseExtension):
             self.config.validate_params()
 
             ten_env.log_info(
-                f"KEYPOINT config: {self.config.to_str(sensitive_handling=True)}"
+                f"config: {self.config.to_str(sensitive_handling=True)}",
+                category=LOG_CATEGORY_KEY_POINT,
             )
 
             self.client = HumeAiTTS(config=self.config, ten_env=ten_env)
@@ -67,7 +69,7 @@ class HumeaiTTSExtension(AsyncTTS2BaseExtension):
                 ModuleError(
                     message=f"Initialization failed: {e}",
                     module=ModuleType.TTS,
-                    code=ModuleErrorCode.FATAL_ERROR,
+                    code=ModuleErrorCode.FATAL_ERROR.value,
                     vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
                 ),
             )
@@ -117,11 +119,16 @@ class HumeaiTTSExtension(AsyncTTS2BaseExtension):
             if flush_id:
                 ten_env.log_info(f"Received flush request for ID: {flush_id}")
 
+                # Cancel the TTS client first and wait for it to complete
+                if self.client:
+                    await self.client.cancel()
+
                 if self.current_request_id:
                     ten_env.log_info(
                         f"Current request {self.current_request_id} is being flushed. Sending INTERRUPTED."
                     )
-                    await self.client.cancel()
+
+                    # Then send the interrupted event
                     if self.sent_ts:
                         request_event_interval = int(
                             (datetime.now() - self.sent_ts).total_seconds()
@@ -135,6 +142,7 @@ class HumeaiTTSExtension(AsyncTTS2BaseExtension):
                             self.current_turn_id,
                             TTSAudioEndReason.INTERRUPTED,
                         )
+                        self.sent_ts = None
                         self.current_request_finished = True
         await super().on_data(ten_env, data)
 
@@ -144,7 +152,8 @@ class HumeaiTTSExtension(AsyncTTS2BaseExtension):
                 raise RuntimeError("Extension is not initialized properly.")
 
             self.ten_env.log_info(
-                f"KEYPOINT request_tts: {t.text}, request_id: {t.request_id}"
+                f"KEYPOINT request_tts: {t.text}, request_id: {t.request_id}",
+                category=LOG_CATEGORY_KEY_POINT,
             )
 
             if t.request_id != self.current_request_id:
@@ -193,9 +202,16 @@ class HumeaiTTSExtension(AsyncTTS2BaseExtension):
                 self.ten_env.log_error(error_msg)
                 return
 
-            async for audio_chunk, event in self.client.get(t.text):
+            async for audio_chunk, event in self.client.get(
+                t.text, t.request_id
+            ):
                 if event == EVENT_TTS_RESPONSE and audio_chunk:
                     self.total_audio_bytes += len(audio_chunk)
+
+                    self.ten_env.log_debug(
+                        f"receive_audio: request_id: {t.request_id}",
+                        category=LOG_CATEGORY_VENDOR,
+                    )
 
                     if (
                         self.first_chunk
@@ -241,6 +257,7 @@ class HumeaiTTSExtension(AsyncTTS2BaseExtension):
                         duration_ms,
                         self.current_turn_id,
                     )
+                    self.current_request_id = None
                     break
 
                 elif event == EVENT_TTS_INVALID_KEY_ERROR:
@@ -254,7 +271,7 @@ class HumeaiTTSExtension(AsyncTTS2BaseExtension):
                         ModuleError(
                             message=error_msg,
                             module=ModuleType.TTS,
-                            code=ModuleErrorCode.FATAL_ERROR,
+                            code=ModuleErrorCode.FATAL_ERROR.value,
                             vendor_info=ModuleErrorVendorInfo(
                                 vendor=self.vendor()
                             ),
@@ -283,7 +300,7 @@ class HumeaiTTSExtension(AsyncTTS2BaseExtension):
                 ModuleError(
                     message=str(e),
                     module=ModuleType.TTS,
-                    code=ModuleErrorCode.NON_FATAL_ERROR,
+                    code=ModuleErrorCode.NON_FATAL_ERROR.value,
                     vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
                 ),
             )

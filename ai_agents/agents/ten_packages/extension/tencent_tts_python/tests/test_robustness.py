@@ -5,7 +5,7 @@
 # Refer to the "LICENSE" file in the root directory for more information.
 #
 from typing import Any
-from unittest.mock import patch, AsyncMock
+from unittest.mock import MagicMock, patch
 import json
 import asyncio
 
@@ -18,6 +18,7 @@ from ten_runtime import (
 from ..tencent_tts import (
     MESSAGE_TYPE_PCM,
     MESSAGE_TYPE_CMD_COMPLETE,
+    MESSAGE_TYPE_CMD_METRIC,
 )
 
 
@@ -57,6 +58,7 @@ class ExtensionTesterRobustness(ExtensionTester):
         tts_input_2 = TTSTextInput(
             request_id="tts_request_to_succeed",
             text="This request should succeed after reconnection.",
+            text_input_end=True,  # Set to True to trigger session finish
         )
         data = Data.create("tts_text_input")
         data.set_property_from_json(None, tts_input_2.model_dump_json())
@@ -65,7 +67,12 @@ class ExtensionTesterRobustness(ExtensionTester):
     def on_data(self, ten_env: TenEnvTester, data) -> None:
         name = data.get_name()
         json_str, _ = data.get_property_to_json(None)
-        payload = json.loads(json_str)
+        payload = json.loads(json_str) if json_str else {}
+
+        # Add debug logging for all events
+        ten_env.log_info(
+            f"DEBUG: Received event '{name}' with payload: {payload}"
+        )
 
         if name == "error" and payload.get("id") == "tts_request_to_fail":
             ten_env.log_info(
@@ -75,14 +82,27 @@ class ExtensionTesterRobustness(ExtensionTester):
             # After receiving the error for the first request, immediately send the second one.
             self.send_second_request()
 
-        # Use a separate 'if' to ensure this check happens independently of the error check.
-        if payload.get("id") == "tts_request_to_succeed":
+        elif (
+            name == "tts_audio_end"
+            and payload.get("request_id") == "tts_request_to_succeed"
+        ):
             ten_env.log_info(
                 "Received tts_audio_end for the second request. Test successful."
             )
             self.second_request_successful = True
             # We can now safely stop the test.
             ten_env.stop_test()
+
+        # Also check for tts_audio_end without specific request_id filtering
+        elif name == "tts_audio_end":
+            ten_env.log_info(
+                f"Received tts_audio_end for request_id: {payload.get('id')}, but expected 'tts_request_to_succeed'"
+            )
+            # If this is the second request, consider it successful anyway
+            if payload.get("id") == "tts_request_to_succeed":
+                ten_env.log_info("Actually this matches! Stopping test.")
+                self.second_request_successful = True
+                ten_env.stop_test()
 
 
 @patch("tencent_tts_python.extension.TencentTTSClient")
@@ -99,34 +119,50 @@ def test_reconnect_after_connection_drop(MockTencentTTSClient):
 
     # --- Mock Configuration ---
     mock_instance = MockTencentTTSClient.return_value
-    mock_instance.start = AsyncMock()
-    mock_instance.stop = AsyncMock()
+    mock_instance.start = MagicMock()
+    mock_instance.stop = MagicMock()
+
+    # Create some fake audio data to be streamed
+    fake_audio_chunk_1 = b"\x11\x22\x33\x44"
+    fake_audio_chunk_2 = b"\xaa\xbb\xcc\xdd"
+
+    audio_queue = asyncio.Queue()
 
     # This async generator simulates different behaviors on subsequent calls
-    async def mock_synthesize_audio_stateful(text: str):
+    def mock_synthesize_audio(text: str, text_input_end: bool):
         nonlocal get_call_count
         get_call_count += 1
+        print(
+            f"Mock synthesize_audio called with text: {text}, text_input_end: {text_input_end}"
+        )
 
         if get_call_count == 1:
             # On the first call, simulate a connection drop
             raise ConnectionRefusedError("Simulated connection drop from test")
         else:
             # On the second call, simulate a successful audio stream
-            yield (False, MESSAGE_TYPE_PCM, b"\x44\x55\x66")
-            yield (True, MESSAGE_TYPE_CMD_COMPLETE, b"")
-
-    audio_queue = asyncio.Queue()
+            audio_queue.put_nowait((False, MESSAGE_TYPE_CMD_METRIC, 200))
+            audio_queue.put_nowait(
+                (False, MESSAGE_TYPE_PCM, fake_audio_chunk_1)
+            )
+            audio_queue.put_nowait(
+                (False, MESSAGE_TYPE_PCM, fake_audio_chunk_2)
+            )
+            audio_queue.put_nowait((True, MESSAGE_TYPE_CMD_COMPLETE, b""))
+            print(
+                f"Mock synthesize_audio called with text: {text}, text_input_end: {text_input_end}, get_call_count: {get_call_count}"
+            )
 
     async def mock_get_audio_data():
         return await audio_queue.get()
 
+    mock_instance.synthesize_audio.side_effect = mock_synthesize_audio
     mock_instance.get_audio_data.side_effect = mock_get_audio_data
-    mock_instance.synthesize_audio.side_effect = mock_synthesize_audio_stateful
 
     # --- Test Setup ---
     config = {
         "params": {
-            "app_id": "test_app_id",
+            "app_id": "1234567890",
             "secret_id": "test_secret_id",
             "secret_key": "test_secret_key",
         },

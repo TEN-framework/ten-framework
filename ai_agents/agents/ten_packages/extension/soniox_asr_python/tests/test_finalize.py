@@ -175,7 +175,7 @@ def test_finalize(patch_soniox_ws):
     async def fake_send_audio(_audio_data):
         await asyncio.sleep(0)
 
-    async def fake_finalize():
+    async def fake_finalize(trailing_silence_ms=None):
         # When finalize is called, send final results
         await asyncio.sleep(0.1)
 
