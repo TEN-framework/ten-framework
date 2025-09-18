@@ -54,7 +54,7 @@ class AsyncIteratorCallback(ResultCallback):
         self.ten_env = ten_env
 
         self._closed = False
-        self._cancelled = False  # 添加取消标识位
+        self._cancelled = False
         self._loop = asyncio.get_event_loop()
         self._queue = queue
 
@@ -113,7 +113,6 @@ class AsyncIteratorCallback(ResultCallback):
             )
             return
 
-        # 如果已被取消，过滤掉音频输出
         if self._cancelled:
             self.ten_env.log_debug(
                 f"Filtered {len(data)} bytes audio data due to cancellation"
@@ -175,7 +174,6 @@ class CosyTTSClient:
         """
         Cancel current TTS operation.
         """
-        # 首先设置callback的取消标识位，过滤后续音频输出
         if self._callback:
             self._callback.cancel()
 
