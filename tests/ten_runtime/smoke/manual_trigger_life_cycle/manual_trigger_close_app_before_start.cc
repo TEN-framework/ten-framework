@@ -28,11 +28,6 @@ class test_extension_a : public ten::extension_t {
                  .count());
 
     ten_env.on_start_done();
-
-    // Close app to stop the test.
-    auto close_app_cmd = ten::close_app_cmd_t::create();
-    close_app_cmd->set_dests({{""}});
-    ten_env.send_cmd(std::move(close_app_cmd));
   }
 
   void on_stop(ten::ten_env_t &ten_env) override {
@@ -90,6 +85,15 @@ class test_extension_b : public ten::extension_t {
 
     // Create a thread to notify the start event
     thread_ = std::thread([ten_env_proxy]() {
+      std::this_thread::sleep_for(std::chrono::seconds(1));
+
+      ten_env_proxy->notify([](ten::ten_env_t &ten_env) {
+        // Close app to stop the test.
+        auto close_app_cmd = ten::close_app_cmd_t::create();
+        close_app_cmd->set_dests({{""}});
+        ten_env.send_cmd(std::move(close_app_cmd));
+      });
+
       std::this_thread::sleep_for(std::chrono::seconds(1));
 
       ten_env_proxy->notify([](ten::ten_env_t &ten_env,
