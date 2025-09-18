@@ -155,7 +155,8 @@ mod tests {
                             selector: None,
                         },
                         cmd: Some(vec![GraphMessageFlow::new(
-                            "test_cmd".to_string(),
+                            Some("test_cmd".to_string()),
+                            None,
                             vec![],
                             vec![],
                         )]),

@@ -47,7 +47,8 @@ mod tests {
                     selector: None,
                 },
                 cmd: Some(vec![connection::GraphMessageFlow::new(
-                    "B".to_string(),
+                    Some("B".to_string()),
+                    None,
                     vec![connection::GraphDestination {
                         loc: connection::GraphLoc {
                             app: None,
@@ -93,7 +94,8 @@ mod tests {
                     selector: None,
                 },
                 cmd: Some(vec![connection::GraphMessageFlow::new(
-                    "B".to_string(),
+                    Some("B".to_string()),
+                    None,
                     vec![connection::GraphDestination {
                         loc: connection::GraphLoc {
                             app: None,
@@ -216,7 +218,8 @@ mod tests {
                         selector: None,
                     },
                     cmd: Some(vec![connection::GraphMessageFlow::new(
-                        "B".to_string(),
+                        Some("B".to_string()),
+                        None,
                         vec![connection::GraphDestination {
                             loc: connection::GraphLoc {
                                 app: None,
@@ -242,7 +245,8 @@ mod tests {
                         selector: None,
                     },
                     cmd: Some(vec![connection::GraphMessageFlow::new(
-                        "H".to_string(),
+                        Some("H".to_string()),
+                        None,
                         vec![connection::GraphDestination {
                             loc: connection::GraphLoc {
                                 app: None,
@@ -393,7 +397,8 @@ mod tests {
                     selector: None,
                 },
                 cmd: Some(vec![connection::GraphMessageFlow::new(
-                    "NonExistentCmd".to_string(),
+                    Some("NonExistentCmd".to_string()),
+                    None,
                     vec![connection::GraphDestination {
                         loc: connection::GraphLoc {
                             app: None,
@@ -477,7 +482,8 @@ mod tests {
                     selector: None,
                 },
                 cmd: Some(vec![connection::GraphMessageFlow::new(
-                    "B".to_string(),
+                    Some("B".to_string()),
+                    None,
                     vec![connection::GraphDestination {
                         loc: connection::GraphLoc {
                             app: None,
@@ -557,7 +563,8 @@ mod tests {
                     selector: None,
                 },
                 cmd: Some(vec![connection::GraphMessageFlow::new(
-                    "TestCmd".to_string(),
+                    Some("TestCmd".to_string()),
+                    None,
                     vec![connection::GraphDestination {
                         loc: connection::GraphLoc {
                             app: None,
@@ -603,7 +610,8 @@ mod tests {
                     selector: None,
                 },
                 cmd: Some(vec![connection::GraphMessageFlow::new(
-                    "InternalCmd".to_string(),
+                    Some("InternalCmd".to_string()),
+                    None,
                     vec![connection::GraphDestination {
                         loc: connection::GraphLoc {
                             app: None,
@@ -649,7 +657,8 @@ mod tests {
                     selector: None,
                 },
                 cmd: Some(vec![connection::GraphMessageFlow::new(
-                    "DeepCmd".to_string(),
+                    Some("DeepCmd".to_string()),
+                    None,
                     vec![connection::GraphDestination {
                         loc: connection::GraphLoc {
                             app: None,
@@ -777,7 +786,8 @@ mod tests {
                     selector: None,
                 },
                 cmd: Some(vec![connection::GraphMessageFlow::new(
-                    "TestCmd".to_string(),
+                    Some("TestCmd".to_string()),
+                    None,
                     vec![connection::GraphDestination {
                         loc: connection::GraphLoc {
                             app: None,
