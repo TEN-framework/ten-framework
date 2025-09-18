@@ -107,6 +107,7 @@ core/src/ten_manager/tests/test_data/cmd_builtin_function_install_all/manifest-l
 
 # next.js
 ai_agents/.next/
+**/.next/
 
 ai_agents/out/
 ai_agents/.pnpm-store
