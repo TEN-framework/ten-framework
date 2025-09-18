@@ -926,7 +926,6 @@ mod tests {
             .contains("Subgraph node 'subgraph_1' has an empty import_uri"));
     }
 
-    /*
     #[tokio::test]
     async fn test_flatten_subgraph_field_reference_all_message_types() {
         // Create a temporary directory for the subgraph
@@ -962,7 +961,8 @@ mod tests {
                         selector: None,
                     },
                     cmd: Some(vec![connection::GraphMessageFlow::new(
-                        "TestCmd".to_string(),
+                        Some("TestCmd".to_string()),
+                        None,
                         vec![connection::GraphDestination {
                             loc: connection::GraphLoc {
                                 app: None,
@@ -975,7 +975,8 @@ mod tests {
                         vec![],
                     )]),
                     data: Some(vec![connection::GraphMessageFlow::new(
-                        "TestData".to_string(),
+                        Some("TestData".to_string()),
+                        None,
                         vec![connection::GraphDestination {
                             loc: connection::GraphLoc {
                                 app: None,
@@ -988,7 +989,8 @@ mod tests {
                         vec![],
                     )]),
                     audio_frame: Some(vec![connection::GraphMessageFlow::new(
-                        "TestAudio".to_string(),
+                        Some("TestAudio".to_string()),
+                        None,
                         vec![connection::GraphDestination {
                             loc: connection::GraphLoc {
                                 app: None,
@@ -1001,7 +1003,8 @@ mod tests {
                         vec![],
                     )]),
                     video_frame: Some(vec![connection::GraphMessageFlow::new(
-                        "TestVideo".to_string(),
+                        Some("TestVideo".to_string()),
+                        None,
                         vec![connection::GraphDestination {
                             loc: connection::GraphLoc {
                                 app: None,
@@ -1023,7 +1026,8 @@ mod tests {
                         selector: None,
                     },
                     cmd: Some(vec![connection::GraphMessageFlow::new(
-                        "ResponseCmd".to_string(),
+                        Some("ResponseCmd".to_string()),
+                        None,
                         vec![connection::GraphDestination {
                             loc: connection::GraphLoc {
                                 app: None,
@@ -1036,7 +1040,8 @@ mod tests {
                         vec![],
                     )]),
                     data: Some(vec![connection::GraphMessageFlow::new(
-                        "ResponseData".to_string(),
+                        Some("ResponseData".to_string()),
+                        None,
                         vec![connection::GraphDestination {
                             loc: connection::GraphLoc {
                                 app: None,
@@ -1049,7 +1054,8 @@ mod tests {
                         vec![],
                     )]),
                     audio_frame: Some(vec![connection::GraphMessageFlow::new(
-                        "ResponseAudio".to_string(),
+                        Some("ResponseAudio".to_string()),
+                        None,
                         vec![connection::GraphDestination {
                             loc: connection::GraphLoc {
                                 app: None,
@@ -1062,7 +1068,8 @@ mod tests {
                         vec![],
                     )]),
                     video_frame: Some(vec![connection::GraphMessageFlow::new(
-                        "ResponseVideo".to_string(),
+                        Some("ResponseVideo".to_string()),
+                        None,
                         vec![connection::GraphDestination {
                             loc: connection::GraphLoc {
                                 app: None,
@@ -1228,7 +1235,7 @@ mod tests {
         assert_eq!(video_flow.name.as_deref(), Some("ResponseVideo"));
         assert_eq!(video_flow.dest[0].loc.extension.as_ref().unwrap(), "ext_a");
     }
-    */
+
     #[tokio::test]
     async fn test_flatten_subgraph_field_reference_exposed_properties() {
         // Create a temporary directory for the subgraph
