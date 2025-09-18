@@ -54,12 +54,20 @@ class AsyncIteratorCallback(ResultCallback):
         self.ten_env = ten_env
 
         self._closed = False
+        self._cancelled = False
         self._loop = asyncio.get_event_loop()
         self._queue = queue
 
     def close(self):
         """Close the callback."""
         self._closed = True
+
+    def cancel(self):
+        """Cancel the callback, filtering out further audio output."""
+        self._cancelled = True
+        self.ten_env.log_info(
+            "AsyncIteratorCallback cancelled, will filter audio output"
+        )
 
     def on_open(self):
         """Called when WebSocket connection opens."""
@@ -69,19 +77,23 @@ class AsyncIteratorCallback(ResultCallback):
         """Called when TTS synthesis completes successfully."""
         self.ten_env.log_info("TTS synthesis task completed successfully.")
 
-        # Send completion signal
-        asyncio.run_coroutine_threadsafe(
-            self._queue.put((True, MESSAGE_TYPE_CMD_COMPLETE, None)), self._loop
-        )
+        # Send completion signal only if not cancelled
+        if not self._cancelled:
+            asyncio.run_coroutine_threadsafe(
+                self._queue.put((True, MESSAGE_TYPE_CMD_COMPLETE, None)),
+                self._loop,
+            )
 
     def on_error(self, message: str):
         """Called when TTS synthesis encounters an error."""
         self.ten_env.log_error(f"TTS synthesis task failed: {message}")
 
-        # Send error signal
-        asyncio.run_coroutine_threadsafe(
-            self._queue.put((True, MESSAGE_TYPE_CMD_ERROR, message)), self._loop
-        )
+        # Send error signal only if not cancelled
+        if not self._cancelled:
+            asyncio.run_coroutine_threadsafe(
+                self._queue.put((True, MESSAGE_TYPE_CMD_ERROR, message)),
+                self._loop,
+            )
 
     def on_close(self):
         """Called when WebSocket connection closes."""
@@ -90,13 +102,20 @@ class AsyncIteratorCallback(ResultCallback):
 
     def on_event(self, message: str) -> None:
         """Called when receiving events from TTS service."""
-        self.ten_env.log_debug(f"Received TTS event: {message}")
+        if not self._cancelled:
+            self.ten_env.log_debug(f"Received TTS event: {message}")
 
     def on_data(self, data: bytes) -> None:
         """Called when receiving audio data from TTS service."""
         if self._closed:
             self.ten_env.log_warn(
                 f"Received {len(data)} bytes but connection was closed"
+            )
+            return
+
+        if self._cancelled:
+            self.ten_env.log_debug(
+                f"Filtered {len(data)} bytes audio data due to cancellation"
             )
             return
 
@@ -155,6 +174,9 @@ class CosyTTSClient:
         """
         Cancel current TTS operation.
         """
+        if self._callback:
+            self._callback.cancel()
+
         if self.synthesizer:
             try:
                 self.synthesizer.streaming_cancel()
