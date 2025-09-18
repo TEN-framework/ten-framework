@@ -101,7 +101,6 @@ class CartesiaTTSClient:
         )
         self._is_cancelled = True
         if self.ws:
-            await self.ws.close()
             self.reset_ttfb()
 
     def reset_ttfb(self):
@@ -123,6 +122,11 @@ class CartesiaTTSClient:
             async for audio_chunk, event_status in self._process_single_tts(
                 text
             ):
+                if event_status == EVENT_TTS_FLUSH:
+                    await self.ws.close()
+                    self.ws = None
+                    await self._ensure_connection()
+
                 yield audio_chunk, event_status
 
         except Exception as e:

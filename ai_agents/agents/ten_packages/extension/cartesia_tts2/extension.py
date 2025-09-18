@@ -226,55 +226,100 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                 )
                 self.current_request_finished = True
 
-            # Get audio stream from Cartesia TTS
-            self.ten_env.log_info(f"Calling client.get() with text: {t.text}")
-            data = self.client.get(t.text)
+            if t.text.strip() != "":
+                # Get audio stream from Cartesia TTS
+                self.ten_env.log_info(
+                    f"Calling client.get() with text: {t.text}"
+                )
+                data = self.client.get(t.text)
 
-            self.ten_env.log_info(
-                "Starting async for loop to process audio chunks"
-            )
-            chunk_count = 0
-            async for data_msg, event_status in data:
-                self.ten_env.log_info(f"Received event_status: {event_status}")
-                if event_status == EVENT_TTS_RESPONSE:
-                    if (
-                        data_msg is not None
-                        and isinstance(data_msg, bytes)
-                        and len(data_msg) > 0
-                    ):
-                        chunk_count += 1
-                        self.total_audio_bytes += len(data_msg)
-                        self.ten_env.log_info(
-                            f"[tts] Received audio chunk #{chunk_count}, size: {len(data_msg)} bytes"
-                        )
-                        # Write to dump file if enabled
+                self.ten_env.log_info(
+                    "Starting async for loop to process audio chunks"
+                )
+                chunk_count = 0
+                async for data_msg, event_status in data:
+                    self.ten_env.log_info(
+                        f"Received event_status: {event_status}"
+                    )
+                    if event_status == EVENT_TTS_RESPONSE:
                         if (
-                            self.config
-                            and self.config.dump
-                            and self.current_request_id
-                            and self.current_request_id in self.recorder_map
+                            data_msg is not None
+                            and isinstance(data_msg, bytes)
+                            and len(data_msg) > 0
                         ):
+                            chunk_count += 1
+                            self.total_audio_bytes += len(data_msg)
                             self.ten_env.log_info(
-                                f"KEYPOINT Writing audio chunk to dump file, dump url: {self.config.dump_path}"
+                                f"[tts] Received audio chunk #{chunk_count}, size: {len(data_msg)} bytes"
                             )
-                            asyncio.create_task(
-                                self.recorder_map[
-                                    self.current_request_id
-                                ].write(data_msg)
+                            # Write to dump file if enabled
+                            if (
+                                self.config
+                                and self.config.dump
+                                and self.current_request_id
+                                and self.current_request_id in self.recorder_map
+                            ):
+                                self.ten_env.log_info(
+                                    f"KEYPOINT Writing audio chunk to dump file, dump url: {self.config.dump_path}"
+                                )
+                                asyncio.create_task(
+                                    self.recorder_map[
+                                        self.current_request_id
+                                    ].write(data_msg)
+                                )
+
+                            # Send audio data
+                            await self.send_tts_audio_data(data_msg)
+                        else:
+                            self.ten_env.log_error(
+                                "Received empty payload for TTS response"
+                            )
+                            if t.text_input_end:
+                                duration_ms = (
+                                    self._calculate_audio_duration_ms()
+                                )
+                                request_event_interval = int(
+                                    (
+                                        datetime.now() - self.sent_ts
+                                    ).total_seconds()
+                                    * 1000
+                                )
+                                await self.send_tts_audio_end(
+                                    self.current_request_id,
+                                    request_event_interval,
+                                    duration_ms,
+                                    self.current_turn_id,
+                                )
+                                self.ten_env.log_info(
+                                    f"KEYPOINT Sent TTS audio end event, interval: {request_event_interval}ms, duration: {duration_ms}ms"
+                                )
+                    elif event_status == EVENT_TTS_TTFB_METRIC:
+                        if data_msg is not None and isinstance(data_msg, int):
+                            self.sent_ts = datetime.now()
+                            ttfb = data_msg
+                            await self.send_tts_audio_start(
+                                self.current_request_id
+                            )
+                            await self.send_tts_ttfb_metrics(
+                                self.current_request_id,
+                                ttfb,
+                                self.current_turn_id,
                             )
 
-                        # Send audio data
-                        await self.send_tts_audio_data(data_msg)
-                    else:
-                        self.ten_env.log_error(
-                            "Received empty payload for TTS response"
+                            self.ten_env.log_info(
+                                f"KEYPOINT Sent TTS audio start and TTFB metrics: {ttfb}ms"
+                            )
+                    elif event_status == EVENT_TTS_END:
+                        self.ten_env.log_info(
+                            "Received TTS_END event from Cartesia TTS"
                         )
-                        if t.text_input_end:
-                            duration_ms = self._calculate_audio_duration_ms()
+                        # Send TTS audio end event
+                        if self.sent_ts and t.text_input_end:
                             request_event_interval = int(
                                 (datetime.now() - self.sent_ts).total_seconds()
                                 * 1000
                             )
+                            duration_ms = self._calculate_audio_duration_ms()
                             await self.send_tts_audio_end(
                                 self.current_request_id,
                                 request_event_interval,
@@ -284,48 +329,25 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                             self.ten_env.log_info(
                                 f"KEYPOINT Sent TTS audio end event, interval: {request_event_interval}ms, duration: {duration_ms}ms"
                             )
-                elif event_status == EVENT_TTS_TTFB_METRIC:
-                    if data_msg is not None and isinstance(data_msg, int):
-                        self.sent_ts = datetime.now()
-                        ttfb = data_msg
-                        await self.send_tts_audio_start(
-                            self.current_request_id,
-                            self.current_turn_id,
-                        )
-                        await self.send_tts_ttfb_metrics(
-                            self.current_request_id,
-                            ttfb,
-                            self.current_turn_id,
-                        )
+                        break
 
-                        self.ten_env.log_info(
-                            f"KEYPOINT Sent TTS audio start and TTFB metrics: {ttfb}ms"
-                        )
-                elif event_status == EVENT_TTS_END:
-                    self.ten_env.log_info(
-                        "Received TTS_END event from Cartesia TTS"
-                    )
-                    # Send TTS audio end event
-                    if self.sent_ts and t.text_input_end:
-                        request_event_interval = int(
-                            (datetime.now() - self.sent_ts).total_seconds()
-                            * 1000
-                        )
-                        duration_ms = self._calculate_audio_duration_ms()
-                        await self.send_tts_audio_end(
-                            self.current_request_id,
-                            request_event_interval,
-                            duration_ms,
-                            self.current_turn_id,
-                        )
-                        self.ten_env.log_info(
-                            f"KEYPOINT Sent TTS audio end event, interval: {request_event_interval}ms, duration: {duration_ms}ms"
-                        )
-                    break
-
-            self.ten_env.log_info(
-                f"TTS processing completed, total chunks: {chunk_count}"
-            )
+                self.ten_env.log_info(
+                    f"TTS processing completed, total chunks: {chunk_count}"
+                )
+            elif self.sent_ts and t.text_input_end:
+                duration_ms = self._calculate_audio_duration_ms()
+                request_event_interval = int(
+                    (datetime.now() - self.sent_ts).total_seconds() * 1000
+                )
+                await self.send_tts_audio_end(
+                    self.current_request_id,
+                    request_event_interval,
+                    duration_ms,
+                    self.current_turn_id,
+                )
+                self.ten_env.log_info(
+                    f"KEYPOINT Sent TTS audio end event, interval: {request_event_interval}ms, duration: {duration_ms}ms"
+                )
 
         except CartesiaTTSConnectionException as e:
             self.ten_env.log_error(
