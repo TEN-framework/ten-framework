@@ -25,6 +25,7 @@ from .cmd import Cmd
 from .cmd_result import CmdResult, StatusCode
 from .start_graph_cmd import StartGraphCmd
 from .stop_graph_cmd import StopGraphCmd
+from .trigger_life_cycle_cmd import TriggerLifeCycleCmd
 from .data import Data
 from .video_frame import VideoFrame, PixelFmt
 from .audio_frame import AudioFrame, AudioFrameDataFmt
@@ -45,6 +46,7 @@ __all__ = [
     "StatusCode",
     "StartGraphCmd",
     "StopGraphCmd",
+    "TriggerLifeCycleCmd",
     "VideoFrame",
     "AudioFrame",
     "Data",
