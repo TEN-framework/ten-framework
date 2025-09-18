@@ -1,5 +1,5 @@
 """
-Test trigger_life_cycle_go.
+Test trigger_life_cycle_nodejs.
 """
 
 import subprocess
@@ -9,16 +9,16 @@ from sys import stdout
 from .utils import http, build_config, build_pkg, fs_utils
 
 
-def test_trigger_life_cycle_go():
+def test_trigger_life_cycle_nodejs():
     """Test client and app server."""
     base_path = os.path.dirname(os.path.abspath(__file__))
     root_dir = os.path.join(base_path, "../../../../../")
 
     my_env = os.environ.copy()
 
-    app_dir_name = "trigger_life_cycle_go_app"
+    app_dir_name = "trigger_life_cycle_nodejs_app"
     app_root_path = os.path.join(base_path, app_dir_name)
-    app_language = "go"
+    app_language = "nodejs"
 
     build_config_args = build_config.parse_build_config(
         os.path.join(root_dir, "tgn_args.txt"),
@@ -40,58 +40,28 @@ def test_trigger_life_cycle_go():
         if rc != 0:
             assert False, "Failed to build package."
 
-    tman_install_cmd = [
-        os.path.join(root_dir, "ten_manager/bin/tman"),
-        "--config-file",
-        os.path.join(root_dir, "tests/local_registry/config.json"),
-        "--yes",
-        "install",
-    ]
+        # Compile typescript extensions.
+        rc = build_pkg.build_nodejs_extensions(app_root_path)
+        if rc != 0:
+            assert False, "Failed to build TypeScript extensions."
 
-    tman_install_process = subprocess.Popen(
-        tman_install_cmd,
-        stdout=stdout,
-        stderr=subprocess.STDOUT,
-        env=my_env,
-        cwd=app_root_path,
-    )
-    tman_install_process.wait()
-    return_code = tman_install_process.returncode
-    if return_code != 0:
-        assert False, "Failed to install package."
-
-    if sys.platform == "win32":
-        print("test_trigger_life_cycle_go doesn't support win32")
-        assert False
-    elif sys.platform == "darwin":
-        # client depends on some libraries in the TEN app.
-        my_env["DYLD_LIBRARY_PATH"] = os.path.join(
-            base_path,
-            "trigger_life_cycle_go_app/ten_packages/system/ten_runtime/lib",
-        )
-    else:
-        # client depends on some libraries in the TEN app.
-        my_env["LD_LIBRARY_PATH"] = os.path.join(
-            base_path,
-            "trigger_life_cycle_go_app/ten_packages/system/ten_runtime/lib",
-        )
-
-        if (
-            build_config_args.enable_sanitizer
-            and not build_config_args.is_clang
-        ):
+    if sys.platform == "linux":
+        if build_config_args.enable_sanitizer:
             libasan_path = os.path.join(
                 base_path,
                 (
-                    "trigger_life_cycle_go_app/ten_packages/system/"
+                    "trigger_life_cycle_nodejs_app/ten_packages/system/"
                     "ten_runtime/lib/libasan.so"
                 ),
             )
+
             if os.path.exists(libasan_path):
                 print("Using AddressSanitizer library.")
                 my_env["LD_PRELOAD"] = libasan_path
 
-    server_cmd = os.path.join(base_path, "trigger_life_cycle_go_app/bin/start")
+    server_cmd = os.path.join(
+        base_path, "trigger_life_cycle_nodejs_app/bin/start"
+    )
 
     if not os.path.isfile(server_cmd):
         print(f"Server command '{server_cmd}' does not exist.")
@@ -107,11 +77,11 @@ def test_trigger_life_cycle_go():
 
     is_started = http.is_app_started("127.0.0.1", 8002, 30)
     if not is_started:
-        print("The trigger_life_cycle_go is not started after 30 seconds.")
+        print("The trigger_life_cycle_nodejs is not started after 30 seconds.")
 
         server.kill()
         exit_code = server.wait()
-        print("The exit code of trigger_life_cycle_go: ", exit_code)
+        print("The exit code of trigger_life_cycle_nodejs: ", exit_code)
 
         assert exit_code == 0
         assert False
