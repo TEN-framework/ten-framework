@@ -62,7 +62,7 @@ class SpeechmaticsASRClient:
         self.sent_user_audio_duration_ms_before_last_reset = 0
         self.last_drain_timestamp: int = 0
         self.session_id = None
-
+        self.connected = False
         # Cache the words for sentence final mode
         self.cache_words = []  # type: List[SpeechmaticsASRWord]
 
@@ -185,6 +185,7 @@ class SpeechmaticsASRClient:
         self.session_id = session_id
 
         try:
+
             await self.audio_queue.put(frame_buf)
         except Exception as e:
             self.ten_env.log_error(f"Error sending audio frame: {e}")
@@ -203,6 +204,7 @@ class SpeechmaticsASRClient:
             try:
                 # Synchronously call stop() and then wait for the connection to close
                 self.client.stop()
+                self.connected = False
 
                 # Wait for WebSocket connection to fully close
                 max_wait_time = 5.0  # Maximum wait time of 5 seconds
@@ -292,12 +294,16 @@ class SpeechmaticsASRClient:
         # wait for the client to auto reconnect
 
     def _handle_recognition_started(self, msg):
-        self.ten_env.log_info(f"_handle_recognition_started, msg: {msg}")
         self.sent_user_audio_duration_ms_before_last_reset += (
             self.timeline.get_total_user_audio_duration()
         )
+
+        self.ten_env.log_info(
+            f"sent_user_audio_duration_ms_before_last_reset: {self.sent_user_audio_duration_ms_before_last_reset} msg: {msg}"
+        )
         self.timeline.reset()
         if self.on_asr_open:
+            self.connected = True
             asyncio.create_task(self.on_asr_open())
 
     def _handle_partial_transcript(self, msg):
@@ -336,6 +342,9 @@ class SpeechmaticsASRClient:
         try:
             metadata = msg.get("metadata", {})
             text = metadata.get("transcript", "")
+            self.ten_env.log_info(
+                f"_handle_transcript_word_final_mode,metadata: {metadata}"
+            )
             if text:
                 start_ms = metadata.get("start_time", 0) * 1000
                 end_ms = metadata.get("end_time", 0) * 1000
@@ -504,6 +513,9 @@ class SpeechmaticsASRClient:
         """
         Emit an error message to the extension.
         """
+        self.ten_env.log_error(
+            f"_emit_error, error: {error}, vendor_info: {vendor_info}"
+        )
         if callable(self.on_asr_error):
             await self.on_asr_error(
                 error, vendor_info
@@ -520,6 +532,9 @@ class SpeechmaticsASRClient:
 
             # If the client is stopping, consider it as not connected
             if self.client_needs_stopping:
+                return False
+
+            if not self.connected:
                 return False
 
             return session_running
