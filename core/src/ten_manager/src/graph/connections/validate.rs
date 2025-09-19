@@ -133,7 +133,7 @@ async fn validate_msg_conversion_schema<'a>(
         &msg_conversion_validate_info.dest.app,
         dest_extension_addon_name,
         msg_conversion_validate_info.msg_type,
-        &msg_conversion_validate_info.msg_names[0].as_str(),
+        msg_conversion_validate_info.msg_names[0].as_str(),
         &dest_msg_name,
         ten_name_rule_index,
         msg_conversion_validate_info.msg_conversion.as_ref().unwrap(),
