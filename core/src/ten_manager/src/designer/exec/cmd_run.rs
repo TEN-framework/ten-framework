@@ -4,17 +4,69 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
+#[cfg(unix)]
+use std::os::unix::process::CommandExt;
 use std::{path::Path, process::Command, thread};
 
 use actix::AsyncContext;
 use actix_web_actors::ws::WebsocketContext;
 use crossbeam_channel::{bounded, Sender};
+use sysinfo::System;
 
 use super::{msg::OutboundMsg, WsRunCmd};
 use crate::{
     designer::exec::RunCmdOutput,
     log::{process_log_line, GraphResourcesLog, LogLineInfo},
 };
+
+/// Cross-platform function to kill a process tree
+/// This will attempt to kill the main process and all its children
+fn kill_process_tree(pid: u32) {
+    let mut system = System::new();
+    system.refresh_all();
+
+    // Find all child processes recursively
+    let mut processes_to_kill = Vec::new();
+    collect_child_processes(&system, pid, &mut processes_to_kill);
+
+    // Add the main process
+    processes_to_kill.push(pid);
+
+    // Kill all processes (children first, then parent)
+    for &process_pid in &processes_to_kill {
+        if let Some(process) = system.process(sysinfo::Pid::from_u32(process_pid)) {
+            // Try graceful termination first
+            process.kill_with(sysinfo::Signal::Term);
+        }
+    }
+
+    // Give processes time to terminate gracefully
+    std::thread::sleep(std::time::Duration::from_millis(100));
+
+    // Force kill any remaining processes
+    system.refresh_all();
+    for &process_pid in &processes_to_kill {
+        if let Some(process) = system.process(sysinfo::Pid::from_u32(process_pid)) {
+            process.kill_with(sysinfo::Signal::Kill);
+        }
+    }
+}
+
+/// Recursively collect all child processes
+fn collect_child_processes(system: &System, parent_pid: u32, result: &mut Vec<u32>) {
+    let parent_pid_sys = sysinfo::Pid::from_u32(parent_pid);
+
+    for (pid, process) in system.processes() {
+        if let Some(ppid) = process.parent() {
+            if ppid == parent_pid_sys {
+                let child_pid = pid.as_u32();
+                // Recursively collect grandchildren
+                collect_child_processes(system, child_pid, result);
+                result.push(child_pid);
+            }
+        }
+    }
+}
 
 // Add this struct to store shutdown senders.
 pub struct ShutdownSenders {
@@ -72,6 +124,11 @@ impl WsRunCmd {
                 )
                 .stdout(std::process::Stdio::piped())
                 .stderr(std::process::Stdio::piped());
+
+            // Create a new process group for Unix systems to ensure all child processes
+            // can be terminated together when needed
+            #[cfg(unix)]
+            command.process_group(0);
         }
 
         if let Some(ref dir) = self.working_directory {
@@ -244,8 +301,11 @@ impl WsRunCmd {
                 let exit_code = loop {
                     let exit_status = crossbeam_channel::select! {
                         recv(shutdown_rx) -> _ => {
-                            // Termination requested, kill the process.
+                            // Termination requested, kill the process group to ensure all child
+                            // processes are terminated
+                            kill_process_tree(child.id());
                             let _ = child.kill();
+
                             match child.wait(){
                                 Ok(status) => Some(status.code().unwrap_or(-1)),
                                 Err(_) => Some(-1),
@@ -302,7 +362,9 @@ impl WsRunCmd {
         }
 
         // Force kill child process if it exists.
+        #[allow(unused_mut)]
         if let Some(mut child) = self.child.take() {
+            kill_process_tree(child.id());
             let _ = child.kill();
         }
     }
