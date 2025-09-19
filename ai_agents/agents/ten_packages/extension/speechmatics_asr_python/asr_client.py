@@ -24,6 +24,7 @@ from .word import (
     convert_words_to_sentence,
     get_sentence_duration_ms,
     get_sentence_start_ms,
+    get_speaker_segments,
 )
 from ten_ai_base.timeline import AudioTimeline
 
@@ -112,6 +113,20 @@ class SpeechmaticsASRClient:
                 else:
                     self.ten_env.log_warn("invalid hotword format: " + hw)
 
+        diarization_kwargs: dict = {}
+        if self.config.diarization:
+            diarization_kwargs["diarization"] = self.config.diarization
+
+        if self.config.speaker_diarization_config:
+            diarization_kwargs["speaker_diarization_config"] = (
+                self.config.speaker_diarization_config
+            )
+
+        if self.config.channel_diarization_labels:
+            diarization_kwargs["channel_diarization_labels"] = (
+                self.config.channel_diarization_labels
+            )
+
         self.transcription_config = speechmatics.models.TranscriptionConfig(
             enable_partials=self.config.enable_partials,
             language=self.config.language,
@@ -123,6 +138,7 @@ class SpeechmaticsASRClient:
                 if self.config.operating_point
                 else None
             ),
+            **diarization_kwargs,
         )
 
         # Initialize client
@@ -319,13 +335,33 @@ class SpeechmaticsASRClient:
                 + self.sent_user_audio_duration_ms_before_last_reset
             )
 
+            speaker = metadata.get("speaker")
+            channel = metadata.get("channel")
+            if channel is not None:
+                channel = str(channel)
+
+            temp_word = SpeechmaticsASRWord(
+                word=text,
+                start_ms=_actual_start_ms,
+                duration_ms=_duration_ms,
+                is_punctuation=False,
+                speaker=speaker,
+                channel=channel,
+            )
+
+            diarization_metadata = self._build_diarization_metadata(
+                [temp_word]
+            )
+            asr_words = self._convert_to_asr_words([temp_word], stable=False)
+
             asr_result = ASRResult(
                 text=text,
                 final=False,
                 start_ms=_actual_start_ms,
                 duration_ms=_duration_ms,
                 language=self.config.language,
-                words=[],
+                words=asr_words,
+                metadata=diarization_metadata,
             )
             if self.on_asr_result:
                 asyncio.create_task(self.on_asr_result(asr_result))
@@ -354,13 +390,35 @@ class SpeechmaticsASRClient:
                     + self.sent_user_audio_duration_ms_before_last_reset
                 )
 
+                speaker = metadata.get("speaker")
+                channel = metadata.get("channel")
+                if channel is not None:
+                    channel = str(channel)
+
+                temp_word = SpeechmaticsASRWord(
+                    word=text,
+                    start_ms=_actual_start_ms,
+                    duration_ms=_duration_ms,
+                    is_punctuation=False,
+                    speaker=speaker,
+                    channel=channel,
+                )
+
+                diarization_metadata = self._build_diarization_metadata(
+                    [temp_word]
+                )
+                asr_words = self._convert_to_asr_words(
+                    [temp_word], stable=True
+                )
+
                 asr_result = ASRResult(
                     text=text,
                     final=True,
                     start_ms=_actual_start_ms,
                     duration_ms=_duration_ms,
                     language=self.config.language,
-                    words=[],
+                    words=asr_words,
+                    metadata=diarization_metadata,
                 )
 
                 if self.on_asr_result:
@@ -400,11 +458,18 @@ class SpeechmaticsASRClient:
                         result_type = result.get("type", "")
                         is_punctuation = result_type == "punctuation"
 
+                        speaker = alternatives[0].get("speaker")
+                        channel = result.get("channel")
+                        if channel is not None:
+                            channel = str(channel)
+
                         word = SpeechmaticsASRWord(
                             word=text,
                             start_ms=actual_start_ms,
                             duration_ms=duration_ms,
                             is_punctuation=is_punctuation,
+                            speaker=speaker,
+                            channel=channel,
                         )
                         self.cache_words.append(word)
 
@@ -415,13 +480,19 @@ class SpeechmaticsASRClient:
                     start_ms = get_sentence_start_ms(self.cache_words)
                     duration_ms = get_sentence_duration_ms(self.cache_words)
 
+                    metadata = self._build_diarization_metadata(self.cache_words)
+                    asr_words = self._convert_to_asr_words(
+                        self.cache_words, stable=True
+                    )
+
                     asr_result = ASRResult(
                         text=sentence,
                         final=True,
                         start_ms=start_ms,
                         duration_ms=duration_ms,
                         language=self.config.language,
-                        words=[],
+                        words=asr_words,
+                        metadata=metadata,
                     )
 
                     if self.on_asr_result:
@@ -436,13 +507,19 @@ class SpeechmaticsASRClient:
                 start_ms = get_sentence_start_ms(self.cache_words)
                 duration_ms = get_sentence_duration_ms(self.cache_words)
 
+                metadata = self._build_diarization_metadata(self.cache_words)
+                asr_words = self._convert_to_asr_words(
+                    self.cache_words, stable=False
+                )
+
                 asr_result_partial = ASRResult(
                     text=sentence,
                     final=False,
                     start_ms=start_ms,
                     duration_ms=duration_ms,
                     language=self.config.language,
-                    words=[],
+                    words=asr_words,
+                    metadata=metadata,
                 )
 
                 if self.on_asr_result:
@@ -504,6 +581,53 @@ class SpeechmaticsASRClient:
                 }
             )
         return new_words
+
+    def _convert_to_asr_words(
+        self, words: List[SpeechmaticsASRWord], stable: bool
+    ) -> List[Word]:
+        if not words:
+            return []
+
+        converted: List[Word] = []
+        for word in words:
+            if not word.word:
+                continue
+            converted.append(
+                Word(
+                    word=word.word,
+                    start_ms=word.start_ms,
+                    duration_ms=word.duration_ms,
+                    stable=stable,
+                )
+            )
+        return converted
+
+    def _build_diarization_metadata(
+        self, words: List[SpeechmaticsASRWord]
+    ) -> dict:
+        if not words or not self.config.diarization:
+            return {}
+
+        segments = get_speaker_segments(words, self.config)
+        if not segments:
+            return {"diarization": {"mode": self.config.diarization}}
+
+        speakers = sorted({segment["speaker"] for segment in segments})
+
+        metadata: dict = {
+            "diarization": {
+                "mode": self.config.diarization,
+                "segments": segments,
+                "speakers": speakers,
+            }
+        }
+
+        if self.config.channel_diarization_labels:
+            metadata["diarization"]["channel_labels"] = (
+                self.config.channel_diarization_labels
+            )
+
+        return metadata
 
     async def _emit_error(
         self,
