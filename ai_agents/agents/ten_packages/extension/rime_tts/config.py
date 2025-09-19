@@ -1,31 +1,8 @@
 from typing import Any
+import copy
+from ten_ai_base import utils
 
 from pydantic import BaseModel, Field
-
-
-def mask_sensitive_data(
-    s: str, unmasked_start: int = 3, unmasked_end: int = 3, mask_char: str = "*"
-) -> str:
-    """
-    Mask a sensitive string by replacing the middle part with asterisks.
-
-    Parameters:
-        s (str): The input string (e.g., API key).
-        unmasked_start (int): Number of visible characters at the beginning.
-        unmasked_end (int): Number of visible characters at the end.
-        mask_char (str): Character used for masking.
-
-    Returns:
-        str: Masked string, e.g., "abc****xyz"
-    """
-    if not s or len(s) <= unmasked_start + unmasked_end:
-        return mask_char * len(s)
-
-    return (
-        s[:unmasked_start]
-        + mask_char * (len(s) - unmasked_start - unmasked_end)
-        + s[-unmasked_end:]
-    )
 
 
 class RimeTTSConfig(BaseModel):
@@ -59,14 +36,19 @@ class RimeTTSConfig(BaseModel):
             if key in self.params:
                 del self.params[key]
 
-    def to_str(self) -> str:
+    def to_str(self, sensitive_handling: bool = True) -> str:
         """
         Convert the configuration to a string representation, masking sensitive data.
         """
-        return (
-            f"RimeTTSConfig(api_key={mask_sensitive_data(self.api_key)}, "
-            f"sampling_rate={self.sampling_rate}, "
-            f"params={self.params}, "
-            f"dump={self.dump}, "
-            f"dump_path={self.dump_path})"
-        )
+        if not sensitive_handling:
+            return f"{self}"
+
+        config = copy.deepcopy(self)
+
+        # Encrypt sensitive fields
+        if config.api_key:
+            config.api_key = utils.encrypt(config.api_key)
+        if config.params and "api_key" in config.params:
+            config.params["api_key"] = utils.encrypt(config.params["api_key"])
+
+        return f"{config}"

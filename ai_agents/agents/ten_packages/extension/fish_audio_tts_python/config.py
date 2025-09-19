@@ -1,19 +1,8 @@
-from typing import Any, Dict
+from typing import Any
+import copy
+from ten_ai_base import utils
 from fish_audio_sdk.apis import Backends
 from pydantic import BaseModel, Field
-
-
-def mask_sensitive_data(
-    s: str, unmasked_start: int = 3, unmasked_end: int = 3, mask_char: str = "*"
-) -> str:
-    if not s or len(s) <= unmasked_start + unmasked_end:
-        return mask_char * len(s)
-
-    return (
-        s[:unmasked_start]
-        + mask_char * (len(s) - unmasked_start - unmasked_end)
-        + s[-unmasked_end:]
-    )
 
 
 class FishAudioTTSConfig(BaseModel):
@@ -22,7 +11,7 @@ class FishAudioTTSConfig(BaseModel):
     dump: bool = False
     dump_path: str = "/tmp"
     backend: Backends = "speech-1.5"
-    params: Dict[str, Any] = Field(default_factory=dict)
+    params: dict[str, Any] = Field(default_factory=dict)
 
     def update_params(self) -> None:
         if "api_key" in self.params:
@@ -56,15 +45,20 @@ class FishAudioTTSConfig(BaseModel):
         if "text" in self.params:
             del self.params["text"]
 
-    def to_str(self) -> str:
+    def to_str(self, sensitive_handling: bool = True) -> str:
         """
         Convert the configuration to a string representation, masking sensitive data.
         """
-        return (
-            f"FishAudioTTSConfig(api_key={mask_sensitive_data(self.api_key)}, "
-            f"sample_rate={self.sample_rate}, "
-            f"backend={self.backend}, "
-            f"dump={self.dump}, "
-            f"dump_path={self.dump_path}, "
-            f"params={self.params}, "
-        )
+
+        if not sensitive_handling:
+            return f"{self}"
+
+        config = copy.deepcopy(self)
+
+        # Encrypt sensitive fields
+        if config.api_key:
+            config.api_key = utils.encrypt(config.api_key)
+        if config.params and "api_key" in config.params:
+            config.params["api_key"] = utils.encrypt(config.params["api_key"])
+
+        return f"{config}"
