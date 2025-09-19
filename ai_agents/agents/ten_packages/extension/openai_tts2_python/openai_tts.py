@@ -3,6 +3,7 @@ from openai import AsyncOpenAI
 
 from .config import OpenaiTTSConfig
 from ten_runtime import AsyncTenEnv
+from ten_ai_base.const import LOG_CATEGORY_VENDOR
 
 # Custom event types to communicate status back to the extension
 EVENT_TTS_RESPONSE = 1
@@ -55,13 +56,13 @@ class OpenaiTTSClient:
                 cache_audio_bytes = bytearray()
                 async for chunk in response.iter_bytes():
                     if self._is_cancelled:
-                        self.ten_env.log_info(
+                        self.ten_env.log_debug(
                             "Cancellation flag detected, sending flush event and stopping TTS stream."
                         )
                         yield None, EVENT_TTS_FLUSH
                         break
 
-                    self.ten_env.log_info(
+                    self.ten_env.log_debug(
                         f"OpenaiTTS: sending EVENT_TTS_RESPONSE, length: {len(chunk)}"
                     )
                     if len(cache_audio_bytes) > 0:
@@ -73,9 +74,6 @@ class OpenaiTTSClient:
                     )
 
                     if left_size > 0:
-                        self.ten_env.log_debug(
-                            f"left_size: {left_size}, chunk: {len(chunk)}"
-                        )
                         cache_audio_bytes = chunk[-left_size:]
                         chunk = chunk[:-left_size]
 
@@ -85,12 +83,15 @@ class OpenaiTTSClient:
                         yield None, EVENT_TTS_END
 
             if not self._is_cancelled:
-                self.ten_env.log_info("OpenaiTTS: sending EVENT_TTS_END")
+                self.ten_env.log_debug("OpenaiTTS: sending EVENT_TTS_END")
                 yield None, EVENT_TTS_END
 
         except Exception as e:
             error_message = str(e)
-            self.ten_env.log_error(f"Openai TTS streaming failed: {e}")
+            self.ten_env.log_error(
+                f"vendor_error: {error_message}",
+                category=LOG_CATEGORY_VENDOR,
+            )
 
             # Check if it's an API key authentication error
             if (

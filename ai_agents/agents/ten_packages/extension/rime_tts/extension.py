@@ -13,11 +13,13 @@ from ten_ai_base.message import (
     ModuleError,
     ModuleErrorCode,
     ModuleType,
+    ModuleErrorVendorInfo,
     ModuleVendorException,
     TTSAudioEndReason,
 )
 from ten_ai_base.struct import TTSTextInput
 from ten_ai_base.tts2 import AsyncTTS2BaseExtension
+from ten_ai_base.const import LOG_CATEGORY_KEY_POINT
 from .config import RimeTTSConfig
 
 from .rime_tts import (
@@ -46,12 +48,8 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
         self.request_ttfb: int | None = None
         self.request_total_audio_duration: int = 0
         self.response_msgs = asyncio.Queue[tuple[int, bytes | int]]()
-        self.recorder_map: dict[str, PCMWriter] = (
-            {}
-        )  # 存储不同 request_id 对应的 PCMWriter
-        self.last_completed_request_id: str | None = (
-            None  # 最新完成的 request_id
-        )
+        self.recorder_map: dict[str, PCMWriter] = {}
+        self.last_completed_request_id: str | None = None
         self.last_completed_has_reset_synthesizer = True
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
@@ -59,23 +57,22 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
             await super().on_init(ten_env)
             ten_env.log_debug("on_init")
 
-            if self.config is None:
-                config_json, _ = await self.ten_env.get_property_to_json("")
-                self.config = RimeTTSConfig.model_validate_json(config_json)
-                self.config.update_params()
-                self.ten_env.log_info(
-                    f"KEYPOINT config: {self.config.to_str()}"
+            config_json, _ = await self.ten_env.get_property_to_json("")
+            if not config_json or config_json.strip() == "{}":
+                raise ValueError(
+                    "Configuration is empty. Required parameter 'key' is missing."
                 )
 
-                # extract parameters from config
+            self.config = RimeTTSConfig.model_validate_json(config_json)
+            self.config.update_params()
 
-                if not self.config.api_key:
-                    self.ten_env.log_error(
-                        "Configuration is empty. Required parameter 'api_key' is missing."
-                    )
-                    raise ValueError(
-                        "Configuration is empty. Required parameter 'api_key' is missing."
-                    )
+            ten_env.log_info(
+                f"LOG_CATEGORY_KEY_POINT: {self.config.to_str(sensitive_handling=True)}",
+                category=LOG_CATEGORY_KEY_POINT,
+            )
+
+            if not self.config.api_key:
+                raise ValueError("API key is required")
 
             # Create client (connection management will be handled automatically)
             self.client = RimeTTSClient(
@@ -83,30 +80,28 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
             )
             self.msg_polling_task = asyncio.create_task(self._loop())
         except Exception as e:
-            ten_env.log_error(f"on_start failed: {traceback.format_exc()}")
+            ten_env.log_error(f"on_init failed: {traceback.format_exc()}")
             await self.send_tts_error(
-                self.current_request_id or "",
+                "",
                 ModuleError(
-                    message=str(e),
+                    message=f"Initialization failed: {e}",
                     module=ModuleType.TTS,
                     code=ModuleErrorCode.FATAL_ERROR,
-                    vendor_info={},
+                    vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
                 ),
             )
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
-        # 关闭客户端连接
         if self.client:
             await self.client.close()
 
         if self.msg_polling_task:
             self.msg_polling_task.cancel()
 
-        # 关闭所有 PCMWriter
         for request_id, recorder in self.recorder_map.items():
             try:
                 await recorder.flush()
-                ten_env.log_info(
+                ten_env.log_debug(
                     f"Flushed PCMWriter for request_id: {request_id}"
                 )
             except Exception as e:
@@ -134,8 +129,8 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
 
                 if event == EVENT_TTS_RESPONSE:  # Audio data event
                     if data is not None and isinstance(data, bytes):
-                        self.ten_env.log_info(
-                            f"KEYPOINT Received audio data for request ID: {self.current_request_id}, audio_data_len: {len(data)}"
+                        self.ten_env.log_debug(
+                            f"Received audio data for request ID: {self.current_request_id}, audio_data_len: {len(data)}"
                         )
 
                         if (
@@ -158,7 +153,7 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                         )
                         await self.send_tts_audio_data(data)
                     else:
-                        self.ten_env.log_error(
+                        self.ten_env.log_debug(
                             "Received empty payload for TTS response"
                         )
                 elif event == EVENT_TTS_TTFB_METRIC:
@@ -175,12 +170,12 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                             self.current_turn_id,
                         )
 
-                        self.ten_env.log_info(
-                            f"KEYPOINT Sent TTS audio start and TTFB metrics: {ttfb}ms"
+                        self.ten_env.log_debug(
+                            f"Sent TTS audio start and TTFB metrics: {ttfb}ms"
                         )
                 elif event == EVENT_TTS_END:
-                    self.ten_env.log_info(
-                        f"KEYPOINT Session finished for request ID: {self.current_request_id}"
+                    self.ten_env.log_debug(
+                        f"Session finished for request ID: {self.current_request_id}"
                     )
                     if self.request_start_ts is not None:
                         request_event_interval = int(
@@ -196,8 +191,8 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                             self.current_turn_id,
                         )
 
-                        self.ten_env.log_info(
-                            f"KEYPOINT request time stamped for request ID: {self.current_request_id}, request_event_interval: {request_event_interval}ms, total_audio_duration: {self.request_total_audio_duration}ms"
+                        self.ten_env.log_debug(
+                            f"request time stamped for request ID: {self.current_request_id}, request_event_interval: {request_event_interval}ms, total_audio_duration: {self.request_total_audio_duration}ms"
                         )
                     if self.stop_event:
                         self.stop_event.set()
@@ -215,10 +210,13 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
         """
         try:
             self.ten_env.log_info(
-                f"KEYPOINT Requesting TTS for text: {t.text}, text_input_end: {t.text_input_end} request ID: {t.request_id}"
+                f"Requesting TTS for text: {t.text}, text_input_end: {t.text_input_end} request ID: {t.request_id}",
             )
 
-            # 检查是否已经收到过这个 request_id 的 text_input_end=true
+            self.ten_env.log_debug(
+                f"current_request_id: {self.current_request_id}, new request_id: {t.request_id}"
+            )
+
             if (
                 self.last_completed_request_id
                 and t.request_id == self.last_completed_request_id
@@ -231,13 +229,13 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                         message=error_msg,
                         module=ModuleType.TTS,
                         code=ModuleErrorCode.NON_FATAL_ERROR,
-                        vendor_info=None,
+                        vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
                     ),
                 )
                 return
             if t.request_id != self.current_request_id:
-                self.ten_env.log_info(
-                    f"KEYPOINT New TTS request with ID: {t.request_id}"
+                self.ten_env.log_debug(
+                    f"New TTS request with ID: {t.request_id}"
                 )
                 if not self.last_completed_has_reset_synthesizer:
                     self.client.reset_synthesizer()
@@ -250,9 +248,7 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                 self.request_start_ts = datetime.now()
                 self.request_total_audio_duration = 0
 
-                # 为新 request_id 创建新的 PCMWriter，并清理旧的
                 if self.config.dump:
-                    # 清理旧的 PCMWriter（除了当前新的 request_id）
                     old_request_ids = [
                         rid
                         for rid in self.recorder_map.keys()
@@ -262,7 +258,7 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                         try:
                             await self.recorder_map[old_rid].flush()
                             del self.recorder_map[old_rid]
-                            self.ten_env.log_info(
+                            self.ten_env.log_debug(
                                 f"Cleaned up old PCMWriter for request_id: {old_rid}"
                             )
                         except Exception as e:
@@ -279,18 +275,17 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                         self.recorder_map[t.request_id] = PCMWriter(
                             dump_file_path
                         )
-                        self.ten_env.log_info(
+                        self.ten_env.log_debug(
                             f"Created PCMWriter for request_id: {t.request_id}, file: {dump_file_path}"
                         )
 
             if t.text.strip() != "":
                 await self.client.send_text(t)
             if t.text_input_end:
-                self.ten_env.log_info(
-                    f"KEYPOINT finish session for request ID: {t.request_id}"
+                self.ten_env.log_debug(
+                    f"finish session for request ID: {t.request_id}"
                 )
 
-                # 更新最新完成的 request_id
                 self.last_completed_request_id = t.request_id
                 self.ten_env.log_info(
                     f"Updated last completed request_id to: {t.request_id}"
@@ -344,7 +339,7 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                 self.stop_event.set()
                 self.stop_event = None
 
-            ten_env.log_info(f"Received tts_flush data: {name}")
+            ten_env.log_debug(f"Received tts_flush data: {name}")
             if self.request_start_ts is not None:
                 request_event_interval = int(
                     (datetime.now() - self.request_start_ts).total_seconds()
@@ -357,7 +352,7 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                     self.current_turn_id,
                     TTSAudioEndReason.INTERRUPTED,
                 )
-            ten_env.log_info(
+            ten_env.log_debug(
                 f"Sent tts_audio_end with INTERRUPTED reason for request_id: {self.current_request_id}"
             )
         await super().on_data(ten_env, data)
