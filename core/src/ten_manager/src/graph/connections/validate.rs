@@ -106,105 +106,105 @@ async fn validate_msg_conversion_schema<'a>(
     graph_app_base_dir: &'a Option<String>,
     msg_conversion_validate_info: &'a MsgConversionValidateInfo<'a>,
 ) -> Result<()> {
-    // assert!(msg_conversion_validate_info.msg_conversion.is_some());
+    assert!(msg_conversion_validate_info.msg_conversion.is_some());
 
-    // let src_extension_addon_name = graph.get_addon_name_of_extension(
-    //     msg_conversion_validate_info.src.app,
-    //     msg_conversion_validate_info.src.extension,
-    // )?;
+    let src_extension_addon_name = graph.get_addon_name_of_extension(
+        &msg_conversion_validate_info.src.app,
+        msg_conversion_validate_info.src.extension.as_ref().unwrap(),
+    )?;
 
-    // let dest_extension_addon_name = graph.get_addon_name_of_extension(
-    //     msg_conversion_validate_info.dest.app,
-    //     msg_conversion_validate_info.dest.extension,
-    // )?;
+    let dest_extension_addon_name = graph.get_addon_name_of_extension(
+        &msg_conversion_validate_info.dest.app,
+        msg_conversion_validate_info.dest.extension.as_ref().unwrap(),
+    )?;
 
-    // // Default to using `src_msg_name` as the `dest_msg_name`, but check if
-    // // there's a special rule for `ten.name` to determine the `dest_msg_name`.
-    // let (dest_msg_name, ten_name_rule_index) = msg_conversion_get_dest_msg_name(
-    //     msg_conversion_validate_info.msg_name,
-    //     msg_conversion_validate_info.msg_conversion.as_ref().unwrap(),
-    // )?;
+    // Default to using `src_msg_name` as the `dest_msg_name`, but check if
+    // there's a special rule for `ten.name` to determine the `dest_msg_name`.
+    let (dest_msg_name, ten_name_rule_index) = msg_conversion_get_dest_msg_name(
+        msg_conversion_validate_info.msg_names[0].as_str(),
+        msg_conversion_validate_info.msg_conversion.as_ref().unwrap(),
+    )?;
 
-    // let (converted_schema, converted_result_schema) = msg_conversion_get_final_target_schema(
-    //     graph_app_base_dir,
-    //     pkgs_cache,
-    //     msg_conversion_validate_info.src.app,
-    //     src_extension_addon_name,
-    //     msg_conversion_validate_info.dest.app,
-    //     dest_extension_addon_name,
-    //     msg_conversion_validate_info.msg_type,
-    //     msg_conversion_validate_info.msg_name,
-    //     &dest_msg_name,
-    //     ten_name_rule_index,
-    //     msg_conversion_validate_info.msg_conversion.as_ref().unwrap(),
-    // )
-    // .await?;
+    let (converted_schema, converted_result_schema) = msg_conversion_get_final_target_schema(
+        graph_app_base_dir,
+        pkgs_cache,
+        &msg_conversion_validate_info.src.app,
+        src_extension_addon_name,
+        &msg_conversion_validate_info.dest.app,
+        dest_extension_addon_name,
+        msg_conversion_validate_info.msg_type,
+        &msg_conversion_validate_info.msg_names[0].as_str(),
+        &dest_msg_name,
+        ten_name_rule_index,
+        msg_conversion_validate_info.msg_conversion.as_ref().unwrap(),
+    )
+    .await?;
 
-    // if let Some(converted_schema) = converted_schema {
-    //     #[cfg(test)]
-    //     {
-    //         eprintln!(
-    //             "msg_conversion converted_schema: {}",
-    //             serde_json::to_string_pretty(&converted_schema).unwrap()
-    //         );
-    //     }
+    if let Some(converted_schema) = converted_schema {
+        #[cfg(test)]
+        {
+            eprintln!(
+                "msg_conversion converted_schema: {}",
+                serde_json::to_string_pretty(&converted_schema).unwrap()
+            );
+        }
 
-    //     validate_msg_conversion_c_schema_oneway(
-    //         graph_app_base_dir,
-    //         msg_conversion_validate_info,
-    //         pkgs_cache,
-    //         &converted_schema.property.as_ref().and_then(|p| p.properties().cloned()),
-    //         &converted_schema.property.as_ref().and_then(|p| p.required.clone()),
-    //         msg_conversion_validate_info.dest.app,
-    //         dest_extension_addon_name,
-    //         &converted_schema.name,
-    //         MsgDirection::In,
-    //     )?;
-    // }
+        validate_msg_conversion_c_schema_oneway(
+            graph_app_base_dir,
+            msg_conversion_validate_info,
+            pkgs_cache,
+            &converted_schema.property.as_ref().and_then(|p| p.properties().cloned()),
+            &converted_schema.property.as_ref().and_then(|p| p.required.clone()),
+            &msg_conversion_validate_info.dest.app,
+            dest_extension_addon_name,
+            &converted_schema.name,
+            MsgDirection::In,
+        )?;
+    }
 
-    // if let Some(converted_result_schema) = converted_result_schema {
-    //     #[cfg(test)]
-    //     {
-    //         eprintln!(
-    //             "msg_conversion converted_result_schema: {}",
-    //             serde_json::to_string_pretty(&converted_result_schema).unwrap()
-    //         );
-    //     }
+    if let Some(converted_result_schema) = converted_result_schema {
+        #[cfg(test)]
+        {
+            eprintln!(
+                "msg_conversion converted_result_schema: {}",
+                serde_json::to_string_pretty(&converted_result_schema).unwrap()
+            );
+        }
 
-    //     validate_msg_conversion_c_schema_oneway(
-    //         graph_app_base_dir,
-    //         msg_conversion_validate_info,
-    //         pkgs_cache,
-    //         &converted_result_schema.property.as_ref().and_then(|p| p.properties().cloned()),
-    //         &converted_result_schema.property.as_ref().and_then(|p| p.required.clone()),
-    //         msg_conversion_validate_info.src.app,
-    //         src_extension_addon_name,
-    //         msg_conversion_validate_info.msg_name,
-    //         MsgDirection::Out,
-    //     )?;
-    // } else {
-    //     // No result conversion, so directly check if the original source result
-    //     // schema and destination result schema are compatible.
-    //     let (src_c_msg_schema, dest_c_msg_schema, error_message) =
-    //         get_src_and_dest_c_msg_schema(pkgs_cache, graph, msg_conversion_validate_info)?;
+        validate_msg_conversion_c_schema_oneway(
+            graph_app_base_dir,
+            msg_conversion_validate_info,
+            pkgs_cache,
+            &converted_result_schema.property.as_ref().and_then(|p| p.properties().cloned()),
+            &converted_result_schema.property.as_ref().and_then(|p| p.required.clone()),
+            &msg_conversion_validate_info.src.app,
+            src_extension_addon_name,
+            msg_conversion_validate_info.msg_names[0].as_str(),
+            MsgDirection::Out,
+        )?;
+    } else {
+        // No result conversion, so directly check if the original source result
+        // schema and destination result schema are compatible.
+        let (src_c_msg_schema, dest_c_msg_schema, error_message) =
+            get_src_and_dest_c_msg_schema(pkgs_cache, graph, msg_conversion_validate_info)?;
 
-    //     if src_c_msg_schema.is_none() || dest_c_msg_schema.is_none() {
-    //         return Ok(());
-    //     }
+        if src_c_msg_schema.is_none() || dest_c_msg_schema.is_none() {
+            return Ok(());
+        }
 
-    //     let src_c_msg_schema = src_c_msg_schema.unwrap();
-    //     let dest_c_msg_schema = dest_c_msg_schema.unwrap();
+        let src_c_msg_schema = src_c_msg_schema.unwrap();
+        let dest_c_msg_schema = dest_c_msg_schema.unwrap();
 
-    //     if let Err(err) = are_ten_schemas_compatible(
-    //         src_c_msg_schema.result.as_ref(),
-    //         dest_c_msg_schema.result.as_ref(),
-    //         true,
-    //         true,
-    //     ) {
-    //         assert!(error_message.is_some());
-    //         return Err(anyhow::anyhow!("{}: {}", error_message.unwrap(), err));
-    //     }
-    // }
+        if let Err(err) = are_ten_schemas_compatible(
+            src_c_msg_schema.result.as_ref(),
+            dest_c_msg_schema.result.as_ref(),
+            true,
+            true,
+        ) {
+            assert!(error_message.is_some());
+            return Err(anyhow::anyhow!("{}: {}", error_message.unwrap(), err));
+        }
+    }
 
     Ok(())
 }
@@ -284,78 +284,77 @@ fn get_src_and_dest_c_msg_schema<'a>(
     graph: &mut Graph,
     msg_conversion_validate_info: &MsgConversionValidateInfo,
 ) -> Result<(Option<&'a TenMsgSchema>, Option<&'a TenMsgSchema>, Option<String>)> {
-    // let src_extension_addon = graph.get_addon_name_of_extension(
-    //     msg_conversion_validate_info.src.app,
-    //     msg_conversion_validate_info.src.extension,
-    // )?;
+    let src_extension_addon = graph.get_addon_name_of_extension(
+        &msg_conversion_validate_info.src.app,
+        msg_conversion_validate_info.src.extension.as_ref().unwrap(),
+    )?;
 
-    // let dest_extension_addon = graph.get_addon_name_of_extension(
-    //     msg_conversion_validate_info.dest.app,
-    //     msg_conversion_validate_info.dest.extension,
-    // )?;
+    let dest_extension_addon = graph.get_addon_name_of_extension(
+        &msg_conversion_validate_info.dest.app,
+        msg_conversion_validate_info.dest.extension.as_ref().unwrap(),
+    )?;
 
-    // let (src_extension_pkg_info, dest_extension_pkg_info) = find_pkg_infos(
-    //     pkgs_cache,
-    //     msg_conversion_validate_info.src.app,
-    //     src_extension_addon,
-    //     msg_conversion_validate_info.dest.app,
-    //     dest_extension_addon,
-    // )?;
+    let (src_extension_pkg_info, dest_extension_pkg_info) = find_pkg_infos(
+        pkgs_cache,
+        &msg_conversion_validate_info.src.app,
+        src_extension_addon,
+        &msg_conversion_validate_info.dest.app,
+        dest_extension_addon,
+    )?;
 
-    // if src_extension_pkg_info.is_none() || dest_extension_pkg_info.is_none() {
-    //     return Ok((None, None, None));
-    // }
+    if src_extension_pkg_info.is_none() || dest_extension_pkg_info.is_none() {
+        return Ok((None, None, None));
+    }
 
-    // let src_extension_pkg_info = src_extension_pkg_info.unwrap();
-    // let dest_extension_pkg_info = dest_extension_pkg_info.unwrap();
+    let src_extension_pkg_info = src_extension_pkg_info.unwrap();
+    let dest_extension_pkg_info = dest_extension_pkg_info.unwrap();
 
-    // // Get source and destination schemas based on message type.
-    // let (src_schema, dest_schema, error_message) =
-    //     match msg_conversion_validate_info.msg_type {
-    //         MsgType::Cmd => {
-    //             let src = src_extension_pkg_info
-    //                 .schema_store
-    //                 .as_ref()
-    //                 .and_then(|store| store.cmd_out.get(msg_conversion_validate_info.msg_name));
-    //             let dest = dest_extension_pkg_info
-    //                 .schema_store
-    //                 .as_ref()
-    //                 .and_then(|store| store.cmd_in.get(msg_conversion_validate_info.msg_name));
-    //             (src, dest, "Command schema incompatibility between source and destination")
-    //         }
-    //         MsgType::Data => {
-    //             let src = src_extension_pkg_info
-    //                 .schema_store
-    //                 .as_ref()
-    //                 .and_then(|store| store.data_out.get(msg_conversion_validate_info.msg_name));
-    //             let dest = dest_extension_pkg_info
-    //                 .schema_store
-    //                 .as_ref()
-    //                 .and_then(|store| store.data_in.get(msg_conversion_validate_info.msg_name));
-    //             (src, dest, "Data schema incompatibility between source and destination")
-    //         }
-    //         MsgType::AudioFrame => {
-    //             let src = src_extension_pkg_info.schema_store.as_ref().and_then(|store| {
-    //                 store.audio_frame_out.get(msg_conversion_validate_info.msg_name)
-    //             });
-    //             let dest = dest_extension_pkg_info.schema_store.as_ref().and_then(|store| {
-    //                 store.audio_frame_in.get(msg_conversion_validate_info.msg_name)
-    //             });
-    //             (src, dest, "Audio frame schema incompatibility between source and destination")
-    //         }
-    //         MsgType::VideoFrame => {
-    //             let src = src_extension_pkg_info.schema_store.as_ref().and_then(|store| {
-    //                 store.video_frame_out.get(msg_conversion_validate_info.msg_name)
-    //             });
-    //             let dest = dest_extension_pkg_info.schema_store.as_ref().and_then(|store| {
-    //                 store.video_frame_in.get(msg_conversion_validate_info.msg_name)
-    //             });
-    //             (src, dest, "Video frame schema incompatibility between source and destination")
-    //         }
-    //     };
+    // Get source and destination schemas based on message type.
+    let (src_schema, dest_schema, error_message) =
+        match msg_conversion_validate_info.msg_type {
+            MsgType::Cmd => {
+                let src = src_extension_pkg_info
+                    .schema_store
+                    .as_ref()
+                    .and_then(|store| store.cmd_out.get(msg_conversion_validate_info.msg_names[0].as_str()));
+                let dest = dest_extension_pkg_info
+                    .schema_store
+                    .as_ref()
+                    .and_then(|store| store.cmd_in.get(msg_conversion_validate_info.msg_names[0].as_str()));
+                (src, dest, "Command schema incompatibility between source and destination")
+            }
+            MsgType::Data => {
+                let src = src_extension_pkg_info
+                    .schema_store
+                    .as_ref()
+                    .and_then(|store| store.data_out.get(msg_conversion_validate_info.msg_names[0].as_str()));
+                let dest = dest_extension_pkg_info
+                    .schema_store
+                    .as_ref()
+                    .and_then(|store| store.data_in.get(msg_conversion_validate_info.msg_names[0].as_str()));
+                (src, dest, "Data schema incompatibility between source and destination")
+            }
+            MsgType::AudioFrame => {
+                let src = src_extension_pkg_info.schema_store.as_ref().and_then(|store| {
+                    store.audio_frame_out.get(msg_conversion_validate_info.msg_names[0].as_str())
+                });
+                let dest = dest_extension_pkg_info.schema_store.as_ref().and_then(|store| {
+                    store.audio_frame_in.get(msg_conversion_validate_info.msg_names[0].as_str())
+                });
+                (src, dest, "Audio frame schema incompatibility between source and destination")
+            }
+            MsgType::VideoFrame => {
+                let src = src_extension_pkg_info.schema_store.as_ref().and_then(|store| {
+                    store.video_frame_out.get(msg_conversion_validate_info.msg_names[0].as_str())
+                });
+                let dest = dest_extension_pkg_info.schema_store.as_ref().and_then(|store| {
+                    store.video_frame_in.get(msg_conversion_validate_info.msg_names[0].as_str())
+                });
+                (src, dest, "Video frame schema incompatibility between source and destination")
+            }
+        };
 
-    // Ok((src_schema, dest_schema, Some(error_message.to_string())))
-    Ok((None, None, None))
+    Ok((src_schema, dest_schema, Some(error_message.to_string())))
 }
 
 /// Checks schema compatibility between source and destination.
@@ -385,10 +384,11 @@ pub async fn validate_connection_schema(
     graph: &mut Graph,
     graph_app_base_dir: &Option<String>,
     msg_conversion_validate_info: &MsgConversionValidateInfo<'_>,
-) -> Result<(), Box<dyn std::error::Error>> {
-    //TODO: support other node types. Now only support extension.
+) -> Result<()> {
+    //TODO: support other node types. Now only support extension && only one flow
     if msg_conversion_validate_info.src.get_node_type()? == GraphNodeType::Extension &&
-    msg_conversion_validate_info.dest.get_node_type()? == GraphNodeType::Extension {
+    msg_conversion_validate_info.dest.get_node_type()? == GraphNodeType::Extension &&
+    msg_conversion_validate_info.msg_names.len() == 1 {
         if msg_conversion_validate_info.msg_conversion.is_some() {
             validate_msg_conversion_schema(
                 pkgs_cache,

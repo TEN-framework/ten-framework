@@ -143,7 +143,7 @@ pub async fn graph_add_connection(
         &msg_type,
         &msg_names,
     )?;
-/*
+
     validate_connection_schema(
         pkgs_cache,
         graph,
@@ -157,7 +157,7 @@ pub async fn graph_add_connection(
         },
     )
     .await?;
-*/
+
     // Create destination object.
     let destination = GraphDestination {
         loc: dest,
