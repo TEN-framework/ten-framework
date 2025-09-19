@@ -12,6 +12,8 @@ ten_package("default_asr_extension_python") {
   package_kind = "extension"
 
   resources = [
+    ".vscode/launch.json",
+    ".vscode/settings.json",
     "__init__.py",
     "__init__.py.tent",
     "addon.py",
