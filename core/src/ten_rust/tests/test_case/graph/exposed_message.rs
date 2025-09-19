@@ -40,7 +40,8 @@ mod tests {
                     selector: None,
                 },
                 cmd: Some(vec![GraphMessageFlow::new(
-                    "B".to_string(),
+                    Some("B".to_string()),
+                    None,
                     vec![GraphDestination {
                         loc: GraphLoc {
                             extension: Some("ext_d".to_string()),
