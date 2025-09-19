@@ -17,7 +17,7 @@ from ten_ai_base.message import (
     ModuleErrorCode,
     TTSAudioEndReason,
 )
-from ten_ai_base.struct import TTSTextInput, TTSTextResult
+from ten_ai_base.struct import TTSTextInput
 from ten_ai_base.tts2 import AsyncTTS2BaseExtension
 from ten_ai_base.const import LOG_CATEGORY_KEY_POINT, LOG_CATEGORY_VENDOR
 from ten_runtime import (
@@ -146,26 +146,16 @@ class GroqTTSExtension(AsyncTTS2BaseExtension):
         turn_id = text_input.metadata.get("turn_id", -1)
         text_input_end = text_input.text_input_end
 
-        first_chunk = False
+        is_new_request = self.current_request_id != request_id
+        self.current_request_id = request_id
         self.request_total_audio_duration = 0
+        self.request_start_ts = time.time()
+
         try:
-            request_start_ts = time.time()
-            self.request_start_ts = request_start_ts
-            self.current_request_id = request_id
-
+            received_first_chunk = False
+            if len(text.strip()) == 0:
+                raise ValueError("text is empty")
             async for chunk in self.client.synthesize_with_retry(text):
-                if not first_chunk:
-                    first_chunk = True
-                    await self.send_tts_audio_start(request_id, turn_id)
-                    elapsed_time = int((time.time() - request_start_ts) * 1000)
-                    await self.send_tts_ttfb_metrics(
-                        request_id, elapsed_time, turn_id
-                    )
-
-                if request_id in self.flush_request_ids:
-                    # flush request, break current synthesize task
-                    break
-
                 # calculate audio duration
                 duration = self._calculate_audio_duration(
                     len(chunk),
@@ -173,29 +163,34 @@ class GroqTTSExtension(AsyncTTS2BaseExtension):
                     self.synthesize_audio_channels(),
                     self.synthesize_audio_sample_width(),
                 )
-                self.request_total_audio_duration += duration
-
                 self.ten_env.log_debug(
                     f"receive_audio: duration: {duration}ms of request_id: {self.current_request_id}",
                     category=LOG_CATEGORY_VENDOR,
                 )
 
+                if not received_first_chunk:
+                    received_first_chunk = True
+                    await self.send_tts_audio_start(request_id, turn_id)
+                    if is_new_request:
+                        # send ttfb metrics for new request
+                        elapsed_time = int(
+                            (time.time() - self.request_start_ts) * 1000
+                        )
+                        await self.send_tts_ttfb_metrics(
+                            request_id, elapsed_time, turn_id
+                        )
+
+                if request_id in self.flush_request_ids:
+                    # flush request, break current synthesize task
+                    break
+
+                self.request_total_audio_duration += duration
                 # send audio data to output
                 self.ten_env.log_debug(
                     f"vendor_status: Sending audio data for request ID: {request_id}",
                     category=LOG_CATEGORY_VENDOR,
                 )
                 await self.send_tts_audio_data(chunk)
-                await self.send_tts_text_result(
-                    TTSTextResult(
-                        request_id=request_id,
-                        text="",
-                        start_ms=0,
-                        duration_ms=self.request_total_audio_duration,
-                        words=[],
-                        metadata={},
-                    )
-                )
 
                 # dump audio data to file
                 assert self.config is not None
@@ -214,22 +209,8 @@ class GroqTTSExtension(AsyncTTS2BaseExtension):
                         await _dumper.start()
                         await _dumper.push_bytes(chunk)
                         self.audio_dumper[request_id] = _dumper
-
-            if text_input_end:
-                self.last_end_request_ids.add(request_id)
-                reason = TTSAudioEndReason.REQUEST_END
-                if request_id in self.flush_request_ids:
-                    reason = TTSAudioEndReason.INTERRUPTED
-                request_event_interval = int(
-                    (time.time() - request_start_ts) * 1000
-                )
-                await self.send_tts_audio_end(
-                    request_id,
-                    request_event_interval,
-                    self.request_total_audio_duration,
-                    turn_id,
-                    reason,
-                )
+        except ValueError:
+            pass
         except Exception as e:
             self.ten_env.log_error(
                 f"vendor_status: Error in request_tts: {traceback.format_exc()}. text: {text}",
@@ -244,11 +225,27 @@ class GroqTTSExtension(AsyncTTS2BaseExtension):
                 ),
             )
 
+        if text_input_end:
+            self.last_end_request_ids.add(request_id)
+            reason = TTSAudioEndReason.REQUEST_END
+            if request_id in self.flush_request_ids:
+                reason = TTSAudioEndReason.INTERRUPTED
+            request_event_interval = int(
+                (time.time() - self.request_start_ts) * 1000
+            )
+            await self.send_tts_audio_end(
+                request_id,
+                request_event_interval,
+                self.request_total_audio_duration,
+                turn_id,
+                reason,
+            )
+
     @override
     async def request_tts(self, t: TTSTextInput) -> None:
         if self.client is None:
             self.ten_env.log_error(
-                "KEYPOINT tts client is not initialized, ignoring TTS request"
+                "tts client is not initialized, ignoring TTS request"
             )
             return
         self.ten_env.log_debug(
