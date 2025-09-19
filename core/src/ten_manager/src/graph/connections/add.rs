@@ -69,7 +69,7 @@ fn check_connection_exists(
     src: &GraphLoc,
     dest: &GraphLoc,
     msg_type: &MsgType,
-    msg_name: &Vec<String>,
+    msg_names: &Vec<String>,
 ) -> Result<()> {
     if let Some(connections) = &graph.connections {
         for conn in connections.iter() {
@@ -87,7 +87,7 @@ fn check_connection_exists(
                 if let Some(flows) = msg_flows {
                     for flow in flows {
                         // Check if message name matches.
-                        for name in msg_name.iter() {
+                        for name in msg_names.iter() {
                             if flow.name.as_deref() == Some(name) {
                                 // Check if destination already exists.
                                 for dest_item in &flow.dest {
@@ -125,7 +125,7 @@ pub async fn graph_add_connection(
     src: GraphLoc,
     dest: GraphLoc,
     msg_type: MsgType,
-    msg_name: Vec<String>,
+    msg_names: Vec<String>,
     msg_conversion: Option<MsgAndResultConversion>,
 ) -> Result<()> {
     // Store the original state in case validation fails.
@@ -141,7 +141,7 @@ pub async fn graph_add_connection(
         &src,
         &dest,
         &msg_type,
-        &msg_name,
+        &msg_names,
     )?;
 /*
     validate_connection_schema(
@@ -152,7 +152,7 @@ pub async fn graph_add_connection(
             src: &src,
             dest: &dest,
             msg_type: &msg_type,
-            msg_name: &msg_name,
+            msg_names: &msg_names,
             msg_conversion: &msg_conversion,
         },
     )
@@ -170,15 +170,15 @@ pub async fn graph_add_connection(
     }
 
     // Create a message flow.
-    if msg_name.is_empty() {
+    if msg_names.is_empty() {
         return Err(anyhow::anyhow!("Message name is empty"));
     }
 
-    let message_flow : GraphMessageFlow = if msg_name.len() == 1 {
-        GraphMessageFlow::new(Some(msg_name[0].clone()), None, vec![destination], vec![])
+    let message_flow : GraphMessageFlow = if msg_names.len() == 1 {
+        GraphMessageFlow::new(Some(msg_names[0].clone()), None, vec![destination], vec![])
     }
     else {
-        GraphMessageFlow::new(None, Some(msg_name), vec![destination], vec![])
+        GraphMessageFlow::new(None, Some(msg_names), vec![destination], vec![])
     };
 
     // Get or create a connection for the source node and add the message
