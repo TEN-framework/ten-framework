@@ -92,7 +92,8 @@
       "property.json",
       "**.py",
       "requirements.txt",
-      "docs/**"
+      "docs/**",
+      ".vscode/**"
     ]
   },
   "scripts": {
