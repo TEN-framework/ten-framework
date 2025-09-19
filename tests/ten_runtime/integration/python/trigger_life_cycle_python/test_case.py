@@ -14,7 +14,23 @@ def test_trigger_life_cycle_python():
     base_path = os.path.dirname(os.path.abspath(__file__))
     root_dir = os.path.join(base_path, "../../../../../")
 
+    # Create virtual environment.
+    venv_dir = os.path.join(base_path, "venv")
+    subprocess.run([sys.executable, "-m", "venv", venv_dir], check=True)
+
     my_env = os.environ.copy()
+
+    # Set the required environment variables for the test.
+    my_env["PYTHONMALLOC"] = "malloc"
+    my_env["PYTHONDEVMODE"] = "1"
+
+    # Launch virtual environment.
+    my_env["VIRTUAL_ENV"] = venv_dir
+    my_env["PATH"] = os.path.join(venv_dir, "bin") + os.pathsep + my_env["PATH"]
+
+    if sys.platform == "win32":
+        print("test_trigger_life_cycle_python doesn't support win32")
+        assert False
 
     app_dir_name = "trigger_life_cycle_python_app"
     app_root_path = os.path.join(base_path, app_dir_name)
@@ -40,6 +56,35 @@ def test_trigger_life_cycle_python():
         if rc != 0:
             assert False, "Failed to build package."
 
+    tman_install_cmd = [
+        os.path.join(root_dir, "ten_manager/bin/tman"),
+        "--config-file",
+        os.path.join(root_dir, "tests/local_registry/config.json"),
+        "--yes",
+        "install",
+    ]
+
+    tman_install_process = subprocess.Popen(
+        tman_install_cmd,
+        stdout=stdout,
+        stderr=subprocess.STDOUT,
+        env=my_env,
+        cwd=app_root_path,
+    )
+    tman_install_process.wait()
+    return_code = tman_install_process.returncode
+    if return_code != 0:
+        assert False, "Failed to install package."
+
+    bootstrap_cmd = os.path.join(
+        base_path, "trigger_life_cycle_python_app/bin/bootstrap"
+    )
+
+    bootstrap_process = subprocess.Popen(
+        bootstrap_cmd, stdout=stdout, stderr=subprocess.STDOUT, env=my_env
+    )
+    bootstrap_process.wait()
+
     if sys.platform == "linux":
         if build_config_args.enable_sanitizer:
             libasan_path = os.path.join(
@@ -48,6 +93,11 @@ def test_trigger_life_cycle_python():
                     "trigger_life_cycle_python_app/ten_packages/system/"
                     "ten_runtime/lib/libasan.so"
                 ),
+            )
+
+            lsan_suppressions_path = os.path.join(
+                base_path,
+                "lsan.suppressions",
             )
 
             if os.path.exists(libasan_path):
@@ -81,7 +131,7 @@ def test_trigger_life_cycle_python():
         assert exit_code == 0
         assert False
 
-    # The app will be auto closed.
+    # Wait for the server to exit.
     exit_code = server.wait()
     print("The exit code of trigger_life_cycle_python: ", exit_code)
 
@@ -91,3 +141,4 @@ def test_trigger_life_cycle_python():
         # Testing complete. If builds are only created during the testing
         # phase, we can clear the build results to save disk space.
         fs_utils.remove_tree(app_root_path)
+        fs_utils.remove_tree(venv_dir)
