@@ -301,7 +301,8 @@ impl WsRunCmd {
                 let exit_code = loop {
                     let exit_status = crossbeam_channel::select! {
                         recv(shutdown_rx) -> _ => {
-                            // Termination requested, kill the process group to ensure all child processes are terminated
+                            // Termination requested, kill the process group to ensure all child
+                            // processes are terminated
                             kill_process_tree(child.id());
                             let _ = child.kill();
 
