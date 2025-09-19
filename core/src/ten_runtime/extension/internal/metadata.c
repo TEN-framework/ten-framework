@@ -74,6 +74,37 @@ static bool ten_extension_determine_ten_namespace_properties(
         self->path_timeout_info.check_interval = check_interval;
       }
     }
+
+    if (ten_string_is_equal_c_str(&kv->key,
+                                  TEN_STR_MANUAL_TRIGGER_LIFE_CYCLE)) {
+      if (ten_value_is_array(kv->value)) {
+        // Parse manual_trigger_life_cycle array
+        ten_value_array_foreach(kv->value, iter) {
+          ten_value_t *stage_config = ten_ptr_listnode_get(iter.node);
+          if (ten_value_is_object(stage_config)) {
+            ten_value_t *stage_value =
+                ten_value_object_peek(stage_config, TEN_STR_STAGE);
+            if (stage_value && ten_value_is_string(stage_value)) {
+              const char *stage_str = ten_value_peek_raw_str(stage_value, &err);
+              if (stage_str) {
+                // Convert stage string to enum and set in extension
+                TEN_MANUAL_TRIGGER_STAGE stage = TEN_MANUAL_TRIGGER_STAGE_MAX;
+
+                if (ten_c_string_is_equal(stage_str, TEN_STR_START)) {
+                  stage = TEN_MANUAL_TRIGGER_STAGE_START;
+                } else if (ten_c_string_is_equal(stage_str, TEN_STR_STOP)) {
+                  stage = TEN_MANUAL_TRIGGER_STAGE_STOP;
+                }
+
+                if (stage < TEN_MANUAL_TRIGGER_STAGE_MAX) {
+                  self->manual_trigger_life_cycle.stages[stage] = true;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
   }
 
   ten_error_deinit(&err);

@@ -15,5 +15,6 @@ ten_runtime_glob("cmd") {
     "stop_graph",
     "timeout",
     "timer",
+    "trigger_life_cycle",
   ]
 }

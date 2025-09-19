@@ -89,6 +89,11 @@ void ten_raw_cmd_base_init(ten_cmd_base_t *self, TEN_MSG_TYPE type) {
                              TEN_STR_MSG_NAME_TEN_STOP_GRAPH);
     break;
 
+  case TEN_MSG_TYPE_CMD_TRIGGER_LIFE_CYCLE:
+    ten_string_set_formatted(ten_value_peek_string(&self->msg_hdr.name), "%s",
+                             TEN_STR_MSG_NAME_TEN_TRIGGER_LIFE_CYCLE);
+    break;
+
   case TEN_MSG_TYPE_CMD_CLOSE_APP:
     ten_string_set_formatted(ten_value_peek_string(&self->msg_hdr.name), "%s",
                              TEN_STR_MSG_NAME_TEN_CLOSE_APP);

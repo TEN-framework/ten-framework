@@ -11,6 +11,7 @@
 #include "include_internal/ten_runtime/msg/cmd_base/cmd/custom/cmd.h"
 #include "include_internal/ten_runtime/msg/cmd_base/cmd/field/field_info.h"
 #include "include_internal/ten_runtime/msg/cmd_base/cmd/stop_graph/cmd.h"
+#include "include_internal/ten_runtime/msg/cmd_base/cmd/trigger_life_cycle/cmd.h"
 #include "include_internal/ten_runtime/msg/cmd_base/cmd_base.h"
 #include "include_internal/ten_runtime/msg/field/field_info.h"
 #include "include_internal/ten_runtime/msg/msg.h"
@@ -125,6 +126,9 @@ void ten_raw_cmd_destroy(ten_cmd_t *self) {
   case TEN_MSG_TYPE_CMD_STOP_GRAPH:
     ten_raw_cmd_stop_graph_as_msg_destroy((ten_msg_t *)self);
     break;
+  case TEN_MSG_TYPE_CMD_TRIGGER_LIFE_CYCLE:
+    ten_raw_cmd_trigger_life_cycle_as_msg_destroy((ten_msg_t *)self);
+    break;
   case TEN_MSG_TYPE_CMD_CLOSE_APP:
     ten_raw_cmd_close_app_as_msg_destroy((ten_msg_t *)self);
     break;
@@ -184,6 +188,8 @@ static ten_cmd_t *ten_raw_cmd_create(const char *name, ten_error_t *err) {
     return ten_raw_cmd_custom_create(name, err);
   case TEN_MSG_TYPE_CMD_STOP_GRAPH:
     return (ten_cmd_t *)ten_raw_cmd_stop_graph_create();
+  case TEN_MSG_TYPE_CMD_TRIGGER_LIFE_CYCLE:
+    return (ten_cmd_t *)ten_raw_cmd_trigger_life_cycle_create();
   case TEN_MSG_TYPE_CMD_CLOSE_APP:
     return (ten_cmd_t *)ten_raw_cmd_close_app_create();
   case TEN_MSG_TYPE_CMD_TIMER:

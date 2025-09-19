@@ -123,7 +123,7 @@ jobs:
           # Due to https://github.com/llvm/llvm-project/issues/155531, we need
           # to use llvm@20 currently, and will switch to llvm when it is solved.
           brew install llvm@20
-          rustup default nightly-2025-08-10
+          rustup default nightly-2025-09-18
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2
@@ -256,7 +256,7 @@ jobs:
           # Due to https://github.com/llvm/llvm-project/issues/155531, we need
           # to use llvm@20 currently, and will switch to llvm when it is solved.
           brew install llvm@20
-          rustup default nightly-2025-08-10
+          rustup default nightly-2025-09-18
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2
@@ -413,7 +413,7 @@ jobs:
           # Due to https://github.com/llvm/llvm-project/issues/155531, we need
           # to use llvm@20 currently, and will switch to llvm when it is solved.
           brew install llvm@20
-          rustup default nightly-2025-08-10
+          rustup default nightly-2025-09-18
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2
@@ -507,7 +507,7 @@ jobs:
           # Due to https://github.com/llvm/llvm-project/issues/155531, we need
           # to use llvm@20 currently, and will switch to llvm when it is solved.
           brew install llvm@20
-          rustup default nightly-2025-08-10
+          rustup default nightly-2025-09-18
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2
@@ -609,7 +609,7 @@ jobs:
           # Due to https://github.com/llvm/llvm-project/issues/155531, we need
           # to use llvm@20 currently, and will switch to llvm when it is solved.
           brew install llvm@20
-          rustup default nightly-2025-08-10
+          rustup default nightly-2025-09-18
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2
@@ -711,7 +711,7 @@ jobs:
           # Due to https://github.com/llvm/llvm-project/issues/155531, we need
           # to use llvm@20 currently, and will switch to llvm when it is solved.
           brew install llvm@20
-          rustup default nightly-2025-08-10
+          rustup default nightly-2025-09-18
 
           brew install tree
           pip3 install --use-pep517 python-dotenv jinja2

@@ -14,6 +14,7 @@
 #include "include_internal/ten_runtime/binding/nodejs/msg/cmd/cmd_result.h"
 #include "include_internal/ten_runtime/binding/nodejs/msg/cmd/start_graph_cmd.h"
 #include "include_internal/ten_runtime/binding/nodejs/msg/cmd/stop_graph_cmd.h"
+#include "include_internal/ten_runtime/binding/nodejs/msg/cmd/trigger_life_cycle_cmd.h"
 #include "include_internal/ten_runtime/binding/nodejs/msg/data.h"
 #include "include_internal/ten_runtime/binding/nodejs/msg/msg.h"
 #include "include_internal/ten_runtime/binding/nodejs/msg/video_frame.h"
@@ -33,6 +34,7 @@ static napi_value ten_runtime_nodejs_init(napi_env env, napi_value exports) {
   ten_nodejs_cmd_result_module_init(env, exports);
   ten_nodejs_cmd_start_graph_module_init(env, exports);
   ten_nodejs_cmd_stop_graph_module_init(env, exports);
+  ten_nodejs_cmd_trigger_life_cycle_module_init(env, exports);
   ten_nodejs_video_frame_module_init(env, exports);
   ten_nodejs_audio_frame_module_init(env, exports);
   ten_nodejs_ten_env_tester_module_init(env, exports);

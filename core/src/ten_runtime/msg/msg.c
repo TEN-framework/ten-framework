@@ -29,6 +29,7 @@
 #include "ten_runtime/common/error_code.h"
 #include "ten_runtime/msg/cmd/close_app/cmd.h"
 #include "ten_runtime/msg/cmd/stop_graph/cmd.h"
+#include "ten_runtime/msg/cmd/trigger_life_cycle/cmd.h"
 #include "ten_runtime/msg/cmd_result/cmd_result.h"
 #include "ten_runtime/msg/msg.h"
 #include "ten_runtime/ten_env/ten_env.h"
@@ -1019,6 +1020,8 @@ ten_shared_ptr_t *ten_msg_create_from_msg_type(TEN_MSG_TYPE msg_type) {
     return ten_cmd_start_graph_create();
   case TEN_MSG_TYPE_CMD_STOP_GRAPH:
     return ten_cmd_stop_graph_create();
+  case TEN_MSG_TYPE_CMD_TRIGGER_LIFE_CYCLE:
+    return ten_cmd_trigger_life_cycle_create();
   case TEN_MSG_TYPE_CMD_TIMEOUT:
     return ten_cmd_timeout_create(0);
   case TEN_MSG_TYPE_CMD_RESULT:
