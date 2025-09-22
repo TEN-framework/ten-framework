@@ -77,7 +77,18 @@ zip = { version = "5", default-features = false, features = [
 crossbeam-channel = "0.5.15"
 libc = "0.2.172"
 winapi = { version = "0.3.9", features = ["fileapi"] }
-sysinfo = "0.37"
+
+# Upgrading sysinfo to 0.37 will introduce a fault in function
+# sysinfo::unix::apple::cpu::get_cpu_frequency on arm64 architectures.
+# This error occurs within the process group termination feature that
+# sysinfo was introduced for.
+#
+# Official changelogs of sysinfo for both v0.33 and 0.35 indicate
+# modifications related to CPU frequency functions, which are
+# likely the cause of the error. So staying v0.32 is temporary considered
+# the safest solution.
+sysinfo = "0.32"
+
 clingo-sys = { version = "0.7.2", features = ["static-linking"] }
 clingo = { version = "0.8", features = ["static-linking"] }
 json-patch = "4.0.0"
