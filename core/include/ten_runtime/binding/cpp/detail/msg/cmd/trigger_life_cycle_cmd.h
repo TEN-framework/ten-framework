@@ -53,6 +53,7 @@ class trigger_life_cycle_cmd_t : public cmd_t {
   std::string get_stage(error_t *err = nullptr) const {
     return ten_cmd_trigger_life_cycle_get_stage(c_msg);
   }
+
   bool set_stage(const char *stage, error_t *err = nullptr) {
     return ten_cmd_trigger_life_cycle_set_stage(c_msg, stage);
   }
