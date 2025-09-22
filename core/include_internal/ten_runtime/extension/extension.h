@@ -109,13 +109,14 @@ typedef enum TEN_EXTENSION_STATE {
 typedef enum TEN_MANUAL_TRIGGER_STAGE {
   TEN_MANUAL_TRIGGER_STAGE_START,
   TEN_MANUAL_TRIGGER_STAGE_STOP,
+
   TEN_MANUAL_TRIGGER_STAGE_MAX
 } TEN_MANUAL_TRIGGER_STAGE;
 
 // Manual trigger life cycle configuration
 typedef struct ten_manual_trigger_life_cycle_t {
-  bool stages[TEN_MANUAL_TRIGGER_STAGE_MAX];  // true if stage should be
-                                              // manually triggered
+  // true if stage should be manually triggered
+  bool stages[TEN_MANUAL_TRIGGER_STAGE_MAX];
 } ten_manual_trigger_life_cycle_t;
 
 struct ten_extension_t {

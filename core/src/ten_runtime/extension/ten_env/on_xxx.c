@@ -290,8 +290,7 @@ bool ten_extension_on_init_done(ten_env_t *self) {
                                                           TEN_STR_START)) {
       TEN_LOGD(
           "[%s] on_start stage is manually controlled and has pending start "
-          "trigger "
-          "commands, triggering on_start",
+          "trigger commands, triggering on_start",
           ten_extension_get_name(extension, true));
 
       int rc = ten_runloop_post_task_tail(

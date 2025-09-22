@@ -1092,6 +1092,7 @@ void ten_extension_handle_trigger_life_cycle_cmd(ten_extension_t *self,
                          ten_value_create_string("Missing stage field"), NULL);
     ten_env_return_result(self->ten_env, cmd_result, NULL, NULL, NULL);
     ten_shared_ptr_destroy(cmd_result);
+
     return;
   }
 
@@ -1354,8 +1355,7 @@ void ten_extension_trigger_stop_if_needed(ten_extension_t *self) {
   if (ten_extension_has_pending_trigger_life_cycle_cmds(self, TEN_STR_STOP)) {
     TEN_LOGD(
         "[%s] Extension configured for manual stop control and has pending "
-        "stop "
-        "trigger commands, triggering stop",
+        "stop trigger commands, triggering stop",
         ten_extension_get_name(self, true));
     ten_extension_on_stop(self);
   } else {

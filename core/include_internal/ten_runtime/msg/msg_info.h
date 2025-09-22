@@ -173,7 +173,7 @@ TEN_UNUSED static const ten_msg_info_t ten_msg_info[] = {
         {
             TEN_STR_TRIGGER_LIFE_CYCLE,              /* msg_type_name */
             TEN_STR_MSG_NAME_TEN_TRIGGER_LIFE_CYCLE, /* msg_unique_name */
-            true,                                   /* create_in_path */
+            true,                                    /* create_in_path */
             NULL,                                    /* engine_handler */
             NULL,                                    /* clone */
             ten_raw_cmd_trigger_life_cycle_loop_all_fields, /* loop_all_fields

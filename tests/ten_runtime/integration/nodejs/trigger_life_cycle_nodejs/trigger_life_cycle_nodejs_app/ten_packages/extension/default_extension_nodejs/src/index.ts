@@ -36,6 +36,7 @@ class MainExtension extends Extension {
     ]);
     const [result, _] = await tenEnv.sendCmd(cmd);
     assert(result !== undefined, "result is undefined");
+
     const [started, err] = result!.getPropertyBool("started");
     assert(!started, "biz extension should not be started as it has been set manual trigger life cycle");
 
