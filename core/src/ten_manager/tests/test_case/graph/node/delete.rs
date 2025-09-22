@@ -45,7 +45,8 @@ mod tests {
             msg_conversion: None,
         };
 
-        let message_flow = GraphMessageFlow::new(cmd_name.to_string(), vec![dest], vec![]);
+        let message_flow =
+            GraphMessageFlow::new(Some(cmd_name.to_string()), None, vec![dest], vec![]);
 
         GraphConnection {
             loc: GraphLoc {
@@ -172,7 +173,8 @@ mod tests {
                 selector: None,
             },
             cmd: Some(vec![GraphMessageFlow::new(
-                "cmd1".to_string(),
+                Some("cmd1".to_string()),
+                None,
                 vec![GraphDestination {
                     loc: GraphLoc {
                         app: Some("app1".to_string()),
@@ -185,7 +187,8 @@ mod tests {
                 vec![],
             )]),
             data: Some(vec![GraphMessageFlow::new(
-                "data1".to_string(),
+                Some("data1".to_string()),
+                None,
                 vec![GraphDestination {
                     loc: GraphLoc {
                         app: Some("app1".to_string()),
@@ -198,7 +201,8 @@ mod tests {
                 vec![],
             )]),
             audio_frame: Some(vec![GraphMessageFlow::new(
-                "audio1".to_string(),
+                Some("audio1".to_string()),
+                None,
                 vec![GraphDestination {
                     loc: GraphLoc {
                         app: Some("app1".to_string()),
@@ -211,7 +215,8 @@ mod tests {
                 vec![],
             )]),
             video_frame: Some(vec![GraphMessageFlow::new(
-                "video1".to_string(),
+                Some("video1".to_string()),
+                None,
                 vec![GraphDestination {
                     loc: GraphLoc {
                         app: Some("app1".to_string()),

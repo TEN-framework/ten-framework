@@ -11,7 +11,7 @@ use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 use ten_rust::{
     graph::{
-        connection::{GraphConnection, GraphMessageFlow},
+        connection::{GraphConnection, GraphLoc, GraphMessageFlow},
         Graph,
     },
     pkg_info::message::MsgType,
@@ -32,12 +32,11 @@ use crate::{
 pub struct DeleteGraphConnectionRequestPayload {
     pub graph_id: Uuid,
 
-    pub src_app: Option<String>,
-    pub src_extension: String,
+    pub src: GraphLoc,
+    pub dest: GraphLoc,
+
     pub msg_type: MsgType,
-    pub msg_name: String,
-    pub dest_app: Option<String>,
-    pub dest_extension: String,
+    pub msg_names: Vec<String>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -47,12 +46,10 @@ pub struct DeleteGraphConnectionResponsePayload {
 
 async fn graph_delete_connection(
     graph: &mut Graph,
-    src_app: Option<String>,
-    src_extension: String,
+    src: GraphLoc,
+    dest: GraphLoc,
     msg_type: MsgType,
-    msg_name: String,
-    dest_app: Option<String>,
-    dest_extension: String,
+    msg_names: Vec<String>,
 ) -> Result<()> {
     // Store the original state in case validation fails.
     let original_graph = graph.clone();
@@ -65,9 +62,7 @@ async fn graph_delete_connection(
     let connections = graph.connections.as_mut().unwrap();
 
     // Find the source node's connection in the connections list.
-    let connection_idx = connections.iter().position(|conn| {
-        conn.loc.app == src_app && (conn.loc.extension.as_ref() == Some(&src_extension))
-    });
+    let connection_idx = connections.iter().position(|conn| conn.loc.matches(&src));
 
     if let Some(idx) = connection_idx {
         let connection = &mut connections[idx];
@@ -80,58 +75,63 @@ async fn graph_delete_connection(
             MsgType::VideoFrame => &mut connection.video_frame,
         };
 
+        if msg_names.is_empty() {
+            return Err(anyhow!("Message names are empty"));
+        }
+
         // If the message flows array exists, find and remove the specific
         // message flow.
         if let Some(flows) = message_flows {
-            if let Some(flow_idx) =
-                flows.iter().position(|flow| flow.name.as_ref() == Some(&msg_name))
-            {
-                let flow = &mut flows[flow_idx];
+            for msg_name in msg_names {
+                if let Some(flow_idx) =
+                    flows.iter().position(|flow| flow.name.as_ref() == Some(&msg_name))
+                {
+                    let flow = &mut flows[flow_idx];
 
-                // Find the destination to remove.
-                let dest_idx = flow.dest.iter().position(|dest| {
-                    dest.loc.app == dest_app && dest.loc.extension.as_ref() == Some(&dest_extension)
-                });
+                    // Find the destination to remove.
+                    let dest_idx =
+                        flow.dest.iter().position(|dest_iter| dest_iter.loc.matches(&dest));
 
-                if let Some(dest_idx) = dest_idx {
-                    // Remove the specific destination.
-                    flow.dest.remove(dest_idx);
+                    if let Some(dest_idx) = dest_idx {
+                        // Remove the specific destination.
+                        flow.dest.remove(dest_idx);
 
-                    // If there are no more destinations, remove the whole
-                    // flow.
-                    if flow.dest.is_empty() {
-                        flows.remove(flow_idx);
-                    }
+                        // If there are no more destinations, remove the whole
+                        // flow.
+                        if flow.dest.is_empty() {
+                            flows.remove(flow_idx);
+                        }
 
-                    // If there are no more flows of this message type, set
-                    // the array to None.
-                    if flows.is_empty() {
-                        *message_flows = None;
-                    }
+                        // If there are no more flows of this message type, set
+                        // the array to None.
+                        if flows.is_empty() {
+                            *message_flows = None;
+                        }
 
-                    // If there are no message flows left in this
-                    // connection, remove the connection.
-                    if connection.cmd.is_none()
-                        && connection.data.is_none()
-                        && connection.audio_frame.is_none()
-                        && connection.video_frame.is_none()
-                    {
-                        connections.remove(idx);
-                    }
+                        // If there are no message flows left in this
+                        // connection, remove the connection.
+                        if connection.cmd.is_none()
+                            && connection.data.is_none()
+                            && connection.audio_frame.is_none()
+                            && connection.video_frame.is_none()
+                        {
+                            connections.remove(idx);
+                        }
 
-                    // If there are no more connections, set the connections
-                    // field to None.
-                    if connections.is_empty() {
-                        graph.connections = None;
-                    }
+                        // If there are no more connections, set the connections
+                        // field to None.
+                        if connections.is_empty() {
+                            graph.connections = None;
+                        }
 
-                    // Validate the updated graph.
-                    match graph.validate_and_complete(None) {
-                        Ok(_) => return Ok(()),
-                        Err(e) => {
-                            // Restore the original graph if validation fails.
-                            *graph = original_graph;
-                            return Err(e);
+                        // Validate the updated graph.
+                        match graph.validate_and_complete(None) {
+                            Ok(_) => return Ok(()),
+                            Err(e) => {
+                                // Restore the original graph if validation fails.
+                                *graph = original_graph;
+                                return Err(e);
+                            }
                         }
                     }
                 }
@@ -169,12 +169,10 @@ pub async fn delete_graph_connection_endpoint(
     // Delete the connection.
     if let Err(err) = graph_delete_connection(
         graph_info.graph.graph_mut(),
-        request_payload.src_app.clone(),
-        request_payload.src_extension.clone(),
+        request_payload.src.clone(),
+        request_payload.dest.clone(),
         request_payload.msg_type.clone(),
-        request_payload.msg_name.clone(),
-        request_payload.dest_app.clone(),
-        request_payload.dest_extension.clone(),
+        request_payload.msg_names.clone(),
     )
     .await
     {

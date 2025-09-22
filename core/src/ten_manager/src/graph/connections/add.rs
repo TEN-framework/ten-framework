@@ -12,7 +12,6 @@ use ten_rust::{
     graph::{
         connection::{GraphConnection, GraphDestination, GraphLoc, GraphMessageFlow},
         msg_conversion::MsgAndResultConversion,
-        node::GraphNode,
         Graph,
     },
     pkg_info::message::MsgType,
@@ -63,21 +62,19 @@ fn add_message_flow_to_connection(
 }
 
 /// Checks if the connection already exists.
+#[allow(clippy::too_many_arguments)]
+#[allow(clippy::ptr_arg)]
 fn check_connection_exists(
     graph: &Graph,
-    src_app: &Option<String>,
-    src_extension: &str,
+    src: &GraphLoc,
+    dest: &GraphLoc,
     msg_type: &MsgType,
-    msg_name: &str,
-    dest_app: &Option<String>,
-    dest_extension: &str,
+    msg_names: &Vec<String>,
 ) -> Result<()> {
     if let Some(connections) = &graph.connections {
         for conn in connections.iter() {
             // Check if source matches.
-            if conn.loc.extension.as_ref().is_some_and(|ext| ext == src_extension)
-                && conn.loc.app == *src_app
-            {
+            if conn.loc.matches(src) {
                 // Check for duplicate message flows based on message type.
                 let msg_flows = match msg_type {
                     MsgType::Cmd => conn.cmd.as_ref(),
@@ -89,22 +86,22 @@ fn check_connection_exists(
                 if let Some(flows) = msg_flows {
                     for flow in flows {
                         // Check if message name matches.
-                        if flow.name.as_deref() == Some(msg_name) {
-                            // Check if destination already exists.
-                            for dest in &flow.dest {
-                                if dest.loc.extension.as_deref() == Some(dest_extension)
-                                    && dest.loc.app == *dest_app
-                                {
-                                    return Err(anyhow::anyhow!(
-                                        "Connection already exists: src:({:?}, {}), \
-                                         msg_type:{:?}, msg_name:{}, dest:({:?}, {})",
-                                        src_app,
-                                        src_extension,
-                                        msg_type,
-                                        msg_name,
-                                        dest_app,
-                                        dest_extension
-                                    ));
+                        for name in msg_names.iter() {
+                            if flow.name.as_deref() == Some(name) {
+                                // Check if destination already exists.
+                                for dest_item in &flow.dest {
+                                    if dest_item.loc.matches(dest) {
+                                        return Err(anyhow::anyhow!(
+                                            "Connection already exists: src: {:?} '{}', \
+                                             msg_type:{:?}, msg_name:{}, dest: {:?} '{}'",
+                                            src.get_node_type()?,
+                                            src.get_node_name()?,
+                                            msg_type,
+                                            name,
+                                            dest.get_node_type()?,
+                                            dest.get_node_name()?,
+                                        ));
+                                    }
                                 }
                             }
                         }
@@ -116,92 +113,37 @@ fn check_connection_exists(
     Ok(())
 }
 
-/// Checks if source and destination nodes exist in the graph.
-fn check_nodes_exist(
-    graph: &Graph,
-    src_app: &Option<String>,
-    src_extension: &str,
-    dest_app: &Option<String>,
-    dest_extension: &str,
-) -> Result<()> {
-    // Validate that source node exists.
-    let src_node_exists = graph.nodes.iter().any(|node| match node {
-        GraphNode::Extension {
-            content,
-        } => content.name == src_extension && content.app == *src_app,
-        _ => false,
-    });
-
-    if !src_node_exists {
-        return Err(anyhow::anyhow!(
-            "Source node with extension '{}' and app '{:?}' not found in the graph",
-            src_extension,
-            src_app
-        ));
-    }
-
-    // Validate that destination node exists.
-    let dest_node_exists = graph.nodes.iter().any(|node| match node {
-        GraphNode::Extension {
-            content,
-        } => content.name == dest_extension && content.app == *dest_app,
-        _ => false,
-    });
-
-    if !dest_node_exists {
-        return Err(anyhow::anyhow!(
-            "Destination node with extension '{}' and app '{:?}' not found in the graph",
-            dest_extension,
-            dest_app
-        ));
-    }
-
-    Ok(())
-}
-
 /// Adds a new connection between two extension nodes in the graph.
 #[allow(clippy::too_many_arguments)]
 pub async fn graph_add_connection(
     graph: &mut Graph,
     graph_app_base_dir: &Option<String>,
-    src_app: Option<String>,
-    src_extension: String,
-    msg_type: MsgType,
-    msg_name: String,
-    dest_app: Option<String>,
-    dest_extension: String,
     pkgs_cache: &HashMap<String, PkgsInfoInApp>,
+    src: GraphLoc,
+    dest: GraphLoc,
+    msg_type: MsgType,
+    msg_names: Vec<String>,
     msg_conversion: Option<MsgAndResultConversion>,
 ) -> Result<()> {
     // Store the original state in case validation fails.
     let original_graph = graph.clone();
 
     // Check if nodes exist.
-    check_nodes_exist(graph, &src_app, &src_extension, &dest_app, &dest_extension)?;
+    GraphLoc::check_node_exists(&src, graph)?;
+    GraphLoc::check_node_exists(&dest, graph)?;
 
     // Check if connection already exists.
-    check_connection_exists(
-        graph,
-        &src_app,
-        &src_extension,
-        &msg_type,
-        &msg_name,
-        &dest_app,
-        &dest_extension,
-    )?;
+    check_connection_exists(graph, &src, &dest, &msg_type, &msg_names)?;
 
-    // Validate connection schema.
     validate_connection_schema(
         pkgs_cache,
         graph,
         graph_app_base_dir,
         &MsgConversionValidateInfo {
-            src_app: &src_app,
-            src_extension: &src_extension,
+            src: &src,
+            dest: &dest,
             msg_type: &msg_type,
-            msg_name: &msg_name,
-            dest_app: &dest_app,
-            dest_extension: &dest_extension,
+            msg_names: &msg_names,
             msg_conversion: &msg_conversion,
         },
     )
@@ -209,12 +151,7 @@ pub async fn graph_add_connection(
 
     // Create destination object.
     let destination = GraphDestination {
-        loc: GraphLoc {
-            app: dest_app,
-            extension: Some(dest_extension),
-            subgraph: None,
-            selector: None,
-        },
+        loc: dest,
         msg_conversion,
     };
 
@@ -224,7 +161,15 @@ pub async fn graph_add_connection(
     }
 
     // Create a message flow.
-    let message_flow = GraphMessageFlow::new(msg_name, vec![destination], vec![]);
+    if msg_names.is_empty() {
+        return Err(anyhow::anyhow!("Message name is empty"));
+    }
+
+    let message_flow: GraphMessageFlow = if msg_names.len() == 1 {
+        GraphMessageFlow::new(Some(msg_names[0].clone()), None, vec![destination], vec![])
+    } else {
+        GraphMessageFlow::new(None, Some(msg_names), vec![destination], vec![])
+    };
 
     // Get or create a connection for the source node and add the message
     // flow.
@@ -233,19 +178,13 @@ pub async fn graph_add_connection(
 
         // Find or create connection.
         let connection_idx = if let Some((idx, _)) =
-            connections.iter().enumerate().find(|(_, conn)| {
-                (conn.loc.extension.as_ref() == Some(&src_extension)) && conn.loc.app == src_app
-            }) {
+            connections.iter().enumerate().find(|(_, conn)| conn.loc.matches(&src))
+        {
             idx
         } else {
             // Create a new connection for the source node.
             connections.push(GraphConnection {
-                loc: GraphLoc {
-                    app: src_app.clone(),
-                    extension: Some(src_extension),
-                    subgraph: None,
-                    selector: None,
-                },
+                loc: src,
                 cmd: None,
                 data: None,
                 audio_frame: None,

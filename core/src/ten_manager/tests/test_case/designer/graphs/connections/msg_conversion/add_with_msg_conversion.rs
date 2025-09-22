@@ -24,9 +24,13 @@ mod tests {
         output::cli::TmanOutputCli,
     };
     use ten_rust::{
-        graph::msg_conversion::{
-            MsgAndResultConversion, MsgConversion, MsgConversionMode, MsgConversionRule,
-            MsgConversionRules, MsgConversionType,
+        graph::{
+            connection::GraphLoc,
+            msg_conversion::{
+                MsgAndResultConversion, MsgConversion, MsgConversionMode, MsgConversionRule,
+                MsgConversionRules, MsgConversionType,
+            },
+            node::GraphNodeType,
         },
         pkg_info::{constants::PROPERTY_JSON_FILENAME, message::MsgType},
     };
@@ -139,14 +143,24 @@ mod tests {
         // Add a connection between existing nodes in the default graph.
         // Use "http://example.com:8000" for both src_app and dest_app to match
         // the test data.
+        let src = GraphLoc::with_app_and_type_and_name(
+            Some("http://example.com:8000".to_string()),
+            GraphNodeType::Extension,
+            "extension_1".to_string(),
+        )
+        .unwrap();
+        let dest = GraphLoc::with_app_and_type_and_name(
+            Some("http://example.com:8000".to_string()),
+            GraphNodeType::Extension,
+            "extension_2".to_string(),
+        )
+        .unwrap();
         let request_payload = AddGraphConnectionRequestPayload {
             graph_id: graph_id_clone,
-            src_app: Some("http://example.com:8000".to_string()),
-            src_extension: "extension_1".to_string(),
+            src,
+            dest,
             msg_type: MsgType::Cmd,
-            msg_name: "test_cmd".to_string(),
-            dest_app: Some("http://example.com:8000".to_string()),
-            dest_extension: "extension_2".to_string(),
+            msg_names: vec!["test_cmd".to_string()],
             msg_conversion: Some(msg_conversion),
         };
 
@@ -300,14 +314,24 @@ mod tests {
         .await;
 
         // Add a connection between existing nodes in the default graph.
+        let src = GraphLoc::with_app_and_type_and_name(
+            Some("http://example.com:8000".to_string()),
+            GraphNodeType::Extension,
+            "extension_1".to_string(),
+        )
+        .unwrap();
+        let dest = GraphLoc::with_app_and_type_and_name(
+            Some("http://example.com:8000".to_string()),
+            GraphNodeType::Extension,
+            "extension_2".to_string(),
+        )
+        .unwrap();
         let request_payload = AddGraphConnectionRequestPayload {
             graph_id: graph_id_clone,
-            src_app: Some("http://example.com:8000".to_string()),
-            src_extension: "extension_1".to_string(),
+            src,
+            dest,
             msg_type: MsgType::Cmd,
-            msg_name: "test_cmd_with_result".to_string(),
-            dest_app: Some("http://example.com:8000".to_string()),
-            dest_extension: "extension_2".to_string(),
+            msg_names: vec!["test_cmd_with_result".to_string()],
             msg_conversion: Some(msg_conversion),
         };
 
@@ -469,14 +493,24 @@ mod tests {
         .await;
 
         // Add a connection between existing nodes in the default graph.
+        let src = GraphLoc::with_app_and_type_and_name(
+            Some("http://example.com:8000".to_string()),
+            GraphNodeType::Extension,
+            "extension_1".to_string(),
+        )
+        .unwrap();
+        let dest = GraphLoc::with_app_and_type_and_name(
+            Some("http://example.com:8000".to_string()),
+            GraphNodeType::Extension,
+            "extension_2".to_string(),
+        )
+        .unwrap();
         let request_payload = AddGraphConnectionRequestPayload {
             graph_id: graph_id_clone,
-            src_app: Some("http://example.com:8000".to_string()),
-            src_extension: "extension_1".to_string(),
+            src,
+            dest,
             msg_type: MsgType::Cmd,
-            msg_name: "test_cmd_for_update".to_string(),
-            dest_app: Some("http://example.com:8000".to_string()),
-            dest_extension: "extension_2".to_string(),
+            msg_names: vec!["test_cmd_for_update".to_string()],
             msg_conversion: Some(msg_conversion),
         };
 
@@ -637,14 +671,24 @@ mod tests {
         .await;
 
         // Add a connection between existing nodes in the default graph.
+        let src = GraphLoc::with_app_and_type_and_name(
+            Some("http://example.com:8000".to_string()),
+            GraphNodeType::Extension,
+            "extension_1".to_string(),
+        )
+        .unwrap();
+        let dest = GraphLoc::with_app_and_type_and_name(
+            Some("http://example.com:8000".to_string()),
+            GraphNodeType::Extension,
+            "extension_2".to_string(),
+        )
+        .unwrap();
         let request_payload = AddGraphConnectionRequestPayload {
             graph_id: graph_id_clone,
-            src_app: Some("http://example.com:8000".to_string()),
-            src_extension: "extension_1".to_string(),
+            src,
+            dest,
             msg_type: MsgType::Cmd,
-            msg_name: "test_cmd_for_update".to_string(),
-            dest_app: Some("http://example.com:8000".to_string()),
-            dest_extension: "extension_2".to_string(),
+            msg_names: vec!["test_cmd_for_update".to_string()],
             msg_conversion: Some(msg_conversion),
         };
 
@@ -806,14 +850,24 @@ mod tests {
         .await;
 
         // Add a connection between existing nodes in the default graph.
+        let src = GraphLoc::with_app_and_type_and_name(
+            Some("http://example.com:8000".to_string()),
+            GraphNodeType::Extension,
+            "extension_1".to_string(),
+        )
+        .unwrap();
+        let dest = GraphLoc::with_app_and_type_and_name(
+            Some("http://example.com:8000".to_string()),
+            GraphNodeType::Extension,
+            "extension_2".to_string(),
+        )
+        .unwrap();
         let request_payload = AddGraphConnectionRequestPayload {
             graph_id: graph_id_clone,
-            src_app: Some("http://example.com:8000".to_string()),
-            src_extension: "extension_1".to_string(),
+            src,
+            dest,
             msg_type: MsgType::Cmd,
-            msg_name: "test_cmd_for_update".to_string(),
-            dest_app: Some("http://example.com:8000".to_string()),
-            dest_extension: "extension_2".to_string(),
+            msg_names: vec!["test_cmd_for_update".to_string()],
             msg_conversion: Some(msg_conversion),
         };
 
