@@ -29,6 +29,7 @@
 #include "ten_runtime/binding/cpp/detail/msg/cmd/cmd.h"  // IWYU pragma: export
 #include "ten_runtime/binding/cpp/detail/msg/cmd/start_graph_cmd.h"  // IWYU pragma: export
 #include "ten_runtime/binding/cpp/detail/msg/cmd/stop_graph_cmd.h"  // IWYU pragma: export
+#include "ten_runtime/binding/cpp/detail/msg/cmd/trigger_life_cycle_cmd.h"  // IWYU pragma: export
 #include "ten_runtime/binding/cpp/detail/msg/cmd_result.h"  // IWYU pragma: export
 #include "ten_runtime/binding/cpp/detail/msg/data.h"  // IWYU pragma: export
 #include "ten_runtime/binding/cpp/detail/msg/msg.h"   // IWYU pragma: export

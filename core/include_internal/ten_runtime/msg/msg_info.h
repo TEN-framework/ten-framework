@@ -19,6 +19,7 @@
 #include "include_internal/ten_runtime/msg/cmd_base/cmd/stop_graph/cmd.h"
 #include "include_internal/ten_runtime/msg/cmd_base/cmd/timeout/cmd.h"
 #include "include_internal/ten_runtime/msg/cmd_base/cmd/timer/cmd.h"
+#include "include_internal/ten_runtime/msg/cmd_base/cmd/trigger_life_cycle/cmd.h"
 #include "include_internal/ten_runtime/msg/cmd_base/cmd_result/cmd.h"
 #include "include_internal/ten_runtime/msg/data/data.h"
 #include "include_internal/ten_runtime/msg/msg.h"
@@ -167,6 +168,19 @@ TEN_UNUSED static const ten_msg_info_t ten_msg_info[] = {
             NULL,                               /* validate_schema */
             ten_raw_cmd_timer_set_ten_property, /* set_ten_property */
             NULL,                               /* peek_ten_property */
+        },
+    [TEN_MSG_TYPE_CMD_TRIGGER_LIFE_CYCLE] =
+        {
+            TEN_STR_TRIGGER_LIFE_CYCLE,              /* msg_type_name */
+            TEN_STR_MSG_NAME_TEN_TRIGGER_LIFE_CYCLE, /* msg_unique_name */
+            true,                                    /* create_in_path */
+            NULL,                                    /* engine_handler */
+            NULL,                                    /* clone */
+            ten_raw_cmd_trigger_life_cycle_loop_all_fields, /* loop_all_fields
+                                                             */
+            NULL, /* validate_schema */
+            NULL, /* set_ten_property */
+            NULL, /* peek_ten_property */
         },
     [TEN_MSG_TYPE_DATA] =
         {
