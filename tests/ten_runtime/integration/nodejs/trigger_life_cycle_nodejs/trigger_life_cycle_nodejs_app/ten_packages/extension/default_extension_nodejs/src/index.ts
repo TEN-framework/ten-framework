@@ -22,10 +22,6 @@ function assert(condition: boolean, message: string) {
 }
 
 class MainExtension extends Extension {
-  constructor(name: string) {
-    super(name);
-  }
-
   async onStart(tenEnv: TenEnv): Promise<void> {
     tenEnv.logInfo("MainExtension onStart");
 

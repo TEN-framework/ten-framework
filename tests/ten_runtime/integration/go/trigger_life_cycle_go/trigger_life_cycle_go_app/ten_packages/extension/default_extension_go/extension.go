@@ -37,7 +37,9 @@ func (p *mainExtension) OnStart(
 
 			started, _ := cr.GetPropertyBool("started")
 			if started {
-				panic("Biz extension should not be started as it has been set manual trigger life cycle")
+				panic(
+					"Biz extension should not be started as it has been set manual trigger life cycle",
+				)
 			}
 
 			// Send manual trigger life cycle cmd to biz extension.
@@ -48,50 +50,59 @@ func (p *mainExtension) OnStart(
 				GraphID:       ten.Ptr(""),
 				ExtensionName: ten.Ptr("biz"),
 			})
-			tenEnv.SendCmd(lifeCycleCmd, func(te ten.TenEnv, cr ten.CmdResult, err error) {
-				if err != nil {
-					panic("Failed to send cmd: " + err.Error())
-				}
 
-				statusCode, _ := cr.GetStatusCode()
-				if statusCode != ten.StatusCodeOk {
-					panic("Failed to send cmd: " + err.Error())
-				}
-
-				// Send cmd to biz extension to check if it is started.
-				cmd, _ := ten.NewCmd("check_start")
-				tenEnv.SendCmd(cmd, func(te ten.TenEnv, cr ten.CmdResult, err error) {
+			tenEnv.SendCmd(
+				lifeCycleCmd,
+				func(te ten.TenEnv, cr ten.CmdResult, err error) {
 					if err != nil {
 						panic("Failed to send cmd: " + err.Error())
 					}
 
 					statusCode, _ := cr.GetStatusCode()
 					if statusCode != ten.StatusCodeOk {
-						panic("Failed to check start")
+						panic("Failed to send cmd: " + err.Error())
 					}
 
-					started, _ := cr.GetPropertyBool("started")
-					if !started {
-						panic("Biz extension should be started as it has received manual trigger life cycle cmd")
-					}
+					// Send cmd to biz extension to check if it is started.
+					cmd, _ := ten.NewCmd("check_start")
+					tenEnv.SendCmd(
+						cmd,
+						func(te ten.TenEnv, cr ten.CmdResult, err error) {
+							if err != nil {
+								panic("Failed to send cmd: " + err.Error())
+							}
 
-					tenEnv.OnStartDone()
+							statusCode, _ := cr.GetStatusCode()
+							if statusCode != ten.StatusCodeOk {
+								panic("Failed to check start")
+							}
 
-					// Send close app cmd to close the app.
-					closeAppCmd, _ := ten.NewCmd("ten:close_app")
+							started, _ := cr.GetPropertyBool("started")
+							if !started {
+								panic(
+									"Biz extension should be started as it has received manual trigger life cycle cmd",
+								)
+							}
 
-					err = closeAppCmd.SetDests(ten.Loc{
-						AppURI:        ten.Ptr(""),
-						GraphID:       ten.Ptr(""),
-						ExtensionName: ten.Ptr(""),
-					})
-					if err != nil {
-						panic("Failed to set dests: " + err.Error())
-					}
+							tenEnv.OnStartDone()
 
-					tenEnv.SendCmd(closeAppCmd, nil)
-				})
-			})
+							// Send close app cmd to close the app.
+							closeAppCmd, _ := ten.NewCmd("ten:close_app")
+
+							err = closeAppCmd.SetDests(ten.Loc{
+								AppURI:        ten.Ptr(""),
+								GraphID:       ten.Ptr(""),
+								ExtensionName: ten.Ptr(""),
+							})
+							if err != nil {
+								panic("Failed to set dests: " + err.Error())
+							}
+
+							tenEnv.SendCmd(closeAppCmd, nil)
+						},
+					)
+				},
+			)
 		})
 	}()
 }
@@ -117,7 +128,9 @@ func (p *mainExtension) OnStop(
 
 			stopped, _ := cr.GetPropertyBool("stopped")
 			if stopped {
-				panic("Biz extension should not be stopped as it has been set manual trigger life cycle")
+				panic(
+					"Biz extension should not be stopped as it has been set manual trigger life cycle",
+				)
 			}
 
 			// Send manual trigger life cycle cmd to biz extension.
@@ -128,18 +141,21 @@ func (p *mainExtension) OnStop(
 				GraphID:       ten.Ptr(""),
 				ExtensionName: ten.Ptr("biz"),
 			})
-			tenEnv.SendCmd(lifeCycleCmd, func(te ten.TenEnv, cr ten.CmdResult, err error) {
-				if err != nil {
-					panic("Failed to send cmd: " + err.Error())
-				}
+			tenEnv.SendCmd(
+				lifeCycleCmd,
+				func(te ten.TenEnv, cr ten.CmdResult, err error) {
+					if err != nil {
+						panic("Failed to send cmd: " + err.Error())
+					}
 
-				statusCode, _ := cr.GetStatusCode()
-				if statusCode != ten.StatusCodeOk {
-					panic("Failed to send cmd: " + err.Error())
-				}
+					statusCode, _ := cr.GetStatusCode()
+					if statusCode != ten.StatusCodeOk {
+						panic("Failed to send cmd: " + err.Error())
+					}
 
-				tenEnv.OnStopDone()
-			})
+					tenEnv.OnStopDone()
+				},
+			)
 		})
 	}()
 }
@@ -191,9 +207,8 @@ func (p *bizExtension) OnCmd(
 func newDefaultExtension(name string) ten.Extension {
 	if name == "main" {
 		return &mainExtension{}
-	} else {
-		return &bizExtension{}
 	}
+	return &bizExtension{}
 }
 
 func init() {

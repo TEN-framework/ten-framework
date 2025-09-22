@@ -40,14 +40,14 @@ class test_extension_a : public ten::extension_t {
         std::move(trigger_cmd),
         [](ten::ten_env_t &ten_env,
            std::unique_ptr<ten::cmd_result_t> cmd_result, ten::error_t *err) {
-          TEN_ENV_LOG_INFO(ten_env,
-                           "start trigger command "
-                           "received");
+          TEN_ENV_LOG_INFO(ten_env, "start trigger command received");
+
           ten_test::check_status_code(cmd_result, TEN_STATUS_CODE_OK);
 
           // Check whether extension B is started
           auto check_start_cmd = ten::cmd_t::create("check_start");
           check_start_cmd->set_dests({{"", "", "test_extension_b"}});
+
           ten_env.send_cmd(
               std::move(check_start_cmd),
               [](ten::ten_env_t &ten_env,
@@ -74,11 +74,12 @@ class test_extension_a : public ten::extension_t {
                  .count());
 
     // Sleep 1 second
-    std::this_thread::sleep_for(std::chrono::seconds(1));
+    ten_random_sleep_range_ms(1000, 2000);
 
     // Send a cmd to extension B to check whether it is stopped
     auto check_stop_cmd = ten::cmd_t::create("check_stop");
     check_stop_cmd->set_dests({{"", "", "test_extension_b"}});
+
     ten_env.send_cmd(
         std::move(check_stop_cmd),
         [](ten::ten_env_t &ten_env,
@@ -91,10 +92,12 @@ class test_extension_a : public ten::extension_t {
 
           // Sleep 1 second then send trigger_life_cycle stop command to
           // extension B
-          std::this_thread::sleep_for(std::chrono::seconds(1));
+          ten_random_sleep_range_ms(1000, 2000);
+
           auto trigger_cmd = ten::trigger_life_cycle_cmd_t::create();
           trigger_cmd->set_stage("stop");
           trigger_cmd->set_dests({{"", "", "test_extension_b"}});
+
           ten_env.send_cmd(std::move(trigger_cmd),
                            [](ten::ten_env_t &ten_env,
                               std::unique_ptr<ten::cmd_result_t> cmd_result,
@@ -122,7 +125,7 @@ class test_extension_b : public ten::extension_t {
 
     // Create a thread to notify the start event
     thread_ = std::thread([ten_env_proxy]() {
-      ten_random_sleep_range_ms(0, 1000);
+      ten_random_sleep_range_ms(1000, 2000);
 
       ten_env_proxy->notify([](ten::ten_env_t &ten_env,
                                void *user_data) { ten_env.on_init_done(); },
