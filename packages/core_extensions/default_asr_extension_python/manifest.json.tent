@@ -90,6 +90,7 @@
     "include": [
       "manifest.json",
       "property.json",
+      "**.tent",
       "**.py",
       "requirements.txt",
       "docs/**",
