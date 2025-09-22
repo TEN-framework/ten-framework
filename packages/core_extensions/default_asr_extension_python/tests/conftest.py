@@ -28,7 +28,10 @@ class FakeApp(App):
                             "handlers": [
                                 {
                                     "matchers": [{"level": "debug"}],
-                                    "formatter": {"type": "plain", "colored": True},
+                                    "formatter": {
+                                        "type": "plain",
+                                        "colored": True,
+                                    },
                                     "emitter": {
                                         "type": "console",
                                         "config": {"stream": "stdout"},
@@ -78,7 +81,9 @@ def global_setup_and_teardown():
     event = threading.Event()
     fake_app_ctx = FakeAppCtx(event)
 
-    fake_app_thread = threading.Thread(target=run_fake_app, args=(fake_app_ctx,))
+    fake_app_thread = threading.Thread(
+        target=run_fake_app, args=(fake_app_ctx,)
+    )
     fake_app_thread.start()
 
     event.wait()
