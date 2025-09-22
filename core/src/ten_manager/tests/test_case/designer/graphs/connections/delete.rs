@@ -67,11 +67,15 @@ mod tests {
         let src = GraphLoc::with_app_and_type_and_name(
             None,
             GraphNodeType::Extension,
-            "source_extension".to_string()).unwrap();
+            "source_extension".to_string(),
+        )
+        .unwrap();
         let dest = GraphLoc::with_app_and_type_and_name(
             None,
             GraphNodeType::Extension,
-            "destination_extension".to_string()).unwrap();
+            "destination_extension".to_string(),
+        )
+        .unwrap();
         let request_payload = DeleteGraphConnectionRequestPayload {
             graph_id: Uuid::new_v4(),
             src,
@@ -137,11 +141,15 @@ mod tests {
         let src = GraphLoc::with_app_and_type_and_name(
             None,
             GraphNodeType::Extension,
-            "nonexistent_extension".to_string()).unwrap();
+            "nonexistent_extension".to_string(),
+        )
+        .unwrap();
         let dest = GraphLoc::with_app_and_type_and_name(
             None,
             GraphNodeType::Extension,
-            "nonexistent_destination".to_string()).unwrap();
+            "nonexistent_destination".to_string(),
+        )
+        .unwrap();
 
         let request_payload = DeleteGraphConnectionRequestPayload {
             graph_id: graph_id_clone,
@@ -233,11 +241,15 @@ mod tests {
         let src = GraphLoc::with_app_and_type_and_name(
             Some("http://example.com:8000".to_string()),
             GraphNodeType::Extension,
-            "extension_1".to_string()).unwrap();
+            "extension_1".to_string(),
+        )
+        .unwrap();
         let dest = GraphLoc::with_app_and_type_and_name(
             Some("http://example.com:8000".to_string()),
             GraphNodeType::Extension,
-            "extension_2".to_string()).unwrap();
+            "extension_2".to_string(),
+        )
+        .unwrap();
         let request_payload = DeleteGraphConnectionRequestPayload {
             graph_id: graph_id_clone,
             src,

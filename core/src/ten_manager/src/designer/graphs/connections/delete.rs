@@ -11,7 +11,7 @@ use anyhow::{anyhow, Result};
 use serde::{Deserialize, Serialize};
 use ten_rust::{
     graph::{
-        connection::{GraphConnection, GraphMessageFlow, GraphLoc},
+        connection::{GraphConnection, GraphLoc, GraphMessageFlow},
         Graph,
     },
     pkg_info::message::MsgType,
@@ -62,9 +62,7 @@ async fn graph_delete_connection(
     let connections = graph.connections.as_mut().unwrap();
 
     // Find the source node's connection in the connections list.
-    let connection_idx = connections.iter().position(|conn| {
-        conn.loc.matches(&src)
-    });
+    let connection_idx = connections.iter().position(|conn| conn.loc.matches(&src));
 
     if let Some(idx) = connection_idx {
         let connection = &mut connections[idx];
@@ -91,9 +89,8 @@ async fn graph_delete_connection(
                     let flow = &mut flows[flow_idx];
 
                     // Find the destination to remove.
-                    let dest_idx = flow.dest.iter().position(|dest_iter| {
-                        dest_iter.loc.matches(&dest)
-                    });
+                    let dest_idx =
+                        flow.dest.iter().position(|dest_iter| dest_iter.loc.matches(&dest));
 
                     if let Some(dest_idx) = dest_idx {
                         // Remove the specific destination.

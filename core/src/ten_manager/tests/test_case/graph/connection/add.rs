@@ -40,11 +40,15 @@ mod tests {
         let src = GraphLoc::with_app_and_type_and_name(
             Some("http://example.com:8000".to_string()),
             GraphNodeType::Extension,
-            "ext1".to_string()).unwrap();
+            "ext1".to_string(),
+        )
+        .unwrap();
         let dest = GraphLoc::with_app_and_type_and_name(
             Some("http://example.com:8000".to_string()),
             GraphNodeType::Extension,
-            "ext2".to_string()).unwrap();
+            "ext2".to_string(),
+        )
+        .unwrap();
         let result = graph_add_connection(
             &mut graph,
             &Some(TEST_DIR.to_string()),
@@ -98,11 +102,15 @@ mod tests {
         let src = GraphLoc::with_app_and_type_and_name(
             Some("app1".to_string()),
             GraphNodeType::Extension,
-            "ext_1".to_string()).unwrap();// This node doesn't exist.
+            "ext_1".to_string(),
+        )
+        .unwrap(); // This node doesn't exist.
         let dest = GraphLoc::with_app_and_type_and_name(
             Some("app1".to_string()),
             GraphNodeType::Extension,
-            "ext_2".to_string()).unwrap();
+            "ext_2".to_string(),
+        )
+        .unwrap();
         let result = graph_add_connection(
             &mut graph,
             &Some(TEST_DIR.to_string()),
@@ -138,11 +146,15 @@ mod tests {
         let src = GraphLoc::with_app_and_type_and_name(
             Some("app1".to_string()),
             GraphNodeType::Extension,
-            "ext1".to_string()).unwrap();
+            "ext1".to_string(),
+        )
+        .unwrap();
         let dest = GraphLoc::with_app_and_type_and_name(
             Some("app1".to_string()),
             GraphNodeType::Extension,
-            "ext2".to_string()).unwrap();// This node doesn't exist.
+            "ext2".to_string(),
+        )
+        .unwrap(); // This node doesn't exist.
         let result = graph_add_connection(
             &mut graph,
             &Some(TEST_DIR.to_string()),
@@ -182,11 +194,15 @@ mod tests {
         let src = GraphLoc::with_app_and_type_and_name(
             Some("http://example.com:8000".to_string()),
             GraphNodeType::Extension,
-            "ext1".to_string()).unwrap();
+            "ext1".to_string(),
+        )
+        .unwrap();
         let dest = GraphLoc::with_app_and_type_and_name(
             Some("http://example.com:8000".to_string()),
             GraphNodeType::Extension,
-            "ext2".to_string()).unwrap();
+            "ext2".to_string(),
+        )
+        .unwrap();
         let result = graph_add_connection(
             &mut graph,
             &Some(TEST_DIR.to_string()),
@@ -205,11 +221,15 @@ mod tests {
         let src = GraphLoc::with_app_and_type_and_name(
             Some("http://example.com:8000".to_string()),
             GraphNodeType::Extension,
-            "ext1".to_string()).unwrap();
+            "ext1".to_string(),
+        )
+        .unwrap();
         let dest = GraphLoc::with_app_and_type_and_name(
             Some("http://example.com:8000".to_string()),
             GraphNodeType::Extension,
-            "ext3".to_string()).unwrap();
+            "ext3".to_string(),
+        )
+        .unwrap();
         let result = graph_add_connection(
             &mut graph,
             &Some(TEST_DIR.to_string()),
@@ -270,11 +290,15 @@ mod tests {
         let src = GraphLoc::with_app_and_type_and_name(
             Some("http://example.com:8000".to_string()),
             GraphNodeType::Extension,
-            "ext1".to_string()).unwrap();
+            "ext1".to_string(),
+        )
+        .unwrap();
         let dest = GraphLoc::with_app_and_type_and_name(
             Some("http://example.com:8000".to_string()),
             GraphNodeType::Extension,
-            "ext2".to_string()).unwrap();
+            "ext2".to_string(),
+        )
+        .unwrap();
         let result = graph_add_connection(
             &mut graph,
             &Some(TEST_DIR.to_string()),
@@ -362,11 +386,15 @@ mod tests {
         let src = GraphLoc::with_app_and_type_and_name(
             Some("http://example.com:8000".to_string()),
             GraphNodeType::Extension,
-            "ext1".to_string()).unwrap();
+            "ext1".to_string(),
+        )
+        .unwrap();
         let dest = GraphLoc::with_app_and_type_and_name(
             Some("http://example.com:8000".to_string()),
             GraphNodeType::Extension,
-            "ext2".to_string()).unwrap();
+            "ext2".to_string(),
+        )
+        .unwrap();
 
         // Add a connection.
         let result = graph_add_connection(
@@ -437,19 +465,27 @@ mod tests {
         let ext1 = GraphLoc::with_app_and_type_and_name(
             Some("http://example.com:8000".to_string()),
             GraphNodeType::Extension,
-            "ext1".to_string()).unwrap();
+            "ext1".to_string(),
+        )
+        .unwrap();
         let ext2 = GraphLoc::with_app_and_type_and_name(
             Some("http://example.com:8000".to_string()),
             GraphNodeType::Extension,
-            "ext2".to_string()).unwrap();
+            "ext2".to_string(),
+        )
+        .unwrap();
         let ext3 = GraphLoc::with_app_and_type_and_name(
             Some("http://example.com:8000".to_string()),
             GraphNodeType::Extension,
-            "ext3".to_string()).unwrap();
+            "ext3".to_string(),
+        )
+        .unwrap();
         let ext4 = GraphLoc::with_app_and_type_and_name(
             Some("http://example.com:8000".to_string()),
             GraphNodeType::Extension,
-            "ext4".to_string()).unwrap();
+            "ext4".to_string(),
+        )
+        .unwrap();
 
         // Test connecting ext1 to ext2 with compatible schema - should succeed.
         let result = graph_add_connection(
@@ -540,4 +576,4 @@ mod tests {
         assert!(result.is_err());
         assert!(result.unwrap_err().to_string().contains("schema incompatibility"));
     }
- }
+}

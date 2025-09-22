@@ -7,13 +7,12 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
-use super::{msg_conversion::MsgAndResultConversion, AppUriDeclarationState, node::GraphNodeType};
+use super::{msg_conversion::MsgAndResultConversion, node::GraphNodeType, AppUriDeclarationState};
 use crate::{
     constants::{
         ERR_MSG_GRAPH_APP_FIELD_SHOULD_BE_DECLARED, ERR_MSG_GRAPH_APP_FIELD_SHOULD_NOT_BE_DECLARED,
         ERR_MSG_GRAPH_LOCALHOST_FORBIDDEN_IN_MULTI_APP_MODE,
-        ERR_MSG_GRAPH_LOCALHOST_FORBIDDEN_IN_SINGLE_APP_MODE,
-        ERR_MSG_TYPE_OF_NODE,
+        ERR_MSG_GRAPH_LOCALHOST_FORBIDDEN_IN_SINGLE_APP_MODE, ERR_MSG_UNKNOWN_GRAPH_NODE_TYPE,
     },
     graph::{is_app_default_loc_or_none, Graph},
     pkg_info::localhost,
@@ -44,7 +43,6 @@ impl GraphLoc {
         }
     }
 
-    #[allow(unreachable_patterns)]
     pub fn with_app_and_type_and_name(
         app: Option<String>,
         node_type: GraphNodeType,
@@ -69,7 +67,6 @@ impl GraphLoc {
                 subgraph: None,
                 selector: Some(node_name),
             }),
-            _ => Err(anyhow::anyhow!(ERR_MSG_TYPE_OF_NODE)),
         }
     }
 
@@ -81,7 +78,7 @@ impl GraphLoc {
         } else if self.selector.is_some() {
             Ok(GraphNodeType::Selector)
         } else {
-            Err(anyhow::anyhow!(ERR_MSG_TYPE_OF_NODE))
+            Err(anyhow::anyhow!(ERR_MSG_UNKNOWN_GRAPH_NODE_TYPE))
         }
     }
 
@@ -93,7 +90,7 @@ impl GraphLoc {
         } else if self.selector.is_some() {
             Ok("selector")
         } else {
-            Err(anyhow::anyhow!(ERR_MSG_TYPE_OF_NODE))
+            Err(anyhow::anyhow!(ERR_MSG_UNKNOWN_GRAPH_NODE_TYPE))
         }
     }
 
@@ -105,7 +102,7 @@ impl GraphLoc {
         } else if self.selector.is_some() {
             Ok(self.selector.as_ref().unwrap())
         } else {
-            Err(anyhow::anyhow!(ERR_MSG_TYPE_OF_NODE))
+            Err(anyhow::anyhow!(ERR_MSG_UNKNOWN_GRAPH_NODE_TYPE))
         }
     }
 
@@ -114,16 +111,21 @@ impl GraphLoc {
     }
 
     pub fn matches(&self, other: &GraphLoc) -> bool {
-        self.app == other.app && self.extension == other.extension && self.subgraph == other.subgraph && self.selector == other.selector
+        self.app == other.app
+            && self.extension == other.extension
+            && self.subgraph == other.subgraph
+            && self.selector == other.selector
     }
 
     /// Validates the node type is one of extension, subgraph, or selector.
     pub fn validate_node_type(&self) -> Result<()> {
-        let count = if self.extension.is_some() { 1 } else { 0 } + if self.subgraph.is_some() { 1 } else { 0 } + if self.selector.is_some() { 1 } else { 0 };
+        let count = if self.extension.is_some() { 1 } else { 0 }
+            + if self.subgraph.is_some() { 1 } else { 0 }
+            + if self.selector.is_some() { 1 } else { 0 };
         if count == 1 {
             Ok(())
         } else {
-            Err(anyhow::anyhow!(ERR_MSG_TYPE_OF_NODE))
+            Err(anyhow::anyhow!(ERR_MSG_UNKNOWN_GRAPH_NODE_TYPE))
         }
     }
 
@@ -168,14 +170,16 @@ impl GraphLoc {
         let node_name = self.get_node_name().unwrap();
         let node_type = self.get_node_type().unwrap();
 
-        let exists = graph.nodes.iter().any(|node| {
-            node.get_name() == node_name && node.get_type() == node_type
-        });
+        let exists = graph
+            .nodes
+            .iter()
+            .any(|node| node.get_name() == node_name && node.get_type() == node_type);
 
         if !exists {
             return Err(anyhow::anyhow!(
                 "{} node '{}' not found in graph",
-                self.get_node_type_str().unwrap(), node_name
+                self.get_node_type_str().unwrap(),
+                node_name
             ));
         }
         Ok(())
@@ -330,7 +334,12 @@ impl GraphMessageFlow {
         Ok(())
     }
 
-    pub fn new(name: Option<String>, names: Option<Vec<String>>, dest: Vec<GraphDestination>, source: Vec<GraphSource>) -> Self {
+    pub fn new(
+        name: Option<String>,
+        names: Option<Vec<String>>,
+        dest: Vec<GraphDestination>,
+        source: Vec<GraphSource>,
+    ) -> Self {
         Self {
             name,
             names,

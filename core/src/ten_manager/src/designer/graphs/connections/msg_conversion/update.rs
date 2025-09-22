@@ -58,8 +58,7 @@ async fn update_graph_info(
     if let Some(connections) = &mut graph_info.graph.connections_mut() {
         // Try to find the matching connection based on app and extension.
         for connection in connections.iter_mut() {
-            if request_payload.src.matches(&connection.loc)
-            {
+            if request_payload.src.matches(&connection.loc) {
                 // Find the correct message flow vector based on msg_type.
                 let msg_flow_vec = match request_payload.msg_type {
                     MsgType::Cmd => &mut connection.cmd,
@@ -71,7 +70,9 @@ async fn update_graph_info(
                 if request_payload.msg_names.len() > 1 {
                     // Restore the original graph
                     graph_info.graph = original_graph;
-                    return Err(anyhow::anyhow!("Multiple message names are not supported for updating conversion"));
+                    return Err(anyhow::anyhow!(
+                        "Multiple message names are not supported for updating conversion"
+                    ));
                 }
 
                 // If we found the message flow vector, find the specific
@@ -81,8 +82,7 @@ async fn update_graph_info(
                         if msg_flow.name.as_ref() == Some(&request_payload.msg_names[0]) {
                             // Find the matching destination
                             for dest in msg_flow.dest.iter_mut() {
-                                if dest.loc.matches(&request_payload.dest)
-                                {
+                                if dest.loc.matches(&request_payload.dest) {
                                     // Update the msg_conversion field.
                                     dest.msg_conversion = request_payload.msg_conversion.clone();
                                     break;

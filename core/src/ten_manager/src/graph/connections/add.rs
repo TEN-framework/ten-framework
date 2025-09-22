@@ -74,8 +74,7 @@ fn check_connection_exists(
     if let Some(connections) = &graph.connections {
         for conn in connections.iter() {
             // Check if source matches.
-            if conn.loc.matches(src)
-            {
+            if conn.loc.matches(src) {
                 // Check for duplicate message flows based on message type.
                 let msg_flows = match msg_type {
                     MsgType::Cmd => conn.cmd.as_ref(),
@@ -91,11 +90,10 @@ fn check_connection_exists(
                             if flow.name.as_deref() == Some(name) {
                                 // Check if destination already exists.
                                 for dest_item in &flow.dest {
-                                    if dest_item.loc.matches(dest)
-                                    {
+                                    if dest_item.loc.matches(dest) {
                                         return Err(anyhow::anyhow!(
                                             "Connection already exists: src: {:?} '{}', \
-                                            msg_type:{:?}, msg_name:{}, dest: {:?} '{}'",
+                                             msg_type:{:?}, msg_name:{}, dest: {:?} '{}'",
                                             src.get_node_type()?,
                                             src.get_node_name()?,
                                             msg_type,
@@ -114,7 +112,6 @@ fn check_connection_exists(
     }
     Ok(())
 }
-
 
 /// Adds a new connection between two extension nodes in the graph.
 #[allow(clippy::too_many_arguments)]
@@ -136,13 +133,7 @@ pub async fn graph_add_connection(
     GraphLoc::check_node_exists(&dest, graph)?;
 
     // Check if connection already exists.
-    check_connection_exists(
-        graph,
-        &src,
-        &dest,
-        &msg_type,
-        &msg_names,
-    )?;
+    check_connection_exists(graph, &src, &dest, &msg_type, &msg_names)?;
 
     validate_connection_schema(
         pkgs_cache,
@@ -174,10 +165,9 @@ pub async fn graph_add_connection(
         return Err(anyhow::anyhow!("Message name is empty"));
     }
 
-    let message_flow : GraphMessageFlow = if msg_names.len() == 1 {
+    let message_flow: GraphMessageFlow = if msg_names.len() == 1 {
         GraphMessageFlow::new(Some(msg_names[0].clone()), None, vec![destination], vec![])
-    }
-    else {
+    } else {
         GraphMessageFlow::new(None, Some(msg_names), vec![destination], vec![])
     };
 
@@ -188,9 +178,8 @@ pub async fn graph_add_connection(
 
         // Find or create connection.
         let connection_idx = if let Some((idx, _)) =
-            connections.iter().enumerate().find(|(_, conn)| {
-                conn.loc.matches(&src)
-            }) {
+            connections.iter().enumerate().find(|(_, conn)| conn.loc.matches(&src))
+        {
             idx
         } else {
             // Create a new connection for the source node.

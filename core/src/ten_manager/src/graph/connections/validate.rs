@@ -10,10 +10,7 @@ use anyhow::Result;
 use ten_rust::{
     base_dir_pkg_info::PkgsInfoInApp,
     graph::{
-        connection::GraphLoc,
-        Graph,
-        msg_conversion::MsgAndResultConversion,
-        node::GraphNodeType,
+        connection::GraphLoc, msg_conversion::MsgAndResultConversion, node::GraphNodeType, Graph,
     },
     pkg_info::{
         find_pkgs_cache_entry_by_app_uri, get_pkg_info_for_extension_addon,
@@ -310,49 +307,44 @@ fn get_src_and_dest_c_msg_schema<'a>(
     let dest_extension_pkg_info = dest_extension_pkg_info.unwrap();
 
     // Get source and destination schemas based on message type.
-    let (src_schema, dest_schema, error_message) =
-        match msg_conversion_validate_info.msg_type {
-            MsgType::Cmd => {
-                let src = src_extension_pkg_info
-                    .schema_store
-                    .as_ref()
-                    .and_then(|store| store.cmd_out.get(msg_conversion_validate_info.msg_names[0].as_str()));
-                let dest = dest_extension_pkg_info
-                    .schema_store
-                    .as_ref()
-                    .and_then(|store| store.cmd_in.get(msg_conversion_validate_info.msg_names[0].as_str()));
-                (src, dest, "Command schema incompatibility between source and destination")
-            }
-            MsgType::Data => {
-                let src = src_extension_pkg_info
-                    .schema_store
-                    .as_ref()
-                    .and_then(|store| store.data_out.get(msg_conversion_validate_info.msg_names[0].as_str()));
-                let dest = dest_extension_pkg_info
-                    .schema_store
-                    .as_ref()
-                    .and_then(|store| store.data_in.get(msg_conversion_validate_info.msg_names[0].as_str()));
-                (src, dest, "Data schema incompatibility between source and destination")
-            }
-            MsgType::AudioFrame => {
-                let src = src_extension_pkg_info.schema_store.as_ref().and_then(|store| {
-                    store.audio_frame_out.get(msg_conversion_validate_info.msg_names[0].as_str())
-                });
-                let dest = dest_extension_pkg_info.schema_store.as_ref().and_then(|store| {
-                    store.audio_frame_in.get(msg_conversion_validate_info.msg_names[0].as_str())
-                });
-                (src, dest, "Audio frame schema incompatibility between source and destination")
-            }
-            MsgType::VideoFrame => {
-                let src = src_extension_pkg_info.schema_store.as_ref().and_then(|store| {
-                    store.video_frame_out.get(msg_conversion_validate_info.msg_names[0].as_str())
-                });
-                let dest = dest_extension_pkg_info.schema_store.as_ref().and_then(|store| {
-                    store.video_frame_in.get(msg_conversion_validate_info.msg_names[0].as_str())
-                });
-                (src, dest, "Video frame schema incompatibility between source and destination")
-            }
-        };
+    let (src_schema, dest_schema, error_message) = match msg_conversion_validate_info.msg_type {
+        MsgType::Cmd => {
+            let src = src_extension_pkg_info.schema_store.as_ref().and_then(|store| {
+                store.cmd_out.get(msg_conversion_validate_info.msg_names[0].as_str())
+            });
+            let dest = dest_extension_pkg_info.schema_store.as_ref().and_then(|store| {
+                store.cmd_in.get(msg_conversion_validate_info.msg_names[0].as_str())
+            });
+            (src, dest, "Command schema incompatibility between source and destination")
+        }
+        MsgType::Data => {
+            let src = src_extension_pkg_info.schema_store.as_ref().and_then(|store| {
+                store.data_out.get(msg_conversion_validate_info.msg_names[0].as_str())
+            });
+            let dest = dest_extension_pkg_info.schema_store.as_ref().and_then(|store| {
+                store.data_in.get(msg_conversion_validate_info.msg_names[0].as_str())
+            });
+            (src, dest, "Data schema incompatibility between source and destination")
+        }
+        MsgType::AudioFrame => {
+            let src = src_extension_pkg_info.schema_store.as_ref().and_then(|store| {
+                store.audio_frame_out.get(msg_conversion_validate_info.msg_names[0].as_str())
+            });
+            let dest = dest_extension_pkg_info.schema_store.as_ref().and_then(|store| {
+                store.audio_frame_in.get(msg_conversion_validate_info.msg_names[0].as_str())
+            });
+            (src, dest, "Audio frame schema incompatibility between source and destination")
+        }
+        MsgType::VideoFrame => {
+            let src = src_extension_pkg_info.schema_store.as_ref().and_then(|store| {
+                store.video_frame_out.get(msg_conversion_validate_info.msg_names[0].as_str())
+            });
+            let dest = dest_extension_pkg_info.schema_store.as_ref().and_then(|store| {
+                store.video_frame_in.get(msg_conversion_validate_info.msg_names[0].as_str())
+            });
+            (src, dest, "Video frame schema incompatibility between source and destination")
+        }
+    };
 
     Ok((src_schema, dest_schema, Some(error_message.to_string())))
 }
@@ -386,9 +378,10 @@ pub async fn validate_connection_schema(
     msg_conversion_validate_info: &MsgConversionValidateInfo<'_>,
 ) -> Result<()> {
     //TODO: support other node types. Now only support extension && only one flow
-    if msg_conversion_validate_info.src.get_node_type()? == GraphNodeType::Extension &&
-    msg_conversion_validate_info.dest.get_node_type()? == GraphNodeType::Extension &&
-    msg_conversion_validate_info.msg_names.len() == 1 {
+    if msg_conversion_validate_info.src.get_node_type()? == GraphNodeType::Extension
+        && msg_conversion_validate_info.dest.get_node_type()? == GraphNodeType::Extension
+        && msg_conversion_validate_info.msg_names.len() == 1
+    {
         if msg_conversion_validate_info.msg_conversion.is_some() {
             validate_msg_conversion_schema(
                 pkgs_cache,

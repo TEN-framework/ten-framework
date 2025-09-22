@@ -26,14 +26,8 @@ mod tests {
         pkg_info::get_all_pkgs::get_all_pkgs_in_app,
     };
     use ten_rust::{
-        graph::{
-            connection::GraphLoc,
-            node::GraphNodeType,
-        },
-        pkg_info::{
-            constants::PROPERTY_JSON_FILENAME,
-            message::MsgType,
-        },
+        graph::{connection::GraphLoc, node::GraphNodeType},
+        pkg_info::{constants::PROPERTY_JSON_FILENAME, message::MsgType},
     };
     use uuid::Uuid;
 
@@ -126,11 +120,15 @@ mod tests {
         let src = GraphLoc::with_app_and_type_and_name(
             Some("http://example.com:8000".to_string()),
             GraphNodeType::Extension,
-            "extension_1".to_string()).unwrap();
+            "extension_1".to_string(),
+        )
+        .unwrap();
         let dest = GraphLoc::with_app_and_type_and_name(
             Some("http://example.com:8000".to_string()),
             GraphNodeType::Extension,
-            "extension_2".to_string()).unwrap();
+            "extension_2".to_string(),
+        )
+        .unwrap();
         // Add a connection between existing nodes in the default graph.
         // Use "http://example.com:8000" for both src_app and dest_app to match the test data.
         let request_payload = AddGraphConnectionRequestPayload {
@@ -297,11 +295,15 @@ mod tests {
         let src = GraphLoc::with_app_and_type_and_name(
             None,
             GraphNodeType::Extension,
-            "aio_http_server_python".to_string()).unwrap();
+            "aio_http_server_python".to_string(),
+        )
+        .unwrap();
         let dest = GraphLoc::with_app_and_type_and_name(
             None,
             GraphNodeType::Extension,
-            "simple_echo_cpp".to_string()).unwrap();
+            "simple_echo_cpp".to_string(),
+        )
+        .unwrap();
 
         // Add a connection between existing nodes in the default graph.
         let request_payload = AddGraphConnectionRequestPayload {
@@ -403,11 +405,15 @@ mod tests {
         let src = GraphLoc::with_app_and_type_and_name(
             None,
             GraphNodeType::Extension,
-            "extension_1".to_string()).unwrap();
+            "extension_1".to_string(),
+        )
+        .unwrap();
         let dest = GraphLoc::with_app_and_type_and_name(
             None,
             GraphNodeType::Extension,
-            "extension_2".to_string()).unwrap();
+            "extension_2".to_string(),
+        )
+        .unwrap();
 
         // Try to add a connection to a non-existent graph.
         let request_payload = AddGraphConnectionRequestPayload {
@@ -517,15 +523,21 @@ mod tests {
         let ext1 = GraphLoc::with_app_and_type_and_name(
             Some("http://example.com:8000".to_string()),
             GraphNodeType::Extension,
-            "extension_1".to_string()).unwrap();
+            "extension_1".to_string(),
+        )
+        .unwrap();
         let ext2 = GraphLoc::with_app_and_type_and_name(
             Some("http://example.com:8000".to_string()),
             GraphNodeType::Extension,
-            "extension_2".to_string()).unwrap();
+            "extension_2".to_string(),
+        )
+        .unwrap();
         let ext3 = GraphLoc::with_app_and_type_and_name(
             Some("http://example.com:8000".to_string()),
             GraphNodeType::Extension,
-            "extension_3".to_string()).unwrap();
+            "extension_3".to_string(),
+        )
+        .unwrap();
 
         // Add first connection.
         let request_payload1 = AddGraphConnectionRequestPayload {
@@ -668,11 +680,15 @@ mod tests {
         let src = GraphLoc::with_app_and_type_and_name(
             Some("http://example.com:8000".to_string()),
             GraphNodeType::Extension,
-            "extension_1".to_string()).unwrap();
+            "extension_1".to_string(),
+        )
+        .unwrap();
         let dest = GraphLoc::with_app_and_type_and_name(
             Some("http://example.com:8000".to_string()),
             GraphNodeType::Extension,
-            "extension_2".to_string()).unwrap();
+            "extension_2".to_string(),
+        )
+        .unwrap();
 
         // Add a DATA type connection between extensions.
         let request_payload = AddGraphConnectionRequestPayload {
@@ -805,11 +821,15 @@ mod tests {
         let src = GraphLoc::with_app_and_type_and_name(
             Some("http://example.com:8000".to_string()),
             GraphNodeType::Extension,
-            "extension_1".to_string()).unwrap();
+            "extension_1".to_string(),
+        )
+        .unwrap();
         let dest = GraphLoc::with_app_and_type_and_name(
             Some("http://example.com:8000".to_string()),
             GraphNodeType::Extension,
-            "extension_2".to_string()).unwrap();
+            "extension_2".to_string(),
+        )
+        .unwrap();
 
         // First add an AUDIO_FRAME type connection.
         let audio_request = AddGraphConnectionRequestPayload {
@@ -959,15 +979,21 @@ mod tests {
         let ext1 = GraphLoc::with_app_and_type_and_name(
             Some("http://example.com:8000".to_string()),
             GraphNodeType::Extension,
-            "extension_1".to_string()).unwrap();
+            "extension_1".to_string(),
+        )
+        .unwrap();
         let ext2 = GraphLoc::with_app_and_type_and_name(
             Some("http://example.com:8000".to_string()),
             GraphNodeType::Extension,
-            "extension_2".to_string()).unwrap();
+            "extension_2".to_string(),
+        )
+        .unwrap();
         let ext3 = GraphLoc::with_app_and_type_and_name(
             Some("http://example.com:8000".to_string()),
             GraphNodeType::Extension,
-            "extension_3".to_string()).unwrap();
+            "extension_3".to_string(),
+        )
+        .unwrap();
 
         // Add first command.
         let cmd1_request = AddGraphConnectionRequestPayload {
@@ -1117,11 +1143,15 @@ mod tests {
         let ext_a = GraphLoc::with_app_and_type_and_name(
             None,
             GraphNodeType::Extension,
-            "ext_a".to_string()).unwrap();
+            "ext_a".to_string(),
+        )
+        .unwrap();
         let ext_b = GraphLoc::with_app_and_type_and_name(
             None,
             GraphNodeType::Extension,
-            "ext_b".to_string()).unwrap();
+            "ext_b".to_string(),
+        )
+        .unwrap();
 
         // Add a connection between "ext_b" and "ext_a" with "hello" cmd.
         let request_payload = AddGraphConnectionRequestPayload {
@@ -1259,15 +1289,21 @@ mod tests {
         let ext_a = GraphLoc::with_app_and_type_and_name(
             None,
             GraphNodeType::Extension,
-            "ext_a".to_string()).unwrap();
+            "ext_a".to_string(),
+        )
+        .unwrap();
         let ext_b = GraphLoc::with_app_and_type_and_name(
             None,
             GraphNodeType::Extension,
-            "ext_b".to_string()).unwrap();
+            "ext_b".to_string(),
+        )
+        .unwrap();
         let ext_c = GraphLoc::with_app_and_type_and_name(
             None,
             GraphNodeType::Extension,
-            "ext_c".to_string()).unwrap();
+            "ext_c".to_string(),
+        )
+        .unwrap();
 
         // Add a connection between "ext_b" and "ext_a" with "data" data.
         let request_payload = AddGraphConnectionRequestPayload {

@@ -148,11 +148,15 @@ mod tests {
         let src = GraphLoc::with_app_and_type_and_name(
             Some("http://example.com:8000".to_string()),
             GraphNodeType::Extension,
-            "extension_1".to_string()).unwrap();
+            "extension_1".to_string(),
+        )
+        .unwrap();
         let dest = GraphLoc::with_app_and_type_and_name(
             Some("http://example.com:8000".to_string()),
             GraphNodeType::Extension,
-            "extension_2".to_string()).unwrap();
+            "extension_2".to_string(),
+        )
+        .unwrap();
 
         let add_request_payload = AddGraphConnectionRequestPayload {
             graph_id: graph_id_clone,
@@ -381,11 +385,15 @@ mod tests {
         let src = GraphLoc::with_app_and_type_and_name(
             Some("http://example.com:8000".to_string()),
             GraphNodeType::Extension,
-            "extension_1".to_string()).unwrap();
+            "extension_1".to_string(),
+        )
+        .unwrap();
         let dest = GraphLoc::with_app_and_type_and_name(
             Some("http://example.com:8000".to_string()),
             GraphNodeType::Extension,
-            "extension_2".to_string()).unwrap();
+            "extension_2".to_string(),
+        )
+        .unwrap();
         let update_request_payload = UpdateGraphConnectionMsgConversionRequestPayload {
             graph_id: graph_id_clone,
             src,
@@ -562,11 +570,15 @@ mod tests {
         let src = GraphLoc::with_app_and_type_and_name(
             Some("http://example.com:8000".to_string()),
             GraphNodeType::Extension,
-            "extension_1".to_string()).unwrap();
+            "extension_1".to_string(),
+        )
+        .unwrap();
         let dest = GraphLoc::with_app_and_type_and_name(
             Some("http://example.com:8000".to_string()),
             GraphNodeType::Extension,
-            "extension_2".to_string()).unwrap();
+            "extension_2".to_string(),
+        )
+        .unwrap();
         let update_request_payload = UpdateGraphConnectionMsgConversionRequestPayload {
             graph_id: graph_id_clone,
             src,
@@ -728,11 +740,15 @@ mod tests {
         let src = GraphLoc::with_app_and_type_and_name(
             Some("http://example.com:8000".to_string()),
             GraphNodeType::Extension,
-            "extension_1".to_string()).unwrap();
+            "extension_1".to_string(),
+        )
+        .unwrap();
         let dest = GraphLoc::with_app_and_type_and_name(
             Some("http://example.com:8000".to_string()),
             GraphNodeType::Extension,
-            "extension_2".to_string()).unwrap();
+            "extension_2".to_string(),
+        )
+        .unwrap();
 
         let add_request_payload = AddGraphConnectionRequestPayload {
             graph_id: graph_id_clone,
@@ -923,11 +939,15 @@ mod tests {
         let src = GraphLoc::with_app_and_type_and_name(
             Some("http://example.com:8000".to_string()),
             GraphNodeType::Extension,
-            "extension_1".to_string()).unwrap();
+            "extension_1".to_string(),
+        )
+        .unwrap();
         let dest = GraphLoc::with_app_and_type_and_name(
             Some("http://example.com:8000".to_string()),
             GraphNodeType::Extension,
-            "extension_2".to_string()).unwrap();
+            "extension_2".to_string(),
+        )
+        .unwrap();
         let add_request_payload = AddGraphConnectionRequestPayload {
             graph_id: graph_id_clone,
             src: src.clone(),
@@ -1139,11 +1159,15 @@ mod tests {
         let src = GraphLoc::with_app_and_type_and_name(
             Some("http://example.com:8000".to_string()),
             GraphNodeType::Extension,
-            "extension_1".to_string()).unwrap();
+            "extension_1".to_string(),
+        )
+        .unwrap();
         let dest = GraphLoc::with_app_and_type_and_name(
             Some("http://example.com:8000".to_string()),
             GraphNodeType::Extension,
-            "extension_2".to_string()).unwrap();
+            "extension_2".to_string(),
+        )
+        .unwrap();
         let update_request_payload = UpdateGraphConnectionMsgConversionRequestPayload {
             graph_id: graph_id_clone,
             src,
@@ -1290,11 +1314,15 @@ mod tests {
         let src = GraphLoc::with_app_and_type_and_name(
             Some("http://example.com:8000".to_string()),
             GraphNodeType::Extension,
-            "extension_1".to_string()).unwrap();
+            "extension_1".to_string(),
+        )
+        .unwrap();
         let dest = GraphLoc::with_app_and_type_and_name(
             Some("http://example.com:8000".to_string()),
             GraphNodeType::Extension,
-            "extension_2".to_string()).unwrap();
+            "extension_2".to_string(),
+        )
+        .unwrap();
         let add_request_payload = AddGraphConnectionRequestPayload {
             graph_id: graph_id_clone,
             src: src.clone(),
