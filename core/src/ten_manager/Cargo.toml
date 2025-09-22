@@ -82,12 +82,11 @@ winapi = { version = "0.3.9", features = ["fileapi"] }
 # sysinfo::unix::apple::cpu::get_cpu_frequency on arm64 architectures.
 # This error occurs within the process group termination feature that
 # sysinfo was introduced for.
-
+#
 # Official changelogs of sysinfo for both v0.33 and 0.35 indicate
 # modifications related to CPU frequency functions, which are
 # likely the cause of the error. So staying v0.32 is temporary considered
 # the safest solution.
-
 sysinfo = "0.32"
 
 clingo-sys = { version = "0.7.2", features = ["static-linking"] }
