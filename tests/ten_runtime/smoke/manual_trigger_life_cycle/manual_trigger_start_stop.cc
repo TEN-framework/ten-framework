@@ -140,6 +140,7 @@ class test_extension_b : public ten::extension_t {
              std::chrono::duration_cast<std::chrono::milliseconds>(
                  std::chrono::system_clock::now().time_since_epoch())
                  .count());
+
     started_ = true;
 
     ten_env.on_start_done();
@@ -150,6 +151,7 @@ class test_extension_b : public ten::extension_t {
              std::chrono::duration_cast<std::chrono::milliseconds>(
                  std::chrono::system_clock::now().time_since_epoch())
                  .count());
+
     stopped_ = true;
 
     ten_env.on_stop_done();
@@ -242,32 +244,32 @@ TEST(ManualTriggerLifeCycleTest, StartStop) {  // NOLINT
   // Send graph with extension B configured for manual trigger
   auto start_graph_cmd = ten::start_graph_cmd_t::create();
   start_graph_cmd->set_graph_from_json(R"({
-           "nodes": [{
-                "type": "extension",
-                "name": "test_extension_a",
-                "addon": "manual_trigger_start_stop__test_extension_a",
-                "extension_group": "a",
-                "app": "msgpack://127.0.0.1:8001/"
-             },{
-                "type": "extension",
-                "name": "test_extension_b",
-                "addon": "manual_trigger_start_stop__test_extension_b",
-                "extension_group": "b",
-                "app": "msgpack://127.0.0.1:8001/",
-                "property": {
-                  "ten": {
-                    "manual_trigger_life_cycle": [
-                      {
-                        "stage": "start"
-                      },
-                      {
-                        "stage": "stop"
-                      }
-                    ]
-                  }
-                }
-             }]
-           })");
+    "nodes": [{
+        "type": "extension",
+        "name": "test_extension_a",
+        "addon": "manual_trigger_start_stop__test_extension_a",
+        "extension_group": "a",
+        "app": "msgpack://127.0.0.1:8001/"
+      },{
+        "type": "extension",
+        "name": "test_extension_b",
+        "addon": "manual_trigger_start_stop__test_extension_b",
+        "extension_group": "b",
+        "app": "msgpack://127.0.0.1:8001/",
+        "property": {
+          "ten": {
+            "manual_trigger_life_cycle": [
+              {
+                "stage": "start"
+              },
+              {
+                "stage": "stop"
+              }
+            ]
+          }
+        }
+      }]
+    })");
   auto cmd_result =
       client->send_cmd_and_recv_result(std::move(start_graph_cmd));
   ten_test::check_status_code(cmd_result, TEN_STATUS_CODE_OK);

@@ -122,7 +122,7 @@ class test_extension_b : public ten::extension_t {
 
     // Create a thread to notify the start event
     thread_ = std::thread([ten_env_proxy]() {
-      std::this_thread::sleep_for(std::chrono::seconds(1));
+      ten_random_sleep_range_ms(0, 1000);
 
       ten_env_proxy->notify([](ten::ten_env_t &ten_env,
                                void *user_data) { ten_env.on_init_done(); },
@@ -136,6 +136,7 @@ class test_extension_b : public ten::extension_t {
              std::chrono::duration_cast<std::chrono::milliseconds>(
                  std::chrono::system_clock::now().time_since_epoch())
                  .count());
+
     thread_.join();
 
     started_ = true;
@@ -148,6 +149,7 @@ class test_extension_b : public ten::extension_t {
              std::chrono::duration_cast<std::chrono::milliseconds>(
                  std::chrono::system_clock::now().time_since_epoch())
                  .count());
+
     stopped_ = true;
 
     ten_env.on_stop_done();
@@ -239,35 +241,35 @@ TEST(ManualTriggerLifeCycleTest, StartEarly) {  // NOLINT
   // Create a client and connect to the app.
   auto *client = new ten::msgpack_tcp_client_t("msgpack://127.0.0.1:8001/");
 
-  // Send graph with extension B configured for manual trigger
+  // Send a graph with extension B configured for manual trigger
   auto start_graph_cmd = ten::start_graph_cmd_t::create();
   start_graph_cmd->set_graph_from_json(R"({
-           "nodes": [{
-                "type": "extension",
-                "name": "test_extension_a",
-                "addon": "manual_trigger_start_early__test_extension_a",
-                "extension_group": "a",
-                "app": "msgpack://127.0.0.1:8001/"
-             },{
-                "type": "extension",
-                "name": "test_extension_b",
-                "addon": "manual_trigger_start_early__test_extension_b",
-                "extension_group": "b",
-                "app": "msgpack://127.0.0.1:8001/",
-                "property": {
-                  "ten": {
-                    "manual_trigger_life_cycle": [
-                      {
-                        "stage": "start"
-                      },
-                      {
-                        "stage": "stop"
-                      }
-                    ]
-                  }
-                }
-             }]
-           })");
+    "nodes": [{
+        "type": "extension",
+        "name": "test_extension_a",
+        "addon": "manual_trigger_start_early__test_extension_a",
+        "extension_group": "a",
+        "app": "msgpack://127.0.0.1:8001/"
+      },{
+        "type": "extension",
+        "name": "test_extension_b",
+        "addon": "manual_trigger_start_early__test_extension_b",
+        "extension_group": "b",
+        "app": "msgpack://127.0.0.1:8001/",
+        "property": {
+          "ten": {
+            "manual_trigger_life_cycle": [
+              {
+                "stage": "start"
+              },
+              {
+                "stage": "stop"
+              }
+            ]
+          }
+        }
+      }]
+    })");
   auto cmd_result =
       client->send_cmd_and_recv_result(std::move(start_graph_cmd));
   ten_test::check_status_code(cmd_result, TEN_STATUS_CODE_OK);
