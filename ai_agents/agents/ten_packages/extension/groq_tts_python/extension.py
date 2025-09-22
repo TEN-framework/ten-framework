@@ -36,7 +36,7 @@ class GroqTTSExtension(AsyncTTS2BaseExtension):
         self.client: GroqTTS | None = None
 
         self.current_request_id: str | None = None
-        self.request_start_ts: float | None = None
+        self.request_start_ts: float = 0
         self.current_turn_id: int = -1
         self.audio_dumper: Dumper | dict[str, Dumper] | None = None
         self.flush_request_ids: set[str] = set()
@@ -124,7 +124,7 @@ class GroqTTSExtension(AsyncTTS2BaseExtension):
                 self.flush_request_ids.add(flush_id)
 
             if (
-                self.request_start_ts is not None
+                self.request_start_ts > 0
                 and self.current_request_id is not None
             ):
                 request_event_interval = int(
@@ -148,8 +148,9 @@ class GroqTTSExtension(AsyncTTS2BaseExtension):
 
         is_new_request = self.current_request_id != request_id
         self.current_request_id = request_id
-        self.request_total_audio_duration = 0
-        self.request_start_ts = time.time()
+        if is_new_request:
+            self.request_total_audio_duration = 0
+            self.request_start_ts = time.time()
 
         try:
             received_first_chunk = False

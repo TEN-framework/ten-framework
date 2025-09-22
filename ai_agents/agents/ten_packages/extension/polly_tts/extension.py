@@ -36,7 +36,7 @@ class PollyTTSExtension(AsyncTTS2BaseExtension):
         self.current_request_id: str | None = None
         self.current_turn_id: int = -1
         self.audio_dumper: Dumper | dict[str, Dumper] | None = None
-        self.request_start_ts: float | None = None
+        self.request_start_ts: float = 0
         self.request_total_audio_duration: int = 0
         self.flush_request_ids: set[str] = set()
         self.last_end_request_ids: set[str] = set()
@@ -115,7 +115,7 @@ class PollyTTSExtension(AsyncTTS2BaseExtension):
             # if current request is flushed, send audio_end
             if (
                 self.current_request_id
-                and self.request_start_ts is not None
+                and self.request_start_ts > 0
                 and self.current_request_id in self.flush_request_ids
             ):
                 request_event_interval = int(
@@ -168,8 +168,9 @@ class PollyTTSExtension(AsyncTTS2BaseExtension):
 
         is_new_request = self.current_request_id != request_id
         self.current_request_id = request_id
-        self.request_total_audio_duration = 0
-        self.request_start_ts = time.time()
+        if is_new_request:
+            self.request_total_audio_duration = 0
+            self.request_start_ts = time.time()
 
         try:
             received_first_chunk = False
