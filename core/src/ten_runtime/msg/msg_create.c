@@ -18,6 +18,7 @@ void ten_raw_msg_destroy(ten_msg_t *self) {
   switch (self->type) {
   case TEN_MSG_TYPE_CMD:
   case TEN_MSG_TYPE_CMD_STOP_GRAPH:
+  case TEN_MSG_TYPE_CMD_TRIGGER_LIFE_CYCLE:
   case TEN_MSG_TYPE_CMD_CLOSE_APP:
   case TEN_MSG_TYPE_CMD_TIMEOUT:
   case TEN_MSG_TYPE_CMD_TIMER:

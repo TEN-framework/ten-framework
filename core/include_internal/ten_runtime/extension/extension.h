@@ -17,6 +17,7 @@
 #include "include_internal/ten_runtime/path/result_return_policy.h"
 #include "include_internal/ten_runtime/schema_store/store.h"
 #include "ten_runtime/binding/common.h"
+#include "ten_runtime/common/status_code.h"
 #include "ten_runtime/extension/extension.h"
 #include "ten_utils/container/hash_handle.h"
 #include "ten_utils/container/list.h"
@@ -88,6 +89,9 @@ typedef enum TEN_EXTENSION_STATE {
   // on_start_done() is completed.
   TEN_EXTENSION_STATE_ON_START_DONE,
 
+  // The extension is preparing to stop.
+  TEN_EXTENSION_STATE_PREPARE_TO_STOP,
+
   // on_stop() is called.
   TEN_EXTENSION_STATE_ON_STOP,
 
@@ -100,6 +104,20 @@ typedef enum TEN_EXTENSION_STATE {
   // on_deinit_done() is called.
   TEN_EXTENSION_STATE_ON_DEINIT_DONE,
 } TEN_EXTENSION_STATE;
+
+// Manual trigger life cycle stage enumeration
+typedef enum TEN_MANUAL_TRIGGER_STAGE {
+  TEN_MANUAL_TRIGGER_STAGE_START,
+  TEN_MANUAL_TRIGGER_STAGE_STOP,
+
+  TEN_MANUAL_TRIGGER_STAGE_MAX
+} TEN_MANUAL_TRIGGER_STAGE;
+
+// Manual trigger life cycle configuration
+typedef struct ten_manual_trigger_life_cycle_t {
+  // true if stage should be manually triggered
+  bool stages[TEN_MANUAL_TRIGGER_STAGE_MAX];
+} ten_manual_trigger_life_cycle_t;
 
 struct ten_extension_t {
   ten_binding_handle_t binding_handle;
@@ -236,6 +254,13 @@ struct ten_extension_t {
 
   bool is_standalone_test_extension;
 
+  // Manual trigger life cycle configuration
+  ten_manual_trigger_life_cycle_t manual_trigger_life_cycle;
+
+  // List of pending trigger_life_cycle commands waiting for response
+  // Contains ten_shared_ptr_t* of trigger_life_cycle commands
+  ten_list_t pending_trigger_life_cycle_cmds;
+
   void *user_data;
 };
 
@@ -283,6 +308,19 @@ TEN_RUNTIME_PRIVATE_API bool ten_extension_validate_msg_schema(
 
 TEN_RUNTIME_PRIVATE_API ten_extension_t *ten_extension_from_smart_ptr(
     ten_smart_ptr_t *extension_smart_ptr);
+
+TEN_RUNTIME_PRIVATE_API void ten_extension_handle_trigger_life_cycle_cmd(
+    ten_extension_t *self, ten_shared_ptr_t *cmd);
+
+TEN_RUNTIME_PRIVATE_API bool ten_extension_has_pending_trigger_life_cycle_cmds(
+    ten_extension_t *self, const char *stage);
+
+TEN_RUNTIME_PRIVATE_API void
+ten_extension_reply_pending_trigger_life_cycle_cmds_by_stage(
+    ten_extension_t *self, const char *stage, TEN_STATUS_CODE status_code);
+
+TEN_RUNTIME_PRIVATE_API void ten_extension_trigger_stop_if_needed(
+    ten_extension_t *self);
 
 TEN_RUNTIME_API void ten_extension_set_me_in_target_lang(
     ten_extension_t *self, void *me_in_target_lang);

@@ -249,6 +249,9 @@ void ten_extension_handle_in_msg(ten_extension_t *self, ten_shared_ptr_t *msg) {
         case TEN_MSG_TYPE_VIDEO_FRAME:
           ten_extension_on_video_frame(self, actual_msg);
           break;
+        case TEN_MSG_TYPE_CMD_TRIGGER_LIFE_CYCLE:
+          ten_extension_handle_trigger_life_cycle_cmd(self, actual_msg);
+          break;
         default:
           TEN_ASSERT(0 && "Should handle more types.", "Should not happen.");
           break;

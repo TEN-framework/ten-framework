@@ -30,11 +30,7 @@ impl Graph {
 
             // Create forward connections for each source
             for src in &flow.source {
-                let mut forward_conn = GraphConnection::new(
-                    src.loc.app.clone(),
-                    src.loc.extension.clone(),
-                    src.loc.subgraph.clone(),
-                );
+                let mut forward_conn = GraphConnection::new(src.loc.clone());
 
                 // Create a new message flow with the current destinations
                 let mut msg_flows = Vec::new();

@@ -6,6 +6,7 @@
 //
 #include "include_internal/ten_runtime/extension/on_xxx.h"
 
+#include "include_internal/ten_runtime/common/constant_str.h"
 #include "include_internal/ten_runtime/common/loc.h"
 #include "include_internal/ten_runtime/extension/base_dir.h"
 #include "include_internal/ten_runtime/extension/close.h"
@@ -79,7 +80,7 @@ bool ten_extension_on_configure_done(ten_env_t *self) {
              "Invalid use of extension %p.", extension);
 
   if (extension->state != TEN_EXTENSION_STATE_ON_CONFIGURE) {
-    if (extension->state >= TEN_EXTENSION_STATE_ON_STOP) {
+    if (extension->state >= TEN_EXTENSION_STATE_PREPARE_TO_STOP) {
       TEN_LOGI(
           "[%s] on_configure_done() skipped: Extension is already in the close "
           "flow",
@@ -110,7 +111,7 @@ bool ten_extension_on_configure_done(ten_env_t *self) {
         "immediately.",
         ten_extension_get_name(extension, true));
 
-    ten_extension_on_stop(extension);
+    ten_extension_trigger_stop_if_needed(extension);
     return true;
   }
 
@@ -237,7 +238,7 @@ bool ten_extension_on_init_done(ten_env_t *self) {
              "Invalid use of extension %p.", extension);
 
   if (extension->state != TEN_EXTENSION_STATE_ON_INIT) {
-    if (extension->state >= TEN_EXTENSION_STATE_ON_STOP) {
+    if (extension->state >= TEN_EXTENSION_STATE_PREPARE_TO_STOP) {
       TEN_LOGI(
           "[%s] on_init_done() skipped: Extension is already in the close flow",
           ten_extension_get_name(extension, true));
@@ -258,6 +259,8 @@ bool ten_extension_on_init_done(ten_env_t *self) {
   TEN_ASSERT(ten_extension_thread_check_integrity(extension_thread, true),
              "Should not happen.");
 
+  ten_extension_flush_all_pending_msgs_received_in_init_stage(extension);
+
   if (extension_thread->is_close_triggered) {
     // Do not proceed with the subsequent start flow, as the extension thread is
     // about to shut down.
@@ -267,19 +270,42 @@ bool ten_extension_on_init_done(ten_env_t *self) {
         "immediately.",
         ten_extension_get_name(extension, true));
 
-    ten_extension_on_stop(extension);
+    ten_extension_trigger_stop_if_needed(extension);
     return true;
   }
 
-  ten_extension_flush_all_pending_msgs_received_in_init_stage(extension);
+  // Trigger on_start of extension only if not manually controlled.
+  if (!extension->manual_trigger_life_cycle
+           .stages[TEN_MANUAL_TRIGGER_STAGE_START]) {
+    int rc = ten_runloop_post_task_tail(
+        ten_extension_get_attached_runloop(extension),
+        ten_extension_trigger_on_start_task, extension, NULL);
+    if (rc) {
+      TEN_LOGW("Failed to post task to extension's runloop: %d", rc);
+      TEN_ASSERT(0, "Should not happen.");
+    }
+  } else {
+    // Check if there are pending trigger_life_cycle start commands
+    if (ten_extension_has_pending_trigger_life_cycle_cmds(extension,
+                                                          TEN_STR_START)) {
+      TEN_LOGD(
+          "[%s] on_start stage is manually controlled and has pending start "
+          "trigger commands, triggering on_start",
+          ten_extension_get_name(extension, true));
 
-  // Trigger on_start of extension.
-  int rc = ten_runloop_post_task_tail(
-      ten_extension_get_attached_runloop(extension),
-      ten_extension_trigger_on_start_task, extension, NULL);
-  if (rc) {
-    TEN_LOGW("Failed to post task to extension's runloop: %d", rc);
-    TEN_ASSERT(0, "Should not happen.");
+      int rc = ten_runloop_post_task_tail(
+          ten_extension_get_attached_runloop(extension),
+          ten_extension_trigger_on_start_task, extension, NULL);
+      if (rc) {
+        TEN_LOGW("Failed to post task to extension's runloop: %d", rc);
+        TEN_ASSERT(0, "Should not happen.");
+      }
+    } else {
+      TEN_LOGD(
+          "[%s] on_start stage is manually controlled, waiting for manual "
+          "trigger",
+          ten_extension_get_name(extension, true));
+    }
   }
 
   return true;
@@ -296,7 +322,7 @@ bool ten_extension_on_start_done(ten_env_t *self) {
              "Invalid use of extension %p.", extension);
 
   if (extension->state != TEN_EXTENSION_STATE_ON_START) {
-    if (extension->state >= TEN_EXTENSION_STATE_ON_STOP) {
+    if (extension->state >= TEN_EXTENSION_STATE_PREPARE_TO_STOP) {
       TEN_LOGI(
           "[%s] on_start_done() skipped: Extension is already in the close "
           "flow",
@@ -312,6 +338,10 @@ bool ten_extension_on_start_done(ten_env_t *self) {
 
   extension->state = TEN_EXTENSION_STATE_ON_START_DONE;
 
+  // Reply to all pending trigger_life_cycle start commands
+  ten_extension_reply_pending_trigger_life_cycle_cmds_by_stage(
+      extension, TEN_STR_START, TEN_STATUS_CODE_OK);
+
   ten_extension_thread_t *extension_thread = extension->extension_thread;
   TEN_ASSERT(extension_thread, "Should not happen.");
   TEN_ASSERT(ten_extension_thread_check_integrity(extension_thread, true),
@@ -324,7 +354,7 @@ bool ten_extension_on_start_done(ten_env_t *self) {
         "immediately.",
         ten_extension_get_name(extension, true));
 
-    ten_extension_on_stop(extension);
+    ten_extension_trigger_stop_if_needed(extension);
     return true;
   }
 
@@ -350,6 +380,10 @@ bool ten_extension_on_stop_done(ten_env_t *self) {
   }
 
   extension->state = TEN_EXTENSION_STATE_ON_STOP_DONE;
+
+  // Reply to all pending trigger_life_cycle stop commands
+  ten_extension_reply_pending_trigger_life_cycle_cmds_by_stage(
+      extension, TEN_STR_STOP, TEN_STATUS_CODE_OK);
 
   ten_extension_do_pre_close_action(extension);
 

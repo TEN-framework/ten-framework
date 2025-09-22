@@ -65,6 +65,7 @@
 #define TEN_STR_MSG_NAME_TEN_RESULT "ten:result"
 #define TEN_STR_MSG_NAME_TEN_TIMEOUT "ten:timeout"
 #define TEN_STR_MSG_NAME_TEN_TIMER "ten:timer"
+#define TEN_STR_MSG_NAME_TEN_TRIGGER_LIFE_CYCLE "ten:trigger_life_cycle"
 
 // Special command.
 #define TEN_STR_STOP_GRAPH "stop_graph"
@@ -72,6 +73,7 @@
 #define TEN_STR_START_GRAPH "start_graph"
 #define TEN_STR_TIMER "timer"
 #define TEN_STR_TIMEOUT "timeout"
+#define TEN_STR_TRIGGER_LIFE_CYCLE "trigger_life_cycle"
 
 // Graph relevant.
 #define TEN_STR_PREDEFINED_GRAPHS "predefined_graphs"
@@ -183,3 +185,7 @@
 #define TEN_STR_TEN_TEST_EXTENSION "ten:test_extension"
 
 #define TEN_STR_MANIFEST_JSON "manifest.json"
+#define TEN_STR_MANUAL_TRIGGER_LIFE_CYCLE "manual_trigger_life_cycle"
+#define TEN_STR_STAGE "stage"
+#define TEN_STR_START "start"
+#define TEN_STR_STOP "stop"

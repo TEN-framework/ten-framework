@@ -40,6 +40,7 @@ group("go") {
       "start_predefined_graph_go",
       "three_extension_cmd_go",
       "transfer_pointer_go",
+      "trigger_life_cycle_go",
       "two_extension_one_group_cmd_go",
     ]
 

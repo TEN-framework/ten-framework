@@ -14,6 +14,7 @@ export * from "./msg/cmd/cmd.js";
 export * from "./msg/cmd/cmd_result.js";
 export * from "./msg/cmd/start_graph_cmd.js";
 export * from "./msg/cmd/stop_graph_cmd.js";
+export * from "./msg/cmd/trigger_life_cycle_cmd.js";
 export * from "./msg/data.js";
 export * from "./msg/audio_frame.js";
 export * from "./msg/video_frame.js";
