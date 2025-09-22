@@ -259,6 +259,8 @@ bool ten_extension_on_init_done(ten_env_t *self) {
   TEN_ASSERT(ten_extension_thread_check_integrity(extension_thread, true),
              "Should not happen.");
 
+  ten_extension_flush_all_pending_msgs_received_in_init_stage(extension);
+
   if (extension_thread->is_close_triggered) {
     // Do not proceed with the subsequent start flow, as the extension thread is
     // about to shut down.
@@ -271,8 +273,6 @@ bool ten_extension_on_init_done(ten_env_t *self) {
     ten_extension_trigger_stop_if_needed(extension);
     return true;
   }
-
-  ten_extension_flush_all_pending_msgs_received_in_init_stage(extension);
 
   // Trigger on_start of extension only if not manually controlled.
   if (!extension->manual_trigger_life_cycle
