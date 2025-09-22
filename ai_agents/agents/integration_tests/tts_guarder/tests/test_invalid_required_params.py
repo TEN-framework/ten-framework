@@ -40,6 +40,8 @@ class InvalidRequiredParamsTester(AsyncExtensionTester):
         print("=" * 80)
 
         self.session_id: str = session_id
+        self.sent_metadata = None  # Store sent metadata for validation
+        self.request_id = "1"
 
     async def _send_finalize_signal(self, ten_env: AsyncTenEnvTester) -> None:
         """Send tts_finalize signal to trigger finalization."""
@@ -77,6 +79,8 @@ class InvalidRequiredParamsTester(AsyncExtensionTester):
             "session_id": self.session_id,
             "turn_id": 1,
         }
+        # Store sent metadata for validation
+        self.sent_metadata = metadata
         tts_text_input_obj.set_property_from_json("metadata", json.dumps(metadata))
         await ten_env.send_data(tts_text_input_obj)
         ten_env.log_info(f"✅ tts text input sent: {text}")

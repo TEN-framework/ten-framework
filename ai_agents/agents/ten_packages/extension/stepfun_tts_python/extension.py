@@ -17,9 +17,9 @@ from ten_ai_base.message import (
 from ten_ai_base.struct import TTSTextInput
 from ten_ai_base.tts2 import AsyncTTS2BaseExtension
 
-from .config import GoogleTTSConfig
-from .google_tts import (
-    GoogleTTS,
+from .config import StepFunTTSConfig
+from .stepfun_tts import (
+    StepFunTTS,
     EVENT_TTS_RESPONSE,
     EVENT_TTS_REQUEST_END,
     EVENT_TTS_ERROR,
@@ -29,11 +29,11 @@ from ten_ai_base.const import LOG_CATEGORY_KEY_POINT, LOG_CATEGORY_VENDOR
 from ten_runtime import AsyncTenEnv
 
 
-class GoogleTTSExtension(AsyncTTS2BaseExtension):
+class StepFunTTSExtension(AsyncTTS2BaseExtension):
     def __init__(self, name: str) -> None:
         super().__init__(name)
-        self.config: GoogleTTSConfig | None = None
-        self.client: GoogleTTS | None = None
+        self.config: StepFunTTSConfig | None = None
+        self.client: StepFunTTS | None = None
         self.sent_ts: datetime | None = None
         self.current_request_id: str | None = None
         self.current_turn_id: int = -1
@@ -53,22 +53,21 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
 
             if not config_json_str or config_json_str.strip() == "{}":
                 raise ValueError(
-                    "Configuration is empty. Required parameter 'credentials' is missing."
+                    "Configuration is empty. Required parameter 'api_key' is missing."
                 )
 
-            self.config = GoogleTTSConfig.model_validate_json(config_json_str)
+            self.config = StepFunTTSConfig.model_validate_json(config_json_str)
             self.config.update_params()
-            ten_env.log_info("Google TTS streaming mode enabled by default")
             ten_env.log_info(
-                f"LOG_CATEGORY_KEY_POINT: {self.config.to_str(sensitive_handling=True)}",
+                f"config: {self.config.to_str(sensitive_handling=True)}",
                 category=LOG_CATEGORY_KEY_POINT,
             )
-            if not self.config.credentials:
+            if not self.config.api_key:
                 raise ValueError(
-                    "Configuration is empty. Required parameter 'credentials' is missing."
+                    "Configuration is empty. Required parameter 'api_key' is missing."
                 )
 
-            self.client = GoogleTTS(
+            self.client = StepFunTTS(
                 config=self.config,
                 ten_env=ten_env,
             )
@@ -96,14 +95,14 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
             )
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
-        ten_env.log_debug("GoogleTTS extension on_stop started")
+        ten_env.log_debug("StepFunTTS extension on_stop started")
 
         # Clean up client
         if self.client:
             try:
                 self.client.clean()
             except Exception as e:
-                ten_env.log_error(f"Error cleaning GoogleTTS client: {e}")
+                ten_env.log_error(f"Error cleaning StepFunTTS client: {e}")
             finally:
                 self.client = None
 
@@ -131,14 +130,12 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
         ten_env.log_debug("on_deinit")
 
     def vendor(self) -> str:
-        return "google"
+        return "stepfun"
 
     def synthesize_audio_sample_rate(self) -> int:
         if self.config and self.config.params:
-            audio_params = self.config.params.get("AudioConfig", {})
-            if audio_params.get("sample_rate_hertz"):
-                return audio_params.get("sample_rate_hertz")
-        return 24000  # Google TTS default sample rate
+            return self.config.get_sample_rate()
+        return 24000  # StepFun TTS default sample rate
 
     def _calculate_audio_duration_ms(self) -> int:
         if self.config is None:
@@ -165,7 +162,7 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
             try:
                 if self.client is not None:
                     ten_env.log_info(
-                        "Flushing Google TTS client - cleaning old connection"
+                        "Flushing StepFun TTS client - cleaning old connection"
                     )
                     self.client.clean()  # Clean up old connection first
 
@@ -253,7 +250,7 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                 # reset connection if needed
                 if self.client and self.client.send_text_in_connection == True:
                     self.ten_env.log_debug(
-                        "Resetting Google TTS client since request id changed and old connection already sent request"
+                        "Resetting StepFun TTS client since request id changed and old connection already sent request"
                     )
                     await self.handle_completed_request(
                         TTSAudioEndReason.INTERRUPTED
@@ -285,7 +282,7 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                     if t.request_id not in self.recorder_map:
                         dump_file_path = os.path.join(
                             self.config.dump_path,
-                            f"google_dump_{t.request_id}.pcm",
+                            f"stepfun_dump_{t.request_id}.pcm",
                         )
                         self.recorder_map[t.request_id] = PCMWriter(
                             dump_file_path
@@ -409,7 +406,7 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                 # reset connection if needed
                 if self.client and self.client.send_text_in_connection == True:
                     self.ten_env.log_debug(
-                        "Resetting Google TTS client since request id changed and old connection already sent request"
+                        "Resetting StepFun TTS client since request id changed and old connection already sent request"
                     )
                     self.client.clean()
                     await self.client.reset()
@@ -432,3 +429,7 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                     vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
                 ),
             )
+
+
+
+

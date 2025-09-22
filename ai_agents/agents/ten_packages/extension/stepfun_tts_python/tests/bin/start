@@ -1,0 +1,27 @@
+#!/bin/bash
+
+# Test runner script for StepFun TTS Python Extension
+# This script runs the basic functionality tests
+
+# Get the directory of this script
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Get the project root (6 levels up from tests/bin)
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../../../../../.." && pwd)"
+
+# Add project root to Python path
+export PYTHONPATH="$PROJECT_ROOT:$PYTHONPATH"
+
+# Change to the tests directory
+cd "$SCRIPT_DIR/.."
+
+echo "Running StepFun TTS Python Extension Tests..."
+echo "Project Root: $PROJECT_ROOT"
+echo "Test Directory: $(pwd)"
+echo "Python Path: $PYTHONPATH"
+echo ""
+
+# Run the tests
+python -m pytest test_basic.py test_error_debug.py -v
+
+echo ""
+echo "Tests completed."

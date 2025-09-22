@@ -57,6 +57,8 @@ class SingleTestCaseTester(AsyncExtensionTester):
         self.received_audio_frame: bool = False
         self.received_error: bool = False
         self.test_success: bool = False
+        self.sent_metadata = None  # Store sent metadata for validation
+        self.request_id = f"test_invalid_request_{self.test_index}"
 
         print(f"\n{'='*60}")
         print(f"🧪 Running test case {test_index + 1}")
@@ -79,6 +81,8 @@ class SingleTestCaseTester(AsyncExtensionTester):
             "session_id": self.session_id,
             "turn_id": self.test_index + 1,
         }
+        # Store sent metadata for validation
+        self.sent_metadata = metadata
         tts_text_input_obj.set_property_from_json("metadata", json.dumps(metadata))
 
         await ten_env.send_data(tts_text_input_obj)

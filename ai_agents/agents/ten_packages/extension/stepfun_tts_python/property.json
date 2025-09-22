@@ -1,0 +1,17 @@
+{
+  "params": {
+    "api_key": "",
+    "base_url": "https://api.stepfun.com/v1",
+    "model": "step-tts-mini",
+    "voice": "cixingnansheng",
+    "response_format": "mp3",
+    "speed": 1.0,
+    "volume": 1.0,
+    "sample_rate": 24000,
+    "voice_label": {
+      "language": "",
+      "emotion": "",
+      "style": ""
+    }
+  }
+}

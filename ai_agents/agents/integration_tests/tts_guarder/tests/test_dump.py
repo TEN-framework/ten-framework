@@ -20,6 +20,7 @@ import json
 import asyncio
 import os
 import glob
+import time
 
 TTS_DUMP_CONFIG_FILE="property_dump.json"
 
@@ -48,6 +49,9 @@ class DumpTester(AsyncExtensionTester):
         self.text: str = text
         self.dump_file_name = f"tts_dump_{self.session_id}.pcm"
         self.tts_extension_dump_folder = tts_extension_dump_folder
+        self.sent_metadata = None  # Store sent metadata for validation
+        self.request_id = "test_dump_request_id_1"
+        self.audio_start_time = None  # Store tts_audio_start timestamp
 
     async def _send_finalize_signal(self, ten_env: AsyncTenEnvTester) -> None:
         """Send tts_finalize signal to trigger finalization."""
@@ -89,6 +93,8 @@ class DumpTester(AsyncExtensionTester):
             "session_id": "test_dump_session_123",
             "turn_id": 1,
         }
+        # Store sent metadata for validation
+        self.sent_metadata = metadata
         tts_text_input_obj.set_property_from_json("metadata", json.dumps(metadata))
         await ten_env.send_data(tts_text_input_obj)
         ten_env.log_info(f"✅ tts text input sent: {text}")
@@ -151,7 +157,82 @@ class DumpTester(AsyncExtensionTester):
 
             self._stop_test_with_error(ten_env, f"Received error data")
             return
+        elif name == "tts_audio_start":
+            ten_env.log_info("Received tts_audio_start")
+            self.audio_start_time = time.time()
+            
+            # 校验request_id
+            received_request_id, _ = data.get_property_string("request_id")
+            if received_request_id != self.request_id:
+                self._stop_test_with_error(ten_env, f"Request ID mismatch in tts_audio_start. Expected: {self.request_id}, Received: {received_request_id}")
+                return
+            
+            # 校验metadata (基类实现中tts_audio_start的metadata只包含session_id和turn_id)
+            metadata_str, _ = data.get_property_to_json("metadata")
+            if metadata_str:
+                try:
+                    received_metadata = json.loads(metadata_str)
+                    expected_metadata = {
+                        "session_id": self.sent_metadata.get("session_id", ""),
+                        "turn_id": self.sent_metadata.get("turn_id", -1)
+                    }
+                    if received_metadata != expected_metadata:
+                        self._stop_test_with_error(ten_env, f"Metadata mismatch in tts_audio_start. Expected: {expected_metadata}, Received: {received_metadata}")
+                        return
+                except json.JSONDecodeError:
+                    self._stop_test_with_error(ten_env, f"Invalid JSON in tts_audio_start metadata: {metadata_str}")
+                    return
+            else:
+                self._stop_test_with_error(ten_env, f"Missing metadata in tts_audio_start response")
+                return
+            
+            ten_env.log_info(f"✅ tts_audio_start received with correct request_id and metadata")
+            return
         elif name =="tts_audio_end":
+            # 校验request_id
+            received_request_id, _ = data.get_property_string("request_id")
+            if received_request_id != self.request_id:
+                self._stop_test_with_error(ten_env, f"Request ID mismatch. Expected: {self.request_id}, Received: {received_request_id}")
+                return
+            
+            # 校验metadata (基类实现中tts_audio_end的metadata只包含session_id和turn_id)
+            metadata_str, _ = data.get_property_to_json("metadata")
+            if metadata_str:
+                try:
+                    received_metadata = json.loads(metadata_str)
+                    expected_metadata = {
+                        "session_id": self.sent_metadata.get("session_id", ""),
+                        "turn_id": self.sent_metadata.get("turn_id", -1)
+                    }
+                    if received_metadata != expected_metadata:
+                        self._stop_test_with_error(ten_env, f"Metadata mismatch in tts_audio_end. Expected: {expected_metadata}, Received: {received_metadata}")
+                        return
+                except json.JSONDecodeError:
+                    self._stop_test_with_error(ten_env, f"Invalid JSON in tts_audio_end metadata: {metadata_str}")
+                    return
+            else:
+                self._stop_test_with_error(ten_env, f"Missing metadata in tts_audio_end response")
+                return
+            
+            # 校验时间差和request_total_audio_duration_ms
+            if self.audio_start_time is not None:
+                current_time = time.time()
+                actual_duration_ms = (current_time - self.audio_start_time) * 1000
+                
+                # 获取request_total_audio_duration_ms
+                received_duration_ms, _ = data.get_property_int("request_total_audio_duration_ms")
+                
+                # 计算时间差（允许100ms误差）
+                time_diff = abs(actual_duration_ms - received_duration_ms)
+                if time_diff > 100:
+                    self._stop_test_with_error(ten_env, f"Audio duration mismatch. Actual: {actual_duration_ms:.2f}ms, Reported: {received_duration_ms}ms, Diff: {time_diff:.2f}ms")
+                    return
+                
+                ten_env.log_info(f"✅ Audio duration validation passed. Actual: {actual_duration_ms:.2f}ms, Reported: {received_duration_ms}ms, Diff: {time_diff:.2f}ms")
+            else:
+                ten_env.log_warn("tts_audio_start not received before tts_audio_end")
+            
+            ten_env.log_info(f"✅ tts_audio_end received with correct request_id and metadata")
             ten_env.stop_test()
         
     @override
