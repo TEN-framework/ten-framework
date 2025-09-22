@@ -1,7 +1,6 @@
 import asyncio
 from collections.abc import Callable
 from datetime import datetime
-from time import time
 from typing import AsyncGenerator, AsyncIterator
 import uuid
 
@@ -10,6 +9,7 @@ from cartesia.tts._async_websocket import AsyncTtsWebsocket
 
 from .config import CartesiaTTSConfig
 from ten_runtime import AsyncTenEnv
+from ten_ai_base.const import LOG_CATEGORY_VENDOR
 
 # Custom event types to communicate status back to the extension
 EVENT_TTS_RESPONSE = 1
@@ -60,10 +60,10 @@ class CartesiaTTSClient:
     async def _connect(self) -> None:
         """Connect to the websocket"""
         try:
-            start_time = time()
             self.ws = await self.client.tts.websocket()
-            self.ten_env.log_info(
-                f"Cartesia websocket connected successfully, took: {time() - start_time}"
+            self.ten_env.log_debug(
+                "vendor_status:  connected to cartesia tts",
+                category=LOG_CATEGORY_VENDOR,
             )
 
         except Exception as e:
@@ -106,14 +106,11 @@ class CartesiaTTSClient:
     def reset_ttfb(self):
         self.sent_ts = None
         self.ttfb_sent = False
-        self.ten_env.log_info("CartesiaTTS: reset TTFB")
 
     async def get(
         self, text: str
     ) -> AsyncIterator[tuple[bytes | int | None, int | None]]:
         """Generate TTS audio for the given text, returns (audio_data, event_status)"""
-
-        self.ten_env.log_debug(f"KEYPOINT generate_TTS for '{text}' ")
 
         self._is_cancelled = False
         try:
@@ -130,7 +127,9 @@ class CartesiaTTSClient:
                 yield audio_chunk, event_status
 
         except Exception as e:
-            self.ten_env.log_error(f"Error in TTS get(): {e}")
+            self.ten_env.log_error(
+                f"vendor_error: {e}", category=LOG_CATEGORY_VENDOR
+            )
             raise
 
     async def _ensure_connection(self) -> None:
@@ -146,7 +145,7 @@ class CartesiaTTSClient:
             self.ten_env.log_error("Cartesia websocket not connected")
             return
 
-        self.ten_env.log_info(f"process_single_tts,text:{text}")
+        self.ten_env.log_debug(f"process_single_tts,text:{text}")
 
         context_id = uuid.uuid4().hex
         if not self.ttfb_sent:
@@ -163,7 +162,7 @@ class CartesiaTTSClient:
         try:
             async for output in output_generator:
                 if self._is_cancelled:
-                    self.ten_env.log_info(
+                    self.ten_env.log_debug(
                         "Cancellation flag detected, sending flush event and stopping TTS stream."
                     )
                     yield None, EVENT_TTS_FLUSH
@@ -184,10 +183,7 @@ class CartesiaTTSClient:
                         )
                         yield ttfb_ms, EVENT_TTS_TTFB_METRIC
                         self.ttfb_sent = True
-                        self.ten_env.log_info(
-                            f"CartesiaTTS: TTFB metric sent: {ttfb_ms}ms"
-                        )
-                    self.ten_env.log_info(
+                    self.ten_env.log_debug(
                         f"CartesiaTTS: sending EVENT_TTS_RESPONSE, length: {len(output.audio)}"
                     )
                     yield output.audio, EVENT_TTS_RESPONSE
@@ -198,9 +194,12 @@ class CartesiaTTSClient:
                     )
 
             if not self._is_cancelled:
-                self.ten_env.log_info("CartesiaTTS: sending EVENT_TTS_END")
+                self.ten_env.log_debug("CartesiaTTS: sending EVENT_TTS_END")
                 yield None, EVENT_TTS_END
         except Exception as e:
             error_message = str(e)
-            self.ten_env.log_error(f"CartesiaTTS failed:{e}")
+            self.ten_env.log_error(
+                f"vendor_error: {error_message}",
+                category=LOG_CATEGORY_VENDOR,
+            )
             yield error_message.encode("utf-8"), EVENT_TTS_ERROR

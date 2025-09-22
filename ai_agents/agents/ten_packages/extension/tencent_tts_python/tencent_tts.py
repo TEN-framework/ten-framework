@@ -53,17 +53,17 @@ class AsyncIteratorCallback(FlowingSpeechSynthesisListener):
 
     def on_close(self):
         super().on_close()
-        self.ten_env.log_info("WebSocket connection closed.")
+        self.ten_env.log_debug("WebSocket connection closed.")
 
     def on_synthesis_start(self, session_id) -> None:
         super().on_synthesis_start(session_id)
-        self.ten_env.log_info(
+        self.ten_env.log_debug(
             f"TTS synthesis task started, session_id: {session_id}"
         )
 
     def on_synthesis_end(self) -> None:
         super().on_synthesis_end()
-        self.ten_env.log_info("TTS synthesis task completed")
+        self.ten_env.log_debug("TTS synthesis task completed")
         asyncio.run_coroutine_threadsafe(
             self._queue.put((True, MESSAGE_TYPE_CMD_COMPLETE, None)), self._loop
         )
@@ -79,7 +79,7 @@ class AsyncIteratorCallback(FlowingSpeechSynthesisListener):
                 self._queue.put((False, MESSAGE_TYPE_CMD_METRIC, ttfb_ms)),
                 self._loop,
             )
-        self.ten_env.log_info(f"Received audio data: {len(audio_bytes)} bytes")
+        self.ten_env.log_debug(f"Received audio data: {len(audio_bytes)} bytes")
         # Send audio data to queue
         asyncio.run_coroutine_threadsafe(
             self._queue.put((False, MESSAGE_TYPE_PCM, audio_bytes)), self._loop
@@ -108,7 +108,7 @@ class AsyncIteratorCallback(FlowingSpeechSynthesisListener):
 
     def on_data(self, data: bytes) -> None:
         """Called when receiving audio data from TTS service."""
-        self.ten_env.log_info(f"Received audio data: {len(data)} bytes")
+        self.ten_env.log_debug(f"Received audio data: {len(data)} bytes")
         # Send audio data to queue
         asyncio.run_coroutine_threadsafe(
             self._queue.put((False, MESSAGE_TYPE_PCM, data)), self._loop
@@ -175,7 +175,7 @@ class TencentTTSClient:
 
         self.synthesizer = synthesizer
 
-        self.ten_env.log_info("Tencent TTS client started successfully")
+        self.ten_env.log_debug("Tencent TTS client started successfully")
 
     def stop(self) -> None:
         """Stop the TTS client and clean up resources."""
@@ -196,10 +196,10 @@ class TencentTTSClient:
                 if self.synthesizer.is_alive():
                     self.synthesizer.close()
                 else:
-                    self.ten_env.log_info(
+                    self.ten_env.log_debug(
                         "Synthesizer is not alive, skipping close"
                     )
-                self.ten_env.log_info("TTS operation closed")
+                self.ten_env.log_debug("TTS operation closed")
             except Exception as e:
                 self.ten_env.log_error(f"Error cancelling TTS: {e}")
 
@@ -210,11 +210,11 @@ class TencentTTSClient:
         """
         Complete current TTS operation.
         """
-        self.ten_env.log_info("TTS operation completed")
+        self.ten_env.log_debug("TTS operation completed")
         if self.synthesizer and self.synthesizer.is_alive():
             try:
                 self.synthesizer.complete()
-                self.ten_env.log_info("TTS operation completed")
+                self.ten_env.log_debug("TTS operation completed")
             except Exception as e:
                 self.ten_env.log_error(f"Error completing TTS: {e}")
 
@@ -224,13 +224,13 @@ class TencentTTSClient:
         This method only initiates synthesis and returns immediately.
         Audio data should be consumed from the queue independently.
         """
-        self.ten_env.log_info(
+        self.ten_env.log_debug(
             f"Starting TTS synthesis, text: {text}, input_end: {text_input_end}"
         )
 
         # Start synthesizer if not initialized
         if self.synthesizer is None or not self.synthesizer.is_alive():
-            self.ten_env.log_info(
+            self.ten_env.log_debug(
                 "Synthesizer is not initialized, starting new one."
             )
             self.start()
@@ -243,7 +243,7 @@ class TencentTTSClient:
         if text_input_end:
             self.complete()
 
-        self.ten_env.log_info(f"TTS synthesis initiated for text: {text}")
+        self.ten_env.log_debug(f"TTS synthesis initiated for text: {text}")
 
     async def get_audio_data(self):
         """
