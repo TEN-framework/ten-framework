@@ -39,13 +39,13 @@ export function useRTCMessageParser(
       .join("");
   };
 
-  const base64ToUtf8 =  (base64: string): string => {
+  const base64ToUtf8 = (base64: string): string => {
     const binaryString = atob(base64); // Latin-1 形式的二进制字符串
     const bytes = new Uint8Array(binaryString.length);
     for (let i = 0; i < binaryString.length; i++) {
       bytes[i] = binaryString.charCodeAt(i);
     }
-    return new TextDecoder('utf-8').decode(bytes);
+    return new TextDecoder("utf-8").decode(bytes);
   };
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: <ignore>
