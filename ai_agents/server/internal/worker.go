@@ -124,7 +124,7 @@ func isInProcessGroup(pid, pgid int) bool {
 }
 
 func (w *Worker) start(req *StartReq) (err error) {
-	shell := fmt.Sprintf("cd /app/agents && %s --property %s", workerExec, w.PropertyJsonFile)
+	shell := fmt.Sprintf("tman run start -- --property %s", w.PropertyJsonFile)
 	slog.Info("Worker start", "requestId", req.RequestId, "shell", shell, logTag)
 	cmd := exec.Command("sh", "-c", shell)
 	cmd.SysProcAttr = &syscall.SysProcAttr{

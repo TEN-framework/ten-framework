@@ -8,10 +8,12 @@ install_python_requirements() {
 
   echo "Starting Python dependencies installation..."
 
-  # Check root directory requirements.txt
+  # Install server Python dependencies from root directory first
   if [[ -f "$app_dir/requirements.txt" ]]; then
-    echo "Installing root directory requirements.txt..."
+    echo "Installing server Python dependencies from root directory requirements.txt..."
     ${PIP_INSTALL_CMD} -r "$app_dir/requirements.txt"
+  else
+    echo "No requirements.txt found in root directory: $app_dir"
   fi
 
   # Traverse ten_packages/extension directory to find requirements.txt
