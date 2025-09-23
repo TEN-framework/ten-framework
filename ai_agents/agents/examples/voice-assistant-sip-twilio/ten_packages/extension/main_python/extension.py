@@ -90,6 +90,7 @@ class MainControlExtension(AsyncExtension):
 
     @agent_event_handler(ASRResultEvent)
     async def _on_asr_result(self, event: ASRResultEvent):
+        self.ten_env.log_info(f"[MainControlExtension] ASR Result: {event.text}")
         self.session_id = event.metadata.get("session_id", "100")
         stream_id = int(self.session_id)
         if not event.text:

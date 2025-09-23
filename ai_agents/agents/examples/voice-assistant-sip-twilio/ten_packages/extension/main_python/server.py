@@ -7,6 +7,9 @@ import asyncio
 import json
 import base64
 import time
+import os
+import audioop
+from datetime import datetime
 from typing import Dict, Any, Optional
 from fastapi import FastAPI, HTTPException, Request, WebSocket
 from fastapi.responses import JSONResponse, Response
@@ -17,6 +20,7 @@ from twilio.rest import Client
 from twilio.twiml.voice_response import VoiceResponse
 
 from ten_runtime import AsyncTenEnv, Loc
+from ten_runtime.audio_frame import AudioFrameDataFmt
 
 from .config import MainControlConfig
 
@@ -30,8 +34,19 @@ class TwilioServer:
         self.app = FastAPI(title="Twilio Dial Server", version="1.0.0")
         self.active_call_sessions: Dict[str, Dict[str, Any]] = {}
         self.twilio_client: Optional[Client] = None
+        self.audio_dump_files: Dict[str, str] = {}  # call_sid -> filepath
+        self._setup_audio_dump_directory()
         self._setup_routes()
         self._setup_twilio_client()
+
+    def _setup_audio_dump_directory(self):
+        """Setup directory for audio dump files"""
+        # Use configured directory or default
+        self.audio_dump_dir = getattr(self.config, 'audio_dump_directory', "/tmp/twilio_audio_dumps")
+
+        os.makedirs(self.audio_dump_dir, exist_ok=True)
+        if self.ten_env:
+            self.ten_env.log_info(f"Audio dump directory created: {self.audio_dump_dir}")
 
     def _setup_twilio_client(self):
         """Initialize Twilio client"""
@@ -276,25 +291,36 @@ class TwilioServer:
             )
 
     async def _forward_audio_to_ten(self, audio_payload: str, call_sid: str):
-        """Forward audio data to TEN framework"""
+        """Forward audio data to TEN framework and dump PCM audio"""
         try:
             if not self.ten_env:
                 return
 
-            # Decode base64 audio data
-            audio_data = base64.b64decode(audio_payload)
+            # Decode base64 audio data (this is μ-law encoded)
+            mulaw_data = base64.b64decode(audio_payload)
+
+            # Convert μ-law to PCM
+            pcm_data = audioop.ulaw2lin(mulaw_data, 2)  # 2 bytes per sample (16-bit)
+
+            # Dump PCM audio to file
+            await self._dump_pcm_audio(pcm_data, call_sid)
 
             # Create AudioFrame and send to TEN framework
             from ten_runtime import AudioFrame
 
             audio_frame = AudioFrame.create("pcm_frame")
-            audio_frame.alloc_buf(len(audio_data))
+            audio_frame.alloc_buf(len(pcm_data))
             buf = audio_frame.lock_buf()
-            buf[:] = audio_data
+            buf[:] = pcm_data
             audio_frame.unlock_buf(buf)
             audio_frame.set_sample_rate(8000)
             audio_frame.set_number_of_channels(1)
             audio_frame.set_bytes_per_sample(2)
+            audio_frame.set_data_fmt(AudioFrameDataFmt.INTERLEAVE)
+            audio_frame.set_samples_per_channel(
+                len(pcm_data)
+                // (2 * 1)
+            )
 
             audio_frame.set_property_int("stream_id", 54321)
 
@@ -314,6 +340,53 @@ class TwilioServer:
             if self.ten_env:
                 self.ten_env.log_error(f"Failed to forward audio to TEN: {e}")
 
+    def _init_audio_dump_file(self, call_sid: str):
+        """Initialize audio dump file for a call"""
+        try:
+            if call_sid in self.audio_dump_files:
+                return  # File already initialized
+
+            # Create filename with timestamp and call_sid
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"twilio_audio_{call_sid}_{timestamp}.pcm"
+            filepath = os.path.join(self.audio_dump_dir, filename)
+
+            # Create empty file to initialize
+            with open(filepath, 'wb') as f:
+                pass  # Create empty file
+
+            self.audio_dump_files[call_sid] = filepath
+
+            if self.ten_env:
+                self.ten_env.log_info(f"Initialized audio dump file: {filepath}")
+
+        except Exception as e:
+            if self.ten_env:
+                self.ten_env.log_error(f"Failed to initialize audio dump file: {e}")
+
+    async def _dump_pcm_audio(self, audio_data: bytes, call_sid: str):
+        """Dump PCM audio data to file"""
+        try:
+            # Initialize file if not exists
+            if call_sid not in self.audio_dump_files:
+                self._init_audio_dump_file(call_sid)
+
+            # Get filepath for this call
+            filepath = self.audio_dump_files.get(call_sid)
+            if not filepath:
+                return
+
+            # Write PCM audio data to file
+            with open(filepath, 'ab') as f:  # 'ab' mode for appending binary data
+                f.write(audio_data)
+
+            if self.ten_env:
+                self.ten_env.log_info(f"Dumped {len(audio_data)} bytes of PCM audio (converted from μ-law) to {filepath}")
+
+        except Exception as e:
+            if self.ten_env:
+                self.ten_env.log_error(f"Failed to dump PCM audio: {e}")
+
     async def send_audio_to_twilio(self, audio_data: bytes, call_sid: str):
         """Send audio data to Twilio via WebSocket"""
         try:
@@ -324,8 +397,11 @@ class TwilioServer:
             if not websocket:
                 return
 
-            # Encode audio data to base64
-            audio_base64 = base64.b64encode(audio_data).decode("utf-8")
+            # Convert PCM to μ-law for Twilio
+            mulaw_data = audioop.lin2ulaw(audio_data, 2)  # 2 bytes per sample (16-bit)
+
+            # Encode μ-law audio data to base64
+            audio_base64 = base64.b64encode(mulaw_data).decode("utf-8")
 
             message = {
                 "event": "media",
@@ -348,6 +424,13 @@ class TwilioServer:
             del self.active_call_sessions[call_sid]
             if self.ten_env:
                 self.ten_env.log_info(f"Cleaned up call session: {call_sid}")
+
+        # Clean up audio dump file
+        if call_sid in self.audio_dump_files:
+            filepath = self.audio_dump_files[call_sid]
+            del self.audio_dump_files[call_sid]
+            if self.ten_env:
+                self.ten_env.log_info(f"Audio dump file ready: {filepath}")
 
     async def start_server(self):
         """Start the FastAPI server"""
@@ -419,6 +502,8 @@ class TwilioServer:
                 while True:
                     message = await websocket.recv()
                     message = json.loads(message)
+
+                    self.ten_env.log_info(f"Received message: {message}")
 
                     if message["event"] == "media":
                         # Handle incoming audio data
