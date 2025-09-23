@@ -8,12 +8,13 @@ install_python_requirements() {
 
   echo "Starting Python dependencies installation..."
 
-  # Install server Python dependencies from root directory first
-  if [[ -f "$app_dir/requirements.txt" ]]; then
-    echo "Installing server Python dependencies from root directory requirements.txt..."
-    ${PIP_INSTALL_CMD} -r "$app_dir/requirements.txt"
+
+  # Install Twilio server Python dependencies
+  if [[ -f "$app_dir/server/requirements.txt" ]]; then
+    echo "Installing Twilio server Python dependencies..."
+    ${PIP_INSTALL_CMD} -r "$app_dir/server/requirements.txt"
   else
-    echo "No requirements.txt found in root directory: $app_dir"
+    echo "No requirements.txt found in server directory: $app_dir/server"
   fi
 
   # Traverse ten_packages/extension directory to find requirements.txt

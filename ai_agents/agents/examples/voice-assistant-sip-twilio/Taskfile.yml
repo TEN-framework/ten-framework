@@ -7,7 +7,7 @@ tasks:
     desc: run backend http server
     dir: ./
     cmds:
-      - /app/server/bin/api
+      - tman run twilio-server
 
   run-gd-server:
     desc: run tman dev http server for TMAN Designer

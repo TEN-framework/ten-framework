@@ -40,6 +40,6 @@
   "scripts": {
     "start": "scripts/start.sh",
     "build": "scripts/install_python_deps.sh",
-    "server": "scripts/run-server.sh"
+    "twilio-server": "scripts/run-twilio-server.sh"
   }
 }
