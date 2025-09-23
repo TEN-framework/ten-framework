@@ -243,13 +243,6 @@ export const DeleteNodePayloadSchema = z.object({
 
 export const AddConnectionPayloadSchema = z.object({
   graph_id: z.string(),
-  // src_app: z.string().nullable().nullish(),
-  // src_extension: z.string(),
-  // msg_type: z.nativeEnum(EConnectionType),
-  // msg_name: z.string(),
-  // dest_app: z.string().nullable().nullish(),
-  // dest_extension: z.string(),
-  // msg_conversion: z.unknown().nullish(), // TODO: add msg_conversion type
   src: GraphLoc,
   dest: GraphLoc,
   msg_type: z.enum(EConnectionType),
@@ -258,13 +251,7 @@ export const AddConnectionPayloadSchema = z.object({
 });
 
 export const DeleteConnectionPayloadSchema = z.object({
-  // graph_id: z.string(),
-  // src_app: z.string().nullable().nullish(),
-  // src_extension: z.string(),
-  // msg_type: z.nativeEnum(EConnectionType),
-  // msg_name: z.string(),
-  // dest_app: z.string().nullable().nullish(),
-  // dest_extension: z.string(),
+  graph_id: z.string(),
   src: GraphLoc,
   dest: GraphLoc,
   msg_type: z.enum(EConnectionType),
