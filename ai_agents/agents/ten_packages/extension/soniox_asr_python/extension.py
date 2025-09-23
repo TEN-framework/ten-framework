@@ -9,6 +9,7 @@ import os
 import time
 from typing import List, Optional, Tuple
 
+from pydantic import BaseModel, Field
 from ten_ai_base.const import (
     LOG_CATEGORY_VENDOR,
     LOG_CATEGORY_KEY_POINT,
@@ -38,6 +39,19 @@ from .websocket import (
     SonioxWebsocketClient,
     SonioxWebsocketEvents,
 )
+
+
+class ASRTranslationResult(BaseModel):
+    """Translation result model specific to Soniox extension."""
+
+    id: str
+    text: str
+    source_text: str  # Original text that was translated
+    final: bool
+    start_ms: int
+    duration_ms: int
+    language: str  # Target language of translation
+    source_language: str  # Source language that was translated from
 
 
 class SonioxASRExtension(AsyncASRBaseExtension):
@@ -290,19 +304,32 @@ class SonioxASRExtension(AsyncASRBaseExtension):
             category=LOG_CATEGORY_VENDOR,
         )
         try:
-            transcript_tokens, unused_translation_tokens, fin = (
-                self._group_tokens(tokens)
-            )
+            # Group tokens into transcript-translation pairs
+            grouped_tokens, fin = self._group_tokens_with_translations(tokens)
 
-            final_tokens, non_final_tokens = (
-                self._group_transcript_tokens_by_final(transcript_tokens)
-            )
+            # Process each group
+            for transcript_tokens, translation_tokens in grouped_tokens:
+                # Create and send ASR results
+                asr_results = self._create_asr_results(
+                    transcript_tokens,
+                    is_final=(
+                        transcript_tokens[0].is_final
+                        if transcript_tokens
+                        else False
+                    ),
+                )
 
-            if final_tokens:
-                await self._send_tokens(final_tokens, is_final=True)
+                for result in asr_results:
+                    await self.send_asr_result(result)
 
-            if non_final_tokens:
-                await self._send_tokens(non_final_tokens, is_final=False)
+                    # If we have translation tokens, send translation with same timing
+                    if translation_tokens:
+                        await self._send_translation_results(
+                            translation_tokens,
+                            result.text,  # Pass source text from ASR result
+                            result.start_ms,
+                            result.duration_ms,
+                        )
 
             if fin:
                 await self._finalize_end()
@@ -310,24 +337,42 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         except Exception as e:
             self.ten_env.log_error(f"Error handling transcript: {e}")
 
-    def _group_tokens(
+    def _group_tokens_with_translations(
         self,
         tokens: List[SonioxToken],
-    ) -> Tuple[List[SonioxTranscriptToken], List[SonioxTranslationToken], bool]:
-        transcript_tokens = []
-        translation_tokens = []
+    ) -> Tuple[
+        List[Tuple[List[SonioxTranscriptToken], List[SonioxTranslationToken]]],
+        bool,
+    ]:
+        """
+        Group tokens based on pattern: transcription tokens followed by translation tokens.
+        Returns list of (transcript_tokens, translation_tokens) tuples.
+        """
+        grouped = []
+        current_transcript = []
+        current_translation = []
         fin = False
 
         for token in tokens:
             if isinstance(token, SonioxTranscriptToken):
-                transcript_tokens.append(token)
+                # If we have accumulated translations, save the current group
+                if current_transcript and current_translation:
+                    grouped.append((current_transcript, current_translation))
+                    current_transcript = []
+                    current_translation = []
+                # Start new transcript group or continue current one
+                current_transcript.append(token)
             elif isinstance(token, SonioxTranslationToken):
-                translation_tokens.append(token)
+                current_translation.append(token)
             elif isinstance(token, SonioxFinToken):
                 fin = True
             # ignore end token
 
-        return transcript_tokens, translation_tokens, fin
+        # Add any remaining group
+        if current_transcript:
+            grouped.append((current_transcript, current_translation))
+
+        return grouped, fin
 
     def _group_transcript_tokens_by_final(
         self, tokens: List[SonioxTranscriptToken]
@@ -349,6 +394,49 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         results = self._create_asr_results(tokens, is_final)
         for result in results:
             await self.send_asr_result(result)
+
+    async def _send_translation_results(
+        self,
+        translation_tokens: List[SonioxTranslationToken],
+        source_text: str,
+        start_ms: int,
+        duration_ms: int,
+    ) -> None:
+        """Send translation results with timing from corresponding transcript."""
+        if not translation_tokens:
+            return
+
+        # Combine all translation tokens into one text
+        text = "".join(token.text for token in translation_tokens)
+
+        # Use the finality of the last token
+        is_final = (
+            translation_tokens[-1].is_final
+            if translation_tokens[-1].is_final is not None
+            else False
+        )
+
+        translation_result = ASRTranslationResult(
+            id=str(int(time.time() * 1000)),
+            text=text,
+            source_text=source_text,
+            final=is_final,
+            start_ms=start_ms,
+            duration_ms=duration_ms,
+            language=translation_tokens[0].language,
+            source_language=translation_tokens[0].source_language,
+        )
+
+        # Send as Data message with name 'asr_translation_result'
+        data = Data.create("asr_translation_result")
+        data.set_property_from_json("", translation_result.model_dump_json())
+        await self.ten_env.send_data(data)
+
+        self.ten_env.log_info(
+            f"Sent translation: '{source_text}' -> '{text}', lang={translation_result.language}, "
+            f"final={is_final}, start_ms={start_ms}",
+            category=LOG_CATEGORY_KEY_POINT,
+        )
 
     def _create_asr_results(
         self, tokens: List[SonioxTranscriptToken], is_final: bool
