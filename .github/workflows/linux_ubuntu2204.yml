@@ -316,13 +316,13 @@ jobs:
 
             if [ ! -d "$item" ]; then
               echo "✗ Directory not found: $item, skipping..."
-              ((FAILED_PUBLISHES++))
+              FAILED_PUBLISHES=$((FAILED_PUBLISHES + 1))
               continue
             fi
 
             cd "$item" || {
               echo "✗ Failed to enter directory: $item, skipping..."
-              ((FAILED_PUBLISHES++))
+              FAILED_PUBLISHES=$((FAILED_PUBLISHES + 1))
               continue
             }
 
@@ -332,7 +332,9 @@ jobs:
 
               # Try to delete existing package (this can fail, it's okay)
               echo "Attempting to delete existing package..."
-              ${TMAN_BIN} --verbose --admin-token ${{ secrets.TEN_CLOUD_STORE_ADMIN_TOKEN }} delete "$identity" || {
+              # Parse identity string into separate arguments: type name version hash
+              read -r pkg_type pkg_name pkg_version pkg_hash <<< "$identity"
+              ${TMAN_BIN} --verbose --admin-token ${{ secrets.TEN_CLOUD_STORE_ADMIN_TOKEN }} delete "$pkg_type" "$pkg_name" "$pkg_version" "$pkg_hash" || {
                 echo "Warning: Failed to delete existing package (this is normal if package doesn't exist)"
               }
 
@@ -340,14 +342,14 @@ jobs:
               echo "Attempting to publish package..."
               if ${TMAN_BIN} --verbose --user-token ${{ secrets.TEN_CLOUD_STORE }} publish; then
                 echo "✓ Successfully published: $item"
-                ((SUCCESSFUL_PUBLISHES++))
+                SUCCESSFUL_PUBLISHES=$((SUCCESSFUL_PUBLISHES + 1))
               else
                 echo "✗ Failed to publish: $item"
-                ((FAILED_PUBLISHES++))
+                FAILED_PUBLISHES=$((FAILED_PUBLISHES + 1))
               fi
             else
               echo "✗ Failed to get identity for: $item"
-              ((FAILED_PUBLISHES++))
+              FAILED_PUBLISHES=$((FAILED_PUBLISHES + 1))
             fi
 
             cd - >/dev/null
@@ -392,14 +394,14 @@ jobs:
             if [ -e "$item" ]; then
               if rm -rf "$item"; then
                 echo "✓ Successfully removed: $item"
-                ((SUCCESSFUL_CLEANUPS++))
+                SUCCESSFUL_CLEANUPS=$((SUCCESSFUL_CLEANUPS + 1))
               else
                 echo "✗ Failed to remove: $item"
-                ((FAILED_CLEANUPS++))
+                FAILED_CLEANUPS=$((FAILED_CLEANUPS + 1))
               fi
             else
               echo "• Already absent: $item"
-              ((SUCCESSFUL_CLEANUPS++))
+              SUCCESSFUL_CLEANUPS=$((SUCCESSFUL_CLEANUPS + 1))
             fi
           done
 
