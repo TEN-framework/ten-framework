@@ -68,6 +68,7 @@ class TencentTTSExtension(AsyncTTS2BaseExtension):
 
             # Initialize Tencent TTS client
             self.client = TencentTTSClient(self.config, ten_env, self.vendor())
+            asyncio.create_task(self.client.start())
             self.audio_processor_task = asyncio.create_task(
                 self._process_audio_data()
             )
@@ -347,6 +348,7 @@ class TencentTTSExtension(AsyncTTS2BaseExtension):
                             self.ten_env.log_debug(
                                 f"request time stamped for request ID: {self.current_request_id}, request_event_interval: {request_event_interval}ms, total_audio_duration: {self.request_total_audio_duration}ms"
                             )
+                            await self.client.stop()
 
                 except asyncio.CancelledError:
                     self.ten_env.log_info("Audio consumer task was cancelled.")
@@ -443,4 +445,4 @@ class TencentTTSExtension(AsyncTTS2BaseExtension):
             self.ten_env.log_debug(
                 f"Flushing TTS for request ID: {self.current_request_id}"
             )
-            self.client.close()
+            await self.client.stop()

@@ -4,7 +4,7 @@
 # Licensed under the Apache License, Version 2.0, with certain conditions.
 # Refer to the "LICENSE" file in the root directory for more information.
 #
-from unittest.mock import patch, MagicMock, AsyncMock
+from unittest.mock import patch, AsyncMock
 import asyncio
 import filecmp
 import json
@@ -109,8 +109,8 @@ def test_dump_functionality(MockTencentTTSClient):
 
     # --- Mock Configuration ---
     mock_instance = MockTencentTTSClient.return_value
-    mock_instance.start = MagicMock()
-    mock_instance.stop = MagicMock()
+    mock_instance.start = AsyncMock()
+    mock_instance.stop = AsyncMock()
 
     # Create some fake audio data to be streamed
     fake_audio_chunk_1 = b"\x11\x22\x33\x44" * 20
@@ -279,8 +279,8 @@ def test_text_input_end_logic(MockTencentTTSClient):
 
     # --- Mock Configuration ---
     mock_instance = MockTencentTTSClient.return_value
-    mock_instance.start = MagicMock()
-    mock_instance.stop = MagicMock()
+    mock_instance.start = AsyncMock()
+    mock_instance.stop = AsyncMock()
 
     # Create some fake audio data to be streamed
     fake_audio_chunk_1 = b"\x11\x22\x33\x44" * 20
@@ -441,8 +441,8 @@ def test_flush_logic(MockTencentTTSClient):
     print("Starting test_flush_logic with mock...")
 
     mock_instance = MockTencentTTSClient.return_value
-    mock_instance.start = MagicMock()
-    mock_instance.stop = MagicMock()
+    mock_instance.start = AsyncMock()
+    mock_instance.stop = AsyncMock()
 
     # Create some fake audio data to be streamed
     fake_audio_chunk_1 = b"\x11\x22\x33\x44" * 20
