@@ -31,7 +31,7 @@
               "property": {
                 "params": {
                   "api_key": "${env:DEEPGRAM_API_KEY}",
-                  "language": "en-US"
+                  "language": "zh-CN"
                 }
               }
             },
@@ -41,7 +41,7 @@
               "addon": "openai_llm2_python",
               "extension_group": "chatgpt",
               "property": {
-                "base_url": "https://api.openai.com/v1",
+                "base_url": "${env:OPENAI_API_BASE}",
                 "api_key": "${env:OPENAI_API_KEY}",
                 "frequency_penalty": 0.9,
                 "model": "${env:OPENAI_MODEL}",
@@ -55,16 +55,16 @@
             {
               "type": "extension",
               "name": "tts",
-              "addon": "elevenlabs_tts2_python",
+              "addon": "fish_audio_tts_python",
               "extension_group": "tts",
               "property": {
-                "dump": false,
-                "dump_path": "./",
                 "params": {
-                  "key": "${env:ELEVENLABS_TTS_KEY}",
-                  "model_id": "eleven_multilingual_v2",
-                  "voice_id": "pNInz6obpgDQGcFmaJgB",
-                  "output_format": "pcm_16000"
+                  "backend": "s1",
+                  "temperature": 0.7,
+                  "sample_rate": 16000,
+                  "top_p": 0.7,
+                  "api_key": "${env:FISH_AUDIO_TTS_KEY}",
+                  "reference_id": "da2b6bff4a9f440988f3076600d7ff5a"
                 }
               }
             },
@@ -74,7 +74,7 @@
               "addon": "main_python",
               "extension_group": "control",
               "property": {
-                "greeting": "TEN Agent connected. How can I help you today?"
+                "greeting": "小小怪下士，你总是在追求所谓的成功，却忘记了生命中最美的风景就在身边。"
               }
             },
             {
