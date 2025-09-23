@@ -1,0 +1,7 @@
+{
+    "params": {
+        "api_key": "invalid",
+        "sample_rate": 16000,
+        "language": "en-US"
+    }
+}
