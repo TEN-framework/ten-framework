@@ -262,6 +262,7 @@ jobs:
           fi
 
           df -h .
+        shell: bash
 
       - name: Publish to release assets
         uses: softprops/action-gh-release@v2
