@@ -1,0 +1,14 @@
+{
+    "params": {
+        "token": "e5d325b22f514766b6e30ec536e8a801",
+        "appkey": "HBd1B2RCzVuJrA9W",
+        "url": "wss://nls-gateway-cn-beijing.aliyuncs.com/ws/v1",
+        "voice": "zhixiaomei",
+        "format": "pcm",
+        "sample_rate": 16000,
+        "volume": 50,
+        "speech_rate": 0,
+        "pitch_rate": 0,
+        "enable_subtitle": false
+    }
+}
