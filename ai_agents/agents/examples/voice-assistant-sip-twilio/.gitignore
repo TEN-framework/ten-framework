@@ -1,0 +1,5 @@
+ten_packages/addon_loader
+ten_packages/system
+ten_packages/extension
+
+!ten_packages/extension/main_python

@@ -17,9 +17,29 @@
       "type": "system",
       "name": "ten_ai_base",
       "version": "0.7"
+    },
+    {
+      "path": "../../ten_packages/extension/streamid_adapter"
+    },
+    {
+      "path": "../../ten_packages/extension/deepgram_asr_python"
+    },
+    {
+      "path": "../../ten_packages/extension/openai_llm2_python"
+    },
+    {
+      "path": "../../ten_packages/extension/elevenlabs_tts2_python"
+    },
+    {
+      "path": "../../ten_packages/extension/message_collector2"
+    },
+    {
+      "path": "../../ten_packages/extension/weatherapi_tool_python"
     }
   ],
   "scripts": {
-    "start": "bin/start"
+    "start": "scripts/start.sh",
+    "build": "scripts/install_python_deps.sh",
+    "server": "scripts/run-server.sh"
   }
 }
