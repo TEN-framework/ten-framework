@@ -24,9 +24,12 @@ mod tests {
         home::config::TmanConfig,
         output::cli::TmanOutputCli,
     };
-    use ten_rust::pkg_info::{
-        constants::{MANIFEST_JSON_FILENAME, PROPERTY_JSON_FILENAME},
-        message::MsgType,
+    use ten_rust::{
+        graph::{connection::GraphLoc, node::GraphNodeType},
+        pkg_info::{
+            constants::{MANIFEST_JSON_FILENAME, PROPERTY_JSON_FILENAME},
+            message::MsgType,
+        },
     };
     use uuid::Uuid;
 
@@ -61,14 +64,24 @@ mod tests {
         .await;
 
         // Try to delete a connection from a non-existent graph.
+        let src = GraphLoc::with_app_and_type_and_name(
+            None,
+            GraphNodeType::Extension,
+            "source_extension".to_string(),
+        )
+        .unwrap();
+        let dest = GraphLoc::with_app_and_type_and_name(
+            None,
+            GraphNodeType::Extension,
+            "destination_extension".to_string(),
+        )
+        .unwrap();
         let request_payload = DeleteGraphConnectionRequestPayload {
             graph_id: Uuid::new_v4(),
-            src_app: None,
-            src_extension: "source_extension".to_string(),
+            src,
+            dest,
             msg_type: MsgType::Cmd,
-            msg_name: "test_message".to_string(),
-            dest_app: None,
-            dest_extension: "destination_extension".to_string(),
+            msg_names: vec!["test_message".to_string()],
         };
 
         let req = test::TestRequest::post()
@@ -125,14 +138,25 @@ mod tests {
         .await;
 
         // Try to delete a non-existent connection.
+        let src = GraphLoc::with_app_and_type_and_name(
+            None,
+            GraphNodeType::Extension,
+            "nonexistent_extension".to_string(),
+        )
+        .unwrap();
+        let dest = GraphLoc::with_app_and_type_and_name(
+            None,
+            GraphNodeType::Extension,
+            "nonexistent_destination".to_string(),
+        )
+        .unwrap();
+
         let request_payload = DeleteGraphConnectionRequestPayload {
             graph_id: graph_id_clone,
-            src_app: None,
-            src_extension: "nonexistent_extension".to_string(),
+            src,
+            dest,
             msg_type: MsgType::Cmd,
-            msg_name: "nonexistent_message".to_string(),
-            dest_app: None,
-            dest_extension: "nonexistent_destination".to_string(),
+            msg_names: vec!["nonexistent_message".to_string()],
         };
 
         let req = test::TestRequest::post()
@@ -214,14 +238,24 @@ mod tests {
             .await;
 
         // Delete a connection from the default_with_app_uri graph.
+        let src = GraphLoc::with_app_and_type_and_name(
+            Some("http://example.com:8000".to_string()),
+            GraphNodeType::Extension,
+            "extension_1".to_string(),
+        )
+        .unwrap();
+        let dest = GraphLoc::with_app_and_type_and_name(
+            Some("http://example.com:8000".to_string()),
+            GraphNodeType::Extension,
+            "extension_2".to_string(),
+        )
+        .unwrap();
         let request_payload = DeleteGraphConnectionRequestPayload {
             graph_id: graph_id_clone,
-            src_app: Some("http://example.com:8000".to_string()),
-            src_extension: "extension_1".to_string(),
+            src,
+            dest,
             msg_type: MsgType::Cmd,
-            msg_name: "hello_world".to_string(),
-            dest_app: Some("http://example.com:8000".to_string()),
-            dest_extension: "extension_2".to_string(),
+            msg_names: vec!["hello_world".to_string()],
         };
 
         let req = test::TestRequest::post()

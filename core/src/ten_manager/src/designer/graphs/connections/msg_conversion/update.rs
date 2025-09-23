@@ -11,7 +11,7 @@ use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use ten_rust::{
     base_dir_pkg_info::PkgsInfoInApp,
-    graph::{graph_info::GraphInfo, msg_conversion::MsgAndResultConversion},
+    graph::{connection::GraphLoc, graph_info::GraphInfo, msg_conversion::MsgAndResultConversion},
     pkg_info::message::MsgType,
 };
 use uuid::Uuid;
@@ -33,12 +33,10 @@ use crate::{
 pub struct UpdateGraphConnectionMsgConversionRequestPayload {
     pub graph_id: Uuid,
 
-    pub src_app: Option<String>,
-    pub src_extension: String,
+    pub src: GraphLoc,
+    pub dest: GraphLoc,
     pub msg_type: MsgType,
-    pub msg_name: String,
-    pub dest_app: Option<String>,
-    pub dest_extension: String,
+    pub msg_names: Vec<String>,
 
     pub msg_conversion: Option<MsgAndResultConversion>,
 }
@@ -60,9 +58,7 @@ async fn update_graph_info(
     if let Some(connections) = &mut graph_info.graph.connections_mut() {
         // Try to find the matching connection based on app and extension.
         for connection in connections.iter_mut() {
-            if connection.loc.app == request_payload.src_app
-                && connection.loc.extension.as_deref() == Some(&request_payload.src_extension)
-            {
+            if request_payload.src.matches(&connection.loc) {
                 // Find the correct message flow vector based on msg_type.
                 let msg_flow_vec = match request_payload.msg_type {
                     MsgType::Cmd => &mut connection.cmd,
@@ -71,20 +67,22 @@ async fn update_graph_info(
                     MsgType::VideoFrame => &mut connection.video_frame,
                 };
 
+                if request_payload.msg_names.len() > 1 {
+                    // Restore the original graph
+                    graph_info.graph = original_graph;
+                    return Err(anyhow::anyhow!(
+                        "Multiple message names are not supported for updating conversion"
+                    ));
+                }
+
                 // If we found the message flow vector, find the specific
                 // message flow by name.
                 if let Some(msg_flows) = msg_flow_vec {
                     for msg_flow in msg_flows.iter_mut() {
-                        if msg_flow.name.as_ref() == Some(&request_payload.msg_name) {
+                        if msg_flow.name.as_ref() == Some(&request_payload.msg_names[0]) {
                             // Find the matching destination
                             for dest in msg_flow.dest.iter_mut() {
-                                if dest.loc.app == request_payload.dest_app
-                                    && dest
-                                        .loc
-                                        .extension
-                                        .as_ref()
-                                        .is_some_and(|ext| ext == &request_payload.dest_extension)
-                                {
+                                if dest.loc.matches(&request_payload.dest) {
                                     // Update the msg_conversion field.
                                     dest.msg_conversion = request_payload.msg_conversion.clone();
                                     break;
@@ -154,12 +152,10 @@ pub async fn update_graph_connection_msg_conversion_endpoint(
         graph_info.graph.graph_mut(),
         &graph_info.app_base_dir,
         &MsgConversionValidateInfo {
-            src_app: &request_payload.src_app,
-            src_extension: &request_payload.src_extension,
+            src: &request_payload.src,
+            dest: &request_payload.dest,
             msg_type: &request_payload.msg_type,
-            msg_name: &request_payload.msg_name,
-            dest_app: &request_payload.dest_app,
-            dest_extension: &request_payload.dest_extension,
+            msg_names: &request_payload.msg_names,
             msg_conversion: &request_payload.msg_conversion,
         },
     )

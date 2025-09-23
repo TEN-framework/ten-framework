@@ -35,12 +35,12 @@ handlebars = { version = "6.2" }
 ignore = { version = "0.4" }
 indicatif = { version = "0.18" }
 infer = "0.19.0"
-inquire = { version = "0.7.5" }
+inquire = { version = "0.9" }
 jaq-core = "2.0.0"
 jaq-json = { version = "1.0.0", features = ["serde_json"] }
 jaq-std = "2.0.0"
 json5 = { version = "0.4" }
-jsonschema = { version = "0.32", default-features = false }
+jsonschema = { version = "0.33", default-features = false }
 mime_guess = { version = "2.0.5" }
 portable-pty = { version = "0.8.1" }
 regex = { version = "1.11" }
@@ -70,13 +70,25 @@ tokio-macros = "2.5.0"
 url = { version = "2.5" }
 uuid = { version = "1.0" }
 walkdir = { version = "2.5" }
-zip = { version = "4.3", default-features = false, features = [
+zip = { version = "5", default-features = false, features = [
   "deflate",
   "time",
 ] }
 crossbeam-channel = "0.5.15"
 libc = "0.2.172"
 winapi = { version = "0.3.9", features = ["fileapi"] }
+
+# Upgrading sysinfo to 0.37 will introduce a fault in function
+# sysinfo::unix::apple::cpu::get_cpu_frequency on arm64 architectures.
+# This error occurs within the process group termination feature that
+# sysinfo was introduced for.
+#
+# Official changelogs of sysinfo for both v0.33 and 0.35 indicate
+# modifications related to CPU frequency functions, which are
+# likely the cause of the error. So staying v0.32 is temporary considered
+# the safest solution.
+sysinfo = "0.32"
+
 clingo-sys = { version = "0.7.2", features = ["static-linking"] }
 clingo = { version = "0.8", features = ["static-linking"] }
 json-patch = "4.0.0"

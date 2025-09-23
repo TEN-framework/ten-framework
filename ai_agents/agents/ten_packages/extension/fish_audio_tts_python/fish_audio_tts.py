@@ -4,6 +4,7 @@ from typing import AsyncIterator
 # Only import the specific TTS modules we need to avoid PortAudio dependency
 from fish_audio_sdk import AsyncWebSocketSession, TTSRequest
 from ten_runtime import AsyncTenEnv
+from ten_ai_base.const import LOG_CATEGORY_VENDOR
 from .config import FishAudioTTSConfig
 
 # Custom event types to communicate status back to the extension
@@ -44,14 +45,14 @@ class FishAudioTTSClient:
             )
             async for chunk in gen:
                 if self._is_cancelled:
-                    self.ten_env.log_info(
+                    self.ten_env.log_debug(
                         "Cancellation flag detected, sending flush event and stopping TTS stream."
                     )
                     yield None, EVENT_TTS_FLUSH
                     await gen.aclose()
                     return
 
-                self.ten_env.log_info(
+                self.ten_env.log_debug(
                     f"FishAudioTTS: sending EVENT_TTS_RESPONSE, length: {len(chunk)}"
                 )
                 if len(chunk) > 0:
@@ -60,14 +61,17 @@ class FishAudioTTSClient:
                 # Only send EVENT_TTS_END if not cancelled (flush event already sent)
 
             if not self._is_cancelled:
-                self.ten_env.log_info(
+                self.ten_env.log_debug(
                     f"FishAudioTTS: sending EVENT_TTS_END, total time: {time.time() - start_time}"
                 )
                 yield None, EVENT_TTS_END
 
         except Exception as e:
             error_message = str(e)
-            self.ten_env.log_error(f"FishAudio TTS streaming failed: {e}")
+            self.ten_env.log_error(
+                f"vendor_error: {error_message}",
+                category=LOG_CATEGORY_VENDOR,
+            )
 
             # Check if it's an API key authentication error
             if (

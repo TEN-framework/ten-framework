@@ -39,6 +39,7 @@
 #include "ten_runtime/addon/addon.h"
 #include "ten_runtime/app/app.h"
 #include "ten_runtime/common/error_code.h"
+#include "ten_runtime/msg/cmd/trigger_life_cycle/cmd.h"
 #include "ten_runtime/msg/cmd_result/cmd_result.h"
 #include "ten_runtime/msg/msg.h"
 #include "ten_runtime/ten_env/internal/on_xxx_done.h"
@@ -58,6 +59,12 @@
 #include "ten_utils/macro/check.h"
 #include "ten_utils/macro/mark.h"
 #include "ten_utils/value/value.h"
+
+static void ten_extension_handle_trigger_start_life_cycle(
+    ten_extension_t *self, ten_shared_ptr_t *cmd);
+
+static void ten_extension_handle_trigger_stop_life_cycle(ten_extension_t *self,
+                                                         ten_shared_ptr_t *cmd);
 
 ten_extension_t *ten_extension_create(
     const char *name, ten_extension_on_configure_func_t on_configure,
@@ -126,6 +133,13 @@ ten_extension_t *ten_extension_create(
       offsetof(ten_extension_output_msg_not_connected_count_t, hh_in_map));
 
   self->is_standalone_test_extension = false;
+
+  // Initialize manual trigger life cycle configuration
+  for (int i = 0; i < TEN_MANUAL_TRIGGER_STAGE_MAX; i++) {
+    self->manual_trigger_life_cycle.stages[i] = false;
+  }
+
+  ten_list_init(&self->pending_trigger_life_cycle_cmds);
 
   self->user_data = user_data;
 
@@ -212,6 +226,9 @@ void ten_extension_destroy(ten_extension_t *self) {
   }
 
   ten_hashtable_deinit(&self->msg_not_connected_count_map);
+
+  // Clean up pending trigger_life_cycle commands
+  ten_list_clear(&self->pending_trigger_life_cycle_cmds);
 
   TEN_FREE(self);
 }
@@ -639,7 +656,7 @@ static void ten_extension_on_configure(ten_env_t *ten_env) {
   TEN_ASSERT(ten_extension_check_integrity(self, true),
              "Invalid use of extension %p.", self);
 
-  if (self->state >= TEN_EXTENSION_STATE_ON_STOP) {
+  if (self->state >= TEN_EXTENSION_STATE_PREPARE_TO_STOP) {
     // The extension has already entered the close flow, so do not continue with
     // the start flow.
     TEN_LOGI(
@@ -677,7 +694,7 @@ void ten_extension_on_init(ten_extension_t *self) {
   TEN_ASSERT(ten_extension_check_integrity(self, true),
              "Invalid use of extension %p.", self);
 
-  if (self->state >= TEN_EXTENSION_STATE_ON_STOP) {
+  if (self->state >= TEN_EXTENSION_STATE_PREPARE_TO_STOP) {
     // The extension has already entered the close flow, so do not continue with
     // the start flow.
     TEN_LOGI("[%s] on_init() skipped: Extension is already in the close flow",
@@ -709,7 +726,7 @@ void ten_extension_on_start(ten_extension_t *self) {
   TEN_ASSERT(ten_extension_check_integrity(self, true),
              "Invalid use of extension %p.", self);
 
-  if (self->state >= TEN_EXTENSION_STATE_ON_STOP) {
+  if (self->state >= TEN_EXTENSION_STATE_PREPARE_TO_STOP) {
     // The extension has already entered the close flow, so do not continue with
     // the start flow.
     TEN_LOGI("[%s] on_start() skipped: Extension is already in the close flow",
@@ -996,6 +1013,7 @@ bool ten_extension_validate_msg_schema(ten_extension_t *self,
       case TEN_MSG_TYPE_CMD_TIMER:
       case TEN_MSG_TYPE_CMD_TIMEOUT:
       case TEN_MSG_TYPE_CMD_STOP_GRAPH:
+      case TEN_MSG_TYPE_CMD_TRIGGER_LIFE_CYCLE:
       case TEN_MSG_TYPE_CMD_CLOSE_APP:
       case TEN_MSG_TYPE_CMD_START_GRAPH:
       case TEN_MSG_TYPE_CMD: {
@@ -1050,4 +1068,300 @@ ten_extension_t *ten_extension_from_smart_ptr(
     ten_smart_ptr_t *extension_smart_ptr) {
   TEN_ASSERT(extension_smart_ptr, "Invalid argument.");
   return ten_smart_ptr_get_data(extension_smart_ptr);
+}
+
+void ten_extension_handle_trigger_life_cycle_cmd(ten_extension_t *self,
+                                                 ten_shared_ptr_t *cmd) {
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_extension_check_integrity(self, true), "Invalid argument.");
+  TEN_ASSERT(cmd, "Invalid argument.");
+  TEN_ASSERT(ten_msg_get_type(cmd) == TEN_MSG_TYPE_CMD_TRIGGER_LIFE_CYCLE,
+             "Invalid argument.");
+
+  TEN_LOGD("[%s] Handle trigger_life_cycle command",
+           ten_extension_get_name(self, true));
+
+  const char *stage = ten_cmd_trigger_life_cycle_get_stage(cmd);
+  if (!stage) {
+    TEN_LOGW("[%s] trigger_life_cycle command missing stage field",
+             ten_extension_get_name(self, true));
+
+    ten_shared_ptr_t *cmd_result =
+        ten_cmd_result_create_from_cmd(TEN_STATUS_CODE_ERROR, cmd);
+    ten_msg_set_property(cmd_result, TEN_STR_DETAIL,
+                         ten_value_create_string("Missing stage field"), NULL);
+    ten_env_return_result(self->ten_env, cmd_result, NULL, NULL, NULL);
+    ten_shared_ptr_destroy(cmd_result);
+
+    return;
+  }
+
+  if (ten_c_string_is_equal(stage, TEN_STR_START)) {
+    ten_extension_handle_trigger_start_life_cycle(self, cmd);
+  } else if (ten_c_string_is_equal(stage, TEN_STR_STOP)) {
+    ten_extension_handle_trigger_stop_life_cycle(self, cmd);
+  } else {
+    TEN_LOGW("[%s] trigger_life_cycle command with unsupported stage: %s",
+             ten_extension_get_name(self, true), stage);
+
+    ten_shared_ptr_t *cmd_result =
+        ten_cmd_result_create_from_cmd(TEN_STATUS_CODE_ERROR, cmd);
+    ten_msg_set_property(cmd_result, TEN_STR_DETAIL,
+                         ten_value_create_string("Unsupported stage"), NULL);
+    ten_env_return_result(self->ten_env, cmd_result, NULL, NULL, NULL);
+    ten_shared_ptr_destroy(cmd_result);
+  }
+}
+
+static void ten_extension_handle_trigger_start_life_cycle(
+    ten_extension_t *self, ten_shared_ptr_t *cmd) {
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_extension_check_integrity(self, true), "Invalid argument.");
+  TEN_ASSERT(cmd, "Invalid argument.");
+
+  TEN_LOGD("[%s] Handle trigger start life cycle",
+           ten_extension_get_name(self, true));
+
+  TEN_EXTENSION_STATE current_state = self->state;
+
+  // Check if extension is configured for manual start control
+  if (!self->manual_trigger_life_cycle.stages[TEN_MANUAL_TRIGGER_STAGE_START]) {
+    TEN_LOGW(
+        "[%s] trigger_life_cycle start command received but extension is not "
+        "configured for manual start control",
+        ten_extension_get_name(self, true));
+
+    ten_shared_ptr_t *cmd_result =
+        ten_cmd_result_create_from_cmd(TEN_STATUS_CODE_ERROR, cmd);
+    ten_msg_set_property(
+        cmd_result, TEN_STR_DETAIL,
+        ten_value_create_string(
+            "Extension not configured for manual start control"),
+        NULL);
+    ten_env_return_result(self->ten_env, cmd_result, NULL, NULL, NULL);
+    ten_shared_ptr_destroy(cmd_result);
+    return;
+  }
+
+  // Check if current state is valid for triggering start
+  if (current_state > TEN_EXTENSION_STATE_ON_START_DONE) {
+    TEN_LOGW(
+        "[%s] trigger_life_cycle start command received but extension is "
+        "already past start stage (state: %d)",
+        ten_extension_get_name(self, true), current_state);
+
+    ten_shared_ptr_t *cmd_result =
+        ten_cmd_result_create_from_cmd(TEN_STATUS_CODE_ERROR, cmd);
+    ten_msg_set_property(
+        cmd_result, TEN_STR_DETAIL,
+        ten_value_create_string("Extension already past start stage"), NULL);
+    ten_env_return_result(self->ten_env, cmd_result, NULL, NULL, NULL);
+    ten_shared_ptr_destroy(cmd_result);
+    return;
+  }
+
+  // Store the command for later response
+  ten_list_push_smart_ptr_back(&self->pending_trigger_life_cycle_cmds, cmd);
+
+  // If extension is in ON_INIT_DONE state, trigger on_start immediately
+  if (current_state == TEN_EXTENSION_STATE_ON_INIT_DONE) {
+    TEN_LOGD("[%s] Extension is in ON_INIT_DONE state, triggering on_start",
+             ten_extension_get_name(self, true));
+
+    // Directly call on_start since we're already in the extension's runloop
+    ten_extension_on_start(self);
+  } else {
+    TEN_LOGD(
+        "[%s] Extension is in state %d, will trigger on_start after "
+        "on_init_done",
+        ten_extension_get_name(self, true), current_state);
+  }
+}
+
+static void ten_extension_handle_trigger_stop_life_cycle(
+    ten_extension_t *self, ten_shared_ptr_t *cmd) {
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_extension_check_integrity(self, true), "Invalid argument.");
+  TEN_ASSERT(cmd, "Invalid argument.");
+
+  TEN_LOGD("[%s] Handle trigger stop life cycle",
+           ten_extension_get_name(self, true));
+
+  // Check if extension is configured for manual stop control
+  if (!self->manual_trigger_life_cycle.stages[TEN_MANUAL_TRIGGER_STAGE_STOP]) {
+    TEN_LOGW(
+        "[%s] trigger_life_cycle stop command received but extension is not "
+        "configured for manual stop control",
+        ten_extension_get_name(self, true));
+
+    ten_shared_ptr_t *cmd_result =
+        ten_cmd_result_create_from_cmd(TEN_STATUS_CODE_ERROR, cmd);
+    ten_msg_set_property(
+        cmd_result, TEN_STR_DETAIL,
+        ten_value_create_string(
+            "Extension not configured for manual stop control"),
+        NULL);
+    ten_env_return_result(self->ten_env, cmd_result, NULL, NULL, NULL);
+    ten_shared_ptr_destroy(cmd_result);
+    return;
+  }
+
+  TEN_EXTENSION_STATE current_state = self->state;
+
+  // Check if current state is valid for triggering stop
+  if (current_state > TEN_EXTENSION_STATE_ON_STOP_DONE) {
+    TEN_LOGW(
+        "[%s] trigger_life_cycle stop command received but extension is "
+        "already past stop stage (state: %d)",
+        ten_extension_get_name(self, true), current_state);
+
+    ten_shared_ptr_t *cmd_result =
+        ten_cmd_result_create_from_cmd(TEN_STATUS_CODE_ERROR, cmd);
+    ten_msg_set_property(
+        cmd_result, TEN_STR_DETAIL,
+        ten_value_create_string("Extension already past stop stage"), NULL);
+    ten_env_return_result(self->ten_env, cmd_result, NULL, NULL, NULL);
+    ten_shared_ptr_destroy(cmd_result);
+    return;
+  }
+
+  // Store the command for later response regardless of current state
+  ten_list_push_smart_ptr_back(&self->pending_trigger_life_cycle_cmds, cmd);
+
+  // Check if current state allows immediate triggering of stop
+  if (current_state < TEN_EXTENSION_STATE_PREPARE_TO_STOP) {
+    TEN_LOGD(
+        "[%s] trigger_life_cycle stop command received before prepare to stop "
+        "(state: %d), will trigger stop when appropriate",
+        ten_extension_get_name(self, true), current_state);
+    return;
+  }
+
+  // If extension is in TEN_EXTENSION_STATE_PREPARE_TO_STOP state, trigger
+  // on_stop immediately
+  if (current_state == TEN_EXTENSION_STATE_PREPARE_TO_STOP) {
+    TEN_LOGD("[%s] Extension is in PREPARE_TO_STOP state, triggering on_stop",
+             ten_extension_get_name(self, true));
+
+    // Directly call on_stop since we're already in the extension's runloop
+    ten_extension_on_stop(self);
+  } else {
+    TEN_LOGD(
+        "[%s] Extension is in state %d, will trigger on_stop when appropriate",
+        ten_extension_get_name(self, true), current_state);
+  }
+}
+
+bool ten_extension_has_pending_trigger_life_cycle_cmds(ten_extension_t *self,
+                                                       const char *stage) {
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_extension_check_integrity(self, true), "Invalid argument.");
+  TEN_ASSERT(stage, "Invalid argument.");
+
+  if (ten_list_is_empty(&self->pending_trigger_life_cycle_cmds)) {
+    return false;
+  }
+
+  ten_list_foreach (&self->pending_trigger_life_cycle_cmds, iter) {
+    ten_shared_ptr_t *cmd = ten_smart_ptr_listnode_get(iter.node);
+    const char *cmd_stage = ten_cmd_trigger_life_cycle_get_stage(cmd);
+
+    if (cmd_stage && ten_c_string_is_equal(cmd_stage, stage)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+void ten_extension_reply_pending_trigger_life_cycle_cmds_by_stage(
+    ten_extension_t *self, const char *stage, TEN_STATUS_CODE status_code) {
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_extension_check_integrity(self, true), "Invalid argument.");
+  TEN_ASSERT(stage, "Invalid argument.");
+
+  if (ten_list_is_empty(&self->pending_trigger_life_cycle_cmds)) {
+    return;
+  }
+
+  TEN_LOGD(
+      "[%s] Replying to pending trigger_life_cycle commands for stage '%s' "
+      "with status %d",
+      ten_extension_get_name(self, true), stage, status_code);
+
+  // Use iterator to safely remove items while iterating
+  ten_list_t commands_to_reply;
+  ten_list_init(&commands_to_reply);
+
+  ten_list_t commands_left;
+  ten_list_init(&commands_left);
+
+  // First, collect commands for the specified stage
+  ten_list_foreach (&self->pending_trigger_life_cycle_cmds, iter) {
+    ten_shared_ptr_t *cmd = ten_smart_ptr_listnode_get(iter.node);
+    const char *cmd_stage = ten_cmd_trigger_life_cycle_get_stage(cmd);
+
+    if (cmd_stage && ten_c_string_is_equal(cmd_stage, stage)) {
+      ten_list_push_smart_ptr_back(&commands_to_reply, cmd);
+    } else {
+      ten_list_push_smart_ptr_back(&commands_left, cmd);
+    }
+  }
+
+  // Replace the pending list with the commands left
+  ten_list_swap(&self->pending_trigger_life_cycle_cmds, &commands_left);
+
+  // Reply to the collected commands
+  ten_list_foreach (&commands_to_reply, iter) {
+    ten_shared_ptr_t *cmd = ten_smart_ptr_listnode_get(iter.node);
+
+    ten_shared_ptr_t *cmd_result =
+        ten_cmd_result_create_from_cmd(status_code, cmd);
+
+    if (status_code == TEN_STATUS_CODE_OK) {
+      ten_msg_set_property(
+          cmd_result, TEN_STR_DETAIL,
+          ten_value_create_string("Life cycle triggered successfully"), NULL);
+    }
+
+    ten_env_return_result(self->ten_env, cmd_result, NULL, NULL, NULL);
+    ten_shared_ptr_destroy(cmd_result);
+  }
+
+  // Clean up the temporary list
+  ten_list_clear(&commands_to_reply);
+  ten_list_clear(&commands_left);
+}
+
+void ten_extension_trigger_stop_if_needed(ten_extension_t *self) {
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_extension_check_integrity(self, true), "Invalid argument.");
+
+  self->state = TEN_EXTENSION_STATE_PREPARE_TO_STOP;
+
+  // Check if extension is configured for manual stop control
+  if (!self->manual_trigger_life_cycle.stages[TEN_MANUAL_TRIGGER_STAGE_STOP]) {
+    // Not configured for manual control, trigger stop directly
+    TEN_LOGD(
+        "[%s] Extension not configured for manual stop control, triggering "
+        "stop directly",
+        ten_extension_get_name(self, true));
+    ten_extension_on_stop(self);
+    return;
+  }
+
+  // Extension is configured for manual stop control
+  // Check if there are pending trigger_life_cycle stop commands
+  if (ten_extension_has_pending_trigger_life_cycle_cmds(self, TEN_STR_STOP)) {
+    TEN_LOGD(
+        "[%s] Extension configured for manual stop control and has pending "
+        "stop trigger commands, triggering stop",
+        ten_extension_get_name(self, true));
+    ten_extension_on_stop(self);
+  } else {
+    TEN_LOGD(
+        "[%s] Extension configured for manual stop control, waiting for stop "
+        "trigger command",
+        ten_extension_get_name(self, true));
+  }
 }

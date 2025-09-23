@@ -15,6 +15,7 @@
 #include "include_internal/ten_runtime/binding/python/msg/cmd/cmd_result.h"
 #include "include_internal/ten_runtime/binding/python/msg/cmd/start_graph_cmd.h"
 #include "include_internal/ten_runtime/binding/python/msg/cmd/stop_graph_cmd.h"
+#include "include_internal/ten_runtime/binding/python/msg/cmd/trigger_life_cycle_cmd.h"
 #include "include_internal/ten_runtime/binding/python/msg/data.h"
 #include "include_internal/ten_runtime/binding/python/msg/msg.h"
 #include "include_internal/ten_runtime/binding/python/msg/video_frame.h"
@@ -64,6 +65,10 @@ static PyModuleDef *ten_py_runtime_module(void) {
       {"_ten_py_cmd_stop_graph_register_type",
        ten_py_cmd_stop_graph_register_type, METH_VARARGS,
        "Register the Python StopGraphCmd class for later tp_alloc use"},
+
+      {"_ten_py_cmd_trigger_life_cycle_register_type",
+       ten_py_cmd_trigger_life_cycle_register_type, METH_VARARGS,
+       "Register the Python TriggerLifeCycleCmd class for later tp_alloc use"},
 
       {"_ten_py_data_register_type", ten_py_data_register_data_type,
        METH_VARARGS, "Register the Python Data class for later tp_alloc use"},
@@ -151,6 +156,11 @@ PyMODINIT_FUNC PyInit_libten_runtime_python(void) {
   }
 
   if (!ten_py_cmd_stop_graph_init_for_module(module)) {
+    Py_DECREF(module);
+    return NULL;
+  }
+
+  if (!ten_py_cmd_trigger_life_cycle_init_for_module(module)) {
     Py_DECREF(module);
     return NULL;
   }

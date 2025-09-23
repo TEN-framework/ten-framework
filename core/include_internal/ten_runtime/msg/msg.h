@@ -162,6 +162,7 @@ inline bool ten_raw_msg_is_cmd_and_result(ten_msg_t *self) {
   case TEN_MSG_TYPE_CMD_CLOSE_APP:
   case TEN_MSG_TYPE_CMD_STOP_GRAPH:
   case TEN_MSG_TYPE_CMD_START_GRAPH:
+  case TEN_MSG_TYPE_CMD_TRIGGER_LIFE_CYCLE:
   case TEN_MSG_TYPE_CMD_TIMER:
   case TEN_MSG_TYPE_CMD_TIMEOUT:
   case TEN_MSG_TYPE_CMD:
@@ -187,6 +188,7 @@ inline bool ten_raw_msg_is_cmd(ten_msg_t *self) {
   case TEN_MSG_TYPE_CMD_CLOSE_APP:
   case TEN_MSG_TYPE_CMD_STOP_GRAPH:
   case TEN_MSG_TYPE_CMD_START_GRAPH:
+  case TEN_MSG_TYPE_CMD_TRIGGER_LIFE_CYCLE:
   case TEN_MSG_TYPE_CMD_TIMER:
   case TEN_MSG_TYPE_CMD_TIMEOUT:
   case TEN_MSG_TYPE_CMD:
@@ -215,6 +217,7 @@ inline bool ten_raw_msg_is_cmd_result(ten_msg_t *self) {
   case TEN_MSG_TYPE_CMD_CLOSE_APP:
   case TEN_MSG_TYPE_CMD_STOP_GRAPH:
   case TEN_MSG_TYPE_CMD_START_GRAPH:
+  case TEN_MSG_TYPE_CMD_TRIGGER_LIFE_CYCLE:
   case TEN_MSG_TYPE_CMD_TIMER:
   case TEN_MSG_TYPE_CMD_TIMEOUT:
   case TEN_MSG_TYPE_CMD:

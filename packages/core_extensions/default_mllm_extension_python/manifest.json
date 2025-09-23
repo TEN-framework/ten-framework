@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "default_mllm_python",
-  "version": "0.11.9",
+  "version": "0.11.12",
   "display_name": {
     "locales": {
       "en-US": {
@@ -68,7 +68,7 @@
     {
       "type": "system",
       "name": "ten_runtime_python",
-      "version": "0.11.9"
+      "version": "0.11.12"
     },
     {
       "type": "system",
@@ -90,9 +90,12 @@
     "include": [
       "manifest.json",
       "property.json",
+      "**.tent",
       "**.py",
       "requirements.txt",
-      "docs/**"
+      "docs/**",
+      ".vscode/**",
+      "tests/**"
     ]
   },
   "scripts": {

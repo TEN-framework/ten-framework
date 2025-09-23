@@ -9,7 +9,10 @@ mod tests {
     use std::collections::HashMap;
 
     use ten_manager::{constants::TEST_DIR, graph::connections::add::graph_add_connection};
-    use ten_rust::{graph::Graph, pkg_info::message::MsgType};
+    use ten_rust::{
+        graph::{connection::GraphLoc, node::GraphNodeType, Graph},
+        pkg_info::message::MsgType,
+    };
 
     use crate::test_case::{
         common::mock::inject_all_standard_pkgs_for_mock, graph::connection::create_test_node,
@@ -34,16 +37,26 @@ mod tests {
         };
 
         // Test adding a connection.
+        let src = GraphLoc::with_app_and_type_and_name(
+            Some("http://example.com:8000".to_string()),
+            GraphNodeType::Extension,
+            "ext1".to_string(),
+        )
+        .unwrap();
+        let dest = GraphLoc::with_app_and_type_and_name(
+            Some("http://example.com:8000".to_string()),
+            GraphNodeType::Extension,
+            "ext2".to_string(),
+        )
+        .unwrap();
         let result = graph_add_connection(
             &mut graph,
             &Some(TEST_DIR.to_string()),
-            Some("http://example.com:8000".to_string()),
-            "ext1".to_string(),
-            MsgType::Cmd,
-            "test_cmd".to_string(),
-            Some("http://example.com:8000".to_string()),
-            "ext2".to_string(),
             &pkgs_cache,
+            src,
+            dest,
+            MsgType::Cmd,
+            vec!["test_cmd".to_string()],
             None,
         )
         .await;
@@ -86,16 +99,26 @@ mod tests {
         };
 
         // Test adding a connection with nonexistent source.
+        let src = GraphLoc::with_app_and_type_and_name(
+            Some("app1".to_string()),
+            GraphNodeType::Extension,
+            "ext_1".to_string(),
+        )
+        .unwrap(); // This node doesn't exist.
+        let dest = GraphLoc::with_app_and_type_and_name(
+            Some("app1".to_string()),
+            GraphNodeType::Extension,
+            "ext_2".to_string(),
+        )
+        .unwrap();
         let result = graph_add_connection(
             &mut graph,
             &Some(TEST_DIR.to_string()),
-            Some("app1".to_string()),
-            "ext1".to_string(), // This node doesn't exist.
-            MsgType::Cmd,
-            "test_cmd".to_string(),
-            Some("app1".to_string()),
-            "ext2".to_string(),
             &pkgs_cache,
+            src,
+            dest,
+            MsgType::Cmd,
+            vec!["test_cmd".to_string()],
             None,
         )
         .await;
@@ -120,16 +143,26 @@ mod tests {
         };
 
         // Test adding a connection with nonexistent destination.
+        let src = GraphLoc::with_app_and_type_and_name(
+            Some("app1".to_string()),
+            GraphNodeType::Extension,
+            "ext1".to_string(),
+        )
+        .unwrap();
+        let dest = GraphLoc::with_app_and_type_and_name(
+            Some("app1".to_string()),
+            GraphNodeType::Extension,
+            "ext2".to_string(),
+        )
+        .unwrap(); // This node doesn't exist.
         let result = graph_add_connection(
             &mut graph,
             &Some(TEST_DIR.to_string()),
-            Some("app1".to_string()),
-            "ext1".to_string(),
-            MsgType::Cmd,
-            "test_cmd".to_string(),
-            Some("app1".to_string()),
-            "ext2".to_string(), // This node doesn't exist.
             &pkgs_cache,
+            src,
+            dest,
+            MsgType::Cmd,
+            vec!["test_cmd".to_string()],
             None,
         )
         .await;
@@ -158,16 +191,26 @@ mod tests {
         };
 
         // Add first connection.
+        let src = GraphLoc::with_app_and_type_and_name(
+            Some("http://example.com:8000".to_string()),
+            GraphNodeType::Extension,
+            "ext1".to_string(),
+        )
+        .unwrap();
+        let dest = GraphLoc::with_app_and_type_and_name(
+            Some("http://example.com:8000".to_string()),
+            GraphNodeType::Extension,
+            "ext2".to_string(),
+        )
+        .unwrap();
         let result = graph_add_connection(
             &mut graph,
             &Some(TEST_DIR.to_string()),
-            Some("http://example.com:8000".to_string()),
-            "ext1".to_string(),
-            MsgType::Cmd,
-            "test_cmd".to_string(),
-            Some("http://example.com:8000".to_string()),
-            "ext2".to_string(),
             &pkgs_cache,
+            src,
+            dest,
+            MsgType::Cmd,
+            vec!["test_cmd".to_string()],
             None,
         )
         .await;
@@ -175,16 +218,26 @@ mod tests {
 
         // Add second connection with same source and message name but different
         // destination.
+        let src = GraphLoc::with_app_and_type_and_name(
+            Some("http://example.com:8000".to_string()),
+            GraphNodeType::Extension,
+            "ext1".to_string(),
+        )
+        .unwrap();
+        let dest = GraphLoc::with_app_and_type_and_name(
+            Some("http://example.com:8000".to_string()),
+            GraphNodeType::Extension,
+            "ext3".to_string(),
+        )
+        .unwrap();
         let result = graph_add_connection(
             &mut graph,
             &Some(TEST_DIR.to_string()),
-            Some("http://example.com:8000".to_string()),
-            "ext1".to_string(),
-            MsgType::Cmd,
-            "test_cmd_2".to_string(),
-            Some("http://example.com:8000".to_string()),
-            "ext3".to_string(),
             &pkgs_cache,
+            src,
+            dest,
+            MsgType::Cmd,
+            vec!["test_cmd_2".to_string()],
             None,
         )
         .await;
@@ -234,16 +287,26 @@ mod tests {
         };
 
         // Add different message types.
+        let src = GraphLoc::with_app_and_type_and_name(
+            Some("http://example.com:8000".to_string()),
+            GraphNodeType::Extension,
+            "ext1".to_string(),
+        )
+        .unwrap();
+        let dest = GraphLoc::with_app_and_type_and_name(
+            Some("http://example.com:8000".to_string()),
+            GraphNodeType::Extension,
+            "ext2".to_string(),
+        )
+        .unwrap();
         let result = graph_add_connection(
             &mut graph,
             &Some(TEST_DIR.to_string()),
-            Some("http://example.com:8000".to_string()),
-            "ext1".to_string(),
+            &pkgs_cache,
+            src.clone(),
+            dest.clone(),
             MsgType::Cmd,
-            "cmd1".to_string(),
-            Some("http://example.com:8000".to_string()),
-            "ext2".to_string(),
-            &pkgs_cache,
+            vec!["cmd1".to_string()],
             None,
         )
         .await;
@@ -252,13 +315,11 @@ mod tests {
         let result = graph_add_connection(
             &mut graph,
             &Some(TEST_DIR.to_string()),
-            Some("http://example.com:8000".to_string()),
-            "ext1".to_string(),
+            &pkgs_cache,
+            src.clone(),
+            dest.clone(),
             MsgType::Data,
-            "data1".to_string(),
-            Some("http://example.com:8000".to_string()),
-            "ext2".to_string(),
-            &pkgs_cache,
+            vec!["data1".to_string()],
             None,
         )
         .await;
@@ -267,13 +328,11 @@ mod tests {
         let result = graph_add_connection(
             &mut graph,
             &Some(TEST_DIR.to_string()),
-            Some("http://example.com:8000".to_string()),
-            "ext1".to_string(),
+            &pkgs_cache,
+            src.clone(),
+            dest.clone(),
             MsgType::AudioFrame,
-            "audio1".to_string(),
-            Some("http://example.com:8000".to_string()),
-            "ext2".to_string(),
-            &pkgs_cache,
+            vec!["audio1".to_string()],
             None,
         )
         .await;
@@ -282,13 +341,11 @@ mod tests {
         let result = graph_add_connection(
             &mut graph,
             &Some(TEST_DIR.to_string()),
-            Some("http://example.com:8000".to_string()),
-            "ext1".to_string(),
-            MsgType::VideoFrame,
-            "video1".to_string(),
-            Some("http://example.com:8000".to_string()),
-            "ext2".to_string(),
             &pkgs_cache,
+            src,
+            dest,
+            MsgType::VideoFrame,
+            vec!["video1".to_string()],
             None,
         )
         .await;
@@ -326,17 +383,28 @@ mod tests {
             exposed_properties: None,
         };
 
+        let src = GraphLoc::with_app_and_type_and_name(
+            Some("http://example.com:8000".to_string()),
+            GraphNodeType::Extension,
+            "ext1".to_string(),
+        )
+        .unwrap();
+        let dest = GraphLoc::with_app_and_type_and_name(
+            Some("http://example.com:8000".to_string()),
+            GraphNodeType::Extension,
+            "ext2".to_string(),
+        )
+        .unwrap();
+
         // Add a connection.
         let result = graph_add_connection(
             &mut graph,
             &Some(TEST_DIR.to_string()),
-            Some("http://example.com:8000".to_string()),
-            "ext1".to_string(),
-            MsgType::Cmd,
-            "test_cmd".to_string(),
-            Some("http://example.com:8000".to_string()),
-            "ext2".to_string(),
             &pkgs_cache,
+            src.clone(),
+            dest.clone(),
+            MsgType::Cmd,
+            vec!["test_cmd".to_string()],
             None,
         )
         .await;
@@ -346,13 +414,11 @@ mod tests {
         let result = graph_add_connection(
             &mut graph,
             &Some(TEST_DIR.to_string()),
-            Some("http://example.com:8000".to_string()),
-            "ext1".to_string(),
-            MsgType::Cmd,
-            "test_cmd".to_string(),
-            Some("http://example.com:8000".to_string()),
-            "ext2".to_string(),
             &pkgs_cache,
+            src,
+            dest,
+            MsgType::Cmd,
+            vec!["test_cmd".to_string()],
             None,
         )
         .await;
@@ -396,17 +462,40 @@ mod tests {
             exposed_properties: None,
         };
 
+        let ext1 = GraphLoc::with_app_and_type_and_name(
+            Some("http://example.com:8000".to_string()),
+            GraphNodeType::Extension,
+            "ext1".to_string(),
+        )
+        .unwrap();
+        let ext2 = GraphLoc::with_app_and_type_and_name(
+            Some("http://example.com:8000".to_string()),
+            GraphNodeType::Extension,
+            "ext2".to_string(),
+        )
+        .unwrap();
+        let ext3 = GraphLoc::with_app_and_type_and_name(
+            Some("http://example.com:8000".to_string()),
+            GraphNodeType::Extension,
+            "ext3".to_string(),
+        )
+        .unwrap();
+        let ext4 = GraphLoc::with_app_and_type_and_name(
+            Some("http://example.com:8000".to_string()),
+            GraphNodeType::Extension,
+            "ext4".to_string(),
+        )
+        .unwrap();
+
         // Test connecting ext1 to ext2 with compatible schema - should succeed.
         let result = graph_add_connection(
             &mut graph,
             &Some(TEST_DIR.to_string()),
-            Some("http://example.com:8000".to_string()),
-            "ext1".to_string(),
-            MsgType::Cmd,
-            "cmd1".to_string(),
-            Some("http://example.com:8000".to_string()),
-            "ext2".to_string(),
             &pkgs_cache,
+            ext1.clone(),
+            ext2.clone(),
+            MsgType::Cmd,
+            vec!["cmd1".to_string()],
             None,
         )
         .await;
@@ -416,13 +505,11 @@ mod tests {
         let result = graph_add_connection(
             &mut graph,
             &Some(TEST_DIR.to_string()),
-            Some("http://example.com:8000".to_string()),
-            "ext1".to_string(),
-            MsgType::Data,
-            "data1".to_string(),
-            Some("http://example.com:8000".to_string()),
-            "ext3".to_string(),
             &pkgs_cache,
+            ext1.clone(),
+            ext3.clone(),
+            MsgType::Data,
+            vec!["data1".to_string()],
             None,
         )
         .await;
@@ -432,13 +519,11 @@ mod tests {
         let result = graph_add_connection(
             &mut graph,
             &Some(TEST_DIR.to_string()),
-            Some("http://example.com:8000".to_string()),
-            "ext1".to_string(),
-            MsgType::Cmd,
-            "cmd_incompatible".to_string(),
-            Some("http://example.com:8000".to_string()),
-            "ext3".to_string(),
             &pkgs_cache,
+            ext1.clone(),
+            ext3.clone(),
+            MsgType::Cmd,
+            vec!["cmd_incompatible".to_string()],
             None,
         )
         .await;
@@ -449,13 +534,11 @@ mod tests {
         let result = graph_add_connection(
             &mut graph,
             &Some(TEST_DIR.to_string()),
-            Some("http://example.com:8000".to_string()),
-            "ext1".to_string(),
-            MsgType::Cmd,
-            "cmd1".to_string(),
-            Some("http://example.com:8000".to_string()),
-            "ext4".to_string(),
             &pkgs_cache,
+            ext1.clone(),
+            ext4.clone(),
+            MsgType::Cmd,
+            vec!["cmd1".to_string()],
             None,
         )
         .await;
@@ -465,13 +548,11 @@ mod tests {
         let result = graph_add_connection(
             &mut graph,
             &Some(TEST_DIR.to_string()),
-            Some("http://example.com:8000".to_string()),
-            "ext1".to_string(),
-            MsgType::Cmd,
-            "cmd2".to_string(),
-            Some("http://example.com:8000".to_string()),
-            "ext4".to_string(),
             &pkgs_cache,
+            ext1.clone(),
+            ext4.clone(),
+            MsgType::Cmd,
+            vec!["cmd2".to_string()],
             None,
         )
         .await;
@@ -484,13 +565,11 @@ mod tests {
         let result = graph_add_connection(
             &mut graph,
             &Some(TEST_DIR.to_string()),
-            Some("http://example.com:8000".to_string()),
-            "ext1".to_string(),
-            MsgType::Data,
-            "data_incompatible".to_string(),
-            Some("http://example.com:8000".to_string()),
-            "ext3".to_string(),
             &pkgs_cache,
+            ext1.clone(),
+            ext3.clone(),
+            MsgType::Data,
+            vec!["data_incompatible".to_string()],
             None,
         )
         .await;

@@ -92,7 +92,7 @@ class RimeTTSynthesizer:
     async def _process_websocket(self) -> None:
         """Main websocket connection monitoring and reconnection logic"""
         try:
-            self.ten_env.log_info(
+            self.ten_env.log_debug(
                 "Starting RIME TTS websocket connection process"
             )
 
@@ -107,11 +107,11 @@ class RimeTTSynthesizer:
             ):
                 self.ws = ws
                 try:
-                    self.ten_env.log_info(
+                    self.ten_env.log_debug(
                         "RIME TTS websocket connected successfully"
                     )
                     if self._session_closing:
-                        self.ten_env.log_info("Session is closing, break.")
+                        self.ten_env.log_debug("Session is closing, break.")
                         return
 
                     # Start send and receive tasks
@@ -127,11 +127,11 @@ class RimeTTSynthesizer:
                     await self._await_channel_tasks()
 
                 except websockets.ConnectionClosed as e:
-                    self.ten_env.log_info(
+                    self.ten_env.log_debug(
                         f"RIME TTS websocket connection closed: {e}."
                     )
                     if not self._session_closing:
-                        self.ten_env.log_info(
+                        self.ten_env.log_debug(
                             "RIME TTS websocket connection closed, will reconnect."
                         )
 
@@ -155,7 +155,7 @@ class RimeTTSynthesizer:
         finally:
             if self.ws:
                 await self.ws.close()
-            self.ten_env.log_info(
+            self.ten_env.log_debug(
                 "RIME TTS websocket connection process ended."
             )
 
@@ -168,7 +168,7 @@ class RimeTTSynthesizer:
             self.channel_tasks,
             return_when=asyncio.FIRST_EXCEPTION,
         )
-        self.ten_env.log_info("RIME TTS channel tasks finished.")
+        self.ten_env.log_debug("RIME TTS channel tasks finished.")
 
         self.channel_tasks.clear()
 
@@ -215,7 +215,7 @@ class RimeTTSynthesizer:
 
             async for message in ws:
                 if self._session_closing:
-                    self.ten_env.log_warn(
+                    self.ten_env.log_debug(
                         "Session is closing, break receive loop."
                     )
                     break
@@ -248,8 +248,8 @@ class RimeTTSynthesizer:
                 context_id = data.get("contextId")
                 # Handle audio chunk
                 audio_data = base64.b64decode(data["data"])
-                self.ten_env.log_info(
-                    f"KEYPOINT Received audio chunk, context_id: {context_id}, length: {len(audio_data)}"
+                self.ten_env.log_debug(
+                    f"Received audio chunk, context_id: {context_id}, length: {len(audio_data)}"
                 )
                 if self.response_msgs:
                     if self.sent_ts and not self.ttfb_sent:
@@ -261,7 +261,7 @@ class RimeTTSynthesizer:
                             (EVENT_TTS_TTFB_METRIC, ttfb_ms)
                         )
                         self.ttfb_sent = True
-                        self.ten_env.log_info(
+                        self.ten_env.log_debug(
                             f"RIME TTS: TTFB metric sent: {ttfb_ms}ms"
                         )
                     await self.response_msgs.put(
@@ -275,7 +275,7 @@ class RimeTTSynthesizer:
                 )
             elif message_type == RIME_MESSAGE_TYPE_DONE:
                 context_id = data.get("contextId")
-                self.ten_env.log_info(
+                self.ten_env.log_debug(
                     f"RIME TTS done: {data}, latest_context_id: {self.latest_context_id}, context_id: {context_id}"
                 )
                 if self.response_msgs:
@@ -316,7 +316,7 @@ class RimeTTSynthesizer:
         # Create RIME TTS text message
         message = {"text": text, "contextId": context_id}
         message_json = json.dumps(message)
-        self.ten_env.log_info(
+        self.ten_env.log_debug(
             f"KEYPOINT Sending text to RIME TTS: {message_json}"
         )
         if not self.ttfb_sent:
@@ -326,7 +326,7 @@ class RimeTTSynthesizer:
 
     def cancel(self) -> None:
         """Cancel current connection, used for flush scenarios"""
-        self.ten_env.log_info("Cancelling RIME TTS request.")
+        self.ten_env.log_debug("Cancelling RIME TTS request.")
 
         self._session_closing = True
 
@@ -352,10 +352,10 @@ class RimeTTSynthesizer:
                 except asyncio.QueueEmpty:
                     break
 
-        self.ten_env.log_info("All RIME TTS queues cleared during cancel")
+        self.ten_env.log_debug("All RIME TTS queues cleared during cancel")
 
     async def close(self):
-        self.ten_env.log_info("Closing RimeTTSynthesizer")
+        self.ten_env.log_debug("Closing RimeTTSynthesizer")
 
         # Set closing flag
         self._session_closing = True
@@ -417,7 +417,7 @@ class RimeTTSClient:
                         synthesizer.websocket_task
                         and synthesizer.websocket_task.done()
                     ):
-                        self.ten_env.log_info(
+                        self.ten_env.log_debug(
                             f"Cleaning up cancelled RIME TTS synthesizer {id(synthesizer)}"
                         )
                         self.cancelled_synthesizers.remove(synthesizer)
@@ -429,7 +429,7 @@ class RimeTTSClient:
 
     def cancel(self) -> None:
         """Cancel current synthesizer and create new synthesizer"""
-        self.ten_env.log_info(
+        self.ten_env.log_debug(
             "Cancelling current RIME TTS synthesizer and creating new one"
         )
 
@@ -440,7 +440,7 @@ class RimeTTSClient:
                     self.response_msgs.get_nowait()
                 except asyncio.QueueEmpty:
                     break
-            self.ten_env.log_info(
+            self.ten_env.log_debug(
                 "RIME TTS response messages queue cleared during cancel"
             )
 
@@ -451,7 +451,7 @@ class RimeTTSClient:
 
         # Create new synthesizer
         self.synthesizer = self._create_synthesizer()
-        self.ten_env.log_info("New RIME TTS synthesizer created successfully")
+        self.ten_env.log_debug("New RIME TTS synthesizer created successfully")
 
     async def send_text(self, t: TTSTextInput):
         """Send text to RIME TTS"""
@@ -468,11 +468,11 @@ class RimeTTSClient:
             self.synthesizer.cancel()
 
         self.synthesizer = self._create_synthesizer()
-        self.ten_env.log_info("Synthesizer reset successfully")
+        self.ten_env.log_debug("Synthesizer reset successfully")
 
     async def close(self):
         """Close RIME TTS client"""
-        self.ten_env.log_info("Closing RimeTTSClient")
+        self.ten_env.log_debug("Closing RimeTTSClient")
 
         # Cancel cleanup task
         if self.cleanup_task:
@@ -496,4 +496,4 @@ class RimeTTSClient:
                 )
 
         self.cancelled_synthesizers.clear()
-        self.ten_env.log_info("RimeTTSClient closed")
+        self.ten_env.log_debug("RimeTTSClient closed")
