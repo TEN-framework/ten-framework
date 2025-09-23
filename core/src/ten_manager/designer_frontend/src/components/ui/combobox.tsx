@@ -59,6 +59,7 @@ interface SingleComboboxProps extends ComboboxBaseProps {
   mode?: "single";
   selected?: ComboboxOptions["value"] | null;
   onChange: (option: ComboboxOptions) => void;
+  maxSelectedItems?: never;
 }
 
 interface MultipleComboboxProps extends ComboboxBaseProps {
