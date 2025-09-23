@@ -122,14 +122,6 @@ class BytedanceASRExtension(AsyncASRBaseExtension):
                 ),
             )
 
-    async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
-        cmd_json, _ = cmd.get_property_to_json()
-        ten_env.log_info(f"on_cmd json: {cmd_json}")
-
-        cmd_result = CmdResult.create(StatusCode.OK, cmd)
-        cmd_result.set_property_string("detail", "success")
-        await ten_env.return_result(cmd_result)
-
     async def _handle_reconnect(self, ten_env: Any | None = None) -> None:
         """Handle reconnection logic with exponential backoff strategy."""
         # Use provided ten_env or stored ten_env
