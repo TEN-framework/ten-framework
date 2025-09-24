@@ -111,6 +111,7 @@ async fn validate_msg_conversion_schema<'a>(
             msg_conversion_validate_info.src,
             msg_conversion_validate_info.msg_type,
             msg_conversion_validate_info.msg_names[0].as_str(),
+            MsgDirection::Out,
         )
         .await?;
 
@@ -120,6 +121,7 @@ async fn validate_msg_conversion_schema<'a>(
             msg_conversion_validate_info.dest,
             msg_conversion_validate_info.msg_type,
             msg_conversion_validate_info.msg_names[0].as_str(),
+            MsgDirection::In,
         )
         .await?;
 
@@ -139,6 +141,7 @@ async fn validate_msg_conversion_schema<'a>(
                     msg_conversion_validate_info.src.subgraph.as_ref().unwrap(),
                     msg_conversion_validate_info.msg_type,
                     msg_conversion_validate_info.msg_names[0].as_str(),
+                    MsgDirection::Out,
                 )
                 .await?;
             extension_node.app
@@ -155,6 +158,7 @@ async fn validate_msg_conversion_schema<'a>(
                     msg_conversion_validate_info.dest.subgraph.as_ref().unwrap(),
                     msg_conversion_validate_info.msg_type,
                     msg_conversion_validate_info.msg_names[0].as_str(),
+                    MsgDirection::In,
                 )
                 .await?;
             extension_node.app
@@ -333,6 +337,7 @@ async fn get_src_and_dest_c_msg_schema<'a>(
             msg_conversion_validate_info.src,
             msg_conversion_validate_info.msg_type,
             msg_conversion_validate_info.msg_names[0].as_str(),
+            MsgDirection::Out,
         )
         .await?;
 
@@ -342,6 +347,7 @@ async fn get_src_and_dest_c_msg_schema<'a>(
             msg_conversion_validate_info.dest,
             msg_conversion_validate_info.msg_type,
             msg_conversion_validate_info.msg_names[0].as_str(),
+            MsgDirection::In,
         )
         .await?;
 
@@ -354,6 +360,7 @@ async fn get_src_and_dest_c_msg_schema<'a>(
                     msg_conversion_validate_info.src.subgraph.as_ref().unwrap(),
                     msg_conversion_validate_info.msg_type,
                     msg_conversion_validate_info.msg_names[0].as_str(),
+                    MsgDirection::Out,
                 )
                 .await?;
             extension_node.app
@@ -370,6 +377,7 @@ async fn get_src_and_dest_c_msg_schema<'a>(
                     msg_conversion_validate_info.dest.subgraph.as_ref().unwrap(),
                     msg_conversion_validate_info.msg_type,
                     msg_conversion_validate_info.msg_names[0].as_str(),
+                    MsgDirection::In,
                 )
                 .await?;
             extension_node.app

@@ -15,7 +15,7 @@ use crate::graph::{
     Graph, GraphExposedMessageType, GraphNodeType,
 };
 
-use crate::pkg_info::message::MsgType;
+use crate::pkg_info::message::{MsgDirection, MsgType};
 
 
 impl Graph {
@@ -81,6 +81,7 @@ impl Graph {
         loc: &GraphLoc,
         msg_type: &crate::pkg_info::message::MsgType,
         msg_name: &str,
+        msg_direction: MsgDirection,
     ) -> Result<String> {
         match loc.get_node_type()? {
             GraphNodeType::Extension => {
@@ -95,6 +96,7 @@ impl Graph {
                         subgraph_name,
                         msg_type,
                         msg_name,
+                        msg_direction,
                     )
                     .await?;
                 Ok(extension_node.addon)
@@ -115,6 +117,7 @@ impl Graph {
         subgraph_name: &str,
         msg_type: &MsgType,
         msg_name: &str,
+        msg_direction: MsgDirection,
     ) -> Result<ExtensionNode> {
         // Find the subgraph node
         let subgraph_node = self
@@ -144,12 +147,22 @@ impl Graph {
         };
 
         // Convert MsgType to GraphExposedMessageType
-        let exposed_msg_type = match msg_type {
-            MsgType::Cmd => GraphExposedMessageType::CmdOut,
-            MsgType::Data => GraphExposedMessageType::DataOut,
-            MsgType::AudioFrame => GraphExposedMessageType::AudioFrameOut,
-            MsgType::VideoFrame => GraphExposedMessageType::VideoFrameOut,
-        };
+        let exposed_msg_type;
+        if msg_direction == MsgDirection::Out {
+            exposed_msg_type = match msg_type {
+                MsgType::Cmd => GraphExposedMessageType::CmdOut,
+                MsgType::Data => GraphExposedMessageType::DataOut,
+                    MsgType::AudioFrame => GraphExposedMessageType::AudioFrameOut,
+                    MsgType::VideoFrame => GraphExposedMessageType::VideoFrameOut,
+            };
+        } else {
+            exposed_msg_type = match msg_type {
+                MsgType::Cmd => GraphExposedMessageType::CmdIn,
+                MsgType::Data => GraphExposedMessageType::DataIn,
+                MsgType::AudioFrame => GraphExposedMessageType::AudioFrameIn,
+                MsgType::VideoFrame => GraphExposedMessageType::VideoFrameIn,
+            };
+        }
 
         // Load the subgraph from the import_uri
         let subgraph_graph =
@@ -202,6 +215,7 @@ impl Graph {
                 &extension_name,
                 msg_type,
                 msg_name,
+                msg_direction
             ))
             .await;
         }
