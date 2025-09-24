@@ -5,7 +5,7 @@
 # Refer to the "LICENSE" file in the root directory for more information.
 #
 import json
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, AsyncMock
 
 from ten_runtime import (
     ExtensionTester,
@@ -151,8 +151,8 @@ def test_invalid_params_fatal_error(MockTencentTTSClient):
     # --- Mock Configuration ---
     mock_instance = MockTencentTTSClient.return_value
     # Mock the async methods called on the client instance
-    mock_instance.start = MagicMock()
-    mock_instance.stop = MagicMock()
+    mock_instance.start = AsyncMock()
+    mock_instance.stop = AsyncMock()
 
     async def mock_get_audio_data():
         return [
