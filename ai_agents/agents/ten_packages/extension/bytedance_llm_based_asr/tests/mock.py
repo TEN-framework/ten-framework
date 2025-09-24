@@ -17,9 +17,20 @@ def patch_volcengine_ws():
 
     patch_target = "ten_packages.extension.bytedance_llm_based_asr.extension.VolcengineASRClient"
 
-    def _fake_ctor(url, app_key, access_key, api_key, auth_method, config, ten_env=None):
+    def _fake_ctor(
+        url, app_key, access_key, api_key, auth_method, config, ten_env=None
+    ):
         class _FakeClient:
-            def __init__(self, url, app_key, access_key, api_key, auth_method, config, ten_env=None):
+            def __init__(
+                self,
+                url,
+                app_key,
+                access_key,
+                api_key,
+                auth_method,
+                config,
+                ten_env=None,
+            ):
                 self.url = url
                 self.app_key = app_key
                 self.access_key = access_key
@@ -236,7 +247,9 @@ def patch_volcengine_ws():
                 print("[mock] listen called")
                 return None
 
-        return _FakeClient(url, app_key, access_key, api_key, auth_method, config, ten_env)
+        return _FakeClient(
+            url, app_key, access_key, api_key, auth_method, config, ten_env
+        )
 
     with patch(patch_target) as MockClient:
         MockClient.side_effect = _fake_ctor
