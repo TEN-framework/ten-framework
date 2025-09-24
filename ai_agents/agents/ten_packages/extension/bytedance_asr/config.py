@@ -70,6 +70,9 @@ class BytedanceASRConfig(BaseModel):
         if config.token:
             config.token = encrypt(config.token)
 
+        if config.api_key:
+            config.api_key = encrypt(config.api_key)
+
         if config.params:
             # Guard for static analyzers: ensure dict semantics for params
             params_dict: dict[str, Any] = (
@@ -80,6 +83,9 @@ class BytedanceASRConfig(BaseModel):
                     params_dict[key] = encrypt(value)
 
                 if key == "token":
+                    params_dict[key] = encrypt(value)
+
+                if key == "api_key":
                     params_dict[key] = encrypt(value)
             config.params = params_dict
 
