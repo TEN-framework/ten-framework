@@ -5,7 +5,7 @@
 # Refer to the "LICENSE" file in the root directory for more information.
 #
 from typing import Any
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, patch
 import json
 import asyncio
 
@@ -119,8 +119,8 @@ def test_reconnect_after_connection_drop(MockTencentTTSClient):
 
     # --- Mock Configuration ---
     mock_instance = MockTencentTTSClient.return_value
-    mock_instance.start = MagicMock()
-    mock_instance.stop = MagicMock()
+    mock_instance.start = AsyncMock()
+    mock_instance.stop = AsyncMock()
 
     # Create some fake audio data to be streamed
     fake_audio_chunk_1 = b"\x11\x22\x33\x44"
@@ -129,7 +129,7 @@ def test_reconnect_after_connection_drop(MockTencentTTSClient):
     audio_queue = asyncio.Queue()
 
     # This async generator simulates different behaviors on subsequent calls
-    def mock_synthesize_audio(text: str, text_input_end: bool):
+    async def mock_synthesize_audio(text: str, text_input_end: bool):
         nonlocal get_call_count
         get_call_count += 1
         print(
