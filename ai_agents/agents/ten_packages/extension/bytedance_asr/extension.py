@@ -24,10 +24,7 @@ from ten_ai_base.const import (
 
 from ten_runtime import (
     AsyncTenEnv,
-    Cmd,
     AudioFrame,
-    StatusCode,
-    CmdResult,
 )
 from .bytedance_asr import AsrWsClient
 from .config import BytedanceASRConfig
@@ -121,14 +118,6 @@ class BytedanceASRExtension(AsyncASRBaseExtension):
                     message=f"Configuration validation failed: {str(e)}",
                 ),
             )
-
-    async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
-        cmd_json, _ = cmd.get_property_to_json()
-        ten_env.log_info(f"on_cmd json: {cmd_json}")
-
-        cmd_result = CmdResult.create(StatusCode.OK, cmd)
-        cmd_result.set_property_string("detail", "success")
-        await ten_env.return_result(cmd_result)
 
     async def _handle_reconnect(self, ten_env: Any | None = None) -> None:
         """Handle reconnection logic with exponential backoff strategy."""
