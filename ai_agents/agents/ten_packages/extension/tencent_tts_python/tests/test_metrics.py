@@ -95,7 +95,7 @@ def test_ttfb_metric_is_sent(MockTencentTTSClient):
     # Mock synthesize_audio and get_audio_data with proper timing using asyncio.Queue
     audio_queue = asyncio.Queue()
 
-    def mock_synthesize_audio(text: str, text_input_end: bool):
+    async def mock_synthesize_audio(text: str, text_input_end: bool):
         time.sleep(0.2)
         # Add audio data to queue when synthesis starts
         audio_queue.put_nowait((False, MESSAGE_TYPE_CMD_METRIC, 200))

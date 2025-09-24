@@ -219,17 +219,17 @@ class TencentTTSClient:
             except Exception as e:
                 self.ten_env.log_error(f"Error completing TTS: {e}")
 
-    def synthesize_audio(self, text: str, text_input_end: bool):
+    async def synthesize_audio(self, text: str, text_input_end: bool):
         """
         Start audio synthesis for the given text.
         This method only initiates synthesis and returns immediately.
         Audio data should be consumed from the queue independently.
         """
         self.ten_env.log_debug(
-            f"Starting TTS synthesis, text: {text}, input_end: {text_input_end}"
+            f"Starting TTS synthesis, text: {text}, input_end: {text_input_end},conn_ready_event: {self.conn_ready_event.is_set()}"
         )
 
-        self.conn_ready_event.wait()
+        await self.conn_ready_event.wait()
 
         # Start streaming TTS synthesis
         self._callback.set_sent_ts()

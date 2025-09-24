@@ -129,7 +129,7 @@ def test_reconnect_after_connection_drop(MockTencentTTSClient):
     audio_queue = asyncio.Queue()
 
     # This async generator simulates different behaviors on subsequent calls
-    def mock_synthesize_audio(text: str, text_input_end: bool):
+    async def mock_synthesize_audio(text: str, text_input_end: bool):
         nonlocal get_call_count
         get_call_count += 1
         print(

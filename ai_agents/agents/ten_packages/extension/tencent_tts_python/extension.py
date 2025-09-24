@@ -208,7 +208,7 @@ class TencentTTSExtension(AsyncTTS2BaseExtension):
                     f"send_text_to_tts_server:  {t.text} of request_id: {t.request_id}",
                     category=LOG_CATEGORY_VENDOR,
                 )
-                self.client.synthesize_audio(t.text, t.text_input_end)
+                await self.client.synthesize_audio(t.text, t.text_input_end)
             if t.text_input_end:
                 self.ten_env.log_debug(
                     f"finish session for request ID: {t.request_id}"

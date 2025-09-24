@@ -119,7 +119,7 @@ def test_dump_functionality(MockTencentTTSClient):
     # Mock synthesize_audio and get_audio_data with proper timing using asyncio.Queue
     audio_queue = asyncio.Queue()
 
-    def mock_synthesize_audio(text: str, text_input_end: bool):
+    async def mock_synthesize_audio(text: str, text_input_end: bool):
         # Add audio data to queue when synthesis starts
         audio_queue.put_nowait((False, MESSAGE_TYPE_CMD_METRIC, 200))
         audio_queue.put_nowait((False, MESSAGE_TYPE_PCM, fake_audio_chunk_1))
@@ -289,7 +289,7 @@ def test_text_input_end_logic(MockTencentTTSClient):
     # Mock synthesize_audio and get_audio_data with proper timing using asyncio.Queue
     audio_queue = asyncio.Queue()
 
-    def mock_synthesize_audio(text: str, text_input_end: bool):
+    async def mock_synthesize_audio(text: str, text_input_end: bool):
         # Add audio data to queue when synthesis starts
         audio_queue.put_nowait((False, MESSAGE_TYPE_CMD_METRIC, 200))
         audio_queue.put_nowait((False, MESSAGE_TYPE_PCM, fake_audio_chunk_1))
@@ -451,7 +451,7 @@ def test_flush_logic(MockTencentTTSClient):
     # Mock synthesize_audio and get_audio_data with proper timing using asyncio.Queue
     audio_queue = asyncio.Queue()
 
-    def mock_synthesize_audio(text: str, text_input_end: bool):
+    async def mock_synthesize_audio(text: str, text_input_end: bool):
         # Add audio data to queue when synthesis starts
         audio_queue.put_nowait((False, MESSAGE_TYPE_CMD_METRIC, 200))
         audio_queue.put_nowait((False, MESSAGE_TYPE_PCM, fake_audio_chunk_1))
