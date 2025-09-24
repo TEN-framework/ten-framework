@@ -556,7 +556,6 @@ class textWebhookExtension(AsyncExtension):
         ten_env.log_debug(f"on_cmd name {cmd_name}")
 
         status = StatusCode.OK
-        detail = "success"
 
         if cmd_name == CMD_NAME_FLUSH:
             ten_env.log_info("Received flush command")
@@ -602,7 +601,6 @@ class textWebhookExtension(AsyncExtension):
             await self.send_user_event_message(ten_env, "left", user_id)
 
         cmd_result = CmdResult.create(status, cmd)
-        cmd_result.set_property_string("detail", detail)
         await ten_env.return_result(cmd_result)
 
     async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
