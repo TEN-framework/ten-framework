@@ -9,7 +9,7 @@ import os
 import time
 from typing import List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from ten_ai_base.const import (
     LOG_CATEGORY_VENDOR,
     LOG_CATEGORY_KEY_POINT,
