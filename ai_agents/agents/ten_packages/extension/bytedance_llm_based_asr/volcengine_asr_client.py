@@ -420,8 +420,8 @@ class VolcengineASRClient:
             )
         else:
             headers = RequestBuilder.new_auth_headers(
-            self.app_key, self.access_key, self.config.resource_id
-        )
+                self.app_key, self.access_key, self.config.resource_id
+            )
         try:
             self.websocket = await websockets.connect(
                 self.url,

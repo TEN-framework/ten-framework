@@ -115,7 +115,9 @@ class BytedanceASRLLMConfig(BaseModel):
         if params_dict:
             encrypted_params: dict[str, Any] = {}  # type: ignore
             for key, value in params_dict.items():
-                if key in ["app_key", "access_key", "api_key"] and isinstance(value, str):
+                if key in ["app_key", "access_key", "api_key"] and isinstance(
+                    value, str
+                ):
                     encrypted_params[key] = encrypt(value)  # type: ignore
                 else:
                     encrypted_params[key] = value  # type: ignore
