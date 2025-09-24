@@ -11,9 +11,9 @@ use anyhow::Result;
 use crate::graph::{
     connection::GraphLoc,
     graph_info::load_graph_from_uri,
-    node::{GraphNode, ExtensionNode, SubgraphNode},
-    Graph, GraphConnection, GraphExposedMessage,
-    GraphExposedMessageType, GraphMessageFlow, GraphNodeType,
+    node::{ExtensionNode, GraphNode, SubgraphNode},
+    Graph, GraphConnection, GraphExposedMessage, GraphExposedMessageType, GraphMessageFlow,
+    GraphNodeType,
 };
 
 impl Graph {
@@ -828,5 +828,4 @@ impl Graph {
             exposed_properties: updated_exposed_properties,
         }))
     }
-
 }

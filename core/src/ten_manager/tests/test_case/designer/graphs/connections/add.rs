@@ -1814,7 +1814,6 @@ mod tests {
         assert_eq!(actual_property_value, expected_property_value);
     }
 
-
     #[actix_web::test]
     async fn test_add_graph_connection_multiple_msg_names_success() {
         let designer_state = DesignerState {

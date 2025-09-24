@@ -8,15 +8,15 @@ pub mod flatten;
 
 use anyhow::Result;
 
-use crate::graph::{
-    connection::GraphLoc,
-    graph_info::load_graph_from_uri,
-    node::{GraphNode, ExtensionNode},
-    Graph, GraphExposedMessageType, GraphNodeType,
+use crate::{
+    graph::{
+        connection::GraphLoc,
+        graph_info::load_graph_from_uri,
+        node::{ExtensionNode, GraphNode},
+        Graph, GraphExposedMessageType, GraphNodeType,
+    },
+    pkg_info::message::{MsgDirection, MsgType},
 };
-
-use crate::pkg_info::message::{MsgDirection, MsgType};
-
 
 impl Graph {
     /// Helper function to resolve subgraph reference to actual extension name.
@@ -58,7 +58,6 @@ impl Graph {
             ))
         }
     }
-
 
     /// Helper function to determine the appropriate GraphExposedMessageType
     /// based on message type string.
@@ -147,22 +146,20 @@ impl Graph {
         };
 
         // Convert MsgType to GraphExposedMessageType
-        let exposed_msg_type;
-        if msg_direction == MsgDirection::Out {
-            exposed_msg_type = match msg_type {
+        let exposed_msg_type = match msg_direction {
+            MsgDirection::Out => match msg_type {
                 MsgType::Cmd => GraphExposedMessageType::CmdOut,
                 MsgType::Data => GraphExposedMessageType::DataOut,
-                    MsgType::AudioFrame => GraphExposedMessageType::AudioFrameOut,
-                    MsgType::VideoFrame => GraphExposedMessageType::VideoFrameOut,
-            };
-        } else {
-            exposed_msg_type = match msg_type {
+                MsgType::AudioFrame => GraphExposedMessageType::AudioFrameOut,
+                MsgType::VideoFrame => GraphExposedMessageType::VideoFrameOut,
+            },
+            MsgDirection::In => match msg_type {
                 MsgType::Cmd => GraphExposedMessageType::CmdIn,
                 MsgType::Data => GraphExposedMessageType::DataIn,
                 MsgType::AudioFrame => GraphExposedMessageType::AudioFrameIn,
                 MsgType::VideoFrame => GraphExposedMessageType::VideoFrameIn,
-            };
-        }
+            },
+        };
 
         // Load the subgraph from the import_uri
         let subgraph_graph =
@@ -215,7 +212,7 @@ impl Graph {
                 &extension_name,
                 msg_type,
                 msg_name,
-                msg_direction
+                msg_direction,
             ))
             .await;
         }
