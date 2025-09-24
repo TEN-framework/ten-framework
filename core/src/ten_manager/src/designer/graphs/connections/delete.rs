@@ -111,7 +111,8 @@ async fn graph_delete_connection(
 
             // Only proceed if we found all requested messages
             if found_count == msg_names.len() {
-                // Remove flows that have no destinations left (in reverse order to maintain indices)
+                // Remove flows that have no destinations left (in reverse order to maintain
+                // indices)
                 flows_to_remove.sort_by(|a, b| b.cmp(a));
                 for flow_idx in flows_to_remove {
                     flows.remove(flow_idx);
