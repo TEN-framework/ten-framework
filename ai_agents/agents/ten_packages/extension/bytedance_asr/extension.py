@@ -180,16 +180,16 @@ class BytedanceASRExtension(AsyncASRBaseExtension):
             config_json, _ = await self.ten_env.get_property_to_json("")
             self.config = BytedanceASRConfig.model_validate_json(config_json)
 
-            if not self.config.appid:
-                raise ValueError("appid is required")
-            if not self.config.token:
-                raise ValueError("token is required")
-
-        # if self.audio_dumper:
-        #     await self.audio_dumper.start()
+            if self.config.auth_method == "api_key":
+                if not self.config.api_key:
+                    raise ValueError("api_key is required")
+            elif self.config.auth_method == "token":
+                if not self.config.appid:
+                    raise ValueError("appid is required")
+                if not self.config.token:
+                    raise ValueError("token is required")
 
         async def on_message(result):
-            # self.ten_env.log_info(f"on_message result: {result}")
             if (
                 not result
                 or "text" not in result[0]
@@ -318,6 +318,8 @@ class BytedanceASRExtension(AsyncASRBaseExtension):
                 vad_signal=self.config.vad_signal,
                 start_silence_time=self.config.start_silence_time,
                 vad_silence_time=self.config.vad_silence_time,
+                auth_method=self.config.auth_method,
+                api_key=self.config.api_key,
                 handle_received_message=on_message,
                 on_finalize_complete=self.on_finalize_complete_callback,
                 on_error=on_error,
