@@ -444,8 +444,8 @@ class SonioxASRExtension(AsyncASRBaseExtension):
             final=is_final,
             start_ms=start_ms,
             duration_ms=duration_ms,
-            language=translation_tokens[0].language,
-            source_language=translation_tokens[0].source_language,
+            language=map_language_code(translation_tokens[0].language),
+            source_language=map_language_code(translation_tokens[0].source_language),
         )
 
         # Send as Data message with name 'asr_translation_result'
