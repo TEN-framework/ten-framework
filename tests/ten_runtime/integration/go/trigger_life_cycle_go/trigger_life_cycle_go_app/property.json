@@ -63,6 +63,19 @@
           ],
           "connections": [
             {
+              "extension": "simple_http_server_cpp",
+              "cmd": [
+                {
+                  "name": "test",
+                  "dest": [
+                    {
+                      "extension": "main"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
               "extension": "main",
               "cmd": [
                 {
