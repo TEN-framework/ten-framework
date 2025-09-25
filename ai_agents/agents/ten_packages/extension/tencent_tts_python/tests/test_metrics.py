@@ -4,7 +4,7 @@
 # Licensed under the Apache License, Version 2.0, with certain conditions.
 # Refer to the "LICENSE" file in the root directory for more information.
 #
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, AsyncMock
 import asyncio
 import json
 import time
@@ -85,8 +85,8 @@ def test_ttfb_metric_is_sent(MockTencentTTSClient):
 
     # --- Mock Configuration ---
     mock_instance = MockTencentTTSClient.return_value
-    mock_instance.start = MagicMock()
-    mock_instance.stop = MagicMock()
+    mock_instance.start = AsyncMock()
+    mock_instance.stop = AsyncMock()
 
     # Create some fake audio data to be streamed
     fake_audio_chunk_1 = b"\x11\x22\x33\x44" * 20
@@ -95,7 +95,7 @@ def test_ttfb_metric_is_sent(MockTencentTTSClient):
     # Mock synthesize_audio and get_audio_data with proper timing using asyncio.Queue
     audio_queue = asyncio.Queue()
 
-    def mock_synthesize_audio(text: str, text_input_end: bool):
+    async def mock_synthesize_audio(text: str, text_input_end: bool):
         time.sleep(0.2)
         # Add audio data to queue when synthesis starts
         audio_queue.put_nowait((False, MESSAGE_TYPE_CMD_METRIC, 200))

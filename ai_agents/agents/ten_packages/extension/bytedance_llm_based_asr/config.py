@@ -16,6 +16,8 @@ class BytedanceASRLLMConfig(BaseModel):
     # Authentication
     app_key: str = ""
     access_key: str = ""
+    api_key: str = ""
+    auth_method: str = "token"
 
     # API Configuration
     api_url: str = "wss://openspeech.bytedance.com/api/v3/sauc/bigmodel_async"
@@ -31,7 +33,7 @@ class BytedanceASRLLMConfig(BaseModel):
     # ASR Model Configuration
     model_name: str = "bigmodel"
     model_version: str = (
-        "310"  # Model version: "310" (default) or "400" (better ITN performance)
+        "400"  # Model version: "310" (default) or "400" (better ITN performance)
     )
     enable_itn: bool = True  # Enable Inverse Text Normalization
     enable_punc: bool = True  # Enable punctuation
@@ -106,12 +108,16 @@ class BytedanceASRLLMConfig(BaseModel):
             config.app_key = encrypt(config.app_key)
         if config.access_key:
             config.access_key = encrypt(config.access_key)
+        if config.api_key:
+            config.api_key = encrypt(config.api_key)
 
         params_dict = config.params
         if params_dict:
             encrypted_params: dict[str, Any] = {}  # type: ignore
             for key, value in params_dict.items():
-                if key in ["app_key", "access_key"] and isinstance(value, str):
+                if key in ["app_key", "access_key", "api_key"] and isinstance(
+                    value, str
+                ):
                     encrypted_params[key] = encrypt(value)  # type: ignore
                 else:
                     encrypted_params[key] = value  # type: ignore
