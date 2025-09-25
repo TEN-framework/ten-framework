@@ -2,24 +2,6 @@
   "version": 1,
   "packages": [
     {
-      "type": "system",
-      "name": "ten_runtime_go",
-      "version": "0.11.14",
-      "hash": "6b63332c6517ffe05b7955bb4a98451399476045550b91354776e76e9bb3fd11",
-      "dependencies": [
-        {
-          "type": "system",
-          "name": "ten_runtime"
-        }
-      ],
-      "supports": [
-        {
-          "os": "linux",
-          "arch": "x64"
-        }
-      ]
-    },
-    {
       "type": "extension",
       "name": "agora_rtc",
       "version": "0.23.0-rc2",
