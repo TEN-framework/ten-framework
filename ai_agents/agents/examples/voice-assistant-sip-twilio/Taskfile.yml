@@ -17,6 +17,12 @@ tasks:
     cmds:
       - tman designer
 
+  run-frontend:
+    desc: run frontend
+    dir: ./frontend
+    cmds:
+      - ./start.sh
+
   install:
     desc: install dependencies
     dir: ./tenapp
@@ -34,3 +40,4 @@ tasks:
     deps:
       - task: run-server
       - task: run-gd-server
+      - task: run-frontend

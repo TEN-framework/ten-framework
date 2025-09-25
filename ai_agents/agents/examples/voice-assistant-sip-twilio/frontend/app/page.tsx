@@ -5,7 +5,7 @@ import { Phone, PhoneIncoming, PhoneOutgoing } from 'lucide-react';
 import OutboundCallForm from '@/components/OutboundCallForm';
 import InboundCallModal from '@/components/InboundCallModal';
 import CallStatus from '@/components/CallStatus';
-import { twilioAPI, CallResponse } from '@/lib/api';
+import { twilioAPI, CallResponse } from './api';
 
 export default function Home() {
     const [activeCall, setActiveCall] = useState<CallResponse | null>(null);

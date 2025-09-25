@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Phone, PhoneOff, Clock, CheckCircle, XCircle } from 'lucide-react';
-import { twilioAPI, CallInfo } from '@/lib/api';
+import { twilioAPI, CallInfo } from '../app/api';
 
 interface CallStatusProps {
     callSid: string | null;

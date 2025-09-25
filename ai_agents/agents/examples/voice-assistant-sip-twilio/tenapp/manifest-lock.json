@@ -181,7 +181,7 @@
       "type": "system",
       "name": "agora_rtc_sdk",
       "version": "4.4.32-140",
-      "hash": "8ef4d46f8b3cb9a7e7874abb412cfaf6a1098ec37623f188d13399927d75ade6",
+      "hash": "a49b6fce6002f2218520e53be1fb3b039138e6228650f385633cc126771264cd",
       "supports": [
         {
           "os": "linux",
