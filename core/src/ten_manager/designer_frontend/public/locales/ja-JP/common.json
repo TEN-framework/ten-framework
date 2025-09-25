@@ -217,6 +217,8 @@
       "sameNodeError": "送信元と送信先のノードは同じにできません",
       "srcExtension": "送信元拡張機能",
       "destExtension": "送信先拡張機能",
+      "srcLocation": "送信元ノード",
+      "destLocation": "送信先ノード",
       "messageType": "メッセージタイプ",
       "messageName": "メッセージ名",
       "addConnection": "接続を追加",
