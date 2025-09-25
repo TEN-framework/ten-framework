@@ -19,7 +19,7 @@ class StepFunTTSConfig(BaseModel):
     voice_id: str = "cixingnansheng"
     speed_ratio: float = 1.0
     volume_ratio: float = 1.0
-    sample_rate: int = 24000
+    sample_rate: int = 16000
 
     # StepFun TTS pass through parameters
     params: Dict[str, Any] = Field(default_factory=dict)

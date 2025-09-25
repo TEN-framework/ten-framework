@@ -128,7 +128,7 @@ class StepFunTTSExtension(AsyncTTS2BaseExtension):
                         self.current_turn_id,
                         TTSAudioEndReason.INTERRUPTED,
                     )
-                    # 重置状态
+                    # Reset state
                     self.sent_ts = None
                     self.total_audio_bytes = 0
                     self.current_request_finished = True
@@ -164,7 +164,7 @@ class StepFunTTSExtension(AsyncTTS2BaseExtension):
         return "stepfun"
 
     def synthesize_audio_sample_rate(self) -> int:
-        if self.config and self.config.params:
+        if self.config:
             return self.config.get_sample_rate()
         return 16000  # StepFun TTS default sample rate
 
@@ -309,7 +309,7 @@ class StepFunTTSExtension(AsyncTTS2BaseExtension):
     async def _handle_audio_data(
         self, audio_data: bytes, event_status: int, audio_timestamp: int
     ) -> None:
-        """处理音频数据回调"""
+        """Handle audio data callback"""
         try:
             self.ten_env.log_info(f"Received event_status: {event_status}")
 
@@ -386,7 +386,7 @@ class StepFunTTSExtension(AsyncTTS2BaseExtension):
                         self.current_turn_id,
                     )
                     await self.client.cancel()
-                    # 重置状态为下一个请求做准备
+                    # Reset state for the next request
                     self.current_request_id = None
                     self.sent_ts = None
                     self.total_audio_bytes = 0
@@ -399,7 +399,7 @@ class StepFunTTSExtension(AsyncTTS2BaseExtension):
             self.ten_env.log_error(f"Error in _handle_audio_data: {e}")
 
     async def _handle_transcription(self, transcription: TTSTextResult) -> None:
-        """处理转录数据回调"""
+        """Handle transcription data callback"""
         try:
             transcription_str = transcription.model_dump_json()
             self.ten_env.log_info(
@@ -414,7 +414,7 @@ class StepFunTTSExtension(AsyncTTS2BaseExtension):
 
     @staticmethod
     def _get_error_type_from_code(error_code: int) -> ModuleErrorCode:
-        """根据错误码判断错误类型"""
+        """Determine the error type based on the error code"""
         fatal_error_codes = {
             -100,  # handshake failed
         }
@@ -427,7 +427,7 @@ class StepFunTTSExtension(AsyncTTS2BaseExtension):
     async def _send_tts_error_for_exception(
         self, exception: StepFunTTSTaskFailedException
     ) -> None:
-        """统一的TTS异常错误发送方法"""
+        """Unified method for sending TTS exceptions"""
         # Create appropriate error based on error code
         error_code = self._get_error_type_from_code(exception.error_code)
 
@@ -449,7 +449,7 @@ class StepFunTTSExtension(AsyncTTS2BaseExtension):
     def _handle_tts_error(
         self, exception: StepFunTTSTaskFailedException
     ) -> None:
-        """处理TTS内部错误回调"""
+        """Handle internal TTS error callback"""
         try:
             self.ten_env.log_error(f"TTS internal error: {exception}")
 
