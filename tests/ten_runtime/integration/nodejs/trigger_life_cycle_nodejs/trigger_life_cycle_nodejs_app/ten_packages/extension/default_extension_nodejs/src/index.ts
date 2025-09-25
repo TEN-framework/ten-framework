@@ -117,7 +117,7 @@ class MainExtension extends Extension {
       const cmdResult = CmdResult.Create(StatusCode.ERROR, cmd);
       cmdResult.setPropertyString("detail", "unknown command");
       tenEnv.returnResult(cmdResult);
-    } 
+    }
   }
 }
 

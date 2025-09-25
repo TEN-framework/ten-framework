@@ -19,6 +19,7 @@ def http_request():
         },
     )
 
+
 def test_trigger_life_cycle_nodejs():
     """Test client and app server."""
     base_path = os.path.dirname(os.path.abspath(__file__))
@@ -103,7 +104,9 @@ def test_trigger_life_cycle_nodejs():
     finally:
         is_stopped = http.stop_app("127.0.0.1", 8002, 30)
         if not is_stopped:
-            print("The trigger_life_cycle_nodejs can not stop after 30 seconds.")
+            print(
+                "The trigger_life_cycle_nodejs can not stop after 30 seconds."
+            )
             server.kill()
 
         exit_code = server.wait()
