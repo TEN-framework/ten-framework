@@ -2,6 +2,8 @@
     "params": {
         "app_key": "${env:BYTEDANCE_ASR_APP_KEY}",
         "access_key": "${env:BYTEDANCE_ASR_ACCESS_KEY}",
+        "api_key": "${env:BYTEDANCE_ASR_API_KEY}",
+        "auth_method": "api_key",
         "resource_id": "${env:BYTEDANCE_ASR_RESOURCE_ID}",
         "language": "en-US",
         "model_version": "400"

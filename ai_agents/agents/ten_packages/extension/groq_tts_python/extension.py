@@ -36,7 +36,8 @@ class GroqTTSExtension(AsyncTTS2BaseExtension):
         self.client: GroqTTS | None = None
 
         self.current_request_id: str | None = None
-        self.request_start_ts: float | None = None
+        self.request_start_ts: float = 0
+        self.first_chunk_ts: float = 0
         self.current_turn_id: int = -1
         self.audio_dumper: Dumper | dict[str, Dumper] | None = None
         self.flush_request_ids: set[str] = set()
@@ -123,12 +124,9 @@ class GroqTTSExtension(AsyncTTS2BaseExtension):
             if flush_id:
                 self.flush_request_ids.add(flush_id)
 
-            if (
-                self.request_start_ts is not None
-                and self.current_request_id is not None
-            ):
+            if self.first_chunk_ts > 0 and self.current_request_id is not None:
                 request_event_interval = int(
-                    (time.time() - self.request_start_ts) * 1000
+                    (time.time() - self.first_chunk_ts) * 1000
                 )
                 await self.send_tts_audio_end(
                     self.current_request_id,
@@ -148,8 +146,9 @@ class GroqTTSExtension(AsyncTTS2BaseExtension):
 
         is_new_request = self.current_request_id != request_id
         self.current_request_id = request_id
-        self.request_total_audio_duration = 0
-        self.request_start_ts = time.time()
+        if is_new_request:
+            self.request_total_audio_duration = 0
+            self.request_start_ts = time.time()
 
         try:
             received_first_chunk = False
@@ -173,8 +172,9 @@ class GroqTTSExtension(AsyncTTS2BaseExtension):
                     await self.send_tts_audio_start(request_id, turn_id)
                     if is_new_request:
                         # send ttfb metrics for new request
+                        self.first_chunk_ts = time.time()
                         elapsed_time = int(
-                            (time.time() - self.request_start_ts) * 1000
+                            (self.first_chunk_ts - self.request_start_ts) * 1000
                         )
                         await self.send_tts_ttfb_metrics(
                             request_id, elapsed_time, turn_id
@@ -225,13 +225,13 @@ class GroqTTSExtension(AsyncTTS2BaseExtension):
                 ),
             )
 
-        if text_input_end:
+        if text_input_end and self.first_chunk_ts > 0:
             self.last_end_request_ids.add(request_id)
             reason = TTSAudioEndReason.REQUEST_END
             if request_id in self.flush_request_ids:
                 reason = TTSAudioEndReason.INTERRUPTED
             request_event_interval = int(
-                (time.time() - self.request_start_ts) * 1000
+                (time.time() - self.first_chunk_ts) * 1000
             )
             await self.send_tts_audio_end(
                 request_id,

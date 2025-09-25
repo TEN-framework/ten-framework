@@ -4,7 +4,7 @@
 # Licensed under the Apache License, Version 2.0, with certain conditions.
 # Refer to the "LICENSE" file in the root directory for more information.
 #
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, AsyncMock, MagicMock
 import json
 import asyncio
 
@@ -56,8 +56,8 @@ def test_params_passthrough(MockTencentTTSClient):
 
     # --- Mock Configuration ---
     mock_instance = MockTencentTTSClient.return_value
-    mock_instance.start = MagicMock()
-    mock_instance.stop = MagicMock()
+    mock_instance.start = AsyncMock()
+    mock_instance.stop = AsyncMock()
     mock_instance.synthesize_audio = MagicMock()
     # Mock synthesize_audio and get_audio_data with proper timing using asyncio.Queue
     audio_queue = asyncio.Queue()

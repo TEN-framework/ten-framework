@@ -80,11 +80,14 @@ async fn graph_delete_connection(
         }
 
         // If the message flows array exists, find and remove the specific
-        // message flow.
+        // message flows.
         if let Some(flows) = message_flows {
-            for msg_name in msg_names {
+            let mut found_count = 0;
+            let mut flows_to_remove = Vec::new();
+
+            for msg_name in &msg_names {
                 if let Some(flow_idx) =
-                    flows.iter().position(|flow| flow.name.as_ref() == Some(&msg_name))
+                    flows.iter().position(|flow| flow.name.as_ref() == Some(msg_name))
                 {
                     let flow = &mut flows[flow_idx];
 
@@ -93,46 +96,57 @@ async fn graph_delete_connection(
                         flow.dest.iter().position(|dest_iter| dest_iter.loc.matches(&dest));
 
                     if let Some(dest_idx) = dest_idx {
+                        found_count += 1;
+
                         // Remove the specific destination.
                         flow.dest.remove(dest_idx);
 
-                        // If there are no more destinations, remove the whole
-                        // flow.
+                        // If there are no more destinations, mark the flow for removal.
                         if flow.dest.is_empty() {
-                            flows.remove(flow_idx);
+                            flows_to_remove.push(flow_idx);
                         }
+                    }
+                }
+            }
 
-                        // If there are no more flows of this message type, set
-                        // the array to None.
-                        if flows.is_empty() {
-                            *message_flows = None;
-                        }
+            // Only proceed if we found all requested messages
+            if found_count == msg_names.len() {
+                // Remove flows that have no destinations left (in reverse order to maintain
+                // indices)
+                flows_to_remove.sort_by(|a, b| b.cmp(a));
+                for flow_idx in flows_to_remove {
+                    flows.remove(flow_idx);
+                }
 
-                        // If there are no message flows left in this
-                        // connection, remove the connection.
-                        if connection.cmd.is_none()
-                            && connection.data.is_none()
-                            && connection.audio_frame.is_none()
-                            && connection.video_frame.is_none()
-                        {
-                            connections.remove(idx);
-                        }
+                // If there are no more flows of this message type, set
+                // the array to None.
+                if flows.is_empty() {
+                    *message_flows = None;
+                }
 
-                        // If there are no more connections, set the connections
-                        // field to None.
-                        if connections.is_empty() {
-                            graph.connections = None;
-                        }
+                // If there are no message flows left in this
+                // connection, remove the connection.
+                if connection.cmd.is_none()
+                    && connection.data.is_none()
+                    && connection.audio_frame.is_none()
+                    && connection.video_frame.is_none()
+                {
+                    connections.remove(idx);
+                }
 
-                        // Validate the updated graph.
-                        match graph.validate_and_complete(None) {
-                            Ok(_) => return Ok(()),
-                            Err(e) => {
-                                // Restore the original graph if validation fails.
-                                *graph = original_graph;
-                                return Err(e);
-                            }
-                        }
+                // If there are no more connections, set the connections
+                // field to None.
+                if connections.is_empty() {
+                    graph.connections = None;
+                }
+
+                // Validate the updated graph.
+                match graph.validate_and_complete(None) {
+                    Ok(_) => return Ok(()),
+                    Err(e) => {
+                        // Restore the original graph if validation fails.
+                        *graph = original_graph;
+                        return Err(e);
                     }
                 }
             }

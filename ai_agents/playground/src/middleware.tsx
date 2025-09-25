@@ -24,7 +24,7 @@ export async function middleware(req: NextRequest) {
 
         try {
             const body = await req.json();
-            console.log(`Request to ${pathname} with body ${JSON.stringify(body)}`);
+            console.log(`Request to ${pathname}`);
         } catch (e) {
             console.log(`Request to ${pathname} ${e}`);
         }

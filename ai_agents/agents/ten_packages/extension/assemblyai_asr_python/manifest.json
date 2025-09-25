@@ -1,0 +1,75 @@
+{
+    "type": "extension",
+    "name": "assemblyai_asr_python",
+    "version": "0.2.0",
+    "dependencies": [
+        {
+            "type": "system",
+            "name": "ten_runtime_python",
+            "version": "0.11"
+        },
+        {
+            "type": "system",
+            "name": "ten_ai_base",
+            "version": "0.7"
+        }
+    ],
+    "api": {
+        "interface": [
+            {
+                "import_uri": "../../system/ten_ai_base/api/asr-interface.json"
+            }
+        ],
+        "property": {
+            "properties": {
+                "params": {
+                    "type": "object",
+                    "properties": {
+                        "api_key": {
+                            "type": "string"
+                        },
+                        "ws_url": {
+                            "type": "string"
+                        },
+                        "sample_rate": {
+                            "type": "int64"
+                        },
+                        "encoding": {
+                            "type": "string"
+                        },
+                        "language": {
+                            "type": "string"
+                        },
+                        "end_of_turn_confidence_threshold": {
+                            "type": "float64"
+                        },
+                        "format_turns": {
+                            "type": "bool"
+                        },
+                        "keyterms_prompt": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        },
+                        "min_end_of_turn_silence_when_confident": {
+                            "type": "int64"
+                        },
+                        "max_turn_silence": {
+                            "type": "int64"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "package": {
+        "include": [
+            "manifest.json",
+            "property.json",
+            "**.py",
+            "requirements.txt",
+            "docs/**"
+        ]
+    }
+}

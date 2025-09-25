@@ -126,16 +126,22 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         if not self.config:
             raise ValueError("Configuration not loaded")
 
-        if not self.config.app_key:
-            raise ValueError("app_key is required")
-        if not self.config.access_key:
-            raise ValueError("access_key is required")
+        if self.config.auth_method == "api_key":
+            if not self.config.api_key:
+                raise ValueError("api_key is required")
+        else:
+            if not self.config.app_key:
+                raise ValueError("app_key is required")
+            if not self.config.access_key:
+                raise ValueError("access_key is required")
 
         try:
             self.client = VolcengineASRClient(
                 url=self.config.api_url,
                 app_key=self.config.app_key,
                 access_key=self.config.access_key,
+                api_key=self.config.api_key,
+                auth_method=self.config.auth_method,
                 config=self.config,
                 ten_env=self.ten_env,
             )
