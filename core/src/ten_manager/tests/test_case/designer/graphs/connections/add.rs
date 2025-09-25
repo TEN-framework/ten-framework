@@ -1511,13 +1511,13 @@ mod tests {
         // Copy the test directory to the temporary directory.
         let test_data_dir = std::path::Path::new("tests")
             .join("test_data")
-            .join("graph_add_connection_to_multi_dests");
+            .join("graph_add_connection_to_nested_subgraph");
 
         copy_folder_recursively(&test_data_dir.to_str().unwrap().to_string(), &test_dir).unwrap();
 
         // Get the new created test directory.
         let test_data_dir =
-            std::path::Path::new(&test_dir).join("graph_add_connection_to_multi_dests");
+            std::path::Path::new(&test_dir).join("graph_add_connection_to_nested_subgraph");
 
         {
             let mut pkgs_cache = designer_state.pkgs_cache.write().await;
@@ -1548,32 +1548,26 @@ mod tests {
         ))
         .await;
 
-        let ext_a = GraphLoc::with_app_and_type_and_name(
+        let src = GraphLoc::with_app_and_type_and_name(
             None,
             GraphNodeType::Extension,
             "ext_a".to_string(),
         )
         .unwrap();
-        let ext_b = GraphLoc::with_app_and_type_and_name(
+        let dest = GraphLoc::with_app_and_type_and_name(
             None,
-            GraphNodeType::Extension,
-            "ext_b".to_string(),
-        )
-        .unwrap();
-        let ext_c = GraphLoc::with_app_and_type_and_name(
-            None,
-            GraphNodeType::Extension,
-            "ext_c".to_string(),
+            GraphNodeType::Subgraph,
+            "subgraph_1".to_string(),
         )
         .unwrap();
 
-        // Add a connection between "ext_b" and "ext_a" with "data" data.
+        // Add a connection between "ext_a" and subgraph node
         let request_payload = AddGraphConnectionRequestPayload {
             graph_id: graph_id_clone,
-            src: ext_b.clone(),
-            dest: ext_a.clone(),
-            msg_type: MsgType::Data,
-            msg_names: vec!["data".to_string()],
+            src,
+            dest,
+            msg_type: MsgType::Cmd,
+            msg_names: vec!["C".to_string()],
             msg_conversion: None,
         };
 
@@ -1587,31 +1581,6 @@ mod tests {
         let body = test::read_body(resp).await;
         let body_str = std::str::from_utf8(&body).unwrap();
 
-        assert!(status.is_success(), "status: {status:?}, body: {body_str}");
-
-        let response: ApiResponse<AddGraphConnectionResponsePayload> =
-            serde_json::from_str(body_str).unwrap();
-        assert!(response.data.success);
-
-        // Add a connection between "ext_b" and "ext_c" with "data" data.
-        let request_payload = AddGraphConnectionRequestPayload {
-            graph_id: graph_id_clone,
-            src: ext_b.clone(),
-            dest: ext_c.clone(),
-            msg_type: MsgType::Data,
-            msg_names: vec!["data".to_string()],
-            msg_conversion: None,
-        };
-
-        let req = test::TestRequest::post()
-            .uri("/api/designer/v1/graphs/connections/add")
-            .set_json(request_payload)
-            .to_request();
-        let resp = test::call_service(&app, req).await;
-
-        let status = resp.status();
-        let body = test::read_body(resp).await;
-        let body_str = std::str::from_utf8(&body).unwrap();
         assert!(status.is_success(), "status: {status:?}, body: {body_str}");
 
         let response: ApiResponse<AddGraphConnectionResponsePayload> =
@@ -1628,7 +1597,7 @@ mod tests {
             serde_json::from_str(&actual_property).unwrap();
 
         let expected_property_json_str = include_str!(
-            "../../../../test_data/graph_add_connection_to_multi_dests/expected_property.json"
+            "../../../../test_data/graph_add_connection_to_nested_subgraph/expected_property.json"
         )
         .to_string();
 
