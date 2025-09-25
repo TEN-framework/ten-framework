@@ -1,14 +1,17 @@
 'use client';
 
 import { useState } from 'react';
-import { Phone, MessageSquare } from 'lucide-react';
+import { Phone, MessageSquare, PhoneOff } from 'lucide-react';
+import { CallResponse } from '../app/api';
 
 interface OutboundCallFormProps {
     onCall: (phoneNumber: string, message: string) => void;
+    onHangUp: () => void;
     isLoading: boolean;
+    activeCall: CallResponse | null;
 }
 
-export default function OutboundCallForm({ onCall, isLoading }: OutboundCallFormProps) {
+export default function OutboundCallForm({ onCall, onHangUp, isLoading, activeCall }: OutboundCallFormProps) {
     const [phoneNumber, setPhoneNumber] = useState('');
     const [message, setMessage] = useState('Hello, this is a call from the AI assistant.');
 
@@ -16,6 +19,10 @@ export default function OutboundCallForm({ onCall, isLoading }: OutboundCallForm
         e.preventDefault();
         if (!phoneNumber.trim()) return;
         onCall(phoneNumber.trim(), message.trim());
+    };
+
+    const handleHangUp = () => {
+        onHangUp();
     };
 
     return (
@@ -62,23 +69,44 @@ export default function OutboundCallForm({ onCall, isLoading }: OutboundCallForm
                     </p>
                 </div>
 
-                <button
-                    type="submit"
-                    disabled={!phoneNumber.trim() || isLoading}
-                    className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-                >
-                    {isLoading ? (
-                        <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                            Dialing...
-                        </>
-                    ) : (
-                        <>
-                            <Phone className="w-4 h-4 mr-2" />
-                            Initiate Outbound Call
-                        </>
-                    )}
-                </button>
+                {activeCall ? (
+                    <button
+                        type="button"
+                        onClick={handleHangUp}
+                        disabled={isLoading}
+                        className="btn-danger w-full disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                    >
+                        {isLoading ? (
+                            <>
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                Hanging up...
+                            </>
+                        ) : (
+                            <>
+                                <PhoneOff className="w-4 h-4 mr-2" />
+                                Hang Up Call
+                            </>
+                        )}
+                    </button>
+                ) : (
+                    <button
+                        type="submit"
+                        disabled={!phoneNumber.trim() || isLoading}
+                        className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                    >
+                        {isLoading ? (
+                            <>
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                Dialing...
+                            </>
+                        ) : (
+                            <>
+                                <Phone className="w-4 h-4 mr-2" />
+                                Initiate Outbound Call
+                            </>
+                        )}
+                    </button>
+                )}
             </form>
         </div>
     );

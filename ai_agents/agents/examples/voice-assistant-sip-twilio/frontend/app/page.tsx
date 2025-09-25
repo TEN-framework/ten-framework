@@ -1,17 +1,45 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Phone, PhoneIncoming, PhoneOutgoing } from 'lucide-react';
 import OutboundCallForm from '@/components/OutboundCallForm';
 import InboundCallModal from '@/components/InboundCallModal';
 import CallStatus from '@/components/CallStatus';
-import { twilioAPI, CallResponse } from './api';
+import { twilioAPI, CallResponse, ServerConfig } from './api';
 
 export default function Home() {
     const [activeCall, setActiveCall] = useState<CallResponse | null>(null);
     const [isOutboundLoading, setIsOutboundLoading] = useState(false);
     const [isInboundModalOpen, setIsInboundModalOpen] = useState(false);
+    const [inboundFromNumber, setInboundFromNumber] = useState<string>('');
     const [error, setError] = useState<string | null>(null);
+    const [serverConfig, setServerConfig] = useState<ServerConfig | null>(null);
+    const [isConfigLoading, setIsConfigLoading] = useState(true);
+
+    // Get Twilio from number from server config
+    const twilioFromNumber = serverConfig?.twilio_from_number || '+1234567890';
+
+    // Load server configuration on component mount
+    useEffect(() => {
+        const loadConfig = async () => {
+            try {
+                setIsConfigLoading(true);
+                const config = await twilioAPI.getConfig();
+                setServerConfig(config);
+            } catch (error) {
+                console.error('Failed to load server config:', error);
+                // Use default values if config loading fails
+                setServerConfig({
+                    twilio_from_number: '+1234567890',
+                    server_port: 8000
+                });
+            } finally {
+                setIsConfigLoading(false);
+            }
+        };
+
+        loadConfig();
+    }, []);
 
     const handleOutboundCall = async (phoneNumber: string, message: string) => {
         try {
@@ -32,24 +60,30 @@ export default function Home() {
         }
     };
 
-    const handleInboundCall = async (phoneNumber: string) => {
-        try {
-            setError(null);
-
-            const response = await twilioAPI.createCall({
-                phone_number: phoneNumber,
-                message: 'Hello, this is an inbound call from the AI assistant.',
-            });
-
-            setActiveCall(response);
-        } catch (error: any) {
-            console.error('Error creating inbound call:', error);
-            setError(error.response?.data?.detail || 'Failed to create inbound call');
-        }
+    const handleInboundCallNotification = (fromNumber: string) => {
+        setInboundFromNumber(fromNumber);
+        setIsInboundModalOpen(true);
     };
 
     const handleCallEnd = () => {
         setActiveCall(null);
+    };
+
+    const handleHangUp = async () => {
+        if (!activeCall) return;
+
+        try {
+            setIsOutboundLoading(true);
+            setError(null);
+
+            await twilioAPI.deleteCall(activeCall.call_sid);
+            setActiveCall(null);
+        } catch (error: any) {
+            console.error('Error hanging up call:', error);
+            setError(error.response?.data?.detail || 'Failed to hang up call');
+        } finally {
+            setIsOutboundLoading(false);
+        }
     };
 
     return (
@@ -93,7 +127,9 @@ export default function Home() {
                     </div>
                     <OutboundCallForm
                         onCall={handleOutboundCall}
+                        onHangUp={handleHangUp}
                         isLoading={isOutboundLoading}
+                        activeCall={activeCall}
                     />
                 </div>
 
@@ -106,14 +142,24 @@ export default function Home() {
 
                     <div className="bg-white rounded-lg shadow-md p-6">
                         <p className="text-gray-600 mb-4">
-                            Click the button below to initiate an inbound call. A dialog will pop up for you to enter the phone number.
+                            Click the button below to simulate an incoming call notification.
                         </p>
                         <button
-                            onClick={() => setIsInboundModalOpen(true)}
-                            className="btn-success w-full flex items-center justify-center"
+                            onClick={() => handleInboundCallNotification(twilioFromNumber)}
+                            disabled={isConfigLoading}
+                            className="btn-success w-full flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            <PhoneIncoming className="w-5 h-5 mr-2" />
-                            Initiate Inbound Call
+                            {isConfigLoading ? (
+                                <>
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                    Loading...
+                                </>
+                            ) : (
+                                <>
+                                    <PhoneIncoming className="w-5 h-5 mr-2" />
+                                    Simulate Inbound Call
+                                </>
+                            )}
                         </button>
                     </div>
                 </div>
@@ -133,7 +179,7 @@ export default function Home() {
             <InboundCallModal
                 isOpen={isInboundModalOpen}
                 onClose={() => setIsInboundModalOpen(false)}
-                onCall={handleInboundCall}
+                fromNumber={inboundFromNumber}
             />
         </div>
     );

@@ -4,3 +4,6 @@ tenapp/ten_packages/extension/*
 !tenapp/ten_packages/extension/main_python
 !tenapp/ten_packages/extension/main_python/**
 tenapp/bin
+
+
+__pycache__

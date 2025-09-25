@@ -22,6 +22,16 @@ export interface CallListResponse {
     total: number;
 }
 
+export interface ServerConfig {
+    twilio_from_number: string;
+    server_port: number;
+}
+
+export interface HealthResponse {
+    status: string;
+    active_calls: number;
+}
+
 export interface CreateCallRequest {
     phone_number: string;
     message?: string;
@@ -84,6 +94,10 @@ class TwilioAPI {
 
     async getHealth(): Promise<HealthResponse> {
         return this.request<HealthResponse>('/health');
+    }
+
+    async getConfig(): Promise<ServerConfig> {
+        return this.request<ServerConfig>('/api/config');
     }
 }
 

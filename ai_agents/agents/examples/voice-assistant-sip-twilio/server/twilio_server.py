@@ -190,12 +190,37 @@ class TwilioServer:
 
         return process
 
+    def _cleanup_ten_process(self, ten_process: subprocess.Popen):
+        """Clean up TEN process and its resources"""
+        try:
+            if ten_process and ten_process.poll() is None:
+                # Process is still running, terminate it
+                ten_process.terminate()
+                ten_process.wait(timeout=5)
+                self.logger.info("TEN process terminated successfully")
+
+            # Close log file if present
+            if hasattr(ten_process, 'log_file') and ten_process.log_file:
+                ten_process.log_file.close()
+                self.logger.info(f"TEN process log file closed: {ten_process.log_path}")
+
+        except subprocess.TimeoutExpired:
+            # Force kill if termination doesn't work
+            ten_process.kill()
+            ten_process.wait()
+            self.logger.warning("TEN process force killed due to timeout")
+        except Exception as e:
+            self.logger.error(f"Error cleaning up TEN process: {e}")
+
     def _setup_routes(self):
         """Setup FastAPI routes"""
 
         @self.app.post("/api/calls")
         async def create_call(request: Request):
             """Create a new outbound call"""
+            ten_process = None
+            property_json_path = None
+
             try:
                 body = await request.json()
                 phone_number = body.get("phone_number")
@@ -224,7 +249,7 @@ class TwilioServer:
 
                 # Wait for the websocket port to become available (TEN process to start)
                 if not self._wait_for_port(websocket_port, timeout=30):
-                    ten_process.terminate()
+                    self._cleanup_ten_process(ten_process)
                     raise HTTPException(
                         status_code=500, detail=f"Failed to start TEN process on port {websocket_port}"
                     )
@@ -280,6 +305,12 @@ class TwilioServer:
 
             except Exception as e:
                 self.logger.error(f"Failed to start call: {e}")
+
+                # Clean up TEN process if it was created
+                if ten_process:
+                    self.logger.info("Cleaning up TEN process due to call creation failure")
+                    self._cleanup_ten_process(ten_process)
+
                 raise HTTPException(status_code=500, detail=str(e))
 
         @self.app.get("/api/calls/{call_sid}")
@@ -427,6 +458,16 @@ class TwilioServer:
                 content={
                     "status": "healthy",
                     "active_calls": len(self.active_call_sessions),
+                }
+            )
+
+        @self.app.get("/api/config")
+        async def get_config():
+            """Get server configuration"""
+            return JSONResponse(
+                content={
+                    "twilio_from_number": self.config.twilio_from_number,
+                    "server_port": self.config.twilio_server_webhook_http_port,
                 }
             )
 
