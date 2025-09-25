@@ -2,6 +2,24 @@
   "version": 1,
   "packages": [
     {
+      "type": "system",
+      "name": "ten_runtime_go",
+      "version": "0.11.15",
+      "hash": "789402b3cb8bb07c1f50018b92bd51331633a78bfdd5994f0821de5622ce08c0",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime"
+        }
+      ],
+      "supports": [
+        {
+          "os": "linux",
+          "arch": "x64"
+        }
+      ]
+    },
+    {
       "type": "extension",
       "name": "agora_rtc",
       "version": "0.23.0-rc2",
@@ -46,7 +64,7 @@
           "name": "ten_runtime_python"
         }
       ],
-      "path": "../../ten_packages/extension/streamid_adapter"
+      "path": "../../../ten_packages/extension/streamid_adapter"
     },
     {
       "type": "extension",
@@ -63,7 +81,7 @@
           "name": "ten_ai_base"
         }
       ],
-      "path": "../../ten_packages/extension/deepgram_asr_python"
+      "path": "../../../ten_packages/extension/deepgram_asr_python"
     },
     {
       "type": "extension",
@@ -80,7 +98,7 @@
           "name": "ten_ai_base"
         }
       ],
-      "path": "../../ten_packages/extension/openai_llm2_python"
+      "path": "../../../ten_packages/extension/openai_llm2_python"
     },
     {
       "type": "extension",
@@ -97,7 +115,7 @@
           "name": "ten_ai_base"
         }
       ],
-      "path": "../../ten_packages/extension/elevenlabs_tts2_python"
+      "path": "../../../ten_packages/extension/elevenlabs_tts2_python"
     },
     {
       "type": "extension",
@@ -110,7 +128,7 @@
           "name": "ten_runtime_python"
         }
       ],
-      "path": "../../ten_packages/extension/message_collector2"
+      "path": "../../../ten_packages/extension/message_collector2"
     },
     {
       "type": "extension",
@@ -123,7 +141,7 @@
           "name": "ten_runtime_python"
         }
       ],
-      "path": "../../ten_packages/extension/weatherapi_tool_python"
+      "path": "../../../ten_packages/extension/weatherapi_tool_python"
     },
     {
       "type": "system",
@@ -150,8 +168,8 @@
     {
       "type": "system",
       "name": "ten_runtime",
-      "version": "0.11.14",
-      "hash": "46d31fb043fbf69edf7cda234f6bbd58fca44c98bb4af4fba4d3716b81a5a51f",
+      "version": "0.11.15",
+      "hash": "bc7038b1bb4a94c0d0e6000973949489b4fa7f40ef60a189f95f334307c8eef9",
       "supports": [
         {
           "os": "linux",
@@ -163,7 +181,7 @@
       "type": "system",
       "name": "agora_rtc_sdk",
       "version": "4.4.32-140",
-      "hash": "a49b6fce6002f2218520e53be1fb3b039138e6228650f385633cc126771264cd",
+      "hash": "8ef4d46f8b3cb9a7e7874abb412cfaf6a1098ec37623f188d13399927d75ade6",
       "supports": [
         {
           "os": "linux",

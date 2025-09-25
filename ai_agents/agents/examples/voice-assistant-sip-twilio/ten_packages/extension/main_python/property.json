@@ -1,8 +1,0 @@
-{
-    "twilio_account_sid": "${env:TWILIO_ACCOUNT_SID}",
-    "twilio_auth_token": "${env:TWILIO_AUTH_TOKEN}",
-    "twilio_from_number": "${env:TWILIO_FROM_NUMBER}",
-    "twilio_server_webhook_http_port": 9000,
-    "twilio_server_media_ws_port": 9001,
-    "twilio_client_media_ws_url": "${env:TWILIO_CLIENT_MEDIA_WS_URL}"
-}

@@ -18,6 +18,7 @@ from typing import Dict, Any, Optional
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse, Response
 import uvicorn
+from fastapi.middleware.cors import CORSMiddleware
 
 # Twilio imports
 from twilio.rest import Client
@@ -48,10 +49,19 @@ class TwilioServer:
     def __init__(self, config: TwilioServerConfig):
         self.config = config
         self.app = FastAPI(title="Twilio Dial Server", version="1.0.0")
+        # Configure CORS to allow frontend to call this API
+        self.app.add_middleware(
+            CORSMiddleware,
+            allow_origins=["*"],  # For demo; tighten in production
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
         self.active_call_sessions: Dict[str, Dict[str, Any]] = {}
         self.twilio_client: Optional[Client] = None
         self.logger = logging.getLogger(__name__)
-        self.property_json_path = "./property.json"
+        # property.json moved under tenapp
+        self.property_json_path = "./tenapp/property.json"
         self._setup_routes()
         self._setup_twilio_client()
 
@@ -136,12 +146,47 @@ class TwilioServer:
         cmd = ["tman", "run", "start", "--", "--property", property_json_path]
         self.logger.info(f"Spawning TEN process: {' '.join(cmd)}")
 
+        # Ensure we run inside the tenapp folder so tman resolves manifest correctly
+        tenapp_dir = (Path(__file__).resolve().parent.parent / "tenapp").resolve()
+        self.logger.info(f"TEN process working directory: {tenapp_dir}")
+
+        # Respect LOG_STDOUT env: if true, stream directly to terminal (no log file)
+        log_stdout_env = os.getenv("LOG_STDOUT", "false").lower() in ("1", "true", "yes", "on")
+        if log_stdout_env:
+            # Inherit parent's stdout/stderr (default None); also merge stderr to stdout for ordering
+            process = subprocess.Popen(
+                cmd,
+                stdout=None,
+                stderr=None,
+                text=True,
+                cwd=str(tenapp_dir),
+            )
+            # Mark that no file logging is used
+            process.log_file = None
+            process.log_path = None
+            self.logger.info("TEN process logging to terminal (LOG_STDOUT=true)")
+            return process
+
+        # Otherwise, log to a single combined file (stdout and stderr together)
+        log_dir = Path("/tmp/ten_agent/logs")
+        log_dir.mkdir(parents=True, exist_ok=True)
+
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]
+        combined_log = log_dir / f"ten_{timestamp}.log"
+        self.logger.info(f"TEN process combined log: {combined_log}")
+
+        log_file = open(combined_log, 'w')
         process = subprocess.Popen(
             cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True
+            stdout=log_file,
+            stderr=subprocess.STDOUT,
+            text=True,
+            cwd=str(tenapp_dir),
         )
+
+        # Store single log file reference for cleanup
+        process.log_file = log_file
+        process.log_path = str(combined_log)
 
         return process
 
@@ -262,11 +307,44 @@ class TwilioServer:
                         status_code=404, detail="Call not found"
                     )
 
+                session = self.active_call_sessions[call_sid]
+
                 if self.twilio_client:
                     # Hang up the call via Twilio API
                     call = self.twilio_client.calls(call_sid).update(
                         status="completed"
                     )
+
+                # Clean up TEN process but keep log files
+                if "ten_process" in session:
+                    ten_process = session["ten_process"]
+                    try:
+                        # Terminate the process if it's still running
+                        if ten_process.poll() is None:
+                            ten_process.terminate()
+                            ten_process.wait(timeout=5)
+
+                        # Close combined log file handle if present; keep the file itself
+                        if hasattr(ten_process, 'log_file') and ten_process.log_file:
+                            ten_process.log_file.close()
+                            self.logger.info(f"TEN process terminated for call {call_sid}. Log preserved at: {ten_process.log_path}")
+                        else:
+                            # Backward compatibility: close old split file handles
+                            if hasattr(ten_process, 'stdout_file'):
+                                ten_process.stdout_file.close()
+                            if hasattr(ten_process, 'stderr_file'):
+                                ten_process.stderr_file.close()
+                            paths = []
+                            if hasattr(ten_process, 'stdout_log'):
+                                paths.append(str(ten_process.stdout_log))
+                            if hasattr(ten_process, 'stderr_log'):
+                                paths.append(str(ten_process.stderr_log))
+                            if paths:
+                                self.logger.info(f"TEN process terminated for call {call_sid}. Logs preserved at: {', '.join(paths)}")
+                            else:
+                                self.logger.info(f"TEN process terminated for call {call_sid}")
+                    except Exception as e:
+                        self.logger.error(f"Error cleaning up TEN process for call {call_sid}: {e}")
 
                 # Remove from active sessions
                 del self.active_call_sessions[call_sid]
@@ -358,6 +436,31 @@ class TwilioServer:
         """Clean up call session after a delay"""
         await asyncio.sleep(delay_seconds)
         if call_sid in self.active_call_sessions:
+            session = self.active_call_sessions[call_sid]
+
+            # Clean up TEN process and log files
+            if "ten_process" in session:
+                ten_process = session["ten_process"]
+                try:
+                    # Terminate the process if it's still running
+                    if ten_process.poll() is None:
+                        ten_process.terminate()
+                        ten_process.wait(timeout=5)
+
+                    # Close single combined log file if present (new behavior)
+                    if hasattr(ten_process, 'log_file') and ten_process.log_file:
+                        ten_process.log_file.close()
+                        self.logger.info(f"TEN process terminated and combined log file closed for call {call_sid}: {ten_process.log_path}")
+                    else:
+                        # Backward compatibility: close old split files if they exist
+                        if hasattr(ten_process, 'stdout_file'):
+                            ten_process.stdout_file.close()
+                        if hasattr(ten_process, 'stderr_file'):
+                            ten_process.stderr_file.close()
+                        self.logger.info(f"TEN process terminated and legacy split log files closed for call {call_sid}")
+                except Exception as e:
+                    self.logger.error(f"Error cleaning up TEN process for call {call_sid}: {e}")
+
             del self.active_call_sessions[call_sid]
             self.logger.info(f"Cleaned up call session: {call_sid}")
 

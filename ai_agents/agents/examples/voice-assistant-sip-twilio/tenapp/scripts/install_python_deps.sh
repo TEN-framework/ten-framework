@@ -46,6 +46,17 @@ install_python_requirements() {
   echo "Python dependencies installation completed!"
 }
 
+build_go_app() {
+  local app_dir=$1
+  cd $app_dir
+
+  go run "$app_dir/ten_packages/system/ten_runtime_go/tools/build/main.go" --verbose
+  if [[ $? -ne 0 ]]; then
+    echo "FATAL: failed to build go app, see logs for detail."
+    exit 1
+  fi
+}
+
 main() {
   # Get the parent directory of script location as app root directory
   APP_HOME=$(
@@ -61,6 +72,8 @@ main() {
     echo "Error: manifest.json file not found"
     exit 1
   fi
+
+  build_go_app "$APP_HOME"
 
   # Install Python dependencies
   install_python_requirements "$APP_HOME"
