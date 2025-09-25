@@ -7,9 +7,9 @@ import asyncio
 import json
 import os
 import time
-from typing import List, Optional
+from typing import Any, List, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from ten_ai_base.const import (
     LOG_CATEGORY_VENDOR,
     LOG_CATEGORY_KEY_POINT,
@@ -52,6 +52,7 @@ class ASRTranslationResult(BaseModel):
     duration_ms: int
     language: str  # Target language of translation
     source_language: str  # Source language that was translated from
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class SonioxASRExtension(AsyncASRBaseExtension):
@@ -438,7 +439,7 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         text = "".join(token.text for token in translation_tokens)
 
         translation_result = ASRTranslationResult(
-            id=str(int(time.time() * 1000)),
+            id=self.uuid,
             text=text,
             source_text=source_text,
             final=is_final,
@@ -449,6 +450,8 @@ class SonioxASRExtension(AsyncASRBaseExtension):
                 translation_tokens[0].source_language
             ),
         )
+        if self.metadata is not None:
+            translation_result.metadata = self.metadata
 
         # Send as Data message with name 'asr_translation_result'
         data = Data.create("asr_translation_result")
@@ -509,7 +512,6 @@ class SonioxASRExtension(AsyncASRBaseExtension):
             text += token.text
 
         return ASRResult(
-            id=str(int(time.time() * 1000)),
             text=text,
             final=is_final,
             start_ms=self._adjust_timestamp(start_ms),
