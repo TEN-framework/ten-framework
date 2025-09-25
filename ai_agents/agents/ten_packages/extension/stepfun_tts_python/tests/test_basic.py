@@ -31,7 +31,7 @@ from ten_runtime import (
 from ten_ai_base.struct import TTSTextInput, TTSFlush
 from stepfun_tts_python.stepfun_tts import (
     StepFunTTSTaskFailedException,
-    EVENT_TTSSentenceEnd,
+    EVENT_TTSTaskFinished,
     EVENT_TTSResponse,
     EVENT_TTSFlush,
 )
@@ -159,7 +159,7 @@ def test_dump_functionality(MockStepFunTTSWebsocket):
             await asyncio.sleep(0.01)
 
             # Simulate sentence end
-            await audio_callback(b"", EVENT_TTSSentenceEnd, 0)
+            await audio_callback(b"", EVENT_TTSTaskFinished, 0)
 
     mock_instance.get = AsyncMock(side_effect=mock_get)
 
@@ -356,7 +356,7 @@ def test_flush_logic(MockStepFunTTSWebsocket):
                 await asyncio.sleep(0.1)
 
             # This part is only reached if not cancelled
-            await flush_audio_callback(b"", EVENT_TTSSentenceEnd, 0)
+            await flush_audio_callback(b"", EVENT_TTSTaskFinished, 0)
 
     mock_instance.get = AsyncMock(side_effect=mock_get_long_audio_stream)
 

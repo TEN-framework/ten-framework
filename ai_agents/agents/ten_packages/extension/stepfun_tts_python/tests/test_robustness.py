@@ -25,7 +25,7 @@ from ten_runtime import (
 )
 from ten_ai_base.struct import TTSTextInput
 from stepfun_tts_python.stepfun_tts import (
-    EVENT_TTSSentenceEnd,
+    EVENT_TTSTaskFinished,
     EVENT_TTSResponse,
 )
 
@@ -153,7 +153,7 @@ def test_reconnect_after_connection_drop(MockStepFunTTSWebsocket):
                 )
 
                 # Simulate sentence end
-                await robustness_audio_callback(b"", EVENT_TTSSentenceEnd, 0)
+                await robustness_audio_callback(b"", EVENT_TTSTaskFinished, 0)
 
     mock_instance.get = AsyncMock(side_effect=mock_get_stateful)
 

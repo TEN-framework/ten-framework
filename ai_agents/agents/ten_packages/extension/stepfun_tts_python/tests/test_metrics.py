@@ -25,7 +25,7 @@ from ten_runtime import (
 )
 from ten_ai_base.struct import TTSTextInput
 from stepfun_tts_python.stepfun_tts import (
-    EVENT_TTSSentenceEnd,
+    EVENT_TTSTaskFinished,
     EVENT_TTSResponse,
 )
 
@@ -122,7 +122,7 @@ def test_ttfb_metric_is_sent(MockStepFunTTSWebsocket):
             await metrics_audio_callback(b"\x11\x22\x33", EVENT_TTSResponse, 0)
 
             # Simulate the end of the stream
-            await metrics_audio_callback(b"", EVENT_TTSSentenceEnd, 0)
+            await metrics_audio_callback(b"", EVENT_TTSTaskFinished, 0)
 
     mock_instance.get = AsyncMock(side_effect=mock_get_audio_with_delay)
 

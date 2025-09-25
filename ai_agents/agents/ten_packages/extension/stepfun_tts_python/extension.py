@@ -364,6 +364,11 @@ class StepFunTTSExtension(AsyncTTS2BaseExtension):
                 self.ten_env.log_info(
                     "Received TTSSentenceEnd event from StepFun TTS"
                 )
+
+            elif event_status == EVENT_TTSTaskFinished:
+                self.ten_env.log_info(
+                    f"KEYPOINT Received task finished event from StepFun TTS for request ID: {self.current_request_id}"
+                )
                 # Send TTS audio end event
                 if (
                     self.sent_ts
@@ -389,11 +394,6 @@ class StepFunTTSExtension(AsyncTTS2BaseExtension):
                     self.ten_env.log_info(
                         f"KEYPOINT Sent TTS audio end event, interval: {request_event_interval}ms, duration: {duration_ms}ms"
                     )
-
-            elif event_status == EVENT_TTSTaskFinished:
-                self.ten_env.log_info(
-                    f"KEYPOINT Received task finished event from StepFun TTS for request ID: {self.current_request_id}"
-                )
 
         except Exception as e:
             self.ten_env.log_error(f"Error in _handle_audio_data: {e}")

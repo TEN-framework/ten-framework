@@ -231,7 +231,7 @@ def test_invalid_config_fatal_error():
     print("Starting test_invalid_config_fatal_error...")
 
     # Invalid configuration (missing required fields)
-    invalid_config = {}  # Completely empty config
+    invalid_config = {"params": {"api_key": ""}}
 
     tester = ExtensionTesterEmptyParams()
     tester.set_test_mode_single(
