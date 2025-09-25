@@ -199,7 +199,6 @@ class AsyncGlueExtension(AsyncLLMBaseExtension):
         ten_env.log_debug("on_cmd name {}".format(cmd_name))
 
         status = StatusCode.OK
-        detail = "success"
 
         if cmd_name == CMD_IN_FLUSH:
             await self.flush_input_items(ten_env)
@@ -217,7 +216,6 @@ class AsyncGlueExtension(AsyncLLMBaseExtension):
             return
 
         cmd_result = CmdResult.create(status, cmd)
-        cmd_result.set_property_string("detail", detail)
         await ten_env.return_result(cmd_result)
 
     async def on_call_chat_completion(

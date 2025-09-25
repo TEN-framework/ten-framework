@@ -9,6 +9,17 @@ from sys import stdout
 from .utils import http, build_config, build_pkg, fs_utils
 
 
+def http_request():
+    return http.post(
+        "http://127.0.0.1:8002/",
+        {
+            "ten": {
+                "name": "test",
+            },
+        },
+    )
+
+
 def test_trigger_life_cycle_python():
     """Test client and app server."""
     base_path = os.path.dirname(os.path.abspath(__file__))
@@ -131,14 +142,25 @@ def test_trigger_life_cycle_python():
         assert exit_code == 0
         assert False
 
-    # Wait for the server to exit.
-    exit_code = server.wait()
-    print("The exit code of trigger_life_cycle_python: ", exit_code)
+    try:
+        resp = http_request()
+        assert resp != 500
+        print(resp)
+    finally:
+        is_stopped = http.stop_app("127.0.0.1", 8002, 30)
+        if not is_stopped:
+            print(
+                "The trigger_life_cycle_python can not stop after 30 seconds."
+            )
+            server.kill()
 
-    assert exit_code == 0
+        exit_code = server.wait()
+        print("The exit code of trigger_life_cycle_python: ", exit_code)
 
-    if build_config_args.ten_enable_tests_cleanup is True:
-        # Testing complete. If builds are only created during the testing
-        # phase, we can clear the build results to save disk space.
-        fs_utils.remove_tree(app_root_path)
-        fs_utils.remove_tree(venv_dir)
+        assert exit_code == 0
+
+        if build_config_args.ten_enable_tests_cleanup is True:
+            # Testing complete. If builds are only created during the testing
+            # phase, we can clear the build results to save disk space.
+            fs_utils.remove_tree(app_root_path)
+            fs_utils.remove_tree(venv_dir)

@@ -1,22 +1,22 @@
 {
   "type": "app",
   "name": "default_app_nodejs",
-  "version": "0.11.14",
+  "version": "0.11.15",
   "dependencies": [
     {
       "type": "system",
       "name": "ten_runtime",
-      "version": "0.11.14"
+      "version": "0.11.15"
     },
     {
       "type": "system",
       "name": "ten_runtime_nodejs",
-      "version": "0.11.14"
+      "version": "0.11.15"
     },
     {
       "type": "protocol",
       "name": "msgpack",
-      "version": "0.11.14"
+      "version": "0.11.15"
     },
     {
       "type": "extension",

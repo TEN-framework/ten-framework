@@ -68,7 +68,13 @@ export const ENDPOINT_GRAPHS = {
       url: `${API_DESIGNER_V1}/graphs/connections/add`,
       method: ENDPOINT_METHOD.POST,
       requestSchema: AddConnectionPayloadSchema,
-      responseSchema: genResSchema(z.any()), // TODO: add response schema
+      responseSchema: genResSchema(
+        z
+          .looseObject({
+            success: z.boolean(),
+          })
+          .or(z.any())
+      ),
     },
   },
   deleteConnection: {
@@ -76,7 +82,7 @@ export const ENDPOINT_GRAPHS = {
       url: `${API_DESIGNER_V1}/graphs/connections/delete`,
       method: ENDPOINT_METHOD.POST,
       requestSchema: DeleteConnectionPayloadSchema,
-      responseSchema: genResSchema(z.any()), // TODO: add response schema
+      responseSchema: genResSchema(z.any()),
     },
   },
   graphs: {
