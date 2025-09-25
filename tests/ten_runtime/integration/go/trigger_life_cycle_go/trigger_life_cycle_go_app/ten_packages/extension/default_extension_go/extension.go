@@ -16,7 +16,7 @@ type mainExtension struct {
 	ten.DefaultExtension
 }
 
-func (p *mainExtension) OnStart(
+func (p *mainExtension) OnInit(
 	tenEnv ten.TenEnv,
 ) {
 	go func() {
@@ -84,21 +84,7 @@ func (p *mainExtension) OnStart(
 								)
 							}
 
-							tenEnv.OnStartDone()
-
-							// Send close app cmd to close the app.
-							closeAppCmd, _ := ten.NewCmd("ten:close_app")
-
-							err = closeAppCmd.SetDests(ten.Loc{
-								AppURI:        ten.Ptr(""),
-								GraphID:       ten.Ptr(""),
-								ExtensionName: ten.Ptr(""),
-							})
-							if err != nil {
-								panic("Failed to set dests: " + err.Error())
-							}
-
-							tenEnv.SendCmd(closeAppCmd, nil)
+							tenEnv.OnInitDone()
 						},
 					)
 				},
@@ -158,6 +144,22 @@ func (p *mainExtension) OnStop(
 			)
 		})
 	}()
+}
+
+func (p *mainExtension) OnCmd(
+	tenEnv ten.TenEnv,
+	cmd ten.Cmd,
+) {
+	cmdName, _ := cmd.GetName()
+	if cmdName == "test" {
+		cmdResult, _ := ten.NewCmdResult(ten.StatusCodeOk, cmd)
+		cmdResult.SetPropertyString("detail", "ok")
+		tenEnv.ReturnResult(cmdResult, nil)
+	} else {
+		cmdResult, _ := ten.NewCmdResult(ten.StatusCodeError, cmd)
+		cmdResult.SetPropertyString("detail", "unknown command")
+		tenEnv.ReturnResult(cmdResult, nil)
+	}
 }
 
 type bizExtension struct {
