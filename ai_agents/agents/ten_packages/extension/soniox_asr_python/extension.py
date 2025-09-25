@@ -63,6 +63,11 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         self.audio_dumper: Optional[Dumper] = None
         self.sent_user_audio_duration_ms_before_last_reset: int = 0
         self.last_finalize_timestamp: int = 0
+        # Track last transcript for standalone translations
+        self.last_transcript_text: str = ""
+        self.last_transcript_start_ms: int = 0
+        self.last_transcript_duration_ms: int = 0
+        self.last_transcript_is_final: bool = False
 
     @override
     def vendor(self) -> str:
@@ -316,11 +321,13 @@ class SonioxASRExtension(AsyncASRBaseExtension):
             transcript_tokens = []
             translation_tokens = []
             has_fin_token = False
+            has_only_translations = True
 
             # First pass: Separate tokens by type
             for token in tokens:
                 match token:
                     case SonioxTranscriptToken():
+                        has_only_translations = False
                         if translation_tokens and transcript_tokens:
                             await self._process_transcript_and_translation(
                                 transcript_tokens, translation_tokens
@@ -334,8 +341,21 @@ class SonioxASRExtension(AsyncASRBaseExtension):
                         has_fin_token = True
                     # EndToken is ignored
 
-            # Process any remaining tokens
-            if transcript_tokens:
+            # Handle standalone translations (no transcript tokens in this call)
+            if (
+                has_only_translations
+                and translation_tokens
+                and self.last_transcript_text
+            ):
+                await self._send_translation_results(
+                    translation_tokens,
+                    self.last_transcript_is_final,
+                    self.last_transcript_text,
+                    self.last_transcript_start_ms,
+                    self.last_transcript_duration_ms,
+                )
+            # Process transcript and translation pairs
+            elif transcript_tokens:
                 await self._process_transcript_and_translation(
                     transcript_tokens, translation_tokens
                 )
@@ -384,6 +404,12 @@ class SonioxASRExtension(AsyncASRBaseExtension):
 
         for result in asr_results:
             await self.send_asr_result(result)
+
+            # Store last transcript info for potential standalone translations
+            self.last_transcript_text = result.text
+            self.last_transcript_start_ms = result.start_ms
+            self.last_transcript_duration_ms = result.duration_ms
+            self.last_transcript_is_final = is_final
 
             # NOTE: it seems weird to send translation multiple times, but this complexity come from
             # the need to seperate multi-language tokens into multiple asr_result.
