@@ -1,5 +1,5 @@
 // API client for Twilio Voice Assistant
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_TWILIO_SERVER_URL || 'http://localhost:8080';
 
 export interface CallResponse {
     call_sid: string;
