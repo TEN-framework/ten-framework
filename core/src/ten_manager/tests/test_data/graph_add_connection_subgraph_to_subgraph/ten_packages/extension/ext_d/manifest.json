@@ -1,0 +1,26 @@
+{
+  "type": "extension",
+  "name": "ext_d",
+  "version": "1.2.3",
+  "api": {
+    "property": {
+      "properties": {
+        "key": {
+          "type": "string"
+        }
+      }
+    },
+    "cmd_in": [
+      {
+        "name": "C",
+        "property": {
+          "properties": {
+            "prop_str": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    ]
+  }
+}

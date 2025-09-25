@@ -18,7 +18,6 @@ use crate::{
     pkg_info::message::{MsgDirection, MsgType},
 };
 
-use crate::pkg_info::message::{MsgDirection, MsgType};
 use crate::utils::path::{get_base_dir_of_uri, get_real_path_from_import_uri};
 
 impl Graph {
