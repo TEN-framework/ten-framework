@@ -1,9 +1,0 @@
-{
-    "dump": false,
-    "dump_path": "./",
-    "params": {
-        "api_key": "${env:SAMBERT_TTS_API_KEY|}",
-        "model": "sambert-zhiwei-v1",
-        "sample_rate": 16000
-    }
-}
