@@ -28,7 +28,7 @@ mod tests {
         assert_eq!(interface.import_uri, "./interface/foo_1.json");
 
         // Check the flattened manifest api.
-        let flattened_manifest = manifest.get_flattened_api().await.unwrap();
+        let flattened_manifest = manifest.get_flattened_api(None).await.unwrap();
         let flattened_manifest = flattened_manifest.as_ref().unwrap();
         assert!(flattened_manifest.interface.is_none());
 
@@ -69,7 +69,7 @@ mod tests {
         assert_eq!(interface.import_uri, "https://raw.githubusercontent.com/TEN-framework/ten-framework/0.10.16/core/src/ten_rust/tests/test_data/interface/foo_1.json");
 
         // Check the flattened manifest api.
-        let flattened_manifest = manifest.get_flattened_api().await.unwrap();
+        let flattened_manifest = manifest.get_flattened_api(None).await.unwrap();
         let flattened_manifest = flattened_manifest.as_ref().unwrap();
         assert!(flattened_manifest.interface.is_none());
 
@@ -123,7 +123,7 @@ mod tests {
         api.interface.as_mut().unwrap()[0].import_uri = interface_uri;
 
         // Check the flattened manifest api.
-        let flattened_manifest = manifest.get_flattened_api().await.unwrap();
+        let flattened_manifest = manifest.get_flattened_api(None).await.unwrap();
         let flattened_manifest = flattened_manifest.as_ref().unwrap();
 
         // Check the properties.
@@ -166,7 +166,7 @@ mod tests {
         api.interface.as_mut().unwrap()[0].import_uri = interface_uri;
 
         // Check the flattened manifest api.
-        let result = manifest.get_flattened_api().await;
+        let result = manifest.get_flattened_api(None).await;
         assert!(result.is_err());
     }
 }
