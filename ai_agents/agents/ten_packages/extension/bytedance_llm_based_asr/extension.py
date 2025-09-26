@@ -44,7 +44,7 @@ from .config import BytedanceASRLLMConfig
 from .volcengine_asr_client import VolcengineASRClient, ASRResponse
 from .const import (
     DUMP_FILE_NAME,
-    RECONNECTABLE_ERROR_CODES,
+    is_reconnectable_error,
 )
 
 
@@ -298,7 +298,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         error_code = getattr(error, "code", ModuleErrorCode.FATAL_ERROR.value)
 
         # Check if error is reconnectable
-        if error_code in RECONNECTABLE_ERROR_CODES and not self.stopped:
+        if is_reconnectable_error(error_code) and not self.stopped:
             await self._handle_reconnect()
         else:
             await self.send_asr_error(
@@ -417,7 +417,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         )
 
         # Check if error is reconnectable
-        if error_code in RECONNECTABLE_ERROR_CODES and not self.stopped:
+        if is_reconnectable_error(error_code) and not self.stopped:
             await self._handle_reconnect()
         else:
             # Create ModuleError object
