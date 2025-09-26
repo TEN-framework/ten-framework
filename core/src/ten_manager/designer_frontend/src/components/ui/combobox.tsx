@@ -31,28 +31,45 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
+const MAX_DISPLAY_ITEMS = 3;
+
 export type ComboboxOptions = {
   value: string;
   label: string;
 };
 
-interface ComboboxProps {
+type ComboboxCommandLabels = {
+  placeholder?: string;
+  noItems?: string;
+  enterValueToCreate?: string;
+  noMatchedItems?: string;
+};
+
+interface ComboboxBaseProps {
   options: ComboboxOptions[];
-  selected: ComboboxOptions["value"];
   className?: string;
   placeholder?: string;
-  disalbed?: boolean;
-  onChange: (option: ComboboxOptions) => void;
-  onCreate?: (label: ComboboxOptions["label"]) => void;
   disabled?: boolean;
+  onCreate?: (label: ComboboxOptions["label"]) => void;
   isLoading?: boolean;
-  commandLabels?: {
-    placeholder?: string;
-    noItems?: string;
-    enterValueToCreate?: string;
-    noMatchedItems?: string;
-  };
+  commandLabels?: ComboboxCommandLabels;
 }
+
+interface SingleComboboxProps extends ComboboxBaseProps {
+  mode?: "single";
+  selected?: ComboboxOptions["value"] | null;
+  onChange: (option: ComboboxOptions) => void;
+  maxSelectedItems?: never;
+}
+
+interface MultipleComboboxProps extends ComboboxBaseProps {
+  mode: "multiple";
+  selected: ComboboxOptions["value"][];
+  onChange: (options: ComboboxOptions[]) => void;
+  maxSelectedItems?: number;
+}
+
+type ComboboxProps = SingleComboboxProps | MultipleComboboxProps;
 
 function CommandAddItem({
   query,
@@ -85,17 +102,18 @@ function CommandAddItem({
   );
 }
 
-export function Combobox({
-  options,
-  selected,
-  className,
-  placeholder,
-  disalbed,
-  onChange,
-  onCreate,
-  isLoading,
-  commandLabels,
-}: ComboboxProps) {
+export function Combobox(props: ComboboxProps) {
+  const {
+    options,
+    className,
+    placeholder,
+    onCreate,
+    isLoading,
+    commandLabels,
+    disabled,
+    maxSelectedItems = MAX_DISPLAY_ITEMS,
+  } = props;
+  const isMultiple = props.mode === "multiple";
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");
   const [canCreate, setCanCreate] = React.useState(true);
@@ -108,18 +126,84 @@ export function Combobox({
     setCanCreate(!!(query && isAlreadyCreated));
   }, [query, options]);
 
-  function handleSelect(option: ComboboxOptions) {
-    if (onChange) {
-      onChange(option);
-      setOpen(false);
-      setQuery("");
+  const getOptionFromValue = React.useCallback(
+    (value: string): ComboboxOptions =>
+      options.find((item) => item.value === value) || {
+        value,
+        label: value,
+      },
+    [options]
+  );
+
+  const multipleSelected = isMultiple
+    ? (props as MultipleComboboxProps).selected
+    : undefined;
+  const singleSelected = !isMultiple
+    ? (props as SingleComboboxProps).selected
+    : undefined;
+
+  const selectedValues = React.useMemo(() => {
+    if (Array.isArray(multipleSelected)) {
+      return multipleSelected;
     }
+
+    if (typeof singleSelected === "string" && singleSelected.length > 0) {
+      return [singleSelected];
+    }
+
+    return [];
+  }, [multipleSelected, singleSelected]);
+
+  const selectedOptionsForDisplay = React.useMemo(
+    () => selectedValues.map((value) => getOptionFromValue(value)),
+    [getOptionFromValue, selectedValues]
+  );
+
+  const multipleSelectionLabel = React.useMemo(() => {
+    if (!isMultiple) return null;
+
+    const displayedItems = selectedOptionsForDisplay.slice(0, maxSelectedItems);
+    const truncatedLabel = displayedItems.map((item) => item.label).join(", ");
+    const remainingCount =
+      selectedOptionsForDisplay.length - displayedItems.length;
+
+    if (remainingCount > 0) {
+      return `${truncatedLabel} +${remainingCount}`;
+    }
+
+    return truncatedLabel;
+  }, [isMultiple, maxSelectedItems, selectedOptionsForDisplay]);
+
+  function handleSelect(option: ComboboxOptions) {
+    if (isMultiple) {
+      const multipleProps = props as MultipleComboboxProps;
+      const current = new Set(multipleProps.selected);
+
+      if (current.has(option.value)) {
+        current.delete(option.value);
+      } else {
+        current.add(option.value);
+      }
+
+      const nextValues = Array.from(current.values());
+      multipleProps.onChange(
+        nextValues.map((value) => getOptionFromValue(value))
+      );
+      return;
+    }
+
+    const singleProps = props as SingleComboboxProps;
+    singleProps.onChange(option);
+    setOpen(false);
+    setQuery("");
   }
 
   function handleCreate() {
     if (onCreate && query) {
       onCreate(query);
-      setOpen(false);
+      if (!isMultiple) {
+        setOpen(false);
+      }
       setQuery("");
     }
   }
@@ -144,13 +228,15 @@ export function Combobox({
           type="button"
           variant="outline"
           role="combobox"
-          disabled={disalbed || isLoading}
+          disabled={disabled || isLoading}
           aria-expanded={open}
           className={cn("w-full font-normal", className)}
         >
-          {selected && selected.length > 0 ? (
+          {selectedOptionsForDisplay.length > 0 ? (
             <div className="mr-auto truncate">
-              {options.find((item) => item.value === selected)?.label}
+              {isMultiple
+                ? multipleSelectionLabel
+                : selectedOptionsForDisplay[0]?.label}
             </div>
           ) : (
             <div className="mr-auto text-slate-600">
@@ -223,7 +309,7 @@ export function Combobox({
               {/* Select */}
               {options.map((option) => (
                 <CommandItem
-                  key={option.label}
+                  key={option.value}
                   tabIndex={0}
                   value={option.label}
                   onSelect={() => {
@@ -247,7 +333,9 @@ export function Combobox({
                   <Check
                     className={cn(
                       "mr-2 size-4",
-                      selected === option.value ? "opacity-100" : "opacity-0"
+                      selectedValues.includes(option.value)
+                        ? "opacity-100"
+                        : "opacity-0"
                     )}
                   />
                   {option.label}

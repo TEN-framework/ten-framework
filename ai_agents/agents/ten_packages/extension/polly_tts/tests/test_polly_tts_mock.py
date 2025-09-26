@@ -146,12 +146,11 @@ def test_polly_tts_success_mock(mock_boto_client, mock_boto_session):
     mock_session.client.return_value = mock_polly
 
     # mock polly synthesize_speech response
-    mock_response = {
+    mock_polly.synthesize_speech.side_effect = lambda **kwargs: {
         "AudioStream": create_mock_polly_response(),
         "ContentType": "audio/pcm",
         "RequestCharacters": 25,
     }
-    mock_polly.synthesize_speech.return_value = mock_response
 
     property_json = {
         "log_level": "DEBUG",

@@ -128,6 +128,7 @@ class TencentTTSClient:
         self.config = config
         self.ten_env = ten_env
         self.vendor = vendor
+        self.conn_ready_event = asyncio.Event()
 
         # TTS synthesizer
         self._callback: AsyncIteratorCallback | None = None
@@ -141,7 +142,7 @@ class TencentTTSClient:
             ]
         ] = asyncio.Queue()
 
-    def start(self) -> None:
+    async def start(self) -> None:
         """Start the TTS client and initialize components."""
 
         # Create synthesizer with configuration
@@ -174,18 +175,15 @@ class TencentTTSClient:
             raise e
 
         self.synthesizer = synthesizer
+        self.conn_ready_event.set()
 
         self.ten_env.log_debug("Tencent TTS client started successfully")
 
-    def stop(self) -> None:
+    async def stop(self) -> None:
         """Stop the TTS client and clean up resources."""
         self.close()
-
-    def cancel(self) -> None:
-        """
-        Cancel current TTS operation.
-        """
-        self.close()
+        # restart the synthesizer
+        await self.start()
 
     def close(self) -> None:
         """
@@ -205,6 +203,7 @@ class TencentTTSClient:
 
             # Clean up synthesizer
             self.synthesizer = None
+            self.conn_ready_event.clear()
 
     def complete(self) -> None:
         """
@@ -214,34 +213,27 @@ class TencentTTSClient:
         if self.synthesizer and self.synthesizer.is_alive():
             try:
                 self.synthesizer.complete()
+                self.conn_ready_event.clear()
+
                 self.ten_env.log_debug("TTS operation completed")
             except Exception as e:
                 self.ten_env.log_error(f"Error completing TTS: {e}")
 
-    def synthesize_audio(self, text: str, text_input_end: bool):
+    async def synthesize_audio(self, text: str, text_input_end: bool):
         """
         Start audio synthesis for the given text.
         This method only initiates synthesis and returns immediately.
         Audio data should be consumed from the queue independently.
         """
         self.ten_env.log_debug(
-            f"Starting TTS synthesis, text: {text}, input_end: {text_input_end}"
+            f"Starting TTS synthesis, text: {text}, input_end: {text_input_end},conn_ready_event: {self.conn_ready_event.is_set()}"
         )
 
-        # Start synthesizer if not initialized
-        if self.synthesizer is None or not self.synthesizer.is_alive():
-            self.ten_env.log_debug(
-                "Synthesizer is not initialized, starting new one."
-            )
-            self.start()
+        await self.conn_ready_event.wait()
 
         # Start streaming TTS synthesis
         self._callback.set_sent_ts()
         self.synthesizer.process(text)
-
-        # Complete streaming if this is the end
-        if text_input_end:
-            self.complete()
 
         self.ten_env.log_debug(f"TTS synthesis initiated for text: {text}")
 

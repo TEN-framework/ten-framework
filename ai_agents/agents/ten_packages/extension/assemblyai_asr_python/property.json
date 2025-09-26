@@ -1,0 +1,14 @@
+{
+    "params": {
+        "api_key": "${env:ASSEMBLYAI_API_KEY|}",
+        "ws_url": "wss://streaming.assemblyai.com/v3/ws",
+        "sample_rate": 16000,
+        "encoding": "pcm_s16le",
+        "language": "en-US",
+        "end_of_turn_confidence_threshold": 0.4,
+        "format_turns": true,
+        "keyterms_prompt": [],
+        "min_end_of_turn_silence_when_confident": 400,
+        "max_turn_silence": 1280
+    }
+}

@@ -158,6 +158,7 @@ class AsrWsClient:
         self.nbest = int(kwargs.get("nbest", 1))
         self.appid = kwargs.get("appid", "")
         self.token = kwargs.get("token", "")
+        self.api_key = kwargs.get("api_key", "")
         self.ws_url = kwargs.get(
             "ws_url", "wss://openspeech.bytedance.com/api/v2/asr"
         )
@@ -442,6 +443,8 @@ class AsrWsClient:
             header = self.token_auth()
         elif self.auth_method == "signature":
             header = self.signature_auth(full_client_request)
+        elif self.auth_method == "api_key":
+            header = self.api_key_auth()
         self.websocket = await websockets.connect(
             self.ws_url,
             additional_headers=header,
@@ -570,6 +573,10 @@ class AsrWsClient:
     def token_auth(self):
         self.ten_env.log_info(f"token_auth: {self.token}")
         return {"Authorization": "Bearer; {}".format(self.token)}
+
+    def api_key_auth(self):
+        self.ten_env.log_info(f"api_key_auth: {self.api_key}")
+        return {"x-api-key": "{}".format(self.api_key)}
 
     def signature_auth(self, data):
         header_dicts = {

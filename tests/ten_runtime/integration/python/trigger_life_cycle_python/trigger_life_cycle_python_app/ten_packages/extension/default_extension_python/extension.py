@@ -20,8 +20,8 @@ class MainExtension(AsyncExtension):
     def __init__(self, name: str):
         super().__init__(name)
 
-    async def on_start(self, ten_env: AsyncTenEnv) -> None:
-        ten_env.log_info("MainExtension on_start")
+    async def on_init(self, ten_env: AsyncTenEnv) -> None:
+        ten_env.log_info("MainExtension on_init")
 
         await asyncio.sleep(1.0)
 
@@ -58,11 +58,6 @@ class MainExtension(AsyncExtension):
             check_start_result.get_status_code() == StatusCode.OK
         ), "check_start_result status code is not OK"
 
-        # Send close app cmd to close the app.
-        close_app_cmd = Cmd.create("ten:close_app")
-        close_app_cmd.set_dests([Loc("")])
-        asyncio.create_task(ten_env.send_cmd(close_app_cmd))
-
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_info("MainExtension on_stop")
 
@@ -92,6 +87,19 @@ class MainExtension(AsyncExtension):
 
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_info("MainExtension on_deinit")
+
+    async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
+        cmd_name = cmd.get_name()
+        ten_env.log_info(f"cmdName: {cmd_name}")
+
+        if cmd_name == "test":
+            cmd_result = CmdResult.create(StatusCode.OK, cmd)
+            cmd_result.set_property_string("detail", "ok")
+            await ten_env.return_result(cmd_result)
+        else:
+            cmd_result = CmdResult.create(StatusCode.ERROR, cmd)
+            cmd_result.set_property_string("detail", "unknown command")
+            await ten_env.return_result(cmd_result)
 
 
 class BizExtension(AsyncExtension):

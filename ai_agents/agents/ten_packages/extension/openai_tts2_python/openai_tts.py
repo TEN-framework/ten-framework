@@ -79,8 +79,6 @@ class OpenaiTTSClient:
 
                     if len(chunk) > 0:
                         yield bytes(chunk), EVENT_TTS_RESPONSE
-                    else:
-                        yield None, EVENT_TTS_END
 
             if not self._is_cancelled:
                 self.ten_env.log_debug("OpenaiTTS: sending EVENT_TTS_END")

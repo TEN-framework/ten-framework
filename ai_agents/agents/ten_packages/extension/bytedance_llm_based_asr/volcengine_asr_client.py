@@ -129,13 +129,26 @@ class RequestBuilder:
     def new_auth_headers(
         app_key: str,
         access_key: str,
-        resource_id: str = "volc.bigasr.sauc.duration",
+        resource_id: str,
     ) -> Dict[str, str]:
         """Create authentication headers for WebSocket connection."""
         connect_id = str(uuid.uuid4())  # Generate connection tracking ID
         return {
             "X-Api-App-Key": app_key,  # APP ID
             "X-Api-Access-Key": access_key,  # Access Token
+            "X-Api-Resource-Id": resource_id,  # Resource information ID
+            "X-Api-Connect-Id": connect_id,  # Connection tracking ID (UUID)
+        }
+
+    @staticmethod
+    def new_api_key_headers(
+        api_key: str,
+        resource_id: str,
+    ) -> Dict[str, str]:
+        """Create authentication headers for WebSocket connection."""
+        connect_id = str(uuid.uuid4())  # Generate connection tracking ID
+        return {
+            "x-api-key": api_key,  # APP ID
             "X-Api-Resource-Id": resource_id,  # Resource information ID
             "X-Api-Connect-Id": connect_id,  # Connection tracking ID (UUID)
         }
@@ -353,12 +366,16 @@ class VolcengineASRClient:
         url: str,
         app_key: str,
         access_key: str,
+        api_key: str,
+        auth_method: str,
         config: BytedanceASRLLMConfig,
         ten_env=None,
     ):
         self.url = url
         self.app_key = app_key
         self.access_key = access_key
+        self.api_key = api_key
+        self.auth_method = auth_method
         self.config = config
         self.ten_env = ten_env
         self.websocket = None
@@ -397,9 +414,14 @@ class VolcengineASRClient:
         if self.connected:
             return
 
-        headers = RequestBuilder.new_auth_headers(
-            self.app_key, self.access_key, self.config.resource_id
-        )
+        if self.auth_method == "api_key":
+            headers = RequestBuilder.new_api_key_headers(
+                self.api_key, self.config.resource_id
+            )
+        else:
+            headers = RequestBuilder.new_auth_headers(
+                self.app_key, self.access_key, self.config.resource_id
+            )
         try:
             self.websocket = await websockets.connect(
                 self.url,
