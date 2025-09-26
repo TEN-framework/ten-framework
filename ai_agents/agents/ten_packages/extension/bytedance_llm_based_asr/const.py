@@ -77,3 +77,26 @@ DEFAULT_SEGMENT_DURATION_MS = 100
 DEFAULT_END_WINDOW_SIZE_MS = 300
 DEFAULT_MAX_RETRIES = 5
 DEFAULT_BASE_DELAY = 0.3
+
+
+def is_reconnectable_error(error_code: int) -> bool:
+    """
+    Check if an error code should trigger reconnection.
+
+    Args:
+        error_code: The error code to check
+
+    Returns:
+        True if the error should trigger reconnection, False otherwise
+    """
+    # Check exact matches first (includes all original RECONNECTABLE_ERROR_CODES)
+    if error_code in RECONNECTABLE_ERROR_CODES:
+        return True
+
+    # Check range matches for specific error patterns
+    # INTERNAL_ERROR: 550xxxxx (all server internal errors)
+    # This covers all 550xxxxx errors, not just the specific 55000000
+    if 55000000 <= error_code <= 55099999:
+        return True
+
+    return False
