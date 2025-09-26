@@ -98,7 +98,8 @@ class TwilioServer:
     def _assign_websocket_port(self, property_json_path: str) -> int:
         """Assign a random websocket port between 9000-9500 and update the property.json"""
         # Generate random port between 9000-9500
-        websocket_port = random.randint(9000, 9500)
+        # websocket_port = random.randint(9000, 9500)
+        websocket_port = 9001
 
         # Read the property.json file
         with open(property_json_path, 'r') as f:

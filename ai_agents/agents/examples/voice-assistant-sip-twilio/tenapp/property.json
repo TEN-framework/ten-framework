@@ -88,22 +88,6 @@
               "name": "streamid_adapter",
               "addon": "streamid_adapter",
               "property": {}
-            },
-            {
-              "type": "extension",
-              "name": "agora_rtc",
-              "addon": "agora_rtc",
-              "property": {
-                "app_id": "${env:AGORA_APP_ID}",
-                "app_certificate": "${env:AGORA_APP_CERTIFICATE|}",
-                "channel": "ten_agent_test",
-                "stream_id": 1234,
-                "remote_stream_id": 123,
-                "subscribe_audio": true,
-                "publish_audio": true,
-                "publish_data": true,
-                "enable_agora_asr": false
-              }
             }
           ],
           "connections": [
@@ -134,13 +118,13 @@
               ]
             },
             {
-              "extension": "message_collector",
-              "data": [
+              "extension": "main_control",
+              "audio_frame": [
                 {
-                  "name": "data",
+                  "name": "pcm_frame",
                   "dest": [
                     {
-                      "extension": "agora_rtc"
+                      "extension": "streamid_adapter"
                     }
                   ]
                 }
