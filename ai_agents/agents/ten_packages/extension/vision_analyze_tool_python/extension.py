@@ -90,7 +90,7 @@ def rgb2base64jpeg(rgb_data, width, height):
         return base64_url
 
     except Exception as e:
-        raise ValueError(f"Failed to process image data: {str(e)}")
+        raise ValueError(f"Failed to process image data: {str(e)}") from e
 
 
 def resize_image_keep_aspect(image, max_size=512):
@@ -215,7 +215,7 @@ class VisionAnalyzeToolExtension(AsyncLLMToolBaseExtension):
                 ten_env.log_error(
                     f"Failed to convert image to base64: {str(e)}"
                 )
-                raise ValueError(f"Image processing failed: {str(e)}")
+                raise ValueError(f"Image processing failed: {str(e)}") from e
             # return LLMToolResult(message=LLMCompletionArgsMessage(role="user", content=[result]))
             # cmd: Cmd = Cmd.create(CMD_CHAT_COMPLETION_CALL)
             # message: LLMChatCompletionUserMessageParam = (
