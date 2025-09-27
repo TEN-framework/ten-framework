@@ -93,6 +93,9 @@ class MainControlExtension(AsyncExtension):
             # Create server instance with config and ten_env
             self.server_instance = TwilioCallServer(self.config, self.ten_env)
 
+            # Set extension instance reference for audio forwarding
+            self.server_instance.extension_instance = self
+
             # Start the server as a background task using configured port
             self.server_task = asyncio.create_task(
                 self.server_instance.start_server(port=self.config.twilio_server_port)
@@ -372,7 +375,7 @@ class MainControlExtension(AsyncExtension):
             pcm_data = audioop.ulaw2lin(mulaw_data, 2)  # 2 bytes per sample (16-bit)
 
             # Dump PCM audio to file
-            await self._dump_pcm_audio(pcm_data, call_sid)
+            # await self._dump_pcm_audio(pcm_data, call_sid)
 
             # Create AudioFrame and send to TEN framework
             audio_frame = AudioFrame.create("pcm_frame")

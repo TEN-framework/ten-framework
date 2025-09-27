@@ -324,11 +324,34 @@ class TwilioCallServer:
                 while True:
                     # Receive message from Twilio
                     data = await websocket.receive_text()
-                    self._log_debug(f"Received WebSocket message: {data}...")
+                    self._log_debug(f"Received WebSocket message: {data[:100]}...")
 
-                    # Process the media stream data here
-                    # No need to send ACK - Twilio media stream is one-way
-                    # Just process the audio data as needed
+                    # Parse Twilio media stream message
+                    try:
+                        import json
+                        message = json.loads(data)
+
+                        if message.get("event") == "media":
+                            # Extract audio payload and call SID
+                            audio_payload = message.get("media", {}).get("payload", "")
+                            call_sid = message.get("streamSid", "")
+
+                            if audio_payload and call_sid:
+                                # Forward audio to TEN framework
+                                if hasattr(self, 'extension_instance') and self.extension_instance:
+                                    await self.extension_instance._forward_audio_to_ten(audio_payload, call_sid)
+                                else:
+                                    self._log_debug("Extension instance not available for audio forwarding")
+
+                        elif message.get("event") == "start":
+                            self._log_info(f"Media stream started: {message}")
+                        elif message.get("event") == "stop":
+                            self._log_info(f"Media stream stopped: {message}")
+
+                    except json.JSONDecodeError:
+                        self._log_debug(f"Received non-JSON message: {data[:100]}...")
+                    except Exception as e:
+                        self._log_error(f"Error processing media message: {e}")
 
             except Exception as e:
                 self._log_error(f"WebSocket error: {e}")
