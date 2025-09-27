@@ -189,9 +189,9 @@ class OpenAIChatGPT:
                                 case ImageContent():
                                     content_items.append(
                                         {
-                                            "type": "image",
+                                            "type": "image_url",
                                             "image_url": {
-                                                "url": item.image_url
+                                                "url": item.image_url.url
                                             },
                                         }
                                     )
