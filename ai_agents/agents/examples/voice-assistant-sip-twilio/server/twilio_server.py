@@ -1,33 +1,27 @@
-#
-# This file is part of TEN Framework, an open source project.
-# Licensed under the Apache License, Version 2.0.
-# See the LICENSE file for more information.
-#
+#!/usr/bin/env python3
+"""
+Twilio Server - Configuration and health check only
+All call logic is handled by tenapp application
+"""
 import asyncio
-import json
 import logging
 import os
-import random
-import shutil
-import socket
+import sys
 import subprocess
-import time
+import signal
+import threading
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Any, Optional
-from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import JSONResponse, Response
+
 import uvicorn
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
-# Twilio imports
-from twilio.rest import Client
-from twilio.twiml.voice_response import VoiceResponse
-
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 
 class TwilioServerConfig(BaseModel):
+    """Configuration for Twilio server"""
     # Twilio configuration
     twilio_account_sid: str = Field(
         default="", description="Twilio Account SID"
@@ -37,420 +31,149 @@ class TwilioServerConfig(BaseModel):
         default="", description="Twilio phone number to call from"
     )
 
-    # Server webhook configuration
-    twilio_server_webhook_http_port: int = Field(
-        default=8000, description="HTTP port for server webhook endpoints"
+    # Server configuration
+    twilio_server_port: int = Field(
+        default=8080, description="Port for server (process management)"
+    )
+
+    # Public server URL configuration
+    twilio_public_server_url: str = Field(
+        default="", description="Public server URL without protocol (e.g., 'your-domain.com:9000') - used for both media stream and webhooks"
+    )
+
+    # Protocol configuration
+    twilio_use_https: bool = Field(
+        default=True, description="Use HTTPS for webhooks (True) or HTTP (False)"
+    )
+    twilio_use_wss: bool = Field(
+        default=True, description="Use WSS for media stream (True) or WS (False)"
     )
 
 
 class TwilioServer:
-    """FastAPI server for Twilio integration"""
+    """FastAPI server for configuration and health check"""
 
     def __init__(self, config: TwilioServerConfig):
         self.config = config
-        self.app = FastAPI(title="Twilio Dial Server", version="1.0.0")
-        # Configure CORS to allow frontend to call this API
+        self.app = FastAPI(title="Twilio Configuration Server")
+        self.logger = self._setup_logging()
+
+        # Process management
+        self.tenapp_process = None
+        self.shutdown_event = threading.Event()
+
+        # Add CORS middleware
         self.app.add_middleware(
             CORSMiddleware,
-            allow_origins=["*"],  # For demo; tighten in production
+            allow_origins=["*"],
             allow_credentials=True,
             allow_methods=["*"],
             allow_headers=["*"],
         )
-        self.active_call_sessions: Dict[str, Dict[str, Any]] = {}
-        self.twilio_client: Optional[Client] = None
-        self.logger = logging.getLogger(__name__)
-        # property.json moved under tenapp
-        self.property_json_path = "./tenapp/property.json"
+
+        # Setup routes
         self._setup_routes()
-        self._setup_twilio_client()
 
+    def _setup_logging(self) -> logging.Logger:
+        """Setup logging configuration"""
+        logger = logging.getLogger("twilio_process_manager")
+        logger.setLevel(logging.INFO)
 
-    def _setup_twilio_client(self):
-        """Initialize Twilio client"""
-        if self.config.twilio_account_sid and self.config.twilio_auth_token:
-            try:
-                self.twilio_client = Client(
-                    self.config.twilio_account_sid,
-                    self.config.twilio_auth_token,
-                )
-                self.logger.info("Twilio client initialized successfully")
-            except Exception as e:
-                self.logger.error(f"Failed to initialize Twilio client: {e}")
+        if not logger.handlers:
+            handler = logging.StreamHandler()
+            formatter = logging.Formatter(
+                '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+            )
+            handler.setFormatter(formatter)
+            logger.addHandler(handler)
 
-    def _copy_property_json(self) -> str:
-        """Copy property.json to /tmp/ten_agent/sip_<timestamp>_property.json"""
-        # Create /tmp/ten_agent directory if it doesn't exist
-        tmp_dir = Path("/tmp/ten_agent")
-        tmp_dir.mkdir(parents=True, exist_ok=True)
+        return logger
 
-        # Generate timestamp-based filename
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]  # milliseconds
-        new_filename = f"sip_{timestamp}_property.json"
-        new_path = tmp_dir / new_filename
+    def _start_tenapp_process(self):
+        """Start the tenapp process with logging"""
+        try:
+            # Get the tenapp directory path
+            current_dir = Path(__file__).parent.parent
+            tenapp_dir = current_dir / "tenapp"
 
-        # Copy the file
-        shutil.copy2(self.property_json_path, new_path)
-        self.logger.info(f"Copied property.json to {new_path}")
-
-        return str(new_path)
-
-    def _assign_websocket_port(self, property_json_path: str) -> int:
-        """Assign a random websocket port between 9000-9500 and update the property.json"""
-        # Generate random port between 9000-9500
-        # websocket_port = random.randint(9000, 9500)
-        websocket_port = 9001
-
-        # Read the property.json file
-        with open(property_json_path, 'r') as f:
-            property_data = json.load(f)
-
-        # Find main_control under ten.predefined_graphs[0].graph.nodes and update websocket port
-        if 'ten' in property_data and 'predefined_graphs' in property_data['ten']:
-            for graph in property_data['ten']['predefined_graphs']:
-                if 'graph' in graph and 'nodes' in graph['graph']:
-                    for node in graph['graph']['nodes']:
-                        if node.get('name') == 'main_control':
-                            # Update the websocket port property
-                            if 'property' not in node:
-                                node['property'] = {}
-                            node['property']['twilio_server_media_ws_port'] = websocket_port
-                            self.logger.info(f"Updated websocket port to {websocket_port} for main_control node")
-                            break
-
-        # Write the updated property.json back
-        with open(property_json_path, 'w') as f:
-            json.dump(property_data, f, indent=2)
-
-        return websocket_port
-
-    def _is_port_available(self, port: int) -> bool:
-        """Check if a port is available"""
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            try:
-                s.bind(('localhost', port))
-                return True
-            except OSError:
+            if not tenapp_dir.exists():
+                self.logger.error(f"Tenapp directory not found: {tenapp_dir}")
                 return False
 
-    def _wait_for_port(self, port: int, timeout: int = 30) -> bool:
-        """Wait for a port to become available"""
-        start_time = time.time()
-        while time.time() - start_time < timeout:
-            if self._is_port_available(port):
-                return True
-            time.sleep(0.5)
-        return False
-
-    def _spawn_ten_process(self, property_json_path: str) -> subprocess.Popen:
-        """Spawn a TEN process with the given property.json"""
-        cmd = ["tman", "run", "start", "--", "--property", property_json_path]
-        self.logger.info(f"Spawning TEN process: {' '.join(cmd)}")
-
-        # Ensure we run inside the tenapp folder so tman resolves manifest correctly
-        tenapp_dir = (Path(__file__).resolve().parent.parent / "tenapp").resolve()
-        self.logger.info(f"TEN process working directory: {tenapp_dir}")
-
-        # Respect LOG_STDOUT env: if true, stream directly to terminal (no log file)
-        log_stdout_env = os.getenv("LOG_STDOUT", "false").lower() in ("1", "true", "yes", "on")
-        if log_stdout_env:
-            # Inherit parent's stdout/stderr (default None); also merge stderr to stdout for ordering
-            process = subprocess.Popen(
-                cmd,
-                stdout=None,
-                stderr=None,
-                text=True,
-                cwd=str(tenapp_dir),
+            # Start tenapp process
+            self.logger.info(f"Starting tenapp process from {tenapp_dir}")
+            self.tenapp_process = subprocess.Popen(
+                ["./scripts/start.sh"],
+                cwd=tenapp_dir,
+                stdout=None,  # Use parent's stdout
+                stderr=subprocess.STDOUT,  # Redirect stderr to stdout
+                preexec_fn=os.setsid  # Create new process group
             )
-            # Mark that no file logging is used
-            process.log_file = None
-            process.log_path = None
-            self.logger.info("TEN process logging to terminal (LOG_STDOUT=true)")
-            return process
 
-        # Otherwise, log to a single combined file (stdout and stderr together)
-        log_dir = Path("/tmp/ten_agent/logs")
-        log_dir.mkdir(parents=True, exist_ok=True)
+            self.logger.info(f"Tenapp process started with PID: {self.tenapp_process.pid}")
+            self.logger.info("Tenapp output will be displayed in this console")
 
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")[:-3]
-        combined_log = log_dir / f"ten_{timestamp}.log"
-        self.logger.info(f"TEN process combined log: {combined_log}")
+            # Start monitoring thread
+            monitor_thread = threading.Thread(target=self._monitor_tenapp_process)
+            monitor_thread.daemon = True
+            monitor_thread.start()
 
-        log_file = open(combined_log, 'w')
-        process = subprocess.Popen(
-            cmd,
-            stdout=log_file,
-            stderr=subprocess.STDOUT,
-            text=True,
-            cwd=str(tenapp_dir),
-        )
+            return True
 
-        # Store single log file reference for cleanup
-        process.log_file = log_file
-        process.log_path = str(combined_log)
-
-        return process
-
-    def _cleanup_ten_process(self, ten_process: subprocess.Popen):
-        """Clean up TEN process and its resources"""
-        try:
-            if ten_process and ten_process.poll() is None:
-                # Process is still running, terminate it
-                ten_process.terminate()
-                ten_process.wait(timeout=5)
-                self.logger.info("TEN process terminated successfully")
-
-            # Close log file if present
-            if hasattr(ten_process, 'log_file') and ten_process.log_file:
-                ten_process.log_file.close()
-                self.logger.info(f"TEN process log file closed: {ten_process.log_path}")
-
-        except subprocess.TimeoutExpired:
-            # Force kill if termination doesn't work
-            ten_process.kill()
-            ten_process.wait()
-            self.logger.warning("TEN process force killed due to timeout")
         except Exception as e:
-            self.logger.error(f"Error cleaning up TEN process: {e}")
+            self.logger.error(f"Failed to start tenapp process: {e}")
+            return False
+
+    def _monitor_tenapp_process(self):
+        """Monitor tenapp process and shutdown if it exits"""
+        if not self.tenapp_process:
+            return
+
+        self.logger.info("Starting tenapp process monitor")
+
+        while not self.shutdown_event.is_set():
+            if self.tenapp_process.poll() is not None:
+                # Process has exited
+                return_code = self.tenapp_process.returncode
+                self.logger.warning(f"Tenapp process exited with code: {return_code}")
+                self.logger.info("Shutting down Twilio server due to tenapp exit")
+
+                # Signal shutdown
+                self.shutdown_event.set()
+
+                # Exit the main process
+                os.kill(os.getpid(), signal.SIGTERM)
+                break
+
+            # Check every second
+            self.shutdown_event.wait(1.0)
+
+    def _stop_tenapp_process(self):
+        """Stop the tenapp process"""
+        if self.tenapp_process:
+            self.logger.info("Stopping tenapp process")
+            try:
+                # Send SIGTERM to the process group
+                os.killpg(os.getpgid(self.tenapp_process.pid), signal.SIGTERM)
+
+                # Wait for process to terminate
+                try:
+                    self.tenapp_process.wait(timeout=10)
+                except subprocess.TimeoutExpired:
+                    # Force kill if it doesn't terminate gracefully
+                    self.logger.warning("Tenapp process didn't terminate gracefully, force killing")
+                    os.killpg(os.getpgid(self.tenapp_process.pid), signal.SIGKILL)
+                    self.tenapp_process.wait()
+
+                self.logger.info("Tenapp process stopped")
+            except Exception as e:
+                self.logger.error(f"Error stopping tenapp process: {e}")
+            finally:
+                self.tenapp_process = None
 
     def _setup_routes(self):
-        """Setup FastAPI routes"""
+        """Setup FastAPI routes for configuration and health check"""
 
-        @self.app.post("/api/calls")
-        async def create_call(request: Request):
-            """Create a new outbound call"""
-            ten_process = None
-            property_json_path = None
-
-            try:
-                body = await request.json()
-                phone_number = body.get("phone_number")
-                message = body.get(
-                    "message", "Hello, this is a call from the AI assistant."
-                )
-
-                if not phone_number:
-                    raise HTTPException(
-                        status_code=400, detail="phone_number is required"
-                    )
-
-                if not self.twilio_client:
-                    raise HTTPException(
-                        status_code=500, detail="Twilio client not initialized"
-                    )
-
-                # Step 1: Copy property.json to /tmp/ten_agent/sip_<timestamp>_property.json
-                property_json_path = self._copy_property_json()
-
-                # Step 2: Assign random websocket port and update the copied json file
-                websocket_port = self._assign_websocket_port(property_json_path)
-
-                # Step 3: Spawn TEN process and wait for websocket port to be available
-                ten_process = self._spawn_ten_process(property_json_path)
-
-                # Wait for the websocket port to become available (TEN process to start)
-                if not self._wait_for_port(websocket_port, timeout=30):
-                    self._cleanup_ten_process(ten_process)
-                    raise HTTPException(
-                        status_code=500, detail=f"Failed to start TEN process on port {websocket_port}"
-                    )
-
-                self.logger.info(f"TEN process started successfully on port {websocket_port}")
-
-                # Create TwiML response
-                twiml_response = VoiceResponse()
-                twiml_response.say(message, voice="alice")
-
-                # Add status callback for call events
-                # Use the configured HTTP port for status callback
-                status_callback_url = f"http://localhost:{self.config.twilio_server_webhook_http_port}/webhook/status"
-
-                # Step 4: Start Twilio client request
-                call = self.twilio_client.calls.create(
-                    to=phone_number,
-                    from_=self.config.twilio_from_number,
-                    twiml=str(twiml_response),
-                    status_callback=status_callback_url,
-                    status_callback_event=[
-                        "initiated",
-                        "ringing",
-                        "answered",
-                        "completed",
-                    ],
-                )
-
-                # Store call session with TEN process info
-                self.active_call_sessions[call.sid] = {
-                    "phone_number": phone_number,
-                    "message": message,
-                    "status": call.status,
-                    "call_type": "outbound",
-                    "created_at": time.time(),
-                    "property_json_path": property_json_path,
-                    "websocket_port": websocket_port,
-                    "ten_process": ten_process,
-                }
-
-                self.logger.info(f"Outbound call initiated: SID={call.sid}, To={phone_number}")
-
-                return JSONResponse(
-                    status_code=201,
-                    content={
-                        "call_sid": call.sid,
-                        "phone_number": phone_number,
-                        "message": message,
-                        "status": call.status,
-                        "created_at": time.time(),
-                    },
-                )
-
-            except Exception as e:
-                self.logger.error(f"Failed to start call: {e}")
-
-                # Clean up TEN process if it was created
-                if ten_process:
-                    self.logger.info("Cleaning up TEN process due to call creation failure")
-                    self._cleanup_ten_process(ten_process)
-
-                raise HTTPException(status_code=500, detail=str(e))
-
-        @self.app.get("/api/calls/{call_sid}")
-        async def get_call(call_sid: str):
-            """Get call information"""
-            if call_sid not in self.active_call_sessions:
-                raise HTTPException(status_code=404, detail="Call not found")
-
-            session = self.active_call_sessions[call_sid]
-            return JSONResponse(
-                content={
-                    "call_sid": call_sid,
-                    "phone_number": session["phone_number"],
-                    "status": session["status"],
-                    "created_at": session["created_at"],
-                }
-            )
-
-        @self.app.delete("/api/calls/{call_sid}")
-        async def delete_call(call_sid: str):
-            """Stop and delete a call"""
-            try:
-                if call_sid not in self.active_call_sessions:
-                    raise HTTPException(
-                        status_code=404, detail="Call not found"
-                    )
-
-                session = self.active_call_sessions[call_sid]
-
-                if self.twilio_client:
-                    # Hang up the call via Twilio API
-                    call = self.twilio_client.calls(call_sid).update(
-                        status="completed"
-                    )
-
-                # Clean up TEN process but keep log files
-                if "ten_process" in session:
-                    ten_process = session["ten_process"]
-                    try:
-                        # Terminate the process if it's still running
-                        if ten_process.poll() is None:
-                            ten_process.terminate()
-                            ten_process.wait(timeout=5)
-
-                        # Close combined log file handle if present; keep the file itself
-                        if hasattr(ten_process, 'log_file') and ten_process.log_file:
-                            ten_process.log_file.close()
-                            self.logger.info(f"TEN process terminated for call {call_sid}. Log preserved at: {ten_process.log_path}")
-                        else:
-                            # Backward compatibility: close old split file handles
-                            if hasattr(ten_process, 'stdout_file'):
-                                ten_process.stdout_file.close()
-                            if hasattr(ten_process, 'stderr_file'):
-                                ten_process.stderr_file.close()
-                            paths = []
-                            if hasattr(ten_process, 'stdout_log'):
-                                paths.append(str(ten_process.stdout_log))
-                            if hasattr(ten_process, 'stderr_log'):
-                                paths.append(str(ten_process.stderr_log))
-                            if paths:
-                                self.logger.info(f"TEN process terminated for call {call_sid}. Logs preserved at: {', '.join(paths)}")
-                            else:
-                                self.logger.info(f"TEN process terminated for call {call_sid}")
-                    except Exception as e:
-                        self.logger.error(f"Error cleaning up TEN process for call {call_sid}: {e}")
-
-                # Remove from active sessions
-                del self.active_call_sessions[call_sid]
-
-                self.logger.info(f"Call {call_sid} stopped")
-
-                return JSONResponse(
-                    content={"message": f"Call {call_sid} stopped"}
-                )
-
-            except Exception as e:
-                self.logger.error(f"Failed to stop call: {e}")
-                raise HTTPException(status_code=500, detail=str(e))
-
-        @self.app.get("/api/calls")
-        async def list_calls():
-            """List all active calls"""
-            calls = []
-            for call_sid, session in self.active_call_sessions.items():
-                calls.append(
-                    {
-                        "call_sid": call_sid,
-                        "phone_number": session["phone_number"],
-                        "status": session["status"],
-                        "created_at": session["created_at"],
-                    }
-                )
-
-            return JSONResponse(content={"calls": calls, "total": len(calls)})
-
-        @self.app.post("/webhook/status")
-        async def twilio_status_webhook(request: Request):
-            """Handle Twilio status webhooks for call events"""
-            try:
-                # Parse form data from Twilio
-                form_data = await request.form()
-                call_sid = form_data.get("CallSid")
-                call_status = form_data.get("CallStatus")
-                from_number = form_data.get("From")
-                to_number = form_data.get("To")
-
-                self.logger.info(f"Received status webhook: CallSid={call_sid}, Status={call_status}")
-
-                # Update call status if we have this call in our sessions
-                if call_sid and call_sid in self.active_call_sessions:
-                    self.active_call_sessions[call_sid]["status"] = call_status
-
-                    # Log the status change
-                    self.logger.info(f"Call {call_sid} status updated to: {call_status}")
-
-                    # Clean up completed calls
-                    if call_status in [
-                        "completed",
-                        "failed",
-                        "busy",
-                        "no-answer",
-                        "canceled",
-                    ]:
-                        asyncio.create_task(
-                            self._cleanup_call_after_delay(call_sid, 10)
-                        )
-
-                # Return TwiML response (empty for status callbacks)
-                twiml_response = VoiceResponse()
-                return Response(
-                    content=str(twiml_response), media_type="application/xml"
-                )
-
-            except Exception as e:
-                self.logger.error(f"Error processing status webhook: {e}")
-                return Response(
-                    content="<Response></Response>",
-                    media_type="application/xml",
-                )
 
         @self.app.get("/health")
         async def health_check():
@@ -458,61 +181,121 @@ class TwilioServer:
             return JSONResponse(
                 content={
                     "status": "healthy",
-                    "active_calls": len(self.active_call_sessions),
+                    "server_time": datetime.now().isoformat(),
                 }
             )
 
         @self.app.get("/api/config")
         async def get_config():
-            """Get server configuration"""
+            """Get server configuration and tenapp server info"""
+            # Extract tenapp port from public server URL
+            tenapp_port = 9000  # Default port
+            if self.config.twilio_public_server_url:
+                if ":" in self.config.twilio_public_server_url:
+                    try:
+                        tenapp_port = int(self.config.twilio_public_server_url.split(":")[-1])
+                    except ValueError:
+                        tenapp_port = 9000
+
+            # Build URLs with configurable protocols
+            media_ws_url = None
+            webhook_url = None
+
+            if self.config.twilio_public_server_url:
+                ws_protocol = "wss" if self.config.twilio_use_wss else "ws"
+                http_protocol = "https" if self.config.twilio_use_https else "http"
+                media_ws_url = f"{ws_protocol}://{self.config.twilio_public_server_url}/media"
+                webhook_url = f"{http_protocol}://{self.config.twilio_public_server_url}/webhook/status"
+
             return JSONResponse(
                 content={
                     "twilio_from_number": self.config.twilio_from_number,
-                    "server_port": self.config.twilio_server_webhook_http_port,
+                    "server_port": self.config.twilio_server_port,
+                    "tenapp_port": tenapp_port,
+                    "tenapp_url": f"http://localhost:{tenapp_port}",
+                    "public_server_url": self.config.twilio_public_server_url if self.config.twilio_public_server_url else None,
+                    "use_https": self.config.twilio_use_https,
+                    "use_wss": self.config.twilio_use_wss,
+                    "media_stream_enabled": bool(self.config.twilio_public_server_url),
+                    "media_ws_url": media_ws_url,
+                    "webhook_enabled": bool(self.config.twilio_public_server_url),
+                    "webhook_url": webhook_url,
                 }
             )
 
-    async def _cleanup_call_after_delay(
-        self, call_sid: str, delay_seconds: int
-    ):
-        """Clean up call session after a delay"""
-        await asyncio.sleep(delay_seconds)
-        if call_sid in self.active_call_sessions:
-            session = self.active_call_sessions[call_sid]
 
-            # Clean up TEN process and log files
-            if "ten_process" in session:
-                ten_process = session["ten_process"]
-                try:
-                    # Terminate the process if it's still running
-                    if ten_process.poll() is None:
-                        ten_process.terminate()
-                        ten_process.wait(timeout=5)
 
-                    # Close single combined log file if present (new behavior)
-                    if hasattr(ten_process, 'log_file') and ten_process.log_file:
-                        ten_process.log_file.close()
-                        self.logger.info(f"TEN process terminated and combined log file closed for call {call_sid}: {ten_process.log_path}")
-                    else:
-                        # Backward compatibility: close old split files if they exist
-                        if hasattr(ten_process, 'stdout_file'):
-                            ten_process.stdout_file.close()
-                        if hasattr(ten_process, 'stderr_file'):
-                            ten_process.stderr_file.close()
-                        self.logger.info(f"TEN process terminated and legacy split log files closed for call {call_sid}")
-                except Exception as e:
-                    self.logger.error(f"Error cleaning up TEN process for call {call_sid}: {e}")
+    async def start_server(self, host: str = "0.0.0.0", port: int = 8080):
+        """Start the server and tenapp process"""
+        self.logger.info(f"Starting Twilio Configuration Server on {host}:{port}")
 
-            del self.active_call_sessions[call_sid]
-            self.logger.info(f"Cleaned up call session: {call_sid}")
+        # Start tenapp process first
+        if not self._start_tenapp_process():
+            self.logger.error("Failed to start tenapp process, exiting")
+            sys.exit(1)
 
-    async def start_server(self):
-        """Start the FastAPI server"""
+        # Wait a moment for tenapp to start
+        await asyncio.sleep(2)
+
         config = uvicorn.Config(
-            self.app,
-            host="0.0.0.0",
-            port=self.config.twilio_server_webhook_http_port,
-            log_level="info",
+            app=self.app,
+            host=host,
+            port=port,
+            log_level="info"
         )
+
         server = uvicorn.Server(config)
-        await server.serve()
+
+        try:
+            await server.serve()
+        except Exception as e:
+            self.logger.error(f"Server error: {e}")
+            raise
+        finally:
+            self._stop_tenapp_process()
+
+    def cleanup(self):
+        """Cleanup resources"""
+        self.logger.info("Cleaning up Twilio Configuration Server")
+        self.shutdown_event.set()
+        self._stop_tenapp_process()
+
+
+async def main():
+    """Main function to run the server"""
+    # Load configuration from environment variables
+    config = TwilioServerConfig(
+        twilio_account_sid=os.getenv("TWILIO_ACCOUNT_SID", ""),
+        twilio_auth_token=os.getenv("TWILIO_AUTH_TOKEN", ""),
+        twilio_from_number=os.getenv("TWILIO_FROM_NUMBER", ""),
+        twilio_server_port=int(os.getenv("TWILIO_HTTP_PORT", "8080")),
+        twilio_public_server_url=os.getenv("TWILIO_PUBLIC_SERVER_URL", ""),
+        twilio_use_https=os.getenv("TWILIO_USE_HTTPS", "false").lower() == "true",
+        twilio_use_wss=os.getenv("TWILIO_USE_WSS", "false").lower() == "true",
+    )
+
+    # Create and start server
+    server = TwilioServer(config)
+
+    # Setup signal handlers for graceful shutdown
+    def signal_handler(signum, frame):
+        print(f"Received signal {signum}, shutting down...")
+        server.cleanup()
+        sys.exit(0)
+
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+
+    try:
+        await server.start_server(port=config.twilio_server_port)
+    except KeyboardInterrupt:
+        print("Server interrupted, shutting down...")
+        server.cleanup()
+    except Exception as e:
+        print(f"Server error: {e}")
+        server.cleanup()
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

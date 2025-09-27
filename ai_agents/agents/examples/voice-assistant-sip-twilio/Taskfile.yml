@@ -35,6 +35,12 @@ tasks:
     cmds:
       - tman run build
 
+  run-tenapp:
+    desc: run tenapp
+    dir: ./tenapp
+    cmds:
+      - tman run start
+
   run:
     desc: run servers
     deps:

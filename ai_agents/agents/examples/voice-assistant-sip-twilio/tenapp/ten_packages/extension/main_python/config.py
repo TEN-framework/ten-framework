@@ -13,15 +13,20 @@ class MainControlConfig(BaseModel):
         default="", description="Twilio phone number to call from"
     )
 
-    # Server webhook configuration
-    twilio_server_webhook_http_port: int = Field(
-        default=8000, description="HTTP port for server webhook endpoints"
+    # Server configuration
+    twilio_server_port: int = Field(
+        default=8000, description="Port for server (supports both HTTP API and WebSocket)"
     )
-    twilio_server_media_ws_port: int = Field(
-        default=8001,
-        description="WebSocket port for server media streaming endpoints",
+
+    # Public server URL configuration
+    twilio_public_server_url: str = Field(
+        default="", description="Public server URL without protocol (e.g., 'your-domain.com:8000') - used for both media stream and webhooks"
     )
-    twilio_client_media_ws_url: str = Field(
-        default="",
-        description="Media WebSocket URL for Twilio client (domain with or without port)",
+
+    # Protocol configuration
+    twilio_use_https: bool = Field(
+        default=True, description="Use HTTPS for webhooks (True) or HTTP (False)"
+    )
+    twilio_use_wss: bool = Field(
+        default=True, description="Use WSS for media stream (True) or WS (False)"
     )

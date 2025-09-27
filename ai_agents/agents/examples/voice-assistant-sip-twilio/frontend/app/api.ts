@@ -1,5 +1,6 @@
 // API client for Twilio Voice Assistant
-const API_BASE_URL = process.env.NEXT_PUBLIC_TWILIO_SERVER_URL || 'http://localhost:8080';
+const TWILIO_SERVER_URL = process.env.NEXT_PUBLIC_TWILIO_SERVER_URL || 'http://localhost:8080';
+const TENAPP_SERVER_URL = process.env.NEXT_PUBLIC_TENAPP_SERVER_URL || 'http://localhost:9000';
 
 export interface CallResponse {
     call_sid: string;
@@ -25,6 +26,15 @@ export interface CallListResponse {
 export interface ServerConfig {
     twilio_from_number: string;
     server_port: number;
+    tenapp_port: number;
+    tenapp_url: string;
+    public_server_url: string;
+    use_https: boolean;
+    use_wss: boolean;
+    media_stream_enabled: boolean;
+    media_ws_url: string;
+    webhook_enabled: boolean;
+    webhook_url: string;
 }
 
 export interface HealthResponse {
@@ -43,17 +53,22 @@ export interface HealthResponse {
 }
 
 class TwilioAPI {
-    private baseUrl: string;
+    private twilioServerUrl: string;
+    private tenappServerUrl: string;
+    private config: ServerConfig | null = null;
 
-    constructor(baseUrl: string = API_BASE_URL) {
-        this.baseUrl = baseUrl;
+    constructor(twilioServerUrl: string = TWILIO_SERVER_URL, tenappServerUrl: string = TENAPP_SERVER_URL) {
+        this.twilioServerUrl = twilioServerUrl;
+        this.tenappServerUrl = tenappServerUrl;
     }
 
     private async request<T>(
         endpoint: string,
-        options: RequestInit = {}
+        options: RequestInit = {},
+        useTenapp: boolean = false
     ): Promise<T> {
-        const url = `${this.baseUrl}${endpoint}`;
+        const baseUrl = useTenapp ? this.tenappServerUrl : this.twilioServerUrl;
+        const url = `${baseUrl}${endpoint}`;
 
         const response = await fetch(url, {
             headers: {
@@ -72,32 +87,35 @@ class TwilioAPI {
     }
 
     async createCall(data: CreateCallRequest): Promise<CallResponse> {
-        return this.request<CallResponse>('/api/calls', {
+        return this.request<CallResponse>('/api/call', {
             method: 'POST',
             body: JSON.stringify(data),
-        });
+        }, true); // Use tenapp server
     }
 
     async getCall(callSid: string): Promise<CallInfo> {
-        return this.request<CallInfo>(`/api/calls/${callSid}`);
+        return this.request<CallInfo>(`/api/call/${callSid}`, {}, true); // Use tenapp server
     }
 
     async deleteCall(callSid: string): Promise<{ message: string }> {
-        return this.request<{ message: string }>(`/api/calls/${callSid}`, {
+        return this.request<{ message: string }>(`/api/call/${callSid}`, {
             method: 'DELETE',
-        });
+        }, true); // Use tenapp server
     }
 
     async listCalls(): Promise<CallListResponse> {
-        return this.request<CallListResponse>('/api/calls');
+        return this.request<CallListResponse>('/api/calls', {}, true); // Use tenapp server
     }
 
     async getHealth(): Promise<HealthResponse> {
-        return this.request<HealthResponse>('/health');
+        return this.request<HealthResponse>('/health', {}, true); // Use tenapp server
     }
 
     async getConfig(): Promise<ServerConfig> {
-        return this.request<ServerConfig>('/api/config');
+        if (!this.config) {
+            this.config = await this.request<ServerConfig>('/api/config'); // Use twilio server
+        }
+        return this.config;
     }
 }
 

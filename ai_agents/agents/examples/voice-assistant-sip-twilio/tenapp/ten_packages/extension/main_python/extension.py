@@ -6,7 +6,7 @@ import os
 import audioop
 from datetime import datetime
 from typing import Literal, Dict, Any, Optional
-import websockets
+from .server import TwilioCallServer
 
 from .agent.decorators import agent_event_handler
 from ten_runtime import (
@@ -48,6 +48,10 @@ class MainControlExtension(AsyncExtension):
         # WebSocket and audio processing
         self.active_call_sessions: Dict[str, Dict[str, Any]] = {}
         self.audio_dump_files: Dict[str, str] = {}  # call_sid -> filepath
+
+        # Server management
+        self.server_task: Optional[asyncio.Task] = None
+        self.server_instance: Optional[Any] = None
         self.audio_dump_dir: str = ""
 
         self.stopped: bool = False
@@ -79,6 +83,91 @@ class MainControlExtension(AsyncExtension):
             event_type = getattr(fn, "_agent_event_type", None)
             if event_type:
                 self.agent.on(event_type, fn)
+
+        # Start the Twilio call server
+        await self._start_server()
+
+    async def _start_server(self):
+        """Start the Twilio call server in the same process"""
+        try:
+            # Create server instance with config and ten_env
+            self.server_instance = TwilioCallServer(self.config, self.ten_env)
+
+            # Start the server as a background task using configured port
+            self.server_task = asyncio.create_task(
+                self.server_instance.start_server(port=self.config.twilio_server_port)
+            )
+
+            self.ten_env.log_info(f"Started Twilio call server on port {self.config.twilio_server_port} (HTTP + WebSocket)")
+
+            # Wait a moment for the server to start
+            await asyncio.sleep(1)
+
+            self.ten_env.log_info("Twilio call server started successfully")
+
+        except Exception as e:
+            self.ten_env.log_error(f"Failed to start server: {str(e)}")
+            raise
+
+    async def _stop_server(self):
+        """Stop the Twilio call server"""
+        try:
+            if self.server_task and not self.server_task.done():
+                self.ten_env.log_info("Stopping Twilio call server")
+
+                # Cancel the server task
+                self.server_task.cancel()
+
+                # Wait for task to complete
+                try:
+                    await asyncio.wait_for(self.server_task, timeout=5.0)
+                except asyncio.TimeoutError:
+                    self.ten_env.log_warning("Server task didn't stop gracefully")
+                except asyncio.CancelledError:
+                    pass  # Expected when cancelling
+
+                self.ten_env.log_info("Twilio call server stopped successfully")
+
+            # Cleanup server instance
+            if self.server_instance:
+                self.server_instance.cleanup()
+                self.server_instance = None
+
+            self.server_task = None
+
+        except Exception as e:
+            self.ten_env.log_error(f"Error stopping server: {str(e)}")
+
+    async def _end_call_and_cleanup(self, call_sid: str):
+        """End a call and cleanup resources"""
+        try:
+            # First, try to end the call via API
+            if call_sid in self.active_call_sessions:
+                self.ten_env.log_info(f"Ending call {call_sid} via API")
+
+                # Make API call to end the call
+                import aiohttp
+                async with aiohttp.ClientSession() as session:
+                    async with session.delete(f"http://localhost:{self.config.twilio_server_port}/api/call/{call_sid}") as response:
+                        if response.status == 200:
+                            self.ten_env.log_info(f"Call {call_sid} ended successfully")
+                        else:
+                            self.ten_env.log_warning(f"Failed to end call {call_sid} via API: {response.status}")
+
+            # Cleanup local resources
+            if call_sid in self.active_call_sessions:
+                del self.active_call_sessions[call_sid]
+
+            if call_sid in self.audio_dump_files:
+                # Clean up audio dump file
+                try:
+                    os.remove(self.audio_dump_files[call_sid])
+                    del self.audio_dump_files[call_sid]
+                except Exception as e:
+                    self.ten_env.log_warning(f"Failed to cleanup audio file for {call_sid}: {str(e)}")
+
+        except Exception as e:
+            self.ten_env.log_error(f"Error during call cleanup for {call_sid}: {str(e)}")
 
     # === Register handlers with decorators ===
     @agent_event_handler(UserJoinedEvent)
@@ -141,15 +230,20 @@ class MainControlExtension(AsyncExtension):
         if self.config:
             self._setup_audio_dump_directory()
 
-            # Start WebSocket server in background
-            asyncio.create_task(self._start_websocket_server())
-            ten_env.log_info(
-                f"WebSocket server started on port {self.config.twilio_server_media_ws_port}"
-            )
+            # WebSocket server is now handled by the main server in server.py
+            ten_env.log_info("WebSocket server is integrated with the main HTTP server")
 
     async def on_stop(self, ten_env: AsyncTenEnv):
         ten_env.log_info("[MainControlExtension] on_stop")
         self.stopped = True
+
+        # End all active calls and cleanup
+        for call_sid in list(self.active_call_sessions.keys()):
+            await self._end_call_and_cleanup(call_sid)
+
+        # Stop the server
+        await self._stop_server()
+
         await self.agent.stop()
 
     async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd):
@@ -378,112 +472,6 @@ class MainControlExtension(AsyncExtension):
     async def _cleanup_call_after_delay(self, call_sid: str, delay_seconds: int):
         """Clean up call session after a delay"""
         await asyncio.sleep(delay_seconds)
-        if call_sid in self.active_call_sessions:
-            del self.active_call_sessions[call_sid]
-            if self.ten_env:
-                self.ten_env.log_info(f"Cleaned up call session: {call_sid}")
 
-        # Clean up audio dump file
-        if call_sid in self.audio_dump_files:
-            filepath = self.audio_dump_files[call_sid]
-            del self.audio_dump_files[call_sid]
-            if self.ten_env:
-                self.ten_env.log_info(f"Audio dump file ready: {filepath}")
-
-    async def _start_websocket_server(self):
-        """Start the WebSocket server"""
-        async def websocket_handler(websocket):
-            """Handle WebSocket connections for Twilio media streaming"""
-            stream_sid = None
-            call_sid = None
-
-            if self.ten_env:
-                self.ten_env.log_info("WebSocket connection established with Twilio")
-
-            try:
-                # Wait for start event (may receive connected event first)
-                while True:
-                    message = await websocket.recv()
-                    message = json.loads(message)
-
-                    if message.get("event") == "connected":
-                        if self.ten_env:
-                            self.ten_env.log_info(f"WebSocket connected: {message}")
-                        continue  # Wait for start event
-
-                    elif "start" in message:
-                        stream_sid = message["start"]["streamSid"]
-                        call_sid = message["start"]["callSid"]
-
-                        if self.ten_env:
-                            self.ten_env.log_info(f"Received start event for streamSid: {stream_sid}, callSid: {call_sid}")
-
-                        # Store WebSocket connection in active session
-                        if call_sid in self.active_call_sessions:
-                            self.active_call_sessions[call_sid]["websocket"] = websocket
-                        else:
-                            # Create new session if not exists
-                            self.active_call_sessions[call_sid] = {
-                                "websocket": websocket,
-                                "stream_sid": stream_sid,
-                                "created_at": time.time(),
-                            }
-                        break  # Exit the start event waiting loop
-
-                    else:
-                        if self.ten_env:
-                            self.ten_env.log_warn(f"Received unexpected event while waiting for start: {message}")
-                        return
-
-                # Process incoming messages after start event
-                while True:
-                    message = await websocket.recv()
-                    message = json.loads(message)
-
-                    self.ten_env.log_info(f"Received message: {message}")
-
-                    if message["event"] == "media":
-                        # Handle incoming audio data
-                        payload = message["media"]["payload"]
-                        if self.ten_env:
-                            self.ten_env.log_debug(f"Received audio data: {len(payload)} bytes")
-
-                        # Forward audio to TEN framework
-                        await self._forward_audio_to_ten(payload, call_sid)
-
-                    elif message["event"] == "stop":
-                        if self.ten_env:
-                            self.ten_env.log_info(f"Received stop event for stream {stream_sid}")
-                        break
-
-                    elif message["event"] == "mark":
-                        if self.ten_env:
-                            self.ten_env.log_info(f"Received mark event for stream {stream_sid}: {message['mark']['name']}")
-
-                    else:
-                        if self.ten_env:
-                            self.ten_env.log_info(f"Received unknown event: {message['event']}")
-
-            except Exception as e:
-                if self.ten_env:
-                    self.ten_env.log_error(f"WebSocket error: {e}")
-            finally:
-                if self.ten_env:
-                    if stream_sid:
-                        self.ten_env.log_info(f"WebSocket connection closed for stream {stream_sid}")
-                    else:
-                        self.ten_env.log_info("WebSocket connection closed")
-                # Clean up WebSocket reference
-                for session_call_sid, session in self.active_call_sessions.items():
-                    if session.get("websocket") == websocket:
-                        session["websocket"] = None
-                        break
-
-        # Use configured WebSocket port
-        websocket_port = self.config.twilio_server_media_ws_port
-        server = await websockets.serve(websocket_handler, "0.0.0.0", websocket_port)
-
-        if self.ten_env:
-            self.ten_env.log_info(f"WebSocket server started on port {websocket_port}")
-
-        await server.wait_closed()
+        # Use the new cleanup method
+        await self._end_call_and_cleanup(call_sid)

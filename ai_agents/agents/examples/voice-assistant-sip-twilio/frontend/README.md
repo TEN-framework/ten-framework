@@ -64,10 +64,11 @@ frontend/
 
 The frontend communicates with the backend through the following APIs:
 
-- `POST /api/calls` - Create a call
-- `GET /api/calls/{call_sid}` - Get call information
-- `DELETE /api/calls/{call_sid}` - End a call
-- `GET /api/calls` - List all calls
+- `POST /api/call` - Create a call (tenapp server)
+- `GET /api/call/{call_sid}` - Get call information (tenapp server)
+- `DELETE /api/call/{call_sid}` - End a call (tenapp server)
+- `GET /api/calls` - List all calls (tenapp server)
+- `GET /api/config` - Get server configuration (twilio server)
 - `GET /health` - Health check
 
 ## Tech Stack
