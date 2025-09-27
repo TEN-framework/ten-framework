@@ -5,7 +5,13 @@
 #
 import json
 import uuid
-from ten_ai_base.struct import EventType, LLMMessage, LLMMessageContent, LLMRequest, parse_llm_response
+from ten_ai_base.struct import (
+    EventType,
+    LLMMessage,
+    LLMMessageContent,
+    LLMRequest,
+    parse_llm_response,
+)
 from ten_runtime import (
     AudioFrame,
     StatusCode,
@@ -53,7 +59,9 @@ def rgb2base64jpeg(rgb_data, width, height):
         # Grayscale format (1 byte per pixel)
         mode = "L"
     else:
-        raise ValueError(f"Unsupported image format. Expected {expected_pixels * 4} (RGBA), {expected_pixels * 3} (RGB), or {expected_pixels} (L) bytes, got {data_length}")
+        raise ValueError(
+            f"Unsupported image format. Expected {expected_pixels * 4} (RGBA), {expected_pixels * 3} (RGB), or {expected_pixels} (L) bytes, got {data_length}"
+        )
 
     try:
         # Convert the image data to a PIL Image
@@ -194,7 +202,9 @@ class VisionAnalyzeToolExtension(AsyncLLMToolBaseExtension):
 
             query = args["query"]
             ten_env.log_info(f"Processing vision query: {query}")
-            ten_env.log_info(f"Image dimensions: {self.image_width}x{self.image_height}, data length: {len(self.image_data) if self.image_data else 0}")
+            ten_env.log_info(
+                f"Image dimensions: {self.image_width}x{self.image_height}, data length: {len(self.image_data) if self.image_data else 0}"
+            )
 
             try:
                 base64_image = rgb2base64jpeg(
@@ -202,7 +212,9 @@ class VisionAnalyzeToolExtension(AsyncLLMToolBaseExtension):
                 )
                 ten_env.log_info("Successfully converted image to base64")
             except Exception as e:
-                ten_env.log_error(f"Failed to convert image to base64: {str(e)}")
+                ten_env.log_error(
+                    f"Failed to convert image to base64: {str(e)}"
+                )
                 raise ValueError(f"Image processing failed: {str(e)}")
             # return LLMToolResult(message=LLMCompletionArgsMessage(role="user", content=[result]))
             # cmd: Cmd = Cmd.create(CMD_CHAT_COMPLETION_CALL)
@@ -231,9 +243,12 @@ class VisionAnalyzeToolExtension(AsyncLLMToolBaseExtension):
                 LLMMessageContent(
                     role="user",
                     content=[
-                        {"type": "text","text": query},
-                        {"type": "image_url","image_url": {"url": base64_image}},
-                    ]
+                        {"type": "text", "text": query},
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": base64_image},
+                        },
+                    ],
                 )
             )
             llm_input = LLMRequest(
@@ -242,7 +257,7 @@ class VisionAnalyzeToolExtension(AsyncLLMToolBaseExtension):
                 model="gpt-4o",
                 streaming=True,
                 parameters={"temperature": 0.7},
-                tools=[]
+                tools=[],
             )
             input_json = llm_input.model_dump()
             cmd = Cmd.create("chat_completion")
@@ -257,9 +272,7 @@ class VisionAnalyzeToolExtension(AsyncLLMToolBaseExtension):
                 if cmd_result and cmd_result.is_final() is False:
                     if cmd_result.get_status_code() == StatusCode.OK:
                         response_json, _ = cmd_result.get_property_to_json(None)
-                        ten_env.log_info(
-                            f"tool: response_json {response_json}"
-                        )
+                        ten_env.log_info(f"tool: response_json {response_json}")
                         completion = parse_llm_response(response_json)
                         if completion.type == EventType.MESSAGE_CONTENT_DONE:
                             result = completion.content
