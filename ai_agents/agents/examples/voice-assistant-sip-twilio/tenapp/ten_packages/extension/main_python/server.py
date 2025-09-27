@@ -12,7 +12,7 @@ from typing import Dict, Any, Optional
 from datetime import datetime
 
 import uvicorn
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request, HTTPException, WebSocket
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from twilio.rest import Client
@@ -98,8 +98,8 @@ class TwilioCallServer:
                     self._log_info(f"Adding media stream to WebSocket: {media_ws_url}")
                     start = twiml_response.start()
                     stream = start.stream(url=media_ws_url)
-                    stream.parameter(name="from", value=phone_number)
-                    stream.parameter(name="to", value=self.config.twilio_from_number)
+                    stream.parameter(name="from", value=self.config.twilio_from_number)
+                    stream.parameter(name="to", value=phone_number)
                     stream.parameter(name="call_sid", value="")  # Will be filled by Twilio
 
                 twiml_response.say(message, voice="alice")
@@ -229,12 +229,24 @@ class TwilioCallServer:
             )
 
         @self.app.post("/webhook/status")
+        @self.app.get("/webhook/status")
         async def handle_status_webhook(request: Request):
             """Handle Twilio status webhook"""
             try:
-                form_data = await request.form()
-                call_sid = form_data.get("CallSid")
-                call_status = form_data.get("CallStatus")
+                # Handle both GET and POST requests
+                if request.method == "GET":
+                    # For GET requests, get parameters from query string
+                    call_sid = request.query_params.get("CallSid")
+                    call_status = request.query_params.get("CallStatus")
+                    call_duration = request.query_params.get("CallDuration")
+                    direction = request.query_params.get("Direction")
+                else:
+                    # For POST requests, get parameters from form data
+                    form_data = await request.form()
+                    call_sid = form_data.get("CallSid")
+                    call_status = form_data.get("CallStatus")
+                    call_duration = form_data.get("CallDuration")
+                    direction = form_data.get("Direction")
 
                 self._log_info(f"Status webhook received for call {call_sid}: {call_status}")
 
@@ -291,23 +303,41 @@ class TwilioCallServer:
 
         # WebSocket endpoint for media streaming
         @self.app.websocket("/media")
-        async def websocket_endpoint(websocket):
+        async def websocket_endpoint(websocket: WebSocket):
             """WebSocket endpoint for Twilio media streaming"""
-            await websocket.accept()
-            self._log_info(f"WebSocket connection established: {websocket.client}")
+            self._log_info(f"WebSocket connection attempt from: {websocket.client}")
 
             try:
+                # Log connection attempt
+                self._log_info(f"WebSocket connection attempt from: {websocket.client}")
+
+                # Check for required query parameters (Twilio sends these)
+                query_params = websocket.query_params
+                self._log_info(f"WebSocket query parameters: {dict(query_params)}")
+
+                # Accept the connection immediately
+                await websocket.accept()
+                self._log_info(f"WebSocket connection established: {websocket.client}")
+
+                # Send initial message to confirm connection
+                await websocket.send_text('{"type": "connected", "message": "WebSocket connection established"}')
+
                 while True:
                     # Receive message from Twilio
                     data = await websocket.receive_text()
                     self._log_debug(f"Received WebSocket message: {data[:100]}...")
 
                     # Process the media stream data here
-                    # For now, just acknowledge receipt
-                    await websocket.send_text("OK")
+                    # No need to send ACK - Twilio media stream is one-way
+                    # Just process the audio data as needed
 
             except Exception as e:
                 self._log_error(f"WebSocket error: {e}")
+                # Try to close the connection gracefully
+                try:
+                    await websocket.close()
+                except:
+                    pass
             finally:
                 self._log_info("WebSocket connection closed")
 
@@ -316,12 +346,26 @@ class TwilioCallServer:
         self._log_info(f"Starting Twilio Call Server on {host}:{port}")
         self._log_info("Server supports both HTTP API and WebSocket media streaming on the same port")
 
+        # Check if SSL is required
+        use_ssl = self.config.twilio_use_https or self.config.twilio_use_wss
+
+        if use_ssl:
+            # For development with ngrok, we'll use HTTP but let ngrok handle SSL
+            self._log_info("SSL/WSS requested - using HTTP server (ngrok will handle SSL termination)")
+            ssl_keyfile = None
+            ssl_certfile = None
+        else:
+            ssl_keyfile = None
+            ssl_certfile = None
+
         # Start server with HTTP and WebSocket support
         config = uvicorn.Config(
             app=self.app,
             host=host,
             port=port,
-            log_level="info"
+            log_level="info",
+            ssl_keyfile=ssl_keyfile,
+            ssl_certfile=ssl_certfile
         )
 
         server = uvicorn.Server(config)

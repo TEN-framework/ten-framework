@@ -41,9 +41,16 @@ tasks:
     cmds:
       - tman run start
 
+  run-ngrok:
+    desc: run ngrok tunnel for WSS support
+    dir: ./
+    cmds:
+      - ./start-with-ngrok.sh
+
   run:
-    desc: run servers
+    desc: run servers with ngrok tunnel
     deps:
       - task: run-server
       - task: run-gd-server
       - task: run-frontend
+      - task: run-ngrok

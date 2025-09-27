@@ -64,8 +64,8 @@
                 "twilio_from_number": "${env:TWILIO_FROM_NUMBER}",
                 "twilio_server_port": 9000,
                 "twilio_public_server_url": "${env:TWILIO_PUBLIC_SERVER_URL}",
-                "twilio_use_https": false,
-                "twilio_use_wss": false
+                "twilio_use_https": true,
+                "twilio_use_wss": true
               }
             },
             {
