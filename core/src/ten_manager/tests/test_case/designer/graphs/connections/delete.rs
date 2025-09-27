@@ -332,7 +332,7 @@ mod tests {
 
         // Read test data from embedded JSON files.
         let input_property_json_str =
-            include_str!("../../../../test_data/app_property_multi_names_connection.json");
+            include_str!("../../../../test_data/app_property_multi_names_flow.json");
         let input_manifest_json_str = include_str!("../../../../test_data/app_manifest.json");
 
         // Write input files to temp directory.
@@ -443,13 +443,11 @@ mod tests {
                                 .as_ref()
                                 .is_some_and(|app| app == "http://example.com:8000")
                             && conn.cmd.as_ref().is_some_and(|cmds| {
-                                cmds.iter().any(|cmd| cmd.name.as_deref() == Some("multi_name_1"))
-                                    || cmds
-                                        .iter()
-                                        .any(|cmd| cmd.name.as_deref() == Some("multi_name_2"))
-                                    || cmds
-                                        .iter()
-                                        .any(|cmd| cmd.name.as_deref() == Some("multi_name_3"))
+                                cmds.iter().any(|cmd| cmd.names.as_ref().is_some_and(|names| {
+                                    names.iter().any(|name| name == "multi_name_1")
+                                        || names.iter().any(|name| name == "multi_name_2")
+                                        || names.iter().any(|name| name == "multi_name_3")
+                                }))
                             })
                     })
                 });
@@ -483,14 +481,14 @@ mod tests {
     }
 
     #[actix_web::test]
-    async fn test_delete_graph_connection_multiple_msg_names_success_and_remove_connection() {
+    async fn test_delete_graph_connection_multiple_msg_names_remove_connection_success() {
         // Create a test directory with property.json file.
         let temp_dir = tempfile::tempdir().unwrap();
         let temp_dir_path = temp_dir.path().to_str().unwrap().to_string();
 
         // Read test data from embedded JSON files.
         let input_property_json_str =
-            include_str!("../../../../test_data/app_property_multi_names_connection.json");
+            include_str!("../../../../test_data/app_property_multi_names_flow_2.json");
         let input_manifest_json_str = include_str!("../../../../test_data/app_manifest.json");
 
         // Write input files to temp directory.
@@ -563,7 +561,6 @@ mod tests {
             dest,
             msg_type: MsgType::Cmd,
             msg_names: vec![
-                "hello_world".to_string(),
                 "multi_name_1".to_string(),
                 "multi_name_2".to_string(),
                 "multi_name_3".to_string(),
@@ -602,16 +599,11 @@ mod tests {
                                 .as_ref()
                                 .is_some_and(|app| app == "http://example.com:8000")
                             && conn.cmd.as_ref().is_some_and(|cmds| {
-                                cmds.iter().any(|cmd| cmd.name.as_deref() == Some("hello_world"))
-                                    || cmds
-                                        .iter()
-                                        .any(|cmd| cmd.name.as_deref() == Some("multi_name_1"))
-                                    || cmds
-                                        .iter()
-                                        .any(|cmd| cmd.name.as_deref() == Some("multi_name_2"))
-                                    || cmds
-                                        .iter()
-                                        .any(|cmd| cmd.name.as_deref() == Some("multi_name_3"))
+                                cmds.iter().any(|cmd| cmd.names.as_ref().is_some_and(|names| {
+                                    names.iter().any(|name| name == "multi_name_1")
+                                        || names.iter().any(|name| name == "multi_name_2")
+                                        || names.iter().any(|name| name == "multi_name_3")
+                                }))
                             })
                     })
                 });
@@ -629,8 +621,7 @@ mod tests {
 
         // Create the expected property JSON, which is the same as input but
         // with the connection removed.
-        let expected_property_json_str =
-            include_str!("../../../../test_data/expected_property_delete_connection.json");
+        let expected_property_json_str = include_str!("../../../../test_data/expected_property_delete_connection.json");
 
         // Parse the expected property JSON.
         let expected_property: serde_json::Value =
@@ -646,14 +637,14 @@ mod tests {
     }
 
     #[actix_web::test]
-    async fn test_delete_graph_connection_multiple_msg_names_invalid_one() {
+    async fn test_delete_graph_connection_multiple_msg_names_across_flows_invalid() {
         // Create a test directory with property.json file.
         let temp_dir = tempfile::tempdir().unwrap();
         let temp_dir_path = temp_dir.path().to_str().unwrap().to_string();
 
         // Read test data from embedded JSON files.
         let input_property_json_str =
-            include_str!("../../../../test_data/app_property_multi_names_connection.json");
+            include_str!("../../../../test_data/app_property_multi_names_flow.json");
         let input_manifest_json_str = include_str!("../../../../test_data/app_manifest.json");
 
         // Write input files to temp directory.
@@ -728,7 +719,7 @@ mod tests {
             msg_names: vec![
                 "multi_name_1".to_string(),
                 "multi_name_2".to_string(),
-                "multi_name_invalid".to_string(),
+                "hello_world".to_string(),
             ],
         };
 
@@ -748,4 +739,5 @@ mod tests {
         let response: ErrorResponse = serde_json::from_str(body_str).unwrap();
         assert_eq!(response.status, Status::Fail);
     }
+
 }

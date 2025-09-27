@@ -82,34 +82,11 @@
               "extension": "extension_1",
               "cmd": [
                 {
-                  "name": "hello_world",
-                  "dest": [
-                    {
-                      "app": "http://example.com:8000",
-                      "extension": "extension_2"
-                    }
-                  ]
-                },
-                {
-                  "name": "multi_name_1",
-                  "dest": [
-                    {
-                      "app": "http://example.com:8000",
-                      "extension": "extension_2"
-                    }
-                  ]
-                },
-                {
-                  "name": "multi_name_2",
-                  "dest": [
-                    {
-                      "app": "http://example.com:8000",
-                      "extension": "extension_2"
-                    }
-                  ]
-                },
-                {
-                  "name": "multi_name_3",
+                  "names": [
+                    "multi_name_1",
+                    "multi_name_2",
+                    "multi_name_3"
+                  ],
                   "dest": [
                     {
                       "app": "http://example.com:8000",
