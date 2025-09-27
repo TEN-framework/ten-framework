@@ -436,7 +436,7 @@ async fn get_msg_schema(
     {
         extension_pkg_info
             .manifest
-            .get_flattened_api()
+            .get_flattened_api(graph_app_base_dir.as_deref())
             .await
             .unwrap()
             .as_ref()

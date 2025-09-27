@@ -71,7 +71,7 @@ impl SchemaStore {
 
         let mut schema_store = SchemaStore::default();
 
-        if let Some(api) = manifest.get_flattened_api().await.unwrap_or(None) {
+        if let Some(api) = manifest.get_flattened_api(None).await.unwrap_or(None) {
             schema_store.parse_schemas_from_manifest(&api)?;
             Ok(Some(schema_store))
         } else {
