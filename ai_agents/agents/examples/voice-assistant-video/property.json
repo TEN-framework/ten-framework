@@ -212,9 +212,6 @@
                   "name": "chat_completion",
                   "dest": [
                     {
-                      "extension": "llm"
-                    },
-                    {
                       "extension": "vllm"
                     }
                   ]
