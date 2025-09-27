@@ -1,0 +1,44 @@
+{
+  "nodes": [
+    {
+      "type": "extension",
+      "name": "ext_b",
+      "addon": "ext_b",
+      "extension_group": "some_group"
+    },
+    {
+      "type": "extension",
+      "name": "ext_c",
+      "addon": "ext_c",
+      "extension_group": "some_group"
+    }
+  ],
+  "connections": [
+    {
+      "extension": "ext_b",
+      "cmd": [
+        {
+          "name": "C",
+          "dest": [
+            {
+              "extension": "ext_c"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "exposed_messages": [
+    {
+      "type": "cmd_in",
+      "name": "C",
+      "extension": "ext_b"
+    }
+  ],
+  "exposed_properties": [
+    {
+      "name": "key",
+      "extension": "ext_c"
+    }
+  ]
+}
