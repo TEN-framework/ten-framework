@@ -96,13 +96,12 @@ class TwilioCallServer:
                     ws_protocol = "wss" if self.config.twilio_use_wss else "ws"
                     media_ws_url = f"{ws_protocol}://{self.config.twilio_public_server_url}/media"
                     self._log_info(f"Adding media stream to WebSocket: {media_ws_url}")
-                    start = twiml_response.start()
-                    stream = start.stream(url=media_ws_url)
-                    stream.parameter(name="from", value=self.config.twilio_from_number)
-                    stream.parameter(name="to", value=phone_number)
-                    stream.parameter(name="call_sid", value="")  # Will be filled by Twilio
+                    connect = twiml_response.connect()
+                    connect.stream(url=media_ws_url)
+                    twiml_response.append(connect)
+                    twiml_response.say("Stream Started")
 
-                twiml_response.say(message, voice="alice")
+                # twiml_response.say(message, voice="alice")
 
                 # Configure webhook URL for call events
                 if self.config.twilio_public_server_url:
@@ -325,7 +324,7 @@ class TwilioCallServer:
                 while True:
                     # Receive message from Twilio
                     data = await websocket.receive_text()
-                    self._log_debug(f"Received WebSocket message: {data[:100]}...")
+                    self._log_debug(f"Received WebSocket message: {data}...")
 
                     # Process the media stream data here
                     # No need to send ACK - Twilio media stream is one-way
