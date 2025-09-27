@@ -61,7 +61,7 @@
               "extension_group": "tts",
               "property": {
                 "params": {
-                  "subscription": "${env:AZURE_TTS_API_KEY}",
+                  "subscription": "${env:AZURE_TTS_KEY}",
                   "region": "${env:AZURE_TTS_REGION}",
                   "speech_recognition_language": "en-US",
                   "output_format": "Raw16Khz16BitMonoPcm",
@@ -255,7 +255,7 @@
               "extension_group": "tts",
               "property": {
                 "params": {
-                  "subscription": "${env:AZURE_TTS_API_KEY}",
+                  "subscription": "${env:AZURE_TTS_KEY}",
                   "region": "${env:AZURE_TTS_REGION}",
                   "speech_recognition_language": "en-US",
                   "output_format": "Raw16Khz16BitMonoPcm",
@@ -448,7 +448,7 @@
               "extension_group": "tts",
               "property": {
                 "params": {
-                  "subscription": "${env:AZURE_TTS_API_KEY}",
+                  "subscription": "${env:AZURE_TTS_KEY}",
                   "region": "${env:AZURE_TTS_REGION}",
                   "speech_recognition_language": "en-US",
                   "output_format": "Raw16Khz16BitMonoPcm",
@@ -642,7 +642,7 @@
               "extension_group": "tts",
               "property": {
                 "params": {
-                  "subscription": "${env:AZURE_TTS_API_KEY}",
+                  "subscription": "${env:AZURE_TTS_KEY}",
                   "region": "${env:AZURE_TTS_REGION}",
                   "speech_recognition_language": "en-US",
                   "output_format": "Raw16Khz16BitMonoPcm",
@@ -1502,7 +1502,7 @@
               "extension_group": "tts",
               "property": {
                 "params": {
-                  "subscription": "${env:AZURE_TTS_API_KEY}",
+                  "subscription": "${env:AZURE_TTS_KEY}",
                   "region": "${env:AZURE_TTS_REGION}",
                   "speech_recognition_language": "en-US",
                   "output_format": "Raw16Khz16BitMonoPcm",
@@ -1692,7 +1692,7 @@
               "extension_group": "tts",
               "property": {
                 "params": {
-                  "subscription": "${env:AZURE_TTS_API_KEY}",
+                  "subscription": "${env:AZURE_TTS_KEY}",
                   "region": "${env:AZURE_TTS_REGION}",
                   "speech_recognition_language": "en-US",
                   "output_format": "Raw16Khz16BitMonoPcm",
@@ -1882,7 +1882,7 @@
               "extension_group": "tts",
               "property": {
                 "params": {
-                  "subscription": "${env:AZURE_TTS_API_KEY}",
+                  "subscription": "${env:AZURE_TTS_KEY}",
                   "region": "${env:AZURE_TTS_REGION}",
                   "speech_recognition_language": "en-US",
                   "output_format": "Raw16Khz16BitMonoPcm",
@@ -2089,7 +2089,7 @@
                   "speech_recognition_language": "en-US",
                   "region": "${env:AZURE_TTS_REGION}",
                   "output_format": "Raw16Khz16BitMonoPcm",
-                  "subscription": "${env:AZURE_TTS_API_KEY}"
+                  "subscription": "${env:AZURE_TTS_KEY}"
                 }
               }
             },
