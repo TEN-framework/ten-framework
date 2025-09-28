@@ -118,6 +118,15 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
 
             await self._register_deepgram_event_handlers()
 
+            keywords = []
+            if self.config.hotwords:
+                for hw in self.config.hotwords:
+                    tokens = hw.split("|")
+                    if len(tokens) == 2 and tokens[1].isdigit():
+                        keywords.append(":".join(tokens))  # replase to ":"
+                    else:
+                        self.ten_env.log_warn("invalid hotword format: " + hw)
+
             options = LiveOptions(
                 language=self.config.language,
                 model=self.config.model,
@@ -126,6 +135,10 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
                 encoding=self.config.encoding,
                 interim_results=self.config.interim_results,
                 punctuate=self.config.punctuate,
+                keywords=keywords,
+                extra=(
+                    {"mid_opt_out": "true"} if self.config.mid_opt_out else None
+                ),
             )
 
             # Update options with advanced params
