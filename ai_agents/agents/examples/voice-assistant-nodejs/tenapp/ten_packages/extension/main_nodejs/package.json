@@ -8,7 +8,7 @@
   },
   "dependencies": {
     "main_nodejs": "file:",
-    "ten-runtime-nodejs": "file:/app/agents/ten_packages/system/ten_runtime_nodejs",
+    "ten-runtime-nodejs": "file:../../system/ten_runtime_nodejs",
     "zod": "^4.0.17",
     "uuid": "^11.1.0"
   },
