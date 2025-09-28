@@ -44,8 +44,8 @@
     {
       "type": "system",
       "name": "ten_ai_base",
-      "version": "0.7.7",
-      "hash": "e9b82e45aaa99d31de947bf340f58f31b4bbc6cfe3869cdcb28d425a9b476fc1",
+      "version": "0.7.9",
+      "hash": "76e66050ec990df1d753fd68fa66d43e0329bdab0d1969913728f1e19f91ed7b",
       "dependencies": [
         {
           "type": "system",
@@ -65,6 +65,23 @@
         }
       ],
       "path": "../../../ten_packages/extension/streamid_adapter"
+    },
+    {
+      "type": "extension",
+      "name": "aliyun_asr",
+      "version": "0.2.0",
+      "hash": "e8c6f1b5c78d17d3ba3dbeb3c7d6ff4a2d293a04ebd5e1f45e7ddbec47bf8b79",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime_python"
+        },
+        {
+          "type": "system",
+          "name": "ten_ai_base"
+        }
+      ],
+      "path": "../../../ten_packages/extension/aliyun_asr"
     },
     {
       "type": "extension",
@@ -146,8 +163,8 @@
     {
       "type": "system",
       "name": "ten_runtime_python",
-      "version": "0.11.14",
-      "hash": "0d45a998f0ae5537ad10e1e4bc30ae4cab1790867436a276975e9d95cffd3f0d",
+      "version": "0.11.15",
+      "hash": "4fcb8878cd3b95f07bde6af091969b2ca10b2c8a4d9036a3d6c33005e57553ee",
       "dependencies": [
         {
           "type": "system",
@@ -192,8 +209,8 @@
     {
       "type": "addon_loader",
       "name": "python_addon_loader",
-      "version": "0.11.14",
-      "hash": "45699313b6daf2df3b950d08c578f70f86e1d0511b5e95fdf7109c89d7ea433c",
+      "version": "0.11.15",
+      "hash": "b5d2ae03996085bda1e8e20c50ebe4798050c319a49bafcf7277020f23b71478",
       "dependencies": [
         {
           "type": "system",
