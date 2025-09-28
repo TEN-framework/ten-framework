@@ -42,7 +42,10 @@ copy_package() {
     cp ten_packages/${package_type}/${package_name}/*.py .release/ten_packages/${package_type}/${package_name}/ | true
     if [[ -f ten_packages/${package_type}/${package_name}/requirements.txt ]]; then
         cp -rf ten_packages/${package_type}/${package_name}/requirements.txt .release/ten_packages/${package_type}/${package_name}/
-        # TODO: workaround
+    fi
+
+    # Always copy agent directory for python extensions if it exists
+    if [[ -d ten_packages/${package_type}/${package_name}/agent ]]; then
         cp -rf ten_packages/${package_type}/${package_name}/agent .release/ten_packages/${package_type}/${package_name}/
     fi
 

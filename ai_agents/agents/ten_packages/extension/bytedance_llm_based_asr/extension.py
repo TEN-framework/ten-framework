@@ -44,7 +44,7 @@ from .config import BytedanceASRLLMConfig
 from .volcengine_asr_client import VolcengineASRClient, ASRResponse
 from .const import (
     DUMP_FILE_NAME,
-    RECONNECTABLE_ERROR_CODES,
+    is_reconnectable_error,
 )
 
 
@@ -126,16 +126,22 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         if not self.config:
             raise ValueError("Configuration not loaded")
 
-        if not self.config.app_key:
-            raise ValueError("app_key is required")
-        if not self.config.access_key:
-            raise ValueError("access_key is required")
+        if self.config.auth_method == "api_key":
+            if not self.config.api_key:
+                raise ValueError("api_key is required")
+        else:
+            if not self.config.app_key:
+                raise ValueError("app_key is required")
+            if not self.config.access_key:
+                raise ValueError("access_key is required")
 
         try:
             self.client = VolcengineASRClient(
                 url=self.config.api_url,
                 app_key=self.config.app_key,
                 access_key=self.config.access_key,
+                api_key=self.config.api_key,
+                auth_method=self.config.auth_method,
                 config=self.config,
                 ten_env=self.ten_env,
             )
@@ -292,7 +298,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         error_code = getattr(error, "code", ModuleErrorCode.FATAL_ERROR.value)
 
         # Check if error is reconnectable
-        if error_code in RECONNECTABLE_ERROR_CODES and not self.stopped:
+        if is_reconnectable_error(error_code) and not self.stopped:
             await self._handle_reconnect()
         else:
             await self.send_asr_error(
@@ -411,7 +417,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
         )
 
         # Check if error is reconnectable
-        if error_code in RECONNECTABLE_ERROR_CODES and not self.stopped:
+        if is_reconnectable_error(error_code) and not self.stopped:
             await self._handle_reconnect()
         else:
             # Create ModuleError object

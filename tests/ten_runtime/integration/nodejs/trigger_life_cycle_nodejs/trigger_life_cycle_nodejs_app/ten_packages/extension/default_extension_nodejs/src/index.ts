@@ -22,8 +22,8 @@ function assert(condition: boolean, message: string) {
 }
 
 class MainExtension extends Extension {
-  async onStart(tenEnv: TenEnv): Promise<void> {
-    tenEnv.logInfo("MainExtension onStart");
+  async onInit(tenEnv: TenEnv): Promise<void> {
+    tenEnv.logInfo("MainExtension onInit");
 
     await new Promise(resolve => setTimeout(resolve, 1000));
 
@@ -67,11 +67,6 @@ class MainExtension extends Extension {
     assert(checkStartResult !== undefined, "checkStartResult is undefined");
     assert(checkStartResult?.getStatusCode() === StatusCode.OK, "checkStartResult status code is not OK");
     assert(checkStartResult?.getPropertyBool("started")[0] === true, "biz extension should be started as it has received manual trigger life cycle cmd");
-
-    // Send close app cmd to close the app.
-    const closeAppCmd = Cmd.Create("ten:close_app");
-    closeAppCmd.setDests([{ appUri: "" }]);
-    tenEnv.sendCmd(closeAppCmd);
   }
 
   async onStop(tenEnv: TenEnv): Promise<void> {
@@ -108,6 +103,21 @@ class MainExtension extends Extension {
 
   async onDeinit(tenEnv: TenEnv): Promise<void> {
     tenEnv.logInfo("MainExtension onDeinit");
+  }
+
+  async onCmd(tenEnv: TenEnv, cmd: Cmd): Promise<void> {
+    const cmdName = cmd.getName();
+    tenEnv.logInfo("cmdName:" + cmdName);
+
+    if (cmdName === "test") {
+      const cmdResult = CmdResult.Create(StatusCode.OK, cmd);
+      cmdResult.setPropertyString("detail", "ok");
+      tenEnv.returnResult(cmdResult);
+    } else {
+      const cmdResult = CmdResult.Create(StatusCode.ERROR, cmd);
+      cmdResult.setPropertyString("detail", "unknown command");
+      tenEnv.returnResult(cmdResult);
+    }
   }
 }
 

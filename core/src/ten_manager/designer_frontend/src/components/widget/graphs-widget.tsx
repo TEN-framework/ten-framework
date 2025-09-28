@@ -586,26 +586,43 @@ export const GraphConnectionCreationWidget = (props: {
     resolver: zodResolver(AddConnectionPayloadSchema),
     defaultValues: {
       graph_id: graph_id ?? "",
-      src_app: app_uri,
-      src_extension:
-        typeof src_node?.data.name === "string"
-          ? src_node.data.name
-          : undefined,
+      src: {
+        app: app_uri,
+        [src_node?.type as keyof typeof src_node]:
+          typeof src_node?.data.name === "string"
+            ? src_node.data.name
+            : undefined,
+      },
+      dest: {
+        app: app_uri,
+        [dest_node?.type as keyof typeof dest_node]:
+          typeof dest_node?.data.name === "string"
+            ? dest_node.data.name
+            : undefined,
+      },
+      msg_names: [],
       msg_type: EConnectionType.CMD,
-      msg_name: undefined,
-      dest_app: app_uri,
-      dest_extension:
-        typeof dest_node?.data.name === "string"
-          ? dest_node.data.name
-          : undefined,
     },
   });
 
+  const watchedMsgNames = form.watch("msg_names");
+  const primaryMsgName = Array.isArray(watchedMsgNames)
+    ? watchedMsgNames[0]
+    : undefined;
+
   const onSubmit = async (data: z.infer<typeof AddConnectionPayloadSchema>) => {
+    console.log("onSubmit === ", { src_node, dest_node, data });
     setIsSubmitting(true);
     try {
       const payload = AddConnectionPayloadSchema.parse(data);
-      if (payload.src_extension === payload.dest_extension) {
+      if (
+        (payload.src?.extension &&
+          payload.src?.extension === payload.dest?.extension) ||
+        (payload.src?.selector &&
+          payload.src?.selector === payload.dest?.selector) ||
+        (payload.src?.subgraph &&
+          payload.src?.subgraph === payload.dest?.subgraph)
+      ) {
         throw new Error(t("popup.graph.sameNodeError"));
       }
       await postAddConnection(payload);
@@ -626,7 +643,7 @@ export const GraphConnectionCreationWidget = (props: {
   } = useCompatibleMessages(
     (src_node || dest_node) &&
       form.watch("msg_type") &&
-      form.watch("msg_name") &&
+      primaryMsgName &&
       graph_id &&
       !(src_node && dest_node)
       ? {
@@ -641,7 +658,7 @@ export const GraphConnectionCreationWidget = (props: {
           msg_direction: src_node?.data.name
             ? EMsgDirection.OUT
             : EMsgDirection.IN,
-          msg_name: form.watch("msg_name"),
+          msg_name: primaryMsgName,
         }
       : null
   );
@@ -730,7 +747,8 @@ export const GraphConnectionCreationWidget = (props: {
                 <Select
                   onValueChange={(val) => {
                     field.onChange(val);
-                    form.setValue("msg_name", undefined as unknown as string);
+                    form.setValue("msg_names", []);
+                    form.trigger("msg_names");
                   }}
                   value={field.value}
                 >
@@ -756,31 +774,40 @@ export const GraphConnectionCreationWidget = (props: {
         {form.watch("msg_type") && (
           <FormField
             control={form.control}
-            name="msg_name"
+            name="msg_names"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>{t("popup.graph.messageName")}</FormLabel>
                 <FormControl>
                   <Combobox
                     // eslint-disable-next-line max-len
-                    key={`${form.watch("msg_type")}-${form.watch("src_extension")}`}
+                    key={`Combobox-src-${form.watch("msg_type")}-${form.watch("src").extension}`} // todo: support selector and subgraph
                     disabled={isExtSchemaLoading}
                     isLoading={isExtSchemaLoading}
+                    mode="multiple"
+                    maxSelectedItems={2}
                     options={msgNameList}
                     placeholder={t("popup.graph.messageName")}
-                    selected={field.value}
-                    onChange={(i) => {
-                      field.onChange(i.value);
+                    selected={field.value ?? []}
+                    onChange={(items) => {
+                      field.onChange(items.map((item) => item.value));
                     }}
                     onCreate={(i) => {
-                      setMsgNameList((prev) => [
-                        ...prev,
-                        {
-                          value: i,
-                          label: i,
-                        },
-                      ]);
-                      field.onChange(i);
+                      setMsgNameList((prev) => {
+                        if (prev.some((item) => item.value === i)) {
+                          return prev;
+                        }
+
+                        return [
+                          ...prev,
+                          {
+                            value: i,
+                            label: i,
+                          },
+                        ];
+                      });
+                      const currentValues = field.value ?? [];
+                      field.onChange([...currentValues, i]);
                     }}
                   />
                 </FormControl>
@@ -843,20 +870,37 @@ export const GraphConnectionCreationWidget = (props: {
           <div className="flex-1 space-y-4 rounded-md bg-muted/50 p-4">
             <FormField
               control={form.control}
-              name="src_extension"
+              name="src"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t("popup.graph.srcExtension")}</FormLabel>
+                  <FormLabel>{t("popup.graph.srcLocation")}</FormLabel>
                   <FormControl>
                     <Select
-                      onValueChange={field.onChange}
-                      value={field.value}
+                      onValueChange={(val) => {
+                        if (!val) return;
+                        const srcNode = srcNodes.find(
+                          (n) => n.data.name === val
+                        );
+                        field.onChange({
+                          app: app_uri ?? undefined,
+                          [srcNode?.type as keyof typeof field.value]: val,
+                        });
+                        if (src_node) {
+                          form.setValue("msg_names", []);
+                          form.trigger("msg_names");
+                        }
+                      }}
+                      value={
+                        field.value[
+                          (src_node?.type as keyof typeof field.value) ||
+                            (dest_node?.type as keyof typeof field.value)
+                        ] || undefined
+                      }
                       disabled={
                         (src_node
                           ? true
-                          : !(
-                              form.watch("msg_type") && form.watch("msg_name")
-                            )) || isCompatibleMsgLoading
+                          : !(form.watch("msg_type") && primaryMsgName)) ||
+                        isCompatibleMsgLoading
                       }
                     >
                       <SelectTrigger
@@ -865,14 +909,17 @@ export const GraphConnectionCreationWidget = (props: {
                           "[&_.badge]:hidden"
                         )}
                       >
-                        <SelectValue
-                          placeholder={t("popup.graph.srcExtension")}
-                        />
+                        <SelectValue placeholder={t("popup.graph.srcLocation")}>
+                          {field.value.extension ||
+                            field.value.selector ||
+                            field.value.subgraph}
+                          ({src_node?.type || dest_node?.type || ""})
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         <SelectGroup>
                           <SelectLabel>
-                            {t("popup.graph.srcExtension")}
+                            {t("popup.graph.srcLocation")}
                           </SelectLabel>
                           {srcNodes
                             .sort((a, b) => {
@@ -924,20 +971,37 @@ export const GraphConnectionCreationWidget = (props: {
           <div className="flex-1 space-y-4 rounded-md bg-muted/50 p-4">
             <FormField
               control={form.control}
-              name="dest_extension"
+              name="dest"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t("popup.graph.destExtension")}</FormLabel>
+                  <FormLabel>{t("popup.graph.destLocation")}</FormLabel>
                   <FormControl>
                     <Select
-                      onValueChange={field.onChange}
-                      value={field.value ?? undefined}
+                      onValueChange={(val) => {
+                        if (!val) return;
+                        const destNode = destNodes.find(
+                          (n) => n.data.name === val
+                        );
+                        field.onChange({
+                          app: app_uri ?? undefined,
+                          [destNode?.type as keyof typeof field.value]: val,
+                        });
+                        if (dest_node) {
+                          form.setValue("msg_names", []);
+                          form.trigger("msg_names");
+                        }
+                      }}
+                      value={
+                        field.value[
+                          (dest_node?.type as keyof typeof field.value) ||
+                            (src_node?.type as keyof typeof field.value)
+                        ] || undefined
+                      }
                       disabled={
                         (dest_node
                           ? true
-                          : !(
-                              form.watch("msg_type") && form.watch("msg_name")
-                            )) || isCompatibleMsgLoading
+                          : !(form.watch("msg_type") && primaryMsgName)) ||
+                        isCompatibleMsgLoading
                       }
                     >
                       <SelectTrigger
@@ -947,13 +1011,18 @@ export const GraphConnectionCreationWidget = (props: {
                         )}
                       >
                         <SelectValue
-                          placeholder={t("popup.graph.destExtension")}
-                        />
+                          placeholder={t("popup.graph.destLocation")}
+                        >
+                          {field.value.extension ||
+                            field.value.selector ||
+                            field.value.subgraph}
+                          ({src_node?.type || dest_node?.type || ""})
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         <SelectGroup>
                           <SelectLabel>
-                            {t("popup.graph.destExtension")}
+                            {t("popup.graph.destLocation")}
                           </SelectLabel>
                           {destNodes
                             .sort((a, b) => {

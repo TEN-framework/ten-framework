@@ -7,8 +7,9 @@ import asyncio
 import json
 import os
 import time
-from typing import List, Optional, Tuple
+from typing import Any, List, Optional
 
+from pydantic import BaseModel, Field
 from ten_ai_base.const import (
     LOG_CATEGORY_VENDOR,
     LOG_CATEGORY_KEY_POINT,
@@ -40,6 +41,20 @@ from .websocket import (
 )
 
 
+class ASRTranslationResult(BaseModel):
+    """Translation result model specific to Soniox extension."""
+
+    id: str
+    text: str
+    source_text: str  # Original text that was translated
+    final: bool
+    start_ms: int
+    duration_ms: int
+    language: str  # Target language of translation
+    source_language: str  # Source language that was translated from
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
 class SonioxASRExtension(AsyncASRBaseExtension):
     def __init__(self, name: str):
         super().__init__(name)
@@ -49,6 +64,11 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         self.audio_dumper: Optional[Dumper] = None
         self.sent_user_audio_duration_ms_before_last_reset: int = 0
         self.last_finalize_timestamp: int = 0
+        # Track last transcript for standalone translations
+        self.last_transcript_text: str = ""
+        self.last_transcript_start_ms: int = 0
+        self.last_transcript_duration_ms: int = 0
+        self.last_transcript_is_final: bool = False
 
     @override
     def vendor(self) -> str:
@@ -285,74 +305,165 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         final_audio_proc_ms: int,
         total_audio_proc_ms: int,
     ):
+        """
+        Tokens can be TranscriptToken, TranslationToken, FinToken, EndToken.
+        Tokens have is_final and language.
+        We need to group tokens properly in order to send `asr_result` and `asr_translation_result`.
+        We can assume some patterns:
+        - Final transcript tokens come before non-final tokens.
+        - When there are translation tokens, they always come after the corresponding transcript tokens.
+        """
         self.ten_env.log_debug(
             f"vendor_result: transcript: {tokens}, final_audio_proc_ms: {final_audio_proc_ms}, total_audio_proc_ms: {total_audio_proc_ms}",
             category=LOG_CATEGORY_VENDOR,
         )
+
         try:
-            transcript_tokens, unused_translation_tokens, fin = (
-                self._group_tokens(tokens)
-            )
+            transcript_tokens = []
+            translation_tokens = []
+            has_fin_token = False
+            has_only_translations = True
 
-            final_tokens, non_final_tokens = (
-                self._group_transcript_tokens_by_final(transcript_tokens)
-            )
+            # First pass: Separate tokens by type
+            for token in tokens:
+                match token:
+                    case SonioxTranscriptToken():
+                        has_only_translations = False
+                        if translation_tokens and transcript_tokens:
+                            await self._process_transcript_and_translation(
+                                transcript_tokens, translation_tokens
+                            )
+                            transcript_tokens = []
+                            translation_tokens = []
+                        transcript_tokens.append(token)
+                    case SonioxTranslationToken():
+                        translation_tokens.append(token)
+                    case SonioxFinToken():
+                        has_fin_token = True
+                    # EndToken is ignored
 
-            if final_tokens:
-                await self._send_tokens(final_tokens, is_final=True)
+            # Handle standalone translations (no transcript tokens in this call)
+            if (
+                has_only_translations
+                and translation_tokens
+                and self.last_transcript_text
+            ):
+                await self._send_translation_results(
+                    translation_tokens,
+                    self.last_transcript_is_final,
+                    self.last_transcript_text,
+                    self.last_transcript_start_ms,
+                    self.last_transcript_duration_ms,
+                )
+            # Process transcript and translation pairs
+            elif transcript_tokens:
+                await self._process_transcript_and_translation(
+                    transcript_tokens, translation_tokens
+                )
 
-            if non_final_tokens:
-                await self._send_tokens(non_final_tokens, is_final=False)
-
-            if fin:
+            # Handle finalization
+            if has_fin_token:
                 await self._finalize_end()
 
         except Exception as e:
             self.ten_env.log_error(f"Error handling transcript: {e}")
 
-    def _group_tokens(
+    async def _process_transcript_and_translation(
         self,
-        tokens: List[SonioxToken],
-    ) -> Tuple[List[SonioxTranscriptToken], List[SonioxTranslationToken], bool]:
-        transcript_tokens = []
-        translation_tokens = []
-        fin = False
-
-        for token in tokens:
-            if isinstance(token, SonioxTranscriptToken):
-                transcript_tokens.append(token)
-            elif isinstance(token, SonioxTranslationToken):
-                translation_tokens.append(token)
-            elif isinstance(token, SonioxFinToken):
-                fin = True
-            # ignore end token
-
-        return transcript_tokens, translation_tokens, fin
-
-    def _group_transcript_tokens_by_final(
-        self, tokens: List[SonioxTranscriptToken]
-    ) -> Tuple[List[SonioxTranscriptToken], List[SonioxTranscriptToken]]:
-        final_tokens = []
-        non_final_tokens = []
-
-        for token in tokens:
-            if token.is_final:
-                final_tokens.append(token)
-            else:
-                non_final_tokens.append(token)
-
-        return final_tokens, non_final_tokens
-
-    async def _send_tokens(
-        self, tokens: List[SonioxTranscriptToken], is_final: bool = False
+        transcript_tokens: List[SonioxTranscriptToken],
+        translation_tokens: List[SonioxTranslationToken],
     ) -> None:
-        results = self._create_asr_results(tokens, is_final)
-        for result in results:
+        """Process transcript tokens and their corresponding translations."""
+        if not transcript_tokens:
+            return
+
+        # Group transcript tokens by is_final
+        final_transcripts = [t for t in transcript_tokens if t.is_final]
+        non_final_transcripts = [t for t in transcript_tokens if not t.is_final]
+
+        # Process final transcripts first (they come before non-final)
+        if final_transcripts:
+            await self._send_transcript_and_translation(
+                final_transcripts, translation_tokens, is_final=True
+            )
+
+        # Process non-final transcripts
+        if non_final_transcripts:
+            await self._send_transcript_and_translation(
+                non_final_transcripts, translation_tokens, is_final=False
+            )
+
+    async def _send_transcript_and_translation(
+        self,
+        transcript_tokens: List[SonioxTranscriptToken],
+        translation_tokens: List[SonioxTranslationToken],
+        is_final: bool,
+    ) -> None:
+        """Send ASR results and their translations."""
+        # Create and send ASR results
+        asr_results = self._create_asr_results(transcript_tokens, is_final)
+
+        for result in asr_results:
             await self.send_asr_result(result)
+
+            # Store last transcript info for potential standalone translations
+            self.last_transcript_text = result.text
+            self.last_transcript_start_ms = result.start_ms
+            self.last_transcript_duration_ms = result.duration_ms
+            self.last_transcript_is_final = is_final
+
+            # NOTE: it seems weird to send translation multiple times, but this complexity come from
+            # the need to seperate multi-language tokens into multiple asr_result.
+            if translation_tokens:
+                await self._send_translation_results(
+                    translation_tokens,
+                    is_final,
+                    result.text,
+                    result.start_ms,
+                    result.duration_ms,
+                )
+
+    async def _send_translation_results(
+        self,
+        translation_tokens: List[SonioxTranslationToken],
+        is_final: bool,
+        source_text: str,
+        start_ms: int,
+        duration_ms: int,
+    ) -> None:
+        """Send translation results with timing from corresponding transcript."""
+        if not translation_tokens:
+            return
+
+        # Combine all translation tokens into one text
+        text = "".join(token.text for token in translation_tokens)
+
+        translation_result = ASRTranslationResult(
+            id=self.uuid,
+            text=text,
+            source_text=source_text,
+            final=is_final,
+            start_ms=start_ms,
+            duration_ms=duration_ms,
+            language=map_language_code(translation_tokens[0].language),
+            source_language=map_language_code(
+                translation_tokens[0].source_language
+            ),
+        )
+        if self.metadata is not None:
+            translation_result.metadata = self.metadata
+
+        # Send as Data message with name 'asr_translation_result'
+        data = Data.create("asr_translation_result")
+        data.set_property_from_json("", translation_result.model_dump_json())
+        await self.ten_env.send_data(data)
 
     def _create_asr_results(
         self, tokens: List[SonioxTranscriptToken], is_final: bool
     ) -> List[ASRResult]:
+        """
+        Create ASRResult objects from a list of SonioxTranscriptToken, grouped by language.
+        """
         if not tokens:
             return []
 
@@ -401,7 +512,6 @@ class SonioxASRExtension(AsyncASRBaseExtension):
             text += token.text
 
         return ASRResult(
-            id=str(int(time.time() * 1000)),
             text=text,
             final=is_final,
             start_ms=self._adjust_timestamp(start_ms),

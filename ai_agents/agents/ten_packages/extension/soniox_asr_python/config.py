@@ -34,10 +34,6 @@ class SonioxASRConfig(BaseModel):
             if param_key not in params_map:
                 params_map[param_key] = value
 
-        # Remove unsupported features
-        if "translation" in params_map and params_map["translation"]:
-            del params_map["translation"]
-
     def to_json(self, sensitive_handling: bool = False) -> str:
         if not sensitive_handling:
             return self.model_dump_json()
