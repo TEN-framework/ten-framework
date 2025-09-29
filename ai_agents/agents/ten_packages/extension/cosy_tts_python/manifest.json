@@ -22,7 +22,6 @@
       "**.tent",
       "**.py",
       "README.md",
-      "tests/**",
       "requirements.txt"
     ]
   },
