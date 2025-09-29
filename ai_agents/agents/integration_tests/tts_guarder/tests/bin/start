@@ -15,4 +15,4 @@ else
     exportENABLE_SAMPLE_RATE="True"
 fi
 
-pytest tests/ "$@"
+pytest tests/ -s "$@"

@@ -58,6 +58,20 @@ class BasicAudioSettingTester(AsyncExtensionTester):
         )
         self.sent_metadata = None  # Store sent metadata for validation
         self.audio_start_time = None  # Store tts_audio_start timestamp
+        self.total_audio_bytes = 0  # Track total audio bytes received
+
+    def _calculate_pcm_audio_duration_ms(self) -> int:
+        """Calculate PCM audio duration in milliseconds based on received audio bytes"""
+        if self.total_audio_bytes == 0 or self.sample_rate == 0:
+            return 0
+        
+        # PCM format: 16-bit (2 bytes per sample), mono (1 channel)
+        bytes_per_sample = 2
+        channels = 1
+        
+        # Calculate duration in seconds, then convert to milliseconds
+        duration_sec = self.total_audio_bytes / (self.sample_rate * bytes_per_sample * channels)
+        return int(duration_sec * 1000)
 
     async def _send_finalize_signal(self, ten_env: AsyncTenEnvTester) -> None:
         """Send tts_finalize signal to trigger finalization."""
@@ -231,21 +245,27 @@ class BasicAudioSettingTester(AsyncExtensionTester):
                 self._stop_test_with_error(ten_env, f"Missing metadata in tts_audio_end response")
                 return
             
-            # 校验时间差和request_total_audio_duration_ms
+            # 校验音频长度
             if self.audio_start_time is not None:
                 current_time = time.time()
                 actual_duration_ms = (current_time - self.audio_start_time) * 1000
                 
-                # 获取request_total_audio_duration_ms
-                received_duration_ms, _ = data.get_property_int("request_total_audio_duration_ms")
+                # 获取request_total_audio_duration_ms（音频实际长度）
+                received_audio_duration_ms, _ = data.get_property_int("request_total_audio_duration_ms")
                 
-                # 计算时间差（允许100ms误差）
-                time_diff = abs(actual_duration_ms - received_duration_ms)
-                if time_diff > 100:
-                    self._stop_test_with_error(ten_env, f"Audio duration mismatch. Actual: {actual_duration_ms:.2f}ms, Reported: {received_duration_ms}ms, Diff: {time_diff:.2f}ms")
-                    return
+                # 校验音频长度：request_total_audio_duration_ms 应该与 PCM 文件计算出的长度一致
+                pcm_audio_duration_ms = self._calculate_pcm_audio_duration_ms()
+                if pcm_audio_duration_ms > 0 and received_audio_duration_ms > 0:
+                    audio_duration_diff = abs(received_audio_duration_ms - pcm_audio_duration_ms)
+                    if audio_duration_diff > 50:  # 允许50ms误差
+                        self._stop_test_with_error(ten_env, f"Audio duration mismatch. PCM calculated: {pcm_audio_duration_ms}ms, Reported: {received_audio_duration_ms}ms, Diff: {audio_duration_diff}ms")
+                        return
+                    ten_env.log_info(f"✅ [{self.test_name}] Audio duration validation passed. PCM: {pcm_audio_duration_ms}ms, Reported: {received_audio_duration_ms}ms, Diff: {audio_duration_diff}ms")
+                else:
+                    ten_env.log_info(f"[{self.test_name}] Skipping audio duration validation - PCM: {pcm_audio_duration_ms}ms, Reported: {received_audio_duration_ms}ms")
                 
-                ten_env.log_info(f"✅ [{self.test_name}] Audio duration validation passed. Actual: {actual_duration_ms:.2f}ms, Reported: {received_duration_ms}ms, Diff: {time_diff:.2f}ms")
+                # 记录实际经过的时间（用于调试）
+                ten_env.log_info(f"[{self.test_name}] Actual event duration: {actual_duration_ms:.2f}ms")
             else:
                 ten_env.log_warn(f"[{self.test_name}] tts_audio_start not received before tts_audio_end")
             
@@ -293,6 +313,17 @@ class BasicAudioSettingTester(AsyncExtensionTester):
                 ten_env.log_info(
                     f"✅ [{self.test_name}] Sample rate consistent: {sample_rate}"
                 )
+
+        # Accumulate audio bytes for duration calculation
+        try:
+            audio_data = audio_frame.get_buf()
+            if audio_data:
+                self.total_audio_bytes += len(audio_data)
+                ten_env.log_info(
+                    f"[{self.test_name}] Audio frame size: {len(audio_data)} bytes, Total: {self.total_audio_bytes} bytes"
+                )
+        except Exception as e:
+            ten_env.log_warn(f"[{self.test_name}] Failed to get audio data: {e}")
 
     @override
     async def on_stop(self, ten_env: AsyncTenEnvTester) -> None:
