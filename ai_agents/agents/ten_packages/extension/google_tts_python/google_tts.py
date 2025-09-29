@@ -1,5 +1,5 @@
 import asyncio
-from typing import AsyncIterator
+from typing import AsyncIterator, Iterator
 from google.cloud import texttospeech
 from ten_runtime import AsyncTenEnv
 from .config import GoogleTTSConfig
@@ -29,6 +29,9 @@ class GoogleTTS:
         self.credentials = None
         self.send_text_in_connection = False
         self.cur_request_id = ""
+        self.streaming_enabled = False
+        self.streaming_config = None
+        self._should_stop_streaming = False
 
     def _initialize_client(self):
         """Initialize Google TTS client with credentials"""
@@ -110,16 +113,104 @@ class GoogleTTS:
             ssml_gender.upper(), texttospeech.SsmlVoiceGender.NEUTRAL
         )
 
-    async def get(
+    def _create_streaming_config(
+        self,
+    ) -> texttospeech.StreamingSynthesizeConfig:
+        """Create streaming configuration from config params"""
+        # Build the voice request from VoiceSelectionParams
+        voice_params = self.config.params.get("VoiceSelectionParams", {})
+
+        # Get language code and set default voice name based on language
+        language_code = voice_params.get("language_code", "en-US")
+
+        voice_name = voice_params.get("name")
+        self.ten_env.log_debug(
+            f"Using voice: {voice_name} for language: {language_code}"
+        )
+
+        voice = texttospeech.VoiceSelectionParams(
+            language_code=language_code,
+            ssml_gender=self._get_ssml_gender_from_params(
+                voice_params.get("ssml_gender")
+            ),
+            name=voice_name,  # Always specify a voice name
+        )
+
+        # Add optional voice parameters
+        if voice_params.get("custom_voice"):
+            voice.custom_voice = voice_params.get("custom_voice")
+        if voice_params.get("voice_clone"):
+            voice.voice_clone = voice_params.get("voice_clone")
+
+        # Get audio parameters for streaming audio config
+        audio_params = self.config.params.get("AudioConfig", {})
+
+        streaming_audio_config = texttospeech.StreamingAudioConfig(
+            audio_encoding=texttospeech.AudioEncoding.PCM
+        )
+
+        # Add sample_rate if specified, otherwise use default
+        if audio_params.get("sample_rate_hertz"):
+            streaming_audio_config.sample_rate_hertz = audio_params.get(
+                "sample_rate_hertz"
+            )
+
+        # Add optional audio parameters
+        if audio_params.get("speaking_rate") is not None:
+            streaming_audio_config.speaking_rate = audio_params.get(
+                "speaking_rate"
+            )
+        if audio_params.get("pitch") is not None:
+            streaming_audio_config.pitch = audio_params.get("pitch")
+        if audio_params.get("volume_gain_db") is not None:
+            streaming_audio_config.volume_gain_db = audio_params.get(
+                "volume_gain_db"
+            )
+        if audio_params.get("effects_profile_id"):
+            streaming_audio_config.effects_profile_id = audio_params.get(
+                "effects_profile_id"
+            )
+
+        return texttospeech.StreamingSynthesizeConfig(
+            voice=voice, streaming_audio_config=streaming_audio_config
+        )
+
+    def _create_request_generator(
+        self, text: str
+    ) -> Iterator[texttospeech.StreamingSynthesizeRequest]:
+        """Create request generator for streaming synthesis"""
+        # First request contains the config
+        config_request = texttospeech.StreamingSynthesizeRequest(
+            streaming_config=self.streaming_config
+        )
+        yield config_request
+
+        # Split text into chunks for streaming (optional - can send as single chunk)
+        # For now, we'll send the entire text as one chunk, but this can be optimized
+        text_chunks = [
+            text
+        ]  # Can be modified to split text into smaller chunks
+
+        for chunk in text_chunks:
+            if chunk.strip():  # Only send non-empty chunks
+                yield texttospeech.StreamingSynthesizeRequest(
+                    input=texttospeech.StreamingSynthesisInput(text=chunk)
+                )
+
+    async def get_streaming(
         self, text: str, request_id: str
     ) -> AsyncIterator[tuple[bytes | None, int, int | None]]:
-        """Generate TTS audio for the given text"""
+        """Generate TTS audio using streaming synthesis for the given text"""
 
         if not self.client:
             error_msg = "Google TTS client not initialized"
             self.ten_env.log_error(error_msg)
             yield error_msg.encode("utf-8"), EVENT_TTS_ERROR
             return
+
+        # Initialize streaming config if not already done
+        if not self.streaming_config:
+            self.streaming_config = self._create_streaming_config()
 
         # Retry configuration
         max_retries = 3
@@ -129,78 +220,63 @@ class GoogleTTS:
         for attempt in range(max_retries):
             ttfb_ms = None
             try:
-                # Set the text input to be synthesized
-                synthesis_input = texttospeech.SynthesisInput(text=text)
-
-                # Build the voice request from VoiceSelectionParams
-                voice_params = self.config.params.get(
-                    "VoiceSelectionParams", {}
-                )
-                voice = texttospeech.VoiceSelectionParams(
-                    language_code=voice_params.get("language_code", "en-US"),
-                    ssml_gender=self._get_ssml_gender_from_params(
-                        voice_params.get("ssml_gender")
-                    ),
-                )
-
-                # Add optional voice parameters
-                if voice_params.get("name"):
-                    voice.name = voice_params.get("name")
-                if voice_params.get("custom_voice"):
-                    voice.custom_voice = voice_params.get("custom_voice")
-                if voice_params.get("voice_clone"):
-                    voice.voice_clone = voice_params.get("voice_clone")
-
-                # Build the audio config from AudioConfig
-                audio_params = self.config.params.get("AudioConfig", {})
-                audio_config = texttospeech.AudioConfig(
-                    audio_encoding=texttospeech.AudioEncoding.LINEAR16,  # PCM format
-                )
-
-                # Add sample_rate if specified, otherwise use default
-                if audio_params.get("sample_rate_hertz"):
-                    audio_config.sample_rate_hertz = audio_params.get(
-                        "sample_rate_hertz"
-                    )
-
-                # Add optional audio parameters
-                if audio_params.get("speaking_rate") is not None:
-                    audio_config.speaking_rate = audio_params.get(
-                        "speaking_rate"
-                    )
-                if audio_params.get("pitch") is not None:
-                    audio_config.pitch = audio_params.get("pitch")
-                if audio_params.get("volume_gain_db") is not None:
-                    audio_config.volume_gain_db = audio_params.get(
-                        "volume_gain_db"
-                    )
-                if audio_params.get("effects_profile_id"):
-                    audio_config.effects_profile_id = audio_params.get(
-                        "effects_profile_id"
-                    )
                 start_ts = None
                 if request_id != self.cur_request_id:
                     start_ts = time.time()
                     self.cur_request_id = request_id
 
-                # Perform the text-to-speech request
-                response = self.client.synthesize_speech(
-                    input=synthesis_input,
-                    voice=voice,
-                    audio_config=audio_config,
+                # Create request generator
+                request_generator = self._create_request_generator(text)
+
+                # Debug: Log the request details
+                self.ten_env.log_debug(
+                    f"Starting streaming synthesis for text: '{text[:100]}...' (request_id: {request_id})"
                 )
+
+                # Perform the streaming text-to-speech request
+                try:
+                    streaming_responses = self.client.streaming_synthesize(
+                        request_generator
+                    )
+                except Exception as e:
+                    self.ten_env.log_error(
+                        f"Error calling streaming_synthesize: {e}"
+                    )
+                    raise
+
                 if start_ts is not None:
                     ttfb_ms = int((time.time() - start_ts) * 1000)
                 self.send_text_in_connection = True
 
-                # The response's audio_content is binary
-                audio_content = response.audio_content
-                if audio_content:
-                    yield audio_content, EVENT_TTS_RESPONSE, ttfb_ms
+                # Process streaming responses
+                audio_received = False
+                try:
+                    for response in streaming_responses:
+                        # Check if we should stop streaming
+                        if self._should_stop_streaming:
+                            self.ten_env.log_debug(
+                                "Stopping streaming synthesis due to flush request"
+                            )
+                            break
+
+                        if response.audio_content:
+                            audio_received = True
+                            yield response.audio_content, EVENT_TTS_RESPONSE, ttfb_ms
+                            # Reset ttfb_ms after first chunk
+                            ttfb_ms = None
+                except Exception as e:
+                    self.ten_env.log_error(
+                        f"Error processing streaming responses: {e}"
+                    )
+                    raise
+
+                if audio_received:
                     yield None, EVENT_TTS_REQUEST_END, ttfb_ms
                     return  # Success, exit retry loop
                 else:
-                    error_msg = "No audio content received from Google TTS"
+                    error_msg = (
+                        "No audio content received from Google TTS streaming"
+                    )
                     yield error_msg.encode("utf-8"), EVENT_TTS_ERROR, ttfb_ms
                     return
 
@@ -231,7 +307,9 @@ class GoogleTTS:
                     continue
                 else:
                     # Final attempt failed or non-retryable error
-                    self.ten_env.log_error(f"Google TTS synthesis failed: {e}")
+                    self.ten_env.log_error(
+                        f"Google TTS streaming synthesis failed: {e}"
+                    )
 
                     # Check if it's an authentication error
                     if (
@@ -269,16 +347,32 @@ class GoogleTTS:
                         ), EVENT_TTS_ERROR, ttfb_ms
                     return
 
+    async def get(
+        self, text: str, request_id: str
+    ) -> AsyncIterator[tuple[bytes | None, int, int | None]]:
+        """Generate TTS audio for the given text using streaming synthesis"""
+
+        # Use streaming synthesis by default
+        async for result in self.get_streaming(text, request_id):
+            yield result
+
     def clean(self):
         """Clean up resources"""
         self.ten_env.log_info("GoogleTTS: clean() called.")
+        # Set flag to stop any ongoing streaming
+        self._should_stop_streaming = True
         if self.client:
             self.client = None
             self.ten_env.log_debug("Google TTS client cleaned")
+        # Reset streaming config
+        self.streaming_config = None
 
     async def reset(self):
         """Reset the client"""
         self.ten_env.log_info("Resetting Google TTS client")
         self.client = None
+        self.streaming_config = None
+        # Reset the stop flag for new requests
+        self._should_stop_streaming = False
         self._initialize_client()
         self.ten_env.log_debug("Google TTS client reset completed")
