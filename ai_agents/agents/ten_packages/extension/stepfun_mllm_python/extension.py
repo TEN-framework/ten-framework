@@ -150,8 +150,7 @@ class StepFunRealtime2Extension(AsyncMLLMBaseExtension):
                 base_url=self.config.base_url,
                 path=self.config.path,
                 api_key=self.config.api_key,
-                model=self.config.model,
-                vendor=self.config.vendor,
+                model=self.config.model
             )
 
             await self.conn.connect()

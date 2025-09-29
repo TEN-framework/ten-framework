@@ -1,0 +1,47 @@
+version: "3"
+
+dotenv: ["/app/.env"]
+
+tasks:
+  run-server:
+    desc: run standalone Twilio HTTP server
+    dir: ./
+    env:
+      PYTHONPATH: "{{.PWD}}:{{.PYTHONPATH}}"
+    cmds:
+      - python3 server/main.py
+
+  run-gd-server:
+    desc: run tman dev http server for TMAN Designer
+    dir: ./tenapp
+    cmds:
+      - tman designer
+
+  run-frontend:
+    desc: run frontend
+    dir: ./frontend
+    cmds:
+      - ./start.sh
+
+  install:
+    desc: install dependencies
+    dir: ./tenapp
+    cmds:
+      - tman install
+
+  build:
+    desc: build
+    dir: ./tenapp
+    cmds:
+      - tman run build
+
+  run-tenapp:
+    desc: run tenapp
+    dir: ./tenapp
+    cmds:
+      - tman run start
+
+  run:
+    desc: run everything
+    deps:
+      - task: run-gd-server
