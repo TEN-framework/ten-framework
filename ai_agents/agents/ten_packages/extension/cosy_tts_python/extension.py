@@ -183,7 +183,12 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
             )
 
             # Start audio synthesis (returns immediately)
-            self.client.synthesize_audio(t.text, t.text_input_end)
+            if t.text.strip() == "":
+                self.ten_env.log_info(
+                    f"KEYPOINT skip empty text, request_id: {t.request_id}"
+                )
+            else:
+                self.client.synthesize_audio(t.text, t.text_input_end)
 
             # Handle text input end
             if t.text_input_end:
