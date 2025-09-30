@@ -37,6 +37,12 @@ declare_args() {
   # Rust's incremental build requires additional disk space, so this option
   # allows it to be disabled in CI environments.
   ten_enable_rust_incremental_build = true
+
+  # Force ten_rust to use release mode regardless of the global is_debug setting.
+  # When set to true, ten_rust will always be compiled in release mode.
+  # This configuration is mainly used to reduce the disk space consumption when
+  # building rust codes in CI environments.
+  ten_rust_force_release = false
 }
 
 declare_args() {
