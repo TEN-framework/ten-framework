@@ -78,11 +78,9 @@ async fn graph_delete_connection(
         // If the message flows array exists, find and remove the specific
         // message flows.
         if let Some(flows) = message_flows {
-            for (flow_idx, flow) in flows.iter_mut().enumerate(){
-
-                //Find the destination to remove.
-                let dest_idx =
-                        flow.dest.iter().position(|dest_iter| dest_iter.loc.matches(&dest));
+            for (flow_idx, flow) in flows.iter_mut().enumerate() {
+                // Find the destination to remove.
+                let dest_idx = flow.dest.iter().position(|dest_iter| dest_iter.loc.matches(&dest));
 
                 if let Some(dest_idx) = dest_idx {
                     // Since 'name' and 'names' in GraphMessageFlow are mutually exclusive,
@@ -99,9 +97,9 @@ async fn graph_delete_connection(
                     }
                     // Check the 'names' field.
                     else if let Some(names) = flow.names.as_ref() {
-                        if msg_names.len() == names.len() &&
-                        msg_names.iter().all(|name|
-                            names.contains(name)) {
+                        if msg_names.len() == names.len()
+                            && msg_names.iter().all(|name| names.contains(name))
+                        {
                             flow.dest.remove(dest_idx);
                             deletion_complete = true;
                         }

@@ -443,11 +443,13 @@ mod tests {
                                 .as_ref()
                                 .is_some_and(|app| app == "http://example.com:8000")
                             && conn.cmd.as_ref().is_some_and(|cmds| {
-                                cmds.iter().any(|cmd| cmd.names.as_ref().is_some_and(|names| {
-                                    names.iter().any(|name| name == "multi_name_1")
-                                        || names.iter().any(|name| name == "multi_name_2")
-                                        || names.iter().any(|name| name == "multi_name_3")
-                                }))
+                                cmds.iter().any(|cmd| {
+                                    cmd.names.as_ref().is_some_and(|names| {
+                                        names.iter().any(|name| name == "multi_name_1")
+                                            || names.iter().any(|name| name == "multi_name_2")
+                                            || names.iter().any(|name| name == "multi_name_3")
+                                    })
+                                })
                             })
                     })
                 });
@@ -599,11 +601,13 @@ mod tests {
                                 .as_ref()
                                 .is_some_and(|app| app == "http://example.com:8000")
                             && conn.cmd.as_ref().is_some_and(|cmds| {
-                                cmds.iter().any(|cmd| cmd.names.as_ref().is_some_and(|names| {
-                                    names.iter().any(|name| name == "multi_name_1")
-                                        || names.iter().any(|name| name == "multi_name_2")
-                                        || names.iter().any(|name| name == "multi_name_3")
-                                }))
+                                cmds.iter().any(|cmd| {
+                                    cmd.names.as_ref().is_some_and(|names| {
+                                        names.iter().any(|name| name == "multi_name_1")
+                                            || names.iter().any(|name| name == "multi_name_2")
+                                            || names.iter().any(|name| name == "multi_name_3")
+                                    })
+                                })
                             })
                     })
                 });
@@ -621,7 +625,8 @@ mod tests {
 
         // Create the expected property JSON, which is the same as input but
         // with the connection removed.
-        let expected_property_json_str = include_str!("../../../../test_data/expected_property_delete_connection.json");
+        let expected_property_json_str =
+            include_str!("../../../../test_data/expected_property_delete_connection.json");
 
         // Parse the expected property JSON.
         let expected_property: serde_json::Value =
@@ -739,5 +744,4 @@ mod tests {
         let response: ErrorResponse = serde_json::from_str(body_str).unwrap();
         assert_eq!(response.status, Status::Fail);
     }
-
 }

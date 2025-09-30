@@ -1479,7 +1479,11 @@ mod tests {
             src,
             dest,
             msg_type: MsgType::Cmd,
-            msg_names: vec!["test_cmd_1".to_string(), "test_cmd_2".to_string(), "test_cmd_3".to_string()],
+            msg_names: vec![
+                "test_cmd_1".to_string(),
+                "test_cmd_2".to_string(),
+                "test_cmd_3".to_string(),
+            ],
             msg_conversion: None,
         };
 
@@ -1505,7 +1509,8 @@ mod tests {
 
         // Define expected property.json content after adding the connection.
         let expected_property_json_str = include_str!(
-            "../../../../test_data/expected_json__test_add_graph_connection_multiple_msg_names_success.json"
+            "../../../../test_data/\
+             expected_json__test_add_graph_connection_multiple_msg_names_success.json"
         );
 
         // Read the actual property.json file generated during the test.
@@ -1526,5 +1531,4 @@ mod tests {
             serde_json::to_string_pretty(&actual_value).unwrap()
         );
     }
-
 }
