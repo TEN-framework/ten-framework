@@ -17,10 +17,12 @@ class DeepgramASRConfig(BaseModel):
     interim_results: bool = True
     punctuate: bool = True
     finalize_mode: str = "disconnect"  # "disconnect" or "mute_pkg"
+    mid_opt_out: bool = True
     mute_pkg_duration_ms: int = 100
     dump: bool = False
     dump_path: str = "/tmp"
     advanced_params_json: str = ""
+    hotwords: List[str] = Field(default_factory=list)
     params: Dict[str, Any] = Field(default_factory=dict)
     black_list_params: List[str] = Field(
         default_factory=lambda: [

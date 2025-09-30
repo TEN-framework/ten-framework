@@ -45,6 +45,7 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
         self.completed_request_ids: set[str] = (
             set()
         )  # Track completed request IDs
+        self._flush_requested = False  # Track if flush has been requested
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         try:
@@ -58,6 +59,7 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
 
             self.config = GoogleTTSConfig.model_validate_json(config_json_str)
             self.config.update_params()
+            ten_env.log_info("Google TTS streaming mode enabled by default")
             ten_env.log_info(
                 f"LOG_CATEGORY_KEY_POINT: {self.config.to_str(sensitive_handling=True)}",
                 category=LOG_CATEGORY_KEY_POINT,
@@ -160,6 +162,8 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
         name = data.get_name()
         if name == "tts_flush":
             ten_env.log_info(f"Received tts_flush data: {name}")
+            # Set flush flag to stop processing audio
+            self._flush_requested = True
 
             try:
                 if self.client is not None:
@@ -246,8 +250,11 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
             if t.request_id != self.current_request_id:
                 self.current_request_id = t.request_id
                 self._reset_request_state()
+                # Reset flush flag for new request
+                self._flush_requested = False
                 if t.metadata:
                     self.current_turn_id = t.metadata.get("turn_id", -1)
+                    self.session_id = t.metadata.get("session_id", "")
 
                 # reset connection if needed
                 if self.client and self.client.send_text_in_connection == True:
@@ -305,6 +312,12 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
             audio_generator = self.client.get(t.text, t.request_id)
             try:
                 async for audio_chunk, event, ttfb_ms in audio_generator:
+                    # Check if flush has been requested
+                    if self._flush_requested:
+                        self.ten_env.log_debug(
+                            "Flush requested, stopping audio processing"
+                        )
+                        break
 
                     if event == EVENT_TTS_RESPONSE and audio_chunk:
                         self.total_audio_bytes += len(audio_chunk)

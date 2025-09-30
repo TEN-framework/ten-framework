@@ -4,8 +4,17 @@
 # See the LICENSE file for more information.
 #
 import json
+import uuid
+from ten_ai_base.struct import (
+    EventType,
+    LLMMessage,
+    LLMMessageContent,
+    LLMRequest,
+    parse_llm_response,
+)
 from ten_runtime import (
     AudioFrame,
+    StatusCode,
     VideoFrame,
     AsyncTenEnv,
     Cmd,
@@ -15,9 +24,7 @@ from PIL import Image
 from io import BytesIO
 from base64 import b64encode
 
-from ten_ai_base.const import CMD_CHAT_COMPLETION_CALL
 from ten_ai_base.types import (
-    LLMChatCompletionUserMessageParam,
     LLMToolMetadata,
     LLMToolMetadataParameter,
     LLMToolResult,
@@ -27,28 +34,63 @@ from ten_ai_base.llm_tool import AsyncLLMToolBaseExtension
 
 
 def rgb2base64jpeg(rgb_data, width, height):
-    # Convert the RGB image to a PIL Image
-    pil_image = Image.frombytes("RGBA", (width, height), bytes(rgb_data))
-    pil_image = pil_image.convert("RGB")
+    """
+    Convert RGB/RGBA image data to base64 JPEG format.
+    Automatically detects the image format based on data length.
+    """
+    if not rgb_data or width <= 0 or height <= 0:
+        raise ValueError("Invalid image data or dimensions")
 
-    # Resize the image while maintaining its aspect ratio
-    pil_image = resize_image_keep_aspect(pil_image, 512)
+    # Convert to bytes if not already
+    if not isinstance(rgb_data, bytes):
+        rgb_data = bytes(rgb_data)
 
-    # Save the image to a BytesIO object in JPEG format
-    buffered = BytesIO()
-    pil_image.save(buffered, format="JPEG")
-    # pil_image.save("test.jpg", format="JPEG")
+    expected_pixels = width * height
+    data_length = len(rgb_data)
 
-    # Get the byte data of the JPEG image
-    jpeg_image_data = buffered.getvalue()
+    # Determine image format based on data length
+    if data_length == expected_pixels * 4:
+        # RGBA format (4 bytes per pixel)
+        mode = "RGBA"
+    elif data_length == expected_pixels * 3:
+        # RGB format (3 bytes per pixel)
+        mode = "RGB"
+    elif data_length == expected_pixels:
+        # Grayscale format (1 byte per pixel)
+        mode = "L"
+    else:
+        raise ValueError(
+            f"Unsupported image format. Expected {expected_pixels * 4} (RGBA), {expected_pixels * 3} (RGB), or {expected_pixels} (L) bytes, got {data_length}"
+        )
 
-    # Convert the JPEG byte data to a Base64 encoded string
-    base64_encoded_image = b64encode(jpeg_image_data).decode("utf-8")
+    try:
+        # Convert the image data to a PIL Image
+        pil_image = Image.frombytes(mode, (width, height), rgb_data)
 
-    # Create the data URL
-    mime_type = "image/jpeg"
-    base64_url = f"data:{mime_type};base64,{base64_encoded_image}"
-    return base64_url
+        # Convert to RGB if needed (JPEG doesn't support RGBA or L directly)
+        if mode in ["RGBA", "L"]:
+            pil_image = pil_image.convert("RGB")
+
+        # Resize the image while maintaining its aspect ratio
+        pil_image = resize_image_keep_aspect(pil_image, 512)
+
+        # Save the image to a BytesIO object in JPEG format
+        buffered = BytesIO()
+        pil_image.save(buffered, format="JPEG", quality=85)
+
+        # Get the byte data of the JPEG image
+        jpeg_image_data = buffered.getvalue()
+
+        # Convert the JPEG byte data to a Base64 encoded string
+        base64_encoded_image = b64encode(jpeg_image_data).decode("utf-8")
+
+        # Create the data URL
+        mime_type = "image/jpeg"
+        base64_url = f"data:{mime_type};base64,{base64_encoded_image}"
+        return base64_url
+
+    except Exception as e:
+        raise ValueError(f"Failed to process image data: {str(e)}") from e
 
 
 def resize_image_keep_aspect(image, max_size=512):
@@ -151,20 +193,54 @@ class VisionAnalyzeToolExtension(AsyncLLMToolBaseExtension):
     ) -> LLMToolResult | None:
         if name == "get_vision_chat_completion":
             if self.image_data is None:
+                ten_env.log_error("No image data available")
                 raise ValueError("No image data available")
 
             if "query" not in args:
+                ten_env.log_error("Missing query parameter")
                 raise ValueError("Failed to get property")
 
             query = args["query"]
-
-            base64_image = rgb2base64jpeg(
-                self.image_data, self.image_width, self.image_height
+            ten_env.log_info(f"Processing vision query: {query}")
+            ten_env.log_info(
+                f"Image dimensions: {self.image_width}x{self.image_height}, data length: {len(self.image_data) if self.image_data else 0}"
             )
+
+            try:
+                base64_image = rgb2base64jpeg(
+                    self.image_data, self.image_width, self.image_height
+                )
+                ten_env.log_info("Successfully converted image to base64")
+            except Exception as e:
+                ten_env.log_error(
+                    f"Failed to convert image to base64: {str(e)}"
+                )
+                raise ValueError(f"Image processing failed: {str(e)}") from e
             # return LLMToolResult(message=LLMCompletionArgsMessage(role="user", content=[result]))
-            cmd: Cmd = Cmd.create(CMD_CHAT_COMPLETION_CALL)
-            message: LLMChatCompletionUserMessageParam = (
-                LLMChatCompletionUserMessageParam(
+            # cmd: Cmd = Cmd.create(CMD_CHAT_COMPLETION_CALL)
+            # message: LLMChatCompletionUserMessageParam = (
+            #     LLMChatCompletionUserMessageParam(
+            #         role="user",
+            #         content=[
+            #             {"type": "text", "text": query},
+            #             {
+            #                 "type": "image_url",
+            #                 "image_url": {"url": base64_image},
+            #             },
+            #         ],
+            #     )
+            # )
+            # cmd.set_property_from_json(
+            #     "arguments", json.dumps({"messages": [message]})
+            # )
+            # ten_env.log_info("send_cmd {}".format(message))
+            # [cmd_result, _] = await ten_env.send_cmd(cmd)
+            # result, _ = cmd_result.get_property_to_json("response")
+
+            request_id = str(uuid.uuid4())
+            messages: list[LLMMessage] = []
+            messages.append(
+                LLMMessageContent(
                     role="user",
                     content=[
                         {"type": "text", "text": query},
@@ -175,12 +251,33 @@ class VisionAnalyzeToolExtension(AsyncLLMToolBaseExtension):
                     ],
                 )
             )
-            cmd.set_property_from_json(
-                "arguments", json.dumps({"messages": [message]})
+            llm_input = LLMRequest(
+                request_id=request_id,
+                messages=messages,
+                model="gpt-4o",
+                streaming=True,
+                parameters={"temperature": 0.7},
+                tools=[],
             )
-            ten_env.log_info("send_cmd {}".format(message))
-            [cmd_result, _] = await ten_env.send_cmd(cmd)
-            result, _ = cmd_result.get_property_to_json("response")
+            input_json = llm_input.model_dump()
+            cmd = Cmd.create("chat_completion")
+            cmd.set_property_from_json(None, json.dumps(input_json))
+            response = ten_env.send_cmd_ex(cmd)
+
+            # response = _send_cmd_ex(ten_env, "chat_completion", "llm", input_json)
+
+            result = ""
+
+            async for cmd_result, _ in response:
+                if cmd_result and cmd_result.is_final() is False:
+                    if cmd_result.get_status_code() == StatusCode.OK:
+                        response_json, _ = cmd_result.get_property_to_json(None)
+                        ten_env.log_info(f"tool: response_json {response_json}")
+                        completion = parse_llm_response(response_json)
+                        if completion.type == EventType.MESSAGE_CONTENT_DONE:
+                            result = completion.content
+                            break
+
             return LLMToolResultLLMResult(
                 type="llmresult",
                 content=json.dumps(result),
