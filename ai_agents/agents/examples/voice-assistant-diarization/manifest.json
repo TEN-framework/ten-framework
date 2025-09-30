@@ -1,0 +1,30 @@
+{
+  "type": "app",
+  "name": "agent_voice_assistant_diarization",
+  "version": "0.10.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_go",
+      "version": "0.11"
+    },
+    {
+      "type": "extension",
+      "name": "agora_rtc",
+      "version": "=0.23.0-rc2"
+    },
+    {
+      "type": "system",
+      "name": "ten_ai_base",
+      "version": "0.7"
+    },
+    {
+      "type": "extension",
+      "name": "speechmatics_diarization_python",
+      "version": "*"
+    }
+  ],
+  "scripts": {
+    "start": "bin/start"
+  }
+}
