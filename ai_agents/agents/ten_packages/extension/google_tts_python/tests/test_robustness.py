@@ -116,19 +116,26 @@ def test_concurrent_requests(MockGoogleTTS):
 
     # Mock the get method to return audio data
     async def mock_get(text, request_id):
-        # Return audio data in the expected format
-        yield b"fake_audio_data", 1, 123  # EVENT_TTS_RESPONSE
+        # Return audio data in the expected format for streaming
+        yield b"fake_audio_data", 1, 123  # EVENT_TTS_RESPONSE with ttfb_ms
         yield None, 2, None  # EVENT_TTS_REQUEST_END
 
     mock_client_instance.get = mock_get
+    mock_client_instance.get_streaming = mock_get  # Streaming method
     mock_client_instance.cancel = AsyncMock()
     # Fix: clean is a synchronous method, not async
     mock_client_instance.clean = Mock()
+    mock_client_instance.reset = AsyncMock()
+    mock_client_instance._should_stop_streaming = False
     mock_client_instance.client = AsyncMock()
     mock_client_instance.config = AsyncMock()
     mock_client_instance.ten_env = AsyncMock()
     mock_client_instance._is_cancelled = False
     mock_client_instance.credentials = None
+    mock_client_instance.send_text_in_connection = False
+    mock_client_instance.cur_request_id = ""
+    mock_client_instance.streaming_enabled = False
+    mock_client_instance.streaming_config = None
     mock_client_instance.config.language_code = "en-US"
     mock_client_instance.config.get_ssml_gender = AsyncMock(return_value=1)
     mock_client_instance._initialize_client = AsyncMock()
@@ -142,6 +149,10 @@ def test_concurrent_requests(MockGoogleTTS):
     config = {
         "params": {
             "AudioConfig": {"sample_rate_hertz": 16000},
+            "VoiceSelectionParams": {
+                "language_code": "en-US",
+                "ssml_gender": "NEUTRAL",
+            },
             "credentials": "fake_credentials_for_mock_testing",
         },
     }
@@ -164,8 +175,8 @@ def test_rapid_requests(MockGoogleTTS):
 
     # Mock the get method to return audio data
     async def mock_get(text, request_id):
-        # Return audio data in the expected format
-        yield b"fake_audio_data", 1, 123  # EVENT_TTS_RESPONSE
+        # Return audio data in the expected format for streaming
+        yield b"fake_audio_data", 1, 123  # EVENT_TTS_RESPONSE with ttfb_ms
         yield None, 2, None  # EVENT_TTS_REQUEST_END
 
     mock_client_instance.get = mock_get
@@ -189,6 +200,10 @@ def test_rapid_requests(MockGoogleTTS):
     config = {
         "params": {
             "AudioConfig": {"sample_rate_hertz": 16000},
+            "VoiceSelectionParams": {
+                "language_code": "en-US",
+                "ssml_gender": "NEUTRAL",
+            },
             "credentials": "fake_credentials_for_mock_testing",
         },
     }
@@ -213,7 +228,9 @@ def test_large_text_requests(MockGoogleTTS):
     async def mock_get(text, request_id):
         # Return multiple audio chunks for large text
         for i in range(10):
-            yield f"fake_audio_data_{i}".encode(), 1, 123  # EVENT_TTS_RESPONSE
+            yield f"fake_audio_data_{i}".encode(), 1, (
+                123 if i == 0 else None
+            )  # EVENT_TTS_RESPONSE with ttfb_ms only for first chunk
         yield None, 2, None  # EVENT_TTS_REQUEST_END
 
     mock_client_instance.get = mock_get
@@ -237,6 +254,10 @@ def test_large_text_requests(MockGoogleTTS):
     config = {
         "params": {
             "AudioConfig": {"sample_rate_hertz": 16000},
+            "VoiceSelectionParams": {
+                "language_code": "en-US",
+                "ssml_gender": "NEUTRAL",
+            },
             "credentials": "fake_credentials_for_mock_testing",
         },
     }
@@ -292,6 +313,10 @@ def test_network_retry_robustness(MockGoogleTTS):
     config = {
         "params": {
             "AudioConfig": {"sample_rate_hertz": 16000},
+            "VoiceSelectionParams": {
+                "language_code": "en-US",
+                "ssml_gender": "NEUTRAL",
+            },
             "credentials": "fake_credentials_for_mock_testing",
         },
     }
@@ -319,7 +344,7 @@ def test_memory_robustness(MockGoogleTTS):
     async def mock_get(text, request_id):
         # Return large audio data to test memory handling
         large_audio_data = b"x" * 1024 * 1024  # 1MB of data
-        yield large_audio_data, 1, 123  # EVENT_TTS_RESPONSE
+        yield large_audio_data, 1, 123  # EVENT_TTS_RESPONSE with ttfb_ms
         yield None, 2, None  # EVENT_TTS_REQUEST_END
 
     mock_client_instance.get = mock_get
@@ -343,6 +368,10 @@ def test_memory_robustness(MockGoogleTTS):
     config = {
         "params": {
             "AudioConfig": {"sample_rate_hertz": 16000},
+            "VoiceSelectionParams": {
+                "language_code": "en-US",
+                "ssml_gender": "NEUTRAL",
+            },
             "credentials": "fake_credentials_for_mock_testing",
         },
     }
@@ -365,8 +394,8 @@ def test_cancellation_robustness(MockGoogleTTS):
 
     # Mock the get method to return audio data
     async def mock_get(text, request_id):
-        # Return audio data in the expected format
-        yield b"fake_audio_data", 1, 123  # EVENT_TTS_RESPONSE
+        # Return audio data in the expected format for streaming
+        yield b"fake_audio_data", 1, 123  # EVENT_TTS_RESPONSE with ttfb_ms
         yield None, 2, None  # EVENT_TTS_REQUEST_END
 
     mock_client_instance.get = mock_get
@@ -390,6 +419,10 @@ def test_cancellation_robustness(MockGoogleTTS):
     config = {
         "params": {
             "AudioConfig": {"sample_rate_hertz": 16000},
+            "VoiceSelectionParams": {
+                "language_code": "en-US",
+                "ssml_gender": "NEUTRAL",
+            },
             "credentials": "fake_credentials_for_mock_testing",
         },
     }
