@@ -171,7 +171,7 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         assert self.config is not None
         assert self.websocket is not None
 
-        buf = frame.lock_buf()
+        buf = frame.get_buf()
         if self.audio_dumper:
             await self.audio_dumper.push_bytes(bytes(buf))
         self.audio_timeline.add_user_audio(
@@ -179,7 +179,6 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         )
 
         await self.websocket.send_audio(bytes(buf))
-        frame.unlock_buf(buf)
 
         return True
 
