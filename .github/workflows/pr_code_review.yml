@@ -1,0 +1,33 @@
+name: PR Code Review
+
+on:
+  pull_request:
+    types: ["opened", "edited", "reopened"]
+
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write
+
+jobs:
+  code-review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: PR Review with Progress Tracking
+        uses: anthropics/claude-code-action@v1
+        with:
+          use_bedrock: "true"
+          prompt: "/review-pr REPO: ${{ github.repository }} PR_NUMBER: ${{ github.event.pull_request.number }}"
+          claude_args: |
+            --allowedTools "mcp__github_inline_comment__create_inline_comment"
+            --model "us.anthropic.claude-sonnet-4-20250514-v1:0"
+          settings: |
+            {
+              "env": {
+                "AWS_ACCESS_KEY_ID": "${{ secrets.AWS_ACCESS_KEY_ID }}",
+                "AWS_SECRET_ACCESS_KEY": "${{ secrets.AWS_SECRET_ACCESS_KEY }}",
+                "AWS_REGION": "us-west-2"
+              }
+            }
