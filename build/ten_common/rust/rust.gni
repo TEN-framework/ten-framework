@@ -16,8 +16,8 @@ template("rust_target") {
   target_path = invoker.target_path
 
   action("${_target_name}") {
-    if (ten_enable_serialized_rust_action) {
-      pool = "//:rust_action_pool"
+    if (enable_serialized_actions) {
+      pool = "//:serialized_action_pool"
     }
 
     script = "//build/ten_common/rust/cargo_build.py"
@@ -194,8 +194,8 @@ template("rust_test") {
   tg_timestamp_proxy_file = "${target_path}/${_target_name}"
 
   action("${_target_name}") {
-    if (ten_enable_serialized_rust_action) {
-      pool = "//:rust_action_pool"
+    if (enable_serialized_actions) {
+      pool = "//:serialized_action_pool"
     }
 
     script = "//build/ten_common/rust/cargo_build_tests.py"
