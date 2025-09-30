@@ -32,7 +32,7 @@ template("rust_target") {
       "--build-type",
     ]
 
-    if (is_debug) {
+    if (is_debug && !ten_rust_force_release) {
       args += [ "debug" ]
     } else {
       args += [ "release" ]
@@ -159,7 +159,7 @@ template("rust_target") {
     }
 
     output_path = "${target_path}/${target}/"
-    if (is_debug) {
+    if (is_debug && !ten_rust_force_release) {
       output_path = "${output_path}/debug"
     } else {
       output_path = "${output_path}/release"
@@ -218,7 +218,7 @@ template("rust_test") {
     }
 
     args += [ "--build-type" ]
-    if (is_debug) {
+    if (is_debug && !ten_rust_force_release) {
       args += [ "debug" ]
     } else {
       args += [ "release" ]
