@@ -582,13 +582,12 @@ class AzureASRExtension(AsyncASRBaseExtension):
         assert self.config is not None
         assert self.stream is not None
 
-        buf = frame.lock_buf()
+        buf = frame.get_buf()
         if self.audio_dumper:
             await self.audio_dumper.push_bytes(bytes(buf))
         self.audio_timeline.add_user_audio(
             int(len(buf) / (self.config.sample_rate / 1000 * 2))
         )
         self.stream.write(bytes(buf))
-        frame.unlock_buf(buf)
 
         return True
