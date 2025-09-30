@@ -3,7 +3,7 @@
     "predefined_graphs": [
       {
         "name": "transcription",
-        "auto_start": false,
+        "auto_start": true,
         "graph": {
           "nodes": [
             {
