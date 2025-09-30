@@ -4,9 +4,9 @@
 # Licensed under the Apache License, Version 2.0, with certain conditions.
 # Refer to the "LICENSE" file in the root directory for more information.
 #
+import("//build/feature/ten_package.gni")
 import("//build/ten_common/rust/rust.gni")
 import("//build/ten_rust/options.gni")
-import("//build/feature/ten_package.gni")
 
 if (ten_enable_ten_rust) {
   copy("ten_rust_test_data") {
@@ -87,7 +87,8 @@ if (ten_enable_ten_rust) {
     package_kind = "custom"
     package_output_root_dir_name = "gen/core/src/ten_rust"
 
-    ten_rust_static_outputs = get_target_outputs(":ten_rust_static_lib_cargo_build")
+    ten_rust_static_outputs =
+        get_target_outputs(":ten_rust_static_lib_cargo_build")
 
     resources = []
     if (is_win) {
@@ -102,10 +103,11 @@ if (ten_enable_ten_rust) {
   if (ten_enable_cargo_clean) {
     rust_clean("ten_rust_static_lib_cargo_clean") {
       project_path = "//core/src/ten_rust"
-      ten_rust_static_lib_dir = get_label_info(":ten_rust_static_lib_package", "target_gen_dir")
+      ten_rust_static_lib_dir =
+          get_label_info(":ten_rust_static_lib_package", "target_gen_dir")
       target_path = "${ten_rust_static_lib_dir}/ten_rust_static_lib"
 
-      deps = [":ten_rust_static_lib_package"]
+      deps = [ ":ten_rust_static_lib_package" ]
     }
   }
 
@@ -145,7 +147,7 @@ if (ten_enable_ten_rust) {
   }
 
   config("ten_rust_config") {
-    if(ten_enable_cargo_clean) {
+    if (ten_enable_cargo_clean) {
       _target_path = "${target_gen_dir}"
       if (is_win) {
         _output_name = "ten_rust.lib"
@@ -154,8 +156,7 @@ if (ten_enable_ten_rust) {
       }
 
       libs = [ "${_target_path}/${_output_name}" ]
-    }
-    else{
+    } else {
       libs = get_target_outputs(":ten_rust_static_lib_cargo_build")
     }
   }
