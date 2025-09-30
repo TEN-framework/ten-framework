@@ -9,7 +9,6 @@
       ]
     }
   },
-  "workspaceMount": "source=${localWorkspaceFolder}/ai_agents,target=/app,type=bind",
   "workspaceFolder": "/app",
   "forwardPorts": [
     3000,
@@ -17,6 +16,12 @@
     49483,
     49484
   ],
+  "portsAttributes": {
+    "3000": { "label": "Playground UI" },
+    "8080": { "label": "Playground Backend" },
+    "49483": { "label": "TEN Manager" },
+    "49484": {}
+  },
   "features": {
     "ghcr.io/devcontainers/features/git:1": {},
     "ghcr.io/devcontainers/features/python:1": {},
