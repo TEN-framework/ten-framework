@@ -81,6 +81,69 @@
             }
           }
         }
+      },
+      {
+        "name": "chat_completion",
+        "property": {
+          "properties": {
+            "request_id": {
+              "type": "string"
+            },
+            "model": {
+              "type": "string"
+            },
+            "messages": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {}
+              }
+            },
+            "streaming": {
+              "type": "bool"
+            },
+            "tools": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "parameters": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {}
+                    }
+                  }
+                },
+                "required": [
+                  "name"
+                ]
+              }
+            },
+            "parameters": {
+              "type": "object",
+              "properties": {}
+            }
+          }
+        },
+        "result": {
+          "property": {
+            "properties": {
+              "response_id": {
+                "type": "string"
+              },
+              "created": {
+                "type": "int64"
+              }
+            }
+          }
+        }
       }
     ],
     "video_frame_in": [
