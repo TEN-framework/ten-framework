@@ -1712,7 +1712,8 @@ mod tests {
             serde_json::from_str(&actual_property).unwrap();
 
         let expected_property_json_str = include_str!(
-            "../../../../test_data/graph_add_connection_subgraph_to_subgraph/expected_property.json"
+            "../../../../test_data/graph_add_connection_subgraph_to_subgraph/expected_property.\
+             json"
         )
         .to_string();
 

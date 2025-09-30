@@ -331,11 +331,16 @@ mod tests {
         let temp_dir_path = temp_dir.path().to_str().unwrap().to_string();
 
         // Read test data from embedded JSON files.
-        let input_property_json_str = include_str!("../../../../test_data/graph_add_connection_subgraph_to_subgraph/expected_property.json");
-        let input_manifest_json_str = include_str!("../../../../test_data/graph_add_connection_subgraph_to_subgraph/manifest.json");
+        let input_property_json_str = include_str!(
+            "../../../../test_data/graph_add_connection_subgraph_to_subgraph/expected_property.\
+             json"
+        );
+        let input_manifest_json_str = include_str!(
+            "../../../../test_data/graph_add_connection_subgraph_to_subgraph/manifest.json"
+        );
 
-        //println!("Property JSON: {}", input_property_json_str);
-        //println!("Manifest JSON: {}", input_manifest_json_str);
+        // println!("Property JSON: {}", input_property_json_str);
+        // println!("Manifest JSON: {}", input_manifest_json_str);
 
         // Write input files to temp directory.
         let property_path = std::path::Path::new(&temp_dir_path).join(PROPERTY_JSON_FILENAME);
@@ -348,8 +353,14 @@ mod tests {
         let graphs_dir = std::path::Path::new(&temp_dir_path).join("graphs");
         std::fs::create_dir_all(&graphs_dir).unwrap();
 
-        let test_graph_1_content = include_str!("../../../../test_data/graph_add_connection_subgraph_to_subgraph/graphs/test_graph_1.json");
-        let test_graph_2_content = include_str!("../../../../test_data/graph_add_connection_subgraph_to_subgraph/graphs/test_graph_2.json");
+        let test_graph_1_content = include_str!(
+            "../../../../test_data/graph_add_connection_subgraph_to_subgraph/graphs/test_graph_1.\
+             json"
+        );
+        let test_graph_2_content = include_str!(
+            "../../../../test_data/graph_add_connection_subgraph_to_subgraph/graphs/test_graph_2.\
+             json"
+        );
 
         std::fs::write(graphs_dir.join("test_graph_1.json"), test_graph_1_content).unwrap();
         std::fs::write(graphs_dir.join("test_graph_2.json"), test_graph_2_content).unwrap();
@@ -386,8 +397,7 @@ mod tests {
         let graph_id_clone;
         {
             let graphs_cache = designer_state.graphs_cache.read().await;
-            let (graph_id, _) =
-                graphs_cache_find_by_name(&graphs_cache, "default").unwrap();
+            let (graph_id, _) = graphs_cache_find_by_name(&graphs_cache, "default").unwrap();
 
             graph_id_clone = *graph_id;
         }
@@ -472,8 +482,9 @@ mod tests {
 
         // Create the expected property JSON, which is the same as input but
         // with the connection removed.
-        let expected_property_json_str =
-            include_str!("../../../../test_data/graph_add_connection_subgraph_to_subgraph/property.json");
+        let expected_property_json_str = include_str!(
+            "../../../../test_data/graph_add_connection_subgraph_to_subgraph/property.json"
+        );
 
         // Parse the expected property JSON.
         let expected_property: serde_json::Value =

@@ -16,9 +16,8 @@ use crate::{
         Graph, GraphExposedMessageType, GraphNodeType,
     },
     pkg_info::message::{MsgDirection, MsgType},
+    utils::path::{get_base_dir_of_uri, get_real_path_from_import_uri},
 };
-
-use crate::utils::path::{get_base_dir_of_uri, get_real_path_from_import_uri};
 
 impl Graph {
     /// Helper function to resolve subgraph reference to actual extension name.
@@ -148,22 +147,21 @@ impl Graph {
         };
 
         // Convert MsgType to GraphExposedMessageType
-        let exposed_msg_type =
-            if msg_direction == MsgDirection::Out {
-                match msg_type {
-                    MsgType::Cmd => GraphExposedMessageType::CmdOut,
-                    MsgType::Data => GraphExposedMessageType::DataOut,
-                    MsgType::AudioFrame => GraphExposedMessageType::AudioFrameOut,
-                    MsgType::VideoFrame => GraphExposedMessageType::VideoFrameOut,
-                }
-            } else {
-                match msg_type {
-                    MsgType::Cmd => GraphExposedMessageType::CmdIn,
-                    MsgType::Data => GraphExposedMessageType::DataIn,
-                    MsgType::AudioFrame => GraphExposedMessageType::AudioFrameIn,
-                    MsgType::VideoFrame => GraphExposedMessageType::VideoFrameIn,
-                }
-            };
+        let exposed_msg_type = if msg_direction == MsgDirection::Out {
+            match msg_type {
+                MsgType::Cmd => GraphExposedMessageType::CmdOut,
+                MsgType::Data => GraphExposedMessageType::DataOut,
+                MsgType::AudioFrame => GraphExposedMessageType::AudioFrameOut,
+                MsgType::VideoFrame => GraphExposedMessageType::VideoFrameOut,
+            }
+        } else {
+            match msg_type {
+                MsgType::Cmd => GraphExposedMessageType::CmdIn,
+                MsgType::Data => GraphExposedMessageType::DataIn,
+                MsgType::AudioFrame => GraphExposedMessageType::AudioFrameIn,
+                MsgType::VideoFrame => GraphExposedMessageType::VideoFrameIn,
+            }
+        };
 
         // Load the subgraph from the import_uri
         let subgraph_graph =
@@ -201,16 +199,22 @@ impl Graph {
         for node in &subgraph_graph.nodes {
             if let GraphNode::Subgraph {
                 content,
-            } = node {
-                let real_path = get_real_path_from_import_uri(&subgraph_content.graph.import_uri, base_dir.as_deref())?;
+            } = node
+            {
+                let real_path = get_real_path_from_import_uri(
+                    &subgraph_content.graph.import_uri,
+                    base_dir.as_deref(),
+                )?;
                 let nested_base_dir = Some(get_base_dir_of_uri(&real_path)?);
-                return Box::pin(subgraph_graph.get_extension_node_from_subgraph_using_exposed_message(
-                    &nested_base_dir,
-                    &content.name,
-                    msg_type,
-                    msg_name,
-                    msg_direction
-                ))
+                return Box::pin(
+                    subgraph_graph.get_extension_node_from_subgraph_using_exposed_message(
+                        &nested_base_dir,
+                        &content.name,
+                        msg_type,
+                        msg_name,
+                        msg_direction,
+                    ),
+                )
                 .await;
             }
         }
