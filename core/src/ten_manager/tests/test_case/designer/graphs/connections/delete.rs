@@ -325,6 +325,181 @@ mod tests {
     }
 
     #[actix_web::test]
+    async fn test_delete_graph_connection_subgraph_to_subgraph_success() {
+        // Create a test directory with property.json file.
+        let temp_dir = tempfile::tempdir().unwrap();
+        let temp_dir_path = temp_dir.path().to_str().unwrap().to_string();
+
+        // Read test data from embedded JSON files.
+        let input_property_json_str = include_str!(
+            "../../../../test_data/graph_add_connection_subgraph_to_subgraph/expected_property.\
+             json"
+        );
+        let input_manifest_json_str = include_str!(
+            "../../../../test_data/graph_add_connection_subgraph_to_subgraph/manifest.json"
+        );
+
+        // println!("Property JSON: {}", input_property_json_str);
+        // println!("Manifest JSON: {}", input_manifest_json_str);
+
+        // Write input files to temp directory.
+        let property_path = std::path::Path::new(&temp_dir_path).join(PROPERTY_JSON_FILENAME);
+        std::fs::write(&property_path, input_property_json_str).unwrap();
+
+        let manifest_path = std::path::Path::new(&temp_dir_path).join(MANIFEST_JSON_FILENAME);
+        std::fs::write(&manifest_path, input_manifest_json_str).unwrap();
+
+        // Create graphs directory and write required graph files
+        let graphs_dir = std::path::Path::new(&temp_dir_path).join("graphs");
+        std::fs::create_dir_all(&graphs_dir).unwrap();
+
+        let test_graph_1_content = include_str!(
+            "../../../../test_data/graph_add_connection_subgraph_to_subgraph/graphs/test_graph_1.\
+             json"
+        );
+        let test_graph_2_content = include_str!(
+            "../../../../test_data/graph_add_connection_subgraph_to_subgraph/graphs/test_graph_2.\
+             json"
+        );
+
+        std::fs::write(graphs_dir.join("test_graph_1.json"), test_graph_1_content).unwrap();
+        std::fs::write(graphs_dir.join("test_graph_2.json"), test_graph_2_content).unwrap();
+
+        // Initialize test state.
+        let designer_state = DesignerState {
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
+            out: Arc::new(Box::new(TmanOutputCli)),
+            pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
+            graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+            persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
+        };
+
+        // Inject the test app into the mock.
+        let all_pkgs_json = vec![(
+            temp_dir_path.clone(),
+            std::fs::read_to_string(&manifest_path).unwrap(),
+            std::fs::read_to_string(&property_path).unwrap(),
+        )];
+
+        {
+            let mut pkgs_cache = designer_state.pkgs_cache.write().await;
+            let mut graphs_cache = designer_state.graphs_cache.write().await;
+
+            let inject_ret =
+                inject_all_pkgs_for_mock(&mut pkgs_cache, &mut graphs_cache, all_pkgs_json).await;
+            if let Err(e) = &inject_ret {
+                eprintln!("inject_all_pkgs_for_mock failed: {:?}", e);
+            }
+            assert!(inject_ret.is_ok());
+        }
+
+        let graph_id_clone;
+        {
+            let graphs_cache = designer_state.graphs_cache.read().await;
+            let (graph_id, _) = graphs_cache_find_by_name(&graphs_cache, "default").unwrap();
+
+            graph_id_clone = *graph_id;
+        }
+
+        let designer_state = Arc::new(designer_state);
+
+        let app =
+            test::init_service(App::new().app_data(web::Data::new(designer_state.clone())).route(
+                "/api/designer/v1/graphs/connections/delete",
+                web::post().to(delete_graph_connection_endpoint),
+            ))
+            .await;
+
+        // Delete a connection from the default graph.
+        let src = GraphLoc::with_app_and_type_and_name(
+            None,
+            GraphNodeType::Subgraph,
+            "subgraph_1".to_string(),
+        )
+        .unwrap();
+        let dest = GraphLoc::with_app_and_type_and_name(
+            None,
+            GraphNodeType::Subgraph,
+            "subgraph_2".to_string(),
+        )
+        .unwrap();
+        let request_payload = DeleteGraphConnectionRequestPayload {
+            graph_id: graph_id_clone,
+            src,
+            dest,
+            msg_type: MsgType::Cmd,
+            msg_names: vec!["C".to_string()],
+        };
+
+        let req = test::TestRequest::post()
+            .uri("/api/designer/v1/graphs/connections/delete")
+            .set_json(request_payload)
+            .to_request();
+        let resp = test::call_service(&app, req).await;
+
+        // Should succeed with a 200 OK
+        assert_eq!(resp.status(), 200);
+
+        let body = test::read_body(resp).await;
+        let body_str = std::str::from_utf8(&body).unwrap();
+        println!("Response body: {body_str}");
+
+        let response: ApiResponse<DeleteGraphConnectionResponsePayload> =
+            serde_json::from_str(body_str).unwrap();
+        assert_eq!(response.status, Status::Ok);
+        assert!(response.data.success);
+
+        // Verify the connection was actually removed from the data.
+        let graphs_cache = designer_state.graphs_cache.read().await;
+        if let Some(predefined_graph) = graphs_cache_find_by_id(&graphs_cache, &graph_id_clone) {
+            // Check if the connection is gone.
+            let connection_exists =
+                predefined_graph.graph.connections().as_ref().is_some_and(|connections| {
+                    connections.iter().any(|conn| {
+                        conn.loc.subgraph == Some("subgraph_1".to_string())
+                            && conn
+                                .loc
+                                .app
+                                .as_ref()
+                                .is_some_and(|app| app == "http://example.com:8000")
+                            && conn.cmd.as_ref().is_some_and(|cmds| {
+                                cmds.iter().any(|cmd| cmd.name.as_deref() == Some("hello_world"))
+                            })
+                    })
+                });
+            assert!(!connection_exists, "Connection should have been deleted");
+        } else {
+            panic!("Graph 'default' not found");
+        }
+
+        // Read the updated property.json file.
+        let updated_property_content = std::fs::read_to_string(&property_path).unwrap();
+
+        // Parse the contents as JSON for proper comparison.
+        let updated_property: serde_json::Value =
+            serde_json::from_str(&updated_property_content).unwrap();
+
+        // Create the expected property JSON, which is the same as input but
+        // with the connection removed.
+        let expected_property_json_str = include_str!(
+            "../../../../test_data/graph_add_connection_subgraph_to_subgraph/property.json"
+        );
+
+        // Parse the expected property JSON.
+        let expected_property: serde_json::Value =
+            serde_json::from_str(expected_property_json_str).unwrap();
+
+        assert_eq!(
+            updated_property,
+            expected_property,
+            "Property file doesn't match expected content.\nExpected:\n{}\nActual:\n{}",
+            serde_json::to_string_pretty(&expected_property).unwrap(),
+            serde_json::to_string_pretty(&updated_property).unwrap()
+        );
+    }
+
+    #[actix_web::test]
     async fn test_delete_graph_connection_multiple_msg_names_success() {
         // Create a test directory with property.json file.
         let temp_dir = tempfile::tempdir().unwrap();

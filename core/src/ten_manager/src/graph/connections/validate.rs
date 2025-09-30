@@ -98,7 +98,7 @@ fn validate_msg_conversion_c_schema_oneway(
 
 async fn validate_msg_conversion_schema<'a>(
     pkgs_cache: &'a HashMap<String, PkgsInfoInApp>,
-    graph: &'a mut Graph,
+    graph: &'a Graph,
     graph_app_base_dir: &'a Option<String>,
     msg_conversion_validate_info: &'a MsgConversionValidateInfo<'a>,
 ) -> Result<()> {
@@ -111,6 +111,7 @@ async fn validate_msg_conversion_schema<'a>(
             msg_conversion_validate_info.src,
             msg_conversion_validate_info.msg_type,
             msg_conversion_validate_info.msg_names[0].as_str(),
+            MsgDirection::Out,
         )
         .await?;
 
@@ -120,6 +121,7 @@ async fn validate_msg_conversion_schema<'a>(
             msg_conversion_validate_info.dest,
             msg_conversion_validate_info.msg_type,
             msg_conversion_validate_info.msg_names[0].as_str(),
+            MsgDirection::In,
         )
         .await?;
 
@@ -139,6 +141,7 @@ async fn validate_msg_conversion_schema<'a>(
                     msg_conversion_validate_info.src.subgraph.as_ref().unwrap(),
                     msg_conversion_validate_info.msg_type,
                     msg_conversion_validate_info.msg_names[0].as_str(),
+                    MsgDirection::Out,
                 )
                 .await?;
             extension_node.app
@@ -155,6 +158,7 @@ async fn validate_msg_conversion_schema<'a>(
                     msg_conversion_validate_info.dest.subgraph.as_ref().unwrap(),
                     msg_conversion_validate_info.msg_type,
                     msg_conversion_validate_info.msg_names[0].as_str(),
+                    MsgDirection::In,
                 )
                 .await?;
             extension_node.app
@@ -323,7 +327,7 @@ fn find_pkg_infos<'a>(
 
 async fn get_src_and_dest_c_msg_schema<'a>(
     pkgs_cache: &'a HashMap<String, PkgsInfoInApp>,
-    graph: &mut Graph,
+    graph: &Graph,
     graph_app_base_dir: &Option<String>,
     msg_conversion_validate_info: &MsgConversionValidateInfo<'a>,
 ) -> Result<(Option<&'a TenMsgSchema>, Option<&'a TenMsgSchema>, Option<String>)> {
@@ -333,6 +337,7 @@ async fn get_src_and_dest_c_msg_schema<'a>(
             msg_conversion_validate_info.src,
             msg_conversion_validate_info.msg_type,
             msg_conversion_validate_info.msg_names[0].as_str(),
+            MsgDirection::Out,
         )
         .await?;
 
@@ -342,6 +347,7 @@ async fn get_src_and_dest_c_msg_schema<'a>(
             msg_conversion_validate_info.dest,
             msg_conversion_validate_info.msg_type,
             msg_conversion_validate_info.msg_names[0].as_str(),
+            MsgDirection::In,
         )
         .await?;
 
@@ -354,6 +360,7 @@ async fn get_src_and_dest_c_msg_schema<'a>(
                     msg_conversion_validate_info.src.subgraph.as_ref().unwrap(),
                     msg_conversion_validate_info.msg_type,
                     msg_conversion_validate_info.msg_names[0].as_str(),
+                    MsgDirection::Out,
                 )
                 .await?;
             extension_node.app
@@ -370,6 +377,7 @@ async fn get_src_and_dest_c_msg_schema<'a>(
                     msg_conversion_validate_info.dest.subgraph.as_ref().unwrap(),
                     msg_conversion_validate_info.msg_type,
                     msg_conversion_validate_info.msg_names[0].as_str(),
+                    MsgDirection::In,
                 )
                 .await?;
             extension_node.app
@@ -438,7 +446,7 @@ async fn get_src_and_dest_c_msg_schema<'a>(
 /// Checks schema compatibility between source and destination.
 async fn check_schema_compatibility<'a>(
     pkgs_cache: &'a HashMap<String, PkgsInfoInApp>,
-    graph: &mut Graph,
+    graph: &Graph,
     graph_app_base_dir: &Option<String>,
     msg_conversion_validate_info: &MsgConversionValidateInfo<'a>,
 ) -> Result<()> {
@@ -465,7 +473,7 @@ async fn check_schema_compatibility<'a>(
 
 pub async fn validate_connection_schema(
     pkgs_cache: &HashMap<String, PkgsInfoInApp>,
-    graph: &mut Graph,
+    graph: &Graph,
     graph_app_base_dir: &Option<String>,
     msg_conversion_validate_info: &MsgConversionValidateInfo<'_>,
 ) -> Result<()> {
