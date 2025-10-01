@@ -69,7 +69,11 @@ pub async fn get_extension_schema_endpoint(
     };
 
     // Success case.
-    let schema = match extension_pkg_info.manifest.get_flattened_api().await {
+    let schema = match extension_pkg_info
+        .manifest
+        .get_flattened_api(Some(&request_payload.app_base_dir))
+        .await
+    {
         Ok(api) => api,
         Err(err) => {
             let error_response = ErrorResponse::from_error(&err, "Flatten api interface failed.");
