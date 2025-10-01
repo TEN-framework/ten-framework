@@ -75,84 +75,81 @@ async fn graph_delete_connection(
             MsgType::VideoFrame => &mut connection.video_frame,
         };
 
-        if msg_names.is_empty() {
-            return Err(anyhow!("Message names are empty"));
-        }
-
         // If the message flows array exists, find and remove the specific
         // message flows.
         if let Some(flows) = message_flows {
-            let mut found_count = 0;
-            let mut flows_to_remove = Vec::new();
+            for (flow_idx, flow) in flows.iter_mut().enumerate() {
+                // Find the destination to remove.
+                let dest_idx = flow.dest.iter().position(|dest_iter| dest_iter.loc.matches(&dest));
 
-            for msg_name in &msg_names {
-                if let Some(flow_idx) =
-                    flows.iter().position(|flow| flow.name.as_ref() == Some(msg_name))
-                {
-                    let flow = &mut flows[flow_idx];
+                if let Some(dest_idx) = dest_idx {
+                    // Since 'name' and 'names' in GraphMessageFlow are mutually exclusive,
+                    // we need to check both fields.
+                    // Deletion will happen only when the name/names set in the payload
+                    // matches the flow exactly.
 
-                    // Find the destination to remove.
-                    let dest_idx =
-                        flow.dest.iter().position(|dest_iter| dest_iter.loc.matches(&dest));
+                    let mut deletion_complete = false;
 
-                    if let Some(dest_idx) = dest_idx {
-                        found_count += 1;
-
-                        // Remove the specific destination.
+                    // Check the 'name' field.
+                    if msg_names.len() == 1 && Some(&msg_names[0]) == flow.name.as_ref() {
                         flow.dest.remove(dest_idx);
-
-                        // If there are no more destinations, mark the flow for removal.
-                        if flow.dest.is_empty() {
-                            flows_to_remove.push(flow_idx);
+                        deletion_complete = true;
+                    }
+                    // Check the 'names' field.
+                    else if let Some(names) = flow.names.as_ref() {
+                        if msg_names.len() == names.len()
+                            && msg_names.iter().all(|name| names.contains(name))
+                        {
+                            flow.dest.remove(dest_idx);
+                            deletion_complete = true;
                         }
                     }
-                }
-            }
 
-            // Only proceed if we found all requested messages
-            if found_count == msg_names.len() {
-                // Remove flows that have no destinations left (in reverse order to maintain
-                // indices)
-                flows_to_remove.sort_by(|a, b| b.cmp(a));
-                for flow_idx in flows_to_remove {
-                    flows.remove(flow_idx);
-                }
+                    // When deletion is completed, check if the whole flow/flows/connection
+                    // needs to be removed, and then validate before return
+                    if deletion_complete {
+                        // If there are no more destinations, remove the whole
+                        // flow.
+                        if flow.dest.is_empty() {
+                            flows.remove(flow_idx);
+                        }
 
-                // If there are no more flows of this message type, set
-                // the array to None.
-                if flows.is_empty() {
-                    *message_flows = None;
-                }
+                        // If there are no more flows of this message type, set
+                        // the array to None.
+                        if flows.is_empty() {
+                            *message_flows = None;
+                        }
 
-                // If there are no message flows left in this
-                // connection, remove the connection.
-                if connection.cmd.is_none()
-                    && connection.data.is_none()
-                    && connection.audio_frame.is_none()
-                    && connection.video_frame.is_none()
-                {
-                    connections.remove(idx);
-                }
+                        // If there are no message flows left in this
+                        // connection, remove the connection.
+                        if connection.cmd.is_none()
+                            && connection.data.is_none()
+                            && connection.audio_frame.is_none()
+                            && connection.video_frame.is_none()
+                        {
+                            connections.remove(idx);
+                        }
 
-                // If there are no more connections, set the connections
-                // field to None.
-                if connections.is_empty() {
-                    graph.connections = None;
-                }
+                        // If there are no more connections, set the connections
+                        // field to None.
+                        if connections.is_empty() {
+                            graph.connections = None;
+                        }
 
-                // Validate the updated graph.
-                match graph.validate_and_complete(None) {
-                    Ok(_) => return Ok(()),
-                    Err(e) => {
-                        // Restore the original graph if validation fails.
-                        *graph = original_graph;
-                        return Err(e);
+                        // Validate the updated graph.
+                        match graph.validate_and_complete(None) {
+                            Ok(_) => return Ok(()),
+                            Err(e) => {
+                                // Restore the original graph if validation fails.
+                                *graph = original_graph;
+                                return Err(e);
+                            }
+                        }
                     }
                 }
             }
         }
     }
-
     // Connection, message flow, or destination not found.
     Err(anyhow!("Connection not found in the graph"))
 }

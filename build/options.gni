@@ -49,9 +49,4 @@ declare_args() {
   # TEN manager is written in Rust, so enabling the TEN manager requires
   # enabling Rust first.
   ten_enable_ten_manager = ten_enable_ten_rust
-
-  # Since `cargo build` can consume a significant amount of disk space, it is
-  # necessary to limit the concurrency of `cargo build` in certain build
-  # environments (e.g., CI) to manage disk space requirements.
-  ten_enable_serialized_rust_action = false
 }
