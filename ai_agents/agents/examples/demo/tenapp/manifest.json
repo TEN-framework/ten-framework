@@ -20,6 +20,7 @@
     }
   ],
   "scripts": {
-    "start": "bin/start"
+    "start": "scripts/start.sh",
+    "build": "scripts/install_python_deps.sh"
   }
 }
