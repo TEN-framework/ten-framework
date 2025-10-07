@@ -79,13 +79,19 @@ def test_error_debug_information(MockGoogleTTS):
 
     # Set up all required attributes and methods
     mock_client_instance.get = mock_get
-    mock_client_instance.cancel = AsyncMock()
+    mock_client_instance.get_streaming = mock_get  # Streaming method
     mock_client_instance.clean = AsyncMock()
+    mock_client_instance.reset = AsyncMock()
+    mock_client_instance._should_stop_streaming = False
     mock_client_instance.client = AsyncMock()
     mock_client_instance.config = AsyncMock()
     mock_client_instance.ten_env = AsyncMock()
     mock_client_instance._is_cancelled = False
     mock_client_instance.credentials = None
+    mock_client_instance.send_text_in_connection = False
+    mock_client_instance.cur_request_id = ""
+    mock_client_instance.streaming_enabled = False
+    mock_client_instance.streaming_config = None
 
     # Mock config properties and methods
     mock_client_instance.config.language_code = "en-US"
@@ -106,6 +112,10 @@ def test_error_debug_information(MockGoogleTTS):
     config = {
         "params": {
             "AudioConfig": {"sample_rate_hertz": 16000},
+            "VoiceSelectionParams": {
+                "language_code": "en-US",
+                "ssml_gender": "NEUTRAL",
+            },
             "credentials": "fake_credentials_for_mock_testing",
         },
     }
@@ -142,13 +152,19 @@ def test_error_debug_stack_trace(MockGoogleTTS):
 
     # Set up all required attributes and methods
     mock_client_instance.get = mock_get
-    mock_client_instance.cancel = AsyncMock()
+    mock_client_instance.get_streaming = mock_get  # Streaming method
     mock_client_instance.clean = AsyncMock()
+    mock_client_instance.reset = AsyncMock()
+    mock_client_instance._should_stop_streaming = False
     mock_client_instance.client = AsyncMock()
     mock_client_instance.config = AsyncMock()
     mock_client_instance.ten_env = AsyncMock()
     mock_client_instance._is_cancelled = False
     mock_client_instance.credentials = None
+    mock_client_instance.send_text_in_connection = False
+    mock_client_instance.cur_request_id = ""
+    mock_client_instance.streaming_enabled = False
+    mock_client_instance.streaming_config = None
 
     # Mock config properties and methods
     mock_client_instance.config.language_code = "en-US"
@@ -169,6 +185,10 @@ def test_error_debug_stack_trace(MockGoogleTTS):
     config = {
         "params": {
             "AudioConfig": {"sample_rate_hertz": 16000},
+            "VoiceSelectionParams": {
+                "language_code": "en-US",
+                "ssml_gender": "NEUTRAL",
+            },
             "credentials": "fake_credentials_for_mock_testing",
         },
     }
@@ -204,13 +224,19 @@ def test_error_debug_request_context(MockGoogleTTS):
 
     # Set up all required attributes and methods
     mock_client_instance.get = mock_get
-    mock_client_instance.cancel = AsyncMock()
+    mock_client_instance.get_streaming = mock_get  # Streaming method
     mock_client_instance.clean = AsyncMock()
+    mock_client_instance.reset = AsyncMock()
+    mock_client_instance._should_stop_streaming = False
     mock_client_instance.client = AsyncMock()
     mock_client_instance.config = AsyncMock()
     mock_client_instance.ten_env = AsyncMock()
     mock_client_instance._is_cancelled = False
     mock_client_instance.credentials = None
+    mock_client_instance.send_text_in_connection = False
+    mock_client_instance.cur_request_id = ""
+    mock_client_instance.streaming_enabled = False
+    mock_client_instance.streaming_config = None
 
     # Mock config properties and methods
     mock_client_instance.config.language_code = "en-US"
@@ -231,6 +257,10 @@ def test_error_debug_request_context(MockGoogleTTS):
     config = {
         "params": {
             "AudioConfig": {"sample_rate_hertz": 16000},
+            "VoiceSelectionParams": {
+                "language_code": "en-US",
+                "ssml_gender": "NEUTRAL",
+            },
             "credentials": "fake_credentials_for_mock_testing",
         },
     }

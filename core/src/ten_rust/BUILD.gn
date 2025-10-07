@@ -4,6 +4,7 @@
 # Licensed under the Apache License, Version 2.0, with certain conditions.
 # Refer to the "LICENSE" file in the root directory for more information.
 #
+import("//build/feature/ten_package.gni")
 import("//build/ten_common/rust/rust.gni")
 import("//build/ten_rust/options.gni")
 
@@ -57,7 +58,7 @@ if (ten_enable_ten_rust) {
     }
   }
 
-  rust_target("ten_rust_static_lib") {
+  rust_target("ten_rust_static_lib_cargo_build") {
     project_path = "//core/src/ten_rust"
     target_path = "${target_gen_dir}/ten_rust_static_lib"
     manifest_path = "//core/src/ten_rust/Cargo.toml"
@@ -78,6 +79,44 @@ if (ten_enable_ten_rust) {
     }
 
     deps = [ ":ten_rust_build_deps" ]
+  }
+
+  # Export the built static library to a stable location so that cargo clean
+  # will not remove it with the intermediate files.
+  ten_package("ten_rust_static_lib_package") {
+    package_kind = "custom"
+    package_output_root_dir_name = "gen/core/src/ten_rust"
+
+    ten_rust_static_outputs =
+        get_target_outputs(":ten_rust_static_lib_cargo_build")
+
+    resources = []
+    if (is_win) {
+      resources += [ "${ten_rust_static_outputs[0]}=>ten_rust.lib" ]
+    } else {
+      resources += [ "${ten_rust_static_outputs[0]}=>libten_rust.a" ]
+    }
+
+    deps = [ ":ten_rust_static_lib_cargo_build" ]
+  }
+
+  if (ten_enable_cargo_clean) {
+    rust_clean("ten_rust_static_lib_cargo_clean") {
+      project_path = "//core/src/ten_rust"
+      ten_rust_static_lib_dir =
+          get_label_info(":ten_rust_static_lib_package", "target_gen_dir")
+      target_path = "${ten_rust_static_lib_dir}/ten_rust_static_lib"
+
+      deps = [ ":ten_rust_static_lib_package" ]
+    }
+  }
+
+  group("ten_rust_static_lib") {
+    if (ten_enable_cargo_clean) {
+      deps = [ ":ten_rust_static_lib_cargo_clean" ]
+    } else {
+      deps = [ ":ten_rust_static_lib_cargo_build" ]
+    }
   }
 
   if (teb_rust_enable_cbindgen) {
@@ -108,7 +147,18 @@ if (ten_enable_ten_rust) {
   }
 
   config("ten_rust_config") {
-    libs = get_target_outputs(":ten_rust_static_lib")
+    if (ten_enable_cargo_clean) {
+      _target_path = "${target_gen_dir}"
+      if (is_win) {
+        _output_name = "ten_rust.lib"
+      } else {
+        _output_name = "libten_rust.a"
+      }
+
+      libs = [ "${_target_path}/${_output_name}" ]
+    } else {
+      libs = get_target_outputs(":ten_rust_static_lib_cargo_build")
+    }
   }
 
   group("ten_rust_build_deps") {

@@ -159,7 +159,7 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
         assert self.client is not None
 
         try:
-            buf = frame.lock_buf()
+            buf = frame.get_buf()
             if self.audio_dumper:
                 await self.audio_dumper.push_bytes(bytes(buf))
             self.audio_timeline.add_user_audio(
@@ -169,8 +169,6 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
         except Exception as e:
             self.ten_env.log_error(f"failed to send audio: {e}")
             return False
-        finally:
-            frame.unlock_buf(buf)
         return True
 
     @override

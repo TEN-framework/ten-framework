@@ -16,8 +16,8 @@ template("rust_target") {
   target_path = invoker.target_path
 
   action("${_target_name}") {
-    if (ten_enable_serialized_rust_action) {
-      pool = "//:rust_action_pool"
+    if (enable_serialized_actions) {
+      pool = "//:serialized_action_pool"
     }
 
     script = "//build/ten_common/rust/cargo_build.py"
@@ -32,7 +32,7 @@ template("rust_target") {
       "--build-type",
     ]
 
-    if (is_debug) {
+    if (is_debug && !ten_rust_force_release) {
       args += [ "debug" ]
     } else {
       args += [ "release" ]
@@ -159,7 +159,7 @@ template("rust_target") {
     }
 
     output_path = "${target_path}/${target}/"
-    if (is_debug) {
+    if (is_debug && !ten_rust_force_release) {
       output_path = "${output_path}/debug"
     } else {
       output_path = "${output_path}/release"
@@ -194,8 +194,8 @@ template("rust_test") {
   tg_timestamp_proxy_file = "${target_path}/${_target_name}"
 
   action("${_target_name}") {
-    if (ten_enable_serialized_rust_action) {
-      pool = "//:rust_action_pool"
+    if (enable_serialized_actions) {
+      pool = "//:serialized_action_pool"
     }
 
     script = "//build/ten_common/rust/cargo_build_tests.py"
@@ -218,7 +218,7 @@ template("rust_test") {
     }
 
     args += [ "--build-type" ]
-    if (is_debug) {
+    if (is_debug && !ten_rust_force_release) {
       args += [ "debug" ]
     } else {
       args += [ "release" ]

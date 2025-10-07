@@ -79,13 +79,15 @@ def test_ttfb_metrics(MockGoogleTTS):
     async def mock_get(text, request_id):
         # Add delay to ensure TTFB calculation works
         await asyncio.sleep(0.01)
-        # Return audio data in the expected format
-        yield b"fake_audio_data", 1, 123  # EVENT_TTS_RESPONSE
+        # Return audio data in the expected format for streaming
+        yield b"fake_audio_data", 1, 123  # EVENT_TTS_RESPONSE with ttfb_ms
         yield None, 2, None  # EVENT_TTS_REQUEST_END
 
     mock_client_instance.get = mock_get
-    mock_client_instance.cancel = AsyncMock()
+    mock_client_instance.get_streaming = mock_get  # Streaming method
     mock_client_instance.clean = AsyncMock()
+    mock_client_instance.reset = AsyncMock()
+    mock_client_instance._should_stop_streaming = False
     MockGoogleTTS.return_value = mock_client_instance
 
     # Set up required attributes
@@ -94,6 +96,10 @@ def test_ttfb_metrics(MockGoogleTTS):
     mock_client_instance.ten_env = AsyncMock()
     mock_client_instance._is_cancelled = False
     mock_client_instance.credentials = None
+    mock_client_instance.send_text_in_connection = False
+    mock_client_instance.cur_request_id = ""
+    mock_client_instance.streaming_enabled = False
+    mock_client_instance.streaming_config = None
     mock_client_instance.config.language_code = "en-US"
     mock_client_instance.config.get_ssml_gender = AsyncMock(return_value=1)
     # Mock the _initialize_client method to avoid actual initialization
@@ -106,6 +112,10 @@ def test_ttfb_metrics(MockGoogleTTS):
     config = {
         "params": {
             "AudioConfig": {"sample_rate_hertz": 16000},
+            "VoiceSelectionParams": {
+                "language_code": "en-US",
+                "ssml_gender": "NEUTRAL",
+            },
             "credentials": "fake_credentials_for_mock_testing",
         },
     }
@@ -138,13 +148,15 @@ def test_audio_timing_metrics(MockGoogleTTS):
     async def mock_get(tex, request_id):
         # Add delay to ensure TTFB calculation works
         await asyncio.sleep(0.01)
-        # Return audio data in the expected format
-        yield b"fake_audio_data", 1, 123  # EVENT_TTS_RESPONSE
+        # Return audio data in the expected format for streaming
+        yield b"fake_audio_data", 1, 123  # EVENT_TTS_RESPONSE with ttfb_ms
         yield None, 2, None  # EVENT_TTS_REQUEST_END
 
     mock_client_instance.get = mock_get
-    mock_client_instance.cancel = AsyncMock()
+    mock_client_instance.get_streaming = mock_get  # Streaming method
     mock_client_instance.clean = AsyncMock()
+    mock_client_instance.reset = AsyncMock()
+    mock_client_instance._should_stop_streaming = False
     MockGoogleTTS.return_value = mock_client_instance
 
     # Set up required attributes
@@ -153,6 +165,10 @@ def test_audio_timing_metrics(MockGoogleTTS):
     mock_client_instance.ten_env = AsyncMock()
     mock_client_instance._is_cancelled = False
     mock_client_instance.credentials = None
+    mock_client_instance.send_text_in_connection = False
+    mock_client_instance.cur_request_id = ""
+    mock_client_instance.streaming_enabled = False
+    mock_client_instance.streaming_config = None
     mock_client_instance.config.language_code = "en-US"
     mock_client_instance.config.get_ssml_gender = AsyncMock(return_value=1)
     # Mock the _initialize_client method to avoid actual initialization
@@ -165,6 +181,10 @@ def test_audio_timing_metrics(MockGoogleTTS):
     config = {
         "params": {
             "AudioConfig": {"sample_rate_hertz": 16000},
+            "VoiceSelectionParams": {
+                "language_code": "en-US",
+                "ssml_gender": "NEUTRAL",
+            },
             "credentials": "fake_credentials_for_mock_testing",
         },
     }
@@ -189,12 +209,16 @@ def test_metrics_with_long_text(MockGoogleTTS):
         await asyncio.sleep(0.01)
         # Return multiple audio chunks to simulate long text
         for i in range(5):
-            yield f"fake_audio_data_{i}".encode(), 1, 123  # EVENT_TTS_RESPONSE
+            yield f"fake_audio_data_{i}".encode(), 1, (
+                123 if i == 0 else None
+            )  # EVENT_TTS_RESPONSE with ttfb_ms only for first chunk
         yield None, 2, None  # EVENT_TTS_REQUEST_END
 
     mock_client_instance.get = mock_get
-    mock_client_instance.cancel = AsyncMock()
+    mock_client_instance.get_streaming = mock_get  # Streaming method
     mock_client_instance.clean = AsyncMock()
+    mock_client_instance.reset = AsyncMock()
+    mock_client_instance._should_stop_streaming = False
     MockGoogleTTS.return_value = mock_client_instance
 
     # Set up required attributes
@@ -203,6 +227,10 @@ def test_metrics_with_long_text(MockGoogleTTS):
     mock_client_instance.ten_env = AsyncMock()
     mock_client_instance._is_cancelled = False
     mock_client_instance.credentials = None
+    mock_client_instance.send_text_in_connection = False
+    mock_client_instance.cur_request_id = ""
+    mock_client_instance.streaming_enabled = False
+    mock_client_instance.streaming_config = None
     mock_client_instance.config.language_code = "en-US"
     mock_client_instance.config.get_ssml_gender = AsyncMock(return_value=1)
     # Mock the _initialize_client method to avoid actual initialization
@@ -215,6 +243,10 @@ def test_metrics_with_long_text(MockGoogleTTS):
     config = {
         "params": {
             "AudioConfig": {"sample_rate_hertz": 16000},
+            "VoiceSelectionParams": {
+                "language_code": "en-US",
+                "ssml_gender": "NEUTRAL",
+            },
             "credentials": "fake_credentials_for_mock_testing",
         },
     }
@@ -245,12 +277,14 @@ def test_metrics_with_fast_response(MockGoogleTTS):
         # Add delay to ensure TTFB calculation works
         await asyncio.sleep(0.01)
         # Return audio data immediately (no delay)
-        yield b"fake_audio_data", 1, 123  # EVENT_TTS_RESPONSE
+        yield b"fake_audio_data", 1, 123  # EVENT_TTS_RESPONSE with ttfb_ms
         yield None, 2, None  # EVENT_TTS_REQUEST_END
 
     mock_client_instance.get = mock_get
-    mock_client_instance.cancel = AsyncMock()
+    mock_client_instance.get_streaming = mock_get  # Streaming method
     mock_client_instance.clean = AsyncMock()
+    mock_client_instance.reset = AsyncMock()
+    mock_client_instance._should_stop_streaming = False
     MockGoogleTTS.return_value = mock_client_instance
 
     # Set up required attributes
@@ -259,6 +293,10 @@ def test_metrics_with_fast_response(MockGoogleTTS):
     mock_client_instance.ten_env = AsyncMock()
     mock_client_instance._is_cancelled = False
     mock_client_instance.credentials = None
+    mock_client_instance.send_text_in_connection = False
+    mock_client_instance.cur_request_id = ""
+    mock_client_instance.streaming_enabled = False
+    mock_client_instance.streaming_config = None
     mock_client_instance.config.language_code = "en-US"
     mock_client_instance.config.get_ssml_gender = AsyncMock(return_value=1)
     # Mock the _initialize_client method to avoid actual initialization
@@ -271,6 +309,10 @@ def test_metrics_with_fast_response(MockGoogleTTS):
     config = {
         "params": {
             "AudioConfig": {"sample_rate_hertz": 16000},
+            "VoiceSelectionParams": {
+                "language_code": "en-US",
+                "ssml_gender": "NEUTRAL",
+            },
             "credentials": "fake_credentials_for_mock_testing",
         },
     }
@@ -303,13 +345,15 @@ def test_metrics_with_flush(MockGoogleTTS):
     async def mock_get(text, request_id):
         # Add delay to ensure TTFB calculation works
         await asyncio.sleep(0.01)
-        # Return audio data in the expected format
-        yield b"fake_audio_data", 1, 123  # EVENT_TTS_RESPONSE
+        # Return audio data in the expected format for streaming
+        yield b"fake_audio_data", 1, 123  # EVENT_TTS_RESPONSE with ttfb_ms
         # After flush, should not continue
 
     mock_client_instance.get = mock_get
-    mock_client_instance.cancel = AsyncMock()
+    mock_client_instance.get_streaming = mock_get  # Streaming method
     mock_client_instance.clean = AsyncMock()
+    mock_client_instance.reset = AsyncMock()
+    mock_client_instance._should_stop_streaming = False
     MockGoogleTTS.return_value = mock_client_instance
 
     # Set up required attributes
@@ -318,6 +362,10 @@ def test_metrics_with_flush(MockGoogleTTS):
     mock_client_instance.ten_env = AsyncMock()
     mock_client_instance._is_cancelled = False
     mock_client_instance.credentials = None
+    mock_client_instance.send_text_in_connection = False
+    mock_client_instance.cur_request_id = ""
+    mock_client_instance.streaming_enabled = False
+    mock_client_instance.streaming_config = None
     mock_client_instance.config.language_code = "en-US"
     mock_client_instance.config.get_ssml_gender = AsyncMock(return_value=1)
     # Mock the _initialize_client method to avoid actual initialization
@@ -330,6 +378,10 @@ def test_metrics_with_flush(MockGoogleTTS):
     config = {
         "params": {
             "AudioConfig": {"sample_rate_hertz": 16000},
+            "VoiceSelectionParams": {
+                "language_code": "en-US",
+                "ssml_gender": "NEUTRAL",
+            },
             "credentials": "fake_credentials_for_mock_testing",
         },
     }

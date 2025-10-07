@@ -88,15 +88,31 @@ def test_default_params(MockGoogleTTS):
 
     # Mock the get method to return audio data
     async def mock_get(text, request_id):
-        # Return audio data in the expected format
-        yield b"fake_audio_data_1", 1, 123  # EVENT_TTS_RESPONSE
-        yield b"fake_audio_data_2", 1, None  # EVENT_TTS_RESPONSE
+        # Return audio data in the expected format for streaming
+        yield b"fake_audio_data_1", 1, 123  # EVENT_TTS_RESPONSE with ttfb_ms
+        yield b"fake_audio_data_2", 1, None  # EVENT_TTS_RESPONSE without ttfb_ms
         yield None, 2, None  # EVENT_TTS_REQUEST_END
 
     mock_client_instance.get = mock_get
-    mock_client_instance.cancel = AsyncMock()
+    mock_client_instance.get_streaming = mock_get  # Streaming method
     mock_client_instance.clean = AsyncMock()
+    mock_client_instance.reset = AsyncMock()
+    mock_client_instance._should_stop_streaming = False
     MockGoogleTTS.return_value = mock_client_instance
+
+    # Set up required attributes
+    mock_client_instance.client = AsyncMock()
+    mock_client_instance.config = AsyncMock()
+    mock_client_instance.ten_env = AsyncMock()
+    mock_client_instance._is_cancelled = False
+    mock_client_instance.credentials = None
+    mock_client_instance.send_text_in_connection = False
+    mock_client_instance.cur_request_id = ""
+    mock_client_instance.streaming_enabled = False
+    mock_client_instance.streaming_config = None
+    mock_client_instance.config.language_code = "en-US"
+    mock_client_instance.config.get_ssml_gender = AsyncMock(return_value=1)
+    mock_client_instance._initialize_client = AsyncMock()
 
     # Create and run the tester
     tester = ExtensionTesterParams()
@@ -105,6 +121,10 @@ def test_default_params(MockGoogleTTS):
     config = {
         "params": {
             "AudioConfig": {"sample_rate_hertz": 16000},
+            "VoiceSelectionParams": {
+                "language_code": "en-US",
+                "ssml_gender": "NEUTRAL",
+            },
             "credentials": "fake_credentials_for_mock_testing",
         },
     }
@@ -124,15 +144,31 @@ def test_custom_params(MockGoogleTTS):
 
     # Mock the get method to return audio data
     async def mock_get(text, request_id):
-        # Return audio data in the expected format
-        yield b"fake_audio_data_1", 1, 123  # EVENT_TTS_RESPONSE
-        yield b"fake_audio_data_2", 1, None  # EVENT_TTS_RESPONSE
+        # Return audio data in the expected format for streaming
+        yield b"fake_audio_data_1", 1, 123  # EVENT_TTS_RESPONSE with ttfb_ms
+        yield b"fake_audio_data_2", 1, None  # EVENT_TTS_RESPONSE without ttfb_ms
         yield None, 2, None  # EVENT_TTS_REQUEST_END
 
     mock_client_instance.get = mock_get
-    mock_client_instance.cancel = AsyncMock()
+    mock_client_instance.get_streaming = mock_get  # Streaming method
     mock_client_instance.clean = AsyncMock()
+    mock_client_instance.reset = AsyncMock()
+    mock_client_instance._should_stop_streaming = False
     MockGoogleTTS.return_value = mock_client_instance
+
+    # Set up required attributes
+    mock_client_instance.client = AsyncMock()
+    mock_client_instance.config = AsyncMock()
+    mock_client_instance.ten_env = AsyncMock()
+    mock_client_instance._is_cancelled = False
+    mock_client_instance.credentials = None
+    mock_client_instance.send_text_in_connection = False
+    mock_client_instance.cur_request_id = ""
+    mock_client_instance.streaming_enabled = False
+    mock_client_instance.streaming_config = None
+    mock_client_instance.config.language_code = "en-US"
+    mock_client_instance.config.get_ssml_gender = AsyncMock(return_value=1)
+    mock_client_instance._initialize_client = AsyncMock()
 
     # Create and run the tester
     tester = ExtensionTesterParams()
@@ -160,15 +196,31 @@ def test_sample_rate_params(MockGoogleTTS):
 
     # Mock the get method to return audio data
     async def mock_get(text, request_id):
-        # Return audio data in the expected format
-        yield b"fake_audio_data_1", 1, 123  # EVENT_TTS_RESPONSE
-        yield b"fake_audio_data_2", 1, None  # EVENT_TTS_RESPONSE
+        # Return audio data in the expected format for streaming
+        yield b"fake_audio_data_1", 1, 123  # EVENT_TTS_RESPONSE with ttfb_ms
+        yield b"fake_audio_data_2", 1, None  # EVENT_TTS_RESPONSE without ttfb_ms
         yield None, 2, None  # EVENT_TTS_REQUEST_END
 
     mock_client_instance.get = mock_get
-    mock_client_instance.cancel = AsyncMock()
+    mock_client_instance.get_streaming = mock_get  # Streaming method
     mock_client_instance.clean = AsyncMock()
+    mock_client_instance.reset = AsyncMock()
+    mock_client_instance._should_stop_streaming = False
     MockGoogleTTS.return_value = mock_client_instance
+
+    # Set up required attributes
+    mock_client_instance.client = AsyncMock()
+    mock_client_instance.config = AsyncMock()
+    mock_client_instance.ten_env = AsyncMock()
+    mock_client_instance._is_cancelled = False
+    mock_client_instance.credentials = None
+    mock_client_instance.send_text_in_connection = False
+    mock_client_instance.cur_request_id = ""
+    mock_client_instance.streaming_enabled = False
+    mock_client_instance.streaming_config = None
+    mock_client_instance.config.language_code = "en-US"
+    mock_client_instance.config.get_ssml_gender = AsyncMock(return_value=1)
+    mock_client_instance._initialize_client = AsyncMock()
 
     # Test different sample rates
     sample_rates = [8000, 16000, 24000, 48000]
@@ -180,7 +232,11 @@ def test_sample_rate_params(MockGoogleTTS):
         # Set up configuration with specific sample rate
         config = {
             "params": {
-                "AudioConfig": {"sample_rate_hertz": 16000},
+                "AudioConfig": {"sample_rate_hertz": sample_rate},
+                "VoiceSelectionParams": {
+                    "language_code": "en-US",
+                    "ssml_gender": "NEUTRAL",
+                },
                 "credentials": "fake_credentials_for_mock_testing",
             },
         }
@@ -202,15 +258,31 @@ def test_voice_params(MockGoogleTTS):
 
     # Mock the get method to return audio data
     async def mock_get(text, request_id):
-        # Return audio data in the expected format
-        yield b"fake_audio_data_1", 1, 123  # EVENT_TTS_RESPONSE
-        yield b"fake_audio_data_2", 1, None  # EVENT_TTS_RESPONSE
+        # Return audio data in the expected format for streaming
+        yield b"fake_audio_data_1", 1, 123  # EVENT_TTS_RESPONSE with ttfb_ms
+        yield b"fake_audio_data_2", 1, None  # EVENT_TTS_RESPONSE without ttfb_ms
         yield None, 2, None  # EVENT_TTS_REQUEST_END
 
     mock_client_instance.get = mock_get
-    mock_client_instance.cancel = AsyncMock()
+    mock_client_instance.get_streaming = mock_get  # Streaming method
     mock_client_instance.clean = AsyncMock()
+    mock_client_instance.reset = AsyncMock()
+    mock_client_instance._should_stop_streaming = False
     MockGoogleTTS.return_value = mock_client_instance
+
+    # Set up required attributes
+    mock_client_instance.client = AsyncMock()
+    mock_client_instance.config = AsyncMock()
+    mock_client_instance.ten_env = AsyncMock()
+    mock_client_instance._is_cancelled = False
+    mock_client_instance.credentials = None
+    mock_client_instance.send_text_in_connection = False
+    mock_client_instance.cur_request_id = ""
+    mock_client_instance.streaming_enabled = False
+    mock_client_instance.streaming_config = None
+    mock_client_instance.config.language_code = "en-US"
+    mock_client_instance.config.get_ssml_gender = AsyncMock(return_value=1)
+    mock_client_instance._initialize_client = AsyncMock()
 
     # Test different voice configurations
     voice_configs = [
@@ -244,6 +316,7 @@ def test_voice_params(MockGoogleTTS):
         config = {
             "params": {
                 "AudioConfig": {"sample_rate_hertz": 16000},
+                "VoiceSelectionParams": voice_config,
                 "credentials": "fake_credentials_for_mock_testing",
             },
         }
@@ -265,15 +338,31 @@ def test_audio_params(MockGoogleTTS):
 
     # Mock the get method to return audio data
     async def mock_get(text, request_id):
-        # Return audio data in the expected format
-        yield b"fake_audio_data_1", 1, 123  # EVENT_TTS_RESPONSE
-        yield b"fake_audio_data_2", 1, None  # EVENT_TTS_RESPONSE
+        # Return audio data in the expected format for streaming
+        yield b"fake_audio_data_1", 1, 123  # EVENT_TTS_RESPONSE with ttfb_ms
+        yield b"fake_audio_data_2", 1, None  # EVENT_TTS_RESPONSE without ttfb_ms
         yield None, 2, None  # EVENT_TTS_REQUEST_END
 
     mock_client_instance.get = mock_get
-    mock_client_instance.cancel = AsyncMock()
+    mock_client_instance.get_streaming = mock_get  # Streaming method
     mock_client_instance.clean = AsyncMock()
+    mock_client_instance.reset = AsyncMock()
+    mock_client_instance._should_stop_streaming = False
     MockGoogleTTS.return_value = mock_client_instance
+
+    # Set up required attributes
+    mock_client_instance.client = AsyncMock()
+    mock_client_instance.config = AsyncMock()
+    mock_client_instance.ten_env = AsyncMock()
+    mock_client_instance._is_cancelled = False
+    mock_client_instance.credentials = None
+    mock_client_instance.send_text_in_connection = False
+    mock_client_instance.cur_request_id = ""
+    mock_client_instance.streaming_enabled = False
+    mock_client_instance.streaming_config = None
+    mock_client_instance.config.language_code = "en-US"
+    mock_client_instance.config.get_ssml_gender = AsyncMock(return_value=1)
+    mock_client_instance._initialize_client = AsyncMock()
 
     # Test different audio parameters
     audio_configs = [
@@ -289,7 +378,11 @@ def test_audio_params(MockGoogleTTS):
         # Set up configuration with specific audio parameters
         config = {
             "params": {
-                "AudioConfig": {"sample_rate_hertz": 16000},
+                "AudioConfig": {"sample_rate_hertz": 16000, **audio_config},
+                "VoiceSelectionParams": {
+                    "language_code": "en-US",
+                    "ssml_gender": "NEUTRAL",
+                },
                 "credentials": "fake_credentials_for_mock_testing",
             },
         }
@@ -314,7 +407,13 @@ def test_missing_credentials(MockGoogleTTS):
 
     # Set up configuration without credentials
     config = {
-        "params": {"AudioConfig": {"sample_rate_hertz": 16000}},
+        "params": {
+            "AudioConfig": {"sample_rate_hertz": 16000},
+            "VoiceSelectionParams": {
+                "language_code": "en-US",
+                "ssml_gender": "NEUTRAL",
+            },
+        },
     }
 
     # Run the test - should receive error event

@@ -222,7 +222,9 @@ class HumeaiTTSExtension(AsyncTTS2BaseExtension):
                             (datetime.now() - self.sent_ts).total_seconds()
                             * 1000
                         )
-                        await self.send_tts_audio_start(self.current_request_id)
+                        await self.send_tts_audio_start(
+                            self.current_request_id, self.current_turn_id
+                        )
                         await self.send_tts_ttfb_metrics(
                             self.current_request_id, ttfb, self.current_turn_id
                         )

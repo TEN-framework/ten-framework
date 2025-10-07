@@ -15,13 +15,6 @@ pool("serialized_action_pool") {
   depth = 1
 }
 
-# Since `cargo build` can consume a significant amount of disk space, it is
-# necessary to limit the concurrency of `cargo build` in certain build
-# environments (e.g., CI) to manage disk space requirements.
-pool("rust_action_pool") {
-  depth = 1
-}
-
 group("ten_framework_all") {
   deps = [
     "//core/src/ten_runtime",
