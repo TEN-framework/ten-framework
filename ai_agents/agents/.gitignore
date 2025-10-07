@@ -42,9 +42,7 @@ xdump_config
 .vscode
 *.pyc
 *.pyc.*
-/manifest.json
 /manifest-lock.json
-/property.json
 build/
 *.tsbuildinfo
 azure_tts_log.txt

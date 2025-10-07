@@ -65,7 +65,6 @@ tasks:
   build-agent-deps:
     desc: build agent
     dir: ./agents
-    internal: true
     cmds:
       - ./scripts/install_deps_and_build.sh linux x64 && mv bin/main bin/worker
 
