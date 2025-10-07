@@ -100,15 +100,19 @@ export const GROUPED_GRAPH_OPTIONS = {
     // },
   ],
   // "Multimodal Voice AI": [
-    // {
-    //   label: "Nova Multimodal",
-    //   value: "va_nova_multimodal_aws",
-    // },
+  // {
+  //   label: "Nova Multimodal",
+  //   value: "va_nova_multimodal_aws",
+  // },
   // ],
   "Speech to Speech Voice AI": [
     {
       label: "OpenAI GPT Realtime",
       value: "va_openai_v2v",
+    },
+    {
+      label: "OpenAI GPT Realtime Mini",
+      value: "va_openai_v2v_mini",
     },
     {
       label: "Gemini 2.0 Flash Live",

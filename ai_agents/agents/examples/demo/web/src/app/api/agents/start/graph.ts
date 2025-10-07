@@ -2,6 +2,7 @@ import { LanguageMap } from "@/common/constant";
 import { IOceanBaseSettings } from "@/types";
 
 const OPENAI_REALTIME_MODEL = "gpt-realtime"
+const OPENAI_REALTIME_MINI_MODEL = "gpt-realtime-mini"
 
 export const voiceNameMap: LanguageMap = {
     "zh-CN": {
@@ -188,6 +189,18 @@ export const getGraphProperties = (
                 "greeting": combined_greeting
             }
         }
+    } else if (graphName === "va_openai_v2v_mini") {
+        return {
+            "v2v": {
+                "model": OPENAI_REALTIME_MINI_MODEL,
+                "voice": voiceNameMap[language]["openai"][voiceType],
+                "language": converteLanguage,
+                "prompt": prompt,
+            },
+            "main_control": {
+                "greeting": combined_greeting
+            }
+        }
     } else if (graphName === "va_openai_azure") {
         return {
             "stt": {
@@ -349,7 +362,7 @@ export const getGraphProperties = (
                 }
             }
         }
-    // Note: duplicate grok4 branch removed for clarity; handled above
+        // Note: duplicate grok4 branch removed for clarity; handled above
     } else if (graphName === "va_azure_v2v") {
         return {
             "v2v": {
