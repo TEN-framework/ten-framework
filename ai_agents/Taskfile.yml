@@ -43,6 +43,7 @@ tasks:
       AGENT: '{{if contains "/" (.AGENT | default "voice-assistant")}}{{.AGENT | default "voice-assistant"}}{{else}}agents/examples/{{.AGENT | default "voice-assistant"}}{{end}}'
     cmds:
       - cd {{.USER_WORKING_DIR}}/{{.AGENT}} && task install && task build
+      - task: build-server
 
   run-server:
     desc: run backend http server
