@@ -17,6 +17,7 @@ import (
 
 type appConfig struct {
 	PropertyFilePath string
+	TenappDir        string
 }
 
 type defaultApp struct {
@@ -28,6 +29,14 @@ type defaultApp struct {
 func (p *defaultApp) OnConfigure(
 	tenEnv ten.TenEnv,
 ) {
+	// Change working directory if tenapp_dir is specified
+	if len(p.cfg.TenappDir) > 0 {
+		if err := os.Chdir(p.cfg.TenappDir); err != nil {
+			log.Fatalf("Failed to change working directory to %s, err %v\n", p.cfg.TenappDir, err)
+		}
+		log.Printf("Changed working directory to: %s\n", p.cfg.TenappDir)
+	}
+
 	// Using the default property.json if not specified.
 	if len(p.cfg.PropertyFilePath) > 0 {
 		if b, err := os.ReadFile(p.cfg.PropertyFilePath); err != nil {
@@ -65,6 +74,7 @@ func main() {
 	cfg := &appConfig{}
 
 	flag.StringVar(&cfg.PropertyFilePath, "property", "", "The absolute path of property.json")
+	flag.StringVar(&cfg.TenappDir, "tenapp_dir", "", "The base folder path for tman run start command")
 	flag.Parse()
 
 	startAppBlocking(cfg)
