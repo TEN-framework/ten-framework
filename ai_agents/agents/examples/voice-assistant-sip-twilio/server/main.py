@@ -21,11 +21,11 @@ def setup_logging():
     """Setup logging configuration"""
     logging.basicConfig(
         level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         handlers=[
             logging.StreamHandler(sys.stdout),
-            logging.FileHandler('/tmp/twilio_server.log')
-        ]
+            logging.FileHandler("/tmp/twilio_server.log"),
+        ],
     )
 
 
@@ -37,7 +37,8 @@ def load_config() -> TwilioServerConfig:
         twilio_from_number=os.getenv("TWILIO_FROM_NUMBER", ""),
         twilio_server_port=int(os.getenv("TWILIO_HTTP_PORT", "8080")),
         twilio_public_server_url=os.getenv("TWILIO_PUBLIC_SERVER_URL", ""),
-        twilio_use_https=os.getenv("TWILIO_USE_HTTPS", "false").lower() == "true",
+        twilio_use_https=os.getenv("TWILIO_USE_HTTPS", "false").lower()
+        == "true",
         twilio_use_wss=os.getenv("TWILIO_USE_WSS", "false").lower() == "true",
     )
 

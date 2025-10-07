@@ -40,8 +40,7 @@ class TwilioCallServer:
 
         # Twilio client
         self.twilio_client = Client(
-            config.twilio_account_sid,
-            config.twilio_auth_token
+            config.twilio_account_sid, config.twilio_auth_token
         )
 
         # Active call sessions
@@ -83,9 +82,13 @@ class TwilioCallServer:
                 message = body.get("message", "Hello from Twilio!")
 
                 if not phone_number:
-                    raise HTTPException(status_code=400, detail="phone_number is required")
+                    raise HTTPException(
+                        status_code=400, detail="phone_number is required"
+                    )
 
-                self._log_info(f"Creating call to {phone_number} with message: {message}")
+                self._log_info(
+                    f"Creating call to {phone_number} with message: {message}"
+                )
 
                 # Create TwiML response
                 twiml_response = VoiceResponse()
@@ -95,7 +98,9 @@ class TwilioCallServer:
                     # For WebSocket, use configurable protocol (WSS or WS)
                     ws_protocol = "wss" if self.config.twilio_use_wss else "ws"
                     media_ws_url = f"{ws_protocol}://{self.config.twilio_public_server_url}/media"
-                    self._log_info(f"Adding media stream to WebSocket: {media_ws_url}")
+                    self._log_info(
+                        f"Adding media stream to WebSocket: {media_ws_url}"
+                    )
                     connect = twiml_response.connect()
                     connect.stream(url=media_ws_url)
                     twiml_response.append(connect)
@@ -105,7 +110,9 @@ class TwilioCallServer:
 
                 # Configure webhook URL for call events
                 if self.config.twilio_public_server_url:
-                    http_protocol = "https" if self.config.twilio_use_https else "http"
+                    http_protocol = (
+                        "https" if self.config.twilio_use_https else "http"
+                    )
                     webhook_url = f"{http_protocol}://{self.config.twilio_public_server_url}/webhook/status"
                 else:
                     webhook_url = None
@@ -113,7 +120,9 @@ class TwilioCallServer:
                 if webhook_url:
                     self._log_info(f"Using webhook URL: {webhook_url}")
                 else:
-                    self._log_info("No public server URL configured - status callbacks will not be sent")
+                    self._log_info(
+                        "No public server URL configured - status callbacks will not be sent"
+                    )
 
                 # Create call parameters
                 call_params = {
@@ -165,17 +174,23 @@ class TwilioCallServer:
             """End a call by SID"""
             try:
                 if call_sid not in self.active_call_sessions:
-                    raise HTTPException(status_code=404, detail="Call not found")
+                    raise HTTPException(
+                        status_code=404, detail="Call not found"
+                    )
 
                 self._log_info(f"Ending call: {call_sid}")
 
                 # Update call status to completed
-                call = self.twilio_client.calls(call_sid).update(status="completed")
+                call = self.twilio_client.calls(call_sid).update(
+                    status="completed"
+                )
 
                 # Update session status
                 if call_sid in self.active_call_sessions:
                     self.active_call_sessions[call_sid]["status"] = "completed"
-                    self.active_call_sessions[call_sid]["ended_at"] = datetime.now().isoformat()
+                    self.active_call_sessions[call_sid][
+                        "ended_at"
+                    ] = datetime.now().isoformat()
 
                 self._log_info(f"Call {call_sid} ended successfully")
 
@@ -196,7 +211,9 @@ class TwilioCallServer:
             """Get call status by SID"""
             try:
                 if call_sid not in self.active_call_sessions:
-                    raise HTTPException(status_code=404, detail="Call not found")
+                    raise HTTPException(
+                        status_code=404, detail="Call not found"
+                    )
 
                 session = self.active_call_sessions[call_sid]
 
@@ -213,7 +230,9 @@ class TwilioCallServer:
                 )
 
             except Exception as e:
-                self._log_error(f"Failed to get call status {call_sid}: {str(e)}")
+                self._log_error(
+                    f"Failed to get call status {call_sid}: {str(e)}"
+                )
                 raise HTTPException(status_code=500, detail=str(e))
 
         @self.app.get("/api/calls")
@@ -247,14 +266,18 @@ class TwilioCallServer:
                     call_duration = form_data.get("CallDuration")
                     direction = form_data.get("Direction")
 
-                self._log_info(f"Status webhook received for call {call_sid}: {call_status}")
+                self._log_info(
+                    f"Status webhook received for call {call_sid}: {call_status}"
+                )
 
                 # Update call session status
                 if call_sid in self.active_call_sessions:
                     self.active_call_sessions[call_sid]["status"] = call_status
 
                     if call_status == "completed":
-                        self.active_call_sessions[call_sid]["ended_at"] = datetime.now().isoformat()
+                        self.active_call_sessions[call_sid][
+                            "ended_at"
+                        ] = datetime.now().isoformat()
 
                 return JSONResponse(content={"success": True})
 
@@ -282,7 +305,9 @@ class TwilioCallServer:
 
             if self.config.twilio_public_server_url:
                 ws_protocol = "wss" if self.config.twilio_use_wss else "ws"
-                http_protocol = "https" if self.config.twilio_use_https else "http"
+                http_protocol = (
+                    "https" if self.config.twilio_use_https else "http"
+                )
                 media_ws_url = f"{ws_protocol}://{self.config.twilio_public_server_url}/media"
                 webhook_url = f"{http_protocol}://{self.config.twilio_public_server_url}/webhook/status"
 
@@ -290,12 +315,20 @@ class TwilioCallServer:
                 content={
                     "twilio_from_number": self.config.twilio_from_number,
                     "server_port": self.config.twilio_server_port,
-                    "public_server_url": self.config.twilio_public_server_url if self.config.twilio_public_server_url else None,
+                    "public_server_url": (
+                        self.config.twilio_public_server_url
+                        if self.config.twilio_public_server_url
+                        else None
+                    ),
                     "use_https": self.config.twilio_use_https,
                     "use_wss": self.config.twilio_use_wss,
-                    "media_stream_enabled": bool(self.config.twilio_public_server_url),
+                    "media_stream_enabled": bool(
+                        self.config.twilio_public_server_url
+                    ),
                     "media_ws_url": media_ws_url,
-                    "webhook_enabled": bool(self.config.twilio_public_server_url),
+                    "webhook_enabled": bool(
+                        self.config.twilio_public_server_url
+                    ),
                     "webhook_url": webhook_url,
                 }
             )
@@ -304,44 +337,66 @@ class TwilioCallServer:
         @self.app.websocket("/media")
         async def websocket_endpoint(websocket: WebSocket):
             """WebSocket endpoint for Twilio media streaming"""
-            self._log_info(f"WebSocket connection attempt from: {websocket.client}")
+            self._log_info(
+                f"WebSocket connection attempt from: {websocket.client}"
+            )
 
             try:
                 # Log connection attempt
-                self._log_info(f"WebSocket connection attempt from: {websocket.client}")
+                self._log_info(
+                    f"WebSocket connection attempt from: {websocket.client}"
+                )
 
                 # Check for required query parameters (Twilio sends these)
                 query_params = websocket.query_params
-                self._log_info(f"WebSocket query parameters: {dict(query_params)}")
+                self._log_info(
+                    f"WebSocket query parameters: {dict(query_params)}"
+                )
 
                 # Accept the connection immediately
                 await websocket.accept()
-                self._log_info(f"WebSocket connection established: {websocket.client}")
+                self._log_info(
+                    f"WebSocket connection established: {websocket.client}"
+                )
 
                 # Send initial message to confirm connection
-                await websocket.send_text('{"type": "connected", "message": "WebSocket connection established"}')
+                await websocket.send_text(
+                    '{"type": "connected", "message": "WebSocket connection established"}'
+                )
 
                 while True:
                     # Receive message from Twilio
                     data = await websocket.receive_text()
-                    self._log_debug(f"Received WebSocket message: {data[:100]}...")
+                    self._log_debug(
+                        f"Received WebSocket message: {data[:100]}..."
+                    )
 
                     # Parse Twilio media stream message
                     try:
                         import json
+
                         message = json.loads(data)
 
                         if message.get("event") == "media":
                             # Extract audio payload and call SID
-                            audio_payload = message.get("media", {}).get("payload", "")
+                            audio_payload = message.get("media", {}).get(
+                                "payload", ""
+                            )
                             call_sid = message.get("streamSid", "")
 
                             if audio_payload and call_sid:
                                 # Forward audio to TEN framework
-                                if hasattr(self, 'extension_instance') and self.extension_instance:
-                                    await self.extension_instance._forward_audio_to_ten(audio_payload, call_sid)
+                                if (
+                                    hasattr(self, "extension_instance")
+                                    and self.extension_instance
+                                ):
+                                    await self.extension_instance._forward_audio_to_ten(
+                                        audio_payload, call_sid
+                                    )
                                 else:
-                                    self._log_debug("Extension instance not available for audio forwarding")
+                                    self._log_debug(
+                                        "Extension instance not available for audio forwarding"
+                                    )
 
                         elif message.get("event") == "start":
                             self._log_info(f"Media stream started: {message}")
@@ -349,7 +404,9 @@ class TwilioCallServer:
                             self._log_info(f"Media stream stopped: {message}")
 
                     except json.JSONDecodeError:
-                        self._log_debug(f"Received non-JSON message: {data[:100]}...")
+                        self._log_debug(
+                            f"Received non-JSON message: {data[:100]}..."
+                        )
                     except Exception as e:
                         self._log_error(f"Error processing media message: {e}")
 
@@ -366,14 +423,18 @@ class TwilioCallServer:
     async def start_server(self, host: str = "0.0.0.0", port: int = 8080):
         """Start the server with both HTTP and WebSocket support"""
         self._log_info(f"Starting Twilio Call Server on {host}:{port}")
-        self._log_info("Server supports both HTTP API and WebSocket media streaming on the same port")
+        self._log_info(
+            "Server supports both HTTP API and WebSocket media streaming on the same port"
+        )
 
         # Check if SSL is required
         use_ssl = self.config.twilio_use_https or self.config.twilio_use_wss
 
         if use_ssl:
             # For development with ngrok, we'll use HTTP but let ngrok handle SSL
-            self._log_info("SSL/WSS requested - using HTTP server (ngrok will handle SSL termination)")
+            self._log_info(
+                "SSL/WSS requested - using HTTP server (ngrok will handle SSL termination)"
+            )
             ssl_keyfile = None
             ssl_certfile = None
         else:
@@ -387,7 +448,7 @@ class TwilioCallServer:
             port=port,
             log_level="info",
             ssl_keyfile=ssl_keyfile,
-            ssl_certfile=ssl_certfile
+            ssl_certfile=ssl_certfile,
         )
 
         server = uvicorn.Server(config)
@@ -414,14 +475,21 @@ async def main():
         twilio_from_number=os.getenv("TWILIO_FROM_NUMBER", ""),
         twilio_server_port=int(os.getenv("TWILIO_SERVER_PORT", "8000")),
         twilio_public_server_url=os.getenv("TWILIO_PUBLIC_SERVER_URL", ""),
-        twilio_use_https=os.getenv("TWILIO_USE_HTTPS", "true").lower() == "true",
+        twilio_use_https=os.getenv("TWILIO_USE_HTTPS", "true").lower()
+        == "true",
         twilio_use_wss=os.getenv("TWILIO_USE_WSS", "true").lower() == "true",
     )
 
     # Validate required configuration
-    if not config.twilio_account_sid or not config.twilio_auth_token or not config.twilio_from_number:
+    if (
+        not config.twilio_account_sid
+        or not config.twilio_auth_token
+        or not config.twilio_from_number
+    ):
         print("Error: Missing required Twilio configuration")
-        print("Please set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_FROM_NUMBER")
+        print(
+            "Please set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_FROM_NUMBER"
+        )
         sys.exit(1)
 
     # Create and start server

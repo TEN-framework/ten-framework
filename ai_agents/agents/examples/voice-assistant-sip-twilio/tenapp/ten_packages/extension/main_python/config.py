@@ -15,18 +15,22 @@ class MainControlConfig(BaseModel):
 
     # Server configuration
     twilio_server_port: int = Field(
-        default=8000, description="Port for server (supports both HTTP API and WebSocket)"
+        default=8000,
+        description="Port for server (supports both HTTP API and WebSocket)",
     )
 
     # Public server URL configuration
     twilio_public_server_url: str = Field(
-        default="", description="Public server URL without protocol (e.g., 'your-domain.com:8000') - used for both media stream and webhooks"
+        default="",
+        description="Public server URL without protocol (e.g., 'your-domain.com:8000') - used for both media stream and webhooks",
     )
 
     # Protocol configuration
     twilio_use_https: bool = Field(
-        default=True, description="Use HTTPS for webhooks (True) or HTTP (False)"
+        default=True,
+        description="Use HTTPS for webhooks (True) or HTTP (False)",
     )
     twilio_use_wss: bool = Field(
-        default=True, description="Use WSS for media stream (True) or WS (False)"
+        default=True,
+        description="Use WSS for media stream (True) or WS (False)",
     )

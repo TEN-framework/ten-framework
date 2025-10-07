@@ -22,6 +22,7 @@ from pydantic import BaseModel, Field
 
 class TwilioServerConfig(BaseModel):
     """Configuration for Twilio server"""
+
     # Twilio configuration
     twilio_account_sid: str = Field(
         default="", description="Twilio Account SID"
@@ -38,15 +39,18 @@ class TwilioServerConfig(BaseModel):
 
     # Public server URL configuration
     twilio_public_server_url: str = Field(
-        default="", description="Public server URL without protocol (e.g., 'your-domain.com:9000') - used for both media stream and webhooks"
+        default="",
+        description="Public server URL without protocol (e.g., 'your-domain.com:9000') - used for both media stream and webhooks",
     )
 
     # Protocol configuration
     twilio_use_https: bool = Field(
-        default=True, description="Use HTTPS for webhooks (True) or HTTP (False)"
+        default=True,
+        description="Use HTTPS for webhooks (True) or HTTP (False)",
     )
     twilio_use_wss: bool = Field(
-        default=True, description="Use WSS for media stream (True) or WS (False)"
+        default=True,
+        description="Use WSS for media stream (True) or WS (False)",
     )
 
 
@@ -82,7 +86,7 @@ class TwilioServer:
         if not logger.handlers:
             handler = logging.StreamHandler()
             formatter = logging.Formatter(
-                '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+                "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
             )
             handler.setFormatter(formatter)
             logger.addHandler(handler)
@@ -107,14 +111,18 @@ class TwilioServer:
                 cwd=tenapp_dir,
                 stdout=None,  # Use parent's stdout
                 stderr=subprocess.STDOUT,  # Redirect stderr to stdout
-                preexec_fn=os.setsid  # Create new process group
+                preexec_fn=os.setsid,  # Create new process group
             )
 
-            self.logger.info(f"Tenapp process started with PID: {self.tenapp_process.pid}")
+            self.logger.info(
+                f"Tenapp process started with PID: {self.tenapp_process.pid}"
+            )
             self.logger.info("Tenapp output will be displayed in this console")
 
             # Start monitoring thread
-            monitor_thread = threading.Thread(target=self._monitor_tenapp_process)
+            monitor_thread = threading.Thread(
+                target=self._monitor_tenapp_process
+            )
             monitor_thread.daemon = True
             monitor_thread.start()
 
@@ -135,8 +143,12 @@ class TwilioServer:
             if self.tenapp_process.poll() is not None:
                 # Process has exited
                 return_code = self.tenapp_process.returncode
-                self.logger.warning(f"Tenapp process exited with code: {return_code}")
-                self.logger.info("Shutting down Twilio server due to tenapp exit")
+                self.logger.warning(
+                    f"Tenapp process exited with code: {return_code}"
+                )
+                self.logger.info(
+                    "Shutting down Twilio server due to tenapp exit"
+                )
 
                 # Signal shutdown
                 self.shutdown_event.set()
@@ -161,8 +173,12 @@ class TwilioServer:
                     self.tenapp_process.wait(timeout=10)
                 except subprocess.TimeoutExpired:
                     # Force kill if it doesn't terminate gracefully
-                    self.logger.warning("Tenapp process didn't terminate gracefully, force killing")
-                    os.killpg(os.getpgid(self.tenapp_process.pid), signal.SIGKILL)
+                    self.logger.warning(
+                        "Tenapp process didn't terminate gracefully, force killing"
+                    )
+                    os.killpg(
+                        os.getpgid(self.tenapp_process.pid), signal.SIGKILL
+                    )
                     self.tenapp_process.wait()
 
                 self.logger.info("Tenapp process stopped")
@@ -173,7 +189,6 @@ class TwilioServer:
 
     def _setup_routes(self):
         """Setup FastAPI routes for configuration and health check"""
-
 
         @self.app.get("/health")
         async def health_check():
@@ -193,7 +208,9 @@ class TwilioServer:
             if self.config.twilio_public_server_url:
                 if ":" in self.config.twilio_public_server_url:
                     try:
-                        tenapp_port = int(self.config.twilio_public_server_url.split(":")[-1])
+                        tenapp_port = int(
+                            self.config.twilio_public_server_url.split(":")[-1]
+                        )
                     except ValueError:
                         tenapp_port = 9000
 
@@ -203,7 +220,9 @@ class TwilioServer:
 
             if self.config.twilio_public_server_url:
                 ws_protocol = "wss" if self.config.twilio_use_wss else "ws"
-                http_protocol = "https" if self.config.twilio_use_https else "http"
+                http_protocol = (
+                    "https" if self.config.twilio_use_https else "http"
+                )
                 media_ws_url = f"{ws_protocol}://{self.config.twilio_public_server_url}/media"
                 webhook_url = f"{http_protocol}://{self.config.twilio_public_server_url}/webhook/status"
 
@@ -213,21 +232,29 @@ class TwilioServer:
                     "server_port": self.config.twilio_server_port,
                     "tenapp_port": tenapp_port,
                     "tenapp_url": f"http://localhost:{tenapp_port}",
-                    "public_server_url": self.config.twilio_public_server_url if self.config.twilio_public_server_url else None,
+                    "public_server_url": (
+                        self.config.twilio_public_server_url
+                        if self.config.twilio_public_server_url
+                        else None
+                    ),
                     "use_https": self.config.twilio_use_https,
                     "use_wss": self.config.twilio_use_wss,
-                    "media_stream_enabled": bool(self.config.twilio_public_server_url),
+                    "media_stream_enabled": bool(
+                        self.config.twilio_public_server_url
+                    ),
                     "media_ws_url": media_ws_url,
-                    "webhook_enabled": bool(self.config.twilio_public_server_url),
+                    "webhook_enabled": bool(
+                        self.config.twilio_public_server_url
+                    ),
                     "webhook_url": webhook_url,
                 }
             )
 
-
-
     async def start_server(self, host: str = "0.0.0.0", port: int = 8080):
         """Start the server and tenapp process"""
-        self.logger.info(f"Starting Twilio Configuration Server on {host}:{port}")
+        self.logger.info(
+            f"Starting Twilio Configuration Server on {host}:{port}"
+        )
 
         # Start tenapp process first
         if not self._start_tenapp_process():
@@ -238,10 +265,7 @@ class TwilioServer:
         await asyncio.sleep(2)
 
         config = uvicorn.Config(
-            app=self.app,
-            host=host,
-            port=port,
-            log_level="info"
+            app=self.app, host=host, port=port, log_level="info"
         )
 
         server = uvicorn.Server(config)
@@ -270,7 +294,8 @@ async def main():
         twilio_from_number=os.getenv("TWILIO_FROM_NUMBER", ""),
         twilio_server_port=int(os.getenv("TWILIO_HTTP_PORT", "8080")),
         twilio_public_server_url=os.getenv("TWILIO_PUBLIC_SERVER_URL", ""),
-        twilio_use_https=os.getenv("TWILIO_USE_HTTPS", "false").lower() == "true",
+        twilio_use_https=os.getenv("TWILIO_USE_HTTPS", "false").lower()
+        == "true",
         twilio_use_wss=os.getenv("TWILIO_USE_WSS", "false").lower() == "true",
     )
 

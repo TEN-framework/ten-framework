@@ -98,10 +98,14 @@ class MainControlExtension(AsyncExtension):
 
             # Start the server as a background task using configured port
             self.server_task = asyncio.create_task(
-                self.server_instance.start_server(port=self.config.twilio_server_port)
+                self.server_instance.start_server(
+                    port=self.config.twilio_server_port
+                )
             )
 
-            self.ten_env.log_info(f"Started Twilio call server on port {self.config.twilio_server_port} (HTTP + WebSocket)")
+            self.ten_env.log_info(
+                f"Started Twilio call server on port {self.config.twilio_server_port} (HTTP + WebSocket)"
+            )
 
             # Wait a moment for the server to start
             await asyncio.sleep(1)
@@ -125,7 +129,9 @@ class MainControlExtension(AsyncExtension):
                 try:
                     await asyncio.wait_for(self.server_task, timeout=5.0)
                 except asyncio.TimeoutError:
-                    self.ten_env.log_warning("Server task didn't stop gracefully")
+                    self.ten_env.log_warning(
+                        "Server task didn't stop gracefully"
+                    )
                 except asyncio.CancelledError:
                     pass  # Expected when cancelling
 
@@ -150,12 +156,19 @@ class MainControlExtension(AsyncExtension):
 
                 # Make API call to end the call
                 import aiohttp
+
                 async with aiohttp.ClientSession() as session:
-                    async with session.delete(f"http://localhost:{self.config.twilio_server_port}/api/call/{call_sid}") as response:
+                    async with session.delete(
+                        f"http://localhost:{self.config.twilio_server_port}/api/call/{call_sid}"
+                    ) as response:
                         if response.status == 200:
-                            self.ten_env.log_info(f"Call {call_sid} ended successfully")
+                            self.ten_env.log_info(
+                                f"Call {call_sid} ended successfully"
+                            )
                         else:
-                            self.ten_env.log_warning(f"Failed to end call {call_sid} via API: {response.status}")
+                            self.ten_env.log_warning(
+                                f"Failed to end call {call_sid} via API: {response.status}"
+                            )
 
             # Cleanup local resources
             if call_sid in self.active_call_sessions:
@@ -167,10 +180,14 @@ class MainControlExtension(AsyncExtension):
                     os.remove(self.audio_dump_files[call_sid])
                     del self.audio_dump_files[call_sid]
                 except Exception as e:
-                    self.ten_env.log_warning(f"Failed to cleanup audio file for {call_sid}: {str(e)}")
+                    self.ten_env.log_warning(
+                        f"Failed to cleanup audio file for {call_sid}: {str(e)}"
+                    )
 
         except Exception as e:
-            self.ten_env.log_error(f"Error during call cleanup for {call_sid}: {str(e)}")
+            self.ten_env.log_error(
+                f"Error during call cleanup for {call_sid}: {str(e)}"
+            )
 
     # === Register handlers with decorators ===
     @agent_event_handler(UserJoinedEvent)
@@ -192,7 +209,9 @@ class MainControlExtension(AsyncExtension):
 
     @agent_event_handler(ASRResultEvent)
     async def _on_asr_result(self, event: ASRResultEvent):
-        self.ten_env.log_info(f"[MainControlExtension] ASR Result: {event.text}")
+        self.ten_env.log_info(
+            f"[MainControlExtension] ASR Result: {event.text}"
+        )
         self.session_id = event.metadata.get("session_id", "100")
         stream_id = int(self.session_id)
         if not event.text:
@@ -234,7 +253,9 @@ class MainControlExtension(AsyncExtension):
             self._setup_audio_dump_directory()
 
             # WebSocket server is now handled by the main server in server.py
-            ten_env.log_info("WebSocket server is integrated with the main HTTP server")
+            ten_env.log_info(
+                "WebSocket server is integrated with the main HTTP server"
+            )
 
     async def on_stop(self, ten_env: AsyncTenEnv):
         ten_env.log_info("[MainControlExtension] on_stop")
@@ -357,10 +378,14 @@ class MainControlExtension(AsyncExtension):
     def _setup_audio_dump_directory(self):
         """Setup directory for audio dump files"""
         # Use configured directory or default
-        self.audio_dump_dir = getattr(self.config, 'audio_dump_directory', "/tmp/twilio_audio_dumps")
+        self.audio_dump_dir = getattr(
+            self.config, "audio_dump_directory", "/tmp/twilio_audio_dumps"
+        )
         os.makedirs(self.audio_dump_dir, exist_ok=True)
         if self.ten_env:
-            self.ten_env.log_info(f"Audio dump directory created: {self.audio_dump_dir}")
+            self.ten_env.log_info(
+                f"Audio dump directory created: {self.audio_dump_dir}"
+            )
 
     async def _forward_audio_to_ten(self, audio_payload: str, call_sid: str):
         """Forward audio data to TEN framework and dump PCM audio"""
@@ -372,7 +397,9 @@ class MainControlExtension(AsyncExtension):
             mulaw_data = base64.b64decode(audio_payload)
 
             # Convert μ-law to PCM
-            pcm_data = audioop.ulaw2lin(mulaw_data, 2)  # 2 bytes per sample (16-bit)
+            pcm_data = audioop.ulaw2lin(
+                mulaw_data, 2
+            )  # 2 bytes per sample (16-bit)
 
             # Dump PCM audio to file
             # await self._dump_pcm_audio(pcm_data, call_sid)
@@ -389,7 +416,15 @@ class MainControlExtension(AsyncExtension):
             audio_frame.set_data_fmt(AudioFrameDataFmt.INTERLEAVE)
             audio_frame.set_samples_per_channel(len(pcm_data) // (2 * 1))
             audio_frame.set_property_int("stream_id", 54321)
-            audio_frame.set_dests([Loc(app_uri="", graph_id="", extension_name="streamid_adapter")])
+            audio_frame.set_dests(
+                [
+                    Loc(
+                        app_uri="",
+                        graph_id="",
+                        extension_name="streamid_adapter",
+                    )
+                ]
+            )
 
             await self.ten_env.send_audio_frame(audio_frame)
 
@@ -409,17 +444,21 @@ class MainControlExtension(AsyncExtension):
             filepath = os.path.join(self.audio_dump_dir, filename)
 
             # Create empty file to initialize
-            with open(filepath, 'wb') as f:
+            with open(filepath, "wb") as f:
                 pass  # Create empty file
 
             self.audio_dump_files[call_sid] = filepath
 
             if self.ten_env:
-                self.ten_env.log_info(f"Initialized audio dump file: {filepath}")
+                self.ten_env.log_info(
+                    f"Initialized audio dump file: {filepath}"
+                )
 
         except Exception as e:
             if self.ten_env:
-                self.ten_env.log_error(f"Failed to initialize audio dump file: {e}")
+                self.ten_env.log_error(
+                    f"Failed to initialize audio dump file: {e}"
+                )
 
     async def _dump_pcm_audio(self, audio_data: bytes, call_sid: str):
         """Dump PCM audio data to file"""
@@ -434,11 +473,15 @@ class MainControlExtension(AsyncExtension):
                 return
 
             # Write PCM audio data to file
-            with open(filepath, 'ab') as f:  # 'ab' mode for appending binary data
+            with open(
+                filepath, "ab"
+            ) as f:  # 'ab' mode for appending binary data
                 f.write(audio_data)
 
             if self.ten_env:
-                self.ten_env.log_info(f"Dumped {len(audio_data)} bytes of PCM audio (converted from μ-law) to {filepath}")
+                self.ten_env.log_info(
+                    f"Dumped {len(audio_data)} bytes of PCM audio (converted from μ-law) to {filepath}"
+                )
 
         except Exception as e:
             if self.ten_env:
@@ -455,7 +498,9 @@ class MainControlExtension(AsyncExtension):
                 return
 
             # Convert PCM to μ-law for Twilio
-            mulaw_data = audioop.lin2ulaw(audio_data, 2)  # 2 bytes per sample (16-bit)
+            mulaw_data = audioop.lin2ulaw(
+                audio_data, 2
+            )  # 2 bytes per sample (16-bit)
 
             # Encode μ-law audio data to base64
             audio_base64 = base64.b64encode(mulaw_data).decode("utf-8")
@@ -472,7 +517,9 @@ class MainControlExtension(AsyncExtension):
             if self.ten_env:
                 self.ten_env.log_error(f"Failed to send audio to Twilio: {e}")
 
-    async def _cleanup_call_after_delay(self, call_sid: str, delay_seconds: int):
+    async def _cleanup_call_after_delay(
+        self, call_sid: str, delay_seconds: int
+    ):
         """Clean up call session after a delay"""
         await asyncio.sleep(delay_seconds)
 
