@@ -7,7 +7,6 @@ NPM_INSTALL_CMD=${NPM_INSTALL_CMD:-"npm install"}
 install_nodejs_deps() {
   local dir=$1
   local name=$2
-  local is_extension=${3:-false}
 
   if [[ -f "$dir/package.json" ]]; then
     echo "Installing $name Node.js dependencies..."
@@ -16,19 +15,6 @@ install_nodejs_deps() {
       echo "Error: Failed to install $name dependencies"
       exit 1
     }
-
-    # For extensions, also run npm run build if build script exists
-    if [[ "$is_extension" == "true" ]]; then
-      if npm run build --dry-run >/dev/null 2>&1; then
-        echo "Building $name..."
-        npm run build || {
-          echo "Error: Failed to build $name"
-          exit 1
-        }
-      else
-        echo "No build script found for $name, skipping build step"
-      fi
-    fi
   fi
 }
 
@@ -104,14 +90,14 @@ main() {
 
   # Install Node.js dependencies
   echo "=== Installing Node.js Dependencies ==="
-  install_nodejs_deps "$APP_HOME" "main app" false
-  install_nodejs_deps "$APP_HOME/../frontend" "frontend" false
-  install_nodejs_deps "$APP_HOME/../server" "server" false
+  install_nodejs_deps "$APP_HOME" "main app"
+  install_nodejs_deps "$APP_HOME/../frontend" "frontend"
+  install_nodejs_deps "$APP_HOME/../server" "server"
 
   # Install Node.js dependencies for extensions
   for dir in "$APP_HOME/ten_packages/extension"/* "$APP_HOME/ten_packages/system"/*; do
     if [[ -d "$dir" && -f "$dir/package.json" ]]; then
-      install_nodejs_deps "$dir" "$(basename "$dir")" true
+      install_nodejs_deps "$dir" "$(basename "$dir")"
     fi
   done
 

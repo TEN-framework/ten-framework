@@ -165,8 +165,8 @@
     {
       "type": "extension",
       "name": "azure_asr_python",
-      "version": "0.2.1",
-      "hash": "4cba8a24797ddb5d51758baa9c9a42e34b2e1ec43c1b34fe992e8aa8d79010ee",
+      "version": "0.2.2",
+      "hash": "519e0eb0656b0ab9d5af9dfbf23db6b40e7a474a1301d01aa6a38b6ab8b0dd0f",
       "dependencies": [
         {
           "type": "system",
@@ -199,8 +199,8 @@
     {
       "type": "extension",
       "name": "bytedance_llm_based_asr",
-      "version": "0.2.3",
-      "hash": "deb69a9d7223536e772fe08a7f0adc69d4525b99a08551a8dc5b73ce9f2adf3d",
+      "version": "0.2.4",
+      "hash": "94a78f8c205a8b1d8c6462e445de579656be1096762852d4c1571d306f1893c7",
       "dependencies": [
         {
           "type": "system",
@@ -216,8 +216,8 @@
     {
       "type": "extension",
       "name": "deepgram_asr_python",
-      "version": "0.2.1",
-      "hash": "0f304e0d46889d4ab0ea994e23ec58697ea6a4b087251605958190ea2dcab1ef",
+      "version": "0.2.2",
+      "hash": "635fa11ecbad2afcfdf43d643c23168db3077ebe3acfb862f46bffb15d082834",
       "dependencies": [
         {
           "type": "system",
@@ -318,8 +318,8 @@
     {
       "type": "extension",
       "name": "tencent_asr_python",
-      "version": "0.2.6",
-      "hash": "8710cf31993cd4e0ed39ea185e14f8b22af5a99ffbeee3e6592b6a09e90fd0f0",
+      "version": "0.2.7",
+      "hash": "3957301485ac7e16452c8a4a22858689b3f76751fe057ce2e6428ba427e77d99",
       "dependencies": [
         {
           "type": "system",
@@ -552,8 +552,8 @@
     {
       "type": "extension",
       "name": "google_tts_python",
-      "version": "0.2.2",
-      "hash": "c8144f286cfe252bc03a2751e4eb4a44dc03e125e6765ab05cb195a6db7fd1bc",
+      "version": "0.2.3",
+      "hash": "21161cb128f26ab15fb7cfe7d85d12bcb87d001f83927b8fbf38207069efaff5",
       "dependencies": [
         {
           "type": "system",
@@ -586,8 +586,8 @@
     {
       "type": "extension",
       "name": "humeai_tts_python",
-      "version": "0.2.1",
-      "hash": "0fb7f1c1981b3f30e9a82ed87736b8396b332764ed7e873fd763de7f28813ef8",
+      "version": "0.2.2",
+      "hash": "5e139ba40a7a353618f024868353e4fe26793832117ce40b330ccef70d1e7e08",
       "dependencies": [
         {
           "type": "system",
@@ -796,7 +796,7 @@
       "type": "system",
       "name": "agora_rtc_sdk",
       "version": "4.4.32-140",
-      "hash": "a49b6fce6002f2218520e53be1fb3b039138e6228650f385633cc126771264cd",
+      "hash": "8ef4d46f8b3cb9a7e7874abb412cfaf6a1098ec37623f188d13399927d75ade6",
       "supports": [
         {
           "os": "linux",

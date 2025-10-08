@@ -24,7 +24,7 @@ tasks:
     internal: true
     dir: ./tenapp
     cmds:
-      - ./scripts/install_python_deps.sh
+      - ./scripts/install_deps.sh
 
   build-api-server:
     desc: build api server
