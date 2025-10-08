@@ -57,7 +57,7 @@ type StartReq struct {
 	WorkerHttpServerPort int32                             `json:"worker_http_server_port,omitempty"`
 	Properties           map[string]map[string]interface{} `json:"properties,omitempty"`
 	QuitTimeoutSeconds   int                               `json:"timeout,omitempty"`
-	TenappDir            string                            `json:"tenapp_dir,omitempty"`
+	TenappDir            string                            `json:"tenapp_dir,omitempty"` // IGNORED for security - always uses launch tenapp_dir
 }
 
 type StopReq struct {
@@ -283,14 +283,12 @@ func (s *HttpServer) handlerStart(c *gin.Context) {
 
 	req.WorkerHttpServerPort = getHttpServerPort()
 
-	// Use launch tenapp_dir as default, override with request tenapp_dir if specified
+	// Security: Always use launch tenapp_dir, ignore request tenapp_dir to prevent path traversal attacks
 	tenappDir := s.config.TenappDir
 	if req.TenappDir != "" {
-		tenappDir = req.TenappDir
-		slog.Info("Using request tenapp_dir", "requestId", req.RequestId, "tenappDir", tenappDir, logTag)
-	} else {
-		slog.Info("Using launch tenapp_dir", "requestId", req.RequestId, "tenappDir", tenappDir, logTag)
+		slog.Warn("Ignoring request tenapp_dir for security", "requestId", req.RequestId, "requestedTenappDir", req.TenappDir, logTag)
 	}
+	slog.Info("Using launch tenapp_dir", "requestId", req.RequestId, "tenappDir", tenappDir, logTag)
 
 	propertyJsonFile, logFile, err := s.processProperty(&req, tenappDir)
 	if err != nil {
