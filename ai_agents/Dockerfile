@@ -30,7 +30,7 @@ RUN apt-get clean && apt-get update && apt-get install -y --no-install-recommend
 
 WORKDIR /app
 
-COPY --from=builder /app/agents/.release/ agents/
+COPY --from=builder /app/${USE_AGENT}/tenapp/.release/ agents/
 COPY --from=builder /app/server/bin/api /app/server/bin/api
 COPY --from=builder /usr/local/lib /usr/local/lib
 COPY --from=builder /usr/lib/python3 /usr/lib/python3
