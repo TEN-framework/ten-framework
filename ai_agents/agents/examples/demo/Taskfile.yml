@@ -1,6 +1,6 @@
 version: "3"
 
-dotenv: ["../../../.env"]
+dotenv: ["/app/.env"]
 
 tasks:
   # install scripts
@@ -28,7 +28,7 @@ tasks:
 
   build-api-server:
     desc: build api server
-    dir: ../../../server
+    dir: /app/server
     cmds:
       - go mod tidy && go mod download && go build -o bin/api main.go
 
@@ -63,7 +63,7 @@ tasks:
 
   run-api-server:
     desc: run api server
-    dir: ../../../server
+    dir: /app/server
     cmds:
       - ./bin/api -tenapp_dir={{.PWD}}/tenapp
 
@@ -79,4 +79,4 @@ tasks:
   release:
     desc: release
     cmds:
-      - ../../scripts/release.sh {{.PWD}}/tenapp
+      - /app/agents/scripts/release.sh {{.PWD}}/tenapp
