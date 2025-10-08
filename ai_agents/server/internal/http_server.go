@@ -13,7 +13,6 @@ import (
 	"log/slog"
 	"mime/multipart"
 	"net/http"
-	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -457,8 +456,16 @@ func (s *HttpServer) handlerVectorDocumentUpload(c *gin.Context) {
 
 	slog.Info("handlerVectorDocumentUpload start", "channelName", req.ChannelName, "requestId", req.RequestId, logTag)
 
+	// Validate channel name to prevent path injection
+	safeChannelName, err := sanitizeChannelName(req.ChannelName)
+	if err != nil {
+		slog.Error("Invalid channel name in upload", "channelName", req.ChannelName, "requestId", req.RequestId, "err", err, logTag)
+		s.output(c, codeErrParamsInvalid, http.StatusBadRequest)
+		return
+	}
+
 	file := req.File
-	uploadFile := fmt.Sprintf("%s/file-%s-%d%s", s.config.LogPath, gmd5.MustEncryptString(req.ChannelName), time.Now().UnixNano(), filepath.Ext(file.Filename))
+	uploadFile := fmt.Sprintf("%s/file-%s-%d%s", s.config.LogPath, gmd5.MustEncryptString(safeChannelName), time.Now().UnixNano(), filepath.Ext(file.Filename))
 	if err := c.SaveUploadedFile(file, uploadFile); err != nil {
 		slog.Error("handlerVectorDocumentUpload save file failed", "err", err, "channelName", req.ChannelName, "requestId", req.RequestId, logTag)
 		s.output(c, codeErrSaveFileFailed, http.StatusBadRequest)
@@ -466,12 +473,12 @@ func (s *HttpServer) handlerVectorDocumentUpload(c *gin.Context) {
 	}
 
 	// Generate collection
-	collection := fmt.Sprintf("a%s_%d", gmd5.MustEncryptString(req.ChannelName), time.Now().UnixNano())
+	collection := fmt.Sprintf("a%s_%d", gmd5.MustEncryptString(safeChannelName), time.Now().UnixNano())
 	fileName := filepath.Base(file.Filename)
 
 	// update worker
 	worker := workers.Get(req.ChannelName).(*Worker)
-	err := worker.update(&WorkerUpdateReq{
+	err = worker.update(&WorkerUpdateReq{
 		RequestId:   req.RequestId,
 		ChannelName: req.ChannelName,
 		Collection:  collection,
@@ -738,14 +745,27 @@ func (s *HttpServer) processProperty(req *StartReq, tenappDir string) (propertyJ
 		slog.Info("LogPath is writable", "requestId", req.RequestId, "tempDir", tempDir, logTag)
 	}
 
-	propertyJsonFile = filepath.Join(tempDir, fmt.Sprintf("property-%s-%s.json", url.QueryEscape(req.ChannelName), ts))
+	// Validate and sanitize channel name to prevent path injection
+	safeChannelName, err := sanitizeChannelName(req.ChannelName)
+	if err != nil {
+		slog.Error("Invalid channel name", "channelName", req.ChannelName, "requestId", req.RequestId, "err", err, logTag)
+		return "", "", fmt.Errorf("invalid channel name: %w", err)
+	}
+
+	propertyJsonFile = filepath.Join(tempDir, fmt.Sprintf("property-%s-%s.json", safeChannelName, ts))
 	// Ensure absolute path for property.json file
 	propertyJsonFile, err = filepath.Abs(propertyJsonFile)
 	if err != nil {
 		slog.Error("Failed to get absolute path for property.json", "err", err, "requestId", req.RequestId, logTag)
-		return
+		return "", "", err
 	}
-	logFile = fmt.Sprintf("%s/app-%s-%s.log", s.config.LogPath, url.QueryEscape(req.ChannelName), ts)
+
+	// Validate that the final path is within the expected directory
+	if !isPathSafe(propertyJsonFile, tempDir) {
+		slog.Error("Path traversal detected", "propertyJsonFile", propertyJsonFile, "tempDir", tempDir, "requestId", req.RequestId, logTag)
+		return "", "", fmt.Errorf("path traversal detected in property file path")
+	}
+	logFile = fmt.Sprintf("%s/app-%s-%s.log", s.config.LogPath, safeChannelName, ts)
 
 	// Debug logging
 	slog.Info("Writing temporary property.json file", "requestId", req.RequestId, "propertyJsonFile", propertyJsonFile, "logPath", s.config.LogPath, logTag)
@@ -817,4 +837,72 @@ func (s *HttpServer) Start() {
 
 	go timeoutWorkers()
 	r.Run(fmt.Sprintf(":%s", s.config.Port))
+}
+
+// sanitizeChannelName validates and sanitizes channel name to prevent path injection
+func sanitizeChannelName(channelName string) (string, error) {
+	if channelName == "" {
+		return "", fmt.Errorf("channel name cannot be empty")
+	}
+
+	// Check length limit
+	if len(channelName) > 100 {
+		return "", fmt.Errorf("channel name too long")
+	}
+
+	// Check for path traversal characters
+	if strings.Contains(channelName, "..") ||
+	   strings.Contains(channelName, "/") ||
+	   strings.Contains(channelName, "\\") ||
+	   strings.Contains(channelName, "\x00") {
+		return "", fmt.Errorf("channel name contains invalid characters")
+	}
+
+	// Check if starts with dot (hidden file)
+	if strings.HasPrefix(channelName, ".") {
+		return "", fmt.Errorf("channel name cannot start with dot")
+	}
+
+	// Sanitize the channel name for safe use in filenames
+	sanitized := strings.ReplaceAll(channelName, "/", "_")
+	sanitized = strings.ReplaceAll(sanitized, "\\", "_")
+	sanitized = strings.ReplaceAll(sanitized, "..", "__")
+	sanitized = strings.ReplaceAll(sanitized, "\x00", "")
+
+	// Remove any other potentially dangerous characters
+	sanitized = strings.ReplaceAll(sanitized, ":", "_")
+	sanitized = strings.ReplaceAll(sanitized, "*", "_")
+	sanitized = strings.ReplaceAll(sanitized, "?", "_")
+	sanitized = strings.ReplaceAll(sanitized, "\"", "_")
+	sanitized = strings.ReplaceAll(sanitized, "<", "_")
+	sanitized = strings.ReplaceAll(sanitized, ">", "_")
+	sanitized = strings.ReplaceAll(sanitized, "|", "_")
+
+	// Limit length after sanitization
+	if len(sanitized) > 50 {
+		sanitized = sanitized[:50]
+	}
+
+	// If result is empty, use default value
+	if sanitized == "" {
+		sanitized = "default"
+	}
+
+	return sanitized, nil
+}
+
+// isPathSafe validates that the given path is within the expected base directory
+func isPathSafe(path, baseDir string) bool {
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		return false
+	}
+
+	absBase, err := filepath.Abs(baseDir)
+	if err != nil {
+		return false
+	}
+
+	// Check if the path is within the base directory
+	return strings.HasPrefix(absPath, absBase)
 }
