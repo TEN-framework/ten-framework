@@ -9,8 +9,8 @@ WORKDIR /app
 COPY . .
 # COPY agents/${SESSION_CONTROL_CONF} agents/session_control.conf
 
-RUN task clean && task use AGENT=${USE_AGENT} && \
-  cd agents && ./scripts/package.sh
+RUN task clean && cd agents/${USE_AGENT} && \
+  task install && task release
 
 FROM ubuntu:22.04
 
