@@ -69,8 +69,8 @@
     {
       "type": "extension",
       "name": "deepgram_asr_python",
-      "version": "0.2.1",
-      "hash": "0f304e0d46889d4ab0ea994e23ec58697ea6a4b087251605958190ea2dcab1ef",
+      "version": "0.2.2",
+      "hash": "635fa11ecbad2afcfdf43d643c23168db3077ebe3acfb862f46bffb15d082834",
       "dependencies": [
         {
           "type": "system",

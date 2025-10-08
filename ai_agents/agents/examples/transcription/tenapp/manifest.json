@@ -35,7 +35,6 @@
     }
   ],
   "scripts": {
-    "start": "scripts/start.sh",
-    "build": "scripts/install_python_deps.sh"
+    "start": "scripts/start.sh"
   }
 }
