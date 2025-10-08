@@ -83,3 +83,10 @@ tasks:
       - task: run-frontend
       - task: run-api-server
       - task: run-ngrok
+
+
+  # release scripts
+  release:
+    desc: release
+    cmds:
+      - ../../scripts/release.sh {{.PWD}}/tenapp

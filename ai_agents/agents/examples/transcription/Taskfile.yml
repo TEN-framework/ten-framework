@@ -73,3 +73,10 @@ tasks:
       - task: run-gd-server
       - task: run-frontend
       - task: run-api-server
+
+
+  # release scripts
+  release:
+    desc: release
+    cmds:
+      - ../../scripts/release.sh {{.PWD}}/tenapp
