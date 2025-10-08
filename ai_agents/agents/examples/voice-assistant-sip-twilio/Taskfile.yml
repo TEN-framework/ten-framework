@@ -1,6 +1,6 @@
 version: "3"
 
-dotenv: ["/app/.env"]
+dotenv: ["../../../.env"]
 
 tasks:
   run-server:
