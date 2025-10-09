@@ -52,7 +52,7 @@ env:
   DEMO_IMAGE_NAME: ten_agent_demo
   TEN_EXAMPLE_DEMO_IMAGE_NAME: ten_agent_example_demo
   TEN_EXAMPLE_VOICE_ASSISTANT_IMAGE_NAME: ten_agent_example_voice_assistant
-
+  TEN_EXAMPLE_VOICE_ASSISTANT_RE_AGENT_IMAGE_NAME: ten_agent_example_voice_assistant_realtime
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -86,6 +86,18 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
           dockerfile: ./agents/examples/voice-assistant/Dockerfile
+          registry: ghcr.io
+          workdir: ./ai_agents/
+          tags: "${{ github.ref == 'refs/heads/main' && 'latest,' || '' }}${{ steps.pre-step.outputs.image-tag }}"
+          no_push: ${{ github.event_name == 'pull_request' }}
+
+      - name: Build & Publish Docker Image for examples/voice-assistant-realtime Agent
+        uses: elgohr/Publish-Docker-Github-Action@v5
+        with:
+          name: ${{ github.repository_owner }}/${{ env.TEN_EXAMPLE_VOICE_ASSISTANT_RE_AGENT_IMAGE_NAME }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          dockerfile: ./agents/examples/voice-assistant-realtime/Dockerfile
           registry: ghcr.io
           workdir: ./ai_agents/
           tags: "${{ github.ref == 'refs/heads/main' && 'latest,' || '' }}${{ steps.pre-step.outputs.image-tag }}"
