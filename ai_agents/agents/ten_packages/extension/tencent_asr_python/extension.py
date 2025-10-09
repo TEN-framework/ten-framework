@@ -238,7 +238,7 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
             ModuleError(
                 module="asr",
                 code=ModuleErrorCode.NON_FATAL_ERROR.value,
-                message=response.result or "unknown error",
+                message=response.model_dump_json(),
                 vendor_info=ModuleErrorVendorInfo(
                     vendor=self.vendor(),
                     code=str(response.code),
@@ -255,7 +255,8 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
         response.code: 9999 is TencentAsrClient error, 9998 is WebSocketClient error.
         response.message = "error"
         response.voice_id is the voice_id of the request.
-        response.result is the Exception instance.
+        response.result is the str of the Exception instance.
+        error is the Exception instance.
         """
         self.ten_env.log_error(
             f"vendor_error: on_asr_error {response.model_dump_json()}",
