@@ -5,16 +5,27 @@ ARG USE_AGENT=agents/examples/voice-assistant
 WORKDIR /app
 
 COPY .env.example .env
-COPY agents/examples/voice-assistant agents/examples/voice-assistant
 COPY server/ server/
 COPY agents/scripts/ agents/scripts/
 COPY agents/ten_packages/ agents/ten_packages/
 COPY playground/ playground/
 
+# Copy tenapp files explicitly to avoid symlink issues
+COPY ${USE_AGENT}/tenapp/go.* ${USE_AGENT}/tenapp/
+COPY ${USE_AGENT}/tenapp/main.go ${USE_AGENT}/tenapp/
+COPY ${USE_AGENT}/tenapp/manifest* ${USE_AGENT}/tenapp/
+COPY ${USE_AGENT}/tenapp/property.json ${USE_AGENT}/tenapp/
+COPY ${USE_AGENT}/tenapp/scripts/ ${USE_AGENT}/tenapp/scripts/
+
+# Copy extension directories that are actual directories (not symlinks)
+COPY ${USE_AGENT}/tenapp/ten_packages/extension/main_python/ ${USE_AGENT}/tenapp/ten_packages/extension/main_python/
+
+# Copy other example files
+COPY ${USE_AGENT}/README.md ${USE_AGENT}/
+COPY ${USE_AGENT}/Taskfile*.yml ${USE_AGENT}/
+
 RUN cd /app/${USE_AGENT} && \
   task install && task release
-
-RUN mv /app/${USE_AGENT}/tenapp/.release/ agents/.release/
 
 # Build frontend in builder stage (npm install already done by task install)
 WORKDIR /app/playground
@@ -22,6 +33,8 @@ RUN NEXT_PUBLIC_EDIT_GRAPH_MODE=false npm run build
 WORKDIR /app
 
 FROM ubuntu:22.04
+
+ARG USE_AGENT=agents/examples/voice-assistant
 
 RUN apt-get clean && apt-get update && apt-get install -y --no-install-recommends \
   libasound2 \
@@ -47,7 +60,7 @@ RUN sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b /usr/loc
 
 WORKDIR /app
 
-COPY --from=builder /app/agents/.release/ /app/agents/
+COPY --from=builder /app/${USE_AGENT}/tenapp/.release/ /app/agents/
 COPY --from=builder /app/server/bin/api /app/server/bin/api
 COPY --from=builder /usr/local/lib /usr/local/lib
 COPY --from=builder /usr/lib/python3 /usr/lib/python3
@@ -57,7 +70,7 @@ COPY --from=builder /usr/local/bin/tman /usr/local/bin/tman
 COPY --from=builder /app/playground/ /app/playground/
 
 # Copy Docker Taskfile
-COPY agents/examples/voice-assistant/Taskfile.docker.yml /app/Taskfile.docker.yml
+COPY --from=builder /app/${USE_AGENT}/Taskfile.docker.yml /app/Taskfile.docker.yml
 
 EXPOSE 8080 3000
 

@@ -5,15 +5,28 @@ ARG USE_AGENT=agents/examples/demo
 WORKDIR /app
 
 COPY .env.example .env
-COPY agents/examples/demo agents/examples/demo
 COPY server/ server/
 COPY agents/scripts/ agents/scripts/
 COPY agents/ten_packages/ agents/ten_packages/
 
+# Copy tenapp files explicitly to avoid symlink issues
+COPY ${USE_AGENT}/tenapp/go.* ${USE_AGENT}/tenapp/
+COPY ${USE_AGENT}/tenapp/main.go ${USE_AGENT}/tenapp/
+COPY ${USE_AGENT}/tenapp/manifest* ${USE_AGENT}/tenapp/
+COPY ${USE_AGENT}/tenapp/property.json ${USE_AGENT}/tenapp/
+COPY ${USE_AGENT}/tenapp/scripts/ ${USE_AGENT}/tenapp/scripts/
+
+# Copy extension directories that are actual directories (not symlinks)
+COPY ${USE_AGENT}/tenapp/ten_packages/extension/main_cascade_python/ ${USE_AGENT}/tenapp/ten_packages/extension/main_cascade_python/
+COPY ${USE_AGENT}/tenapp/ten_packages/extension/main_realtime_python/ ${USE_AGENT}/tenapp/ten_packages/extension/main_realtime_python/
+
+# Copy other example files
+COPY ${USE_AGENT}/README.md ${USE_AGENT}/
+COPY ${USE_AGENT}/Taskfile*.yml ${USE_AGENT}/
+COPY ${USE_AGENT}/frontend/ ${USE_AGENT}/frontend/
+
 RUN cd /app/${USE_AGENT} && \
   task install && task release
-
-RUN mv /app/${USE_AGENT}/tenapp/.release/ agents/.release/
 
 # Build frontend in builder stage (npm install already done by task install)
 WORKDIR /app/agents/examples/demo/frontend
@@ -21,6 +34,8 @@ RUN npm run build
 WORKDIR /app
 
 FROM ubuntu:22.04
+
+ARG USE_AGENT=agents/examples/demo
 
 RUN apt-get clean && apt-get update && apt-get install -y --no-install-recommends \
   libasound2 \
@@ -46,7 +61,7 @@ RUN sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b /usr/loc
 
 WORKDIR /app
 
-COPY --from=builder /app/agents/.release/ /app/agents/
+COPY --from=builder /app/${USE_AGENT}/tenapp/.release/ /app/agents/
 COPY --from=builder /app/server/bin/api /app/server/bin/api
 COPY --from=builder /usr/local/lib /usr/local/lib
 COPY --from=builder /usr/lib/python3 /usr/lib/python3
@@ -56,7 +71,7 @@ COPY --from=builder /usr/local/bin/tman /usr/local/bin/tman
 COPY --from=builder /app/agents/examples/demo/frontend/ /app/frontend/
 
 # Copy Docker Taskfile
-COPY agents/examples/demo/Taskfile.docker.yml /app/Taskfile.docker.yml
+COPY --from=builder /app/${USE_AGENT}/Taskfile.docker.yml /app/Taskfile.docker.yml
 
 EXPOSE 8080 3000
 
