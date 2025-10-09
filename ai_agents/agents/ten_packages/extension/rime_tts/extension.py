@@ -281,7 +281,7 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
 
             if t.text.strip() != "":
                 await self.client.send_text(t)
-            elif self.request_start_ts and t.text_input_end:
+            if self.request_start_ts and t.text_input_end:
                 request_event_interval = int(
                     (datetime.now() - self.request_start_ts).total_seconds()
                     * 1000
