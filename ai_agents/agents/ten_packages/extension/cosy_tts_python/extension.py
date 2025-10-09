@@ -63,6 +63,8 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
         self.first_chunk: bool = True
         # Count of audio chunks received
         self.chunk_count: int = 0
+        # Flag indicating if the first request is being processed
+        self.is_first_message_of_request: bool = False
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         try:
@@ -147,7 +149,7 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
 
             if self.client is None:
                 self.ten_env.log_error("Client is not initialized")
-                raise ValueError("Client is not initialized")
+                return
 
             if t.request_id != self.current_request_id:
                 self.ten_env.log_info(
@@ -164,6 +166,7 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
                 self.first_chunk = True
                 self.chunk_count = 0
                 self.request_start_ts = datetime.now()
+                self.is_first_message_of_request = True
 
                 if t.metadata is not None:
                     self.current_turn_id = t.metadata.get("turn_id", -1)
@@ -182,8 +185,26 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
                 category=LOG_CATEGORY_VENDOR,
             )
 
+            if (
+                self.is_first_message_of_request
+                and t.text.strip() == ""
+                and t.text_input_end
+            ):
+                self.ten_env.log_info(
+                    f"KEYPOINT skip empty text, request_id: {t.request_id}"
+                )
+                await self._handle_tts_audio_end()
+                self.current_request_id = None
+                return
+
             # Start audio synthesis (returns immediately)
-            self.client.synthesize_audio(t.text, t.text_input_end)
+            if t.text.strip() == "":
+                self.ten_env.log_info(
+                    f"KEYPOINT skip empty text, request_id: {t.request_id}"
+                )
+            else:
+                self.client.synthesize_audio(t.text, t.text_input_end)
+                self.is_first_message_of_request = False
 
             # Handle text input end
             if t.text_input_end:
@@ -471,6 +492,7 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
             )
 
             self.current_request_id = None
+            self.is_first_message_of_request = False
 
             self.ten_env.log_info(
                 f"KEYPOINT Sent TTS audio end event, interval: {request_event_interval}ms, duration: {self.request_total_audio_duration_ms}ms, current_request_id: {self.current_request_id}, current_turn_id: {self.current_turn_id}"
@@ -539,6 +561,7 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
                 code=code,
                 vendor_info=vendor_info,
             ),
+            self.current_turn_id,
         )
 
     async def _write_audio_to_dump_file(self, audio_chunk: bytes) -> None:
