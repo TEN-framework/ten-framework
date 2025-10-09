@@ -809,9 +809,19 @@ async fn test_get_compatible_messages_with_interface_based_on_app_base_dir() {
 
     let designer_state = Arc::new(designer_state);
 
-    let app_base_dir =
-        std::fs::canonicalize("tests/test_data/graph_add_connection_to_extension_with_interface_2")
-            .unwrap();
+    let app_base_dir = {
+        let path = std::path::Path::new(
+            "tests/test_data/graph_add_connection_to_extension_with_interface_2",
+        );
+        match std::fs::canonicalize(path) {
+            Ok(canonical_path) => canonical_path,
+            Err(_) => {
+                // Fallback to absolute path construction for Windows compatibility
+                let current_dir = std::env::current_dir().unwrap();
+                current_dir.join(path)
+            }
+        }
+    };
 
     {
         let mut pkgs_cache = designer_state.pkgs_cache.write().await;

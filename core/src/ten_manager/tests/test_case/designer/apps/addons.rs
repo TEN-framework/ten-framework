@@ -239,9 +239,19 @@ mod tests {
 
         let designer_state = Arc::new(designer_state);
         // Get the real path of the app base dir.
-        let app_base_dir =
-            std::fs::canonicalize("tests/test_data/extension_interface_reference_to_app_base_dir")
-                .unwrap();
+        let app_base_dir = {
+            let path = std::path::Path::new(
+                "tests/test_data/extension_interface_reference_to_app_base_dir",
+            );
+            match std::fs::canonicalize(path) {
+                Ok(canonical_path) => canonical_path,
+                Err(_) => {
+                    // Fallback to absolute path construction for Windows compatibility
+                    let current_dir = std::env::current_dir().unwrap();
+                    current_dir.join(path)
+                }
+            }
+        };
 
         {
             let mut pkgs_cache = designer_state.pkgs_cache.write().await;
