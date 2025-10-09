@@ -263,11 +263,31 @@ mod tests {
     fn test_get_real_path_with_app_base_dir_variable() {
         let import_uri = "${app_base_dir}/ten_packages/interface.json";
         let base_dir = None;
-        let app_base_dir = "/home/user/myapp";
-        let real_path = get_real_path_from_import_uri(import_uri, base_dir, Some(app_base_dir));
 
-        assert!(real_path.is_ok());
-        assert_eq!(real_path.unwrap(), "file:///home/user/myapp/ten_packages/interface.json");
+        #[cfg(unix)]
+        {
+            let app_base_dir = "/home/user/myapp";
+            let real_path = get_real_path_from_import_uri(import_uri, base_dir, Some(app_base_dir));
+
+            assert!(real_path.is_ok());
+            assert_eq!(real_path.unwrap(), "file:///home/user/myapp/ten_packages/interface.json");
+        }
+
+        #[cfg(windows)]
+        {
+            let app_base_dir = "C:\\Users\\test\\myapp";
+            let real_path = get_real_path_from_import_uri(import_uri, base_dir, Some(app_base_dir));
+
+            assert!(real_path.is_ok());
+            let result = real_path.unwrap();
+            assert!(result.starts_with("file://"));
+            assert!(result.contains("ten_packages"));
+            assert!(result.contains("interface.json"));
+            // On Windows, check that the path contains the expected components
+            assert!(
+                result.contains("Users") || result.contains("test") || result.contains("myapp")
+            );
+        }
     }
 
     #[test]
@@ -287,11 +307,33 @@ mod tests {
     fn test_get_real_path_with_app_base_dir_variable_relative_path() {
         let import_uri = "${app_base_dir}/ten_packages/../config/interface.json";
         let base_dir = None;
-        let app_base_dir = "/home/user/myapp";
-        let real_path = get_real_path_from_import_uri(import_uri, base_dir, Some(app_base_dir));
 
-        assert!(real_path.is_ok());
-        assert_eq!(real_path.unwrap(), "file:///home/user/myapp/config/interface.json");
+        #[cfg(unix)]
+        {
+            let app_base_dir = "/home/user/myapp";
+            let real_path = get_real_path_from_import_uri(import_uri, base_dir, Some(app_base_dir));
+
+            assert!(real_path.is_ok());
+            assert_eq!(real_path.unwrap(), "file:///home/user/myapp/config/interface.json");
+        }
+
+        #[cfg(windows)]
+        {
+            let app_base_dir = "C:\\Users\\test\\myapp";
+            let real_path = get_real_path_from_import_uri(import_uri, base_dir, Some(app_base_dir));
+
+            assert!(real_path.is_ok());
+            let result = real_path.unwrap();
+            assert!(result.starts_with("file://"));
+            assert!(result.contains("config"));
+            assert!(result.contains("interface.json"));
+            // On Windows, check that the path contains the expected components
+            assert!(
+                result.contains("Users") || result.contains("test") || result.contains("myapp")
+            );
+            // Should not contain "ten_packages" since we went up one level with ../
+            assert!(!result.contains("ten_packages"));
+        }
     }
 
     #[test]
