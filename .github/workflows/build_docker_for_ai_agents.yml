@@ -53,6 +53,12 @@ env:
   TEN_EXAMPLE_DEMO_IMAGE_NAME: ten_agent_example_demo
   TEN_EXAMPLE_VOICE_ASSISTANT_IMAGE_NAME: ten_agent_example_voice_assistant
   TEN_EXAMPLE_VOICE_ASSISTANT_RE_AGENT_IMAGE_NAME: ten_agent_example_voice_assistant_realtime
+  TEN_EXAMPLE_STEPFUN_DEMO_IMAGE_NAME: ten_agent_example_stepfun_demo
+  TEN_EXAMPLE_TRANSCRIPTION_IMAGE_NAME: ten_agent_example_transcription
+  TEN_EXAMPLE_VOICE_ASSISTANT_NODEJS_IMAGE_NAME: ten_agent_example_voice_assistant_nodejs
+  TEN_EXAMPLE_VOICE_ASSISTANT_VIDEO_IMAGE_NAME: ten_agent_example_voice_assistant_video
+  TEN_EXAMPLE_VOICE_ASSISTANT_WITH_MEMU_IMAGE_NAME: ten_agent_example_voice_assistant_with_memu
+  TEN_EXAMPLE_VOICE_ASSISTANT_WITH_TEN_VAD_IMAGE_NAME: ten_agent_example_voice_assistant_with_ten_vad
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -98,6 +104,78 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
           dockerfile: ./agents/examples/voice-assistant-realtime/Dockerfile
+          registry: ghcr.io
+          workdir: ./ai_agents/
+          tags: "${{ github.ref == 'refs/heads/main' && 'latest,' || '' }}${{ steps.pre-step.outputs.image-tag }}"
+          no_push: ${{ github.event_name == 'pull_request' }}
+
+      - name: Build & Publish Docker Image for examples/stepfun-demo Agent
+        uses: elgohr/Publish-Docker-Github-Action@v5
+        with:
+          name: ${{ github.repository_owner }}/${{ env.TEN_EXAMPLE_STEPFUN_DEMO_IMAGE_NAME }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          dockerfile: ./agents/examples/stepfun-demo/Dockerfile
+          registry: ghcr.io
+          workdir: ./ai_agents/
+          tags: "${{ github.ref == 'refs/heads/main' && 'latest,' || '' }}${{ steps.pre-step.outputs.image-tag }}"
+          no_push: ${{ github.event_name == 'pull_request' }}
+
+      - name: Build & Publish Docker Image for examples/transcription Agent
+        uses: elgohr/Publish-Docker-Github-Action@v5
+        with:
+          name: ${{ github.repository_owner }}/${{ env.TEN_EXAMPLE_TRANSCRIPTION_IMAGE_NAME }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          dockerfile: ./agents/examples/transcription/Dockerfile
+          registry: ghcr.io
+          workdir: ./ai_agents/
+          tags: "${{ github.ref == 'refs/heads/main' && 'latest,' || '' }}${{ steps.pre-step.outputs.image-tag }}"
+          no_push: ${{ github.event_name == 'pull_request' }}
+
+      - name: Build & Publish Docker Image for examples/voice-assistant-nodejs Agent
+        uses: elgohr/Publish-Docker-Github-Action@v5
+        with:
+          name: ${{ github.repository_owner }}/${{ env.TEN_EXAMPLE_VOICE_ASSISTANT_NODEJS_IMAGE_NAME }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          dockerfile: ./agents/examples/voice-assistant-nodejs/Dockerfile
+          registry: ghcr.io
+          workdir: ./ai_agents/
+          tags: "${{ github.ref == 'refs/heads/main' && 'latest,' || '' }}${{ steps.pre-step.outputs.image-tag }}"
+          no_push: ${{ github.event_name == 'pull_request' }}
+
+      - name: Build & Publish Docker Image for examples/voice-assistant-video Agent
+        uses: elgohr/Publish-Docker-Github-Action@v5
+        with:
+          name: ${{ github.repository_owner }}/${{ env.TEN_EXAMPLE_VOICE_ASSISTANT_VIDEO_IMAGE_NAME }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          dockerfile: ./agents/examples/voice-assistant-video/Dockerfile
+          registry: ghcr.io
+          workdir: ./ai_agents/
+          tags: "${{ github.ref == 'refs/heads/main' && 'latest,' || '' }}${{ steps.pre-step.outputs.image-tag }}"
+          no_push: ${{ github.event_name == 'pull_request' }}
+
+      - name: Build & Publish Docker Image for examples/voice-assistant-with-memU Agent
+        uses: elgohr/Publish-Docker-Github-Action@v5
+        with:
+          name: ${{ github.repository_owner }}/${{ env.TEN_EXAMPLE_VOICE_ASSISTANT_WITH_MEMU_IMAGE_NAME }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          dockerfile: ./agents/examples/voice-assistant-with-memU/Dockerfile
+          registry: ghcr.io
+          workdir: ./ai_agents/
+          tags: "${{ github.ref == 'refs/heads/main' && 'latest,' || '' }}${{ steps.pre-step.outputs.image-tag }}"
+          no_push: ${{ github.event_name == 'pull_request' }}
+
+      - name: Build & Publish Docker Image for examples/voice-assistant-with-ten-vad Agent
+        uses: elgohr/Publish-Docker-Github-Action@v5
+        with:
+          name: ${{ github.repository_owner }}/${{ env.TEN_EXAMPLE_VOICE_ASSISTANT_WITH_TEN_VAD_IMAGE_NAME }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          dockerfile: ./agents/examples/voice-assistant-with-ten-vad/Dockerfile
           registry: ghcr.io
           workdir: ./ai_agents/
           tags: "${{ github.ref == 'refs/heads/main' && 'latest,' || '' }}${{ steps.pre-step.outputs.image-tag }}"
