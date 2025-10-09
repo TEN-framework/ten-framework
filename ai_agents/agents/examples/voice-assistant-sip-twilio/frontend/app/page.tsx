@@ -31,7 +31,16 @@ export default function Home() {
                 // Use default values if config loading fails
                 setServerConfig({
                     twilio_from_number: '+1234567890',
-                    server_port: 8000
+                    server_port: 8000,
+                    tenapp_port: 8080,
+                    tenapp_url: 'http://localhost:8080',
+                    public_server_url: 'http://localhost:8000',
+                    use_https: false,
+                    use_wss: false,
+                    media_stream_enabled: false,
+                    media_ws_url: 'ws://localhost:8000/ws',
+                    webhook_enabled: false,
+                    webhook_url: ''
                 });
             } finally {
                 setIsConfigLoading(false);

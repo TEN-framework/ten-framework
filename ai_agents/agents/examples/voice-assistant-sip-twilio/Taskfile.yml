@@ -3,12 +3,11 @@ version: "3"
 dotenv: ["../../../.env"]
 
 tasks:
-
   # install scripts
   install-frontend:
     desc: install frontend dependencies
     internal: true
-    dir: ../../../playground
+    dir: ./frontend
     cmds:
       - npm install --verbose
 
@@ -27,12 +26,6 @@ tasks:
     cmds:
       - ./scripts/install_python_deps.sh
 
-  build-api-server:
-    desc: build api server
-    dir: ../../../server
-    cmds:
-      - go mod tidy && go mod download && go build -o bin/api main.go
-
   install:
     desc: install dependencies
     dir: ./tenapp
@@ -40,8 +33,6 @@ tasks:
       - task: install-tenapp
       - task: install-tenapp-python-deps
       - task: install-frontend
-      - task: build-api-server
-
 
   # run scripts
   run-tenapp:
@@ -58,17 +49,15 @@ tasks:
 
   run-frontend:
     desc: run frontend
-    dir: ../../../playground
+    dir: ./frontend
     cmds:
       - npm run dev
 
   run-api-server:
     desc: run standalone Twilio HTTP server
-    dir: ./
-    env:
-      PYTHONPATH: "{{.PWD}}:{{.PYTHONPATH}}"
+    dir: ./server
     cmds:
-      - python3 server/main.py
+      - python3 main.py
 
   run-ngrok:
     desc: run ngrok tunnel for WSS support
@@ -83,7 +72,6 @@ tasks:
       - task: run-frontend
       - task: run-api-server
       - task: run-ngrok
-
 
   # release scripts
   release:
