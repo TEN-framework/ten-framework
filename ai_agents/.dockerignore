@@ -40,12 +40,6 @@ Thumbs.db
 *.swo
 *~
 
-# Environment files
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
 
 # Build artifacts
 bin/
@@ -64,6 +58,10 @@ BUILD.gn
 
 # Large directories not needed for demo
 esp32-client
+**/node_modules/
+**/.next/
+**/out/
+**/dist/
 agents/bin/
 agents/.gn
 agents/.gnfiles
