@@ -51,6 +51,7 @@ env:
   NON_EDIT_PLAYGROUND_IMAGE_NAME: ten_agent_non_edit_playground
   DEMO_IMAGE_NAME: ten_agent_demo
   TEN_EXAMPLE_DEMO_IMAGE_NAME: ten_agent_example_demo
+  TEN_EXAMPLE_VOICE_ASSISTANT_IMAGE_NAME: ten_agent_example_voice_assistant
 
 jobs:
   build:
@@ -66,13 +67,25 @@ jobs:
         shell: bash
         run: echo "image-tag=$(git describe --tags --always)" >> $GITHUB_OUTPUT
 
-      - name: Build & Publish Docker Image for Agents Server
+      - name: Build & Publish Docker Image for examples/demo Agent
         uses: elgohr/Publish-Docker-Github-Action@v5
         with:
           name: ${{ github.repository_owner }}/${{ env.TEN_EXAMPLE_DEMO_IMAGE_NAME }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
           dockerfile: ./agents/examples/demo/Dockerfile
+          registry: ghcr.io
+          workdir: ./ai_agents/
+          tags: "${{ github.ref == 'refs/heads/main' && 'latest,' || '' }}${{ steps.pre-step.outputs.image-tag }}"
+          no_push: ${{ github.event_name == 'pull_request' }}
+
+      - name: Build & Publish Docker Image for examples/voice-assistant Agent
+        uses: elgohr/Publish-Docker-Github-Action@v5
+        with:
+          name: ${{ github.repository_owner }}/${{ env.TEN_EXAMPLE_VOICE_ASSISTANT_IMAGE_NAME }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          dockerfile: ./agents/examples/voice-assistant/Dockerfile
           registry: ghcr.io
           workdir: ./ai_agents/
           tags: "${{ github.ref == 'refs/heads/main' && 'latest,' || '' }}${{ steps.pre-step.outputs.image-tag }}"
