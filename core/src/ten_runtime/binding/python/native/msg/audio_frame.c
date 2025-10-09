@@ -135,10 +135,12 @@ PyObject *ten_py_audio_frame_lock_buf(PyObject *self,
 
   if (!ten_msg_add_locked_res_buf(py_audio_frame->msg.c_msg, data->data,
                                   &err)) {
+    ten_error_deinit(&err);
     return ten_py_raise_py_runtime_error_exception(
         "Failed to lock buffer in video frame.");
   }
 
+  ten_error_deinit(&err);
   return PyMemoryView_FromMemory((char *)data->data, (Py_ssize_t)data->size,
                                  PyBUF_WRITE);
 }
@@ -157,11 +159,13 @@ PyObject *ten_py_audio_frame_unlock_buf(PyObject *self, PyObject *args) {
   Py_ssize_t size = 0;
   uint8_t *data = py_buf.buf;
   if (!data) {
+    PyBuffer_Release(&py_buf);
     return ten_py_raise_py_value_error_exception("Invalid buffer.");
   }
 
   size = py_buf.len;
   if (size <= 0) {
+    PyBuffer_Release(&py_buf);
     return ten_py_raise_py_value_error_exception("Invalid buffer size.");
   }
 
@@ -169,9 +173,14 @@ PyObject *ten_py_audio_frame_unlock_buf(PyObject *self, PyObject *args) {
   TEN_ERROR_INIT(err);
 
   if (!ten_msg_remove_locked_res_buf(py_audio_frame->msg.c_msg, data, &err)) {
+    PyBuffer_Release(&py_buf);
+    ten_error_deinit(&err);
     return ten_py_raise_py_runtime_error_exception(
         "Failed to unlock buffer in audio frame.");
   }
+
+  ten_error_deinit(&err);
+  PyBuffer_Release(&py_buf);
 
   Py_RETURN_NONE;
 }
