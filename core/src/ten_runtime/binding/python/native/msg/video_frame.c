@@ -116,10 +116,12 @@ PyObject *ten_py_video_frame_lock_buf(PyObject *self,
 
   if (!ten_msg_add_locked_res_buf(py_video_frame->msg.c_msg, data->data,
                                   &err)) {
-    TEN_ASSERT(0, "Should not happen.");
+    ten_error_deinit(&err);
     return ten_py_raise_py_system_error_exception(
         "Failed to lock buffer in video frame.");
   }
+
+  ten_error_deinit(&err);
 
   return PyMemoryView_FromMemory((char *)data->data, (Py_ssize_t)data->size,
                                  PyBUF_WRITE);
@@ -133,20 +135,19 @@ PyObject *ten_py_video_frame_unlock_buf(PyObject *self, PyObject *args) {
 
   Py_buffer py_buf;
   if (!PyArg_ParseTuple(args, "y*", &py_buf)) {
-    TEN_ASSERT(0, "Should not happen.");
     return ten_py_raise_py_value_error_exception("Invalid buffer.");
   }
 
   Py_ssize_t size = 0;
   uint8_t *data = py_buf.buf;
   if (!data) {
-    TEN_ASSERT(0, "Should not happen.");
+    PyBuffer_Release(&py_buf);
     return ten_py_raise_py_value_error_exception("Invalid buffer.");
   }
 
   size = py_buf.len;
   if (size <= 0) {
-    TEN_ASSERT(0, "Should not happen.");
+    PyBuffer_Release(&py_buf);
     return ten_py_raise_py_value_error_exception("Invalid buffer size.");
   }
 
@@ -154,10 +155,14 @@ PyObject *ten_py_video_frame_unlock_buf(PyObject *self, PyObject *args) {
   TEN_ERROR_INIT(err);
 
   if (!ten_msg_remove_locked_res_buf(py_video_frame->msg.c_msg, data, &err)) {
-    TEN_ASSERT(0, "Should not happen.");
+    PyBuffer_Release(&py_buf);
+    ten_error_deinit(&err);
     return ten_py_raise_py_system_error_exception(
         "Failed to unlock buffer in video frame.");
   }
+
+  PyBuffer_Release(&py_buf);
+  ten_error_deinit(&err);
 
   Py_RETURN_NONE;
 }

@@ -92,9 +92,12 @@ PyObject *ten_py_data_lock_buf(PyObject *self, TEN_UNUSED PyObject *args) {
   if (!ten_msg_add_locked_res_buf(py_data->msg.c_msg,
                                   ten_data_peek_buf(py_data->msg.c_msg)->data,
                                   &err)) {
+    ten_error_deinit(&err);
     return ten_py_raise_py_system_error_exception(
         "Failed to lock buffer in data.");
   }
+
+  ten_error_deinit(&err);
 
   ten_buf_t *result = ten_data_peek_buf(py_data->msg.c_msg);
 
@@ -115,11 +118,13 @@ PyObject *ten_py_data_unlock_buf(PyObject *self, PyObject *args) {
   Py_ssize_t size = 0;
   uint8_t *data = py_buf.buf;
   if (!data) {
+    PyBuffer_Release(&py_buf);
     return ten_py_raise_py_value_error_exception("Invalid buffer.");
   }
 
   size = py_buf.len;
   if (size <= 0) {
+    PyBuffer_Release(&py_buf);
     return ten_py_raise_py_value_error_exception("Invalid buffer size.");
   }
 
@@ -127,9 +132,14 @@ PyObject *ten_py_data_unlock_buf(PyObject *self, PyObject *args) {
   TEN_ERROR_INIT(err);
 
   if (!ten_msg_remove_locked_res_buf(py_data->msg.c_msg, data, &err)) {
+    PyBuffer_Release(&py_buf);
+    ten_error_deinit(&err);
     return ten_py_raise_py_system_error_exception(
         "Failed to unlock buffer in data.");
   }
+
+  PyBuffer_Release(&py_buf);
+  ten_error_deinit(&err);
 
   Py_RETURN_NONE;
 }
