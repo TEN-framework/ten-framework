@@ -183,6 +183,10 @@
 
 #define TEN_STR_DEFAULT_EXTENSION_GROUP "default_extension_group"
 #define TEN_STR_TEN_TEST_EXTENSION "ten:test_extension"
+#define TEN_STR_TEN_GRAPH_PROXY_EXTENSION "ten:graph_proxy_extension"
+#define TEN_STR_HOST_LOC "host_loc"
+#define TEN_STR_APP_URI "app_uri"
+#define TEN_STR_EXTENSION_NAME "extension_name"
 
 #define TEN_STR_MANIFEST_JSON "manifest.json"
 #define TEN_STR_MANUAL_TRIGGER_LIFE_CYCLE "manual_trigger_life_cycle"

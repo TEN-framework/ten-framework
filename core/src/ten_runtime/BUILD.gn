@@ -45,6 +45,7 @@ ten_target("ten_runtime_library") {
     "extension_store",
     "extension_thread",
     "global",
+    "graph_proxy",
     "metadata",
     "msg",
     "msg_conversion",
