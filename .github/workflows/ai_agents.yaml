@@ -19,6 +19,7 @@ on:
       - "ai_agents/esp32-client/**"
       - "ai_agents/Dockerfile"
       - "ai_agents/docker-compose.yml"
+      - "ai_agents/playground/**"
       - "ai_agents/agents/examples/demo/**"
   workflow_dispatch:
 
