@@ -1,13 +1,13 @@
 version: "3"
 
-dotenv: ["/app/.env"]
+dotenv: ["../../../.env"]
 
 tasks:
   # install scripts
   install-frontend:
     desc: install frontend dependencies
     internal: true
-    dir: /app/playground
+    dir: ../../../playground
     cmds:
       - npm install --verbose
 
@@ -28,7 +28,7 @@ tasks:
 
   build-api-server:
     desc: build api server
-    dir: /app/server
+    dir: ../../../server
     cmds:
       - go mod tidy && go mod download && go build -o bin/api main.go
 
@@ -57,13 +57,13 @@ tasks:
 
   run-frontend:
     desc: run frontend
-    dir: /app/playground
+    dir: ../../../playground
     cmds:
       - npm run dev
 
   run-api-server:
     desc: run api server
-    dir: /app/server
+    dir: ../../../server
     cmds:
       - ./bin/api -tenapp_dir={{.PWD}}/tenapp
 
@@ -79,4 +79,4 @@ tasks:
   release:
     desc: release
     cmds:
-      - /app/agents/scripts/release.sh {{.PWD}}/tenapp
+      - ../../scripts/release.sh {{.PWD}}/tenapp
