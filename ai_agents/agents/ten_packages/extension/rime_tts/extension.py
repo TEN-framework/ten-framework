@@ -281,7 +281,20 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
 
             if t.text.strip() != "":
                 await self.client.send_text(t)
-            if t.text_input_end:
+            elif self.request_start_ts and t.text_input_end:
+                request_event_interval = int(
+                    (datetime.now() - self.request_start_ts).total_seconds()
+                    * 1000
+                )
+                await self.send_tts_audio_end(
+                    self.current_request_id,
+                    request_event_interval,
+                    self.request_total_audio_duration,
+                    self.current_turn_id,
+                )
+                self.ten_env.log_debug(
+                    f"Sent TTS audio end event, interval: {request_event_interval}ms, duration: {self.request_total_audio_duration}ms"
+                )
                 self.ten_env.log_debug(
                     f"finish session for request ID: {t.request_id}"
                 )
