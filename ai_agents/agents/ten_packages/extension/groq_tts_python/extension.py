@@ -223,6 +223,7 @@ class GroqTTSExtension(AsyncTTS2BaseExtension):
                     module="tts",
                     code=ModuleErrorCode.NON_FATAL_ERROR.value,
                 ),
+                turn_id=turn_id,
             )
 
         if text_input_end and self.first_chunk_ts > 0:
@@ -254,20 +255,14 @@ class GroqTTSExtension(AsyncTTS2BaseExtension):
         )
         # check if request_id is in flush_request_ids
         if t.request_id in self.flush_request_ids:
-            error_msg = (
+            self.ten_env.log_debug(
                 f"Request ID {t.request_id} was flushed, ignoring TTS request"
             )
-            self.ten_env.log_debug(error_msg)
             return
 
         if t.request_id in self.last_end_request_ids:
-            await self.send_tts_error(
-                t.request_id,
-                ModuleError(
-                    message=f"End request ID: {t.request_id} is already ended, ignoring TTS request",
-                    module="tts",
-                    code=ModuleErrorCode.NON_FATAL_ERROR.value,
-                ),
+            self.ten_env.log_debug(
+                f"Request ID {t.request_id} was ended, ignoring TTS request"
             )
             return
 
