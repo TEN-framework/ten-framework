@@ -1,0 +1,83 @@
+{
+  "type": "extension",
+  "name": "tavus_python",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.11"
+    },
+    {
+      "type": "system",
+      "name": "ten_ai_base",
+      "version": "0.7"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "**.py",
+      "README.md"
+    ]
+  },
+  "api": {
+    "property": {
+      "properties": {
+        "tavus_api_key": {
+          "type": "string",
+          "description": "Tavus API key from platform.tavus.io/api-keys"
+        },
+        "persona_id": {
+          "type": "string",
+          "description": "Tavus persona ID for conversation behavior"
+        },
+        "replica_id": {
+          "type": "string",
+          "description": "Tavus replica ID for the AI avatar"
+        },
+        "conversation_name": {
+          "type": "string",
+          "description": "Name for the conversation"
+        },
+        "max_call_duration": {
+          "type": "int64",
+          "description": "Maximum call duration in seconds"
+        },
+        "enable_recording": {
+          "type": "bool",
+          "description": "Enable conversation recording"
+        },
+        "language": {
+          "type": "string",
+          "description": "Conversation language (e.g., 'en', 'es', 'multilingual')"
+        }
+      }
+    },
+    "cmd_in": [
+      {
+        "name": "on_user_joined",
+        "description": "User joined the conversation"
+      },
+      {
+        "name": "on_user_left",
+        "description": "User left the conversation"
+      },
+      {
+        "name": "start_conversation",
+        "description": "Start a Tavus conversation"
+      },
+      {
+        "name": "end_conversation",
+        "description": "End the Tavus conversation"
+      }
+    ],
+    "data_out": [
+      {
+        "name": "tavus_conversation_created",
+        "description": "Conversation created with URL"
+      }
+    ]
+  }
+}
