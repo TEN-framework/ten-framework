@@ -4,11 +4,25 @@ on:
   pull_request:
     types: [opened, synchronize]
     # Optional: Only run on specific file changes
-    # paths:
-    #   - "src/**/*.ts"
-    #   - "src/**/*.tsx"
-    #   - "src/**/*.js"
-    #   - "src/**/*.jsx"
+    branches: ["main"]
+    paths-ignore:
+      - "core/**"
+      - "tests/**"
+      - "tools/**"
+      - "packages/**"
+      - "build/**"
+      - "third_party/**"
+      - ".devcontainer/**"
+      - ".github/**"
+      - "!.github/workflows/claude-code-review.yml"
+      - ".vscode/**"
+      - "**.md"
+      - "ai_agents/docs/**"
+      - "ai_agents/esp32-client/**"
+      - "ai_agents/Dockerfile"
+      - "ai_agents/docker-compose.yml"
+      - "ai_agents/playground/**"
+      - "ai_agents/agents/examples/demo/**"
 
 jobs:
   claude-review:
@@ -28,8 +42,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
 
       - name: Run Claude Code Review
         id: claude-review
@@ -54,4 +66,3 @@ jobs:
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
           # or https://docs.claude.com/en/docs/claude-code/cli-reference for available options
           claude_args: '--allowed-tools "Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*)"'
-
