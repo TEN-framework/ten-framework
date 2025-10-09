@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "cosy_tts_python",
-  "version": "0.2.1",
+  "version": "0.2.3",
   "dependencies": [
     {
       "type": "system",
@@ -22,7 +22,6 @@
       "**.tent",
       "**.py",
       "README.md",
-      "tests/**",
       "requirements.txt"
     ]
   },

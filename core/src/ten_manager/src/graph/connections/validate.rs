@@ -98,7 +98,7 @@ fn validate_msg_conversion_c_schema_oneway(
 
 async fn validate_msg_conversion_schema<'a>(
     pkgs_cache: &'a HashMap<String, PkgsInfoInApp>,
-    graph: &'a mut Graph,
+    graph: &'a Graph,
     graph_app_base_dir: &'a Option<String>,
     msg_conversion_validate_info: &'a MsgConversionValidateInfo<'a>,
 ) -> Result<()> {
@@ -111,6 +111,7 @@ async fn validate_msg_conversion_schema<'a>(
             msg_conversion_validate_info.src,
             msg_conversion_validate_info.msg_type,
             msg_conversion_validate_info.msg_names[0].as_str(),
+            MsgDirection::Out,
         )
         .await?;
 
@@ -120,6 +121,7 @@ async fn validate_msg_conversion_schema<'a>(
             msg_conversion_validate_info.dest,
             msg_conversion_validate_info.msg_type,
             msg_conversion_validate_info.msg_names[0].as_str(),
+            MsgDirection::In,
         )
         .await?;
 
@@ -139,6 +141,7 @@ async fn validate_msg_conversion_schema<'a>(
                     msg_conversion_validate_info.src.subgraph.as_ref().unwrap(),
                     msg_conversion_validate_info.msg_type,
                     msg_conversion_validate_info.msg_names[0].as_str(),
+                    MsgDirection::Out,
                 )
                 .await?;
             extension_node.app
@@ -155,6 +158,7 @@ async fn validate_msg_conversion_schema<'a>(
                     msg_conversion_validate_info.dest.subgraph.as_ref().unwrap(),
                     msg_conversion_validate_info.msg_type,
                     msg_conversion_validate_info.msg_names[0].as_str(),
+                    MsgDirection::In,
                 )
                 .await?;
             extension_node.app
@@ -323,7 +327,7 @@ fn find_pkg_infos<'a>(
 
 async fn get_src_and_dest_c_msg_schema<'a>(
     pkgs_cache: &'a HashMap<String, PkgsInfoInApp>,
-    graph: &mut Graph,
+    graph: &Graph,
     graph_app_base_dir: &Option<String>,
     msg_conversion_validate_info: &MsgConversionValidateInfo<'a>,
 ) -> Result<(Option<&'a TenMsgSchema>, Option<&'a TenMsgSchema>, Option<String>)> {
@@ -333,6 +337,7 @@ async fn get_src_and_dest_c_msg_schema<'a>(
             msg_conversion_validate_info.src,
             msg_conversion_validate_info.msg_type,
             msg_conversion_validate_info.msg_names[0].as_str(),
+            MsgDirection::Out,
         )
         .await?;
 
@@ -342,6 +347,7 @@ async fn get_src_and_dest_c_msg_schema<'a>(
             msg_conversion_validate_info.dest,
             msg_conversion_validate_info.msg_type,
             msg_conversion_validate_info.msg_names[0].as_str(),
+            MsgDirection::In,
         )
         .await?;
 
@@ -354,6 +360,7 @@ async fn get_src_and_dest_c_msg_schema<'a>(
                     msg_conversion_validate_info.src.subgraph.as_ref().unwrap(),
                     msg_conversion_validate_info.msg_type,
                     msg_conversion_validate_info.msg_names[0].as_str(),
+                    MsgDirection::Out,
                 )
                 .await?;
             extension_node.app
@@ -370,6 +377,7 @@ async fn get_src_and_dest_c_msg_schema<'a>(
                     msg_conversion_validate_info.dest.subgraph.as_ref().unwrap(),
                     msg_conversion_validate_info.msg_type,
                     msg_conversion_validate_info.msg_names[0].as_str(),
+                    MsgDirection::In,
                 )
                 .await?;
             extension_node.app
@@ -438,7 +446,7 @@ async fn get_src_and_dest_c_msg_schema<'a>(
 /// Checks schema compatibility between source and destination.
 async fn check_schema_compatibility<'a>(
     pkgs_cache: &'a HashMap<String, PkgsInfoInApp>,
-    graph: &mut Graph,
+    graph: &Graph,
     graph_app_base_dir: &Option<String>,
     msg_conversion_validate_info: &MsgConversionValidateInfo<'a>,
 ) -> Result<()> {
@@ -465,37 +473,72 @@ async fn check_schema_compatibility<'a>(
 
 pub async fn validate_connection_schema(
     pkgs_cache: &HashMap<String, PkgsInfoInApp>,
-    graph: &mut Graph,
+    graph: &Graph,
     graph_app_base_dir: &Option<String>,
     msg_conversion_validate_info: &MsgConversionValidateInfo<'_>,
 ) -> Result<()> {
-    // TODO: support selector node type.
-    if msg_conversion_validate_info.src.get_node_type()? != GraphNodeType::Selector
-        && msg_conversion_validate_info.dest.get_node_type()? != GraphNodeType::Selector
-    {
-        if msg_conversion_validate_info.msg_names.len() == 1
-            && msg_conversion_validate_info.msg_conversion.is_some()
-        {
-            validate_msg_conversion_schema(
-                pkgs_cache,
-                graph,
-                graph_app_base_dir,
-                msg_conversion_validate_info,
-            )
-            .await?;
-        } else if msg_conversion_validate_info.msg_conversion.is_none() {
-            check_schema_compatibility(
-                pkgs_cache,
-                graph,
-                graph_app_base_dir,
-                msg_conversion_validate_info,
-            )
-            .await?;
-        } else {
-            // msg_conversion is present but msg_names.len() != 1
-            return Err(anyhow::anyhow!(
-                "One and only one message name is allowed when msg_conversion is present"
-            ));
+    // Break down the selector nodes into individual nodes
+    let mut src_nodes = Vec::new();
+    let mut dest_nodes = Vec::new();
+
+    if msg_conversion_validate_info.src.get_node_type()? == GraphNodeType::Selector {
+        let node_name = msg_conversion_validate_info.src.get_node_name()?;
+        if let Some(nodes) = graph.get_nodes_by_selector_node_name(node_name) {
+            let locs: Vec<GraphLoc> = nodes.iter().map(|node| node.get_loc()).collect();
+            src_nodes.extend(locs);
+        }
+    } else {
+        src_nodes.push(msg_conversion_validate_info.src.clone());
+    }
+
+    if msg_conversion_validate_info.dest.get_node_type()? == GraphNodeType::Selector {
+        let node_name = msg_conversion_validate_info.dest.get_node_name()?;
+        if let Some(nodes) = graph.get_nodes_by_selector_node_name(node_name) {
+            let locs: Vec<GraphLoc> = nodes.iter().map(|node| node.get_loc()).collect();
+            dest_nodes.extend(locs);
+        }
+    } else {
+        dest_nodes.push(msg_conversion_validate_info.dest.clone());
+    }
+
+    assert!(!src_nodes.is_empty());
+    assert!(!dest_nodes.is_empty());
+
+    // Validate the connection schema for each combination of src and dest nodes
+    for src_node in src_nodes.clone() {
+        for dest_node in dest_nodes.clone() {
+            let each_node_info = MsgConversionValidateInfo {
+                src: &src_node,
+                dest: &dest_node,
+                msg_type: msg_conversion_validate_info.msg_type,
+                msg_names: msg_conversion_validate_info.msg_names,
+                msg_conversion: msg_conversion_validate_info.msg_conversion,
+            };
+
+            if each_node_info.msg_names.len() == 1
+                && each_node_info.msg_conversion.is_some()
+            {
+                validate_msg_conversion_schema(
+                    pkgs_cache,
+                    graph,
+                    graph_app_base_dir,
+                    &each_node_info,
+                )
+                .await?;
+            } else if each_node_info.msg_conversion.is_none() {
+                check_schema_compatibility(
+                    pkgs_cache,
+                    graph,
+                    graph_app_base_dir,
+                    &each_node_info,
+                )
+                .await?;
+            } else {
+                // msg_conversion is present but msg_names.len() != 1
+                return Err(anyhow::anyhow!(
+                    "One and only one message name is allowed when msg_conversion is present"
+                ));
+            }
         }
     }
 

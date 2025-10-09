@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "humeai_tts_python",
-  "version": "0.2.2",
+  "version": "0.2.4",
   "dependencies": [
     {
       "type": "system",
@@ -21,7 +21,6 @@
       "**.tent",
       "**.py",
       "README.md",
-      "tests/**",
       "requirements.txt"
     ]
   },
