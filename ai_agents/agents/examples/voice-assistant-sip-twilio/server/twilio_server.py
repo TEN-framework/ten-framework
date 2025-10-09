@@ -37,6 +37,11 @@ class TwilioServerConfig(BaseModel):
         default=8080, description="Port for server (process management)"
     )
 
+    # Tenapp configuration
+    tenapp_dir: str = Field(
+        default="", description="Path to tenapp directory"
+    )
+
     # Public server URL configuration
     twilio_public_server_url: str = Field(
         default="",
@@ -96,9 +101,13 @@ class TwilioServer:
     def _start_tenapp_process(self):
         """Start the tenapp process with logging"""
         try:
-            # Get the tenapp directory path
-            current_dir = Path(__file__).parent.parent
-            tenapp_dir = current_dir / "tenapp"
+            # Get the tenapp directory path from config
+            if self.config.tenapp_dir:
+                tenapp_dir = Path(self.config.tenapp_dir)
+            else:
+                # Fallback to default relative path
+                current_dir = Path(__file__).parent.parent
+                tenapp_dir = current_dir / "tenapp"
 
             if not tenapp_dir.exists():
                 self.logger.error(f"Tenapp directory not found: {tenapp_dir}")

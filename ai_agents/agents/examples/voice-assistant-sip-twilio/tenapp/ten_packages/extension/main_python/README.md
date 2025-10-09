@@ -14,6 +14,7 @@ The `main_python` extension acts as the orchestrator for AI agent conversations,
 - **Session Management**: Tracks user presence and manages conversation state
 - **Streaming Support**: Handles both final and intermediate results for smooth user experience
 - **Caption Generation**: Provides real-time captions for accessibility and logging
+- **Audio Sample Rate Conversion**: Automatically downsamples outgoing audio from 16000 Hz to 8000 Hz for Twilio compatibility and upsamples incoming audio from 8000 Hz to 16000 Hz
 
 ## API Interface
 

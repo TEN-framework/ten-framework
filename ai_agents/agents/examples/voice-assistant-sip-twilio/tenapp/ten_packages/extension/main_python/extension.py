@@ -46,12 +46,11 @@ class MainControlExtension(AsyncExtension):
         self.config: MainControlConfig = None
 
         # WebSocket and audio processing
-        self.active_call_sessions: Dict[str, Dict[str, Any]] = {}
         self.audio_dump_files: Dict[str, str] = {}  # call_sid -> filepath
 
         # Server management
         self.server_task: Optional[asyncio.Task] = None
-        self.server_instance: Optional[Any] = None
+        self.server_instance: Optional[TwilioCallServer] = None
         self.audio_dump_dir: str = ""
 
         self.stopped: bool = False
@@ -129,7 +128,7 @@ class MainControlExtension(AsyncExtension):
                 try:
                     await asyncio.wait_for(self.server_task, timeout=5.0)
                 except asyncio.TimeoutError:
-                    self.ten_env.log_warning(
+                    self.ten_env.log_warn(
                         "Server task didn't stop gracefully"
                     )
                 except asyncio.CancelledError:
@@ -151,7 +150,7 @@ class MainControlExtension(AsyncExtension):
         """End a call and cleanup resources"""
         try:
             # First, try to end the call via API
-            if call_sid in self.active_call_sessions:
+            if call_sid in self.server_instance.active_call_sessions:
                 self.ten_env.log_info(f"Ending call {call_sid} via API")
 
                 # Make API call to end the call
@@ -166,13 +165,13 @@ class MainControlExtension(AsyncExtension):
                                 f"Call {call_sid} ended successfully"
                             )
                         else:
-                            self.ten_env.log_warning(
+                            self.ten_env.log_warn(
                                 f"Failed to end call {call_sid} via API: {response.status}"
                             )
 
             # Cleanup local resources
-            if call_sid in self.active_call_sessions:
-                del self.active_call_sessions[call_sid]
+            if call_sid in self.server_instance.active_call_sessions:
+                del self.server_instance.active_call_sessions[call_sid]
 
             if call_sid in self.audio_dump_files:
                 # Clean up audio dump file
@@ -180,7 +179,7 @@ class MainControlExtension(AsyncExtension):
                     os.remove(self.audio_dump_files[call_sid])
                     del self.audio_dump_files[call_sid]
                 except Exception as e:
-                    self.ten_env.log_warning(
+                    self.ten_env.log_warn(
                         f"Failed to cleanup audio file for {call_sid}: {str(e)}"
                     )
 
@@ -262,7 +261,7 @@ class MainControlExtension(AsyncExtension):
         self.stopped = True
 
         # End all active calls and cleanup
-        for call_sid in list(self.active_call_sessions.keys()):
+        for call_sid in list(self.server_instance.active_call_sessions.keys()):
             await self._end_call_and_cleanup(call_sid)
 
         # Stop the server
@@ -281,11 +280,11 @@ class MainControlExtension(AsyncExtension):
     ) -> None:
         """Handle outgoing audio frames from TEN framework"""
         try:
-            if self.twilio_server and audio_frame.get_name() == "audio_out":
+            if audio_frame.get_name() == "pcm_frame":
                 audio_data = audio_frame.get_buf()
                 # Send audio to all active Twilio calls
-                for call_sid in self.twilio_server.active_call_sessions.keys():
-                    await self.twilio_server.send_audio_to_twilio(
+                for call_sid in self.server_instance.active_call_sessions.keys():
+                    await self.send_audio_to_twilio(
                         audio_data, call_sid
                     )
         except Exception as e:
@@ -410,7 +409,7 @@ class MainControlExtension(AsyncExtension):
             buf = audio_frame.lock_buf()
             buf[:] = pcm_data
             audio_frame.unlock_buf(buf)
-            audio_frame.set_sample_rate(8000)
+            audio_frame.set_sample_rate(8000)  # Twilio's fixed sample rate
             audio_frame.set_number_of_channels(1)
             audio_frame.set_bytes_per_sample(2)
             audio_frame.set_data_fmt(AudioFrameDataFmt.INTERLEAVE)
@@ -487,27 +486,74 @@ class MainControlExtension(AsyncExtension):
             if self.ten_env:
                 self.ten_env.log_error(f"Failed to dump PCM audio: {e}")
 
+    def _downsample_audio(self, audio_data: bytes, source_rate: int, target_rate: int) -> bytes:
+        """Downsample audio data from source rate to target rate"""
+        try:
+            if source_rate == target_rate:
+                return audio_data
+
+            # Convert bytearray to bytes if needed
+            if isinstance(audio_data, bytearray):
+                audio_data = bytes(audio_data)
+
+            # For 16000 Hz to 8000 Hz, use simple decimation (take every 2nd sample)
+            if source_rate == 16000 and target_rate == 8000:
+                # Simple decimation: take every 2nd sample (16-bit = 2 bytes per sample)
+                decimated_audio = bytearray()
+                for i in range(0, len(audio_data), 4):  # Skip every 2nd sample (4 bytes = 2 samples)
+                    if i + 1 < len(audio_data):
+                        decimated_audio.extend(audio_data[i:i+2])  # Take first sample (2 bytes)
+
+                return bytes(decimated_audio)
+
+            # For other conversions, use audioop.ratecv
+            import math
+
+            # Calculate the conversion ratio
+            gcd_rate = math.gcd(source_rate, target_rate)
+            old_rate = source_rate // gcd_rate
+            new_rate = target_rate // gcd_rate
+
+            # Convert audio using ratecv
+            converted_audio, _ = audioop.ratecv(
+                audio_data, 2, 1, old_rate, new_rate, None, None
+            )
+
+            return converted_audio
+
+        except Exception as e:
+            if self.ten_env:
+                self.ten_env.log_error(f"Failed to downsample audio: {e}")
+            return audio_data  # Return original data if conversion fails
+
     async def send_audio_to_twilio(self, audio_data: bytes, call_sid: str):
         """Send audio data to Twilio via WebSocket"""
         try:
-            if call_sid not in self.active_call_sessions:
+            if call_sid not in self.server_instance.active_call_sessions:
                 return
 
-            websocket = self.active_call_sessions[call_sid].get("websocket")
+            websocket = self.server_instance.active_call_sessions[call_sid].get("websocket")
             if not websocket:
                 return
 
+            # Downsample audio from 16000 Hz to 8000 Hz for Twilio
+            source_rate = 16000  # TTS generated audio sample rate
+            target_rate = 8000   # Twilio required sample rate
+            downsampled_audio = self._downsample_audio(audio_data, source_rate, target_rate)
+
             # Convert PCM to μ-law for Twilio
             mulaw_data = audioop.lin2ulaw(
-                audio_data, 2
+                downsampled_audio, 2
             )  # 2 bytes per sample (16-bit)
 
             # Encode μ-law audio data to base64
             audio_base64 = base64.b64encode(mulaw_data).decode("utf-8")
 
+            stream_sid = self.server_instance.active_call_sessions[call_sid].get("stream_sid")
+
             message = {
                 "event": "media",
-                "streamSid": call_sid,
+                "streamSid": stream_sid,
                 "media": {"payload": audio_base64},
             }
 

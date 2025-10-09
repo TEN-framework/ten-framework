@@ -57,7 +57,7 @@ tasks:
     desc: run standalone Twilio HTTP server
     dir: ./server
     cmds:
-      - python3 main.py
+      - python3 main.py --tenapp-dir ../tenapp
 
   run-ngrok:
     desc: run ngrok tunnel for WSS support

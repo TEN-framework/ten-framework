@@ -130,6 +130,19 @@
                   ]
                 }
               ]
+            },
+            {
+              "extension": "tts",
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "dest": [
+                    {
+                      "extension": "main_control"
+                    }
+                  ]
+                }
+              ]
             }
           ]
         }

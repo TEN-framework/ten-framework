@@ -8,7 +8,6 @@ tasks:
     dir: ./agents
     cmds:
       - tman run start
-    background: true
 
   run-twilio-server-prod:
     desc: run Twilio server in production
@@ -16,15 +15,13 @@ tasks:
     env:
       PYTHONPATH: "/app:/app/server:{{.PYTHONPATH}}"
     cmds:
-      - python3 main.py
-    background: true
+      - python3 main.py --tenapp-dir /app/agents
 
   run-frontend-prod:
     desc: run frontend in production
     dir: ./frontend
     cmds:
       - npm start
-    background: true
 
   run-ngrok-prod:
     desc: run ngrok tunnel for WebSocket support
@@ -36,7 +33,6 @@ tasks:
   run-prod:
     desc: run all services in production
     deps:
-      - task: run-tenapp-prod
       - task: run-twilio-server-prod
       - task: run-frontend-prod
       - task: run-ngrok-prod
