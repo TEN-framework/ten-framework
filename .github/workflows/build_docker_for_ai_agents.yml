@@ -71,7 +71,7 @@ jobs:
           name: ${{ github.repository_owner }}/${{ env.SERVER_IMAGE_NAME }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-          dockerfile: ./ai_agents/examples/demo/Dockerfile
+          dockerfile: ./ai_agents/agents/examples/demo/Dockerfile
           registry: ghcr.io
           workdir: ./ai_agents/
           tags: "${{ github.ref == 'refs/heads/main' && 'latest,' || '' }}${{ steps.pre-step.outputs.image-tag }}"
