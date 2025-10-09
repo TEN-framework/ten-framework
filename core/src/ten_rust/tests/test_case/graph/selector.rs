@@ -88,4 +88,27 @@ mod tests {
         assert_eq!(data[0].dest.len(), 1);
         assert_eq!(data[0].dest[0].loc.extension, Some("test_extension_4".to_string()));
     }
+
+    #[tokio::test]
+    async fn test_get_nodes_by_selector_node_name() {
+        use ten_rust::graph::Graph;
+
+        let graph_str = include_str!("../../test_data/graph_with_selector/graph_with_selector_1.json");
+        let graph = serde_json::from_str::<Graph>(graph_str).unwrap();
+        let nodes = graph.get_nodes_by_selector_node_name("selector_for_ext_1_and_2").unwrap();
+        assert_eq!(nodes.len(), 2);
+        assert_eq!(nodes[0].get_name(), "test_extension_1");
+        assert_eq!(nodes[1].get_name(), "test_extension_2");
+
+        let nodes = graph.get_nodes_by_selector_node_name("selector_for_ext_1_and_2_and_3").unwrap();
+        assert_eq!(nodes.len(), 3);
+        assert_eq!(nodes[0].get_name(), "test_extension_1");
+        assert_eq!(nodes[1].get_name(), "test_extension_2");
+        assert_eq!(nodes[2].get_name(), "test_extension_3");
+
+        let nodes = graph.get_nodes_by_selector_node_name("selector_for_ext_1_or_3").unwrap();
+        assert_eq!(nodes.len(), 2);
+        assert_eq!(nodes[0].get_name(), "test_extension_1");
+        assert_eq!(nodes[1].get_name(), "test_extension_3");
+    }
 }
