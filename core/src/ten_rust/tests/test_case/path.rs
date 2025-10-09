@@ -261,7 +261,7 @@ mod tests {
 
     #[test]
     fn test_get_real_path_with_app_base_dir_variable() {
-        let import_uri = "${app_base_dir}/ten_packages/interface.json";
+        let import_uri = "file://${app_base_dir}/ten_packages/interface.json";
         let base_dir = None;
 
         #[cfg(unix)]
@@ -292,7 +292,7 @@ mod tests {
 
     #[test]
     fn test_get_real_path_with_app_base_dir_variable_no_app_base_dir() {
-        let import_uri = "${app_base_dir}/ten_packages/interface.json";
+        let import_uri = "file://${app_base_dir}/ten_packages/interface.json";
         let base_dir = None;
         let app_base_dir = None;
         let real_path = get_real_path_from_import_uri(import_uri, base_dir, app_base_dir);
@@ -305,7 +305,7 @@ mod tests {
 
     #[test]
     fn test_get_real_path_with_app_base_dir_variable_relative_path() {
-        let import_uri = "${app_base_dir}/ten_packages/../config/interface.json";
+        let import_uri = "file://${app_base_dir}/ten_packages/../config/interface.json";
         let base_dir = None;
 
         #[cfg(unix)]
@@ -338,7 +338,7 @@ mod tests {
 
     #[test]
     fn test_get_real_path_with_app_base_dir_variable_windows_path() {
-        let import_uri = "${app_base_dir}/ten_packages/interface.json";
+        let import_uri = "file://${app_base_dir}/ten_packages/interface.json";
         let base_dir = None;
         let app_base_dir = "C:\\Users\\test\\myapp";
         let real_path = get_real_path_from_import_uri(import_uri, base_dir, Some(app_base_dir));

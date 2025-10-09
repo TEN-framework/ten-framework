@@ -76,6 +76,7 @@ impl PkgInfo {
         url: &str,
         manifest: &Manifest,
         property: &Option<Property>,
+        app_base_dir: Option<&str>,
     ) -> Result<Self> {
         let mut pkg_info = PkgInfo {
             manifest: manifest.clone(),
@@ -86,7 +87,7 @@ impl PkgInfo {
             url: url.to_string(),
             hash: String::new(),
 
-            schema_store: SchemaStore::from_manifest(manifest).await?,
+            schema_store: SchemaStore::from_manifest(manifest, app_base_dir).await?,
 
             is_local_dependency: false,
             local_dependency_path: None,
@@ -151,7 +152,7 @@ pub async fn get_pkg_info_from_path(
         (parse_property_in_folder(
             path,
             graphs_cache.as_mut().unwrap(),
-            app_base_dir,
+            app_base_dir.clone(),
             Some(manifest.type_and_name.pkg_type),
             Some(manifest.type_and_name.name.clone()),
         )
@@ -160,8 +161,13 @@ pub async fn get_pkg_info_from_path(
         None
     };
 
-    let mut pkg_info: PkgInfo =
-        PkgInfo::from_metadata(path.to_string_lossy().as_ref(), &manifest, &property).await?;
+    let mut pkg_info: PkgInfo = PkgInfo::from_metadata(
+        path.to_string_lossy().as_ref(),
+        &manifest,
+        &property,
+        app_base_dir.as_deref(),
+    )
+    .await?;
 
     pkg_info.is_installed = is_installed;
 

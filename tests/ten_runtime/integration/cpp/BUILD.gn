@@ -16,6 +16,7 @@ group("cpp") {
     "hello_world",
     "import_graph",
     "interface_schema_check",
+    "interface_schema_check_2",
     "large_result",
     "long_running",
     "restful",
