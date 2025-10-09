@@ -12,7 +12,7 @@ use crate::{
         ERR_MSG_GRAPH_LOCALHOST_FORBIDDEN_IN_MULTI_APP_MODE,
         ERR_MSG_GRAPH_LOCALHOST_FORBIDDEN_IN_SINGLE_APP_MODE,
     },
-    graph::{is_app_default_loc_or_none, AppUriDeclarationState},
+    graph::{is_app_default_loc_or_none, AppUriDeclarationState, connection::GraphLoc},
     pkg_info::localhost,
 };
 
@@ -206,6 +206,32 @@ impl GraphNode {
             GraphNode::Selector {
                 ..
             } => Ok(()),
+        }
+    }
+
+    pub fn get_loc(&self) -> GraphLoc {
+        match self {
+            GraphNode::Extension { content } => {
+                GraphLoc::with_app_and_type_and_name(
+                    content.app.clone(),
+                    GraphNodeType::Extension,
+                    content.name.clone(),
+                ).unwrap()
+            }
+            GraphNode::Subgraph { content } => {
+                GraphLoc::with_app_and_type_and_name(
+                    None,
+                    GraphNodeType::Subgraph,
+                    content.name.clone(),
+                ).unwrap()
+            }
+            GraphNode::Selector { content } => {
+                GraphLoc::with_app_and_type_and_name(
+                    None,
+                    GraphNodeType::Selector,
+                    content.name.clone(),
+                ).unwrap()
+            }
         }
     }
 
