@@ -561,6 +561,7 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
                 code=code,
                 vendor_info=vendor_info,
             ),
+            self.current_turn_id,
         )
 
     async def _write_audio_to_dump_file(self, audio_chunk: bytes) -> None:
