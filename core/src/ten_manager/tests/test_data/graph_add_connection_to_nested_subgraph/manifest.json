@@ -1,0 +1,17 @@
+{
+  "type": "app",
+  "name": "extension_interface_reference_to_sys_pkg_app",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "type": "extension",
+      "name": "ext_a",
+      "version": "1.0.0"
+    }
+  ],
+  "package": {
+    "include": [
+      "**"
+    ]
+  }
+}

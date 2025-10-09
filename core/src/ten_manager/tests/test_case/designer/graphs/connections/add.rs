@@ -1377,6 +1377,353 @@ mod tests {
     }
 
     #[actix_web::test]
+    async fn test_add_graph_connection_to_subgraph() {
+        let designer_state = DesignerState {
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
+            out: Arc::new(Box::new(TmanOutputCli)),
+            pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
+            graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+            persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
+        };
+
+        // Create a temporary directory for our test to store the generated
+        // property.json.
+        let temp_dir = tempfile::tempdir().unwrap();
+        let test_dir = temp_dir.path().to_str().unwrap().to_string();
+
+        // Copy the test directory to the temporary directory.
+        let test_data_dir = std::path::Path::new("tests")
+            .join("test_data")
+            .join("graph_add_connection_to_subgraph");
+
+        copy_folder_recursively(&test_data_dir.to_str().unwrap().to_string(), &test_dir).unwrap();
+
+        // Get the new created test directory.
+        let test_data_dir =
+            std::path::Path::new(&test_dir).join("graph_add_connection_to_subgraph");
+
+        {
+            let mut pkgs_cache = designer_state.pkgs_cache.write().await;
+            let mut graphs_cache = designer_state.graphs_cache.write().await;
+
+            get_all_pkgs_in_app(
+                &mut pkgs_cache,
+                &mut graphs_cache,
+                &test_data_dir.to_str().unwrap().to_string(),
+            )
+            .await
+            .unwrap();
+        }
+
+        let graph_id_clone;
+        {
+            let graphs_cache = designer_state.graphs_cache.read().await;
+            let (graph_id, _) = graphs_cache_find_by_name(&graphs_cache, "default").unwrap();
+
+            graph_id_clone = *graph_id;
+        }
+
+        let designer_state = Arc::new(designer_state);
+
+        let app = test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
+            "/api/designer/v1/graphs/connections/add",
+            web::post().to(add_graph_connection_endpoint),
+        ))
+        .await;
+
+        let src = GraphLoc::with_app_and_type_and_name(
+            None,
+            GraphNodeType::Extension,
+            "ext_a".to_string(),
+        )
+        .unwrap();
+
+        let dest = GraphLoc::with_app_and_type_and_name(
+            None,
+            GraphNodeType::Subgraph,
+            "subgraph_1".to_string(),
+        )
+        .unwrap();
+
+        // Add a connection between "ext_a" and subgraph node
+        let request_payload = AddGraphConnectionRequestPayload {
+            graph_id: graph_id_clone,
+            src,
+            dest,
+            msg_type: MsgType::Cmd,
+            msg_names: vec!["C".to_string()],
+            msg_conversion: None,
+        };
+
+        let req = test::TestRequest::post()
+            .uri("/api/designer/v1/graphs/connections/add")
+            .set_json(request_payload)
+            .to_request();
+        let resp = test::call_service(&app, req).await;
+
+        let status = resp.status();
+        let body = test::read_body(resp).await;
+        let body_str = std::str::from_utf8(&body).unwrap();
+
+        assert!(status.is_success(), "status: {status:?}, body: {body_str}");
+
+        let response: ApiResponse<AddGraphConnectionResponsePayload> =
+            serde_json::from_str(body_str).unwrap();
+        assert!(response.data.success);
+
+        // Read the actual property.json file generated during the test.
+        let property_path = std::path::Path::new(&test_data_dir).join(PROPERTY_JSON_FILENAME);
+        let actual_property = std::fs::read_to_string(property_path).unwrap();
+
+        println!("actual_property: {actual_property}");
+
+        let actual_property_value: serde_json::Value =
+            serde_json::from_str(&actual_property).unwrap();
+
+        let expected_property_json_str = include_str!(
+            "../../../../test_data/graph_add_connection_to_subgraph/expected_property.json"
+        )
+        .to_string();
+
+        let expected_property_value: serde_json::Value =
+            serde_json::from_str(&expected_property_json_str).unwrap();
+
+        assert_eq!(actual_property_value, expected_property_value);
+    }
+
+    #[actix_web::test]
+    async fn test_add_graph_connection_to_nested_subgraph() {
+        let designer_state = DesignerState {
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
+            out: Arc::new(Box::new(TmanOutputCli)),
+            pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
+            graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+            persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
+        };
+
+        // Create a temporary directory for our test to store the generated
+        // property.json.
+        let temp_dir = tempfile::tempdir().unwrap();
+        let test_dir = temp_dir.path().to_str().unwrap().to_string();
+
+        // Copy the test directory to the temporary directory.
+        let test_data_dir = std::path::Path::new("tests")
+            .join("test_data")
+            .join("graph_add_connection_to_nested_subgraph");
+
+        copy_folder_recursively(&test_data_dir.to_str().unwrap().to_string(), &test_dir).unwrap();
+
+        // Get the new created test directory.
+        let test_data_dir =
+            std::path::Path::new(&test_dir).join("graph_add_connection_to_nested_subgraph");
+
+        {
+            let mut pkgs_cache = designer_state.pkgs_cache.write().await;
+            let mut graphs_cache = designer_state.graphs_cache.write().await;
+
+            get_all_pkgs_in_app(
+                &mut pkgs_cache,
+                &mut graphs_cache,
+                &test_data_dir.to_str().unwrap().to_string(),
+            )
+            .await
+            .unwrap();
+        }
+
+        let graph_id_clone;
+        {
+            let graphs_cache = designer_state.graphs_cache.read().await;
+            let (graph_id, _) = graphs_cache_find_by_name(&graphs_cache, "default").unwrap();
+
+            graph_id_clone = *graph_id;
+        }
+
+        let designer_state = Arc::new(designer_state);
+
+        let app = test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
+            "/api/designer/v1/graphs/connections/add",
+            web::post().to(add_graph_connection_endpoint),
+        ))
+        .await;
+
+        let src = GraphLoc::with_app_and_type_and_name(
+            None,
+            GraphNodeType::Extension,
+            "ext_a".to_string(),
+        )
+        .unwrap();
+        let dest = GraphLoc::with_app_and_type_and_name(
+            None,
+            GraphNodeType::Subgraph,
+            "subgraph_1".to_string(),
+        )
+        .unwrap();
+
+        // Add a connection between "ext_a" and subgraph node
+        let request_payload = AddGraphConnectionRequestPayload {
+            graph_id: graph_id_clone,
+            src,
+            dest,
+            msg_type: MsgType::Cmd,
+            msg_names: vec!["C".to_string()],
+            msg_conversion: None,
+        };
+
+        let req = test::TestRequest::post()
+            .uri("/api/designer/v1/graphs/connections/add")
+            .set_json(request_payload)
+            .to_request();
+        let resp = test::call_service(&app, req).await;
+
+        let status = resp.status();
+        let body = test::read_body(resp).await;
+        let body_str = std::str::from_utf8(&body).unwrap();
+
+        assert!(status.is_success(), "status: {status:?}, body: {body_str}");
+
+        let response: ApiResponse<AddGraphConnectionResponsePayload> =
+            serde_json::from_str(body_str).unwrap();
+        assert!(response.data.success);
+
+        // Read the actual property.json file generated during the test.
+        let property_path = std::path::Path::new(&test_data_dir).join(PROPERTY_JSON_FILENAME);
+        let actual_property = std::fs::read_to_string(property_path).unwrap();
+
+        println!("actual_property: {actual_property}");
+
+        let actual_property_value: serde_json::Value =
+            serde_json::from_str(&actual_property).unwrap();
+
+        let expected_property_json_str = include_str!(
+            "../../../../test_data/graph_add_connection_to_nested_subgraph/expected_property.json"
+        )
+        .to_string();
+
+        let expected_property_value: serde_json::Value =
+            serde_json::from_str(&expected_property_json_str).unwrap();
+
+        assert_eq!(actual_property_value, expected_property_value);
+    }
+
+    #[actix_web::test]
+    async fn test_add_graph_connection_subgraph_to_subgraph() {
+        let designer_state = DesignerState {
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
+            out: Arc::new(Box::new(TmanOutputCli)),
+            pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
+            graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+            persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
+        };
+
+        // Create a temporary directory for our test to store the generated
+        // property.json.
+        let temp_dir = tempfile::tempdir().unwrap();
+        let test_dir = temp_dir.path().to_str().unwrap().to_string();
+
+        // Copy the test directory to the temporary directory.
+        let test_data_dir = std::path::Path::new("tests")
+            .join("test_data")
+            .join("graph_add_connection_subgraph_to_subgraph");
+
+        copy_folder_recursively(&test_data_dir.to_str().unwrap().to_string(), &test_dir).unwrap();
+
+        // Get the new created test directory.
+        let test_data_dir =
+            std::path::Path::new(&test_dir).join("graph_add_connection_subgraph_to_subgraph");
+
+        {
+            let mut pkgs_cache = designer_state.pkgs_cache.write().await;
+            let mut graphs_cache = designer_state.graphs_cache.write().await;
+
+            get_all_pkgs_in_app(
+                &mut pkgs_cache,
+                &mut graphs_cache,
+                &test_data_dir.to_str().unwrap().to_string(),
+            )
+            .await
+            .unwrap();
+        }
+
+        let graph_id_clone;
+        {
+            let graphs_cache = designer_state.graphs_cache.read().await;
+            let (graph_id, _) = graphs_cache_find_by_name(&graphs_cache, "default").unwrap();
+
+            graph_id_clone = *graph_id;
+        }
+
+        let designer_state = Arc::new(designer_state);
+
+        let app = test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
+            "/api/designer/v1/graphs/connections/add",
+            web::post().to(add_graph_connection_endpoint),
+        ))
+        .await;
+
+        let src = GraphLoc::with_app_and_type_and_name(
+            None,
+            GraphNodeType::Subgraph,
+            "subgraph_1".to_string(),
+        )
+        .unwrap();
+        let dest = GraphLoc::with_app_and_type_and_name(
+            None,
+            GraphNodeType::Subgraph,
+            "subgraph_2".to_string(),
+        )
+        .unwrap();
+
+        // Add a connection between 2 subgraphs.
+        let request_payload = AddGraphConnectionRequestPayload {
+            graph_id: graph_id_clone,
+            src,
+            dest,
+            msg_type: MsgType::Cmd,
+            msg_names: vec!["C".to_string()],
+            msg_conversion: None,
+        };
+
+        let req = test::TestRequest::post()
+            .uri("/api/designer/v1/graphs/connections/add")
+            .set_json(request_payload)
+            .to_request();
+        let resp = test::call_service(&app, req).await;
+
+        let status = resp.status();
+        let body = test::read_body(resp).await;
+        let body_str = std::str::from_utf8(&body).unwrap();
+
+        assert!(status.is_success(), "status: {status:?}, body: {body_str}");
+
+        let response: ApiResponse<AddGraphConnectionResponsePayload> =
+            serde_json::from_str(body_str).unwrap();
+        assert!(response.data.success);
+
+        // Read the actual property.json file generated during the test.
+        let property_path = std::path::Path::new(&test_data_dir).join(PROPERTY_JSON_FILENAME);
+        let actual_property = std::fs::read_to_string(property_path).unwrap();
+
+        println!("actual_property: {actual_property}");
+
+        let actual_property_value: serde_json::Value =
+            serde_json::from_str(&actual_property).unwrap();
+
+        let expected_property_json_str = include_str!(
+            "../../../../test_data/graph_add_connection_subgraph_to_subgraph/expected_property.\
+             json"
+        )
+        .to_string();
+
+        let expected_property_value: serde_json::Value =
+            serde_json::from_str(&expected_property_json_str).unwrap();
+
+        assert_eq!(actual_property_value, expected_property_value);
+    }
+
+    #[actix_web::test]
     async fn test_add_graph_connection_multiple_msg_names_success() {
         let designer_state = DesignerState {
             tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),

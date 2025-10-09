@@ -311,4 +311,30 @@ impl Graph {
 
         Ok(Some(new_graph))
     }
+
+    /// Get the nodes that match the selector filter
+    pub fn get_nodes_by_selector_node(
+        &self,
+        selector_node: &SelectorNode,
+    ) -> Option<Vec<&GraphNode>> {
+        let mut regex_cache: HashMap<String, Regex> = HashMap::new();
+
+        Some(self.nodes.iter().filter(|node|
+            matches_filter(&selector_node.filter, node, &mut regex_cache)).collect())
+    }
+
+    pub fn get_nodes_by_selector_node_name(
+        &self,
+        selector_node_name: &str,
+    ) -> Option<Vec<&GraphNode>> {
+        let selector_node = self.nodes.iter().find_map(|node| {
+            if node.get_name() == selector_node_name && node.get_type() == GraphNodeType::Selector {
+                node.as_selector_node()
+            } else {
+                None
+            }
+        })?;
+
+        self.get_nodes_by_selector_node(selector_node)
+    }
 }
