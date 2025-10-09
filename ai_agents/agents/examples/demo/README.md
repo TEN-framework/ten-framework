@@ -23,4 +23,27 @@ A comprehensive demo showcasing various AI agent capabilities with multiple LLM 
 
 - `task install` - Install all dependencies
 - `task run` - Start all services
-- `task release` - Build release package
+
+---
+
+## Release as Docker image
+
+### Build image
+```bash
+# Run at project root
+docker build -f agents/examples/demo/Dockerfile -t demo-app .
+```
+
+### Run container
+```bash
+# Use local .env (optional)
+docker run --rm -it \
+  --env-file .env \
+  -p 8080:8080 \
+  -p 4000:3000 \
+  demo-app
+```
+
+### Access
+- Frontend: http://localhost:3000
+- API Server: http://localhost:8080
