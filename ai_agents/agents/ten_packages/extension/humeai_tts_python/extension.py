@@ -278,6 +278,7 @@ class HumeaiTTSExtension(AsyncTTS2BaseExtension):
                                 vendor=self.vendor()
                             ),
                         ),
+                        self.current_turn_id,
                     )
                     return
 
@@ -305,4 +306,5 @@ class HumeaiTTSExtension(AsyncTTS2BaseExtension):
                     code=ModuleErrorCode.NON_FATAL_ERROR.value,
                     vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
                 ),
+                self.current_turn_id,
             )
