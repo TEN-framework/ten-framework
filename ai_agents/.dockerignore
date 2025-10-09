@@ -63,8 +63,7 @@ compile_commands.json
 BUILD.gn
 
 # Large directories not needed for demo
-playground/
-esp32-client/
+esp32-client
 agents/bin/
 agents/.gn
 agents/.gnfiles

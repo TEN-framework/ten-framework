@@ -112,10 +112,12 @@ func (s *HttpServer) handlerList(c *gin.Context) {
 
 func (s *HttpServer) handleGraphs(c *gin.Context) {
 	// read the property.json file and get the graph list from predefined_graphs, return the result as response
-	// for every graph object returned, only keep the name and auto_start fields
-	content, err := os.ReadFile(PropertyJsonFile)
+    // for every graph object returned, only keep the name and auto_start fields
+    // Read property.json from tenapp_dir
+    propertyJsonPath := filepath.Join(s.config.TenappDir, "property.json")
+    content, err := os.ReadFile(propertyJsonPath)
 	if err != nil {
-		slog.Error("failed to read property.json file", "err", err, logTag)
+        slog.Error("failed to read property.json file", "err", err, "path", propertyJsonPath, logTag)
 		s.output(c, codeErrReadFileFailed, http.StatusInternalServerError)
 		return
 	}

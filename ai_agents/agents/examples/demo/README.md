@@ -40,7 +40,7 @@ docker build -f agents/examples/demo/Dockerfile -t demo-app .
 docker run --rm -it \
   --env-file .env \
   -p 8080:8080 \
-  -p 4000:3000 \
+  -p 3000:3000 \
   demo-app
 ```
 
