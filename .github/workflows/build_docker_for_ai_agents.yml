@@ -59,6 +59,7 @@ env:
   TEN_EXAMPLE_VOICE_ASSISTANT_VIDEO_IMAGE_NAME: ten_agent_example_voice_assistant_video
   TEN_EXAMPLE_VOICE_ASSISTANT_WITH_MEMU_IMAGE_NAME: ten_agent_example_voice_assistant_with_memu
   TEN_EXAMPLE_VOICE_ASSISTANT_WITH_TEN_VAD_IMAGE_NAME: ten_agent_example_voice_assistant_with_ten_vad
+  TEN_EXAMPLE_VOICE_ASSISTANT_SIP_TWILIO_IMAGE_NAME: ten_agent_example_voice_assistant_sip_twilio
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -176,6 +177,18 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
           dockerfile: ./agents/examples/voice-assistant-with-ten-vad/Dockerfile
+          registry: ghcr.io
+          workdir: ./ai_agents/
+          tags: "${{ github.ref == 'refs/heads/main' && 'latest,' || '' }}${{ steps.pre-step.outputs.image-tag }}"
+          no_push: ${{ github.event_name == 'pull_request' }}
+
+      - name: Build & Publish Docker Image for examples/voice-assistant-sip-twilio Agent
+        uses: elgohr/Publish-Docker-Github-Action@v5
+        with:
+          name: ${{ github.repository_owner }}/${{ env.TEN_EXAMPLE_VOICE_ASSISTANT_SIP_TWILIO_IMAGE_NAME }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          dockerfile: ./agents/examples/voice-assistant-sip-twilio/Dockerfile
           registry: ghcr.io
           workdir: ./ai_agents/
           tags: "${{ github.ref == 'refs/heads/main' && 'latest,' || '' }}${{ steps.pre-step.outputs.image-tag }}"
