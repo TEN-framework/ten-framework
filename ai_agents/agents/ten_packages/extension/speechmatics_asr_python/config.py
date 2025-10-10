@@ -35,6 +35,17 @@ class SpeechmaticsASRConfig(BaseModel):
     dump: bool = False
     dump_path: str = "."
 
+    # Diarization settings
+    diarization: str = (
+        "none"  # "none", "speaker", "channel", or "channel_and_speaker"
+    )
+    speaker_sensitivity: float = 0.5  # 0.0 - 1.0, higher = more unique speakers
+    max_speakers: int = 50  # 2 - 100, maximum number of speakers to detect
+    prefer_current_speaker: bool = False  # reduce false speaker switches
+    channel_diarization_labels: List[str] = field(
+        default_factory=list
+    )  # e.g., ["Agent", "Customer"]
+
     def to_str(self, sensitive_handling: bool = False) -> str:
         if not sensitive_handling:
             return f"{self}"

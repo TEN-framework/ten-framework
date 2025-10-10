@@ -160,16 +160,6 @@ class GoogleTTS:
             streaming_audio_config.speaking_rate = audio_params.get(
                 "speaking_rate"
             )
-        if audio_params.get("pitch") is not None:
-            streaming_audio_config.pitch = audio_params.get("pitch")
-        if audio_params.get("volume_gain_db") is not None:
-            streaming_audio_config.volume_gain_db = audio_params.get(
-                "volume_gain_db"
-            )
-        if audio_params.get("effects_profile_id"):
-            streaming_audio_config.effects_profile_id = audio_params.get(
-                "effects_profile_id"
-            )
 
         return texttospeech.StreamingSynthesizeConfig(
             voice=voice, streaming_audio_config=streaming_audio_config

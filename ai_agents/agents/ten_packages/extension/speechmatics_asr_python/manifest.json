@@ -1,7 +1,7 @@
 {
     "type": "extension",
     "name": "speechmatics_asr_python",
-    "version": "0.2.4",
+    "version": "0.2.5",
     "dependencies": [
         {
             "type": "system",
@@ -36,6 +36,18 @@
                         },
                         "sample_rate": {
                             "type": "int64"
+                        },
+                        "diarization": {
+                            "type": "string"
+                        },
+                        "speaker_sensitivity": {
+                            "type": "float64"
+                        },
+                        "max_speakers": {
+                            "type": "int64"
+                        },
+                        "prefer_current_speaker": {
+                            "type": "bool"
                         }
                     }
                 }
