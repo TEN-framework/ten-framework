@@ -112,6 +112,29 @@ class SpeechmaticsASRClient:
                 else:
                     self.ten_env.log_warn("invalid hotword format: " + hw)
 
+        # Configure diarization if enabled
+        diarization_config = None
+        if self.config.diarization == "speaker":
+            diarization_config = "speaker"
+        elif self.config.diarization == "channel":
+            diarization_config = "channel"
+        elif self.config.diarization == "channel_and_speaker":
+            diarization_config = "channel_and_speaker"
+
+        # Speaker diarization config
+        speaker_diarization_config = None
+        if (
+            self.config.diarization == "speaker"
+            or self.config.diarization == "channel_and_speaker"
+        ):
+            speaker_diarization_config = (
+                speechmatics.models.RTSpeakerDiarizationConfig(
+                    max_speakers=self.config.max_speakers,
+                )
+            )
+            # Note: speaker_sensitivity and prefer_current_speaker are not supported in speechmatics-python 3.0.2
+            # These parameters are available in newer versions of the Speechmatics API
+
         self.transcription_config = speechmatics.models.TranscriptionConfig(
             enable_partials=self.config.enable_partials,
             language=self.config.language,
@@ -121,6 +144,13 @@ class SpeechmaticsASRClient:
             operating_point=(
                 self.config.operating_point
                 if self.config.operating_point
+                else None
+            ),
+            diarization=diarization_config,
+            speaker_diarization_config=speaker_diarization_config,
+            channel_diarization_labels=(
+                self.config.channel_diarization_labels
+                if self.config.channel_diarization_labels
                 else None
             ),
         )
@@ -319,6 +349,13 @@ class SpeechmaticsASRClient:
                 + self.sent_user_audio_duration_ms_before_last_reset
             )
 
+            # Extract speaker/channel info if available
+            result_metadata = {}
+            if "speaker" in metadata:
+                result_metadata["speaker"] = metadata["speaker"]
+            if "channel" in metadata:
+                result_metadata["channel"] = metadata["channel"]
+
             asr_result = ASRResult(
                 text=text,
                 final=False,
@@ -326,6 +363,7 @@ class SpeechmaticsASRClient:
                 duration_ms=_duration_ms,
                 language=self.config.language,
                 words=[],
+                metadata=result_metadata,
             )
             if self.on_asr_result:
                 asyncio.create_task(self.on_asr_result(asr_result))
@@ -354,6 +392,13 @@ class SpeechmaticsASRClient:
                     + self.sent_user_audio_duration_ms_before_last_reset
                 )
 
+                # Extract speaker/channel info if available
+                result_metadata = {}
+                if "speaker" in metadata:
+                    result_metadata["speaker"] = metadata["speaker"]
+                if "channel" in metadata:
+                    result_metadata["channel"] = metadata["channel"]
+
                 asr_result = ASRResult(
                     text=text,
                     final=True,
@@ -361,6 +406,7 @@ class SpeechmaticsASRClient:
                     duration_ms=_duration_ms,
                     language=self.config.language,
                     words=[],
+                    metadata=result_metadata,
                 )
 
                 if self.on_asr_result:
@@ -387,6 +433,7 @@ class SpeechmaticsASRClient:
                 alternatives = result.get("alternatives", [])
                 if alternatives:
                     text = alternatives[0].get("content", "")
+                    speaker = alternatives[0].get("speaker", "")
                     if text:
                         start_ms = result.get("start_time", 0) * 1000
                         end_ms = result.get("end_time", 0) * 1000
@@ -399,12 +446,15 @@ class SpeechmaticsASRClient:
                         )
                         result_type = result.get("type", "")
                         is_punctuation = result_type == "punctuation"
+                        channel = result.get("channel", "")
 
                         word = SpeechmaticsASRWord(
                             word=text,
                             start_ms=actual_start_ms,
                             duration_ms=duration_ms,
                             is_punctuation=is_punctuation,
+                            speaker=speaker,
+                            channel=channel,
                         )
                         self.cache_words.append(word)
 
@@ -415,6 +465,14 @@ class SpeechmaticsASRClient:
                     start_ms = get_sentence_start_ms(self.cache_words)
                     duration_ms = get_sentence_duration_ms(self.cache_words)
 
+                    # Extract speaker/channel from cached words (use first non-empty)
+                    result_metadata = {}
+                    for w in self.cache_words:
+                        if w.speaker and not result_metadata.get("speaker"):
+                            result_metadata["speaker"] = w.speaker
+                        if w.channel and not result_metadata.get("channel"):
+                            result_metadata["channel"] = w.channel
+
                     asr_result = ASRResult(
                         text=sentence,
                         final=True,
@@ -422,6 +480,7 @@ class SpeechmaticsASRClient:
                         duration_ms=duration_ms,
                         language=self.config.language,
                         words=[],
+                        metadata=result_metadata,
                     )
 
                     if self.on_asr_result:
@@ -436,6 +495,14 @@ class SpeechmaticsASRClient:
                 start_ms = get_sentence_start_ms(self.cache_words)
                 duration_ms = get_sentence_duration_ms(self.cache_words)
 
+                # Extract speaker/channel from cached words
+                result_metadata = {}
+                for w in self.cache_words:
+                    if w.speaker and not result_metadata.get("speaker"):
+                        result_metadata["speaker"] = w.speaker
+                    if w.channel and not result_metadata.get("channel"):
+                        result_metadata["channel"] = w.channel
+
                 asr_result_partial = ASRResult(
                     text=sentence,
                     final=False,
@@ -443,6 +510,7 @@ class SpeechmaticsASRClient:
                     duration_ms=duration_ms,
                     language=self.config.language,
                     words=[],
+                    metadata=result_metadata,
                 )
 
                 if self.on_asr_result:
