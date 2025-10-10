@@ -2,11 +2,10 @@
 
 import AgoraRTM, { type RTMClient, type RTMStreamChannel } from "agora-rtm"
 import { AGEventEmitter } from "../events"
-import { apiGenAgoraData } from "@/common"
 import { type IRTMTextItem, EMessageDataType, ERTMTextType } from "@/types"
 
 export interface IRtmEvents {
-  rtmMessage: (text: any) => void // TODO: update type
+  rtmMessage: (text: IRTMTextItem) => void
 }
 
 export type TRTMMessageEvent = {
@@ -53,7 +52,7 @@ export class RtmManager extends AGEventEmitter<IRtmEvents> {
     this.appId = appId
     this.token = token
     const rtm = new AgoraRTM.RTM(appId, String(userId), {
-      logLevel: "debug", // TODO: use INFO
+      logLevel: "info",
       // update config: https://doc.shengwang.cn/api-ref/rtm2/javascript/toc-configuration/configuration#rtmConfig
     })
     await rtm.login({ token })
@@ -120,7 +119,7 @@ export class RtmManager extends AGEventEmitter<IRtmEvents> {
       stream_id: String(this.userId),
     }
     await this._client?.publish(this.channel, JSON.stringify(msg), {
-      customType: "PainTxt",
+      customType: "PlainTxt",
     })
     this.emit("rtmMessage", msg)
   }
