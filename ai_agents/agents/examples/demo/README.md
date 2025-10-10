@@ -211,13 +211,15 @@ The demo is configured in `property.json`:
 | `WEATHERAPI_API_KEY` | string | - | Weather API key (optional) |
 
 
-## Docker
+## Release as Docker image
 
-### Build
+**Note**: The following commands need to be executed outside of any Docker container.
+
+### Build image
 
 ```bash
 cd ai_agents
-docker build -f examples/demo/Dockerfile -t demo-app .
+docker build -f agents/examples/demo/Dockerfile -t demo-app .
 ```
 
 ### Run
