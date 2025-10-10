@@ -183,7 +183,7 @@ class TencentTTSClient:
         """Stop the TTS client and clean up resources."""
         self.close()
         # restart the synthesizer
-        await self.start()
+        asyncio.create_task(self.start())
 
     def close(self) -> None:
         """
