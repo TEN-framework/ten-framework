@@ -307,14 +307,14 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                 if t.text.strip() != "":
                     self.stop_event = asyncio.Event()
                     await self.stop_event.wait()
+                    # session finished, connection will be re-established for next request
+                    if not self.last_completed_has_reset_synthesizer:
+                        self.client.reset_synthesizer()
+                        self.last_completed_has_reset_synthesizer = True
                 else:
                     self.ten_env.log_debug(
                         "Skipping stop_event wait for empty text input"
                     )
-                # session finished, connection will be re-established for next request
-                if not self.last_completed_has_reset_synthesizer:
-                    self.client.reset_synthesizer()
-                    self.last_completed_has_reset_synthesizer = True
 
         except ModuleVendorException as e:
             self.ten_env.log_error(
