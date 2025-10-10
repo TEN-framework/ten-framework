@@ -144,7 +144,7 @@ The playground UI automatically displays speaker labels in the transcript. To fu
 ```bash
 # Run at project root
 cd ai_agents
-docker build -f examples/speechmatics-diarization/Dockerfile -t speechmatics-diarization-app .
+docker build -f agents/examples/speechmatics-diarization/Dockerfile -t speechmatics-diarization-app .
 ```
 
 ### Run container

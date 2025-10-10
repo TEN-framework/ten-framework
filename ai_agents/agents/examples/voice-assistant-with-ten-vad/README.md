@@ -18,9 +18,3 @@ A voice assistant enhanced with TEN Voice Activity Detection (VAD) for improved 
    - Frontend: http://localhost:3000
    - API Server: http://localhost:8080
    - TMAN Designer: http://localhost:49483
-
-## Available Tasks
-
-- `task install` - Install all dependencies
-- `task run` - Start all services
-- `task release` - Build release package

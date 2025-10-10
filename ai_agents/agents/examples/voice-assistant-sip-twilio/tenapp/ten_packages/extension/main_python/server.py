@@ -364,6 +364,9 @@ class TwilioCallServer:
                     '{"type": "connected", "message": "WebSocket connection established"}'
                 )
 
+                # Initialize call_sid to None to prevent NameError
+                call_sid = None
+
                 while True:
                     # Receive message from Twilio
                     data = await websocket.receive_text()
