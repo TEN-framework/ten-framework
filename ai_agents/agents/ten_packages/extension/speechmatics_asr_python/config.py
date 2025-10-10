@@ -26,6 +26,11 @@ class SpeechmaticsASRConfig(BaseModel):
     operating_point: str = "enhanced"
     hotwords: List[str] = field(default_factory=list)
 
+    # Diarization configuration
+    diarization: str | None = None  # "speaker", "channel", "channel_and_speaker"
+    speaker_diarization_config: Dict[str, Any] = field(default_factory=dict)
+    channel_diarization_labels: List[str] | None = None
+
     # True: streaming output final words, False: streaming output final sentences
     enable_word_final_mode: bool = False
 
