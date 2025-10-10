@@ -19,11 +19,30 @@ Folders
 - In `web/.env`:
   - `AGENT_SERVER_URL=http://localhost:8080` (TEN server URL)
 
--Run
-1) From repo root: `cd ai_agents` then run `task use AGENT=transcription`.
-2) Still inside `ai_agents`, start the runtime with `task run` (leave it running).
-3) In a new terminal, `cd agents/examples/transcription/web`, run `pnpm install` (first time) and `pnpm dev`, then open `http://localhost:3000`.
+## Quick Start
 
-Notes
+1. **Install dependencies:**
+   ```bash
+   task install
+   ```
+
+2. **Run the transcription service:**
+   ```bash
+   task run
+   ```
+
+3. **Access the application:**
+   - Web UI: http://localhost:3000
+   - API Server: http://localhost:8080
+   - TMAN Designer: http://localhost:49483
+
+## Available Tasks
+
+- `task install` - Install all dependencies
+- `task run` - Start all services
+- `task release` - Build release package
+
+## Notes
+
 - The UI calls `/api/agents/start` (proxied server-side) with `graph_name=transcription`, then joins Agora and publishes microphone audio.
 - Transcripts are streamed back via Agora RTC `stream-message`; the UI assembles chunked payloads and renders raw vs corrected text side by side.

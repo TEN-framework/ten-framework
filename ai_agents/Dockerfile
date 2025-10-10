@@ -7,10 +7,12 @@ ARG USE_AGENT=agents/examples/voice-assistant
 WORKDIR /app
 
 COPY . .
-COPY agents/${SESSION_CONTROL_CONF} agents/session_control.conf
+# COPY agents/${SESSION_CONTROL_CONF} agents/session_control.conf
 
-RUN task clean && task use AGENT=${USE_AGENT} && \
-  cd agents && ./scripts/package.sh
+RUN task clean && cd ${USE_AGENT} && \
+  task install && task release
+
+RUN mv ${USE_AGENT}/tenapp/.release/ agents/
 
 FROM ubuntu:22.04
 
