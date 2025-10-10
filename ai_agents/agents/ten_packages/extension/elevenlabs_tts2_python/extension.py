@@ -76,7 +76,9 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                 target_request_id = (
                     request_id if request_id else self.current_request_id or ""
                 )
-                await self.send_tts_error(target_request_id, error, self.current_turn_id)
+                await self.send_tts_error(
+                    target_request_id, error, self.current_turn_id
+                )
                 if error.code == ModuleErrorCode.FATAL_ERROR:
                     self.ten_env.log_error(
                         f"Fatal error occurred: {error.message}"
