@@ -351,4 +351,4 @@ class AsyncTenEnv(TenEnvBase):
         asyncio.run_coroutine_threadsafe(self._close_loop(), self._ten_loop)
 
         # Wait for the internal thread to finish.
-        self._ten_thread.join()
+        # self._ten_thread.join()
