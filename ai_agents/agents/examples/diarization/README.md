@@ -80,9 +80,11 @@ You can customize diarization settings in `property.json`:
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `diarization` | string | `"none"` | Diarization mode: `"none"`, `"speaker"`, `"channel"`, or `"channel_and_speaker"` |
-| `speaker_sensitivity` | float | `0.5` | Range 0-1. Higher values detect more unique speakers |
 | `max_speakers` | int | `50` | Maximum number of speakers (2-100) |
-| `prefer_current_speaker` | bool | `false` | Reduce false speaker switches between similar voices |
+| `speaker_sensitivity` | float | `0.5` | Range 0-1. Higher values detect more unique speakers (⚠️ Not supported in current version) |
+| `prefer_current_speaker` | bool | `false` | Reduce false speaker switches between similar voices (⚠️ Not supported in current version) |
+
+**Note**: The current implementation uses `speechmatics-python==3.0.2`, which has limited diarization configuration support. Only `max_speakers` is functional. `speaker_sensitivity` and `prefer_current_speaker` are available in newer Speechmatics API versions.
 
 ## How It Works
 
@@ -114,13 +116,12 @@ You can customize diarization settings in `property.json`:
 
 ### Too many false speaker switches
 
-- Increase `prefer_current_speaker` to `true`
-- Decrease `speaker_sensitivity` (e.g., to 0.3)
+- Note: `prefer_current_speaker` and `speaker_sensitivity` are not supported in the current version
+- Consider adjusting `max_speakers` to limit the number of detected speakers
 
 ### Not enough speakers detected
 
-- Increase `speaker_sensitivity` (e.g., to 0.7)
-- Increase `max_speakers` if you expect more than 10 speakers
+- Increase `max_speakers` if you expect more than the default number of speakers
 
 ## UI Customization
 
