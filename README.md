@@ -267,6 +267,17 @@ cp ./.env.example ./.env
 ```bash
 AGORA_APP_ID=
 AGORA_APP_CERTIFICATE=
+
+# In case you are running default voice-assistant example
+# Deepgram (required for speech-to-text)
+DEEPGRAM_API_KEY=your_deepgram_api_key_here
+
+# OpenAI (required for language model)
+OPENAI_API_KEY=your_openai_api_key_here
+OPENAI_MODEL=gpt-4o
+
+# ElevenLabs (required for text-to-speech)
+ELEVENLABS_TTS_KEY=your_elevenlabs_api_key_here
 ```
 
 ##### 3. Start agent development containers
