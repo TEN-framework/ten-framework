@@ -16,6 +16,8 @@ class SpeechmaticsASRWord:
     start_ms: int = 0
     duration_ms: int = 0
     is_punctuation: bool = False
+    speaker: str = ""  # Speaker label like "S1", "S2", "UU"
+    channel: str = ""  # Channel label if channel diarization is used
 
 
 def convert_words_to_sentence(
