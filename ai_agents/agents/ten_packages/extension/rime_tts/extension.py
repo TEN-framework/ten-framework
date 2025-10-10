@@ -293,7 +293,7 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                         self.current_turn_id,
                     )
                     self.ten_env.log_debug(
-                        f"Sent TTS audio end event, interval: {request_event_interval}ms, duration: {self.request_total_audio_duration}ms"
+                        f"Sent TTS audio end event,text is empty, interval: {request_event_interval}ms, duration: {self.request_total_audio_duration}ms"
                     )
                 self.ten_env.log_debug(
                     f"finish session for request ID: {t.request_id}"
@@ -307,7 +307,8 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                 if t.text.strip() != "":
                     self.stop_event = asyncio.Event()
                     await self.stop_event.wait()
-
+                else:
+                    self.ten_env.log_debug("Skipping stop_event wait for empty text input")
                 # session finished, connection will be re-established for next request
                 if not self.last_completed_has_reset_synthesizer:
                     self.client.reset_synthesizer()
