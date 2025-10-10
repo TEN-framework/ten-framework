@@ -45,7 +45,6 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
         self.msg_polling_task: asyncio.Task = None
         self.recorder: PCMWriter = None
         self.request_start_ts: datetime | None = None
-        self.request_ttfb: int | None = None
         self.request_total_audio_duration: int = 0
         self.response_msgs = asyncio.Queue[tuple[int, bytes | int]]()
         self.recorder_map: dict[str, PCMWriter] = {}
