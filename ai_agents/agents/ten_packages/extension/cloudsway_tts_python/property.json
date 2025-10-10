@@ -1,0 +1,8 @@
+{
+    "api_key": "",
+    "model": "cloudsway_tts",
+    "sample_rate": 32000,
+    "url": "http://0.0.0.0:9880/tts/stream",
+    "voice_id": "Luna_moan_1",
+    "language": "en"
+}
