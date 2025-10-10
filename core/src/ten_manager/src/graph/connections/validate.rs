@@ -507,6 +507,10 @@ pub async fn validate_connection_schema(
     // Validate the connection schema for each combination of src and dest nodes
     for src_node in src_nodes.clone() {
         for dest_node in dest_nodes.clone() {
+            // Selector nodes should all be broken down into extension/subgraph nodes by now
+            assert!(src_node.get_node_type()? != GraphNodeType::Selector);
+            assert!(dest_node.get_node_type()? != GraphNodeType::Selector);
+
             let each_node_info = MsgConversionValidateInfo {
                 src: &src_node,
                 dest: &dest_node,
