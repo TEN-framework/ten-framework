@@ -394,6 +394,9 @@
         "subgraph": {
           "$ref": "#/$defs/alphanumericCharacters"
         },
+        "selector": {
+          "$ref": "#/$defs/alphanumericCharacters"
+        },
         "cmd": {
           "$ref": "#/$defs/extensionCmdsInGraph"
         },
@@ -413,8 +416,17 @@
             "extension"
           ],
           "not": {
-            "required": [
-              "subgraph"
+            "anyOf": [
+              {
+                "required": [
+                  "subgraph"
+                ]
+              },
+              {
+                "required": [
+                  "selector"
+                ]
+              }
             ]
           }
         },
@@ -423,8 +435,36 @@
             "subgraph"
           ],
           "not": {
-            "required": [
-              "extension"
+            "anyOf": [
+              {
+                "required": [
+                  "extension"
+                ]
+              },
+              {
+                "required": [
+                  "selector"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "required": [
+            "selector"
+          ],
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "extension"
+                ]
+              },
+              {
+                "required": [
+                  "subgraph"
+                ]
+              }
             ]
           }
         }
