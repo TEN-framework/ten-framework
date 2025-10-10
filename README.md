@@ -281,26 +281,34 @@ docker compose up -d
 docker exec -it ten_agent_dev bash
 ```
 
-##### 5. Build agent with the default `graph` ( ~5min - ~8min)
+##### 5. Build agent with the default example ( ~5min - ~8min)
 
 check the `/examples` folder for more examples
 
 ```bash
 # use the chained voice assistant
-task use AGENT=voice-assistant
+cd agents/examples/voice-assistant
 
 # or use the speech-to-speech voice assistant realtime
-task use AGENT=voice-assistant-realtime
+cd agents/examples/voice-assistant-realtime
 ```
 
 ##### 6. Start the web server
 
 ```bash
-# run task build if you changed any local source code, this is necessary if you are working on languages which require compilation like TypeScript or Golang.
-task build
+task install
+# run task build if you changed any local source code, this is necessary if you are working on languages which require compilation like TypeScript or Golang, while not needed for languages like Python
+# task build
 
 task run
 ```
+
+##### 7. Access the agent
+
+- Frontend: http://localhost:3000
+- API Server: http://localhost:8080
+- TMAN Designer: http://localhost:49483
+
 
 <br>
 
@@ -344,7 +352,22 @@ Check out [this guide](https://theten.ai/docs/ten_agent/setup_development_env/se
 
 Once you have customized your agent (either by using the TMAN Manager, Playground, or editing `property.json` directly), you can deploy it by creating a release Docker image for your service.
 
-Read the [Deployment Guide](https://theten.ai/docs/ten_agent/deploy_ten_agent/deploy_agent_service) for detailed information about deployment.
+##### Release as Docker image
+
+**Note**: The following commands need to be executed outside of any Docker container.
+
+###### Build image
+
+```bash
+cd ai_agents
+docker build -f agents/examples/<example-name>/Dockerfile -t example-app .
+```
+
+###### Run
+
+```bash
+docker run --rm -it --env-file .env -p 3000:3000 example-app
+```
 
 <br>
 
