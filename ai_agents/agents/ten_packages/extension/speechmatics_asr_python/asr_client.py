@@ -123,9 +123,14 @@ class SpeechmaticsASRClient:
 
         # Speaker diarization config
         speaker_diarization_config = None
-        if self.config.diarization == "speaker" or self.config.diarization == "channel_and_speaker":
-            speaker_diarization_config = speechmatics.models.RTSpeakerDiarizationConfig(
-                max_speakers=self.config.max_speakers,
+        if (
+            self.config.diarization == "speaker"
+            or self.config.diarization == "channel_and_speaker"
+        ):
+            speaker_diarization_config = (
+                speechmatics.models.RTSpeakerDiarizationConfig(
+                    max_speakers=self.config.max_speakers,
+                )
             )
             # Note: speaker_sensitivity and prefer_current_speaker are not supported in speechmatics-python 3.0.2
             # These parameters are available in newer versions of the Speechmatics API
