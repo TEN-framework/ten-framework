@@ -59,6 +59,9 @@ jobs:
           - name: "voice-assistant-sip-twilio"
             dockerfile: "./agents/examples/voice-assistant-sip-twilio/Dockerfile"
             image_name: "ten_agent_example_voice_assistant_sip_twilio"
+          - name: "speechmatics-diarization"
+            dockerfile: "./agents/examples/speechmatics-diarization/Dockerfile"
+            image_name: "ten_agent_example_speechmatics_diarization"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -121,5 +124,6 @@ jobs:
           echo "| voice-assistant-with-memU | ✅ Built |" >> $GITHUB_STEP_SUMMARY
           echo "| voice-assistant-with-ten-vad | ✅ Built |" >> $GITHUB_STEP_SUMMARY
           echo "| voice-assistant-sip-twilio | ✅ Built |" >> $GITHUB_STEP_SUMMARY
+          echo "| speechmatics-diarization | ✅ Built |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "All Docker images have been built and published to GitHub Container Registry (ghcr.io)" >> $GITHUB_STEP_SUMMARY

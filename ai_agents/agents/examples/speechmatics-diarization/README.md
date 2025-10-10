@@ -38,10 +38,11 @@ AGORA_APP_ID=your_agora_app_id_here
 AGORA_APP_CERTIFICATE=your_agora_certificate_here
 ```
 
-### 2. Use the Diarization Agent
+### 2. Install Dependencies
 
 ```bash
-task use AGENT=diarization
+cd agents/examples/speechmatics-diarization
+task install
 ```
 
 This command will:
@@ -52,10 +53,16 @@ This command will:
 ### 3. Run the Agent
 
 ```bash
+cd agents/examples/speechmatics-diarization
 task run
 ```
 
 The agent will start with speaker diarization enabled.
+
+4. **Access the application:**
+   - Frontend: http://localhost:3000
+   - API Server: http://localhost:8080
+   - TMAN Designer: http://localhost:49483
 
 ## Configuration
 
@@ -126,6 +133,33 @@ You can customize diarization settings in `property.json`:
 ## UI Customization
 
 The playground UI automatically displays speaker labels in the transcript. To further customize the display, you can modify the `main_python` extension's `_on_asr_result` method in `extension.py`.
+
+---
+
+## Release as Docker image
+
+**Note**: The following commands need to be executed outside of any Docker container.
+
+### Build image
+```bash
+# Run at project root
+cd ai_agents
+docker build -f examples/speechmatics-diarization/Dockerfile -t speechmatics-diarization-app .
+```
+
+### Run container
+```bash
+# Use local .env (optional)
+docker run --rm -it \
+  --env-file .env \
+  -p 8080:8080 \
+  -p 3000:3000 \
+  speechmatics-diarization-app
+```
+
+### Access
+- Frontend: http://localhost:3000
+- API Server: http://localhost:8080
 
 ## Learn More
 

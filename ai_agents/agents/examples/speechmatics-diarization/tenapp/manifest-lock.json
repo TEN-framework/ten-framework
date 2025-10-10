@@ -1,0 +1,517 @@
+{
+  "version": 1,
+  "packages": [
+    {
+      "type": "system",
+      "name": "ten_runtime_go",
+      "version": "0.11.16",
+      "hash": "48eda442dca7f56ea86056311a5ca11962bbb8ce4ce5fb4cc1c990becdbf5ec1",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime"
+        }
+      ],
+      "supports": [
+        {
+          "os": "linux",
+          "arch": "x64"
+        }
+      ]
+    },
+    {
+      "type": "extension",
+      "name": "agora_rtc",
+      "version": "0.23.0-rc2",
+      "hash": "fc135467d95795a9e5776c298af3e2efbfc8652150abb612bae27e63b8eedc27",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime"
+        },
+        {
+          "type": "system",
+          "name": "agora_rtc_sdk"
+        }
+      ],
+      "supports": [
+        {
+          "os": "linux",
+          "arch": "x64"
+        }
+      ]
+    },
+    {
+      "type": "system",
+      "name": "ten_ai_base",
+      "version": "0.7.12",
+      "hash": "92e91562b8b13563afa2db0c5101a6dd74f6ce562eb69304e3b32a49e3fc2917",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime_python"
+        }
+      ]
+    },
+    {
+      "type": "extension",
+      "name": "streamid_adapter",
+      "version": "0.2.0",
+      "hash": "6df9a1b48a4007339ccbda84ff96a4ed4eb5df498b8fef021ca2302be7c55051",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime_python"
+        }
+      ],
+      "path": "../../../ten_packages/extension/streamid_adapter"
+    },
+    {
+      "type": "extension",
+      "name": "speechmatics_asr_python",
+      "version": "0.2.5",
+      "hash": "5c9b91322f73d0ebe4b5d1e4379650b7657092e0f7c5411d061f16cf4963bf59",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime_python"
+        },
+        {
+          "type": "system",
+          "name": "ten_ai_base"
+        }
+      ],
+      "path": "../../../ten_packages/extension/speechmatics_asr_python"
+    },
+    {
+      "type": "extension",
+      "name": "coze_llm2_python",
+      "version": "0.2.0",
+      "hash": "6056efcc889c5cdb85b104d19d97f01f6cd33dc831634d2249b6729fa4340325",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime_python"
+        },
+        {
+          "type": "system",
+          "name": "ten_ai_base"
+        }
+      ],
+      "path": "../../../ten_packages/extension/coze_llm2_python"
+    },
+    {
+      "type": "extension",
+      "name": "dify_llm2_python",
+      "version": "0.2.0",
+      "hash": "2e4e13f3a99d855ffd6715cc830fd65dcfa39bf5a2a8b2e7ffbac938f82d870b",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime_python"
+        },
+        {
+          "type": "system",
+          "name": "ten_ai_base"
+        }
+      ],
+      "path": "../../../ten_packages/extension/dify_llm2_python"
+    },
+    {
+      "type": "extension",
+      "name": "openai_llm2_python",
+      "version": "0.2.0",
+      "hash": "ad24801cf718276830749bc50d72c5eba969e5d0ae7538ebd6e6d1ad0b414244",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime_python"
+        },
+        {
+          "type": "system",
+          "name": "ten_ai_base"
+        }
+      ],
+      "path": "../../../ten_packages/extension/openai_llm2_python"
+    },
+    {
+      "type": "extension",
+      "name": "azure_tts_python",
+      "version": "0.2.3",
+      "hash": "493402fc24dc7451b1ba0fb76b3cc86d4574b44061142ef4ac7be67fa2f6493f",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime_python"
+        },
+        {
+          "type": "system",
+          "name": "ten_ai_base"
+        }
+      ],
+      "path": "../../../ten_packages/extension/azure_tts_python"
+    },
+    {
+      "type": "extension",
+      "name": "bytedance_tts_duplex",
+      "version": "0.2.0",
+      "hash": "b10c2ab223e4a9ca8d6193f3b1ec8219b9af259aa5999f1f930ec724da22c773",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime_python"
+        },
+        {
+          "type": "system",
+          "name": "ten_ai_base"
+        }
+      ],
+      "path": "../../../ten_packages/extension/bytedance_tts_duplex"
+    },
+    {
+      "type": "extension",
+      "name": "cartesia_tts2",
+      "version": "0.2.7",
+      "hash": "bad6f58dc848ffd8e2abeb92bf345868cb2b3a5ac23f575e31aed80ba6ef8859",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime_python"
+        },
+        {
+          "type": "system",
+          "name": "ten_ai_base"
+        }
+      ],
+      "path": "../../../ten_packages/extension/cartesia_tts2"
+    },
+    {
+      "type": "extension",
+      "name": "cosy_tts_python",
+      "version": "0.2.3",
+      "hash": "b6713574576dcb4bc9091474852a088c0ab821fcec9b5f12bd52f28b47e1106d",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime_python"
+        },
+        {
+          "type": "system",
+          "name": "ten_ai_base"
+        }
+      ],
+      "path": "../../../ten_packages/extension/cosy_tts_python"
+    },
+    {
+      "type": "extension",
+      "name": "dubverse_tts",
+      "version": "0.2.0",
+      "hash": "92bc225d5a46d9b09b06c72b93ae5def0105b1915a91f6b99b88babf1527d8eb",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime_python"
+        }
+      ],
+      "path": "../../../ten_packages/extension/dubverse_tts"
+    },
+    {
+      "type": "extension",
+      "name": "elevenlabs_tts2_python",
+      "version": "0.2.3",
+      "hash": "0435ef6f29279fae8b40e6f5b80df9c9f645a409ad1bac8006199f11f057507c",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime_python"
+        },
+        {
+          "type": "system",
+          "name": "ten_ai_base"
+        }
+      ],
+      "path": "../../../ten_packages/extension/elevenlabs_tts2_python"
+    },
+    {
+      "type": "extension",
+      "name": "fish_audio_tts_python",
+      "version": "0.2.2",
+      "hash": "b79dccdf2eef96f5576a919da3a1d16185350660e66214f6e659c625caf50950",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime_python"
+        },
+        {
+          "type": "system",
+          "name": "ten_ai_base"
+        }
+      ],
+      "path": "../../../ten_packages/extension/fish_audio_tts_python"
+    },
+    {
+      "type": "extension",
+      "name": "google_tts_python",
+      "version": "0.2.4",
+      "hash": "fe8b40faee44d0c5d19f9f666f898ec2454439ad00dd4f48c4edc17d3379d5ed",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime_python"
+        },
+        {
+          "type": "system",
+          "name": "ten_ai_base"
+        }
+      ],
+      "path": "../../../ten_packages/extension/google_tts_python"
+    },
+    {
+      "type": "extension",
+      "name": "groq_tts_python",
+      "version": "0.2.4",
+      "hash": "6c277deea67015eb0c8f3bc2e02bd146ca09cc6a85297b45f03087d0dc77aa73",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime_python"
+        },
+        {
+          "type": "system",
+          "name": "ten_ai_base"
+        }
+      ],
+      "path": "../../../ten_packages/extension/groq_tts_python"
+    },
+    {
+      "type": "extension",
+      "name": "humeai_tts_python",
+      "version": "0.2.4",
+      "hash": "d974dfb648a9403203a37f2e325764cd4b7b274e665792ec990e119bd055409d",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime_python"
+        },
+        {
+          "type": "system",
+          "name": "ten_ai_base"
+        }
+      ],
+      "path": "../../../ten_packages/extension/humeai_tts_python"
+    },
+    {
+      "type": "extension",
+      "name": "minimax_tts_websocket_python",
+      "version": "0.2.0",
+      "hash": "eb298db42070237033e16aa42bb8e5677ffbacbf13769a7a958c35eeaa4da447",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime_python"
+        },
+        {
+          "type": "system",
+          "name": "ten_ai_base"
+        }
+      ],
+      "path": "../../../ten_packages/extension/minimax_tts_websocket_python"
+    },
+    {
+      "type": "extension",
+      "name": "neuphonic_tts",
+      "version": "0.2.0",
+      "hash": "d37d2f4c394eac42c4fb18b9763176312be7ead3d604119293191956aea1a94e",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime_python"
+        }
+      ],
+      "path": "../../../ten_packages/extension/neuphonic_tts"
+    },
+    {
+      "type": "extension",
+      "name": "openai_tts2_python",
+      "version": "0.2.4",
+      "hash": "13f2122d9fcfedd09aaaa2e9edabdb83934188b0267d64981461552063784747",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime_python"
+        },
+        {
+          "type": "system",
+          "name": "ten_ai_base"
+        }
+      ],
+      "path": "../../../ten_packages/extension/openai_tts2_python"
+    },
+    {
+      "type": "extension",
+      "name": "polly_tts",
+      "version": "0.2.6",
+      "hash": "5645ca50969b270a480ec4608f6602b7fc6274c7654d90697dd9155bd965eb7d",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime_python"
+        },
+        {
+          "type": "system",
+          "name": "ten_ai_base"
+        }
+      ],
+      "path": "../../../ten_packages/extension/polly_tts"
+    },
+    {
+      "type": "extension",
+      "name": "rime_http_tts",
+      "version": "0.2.2",
+      "hash": "6841d03416a3909c90250ad1e7bea4a1432fb67a699185567d20ceea84a390fb",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime_python"
+        },
+        {
+          "type": "system",
+          "name": "ten_ai_base"
+        }
+      ],
+      "path": "../../../ten_packages/extension/rime_http_tts"
+    },
+    {
+      "type": "extension",
+      "name": "rime_tts",
+      "version": "0.2.2",
+      "hash": "3136f3f9270e99e4c88361b2ca0d3051949ce2e463cfbd6ce1d239fcffa0c5b0",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime_python"
+        },
+        {
+          "type": "system",
+          "name": "ten_ai_base"
+        }
+      ],
+      "path": "../../../ten_packages/extension/rime_tts"
+    },
+    {
+      "type": "extension",
+      "name": "stepfun_tts_python",
+      "version": "0.2.0",
+      "hash": "d86fc1656d4ffe41421af8d8dd302a3db5478dc0c60bf92a30a43c2e7667e882",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime_python"
+        },
+        {
+          "type": "system",
+          "name": "ten_ai_base"
+        }
+      ],
+      "path": "../../../ten_packages/extension/stepfun_tts_python"
+    },
+    {
+      "type": "extension",
+      "name": "tencent_tts_python",
+      "version": "0.2.10",
+      "hash": "8c6a6e13097639c5ec71b9a92155068ffac60373fd4695360bb7b586d5a5c462",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime_python"
+        },
+        {
+          "type": "system",
+          "name": "ten_ai_base"
+        }
+      ],
+      "path": "../../../ten_packages/extension/tencent_tts_python"
+    },
+    {
+      "type": "extension",
+      "name": "message_collector2",
+      "version": "0.2.0",
+      "hash": "b4cdc75c61ed572952e2f14bdb5c440f993d3a5bf2da6fe5f5cbb1b4d772a837",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime_python"
+        }
+      ],
+      "path": "../../../ten_packages/extension/message_collector2"
+    },
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.11.16",
+      "hash": "4322d3e83b73e1b949e7104f0c540f8cf04fa1a45e1b630f2c73a08729eb44e7",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime"
+        },
+        {
+          "type": "addon_loader",
+          "name": "python_addon_loader"
+        }
+      ],
+      "supports": [
+        {
+          "os": "linux",
+          "arch": "x64"
+        }
+      ]
+    },
+    {
+      "type": "system",
+      "name": "ten_runtime",
+      "version": "0.11.16",
+      "hash": "0c0c30343eea5d58ccbe56174aab5fe13c6b09b1e149dff1e05309e323d32bfd",
+      "supports": [
+        {
+          "os": "linux",
+          "arch": "x64"
+        }
+      ]
+    },
+    {
+      "type": "system",
+      "name": "agora_rtc_sdk",
+      "version": "4.4.32-140",
+      "hash": "8ef4d46f8b3cb9a7e7874abb412cfaf6a1098ec37623f188d13399927d75ade6",
+      "supports": [
+        {
+          "os": "linux",
+          "arch": "x64"
+        }
+      ]
+    },
+    {
+      "type": "addon_loader",
+      "name": "python_addon_loader",
+      "version": "0.11.16",
+      "hash": "4461d42bca063b9fc17163c11d9d620677e19cfcc9d28fd931534d5aaf49c6c0",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime"
+        },
+        {
+          "type": "system",
+          "name": "ten_runtime_python"
+        }
+      ],
+      "supports": [
+        {
+          "os": "linux",
+          "arch": "x64"
+        }
+      ]
+    }
+  ]
+}
