@@ -313,16 +313,30 @@ impl Graph {
     }
 
     /// Get the nodes that match the selector filter
+    /// It will return the extension/subgraph nodes that match the selector
+    /// filter
     pub fn get_nodes_by_selector_node(
         &self,
         selector_node: &SelectorNode,
     ) -> Option<Vec<&GraphNode>> {
         let mut regex_cache: HashMap<String, Regex> = HashMap::new();
 
-        Some(self.nodes.iter().filter(|node|
-            matches_filter(&selector_node.filter, node, &mut regex_cache)).collect())
+        // Get the nodes that match the selector filter
+        let mut nodes: Vec<&GraphNode> = self
+            .nodes
+            .iter()
+            .filter(|node| matches_filter(&selector_node.filter, node, &mut regex_cache))
+            .collect();
+
+        // Remove the selector nodes
+        nodes.retain(|node| !matches!(node.get_type(), GraphNodeType::Selector));
+
+        Some(nodes)
     }
 
+    /// Get the nodes that match the selector filter
+    /// It will return the extension/subgraph nodes that match the selector
+    /// filter
     pub fn get_nodes_by_selector_node_name(
         &self,
         selector_node_name: &str,
