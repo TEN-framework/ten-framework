@@ -1935,7 +1935,6 @@ mod tests {
         ))
         .await;
 
-
         // First, add a connection from extension to selector.
         let src = GraphLoc::with_app_and_type_and_name(
             None,

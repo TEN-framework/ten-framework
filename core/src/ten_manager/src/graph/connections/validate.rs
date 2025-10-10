@@ -519,9 +519,7 @@ pub async fn validate_connection_schema(
                 msg_conversion: msg_conversion_validate_info.msg_conversion,
             };
 
-            if each_node_info.msg_names.len() == 1
-                && each_node_info.msg_conversion.is_some()
-            {
+            if each_node_info.msg_names.len() == 1 && each_node_info.msg_conversion.is_some() {
                 validate_msg_conversion_schema(
                     pkgs_cache,
                     graph,
@@ -530,13 +528,8 @@ pub async fn validate_connection_schema(
                 )
                 .await?;
             } else if each_node_info.msg_conversion.is_none() {
-                check_schema_compatibility(
-                    pkgs_cache,
-                    graph,
-                    graph_app_base_dir,
-                    &each_node_info,
-                )
-                .await?;
+                check_schema_compatibility(pkgs_cache, graph, graph_app_base_dir, &each_node_info)
+                    .await?;
             } else {
                 // msg_conversion is present but msg_names.len() != 1
                 return Err(anyhow::anyhow!(

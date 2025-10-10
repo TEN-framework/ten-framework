@@ -506,8 +506,11 @@ mod tests {
         let temp_dir_path = temp_dir.path().to_str().unwrap().to_string();
 
         // Read test data from embedded JSON files.
-        let input_property_json_str = include_str!("../../../../test_data/graph_add_connection_for_selector/expected_property.json");
-        let input_manifest_json_str = include_str!("../../../../test_data/graph_add_connection_for_selector/manifest.json");
+        let input_property_json_str = include_str!(
+            "../../../../test_data/graph_add_connection_for_selector/expected_property.json"
+        );
+        let input_manifest_json_str =
+            include_str!("../../../../test_data/graph_add_connection_for_selector/manifest.json");
 
         //println!("Property JSON: {}", input_property_json_str);
         //println!("Manifest JSON: {}", input_manifest_json_str);
@@ -556,8 +559,7 @@ mod tests {
         let graph_id_clone;
         {
             let graphs_cache = designer_state.graphs_cache.read().await;
-            let (graph_id, _) =
-                graphs_cache_find_by_name(&graphs_cache, "default").unwrap();
+            let (graph_id, _) = graphs_cache_find_by_name(&graphs_cache, "default").unwrap();
 
             graph_id_clone = *graph_id;
         }
@@ -693,8 +695,7 @@ mod tests {
         let graphs_cache = designer_state.graphs_cache.read().await;
         if let Some(predefined_graph) = graphs_cache_find_by_id(&graphs_cache, &graph_id_clone) {
             // Check if all connections are gone.
-            let connection_gone =
-                predefined_graph.graph.connections().as_ref().is_none();
+            let connection_gone = predefined_graph.graph.connections().as_ref().is_none();
             assert!(connection_gone, "All connections should have been deleted");
         } else {
             panic!("Graph 'default' not found");
