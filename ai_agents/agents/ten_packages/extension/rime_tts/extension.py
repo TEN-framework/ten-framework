@@ -308,7 +308,9 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                     self.stop_event = asyncio.Event()
                     await self.stop_event.wait()
                 else:
-                    self.ten_env.log_debug("Skipping stop_event wait for empty text input")
+                    self.ten_env.log_debug(
+                        "Skipping stop_event wait for empty text input"
+                    )
                 # session finished, connection will be re-established for next request
                 if not self.last_completed_has_reset_synthesizer:
                     self.client.reset_synthesizer()
