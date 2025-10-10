@@ -32,10 +32,14 @@ class ThreadMode:
     MULTI_THREAD: str = "multi_thread"
 
 
-# Cache thread mode at module load time to avoid repeated environment variable reads
+# Cache thread mode at module load time to avoid repeated environment variable
+# reads
 _cached_thread_mode: str | None = None
 
 
+# Note: This action is needed if each async extension has its own asyncio
+# thread, but is not needed when all async extensions use a single shared
+# asyncio thread.
 def _get_cached_thread_mode(ten_env: TenEnv) -> str:
     """Get cached thread mode configuration
 
@@ -43,6 +47,7 @@ def _get_cached_thread_mode(ten_env: TenEnv) -> str:
         str: Thread mode, defaults to single thread mode
     """
     global _cached_thread_mode
+
     if _cached_thread_mode is None:
         mode = os.getenv("TEN_PYTHON_THREAD_MODE", ThreadMode.SINGLE_THREAD)
         if mode not in [ThreadMode.SINGLE_THREAD, ThreadMode.MULTI_THREAD]:
@@ -161,7 +166,8 @@ class _GlobalThreadManager:
             for task in pending_tasks:
                 task.cancel()
 
-            # Wait for all tasks to complete (they should complete quickly after cancellation)
+            # Wait for all tasks to complete (they should complete quickly
+            # after cancellation)
             try:
                 await asyncio.wait_for(
                     asyncio.gather(*pending_tasks, return_exceptions=True),
@@ -175,13 +181,15 @@ class _GlobalThreadManager:
             except Exception as e:
                 ten_env.log_warn(f"Error during task cleanup: {e}")
 
-            # Ensure all tasks are properly awaited to avoid "exception was never retrieved" warnings
+            # Ensure all tasks are properly awaited to avoid "exception was
+            # never retrieved" warnings
             for task in pending_tasks:
                 if not task.done():
                     try:
                         await task
                     except (asyncio.CancelledError, Exception):
-                        # Ignore cancellation and other exceptions during cleanup
+                        # Ignore cancellation and other exceptions during
+                        # cleanup
                         pass
 
             ten_env.log_debug(f"Task cleanup completed")

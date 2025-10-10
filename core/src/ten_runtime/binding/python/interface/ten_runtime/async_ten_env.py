@@ -351,4 +351,9 @@ class AsyncTenEnv(TenEnvBase):
         asyncio.run_coroutine_threadsafe(self._close_loop(), self._ten_loop)
 
         # Wait for the internal thread to finish.
+        #
+        # Note: This action is needed if each async extension has its own
+        # asyncio thread, but is not needed when all async extensions use a
+        # single shared asyncio thread.
+        #
         # self._ten_thread.join()
