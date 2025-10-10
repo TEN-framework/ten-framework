@@ -76,7 +76,7 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                 target_request_id = (
                     request_id if request_id else self.current_request_id or ""
                 )
-                await self.send_tts_error(target_request_id, error)
+                await self.send_tts_error(target_request_id, error, self.current_turn_id)
                 if error.code == ModuleErrorCode.FATAL_ERROR:
                     self.ten_env.log_error(
                         f"Fatal error occurred: {error.message}"
@@ -108,6 +108,7 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                     code=ModuleErrorCode.FATAL_ERROR,
                     vendor_info={},
                 ),
+                self.current_turn_id,
             )
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
@@ -338,6 +339,7 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                             code=ModuleErrorCode.FATAL_ERROR,
                             vendor_info={"vendor": "elevenlabs"},
                         ),
+                        self.current_turn_id,
                     )
                     return
             else:
@@ -357,6 +359,7 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                         code=ModuleErrorCode.FATAL_ERROR,
                         vendor_info={"vendor": "elevenlabs"},
                     ),
+                    self.current_turn_id,
                 )
                 return
 
@@ -375,6 +378,7 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                     code=ModuleErrorCode.NON_FATAL_ERROR,
                     vendor_info=e.error,
                 ),
+                self.current_turn_id,
             )
         except Exception as e:
             self.ten_env.log_error(
@@ -388,6 +392,7 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                     code=ModuleErrorCode.NON_FATAL_ERROR,
                     vendor_info={"vendor": "elevenlabs"},
                 ),
+                self.current_turn_id,
             )
 
     async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
@@ -420,6 +425,7 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                             code=ModuleErrorCode.FATAL_ERROR,
                             vendor_info={"vendor": "elevenlabs"},
                         ),
+                        self.current_turn_id,
                     )
                     return
 
@@ -435,6 +441,7 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                         code=ModuleErrorCode.FATAL_ERROR,
                         vendor_info={"vendor": "elevenlabs"},
                     ),
+                    self.current_turn_id,
                 )
                 return
 
@@ -454,6 +461,7 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                         code=ModuleErrorCode.NON_FATAL_ERROR,
                         vendor_info={"vendor": "elevenlabs"},
                     ),
+                    self.current_turn_id,
                 )
                 return
         await super().on_data(ten_env, data)
