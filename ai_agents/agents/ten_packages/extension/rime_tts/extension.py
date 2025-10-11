@@ -44,6 +44,7 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
         self.stop_event: asyncio.Event = None
         self.msg_polling_task: asyncio.Task = None
         self.recorder: PCMWriter = None
+        self.sent_tts: bool = False
         self.request_start_ts: datetime | None = None
         self.request_total_audio_duration: int = 0
         self.response_msgs = asyncio.Queue[tuple[int, bytes | int]]()
@@ -201,6 +202,9 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                 self.ten_env.log_error(
                     f"Error in _loop: {traceback.format_exc()}"
                 )
+                if self.stop_event:
+                    self.stop_event.set()
+                    self.stop_event = None
 
     async def request_tts(self, t: TTSTextInput) -> None:
         """
@@ -246,6 +250,7 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                     self.current_turn_id = t.metadata.get("turn_id", -1)
                 self.request_start_ts = datetime.now()
                 self.request_total_audio_duration = 0
+                self.sent_tts = False
 
                 if self.config.dump:
                     old_request_ids = [
@@ -279,9 +284,10 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                         )
 
             if t.text.strip() != "":
+                self.sent_tts = True
                 await self.client.send_text(t)
             if self.request_start_ts and t.text_input_end:
-                if t.text.strip() == "":
+                if t.text.strip() == "" and not self.sent_tts:
                     request_event_interval = int(
                         (datetime.now() - self.request_start_ts).total_seconds()
                         * 1000
@@ -304,7 +310,7 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                     f"Updated last completed request_id to: {t.request_id}"
                 )
 
-                if t.text.strip() != "":
+                if self.sent_tts:
                     self.stop_event = asyncio.Event()
                     await self.stop_event.wait()
                     # session finished, connection will be re-established for next request
@@ -312,9 +318,7 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                         self.client.reset_synthesizer()
                         self.last_completed_has_reset_synthesizer = True
                 else:
-                    self.ten_env.log_debug(
-                        "Skipping stop_event wait for empty text input"
-                    )
+                    self.ten_env.log_debug("Skipping stop_event")
 
         except ModuleVendorException as e:
             self.ten_env.log_error(
