@@ -50,7 +50,6 @@ class GlobalThreadManager:
         self, ten_env: "TenEnv"
     ) -> asyncio.AbstractEventLoop:
         """Get or start the global main thread"""
-        need_to_wait = False
         with self._lock:
             if self._main_thread is None or not self._main_thread.is_alive():
                 # Clear the ready event before starting a new thread
@@ -72,11 +71,11 @@ class GlobalThreadManager:
                     name="PythonGlobalMainThread",
                 )
                 self._main_thread.start()
-                need_to_wait = True
 
         # Wait for event loop to start outside the lock
-        if need_to_wait:
-            self._loop_ready_event.wait()
+        # Always wait to ensure the loop is ready, even if the thread already exists
+        # If the loop is already ready, wait() will return immediately
+        self._loop_ready_event.wait()
 
         assert self._main_loop is not None, "Main loop should be initialized"
         return self._main_loop
