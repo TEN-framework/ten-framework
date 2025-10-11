@@ -353,8 +353,19 @@ class SpeechmaticsASRClient:
             result_metadata = {}
             if "speaker" in metadata:
                 result_metadata["speaker"] = metadata["speaker"]
+                self.ten_env.log_info(
+                    f"[PARTIAL] Found speaker: {metadata['speaker']}"
+                )
             if "channel" in metadata:
                 result_metadata["channel"] = metadata["channel"]
+                self.ten_env.log_info(
+                    f"[PARTIAL] Found channel: {metadata['channel']}"
+                )
+
+            if not result_metadata:
+                self.ten_env.log_warn(
+                    f"[PARTIAL] No speaker/channel. Full msg: {msg}"
+                )
 
             asr_result = ASRResult(
                 text=text,
@@ -396,8 +407,19 @@ class SpeechmaticsASRClient:
                 result_metadata = {}
                 if "speaker" in metadata:
                     result_metadata["speaker"] = metadata["speaker"]
+                    self.ten_env.log_info(
+                        f"[FINAL] Found speaker: {metadata['speaker']}"
+                    )
                 if "channel" in metadata:
                     result_metadata["channel"] = metadata["channel"]
+                    self.ten_env.log_info(
+                        f"[FINAL] Found channel: {metadata['channel']}"
+                    )
+
+                if not result_metadata:
+                    self.ten_env.log_warn(
+                        f"[FINAL] No speaker/channel. Full msg: {msg}"
+                    )
 
                 asr_result = ASRResult(
                     text=text,
@@ -434,6 +456,10 @@ class SpeechmaticsASRClient:
                 if alternatives:
                     text = alternatives[0].get("content", "")
                     speaker = alternatives[0].get("speaker", "")
+                    if speaker:
+                        self.ten_env.log_info(
+                            f"[SENTENCE] Word '{text}' has speaker: {speaker}"
+                        )
                     if text:
                         start_ms = result.get("start_time", 0) * 1000
                         end_ms = result.get("end_time", 0) * 1000
@@ -470,8 +496,23 @@ class SpeechmaticsASRClient:
                     for w in self.cache_words:
                         if w.speaker and not result_metadata.get("speaker"):
                             result_metadata["speaker"] = w.speaker
+                            self.ten_env.log_info(
+                                f"[SENTENCE_EOS] Extracted speaker from word: {w.speaker}"
+                            )
                         if w.channel and not result_metadata.get("channel"):
                             result_metadata["channel"] = w.channel
+                            self.ten_env.log_info(
+                                f"[SENTENCE_EOS] Extracted channel from word: {w.channel}"
+                            )
+
+                    if not result_metadata:
+                        self.ten_env.log_warn(
+                            f"[SENTENCE_EOS] No speaker in {len(self.cache_words)} cached words!"
+                        )
+
+                    self.ten_env.log_info(
+                        f"[SENTENCE_EOS] Final metadata: {result_metadata}, sentence: '{sentence}'"
+                    )
 
                     asr_result = ASRResult(
                         text=sentence,
@@ -500,8 +541,23 @@ class SpeechmaticsASRClient:
                 for w in self.cache_words:
                     if w.speaker and not result_metadata.get("speaker"):
                         result_metadata["speaker"] = w.speaker
+                        self.ten_env.log_info(
+                            f"[SENTENCE_PARTIAL] Extracted speaker from word: {w.speaker}"
+                        )
                     if w.channel and not result_metadata.get("channel"):
                         result_metadata["channel"] = w.channel
+                        self.ten_env.log_info(
+                            f"[SENTENCE_PARTIAL] Extracted channel from word: {w.channel}"
+                        )
+
+                if not result_metadata:
+                    self.ten_env.log_warn(
+                        f"[SENTENCE_PARTIAL] No speaker in {len(self.cache_words)} cached words!"
+                    )
+
+                self.ten_env.log_info(
+                    f"[SENTENCE_PARTIAL] Final metadata: {result_metadata}, sentence: '{sentence}'"
+                )
 
                 asr_result_partial = ASRResult(
                     text=sentence,

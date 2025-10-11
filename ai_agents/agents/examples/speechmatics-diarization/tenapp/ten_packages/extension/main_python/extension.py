@@ -42,6 +42,7 @@ class MainControlExtension(AsyncExtension):
         self.sentence_fragment: str = ""
         self.turn_id: int = 0
         self.session_id: str = "0"
+        self.last_speaker: str = ""  # Track the last speaker for context
 
     def _current_metadata(self) -> dict:
         return {"session_id": self.session_id, "turn_id": self.turn_id}
@@ -68,6 +69,7 @@ class MainControlExtension(AsyncExtension):
         self._rtc_user_count += 1
         if self._rtc_user_count == 1 and self.config and self.config.greeting:
             await self._send_to_tts(self.config.greeting, True)
+            # No label for assistant greeting
             await self._send_transcript(
                 "assistant", self.config.greeting, True, 100
             )
@@ -88,8 +90,27 @@ class MainControlExtension(AsyncExtension):
         # Extract speaker information for diarization
         speaker = event.metadata.get("speaker", "")
         channel = event.metadata.get("channel", "")
-        speaker_label = f" [{speaker}]" if speaker else ""
-        channel_label = f" [{channel}]" if channel else ""
+
+        # Debug logging to check if speaker info is received
+        if event.final:
+            self.ten_env.log_info(f"[ASR] Received metadata: speaker='{speaker}', channel='{channel}', metadata={event.metadata}")
+
+        # Format speaker label as [S1], [S2], etc.
+        speaker_label = ""
+        if speaker:
+            speaker_label = f"[{speaker.upper()}] "
+            self.ten_env.log_info(f"[ASR] Using speaker label: {speaker_label}")
+        elif channel:
+            speaker_label = f"[{channel.upper()}] "
+            self.ten_env.log_info(f"[ASR] Using channel label: {speaker_label}")
+        else:
+            # If no speaker/channel info, use last known speaker or default
+            if self.last_speaker:
+                speaker_label = f"[{self.last_speaker.upper()}] "
+                self.ten_env.log_info(f"[ASR] Using last speaker label: {speaker_label}")
+            else:
+                speaker_label = "[USER] "
+                self.ten_env.log_info(f"[ASR] Using default label: {speaker_label}")
 
         if not event.text:
             return
@@ -97,10 +118,17 @@ class MainControlExtension(AsyncExtension):
             await self._interrupt()
         if event.final:
             self.turn_id += 1
+            # Track the current speaker
+            if speaker or channel:
+                self.last_speaker = speaker if speaker else channel
             # Include speaker info in LLM context
-            text_with_speaker = f"{speaker_label}{channel_label} {event.text}" if (speaker or channel) else event.text
+            text_with_speaker = f"{speaker_label}{event.text}"
             await self.agent.queue_llm_input(text_with_speaker)
-        await self._send_transcript("user", event.text + speaker_label + channel_label, event.final, stream_id)
+
+        # Add speaker label to transcript display (always include label)
+        transcript_text = f"{speaker_label}{event.text}"
+        self.ten_env.log_info(f"[ASR] Sending transcript: {transcript_text}")
+        await self._send_transcript("user", transcript_text, event.final, stream_id)
 
     @agent_event_handler(LLMResponseEvent)
     async def _on_llm_response(self, event: LLMResponseEvent):
@@ -116,6 +144,7 @@ class MainControlExtension(AsyncExtension):
             self.sentence_fragment = ""
             await self._send_to_tts(remaining_text, True)
 
+        # No label for assistant responses
         await self._send_transcript(
             "assistant",
             event.text,
