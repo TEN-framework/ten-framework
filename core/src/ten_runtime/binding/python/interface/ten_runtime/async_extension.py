@@ -18,18 +18,70 @@ from libten_runtime_python import (
 from .log_level import LogLevel
 from .ten_env import TenEnv
 from .async_ten_env import AsyncTenEnv
+from .global_thread_manager import GlobalThreadManager
 from .cmd import Cmd
 from .data import Data
 from .video_frame import VideoFrame
 from .audio_frame import AudioFrame
 
 
+# Thread mode configuration
+class ThreadMode:
+    """Thread mode enumeration"""
+
+    SINGLE_THREAD: str = "single_thread"
+    MULTI_THREAD: str = "multi_thread"
+
+
+# Cache thread mode at module load time to avoid repeated environment variable
+# reads
+_cached_thread_mode: str | None = None
+
+
+# Note: This action is needed if each async extension has its own asyncio
+# thread, but is not needed when all async extensions use a single shared
+# asyncio thread.
+def _get_cached_thread_mode(ten_env: TenEnv) -> str:
+    """Get cached thread mode configuration
+
+    Returns:
+        str: Thread mode, defaults to single thread mode
+    """
+    global _cached_thread_mode
+
+    if _cached_thread_mode is None:
+        mode = os.getenv("TEN_PYTHON_THREAD_MODE", ThreadMode.SINGLE_THREAD)
+        if mode not in [ThreadMode.SINGLE_THREAD, ThreadMode.MULTI_THREAD]:
+            ten_env.log_warn(
+                f"Warning: Invalid thread mode '{mode}', using default single_thread mode"
+            )
+            _cached_thread_mode = ThreadMode.SINGLE_THREAD
+        else:
+            _cached_thread_mode = mode
+
+        ten_env.log_info(
+            f"TEN_PYTHON_THREAD_MODE read from environment variable: {_cached_thread_mode}"
+        )
+
+    return _cached_thread_mode
+
+
+def is_single_thread_mode(ten_env: TenEnv) -> bool:
+    """Check if single thread mode is used
+
+    Returns:
+        bool: True if single thread mode, False otherwise
+    """
+    return _get_cached_thread_mode(ten_env) == ThreadMode.SINGLE_THREAD
+
+
 class AsyncExtension(_Extension):
     name: str
     _ten_stop_event: asyncio.Event
     _ten_loop: asyncio.AbstractEventLoop | None
-    _async_ten_env: AsyncTenEnv | None
     _ten_thread: threading.Thread | None
+    _async_ten_env: AsyncTenEnv | None
+    _global_thread_manager: GlobalThreadManager | None
 
     def __new__(cls, name: str):
         instance = super().__new__(cls, name)
@@ -47,27 +99,29 @@ class AsyncExtension(_Extension):
         self._ten_stop_event = asyncio.Event()
 
         self._ten_loop = None
-        self._async_ten_env = None
         self._ten_thread = None
+        self._async_ten_env = None
+        self._global_thread_manager = None
 
     def __del__(self) -> None:
         pass
 
-    async def _thread_routine(self, ten_env: TenEnv):
+    async def _configure_routine(self, ten_env: TenEnv):
+        """Configuration routine executed in the global thread"""
         self._ten_loop = asyncio.get_running_loop()
 
-        assert (
-            self._ten_thread is not None
-        ), "self._ten_thread should never be None"
+        # Create a virtual thread object for AsyncTenEnv
+        # Here we use the current thread identifier
+        current_thread = threading.current_thread()
 
         self._async_ten_env = AsyncTenEnv(
-            ten_env, self._ten_loop, self._ten_thread
+            ten_env, self._ten_loop, current_thread, self._global_thread_manager
         )
 
         await self._wrapper_on_config(self._async_ten_env)
         ten_env.on_configure_done()
 
-        # Suspend the thread until stopEvent is set.
+        # Suspend until stopEvent is set.
         await self._ten_stop_event.wait()
 
         await self._wrapper_on_deinit(self._async_ten_env)
@@ -89,23 +143,72 @@ class AsyncExtension(_Extension):
 
     @final
     def _proxy_on_configure(self, ten_env: TenEnv) -> None:
-        # We pass the TenEnv object to another Python thread without worrying
-        # about the thread safety issue of the TenEnv API, because the actual
-        # execution logic of all TenEnv APIs occurs in the extension thread.
-        # We only need to ensure that the TenEnv object should remain valid
-        # while it is being used. The way to achieve this is to ensure that the
-        # Python thread remains alive until TenEnv.on_deinit_done is called.
+        if is_single_thread_mode(ten_env):
+            # Single thread mode: use global thread manager
+            self._proxy_on_configure_single_thread(ten_env)
+        else:
+            # Multi-thread mode: create independent thread for each extension
+            self._proxy_on_configure_multi_thread(ten_env)
+
+    def _proxy_on_configure_single_thread(self, ten_env: TenEnv) -> None:
+        """Single thread mode configuration handling"""
+        self._global_thread_manager = GlobalThreadManager()
+
+        # Increment reference count
+        self._global_thread_manager.increment_ref_count()
+
+        # Get or start the global main thread
+        main_loop = self._global_thread_manager.get_or_start_thread(ten_env)
+
+        # Submit configuration task to global event loop
+        asyncio.run_coroutine_threadsafe(
+            self._configure_routine(ten_env), main_loop
+        )
+
+    def _proxy_on_configure_multi_thread(self, ten_env: TenEnv) -> None:
+        """Multi-thread mode configuration handling"""
+        # Create and run event loop in new thread
         self._ten_thread = threading.Thread(
-            target=asyncio.run, args=(self._thread_routine(ten_env),)
+            target=self._run_multi_thread_configure,
+            args=(ten_env,),
+            daemon=True,
+            name=f"AsyncExtension-{self.name}",
         )
         self._ten_thread.start()
 
+    def _run_multi_thread_configure(self, ten_env: TenEnv) -> None:
+        """Multi-thread mode configuration execution function"""
+        try:
+            # Create event loop in the new thread
+            self._ten_loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(self._ten_loop)
+
+            # Run configuration coroutine
+            self._ten_loop.run_until_complete(self._configure_routine(ten_env))
+        except Exception as e:
+            ten_env.log_warn(f"Error in multi-thread configure: {e}")
+            traceback.print_exc()
+        finally:
+            if self._ten_loop and not self._ten_loop.is_closed():
+                self._ten_loop.close()
+
     @final
     def _proxy_on_init(self, ten_env: TenEnv) -> None:
-        assert self._ten_loop is not None, "self._ten_loop should never be None"
-        asyncio.run_coroutine_threadsafe(
-            self._proxy_async_on_init(ten_env), self._ten_loop
-        )
+        if is_single_thread_mode(ten_env):
+            assert (
+                self._global_thread_manager is not None
+            ), "self._global_thread_manager should never be None"
+
+            main_loop = self._global_thread_manager.get_thread()
+            asyncio.run_coroutine_threadsafe(
+                self._proxy_async_on_init(ten_env), main_loop
+            )
+        else:
+            # Multi-thread mode: run directly in current thread's event loop
+            if self._ten_loop and not self._ten_loop.is_closed():
+                asyncio.run_coroutine_threadsafe(
+                    self._proxy_async_on_init(ten_env), self._ten_loop
+                )
 
     @final
     async def _proxy_async_on_init(self, ten_env: TenEnv):
@@ -117,10 +220,21 @@ class AsyncExtension(_Extension):
 
     @final
     def _proxy_on_start(self, ten_env: TenEnv) -> None:
-        assert self._ten_loop is not None, "self._ten_loop should never be None"
-        asyncio.run_coroutine_threadsafe(
-            self._proxy_async_on_start(ten_env), self._ten_loop
-        )
+        if is_single_thread_mode(ten_env):
+            assert (
+                self._global_thread_manager is not None
+            ), "self._global_thread_manager should never be None"
+
+            main_loop = self._global_thread_manager.get_thread()
+            asyncio.run_coroutine_threadsafe(
+                self._proxy_async_on_start(ten_env), main_loop
+            )
+        else:
+            # Multi-thread mode: run directly in current thread's event loop
+            if self._ten_loop and not self._ten_loop.is_closed():
+                asyncio.run_coroutine_threadsafe(
+                    self._proxy_async_on_start(ten_env), self._ten_loop
+                )
 
     @final
     async def _proxy_async_on_start(self, ten_env: TenEnv):
@@ -132,10 +246,21 @@ class AsyncExtension(_Extension):
 
     @final
     def _proxy_on_stop(self, ten_env: TenEnv) -> None:
-        assert self._ten_loop is not None, "self._ten_loop should never be None"
-        asyncio.run_coroutine_threadsafe(
-            self._proxy_async_on_stop(ten_env), self._ten_loop
-        )
+        if is_single_thread_mode(ten_env):
+            assert (
+                self._global_thread_manager is not None
+            ), "self._global_thread_manager should never be None"
+
+            main_loop = self._global_thread_manager.get_thread()
+            asyncio.run_coroutine_threadsafe(
+                self._proxy_async_on_stop(ten_env), main_loop
+            )
+        else:
+            # Multi-thread mode: run directly in current thread's event loop
+            if self._ten_loop and not self._ten_loop.is_closed():
+                asyncio.run_coroutine_threadsafe(
+                    self._proxy_async_on_stop(ten_env), self._ten_loop
+                )
 
     @final
     async def _proxy_async_on_stop(self, ten_env: TenEnv):
@@ -146,55 +271,118 @@ class AsyncExtension(_Extension):
         ten_env.on_stop_done()
 
     @final
-    def _proxy_on_deinit(self, _ten_env: TenEnv) -> None:
-        assert self._ten_loop is not None, "self._ten_loop should never be None"
-        asyncio.run_coroutine_threadsafe(self._stop_thread(), self._ten_loop)
+    def _proxy_on_deinit(self, ten_env: TenEnv) -> None:
+        if is_single_thread_mode(ten_env):
+            assert (
+                self._global_thread_manager is not None
+            ), "self._global_thread_manager should never be None"
+
+            main_loop = self._global_thread_manager.get_thread()
+            asyncio.run_coroutine_threadsafe(self._stop_thread(), main_loop)
+        else:
+            # Multi-thread mode: run directly in current thread's event loop
+            if self._ten_loop and not self._ten_loop.is_closed():
+                asyncio.run_coroutine_threadsafe(
+                    self._stop_thread(), self._ten_loop
+                )
 
     @final
-    def _proxy_on_cmd(self, _ten_env: TenEnv, cmd: Cmd) -> None:
+    def _proxy_on_cmd(self, ten_env: TenEnv, cmd: Cmd) -> None:
         assert (
             self._async_ten_env is not None
         ), "self._async_ten_env should never be None"
-        assert self._ten_loop is not None, "self._ten_loop should never be None"
-        asyncio.run_coroutine_threadsafe(
-            self._wrapper_on_cmd(self._async_ten_env, cmd), self._ten_loop
-        )
+        if is_single_thread_mode(ten_env):
+            assert (
+                self._global_thread_manager is not None
+            ), "self._global_thread_manager should never be None"
+
+            main_loop = self._global_thread_manager.get_thread()
+            asyncio.run_coroutine_threadsafe(
+                self._wrapper_on_cmd(self._async_ten_env, cmd), main_loop
+            )
+        else:
+            # Multi-thread mode: run directly in current thread's event loop
+            if self._ten_loop and not self._ten_loop.is_closed():
+                asyncio.run_coroutine_threadsafe(
+                    self._wrapper_on_cmd(self._async_ten_env, cmd),
+                    self._ten_loop,
+                )
 
     @final
-    def _proxy_on_data(self, _ten_env: TenEnv, data: Data) -> None:
+    def _proxy_on_data(self, ten_env: TenEnv, data: Data) -> None:
         assert (
             self._async_ten_env is not None
         ), "self._async_ten_env should never be None"
-        assert self._ten_loop is not None, "self._ten_loop should never be None"
-        asyncio.run_coroutine_threadsafe(
-            self._wrapper_on_data(self._async_ten_env, data), self._ten_loop
-        )
+        if is_single_thread_mode(ten_env):
+            assert (
+                self._global_thread_manager is not None
+            ), "self._global_thread_manager should never be None"
+
+            main_loop = self._global_thread_manager.get_thread()
+            asyncio.run_coroutine_threadsafe(
+                self._wrapper_on_data(self._async_ten_env, data), main_loop
+            )
+        else:
+            # Multi-thread mode: run directly in current thread's event loop
+            if self._ten_loop and not self._ten_loop.is_closed():
+                asyncio.run_coroutine_threadsafe(
+                    self._wrapper_on_data(self._async_ten_env, data),
+                    self._ten_loop,
+                )
 
     @final
     def _proxy_on_video_frame(
-        self, _ten_env: TenEnv, video_frame: VideoFrame
+        self, ten_env: TenEnv, video_frame: VideoFrame
     ) -> None:
         assert (
             self._async_ten_env is not None
         ), "self._async_ten_env should never be None"
-        assert self._ten_loop is not None, "self._ten_loop should never be None"
-        asyncio.run_coroutine_threadsafe(
-            self._wrapper_on_video_frame(self._async_ten_env, video_frame),
-            self._ten_loop,
-        )
+        if is_single_thread_mode(ten_env):
+            assert (
+                self._global_thread_manager is not None
+            ), "self._global_thread_manager should never be None"
+
+            main_loop = self._global_thread_manager.get_thread()
+            asyncio.run_coroutine_threadsafe(
+                self._wrapper_on_video_frame(self._async_ten_env, video_frame),
+                main_loop,
+            )
+        else:
+            # Multi-thread mode: run directly in current thread's event loop
+            if self._ten_loop and not self._ten_loop.is_closed():
+                asyncio.run_coroutine_threadsafe(
+                    self._wrapper_on_video_frame(
+                        self._async_ten_env, video_frame
+                    ),
+                    self._ten_loop,
+                )
 
     @final
     def _proxy_on_audio_frame(
-        self, _ten_env: TenEnv, audio_frame: AudioFrame
+        self, ten_env: TenEnv, audio_frame: AudioFrame
     ) -> None:
         assert (
             self._async_ten_env is not None
         ), "self._async_ten_env should never be None"
-        assert self._ten_loop is not None, "self._ten_loop should never be None"
-        asyncio.run_coroutine_threadsafe(
-            self._wrapper_on_audio_frame(self._async_ten_env, audio_frame),
-            self._ten_loop,
-        )
+        if is_single_thread_mode(ten_env):
+            assert (
+                self._global_thread_manager is not None
+            ), "self._global_thread_manager should never be None"
+
+            main_loop = self._global_thread_manager.get_thread()
+            asyncio.run_coroutine_threadsafe(
+                self._wrapper_on_audio_frame(self._async_ten_env, audio_frame),
+                main_loop,
+            )
+        else:
+            # Multi-thread mode: run directly in current thread's event loop
+            if self._ten_loop and not self._ten_loop.is_closed():
+                asyncio.run_coroutine_threadsafe(
+                    self._wrapper_on_audio_frame(
+                        self._async_ten_env, audio_frame
+                    ),
+                    self._ten_loop,
+                )
 
     # Wrapper methods for handling exceptions in User-defined methods
 

@@ -16,12 +16,11 @@
 
 typedef struct ten_env_notify_log_ctx_t {
   int32_t level;
-  const char *func_name;
-  const char *file_name;
+  ten_string_t func_name;
+  ten_string_t file_name;
   size_t line_no;
-  const char *msg;
-  const char *category;
-  ten_event_t *completed;
+  ten_string_t msg;
+  ten_string_t category;
 } ten_env_notify_log_ctx_t;
 
 static ten_env_notify_log_ctx_t *ten_env_notify_log_ctx_create(
@@ -31,12 +30,35 @@ static ten_env_notify_log_ctx_t *ten_env_notify_log_ctx_create(
   TEN_ASSERT(ctx, "Failed to allocate memory.");
 
   ctx->level = level;
-  ctx->func_name = func_name;
-  ctx->file_name = file_name;
+
+  if (func_name) {
+    ten_string_init_from_c_str_with_size(&ctx->func_name, func_name,
+                                         strlen(func_name));
+  } else {
+    TEN_STRING_INIT(ctx->func_name);
+  }
+
+  if (file_name) {
+    ten_string_init_from_c_str_with_size(&ctx->file_name, file_name,
+                                         strlen(file_name));
+  } else {
+    TEN_STRING_INIT(ctx->file_name);
+  }
+
   ctx->line_no = line_no;
-  ctx->msg = msg;
-  ctx->category = category;
-  ctx->completed = ten_event_create(0, 1);
+
+  if (msg) {
+    ten_string_init_from_c_str_with_size(&ctx->msg, msg, strlen(msg));
+  } else {
+    TEN_STRING_INIT(ctx->msg);
+  }
+
+  if (category) {
+    ten_string_init_from_c_str_with_size(&ctx->category, category,
+                                         strlen(category));
+  } else {
+    TEN_STRING_INIT(ctx->category);
+  }
 
   return ctx;
 }
@@ -44,7 +66,10 @@ static ten_env_notify_log_ctx_t *ten_env_notify_log_ctx_create(
 static void ten_env_notify_log_ctx_destroy(ten_env_notify_log_ctx_t *ctx) {
   TEN_ASSERT(ctx, "Invalid argument.");
 
-  ten_event_destroy(ctx->completed);
+  ten_string_deinit(&ctx->func_name);
+  ten_string_deinit(&ctx->file_name);
+  ten_string_deinit(&ctx->msg);
+  ten_string_deinit(&ctx->category);
 
   TEN_FREE(ctx);
 }
@@ -57,10 +82,12 @@ static void ten_env_proxy_notify_log(ten_env_t *ten_env, void *user_data) {
   ten_env_notify_log_ctx_t *ctx = user_data;
   TEN_ASSERT(ctx, "Should not happen.");
 
-  ten_env_log(ten_env, ctx->level, ctx->func_name, ctx->file_name, ctx->line_no,
-              ctx->msg, ctx->category, NULL);
+  ten_env_log(ten_env, ctx->level, ten_string_get_raw_str(&ctx->func_name),
+              ten_string_get_raw_str(&ctx->file_name), ctx->line_no,
+              ten_string_get_raw_str(&ctx->msg),
+              ten_string_get_raw_str(&ctx->category), NULL);
 
-  ten_event_set(ctx->completed);
+  ten_env_notify_log_ctx_destroy(ctx);
 }
 
 PyObject *ten_py_ten_env_log(PyObject *self, PyObject *args) {
@@ -109,18 +136,6 @@ PyObject *ten_py_ten_env_log(PyObject *self, PyObject *args) {
       ten_env_notify_log_ctx_destroy(ctx);
       return result;
     }
-
-    // The current implementation of the logging API is fully synchronous. One
-    // reason for not designing it as asynchronous is that if `exit()` is called
-    // immediately after logging, the log message may not actually be output,
-    // which is very unfriendly for diagnosing issues. However, in the future,
-    // it might be possible to support both synchronous and asynchronous logging
-    // APIs. For example, developers could choose the mode via a parameter in
-    // the logging API, as asynchronous implementation offers better performance
-    // compared to the synchronous approach.
-    PyThreadState *saved_py_thread_state = PyEval_SaveThread();
-    ten_event_wait(ctx->completed, -1);
-    PyEval_RestoreThread(saved_py_thread_state);
   } else {
     // TODO(Wei): This function is currently specifically designed for the addon
     // because the addon currently does not have a main thread, so it's unable
@@ -132,12 +147,16 @@ PyObject *ten_py_ten_env_log(PyObject *self, PyObject *args) {
                "Should not happen.");
 
     ten_env_log_without_check_thread(
-        py_ten_env->c_ten_env, ctx->level, ctx->func_name, ctx->file_name,
-        ctx->line_no, ctx->msg, ctx->category, NULL);
+        py_ten_env->c_ten_env, ctx->level,
+        ten_string_get_raw_str(&ctx->func_name),
+        ten_string_get_raw_str(&ctx->file_name), ctx->line_no,
+        ten_string_get_raw_str(&ctx->msg),
+        ten_string_get_raw_str(&ctx->category), NULL);
+
+    ten_env_notify_log_ctx_destroy(ctx);
   }
 
   ten_error_deinit(&err);
-  ten_env_notify_log_ctx_destroy(ctx);
 
   Py_RETURN_NONE;
 }

@@ -18,6 +18,7 @@ from .data import Data
 from .video_frame import VideoFrame
 from .audio_frame import AudioFrame
 from .cmd_result import CmdResult
+from .global_thread_manager import GlobalThreadManager
 
 CmdResultTuple = tuple[CmdResult | None, TenError | None]
 ResultHandlerResultType = TypeVar(
@@ -29,15 +30,21 @@ class AsyncTenEnv(TenEnvBase):
     _ten_loop: AbstractEventLoop
     _ten_thread: threading.Thread
     _ten_all_tasks_done_event: asyncio.Event
+    _global_thread_manager: GlobalThreadManager | None
 
     def __init__(
-        self, ten_env: TenEnv, loop: AbstractEventLoop, thread: threading.Thread
+        self,
+        ten_env: TenEnv,
+        loop: AbstractEventLoop,
+        thread: threading.Thread,
+        global_thread_manager: GlobalThreadManager | None,
     ) -> None:
         super().__init__(ten_env._internal)
 
         self._ten_loop = loop
         self._ten_thread = thread
         self._ten_all_tasks_done_event = asyncio.Event()
+        self._global_thread_manager = global_thread_manager
         ten_env._set_release_handler(  # pyright: ignore[reportPrivateUsage]
             self._on_release
         )
@@ -350,5 +357,21 @@ class AsyncTenEnv(TenEnvBase):
         # `ten_env_proxy == NULL`.
         asyncio.run_coroutine_threadsafe(self._close_loop(), self._ten_loop)
 
-        # Wait for the internal thread to finish.
-        self._ten_thread.join()
+        # Check if we need to join the thread based on reference count
+        if self._global_thread_manager is not None:
+            # Decrement reference count and check if it reaches 0
+            ref_count = self._global_thread_manager.decrement_ref_count()
+
+            # Only join the thread if reference count reaches 0
+            if ref_count <= 0:
+                # Wait for the internal thread to finish.
+                #
+                # Note: This action is needed if each async extension has its
+                # own asyncio thread, but is not needed when all async
+                # extensions use a single shared asyncio thread.
+                self._ten_thread.join()
+                self._global_thread_manager.reset()
+        else:
+            # Fallback: if no global thread manager reference, join the thread
+            # This maintains backward compatibility
+            self._ten_thread.join()

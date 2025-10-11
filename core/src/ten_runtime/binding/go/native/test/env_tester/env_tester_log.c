@@ -19,7 +19,6 @@ typedef struct ten_env_tester_notify_log_ctx_t {
   size_t line_no;
   ten_string_t msg;
   ten_string_t category;
-  ten_event_t *completed;
 } ten_env_tester_notify_log_ctx_t;
 
 static ten_env_tester_notify_log_ctx_t *ten_env_tester_notify_log_ctx_create(
@@ -39,7 +38,6 @@ static ten_env_tester_notify_log_ctx_t *ten_env_tester_notify_log_ctx_create(
   ctx->line_no = line_no;
   ten_string_init_from_c_str_with_size(&ctx->msg, msg, msg_len);
   ten_string_init_from_c_str_with_size(&ctx->category, category, category_len);
-  ctx->completed = ten_event_create(0, 1);
 
   return ctx;
 }
@@ -48,7 +46,6 @@ static void ten_env_tester_notify_log_ctx_destroy(
     ten_env_tester_notify_log_ctx_t *ctx) {
   TEN_ASSERT(ctx, "Invalid argument.");
 
-  ten_event_destroy(ctx->completed);
   ten_string_deinit(&ctx->func_name);
   ten_string_deinit(&ctx->file_name);
   ten_string_deinit(&ctx->msg);
@@ -68,7 +65,7 @@ static void ten_go_ten_env_tester_log_proxy_notify(
                      ten_string_get_raw_str(&ctx->msg),
                      ten_string_get_raw_str(&ctx->category), NULL, NULL);
 
-  ten_event_set(ctx->completed);
+  ten_env_tester_notify_log_ctx_destroy(ctx);
 }
 
 ten_go_error_t ten_go_ten_env_tester_log(
@@ -123,10 +120,7 @@ ten_go_error_t ten_go_ten_env_tester_log(
                                         ctx, &err);
   TEN_ASSERT(rc, "Should not happen.");
 
-  ten_event_wait(ctx->completed, -1);
-
   ten_error_deinit(&err);
-  ten_env_tester_notify_log_ctx_destroy(ctx);
 
   return cgo_error;
 }
