@@ -83,6 +83,7 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                     code=ModuleErrorCode.FATAL_ERROR,
                     vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
                 ),
+                self.current_turn_id,
             )
         except Exception as e:
             ten_env.log_error(f"on_init failed: {traceback.format_exc()}")
@@ -94,6 +95,7 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                     code=ModuleErrorCode.FATAL_ERROR,
                     vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
                 ),
+                self.current_turn_id,
             )
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
@@ -191,6 +193,7 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                                 vendor=self.vendor()
                             ),
                         ),
+                        self.current_turn_id,
                     )
                 else:
                     ten_env.log_error(
@@ -377,6 +380,7 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                                     vendor=self.vendor()
                                 ),
                             ),
+                            self.current_turn_id,
                         )
                         return  # Exit early on error, don't send audio_end
 
@@ -400,6 +404,7 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                         code=ModuleErrorCode.NON_FATAL_ERROR,
                         vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
                     ),
+                    self.current_turn_id,
                 )
 
             finally:
@@ -443,4 +448,5 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                     code=ModuleErrorCode.NON_FATAL_ERROR,
                     vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
                 ),
+                self.current_turn_id,
             )

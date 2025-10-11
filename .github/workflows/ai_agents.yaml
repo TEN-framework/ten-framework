@@ -117,6 +117,7 @@ jobs:
       - name: Run lint
         run: |
           cd ai_agents
+          task build-agent-deps
           task lint
 
       - name: Run tests

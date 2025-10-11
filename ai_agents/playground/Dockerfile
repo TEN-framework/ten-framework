@@ -12,10 +12,7 @@ WORKDIR /app
 # Install dependencies based on the preferred package manager
 COPY package.json bun.lock ./
 RUN \
-  if [ -f yarn.lock ]; then corepack enable yarn && yarn --immutable; \
-  elif [ -f package-lock.json ]; then npm ci; \
-  elif [ -f pnpm-lock.yaml ]; then npm install -g pnpm@10.2.0 && pnpm i; \
-  elif [ -f bun.lockb ]; then bun i --frozen-lockfile; \
+  if [ -f bun.lockb ]; then bun i --frozen-lockfile; \
   elif [ -f bun.lock ]; then bun i --frozen-lockfile; \
   else echo "Lockfile not found." && exit 1; \
   fi
@@ -32,10 +29,7 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 
 RUN \
-  if [ -f yarn.lock ]; then corepack enable yarn && yarn run build; \
-  elif [ -f package-lock.json ]; then npm run build; \
-  elif [ -f pnpm-lock.yaml ]; then npm install -g pnpm@10.2.0 && pnpm run build; \
-  elif [ -f bun.lockb ]; then bun run build; \
+  if [ -f bun.lockb ]; then bun run build; \
   elif [ -f bun.lock ]; then bun run build; \
   else echo "Lockfile not found." && exit 1; \
   fi

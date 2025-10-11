@@ -1,0 +1,28 @@
+{
+  "nodes": [
+    {
+      "type": "subgraph",
+      "name": "subgraph_3",
+      "graph": {
+        "import_uri": "test_graph_3.json"
+      },
+      "property": {
+        "key": "value"
+      }
+    }
+  ],
+  "connections": [],
+  "exposed_messages": [
+    {
+      "type": "cmd_in",
+      "name": "C",
+      "extension": "ext_b"
+    }
+  ],
+  "exposed_properties": [
+    {
+      "name": "key",
+      "extension": "ext_c"
+    }
+  ]
+}

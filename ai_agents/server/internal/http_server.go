@@ -13,7 +13,6 @@ import (
 	"log/slog"
 	"mime/multipart"
 	"net/http"
-	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -39,6 +38,7 @@ type HttpServerConfig struct {
 	Port                     string
 	WorkersMax               int
 	WorkerQuitTimeoutSeconds int
+	TenappDir                string
 }
 
 type PingReq struct {
@@ -56,6 +56,7 @@ type StartReq struct {
 	WorkerHttpServerPort int32                             `json:"worker_http_server_port,omitempty"`
 	Properties           map[string]map[string]interface{} `json:"properties,omitempty"`
 	QuitTimeoutSeconds   int                               `json:"timeout,omitempty"`
+	TenappDir            string                            `json:"tenapp_dir,omitempty"` // IGNORED for security - always uses launch tenapp_dir
 }
 
 type StopReq struct {
@@ -111,10 +112,12 @@ func (s *HttpServer) handlerList(c *gin.Context) {
 
 func (s *HttpServer) handleGraphs(c *gin.Context) {
 	// read the property.json file and get the graph list from predefined_graphs, return the result as response
-	// for every graph object returned, only keep the name and auto_start fields
-	content, err := os.ReadFile(PropertyJsonFile)
+    // for every graph object returned, only keep the name and auto_start fields
+    // Read property.json from tenapp_dir
+    propertyJsonPath := filepath.Join(s.config.TenappDir, "property.json")
+    content, err := os.ReadFile(propertyJsonPath)
 	if err != nil {
-		slog.Error("failed to read property.json file", "err", err, logTag)
+        slog.Error("failed to read property.json file", "err", err, "path", propertyJsonPath, logTag)
 		s.output(c, codeErrReadFileFailed, http.StatusInternalServerError)
 		return
 	}
@@ -148,7 +151,7 @@ func (s *HttpServer) handleGraphs(c *gin.Context) {
 		if ok {
 			graphs = append(graphs, map[string]interface{}{
 				"name":       graphMap["name"],
-				"graph_id":       graphMap["name"],
+				"graph_id":   graphMap["name"],
 				"auto_start": graphMap["auto_start"],
 			})
 		}
@@ -280,14 +283,22 @@ func (s *HttpServer) handlerStart(c *gin.Context) {
 	}
 
 	req.WorkerHttpServerPort = getHttpServerPort()
-	propertyJsonFile, logFile, err := s.processProperty(&req)
+
+	// Security: Always use launch tenapp_dir, ignore request tenapp_dir to prevent path traversal attacks
+	tenappDir := s.config.TenappDir
+	if req.TenappDir != "" {
+		slog.Warn("Ignoring request tenapp_dir for security", "requestId", req.RequestId, "requestedTenappDir", req.TenappDir, logTag)
+	}
+	slog.Info("Using launch tenapp_dir", "requestId", req.RequestId, "tenappDir", tenappDir, logTag)
+
+	propertyJsonFile, logFile, err := s.processProperty(&req, tenappDir)
 	if err != nil {
 		slog.Error("handlerStart process property", "channelName", req.ChannelName, "requestId", req.RequestId, logTag)
 		s.output(c, codeErrProcessPropertyFailed, http.StatusInternalServerError)
 		return
 	}
 
-	worker := newWorker(req.ChannelName, logFile, s.config.Log2Stdout, propertyJsonFile)
+	worker := newWorker(req.ChannelName, logFile, s.config.Log2Stdout, propertyJsonFile, tenappDir)
 	worker.HttpServerPort = req.WorkerHttpServerPort
 	worker.GraphName = req.GraphName // Save graphName in the Worker instance
 
@@ -447,8 +458,16 @@ func (s *HttpServer) handlerVectorDocumentUpload(c *gin.Context) {
 
 	slog.Info("handlerVectorDocumentUpload start", "channelName", req.ChannelName, "requestId", req.RequestId, logTag)
 
+	// Validate channel name to prevent path injection
+	safeChannelName, err := sanitizeChannelName(req.ChannelName)
+	if err != nil {
+		slog.Error("Invalid channel name in upload", "channelName", req.ChannelName, "requestId", req.RequestId, "err", err, logTag)
+		s.output(c, codeErrParamsInvalid, http.StatusBadRequest)
+		return
+	}
+
 	file := req.File
-	uploadFile := fmt.Sprintf("%s/file-%s-%d%s", s.config.LogPath, gmd5.MustEncryptString(req.ChannelName), time.Now().UnixNano(), filepath.Ext(file.Filename))
+	uploadFile := fmt.Sprintf("%s/file-%s-%d%s", s.config.LogPath, gmd5.MustEncryptString(safeChannelName), time.Now().UnixNano(), filepath.Ext(file.Filename))
 	if err := c.SaveUploadedFile(file, uploadFile); err != nil {
 		slog.Error("handlerVectorDocumentUpload save file failed", "err", err, "channelName", req.ChannelName, "requestId", req.RequestId, logTag)
 		s.output(c, codeErrSaveFileFailed, http.StatusBadRequest)
@@ -456,12 +475,12 @@ func (s *HttpServer) handlerVectorDocumentUpload(c *gin.Context) {
 	}
 
 	// Generate collection
-	collection := fmt.Sprintf("a%s_%d", gmd5.MustEncryptString(req.ChannelName), time.Now().UnixNano())
+	collection := fmt.Sprintf("a%s_%d", gmd5.MustEncryptString(safeChannelName), time.Now().UnixNano())
 	fileName := filepath.Base(file.Filename)
 
 	// update worker
 	worker := workers.Get(req.ChannelName).(*Worker)
-	err := worker.update(&WorkerUpdateReq{
+	err = worker.update(&WorkerUpdateReq{
 		RequestId:   req.RequestId,
 		ChannelName: req.ChannelName,
 		Collection:  collection,
@@ -512,10 +531,17 @@ func mergeProperties(original, newProps map[string]interface{}) map[string]inter
 	return original
 }
 
-func (s *HttpServer) processProperty(req *StartReq) (propertyJsonFile string, logFile string, err error) {
-	content, err := os.ReadFile(PropertyJsonFile)
+func (s *HttpServer) processProperty(req *StartReq, tenappDir string) (propertyJsonFile string, logFile string, err error) {
+	// Debug logging
+	slog.Info("processProperty called", "requestId", req.RequestId, "tenappDir", tenappDir, "logPath", s.config.LogPath, logTag)
+
+	// Build property.json path based on tenapp_dir
+	propertyJsonPath := filepath.Join(tenappDir, "property.json")
+	slog.Info("Reading property.json from", "requestId", req.RequestId, "propertyJsonPath", propertyJsonPath, logTag)
+
+	content, err := os.ReadFile(propertyJsonPath)
 	if err != nil {
-		slog.Error("handlerStart read property.json failed", "err", err, "propertyJsonFile", propertyJsonFile, "requestId", req.RequestId, logTag)
+		slog.Error("handlerStart read property.json failed", "err", err, "propertyJsonPath", propertyJsonPath, "requestId", req.RequestId, logTag)
 		return
 	}
 
@@ -639,12 +665,12 @@ func (s *HttpServer) processProperty(req *StartReq) (propertyJsonFile string, lo
 		}
 	}
 
-    // Validate environment variables in the "nodes" section
-    // Support optional env placeholder with default: ${env:VAR|default}
-    // Capture groups:
-    //  1) variable name
-    //  2) optional default part starting with '|', may be empty string like '|'
-    envPattern := regexp.MustCompile(`\${env:([^}|]+)(\|[^}]*)?}`)
+	// Validate environment variables in the "nodes" section
+	// Support optional env placeholder with default: ${env:VAR|default}
+	// Capture groups:
+	//  1) variable name
+	//  2) optional default part starting with '|', may be empty string like '|'
+	envPattern := regexp.MustCompile(`\${env:([^}|]+)(\|[^}]*)?}`)
 	for _, graph := range newGraphs {
 		graphMap, _ := graph.(map[string]interface{})
 		graphData, _ := graphMap["graph"].(map[string]interface{})
@@ -668,29 +694,29 @@ func (s *HttpServer) processProperty(req *StartReq) (propertyJsonFile string, lo
 				// Log the property value being processed
 				// slog.Info("Processing property", "key", key, "value", strVal)
 
-                matches := envPattern.FindAllStringSubmatch(strVal, -1)
+				matches := envPattern.FindAllStringSubmatch(strVal, -1)
 				// if len(matches) == 0 {
 				// 	slog.Info("No environment variable patterns found in property", "key", key, "value", strVal)
 				// }
 
-                for _, match := range matches {
-                    if len(match) < 2 {
-                        continue
-                    }
-                    variable := match[1]
-                    // match[2] contains the optional default part (e.g., "|some-default" or just "|")
-                    hasDefault := len(match) >= 3 && match[2] != ""
-                    exists := os.Getenv(variable) != ""
-                    // slog.Info("Checking environment variable", "variable", variable, "exists", exists, "hasDefault", hasDefault)
-                    if !exists {
-                        if hasDefault {
-                            // Optional env not set; skip error logging
-                            slog.Info("Optional environment variable not set; using default", "variable", variable, "property", key, "requestId", req.RequestId, logTag)
-                        } else {
-                            slog.Error("Environment variable not found", "variable", variable, "property", key, "requestId", req.RequestId, logTag)
-                        }
-                    }
-                }
+				for _, match := range matches {
+					if len(match) < 2 {
+						continue
+					}
+					variable := match[1]
+					// match[2] contains the optional default part (e.g., "|some-default" or just "|")
+					hasDefault := len(match) >= 3 && match[2] != ""
+					exists := os.Getenv(variable) != ""
+					// slog.Info("Checking environment variable", "variable", variable, "exists", exists, "hasDefault", hasDefault)
+					if !exists {
+						if hasDefault {
+							// Optional env not set; skip error logging
+							slog.Info("Optional environment variable not set; using default", "variable", variable, "property", key, "requestId", req.RequestId, logTag)
+						} else {
+							slog.Error("Environment variable not found", "variable", variable, "property", key, "requestId", req.RequestId, logTag)
+						}
+					}
+				}
 			}
 
 		}
@@ -704,9 +730,90 @@ func (s *HttpServer) processProperty(req *StartReq) (propertyJsonFile string, lo
 	}
 
 	ts := time.Now().Format("20060102_150405_000")
-	propertyJsonFile = fmt.Sprintf("%s/property-%s-%s.json", s.config.LogPath, url.QueryEscape(req.ChannelName), ts)
-	logFile = fmt.Sprintf("%s/app-%s-%s.log", s.config.LogPath, url.QueryEscape(req.ChannelName), ts)
-	os.WriteFile(propertyJsonFile, []byte(modifiedPropertyJson), 0644)
+
+	// Use a more reliable temp directory if LogPath is not writable
+	tempDir := s.config.LogPath
+
+	// Test if we can actually write to the directory by trying to create a test file
+	testFile := filepath.Join(tempDir, "test-write-permission")
+	if testFileHandle, testErr := os.Create(testFile); testErr != nil {
+		// Fallback to system temp directory
+		tempDir = os.TempDir()
+		slog.Info("Using system temp directory as fallback", "requestId", req.RequestId, "tempDir", tempDir, "originalLogPath", s.config.LogPath, "testErr", testErr, logTag)
+	} else {
+		// Clean up test file
+		testFileHandle.Close()
+		os.Remove(testFile)
+		slog.Info("LogPath is writable", "requestId", req.RequestId, "tempDir", tempDir, logTag)
+	}
+
+	// Validate and sanitize channel name to prevent path injection
+	safeChannelName, err := sanitizeChannelName(req.ChannelName)
+	if err != nil {
+		slog.Error("Invalid channel name", "channelName", req.ChannelName, "requestId", req.RequestId, "err", err, logTag)
+		return "", "", fmt.Errorf("invalid channel name: %w", err)
+	}
+
+	propertyJsonFile = filepath.Join(tempDir, fmt.Sprintf("property-%s-%s.json", safeChannelName, ts))
+	// Ensure absolute path for property.json file
+	propertyJsonFile, err = filepath.Abs(propertyJsonFile)
+	if err != nil {
+		slog.Error("Failed to get absolute path for property.json", "err", err, "requestId", req.RequestId, logTag)
+		return "", "", err
+	}
+
+	// Validate that the final path is within the expected directory
+	if !isPathSafe(propertyJsonFile, tempDir) {
+		slog.Error("Path traversal detected", "propertyJsonFile", propertyJsonFile, "tempDir", tempDir, "requestId", req.RequestId, logTag)
+		return "", "", fmt.Errorf("path traversal detected in property file path")
+	}
+	logFile = fmt.Sprintf("%s/app-%s-%s.log", s.config.LogPath, safeChannelName, ts)
+
+	// Debug logging
+	slog.Info("Writing temporary property.json file", "requestId", req.RequestId, "propertyJsonFile", propertyJsonFile, "logPath", s.config.LogPath, logTag)
+
+	// Ensure the directory exists before writing the file
+	dir := filepath.Dir(propertyJsonFile)
+	slog.Info("Creating directory", "requestId", req.RequestId, "dir", dir, logTag)
+	if mkdirErr := os.MkdirAll(dir, 0755); mkdirErr != nil {
+		slog.Error("Failed to create directory for property.json file", "err", mkdirErr, "dir", dir, "requestId", req.RequestId, logTag)
+		return
+	}
+	slog.Info("Directory created successfully", "requestId", req.RequestId, "dir", dir, logTag)
+
+	// Check if directory exists and is writable
+	if stat, statErr := os.Stat(dir); statErr != nil {
+		slog.Error("Directory stat failed", "err", statErr, "dir", dir, "requestId", req.RequestId, logTag)
+		return
+	} else {
+		slog.Info("Directory stat", "requestId", req.RequestId, "dir", dir, "mode", stat.Mode(), "isDir", stat.IsDir(), logTag)
+	}
+
+	// Additional debugging for file path
+	slog.Info("About to write file", "requestId", req.RequestId, "propertyJsonFile", propertyJsonFile, "fileSize", len(modifiedPropertyJson), logTag)
+
+	// Try to create the file first to see if there are any permission issues
+	file, createErr := os.Create(propertyJsonFile)
+	if createErr != nil {
+		slog.Error("Failed to create file", "err", createErr, "propertyJsonFile", propertyJsonFile, "requestId", req.RequestId, logTag)
+		return
+	}
+	defer file.Close()
+
+	// Write content to file
+	_, writeErr := file.Write([]byte(modifiedPropertyJson))
+	if writeErr != nil {
+		slog.Error("Failed to write content to file", "err", writeErr, "propertyJsonFile", propertyJsonFile, "requestId", req.RequestId, logTag)
+		return
+	}
+
+	// Sync to ensure data is written to disk
+	if syncErr := file.Sync(); syncErr != nil {
+		slog.Error("Failed to sync file", "err", syncErr, "propertyJsonFile", propertyJsonFile, "requestId", req.RequestId, logTag)
+		return
+	}
+
+	slog.Info("Successfully wrote temporary property.json file", "requestId", req.RequestId, "propertyJsonFile", propertyJsonFile, logTag)
 
 	return
 }
@@ -732,4 +839,72 @@ func (s *HttpServer) Start() {
 
 	go timeoutWorkers()
 	r.Run(fmt.Sprintf(":%s", s.config.Port))
+}
+
+// sanitizeChannelName validates and sanitizes channel name to prevent path injection
+func sanitizeChannelName(channelName string) (string, error) {
+	if channelName == "" {
+		return "", fmt.Errorf("channel name cannot be empty")
+	}
+
+	// Check length limit
+	if len(channelName) > 100 {
+		return "", fmt.Errorf("channel name too long")
+	}
+
+	// Check for path traversal characters
+	if strings.Contains(channelName, "..") ||
+	   strings.Contains(channelName, "/") ||
+	   strings.Contains(channelName, "\\") ||
+	   strings.Contains(channelName, "\x00") {
+		return "", fmt.Errorf("channel name contains invalid characters")
+	}
+
+	// Check if starts with dot (hidden file)
+	if strings.HasPrefix(channelName, ".") {
+		return "", fmt.Errorf("channel name cannot start with dot")
+	}
+
+	// Sanitize the channel name for safe use in filenames
+	sanitized := strings.ReplaceAll(channelName, "/", "_")
+	sanitized = strings.ReplaceAll(sanitized, "\\", "_")
+	sanitized = strings.ReplaceAll(sanitized, "..", "__")
+	sanitized = strings.ReplaceAll(sanitized, "\x00", "")
+
+	// Remove any other potentially dangerous characters
+	sanitized = strings.ReplaceAll(sanitized, ":", "_")
+	sanitized = strings.ReplaceAll(sanitized, "*", "_")
+	sanitized = strings.ReplaceAll(sanitized, "?", "_")
+	sanitized = strings.ReplaceAll(sanitized, "\"", "_")
+	sanitized = strings.ReplaceAll(sanitized, "<", "_")
+	sanitized = strings.ReplaceAll(sanitized, ">", "_")
+	sanitized = strings.ReplaceAll(sanitized, "|", "_")
+
+	// Limit length after sanitization
+	if len(sanitized) > 50 {
+		sanitized = sanitized[:50]
+	}
+
+	// If result is empty, use default value
+	if sanitized == "" {
+		sanitized = "default"
+	}
+
+	return sanitized, nil
+}
+
+// isPathSafe validates that the given path is within the expected base directory
+func isPathSafe(path, baseDir string) bool {
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		return false
+	}
+
+	absBase, err := filepath.Abs(baseDir)
+	if err != nil {
+		return false
+	}
+
+	// Check if the path is within the base directory
+	return strings.HasPrefix(absPath, absBase)
 }
