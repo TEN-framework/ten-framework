@@ -63,7 +63,7 @@
                 "params": {
                   "key": "${env:ELEVENLABS_TTS_KEY}",
                   "model_id": "eleven_multilingual_v2",
-                  "voice_id": "pNInz6obpgDQGcFmaJgB",
+                  "voice_id": "FGY2WhTYpPnrIDTdsKH5",
                   "output_format": "pcm_16000"
                 }
               }

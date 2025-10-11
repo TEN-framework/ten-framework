@@ -6,7 +6,6 @@ tasks:
   # install scripts
   install-frontend:
     desc: install frontend dependencies
-    internal: true
     dir: ./frontend
     cmds:
       - npm install --verbose

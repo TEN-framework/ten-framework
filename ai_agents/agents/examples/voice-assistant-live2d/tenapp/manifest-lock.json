@@ -460,8 +460,8 @@
     {
       "type": "extension",
       "name": "cosy_tts_python",
-      "version": "0.2.3",
-      "hash": "b6713574576dcb4bc9091474852a088c0ab821fcec9b5f12bd52f28b47e1106d",
+      "version": "0.2.4",
+      "hash": "0133743c78b1d2a97af119206675c10d43a7f5866046a6779f381f2fef26c501",
       "dependencies": [
         {
           "type": "system",

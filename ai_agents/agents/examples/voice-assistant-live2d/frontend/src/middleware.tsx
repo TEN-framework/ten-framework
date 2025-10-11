@@ -1,66 +1,62 @@
 // middleware.js
 import { NextRequest, NextResponse } from 'next/server';
 
-const { AGENT_SERVER_URL, TEN_DEV_SERVER_URL } = process.env;
+/**
+ * Environment Variables Required:
+ * - AGENT_SERVER_URL: The URL of your agent server (typically http://localhost:8080)
+ *
+ * Example .env.local:
+ * AGENT_SERVER_URL=http://localhost:8080
+ */
+
+const { AGENT_SERVER_URL } = process.env;
 
 // Check if environment variables are available
 if (!AGENT_SERVER_URL) {
     throw "Environment variables AGENT_SERVER_URL are not available";
 }
 
-if (!TEN_DEV_SERVER_URL) {
-    throw "Environment variables TEN_DEV_SERVER_URL are not available";
-}
-
 export async function middleware(req: NextRequest) {
     const { pathname } = req.nextUrl;
     const url = req.nextUrl.clone();
 
+    console.log(`Middleware triggered for: ${pathname}`);
 
     if (pathname.startsWith(`/api/agents/`)) {
-        // if (!pathname.startsWith('/api/agents/start')) {
-        // Proxy all other agents API requests
+        // Proxy agents API requests to the agent server (port 8080)
         url.href = `${AGENT_SERVER_URL}${pathname.replace('/api/agents/', '/')}`;
 
         try {
             const body = await req.json();
-            console.log(`Request to ${pathname}`);
+            console.log(`Agents request to ${pathname} with body:`, body);
         } catch (e) {
-            console.log(`Request to ${pathname} ${e}`);
+            console.log(`Agents request to ${pathname} (no body): ${e}`);
         }
 
-        // console.log(`Rewriting request to ${url.href}`);
-        return NextResponse.rewrite(url);
-        // } else {
-        //     return NextResponse.next();
-        // }
-    } else if (pathname.startsWith(`/api/vector/`)) {
-
-        // Proxy all other documents requests
-        url.href = `${AGENT_SERVER_URL}${pathname.replace('/api/vector/', '/vector/')}`;
-
-        // console.log(`Rewriting request to ${url.href}`);
+        console.log(`Rewriting agents request from ${pathname} to ${url.href}`);
         return NextResponse.rewrite(url);
     } else if (pathname.startsWith(`/api/token/`)) {
-        // Proxy all other documents requests
+        // Proxy token requests to the agent server (port 8080)
         url.href = `${AGENT_SERVER_URL}${pathname.replace('/api/token/', '/token/')}`;
 
-        // console.log(`Rewriting request to ${url.href}`);
-        return NextResponse.rewrite(url);
-    } else if (pathname.startsWith('/api/dev/')) {
-
-        if (pathname.startsWith('/api/dev/v1/addons/default-properties')) {
-            url.href = `${AGENT_SERVER_URL}/dev-tmp/addons/default-properties`;
-            console.log(`Rewriting request to ${url.href}`);
-            return NextResponse.rewrite(url);
+        try {
+            const body = await req.json();
+            console.log(`Token request to ${pathname} with body:`, body);
+        } catch (e) {
+            console.log(`Token request to ${pathname} (no body): ${e}`);
         }
 
-        url.href = `${TEN_DEV_SERVER_URL}${pathname.replace('/api/dev/', '/api/designer/')}`;
-
-        // console.log(`Rewriting request to ${url.href}`);
+        console.log(`Rewriting token request from ${pathname} to ${url.href}`);
         return NextResponse.rewrite(url);
     } else {
+        console.log(`No rewrite needed for: ${pathname}`);
         return NextResponse.next();
     }
-
 }
+
+export const config = {
+    matcher: [
+        '/api/agents/:path*',
+        '/api/token/:path*',
+    ],
+};

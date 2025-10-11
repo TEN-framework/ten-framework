@@ -1,53 +1,27 @@
-// import { ConfigProvider } from "antd";
-import { StoreProvider } from "@/store"
-import type { Metadata, Viewport } from "next"
-import { Toaster } from "@/components/ui/sonner"
+import type { Metadata } from 'next'
+import { Inter } from 'next/font/google'
+import './globals.css'
 
-import "./global.css"
+const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: "TEN Agent | Real-Time Multimodal AI Agent",
-  description:
-    "TEN Agent is an open-source multimodal AI agent that can speak, see, and access a knowledge base(RAG).",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "black",
-  },
-}
-
-export const viewport: Viewport = {
-  width: "device-width",
-  initialScale: 1,
-  minimumScale: 1,
-  maximumScale: 1,
-  userScalable: false,
-  viewportFit: "cover",
+    title: 'Live2D Voice Assistant',
+    description: 'Real-time voice assistant with Live2D character',
 }
 
 export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode
-}>) {
-  return (
-    <html lang="en">
-      <head>
-        <script src="/lib/live2dcubismcore.min.js" async></script>
-      </head>
-      <body className="dark">
-        {/* <ConfigProvider
-          theme={{
-            components: {
-              Select: {
-                selectorBg: "#181A1D",
-              },
-            },
-          }}
-        > */}
-        <StoreProvider>{children}</StoreProvider>
-        {/* </ConfigProvider> */}
-        <Toaster richColors closeButton theme="dark" />
-      </body>
-    </html>
-  )
+    children,
+}: {
+    children: React.ReactNode
+}) {
+    return (
+        <html lang="en">
+            <head>
+                <script src="/lib/live2dcubismcore.min.js" async></script>
+            </head>
+            <body className={inter.className}>
+                {children}
+            </body>
+        </html>
+    )
 }
