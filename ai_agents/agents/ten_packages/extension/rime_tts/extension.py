@@ -321,6 +321,7 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                     self.ten_env.log_debug("Skipping stop_event")
 
         except ModuleVendorException as e:
+            self.sent_tts = False
             self.ten_env.log_error(
                 f"ModuleVendorException in request_tts: {traceback.format_exc()}. text: {t.text}"
             )
