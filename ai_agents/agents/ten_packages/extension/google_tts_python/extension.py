@@ -303,9 +303,6 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                             f"Created PCMWriter for request_id: {t.request_id}, file: {dump_file_path}"
                         )
 
-                # Initialize variables for all cases
-                first_chunk = True
-                cur_duration_bytes = 0
             self.ten_env.log_debug(
                 f"send_text_to_tts_server:  {t.text} of request_id: {t.request_id}",
                 category=LOG_CATEGORY_VENDOR,
@@ -325,7 +322,6 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
 
                         if event == EVENT_TTS_RESPONSE and audio_chunk:
                             self.total_audio_bytes += len(audio_chunk)
-                            cur_duration_bytes += len(audio_chunk)
                             duration_ms = (
                                 self.total_audio_bytes
                                 / (self.synthesize_audio_sample_rate() * 2 * 1)
@@ -337,11 +333,12 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                                 category=LOG_CATEGORY_VENDOR,
                             )
 
-                            if first_chunk and self.current_request_id:
+                            if self.sent_ts is None and self.current_request_id:
                                 self.sent_ts = datetime.now()
 
                                 await self.send_tts_audio_start(
-                                    self.current_request_id, self.current_turn_id
+                                    self.current_request_id,
+                                    self.current_turn_id,
                                 )
                                 if ttfb_ms is not None:
                                     await self.send_tts_ttfb_metrics(
@@ -349,7 +346,6 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                                         ttfb_ms,
                                         self.current_turn_id,
                                     )
-                                first_chunk = False
 
                             if (
                                 self.config.dump
@@ -403,7 +399,9 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                             message=str(e),
                             module=ModuleType.TTS,
                             code=ModuleErrorCode.NON_FATAL_ERROR,
-                            vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
+                            vendor_info=ModuleErrorVendorInfo(
+                                vendor=self.vendor()
+                            ),
                         ),
                         self.current_turn_id,
                     )
@@ -416,6 +414,10 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                         self.ten_env.log_error(
                             f"Error closing audio generator: {e}"
                         )
+            else:
+                self.ten_env.log_debug(
+                    f"Empty text received for request_id: {t.request_id}"
+                )
 
             # Handle end of request (only if no error occurred)
             if t.text_input_end:
