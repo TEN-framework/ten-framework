@@ -34,6 +34,7 @@ class GlobalThreadManager:
         self._main_thread: threading.Thread | None = None
         self._main_loop: asyncio.AbstractEventLoop | None = None
         self._stop_event: asyncio.Event = asyncio.Event()
+        self._loop_ready_event: threading.Event = threading.Event()
         self._initialized: bool = True
 
     def reset(self):
@@ -42,14 +43,19 @@ class GlobalThreadManager:
             self._main_thread = None
             self._main_loop = None
             self._stop_event = asyncio.Event()
+            self._loop_ready_event = threading.Event()
             self._initialized = True
 
     def get_or_start_thread(
         self, ten_env: "TenEnv"
     ) -> asyncio.AbstractEventLoop:
         """Get or start the global main thread"""
+        need_to_wait = False
         with self._lock:
             if self._main_thread is None or not self._main_thread.is_alive():
+                # Clear the ready event before starting a new thread
+                self._loop_ready_event.clear()
+
                 try:
                     import namedthreads
 
@@ -66,13 +72,14 @@ class GlobalThreadManager:
                     name="PythonGlobalMainThread",
                 )
                 self._main_thread.start()
-                # Wait for event loop to start
-                while self._main_loop is None:
-                    threading.Event().wait(0.01)
-            assert (
-                self._main_loop is not None
-            ), "Main loop should be initialized"
-            return self._main_loop
+                need_to_wait = True
+
+        # Wait for event loop to start outside the lock
+        if need_to_wait:
+            self._loop_ready_event.wait()
+
+        assert self._main_loop is not None, "Main loop should be initialized"
+        return self._main_loop
 
     def get_thread(self) -> asyncio.AbstractEventLoop:
         """Get the global main thread (without starting)"""
@@ -86,6 +93,9 @@ class GlobalThreadManager:
 
         self._main_loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self._main_loop)
+
+        # Signal that the event loop is ready
+        self._loop_ready_event.set()
 
         # Run event loop until stop event is set
         self._main_loop.run_until_complete(self._stop_event.wait())
