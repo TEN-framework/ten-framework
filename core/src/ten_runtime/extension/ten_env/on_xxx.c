@@ -224,6 +224,12 @@ static void ten_extension_trigger_on_start_task(void *self_,
   TEN_ASSERT(ten_extension_check_integrity(self, true),
              "Invalid use of extension %p.", self);
 
+  if (self->state >= TEN_EXTENSION_STATE_ON_START) {
+    TEN_LOGW("[%s] on_start() skipped: Extension is already in the start flow",
+             ten_extension_get_name(self, true));
+    return;
+  }
+
   ten_extension_on_start(self);
 }
 

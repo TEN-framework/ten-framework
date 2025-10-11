@@ -206,8 +206,11 @@ ten_shared_ptr_t *get_extension_info_in_extensions_info(
 
   ten_string_set_formatted(&self->extension_addon_name, "%s",
                            extension_addon_name);
+
+  const char *extension_group_name_str =
+      extension_group_name ? extension_group_name : TEN_STR_UNSPECIFIED_GROUP;
   ten_string_set_formatted(&self->extension_group_name, "%s",
-                           extension_group_name);
+                           extension_group_name_str);
 
   ten_loc_set(&self->loc, app_uri, graph_id, extension_instance_name);
 
