@@ -1,0 +1,57 @@
+{
+	"Version": 3,
+	"FileReferences": {
+		"Moc": "kei_vowels_pro.moc3",
+		"Textures": [
+			"kei_vowels_pro.2048/texture_00.png"
+		],
+		"Physics": "kei_vowels_pro.physics3.json",
+		"DisplayInfo": "kei_vowels_pro.cdi3.json",
+		"MotionSync": "kei_vowels_pro.motionsync3.json",
+		"Motions": {
+			"": [
+				{
+					"File": "motions/01_kei_en.motion3.json",
+					"Sound": "sounds/01_kei_en.wav",
+					"MotionSync": "Vowels_CRI"
+				},
+				{
+					"File": "motions/01_kei_jp.motion3.json",
+					"Sound": "sounds/01_kei_jp.wav",
+					"MotionSync": "Vowels_CRI"
+				},
+				{
+					"File": "motions/01_kei_ko.motion3.json",
+					"Sound": "sounds/01_kei_ko.wav",
+					"MotionSync": "Vowels_CRI"
+				},
+				{
+					"File": "motions/01_kei_zh.motion3.json",
+					"Sound": "sounds/01_kei_zh.wav",
+					"MotionSync": "Vowels_CRI"
+				}
+			]
+		}
+	},
+	"Groups": [
+		{
+			"Target": "Parameter",
+			"Name": "LipSync",
+			"Ids": []
+		},
+		{
+			"Target": "Parameter",
+			"Name": "EyeBlink",
+			"Ids": [
+				"ParamEyeLOpen",
+				"ParamEyeROpen"
+			]
+		}
+	],
+	"HitAreas": [
+		{
+			"Id": "HitAreaHead",
+			"Name": "Head"
+		}
+	]
+}
