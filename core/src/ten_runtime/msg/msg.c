@@ -1080,6 +1080,22 @@ TEN_MSG_TYPE ten_msg_type_from_type_string(const char *type_str) {
   return msg_type;
 }
 
+static void ten_msg_set_dest_extension_if_empty(ten_shared_ptr_t *msg) {
+  TEN_ASSERT(msg, "Should not happen.");
+  TEN_ASSERT(ten_msg_check_integrity(msg), "Should not happen.");
+
+  ten_list_foreach (ten_msg_get_dest(msg), iter) {
+    ten_loc_t *dest_loc = ten_ptr_listnode_get(iter.node);
+    TEN_ASSERT(dest_loc, "Should not happen.");
+    TEN_ASSERT(ten_loc_check_integrity(dest_loc), "Should not happen.");
+
+    if (dest_loc->has_extension_name &&
+        ten_string_is_empty(&dest_loc->extension_name)) {
+      ten_loc_set_extension_name(dest_loc, TEN_STR_TEN_GRAPH_PROXY_EXTENSION);
+    }
+  }
+}
+
 /**
  * @brief Corrects the destination location in a message.
  *
@@ -1135,6 +1151,8 @@ void ten_msg_correct_dest(ten_shared_ptr_t *msg, ten_engine_t *engine) {
         // properly set.
         ten_msg_set_dest_graph_if_empty_or_predefined_graph_name(
             msg, engine, &engine->app->predefined_graph_infos);
+
+        ten_msg_set_dest_extension_if_empty(msg);
         break;
       }
     }

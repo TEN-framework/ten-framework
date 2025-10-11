@@ -31,6 +31,7 @@
 #include "ten_utils/lib/smart_ptr.h"
 #include "ten_utils/log/log.h"
 #include "ten_utils/macro/check.h"
+#include "ten_utils/macro/memory.h"
 
 static bool ten_app_fill_start_graph_cmd_extensions_info_from_predefined_graph(
     ten_app_t *self, ten_shared_ptr_t *cmd, ten_error_t *err) {
@@ -100,12 +101,43 @@ bool ten_app_handle_start_graph_cmd(ten_app_t *self,
   ten_string_t *graph_json_str = ten_cmd_start_graph_get_graph_json(cmd);
   if (graph_json_str && !ten_string_is_empty(graph_json_str)) {
 #if defined(TEN_ENABLE_TEN_RUST_APIS)
+    // Get the cmd source location.
+    ten_loc_t *src_loc = ten_msg_get_src_loc(cmd);
+    ten_value_t *src_loc_value = ten_loc_to_value(src_loc);
+
+    ten_json_t src_loc_json =
+        TEN_JSON_INIT_VAL(ten_json_create_new_ctx(), true);
+    bool success = ten_value_to_json(src_loc_value, &src_loc_json);
+    if (!success) {
+      TEN_LOGE("Failed to convert src loc to json.");
+      ten_value_destroy(src_loc_value);
+      return false;
+    }
+
+    bool must_free = false;
+    const char *src_loc_json_str =
+        ten_json_to_string(&src_loc_json, NULL, &must_free);
+    ten_json_deinit(&src_loc_json);
+
+    if (!src_loc_json_str) {
+      TEN_LOGE("Failed to convert src loc to json string.");
+      ten_value_destroy(src_loc_value);
+      return false;
+    }
+
+    ten_value_destroy(src_loc_value);
+
     // Flatten the graph json string.
     char *err_msg = NULL;
     const char *flattened_graph_json_str =
         ten_rust_graph_validate_complete_flatten(
             ten_string_get_raw_str(graph_json_str), ten_app_get_base_dir(self),
-            &err_msg);
+            src_loc_json_str, &err_msg);
+
+    if (must_free) {
+      TEN_FREE(src_loc_json_str);
+    }
+
     if (!flattened_graph_json_str) {
       TEN_LOGE("Failed to flatten graph json string: %s", err_msg);
       ten_rust_free_cstring(err_msg);

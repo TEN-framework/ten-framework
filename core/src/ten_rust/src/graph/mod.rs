@@ -552,6 +552,323 @@ impl Graph {
 
         Ok(Some(processing_graph.clone()))
     }
+
+    /// Converts exposed_messages into a ten:graph_proxy extension node and
+    /// automatically creates connections.
+    ///
+    /// This method implements the cross-graph message routing design by:
+    /// 1. Creating a ten:graph_proxy extension node if exposed_messages exist
+    /// 2. Creating connections based on message types:
+    ///    - For *_in messages: ten:graph_proxy -> target extension
+    ///    - For *_out messages: source extension -> ten:graph_proxy
+    ///
+    /// # Arguments
+    /// * `host_loc_property` - Optional host location property (app_uri,
+    ///   graph_id, extension_name) to set on the graph_proxy node
+    ///
+    /// # Returns
+    /// * `Ok(None)` if there are no exposed_messages
+    /// * `Ok(Some(new_graph))` if graph_proxy was added successfully
+    /// * `Err` if there are validation errors
+    pub fn inject_graph_proxy_from_exposed_messages(
+        &self,
+        host_loc_json_str: Option<&str>,
+    ) -> Result<Option<Graph>> {
+        // Check if exposed_messages exist
+        let Some(exposed_messages) = &self.exposed_messages else {
+            return Ok(None);
+        };
+
+        if exposed_messages.is_empty() {
+            return Ok(None);
+        }
+
+        const GRAPH_PROXY_NAME: &str = "ten:graph_proxy";
+        const GRAPH_PROXY_ADDON: &str = "ten:graph_proxy";
+
+        // Check if graph_proxy node already exists
+        if self.nodes.iter().any(|node| node.get_name() == GRAPH_PROXY_NAME) {
+            return Err(anyhow::anyhow!(
+                "Graph already contains a node named '{}', cannot inject graph_proxy",
+                GRAPH_PROXY_NAME
+            ));
+        }
+
+        let mut new_graph = self.clone();
+
+        // Parse the host_loc_json_str to serde_json::Value and wrap it in a
+        // property object with "host_loc" key
+        let proxy_property = host_loc_json_str.map(|host_loc| {
+            let host_loc_value: serde_json::Value = serde_json::from_str(host_loc).unwrap();
+            serde_json::json!({
+                "host_loc": host_loc_value
+            })
+        });
+
+        let proxy_node = GraphNode::new_extension_node(
+            GRAPH_PROXY_NAME.to_string(),
+            GRAPH_PROXY_ADDON.to_string(),
+            None, // extension_group
+            None, // app
+            proxy_property,
+        );
+
+        new_graph.nodes.push(proxy_node);
+
+        // Create connections based on exposed_messages
+        let mut new_connections = new_graph.connections.clone().unwrap_or_default();
+
+        for exposed_msg in exposed_messages {
+            // Validate that either extension or subgraph is specified
+            let target_extension = if let Some(ext) = &exposed_msg.extension {
+                ext.clone()
+            } else if exposed_msg.subgraph.is_some() {
+                return Err(anyhow::anyhow!(
+                    "Subgraph references in exposed_messages are not supported for graph_proxy \
+                     injection. Please flatten the graph first."
+                ));
+            } else {
+                return Err(anyhow::anyhow!(
+                    "exposed_messages entry must specify either 'extension' or 'subgraph'"
+                ));
+            };
+
+            // Verify the target extension exists and get its app URI
+            let target_extension_app = self
+                .nodes
+                .iter()
+                .find(|node| {
+                    node.get_type() == GraphNodeType::Extension
+                        && node.get_name() == target_extension
+                })
+                .map(|node| node.get_app_uri())
+                .ok_or_else(|| {
+                    anyhow::anyhow!(
+                        "Extension '{}' referenced in exposed_messages does not exist in the graph",
+                        target_extension
+                    )
+                })?;
+
+            use connection::{GraphDestination, GraphMessageFlow};
+
+            match exposed_msg.msg_type {
+                // For *_in messages: ten:graph_proxy -> target extension
+                GraphExposedMessageType::CmdIn => {
+                    let connection = Self::find_or_create_connection(
+                        &mut new_connections,
+                        GRAPH_PROXY_NAME,
+                        GraphNodeType::Extension,
+                        None,
+                    );
+
+                    let dest = GraphDestination::new(
+                        target_extension_app.clone(),
+                        GraphNodeType::Extension,
+                        target_extension.clone(),
+                    )?;
+
+                    let flow = GraphMessageFlow::new(
+                        Some(exposed_msg.name.clone()),
+                        None,
+                        vec![dest],
+                        vec![],
+                    );
+
+                    connection.cmd.get_or_insert_with(Vec::new).push(flow);
+                }
+                GraphExposedMessageType::DataIn => {
+                    let connection = Self::find_or_create_connection(
+                        &mut new_connections,
+                        GRAPH_PROXY_NAME,
+                        GraphNodeType::Extension,
+                        None,
+                    );
+
+                    let dest = GraphDestination::new(
+                        target_extension_app.clone(),
+                        GraphNodeType::Extension,
+                        target_extension.clone(),
+                    )?;
+
+                    let flow = GraphMessageFlow::new(
+                        Some(exposed_msg.name.clone()),
+                        None,
+                        vec![dest],
+                        vec![],
+                    );
+
+                    connection.data.get_or_insert_with(Vec::new).push(flow);
+                }
+                GraphExposedMessageType::AudioFrameIn => {
+                    let connection = Self::find_or_create_connection(
+                        &mut new_connections,
+                        GRAPH_PROXY_NAME,
+                        GraphNodeType::Extension,
+                        None,
+                    );
+
+                    let dest = GraphDestination::new(
+                        target_extension_app.clone(),
+                        GraphNodeType::Extension,
+                        target_extension.clone(),
+                    )?;
+
+                    let flow = GraphMessageFlow::new(
+                        Some(exposed_msg.name.clone()),
+                        None,
+                        vec![dest],
+                        vec![],
+                    );
+
+                    connection.audio_frame.get_or_insert_with(Vec::new).push(flow);
+                }
+                GraphExposedMessageType::VideoFrameIn => {
+                    let connection = Self::find_or_create_connection(
+                        &mut new_connections,
+                        GRAPH_PROXY_NAME,
+                        GraphNodeType::Extension,
+                        None,
+                    );
+
+                    let dest = GraphDestination::new(
+                        target_extension_app.clone(),
+                        GraphNodeType::Extension,
+                        target_extension.clone(),
+                    )?;
+
+                    let flow = GraphMessageFlow::new(
+                        Some(exposed_msg.name.clone()),
+                        None,
+                        vec![dest],
+                        vec![],
+                    );
+
+                    connection.video_frame.get_or_insert_with(Vec::new).push(flow);
+                }
+                // For *_out messages: source extension -> ten:graph_proxy
+                GraphExposedMessageType::CmdOut => {
+                    let connection = Self::find_or_create_connection(
+                        &mut new_connections,
+                        &target_extension,
+                        GraphNodeType::Extension,
+                        target_extension_app.clone(),
+                    );
+
+                    let dest = GraphDestination::new(
+                        None,
+                        GraphNodeType::Extension,
+                        GRAPH_PROXY_NAME.to_string(),
+                    )?;
+
+                    let flow = GraphMessageFlow::new(
+                        Some(exposed_msg.name.clone()),
+                        None,
+                        vec![dest],
+                        vec![],
+                    );
+
+                    connection.cmd.get_or_insert_with(Vec::new).push(flow);
+                }
+                GraphExposedMessageType::DataOut => {
+                    let connection = Self::find_or_create_connection(
+                        &mut new_connections,
+                        &target_extension,
+                        GraphNodeType::Extension,
+                        target_extension_app.clone(),
+                    );
+
+                    let dest = GraphDestination::new(
+                        None,
+                        GraphNodeType::Extension,
+                        GRAPH_PROXY_NAME.to_string(),
+                    )?;
+
+                    let flow = GraphMessageFlow::new(
+                        Some(exposed_msg.name.clone()),
+                        None,
+                        vec![dest],
+                        vec![],
+                    );
+
+                    connection.data.get_or_insert_with(Vec::new).push(flow);
+                }
+                GraphExposedMessageType::AudioFrameOut => {
+                    let connection = Self::find_or_create_connection(
+                        &mut new_connections,
+                        &target_extension,
+                        GraphNodeType::Extension,
+                        target_extension_app.clone(),
+                    );
+
+                    let dest = GraphDestination::new(
+                        None,
+                        GraphNodeType::Extension,
+                        GRAPH_PROXY_NAME.to_string(),
+                    )?;
+
+                    let flow = GraphMessageFlow::new(
+                        Some(exposed_msg.name.clone()),
+                        None,
+                        vec![dest],
+                        vec![],
+                    );
+
+                    connection.audio_frame.get_or_insert_with(Vec::new).push(flow);
+                }
+                GraphExposedMessageType::VideoFrameOut => {
+                    let connection = Self::find_or_create_connection(
+                        &mut new_connections,
+                        &target_extension,
+                        GraphNodeType::Extension,
+                        target_extension_app.clone(),
+                    );
+
+                    let dest = GraphDestination::new(
+                        None,
+                        GraphNodeType::Extension,
+                        GRAPH_PROXY_NAME.to_string(),
+                    )?;
+
+                    let flow = GraphMessageFlow::new(
+                        Some(exposed_msg.name.clone()),
+                        None,
+                        vec![dest],
+                        vec![],
+                    );
+
+                    connection.video_frame.get_or_insert_with(Vec::new).push(flow);
+                }
+            }
+        }
+
+        new_graph.connections = Some(new_connections);
+
+        Ok(Some(new_graph))
+    }
+
+    /// Helper function to find an existing connection or create a new one.
+    fn find_or_create_connection<'a>(
+        connections: &'a mut Vec<GraphConnection>,
+        node_name: &str,
+        node_type: GraphNodeType,
+        app: Option<String>,
+    ) -> &'a mut GraphConnection {
+        use connection::GraphLoc;
+
+        // Try to find existing connection
+        let loc =
+            GraphLoc::with_app_and_type_and_name(app.clone(), node_type, node_name.to_string())
+                .unwrap();
+
+        if let Some(pos) = connections.iter().position(|conn| conn.loc.matches(&loc)) {
+            return &mut connections[pos];
+        }
+
+        // Create new connection if not found
+        let new_conn = GraphConnection::new(loc);
+        connections.push(new_conn);
+        connections.last_mut().unwrap()
+    }
 }
 
 /// Checks if the application URI is either not specified (None) or set to the
