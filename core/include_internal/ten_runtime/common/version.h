@@ -6,4 +6,4 @@
 //
 #pragma once
 
-#define TEN_RUNTIME_VERSION "0.11.17-rc1"
+#define TEN_RUNTIME_VERSION "0.11.16"
