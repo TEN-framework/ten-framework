@@ -11,7 +11,7 @@ tasks:
 
   run-frontend-prod:
     desc: run frontend in production
-    dir: ./frontend2
+    dir: ./frontend
     cmds:
       - npm start
     background: true

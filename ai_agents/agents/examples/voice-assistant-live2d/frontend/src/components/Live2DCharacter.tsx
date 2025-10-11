@@ -1,17 +1,11 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import * as PIXI from 'pixi.js';
-import { Live2DModel } from 'pixi-live2d-display/cubism4';
+// Import PIXI setup first to ensure global availability
+import PIXI from '@/lib/pixi-setup';
 import { MotionSync } from 'live2d-motionsync/stream';
 // IRemoteAudioTrack will be imported dynamically
 import { cn } from '@/lib/utils';
-
-// Ensure PIXI.Ticker is available in plugins (only on client side)
-if (typeof window !== 'undefined') {
-    // @ts-ignore
-    window.PIXI = PIXI;
-}
 
 interface Live2DCharacterProps {
     modelPath: string;
@@ -30,7 +24,7 @@ export default function Live2DCharacter({
 }: Live2DCharacterProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const motionSyncRef = useRef<MotionSync | null>(null);
-    const appRef = useRef<PIXI.Application | null>(null);
+    const appRef = useRef<any>(null);
     const [isModelLoaded, setIsModelLoaded] = useState(false);
     const [isClient, setIsClient] = useState(false);
     const audioElementRef = useRef<HTMLAudioElement | null>(null);
@@ -177,7 +171,9 @@ export default function Live2DCharacter({
                 }
                 console.log('[Live2DCharacter] PIXI Application validation passed');
 
-                let model: Live2DModel;
+                // Load Live2D with proper PIXI setup
+                const { Live2DModel } = await import('@/lib/live2d-loader').then(loader => loader.loadLive2DModel());
+                let model: any;
 
                 console.log('[Live2DCharacter] Loading model from:', modelPath);
                 model = await Live2DModel.from(modelPath);
