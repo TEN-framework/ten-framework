@@ -67,6 +67,8 @@ ten_extension_group_t *ten_extension_group_create_internal(
   self->addon_host = NULL;
   if (name) {
     ten_string_init_formatted(&self->name, "%s", name);
+  } else {
+    TEN_STRING_INIT(self->name);
   }
 
   self->on_configure = on_configure;

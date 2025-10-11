@@ -21,16 +21,11 @@
 
 typedef struct ten_env_notify_log_ctx_t {
   int32_t level;
-  const char *func_name;
-  size_t func_name_len;
-  const char *file_name;
-  size_t file_name_len;
+  ten_string_t func_name;
+  ten_string_t file_name;
   size_t line_no;
-  const char *msg;
-  size_t msg_len;
-  const char *category;
-  size_t category_len;
-  ten_event_t *completed;
+  ten_string_t msg;
+  ten_string_t category;
 } ten_env_notify_log_ctx_t;
 
 static ten_env_notify_log_ctx_t *ten_env_notify_log_ctx_create(
@@ -42,16 +37,13 @@ static ten_env_notify_log_ctx_t *ten_env_notify_log_ctx_create(
   TEN_ASSERT(ctx, "Failed to allocate memory.");
 
   ctx->level = level;
-  ctx->func_name = func_name;
-  ctx->func_name_len = func_name_len;
-  ctx->file_name = file_name;
-  ctx->file_name_len = file_name_len;
+  ten_string_init_from_c_str_with_size(&ctx->func_name, func_name,
+                                       func_name_len);
+  ten_string_init_from_c_str_with_size(&ctx->file_name, file_name,
+                                       file_name_len);
   ctx->line_no = line_no;
-  ctx->msg = msg;
-  ctx->msg_len = msg_len;
-  ctx->category = category;
-  ctx->category_len = category_len;
-  ctx->completed = ten_event_create(0, 1);
+  ten_string_init_from_c_str_with_size(&ctx->msg, msg, msg_len);
+  ten_string_init_from_c_str_with_size(&ctx->category, category, category_len);
 
   return ctx;
 }
@@ -59,7 +51,10 @@ static ten_env_notify_log_ctx_t *ten_env_notify_log_ctx_create(
 static void ten_env_notify_log_ctx_destroy(ten_env_notify_log_ctx_t *ctx) {
   TEN_ASSERT(ctx, "Invalid argument.");
 
-  ten_event_destroy(ctx->completed);
+  ten_string_deinit(&ctx->func_name);
+  ten_string_deinit(&ctx->file_name);
+  ten_string_deinit(&ctx->msg);
+  ten_string_deinit(&ctx->category);
 
   TEN_FREE(ctx);
 }
@@ -72,12 +67,12 @@ static void ten_env_proxy_notify_log(ten_env_t *ten_env, void *user_data) {
   ten_env_notify_log_ctx_t *ctx = user_data;
   TEN_ASSERT(ctx, "Should not happen.");
 
-  ten_env_log_with_size_formatted(
-      ten_env, ctx->level, ctx->func_name, ctx->func_name_len, ctx->file_name,
-      ctx->file_name_len, ctx->line_no, ctx->category, ctx->category_len, NULL,
-      "%.*s", ctx->msg_len, ctx->msg);
+  ten_env_log(ten_env, ctx->level, ten_string_get_raw_str(&ctx->func_name),
+              ten_string_get_raw_str(&ctx->file_name), ctx->line_no,
+              ten_string_get_raw_str(&ctx->msg),
+              ten_string_get_raw_str(&ctx->category), NULL);
 
-  ten_event_set(ctx->completed);
+  ten_env_notify_log_ctx_destroy(ctx);
 }
 
 ten_go_error_t ten_go_ten_env_log(uintptr_t bridge_addr, int level,
@@ -131,8 +126,7 @@ ten_go_error_t ten_go_ten_env_log(uintptr_t bridge_addr, int level,
     if (!ten_env_proxy_notify(self->c_ten_env_proxy, ten_env_proxy_notify_log,
                               ctx, false, &err)) {
       ten_go_error_set_from_error(&cgo_error, &err);
-    } else {
-      ten_event_wait(ctx->completed, -1);
+      ten_env_notify_log_ctx_destroy(ctx);
     }
   } else {
     // TODO(Wei): This function is currently specifically designed for the addon
@@ -144,14 +138,16 @@ ten_go_error_t ten_go_ten_env_log(uintptr_t bridge_addr, int level,
     TEN_ASSERT(self->c_ten_env->attach_to == TEN_ENV_ATTACH_TO_ADDON,
                "Should not happen.");
 
-    ten_env_log_with_size_formatted_without_check_thread(
-        self->c_ten_env, ctx->level, ctx->func_name, ctx->func_name_len,
-        ctx->file_name, ctx->file_name_len, ctx->line_no, category,
-        category_len, NULL, "%.*s", ctx->msg_len, ctx->msg);
+    ten_env_log_without_check_thread(
+        self->c_ten_env, ctx->level, ten_string_get_raw_str(&ctx->func_name),
+        ten_string_get_raw_str(&ctx->file_name), ctx->line_no,
+        ten_string_get_raw_str(&ctx->msg),
+        ten_string_get_raw_str(&ctx->category), NULL);
+
+    ten_env_notify_log_ctx_destroy(ctx);
   }
 
   ten_error_deinit(&err);
-  ten_env_notify_log_ctx_destroy(ctx);
 
   TEN_GO_TEN_ENV_IS_ALIVE_REGION_END(self);
 
