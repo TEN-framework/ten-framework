@@ -136,7 +136,7 @@ static void graph_proxy_extension_on_init(ten_extension_t *self,
 
   // Extract app_uri
   ten_value_t *app_uri_value =
-      ten_value_object_peek(host_loc_value, TEN_STR_APP_URI);
+      ten_value_object_peek(host_loc_value, TEN_STR_APP);
   if (app_uri_value && ten_value_get_type(app_uri_value) == TEN_TYPE_STRING) {
     const char *app_uri_str = ten_value_peek_raw_str(app_uri_value, NULL);
     if (app_uri_str) {
@@ -149,7 +149,7 @@ static void graph_proxy_extension_on_init(ten_extension_t *self,
 
   // Extract graph_id
   ten_value_t *graph_id_value =
-      ten_value_object_peek(host_loc_value, TEN_STR_GRAPH_ID);
+      ten_value_object_peek(host_loc_value, TEN_STR_GRAPH);
   if (graph_id_value && ten_value_get_type(graph_id_value) == TEN_TYPE_STRING) {
     const char *graph_id_str = ten_value_peek_raw_str(graph_id_value, NULL);
     if (graph_id_str) {
@@ -159,7 +159,7 @@ static void graph_proxy_extension_on_init(ten_extension_t *self,
 
   // Extract extension_name
   ten_value_t *extension_name_value =
-      ten_value_object_peek(host_loc_value, TEN_STR_EXTENSION_NAME);
+      ten_value_object_peek(host_loc_value, TEN_STR_EXTENSION);
   if (extension_name_value &&
       ten_value_get_type(extension_name_value) == TEN_TYPE_STRING) {
     const char *extension_name_str =
