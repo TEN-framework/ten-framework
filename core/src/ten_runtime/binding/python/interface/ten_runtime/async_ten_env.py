@@ -366,9 +366,9 @@ class AsyncTenEnv(TenEnvBase):
             if ref_count <= 0:
                 # Wait for the internal thread to finish.
                 #
-                # Note: This action is needed if each async extension has its own
-                # asyncio thread, but is not needed when all async extensions use a
-                # single shared asyncio thread.
+                # Note: This action is needed if each async extension has its
+                # own asyncio thread, but is not needed when all async
+                # extensions use a single shared asyncio thread.
                 self._ten_thread.join()
                 self._global_thread_manager.reset()
         else:
