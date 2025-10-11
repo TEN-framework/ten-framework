@@ -4,6 +4,7 @@ import time
 import base64
 import os
 import audioop
+import aiohttp
 from datetime import datetime
 from typing import Literal, Dict, Any, Optional
 from .server import TwilioCallServer
@@ -154,8 +155,6 @@ class MainControlExtension(AsyncExtension):
                 self.ten_env.log_info(f"Ending call {call_sid} via API")
 
                 # Make API call to end the call
-                import aiohttp
-
                 async with aiohttp.ClientSession() as session:
                     async with session.delete(
                         f"http://localhost:{self.config.twilio_server_port}/api/call/{call_sid}"
