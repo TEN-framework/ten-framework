@@ -39,6 +39,7 @@ pub fn normalize_path(path: &Path) -> PathBuf {
 /// Sanitize the local path to make it a valid Windows path.
 /// It will strip the Windows verbatim prefix (e.g., \\?\ or \\?\UNC\) and
 /// replace the '/' with '\'.
+#[cfg(windows)]
 fn sanitize_windows_local_path(raw_path: Option<&str>) -> Option<String> {
     raw_path.map(|path| {
         if let Some(rest) = path.strip_prefix("\\\\?\\UNC\\") {
@@ -119,11 +120,23 @@ pub fn get_real_path_from_import_uri(
         ));
     }
 
-    // Windows only: Sanitize the base_dir and app_base_dir.
-    let base_dir_string = sanitize_windows_local_path(raw_base_dir);
-    let base_dir = base_dir_string.as_deref();
-    let app_base_dir_string = sanitize_windows_local_path(raw_app_base_dir);
-    let app_base_dir = app_base_dir_string.as_deref();
+    let base_dir: Option<&str>;
+    let base_dir_string: Option<String>;
+    let app_base_dir: Option<&str>;
+    let app_base_dir_string: Option<String>;
+    #[cfg(windows)]
+    {
+        // Windows only: Sanitize the base_dir and app_base_dir.
+        base_dir_string = sanitize_windows_local_path(raw_base_dir);
+        base_dir = base_dir_string.as_deref();
+        app_base_dir_string = sanitize_windows_local_path(raw_app_base_dir);
+        app_base_dir = app_base_dir_string.as_deref();
+    }
+    #[cfg(not(windows))]
+    {
+        base_dir = raw_base_dir;
+        app_base_dir = raw_app_base_dir;
+    }
 
     // Check if import_uri contains ${app_base_dir} variable
     let processed_import_uri = if import_uri.contains("${app_base_dir}") {
