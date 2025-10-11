@@ -20,7 +20,7 @@ export async function middleware(req: NextRequest) {
     const { pathname } = req.nextUrl;
     const url = req.nextUrl.clone();
 
-    console.log(`Middleware triggered for: ${pathname}`);
+    console.log('Middleware triggered for:', pathname);
 
     if (pathname.startsWith(`/api/agents/`)) {
         // Proxy agents API requests to the agent server (port 8080)
@@ -28,12 +28,12 @@ export async function middleware(req: NextRequest) {
 
         try {
             const body = await req.json();
-            console.log(`Agents request to ${pathname} with body:`, body);
+            console.log('Agents request to', pathname, 'with body:', body);
         } catch (e) {
-            console.log(`Agents request to ${pathname} (no body): ${e}`);
+            console.log('Agents request to', pathname, '(no body):', e);
         }
 
-        console.log(`Rewriting agents request from ${pathname} to ${url.href}`);
+        console.log('Rewriting agents request from', pathname, 'to', url.href);
         return NextResponse.rewrite(url);
     } else if (pathname.startsWith(`/api/token/`)) {
         // Proxy token requests to the agent server (port 8080)
@@ -41,15 +41,15 @@ export async function middleware(req: NextRequest) {
 
         try {
             const body = await req.json();
-            console.log(`Token request to ${pathname} with body:`, body);
+            console.log('Token request to', pathname, 'with body:', body);
         } catch (e) {
-            console.log(`Token request to ${pathname} (no body): ${e}`);
+            console.log('Token request to', pathname, '(no body):', e);
         }
 
-        console.log(`Rewriting token request from ${pathname} to ${url.href}`);
+        console.log('Rewriting token request from', pathname, 'to', url.href);
         return NextResponse.rewrite(url);
     } else {
-        console.log(`No rewrite needed for: ${pathname}`);
+        console.log('No rewrite needed for:', pathname);
         return NextResponse.next();
     }
 }

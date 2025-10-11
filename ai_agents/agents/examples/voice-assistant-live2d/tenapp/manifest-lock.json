@@ -524,8 +524,8 @@
     {
       "type": "extension",
       "name": "google_tts_python",
-      "version": "0.2.4",
-      "hash": "fe8b40faee44d0c5d19f9f666f898ec2454439ad00dd4f48c4edc17d3379d5ed",
+      "version": "0.2.5",
+      "hash": "0d1bd4d55d58799f2abe4f2f6ea42066ab6bda4c67d98a6858cb146be383816b",
       "dependencies": [
         {
           "type": "system",
@@ -656,8 +656,8 @@
     {
       "type": "extension",
       "name": "rime_tts",
-      "version": "0.2.2",
-      "hash": "3136f3f9270e99e4c88361b2ca0d3051949ce2e463cfbd6ce1d239fcffa0c5b0",
+      "version": "0.2.9",
+      "hash": "1fbc56d944d5f2b2d682f05b137788a4f34a4fbcc108526a65d5b107af6c1c12",
       "dependencies": [
         {
           "type": "system",
@@ -690,8 +690,8 @@
     {
       "type": "extension",
       "name": "tencent_tts_python",
-      "version": "0.2.10",
-      "hash": "8c6a6e13097639c5ec71b9a92155068ffac60373fd4695360bb7b586d5a5c462",
+      "version": "0.2.11",
+      "hash": "0f51929e67fc52fb874ceff2d3bc57310097c285cab37e157d6babed40a1f350",
       "dependencies": [
         {
           "type": "system",

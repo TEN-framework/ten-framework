@@ -125,8 +125,8 @@ export default function Home() {
                             'Content-Type': 'application/json',
                         },
                         body: JSON.stringify({
-                            request_id: Math.random().toString(36).substring(7),
-                            uid: Math.floor(Math.random() * 100000),
+                            request_id: crypto.getRandomValues(new Uint8Array(16)).reduce((str, byte) => str + byte.toString(16).padStart(2, '0'), ''),
+                            uid: crypto.getRandomValues(new Uint32Array(1))[0] % 100000,
                             channel_name: 'test-channel'
                         })
                     });
