@@ -16,7 +16,7 @@ const (
 	extensionNameHttpServer = "http_server"
 
 	// Property json
-	PropertyJsonFile = "./agents/property.json"
+	PropertyJsonFile = "./property.json"
 	// Token expire time
 	tokenExpirationInSeconds = uint32(86400)
 

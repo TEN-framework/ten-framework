@@ -4,36 +4,14 @@ on:
   push:
     branches: ["**"]
     tags: ["**"]
-    paths-ignore:
-      - "core/**"
-      - "tests/**"
-      - "tools/**"
-      - "packages/**"
-      - "build/**"
-      - "third_party/**"
-      - ".vscode/**"
-      - ".devcontainer/**"
-      - ".github/**"
-      - "!.github/workflows/build_docker_for_ai_agents.yml"
-      - ".vscode/**"
-      - "ai_agents/docs/**"
-      - "**.md"
+    paths:
+      - "ai_agents/**"
+      - ".github/workflows/build_docker_for_ai_agents.yml"
   pull_request:
     branches: ["main"]
-    paths-ignore:
-      - "core/**"
-      - "tests/**"
-      - "tools/**"
-      - "packages/**"
-      - "build/**"
-      - "third_party/**"
-      - ".vscode/**"
-      - ".devcontainer/**"
-      - ".github/**"
-      - "!.github/workflows/build_docker_for_ai_agents.yml"
-      - ".vscode/**"
-      - "ai_agents/docs/**"
-      - "**.md"
+    paths:
+      - "ai_agents/**"
+      - ".github/workflows/build_docker_for_ai_agents.yml"
   workflow_dispatch:
 
 permissions:
@@ -45,15 +23,45 @@ concurrency:
   group: build-docker-for-ai-agents-${{ github.head_ref }}
   cancel-in-progress: true
 
-env:
-  SERVER_IMAGE_NAME: ten_agent_server
-  PLAYGROUND_IMAGE_NAME: ten_agent_playground
-  NON_EDIT_PLAYGROUND_IMAGE_NAME: ten_agent_non_edit_playground
-  DEMO_IMAGE_NAME: ten_agent_demo
-
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - name: "demo"
+            dockerfile: "./agents/examples/demo/Dockerfile"
+            image_name: "ten_agent_example_demo"
+          - name: "voice-assistant"
+            dockerfile: "./agents/examples/voice-assistant/Dockerfile"
+            image_name: "ten_agent_example_voice_assistant"
+          - name: "voice-assistant-realtime"
+            dockerfile: "./agents/examples/voice-assistant-realtime/Dockerfile"
+            image_name: "ten_agent_example_voice_assistant_realtime"
+          - name: "stepfun-demo"
+            dockerfile: "./agents/examples/stepfun-demo/Dockerfile"
+            image_name: "ten_agent_example_stepfun_demo"
+          - name: "transcription"
+            dockerfile: "./agents/examples/transcription/Dockerfile"
+            image_name: "ten_agent_example_transcription"
+          - name: "voice-assistant-nodejs"
+            dockerfile: "./agents/examples/voice-assistant-nodejs/Dockerfile"
+            image_name: "ten_agent_example_voice_assistant_nodejs"
+          - name: "voice-assistant-video"
+            dockerfile: "./agents/examples/voice-assistant-video/Dockerfile"
+            image_name: "ten_agent_example_voice_assistant_video"
+          - name: "voice-assistant-with-memU"
+            dockerfile: "./agents/examples/voice-assistant-with-memU/Dockerfile"
+            image_name: "ten_agent_example_voice_assistant_with_memu"
+          - name: "voice-assistant-with-ten-vad"
+            dockerfile: "./agents/examples/voice-assistant-with-ten-vad/Dockerfile"
+            image_name: "ten_agent_example_voice_assistant_with_ten_vad"
+          - name: "voice-assistant-sip-twilio"
+            dockerfile: "./agents/examples/voice-assistant-sip-twilio/Dockerfile"
+            image_name: "ten_agent_example_voice_assistant_sip_twilio"
+          - name: "speechmatics-diarization"
+            dockerfile: "./agents/examples/speechmatics-diarization/Dockerfile"
+            image_name: "ten_agent_example_speechmatics_diarization"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -65,53 +73,57 @@ jobs:
         shell: bash
         run: echo "image-tag=$(git describe --tags --always)" >> $GITHUB_OUTPUT
 
-      - name: Build & Publish Docker Image for Agents Server
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Clean up Docker system
+        run: |
+          docker system prune -f
+          docker builder prune -f
+
+      - name: Build & Publish Docker Image for ${{ matrix.name }}
         uses: elgohr/Publish-Docker-Github-Action@v5
         with:
-          name: ${{ github.repository_owner }}/${{ env.SERVER_IMAGE_NAME }}
+          name: ${{ github.repository_owner }}/${{ matrix.image_name }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+          dockerfile: ${{ matrix.dockerfile }}
           registry: ghcr.io
           workdir: ./ai_agents/
           tags: "${{ github.ref == 'refs/heads/main' && 'latest,' || '' }}${{ steps.pre-step.outputs.image-tag }}"
           no_push: ${{ github.event_name == 'pull_request' }}
+          cache: true
+          cache_from: type=gha
+          cache_to: type=gha,mode=max
+          build_args: |
+            BUILDKIT_INLINE_CACHE=1
 
-      - name: Build & Publish Docker Image for Playground
-        uses: elgohr/Publish-Docker-Github-Action@v5
-        env:
-          EDIT_GRAPH_MODE: true
-        with:
-          name: ${{ github.repository_owner }}/${{ env.PLAYGROUND_IMAGE_NAME }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-          registry: ghcr.io
-          workdir: ./ai_agents/playground
-          tags: "${{ github.ref == 'refs/heads/main' && 'latest,' || '' }}${{ steps.pre-step.outputs.image-tag }}"
-          no_push: ${{ github.event_name == 'pull_request' }}
-          buildargs: EDIT_GRAPH_MODE
+      - name: Clean up after build
+        if: always()
+        run: |
+          docker system prune -af
+          docker volume prune -f
 
-      - name: Build & Publish Docker Image for Non-Editable Playground
-        uses: elgohr/Publish-Docker-Github-Action@v5
-        env:
-          EDIT_GRAPH_MODE: false
-        with:
-          name: ${{ github.repository_owner }}/${{ env.NON_EDIT_PLAYGROUND_IMAGE_NAME }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-          registry: ghcr.io
-          workdir: ./ai_agents/playground
-          tags: "${{ github.ref == 'refs/heads/main' && 'latest,' || '' }}${{ steps.pre-step.outputs.image-tag }}"
-          no_push: ${{ github.event_name == 'pull_request' }}
-          buildargs: EDIT_GRAPH_MODE
-
-      - name: Build & Publish Docker Image for demo
-        uses: elgohr/Publish-Docker-Github-Action@v5
-        with:
-          name: ${{ github.repository_owner }}/${{ env.DEMO_IMAGE_NAME }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-          registry: ghcr.io
-          workdir: ./ai_agents/agents/examples/demo/web
-          buildoptions: --no-cache
-          tags: "${{ github.ref == 'refs/heads/main' && 'latest,' || '' }}${{ steps.pre-step.outputs.image-tag }}"
-          no_push: ${{ github.event_name == 'pull_request' }}
+  summary:
+    runs-on: ubuntu-latest
+    needs: build
+    if: always()
+    steps:
+      - name: Build Summary
+        run: |
+          echo "## 🐳 Docker Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "| Example | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| demo | ✅ Built |" >> $GITHUB_STEP_SUMMARY
+          echo "| voice-assistant | ✅ Built |" >> $GITHUB_STEP_SUMMARY
+          echo "| voice-assistant-realtime | ✅ Built |" >> $GITHUB_STEP_SUMMARY
+          echo "| stepfun-demo | ✅ Built |" >> $GITHUB_STEP_SUMMARY
+          echo "| transcription | ✅ Built |" >> $GITHUB_STEP_SUMMARY
+          echo "| voice-assistant-nodejs | ✅ Built |" >> $GITHUB_STEP_SUMMARY
+          echo "| voice-assistant-video | ✅ Built |" >> $GITHUB_STEP_SUMMARY
+          echo "| voice-assistant-with-memU | ✅ Built |" >> $GITHUB_STEP_SUMMARY
+          echo "| voice-assistant-with-ten-vad | ✅ Built |" >> $GITHUB_STEP_SUMMARY
+          echo "| voice-assistant-sip-twilio | ✅ Built |" >> $GITHUB_STEP_SUMMARY
+          echo "| speechmatics-diarization | ✅ Built |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "All Docker images have been built and published to GitHub Container Registry (ghcr.io)" >> $GITHUB_STEP_SUMMARY

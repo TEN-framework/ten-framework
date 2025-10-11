@@ -103,7 +103,7 @@ export const apiPing = async (channel: string) => {
 export const apiFetchAddonsExtensions = async (): Promise<AddonDef.Module[]> => {
   // let resp: any = await axios.get(`/api/dev/v1/addons/extensions`)
   let resp: any = await axios.post(`/api/dev/v1/apps/addons`, {
-    base_dir: "/app/agents"
+    base_dir: "."
   })
   return resp.data.data
 }
@@ -146,7 +146,7 @@ export const apiFetchGraphs = async (): Promise<Graph[]> => {
 
 export const apiLoadApp = async (): Promise<any> => {
   let resp: any = await axios.post(`/api/dev/v1/apps/load`, {
-    base_dir: "/app/agents",
+    base_dir: "."
   })
   return resp.data.data
 }
@@ -262,7 +262,7 @@ export const apiFetchGraphConnections = async (graphId: string): Promise<Connect
 export const apiGetDefaultProperty = async (module: string): Promise<any> => {
   let resp: any = await axios.post(`/api/dev/v1/extensions/property/get`, {
     addon_name: module,
-    app_base_dir: "/app/agents",
+    base_dir: "."
   })
   return resp.data.data
 }
@@ -450,7 +450,7 @@ export const apiSaveProperty = async () => {
 
 export const apiReloadPackage = async () => {
   let resp: any = await axios.post(`/api/dev/v1/apps/reload`, {
-    base_dir: "/app/agents",
+    base_dir: "."
   })
   resp = (resp.data) || {}
   return resp

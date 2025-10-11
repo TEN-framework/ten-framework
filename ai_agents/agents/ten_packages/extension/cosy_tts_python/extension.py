@@ -27,6 +27,7 @@ from .cosy_tts import (
     MESSAGE_TYPE_PCM,
     MESSAGE_TYPE_CMD_ERROR,
     MESSAGE_TYPE_CMD_CANCEL,
+    MESSAGE_TYPE_CMD_RESULT_GENERATED,
     CosyTTSClient,
 )
 
@@ -203,6 +204,14 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
                     f"KEYPOINT skip empty text, request_id: {t.request_id}"
                 )
             else:
+                # Add output characters to metrics
+                char_count = len(t.text)
+                self.metrics_add_output_characters(char_count)
+                self.ten_env.log_info(
+                    f"KEYPOINT add output characters to metrics: {char_count}, request_id: {t.request_id}"
+                )
+
+                # Start audio synthesis
                 self.client.synthesize_audio(t.text, t.text_input_end)
                 self.is_first_message_of_request = False
 
@@ -265,6 +274,8 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
                             and len(audio_chunk) > 0
                             and isinstance(audio_chunk, bytes)
                         ):
+                            # Add recv audio chunks to metrics
+                            self.metrics_add_recv_audio_chunks(audio_chunk)
                             self.chunk_count += 1
                             self.total_audio_bytes += len(audio_chunk)
                             # Calculate audio duration for this chunk
@@ -290,6 +301,9 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
                             self.ten_env.log_info(
                                 f"Received empty or invalid payload for TTS response, current_request_id: {self.current_request_id}, current_turn_id: {self.current_turn_id}"
                             )
+                    elif message_type == MESSAGE_TYPE_CMD_RESULT_GENERATED:
+                        if isinstance(data, int):
+                            self.metrics_add_input_characters(data)
                     elif message_type == MESSAGE_TYPE_CMD_ERROR:
                         self.ten_env.log_error(
                             f"vendor_error: {data}",
@@ -490,6 +504,8 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
                 self.current_turn_id,
                 reason,
             )
+            # Send usage metrics
+            await self.send_usage_metrics(self.current_request_id)
 
             self.current_request_id = None
             self.is_first_message_of_request = False

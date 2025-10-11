@@ -23,14 +23,33 @@
         "/usr/lib/**/*"
     ],
     "include": [
-        "agents"
+        "agents/ten_packages/**/*",
+        "agents/examples/**/*"
     ],
     "executionEnvironments": [
         {
-            "root": "/app/agents",
+            "root": "agents/examples",
             "extraPaths": [
-                "/app/agents/ten_packages/system/ten_runtime_python/interface",
-                "/app/agents/ten_packages/system/ten_ai_base/interface"
+                "/app/agents/examples/demo/tenapp/ten_packages/system/ten_runtime_python/interface",
+                "/app/agents/examples/stepfun-demo/tenapp/ten_packages/system/ten_runtime_python/interface",
+                "/app/agents/examples/transcription/tenapp/ten_packages/system/ten_runtime_python/interface",
+                "/app/agents/examples/voice-assistant/tenapp/ten_packages/system/ten_runtime_python/interface",
+                "/app/agents/examples/voice-assistant-nodejs/tenapp/ten_packages/system/ten_runtime_python/interface",
+                "/app/agents/examples/voice-assistant-realtime/tenapp/ten_packages/system/ten_runtime_python/interface",
+                "/app/agents/examples/voice-assistant-sip-twilio/tenapp/ten_packages/system/ten_runtime_python/interface",
+                "/app/agents/examples/voice-assistant-video/tenapp/ten_packages/system/ten_runtime_python/interface",
+                "/app/agents/examples/voice-assistant-with-memU/tenapp/ten_packages/system/ten_runtime_python/interface",
+                "/app/agents/examples/voice-assistant-with-ten-vad/tenapp/ten_packages/system/ten_runtime_python/interface",
+                "/app/agents/examples/demo/tenapp/ten_packages/system/ten_ai_base/interface",
+                "/app/agents/examples/stepfun-demo/tenapp/ten_packages/system/ten_ai_base/interface",
+                "/app/agents/examples/transcription/tenapp/ten_packages/system/ten_ai_base/interface",
+                "/app/agents/examples/voice-assistant/tenapp/ten_packages/system/ten_ai_base/interface",
+                "/app/agents/examples/voice-assistant-nodejs/tenapp/ten_packages/system/ten_ai_base/interface",
+                "/app/agents/examples/voice-assistant-realtime/tenapp/ten_packages/system/ten_ai_base/interface",
+                "/app/agents/examples/voice-assistant-sip-twilio/tenapp/ten_packages/system/ten_ai_base/interface",
+                "/app/agents/examples/voice-assistant-video/tenapp/ten_packages/system/ten_ai_base/interface",
+                "/app/agents/examples/voice-assistant-with-memU/tenapp/ten_packages/system/ten_ai_base/interface",
+                "/app/agents/examples/voice-assistant-with-ten-vad/tenapp/ten_packages/system/ten_ai_base/interface"
             ]
         }
     ]
