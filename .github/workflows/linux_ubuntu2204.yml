@@ -47,6 +47,14 @@ jobs:
     container:
       image: ghcr.io/ten-framework/ten_building_ubuntu2204
     steps:
+      - name: Debug context
+        run: |
+          echo "event_name=${{ github.event_name }}"
+          echo "event_action=${{ github.event.action }}"
+          echo "ref=${{ github.ref }}"
+          echo "ref_name=${{ github.ref_name }}"
+          echo "ref_type=${{ github.ref_type }}"
+
       - name: Check PR status before matrix execution
         uses: actions/github-script@v7
         with:
