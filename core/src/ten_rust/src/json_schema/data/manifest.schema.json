@@ -81,7 +81,7 @@
                       "format": "uri-reference"
                     },
                     {
-                      "pattern": "^.*\\$\\{app_base_dir\\}.*$"
+                      "pattern": "^\\$\\{app_base_dir\\}.*$"
                     }
                   ]
                 }
