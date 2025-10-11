@@ -43,10 +43,6 @@ class test_extension_a : public ten::extension_t {
           TEN_ENV_LOG_INFO(ten_env, "start trigger command received");
 
           ten_test::check_status_code(cmd_result, TEN_STATUS_CODE_OK);
-
-          // Check whether extension B is started
-          auto check_start_cmd = ten::cmd_t::create("check_start");
-          check_start_cmd->set_dests({{"", "", "test_extension_b"}});
         });
 
     ten_env.on_init_done();
