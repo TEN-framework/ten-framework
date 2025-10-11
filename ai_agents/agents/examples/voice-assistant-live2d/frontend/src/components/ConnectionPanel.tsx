@@ -26,7 +26,7 @@ export default function ConnectionPanel({
         appId: '',
         channel: 'live2d-voice-assistant',
         token: '',
-        uid: crypto.getRandomValues(new Uint32Array(1))[0] % 100000
+        uid: Math.floor(Math.random() * 100000)
     });
 
     const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>({
