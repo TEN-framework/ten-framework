@@ -303,118 +303,121 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                             f"Created PCMWriter for request_id: {t.request_id}, file: {dump_file_path}"
                         )
 
-            # Initialize variables for all cases
-            first_chunk = True
-            cur_duration_bytes = 0
             self.ten_env.log_debug(
                 f"send_text_to_tts_server:  {t.text} of request_id: {t.request_id}",
                 category=LOG_CATEGORY_VENDOR,
             )
 
             # Process audio chunks
-            audio_generator = self.client.get(t.text, t.request_id)
-            try:
-                async for audio_chunk, event, ttfb_ms in audio_generator:
-                    # Check if flush has been requested
-                    if self._flush_requested:
-                        self.ten_env.log_debug(
-                            "Flush requested, stopping audio processing"
-                        )
-                        break
-
-                    if event == EVENT_TTS_RESPONSE and audio_chunk:
-                        self.total_audio_bytes += len(audio_chunk)
-                        cur_duration_bytes += len(audio_chunk)
-                        duration_ms = (
-                            self.total_audio_bytes
-                            / (self.synthesize_audio_sample_rate() * 2 * 1)
-                            * 1000
-                        )
-
-                        self.ten_env.log_debug(
-                            f"receive_audio:  duration: {duration_ms} of request id: {t.request_id}",
-                            category=LOG_CATEGORY_VENDOR,
-                        )
-
-                        if first_chunk and self.current_request_id:
-                            self.sent_ts = datetime.now()
-
-                            await self.send_tts_audio_start(
-                                self.current_request_id, self.current_turn_id
+            if t.text.strip() != "":
+                audio_generator = self.client.get(t.text, t.request_id)
+                try:
+                    async for audio_chunk, event, ttfb_ms in audio_generator:
+                        # Check if flush has been requested
+                        if self._flush_requested:
+                            self.ten_env.log_debug(
+                                "Flush requested, stopping audio processing"
                             )
-                            if ttfb_ms is not None:
-                                await self.send_tts_ttfb_metrics(
+                            break
+
+                        if event == EVENT_TTS_RESPONSE and audio_chunk:
+                            self.total_audio_bytes += len(audio_chunk)
+                            duration_ms = (
+                                self.total_audio_bytes
+                                / (self.synthesize_audio_sample_rate() * 2 * 1)
+                                * 1000
+                            )
+
+                            self.ten_env.log_debug(
+                                f"receive_audio:  duration: {duration_ms} of request id: {t.request_id}",
+                                category=LOG_CATEGORY_VENDOR,
+                            )
+
+                            if self.sent_ts is None and self.current_request_id:
+                                self.sent_ts = datetime.now()
+
+                                await self.send_tts_audio_start(
                                     self.current_request_id,
-                                    ttfb_ms,
                                     self.current_turn_id,
                                 )
-                            first_chunk = False
+                                if ttfb_ms is not None:
+                                    await self.send_tts_ttfb_metrics(
+                                        self.current_request_id,
+                                        ttfb_ms,
+                                        self.current_turn_id,
+                                    )
 
-                        if (
-                            self.config.dump
-                            and self.current_request_id
-                            and self.current_request_id in self.recorder_map
-                        ):
-                            await self.recorder_map[
-                                self.current_request_id
-                            ].write(audio_chunk)
+                            if (
+                                self.config.dump
+                                and self.current_request_id
+                                and self.current_request_id in self.recorder_map
+                            ):
+                                await self.recorder_map[
+                                    self.current_request_id
+                                ].write(audio_chunk)
 
-                        await self.send_tts_audio_data(audio_chunk)
+                            await self.send_tts_audio_data(audio_chunk)
 
-                    elif event == EVENT_TTS_REQUEST_END:
-                        break
+                        elif event == EVENT_TTS_REQUEST_END:
+                            break
 
-                    elif event == EVENT_TTS_INVALID_KEY_ERROR:
-                        error_msg = (
-                            audio_chunk.decode("utf-8")
-                            if audio_chunk
-                            else "Unknown API key error"
-                        )
-                        await self.send_tts_error(
-                            self.current_request_id or t.request_id,
-                            ModuleError(
-                                message=error_msg,
-                                module=ModuleType.TTS,
-                                code=ModuleErrorCode.FATAL_ERROR,
-                                vendor_info=ModuleErrorVendorInfo(
-                                    vendor=self.vendor()
+                        elif event == EVENT_TTS_INVALID_KEY_ERROR:
+                            error_msg = (
+                                audio_chunk.decode("utf-8")
+                                if audio_chunk
+                                else "Unknown API key error"
+                            )
+                            await self.send_tts_error(
+                                self.current_request_id or t.request_id,
+                                ModuleError(
+                                    message=error_msg,
+                                    module=ModuleType.TTS,
+                                    code=ModuleErrorCode.FATAL_ERROR,
+                                    vendor_info=ModuleErrorVendorInfo(
+                                        vendor=self.vendor()
+                                    ),
                                 ),
-                            ),
-                            self.current_turn_id,
-                        )
-                        return  # Exit early on error, don't send audio_end
+                                self.current_turn_id,
+                            )
+                            return  # Exit early on error, don't send audio_end
 
-                    elif event == EVENT_TTS_ERROR:
-                        error_msg = (
-                            audio_chunk.decode("utf-8")
-                            if audio_chunk
-                            else "Unknown client error"
-                        )
-                        raise RuntimeError(error_msg)
-            except Exception as e:
-                # Handle exceptions from the async for loop
-                self.ten_env.log_error(
-                    f"Error in audio processing: {traceback.format_exc()}"
-                )
-                await self.send_tts_error(
-                    self.current_request_id or t.request_id,
-                    ModuleError(
-                        message=str(e),
-                        module=ModuleType.TTS,
-                        code=ModuleErrorCode.NON_FATAL_ERROR,
-                        vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
-                    ),
-                    self.current_turn_id,
-                )
-
-            finally:
-                # Ensure the async generator is properly closed
-                try:
-                    await audio_generator.aclose()
+                        elif event == EVENT_TTS_ERROR:
+                            error_msg = (
+                                audio_chunk.decode("utf-8")
+                                if audio_chunk
+                                else "Unknown client error"
+                            )
+                            raise RuntimeError(error_msg)
                 except Exception as e:
+                    # Handle exceptions from the async for loop
                     self.ten_env.log_error(
-                        f"Error closing audio generator: {e}"
+                        f"Error in audio processing: {traceback.format_exc()}"
                     )
+                    await self.send_tts_error(
+                        self.current_request_id or t.request_id,
+                        ModuleError(
+                            message=str(e),
+                            module=ModuleType.TTS,
+                            code=ModuleErrorCode.NON_FATAL_ERROR,
+                            vendor_info=ModuleErrorVendorInfo(
+                                vendor=self.vendor()
+                            ),
+                        ),
+                        self.current_turn_id,
+                    )
+
+                finally:
+                    # Ensure the async generator is properly closed
+                    try:
+                        await audio_generator.aclose()
+                    except Exception as e:
+                        self.ten_env.log_error(
+                            f"Error closing audio generator: {e}"
+                        )
+            else:
+                self.ten_env.log_debug(
+                    f"Empty text received for request_id: {t.request_id}"
+                )
 
             # Handle end of request (only if no error occurred)
             if t.text_input_end:

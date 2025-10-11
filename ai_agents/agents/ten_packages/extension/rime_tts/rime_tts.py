@@ -194,9 +194,6 @@ class RimeTTSynthesizer:
                 context_id = (
                     f"{tts_text_input.request_id}_{int(time.time() * 1000)}"
                 )
-                if tts_text_input.text_input_end:
-                    self.latest_context_id = context_id
-
                 self.latest_context_id = context_id
 
                 # Send text message
