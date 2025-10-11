@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { AgoraConfig, ConnectionStatus } from '@/types';
+import { NetworkQuality } from 'agora-rtc-sdk-ng';
 // IRemoteAudioTrack will be imported dynamically
 import {
     Wifi,
@@ -57,7 +58,7 @@ export default function ConnectionPanel({
         if (onAudioTrackChange) {
             agoraService.setOnRemoteAudioTrack(onAudioTrackChange);
         }
-        agoraService.setOnNetworkQuality((quality) => {
+        agoraService.setOnNetworkQuality((quality: NetworkQuality) => {
             setNetworkQuality(quality.uplinkNetworkQuality);
         });
 

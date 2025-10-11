@@ -22,7 +22,7 @@ export class AgoraService {
     // Event callbacks
     private onConnectionStatusChange?: (status: ConnectionStatus) => void;
     private onTranscriptMessage?: (message: TranscriptMessage) => void;
-    private onRemoteAudioTrack?: (track: IRemoteAudioTrack) => void;
+    private onRemoteAudioTrack?: (track: IRemoteAudioTrack | null) => void;
     private onNetworkQuality?: (quality: NetworkQuality) => void;
 
     constructor() {
@@ -220,7 +220,7 @@ export class AgoraService {
         this.onTranscriptMessage = callback;
     }
 
-    setOnRemoteAudioTrack(callback: (track: IRemoteAudioTrack) => void) {
+    setOnRemoteAudioTrack(callback: (track: IRemoteAudioTrack | null) => void) {
         this.onRemoteAudioTrack = callback;
     }
 
