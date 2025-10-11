@@ -167,11 +167,7 @@ class AsyncExtension(_Extension):
 
     def _proxy_on_configure_multi_thread(self, ten_env: TenEnv) -> None:
         """Multi-thread mode configuration handling"""
-        # Create independent event loop and thread
-        self._ten_loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(self._ten_loop)
-
-        # Run configuration in new thread
+        # Create and run event loop in new thread
         self._ten_thread = threading.Thread(
             target=self._run_multi_thread_configure,
             args=(ten_env,),
@@ -183,11 +179,12 @@ class AsyncExtension(_Extension):
     def _run_multi_thread_configure(self, ten_env: TenEnv) -> None:
         """Multi-thread mode configuration execution function"""
         try:
+            # Create event loop in the new thread
+            self._ten_loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(self._ten_loop)
+
             # Run configuration coroutine
-            if self._ten_loop:
-                self._ten_loop.run_until_complete(
-                    self._configure_routine(ten_env)
-                )
+            self._ten_loop.run_until_complete(self._configure_routine(ten_env))
         except Exception as e:
             ten_env.log_warn(f"Error in multi-thread configure: {e}")
             traceback.print_exc()
