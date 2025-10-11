@@ -7,6 +7,7 @@ from dashscope.audio.tts_v2 import (
     AudioFormat,
     ResultCallback,
 )
+import json
 
 from .config import CosyTTSConfig
 from ten_runtime.async_ten_env import AsyncTenEnv
@@ -16,6 +17,7 @@ MESSAGE_TYPE_PCM = 1
 MESSAGE_TYPE_CMD_COMPLETE = 2
 MESSAGE_TYPE_CMD_ERROR = 3
 MESSAGE_TYPE_CMD_CANCEL = 4
+MESSAGE_TYPE_CMD_RESULT_GENERATED = 5
 
 ERROR_CODE_TTS_FAILED = -1
 
@@ -103,7 +105,32 @@ class AsyncIteratorCallback(ResultCallback):
     def on_event(self, message: str) -> None:
         """Called when receiving events from TTS service."""
         if not self._cancelled:
-            self.ten_env.log_debug(f"Received TTS event: {message}")
+            try:
+                event_data = json.loads(message)
+                if (
+                    event_data.get("header", {}).get("event")
+                    == "result-generated"
+                ):
+                    char_count = (
+                        event_data.get("payload", {})
+                        .get("usage", {})
+                        .get("characters")
+                    )
+                    if isinstance(char_count, int):
+                        asyncio.run_coroutine_threadsafe(
+                            self._queue.put(
+                                (
+                                    True,
+                                    MESSAGE_TYPE_CMD_RESULT_GENERATED,
+                                    char_count,
+                                )
+                            ),
+                            self._loop,
+                        )
+            except json.JSONDecodeError:
+                self.ten_env.log_error("Failed to decode TTS event JSON")
+            except Exception as e:
+                self.ten_env.log_error(f"Error processing TTS event: {e}")
 
     def on_data(self, data: bytes) -> None:
         """Called when receiving audio data from TTS service."""
