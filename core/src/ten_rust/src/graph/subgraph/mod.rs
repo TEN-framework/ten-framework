@@ -102,7 +102,8 @@ impl Graph {
                 Ok(extension_node.addon)
             }
             GraphNodeType::Selector => Err(anyhow::anyhow!(
-                "Selector nodes are not yet supported in get_addon_name_of_node"
+                "Selector node are not supported in get_addon_name_of_node, it should be broken \
+                 down into extension nodes."
             )),
         }
     }

@@ -17,8 +17,6 @@ from .struct import (
 
 DEFAULT_VIRTUAL_MODEL = "gpt-4o-realtime-preview"
 
-VENDOR_AZURE = "azure"
-
 
 def smart_str(s: str, max_field_len: int = 128) -> str:
     """parse string as json, truncate data field to 128 characters, reserialize"""
@@ -46,13 +44,11 @@ class RealtimeApiConnection:
         api_key: str | None = None,
         path: str = "/v1/realtime",
         model: str = DEFAULT_VIRTUAL_MODEL,
-        vendor: str = "",
         verbose: bool = False,
     ):
         self.ten_env = ten_env
-        self.vendor = vendor
         self.url = f"{base_url}{path}"
-        if not self.vendor and "model=" not in self.url:
+        if "model=" not in self.url:
             self.url += f"?model={model}"
 
         self.api_key = api_key or os.environ.get("STEPFUN_API_KEY")
@@ -71,13 +67,9 @@ class RealtimeApiConnection:
         return False
 
     async def connect(self):
-        headers = {}
-        if self.vendor == VENDOR_AZURE:
-            headers = {"api-key": self.api_key}
-        elif not self.vendor:
-            headers = {
-                "Authorization": "Bearer " + self.api_key,
-            }
+        headers = {
+            "Authorization": "Bearer " + self.api_key,
+        }
 
         self.ten_env.log_info(f"Connecting to {self.url}, headers: {headers}")
 

@@ -188,44 +188,48 @@ let initializeGraphData: any;
 // Fetch graph details
 let fetchGraphDetails: any;
 
-if (isEditModeOn) {
-  // only for development, below requests depend on dev-server
-  initializeGraphData = createAsyncThunk(
-    "global/initializeGraphData",
-    async (_, { dispatch }) => {
-      await apiReloadPackage();
-      await apiLoadApp();
-      const [fetchedGraphs, modules] = await Promise.all([
-        apiFetchGraphs(),
-        apiFetchInstalledAddons(),
-      ]);
-      dispatch(setGraphList(fetchedGraphs.map((graph) => graph)));
-      dispatch(setAddonModules(modules));
-    }
-  );
-  fetchGraphDetails = createAsyncThunk(
-    "global/fetchGraphDetails",
-    async (graph: Graph, { dispatch }) => {
-      const updatedGraph = await apiFetchGraphDetails(graph);
-      dispatch(setGraph(updatedGraph));
-    }
-  );
-} else {
-  initializeGraphData = createAsyncThunk(
-    "global/initializeGraphData",
-    async (_, { dispatch }) => {
-      const fetchedGraphs = await apiFetchGraphs();
-      dispatch(setGraphList(fetchedGraphs.map((graph) => graph)));
-    }
-  );
-  fetchGraphDetails = createAsyncThunk(
-    "global/fetchGraphDetails",
-    async (graphId: string, { dispatch }) => {
-      // Do nothing in production
-      return
-    }
-  );
-}
+// if (isEditModeOn) {
+//   // only for development, below requests depend on dev-server
+//   initializeGraphData = createAsyncThunk(
+//     "global/initializeGraphData",
+//     async (_, { dispatch }) => {
+//       try {
+//         await apiReloadPackage();
+//       } catch (error) {
+//         console.warn("Error reloading package:", error);
+//       }
+//       await apiLoadApp();
+//       const [fetchedGraphs, modules] = await Promise.all([
+//         apiFetchGraphs(),
+//         apiFetchInstalledAddons(),
+//       ]);
+//       dispatch(setGraphList(fetchedGraphs.map((graph) => graph)));
+//       dispatch(setAddonModules(modules));
+//     }
+//   );
+//   fetchGraphDetails = createAsyncThunk(
+//     "global/fetchGraphDetails",
+//     async (graph: Graph, { dispatch }) => {
+//       const updatedGraph = await apiFetchGraphDetails(graph);
+//       dispatch(setGraph(updatedGraph));
+//     }
+//   );
+// } else {
+initializeGraphData = createAsyncThunk(
+  "global/initializeGraphData",
+  async (_, { dispatch }) => {
+    const fetchedGraphs = await apiFetchGraphs();
+    dispatch(setGraphList(fetchedGraphs.map((graph) => graph)));
+  }
+);
+fetchGraphDetails = createAsyncThunk(
+  "global/fetchGraphDetails",
+  async (graphId: string, { dispatch }) => {
+    // Do nothing in production
+    return
+  }
+);
+// }
 
 // Update a graph
 export const updateGraph = createAsyncThunk(

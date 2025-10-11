@@ -162,7 +162,7 @@ main() {
   echo "build_cxx_extensions..."
   build_cxx_extensions $APP_HOME
   echo "build_go_app..."
-  build_go_app $APP_HOME
+  # build_go_app $APP_HOME
   echo "install_python_requirements..."
   install_python_requirements $APP_HOME
   echo "install_node_dependencies..."
