@@ -1,6 +1,6 @@
 FROM ghcr.io/ten-framework/ten_agent_build:0.7.3 AS builder
 
-ARG USE_AGENT=agents/examples/voice-assistant
+ARG USE_AGENT=agents/examples/voice-assistant-live2d
 
 WORKDIR /app
 
@@ -28,13 +28,13 @@ RUN cd /app/${USE_AGENT} && \
   task install && task release
 
 # Build frontend in builder stage (npm install already done by task install)
-WORKDIR /app/agents/examples/voice-assistant-live2d/frontend
+WORKDIR /app/${USE_AGENT}/frontend
 RUN NEXT_PUBLIC_EDIT_GRAPH_MODE=false npm run build
 WORKDIR /app
 
 FROM ubuntu:22.04
 
-ARG USE_AGENT=agents/examples/voice-assistant
+ARG USE_AGENT=agents/examples/voice-assistant-live2d
 
 RUN apt-get clean && apt-get update && apt-get install -y --no-install-recommends \
   libasound2 \
