@@ -278,7 +278,14 @@
           "properties": {
             "import_uri": {
               "type": "string",
-              "format": "uri-reference",
+              "anyOf": [
+                {
+                  "format": "uri-reference"
+                },
+                {
+                  "pattern": "^\\$\\{app_base_dir\\}.*$"
+                }
+              ],
               "minLength": 1
             }
           }
@@ -918,7 +925,14 @@
                 "properties": {
                   "import_uri": {
                     "type": "string",
-                    "format": "uri-reference",
+                    "anyOf": [
+                      {
+                        "format": "uri-reference"
+                      },
+                      {
+                        "pattern": "^\\$\\{app_base_dir\\}.*$"
+                      }
+                    ],
                     "minLength": 1
                   },
                   "nodes": {

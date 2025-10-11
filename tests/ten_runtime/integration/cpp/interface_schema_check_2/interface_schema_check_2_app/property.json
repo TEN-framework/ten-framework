@@ -1,0 +1,73 @@
+{
+  "ten": {
+    "predefined_graphs": [
+      {
+        "name": "default",
+        "auto_start": true,
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "simple_http_server_cpp",
+              "addon": "simple_http_server_cpp",
+              "extension_group": "http_server"
+            },
+            {
+              "type": "extension",
+              "name": "simple_echo_cpp",
+              "addon": "simple_echo_cpp",
+              "extension_group": "echo"
+            },
+            {
+              "type": "extension",
+              "name": "default_extension_cpp",
+              "addon": "default_extension_cpp",
+              "extension_group": "default"
+            }
+          ],
+          "connections": [
+            {
+              "extension": "simple_http_server_cpp",
+              "cmd": [
+                {
+                  "name": "test",
+                  "dest": [
+                    {
+                      "extension": "default_extension_cpp"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "default_extension_cpp",
+              "data": [
+                {
+                  "name": "text_data",
+                  "dest": [
+                    {
+                      "extension": "simple_echo_cpp"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "simple_echo_cpp",
+              "data": [
+                {
+                  "name": "text_data",
+                  "dest": [
+                    {
+                      "extension": "default_extension_cpp"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

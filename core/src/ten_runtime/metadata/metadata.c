@@ -129,10 +129,12 @@ void ten_metadata_load(ten_object_on_configure_func_t on_configure,
 // Note that if the return value is not NULL, it means the return value is a new
 // value, and the caller should destroy it after using.
 static ten_value_t *ten_metadata_flatten_manifest_api_definition(
-    ten_value_t *api_definition, const char *base_dir) {
+    ten_value_t *api_definition, const char *base_dir,
+    const char *app_base_dir) {
   TEN_ASSERT(api_definition, "Invalid argument.");
   TEN_ASSERT(ten_value_check_integrity(api_definition), "Invalid argument.");
   TEN_ASSERT(base_dir, "Invalid argument.");
+  TEN_ASSERT(app_base_dir, "Invalid argument.");
 
   ten_value_t *result = NULL;
 
@@ -152,8 +154,8 @@ static ten_value_t *ten_metadata_flatten_manifest_api_definition(
   TEN_ASSERT(original_api_json_str, "Should not happen.");
 
   char *err_msg = NULL;
-  const char *flattened_api_json_str =
-      ten_rust_manifest_api_flatten(original_api_json_str, base_dir, &err_msg);
+  const char *flattened_api_json_str = ten_rust_manifest_api_flatten(
+      original_api_json_str, base_dir, app_base_dir, &err_msg);
 
   if (must_free_original_json_str) {
     TEN_FREE(original_api_json_str);
@@ -186,7 +188,8 @@ static ten_value_t *ten_metadata_flatten_manifest_api_definition(
 
 bool ten_metadata_init_schema_store(ten_value_t *manifest,
                                     ten_schema_store_t *schema_store,
-                                    const char *base_dir) {
+                                    const char *base_dir,
+                                    const char *app_base_dir) {
   TEN_ASSERT(manifest, "Invalid argument.");
   TEN_ASSERT(ten_value_check_integrity(manifest), "Invalid argument.");
   TEN_ASSERT(ten_value_is_object(manifest), "Should not happen.");
@@ -200,11 +203,13 @@ bool ten_metadata_init_schema_store(ten_value_t *manifest,
   bool value_need_free = false;
 
 #if defined(TEN_ENABLE_TEN_RUST_APIS)
-  api_definition =
-      ten_metadata_flatten_manifest_api_definition(api_definition, base_dir);
+  api_definition = ten_metadata_flatten_manifest_api_definition(
+      api_definition, base_dir, app_base_dir);
   if (!api_definition) {
-    TEN_LOGE("Failed to flatten manifest api definition. base_dir: %s",
-             base_dir);
+    TEN_LOGE(
+        "Failed to flatten manifest api definition. base_dir: %s, "
+        "app_base_dir: %s",
+        base_dir, app_base_dir);
     return false;
   }
 

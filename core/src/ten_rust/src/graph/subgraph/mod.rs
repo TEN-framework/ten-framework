@@ -205,6 +205,7 @@ impl Graph {
                 let real_path = get_real_path_from_import_uri(
                     &subgraph_content.graph.import_uri,
                     base_dir.as_deref(),
+                    None,
                 )?;
                 let nested_base_dir = Some(get_base_dir_of_uri(&real_path)?);
                 return Box::pin(

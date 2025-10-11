@@ -6,6 +6,7 @@
 //
 #include "include_internal/ten_runtime/extension/on_xxx.h"
 
+#include "include_internal/ten_runtime/app/base_dir.h"
 #include "include_internal/ten_runtime/common/constant_str.h"
 #include "include_internal/ten_runtime/common/loc.h"
 #include "include_internal/ten_runtime/extension/base_dir.h"
@@ -23,6 +24,7 @@
 #include "include_internal/ten_runtime/msg/msg.h"
 #include "include_internal/ten_runtime/ten_env/ten_env.h"
 #include "include_internal/ten_runtime/timer/timer.h"
+#include "ten_runtime/app/app.h"
 #include "ten_utils/log/log.h"
 #include "ten_utils/macro/check.h"
 #include "ten_utils/macro/mark.h"
@@ -151,8 +153,15 @@ bool ten_extension_on_configure_done(ten_env_t *self) {
   TEN_ASSERT(rc, "[%s] Failed to handle 'ten' properties.",
              ten_string_get_raw_str(&extension->name));
 
+  ten_app_t *app = extension->app;
+  TEN_ASSERT(app, "Should not happen.");
+  // TEN_NOLINTNEXTLINE(thread-check)
+  // thread-check: This function is called on the extension thread.
+  TEN_ASSERT(ten_app_check_integrity(app, false), "Should not happen.");
+
   ten_metadata_init_schema_store(&extension->manifest, &extension->schema_store,
-                                 ten_extension_get_base_dir(extension));
+                                 ten_extension_get_base_dir(extension),
+                                 ten_app_get_base_dir(app));
 
   ten_extension_adjust_and_validate_property_on_configure_done(extension);
 

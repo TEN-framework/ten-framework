@@ -159,8 +159,15 @@
       "properties": {
         "import_uri": {
           "type": "string",
-          "format": "uri-reference",
-          "minLength": 1
+          "minLength": 1,
+          "anyOf": [
+            {
+              "format": "uri-reference"
+            },
+            {
+              "pattern": "^\\$\\{app_base_dir\\}.*$"
+            }
+          ]
         }
       }
     },
