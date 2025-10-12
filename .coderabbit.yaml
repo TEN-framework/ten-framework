@@ -8,8 +8,8 @@ reviews:
     enabled: true
     drafts: false
   tools:
-    # Backend  
-    ruff:        # Python
+    # Backend
+    ruff: # Python
       enabled: true
     gitleaks:
       enabled: true
