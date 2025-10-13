@@ -19,6 +19,7 @@ bin/main
 
 node_modules
 build
+.next
 
 __pycache__
 .release
