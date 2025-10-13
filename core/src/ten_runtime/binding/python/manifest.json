@@ -18,6 +18,7 @@
     "include": [
       "manifest.json",
       "BUILD.gn",
+      "requirements.txt",
       "interface/**",
       "tools/**",
       "lib/**"

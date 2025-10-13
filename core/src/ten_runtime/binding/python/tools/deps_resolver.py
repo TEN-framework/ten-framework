@@ -86,6 +86,16 @@ class DepsManager:
 
                 result.append(source_file)
 
+        # Collect requirements.txt files from ten_packages/system directory.
+        system_dir = os.path.join(self.root, "ten_packages", "system")
+        if os.path.exists(system_dir):
+            for root, _, files in os.walk(system_dir):
+                if "requirements.txt" in files:
+                    source_file = os.path.relpath(
+                        os.path.join(root, "requirements.txt"), self.root
+                    )
+                    result.append(source_file)
+
         # Include the requirements.txt file in the root directory.
         if os.path.exists(os.path.join(self.root, "requirements.txt")):
             result.append("requirements.txt")

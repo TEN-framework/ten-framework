@@ -90,7 +90,16 @@ class GlobalThreadManager:
     def _thread_routine(self, ten_env: "TenEnv"):
         """Global main thread execution function"""
 
-        self._main_loop = asyncio.new_event_loop()
+        try:
+            import uvloop
+
+            self._main_loop = uvloop.new_event_loop()
+        except ImportError:
+            ten_env.log_warn(
+                "Warning: uvloop not available, using default event loop"
+            )
+            self._main_loop = asyncio.new_event_loop()
+
         asyncio.set_event_loop(self._main_loop)
 
         # Signal that the event loop is ready
