@@ -1043,6 +1043,7 @@ bool ten_msg_type_to_handle_when_closing(ten_shared_ptr_t *msg) {
 
   switch (ten_msg_get_type(msg)) {
   case TEN_MSG_TYPE_CMD_RESULT:
+  case TEN_MSG_TYPE_CMD_STOP_GRAPH:
     return true;
   default:
     return false;
