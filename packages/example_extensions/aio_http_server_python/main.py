@@ -97,14 +97,16 @@ class HttpServerExtension(AsyncExtension):
         return web.AppRunner(self.webApp)
 
     async def start_server(self, host, port):
-        runner = self.create_runner()
-        await runner.setup()
-        self.tcpSite = web.TCPSite(runner, host, port)
+        self.runner = self.create_runner()
+        await self.runner.setup()
+        self.tcpSite = web.TCPSite(self.runner, host, port)
         await self.tcpSite.start()
 
     def __init__(self, name: str) -> None:
         super().__init__(name)
         self.name = name
+        self.runner = None
+        self.tcpSite = None
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         self.ten_env = ten_env
@@ -133,6 +135,15 @@ class HttpServerExtension(AsyncExtension):
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log(LogLevel.DEBUG, "on_stop")
+
+        # Clean up HTTP server resources
+        if self.tcpSite is not None:
+            await self.tcpSite.stop()
+            ten_env.log(LogLevel.DEBUG, "TCPSite stopped")
+
+        if self.runner is not None:
+            await self.runner.cleanup()
+            ten_env.log(LogLevel.DEBUG, "AppRunner cleaned up")
 
 
 @register_addon_as_extension("aio_http_server_python")
