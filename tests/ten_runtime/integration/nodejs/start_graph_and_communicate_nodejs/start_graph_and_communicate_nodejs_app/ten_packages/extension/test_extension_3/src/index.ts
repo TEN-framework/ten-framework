@@ -49,4 +49,3 @@ class TestExtension3Addon extends Addon {
     return new TestExtension3(instanceName);
   }
 }
-

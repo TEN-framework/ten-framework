@@ -56,4 +56,3 @@ class TestExtension2Addon extends Addon {
     return new TestExtension2(instanceName);
   }
 }
-

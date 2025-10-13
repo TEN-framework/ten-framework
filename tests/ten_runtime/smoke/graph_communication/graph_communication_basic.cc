@@ -54,7 +54,7 @@ class test_extension_1 : public ten::extension_t {
           // Set dests to the graph, the msg will automatically be sent to the
           // 'test_extension_2' extension in the graph.
           hello_world_cmd->set_dests(
-              {{"msgpack://127.0.0.1:8001/", graph_id.c_str(), ""}});
+              {{"msgpack://127.0.0.1:8001/", graph_id.c_str()}});
           ten_env.send_cmd(
               std::move(hello_world_cmd),
               [](ten::ten_env_t &ten_env,
