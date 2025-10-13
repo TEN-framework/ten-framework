@@ -523,7 +523,13 @@ pub unsafe extern "C" fn ten_rust_graph_validate_complete_flatten(
 
         // Inject graph_proxy from exposed messages
         match flattened_graph.inject_graph_proxy_from_exposed_messages(src_loc_json_str_rust_str) {
-            Ok(g) => g,
+            Ok(g) => {
+                if let Some(g) = g {
+                    g
+                } else {
+                    flattened_graph
+                }
+            }
             Err(e) => {
                 if !err_msg.is_null() {
                     let err_msg_c_str = CString::new(e.to_string()).unwrap();
