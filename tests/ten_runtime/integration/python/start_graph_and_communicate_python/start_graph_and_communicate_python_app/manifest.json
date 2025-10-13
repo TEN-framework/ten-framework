@@ -21,22 +21,22 @@
     {
       "type": "extension",
       "name": "test_extension_1",
-      "version": "0.10.31"
+      "version": "0.11.18"
     },
     {
       "type": "extension",
       "name": "test_extension_2",
-      "version": "0.10.31"
+      "version": "0.11.18"
     },
     {
       "type": "extension",
       "name": "test_extension_3",
-      "version": "0.10.31"
+      "version": "0.11.18"
     },
     {
       "type": "extension",
       "name": "test_extension_4",
-      "version": "0.10.31"
+      "version": "0.11.18"
     }
   ]
 }
