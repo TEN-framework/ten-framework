@@ -1103,8 +1103,7 @@ static void ten_msg_set_dest_extension_if_only_extension_not_specified(
 
   if (msg_sent_to_extensions && dest_loc->has_app_uri &&
       dest_loc->has_graph_id) {
-    if (!dest_loc->has_extension_name ||
-        ten_string_is_empty(&dest_loc->extension_name)) {
+    if (!dest_loc->has_extension_name) {
       ten_loc_set_extension_name(dest_loc, TEN_STR_TEN_GRAPH_PROXY_EXTENSION);
     }
     return;
