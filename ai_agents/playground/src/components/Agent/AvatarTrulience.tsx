@@ -81,7 +81,7 @@ export default function Avatar({ audioTrack }: AvatarProps) {
     if (trulienceAvatarRef.current) {
       if (audioTrack && agentConnected) {
         const stream = new MediaStream([audioTrack.getMediaStreamTrack()])
-        trulienceAvatarRef.current.setMediaStream(null)
+        // trulienceAvatarRef.current.setMediaStream(null)
         trulienceAvatarRef.current.setMediaStream(stream)
         console.warn("[TrulienceAvatar] MediaStream set:", stream)
       } else if (!agentConnected) {
@@ -93,7 +93,7 @@ export default function Avatar({ audioTrack }: AvatarProps) {
 
     // Cleanup: unset media stream
     return () => {
-      trulienceAvatarRef.current?.setMediaStream(null)
+      // trulienceAvatarRef.current?.setMediaStream(null)
     }
   }, [audioTrack, agentConnected])
 
