@@ -9,6 +9,7 @@ services:
     ports:
       - "${GRAPH_DESIGNER_SERVER_PORT}:${GRAPH_DESIGNER_SERVER_PORT}"
       - "${SERVER_PORT}:${SERVER_PORT}"
+      - "3000:3000"
       - 9000-9001:9000-9001
     volumes:
       - ./:/app

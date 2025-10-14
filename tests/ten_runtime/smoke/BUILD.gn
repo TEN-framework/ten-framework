@@ -82,6 +82,7 @@ ten_executable("ten_runtime_smoke_test") {
   if (ten_enable_ten_rust) {
     deps += [
       "graph_check",
+      "graph_communication",
       "graph_syntax_sugar",
       "log_test",
       "schema_test",

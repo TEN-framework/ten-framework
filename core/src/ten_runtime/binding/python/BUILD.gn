@@ -15,7 +15,10 @@ ten_package("ten_python_binding_system_package") {
   package_kind = "system"
   package_output_root_dir_name = "ten_runtime_python"
 
-  resources = [ "manifest.json" ]
+  resources = [
+    "manifest.json",
+    "requirements.txt",
+  ]
 
   interface_files = exec_script(
           "//.gnfiles/build/scripts/glob_file.py",

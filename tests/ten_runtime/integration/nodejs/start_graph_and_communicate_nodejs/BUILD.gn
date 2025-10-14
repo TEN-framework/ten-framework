@@ -1,0 +1,98 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+import("//build/ten_runtime/feature/test.gni")
+import("//build/ten_runtime/ten.gni")
+
+ten_package_test_prepare_app("start_graph_and_communicate_nodejs_app") {
+  src_app = "default_app_nodejs"
+  src_app_language = "nodejs"
+  generated_app_src_root_dir_name = "start_graph_and_communicate_nodejs_app"
+
+  replace_paths_after_install_app = [
+    "start_graph_and_communicate_nodejs_app/manifest.json",
+    "start_graph_and_communicate_nodejs_app/property.json",
+    "start_graph_and_communicate_nodejs_app/ten_packages/extension/test_extension_1/manifest.json",
+    "start_graph_and_communicate_nodejs_app/ten_packages/extension/test_extension_1/property.json",
+    "start_graph_and_communicate_nodejs_app/ten_packages/extension/test_extension_1/src/index.ts",
+    "start_graph_and_communicate_nodejs_app/ten_packages/extension/test_extension_1/package.json",
+    "start_graph_and_communicate_nodejs_app/ten_packages/extension/test_extension_1/tsconfig.json",
+    "start_graph_and_communicate_nodejs_app/ten_packages/extension/test_extension_2/manifest.json",
+    "start_graph_and_communicate_nodejs_app/ten_packages/extension/test_extension_2/property.json",
+    "start_graph_and_communicate_nodejs_app/ten_packages/extension/test_extension_2/src/index.ts",
+    "start_graph_and_communicate_nodejs_app/ten_packages/extension/test_extension_2/package.json",
+    "start_graph_and_communicate_nodejs_app/ten_packages/extension/test_extension_2/tsconfig.json",
+    "start_graph_and_communicate_nodejs_app/ten_packages/extension/test_extension_3/manifest.json",
+    "start_graph_and_communicate_nodejs_app/ten_packages/extension/test_extension_3/property.json",
+    "start_graph_and_communicate_nodejs_app/ten_packages/extension/test_extension_3/src/index.ts",
+    "start_graph_and_communicate_nodejs_app/ten_packages/extension/test_extension_3/package.json",
+    "start_graph_and_communicate_nodejs_app/ten_packages/extension/test_extension_3/tsconfig.json",
+    "start_graph_and_communicate_nodejs_app/ten_packages/extension/test_extension_4/manifest.json",
+    "start_graph_and_communicate_nodejs_app/ten_packages/extension/test_extension_4/property.json",
+    "start_graph_and_communicate_nodejs_app/ten_packages/extension/test_extension_4/src/index.ts",
+    "start_graph_and_communicate_nodejs_app/ten_packages/extension/test_extension_4/package.json",
+    "start_graph_and_communicate_nodejs_app/ten_packages/extension/test_extension_4/tsconfig.json",
+  ]
+
+  if (ten_enable_ten_manager) {
+    deps = [
+      "//core/src/ten_manager",
+      "//packages/core_apps/default_app_nodejs:upload_default_app_nodejs_to_server",
+      "//packages/core_protocols/msgpack:upload_protocol_msgpack_to_server",
+    ]
+  }
+}
+
+ten_package_test_prepare_client(
+    "start_graph_and_communicate_nodejs_app_client") {
+  sources = [ "client/client.cc" ]
+  include_dirs = [
+    "//core/src",
+    "//core",
+    "//packages",
+    "//tests",
+  ]
+  deps = [
+    "//core/src/ten_runtime",
+    "//packages/core_protocols/msgpack:msgpack_files",
+    "//tests/common/client:msgpack_client",
+    "//third_party/msgpack:msgpackc",
+    "//third_party/nlohmann_json",
+  ]
+}
+
+ten_package_test_prepare_auxiliary_resources(
+    "start_graph_and_communicate_nodejs_test_files") {
+  resources = [
+    "__init__.py",
+    "test_case.py",
+  ]
+
+  utils_files = exec_script("//.gnfiles/build/scripts/glob_file.py",
+                            [
+                              "--dir",
+                              rebase_path("//tests/utils/**/*"),
+                              "--dir-base",
+                              rebase_path("//tests/utils"),
+                              "--recursive",
+                              "--only-output-file",
+                            ],
+                            "json")
+
+  foreach(utils_file, utils_files) {
+    utils_file_rel_path = utils_file.relative_path
+    resources +=
+        [ "//tests/utils/${utils_file_rel_path}=>utils/${utils_file_rel_path}" ]
+  }
+}
+
+group("start_graph_and_communicate_nodejs") {
+  deps = [
+    ":start_graph_and_communicate_nodejs_app",
+    ":start_graph_and_communicate_nodejs_app_client",
+    ":start_graph_and_communicate_nodejs_test_files",
+  ]
+}
