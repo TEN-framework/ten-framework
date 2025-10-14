@@ -1,0 +1,15 @@
+{
+  "name": "test-extension-4",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "./build/index.js",
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  },
+  "dependencies": {
+    "ten-runtime-nodejs": "file:../../system/ten_runtime_nodejs"
+  },
+  "scripts": {
+    "build": "tsc --listEmittedFiles"
+  }
+}

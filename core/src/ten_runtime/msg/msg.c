@@ -1043,6 +1043,7 @@ bool ten_msg_type_to_handle_when_closing(ten_shared_ptr_t *msg) {
 
   switch (ten_msg_get_type(msg)) {
   case TEN_MSG_TYPE_CMD_RESULT:
+  case TEN_MSG_TYPE_CMD_STOP_GRAPH:
     return true;
   default:
     return false;
@@ -1078,6 +1079,35 @@ TEN_MSG_TYPE ten_msg_type_from_type_string(const char *type_str) {
   }
 
   return msg_type;
+}
+
+static void ten_msg_set_dest_extension_if_only_extension_not_specified(
+    ten_shared_ptr_t *msg, ten_loc_t *dest_loc) {
+  TEN_ASSERT(msg, "Should not happen.");
+  TEN_ASSERT(ten_msg_check_integrity(msg), "Should not happen.");
+
+  bool msg_sent_to_extensions = false;
+
+  TEN_MSG_TYPE msg_type = ten_msg_get_type(msg);
+  switch (msg_type) {
+  case TEN_MSG_TYPE_CMD:
+  case TEN_MSG_TYPE_DATA:
+  case TEN_MSG_TYPE_VIDEO_FRAME:
+  case TEN_MSG_TYPE_AUDIO_FRAME:
+    msg_sent_to_extensions = true;
+    break;
+
+  default:
+    break;
+  }
+
+  if (msg_sent_to_extensions && dest_loc->has_app_uri &&
+      dest_loc->has_graph_id) {
+    if (!dest_loc->has_extension_name) {
+      ten_loc_set_extension_name(dest_loc, TEN_STR_TEN_GRAPH_PROXY_EXTENSION);
+    }
+    return;
+  }
 }
 
 /**
@@ -1138,6 +1168,8 @@ void ten_msg_correct_dest(ten_shared_ptr_t *msg, ten_engine_t *engine) {
         break;
       }
     }
+
+    ten_msg_set_dest_extension_if_only_extension_not_specified(msg, dest_loc);
   }
 }
 
