@@ -3,7 +3,8 @@
 import * as React from "react"
 // import CamSelect from "./camSelect"
 import { CamIconByStatus } from "@/components/Icon"
-import AgoraRTC, { ICameraVideoTrack, ILocalVideoTrack } from "agora-rtc-sdk-ng"
+import AgoraRTC from "agora-rtc-sdk-ng"
+import type { ICameraVideoTrack, ILocalVideoTrack } from "agora-rtc-sdk-ng"
 // import { LocalStreamPlayer } from "../streamPlayer"
 // import { useSmallScreen } from "@/common"
 import {

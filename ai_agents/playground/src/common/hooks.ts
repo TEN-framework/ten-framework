@@ -1,6 +1,6 @@
 "use client";
 
-import { IMicrophoneAudioTrack } from "agora-rtc-sdk-ng";
+import type { IMicrophoneAudioTrack } from "agora-rtc-sdk-ng";
 import { deepMerge, normalizeFrequencies } from "./utils";
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import type { AppDispatch, AppStore, RootState } from "../store";

@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { NetworkQuality } from "agora-rtc-sdk-ng"
+import type { NetworkQuality } from "agora-rtc-sdk-ng"
 import { rtcManager } from "@/manager"
 import { NetworkIconByLevel } from "@/components/Icon"
 

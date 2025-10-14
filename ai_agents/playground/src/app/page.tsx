@@ -10,7 +10,6 @@ import { cn } from "@/lib/utils";
 import Avatar from "@/components/Agent/AvatarTrulience";
 import React from "react";
 import { IRtcUser, IUserTracks } from "@/manager";
-import { IMicrophoneAudioTrack } from "agora-rtc-sdk-ng";
 
 const DynamicRTCCard = dynamic(() => import("@/components/Dynamic/RTCCard"), {
   ssr: false,

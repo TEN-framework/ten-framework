@@ -54,22 +54,6 @@
             },
             {
               "type": "extension",
-              "name": "tts",
-              "addon": "elevenlabs_tts2_python",
-              "extension_group": "tts",
-              "property": {
-                "dump": false,
-                "dump_path": "./",
-                "params": {
-                  "key": "${env:ELEVENLABS_TTS_KEY}",
-                  "model_id": "eleven_multilingual_v2",
-                  "voice_id": "pNInz6obpgDQGcFmaJgB",
-                  "output_format": "pcm_16000"
-                }
-              }
-            },
-            {
-              "type": "extension",
               "name": "main_control",
               "addon": "main_python",
               "extension_group": "control",
@@ -102,42 +86,6 @@
           ],
           "connections": [
             {
-              "extension": "main_control",
-              "cmd": [
-                {
-                  "names": [
-                    "on_user_joined",
-                    "on_user_left"
-                  ],
-                  "source": [
-                    {
-                      "extension": "agora_rtc"
-                    }
-                  ]
-                },
-                {
-                  "names": [
-                    "tool_register"
-                  ],
-                  "source": [
-                    {
-                      "extension": "weatherapi_tool_python"
-                    }
-                  ]
-                }
-              ],
-              "data": [
-                {
-                  "name": "asr_result",
-                  "source": [
-                    {
-                      "extension": "stt"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
               "extension": "agora_rtc",
               "audio_frame": [
                 {
@@ -147,26 +95,9 @@
                       "extension": "streamid_adapter"
                     }
                   ]
-                },
-                {
-                  "name": "pcm_frame",
-                  "source": [
-                    {
-                      "extension": "tts"
-                    }
-                  ]
                 }
               ],
-              "data": [
-                {
-                  "name": "data",
-                  "source": [
-                    {
-                      "extension": "message_collector"
-                    }
-                  ]
-                }
-              ]
+              "data": []
             },
             {
               "extension": "streamid_adapter",

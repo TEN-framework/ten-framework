@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react"
 import { useAppSelector } from "@/common"
 import { TrulienceAvatar } from "trulience-sdk"
-import { IMicrophoneAudioTrack } from "agora-rtc-sdk-ng"
+import type { IMicrophoneAudioTrack } from "agora-rtc-sdk-ng"
 import { Maximize, Minimize } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
