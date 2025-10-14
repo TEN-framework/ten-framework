@@ -23,6 +23,7 @@ group("nodejs") {
     "standalone_test_nodejs",
     "standalone_test_nodejs_2",
     "standalone_test_nodejs_3",
+    "start_graph_and_communicate_nodejs",
     "start_graph_and_set_dests_from_new_graph_nodejs",
     "trigger_life_cycle_nodejs",
     "websocket_server_nodejs",

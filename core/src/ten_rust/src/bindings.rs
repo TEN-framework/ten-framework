@@ -429,6 +429,7 @@ pub unsafe extern "C" fn ten_rust_validate_graph_json_string(
 pub unsafe extern "C" fn ten_rust_graph_validate_complete_flatten(
     json_str: *const c_char,
     current_base_dir: *const c_char,
+    src_loc_json_str: *const c_char,
     err_msg: *mut *mut c_char,
 ) -> *const c_char {
     if json_str.is_null() {
@@ -469,6 +470,23 @@ pub unsafe extern "C" fn ten_rust_graph_validate_complete_flatten(
         Some(current_base_dir_rust_str)
     };
 
+    let src_loc_json_str_rust_str = if src_loc_json_str.is_null() {
+        None
+    } else {
+        let src_loc_json_str_c_str = CStr::from_ptr(src_loc_json_str);
+        let src_loc_json_str_rust_str = match src_loc_json_str_c_str.to_str() {
+            Ok(s) => s,
+            Err(e) => {
+                if !err_msg.is_null() {
+                    let err_msg_c_str = CString::new(e.to_string()).unwrap();
+                    *err_msg = err_msg_c_str.into_raw();
+                }
+                return std::ptr::null(); // Invalid UTF-8
+            }
+        };
+        Some(src_loc_json_str_rust_str)
+    };
+
     // Parse the JSON string into a Graph
     let graph = {
         let rt = Runtime::new().unwrap();
@@ -486,7 +504,7 @@ pub unsafe extern "C" fn ten_rust_graph_validate_complete_flatten(
         };
 
         // Flatten the graph
-        match rt.block_on(graph.flatten_graph(current_base_dir_rust_str)) {
+        let flattened_graph = match rt.block_on(graph.flatten_graph(current_base_dir_rust_str)) {
             Ok(g) => {
                 if let Some(g) = g {
                     g
@@ -500,6 +518,24 @@ pub unsafe extern "C" fn ten_rust_graph_validate_complete_flatten(
                     *err_msg = err_msg_c_str.into_raw();
                 }
                 return std::ptr::null(); // Flattening failed
+            }
+        };
+
+        // Inject graph_proxy from exposed messages
+        match flattened_graph.inject_graph_proxy_from_exposed_messages(src_loc_json_str_rust_str) {
+            Ok(g) => {
+                if let Some(g) = g {
+                    g
+                } else {
+                    flattened_graph
+                }
+            }
+            Err(e) => {
+                if !err_msg.is_null() {
+                    let err_msg_c_str = CString::new(e.to_string()).unwrap();
+                    *err_msg = err_msg_c_str.into_raw();
+                }
+                return std::ptr::null(); // Injecting graph_proxy failed
             }
         }
     };
