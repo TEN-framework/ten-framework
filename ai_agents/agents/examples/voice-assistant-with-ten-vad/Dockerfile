@@ -1,4 +1,4 @@
-FROM ghcr.io/ten-framework/ten_agent_build:0.7.3 AS builder
+FROM ghcr.io/ten-framework/ten_agent_build:0.7.6 AS builder
 
 ARG USE_AGENT=agents/examples/voice-assistant-with-ten-vad
 
