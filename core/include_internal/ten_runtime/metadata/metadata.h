@@ -43,7 +43,7 @@ TEN_RUNTIME_PRIVATE_API bool ten_metadata_load_from_info(
 
 TEN_RUNTIME_PRIVATE_API bool ten_metadata_init_schema_store(
     ten_value_t *manifest, ten_schema_store_t *schema_store,
-    const char *base_dir);
+    const char *base_dir, const char *app_base_dir);
 
 TEN_RUNTIME_PRIVATE_API bool ten_manifest_json_string_is_valid(
     const char *json_str, ten_error_t *err);

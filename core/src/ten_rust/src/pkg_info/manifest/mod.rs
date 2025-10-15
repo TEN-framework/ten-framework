@@ -98,7 +98,8 @@ impl LocaleContent {
 
         // If content is None, try to load from import_uri
         if let Some(import_uri) = &self.import_uri {
-            let real_path = get_real_path_from_import_uri(import_uri, self.base_dir.as_deref())?;
+            let real_path =
+                get_real_path_from_import_uri(import_uri, self.base_dir.as_deref(), None)?;
 
             // Load content from URI
             load_content_from_uri(&real_path).await.with_context(|| {
@@ -772,7 +773,10 @@ impl Manifest {
         dependencies
     }
 
-    pub async fn get_flattened_api(&self) -> Result<Option<ManifestApi>> {
+    pub async fn get_flattened_api(
+        &self,
+        app_base_dir: Option<&str>,
+    ) -> Result<Option<ManifestApi>> {
         // If the api contains no interfaces, return api directly.
         if let Some(api) = &self.api {
             if api.interface.is_none() || api.interface.as_ref().unwrap().is_empty() {
@@ -786,7 +790,7 @@ impl Manifest {
                 drop(read_guard);
 
                 let mut write_guard = self.flattened_api.write().await;
-                flatten_manifest_api(&self.api, &mut write_guard).await?;
+                flatten_manifest_api(&self.api, &mut write_guard, app_base_dir).await?;
 
                 let flattened = write_guard.as_ref().map(|api| api.clone());
                 drop(write_guard);

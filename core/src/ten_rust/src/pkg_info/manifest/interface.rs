@@ -30,12 +30,13 @@ use crate::{
 async fn load_interface(
     interface: &ManifestApiInterface,
     interface_set: &mut HashSet<String>,
+    app_base_dir: Option<&str>,
 ) -> Result<ManifestApi> {
     let import_uri = &interface.import_uri;
     let base_dir = interface.base_dir.as_deref();
 
     // Get the real path according to the import_uri and base_dir.
-    let real_path = get_real_path_from_import_uri(import_uri, base_dir)?;
+    let real_path = get_real_path_from_import_uri(import_uri, base_dir, app_base_dir)?;
 
     // Check if the interface is in the interface_set.
     if interface_set.contains(&real_path) {
@@ -199,10 +200,11 @@ fn merge_manifest_api(apis: Vec<ManifestApi>) -> Result<ManifestApi> {
 pub async fn flatten_manifest_api(
     manifest_api: &Option<ManifestApi>,
     flattened_api: &mut Option<ManifestApi>,
+    app_base_dir: Option<&str>,
 ) -> Result<()> {
     // Try to flatten the manifest api if it contains any interface references.
     let maybe_flattened_api =
-        if let Some(api) = manifest_api { api.flatten().await? } else { None };
+        if let Some(api) = manifest_api { api.flatten(app_base_dir).await? } else { None };
 
     if let Some(api) = maybe_flattened_api {
         *flattened_api = Some(api);
@@ -218,6 +220,7 @@ impl ManifestApi {
         &self,
         flattened_apis: &mut Vec<ManifestApi>,
         interface_set: &mut HashSet<String>,
+        app_base_dir: Option<&str>,
     ) -> Result<()> {
         // Push the current ManifestApi to the flattened_apis.
         flattened_apis.push(self.clone());
@@ -236,10 +239,15 @@ impl ManifestApi {
             // Load the interface.
             // If the interface is already loaded or cannot be loaded,
             // return an error.
-            let loaded_interface = load_interface(interface, interface_set).await?;
+            let loaded_interface = load_interface(interface, interface_set, app_base_dir).await?;
 
             // Flatten the loaded interface using Box::pin to handle recursion
-            Box::pin(loaded_interface.flatten_internal(flattened_apis, interface_set)).await?;
+            Box::pin(loaded_interface.flatten_internal(
+                flattened_apis,
+                interface_set,
+                app_base_dir,
+            ))
+            .await?;
         }
 
         Ok(())
@@ -250,7 +258,7 @@ impl ManifestApi {
     /// Returns `Ok(None)` if the ManifestApi contains no interface and doesn't
     /// need flattening. Returns `Ok(Some(flattened_manifest_api))` if the
     /// ManifestApi was successfully flattened.
-    async fn flatten(&self) -> Result<Option<ManifestApi>> {
+    async fn flatten(&self, app_base_dir: Option<&str>) -> Result<Option<ManifestApi>> {
         // Check if the ManifestApi contains any interface.
         if self.interface.is_none() || self.interface.as_ref().unwrap().is_empty() {
             return Ok(None);
@@ -260,7 +268,7 @@ impl ManifestApi {
         let mut flattened_apis = Vec::new();
         let mut interface_set = HashSet::new();
 
-        self.flatten_internal(&mut flattened_apis, &mut interface_set).await?;
+        self.flatten_internal(&mut flattened_apis, &mut interface_set, app_base_dir).await?;
 
         // Merge the flattened apis into a single ManifestApi.
         let merged_api = merge_manifest_api(flattened_apis)?;

@@ -36,7 +36,7 @@ pub async fn load_graph_from_uri(
     new_base_dir: &mut Option<String>,
 ) -> Result<Graph> {
     // Get the real path of the import_uri based on the base_dir.
-    let real_path = get_real_path_from_import_uri(uri, base_dir)?;
+    let real_path = get_real_path_from_import_uri(uri, base_dir, None)?;
 
     // Read the graph file.
     let graph_content = load_content_from_uri(&real_path).await?;
