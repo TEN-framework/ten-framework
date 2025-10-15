@@ -1231,6 +1231,161 @@ mod tests {
     }
 
     #[actix_web::test]
+    async fn test_add_graph_connection_to_extension_with_interface_2() {
+        let designer_state = DesignerState {
+            tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),
+            storage_in_memory: Arc::new(tokio::sync::RwLock::new(TmanStorageInMemory::default())),
+            out: Arc::new(Box::new(TmanOutputCli)),
+            pkgs_cache: tokio::sync::RwLock::new(HashMap::new()),
+            graphs_cache: tokio::sync::RwLock::new(HashMap::new()),
+            persistent_storage_schema: Arc::new(tokio::sync::RwLock::new(None)),
+        };
+
+        // Create a temporary directory for our test to store the generated
+        // property.json.
+        let temp_dir = tempfile::tempdir().unwrap();
+        let test_dir = temp_dir.path().to_str().unwrap().to_string();
+
+        // Copy the test directory to the temporary directory.
+        let test_data_dir = std::path::Path::new("tests")
+            .join("test_data")
+            .join("graph_add_connection_to_extension_with_interface_2");
+
+        copy_folder_recursively(&test_data_dir.to_str().unwrap().to_string(), &test_dir).unwrap();
+
+        // Get the new created test directory.
+        let test_data_dir = std::path::Path::new(&test_dir)
+            .join("graph_add_connection_to_extension_with_interface_2");
+
+        {
+            let mut pkgs_cache = designer_state.pkgs_cache.write().await;
+            let mut graphs_cache = designer_state.graphs_cache.write().await;
+
+            get_all_pkgs_in_app(
+                &mut pkgs_cache,
+                &mut graphs_cache,
+                &test_data_dir.to_str().unwrap().to_string(),
+            )
+            .await
+            .unwrap();
+        }
+
+        {
+            let pkgs_cache = designer_state.pkgs_cache.read().await;
+            let graphs_cache = designer_state.graphs_cache.read().await;
+            println!("Packages in cache: {pkgs_cache:?}");
+            println!("Graphs in cache: {graphs_cache:?}");
+        }
+
+        let graph_id_clone;
+        {
+            let graphs_cache = designer_state.graphs_cache.read().await;
+            let (graph_id, _) = graphs_cache_find_by_name(&graphs_cache, "default").unwrap();
+
+            graph_id_clone = *graph_id;
+        }
+
+        let designer_state = Arc::new(designer_state);
+
+        let app = test::init_service(App::new().app_data(web::Data::new(designer_state)).route(
+            "/api/designer/v1/graphs/connections/add",
+            web::post().to(add_graph_connection_endpoint),
+        ))
+        .await;
+
+        // Add connections between existing nodes in the default graph.
+
+        let ext_a = GraphLoc::with_app_and_type_and_name(
+            None,
+            GraphNodeType::Extension,
+            "ext_a".to_string(),
+        )
+        .unwrap();
+        let ext_b = GraphLoc::with_app_and_type_and_name(
+            None,
+            GraphNodeType::Extension,
+            "ext_b".to_string(),
+        )
+        .unwrap();
+
+        // Add a connection between "ext_b" and "ext_a" with "hello" cmd.
+        let request_payload = AddGraphConnectionRequestPayload {
+            graph_id: graph_id_clone,
+            src: ext_b.clone(),
+            dest: ext_a.clone(),
+            msg_type: MsgType::Cmd,
+            msg_names: vec!["hello".to_string()],
+            msg_conversion: None,
+        };
+
+        let req = test::TestRequest::post()
+            .uri("/api/designer/v1/graphs/connections/add")
+            .set_json(request_payload)
+            .to_request();
+        let resp = test::call_service(&app, req).await;
+
+        let status = resp.status();
+        let body = test::read_body(resp).await;
+        let body_str = std::str::from_utf8(&body).unwrap();
+
+        assert!(status.is_success(), "status: {status:?}, body: {body_str}");
+
+        let response: ApiResponse<AddGraphConnectionResponsePayload> =
+            serde_json::from_str(body_str).unwrap();
+        assert!(response.data.success);
+
+        // Add a connection between "ext_a" and "ext_b" with "cmd_out_b" cmd.
+        let request_payload = AddGraphConnectionRequestPayload {
+            graph_id: graph_id_clone,
+            src: ext_a.clone(),
+            dest: ext_b.clone(),
+            msg_type: MsgType::Cmd,
+            msg_names: vec!["cmd_out_b".to_string()],
+            msg_conversion: None,
+        };
+
+        let req = test::TestRequest::post()
+            .uri("/api/designer/v1/graphs/connections/add")
+            .set_json(request_payload)
+            .to_request();
+        let resp = test::call_service(&app, req).await;
+
+        let status = resp.status();
+        let body = test::read_body(resp).await;
+        let body_str = std::str::from_utf8(&body).unwrap();
+        assert!(status.is_success(), "status: {status:?}, body: {body_str}");
+
+        let response: ApiResponse<AddGraphConnectionResponsePayload> =
+            serde_json::from_str(body_str).unwrap();
+        assert!(response.data.success);
+
+        // Add a connection between "ext_b" and "ext_a" with "data" data.
+        let request_payload = AddGraphConnectionRequestPayload {
+            graph_id: graph_id_clone,
+            src: ext_b,
+            dest: ext_a,
+            msg_type: MsgType::Data,
+            msg_names: vec!["data".to_string()],
+            msg_conversion: None,
+        };
+
+        let req = test::TestRequest::post()
+            .uri("/api/designer/v1/graphs/connections/add")
+            .set_json(request_payload)
+            .to_request();
+        let resp = test::call_service(&app, req).await;
+
+        let status = resp.status();
+        let body = test::read_body(resp).await;
+        let body_str = std::str::from_utf8(&body).unwrap();
+        assert!(status.is_success(), "status: {status:?}, body: {body_str}");
+
+        let response: ApiResponse<AddGraphConnectionResponsePayload> =
+            serde_json::from_str(body_str).unwrap();
+        assert!(response.data.success);
+    }
+
+    #[actix_web::test]
     async fn test_add_graph_connection_to_multi_dests() {
         let designer_state = DesignerState {
             tman_config: Arc::new(tokio::sync::RwLock::new(TmanConfig::default())),

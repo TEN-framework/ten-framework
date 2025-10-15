@@ -56,21 +56,16 @@
             {
               "type": "extension",
               "name": "tts",
-              "addon": "minimax_tts_websocket_python",
+              "addon": "elevenlabs_tts2_python",
               "extension_group": "tts",
               "property": {
                 "params": {
-                  "url": "wss://api.minimaxi.com/ws/v1/t2a_v2",
-                  "voice_setting": {
-                    "voice_id": "female-shaonv"
-                  },
-                  "audio_setting": {
-                    "sample_rate": 16000
-                  },
-                  "model": "speech-02-turbo",
-                  "api_key": "${env:MINIMAX_TTS_API_KEY|}",
-                  "group_id": "${env:MINIMAX_TTS_GROUP_ID|}"
-                }
+                  "key": "${env:ELEVENLABS_TTS_KEY|}",
+                  "voice_id": "lhTvHflPVOqgSWyuWQry",
+                  "model_id": "eleven_multilingual_v2"
+                },
+                "dump": false,
+                "dump_path": "./"
               }
             },
             {
