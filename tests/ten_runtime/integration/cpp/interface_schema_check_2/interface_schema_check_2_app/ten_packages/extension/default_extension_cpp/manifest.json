@@ -17,7 +17,7 @@
   "api": {
     "interface": [
       {
-        "import_uri": "file://${app_base_dir}/ten_packages/extension/default_extension_cpp/interfaces/test_interface.json"
+        "import_uri": "${app_base_dir}/ten_packages/extension/default_extension_cpp/interfaces/test_interface.json"
       }
     ],
     "cmd_in": [],

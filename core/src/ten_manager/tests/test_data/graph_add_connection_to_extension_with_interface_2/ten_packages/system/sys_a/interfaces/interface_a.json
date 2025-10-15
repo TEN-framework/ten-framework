@@ -1,7 +1,7 @@
 {
   "interface": [
     {
-      "import_uri": "file://${app_base_dir}/ten_packages/system/sys_a/interfaces/interface_b.json"
+      "import_uri": "${app_base_dir}/ten_packages/system/sys_a/interfaces/interface_b.json"
     }
   ],
   "property": {
