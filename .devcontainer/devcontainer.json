@@ -1,6 +1,6 @@
 {
   "name": "ten_framework",
-  "image": "ghcr.io/ten-framework/ten_agent_build:0.7.3",
+  "image": "ghcr.io/ten-framework/ten_agent_build:0.7.6",
   "customizations": {
     "vscode": {
       "extensions": [
@@ -9,8 +9,7 @@
       ]
     }
   },
-  "workspaceMount": "source=${localWorkspaceFolder}/ai_agents,target=/app,type=bind",
-  "workspaceFolder": "/app",
+  "workspaceFolder": "/workspaces/ten-framework/ai_agents",
   "forwardPorts": [
     3000,
     8080,

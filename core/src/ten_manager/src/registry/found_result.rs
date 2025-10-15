@@ -87,7 +87,7 @@ pub async fn get_pkg_registry_info_from_manifest(
     download_url: &str,
     manifest: &Manifest,
 ) -> Result<PkgRegistryInfo> {
-    let mut pkg_info = PkgInfo::from_metadata(download_url, manifest, &None).await?;
+    let mut pkg_info = PkgInfo::from_metadata(download_url, manifest, &None, None).await?;
 
     let mut updated_manifest = pkg_info.manifest.clone();
 
