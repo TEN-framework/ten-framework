@@ -43,7 +43,8 @@ pub async fn inject_all_pkgs_for_mock(
         )
         .await?;
 
-        let pkg_info = PkgInfo::from_metadata(&metadata_json.0, &manifest, &Some(property)).await?;
+        let pkg_info =
+            PkgInfo::from_metadata(&metadata_json.0, &manifest, &Some(property), None).await?;
 
         // Sort package by type.
         match manifest.type_and_name.pkg_type {

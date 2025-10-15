@@ -1,0 +1,46 @@
+{
+  "type": "extension",
+  "name": "ext_b",
+  "version": "1.2.3",
+  "api": {
+    "property": {
+      "properties": {
+        "test": {
+          "type": "string"
+        }
+      }
+    },
+    "cmd_out": [
+      {
+        "name": "hello",
+        "property": {
+          "properties": {
+            "foo": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "foo"
+          ]
+        }
+      }
+    ],
+    "cmd_in": [
+      {
+        "name": "cmd_out_b",
+        "property": {
+          "properties": {
+            "message": {
+              "type": "buf"
+            }
+          }
+        }
+      }
+    ],
+    "data_out": [
+      {
+        "name": "data"
+      }
+    ]
+  }
+}

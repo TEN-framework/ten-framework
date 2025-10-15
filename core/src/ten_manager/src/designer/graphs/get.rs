@@ -150,7 +150,8 @@ async fn extract_designer_graph_from_graph_info(
             );
 
             if let Some(pkg_info) = pkg_info {
-                let manifest_api = pkg_info.manifest.get_flattened_api().await;
+                let manifest_api =
+                    pkg_info.manifest.get_flattened_api(graph_info.app_base_dir.as_deref()).await;
                 if manifest_api.is_err() {
                     let error_response = ErrorResponse::from_error(
                         &manifest_api.err().unwrap(),
