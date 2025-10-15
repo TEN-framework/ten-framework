@@ -1,7 +1,7 @@
 {
     "params": {
         "api_key": "${env:DEEPGRAM_API_KEY|}",
-        "model": "nova-2",
+        "model": "nova-3",
         "language": "en-US"
     }
 }
