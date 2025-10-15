@@ -57,7 +57,8 @@ impl ManifestApi {
 
             // Flatten the api.
             let mut flattened_api = None;
-            flatten_manifest_api(&Some(self.clone()), &mut flattened_api, Some(app_base_dir)).await?;
+            flatten_manifest_api(&Some(self.clone()), &mut flattened_api, Some(app_base_dir))
+                .await?;
             Ok(flattened_api)
         } else {
             Ok(None)

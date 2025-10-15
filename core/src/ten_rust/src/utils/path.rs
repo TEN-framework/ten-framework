@@ -124,9 +124,12 @@ pub fn get_real_path_from_import_uri(
     // Remove the Windows verbatim prefix (e.g., \\?\ or \\?\UNC\) and
     // replace the '\' with '/'.
     let base_dir: Option<&str>;
+    #[cfg(windows)]
     let base_dir_string: Option<String>;
     let app_base_dir: Option<&str>;
+    #[cfg(windows)]
     let app_base_dir_string: Option<String>;
+
     #[cfg(windows)]
     {
         base_dir_string = sanitize_windows_local_path(raw_base_dir);
@@ -141,10 +144,11 @@ pub fn get_real_path_from_import_uri(
     }
 
     // Check if import_uri contains ${app_base_dir} variable
-    let processed_import_uri = if import_uri.contains("${app_base_dir}"){
+    let processed_import_uri = if import_uri.contains("${app_base_dir}") {
         assert!(
             import_uri.starts_with("${app_base_dir}"),
-            "app_base_dir should be at the beginning of the import_uri: {}", import_uri
+            "app_base_dir should be at the beginning of the import_uri: {}",
+            import_uri
         );
         if let Some(app_base_dir) = app_base_dir {
             // Replace ${app_base_dir} with the actual app base directory

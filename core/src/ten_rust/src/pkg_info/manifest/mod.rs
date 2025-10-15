@@ -773,7 +773,10 @@ impl Manifest {
         dependencies
     }
 
-    pub async fn get_flattened_api(&self, app_base_dir: Option<&str>) -> Result<Option<ManifestApi>> {
+    pub async fn get_flattened_api(
+        &self,
+        app_base_dir: Option<&str>,
+    ) -> Result<Option<ManifestApi>> {
         // If the api contains no interfaces, return api directly.
         if let Some(api) = &self.api {
             if api.interface.is_none() || api.interface.as_ref().unwrap().is_empty() {
