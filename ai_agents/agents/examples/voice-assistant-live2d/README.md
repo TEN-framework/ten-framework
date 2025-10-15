@@ -105,7 +105,7 @@ The voice assistant is configured in `tenapp/property.json`:
   "ten": {
     "predefined_graphs": [
       {
-        "name": "voice_assistant",
+        "name": "voice_assistant_live2d",
         "auto_start": true,
         "graph": {
           "nodes": [
