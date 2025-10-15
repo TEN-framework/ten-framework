@@ -4,10 +4,13 @@ import React, { useEffect, useRef, useState } from "react";
 
 type Heart = {
   id: number;
-  offset: number;
+  baseX: number;
+  jitter: number;
+  verticalJitter: number;
   size: number;
   duration: number;
   rotation: number;
+  side: "left" | "right";
 };
 
 interface HeartEmitterProps {
@@ -19,18 +22,25 @@ export function HeartEmitter({ active }: HeartEmitterProps) {
   const nextId = useRef(0);
 
   useEffect(() => {
-    if (!active) {
-      return;
-    }
-
     const spawnHeart = () => {
+      if (!active) {
+        return;
+      }
+
       const id = nextId.current++;
+      const side: Heart["side"] = Math.random() > 0.5 ? "left" : "right";
+      const baseX =
+        (side === "left" ? -1 : 1) * (90 + Math.random() * 55); // around cheeks
+
       const heart: Heart = {
         id,
-        offset: Math.random() * 26 - 13, // drift left/right
-        size: 14 + Math.random() * 10,
-        duration: 1.6 + Math.random() * 0.9,
-        rotation: (Math.random() * 26 - 13) // degrees
+        baseX,
+        jitter: Math.random() * 34 - 17,
+        verticalJitter: Math.random() * 28 - 14,
+        size: 16 + Math.random() * 14,
+        duration: 1.9 + Math.random() * 1.3,
+        rotation: Math.random() * 36 - 18,
+        side,
       };
 
       setHearts((prev) => [...prev, heart]);
@@ -41,9 +51,8 @@ export function HeartEmitter({ active }: HeartEmitterProps) {
       }, heart.duration * 1000);
     };
 
-    // Spawn immediately for responsiveness
+    const interval = setInterval(spawnHeart, 230);
     spawnHeart();
-    const interval = setInterval(spawnHeart, 240);
 
     return () => {
       clearInterval(interval);
@@ -51,7 +60,7 @@ export function HeartEmitter({ active }: HeartEmitterProps) {
   }, [active]);
 
   return (
-    <div className="pointer-events-none absolute bottom-[18%] left-1/2 -translate-x-1/2">
+    <div className="pointer-events-none absolute bottom-[24%] left-1/2 flex h-0 w-full max-w-[460px] -translate-x-1/2 justify-center">
       {hearts.map((heart) => (
         <span
           key={heart.id}
@@ -59,8 +68,9 @@ export function HeartEmitter({ active }: HeartEmitterProps) {
           style={{
             fontSize: `${heart.size}px`,
             animationDuration: `${heart.duration}s`,
-            transformOrigin: "center",
-            ["--heart-x" as string]: `${heart.offset}px`,
+            ["--heart-base-x" as string]: `${heart.baseX}px`,
+            ["--heart-jitter" as string]: `${heart.jitter}px`,
+            ["--heart-y" as string]: `${heart.verticalJitter}px`,
             ["--heart-rot" as string]: `${heart.rotation}deg`,
           } as React.CSSProperties}
         >
