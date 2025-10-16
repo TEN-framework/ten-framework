@@ -122,6 +122,11 @@ jobs:
         run: |
           pip3 install --use-pep517 python-dotenv jinja2
 
+      - name: Update version
+        run: |
+          python3 tools/version/update_version_in_ten_framework.py
+          python3 tools/version/check_version_in_ten_framework.py
+
       - name: Install dependencies
         run: |
           cd core/src/ten_manager/designer_frontend
