@@ -118,11 +118,6 @@ jobs:
         with:
           python-version: "3.10"
 
-      - name: Update version
-        run: |
-          python tools/version/update_version_in_ten_framework.py
-          python tools/version/check_version_in_ten_framework.py
-
       - uses: actions/setup-go@v5
         with:
           go-version: "stable"
@@ -135,6 +130,11 @@ jobs:
           go env -w GOFLAGS="-buildvcs=false"
           rustup default nightly-2025-09-18
           cargo install --force cbindgen
+
+      - name: Update version
+        run: |
+          python tools/version/update_version_in_ten_framework.py
+          python tools/version/check_version_in_ten_framework.py
 
       - name: Get Python executable path
         run: |
