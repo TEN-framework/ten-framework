@@ -255,7 +255,8 @@ class SonioxASRExtension(AsyncASRBaseExtension):
             * 2
         )
         frame = bytearray(empty_audio_bytes_len)
-        self.stream.write(bytes(frame))
+        if self.websocket:
+            self.websocket.send_audio(bytes(frame))
         self.audio_timeline.add_silence_audio(self.config.mute_pkg_duration_ms)
 
         # No need to do stats.
