@@ -162,6 +162,7 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                 if ttfb_ms is not None:
                     extra_metadata = {
                         "voice_id": self.config.params.get('voice_id', ""),
+                        "model_id": self.config.params.get('model_id', ""),
                     }
                     await self.send_tts_ttfb_metrics(
                         request_id=self.current_request_id, ttfb_ms=ttfb_ms,
