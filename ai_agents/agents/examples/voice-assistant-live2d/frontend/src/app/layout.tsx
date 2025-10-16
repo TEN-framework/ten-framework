@@ -18,6 +18,7 @@ export default function RootLayout({
         <html lang="en">
             <head>
                 <script src="/lib/live2dcubismcore.min.js" async></script>
+                <script src="/agora-extension-virtual-background/agora-extension-virtual-background.js" async></script>
             </head>
             <body className={inter.className}>
                 {children}

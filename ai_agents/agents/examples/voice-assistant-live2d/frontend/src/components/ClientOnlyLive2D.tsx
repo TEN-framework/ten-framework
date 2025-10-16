@@ -3,12 +3,13 @@
 import dynamic from 'next/dynamic';
 // IRemoteAudioTrack will be imported dynamically
 
-interface ClientOnlyLive2DProps {
+export interface ClientOnlyLive2DProps {
     modelPath: string;
     audioTrack?: any;
     className?: string;
     onModelLoaded?: () => void;
     onModelError?: (error: Error) => void;
+    isUserSpeaking?: boolean;
 }
 
 // Dynamically import the actual Live2D component with no SSR

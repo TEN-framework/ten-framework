@@ -13,6 +13,7 @@ interface Live2DCharacterProps {
     className?: string;
     onModelLoaded?: () => void;
     onModelError?: (error: Error) => void;
+    isUserSpeaking?: boolean; // Whether the user (left side) is speaking
 }
 
 export default function Live2DCharacter({
@@ -20,11 +21,13 @@ export default function Live2DCharacter({
     audioTrack,
     className,
     onModelLoaded,
-    onModelError
+    onModelError,
+    isUserSpeaking = false
 }: Live2DCharacterProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const motionSyncRef = useRef<MotionSync | null>(null);
     const appRef = useRef<any>(null);
+    const modelRef = useRef<any>(null);
     const [isModelLoaded, setIsModelLoaded] = useState(false);
     const [isClient, setIsClient] = useState(false);
     const audioElementRef = useRef<HTMLAudioElement | null>(null);
@@ -176,12 +179,16 @@ export default function Live2DCharacter({
                 let model: any;
 
                 console.log('[Live2DCharacter] Loading model from:', modelPath);
-                model = await Live2DModel.from(modelPath);
+                // Disable mouse interaction/tracking by setting autoInteract to false
+                model = await Live2DModel.from(modelPath, { autoInteract: false });
 
                 // Validate model is loaded before adding to stage
                 if (!model) {
                     throw new Error('Failed to load Live2D model');
                 }
+
+                // Store model reference for later use
+                modelRef.current = model;
 
                 app.stage.addChild(model);
 
@@ -389,6 +396,61 @@ export default function Live2DCharacter({
             }
         };
     }, [audioTrack, isModelLoaded]);
+
+    // Control model's focus direction based on user speaking with smooth animation
+    useEffect(() => {
+        const model = modelRef.current;
+        if (!model || !isModelLoaded) return;
+
+        let animationFrameId: number;
+        let startTime: number | null = null;
+        const duration = 800; // Animation duration in milliseconds (slower transition)
+
+        try {
+            if (model.internalModel && model.internalModel.focusController) {
+                const controller = model.internalModel.focusController;
+
+                // Get current focus position
+                const currentX = controller.targetX || 0;
+                const currentY = controller.targetY || 0;
+
+                // Set target position
+                const targetX = isUserSpeaking ? -1 : 0;
+                const targetY = 0;
+
+                // Animate the transition
+                const animate = (timestamp: number) => {
+                    if (!startTime) startTime = timestamp;
+                    const progress = Math.min((timestamp - startTime) / duration, 1);
+
+                    // Ease-out function for smooth deceleration
+                    const easeProgress = 1 - Math.pow(1 - progress, 3);
+
+                    // Interpolate between current and target position
+                    const x = currentX + (targetX - currentX) * easeProgress;
+                    const y = currentY + (targetY - currentY) * easeProgress;
+
+                    controller.focus(x, y);
+
+                    if (progress < 1) {
+                        animationFrameId = requestAnimationFrame(animate);
+                    } else {
+                        console.log(`[Live2DCharacter] ${isUserSpeaking ? 'Looking left' : 'Looking center'} - animation complete`);
+                    }
+                };
+
+                animationFrameId = requestAnimationFrame(animate);
+            }
+        } catch (error) {
+            console.error('[Live2DCharacter] Error controlling focus:', error);
+        }
+
+        return () => {
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
+        };
+    }, [isUserSpeaking, isModelLoaded]);
 
     // Component unmount cleanup
     useEffect(() => {

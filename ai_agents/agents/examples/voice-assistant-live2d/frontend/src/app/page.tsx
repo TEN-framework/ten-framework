@@ -8,6 +8,7 @@ export const dynamic = "force-dynamic";
 import dynamicImport from "next/dynamic";
 import { Baloo_2, Quicksand } from "next/font/google";
 import { HeartEmitter } from "@/components/HeartEmitter";
+import Danmaku, { DanmakuMessage } from "@/components/Danmaku";
 
 // Dynamically import Live2D component to prevent SSR issues
 const ClientOnlyLive2D = dynamicImport(
@@ -19,6 +20,22 @@ const ClientOnlyLive2D = dynamicImport(
         <div className="text-center">
           <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-white border-b-2"></div>
           <p className="text-white/70">Loading Live2D Model...</p>
+        </div>
+      </div>
+    ),
+  }
+);
+
+// Dynamically import CameraView component to prevent SSR issues
+const ClientOnlyCameraView = dynamicImport(
+  () => import("@/components/CameraView"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex h-full items-center justify-center">
+        <div className="text-center">
+          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-white border-b-2"></div>
+          <p className="text-white/70">Loading Camera...</p>
         </div>
       </div>
     ),
@@ -360,6 +377,12 @@ export default function Home() {
   const [agoraService, setAgoraService] = useState<any>(null);
   const [pingInterval, setPingInterval] = useState<NodeJS.Timeout | null>(null);
   const [isAssistantSpeaking, setIsAssistantSpeaking] = useState(false);
+  const [isUserSpeaking, setIsUserSpeaking] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
+  const [cameraBackgroundColor, setCameraBackgroundColor] = useState('#ffffff');
+  const [isBroadcasting, setIsBroadcasting] = useState(false);
+  const [broadcastChannelName] = useState('broadcast_channel');
+  const [danmakuMessages, setDanmakuMessages] = useState<DanmakuMessage[]>([]);
 
   useEffect(() => {
     // Dynamically import Agora service only on client side
@@ -371,6 +394,8 @@ export default function Home() {
         // Set up callbacks for Agora service
         service.setOnConnectionStatusChange(handleConnectionChange);
         service.setOnRemoteAudioTrack(handleAudioTrackChange);
+        service.setOnLocalVolumeChange(handleLocalVolumeChange);
+        service.setOnDanmakuMessage(handleDanmakuMessage);
       });
     }
 
@@ -387,6 +412,55 @@ export default function Home() {
   const handleAudioTrackChange = (track: any) => {
     setRemoteAudioTrack(track);
   };
+
+  const handleLocalVolumeChange = (level: number) => {
+    // Threshold for speaking detection - higher value to avoid noise
+    console.log('Local volume level:', level);
+    const speaking = level > 50;
+    setIsUserSpeaking((prev) => (prev === speaking ? prev : speaking));
+  };
+
+  const handleDanmakuMessage = (uid: number, message: string) => {
+    console.log('[UI] Received danmaku:', uid, message);
+    const newDanmaku: DanmakuMessage = {
+      id: `${uid}-${Date.now()}-${Math.random()}`,
+      uid: uid,
+      content: message,
+      timestamp: Date.now()
+    };
+    setDanmakuMessages(prev => [...prev, newDanmaku]);
+  };
+
+  // Mock danmaku data for testing (triggered when broadcasting starts)
+  useEffect(() => {
+    if (!isBroadcasting) return;
+
+    const mockMessages = [
+      "这个Live2D好可爱！💕",
+      "666666",
+      "主播加油！",
+      "声音好好听~",
+      "这是什么技术实现的？",
+      "太酷了！",
+      "在线人数+1",
+      "画面很流畅",
+      "求分享代码",
+      "这个项目开源吗？",
+      "Amazing! 👍",
+      "期待更新",
+      "弹幕测试中...",
+      "Hello from chat!",
+      "Nice demo! 🎉"
+    ];
+
+    const interval = setInterval(() => {
+      const randomMessage = mockMessages[Math.floor(Math.random() * mockMessages.length)];
+      const randomUid = Math.floor(Math.random() * 10000);
+      handleDanmakuMessage(randomUid, randomMessage);
+    }, 2000); // Send a mock danmaku every 2 seconds
+
+    return () => clearInterval(interval);
+  }, [isBroadcasting]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
@@ -545,8 +619,43 @@ export default function Home() {
     }
   };
 
+  const handleStartBroadcast = async () => {
+    if (!agoraService || isBroadcasting) return;
+
+    try {
+      const success = await agoraService.startScreenShare(broadcastChannelName);
+      if (success) {
+        setIsBroadcasting(true);
+        console.log('[UI] Broadcast started on channel:', broadcastChannelName);
+      } else {
+        console.error('[UI] Failed to start broadcast');
+        alert('Failed to start screen sharing. Please check permissions.');
+      }
+    } catch (error) {
+      console.error('[UI] Error starting broadcast:', error);
+      alert('Error starting broadcast: ' + (error as Error).message);
+    }
+  };
+
+  const handleStopBroadcast = async () => {
+    if (!agoraService || !isBroadcasting) return;
+
+    try {
+      await agoraService.stopScreenShare();
+      setIsBroadcasting(false);
+      console.log('[UI] Broadcast stopped');
+    } catch (error) {
+      console.error('[UI] Error stopping broadcast:', error);
+    }
+  };
+
   return (
     <div className="relative min-h-[100svh] overflow-hidden bg-[#fff9fd] text-[#2f2d4b]">
+      {/* Global Danmaku Layer - Fixed position, full screen, top layer */}
+      <div className="fixed left-0 right-0 top-0 bottom-0 z-50 pointer-events-none">
+        <Danmaku messages={danmakuMessages} />
+      </div>
+
       <div className="absolute inset-0">
         <div className="absolute inset-0 bg-[linear-gradient(160deg,#ffeaf3_0%,#fffaf2_40%,#e3f1ff_100%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,#ffdff2_0%,transparent_60%),radial-gradient(circle_at_bottom,#d2e8ff_0%,transparent_65%)] opacity-75 mix-blend-screen" />
@@ -608,65 +717,158 @@ export default function Home() {
           </p>
         </header>
 
-        <main className="flex w-full max-w-5xl flex-col items-center gap-8">
-          <div className="relative w-full max-w-3xl">
+        <main className="flex w-full max-w-7xl flex-col items-center gap-8">
+          {/* PK Style Layout: Camera vs Avatar */}
+          <div className="relative w-full">
+            {/* Decorative blur effects */}
             <div className="-inset-5 absolute rounded-[40px] bg-gradient-to-br from-[#ffe1f1]/60 via-[#d8ecff]/60 to-[#fff6d9]/60 blur-3xl" />
-            <div className="relative overflow-hidden rounded-[32px] border border-white/80 bg-white/80 px-5 pt-6 pb-8 shadow-[0_24px_60px_rgba(200,208,255,0.35)] backdrop-blur-xl md:px-8">
-              <div className="flex w-full items-center justify-between font-semibold text-[#87a0ff] text-[0.6rem] uppercase tracking-[0.3em]">
-                <span>Kei</span>
-                <span className="flex items-center gap-2">
-                  <span
-                    className={`inline-flex h-2.5 w-2.5 rounded-full ${
-                      isConnected ? "bg-[#7dd87d]" : "bg-[#ff9bae]"
-                    }`}
-                  />
-                  {isConnected ? "Online" : "Waiting"}
-                </span>
+
+            {/* Main PK Container */}
+            <div className="relative flex flex-col lg:flex-row items-stretch gap-4 lg:gap-6">
+
+              {/* Left Side: Your Camera */}
+              <div className="relative flex-1 min-w-0">
+                <div className="relative overflow-hidden rounded-[32px] border border-white/80 bg-white/80 px-4 pt-5 pb-6 shadow-[0_24px_60px_rgba(200,208,255,0.35)] backdrop-blur-xl h-full">
+                  <div className="flex w-full items-center justify-between font-semibold text-[#ff8fb4] text-[0.6rem] uppercase tracking-[0.3em]">
+                    <span>You</span>
+                    <button
+                      onClick={() => setShowCamera(!showCamera)}
+                      className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-[0.65rem] transition-colors ${showCamera
+                        ? "bg-[#e6f8ff] text-[#236d94]"
+                        : "bg-[#ffe8ef] text-[#b34f6a]"
+                        }`}
+                    >
+                      <span className={`h-2 w-2 rounded-full ${showCamera ? "bg-[#38a8d8]" : "bg-[#f0708f]"}`} />
+                      {showCamera ? "ON" : "OFF"}
+                    </button>
+                  </div>
+                  {showCamera && (
+                    <>
+                      <div className="relative mt-4 h-[28rem] lg:h-[36rem]">
+                        <ClientOnlyCameraView
+                          className="h-full w-full"
+                          backgroundColor={cameraBackgroundColor}
+                          enableVirtualBackground={true}
+                        />
+                      </div>
+                      <div className="mt-3 flex items-center justify-center gap-2 flex-wrap">
+                        <label className="text-[#6f6a92] text-[0.65rem] font-medium">BG:</label>
+                        <input
+                          type="color"
+                          value={cameraBackgroundColor}
+                          onChange={(e) => setCameraBackgroundColor(e.target.value)}
+                          className="h-6 w-12 cursor-pointer rounded border border-white/70 shadow-sm"
+                        />
+                        <span className="text-[#6f6a92] text-[0.6rem] font-mono">{cameraBackgroundColor}</span>
+                      </div>
+                    </>
+                  )}
+                  {!showCamera && (
+                    <div className="mt-4 flex h-[28rem] lg:h-[36rem] items-center justify-center rounded-[28px] border border-white/70 bg-gradient-to-b from-white/60 to-[#f5e7ff]/40">
+                      <div className="text-center">
+                        <svg
+                          className="mx-auto mb-3 h-12 w-12 text-[#b7b4c9]"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={1.5}
+                            d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+                          />
+                        </svg>
+                        <p className="text-[#6f6a92] text-sm">Camera is off</p>
+                        <p className="mt-1 text-[#b7b4c9] text-xs">Turn on to start</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="relative mt-4">
-                <ClientOnlyLive2D
-                  key={selectedModel.id}
-                  modelPath={selectedModel.path}
-                  audioTrack={remoteAudioTrack}
-                  className="h-[26rem] w-full rounded-[28px] border border-white/70 bg-gradient-to-b from-white/60 to-[#f5e7ff]/40 md:h-[34rem]"
-                />
-                <HeartEmitter active={isAssistantSpeaking} />
+
+              {/* VS Divider - Only visible on large screens */}
+              <div className="hidden lg:flex items-center justify-center self-stretch z-10">
+                <div className="relative flex flex-col items-center gap-2">
+                  <div className="h-20 w-px bg-gradient-to-b from-transparent via-[#ff92bb]/30 to-transparent"></div>
+                  <div className="relative">
+                    <div className="absolute -inset-3 rounded-full bg-gradient-to-br from-[#ff92bb]/20 via-[#87a0ff]/20 to-[#ffd27f]/20 blur-xl"></div>
+                    <div className="relative flex h-16 w-16 items-center justify-center rounded-full border-2 border-white/80 bg-white/90 shadow-lg backdrop-blur-sm">
+                      <span className="font-bold text-transparent bg-clip-text bg-gradient-to-br from-[#ff79a8] via-[#87a0ff] to-[#ffd27f] text-xl tracking-wider">VS</span>
+                    </div>
+                  </div>
+                  <div className="h-20 w-px bg-gradient-to-b from-transparent via-[#87a0ff]/30 to-transparent"></div>
+                </div>
               </div>
-              <p className="mt-4 text-center text-[#6f6a92] text-xs md:text-sm">
-                “Hi! I’m Kei. Let me know how I can make your day easier.”
-              </p>
+
+              {/* Right Side: Kei Avatar */}
+              <div className="relative flex-1 min-w-0">
+                <div className="relative overflow-hidden rounded-[32px] border border-white/80 bg-white/80 px-4 pt-5 pb-6 shadow-[0_24px_60px_rgba(200,208,255,0.35)] backdrop-blur-xl h-full">
+                  <div className="flex w-full items-center justify-between font-semibold text-[#87a0ff] text-[0.6rem] uppercase tracking-[0.3em]">
+                    <span>Kei</span>
+                    <span className="flex items-center gap-2">
+                      <span
+                        className={`inline-flex h-2.5 w-2.5 rounded-full ${isConnected ? "bg-[#7dd87d]" : "bg-[#ff9bae]"
+                          }`}
+                      />
+                      {isConnected ? "Online" : "Waiting"}
+                    </span>
+                  </div>
+                  <div className="relative mt-4 h-[28rem] lg:h-[36rem]">
+                    <ClientOnlyLive2D
+                      key={selectedModel.id}
+                      modelPath={selectedModel.path}
+                      audioTrack={remoteAudioTrack}
+                      isUserSpeaking={isUserSpeaking}
+                      className="h-full w-full rounded-[28px] border border-white/70 bg-gradient-to-b from-white/60 to-[#f5e7ff]/40"
+                    />
+                    <HeartEmitter active={isAssistantSpeaking} />
+                  </div>
+                  <p className="mt-3 text-center text-[#6f6a92] text-[0.65rem] lg:text-xs">
+                    "Hi! Let me know how I can help."
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
 
           <div className="flex w-full max-w-3xl flex-col items-center gap-4">
             <div className="flex flex-wrap items-center justify-center gap-2 font-medium text-[0.7rem] md:text-xs">
               <span
-                className={`inline-flex items-center gap-2 rounded-full px-4 py-2 ${
-                  isConnected
-                    ? "bg-[#e6f8ff] text-[#236d94]"
-                    : "bg-[#ffe8ef] text-[#b34f6a]"
-                }`}
+                className={`inline-flex items-center gap-2 rounded-full px-4 py-2 ${isConnected
+                  ? "bg-[#e6f8ff] text-[#236d94]"
+                  : "bg-[#ffe8ef] text-[#b34f6a]"
+                  }`}
               >
                 <span
-                  className={`h-2.5 w-2.5 rounded-full ${
-                    isConnected ? "bg-[#38a8d8]" : "bg-[#f0708f]"
-                  }`}
+                  className={`h-2.5 w-2.5 rounded-full ${isConnected ? "bg-[#38a8d8]" : "bg-[#f0708f]"
+                    }`}
                 />
                 {isConnected ? "Connected to channel" : "Not connected"}
               </span>
               <span
-                className={`inline-flex items-center gap-2 rounded-full px-4 py-2 ${
-                  isMuted
-                    ? "bg-[#ffe8ef] text-[#b34f6a]"
-                    : "bg-[#ecfce1] text-[#2f7d3e]"
-                }`}
+                className={`inline-flex items-center gap-2 rounded-full px-4 py-2 ${isMuted
+                  ? "bg-[#ffe8ef] text-[#b34f6a]"
+                  : "bg-[#ecfce1] text-[#2f7d3e]"
+                  }`}
               >
                 <span
-                  className={`h-2.5 w-2.5 rounded-full ${
-                    isMuted ? "bg-[#f0708f]" : "bg-[#4cc073]"
-                  }`}
+                  className={`h-2.5 w-2.5 rounded-full ${isMuted ? "bg-[#f0708f]" : "bg-[#4cc073]"
+                    }`}
                 />
                 {isMuted ? "Mic muted" : "Mic open"}
+              </span>
+              <span
+                className={`inline-flex items-center gap-2 rounded-full px-4 py-2 ${isBroadcasting
+                  ? "bg-[#ffe8ef] text-[#e63946]"
+                  : "bg-[#f3f4f6] text-[#6b7280]"
+                  }`}
+              >
+                <span
+                  className={`h-2.5 w-2.5 rounded-full ${isBroadcasting ? "bg-[#e63946] animate-pulse" : "bg-[#9ca3af]"
+                    }`}
+                />
+                {isBroadcasting ? `Broadcasting on ${broadcastChannelName}` : "Not broadcasting"}
               </span>
             </div>
 
@@ -674,13 +876,12 @@ export default function Home() {
               <button
                 onClick={handleMicToggle}
                 disabled={!isConnected}
-                className={`relative flex h-14 w-14 items-center justify-center rounded-2xl border text-lg shadow-lg transition-all duration-200 ${
-                  !isConnected
-                    ? "cursor-not-allowed border-[#e9e7f7] bg-white text-[#b7b4c9] opacity-60"
-                    : isMuted
-                      ? "border-[#ffcfe0] bg-[#ffe7f0] text-[#b44f6c] hover:bg-[#ffd9e8]"
-                      : "border-[#cde5ff] bg-[#e7f3ff] text-[#2f63a1] hover:bg-[#d8ecff]"
-                }`}
+                className={`relative flex h-14 w-14 items-center justify-center rounded-2xl border text-lg shadow-lg transition-all duration-200 ${!isConnected
+                  ? "cursor-not-allowed border-[#e9e7f7] bg-white text-[#b7b4c9] opacity-60"
+                  : isMuted
+                    ? "border-[#ffcfe0] bg-[#ffe7f0] text-[#b44f6c] hover:bg-[#ffd9e8]"
+                    : "border-[#cde5ff] bg-[#e7f3ff] text-[#2f63a1] hover:bg-[#d8ecff]"
+                  }`}
               >
                 {isMuted ? (
                   <svg
@@ -712,13 +913,12 @@ export default function Home() {
               <button
                 onClick={handleConnectToggle}
                 disabled={isConnecting}
-                className={`relative flex h-14 w-60 items-center justify-center gap-2 rounded-2xl border px-6 text-center font-semibold text-sm leading-tight shadow-lg transition-all duration-200 ${
-                  isConnecting
-                    ? "cursor-progress border-[#cde5ff] bg-[#e7f3ff] text-[#5a6a96]"
-                    : isConnected
-                      ? "border-[#ffcfe0] bg-[#ffe6f3] text-[#b44f6c] hover:bg-[#ffd9eb]"
-                      : "border-[#cbeec4] bg-[#e7f8df] text-[#2f7036] hover:bg-[#def6d2]"
-                }`}
+                className={`relative flex h-14 w-60 items-center justify-center gap-2 rounded-2xl border px-6 text-center font-semibold text-sm leading-tight shadow-lg transition-all duration-200 ${isConnecting
+                  ? "cursor-progress border-[#cde5ff] bg-[#e7f3ff] text-[#5a6a96]"
+                  : isConnected
+                    ? "border-[#ffcfe0] bg-[#ffe6f3] text-[#b44f6c] hover:bg-[#ffd9eb]"
+                    : "border-[#cbeec4] bg-[#e7f8df] text-[#2f7036] hover:bg-[#def6d2]"
+                  }`}
               >
                 {isConnecting ? (
                   <>
@@ -769,6 +969,47 @@ export default function Home() {
                   </>
                 )}
               </button>
+
+              {/* Screen Share / Broadcast Button */}
+              {!isBroadcasting ? (
+                <button
+                  onClick={handleStartBroadcast}
+                  disabled={!agoraService}
+                  className={`relative flex h-14 items-center justify-center gap-2 rounded-2xl border px-6 text-center font-semibold text-sm leading-tight shadow-lg transition-all duration-200 ${!agoraService
+                    ? "cursor-not-allowed border-[#e9e7f7] bg-white text-[#b7b4c9] opacity-60"
+                    : "border-[#cde5ff] bg-[#e7f3ff] text-[#2f63a1] hover:bg-[#d8ecff]"
+                    }`}
+                >
+                  <svg
+                    className="h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+                    />
+                  </svg>
+                  <span className="text-center text-sm">Start Broadcast</span>
+                </button>
+              ) : (
+                <button
+                  onClick={handleStopBroadcast}
+                  className="relative flex h-14 items-center justify-center gap-2 rounded-2xl border border-[#ffcfe0] bg-[#ffe6f3] text-[#b44f6c] px-6 text-center font-semibold text-sm leading-tight shadow-lg transition-all duration-200 hover:bg-[#ffd9eb]"
+                >
+                  <svg
+                    className="h-4 w-4"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <rect x="6" y="6" width="12" height="12" rx="2" />
+                  </svg>
+                  <span className="text-center text-sm">Stop Broadcast</span>
+                </button>
+              )}
             </div>
           </div>
         </main>
