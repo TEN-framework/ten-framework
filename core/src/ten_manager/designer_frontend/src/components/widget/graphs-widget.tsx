@@ -32,7 +32,7 @@ import { SpinnerLoading } from "@/components/status/loading";
 import { AutoFormDynamicFields } from "@/components/ui/autoform/auto-form-dynamic-fields";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Combobox } from "@/components/ui/combobox";
+import { Combobox, MultiSelectorWithCheckbox } from "@/components/ui/combobox";
 import {
   Form,
   FormControl,
@@ -58,7 +58,7 @@ import {
 } from "@/components/widget/utils";
 import { cn } from "@/lib/utils";
 import { useDialogStore, useFlowStore } from "@/store";
-import type { TCustomNode } from "@/types/flow";
+import { ECustomNodeType, type TCustomNode } from "@/types/flow";
 import {
   AddConnectionPayloadSchema,
   AddNodePayloadSchema,
@@ -574,7 +574,8 @@ export const GraphConnectionCreationWidget = (props: {
     isLoading: isExtSchemaLoading,
     error: extSchemaError,
   } = useFetchExtSchema(
-    src_node || dest_node
+    (src_node && src_node?.type === ECustomNodeType.EXTENSION) ||
+      (dest_node && dest_node?.type === ECustomNodeType.EXTENSION)
       ? {
           appBaseDir: base_dir ?? "",
           addonName: (src_node?.data.addon || dest_node?.data.addon) as string,
@@ -771,51 +772,52 @@ export const GraphConnectionCreationWidget = (props: {
             </FormItem>
           )}
         />
-        {form.watch("msg_type") && (
-          <FormField
-            control={form.control}
-            name="msg_names"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t("popup.graph.messageName")}</FormLabel>
-                <FormControl>
-                  <Combobox
-                    // eslint-disable-next-line max-len
-                    key={`Combobox-src-${form.watch("msg_type")}-${form.watch("src").extension}`} // todo: support selector and subgraph
-                    disabled={isExtSchemaLoading}
-                    isLoading={isExtSchemaLoading}
-                    mode="multiple"
-                    maxSelectedItems={2}
-                    options={msgNameList}
-                    placeholder={t("popup.graph.messageName")}
-                    selected={field.value ?? []}
-                    onChange={(items) => {
-                      field.onChange(items.map((item) => item.value));
-                    }}
-                    onCreate={(i) => {
-                      setMsgNameList((prev) => {
-                        if (prev.some((item) => item.value === i)) {
-                          return prev;
-                        }
+        {form.watch("msg_type") &&
+          src_node?.type === ECustomNodeType.EXTENSION && (
+            <FormField
+              control={form.control}
+              name="msg_names"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t("popup.graph.messageName")}</FormLabel>
+                  <FormControl>
+                    <Combobox
+                      // eslint-disable-next-line max-len
+                      key={`Combobox-src-${form.watch("msg_type")}-${form.watch("src").extension}`} // todo: support selector and subgraph
+                      disabled={isExtSchemaLoading}
+                      isLoading={isExtSchemaLoading}
+                      mode="multiple"
+                      maxSelectedItems={2}
+                      options={msgNameList}
+                      placeholder={t("popup.graph.messageName")}
+                      selected={field.value ?? []}
+                      onChange={(items) => {
+                        field.onChange(items.map((item) => item.value));
+                      }}
+                      onCreate={(i) => {
+                        setMsgNameList((prev) => {
+                          if (prev.some((item) => item.value === i)) {
+                            return prev;
+                          }
 
-                        return [
-                          ...prev,
-                          {
-                            value: i,
-                            label: i,
-                          },
-                        ];
-                      });
-                      const currentValues = field.value ?? [];
-                      field.onChange([...currentValues, i]);
-                    }}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        )}
+                          return [
+                            ...prev,
+                            {
+                              value: i,
+                              label: i,
+                            },
+                          ];
+                        });
+                        const currentValues = field.value ?? [];
+                        field.onChange([...currentValues, i]);
+                      }}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
       </>
     );
   };
@@ -998,10 +1000,12 @@ export const GraphConnectionCreationWidget = (props: {
                         ] || undefined
                       }
                       disabled={
-                        (dest_node
-                          ? true
-                          : !(form.watch("msg_type") && primaryMsgName)) ||
-                        isCompatibleMsgLoading
+                        src_node?.type === ECustomNodeType.SELECTOR
+                          ? false
+                          : (dest_node
+                              ? true
+                              : !(form.watch("msg_type") && primaryMsgName)) ||
+                            isCompatibleMsgLoading
                       }
                     >
                       <SelectTrigger
@@ -1025,6 +1029,15 @@ export const GraphConnectionCreationWidget = (props: {
                             {t("popup.graph.destLocation")}
                           </SelectLabel>
                           {destNodes
+                            ?.filter(
+                              (n) =>
+                                // can't connect to selector
+                                n.id !== src_node?.id &&
+                                ![
+                                  ECustomNodeType.SELECTOR,
+                                  ECustomNodeType.GRAPH,
+                                ].includes(n.type)
+                            )
                             .sort((a, b) => {
                               const aCompatible =
                                 compatibleMessagesExtList.includes(
@@ -1068,7 +1081,39 @@ export const GraphConnectionCreationWidget = (props: {
                 </FormItem>
               )}
             />
-            {!!dest_node && <Inner />}
+            {!!dest_node && src_node?.type !== ECustomNodeType.SELECTOR && (
+              <Inner />
+            )}
+            {src_node?.type === ECustomNodeType.SELECTOR && (
+              <MultiSelectorWithCheckbox
+                options={msgNameList}
+                placeholder={t("popup.graph.messageName")}
+                selected={form.watch("msg_names") ?? []}
+                onChange={(items) => {
+                  form.setValue(
+                    "msg_names",
+                    items.map((item) => item.value)
+                  );
+                }}
+                onCreate={(i) => {
+                  setMsgNameList((prev) => {
+                    if (prev.some((item) => item.value === i)) {
+                      return prev;
+                    }
+
+                    return [
+                      ...prev,
+                      {
+                        value: i,
+                        label: i,
+                      },
+                    ];
+                  });
+                  const currentValues = form.watch("msg_names") ?? [];
+                  form.setValue("msg_names", [...currentValues, i]);
+                }}
+              />
+            )}
           </div>
         </div>
         <div className="flex w-full">

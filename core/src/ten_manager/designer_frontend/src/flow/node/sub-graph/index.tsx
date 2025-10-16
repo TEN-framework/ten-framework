@@ -5,7 +5,7 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 
-import { type NodeProps, Position } from "@xyflow/react";
+import type { NodeProps } from "@xyflow/react";
 import { BaseNode } from "@/components/ui/react-flow/base-node";
 import { Separator } from "@/components/ui/separator";
 import { NODE_CONFIG_MAPPING } from "@/flow/node/base";
