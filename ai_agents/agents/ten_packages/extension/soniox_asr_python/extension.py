@@ -260,6 +260,7 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         self.audio_timeline.add_silence_audio(self.config.mute_pkg_duration_ms)
 
         # No need to do stats.
+        self.last_finalize_timestamp = 0
         await self.send_asr_finalize_end()
 
         self.ten_env.log_info("finalize by mute pkg done")
