@@ -38,7 +38,6 @@ class HumeaiTTSExtension(AsyncTTS2BaseExtension):
         self.client: HumeAiTTS | None = None
         self.sent_ts: datetime | None = None
         self.current_request_id: str | None = None
-        self.current_turn_id: int = -1
         self.total_audio_bytes: int = 0
         self.first_chunk: bool = False
         self.current_request_finished: bool = False
@@ -139,7 +138,6 @@ class HumeaiTTSExtension(AsyncTTS2BaseExtension):
                             self.current_request_id,
                             request_event_interval,
                             duration_ms,
-                            self.current_turn_id,
                             TTSAudioEndReason.INTERRUPTED,
                         )
                         self.sent_ts = None
@@ -162,8 +160,6 @@ class HumeaiTTSExtension(AsyncTTS2BaseExtension):
                 self.current_request_id = t.request_id
                 self.total_audio_bytes = 0
                 self.current_request_finished = False
-                if t.metadata:
-                    self.current_turn_id = t.metadata.get("turn_id", -1)
 
                 # Create new PCMWriter for new request_id and clean up old ones
                 if self.config and self.config.dump:
@@ -222,11 +218,20 @@ class HumeaiTTSExtension(AsyncTTS2BaseExtension):
                             (datetime.now() - self.sent_ts).total_seconds()
                             * 1000
                         )
-                        await self.send_tts_audio_start(
-                            self.current_request_id, self.current_turn_id
-                        )
+                        await self.send_tts_audio_start(self.current_request_id)
                         await self.send_tts_ttfb_metrics(
-                            self.current_request_id, ttfb, self.current_turn_id
+                            self.current_request_id,
+                            ttfb,
+                            extra_metadata={
+                                "voice_id": (
+                                    self.config.voice_id if self.config else ""
+                                ),
+                                "voice_name": (
+                                    self.config.voice_name
+                                    if self.config
+                                    else ""
+                                ),
+                            },
                         )
                         self.first_chunk = False
 
@@ -257,7 +262,6 @@ class HumeaiTTSExtension(AsyncTTS2BaseExtension):
                         self.current_request_id,
                         request_interval,
                         duration_ms,
-                        self.current_turn_id,
                     )
                     self.current_request_id = None
                     break
@@ -278,7 +282,6 @@ class HumeaiTTSExtension(AsyncTTS2BaseExtension):
                                 vendor=self.vendor()
                             ),
                         ),
-                        self.current_turn_id,
                     )
                     return
 
@@ -306,5 +309,4 @@ class HumeaiTTSExtension(AsyncTTS2BaseExtension):
                     code=ModuleErrorCode.NON_FATAL_ERROR.value,
                     vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
                 ),
-                self.current_turn_id,
             )
