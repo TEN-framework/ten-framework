@@ -213,6 +213,7 @@ class SonioxASRExtension(AsyncASRBaseExtension):
     async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
         await super().on_data(ten_env, data)
         if data.get_name() == "asr_finalize":
+            self.last_finalize_timestamp = int(time.time() * 1000)
             if self.config.finalize_mode == FinalizeMode.IGNORE:
                 return
             if self.config.finalize_mode == FinalizeMode.MUTE_PKG:
@@ -238,7 +239,6 @@ class SonioxASRExtension(AsyncASRBaseExtension):
             f"vendor_cmd: finalize, silence_duration_ms: {silence_duration_ms}",
             category=LOG_CATEGORY_VENDOR,
         )
-        self.last_finalize_timestamp = int(time.time() * 1000)
         if self.websocket:
             await self.websocket.finalize(silence_duration_ms)
 
