@@ -412,6 +412,7 @@ class TwilioCallServer:
                             self.active_call_sessions[call_sid][
                                 "websocket"
                             ] = websocket
+<<<<<<< HEAD
 
                             # Notify extension that websocket is connected
                             if (
@@ -421,6 +422,8 @@ class TwilioCallServer:
                                 await self.extension_instance.on_websocket_connected(
                                     call_sid
                                 )
+=======
+>>>>>>> d452c4261 (feat: change google tts and 11labs tts code)
                         elif message.get("event") == "stop":
                             self._log_info(f"Media stream stopped: {message}")
 
