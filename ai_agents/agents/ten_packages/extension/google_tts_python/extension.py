@@ -76,7 +76,7 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
             ten_env.log_error(f"on_init failed: {traceback.format_exc()}")
             await self.send_tts_error(
                 request_id="",
-                rerror=ModuleError(
+                error=ModuleError(
                     message=f"Initialization failed: {e}",
                     module=ModuleType.TTS,
                     code=ModuleErrorCode.FATAL_ERROR,
