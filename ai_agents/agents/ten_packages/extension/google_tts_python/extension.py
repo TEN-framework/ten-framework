@@ -77,10 +77,14 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
             await self.send_tts_error(
                 request_id="",
 <<<<<<< HEAD
+<<<<<<< HEAD
                 error=ModuleError(
 =======
                 rerror=ModuleError(
 >>>>>>> d452c4261 (feat: change google tts and 11labs tts code)
+=======
+                error=ModuleError(
+>>>>>>> d9e836b02 (fix: fix name error)
                     message=f"Initialization failed: {e}",
                     module=ModuleType.TTS,
                     code=ModuleErrorCode.FATAL_ERROR,
