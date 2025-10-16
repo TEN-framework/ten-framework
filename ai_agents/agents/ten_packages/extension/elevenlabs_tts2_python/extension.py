@@ -175,6 +175,7 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                         ttfb_ms=ttfb_ms,
 =======
                         "voice_id": self.config.params.get('voice_id', ""),
+                        "model_id": self.config.params.get('model_id', ""),
                     }
                     await self.send_tts_ttfb_metrics(
                         request_id=self.current_request_id, ttfb_ms=ttfb_ms,
