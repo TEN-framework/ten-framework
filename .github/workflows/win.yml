@@ -118,6 +118,11 @@ jobs:
         with:
           python-version: "3.10"
 
+      - name: Update version
+        run: |
+          python tools/version/update_version_in_ten_framework.py
+          python tools/version/check_version_in_ten_framework.py
+
       - uses: actions/setup-go@v5
         with:
           go-version: "stable"

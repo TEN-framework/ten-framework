@@ -118,6 +118,11 @@ jobs:
         with:
           python-version: "3.10"
 
+      - name: Update version
+        run: |
+          python3 tools/version/update_version_in_ten_framework.py
+          python3 tools/version/check_version_in_ten_framework.py
+
       - name: Install tools and dependencies
         run: |
           pip3 install --use-pep517 python-dotenv jinja2
