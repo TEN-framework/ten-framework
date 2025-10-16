@@ -1,83 +1,86 @@
 # Live2D Voice Assistant
 
-A voice assistant with **Live2D character integration** and real-time conversation capabilities using Agora RTC, Deepgram STT, OpenAI LLM, and ElevenLabs TTS. This example features animated Live2D characters that respond to audio input with synchronized mouth movements and expressions, providing an engaging and interactive user experience.
+A voice assistant with **Live2D character integration** and real-time conversation capabilities powered by Agora RTC, Deepgram STT, OpenAI LLM, and ElevenLabs TTS. The example extends the standard voice assistant backend with a Live2D-ready frontend, so animated characters can react to the audio pipeline with synchronized motion.
 
-> **Note**: This example shares the same backend configuration as the [voice-assistant](../voice-assistant/) example but includes an enhanced frontend with Live2D character support.
+> **Note**: This example reuses the backend configuration from [voice-assistant](../voice-assistant/) and adds a Live2D-aware frontend.
 
 ## Features
 
-- **Live2D Character Integration**: Interactive Live2D models with audio synchronization and mouth movement
-- **Chained Model Real-time Voice Interaction**: Complete voice conversation pipeline with STT → LLM → TTS processing
-- **Real-time Voice Communication**: Powered by Agora RTC
+- **Live2D Character Integration**: Interactive Live2D model with audio-driven mouth movement.
+- **Chained Model Voice Pipeline**: Real-time STT → LLM → TTS conversation loop.
+- **Agora RTC Streaming**: Bidirectional audio streaming with Agora RTC/RTM.
 
 ## Prerequisites
 
-### Required Environment Variables
+### Tooling
 
-1. **Agora Account**: Get credentials from [Agora Console](https://console.agora.io/)
-   - `AGORA_APP_ID` - Your Agora App ID (required)
+- [`task`](https://taskfile.dev/) CLI v3 or newer (used for automation).
+- `tman` CLI available on `PATH` (build it from the repo root with `task gen-tman` if you have not already).
+- Go 1.21+ (required to build the API server and TEN runtime).
+- Node.js 20+ with npm (frontend uses Next.js 15).
+- Python 3.10+ plus [uv](https://docs.astral.sh/uv/) (default `PIP_INSTALL_CMD=uv pip install --system`). If you do not use `uv`, export `PIP_INSTALL_CMD="pip install"` before running `task install`.
 
-2. **Deepgram Account**: Get credentials from [Deepgram Console](https://console.deepgram.com/)
-   - `DEEPGRAM_API_KEY` - Your Deepgram API key (required)
+### Environment Files
 
-3. **OpenAI Account**: Get credentials from [OpenAI Platform](https://platform.openai.com/)
-   - `OPENAI_API_KEY` - Your OpenAI API key (required)
+1. From the repository root: `cp ai_agents/.env.example ai_agents/.env`
+2. From the repository root: `cp ai_agents/agents/examples/voice-assistant-live2d/frontend/env.example ai_agents/agents/examples/voice-assistant-live2d/frontend/.env.local`
+3. Populate both files using the tables below.
 
-4. **ElevenLabs Account**: Get credentials from [ElevenLabs](https://elevenlabs.io/)
-   - `ELEVENLABS_TTS_KEY` - Your ElevenLabs API key (required)
+### Required Environment Variables (`ai_agents/.env`)
 
-### Optional Environment Variables
+| Variable | Description |
+|----------|-------------|
+| `AGORA_APP_ID` | Agora App ID used for RTC audio streaming. |
+| `DEEPGRAM_API_KEY` | Deepgram API key for speech-to-text. |
+| `OPENAI_API_KEY` | OpenAI API key for the LLM. |
+| `OPENAI_MODEL` | OpenAI realtime model name (for example `gpt-4o` or `gpt-4o-mini`). |
+| `ELEVENLABS_TTS_KEY` | ElevenLabs API key for text-to-speech synthesis. |
 
-- `AGORA_APP_CERTIFICATE` - Agora App Certificate (optional)
-- `OPENAI_MODEL` - OpenAI model name (optional, defaults to configured model)
-- `OPENAI_PROXY_URL` - Proxy URL for OpenAI API (optional)
-- `WEATHERAPI_API_KEY` - Weather API key for weather tool (optional)
+### Optional Environment Variables (`ai_agents/.env`)
+
+| Variable | Description |
+|----------|-------------|
+| `AGORA_APP_CERTIFICATE` | Agora App Certificate if your project requires certificate-based auth. |
+| `OPENAI_PROXY_URL` | HTTP proxy for routing OpenAI traffic. |
+| `WEATHERAPI_API_KEY` | WeatherAPI key to enable the bundled weather tool. |
+
+### Frontend Environment (`frontend/.env.local`)
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `NEXT_PUBLIC_AGORA_APP_ID` | Agora App ID exposed to the browser client. | _none_ |
+| `NEXT_PUBLIC_API_BASE_URL` | Base URL for the local API server. | `http://localhost:8080` |
 
 ## Setup
 
-### 1. Set Environment Variables
-
-Add to your `.env` file:
+### 1. Install Dependencies
 
 ```bash
-# Agora (required for audio streaming)
-AGORA_APP_ID=your_agora_app_id_here
-AGORA_APP_CERTIFICATE=your_agora_certificate_here
-
-# Deepgram (required for speech-to-text)
-DEEPGRAM_API_KEY=your_deepgram_api_key_here
-
-# OpenAI (required for language model)
-OPENAI_API_KEY=your_openai_api_key_here
-OPENAI_MODEL=gpt-4o
-
-# ElevenLabs (required for text-to-speech)
-ELEVENLABS_TTS_KEY=your_elevenlabs_api_key_here
-
-# Optional
-OPENAI_PROXY_URL=your_proxy_url_here
-WEATHERAPI_API_KEY=your_weather_api_key_here
-```
-
-### 2. Install Dependencies
-
-```bash
-cd agents/examples/voice-assistant-live2d
+cd ai_agents/agents/examples/voice-assistant-live2d
 task install
 ```
 
-This installs Python dependencies and frontend components.
+This command installs TEN runtime packages via `tman`, builds the Go binary, installs Python dependencies (using `uv` by default), and installs the frontend dependencies.
 
-### 3. Run the Voice Assistant
+### 2. Run the Voice Assistant
+
+Start each process in its own terminal so they can continue running:
 
 ```bash
-cd agents/examples/voice-assistant-live2d
-task run
+# Terminal 1 – TEN runtime
+task run-tenapp
+
+# Terminal 2 – API server
+task run-api-server
+
+# Terminal 3 – Frontend
+task run-frontend
+
+# Terminal 4 – (Optional) TMAN Designer UI
+task run-gd-server
 ```
 
-The voice assistant starts with all capabilities enabled.
-
-### 4. Access the Application
+### 3. Access the Application
 
 - **Frontend**: http://localhost:3000
 - **API Server**: http://localhost:8080
@@ -85,20 +88,11 @@ The voice assistant starts with all capabilities enabled.
 
 ## Live2D Models
 
-The application includes pre-configured Live2D models:
-- **Kei Vowels Pro** - Multi-language character with voice sync
-- Models are located in `frontend/public/models/` and can be easily swapped or extended
-
-### Live2D Character Customization
-
-The Live2D frontend supports custom character models:
-- Replace models in `frontend/public/models/` directory
-- Supported formats: `.model3.json`, `.moc3`, `.physics3.json`
-- Configure character settings in the frontend components
+The example ships with the **Kei Vowels Pro** Live2D model (see `frontend/public/models/kei_vowels_pro`). Replace or add additional models by copying their assets into `frontend/public/models/` and updating the frontend configuration.
 
 ## Configuration
 
-The voice assistant is configured in `tenapp/property.json`:
+The TEN runtime graph is defined in `tenapp/property.json`:
 
 ```json
 {
@@ -110,88 +104,238 @@ The voice assistant is configured in `tenapp/property.json`:
         "graph": {
           "nodes": [
             {
+              "type": "extension",
               "name": "agora_rtc",
               "addon": "agora_rtc",
+              "extension_group": "default",
               "property": {
                 "app_id": "${env:AGORA_APP_ID}",
                 "app_certificate": "${env:AGORA_APP_CERTIFICATE|}",
                 "channel": "ten_agent_test",
+                "stream_id": 1234,
+                "remote_stream_id": 123,
                 "subscribe_audio": true,
                 "publish_audio": true,
-                "publish_data": true
+                "publish_data": true,
+                "enable_agora_asr": false
               }
             },
             {
+              "type": "extension",
               "name": "stt",
               "addon": "deepgram_asr_python",
+              "extension_group": "stt",
               "property": {
                 "params": {
                   "api_key": "${env:DEEPGRAM_API_KEY}",
-                  "language": "en-US"
+                  "language": "en-US",
+                  "model": "nova-3"
                 }
               }
             },
             {
+              "type": "extension",
               "name": "llm",
               "addon": "openai_llm2_python",
+              "extension_group": "chatgpt",
               "property": {
+                "base_url": "https://api.openai.com/v1",
                 "api_key": "${env:OPENAI_API_KEY}",
+                "frequency_penalty": 0.9,
                 "model": "${env:OPENAI_MODEL}",
                 "max_tokens": 512,
-                "greeting": "TEN Agent connected. How can I help you today?"
+                "prompt": "",
+                "proxy_url": "${env:OPENAI_PROXY_URL|}",
+                "greeting": "My name is Kei, nice to meet you I am your anime assistant, and what's your name?",
+                "max_memory_length": 10
               }
             },
             {
+              "type": "extension",
               "name": "tts",
               "addon": "elevenlabs_tts2_python",
+              "extension_group": "tts",
               "property": {
                 "params": {
-                  "key": "${env:ELEVENLABS_TTS_KEY}",
-                  "model_id": "eleven_multilingual_v2",
-                  "voice_id": "pNInz6obpgDQGcFmaJgB",
-                  "output_format": "pcm_16000"
-                }
+                  "key": "${env:ELEVENLABS_TTS_KEY|}",
+                  "voice_id": "lhTvHflPVOqgSWyuWQry",
+                  "model_id": "eleven_multilingual_v2"
+                },
+                "dump": false,
+                "dump_path": "./"
               }
+            },
+            {
+              "type": "extension",
+              "name": "main_control",
+              "addon": "main_python",
+              "extension_group": "control",
+              "property": {
+                "greeting": "My name is Kei, nice to meet you I am your anime assistant, and what's your name?"
+              }
+            },
+            {
+              "type": "extension",
+              "name": "message_collector",
+              "addon": "message_collector2",
+              "extension_group": "transcriber",
+              "property": {}
+            },
+            {
+              "type": "extension",
+              "name": "weatherapi_tool_python",
+              "addon": "weatherapi_tool_python",
+              "extension_group": "default",
+              "property": {
+                "api_key": "${env:WEATHERAPI_API_KEY|}"
+              }
+            },
+            {
+              "type": "extension",
+              "name": "streamid_adapter",
+              "addon": "streamid_adapter",
+              "property": {}
+            }
+          ],
+          "connections": [
+            {
+              "extension": "main_control",
+              "cmd": [
+                {
+                  "names": [
+                    "on_user_joined",
+                    "on_user_left"
+                  ],
+                  "source": [
+                    {
+                      "extension": "agora_rtc"
+                    }
+                  ]
+                },
+                {
+                  "names": [
+                    "tool_register"
+                  ],
+                  "source": [
+                    {
+                      "extension": "weatherapi_tool_python"
+                    }
+                  ]
+                }
+              ],
+              "data": [
+                {
+                  "name": "asr_result",
+                  "source": [
+                    {
+                      "extension": "stt"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "agora_rtc",
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "dest": [
+                    {
+                      "extension": "streamid_adapter"
+                    }
+                  ]
+                },
+                {
+                  "name": "pcm_frame",
+                  "source": [
+                    {
+                      "extension": "tts"
+                    }
+                  ]
+                }
+              ],
+              "data": [
+                {
+                  "name": "data",
+                  "source": [
+                    {
+                      "extension": "message_collector"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "streamid_adapter",
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "dest": [
+                    {
+                      "extension": "stt"
+                    }
+                  ]
+                }
+              ]
             }
           ]
         }
       }
-    ]
+    ],
+    "log": {
+      "handlers": [
+        {
+          "matchers": [
+            {
+              "level": "info"
+            }
+          ],
+          "formatter": {
+            "type": "plain",
+            "colored": true
+          },
+          "emitter": {
+            "type": "console",
+            "config": {
+              "stream": "stdout"
+            }
+          }
+        }
+      ]
+    }
   }
 }
 ```
 
 ### Configuration Parameters
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `AGORA_APP_ID` | string | - | Your Agora App ID (required) |
-| `AGORA_APP_CERTIFICATE` | string | - | Your Agora App Certificate (optional) |
-| `DEEPGRAM_API_KEY` | string | - | Deepgram API key (required) |
-| `OPENAI_API_KEY` | string | - | OpenAI API key (required) |
-| `OPENAI_MODEL` | string | - | OpenAI model name (optional) |
-| `OPENAI_PROXY_URL` | string | - | Proxy URL for OpenAI API (optional) |
-| `ELEVENLABS_TTS_KEY` | string | - | ElevenLabs API key (required) |
-| `WEATHERAPI_API_KEY` | string | - | Weather API key (optional) |
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `AGORA_APP_ID` | string | ✔︎ | Agora App ID for RTC. |
+| `AGORA_APP_CERTIFICATE` | string | ✖︎ | Agora certificate if needed. |
+| `DEEPGRAM_API_KEY` | string | ✔︎ | Deepgram API key. |
+| `OPENAI_API_KEY` | string | ✔︎ | OpenAI API key. |
+| `OPENAI_MODEL` | string | ✔︎ | OpenAI realtime model identifier. |
+| `OPENAI_PROXY_URL` | string | ✖︎ | Proxy URL for OpenAI traffic. |
+| `ELEVENLABS_TTS_KEY` | string | ✔︎ | ElevenLabs API key. |
+| `WEATHERAPI_API_KEY` | string | ✖︎ | Enables the weather tool node. |
 
 ## Customization
 
-The voice assistant uses a modular design that allows you to easily replace STT, LLM, or TTS modules with other providers using TMAN Designer.
+Use TMAN Designer (http://localhost:49483) to modify the graph: swap STT/LLM/TTS providers, add tools, or adjust greetings. See the [TMAN Designer documentation](https://theten.ai/docs/ten_agent/customize_agent/tman-designer) for detailed instructions.
 
-Access the visual designer at http://localhost:49483 to customize your voice agent. For detailed usage instructions, see the [TMAN Designer documentation](https://theten.ai/docs/ten_agent/customize_agent/tman-designer).
+## Release as Docker Image
 
-## Release as Docker image
+> Run the following commands from the `ai_agents` directory after populating `.env`.
 
-**Note**: The following commands need to be executed outside of any Docker container.
-
-### Build image
+### Build Image
 
 ```bash
 cd ai_agents
 docker build -f agents/examples/voice-assistant-live2d/Dockerfile -t voice-assistant-live2d .
 ```
 
-### Run
+### Run Container
 
 ```bash
 docker run --rm -it --env-file .env -p 8080:8080 -p 3000:3000 voice-assistant-live2d
