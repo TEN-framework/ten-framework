@@ -3,7 +3,8 @@
 import * as React from "react"
 import { useMultibandTrackVolume } from "@/common"
 import AudioVisualizer from "@/components/Agent/AudioVisualizer"
-import AgoraRTC, { IMicrophoneAudioTrack } from "agora-rtc-sdk-ng"
+import AgoraRTC from "agora-rtc-sdk-ng"
+import type { IMicrophoneAudioTrack } from "agora-rtc-sdk-ng"
 import {
   Select,
   SelectContent,

@@ -3,7 +3,7 @@
 import { useMultibandTrackVolume } from "@/common"
 import { cn } from "@/lib/utils"
 // import AudioVisualizer from "../audioVisualizer"
-import { IMicrophoneAudioTrack } from "agora-rtc-sdk-ng"
+import type { IMicrophoneAudioTrack } from "agora-rtc-sdk-ng"
 import AudioVisualizer from "@/components/Agent/AudioVisualizer"
 
 export interface AgentViewProps {

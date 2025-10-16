@@ -1,10 +1,10 @@
 "use client";
 
 import AgoraRTC, {
-  IAgoraRTCClient,
-  IMicrophoneAudioTrack,
-  IRemoteAudioTrack,
-  UID,
+  type IAgoraRTCClient,
+  type IMicrophoneAudioTrack,
+  type IRemoteAudioTrack,
+  type UID,
 } from "agora-rtc-sdk-ng";
 import { EMessageDataType, EMessageType, IChatItem, ITextItem } from "@/types";
 import { AGEventEmitter } from "../events";
