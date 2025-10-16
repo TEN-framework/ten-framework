@@ -108,7 +108,7 @@
     "viewDetails": "詳細を表示",
     "reset": "リセット",
     "chooseBaseDir": "ベースディレクトリを選択",
-    "deleteNodeConfirmationWithName": "ノード {{name}} を削除してもよろしいですか？",
+    "deleteNodeConfirmationWithName": "{{type}}: {{name}} を削除してもよろしいですか？",
     "update": "更新",
     "create": "作成",
     "deleteConnectionConfirmation": "接続を削除してもよろしいですか？",

@@ -108,7 +108,7 @@
     "viewDetails": "查看詳情",
     "reset": "重置",
     "chooseBaseDir": "選擇基礎目錄",
-    "deleteNodeConfirmationWithName": "確定要刪除節點 {{name}} 嗎？",
+    "deleteNodeConfirmationWithName": "確定要刪除{{type}}: {{name}} 嗎？",
     "update": "更新",
     "create": "建立",
     "deleteConnectionConfirmation": "確定要刪除此連線嗎？",

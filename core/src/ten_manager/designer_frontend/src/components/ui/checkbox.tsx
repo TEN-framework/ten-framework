@@ -5,12 +5,10 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 /* eslint-disable max-len */
-"use client";
 
 import * as CheckboxPrimitive from "@radix-ui/react-checkbox";
 import { CheckIcon } from "lucide-react";
 import type * as React from "react";
-
 import { cn } from "@/lib/utils";
 
 function Checkbox({
@@ -28,9 +26,9 @@ function Checkbox({
     >
       <CheckboxPrimitive.Indicator
         data-slot="checkbox-indicator"
-        className="flex items-center justify-center text-current transition-none"
+        className="grid place-content-center text-current transition-none"
       >
-        <CheckIcon className="size-3.5" />
+        <CheckIcon className="size-3.5 text-inherit" />
       </CheckboxPrimitive.Indicator>
     </CheckboxPrimitive.Root>
   );
