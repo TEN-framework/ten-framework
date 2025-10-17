@@ -1,6 +1,7 @@
 // import { ConfigProvider } from "antd";
 
 import type { Metadata, Viewport } from "next";
+import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { StoreProvider } from "@/store";
 
@@ -32,7 +33,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="dark">
+      <body className="antialiased">
         {/* <ConfigProvider
           theme={{
             components: {
@@ -42,9 +43,17 @@ export default function RootLayout({
             },
           }}
         > */}
-        <StoreProvider>{children}</StoreProvider>
-        {/* </ConfigProvider> */}
-        <Toaster richColors closeButton theme="dark" />
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          forcedTheme="dark"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <StoreProvider>{children}</StoreProvider>
+          {/* </ConfigProvider> */}
+          <Toaster richColors closeButton theme="dark" />
+        </ThemeProvider>
       </body>
     </html>
   );
