@@ -1,17 +1,17 @@
-import camMuteSvg from "@/assets/cam_mute.svg"
-import camUnMuteSvg from "@/assets/cam_unmute.svg"
-import { IconProps } from "../types"
+import camMuteSvg from "@/assets/cam_mute.svg";
+import camUnMuteSvg from "@/assets/cam_unmute.svg";
+import type { IconProps } from "../types";
 
 interface ICamIconProps extends IconProps {
-  active?: boolean
+  active?: boolean;
 }
 
 export const CamIcon = (props: ICamIconProps) => {
-  const { active, ...rest } = props
+  const { active, ...rest } = props;
 
   if (active) {
-    return camUnMuteSvg(rest)
+    return camUnMuteSvg(rest);
   } else {
-    return camMuteSvg(rest)
+    return camMuteSvg(rest);
   }
-}
+};

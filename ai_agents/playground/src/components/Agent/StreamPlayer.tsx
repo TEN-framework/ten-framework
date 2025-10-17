@@ -1,20 +1,20 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import {
+import type {
   ICameraVideoTrack,
   ILocalVideoTrack,
   IMicrophoneAudioTrack,
   VideoPlayerConfig,
-} from "agora-rtc-sdk-ng"
+} from "agora-rtc-sdk-ng";
+import * as React from "react";
 
 export interface StreamPlayerProps {
-  videoTrack?: ICameraVideoTrack | ILocalVideoTrack
-  audioTrack?: IMicrophoneAudioTrack
-  style?: React.CSSProperties
-  fit?: "cover" | "contain" | "fill"
-  onClick?: () => void
-  mute?: boolean
+  videoTrack?: ICameraVideoTrack | ILocalVideoTrack;
+  audioTrack?: IMicrophoneAudioTrack;
+  style?: React.CSSProperties;
+  fit?: "cover" | "contain" | "fill";
+  onClick?: () => void;
+  mute?: boolean;
 }
 
 export const LocalStreamPlayer = React.forwardRef(
@@ -26,23 +26,23 @@ export const LocalStreamPlayer = React.forwardRef(
       style = {},
       fit = "cover",
       onClick = () => {},
-    } = props
-    const vidDiv = React.useRef(null)
+    } = props;
+    const vidDiv = React.useRef(null);
 
     React.useLayoutEffect(() => {
-      const config = { fit } as VideoPlayerConfig
+      const config = { fit } as VideoPlayerConfig;
       if (mute) {
-        videoTrack?.stop()
+        videoTrack?.stop();
       } else {
         if (!videoTrack?.isPlaying) {
-          videoTrack?.play(vidDiv.current!, config)
+          videoTrack?.play(vidDiv.current!, config);
         }
       }
 
       return () => {
-        videoTrack?.stop()
-      }
-    }, [videoTrack, fit, mute])
+        videoTrack?.stop();
+      };
+    }, [videoTrack, fit, mute]);
 
     // local audio track need not to be played
     // useLayoutEffect(() => {}, [audioTrack, localAudioMute])
@@ -54,6 +54,6 @@ export const LocalStreamPlayer = React.forwardRef(
         ref={vidDiv}
         onClick={onClick}
       />
-    )
-  },
-)
+    );
+  }
+);

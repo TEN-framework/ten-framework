@@ -1,6 +1,6 @@
-import * as React from "react"
+import type * as React from "react";
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/lib/utils";
 
 export const GitHubIcon = (props: React.SVGProps<SVGSVGElement>) => {
   return (
@@ -12,11 +12,11 @@ export const GitHubIcon = (props: React.SVGProps<SVGSVGElement>) => {
     >
       <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8" />
     </svg>
-  )
-}
+  );
+};
 
 export const AnimatedSpinnerIcon = (props: React.SVGProps<SVGSVGElement>) => {
-  const { className, ...rest } = props
+  const { className, ...rest } = props;
   return (
     <svg
       className={cn("-ml-1 mr-3 h-5 w-5 animate-spin text-white", className)}
@@ -39,8 +39,8 @@ export const AnimatedSpinnerIcon = (props: React.SVGProps<SVGSVGElement>) => {
         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
       ></path>
     </svg>
-  )
-}
+  );
+};
 
 export const LogoIcon = (props: React.SVGProps<SVGSVGElement>) => {
   return (
@@ -133,8 +133,8 @@ export const LogoIcon = (props: React.SVGProps<SVGSVGElement>) => {
         </linearGradient>
       </defs>
     </svg>
-  )
-}
+  );
+};
 
 export const SmallLogoIcon = (props: React.SVGProps<SVGSVGElement>) => {
   return (
@@ -207,8 +207,8 @@ export const SmallLogoIcon = (props: React.SVGProps<SVGSVGElement>) => {
         </linearGradient>
       </defs>
     </svg>
-  )
-}
+  );
+};
 
 export const InfoIcon = (props: React.SVGProps<SVGSVGElement>) => {
   return (
@@ -225,8 +225,8 @@ export const InfoIcon = (props: React.SVGProps<SVGSVGElement>) => {
         fill="currentColor"
       />
     </svg>
-  )
-}
+  );
+};
 
 export const PaletteIcon = (props: React.SVGProps<SVGSVGElement>) => {
   return (
@@ -246,8 +246,8 @@ export const PaletteIcon = (props: React.SVGProps<SVGSVGElement>) => {
       <circle cx="6.5" cy="12.5" r=".5" fill="currentColor" />
       <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z" />
     </svg>
-  )
-}
+  );
+};
 
 export const NetworkAverageIcon = (props: React.SVGProps<SVGSVGElement>) => {
   return (
@@ -282,11 +282,11 @@ export const NetworkAverageIcon = (props: React.SVGProps<SVGSVGElement>) => {
         fill="#D0D5DD"
       />
     </svg>
-  )
-}
+  );
+};
 
 export const NetworkDisconnectedIcon = (
-  props: React.SVGProps<SVGSVGElement>,
+  props: React.SVGProps<SVGSVGElement>
 ) => {
   return (
     <svg
@@ -308,8 +308,8 @@ export const NetworkDisconnectedIcon = (
         fill="#DF1642"
       />
     </svg>
-  )
-}
+  );
+};
 
 export const NetworkExcellentIcon = (props: React.SVGProps<SVGSVGElement>) => {
   return (
@@ -326,8 +326,8 @@ export const NetworkExcellentIcon = (props: React.SVGProps<SVGSVGElement>) => {
         fill="#18A957"
       />
     </svg>
-  )
-}
+  );
+};
 
 export const NetworkGoodIcon = (props: React.SVGProps<SVGSVGElement>) => {
   return (
@@ -362,8 +362,8 @@ export const NetworkGoodIcon = (props: React.SVGProps<SVGSVGElement>) => {
         fill="#D0D5DD"
       />
     </svg>
-  )
-}
+  );
+};
 
 export const NetworkPoorIcon = (props: React.SVGProps<SVGSVGElement>) => {
   return (
@@ -398,30 +398,30 @@ export const NetworkPoorIcon = (props: React.SVGProps<SVGSVGElement>) => {
         fill="#D0D5DD"
       />
     </svg>
-  )
-}
+  );
+};
 
 export const NetworkIconByLevel = (
-  props: React.SVGProps<SVGSVGElement> & { level?: number },
+  props: React.SVGProps<SVGSVGElement> & { level?: number }
 ) => {
-  const { level, ...rest } = props
+  const { level, ...rest } = props;
   switch (level) {
     case 0:
-      return <NetworkDisconnectedIcon {...rest} />
+      return <NetworkDisconnectedIcon {...rest} />;
     case 1:
-      return <NetworkExcellentIcon {...rest} />
+      return <NetworkExcellentIcon {...rest} />;
     case 2:
-      return <NetworkGoodIcon {...rest} />
+      return <NetworkGoodIcon {...rest} />;
     case 3:
     case 4:
-      return <NetworkAverageIcon {...rest} />
+      return <NetworkAverageIcon {...rest} />;
     case 5:
-      return <NetworkPoorIcon {...rest} />
+      return <NetworkPoorIcon {...rest} />;
     case 6:
     default:
-      return <NetworkDisconnectedIcon {...rest} />
+      return <NetworkDisconnectedIcon {...rest} />;
   }
-}
+};
 
 export const VoiceIcon = (props: React.SVGProps<SVGSVGElement>) => {
   return (
@@ -436,8 +436,8 @@ export const VoiceIcon = (props: React.SVGProps<SVGSVGElement>) => {
         fill="currentColor"
       />
     </svg>
-  )
-}
+  );
+};
 
 export const MicMuteIcon = (props: React.SVGProps<SVGSVGElement>) => {
   return (
@@ -454,8 +454,8 @@ export const MicMuteIcon = (props: React.SVGProps<SVGSVGElement>) => {
         fill="currentColor"
       />
     </svg>
-  )
-}
+  );
+};
 
 export const MicActiveIcon = (props: React.SVGProps<SVGSVGElement>) => {
   return (
@@ -472,18 +472,18 @@ export const MicActiveIcon = (props: React.SVGProps<SVGSVGElement>) => {
         fill="currentColor"
       />
     </svg>
-  )
-}
+  );
+};
 
 export const MicIconByStatus = (
-  props: React.SVGProps<SVGSVGElement> & { active?: boolean; color?: string },
+  props: React.SVGProps<SVGSVGElement> & { active?: boolean; color?: string }
 ) => {
-  const { active, color, ...rest } = props
+  const { active, color, ...rest } = props;
   if (active) {
-    return <MicActiveIcon color={color || "#3D53F5"} {...rest} />
+    return <MicActiveIcon color={color || "#3D53F5"} {...rest} />;
   }
-  return <MicMuteIcon color={color || "#667085"} {...rest} />
-}
+  return <MicMuteIcon color={color || "#667085"} {...rest} />;
+};
 
 export const CameraDisabledIcon = (props: React.SVGProps<SVGSVGElement>) => {
   return (
@@ -500,8 +500,8 @@ export const CameraDisabledIcon = (props: React.SVGProps<SVGSVGElement>) => {
         fill="currentColor"
       />
     </svg>
-  )
-}
+  );
+};
 
 export const CameraActiveIcon = (props: React.SVGProps<SVGSVGElement>) => {
   return (
@@ -518,15 +518,15 @@ export const CameraActiveIcon = (props: React.SVGProps<SVGSVGElement>) => {
         fill="currentColor"
       />
     </svg>
-  )
-}
+  );
+};
 
 export const CamIconByStatus = (
-  props: React.SVGProps<SVGSVGElement> & { active?: boolean; color?: string },
+  props: React.SVGProps<SVGSVGElement> & { active?: boolean; color?: string }
 ) => {
-  const { active, color, ...rest } = props
+  const { active, color, ...rest } = props;
   if (active) {
-    return <CameraActiveIcon color={color || "#3D53F5"} {...rest} />
+    return <CameraActiveIcon color={color || "#3D53F5"} {...rest} />;
   }
-  return <CameraDisabledIcon color={color || "#667085"} {...rest} />
-}
+  return <CameraDisabledIcon color={color || "#667085"} {...rest} />;
+};

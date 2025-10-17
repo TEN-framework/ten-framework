@@ -1,6 +1,6 @@
-import { IconProps } from "../types"
-import PdfSvg from "@/assets/pdf.svg"
+import PdfSvg from "@/assets/pdf.svg";
+import type { IconProps } from "../types";
 
 export const PdfIcon = (props: IconProps) => {
-  return <PdfSvg {...props}></PdfSvg>
-}
+  return <PdfSvg {...props}></PdfSvg>;
+};
