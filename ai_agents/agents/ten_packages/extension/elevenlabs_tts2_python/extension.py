@@ -76,7 +76,8 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                     request_id if request_id else self.current_request_id or ""
                 )
                 await self.send_tts_error(
-                    request_id=target_request_id, error=error,
+                    request_id=target_request_id,
+                    error=error,
                 )
                 if error.code == ModuleErrorCode.FATAL_ERROR:
                     self.ten_env.log_error(
@@ -161,11 +162,12 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                 )
                 if ttfb_ms is not None:
                     extra_metadata = {
-                        "voice_id": self.config.params.get('voice_id', ""),
-                        "model_id": self.config.params.get('model_id', ""),
+                        "voice_id": self.config.params.get("voice_id", ""),
+                        "model_id": self.config.params.get("model_id", ""),
                     }
                     await self.send_tts_ttfb_metrics(
-                        request_id=self.current_request_id, ttfb_ms=ttfb_ms,
+                        request_id=self.current_request_id,
+                        ttfb_ms=ttfb_ms,
                         extra_metadata=extra_metadata,
                     )
                 self.ten_env.log_debug(f"Received isFinal: {isFinal}")

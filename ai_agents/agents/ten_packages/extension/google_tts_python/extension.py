@@ -220,7 +220,7 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                 (datetime.now() - self.sent_ts).total_seconds() * 1000
             )
         await self.send_tts_audio_end(
-            request_id= self.current_request_id,
+            request_id=self.current_request_id,
             request_event_interval_ms=request_event_interval,
             request_total_audio_duration_ms=self._calculate_audio_duration_ms(),
             reason=reason,
@@ -332,7 +332,9 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                                     request_id=self.current_request_id,
                                 )
                                 extra_metadata = {
-                                    "name": self.config.params.get("VoiceSelectionParams", {}).get("name", ""),
+                                    "name": self.config.params.get(
+                                        "VoiceSelectionParams", {}
+                                    ).get("name", ""),
                                 }
                                 if ttfb_ms is not None:
                                     await self.send_tts_ttfb_metrics(
@@ -362,7 +364,8 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                                 else "Unknown API key error"
                             )
                             await self.send_tts_error(
-                                request_id=self.current_request_id or t.request_id,
+                                request_id=self.current_request_id
+                                or t.request_id,
                                 error=ModuleError(
                                     message=error_msg,
                                     module=ModuleType.TTS,
