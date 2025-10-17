@@ -44,8 +44,6 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
         self.current_request_finished: bool = True
         # ID of the current TTS request being processed
         self.current_request_id: str | None = None
-        # Turn ID for conversation tracking
-        self.current_turn_id: int = -1
         # Extension name for logging and identification
         self.name: str = name
         # Store PCMWriter instances for different request_ids
@@ -169,9 +167,6 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
                 self.request_start_ts = datetime.now()
                 self.is_first_message_of_request = True
 
-                if t.metadata is not None:
-                    self.current_turn_id = t.metadata.get("turn_id", -1)
-
                 # Manage PCMWriter instances for audio recording
                 await self._manage_pcm_writers(t.request_id)
 
@@ -262,7 +257,7 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
                     )
 
                     self.ten_env.log_info(
-                        f"Received done: {done}, message_type: {message_type}, current_request_id: {self.current_request_id}, current_turn_id: {self.current_turn_id}"
+                        f"Received done: {done}, message_type: {message_type}, current_request_id: {self.current_request_id}"
                     )
 
                     # Process PCM audio chunks
@@ -299,7 +294,7 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
                             await self.send_tts_audio_data(audio_chunk)
                         else:
                             self.ten_env.log_info(
-                                f"Received empty or invalid payload for TTS response, current_request_id: {self.current_request_id}, current_turn_id: {self.current_turn_id}"
+                                f"Received empty or invalid payload for TTS response, current_request_id: {self.current_request_id}"
                             )
                     elif message_type == MESSAGE_TYPE_CMD_RESULT_GENERATED:
                         if isinstance(data, int):
@@ -325,7 +320,7 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
                     # Handle TTS audio end - this is when we should stop
                     if done:
                         self.ten_env.log_info(
-                            f"All pcm received done, current_request_id: {self.current_request_id}, current_turn_id: {self.current_turn_id}"
+                            f"All pcm received done, current_request_id: {self.current_request_id}"
                         )
                         await self._handle_tts_audio_end()
                         self.current_request_id = None
@@ -459,18 +454,20 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
         if self.request_start_ts:
             await self.send_tts_audio_start(
                 self.current_request_id,
-                self.current_turn_id,
             )
 
             self.request_ttfb = self._calculate_ttfb_ms(self.request_start_ts)
             await self.send_tts_ttfb_metrics(
-                self.current_request_id,
-                self.request_ttfb,
-                self.current_turn_id,
+                request_id=self.current_request_id,
+                ttfb_ms=self.request_ttfb,
+                extra_metadata={
+                    "model": (self.config.model if self.config else ""),
+                    "voice": (self.config.voice if self.config else ""),
+                },
             )
 
             self.ten_env.log_info(
-                f"KEYPOINT Sent TTS audio start and TTFB metrics: {self.request_ttfb}ms, current_request_id: {self.current_request_id}, current_turn_id: {self.current_turn_id}"
+                f"KEYPOINT Sent TTS audio start and TTFB metrics: {self.request_ttfb}ms, current_request_id: {self.current_request_id}"
             )
 
     async def _handle_tts_audio_end(
@@ -498,11 +495,10 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
 
             # Send TTS audio end event
             await self.send_tts_audio_end(
-                self.current_request_id,
-                request_event_interval,
-                self.request_total_audio_duration_ms,
-                self.current_turn_id,
-                reason,
+                request_id=self.current_request_id,
+                request_event_interval_ms=request_event_interval,
+                request_total_audio_duration_ms=self.request_total_audio_duration_ms,
+                reason=reason,
             )
             # Send usage metrics
             await self.send_usage_metrics(self.current_request_id)
@@ -511,7 +507,7 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
             self.is_first_message_of_request = False
 
             self.ten_env.log_info(
-                f"KEYPOINT Sent TTS audio end event, interval: {request_event_interval}ms, duration: {self.request_total_audio_duration_ms}ms, current_request_id: {self.current_request_id}, current_turn_id: {self.current_turn_id}"
+                f"KEYPOINT Sent TTS audio end event, interval: {request_event_interval}ms, duration: {self.request_total_audio_duration_ms}ms, current_request_id: {self.current_request_id}"
             )
 
     async def _manage_pcm_writers(self, request_id: str) -> None:
@@ -577,7 +573,6 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
                 code=code,
                 vendor_info=vendor_info,
             ),
-            self.current_turn_id,
         )
 
     async def _write_audio_to_dump_file(self, audio_chunk: bytes) -> None:

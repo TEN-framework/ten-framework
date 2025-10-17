@@ -80,14 +80,15 @@
               "addon": "main_python",
               "extension_group": "control",
               "property": {
-                "greeting": "TEN Agent connected. How can I help you today?",
+                "greeting": "Hello, I am your AI assistant.",
                 "agent_id": "voice_assistant_agent",
-                "memu_base_url": "http://host.docker.internal:8000",
+                "memu_base_url": "https://api.memu.so",
+                "memu_api_key": "${env:MEMU_API_KEY}",
                 "agent_name": "voice_assistant_agent",
                 "self_hosting": true,
                 "user_name": "User",
                 "user_id": "user",
-                "enable_memorization": false
+                "enable_memorization": true
               }
             },
             {

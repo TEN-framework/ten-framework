@@ -34,7 +34,6 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
         self.config: ElevenLabsTTS2Config = None
         self.client: ElevenLabsTTS2Client = None
         self.current_request_id: str = None
-        self.current_turn_id: int = -1
         self.stop_event: asyncio.Event = None
         self.recorder: PCMWriter = None
         self.request_start_ts: datetime | None = None
@@ -77,7 +76,8 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                     request_id if request_id else self.current_request_id or ""
                 )
                 await self.send_tts_error(
-                    target_request_id, error, self.current_turn_id
+                    request_id=target_request_id,
+                    error=error,
                 )
                 if error.code == ModuleErrorCode.FATAL_ERROR:
                     self.ten_env.log_error(
@@ -103,14 +103,13 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                 "Initialization failed but event set to prevent blocking"
             )
             await self.send_tts_error(
-                "",  # No request_id available during on_init
-                ModuleError(
+                request_id="",  # No request_id available during on_init
+                error=ModuleError(
                     message=str(e),
                     module=ModuleType.TTS,
                     code=ModuleErrorCode.FATAL_ERROR,
                     vendor_info={},
                 ),
-                self.current_turn_id,
             )
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
@@ -162,8 +161,14 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                     await self.client.response_msgs.get()
                 )
                 if ttfb_ms is not None:
+                    extra_metadata = {
+                        "voice_id": self.config.params.get("voice_id", ""),
+                        "model_id": self.config.params.get("model_id", ""),
+                    }
                     await self.send_tts_ttfb_metrics(
-                        self.current_request_id, ttfb_ms, self.current_turn_id
+                        request_id=self.current_request_id,
+                        ttfb_ms=ttfb_ms,
+                        extra_metadata=extra_metadata,
                     )
                 self.ten_env.log_debug(f"Received isFinal: {isFinal}")
                 self.get_audio_count += 1
@@ -176,7 +181,7 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                     ):
                         self.request_start_ts = datetime.now()
                         await self.send_tts_audio_start(
-                            self.current_request_id, self.current_turn_id
+                            request_id=self.current_request_id,
                         )
 
                     if (
@@ -276,9 +281,6 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                         TTSAudioEndReason.INTERRUPTED
                     )
 
-                if t.metadata is not None:
-                    self.session_id = t.metadata.get("session_id", "")
-                    self.current_turn_id = t.metadata.get("turn_id", -1)
                 self.request_total_audio_duration = 0
 
                 # create new PCMWriter for new request_id, and clean up old PCMWriter
@@ -334,14 +336,13 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                         "Initialization timeout, cannot process TTS request"
                     )
                     await self.send_tts_error(
-                        t.request_id,
-                        ModuleError(
+                        request_id=t.request_id,
+                        error=ModuleError(
                             message="TTS initialization timeout",
                             module=ModuleType.TTS,
                             code=ModuleErrorCode.FATAL_ERROR,
                             vendor_info={"vendor": "elevenlabs"},
                         ),
-                        self.current_turn_id,
                     )
                     return
             else:
@@ -354,14 +355,13 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                     "Client is not initialized, cannot process TTS request"
                 )
                 await self.send_tts_error(
-                    t.request_id,
-                    ModuleError(
+                    request_id=t.request_id,
+                    error=ModuleError(
                         message="TTS client is not initialized",
                         module=ModuleType.TTS,
                         code=ModuleErrorCode.FATAL_ERROR,
                         vendor_info={"vendor": "elevenlabs"},
                     ),
-                    self.current_turn_id,
                 )
                 return
 
@@ -373,28 +373,26 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                 f"ModuleVendorException in request_tts: {traceback.format_exc()}. text: {t.text}"
             )
             await self.send_tts_error(
-                self.current_request_id,
-                ModuleError(
+                request_id=self.current_request_id,
+                error=ModuleError(
                     message=str(e),
                     module=ModuleType.TTS,
                     code=ModuleErrorCode.NON_FATAL_ERROR,
                     vendor_info=e.error,
                 ),
-                self.current_turn_id,
             )
         except Exception as e:
             self.ten_env.log_error(
                 f"Error in request_tts: {traceback.format_exc()}. text: {t.text}"
             )
             await self.send_tts_error(
-                self.current_request_id,
-                ModuleError(
+                request_id=self.current_request_id,
+                error=ModuleError(
                     message=str(e),
                     module=ModuleType.TTS,
                     code=ModuleErrorCode.NON_FATAL_ERROR,
                     vendor_info={"vendor": "elevenlabs"},
                 ),
-                self.current_turn_id,
             )
 
     async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
@@ -420,14 +418,13 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                         "Initialization timeout, cannot handle flush"
                     )
                     await self.send_tts_error(
-                        self.current_request_id,
-                        ModuleError(
+                        request_id=self.current_request_id,
+                        error=ModuleError(
                             message="TTS initialization timeout",
                             module=ModuleType.TTS,
                             code=ModuleErrorCode.FATAL_ERROR,
                             vendor_info={"vendor": "elevenlabs"},
                         ),
-                        self.current_turn_id,
                     )
                     return
 
@@ -436,14 +433,13 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                     "Client is not initialized, cannot handle flush"
                 )
                 await self.send_tts_error(
-                    self.current_request_id,
-                    ModuleError(
+                    request_id=self.current_request_id,
+                    error=ModuleError(
                         message="TTS client is not initialized",
                         module=ModuleType.TTS,
                         code=ModuleErrorCode.FATAL_ERROR,
                         vendor_info={"vendor": "elevenlabs"},
                     ),
-                    self.current_turn_id,
                 )
                 return
 
@@ -456,14 +452,13 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
             except Exception as e:
                 ten_env.log_error(f"Error in handle_flush: {e}")
                 await self.send_tts_error(
-                    self.current_request_id,
-                    ModuleError(
+                    request_id=self.current_request_id,
+                    error=ModuleError(
                         message=str(e),
                         module=ModuleType.TTS,
                         code=ModuleErrorCode.NON_FATAL_ERROR,
                         vendor_info={"vendor": "elevenlabs"},
                     ),
-                    self.current_turn_id,
                 )
                 return
         await super().on_data(ten_env, data)
@@ -504,11 +499,10 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
             else 0
         )
         await self.send_tts_audio_end(
-            self.current_request_id,
-            request_event_interval,
-            duration_ms,
-            self.current_turn_id,
-            reason,
+            request_id=self.current_request_id,
+            request_event_interval_ms=request_event_interval,
+            request_total_audio_duration_ms=duration_ms,
+            reason=reason,
         )
         self.ten_env.log_debug(
             f"Sent tts_audio_end with {reason.name} reason for request_id: {self.current_request_id}"
