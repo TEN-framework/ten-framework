@@ -372,7 +372,7 @@ class TencentTTSExtension(AsyncTTS2BaseExtension):
                     )
 
         except Exception as e:
-            self.ten_env.log_error(f"Fatal error in audio consumer: {e}")
+            self.ten_env.log_error(f"error in audio consumer: {e}")
             await self.send_tts_error(
                 request_id=self.current_request_id,
                 error=ModuleError(
