@@ -18,6 +18,7 @@ class SonioxASRConfig(BaseModel):
     dump: bool = False
     dump_path: str = "."
     finalize_mode: FinalizeMode = FinalizeMode.DEFAULT
+    finalize_holding: bool = False
     mute_pkg_duration_ms: int = 800
 
     def update(self, params: dict[str, Any]):
@@ -27,6 +28,7 @@ class SonioxASRConfig(BaseModel):
             "dump",
             "dump_path",
             "finalize_mode",
+            "finalize_holding",
             "mute_pkg_duration_ms",
         ]
         for key in special_params:

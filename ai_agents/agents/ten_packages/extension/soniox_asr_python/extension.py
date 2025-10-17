@@ -71,6 +71,10 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         self.last_transcript_duration_ms: int = 0
         self.last_transcript_is_final: bool = False
 
+        self.holding = False
+        self.holding_final_tokens: list[SonioxTranscriptToken] = []
+        self.holding_translation_tokens: list[SonioxTranslationToken] = []
+
     @override
     def vendor(self) -> str:
         return "soniox"
@@ -89,6 +93,13 @@ class SonioxASRExtension(AsyncASRBaseExtension):
                 category=LOG_CATEGORY_KEY_POINT,
             )
 
+            if self.config.finalize_mode == FinalizeMode.IGNORE:
+                if not (
+                    self.config.params.get("enable_endpoint_detection", False)
+                ):
+                    raise ValueError(
+                        "endpoint detection must be enabled when finalize_mode is IGNORE"
+                    )
             if self.config.dump:
                 dump_file_path = os.path.join(
                     self.config.dump_path, DUMP_FILE_NAME
@@ -214,10 +225,12 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         await super().on_data(ten_env, data)
         if data.get_name() == "asr_finalize":
             self.last_finalize_timestamp = int(time.time() * 1000)
-            if self.config.finalize_mode == FinalizeMode.IGNORE:
-                return
             if self.config.finalize_mode == FinalizeMode.MUTE_PKG:
                 await self._real_finalize_by_mute_pkg()
+                return
+            if self.config.finalize_holding:
+                self.holding = True
+            if self.config.finalize_mode == FinalizeMode.IGNORE:
                 return
             # NOTE: We need this extra parameter for manual finalization in order to achieve lower finalization latency.
             # Refer to: https://soniox.com/docs/stt/rt/manual-finalization#trailing-silence
@@ -267,6 +280,18 @@ class SonioxASRExtension(AsyncASRBaseExtension):
 
     async def _finalize_end(self) -> None:
         self.ten_env.log_info("finalize end")
+        if self.holding and self.config.finalize_holding:
+            # TODO: what if asr_finalize_end is before asr_finalize?
+            self.holding = False
+            if self.holding_final_tokens:
+                await self._send_transcript_and_translation(
+                    self.holding_final_tokens,
+                    self.holding_translation_tokens,
+                    True,
+                )
+                self.holding_final_tokens = []
+                self.holding_translation_tokens = []
+
         if self.last_finalize_timestamp != 0:
             timestamp = int(time.time() * 1000)
             latency = timestamp - self.last_finalize_timestamp
@@ -414,14 +439,23 @@ class SonioxASRExtension(AsyncASRBaseExtension):
 
         # Process final transcripts first (they come before non-final)
         if final_transcripts:
-            await self._send_transcript_and_translation(
-                final_transcripts, translation_tokens, is_final=True
-            )
+            if self.config.finalize_holding:
+                self.holding_final_tokens.extend(final_transcripts)
+                self.holding_translation_tokens.extend(translation_tokens)
+            else:
+                await self._send_transcript_and_translation(
+                    final_transcripts, translation_tokens, is_final=True
+                )
 
         # Process non-final transcripts
         if non_final_transcripts:
+            tokens = non_final_transcripts
+            if self.config.finalize_holding and self.holding_final_tokens:
+                tokens = [*self.holding_final_tokens, *non_final_transcripts]
             await self._send_transcript_and_translation(
-                non_final_transcripts, translation_tokens, is_final=False
+                tokens,
+                translation_tokens,
+                is_final=False,
             )
 
     async def _send_transcript_and_translation(
