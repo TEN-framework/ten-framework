@@ -1,4 +1,4 @@
-@import 'tailwindcss';
+@import "tailwindcss";
 
 @plugin 'tailwindcss-animate';
 
@@ -72,7 +72,7 @@
   html,
   body {
     background-color: #0f0f11;
-    font-family: 'PingFang SC';
+    font-family: "PingFang SC";
     height: 100%;
   }
 

@@ -125,8 +125,8 @@ export const useAutoScroll = (ref: React.RefObject<HTMLElement | null>) => {
 //   }
 // }
 
-export const usePrevious = (value: any) => {
-  const ref = useRef();
+export const usePrevious = (value: unknown) => {
+  const ref = useRef<typeof value>(value);
 
   useEffect(() => {
     ref.current = value;

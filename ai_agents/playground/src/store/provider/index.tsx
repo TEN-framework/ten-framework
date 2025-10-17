@@ -5,7 +5,7 @@ import { Provider } from "react-redux";
 import { type AppStore, makeStore } from "..";
 
 export function StoreProvider({ children }: { children: React.ReactNode }) {
-  const storeRef = useRef<AppStore>();
+  const storeRef = useRef<AppStore>(makeStore());
 
   if (!storeRef.current) {
     // Create the store instance the first time this renders
