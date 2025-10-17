@@ -108,7 +108,7 @@
     "viewDetails": "查看详情",
     "reset": "重置",
     "chooseBaseDir": "选择基础目录",
-    "deleteNodeConfirmationWithName": "确定要删除节点 {{name}} 吗？",
+    "deleteNodeConfirmationWithName": "确定要删除{{type}}: {{name}} 吗？",
     "update": "更新",
     "create": "创建",
     "deleteConnectionConfirmation": "确定要删除此连接吗？",
