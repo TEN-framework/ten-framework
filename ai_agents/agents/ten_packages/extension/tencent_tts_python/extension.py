@@ -379,7 +379,7 @@ class TencentTTSExtension(AsyncTTS2BaseExtension):
                     message=str(e),
                     module=ModuleType.TTS,
                     code=ModuleErrorCode.NON_FATAL_ERROR,
-                    vendor_info={},
+                    vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
                 ),
             )
 
