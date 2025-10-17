@@ -937,7 +937,13 @@ export const GraphConnectionCreationWidget = (props: {
                           {field.value.extension ||
                             field.value.selector ||
                             field.value.subgraph}
-                          ({src_node?.type || dest_node?.type || ""})
+                          (
+                          {src_node?.type ||
+                            (field.value?.extension && "extension") ||
+                            (field.value?.selector && "selector") ||
+                            (field.value?.subgraph && "subgraph") ||
+                            ""}
+                          )
                         </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
@@ -1042,7 +1048,13 @@ export const GraphConnectionCreationWidget = (props: {
                           {field.value.extension ||
                             field.value.selector ||
                             field.value.subgraph}
-                          ({src_node?.type || dest_node?.type || ""})
+                          (
+                          {dest_node?.type ||
+                            (field.value?.extension && "extension") ||
+                            (field.value?.selector && "selector") ||
+                            (field.value?.subgraph && "subgraph") ||
+                            ""}
+                          )
                         </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
