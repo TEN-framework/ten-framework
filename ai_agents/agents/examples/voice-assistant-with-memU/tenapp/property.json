@@ -36,8 +36,8 @@
               "property": {
                 "params": {
                   "api_key": "${env:DEEPGRAM_API_KEY}",
-                  "language": "zh-CN",
-                  "model": "nova-2"
+                  "language": "en-US",
+                  "model": "nova-3"
                 }
               }
             },
