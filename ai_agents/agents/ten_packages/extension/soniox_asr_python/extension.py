@@ -29,10 +29,11 @@ from ten_ai_base.message import (
 from ten_runtime import AsyncTenEnv, AudioFrame, Data
 from typing_extensions import override
 
-from .config import SonioxASRConfig
+from .config import SonioxASRConfig, FinalizeMode
 from .const import DUMP_FILE_NAME, MODULE_NAME_ASR, map_language_code
 from .websocket import (
     SonioxFinToken,
+    SonioxEndToken,
     SonioxTranscriptToken,
     SonioxTranslationToken,
     SonioxToken,
@@ -212,6 +213,12 @@ class SonioxASRExtension(AsyncASRBaseExtension):
     async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
         await super().on_data(ten_env, data)
         if data.get_name() == "asr_finalize":
+            self.last_finalize_timestamp = int(time.time() * 1000)
+            if self.config.finalize_mode == FinalizeMode.IGNORE:
+                return
+            if self.config.finalize_mode == FinalizeMode.MUTE_PKG:
+                await self._real_finalize_by_mute_pkg()
+                return
             # NOTE: We need this extra parameter for manual finalization in order to achieve lower finalization latency.
             # Refer to: https://soniox.com/docs/stt/rt/manual-finalization#trailing-silence
             #
@@ -232,9 +239,31 @@ class SonioxASRExtension(AsyncASRBaseExtension):
             f"vendor_cmd: finalize, silence_duration_ms: {silence_duration_ms}",
             category=LOG_CATEGORY_VENDOR,
         )
-        self.last_finalize_timestamp = int(time.time() * 1000)
         if self.websocket:
             await self.websocket.finalize(silence_duration_ms)
+
+    async def _real_finalize_by_mute_pkg(self) -> None:
+        self.ten_env.log_info(
+            "vendor_cmd: finalize, by mute pkg",
+            category=LOG_CATEGORY_VENDOR,
+        )
+
+        empty_audio_bytes_len = int(
+            self.config.mute_pkg_duration_ms
+            * self.config.sample_rate
+            / 1000
+            * 2
+        )
+        frame = bytearray(empty_audio_bytes_len)
+        if self.websocket:
+            await self.websocket.send_audio(bytes(frame))
+        self.audio_timeline.add_silence_audio(self.config.mute_pkg_duration_ms)
+
+        # No need to do stats.
+        self.last_finalize_timestamp = 0
+        await self.send_asr_finalize_end()
+
+        self.ten_env.log_info("finalize by mute pkg done")
 
     async def _finalize_end(self) -> None:
         self.ten_env.log_info("finalize end")
@@ -321,7 +350,7 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         try:
             transcript_tokens = []
             translation_tokens = []
-            has_fin_token = False
+            send_finalize_end = False
             has_only_translations = True
 
             # First pass: Separate tokens by type
@@ -339,8 +368,10 @@ class SonioxASRExtension(AsyncASRBaseExtension):
                     case SonioxTranslationToken():
                         translation_tokens.append(token)
                     case SonioxFinToken():
-                        has_fin_token = True
-                    # EndToken is ignored
+                        send_finalize_end = True
+                    # Sending asr_finalize_end on <end> is harmless, because the receiver knows whether it has sent asr_finalize.
+                    case SonioxEndToken():
+                        send_finalize_end = True
 
             # Handle standalone translations (no transcript tokens in this call)
             if (
@@ -362,7 +393,7 @@ class SonioxASRExtension(AsyncASRBaseExtension):
                 )
 
             # Handle finalization
-            if has_fin_token:
+            if send_finalize_end:
                 await self._finalize_end()
 
         except Exception as e:
