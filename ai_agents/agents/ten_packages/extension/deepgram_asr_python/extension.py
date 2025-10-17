@@ -229,6 +229,8 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
         if final:
             await self._finalize_end()
 
+        text = text if text.startswith(" ") else " " + text
+
         asr_result = ASRResult(
             text=text,
             final=final,
