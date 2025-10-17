@@ -24,7 +24,7 @@ export default function MessageList(props: { className?: string }) {
   return (
     <div
       ref={containerRef}
-      className={cn("flex-grow space-y-2 overflow-y-auto p-4", className)}
+      className={cn("grow space-y-2 overflow-y-auto p-4", className)}
     >
       {chatItems.map((item, index) => {
         return <MessageItem data={item} key={item.time} />;

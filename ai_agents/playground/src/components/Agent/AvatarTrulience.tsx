@@ -140,7 +140,7 @@ export default function Avatar({ audioTrack }: AvatarProps) {
               value={loadProgress * 100}
             >
               <ProgressIndicator
-                className="0, 0.35, 1)] size-full bg-white transition-transform duration-[660ms] ease-[cubic-bezier(0.65,"
+                className="0, 0.35, 1)] size-full bg-white transition-transform duration-660 ease-[cubic-bezier(0.65,"
                 style={{
                   transform: `translateX(-${100 - loadProgress * 100}%)`,
                 }}

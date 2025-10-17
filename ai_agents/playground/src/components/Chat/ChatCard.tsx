@@ -117,7 +117,7 @@ export default function ChatCard(props: { className?: string }) {
                 value={inputValue}
                 onChange={handleInputChange}
                 className={cn(
-                  "flex-grow rounded-md border bg-background p-1.5 focus:outline-none focus:ring-1 focus:ring-ring",
+                  "grow rounded-md border bg-background p-1.5 focus:outline-hidden focus:ring-1 focus:ring-ring",
                   {
                     ["cursor-not-allowed"]: disableInputMemo,
                   }

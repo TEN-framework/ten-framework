@@ -53,7 +53,7 @@ export function HeaderRoomInfo() {
             </span>
             <span className="max-w-24 text-sm md:text-base">{channel}</span>
           </TooltipTrigger>
-          <TooltipContent className="bg-[var(--background-color,#1C1E22)] text-gray-600">
+          <TooltipContent className="bg-(--background-color,#1C1E22) text-gray-600">
             <table className="border-collapse">
               <tbody>
                 <tr>
@@ -130,8 +130,8 @@ export const ThemePalettePopover = () => {
         <PopoverTrigger>
           <PaletteIcon className="h-4 w-4 md:h-5 md:w-5" color={themeColor} />
         </PopoverTrigger>
-        <PopoverContent className="space-y-2 border-none bg-[var(--background-color,#1C1E22)]">
-          <div className="font-semibold text-[var(--Grey-300,#EAECF0)] text-sm">
+        <PopoverContent className="space-y-2 border-none bg-(--background-color,#1C1E22)">
+          <div className="font-semibold text-(--Grey-300,#EAECF0) text-sm">
             STYLE
           </div>
           <div className="mt-4 flex gap-3">
