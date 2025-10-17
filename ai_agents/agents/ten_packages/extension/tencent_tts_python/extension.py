@@ -98,7 +98,7 @@ class TencentTTSExtension(AsyncTTS2BaseExtension):
             self.audio_processor_task = None
 
         if self.client:
-            # The new client is stateless, no stop method needed.
+            self.client.close()
             self.client = None
 
         # Clean up all PCMWriters
