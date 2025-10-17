@@ -104,11 +104,10 @@ const EdgeContextMenu: React.FC<EdgeContextMenuProps> = ({
     // },
     {
       _type: EContextMenuItemType.BUTTON,
+      className: "text-destructive",
       label: t("action.delete"),
       icon: <TrashIcon />,
-      disabled:
-        edge.data?.source?.type === ECustomNodeType.SELECTOR ||
-        edge.data?.target?.type === ECustomNodeType.SELECTOR, // tmp disable
+      disabled: edge.data?.target?.type === ECustomNodeType.SELECTOR,
       onClick: () => {
         const dialogId =
           edge.source +
@@ -121,6 +120,7 @@ const EdgeContextMenu: React.FC<EdgeContextMenuProps> = ({
         }
         appendDialog({
           id: dialogId,
+          variant: "destructive",
           title: t("action.confirm"),
           content: t("action.deleteConnectionConfirmation"),
           confirmLabel: t("action.delete"),

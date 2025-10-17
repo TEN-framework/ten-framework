@@ -558,11 +558,12 @@ export const GraphConnectionCreationWidget = (props: {
     {
       value: string;
       label: string;
+      disabled?: boolean;
     }[]
   >([]);
 
   const { t } = useTranslation();
-  const { nodes } = useFlowStore();
+  const { nodes, displayedEdges } = useFlowStore();
   const {
     data: graphs,
     isLoading: isGraphsLoading,
@@ -704,10 +705,31 @@ export const GraphConnectionCreationWidget = (props: {
           label: `${i}`,
         })),
       ];
+      if (direction === "out" && src_node?.type === ECustomNodeType.SELECTOR) {
+        const existedSelectorOutputEdges = displayedEdges.filter((edge) => {
+          return (
+            edge.data?.source?.name === src_node?.data.name &&
+            edge.data?.graph?.graph_id === graph_id &&
+            edge.data?.source?.type === ECustomNodeType.SELECTOR &&
+            edge.data?.target?.type !== ECustomNodeType.SELECTOR
+          );
+        });
+        const updatedMsgNameList = newMsgNameList.map((i) => {
+          const existedSelectorOutputEdge = existedSelectorOutputEdges.find(
+            (edge) => edge.data?.target?.name === i.value
+          );
+          return {
+            ...i,
+            disabled: !!existedSelectorOutputEdge,
+          };
+        });
+        setMsgNameList(updatedMsgNameList);
+        return;
+      }
       setMsgNameList(newMsgNameList);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [extSchema, form.watch("msg_type"), src_node?.data.name]);
+  }, [extSchema, form.watch("msg_type"), src_node?.data.name, displayedEdges]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: <ignore>
   React.useEffect(() => {
@@ -1086,7 +1108,9 @@ export const GraphConnectionCreationWidget = (props: {
             )}
             {src_node?.type === ECustomNodeType.SELECTOR && (
               <MultiSelectorWithCheckbox
+                // todo: update msgNameList with selectable field
                 options={msgNameList}
+                disabled={!!dest_node}
                 placeholder={t("popup.graph.messageName")}
                 selected={form.watch("msg_names") ?? []}
                 onChange={(items) => {

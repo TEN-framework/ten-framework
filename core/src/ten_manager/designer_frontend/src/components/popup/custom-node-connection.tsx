@@ -144,26 +144,20 @@ function EdgeInfoContent(props: {
       <div className="flex w-full items-center gap-2">
         <CustomNodeConnectionButton
           variant="outline"
-          size="lg"
-          data={{
-            source,
-            graph,
-          }}
+          className="px-4 py-2 text-sm"
+          data={{ source, graph }}
         >
-          <PuzzleIcon className="h-4 w-4" />
-          <span>{source.name}</span>
+          <PuzzleIcon className="size-4" />
+          <span className="text-sm">{source.name}</span>
         </CustomNodeConnectionButton>
-        <ArrowBigRightDashIcon className="h-6 w-6" />
+        <ArrowBigRightDashIcon className="size-6" />
         <CustomNodeConnectionButton
           variant="outline"
-          size="lg"
-          data={{
-            source: target,
-            graph,
-          }}
+          className="px-4 py-2 text-sm"
+          data={{ source: target, graph }}
         >
-          <PuzzleIcon className="h-4 w-4" />
-          <span>{target?.name}</span>
+          <PuzzleIcon className="size-4" />
+          <span className="text-sm">{target?.name}</span>
         </CustomNodeConnectionButton>
       </div>
       <Filters
