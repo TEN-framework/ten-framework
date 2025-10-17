@@ -221,6 +221,11 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
             self.ten_env.log_debug(
                 f"current_request_id: {self.current_request_id}, new request_id: {t.request_id}"
             )
+            if self.client is None:
+                self.client = RimeTTSClient(
+                    self.config, self.ten_env, self.vendor(), self.response_msgs
+                )
+                self.ten_env.log_debug("TTS client reinitialized successfully.")
 
             if (
                 self.last_completed_request_id

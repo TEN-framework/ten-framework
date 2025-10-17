@@ -145,6 +145,12 @@ class TencentTTSExtension(AsyncTTS2BaseExtension):
             self.ten_env.log_info(
                 f"Requesting TTS for text: {t.text}, text_input_end: {t.text_input_end} request ID: {t.request_id}",
             )
+            if self.client is None:
+                self.client = TencentTTSClient(
+                    self.config, self.ten_env, self.vendor()
+                )
+                asyncio.create_task(self.client.start())
+                self.ten_env.log_debug("TTS client reinitialized successfully.")
 
             if (
                 self.last_completed_request_id
