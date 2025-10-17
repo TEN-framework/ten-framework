@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "google_tts_python",
-  "version": "0.2.5",
+  "version": "0.3.0",
   "display_name": {
     "locales": {
       "en-US": {
