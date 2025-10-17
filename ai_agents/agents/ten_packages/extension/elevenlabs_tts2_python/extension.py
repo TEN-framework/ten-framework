@@ -77,11 +77,16 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                 )
                 await self.send_tts_error(
 <<<<<<< HEAD
+<<<<<<< HEAD
                     request_id=target_request_id,
                     error=error,
 =======
                     request_id=target_request_id, error=error,
 >>>>>>> d452c4261 (feat: change google tts and 11labs tts code)
+=======
+                    request_id=target_request_id,
+                    error=error,
+>>>>>>> 01013b1f6 (ci: format code)
                 )
                 if error.code == ModuleErrorCode.FATAL_ERROR:
                     self.ten_env.log_error(
@@ -167,6 +172,7 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                 if ttfb_ms is not None:
                     extra_metadata = {
 <<<<<<< HEAD
+<<<<<<< HEAD
                         "voice_id": self.config.params.get("voice_id", ""),
                         "model_id": self.config.params.get("model_id", ""),
                     }
@@ -180,6 +186,14 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                     await self.send_tts_ttfb_metrics(
                         request_id=self.current_request_id, ttfb_ms=ttfb_ms,
 >>>>>>> d452c4261 (feat: change google tts and 11labs tts code)
+=======
+                        "voice_id": self.config.params.get("voice_id", ""),
+                        "model_id": self.config.params.get("model_id", ""),
+                    }
+                    await self.send_tts_ttfb_metrics(
+                        request_id=self.current_request_id,
+                        ttfb_ms=ttfb_ms,
+>>>>>>> 01013b1f6 (ci: format code)
                         extra_metadata=extra_metadata,
                     )
                 self.ten_env.log_debug(f"Received isFinal: {isFinal}")

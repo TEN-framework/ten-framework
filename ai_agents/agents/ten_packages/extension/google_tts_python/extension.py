@@ -229,10 +229,14 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
             )
         await self.send_tts_audio_end(
 <<<<<<< HEAD
+<<<<<<< HEAD
             request_id=self.current_request_id,
 =======
             request_id= self.current_request_id,
 >>>>>>> d452c4261 (feat: change google tts and 11labs tts code)
+=======
+            request_id=self.current_request_id,
+>>>>>>> 01013b1f6 (ci: format code)
             request_event_interval_ms=request_event_interval,
             request_total_audio_duration_ms=self._calculate_audio_duration_ms(),
             reason=reason,
@@ -345,12 +349,18 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                                 )
                                 extra_metadata = {
 <<<<<<< HEAD
+<<<<<<< HEAD
                                     "name": self.config.params.get(
                                         "VoiceSelectionParams", {}
                                     ).get("name", ""),
 =======
                                     "name": self.config.params.get("VoiceSelectionParams", {}).get("name", ""),
 >>>>>>> d452c4261 (feat: change google tts and 11labs tts code)
+=======
+                                    "name": self.config.params.get(
+                                        "VoiceSelectionParams", {}
+                                    ).get("name", ""),
+>>>>>>> 01013b1f6 (ci: format code)
                                 }
                                 if ttfb_ms is not None:
                                     await self.send_tts_ttfb_metrics(
@@ -381,11 +391,16 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                             )
                             await self.send_tts_error(
 <<<<<<< HEAD
+<<<<<<< HEAD
                                 request_id=self.current_request_id
                                 or t.request_id,
 =======
                                 request_id=self.current_request_id or t.request_id,
 >>>>>>> d452c4261 (feat: change google tts and 11labs tts code)
+=======
+                                request_id=self.current_request_id
+                                or t.request_id,
+>>>>>>> 01013b1f6 (ci: format code)
                                 error=ModuleError(
                                     message=error_msg,
                                     module=ModuleType.TTS,
