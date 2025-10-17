@@ -458,8 +458,8 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
 
             self.request_ttfb = self._calculate_ttfb_ms(self.request_start_ts)
             await self.send_tts_ttfb_metrics(
-                self.current_request_id,
-                self.request_ttfb,
+                request_id=self.current_request_id,
+                ttfb_ms=self.request_ttfb,
                 extra_metadata={
                     "model": (self.config.model if self.config else ""),
                     "voice": (self.config.voice if self.config else ""),
@@ -495,10 +495,10 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
 
             # Send TTS audio end event
             await self.send_tts_audio_end(
-                self.current_request_id,
-                request_event_interval,
-                self.request_total_audio_duration_ms,
-                reason,
+                request_id=self.current_request_id,
+                request_event_interval_ms=request_event_interval,
+                request_total_audio_duration_ms=self.request_total_audio_duration_ms,
+                reason=reason,
             )
             # Send usage metrics
             await self.send_usage_metrics(self.current_request_id)

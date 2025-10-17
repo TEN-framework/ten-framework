@@ -135,10 +135,10 @@ class HumeaiTTSExtension(AsyncTTS2BaseExtension):
                         )
                         duration_ms = self._calculate_audio_duration_ms()
                         await self.send_tts_audio_end(
-                            self.current_request_id,
-                            request_event_interval,
-                            duration_ms,
-                            TTSAudioEndReason.INTERRUPTED,
+                            request_id=self.current_request_id,
+                            request_event_interval_ms=request_event_interval,
+                            request_total_audio_duration_ms=duration_ms,
+                            reason=TTSAudioEndReason.INTERRUPTED,
                         )
                         self.sent_ts = None
                         self.current_request_finished = True
@@ -220,8 +220,8 @@ class HumeaiTTSExtension(AsyncTTS2BaseExtension):
                         )
                         await self.send_tts_audio_start(self.current_request_id)
                         await self.send_tts_ttfb_metrics(
-                            self.current_request_id,
-                            ttfb,
+                            request_id=self.current_request_id,
+                            ttfb_ms=ttfb,
                             extra_metadata={
                                 "voice_id": (
                                     self.config.voice_id if self.config else ""
@@ -259,9 +259,9 @@ class HumeaiTTSExtension(AsyncTTS2BaseExtension):
                         (datetime.now() - self.sent_ts).total_seconds() * 1000
                     )
                     await self.send_tts_audio_end(
-                        self.current_request_id,
-                        request_interval,
-                        duration_ms,
+                        request_id=self.current_request_id,
+                        request_event_interval_ms=request_interval,
+                        request_total_audio_duration_ms=duration_ms,
                     )
                     self.current_request_id = None
                     break
