@@ -73,6 +73,7 @@ class SonioxASRExtension(AsyncASRBaseExtension):
 
         self.holding = False
         self.holding_final_tokens: list[SonioxTranscriptToken] = []
+        self.holding_translation_tokens: list[SonioxTranslationToken] = []
 
     @override
     def vendor(self) -> str:
@@ -93,11 +94,12 @@ class SonioxASRExtension(AsyncASRBaseExtension):
             )
 
             if self.config.finalize_mode == FinalizeMode.IGNORE:
-                assert (
-                    "enable_endpoint_detection" in self.config.params
-                    and self.config.params["enable_endpoint_detection"]
-                ), "endpoint detection must be enabled when finalize_mode is IGNORE"
-
+                if not (
+                    self.config.params.get("enable_endpoint_detection", False)
+                ):
+                    raise ValueError(
+                        "endpoint detection must be enabled when finalize_mode is IGNORE"
+                    )
             if self.config.dump:
                 dump_file_path = os.path.join(
                     self.config.dump_path, DUMP_FILE_NAME
@@ -282,9 +284,13 @@ class SonioxASRExtension(AsyncASRBaseExtension):
             # TODO: what if asr_finalize_end is before asr_finalize?
             self.holding = False
             if self.holding_final_tokens:
-                tokens = self.holding_final_tokens
+                await self._send_transcript_and_translation(
+                    self.holding_final_tokens,
+                    self.holding_translation_tokens,
+                    True,
+                )
                 self.holding_final_tokens = []
-                await self._send_transcript_and_translation(tokens, [], True)
+                self.holding_translation_tokens = []
 
         if self.last_finalize_timestamp != 0:
             timestamp = int(time.time() * 1000)
@@ -435,6 +441,7 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         if final_transcripts:
             if self.config.finalize_holding:
                 self.holding_final_tokens.extend(final_transcripts)
+                self.holding_translation_tokens.extend(translation_tokens)
             else:
                 await self._send_transcript_and_translation(
                     final_transcripts, translation_tokens, is_final=True
