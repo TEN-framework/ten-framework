@@ -1,13 +1,17 @@
 "use client";
 
-import { IMicrophoneAudioTrack } from "agora-rtc-sdk-ng";
-import { deepMerge, normalizeFrequencies } from "./utils";
-import { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import type { AppDispatch, AppStore, RootState } from "../store";
+import type { IMicrophoneAudioTrack } from "agora-rtc-sdk-ng";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector, useStore } from "react-redux";
-import { Node, AddonDef, Graph } from "@/common/graph";
+import type { AddonDef, Graph, Node } from "@/common/graph";
+import {
+  type ModuleRegistry,
+  moduleRegistry,
+  toolModuleRegistry,
+} from "@/common/moduleConfig";
 import { initializeGraphData, updateGraph } from "@/store/reducers/global";
-import { moduleRegistry, ModuleRegistry, toolModuleRegistry } from "@/common/moduleConfig";
+import type { AppDispatch, AppStore, RootState } from "../store";
+import { deepMerge, normalizeFrequencies } from "./utils";
 // import { Grid } from "antd"
 
 // const { useBreakpoint } = Grid;
@@ -30,7 +34,7 @@ export const useMultibandTrackVolume = (
     }
 
     const ctx = new AudioContext();
-    let finTrack =
+    const finTrack =
       track instanceof MediaStreamTrack ? track : track.getMediaStreamTrack();
     const mediaStream = new MediaStream([finTrack]);
     const source = ctx.createMediaStreamSource(mediaStream);
@@ -121,8 +125,8 @@ export const useAutoScroll = (ref: React.RefObject<HTMLElement | null>) => {
 //   }
 // }
 
-export const usePrevious = (value: any) => {
-  const ref = useRef();
+export const usePrevious = (value: unknown) => {
+  const ref = useRef<typeof value>(value);
 
   useEffect(() => {
     ref.current = value;
@@ -131,47 +135,51 @@ export const usePrevious = (value: any) => {
   return ref.current;
 };
 
-
-
 const useGraphs = () => {
-  const dispatch = useAppDispatch()
+  const dispatch = useAppDispatch();
   const selectedGraphId = useAppSelector(
-    (state) => state.global.selectedGraphId,
-  )
-  const graphMap = useAppSelector((state) => state.global.graphMap)
-  const selectedGraph = graphMap[selectedGraphId]
-  const addonModules: AddonDef.Module[] = useAppSelector((state) => state.global.addonModules);
+    (state) => state.global.selectedGraphId
+  );
+  const graphMap = useAppSelector((state) => state.global.graphMap);
+  const selectedGraph = graphMap[selectedGraphId];
+  const addonModules: AddonDef.Module[] = useAppSelector(
+    (state) => state.global.addonModules
+  );
 
   const initialize = async () => {
-    await dispatch(initializeGraphData())
-  }
+    await dispatch(initializeGraphData());
+  };
 
   const update = async (graph: Graph, updates: Partial<Graph>) => {
-    await dispatch(updateGraph({ graph, updates })).unwrap()
-  }
+    await dispatch(updateGraph({ graph, updates })).unwrap();
+  };
 
   const getGraphNodeAddonByName = useCallback(
     (nodeName: string) => {
       if (!selectedGraph) {
-        return null
+        return null;
       }
-      const node = selectedGraph.nodes.find((node: Node) => node.name === nodeName)
+      const node = selectedGraph.nodes.find(
+        (node: Node) => node.name === nodeName
+      );
       if (!node) {
-        return null
+        return null;
       }
-      return node
+      return node;
     },
-    [selectedGraph],
-  )
-
+    [selectedGraph]
+  );
 
   const getInstalledAndRegisteredModulesMap = useCallback(() => {
-    const groupedModules: Record<ModuleRegistry.NonToolModuleType, ModuleRegistry.Module[]> = {
+    const groupedModules: Record<
+      ModuleRegistry.NonToolModuleType,
+      ModuleRegistry.Module[]
+    > = {
       stt: [],
       tts: [],
       llm: [],
-      v2v: []
-    }
+      v2v: [],
+    };
 
     addonModules.forEach((addonModule) => {
       const registeredModule = moduleRegistry[addonModule.name];
@@ -194,16 +202,16 @@ const useGraphs = () => {
     });
 
     return toolModules;
-  }, [addonModules])
+  }, [addonModules]);
 
   const installedAndRegisteredModulesMap = useMemo(
     () => getInstalledAndRegisteredModulesMap(),
-    [getInstalledAndRegisteredModulesMap],
+    [getInstalledAndRegisteredModulesMap]
   );
 
   const installedAndRegisteredToolModules = useMemo(
     () => getInstalledAndRegisteredToolModules(),
-    [getInstalledAndRegisteredToolModules],
+    [getInstalledAndRegisteredToolModules]
   );
 
   return {
@@ -213,7 +221,7 @@ const useGraphs = () => {
     selectedGraph,
     installedAndRegisteredModulesMap,
     installedAndRegisteredToolModules,
-  }
-}
+  };
+};
 
-export { useGraphs }
+export { useGraphs };

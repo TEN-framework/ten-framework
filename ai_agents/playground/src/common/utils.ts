@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 
 export const genRandomString = (length: number = 10) => {
-  let result = '';
-  const characters = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  let result = "";
+  const characters = "abcdefghijklmnopqrstuvwxyz0123456789";
   const charactersLength = characters.length;
 
   for (let i = 0; i < length; i++) {
@@ -12,22 +12,19 @@ export const genRandomString = (length: number = 10) => {
   }
 
   return result;
-}
-
+};
 
 export const getRandomUserId = (): number => {
-  return Math.floor(Math.random() * 99999) + 100000
-}
+  return Math.floor(Math.random() * 99999) + 100000;
+};
 
 export const getRandomChannel = (number = 6) => {
-  return "agora_" + genRandomString(number)
-}
-
+  return "agora_" + genRandomString(number);
+};
 
 export const sleep = (ms: number) => {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
+  return new Promise((resolve) => setTimeout(resolve, ms));
+};
 
 export const normalizeFrequencies = (frequencies: Float32Array) => {
   const normalizeDb = (value: number) => {
@@ -48,32 +45,29 @@ export const normalizeFrequencies = (frequencies: Float32Array) => {
   });
 };
 
-
 export const genUUID = () => {
-  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
-    const r = (Math.random() * 16) | 0
-    const v = c === "x" ? r : (r & 0x3) | 0x8
-    return v.toString(16)
-  })
-}
-
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+};
 
 export const isMobile = () => {
-  return /Mobile|iPhone|iPad|Android|Windows Phone/i.test(navigator.userAgent)
-}
+  return /Mobile|iPhone|iPad|Android|Windows Phone/i.test(navigator.userAgent);
+};
 
 export function useIsCompactLayout(): boolean {
-  
   const [isCompactLayout, setIsCompactLayout] = useState(false);
 
   useEffect(() => {
     // Guard clause for SSR or environments without window
-    if (typeof window === 'undefined') {
+    if (typeof window === "undefined") {
       return;
     }
 
     // Create a media query for max-width: 768px
-    const mediaQuery = window.matchMedia('(max-width: 768px)');
+    const mediaQuery = window.matchMedia("(max-width: 768px)");
 
     // Set initial value based on the current match state
     setIsCompactLayout(mediaQuery.matches);
@@ -84,19 +78,21 @@ export function useIsCompactLayout(): boolean {
     };
 
     // Attach the listener using the modern API
-    mediaQuery.addEventListener('change', handleChange);
+    mediaQuery.addEventListener("change", handleChange);
 
     // Cleanup
     return () => {
-      mediaQuery.removeEventListener('change', handleChange);
+      mediaQuery.removeEventListener("change", handleChange);
     };
   }, []);
 
   return isCompactLayout;
-
 }
 
-export const deepMerge = (target: Record<string, any>, source: Record<string, any>): Record<string, any> => {
+export const deepMerge = (
+  target: Record<string, any>,
+  source: Record<string, any>
+): Record<string, any> => {
   for (const key of Object.keys(source)) {
     if (source[key] instanceof Object && key in target) {
       Object.assign(source[key], deepMerge(target[key], source[key]));
@@ -104,4 +100,4 @@ export const deepMerge = (target: Record<string, any>, source: Record<string, an
   }
   // Merge source into target
   return { ...target, ...source };
-}
+};

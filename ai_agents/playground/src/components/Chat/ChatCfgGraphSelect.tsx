@@ -1,33 +1,30 @@
-import * as React from "react"
+import * as React from "react";
+import { useIsCompactLayout } from "@/common";
+import { useAppDispatch, useAppSelector } from "@/common/hooks";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { useAppDispatch, useAppSelector } from "@/common/hooks"
-import {
-  setSelectedGraphId,
-} from "@/store/reducers/global"
-import { useIsCompactLayout } from "@/common"
-import { cn } from "@/lib/utils"
-
+} from "@/components/ui/select";
+import { cn } from "@/lib/utils";
+import { setSelectedGraphId } from "@/store/reducers/global";
 
 export function RemoteGraphSelect() {
-  const dispatch = useAppDispatch()
-  const graphName = useAppSelector((state) => state.global.selectedGraphId)
-  const graphs = useAppSelector((state) => state.global.graphList)
-  const agentConnected = useAppSelector((state) => state.global.agentConnected)
+  const dispatch = useAppDispatch();
+  const graphName = useAppSelector((state) => state.global.selectedGraphId);
+  const graphs = useAppSelector((state) => state.global.graphList);
+  const agentConnected = useAppSelector((state) => state.global.agentConnected);
 
   const onGraphNameChange = (val: string) => {
-    dispatch(setSelectedGraphId(val))
-  }
+    dispatch(setSelectedGraphId(val));
+  };
 
   const graphOptions = graphs.map((item) => ({
     label: item.name,
     value: item.graph_id,
-  }))
+  }));
 
   return (
     <>
@@ -38,7 +35,7 @@ export function RemoteGraphSelect() {
       >
         <SelectTrigger
           className={cn(
-            "w-auto", // or "w-auto max-w-full" if you want to keep the existing defaults
+            "w-auto" // or "w-auto max-w-full" if you want to keep the existing defaults
           )}
         >
           <SelectValue placeholder={"Select Graph"} />
@@ -52,5 +49,5 @@ export function RemoteGraphSelect() {
         </SelectContent>
       </Select>
     </>
-  )
+  );
 }

@@ -1,33 +1,37 @@
 import {
-  IOptions,
-  IChatItem,
-  Language,
-  VoiceType,
-  ITrulienceSettings,
-} from "@/types";
-import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit";
+  createAsyncThunk,
+  createSlice,
+  type PayloadAction,
+} from "@reduxjs/toolkit";
 import {
-  EMobileActiveTab,
-  DEFAULT_OPTIONS,
   COLOR_LIST,
+  DEFAULT_OPTIONS,
+  DEFAULT_TRULIENCE_OPTIONS,
+  EMobileActiveTab,
   isEditModeOn,
-  DEFAULT_TRULIENCE_OPTIONS
 } from "@/common/constant";
+import type { AddonDef, Graph } from "@/common/graph";
+import { useAppSelector } from "@/common/hooks";
 import {
-  apiReloadPackage,
+  apiFetchGraphDetails,
   apiFetchGraphs,
   apiFetchInstalledAddons,
-  apiFetchGraphDetails,
-  apiUpdateGraph,
-  apiSaveProperty,
   apiLoadApp,
-} from "@/common/request"
+  apiReloadPackage,
+  apiSaveProperty,
+  apiUpdateGraph,
+} from "@/common/request";
 import {
   setOptionsToLocal,
   setTrulienceSettingsToLocal,
-} from "@/common/storage"
-import { AddonDef, Graph } from "@/common/graph";
-import { useAppSelector } from "@/common/hooks";
+} from "@/common/storage";
+import type {
+  IChatItem,
+  IOptions,
+  ITrulienceSettings,
+  Language,
+  VoiceType,
+} from "@/types";
 
 export interface InitialState {
   options: IOptions;
@@ -73,8 +77,14 @@ export const globalSlice = createSlice({
       state.options = { ...state.options, ...action.payload };
       setOptionsToLocal(state.options);
     },
-    setTrulienceSettings: (state, action: PayloadAction<ITrulienceSettings>) => {
-      state.trulienceSettings = { ...state.trulienceSettings, ...action.payload };
+    setTrulienceSettings: (
+      state,
+      action: PayloadAction<ITrulienceSettings>
+    ) => {
+      state.trulienceSettings = {
+        ...state.trulienceSettings,
+        ...action.payload,
+      };
       setTrulienceSettingsToLocal(state.trulienceSettings);
     },
     setThemeColor: (state, action: PayloadAction<string>) => {
@@ -98,8 +108,8 @@ export const globalSlice = createSlice({
       const LastNonFinalIndex = state.chatItems.findLastIndex((el) => {
         return el.userId == userId && !el.isFinal;
       });
-      let LastFinalItem = state.chatItems[LastFinalIndex];
-      let LastNonFinalItem = state.chatItems[LastNonFinalIndex];
+      const LastFinalItem = state.chatItems[LastFinalIndex];
+      const LastNonFinalItem = state.chatItems[LastNonFinalIndex];
       if (LastFinalItem) {
         // has last final Item
         if (time <= LastFinalItem.time) {
@@ -173,13 +183,13 @@ export const globalSlice = createSlice({
       );
     },
     setGraph: (state, action: PayloadAction<Graph>) => {
-      let graphMap = JSON.parse(JSON.stringify(state.graphMap));
+      const graphMap = JSON.parse(JSON.stringify(state.graphMap));
       graphMap[action.payload.graph_id] = action.payload;
       state.graphMap = graphMap;
     },
     setAddonModules: (state, action: PayloadAction<Record<string, any>[]>) => {
       state.addonModules = JSON.parse(JSON.stringify(action.payload));
-    }
+    },
   },
 });
 
@@ -226,7 +236,7 @@ fetchGraphDetails = createAsyncThunk(
   "global/fetchGraphDetails",
   async (graphId: string, { dispatch }) => {
     // Do nothing in production
-    return
+    return;
   }
 );
 // }
@@ -270,8 +280,6 @@ export const {
   setTrulienceSettings,
 } = globalSlice.actions;
 
-export {
-  initializeGraphData, fetchGraphDetails
-}
+export { initializeGraphData, fetchGraphDetails };
 
 export default globalSlice.reducer;

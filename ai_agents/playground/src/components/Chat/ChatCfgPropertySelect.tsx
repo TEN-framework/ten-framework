@@ -1,26 +1,21 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { buttonVariants } from "@/components/ui/button"
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-  SheetFooter,
-  SheetClose,
-} from "@/components/ui/sheet"
+  BoxesIcon,
+  LoaderCircleIcon,
+  SettingsIcon,
+  Trash2Icon,
+} from "lucide-react";
+import * as React from "react";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { z } from "zod";
+import { useAppDispatch, useAppSelector } from "@/common";
+import type { AddonDef, Graph } from "@/common/graph";
+import { useGraphs } from "@/common/hooks";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Form,
   FormControl,
@@ -29,45 +24,55 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form"
-import { Label } from "@/components/ui/label"
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Input } from "@/components/ui/input"
-import { Switch } from "@/components/ui/switch"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
-  useAppDispatch,
-  useAppSelector,
-} from "@/common"
-import { cn } from "@/lib/utils"
-import { SettingsIcon, LoaderCircleIcon, BoxesIcon, Trash2Icon } from "lucide-react"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
-import { z } from "zod"
-import { toast } from "sonner"
-import { useGraphs } from "@/common/hooks"
-import { AddonDef, Graph } from "@/common/graph"
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
 
 export function RemotePropertyCfgSheet() {
-  const dispatch = useAppDispatch()
-  const { selectedGraph, updateGraph } = useGraphs()
-  const graphName = useAppSelector((state) => state.global.selectedGraphId)
+  const dispatch = useAppDispatch();
+  const { selectedGraph, updateGraph } = useGraphs();
+  const graphName = useAppSelector((state) => state.global.selectedGraphId);
 
-  const [selectedExtension, setSelectedExtension] = React.useState<string>("")
-  const selectedExtensionNode = selectedGraph?.nodes.find(n => n.name === selectedExtension)
-  const addonModules = useAppSelector((state) => state.global.addonModules)
+  const [selectedExtension, setSelectedExtension] = React.useState<string>("");
+  const selectedExtensionNode = selectedGraph?.nodes.find(
+    (n) => n.name === selectedExtension
+  );
+  const addonModules = useAppSelector((state) => state.global.addonModules);
   const selectedAddonModule = addonModules.find(
-    (module) => module.name === selectedExtensionNode?.addon,
-  )
-  const hasProperty = !!selectedAddonModule?.api?.property?.properties && Object.keys(selectedAddonModule?.api?.property?.properties).length > 0
+    (module) => module.name === selectedExtensionNode?.addon
+  );
+  const hasProperty =
+    !!selectedAddonModule?.api?.property?.properties &&
+    Object.keys(selectedAddonModule?.api?.property?.properties).length > 0;
 
   return (
     <Sheet>
       <SheetTrigger
         className={cn(
           buttonVariants({ variant: "outline", size: "icon" }),
-          "bg-transparent",
+          "bg-transparent"
         )}
       >
         <SettingsIcon />
@@ -76,8 +81,8 @@ export function RemotePropertyCfgSheet() {
         <SheetHeader>
           <SheetTitle>Properties Setting</SheetTitle>
           <SheetDescription>
-            You can adjust extension properties for selected graph here, the values will be
-            written into property.json file when you save.
+            You can adjust extension properties for selected graph here, the
+            values will be written into property.json file when you save.
           </SheetDescription>
         </SheetHeader>
 
@@ -91,47 +96,51 @@ export function RemotePropertyCfgSheet() {
               <SelectValue placeholder="Select extension" />
             </SelectTrigger>
             <SelectContent>
-              {selectedGraph ? (selectedGraph.nodes).map((node) => (
-                <SelectItem key={node.name} value={node.name}>
-                  {node.name}
-                </SelectItem>
-              )) : null}
+              {selectedGraph
+                ? selectedGraph.nodes.map((node) => (
+                    <SelectItem key={node.name} value={node.name}>
+                      {node.name}
+                    </SelectItem>
+                  ))
+                : null}
             </SelectContent>
           </Select>
         </div>
 
-        {hasProperty ? selectedExtensionNode?.["property"] && (
-          <GraphCfgForm
-            selectedAddonModule={selectedAddonModule}
-            selectedExtension={selectedExtension}
-            key={`${graphName}-${selectedExtension}`}
-            initialData={
-              selectedExtensionNode?.["property"] || {}
-            }
-            metadata={
-              addonModules.find(
-                (module) => module.name === selectedExtensionNode?.addon,
-              )?.api?.property?.properties || {}
-            }
-            onUpdate={async (data) => {
-              // clone the overridenProperties
-              const selectedGraphCopy: Graph = JSON.parse(JSON.stringify(selectedGraph))
-              const nodes = selectedGraphCopy?.nodes || []
-              let needUpdate = false
-              for (const node of nodes) {
-                if (node.name === selectedExtension) {
-                  node.property = data
-                  needUpdate = true
+        {hasProperty ? (
+          selectedExtensionNode?.["property"] && (
+            <GraphCfgForm
+              selectedAddonModule={selectedAddonModule}
+              selectedExtension={selectedExtension}
+              key={`${graphName}-${selectedExtension}`}
+              initialData={selectedExtensionNode?.["property"] || {}}
+              metadata={
+                addonModules.find(
+                  (module) => module.name === selectedExtensionNode?.addon
+                )?.api?.property?.properties || {}
+              }
+              onUpdate={async (data) => {
+                // clone the overridenProperties
+                const selectedGraphCopy: Graph = JSON.parse(
+                  JSON.stringify(selectedGraph)
+                );
+                const nodes = selectedGraphCopy?.nodes || [];
+                let needUpdate = false;
+                for (const node of nodes) {
+                  if (node.name === selectedExtension) {
+                    node.property = data;
+                    needUpdate = true;
+                  }
                 }
-              }
-              if (needUpdate) {
-                await updateGraph(selectedGraph, selectedGraphCopy)
-                toast.success("Properties updated", {
-                  description: `Graph: ${graphName}, Extension: ${selectedExtension}`,
-                })
-              }
-            }}
-          />
+                if (needUpdate) {
+                  await updateGraph(selectedGraph, selectedGraphCopy);
+                  toast.success("Properties updated", {
+                    description: `Graph: ${graphName}, Extension: ${selectedExtension}`,
+                  });
+                }
+              }}
+            />
+          )
         ) : (
           <SheetDescription>
             No properties found for the selected extension.
@@ -139,62 +148,72 @@ export function RemotePropertyCfgSheet() {
         )}
       </SheetContent>
     </Sheet>
-  )
+  );
 }
-
-
 
 export function RemotePropertyAddCfgSheet({
   selectedExtension,
   extensionNodeData,
   onUpdate,
 }: {
-  selectedExtension: string,
-  extensionNodeData: Record<string, string | number | boolean | null>,
-  onUpdate: (data: string) => void
+  selectedExtension: string;
+  extensionNodeData: Record<string, string | number | boolean | null>;
+  onUpdate: (data: string) => void;
 }) {
-  const dispatch = useAppDispatch()
-  const { selectedGraph } = useGraphs()
+  const dispatch = useAppDispatch();
+  const { selectedGraph } = useGraphs();
 
-  const selectedExtensionNode = selectedGraph?.nodes.find(n => n.name === selectedExtension)
-  const addonModules = useAppSelector((state) => state.global.addonModules)
+  const selectedExtensionNode = selectedGraph?.nodes.find(
+    (n) => n.name === selectedExtension
+  );
+  const addonModules = useAppSelector((state) => state.global.addonModules);
   const selectedAddonModule = addonModules.find(
-    (module) => module.name === selectedExtensionNode?.addon,
-  )
-  const allProperties = Object.keys(selectedAddonModule?.api?.property?.properties || {})
-  const usedProperties = Object.keys(extensionNodeData)
+    (module) => module.name === selectedExtensionNode?.addon
+  );
+  const allProperties = Object.keys(
+    selectedAddonModule?.api?.property?.properties || {}
+  );
+  const usedProperties = Object.keys(extensionNodeData);
   const remainingProperties = allProperties.filter(
-    (prop) => !usedProperties.includes(prop),
-  )
-  const hasRemainingProperties = remainingProperties.length > 0
+    (prop) => !usedProperties.includes(prop)
+  );
+  const hasRemainingProperties = remainingProperties.length > 0;
 
-  const [selectedProperty, setSelectedProperty] = React.useState<string>("")
-  const [isSheetOpen, setSheetOpen] = React.useState(false) // State to control the sheet
+  const [selectedProperty, setSelectedProperty] = React.useState<string>("");
+  const [isSheetOpen, setSheetOpen] = React.useState(false); // State to control the sheet
 
   return (
     <Sheet open={isSheetOpen} onOpenChange={setSheetOpen}>
-      <SheetTrigger asChild
-      >
+      <SheetTrigger asChild>
         <div>
-          <Button type="button" variant="secondary" onClick={() => { setSheetOpen(true) }}>Add</Button>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => {
+              setSheetOpen(true);
+            }}
+          >
+            Add
+          </Button>
         </div>
       </SheetTrigger>
       <SheetContent className="w-[400px] overflow-y-auto sm:w-[540px]">
         <SheetHeader>
           <SheetTitle>Property Add</SheetTitle>
           <SheetDescription>
-            You can add a property into a graph extension node and configure its value.
+            You can add a property into a graph extension node and configure its
+            value.
           </SheetDescription>
         </SheetHeader>
         {hasRemainingProperties ? (
           <>
             <Select
               onValueChange={(key) => {
-                setSelectedProperty(key)
+                setSelectedProperty(key);
               }}
               value={selectedProperty}
             >
-              <SelectTrigger className="w-full my-4">
+              <SelectTrigger className="my-4 w-full">
                 <SelectValue placeholder="Select a property" />
               </SelectTrigger>
               <SelectContent>
@@ -206,28 +225,37 @@ export function RemotePropertyAddCfgSheet({
               </SelectContent>
             </Select>
 
-            <Button type="submit" onClick={() => {
-              setSheetOpen(false)
-              if (selectedProperty !== "") {
-                onUpdate(selectedProperty)
-                setSelectedProperty("")
-              }
-            }}>Add</Button>
+            <Button
+              type="submit"
+              onClick={() => {
+                setSheetOpen(false);
+                if (selectedProperty !== "") {
+                  onUpdate(selectedProperty);
+                  setSelectedProperty("");
+                }
+              }}
+            >
+              Add
+            </Button>
           </>
         ) : (
           <>
             <SheetDescription className="my-4">
               No remaining properties to add.
             </SheetDescription>
-            <Button type="submit" onClick={() => {
-              setSheetOpen(false)
-            }}>OK</Button>
+            <Button
+              type="submit"
+              onClick={() => {
+                setSheetOpen(false);
+              }}
+            >
+              OK
+            </Button>
           </>
         )}
-
       </SheetContent>
     </Sheet>
-  )
+  );
 }
 
 // Helper to convert values based on type
@@ -235,35 +263,35 @@ const convertToType = (value: any, type: string) => {
   switch (type) {
     case "int64":
     case "int32":
-      return parseInt(value, 10)
+      return parseInt(value, 10);
     case "float64":
     case "float32":
-      return parseFloat(value)
+      return parseFloat(value);
     case "bool":
-      return value === true || value === "true"
+      return value === true || value === "true";
     case "string":
-      return String(value)
+      return String(value);
     default:
-      return value
+      return value;
   }
-}
+};
 
 const defaultTypeValue = (type: string) => {
   switch (type) {
     case "int64":
     case "int32":
-      return 0
+      return 0;
     case "float64":
-      return 0.1
+      return 0.1;
     case "bool":
-      return false
+      return false;
     case "string":
     default:
-      return ""
+      return "";
   }
-}
+};
 
-import { useState } from "react"
+import { useState } from "react";
 
 const GraphCfgForm = ({
   selectedExtension,
@@ -272,53 +300,54 @@ const GraphCfgForm = ({
   metadata,
   onUpdate,
 }: {
-  selectedExtension: string,
-  selectedAddonModule: AddonDef.Module | undefined,
-  initialData: Record<string, string | number | boolean | null>
-  metadata: Record<string, { type: string }>
-  onUpdate: (data: Record<string, string | number | boolean | null>) => void
+  selectedExtension: string;
+  selectedAddonModule: AddonDef.Module | undefined;
+  initialData: Record<string, string | number | boolean | null>;
+  metadata: Record<string, { type: string }>;
+  onUpdate: (data: Record<string, string | number | boolean | null>) => void;
 }) => {
   const formSchema = z.record(
     z.string(),
     z.union([z.string(), z.number(), z.boolean(), z.null()])
-  )
+  );
 
-  const [formData, setFormData] = useState(initialData)
+  const [formData, setFormData] = useState(initialData);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: formData,
-  })
+  });
 
   const onSubmit = (data: z.infer<typeof formSchema>) => {
     const convertedData = Object.entries(data).reduce(
       (acc, [key, value]) => {
-        const type = metadata[key]?.type || "string"
-        acc[key] = value === "" ? defaultTypeValue(type) : convertToType(value, type)
-        return acc
+        const type = metadata[key]?.type || "string";
+        acc[key] =
+          value === "" ? defaultTypeValue(type) : convertToType(value, type);
+        return acc;
       },
       {} as Record<string, string | number | boolean | null>
-    )
-    onUpdate(convertedData)
-  }
+    );
+    onUpdate(convertedData);
+  };
 
   const handleDelete = (key: string) => {
-    const updatedData = { ...formData }
-    delete updatedData[key] // Remove the specific key
-    setFormData(updatedData) // Update state
-    form.reset(updatedData) // Reset the form
-  }
+    const updatedData = { ...formData };
+    delete updatedData[key]; // Remove the specific key
+    setFormData(updatedData); // Update state
+    form.reset(updatedData); // Reset the form
+  };
 
   const initialDataWithType = Object.entries(formData).reduce(
     (acc, [key, value]) => {
-      acc[key] = { value, type: metadata[key]?.type || "string" }
-      return acc
+      acc[key] = { value, type: metadata[key]?.type || "string" };
+      return acc;
     },
     {} as Record<
       string,
       { value: string | number | boolean | null; type: string }
     >
-  )
+  );
 
   return (
     <Form {...form}>
@@ -331,7 +360,7 @@ const GraphCfgForm = ({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>{key}</FormLabel>
-                <div className="flex justify-between items-center">
+                <div className="flex items-center justify-between">
                   <FormControl>
                     {type === "bool" ? (
                       <div className="flex items-center space-x-2">
@@ -373,20 +402,22 @@ const GraphCfgForm = ({
             selectedExtension={selectedExtension}
             extensionNodeData={formData}
             onUpdate={(key: string) => {
-              let defaultProperty = selectedAddonModule?.defaultProperty || {}
-              let defaultValue = defaultProperty[key]
+              const defaultProperty =
+                selectedAddonModule?.defaultProperty || {};
+              let defaultValue = defaultProperty[key];
 
               if (defaultValue === undefined) {
-                let schema = selectedAddonModule?.api?.property?.properties || {}
-                let schemaType = schema[key]?.type
+                const schema =
+                  selectedAddonModule?.api?.property?.properties || {};
+                const schemaType = schema[key]?.type;
                 if (schemaType === "bool") {
-                  defaultValue = false
+                  defaultValue = false;
                 }
               }
-              let updatedData = { ...formData }
-              updatedData[key] = defaultValue
-              setFormData(updatedData)
-              form.reset(updatedData)
+              const updatedData = { ...formData };
+              updatedData[key] = defaultValue;
+              setFormData(updatedData);
+              form.reset(updatedData);
             }}
           />
           <Button
@@ -406,5 +437,5 @@ const GraphCfgForm = ({
         </div>
       </form>
     </Form>
-  )
-}
+  );
+};

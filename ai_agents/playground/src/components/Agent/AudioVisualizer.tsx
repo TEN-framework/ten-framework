@@ -1,11 +1,11 @@
 export interface AudioVisualizerProps {
-  type: "agent" | "user"
-  frequencies: Float32Array[]
-  gap: number
-  barWidth: number
-  minBarHeight: number
-  maxBarHeight: number
-  borderRadius: number
+  type: "agent" | "user";
+  frequencies: Float32Array[];
+  gap: number;
+  barWidth: number;
+  minBarHeight: number;
+  maxBarHeight: number;
+  borderRadius: number;
 }
 
 export default function AudioVisualizer(props: AudioVisualizerProps) {
@@ -17,15 +17,15 @@ export default function AudioVisualizer(props: AudioVisualizerProps) {
     maxBarHeight,
     borderRadius,
     type,
-  } = props
+  } = props;
 
   const summedFrequencies = frequencies.map((bandFrequencies) => {
-    const sum = bandFrequencies.reduce((a, b) => a + b, 0)
+    const sum = bandFrequencies.reduce((a, b) => a + b, 0);
     if (sum <= 0) {
-      return 0
+      return 0;
     }
-    return Math.sqrt(sum / bandFrequencies.length)
-  })
+    return Math.sqrt(sum / bandFrequencies.length);
+  });
 
   return (
     <div
@@ -43,10 +43,10 @@ export default function AudioVisualizer(props: AudioVisualizerProps) {
           // transform: transform,
           backgroundColor: type === "agent" ? "#0888FF" : "#EAECF0",
           boxShadow: type === "agent" ? "0 0 10px #EAECF0" : "none",
-        }
+        };
 
-        return <span key={index} style={style} />
+        return <span key={index} style={style} />;
       })}
     </div>
-  )
+  );
 }

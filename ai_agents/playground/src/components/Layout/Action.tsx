@@ -1,23 +1,22 @@
 "use client";
 
 import * as React from "react";
-
-import { LoadingButton } from "@/components/Button/LoadingButton";
-import { setAgentConnected, setMobileActiveTab } from "@/store/reducers/global";
+import { toast } from "sonner";
 import {
-  useAppDispatch,
-  useAppSelector,
   apiPing,
   apiStartService,
   apiStopService,
-  MOBILE_ACTIVE_TAB_MAP,
   EMobileActiveTab,
   isEditModeOn,
+  MOBILE_ACTIVE_TAB_MAP,
+  useAppDispatch,
+  useAppSelector,
 } from "@/common";
-import { toast } from "sonner";
+import { LoadingButton } from "@/components/Button/LoadingButton";
+import { RemoteGraphSelect } from "@/components/Chat/ChatCfgGraphSelect";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
-import { RemoteGraphSelect } from "@/components/Chat/ChatCfgGraphSelect";
+import { setAgentConnected, setMobileActiveTab } from "@/store/reducers/global";
 import { TrulienceCfgSheet } from "../Chat/ChatCfgTrulienceSetting";
 
 let intervalId: NodeJS.Timeout | null = null;
@@ -129,18 +128,17 @@ export default function Action(props: { className?: string }) {
       >
         {/* -- Description Part */}
         <div className="hidden md:block">
-          <span className="text-sm font-bold">Description</span>
-          <span className="ml-2 text-xs text-muted-foreground whitespace-nowrap">
+          <span className="font-bold text-sm">Description</span>
+          <span className="ml-2 whitespace-nowrap text-muted-foreground text-xs">
             A Realtime Conversational AI Agent powered by TEN
           </span>
-
         </div>
 
-        <div className="flex w-full flex-col md:flex-row md:items-center justify-between md:justify-end">
+        <div className="flex w-full flex-col justify-between md:flex-row md:items-center md:justify-end">
           {/* -- Tabs Section */}
           <Tabs
             defaultValue={mobileActiveTab}
-            className="md:hidden w-full md:flex-row"
+            className="w-full md:hidden md:flex-row"
             onValueChange={onChangeMobileActiveTab}
           >
             <TabsList className="flex justify-center md:justify-start">
@@ -153,7 +151,7 @@ export default function Action(props: { className?: string }) {
           </Tabs>
 
           {/* -- Graph Select Part */}
-          <div className="flex flex-wrap items-center justify-between w-full md:w-auto gap-2 mt-2 md:mt-0">
+          <div className="mt-2 flex w-full flex-wrap items-center justify-between gap-2 md:mt-0 md:w-auto">
             <RemoteGraphSelect />
             {isEditModeOn && (
               <>

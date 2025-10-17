@@ -1,6 +1,6 @@
-import { IconProps } from "../types"
-import GithubSvg from "@/assets/github.svg"
+import GithubSvg from "@/assets/github.svg";
+import type { IconProps } from "../types";
 
 export const GithubIcon = (props: IconProps) => {
-  return <GithubSvg {...props}></GithubSvg>
-}
+  return <GithubSvg {...props}></GithubSvg>;
+};

@@ -1,28 +1,28 @@
-"use client"
+"use client";
 
-import { useMultibandTrackVolume } from "@/common"
-import { cn } from "@/lib/utils"
 // import AudioVisualizer from "../audioVisualizer"
-import { IMicrophoneAudioTrack } from "agora-rtc-sdk-ng"
-import AudioVisualizer from "@/components/Agent/AudioVisualizer"
+import type { IMicrophoneAudioTrack } from "agora-rtc-sdk-ng";
+import { useMultibandTrackVolume } from "@/common";
+import AudioVisualizer from "@/components/Agent/AudioVisualizer";
+import { cn } from "@/lib/utils";
 
 export interface AgentViewProps {
-  audioTrack?: IMicrophoneAudioTrack
+  audioTrack?: IMicrophoneAudioTrack;
 }
 
 export default function AgentView(props: AgentViewProps) {
-  const { audioTrack } = props
+  const { audioTrack } = props;
 
-  const subscribedVolumes = useMultibandTrackVolume(audioTrack, 12)
+  const subscribedVolumes = useMultibandTrackVolume(audioTrack, 12);
 
   return (
     <div
       className={cn(
         "flex h-auto w-full flex-col items-center justify-center px-4 py-5",
-        "bg-[#0F0F11] bg-gradient-to-br from-[rgba(27,66,166,0.16)] via-[rgba(27,45,140,0.00)] to-[#11174E] shadow-[0px_3.999px_48.988px_0px_rgba(0,7,72,0.12)] backdrop-blur-[7px]",
+        "bg-[#0F0F11] bg-linear-to-br from-[rgba(27,66,166,0.16)] via-[rgba(27,45,140,0.00)] to-[#11174E] shadow-[0px_3.999px_48.988px_0px_rgba(0,7,72,0.12)] backdrop-blur-[7px]"
       )}
     >
-      <div className="mb-2 text-lg font-semibold text-[#EAECF0]">Agent</div>
+      <div className="mb-2 font-semibold text-[#EAECF0] text-lg">Agent</div>
       <div className="mt-8 h-14 w-full">
         <AudioVisualizer
           type="agent"
@@ -35,5 +35,5 @@ export default function AgentView(props: AgentViewProps) {
         />
       </div>
     </div>
-  )
+  );
 }

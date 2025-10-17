@@ -1,6 +1,6 @@
-import { IconProps } from "../types"
-import TranscriptionSvg from "@/assets/transcription.svg"
+import TranscriptionSvg from "@/assets/transcription.svg";
+import type { IconProps } from "../types";
 
 export const TranscriptionIcon = (props: IconProps) => {
-  return <TranscriptionSvg {...props}></TranscriptionSvg>
-}
+  return <TranscriptionSvg {...props}></TranscriptionSvg>;
+};

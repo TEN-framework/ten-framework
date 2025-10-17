@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
-import axios from 'axios';
+import axios from "axios";
+import { type NextRequest, NextResponse } from "next/server";
 
 /**
  * Handles the POST request to start an agent.
- * 
+ *
  * @param request - The NextRequest object representing the incoming request.
  * @returns A NextResponse object representing the response to be sent back to the client.
  */
@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
       graph_name,
       language,
       voice_type,
-      properties
+      properties,
     } = body;
 
     // Send a POST request to start the agent
@@ -45,7 +45,10 @@ export async function POST(request: NextRequest) {
       const errorData = await error.json();
       return NextResponse.json(errorData, { status: error.status });
     } else {
-      return NextResponse.json({ code: "1", data: null, msg: "Internal Server Error" }, { status: 500 });
+      return NextResponse.json(
+        { code: "1", data: null, msg: "Internal Server Error" },
+        { status: 500 }
+      );
     }
   }
 }
