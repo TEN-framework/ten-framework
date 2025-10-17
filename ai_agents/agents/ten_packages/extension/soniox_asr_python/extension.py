@@ -226,7 +226,8 @@ class SonioxASRExtension(AsyncASRBaseExtension):
             if self.config.finalize_mode == FinalizeMode.MUTE_PKG:
                 await self._real_finalize_by_mute_pkg()
                 return
-            self.holding = True
+            if self.config.finalize_holding:
+                self.holding = True
             if self.config.finalize_mode == FinalizeMode.IGNORE:
                 return
             # NOTE: We need this extra parameter for manual finalization in order to achieve lower finalization latency.
@@ -277,7 +278,7 @@ class SonioxASRExtension(AsyncASRBaseExtension):
 
     async def _finalize_end(self) -> None:
         self.ten_env.log_info("finalize end")
-        if self.holding:
+        if self.holding and self.config.finalize_holding:
             # TODO: what if asr_finalize_end is before asr_finalize?
             self.holding = False
             if self.holding_final_tokens:
@@ -441,8 +442,11 @@ class SonioxASRExtension(AsyncASRBaseExtension):
 
         # Process non-final transcripts
         if non_final_transcripts:
+            tokens = non_final_transcripts
+            if self.config.finalize_holding and self.holding_final_tokens:
+                tokens = [*self.holding_final_tokens, *non_final_transcripts]
             await self._send_transcript_and_translation(
-                [*self.holding_final_tokens, *non_final_transcripts],
+                tokens,
                 translation_tokens,
                 is_final=False,
             )
