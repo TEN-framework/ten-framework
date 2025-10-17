@@ -312,27 +312,47 @@ class MemuHttpMemoryStore(MemoryStore):
             "category_query": category_query
         }
         
+        # Redact sensitive fields for logging
+        redacted = {**payload, "user_id": "***", "category_query": "***"}
         self.env.log_info(
-            f"[MemuHttpMemoryStore] retrieve_related_clustered_categories called with: {payload}"
+            f"[MemuHttpMemoryStore] retrieve_related_clustered_categories called with: {redacted}"
         )
         self.env.log_info(
             f"[MemuHttpMemoryStore] API endpoint: {self.base_url}/api/v1/memory/retrieve/related-clustered-categories"
         )
         
-        async with aiohttp.ClientSession() as session:
-            async with session.post(
-                f"{self.base_url}/api/v1/memory/retrieve/related-clustered-categories",
-                headers=await self._headers(),
-                data=json.dumps(payload),
-            ) as r:
-                r.raise_for_status()
-                result = await r.json()
-                
-                self.env.log_info(
-                    f"[MemuHttpMemoryStore] retrieve_related_clustered_categories returned: {result}"
-                )
-                
-                return result
+        try:
+            # Configure timeout: 15 seconds total
+            timeout = aiohttp.ClientTimeout(total=15)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.post(
+                    f"{self.base_url}/api/v1/memory/retrieve/related-clustered-categories",
+                    headers=await self._headers(),
+                    json=payload,
+                ) as r:
+                    r.raise_for_status()
+                    result = await r.json()
+                    
+                    self.env.log_info(
+                        f"[MemuHttpMemoryStore] retrieve_related_clustered_categories returned successfully"
+                    )
+                    
+                    return result
+        except asyncio.TimeoutError:
+            self.env.log_error(
+                "[MemuHttpMemoryStore] retrieve_related_clustered_categories timed out after 15 seconds"
+            )
+            raise
+        except aiohttp.ClientError as e:
+            self.env.log_error(
+                f"[MemuHttpMemoryStore] retrieve_related_clustered_categories client error: {type(e).__name__}: {str(e)}"
+            )
+            raise
+        except Exception as e:
+            self.env.log_error(
+                f"[MemuHttpMemoryStore] retrieve_related_clustered_categories unexpected error: {type(e).__name__}: {str(e)}"
+            )
+            raise
 
 
     def parse_default_categories(self, data: Any) -> dict:
@@ -409,8 +429,10 @@ class MemuHttpMemoryStore(MemoryStore):
                 "categories": []
             }
 
+        names = [c.get("name") for c in data.get("clustered_categories", [])][:5]
         self.env.log_info(
-            f"[MemuHttpMemoryStore] parse_related_clustered_categories raw data: {data}"
+            f"[MemuHttpMemoryStore] parse_related_clustered_categories received "
+            f"categories={len(data.get('clustered_categories', []))}, sample_names={names}"
         )
 
         clustered_categories = data.get("clustered_categories", [])
