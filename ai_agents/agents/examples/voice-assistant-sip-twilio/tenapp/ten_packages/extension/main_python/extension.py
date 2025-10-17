@@ -129,9 +129,7 @@ class MainControlExtension(AsyncExtension):
                 try:
                     await asyncio.wait_for(self.server_task, timeout=5.0)
                 except asyncio.TimeoutError:
-                    self.ten_env.log_warn(
-                        "Server task didn't stop gracefully"
-                    )
+                    self.ten_env.log_warn("Server task didn't stop gracefully")
                 except asyncio.CancelledError:
                     pass  # Expected when cancelling
 
@@ -282,10 +280,10 @@ class MainControlExtension(AsyncExtension):
             if audio_frame.get_name() == "pcm_frame":
                 audio_data = audio_frame.get_buf()
                 # Send audio to all active Twilio calls
-                for call_sid in self.server_instance.active_call_sessions.keys():
-                    await self.send_audio_to_twilio(
-                        audio_data, call_sid
-                    )
+                for (
+                    call_sid
+                ) in self.server_instance.active_call_sessions.keys():
+                    await self.send_audio_to_twilio(audio_data, call_sid)
         except Exception as e:
             ten_env.log_error(f"Failed to handle audio frame: {e}")
 
@@ -485,7 +483,9 @@ class MainControlExtension(AsyncExtension):
             if self.ten_env:
                 self.ten_env.log_error(f"Failed to dump PCM audio: {e}")
 
-    def _downsample_audio(self, audio_data: bytes, source_rate: int, target_rate: int) -> bytes:
+    def _downsample_audio(
+        self, audio_data: bytes, source_rate: int, target_rate: int
+    ) -> bytes:
         """Downsample audio data from source rate to target rate"""
         try:
             if source_rate == target_rate:
@@ -499,9 +499,13 @@ class MainControlExtension(AsyncExtension):
             if source_rate == 16000 and target_rate == 8000:
                 # Simple decimation: take every 2nd sample (16-bit = 2 bytes per sample)
                 decimated_audio = bytearray()
-                for i in range(0, len(audio_data), 4):  # Skip every 2nd sample (4 bytes = 2 samples)
+                for i in range(
+                    0, len(audio_data), 4
+                ):  # Skip every 2nd sample (4 bytes = 2 samples)
                     if i + 1 < len(audio_data):
-                        decimated_audio.extend(audio_data[i:i+2])  # Take first sample (2 bytes)
+                        decimated_audio.extend(
+                            audio_data[i : i + 2]
+                        )  # Take first sample (2 bytes)
 
                 return bytes(decimated_audio)
 
@@ -531,14 +535,18 @@ class MainControlExtension(AsyncExtension):
             if call_sid not in self.server_instance.active_call_sessions:
                 return
 
-            websocket = self.server_instance.active_call_sessions[call_sid].get("websocket")
+            websocket = self.server_instance.active_call_sessions[call_sid].get(
+                "websocket"
+            )
             if not websocket:
                 return
 
             # Downsample audio from 16000 Hz to 8000 Hz for Twilio
             source_rate = 16000  # TTS generated audio sample rate
-            target_rate = 8000   # Twilio required sample rate
-            downsampled_audio = self._downsample_audio(audio_data, source_rate, target_rate)
+            target_rate = 8000  # Twilio required sample rate
+            downsampled_audio = self._downsample_audio(
+                audio_data, source_rate, target_rate
+            )
 
             # Convert PCM to μ-law for Twilio
             mulaw_data = audioop.lin2ulaw(
@@ -548,7 +556,9 @@ class MainControlExtension(AsyncExtension):
             # Encode μ-law audio data to base64
             audio_base64 = base64.b64encode(mulaw_data).decode("utf-8")
 
-            stream_sid = self.server_instance.active_call_sessions[call_sid].get("stream_sid")
+            stream_sid = self.server_instance.active_call_sessions[
+                call_sid
+            ].get("stream_sid")
 
             message = {
                 "event": "media",

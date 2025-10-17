@@ -38,9 +38,7 @@ class TwilioServerConfig(BaseModel):
     )
 
     # Tenapp configuration
-    tenapp_dir: str = Field(
-        default="", description="Path to tenapp directory"
-    )
+    tenapp_dir: str = Field(default="", description="Path to tenapp directory")
 
     # Public server URL configuration
     twilio_public_server_url: str = Field(
