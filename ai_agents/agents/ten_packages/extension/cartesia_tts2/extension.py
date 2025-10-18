@@ -79,8 +79,8 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
         except Exception as e:
             ten_env.log_error(f"on_init failed: {traceback.format_exc()}")
             await self.send_tts_error(
-                "",
-                ModuleError(
+                request_id="",
+                error=ModuleError(
                     message=f"Initialization failed: {e}",
                     module=ModuleType.TTS,
                     code=ModuleErrorCode.FATAL_ERROR,
@@ -132,11 +132,10 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                         )
                         duration_ms = self._calculate_audio_duration_ms()
                         await self.send_tts_audio_end(
-                            self.current_request_id,
-                            request_event_interval,
-                            duration_ms,
-                            self.current_turn_id,
-                            TTSAudioEndReason.INTERRUPTED,
+                            request_id=self.current_request_id,
+                            request_event_interval_ms=request_event_interval,
+                            request_total_audio_duration_ms=duration_ms,
+                            reason=TTSAudioEndReason.INTERRUPTED,
                         )
                         self.current_request_finished = True
         await super().on_data(ten_env, data)
@@ -287,10 +286,9 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                                     * 1000
                                 )
                                 await self.send_tts_audio_end(
-                                    self.current_request_id,
-                                    request_event_interval,
-                                    duration_ms,
-                                    self.current_turn_id,
+                                    request_id=self.current_request_id,
+                                    request_event_interval_ms=request_event_interval,
+                                    request_total_audio_duration_ms=duration_ms,
                                 )
                                 self.ten_env.log_debug(
                                     f"Sent TTS audio end event, interval: {request_event_interval}ms, duration: {duration_ms}ms"
@@ -300,13 +298,20 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                             self.sent_ts = datetime.now()
                             ttfb = data_msg
                             await self.send_tts_audio_start(
-                                self.current_request_id,
-                                self.current_turn_id,
+                                request_id=self.current_request_id,
                             )
+                            extra_metadata = {
+                                "model_id": self.config.params.get(
+                                    "model_id", ""
+                                ),
+                                "voice_id": self.config.params.get(
+                                    "voice", {}
+                                ).get("id", ""),
+                            }
                             await self.send_tts_ttfb_metrics(
-                                self.current_request_id,
-                                ttfb,
-                                self.current_turn_id,
+                                request_id=self.current_request_id,
+                                ttfb_ms=ttfb,
+                                extra_metadata=extra_metadata,
                             )
 
                             self.ten_env.log_debug(
@@ -324,10 +329,9 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                             )
                             duration_ms = self._calculate_audio_duration_ms()
                             await self.send_tts_audio_end(
-                                self.current_request_id,
-                                request_event_interval,
-                                duration_ms,
-                                self.current_turn_id,
+                                request_id=self.current_request_id,
+                                request_event_interval_ms=request_event_interval,
+                                request_total_audio_duration_ms=duration_ms,
                             )
                             self.ten_env.log_debug(
                                 f"Sent TTS audio end event, interval: {request_event_interval}ms, duration: {duration_ms}ms"
@@ -343,10 +347,9 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                     (datetime.now() - self.sent_ts).total_seconds() * 1000
                 )
                 await self.send_tts_audio_end(
-                    self.current_request_id,
-                    request_event_interval,
-                    duration_ms,
-                    self.current_turn_id,
+                    request_id=self.current_request_id,
+                    request_event_interval_ms=request_event_interval,
+                    request_total_audio_duration_ms=duration_ms,
                 )
                 self.ten_env.log_debug(
                     f"Sent TTS audio end event, interval: {request_event_interval}ms, duration: {duration_ms}ms"
@@ -359,8 +362,8 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
 
             if e.status_code == 401:
                 await self.send_tts_error(
-                    self.current_request_id,
-                    ModuleError(
+                    request_id=self.current_request_id,
+                    error=ModuleError(
                         message=e.body,
                         module=ModuleType.TTS,
                         code=ModuleErrorCode.FATAL_ERROR,
@@ -373,8 +376,8 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                 )
             else:
                 await self.send_tts_error(
-                    self.current_request_id,
-                    ModuleError(
+                    request_id=self.current_request_id,
+                    error=ModuleError(
                         message=e.body,
                         module=ModuleType.TTS,
                         code=ModuleErrorCode.NON_FATAL_ERROR,
@@ -391,8 +394,8 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                 f"Error in request_tts: {traceback.format_exc()}. text: {t.text}"
             )
             await self.send_tts_error(
-                self.current_request_id,
-                ModuleError(
+                request_id=self.current_request_id,
+                error=ModuleError(
                     message=str(e),
                     module=ModuleType.TTS,
                     code=ModuleErrorCode.NON_FATAL_ERROR,
@@ -410,8 +413,8 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
 
     async def send_fatal_tts_error(self, error_message: str) -> None:
         await self.send_tts_error(
-            self.current_request_id or "",
-            ModuleError(
+            request_id=self.current_request_id or "",
+            error=ModuleError(
                 message=error_message,
                 module=ModuleType.TTS,
                 code=ModuleErrorCode.FATAL_ERROR,
@@ -421,8 +424,8 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
 
     async def send_non_fatal_tts_error(self, error_message: str) -> None:
         await self.send_tts_error(
-            self.current_request_id or "",
-            ModuleError(
+            request_id=self.current_request_id or "",
+            error=ModuleError(
                 message=error_message,
                 module=ModuleType.TTS,
                 code=ModuleErrorCode.NON_FATAL_ERROR,

@@ -230,6 +230,9 @@ class TencentTTSClient:
         )
 
         await self.conn_ready_event.wait()
+        if not self.synthesizer or not self.synthesizer.is_alive():
+            self.ten_env.log_error("Synthesizer is not alive, reinitializing")
+            await self.start()
 
         # Start streaming TTS synthesis
         self._callback.set_sent_ts()
