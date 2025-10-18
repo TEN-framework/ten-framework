@@ -50,7 +50,9 @@ class LLMExec:
         ] = None
         self.current_task: Optional[asyncio.Task] = None
         self.loop = asyncio.get_event_loop()
-        self.loop.create_task(self._process_input_queue())
+        self._queue_task: Optional[asyncio.Task] = self.loop.create_task(
+            self._process_input_queue()
+        )
         self.available_tools: list[LLMToolMetadata] = []
         self.tool_registry: dict[str, str] = {}
         self.available_tools_lock = (
@@ -68,6 +70,7 @@ class LLMExec:
         Flush the input queue to ensure all items are processed.
         This is useful for ensuring that all pending inputs are handled before stopping.
         """
+        self.ten_env.log_info("[LLMExec] flush start")
         await self.input_queue.flush()
         if self.current_request_id:
             request_id = self.current_request_id
@@ -77,6 +80,12 @@ class LLMExec:
             )
         if self.current_task:
             self.current_task.cancel()
+            try:
+                await self.current_task
+            except asyncio.CancelledError:
+                pass
+            self.current_task = None
+        self.ten_env.log_info("[LLMExec] flush done")
 
     async def stop(self) -> None:
         """
@@ -84,9 +93,31 @@ class LLMExec:
         This will stop the input queue processing and any ongoing tasks.
         """
         self.stopped = True
+        self.ten_env.log_info("[LLMExec] stop begin")
         await self.flush()
+        await self.input_queue.put(None)
         if self.current_task:
             self.current_task.cancel()
+            try:
+                await self.current_task
+            except asyncio.CancelledError:
+                pass
+            self.current_task = None
+        if self._queue_task and not self._queue_task.done():
+            self._queue_task.cancel()
+            try:
+                await self._queue_task
+            except asyncio.CancelledError:
+                pass
+        self._queue_task = None
+        self.ten_env.log_info("[LLMExec] stop complete")
+        if self._queue_task and not self._queue_task.done():
+            self._queue_task.cancel()
+            try:
+                await self._queue_task
+            except asyncio.CancelledError:
+                pass
+        self._queue_task = None
 
     async def register_tool(self, tool: LLMToolMetadata, source: str) -> None:
         """
@@ -105,6 +136,8 @@ class LLMExec:
         while not self.stopped:
             try:
                 text = await self.input_queue.get()
+                if text is None:
+                    break
                 new_message = LLMMessageContent(role="user", content=text)
                 self.current_task = self.loop.create_task(
                     self._send_to_llm(self.ten_env, new_message)

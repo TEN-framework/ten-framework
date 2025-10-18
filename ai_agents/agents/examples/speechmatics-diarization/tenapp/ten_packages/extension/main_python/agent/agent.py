@@ -216,10 +216,25 @@ class Agent:
         Stop the agent processing.
         This will stop the event queue and any ongoing tasks.
         """
+        self.ten_env.log_info("[Agent] stop requested")
         self.stopped = True
         await self.llm_exec.stop()
+        self.ten_env.log_info("[Agent] LLM exec stopped")
         await self.flush_llm()
+        self.ten_env.log_info("[Agent] LLM queue flushed")
         if self._asr_consumer:
             self._asr_consumer.cancel()
+            try:
+                await self._asr_consumer
+            except asyncio.CancelledError:
+                pass
+            self._asr_consumer = None
+        self.ten_env.log_info("[Agent] ASR consumer cancelled")
         if self._llm_consumer:
             self._llm_consumer.cancel()
+            try:
+                await self._llm_consumer
+            except asyncio.CancelledError:
+                pass
+            self._llm_consumer = None
+        self.ten_env.log_info("[Agent] LLM consumer cancelled")

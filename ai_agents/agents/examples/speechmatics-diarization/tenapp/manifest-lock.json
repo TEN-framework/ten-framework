@@ -4,8 +4,8 @@
     {
       "type": "system",
       "name": "ten_runtime_go",
-      "version": "0.11.16",
-      "hash": "48eda442dca7f56ea86056311a5ca11962bbb8ce4ce5fb4cc1c990becdbf5ec1",
+      "version": "0.11.20",
+      "hash": "8886fe1b0d8256f7b0c951dc12b8741c9b05eb6294e552aba72f47672d16ac12",
       "dependencies": [
         {
           "type": "system",
@@ -188,8 +188,8 @@
     {
       "type": "extension",
       "name": "cosy_tts_python",
-      "version": "0.2.3",
-      "hash": "b6713574576dcb4bc9091474852a088c0ab821fcec9b5f12bd52f28b47e1106d",
+      "version": "0.3.0",
+      "hash": "b837946d3a968b8f0d4dae141f3c0a34abbc5910d4d7aea1c193dab1da1290b6",
       "dependencies": [
         {
           "type": "system",
@@ -252,8 +252,8 @@
     {
       "type": "extension",
       "name": "google_tts_python",
-      "version": "0.2.4",
-      "hash": "fe8b40faee44d0c5d19f9f666f898ec2454439ad00dd4f48c4edc17d3379d5ed",
+      "version": "0.2.5",
+      "hash": "0d1bd4d55d58799f2abe4f2f6ea42066ab6bda4c67d98a6858cb146be383816b",
       "dependencies": [
         {
           "type": "system",
@@ -384,8 +384,8 @@
     {
       "type": "extension",
       "name": "rime_tts",
-      "version": "0.2.2",
-      "hash": "3136f3f9270e99e4c88361b2ca0d3051949ce2e463cfbd6ce1d239fcffa0c5b0",
+      "version": "0.2.9",
+      "hash": "1fbc56d944d5f2b2d682f05b137788a4f34a4fbcc108526a65d5b107af6c1c12",
       "dependencies": [
         {
           "type": "system",
@@ -418,8 +418,8 @@
     {
       "type": "extension",
       "name": "tencent_tts_python",
-      "version": "0.2.10",
-      "hash": "8c6a6e13097639c5ec71b9a92155068ffac60373fd4695360bb7b586d5a5c462",
+      "version": "0.2.11",
+      "hash": "0f51929e67fc52fb874ceff2d3bc57310097c285cab37e157d6babed40a1f350",
       "dependencies": [
         {
           "type": "system",
@@ -448,8 +448,8 @@
     {
       "type": "system",
       "name": "ten_runtime_python",
-      "version": "0.11.16",
-      "hash": "4322d3e83b73e1b949e7104f0c540f8cf04fa1a45e1b630f2c73a08729eb44e7",
+      "version": "0.11.20",
+      "hash": "336f286b2fccea9015046506546bd026524bbb05ed62a9310f8247612415e890",
       "dependencies": [
         {
           "type": "system",
@@ -470,8 +470,8 @@
     {
       "type": "system",
       "name": "ten_runtime",
-      "version": "0.11.16",
-      "hash": "0c0c30343eea5d58ccbe56174aab5fe13c6b09b1e149dff1e05309e323d32bfd",
+      "version": "0.11.20",
+      "hash": "7df4747d962481721dbac01d15c85ca9047df87c12bc97d57d211094e9fef960",
       "supports": [
         {
           "os": "linux",
@@ -494,8 +494,8 @@
     {
       "type": "addon_loader",
       "name": "python_addon_loader",
-      "version": "0.11.16",
-      "hash": "4461d42bca063b9fc17163c11d9d620677e19cfcc9d28fd931534d5aaf49c6c0",
+      "version": "0.11.20",
+      "hash": "dc178896381d8fab102cd3ce5648248c35b759374fb9f93b8133809e98bb99db",
       "dependencies": [
         {
           "type": "system",

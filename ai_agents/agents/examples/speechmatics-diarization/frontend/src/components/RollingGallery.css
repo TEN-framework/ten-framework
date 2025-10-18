@@ -1,0 +1,125 @@
+.gallery-container {
+  position: relative;
+  height: 340px;
+  width: 100%;
+  overflow: visible;
+  padding: 14px 0 28px;
+}
+
+.gallery-gradient {
+  display: none;
+}
+
+.gallery-gradient-left,
+.gallery-gradient-right {
+  display: none;
+}
+
+.gallery-content {
+  display: flex;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  perspective: 1400px;
+  transform-style: preserve-3d;
+}
+
+.gallery-track {
+  display: flex;
+  height: auto;
+  min-height: 200px;
+  justify-content: center;
+  align-items: center;
+  cursor: grab;
+  transform-style: preserve-3d;
+  width: 100%;
+}
+
+.gallery-item {
+  position: absolute;
+  display: flex;
+  height: fit-content;
+  align-items: center;
+  justify-content: center;
+  padding: 7%;
+  backface-visibility: hidden;
+}
+
+.gallery-card {
+  pointer-events: none;
+  width: 300px;
+  min-height: 170px;
+  border-radius: 20px;
+  border: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 26px;
+  background: #ffffff;
+  transition: transform 0.3s ease;
+  color: #111827;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+}
+
+.gallery-card h3 {
+  margin: 0;
+  font-size: 1.45rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.gallery-card p {
+  margin: 12px 0 0;
+  font-size: 0.92rem;
+  line-height: 1.4;
+  color: #4b5563;
+}
+
+.gallery-card span {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.25em;
+  color: #6b7280;
+}
+
+.gallery-item:hover .gallery-card {
+  transform: scale(1.05);
+  transition: 0.3s ease;
+  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.12);
+}
+
+.gallery-accent {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  letter-spacing: 0.18em;
+  color: #374151;
+}
+
+.gallery-accent-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background-color: currentColor;
+}
+
+@media (max-width: 768px) {
+  .gallery-container {
+    height: 310px;
+  }
+  .gallery-item {
+    padding: 6%;
+  }
+  .gallery-card {
+    width: 240px;
+    min-height: 140px;
+    padding: 20px;
+  }
+  .gallery-card h3 {
+    font-size: 1.2rem;
+  }
+  .gallery-card p {
+    font-size: 0.85rem;
+  }
+}

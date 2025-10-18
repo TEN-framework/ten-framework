@@ -1,0 +1,28 @@
+{
+  "name": "ten_agent_speechmatics_web",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "agora-rtc-sdk-ng": "^4.21.0",
+    "axios": "^1.7.7",
+    "motion": "^12.23.24",
+    "next": "^15.0.2",
+    "ogl": "^1.0.11",
+    "react": "^18",
+    "react-dom": "^18"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "typescript": "^5"
+  }
+}
