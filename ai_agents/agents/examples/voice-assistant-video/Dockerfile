@@ -56,8 +56,10 @@ RUN apt-get clean && apt-get update && apt-get install -y --no-install-recommend
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs
 
-# install Bun(The unzip package is required to install Bun)
+# Install Bun using the official install script
 RUN curl -fsSL https://bun.com/install | bash
+# Add Bun to the PATH (if not already added by the install script)
+ENV PATH="/root/.bun/bin:$PATH"
 
 # Install Task
 RUN sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b /usr/local/bin
