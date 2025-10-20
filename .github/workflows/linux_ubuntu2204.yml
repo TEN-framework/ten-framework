@@ -1411,3 +1411,78 @@ jobs:
           pytest -s tests/ten_runtime/integration/nodejs/
 
           df -h .
+
+  coverage-build:
+    needs: build
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/ten-framework/ten_building_ubuntu2204
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+
+      - name: Trust working directory
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
+      - name: Initialize and update submodules except portal/
+        run: |
+          submodules=$(git config --file .gitmodules --get-regexp path | awk '$2 != "portal" { print $2 }')
+          git submodule init
+          for s in $submodules; do
+            git submodule update --init --recursive --depth 1 "$s"
+          done
+
+      - name: Build (clang + debug + x64) with coverage enabled
+        env:
+          PATH: ${{ github.workspace }}/core/ten_gn:/usr/local/go/bin:/root/go/bin:/root/.cargo/bin:${{ env.PATH }}
+        run: |
+          echo $PATH
+          rustup default nightly-2025-09-18
+          tgn gen linux x64 debug -- is_clang=true ten_runtime_enable_coverage=true ten_enable_integration_tests_prebuilt=false
+          tgn build linux x64 debug -- tests:ten_runtime
+
+      - name: Generate coverage report
+        env:
+          PATH: ${{ github.workspace }}/core/ten_gn:${{ env.PATH }}
+        run: |
+          tgn build linux x64 debug -- tests/ten_runtime:gen_coverage_report
+          ls -al out/linux/x64/tests/standalone/coverage
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-html
+          path: out/linux/x64/tests/standalone/coverage
+          if-no-files-found: error
+          retention-days: 14
+
+  publish-coverage:
+    needs: coverage-build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download coverage artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-html
+          path: coverage-html
+
+      - name: Publish coverage to gh-pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: coverage-html
+          destination_dir: coverage/${{ github.ref_name }}/${{ github.run_id }}
+          keep_files: true
+          enable_jekyll: false
+
+      - name: Add coverage link to job summary
+        shell: bash
+        run: |
+          REPO_NAME=$(echo "$GITHUB_REPOSITORY" | awk -F/ '{print $2}')
+          echo "Repository: $GITHUB_REPOSITORY (branch/tag: $GITHUB_REF_NAME)" >> "$GITHUB_STEP_SUMMARY"
+          URL="https://${{ github.repository_owner }}.github.io/${REPO_NAME}/coverage/${GITHUB_REF_NAME}/${GITHUB_RUN_ID}/index.html"
+          echo "Coverage report: ${URL}" >> "$GITHUB_STEP_SUMMARY"
+          echo "You can also download the 'coverage-html' artifact from workflow artifacts." >> "$GITHUB_STEP_SUMMARY"
