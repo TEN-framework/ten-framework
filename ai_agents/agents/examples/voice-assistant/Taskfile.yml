@@ -9,7 +9,6 @@ tasks:
     internal: true
     dir: ../../../playground
     cmds:
-      - echo $PATH
       - bun install --verbose
 
   install-tenapp:
