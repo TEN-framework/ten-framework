@@ -1,4 +1,4 @@
-FROM ghcr.io/ten-framework/ten_agent_build:0.7.6 AS builder
+FROM ghcr.io/ten-framework/ten_agent_build:0.7.7 AS builder
 
 ARG USE_AGENT=agents/examples/voice-assistant-realtime
 
@@ -30,9 +30,9 @@ RUN cd /app/${USE_AGENT} && \
 
 RUN mv /app/${USE_AGENT}/tenapp/.release/ agents/.release/
 
-# Build frontend in builder stage (npm install already done by task install)
+# Build frontend in builder stage (bun already done by task install)
 WORKDIR /app/playground
-RUN NEXT_PUBLIC_EDIT_GRAPH_MODE=false npm run build
+RUN NEXT_PUBLIC_EDIT_GRAPH_MODE=false bun run build
 WORKDIR /app
 
 FROM ubuntu:22.04

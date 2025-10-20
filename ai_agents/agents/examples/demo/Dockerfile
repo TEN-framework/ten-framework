@@ -1,4 +1,4 @@
-FROM ghcr.io/ten-framework/ten_agent_build:0.7.6 AS builder
+FROM ghcr.io/ten-framework/ten_agent_build:0.7.7 AS builder
 
 ARG USE_AGENT=agents/examples/demo
 
@@ -28,9 +28,9 @@ COPY ${USE_AGENT}/frontend/ ${USE_AGENT}/frontend/
 RUN cd /app/${USE_AGENT} && \
   task install && task release
 
-# Build frontend in builder stage (npm install already done by task install)
+# Build frontend in builder stage (bun already done by task install)
 WORKDIR /app/agents/examples/demo/frontend
-RUN npm run build
+RUN bun run build
 WORKDIR /app
 
 FROM ubuntu:22.04
