@@ -87,7 +87,9 @@ def test_ttfb_metric_is_sent(MockCosyTTSClient):
 
     # Create a mock that simulates the delay *before* returning the first audio chunk
     async def get_audio_data_with_delay():
-        await asyncio.sleep(0.25)  # Use 250ms to have margin for timing variations
+        await asyncio.sleep(
+            0.25
+        )  # Use 250ms to have margin for timing variations
         return (False, MESSAGE_TYPE_PCM, b"\x11\x22\x33")
 
     # This async function will wrap the tuple to make it awaitable
