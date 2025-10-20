@@ -129,6 +129,11 @@ jobs:
           rustup default nightly-2025-09-18
           cargo install --force cbindgen
 
+      - name: Update version
+        run: |
+          python tools/version/update_version_in_ten_framework.py
+          python tools/version/check_version_in_ten_framework.py
+
       - name: Get Python executable path
         run: |
           $pythonPath = python -c "import sys; print(sys.executable)"
