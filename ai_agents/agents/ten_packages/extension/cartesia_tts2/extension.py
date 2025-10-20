@@ -138,7 +138,7 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
         else:
             if self.ten_env:
                 self.ten_env.log_warn(
-                    f"Current request {self.current_request_id} is not found,skip canceling tts."
+                    f"No current request found, skipping TTS cancellation."
                 )
 
     def vendor(self) -> str:
