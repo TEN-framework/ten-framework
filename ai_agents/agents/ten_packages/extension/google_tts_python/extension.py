@@ -210,7 +210,7 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                 (datetime.now() - self.sent_ts).total_seconds() * 1000
             )
         await self.send_tts_audio_end(
-            request_id=self.current_request_id,
+            request_id=self.current_request_id or "",
             request_event_interval_ms=request_event_interval,
             request_total_audio_duration_ms=self._calculate_audio_duration_ms(),
             reason=reason,
