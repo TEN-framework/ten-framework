@@ -21,7 +21,7 @@ tasks:
     desc: run frontend in production
     dir: ./frontend
     cmds:
-      - npm start
+      - bun start
 
   run-ngrok-prod:
     desc: run ngrok tunnel for WebSocket support

@@ -13,7 +13,7 @@ tasks:
     desc: run frontend in production
     dir: ./frontend
     cmds:
-      - npm start
+      - bun start
     background: true
 
   run-prod:

@@ -49,11 +49,15 @@ RUN apt-get clean && apt-get update && apt-get install -y --no-install-recommend
     jq vim \
     ca-certificates \
     curl \
+    unzip \
     && apt-get clean && rm -rf /var/lib/apt/lists/* && rm -rf /tmp/*
 
 # Install Node.js 20
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs
+
+# install Bun(The unzip package is required to install Bun)
+RUN curl -fsSL https://bun.com/install | bash
 
 # Install Task
 RUN sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b /usr/local/bin
