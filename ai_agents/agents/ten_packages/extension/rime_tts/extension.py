@@ -28,15 +28,13 @@ from .rime_tts import (
     EVENT_TTS_TTFB_METRIC,
     RimeTTSClient,
 )
-from ten_runtime import (
-    AsyncTenEnv,
-    Data,
-)
+from ten_runtime import AsyncTenEnv
 
 
 class RimeTTSExtension(AsyncTTS2BaseExtension):
     def __init__(self, name: str) -> None:
         super().__init__(name)
+        self.ten_env: AsyncTenEnv | None = None
         self.config: RimeTTSConfig = None
         self.client: RimeTTSClient = None
         self.current_request_id: str = None
@@ -55,6 +53,7 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         try:
             await super().on_init(ten_env)
+            self.ten_env = ten_env
             ten_env.log_debug("on_init")
 
             config_json, _ = await self.ten_env.get_property_to_json("")
@@ -354,10 +353,12 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                 ),
             )
 
-    async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
-        name = data.get_name()
-        if name == "tts_flush":
-            # Cancel current connection (maintain original flush disconnect behavior)
+    async def cancel_tts(self) -> None:
+        if self.current_request_id:
+            if self.ten_env:
+                self.ten_env.log_debug(
+                    f"Current request {self.current_request_id} is being cancelled. Sending INTERRUPTED."
+                )
             if self.client:
                 self.client.cancel()
                 self.last_completed_has_reset_synthesizer = True
@@ -367,7 +368,6 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                 self.stop_event.set()
                 self.stop_event = None
 
-            ten_env.log_debug(f"Received tts_flush data: {name}")
             if self.request_start_ts is not None:
                 request_event_interval = int(
                     (datetime.now() - self.request_start_ts).total_seconds()
@@ -379,10 +379,11 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                     request_total_audio_duration_ms=self.request_total_audio_duration,
                     reason=TTSAudioEndReason.INTERRUPTED,
                 )
-            ten_env.log_debug(
-                f"Sent tts_audio_end with INTERRUPTED reason for request_id: {self.current_request_id}"
-            )
-        await super().on_data(ten_env, data)
+        else:
+            if self.ten_env:
+                self.ten_env.log_warn(
+                    f"Current request {self.current_request_id} is not found,skip canceling tts."
+                )
 
     def calculate_audio_duration(
         self,

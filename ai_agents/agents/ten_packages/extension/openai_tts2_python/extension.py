@@ -29,12 +29,13 @@ from .openai_tts import (
     EVENT_TTS_INVALID_KEY_ERROR,
     OpenaiTTSClient,
 )
-from ten_runtime import AsyncTenEnv, Data
+from ten_runtime import AsyncTenEnv
 
 
 class OpenaiTTSExtension(AsyncTTS2BaseExtension):
     def __init__(self, name: str) -> None:
         super().__init__(name)
+        self.ten_env: AsyncTenEnv | None = None
         self.config: OpenaiTTSConfig | None = None
         self.client: OpenaiTTSClient | None = None
         self.current_request_id: str | None = None
@@ -51,6 +52,7 @@ class OpenaiTTSExtension(AsyncTTS2BaseExtension):
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         try:
             await super().on_init(ten_env)
+            self.ten_env = ten_env
             config_json_str, _ = await self.ten_env.get_property_to_json("")
 
             if not config_json_str or config_json_str.strip() == "{}":
@@ -106,32 +108,32 @@ class OpenaiTTSExtension(AsyncTTS2BaseExtension):
         await super().on_deinit(ten_env)
         ten_env.log_debug("on_deinit")
 
-    async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
-        data_name = data.get_name()
-
-        if data_name == "tts_flush":
-            flush_id, _ = data.get_property_string("flush_id")
-            if flush_id:
-                ten_env.log_debug(f"Received flush request for ID: {flush_id}")
-                if self.current_request_id:
-                    ten_env.log_debug(
-                        f"Current request {self.current_request_id} is being flushed. Sending INTERRUPTED."
+    async def cancel_tts(self) -> None:
+        self.current_request_finished = True
+        if self.current_request_id:
+            if self.ten_env:
+                self.ten_env.log_debug(
+                    f"Current request {self.current_request_id} is being cancelled. Sending INTERRUPTED."
+                )
+            if self.client:
+                self.client.cancel()
+                if self.request_ts:
+                    request_event_interval = int(
+                        (datetime.now() - self.request_ts).total_seconds()
+                        * 1000
                     )
-                    self.client.cancel()
-                    if self.request_ts:
-                        request_event_interval = int(
-                            (datetime.now() - self.request_ts).total_seconds()
-                            * 1000
-                        )
-                        duration_ms = self._calculate_audio_duration_ms()
-                        await self.send_tts_audio_end(
-                            request_id=self.current_request_id,
-                            request_event_interval_ms=request_event_interval,
-                            request_total_audio_duration_ms=duration_ms,
-                            reason=TTSAudioEndReason.INTERRUPTED,
-                        )
-                        self.current_request_finished = True
-        await super().on_data(ten_env, data)
+                    duration_ms = self._calculate_audio_duration_ms()
+                    await self.send_tts_audio_end(
+                        request_id=self.current_request_id,
+                        request_event_interval_ms=request_event_interval,
+                        request_total_audio_duration_ms=duration_ms,
+                        reason=TTSAudioEndReason.INTERRUPTED,
+                    )
+        else:
+            if self.ten_env:
+                self.ten_env.log_warn(
+                    f"Current request {self.current_request_id} is not found,skip canceling tts."
+                )
 
     def vendor(self) -> str:
         return "openai"
