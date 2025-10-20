@@ -168,7 +168,7 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
 
                 await self.client.reset()  # Initialize new connection
             else:
-                self.ten_env.log_warning(
+                self.ten_env.log_warn(
                     "Client is not initialized, skipping reset"
                 )
         except Exception as e:
@@ -181,9 +181,7 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                         message=str(e),
                         module=ModuleType.TTS,
                         code=ModuleErrorCode.NON_FATAL_ERROR,
-                        vendor_info=ModuleErrorVendorInfo(
-                            vendor=self.vendor()
-                        ),
+                        vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
                     ),
                 )
             else:
@@ -193,11 +191,9 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
 
         # Check if ten_env is available before calling handle_completed_request
         if self.ten_env is not None:
-            await self.handle_completed_request(
-                TTSAudioEndReason.INTERRUPTED
-            )
+            await self.handle_completed_request(TTSAudioEndReason.INTERRUPTED)
         else:
-            self.ten_env.log_warning(
+            self.ten_env.log_warn(
                 "Cannot handle completed request: ten_env is not initialized"
             )
 

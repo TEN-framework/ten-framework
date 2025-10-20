@@ -441,9 +441,7 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
         try:
             # Cancel current connection (maintain original flush disconnect behavior)
             self.client.cancel()
-            await self.handle_completed_request(
-                TTSAudioEndReason.INTERRUPTED
-            )
+            await self.handle_completed_request(TTSAudioEndReason.INTERRUPTED)
         except Exception as e:
             self.ten_env.log_error(f"Error in handle_flush: {e}")
             await self.send_tts_error(
