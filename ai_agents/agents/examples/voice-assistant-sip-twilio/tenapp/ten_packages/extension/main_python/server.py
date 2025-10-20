@@ -406,8 +406,21 @@ class TwilioCallServer:
                             stream_sid = message.get("streamSid", "")
                             start = message.get("start", {})
                             call_sid = start.get("callSid", "")
-                            self.active_call_sessions[call_sid]["stream_sid"] = stream_sid
-                            self.active_call_sessions[call_sid]["websocket"] = websocket
+                            self.active_call_sessions[call_sid][
+                                "stream_sid"
+                            ] = stream_sid
+                            self.active_call_sessions[call_sid][
+                                "websocket"
+                            ] = websocket
+
+                            # Notify extension that websocket is connected
+                            if (
+                                hasattr(self, "extension_instance")
+                                and self.extension_instance
+                            ):
+                                await self.extension_instance.on_websocket_connected(
+                                    call_sid
+                                )
                         elif message.get("event") == "stop":
                             self._log_info(f"Media stream stopped: {message}")
 
