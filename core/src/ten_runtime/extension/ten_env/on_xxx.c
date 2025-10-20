@@ -95,7 +95,7 @@ bool ten_extension_on_configure_done(ten_env_t *self) {
     return false;
   }
 
-  TEN_LOGD("[%s] on_configure() done", ten_extension_get_name(extension, true));
+  TEN_LOGI("[%s] on_configure() done", ten_extension_get_name(extension, true));
 
   extension->state = TEN_EXTENSION_STATE_ON_CONFIGURE_DONE;
 
@@ -265,7 +265,7 @@ bool ten_extension_on_init_done(ten_env_t *self) {
     return false;
   }
 
-  TEN_LOGD("[%s] on_init() done", ten_extension_get_name(extension, true));
+  TEN_LOGI("[%s] on_init() done", ten_extension_get_name(extension, true));
 
   extension->state = TEN_EXTENSION_STATE_ON_INIT_DONE;
 
@@ -502,7 +502,7 @@ bool ten_extension_on_deinit_done(ten_env_t *self) {
 
   extension->state = TEN_EXTENSION_STATE_ON_DEINIT_DONE;
 
-  TEN_LOGD("[%s] on_deinit() done", ten_extension_get_name(extension, true));
+  TEN_LOGI("[%s] on_deinit() done", ten_extension_get_name(extension, true));
 
   // Close the ten_env so that any apis called on the ten_env will return
   // TEN_ERROR_ENV_CLOSED.

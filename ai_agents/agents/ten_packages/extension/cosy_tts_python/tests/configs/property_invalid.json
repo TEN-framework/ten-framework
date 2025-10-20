@@ -1,6 +1,6 @@
 {
   "params": {
-    "app_id": "invalid",
+    "api_key": "invalid",
     "sample_rate": 16000
   }
 }
