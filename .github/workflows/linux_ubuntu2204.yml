@@ -1417,6 +1417,9 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/ten-framework/ten_building_ubuntu2204
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v4
         with:
@@ -1435,17 +1438,18 @@ jobs:
           done
 
       - name: Tgn gen (clang + debug + x64) with coverage enabled
-        env:
-          PATH: ${{ github.workspace }}/core/ten_gn:/usr/local/go/bin:/root/go/bin:/root/.cargo/bin:${{ env.PATH }}
         run: |
+          export PATH=$(pwd)/core/ten_gn:/usr/local/go/bin:/root/go/bin:/root/.cargo/bin:$PATH
           echo $PATH
           rustup default nightly-2025-09-18
           tgn gen linux x64 debug -- is_clang=true ten_runtime_enable_coverage=true ten_rust_force_release=true log_level=1 enable_serialized_actions=true ten_enable_serialized_rust_action=true ten_rust_enable_gen_cargo_config=false ten_enable_cargo_clean=true ten_enable_go_lint=true ten_enable_rust_incremental_build=false ten_manager_enable_frontend=false ten_enable_integration_tests_prebuilt=false ten_enable_ffmpeg_extensions=true
 
       - name: Generate coverage report
-        env:
-          PATH: ${{ github.workspace }}/core/ten_gn:${{ env.PATH }}
         run: |
+          export PATH=$(pwd)/core/ten_gn:$PATH
+          ulimit -n 102400
+          sysctl -w net.core.somaxconn=8192
+          fuser -k 8001/tcp || true
           tgn build linux x64 debug -- tests/ten_runtime:gen_coverage_report
           ls -al out/linux/x64/tests/standalone/coverage
 
