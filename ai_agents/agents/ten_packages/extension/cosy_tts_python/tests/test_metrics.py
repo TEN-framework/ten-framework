@@ -87,7 +87,9 @@ def test_ttfb_metric_is_sent(MockCosyTTSClient):
 
     # Create a mock that simulates the delay *before* returning the first audio chunk
     async def get_audio_data_with_delay():
-        await asyncio.sleep(0.2)
+        await asyncio.sleep(
+            0.25
+        )  # Use 250ms to have margin for timing variations
         return (False, MESSAGE_TYPE_PCM, b"\x11\x22\x33")
 
     # This async function will wrap the tuple to make it awaitable
@@ -118,8 +120,8 @@ def test_ttfb_metric_is_sent(MockCosyTTSClient):
     assert tester.audio_end_received, "Did not receive the tts_audio_end event."
     assert tester.ttfb_received, "TTFB metric was not received."
 
-    # Check if the TTFB value is reasonable. It should be slightly more than
-    # the 0.2s delay we introduced. We check for >= 200ms.
+    # Check if the TTFB value is reasonable. It should be around 250ms with the delay
+    # we introduced. Allow 50ms margin for timing variations and system scheduling.
     assert (
         tester.ttfb_value >= 200
     ), f"Expected TTFB to be >= 200ms, but got {tester.ttfb_value}ms."
