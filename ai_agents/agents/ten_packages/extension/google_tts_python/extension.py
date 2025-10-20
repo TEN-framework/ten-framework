@@ -76,15 +76,7 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
             ten_env.log_error(f"on_init failed: {traceback.format_exc()}")
             await self.send_tts_error(
                 request_id="",
-<<<<<<< HEAD
-<<<<<<< HEAD
                 error=ModuleError(
-=======
-                rerror=ModuleError(
->>>>>>> d452c4261 (feat: change google tts and 11labs tts code)
-=======
-                error=ModuleError(
->>>>>>> d9e836b02 (fix: fix name error)
                     message=f"Initialization failed: {e}",
                     module=ModuleType.TTS,
                     code=ModuleErrorCode.FATAL_ERROR,
@@ -165,46 +157,55 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
         self.current_request_finished = False
         self.sent_ts = None
 
-    async def cancel_tts(self) -> None:
-        self._flush_requested = True
-        try:
-            self.ten_env.log_debug(f"Executing cancel_tts")
-            if self.client is not None:
-                    self.ten_env.log_info(
+    async def on_data(self, ten_env: AsyncTenEnv, data) -> None:
+        name = data.get_name()
+        if name == "tts_flush":
+            ten_env.log_info(f"Received tts_flush data: {name}")
+            # Set flush flag to stop processing audio
+            self._flush_requested = True
+
+            try:
+                if self.client is not None:
+                    ten_env.log_info(
                         "Flushing Google TTS client - cleaning old connection"
                     )
                     self.client.clean()  # Clean up old connection first
 
                     await self.client.reset()  # Initialize new connection
-            else:
-                self.ten_env.log_warning(
-                    "Client is not initialized, skipping reset"
-                )
-        except Exception as e:
-            self.ten_env.log_error(f"Error in handle_flush: {e}")
-            # Check if ten_env is available before calling send_tts_error
-            if self.ten_env is not None:
-                await self.send_tts_error(
-                    request_id=self.current_request_id,
-                    error=ModuleError(
-                        message=str(e),
-                        module=ModuleType.TTS,
-                        code=ModuleErrorCode.NON_FATAL_ERROR,
-                        vendor_info=ModuleErrorVendorInfo(
-                            vendor=self.vendor()
+                else:
+                    ten_env.log_warning(
+                        "Client is not initialized, skipping reset"
+                    )
+            except Exception as e:
+                ten_env.log_error(f"Error in handle_flush: {e}")
+                # Check if ten_env is available before calling send_tts_error
+                if self.ten_env is not None:
+                    await self.send_tts_error(
+                        request_id=self.current_request_id,
+                        error=ModuleError(
+                            message=str(e),
+                            module=ModuleType.TTS,
+                            code=ModuleErrorCode.NON_FATAL_ERROR,
+                            vendor_info=ModuleErrorVendorInfo(
+                                vendor=self.vendor()
+                            ),
                         ),
-                    ),
+                    )
+                else:
+                    ten_env.log_error(
+                        "Cannot send error: ten_env is not initialized"
+                    )
+
+            # Check if ten_env is available before calling handle_completed_request
+            if self.ten_env is not None:
+                await self.handle_completed_request(
+                    TTSAudioEndReason.INTERRUPTED
                 )
             else:
-                self.ten_env.log_error(
-                    "Cannot send error: ten_env is not initialized"
+                ten_env.log_warning(
+                    "Cannot handle completed request: ten_env is not initialized"
                 )
-
-        # Check if ten_env is available before calling handle_completed_request
-        await self.handle_completed_request(
-            TTSAudioEndReason.INTERRUPTED
-        )
-
+        await super().on_data(ten_env, data)
 
     async def handle_completed_request(self, reason: TTSAudioEndReason):
         # update request_id
@@ -219,15 +220,7 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                 (datetime.now() - self.sent_ts).total_seconds() * 1000
             )
         await self.send_tts_audio_end(
-<<<<<<< HEAD
-<<<<<<< HEAD
             request_id=self.current_request_id,
-=======
-            request_id= self.current_request_id,
->>>>>>> d452c4261 (feat: change google tts and 11labs tts code)
-=======
-            request_id=self.current_request_id,
->>>>>>> 01013b1f6 (ci: format code)
             request_event_interval_ms=request_event_interval,
             request_total_audio_duration_ms=self._calculate_audio_duration_ms(),
             reason=reason,
@@ -339,19 +332,9 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                                     request_id=self.current_request_id,
                                 )
                                 extra_metadata = {
-<<<<<<< HEAD
-<<<<<<< HEAD
                                     "name": self.config.params.get(
                                         "VoiceSelectionParams", {}
                                     ).get("name", ""),
-=======
-                                    "name": self.config.params.get("VoiceSelectionParams", {}).get("name", ""),
->>>>>>> d452c4261 (feat: change google tts and 11labs tts code)
-=======
-                                    "name": self.config.params.get(
-                                        "VoiceSelectionParams", {}
-                                    ).get("name", ""),
->>>>>>> 01013b1f6 (ci: format code)
                                 }
                                 if ttfb_ms is not None:
                                     await self.send_tts_ttfb_metrics(
@@ -381,17 +364,8 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                                 else "Unknown API key error"
                             )
                             await self.send_tts_error(
-<<<<<<< HEAD
-<<<<<<< HEAD
                                 request_id=self.current_request_id
                                 or t.request_id,
-=======
-                                request_id=self.current_request_id or t.request_id,
->>>>>>> d452c4261 (feat: change google tts and 11labs tts code)
-=======
-                                request_id=self.current_request_id
-                                or t.request_id,
->>>>>>> 01013b1f6 (ci: format code)
                                 error=ModuleError(
                                     message=error_msg,
                                     module=ModuleType.TTS,
