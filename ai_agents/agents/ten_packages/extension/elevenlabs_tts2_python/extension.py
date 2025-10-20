@@ -421,47 +421,28 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                 ),
             )
 
-    async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
-
-        name = data.get_name()
-        if name == "tts_flush":
-            ten_env.log_debug(f"Received tts_flush data: {name}")
-
-            # Wait for initialization to complete with timeout
-            if not self.init_complete.is_set():
-                ten_env.log_debug(
-                    "Waiting for initialization to complete before handling flush..."
+    async def cancel_tts(self) -> None:
+        self.ten_env.log_debug(f"Executing cancel_tts")
+        # Wait for initialization to complete with timeout
+        if not self.init_complete.is_set():
+            self.ten_env.log_debug(
+                "Waiting for initialization to complete before handling flush..."
+            )
+            try:
+                await asyncio.wait_for(
+                    self.init_complete.wait(), timeout=30.0
+                )  # 30 second timeout
+                self.ten_env.log_debug(
+                    "Initialization completed, proceeding with flush"
                 )
-                try:
-                    await asyncio.wait_for(
-                        self.init_complete.wait(), timeout=30.0
-                    )  # 30 second timeout
-                    ten_env.log_debug(
-                        "Initialization completed, proceeding with flush"
-                    )
-                except asyncio.TimeoutError:
-                    ten_env.log_error(
-                        "Initialization timeout, cannot handle flush"
-                    )
-                    await self.send_tts_error(
-                        request_id=self.current_request_id,
-                        error=ModuleError(
-                            message="TTS initialization timeout",
-                            module=ModuleType.TTS,
-                            code=ModuleErrorCode.FATAL_ERROR,
-                            vendor_info={"vendor": "elevenlabs"},
-                        ),
-                    )
-                    return
-
-            if self.client is None:
-                ten_env.log_error(
-                    "Client is not initialized, cannot handle flush"
+            except asyncio.TimeoutError:
+                self.ten_env.log_error(
+                    "Initialization timeout, cannot handle flush"
                 )
                 await self.send_tts_error(
                     request_id=self.current_request_id,
                     error=ModuleError(
-                        message="TTS client is not initialized",
+                        message="TTS initialization timeout",
                         module=ModuleType.TTS,
                         code=ModuleErrorCode.FATAL_ERROR,
                         vendor_info={"vendor": "elevenlabs"},
@@ -469,25 +450,39 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                 )
                 return
 
-            try:
-                # Cancel current connection (maintain original flush disconnect behavior)
-                self.client.cancel()
-                await self.handle_completed_request(
-                    TTSAudioEndReason.INTERRUPTED
-                )
-            except Exception as e:
-                ten_env.log_error(f"Error in handle_flush: {e}")
-                await self.send_tts_error(
-                    request_id=self.current_request_id,
-                    error=ModuleError(
-                        message=str(e),
-                        module=ModuleType.TTS,
-                        code=ModuleErrorCode.NON_FATAL_ERROR,
-                        vendor_info={"vendor": "elevenlabs"},
-                    ),
-                )
-                return
-        await super().on_data(ten_env, data)
+        if self.client is None:
+            self.ten_env.log_error(
+                "Client is not initialized, cannot handle flush"
+            )
+            await self.send_tts_error(
+                request_id=self.current_request_id,
+                error=ModuleError(
+                    message="TTS client is not initialized",
+                    module=ModuleType.TTS,
+                    code=ModuleErrorCode.FATAL_ERROR,
+                    vendor_info={"vendor": "elevenlabs"},
+                ),
+            )
+            return
+
+        try:
+            # Cancel current connection (maintain original flush disconnect behavior)
+            self.client.cancel()
+
+        except Exception as e:
+            self.ten_env.log_error(f"Error in handle_flush: {e}")
+            await self.send_tts_error(
+                request_id=self.current_request_id,
+                error=ModuleError(
+                    message=str(e),
+                    module=ModuleType.TTS,
+                    code=ModuleErrorCode.NON_FATAL_ERROR,
+                    vendor_info={"vendor": "elevenlabs"},
+                ),
+            )
+            await self.handle_completed_request(
+                TTSAudioEndReason.INTERRUPTED
+            )
 
     async def handle_completed_request(self, reason: TTSAudioEndReason):
         # update request_id

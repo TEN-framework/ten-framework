@@ -165,55 +165,46 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
         self.current_request_finished = False
         self.sent_ts = None
 
-    async def on_data(self, ten_env: AsyncTenEnv, data) -> None:
-        name = data.get_name()
-        if name == "tts_flush":
-            ten_env.log_info(f"Received tts_flush data: {name}")
-            # Set flush flag to stop processing audio
-            self._flush_requested = True
-
-            try:
-                if self.client is not None:
-                    ten_env.log_info(
+    async def cancel_tts(self) -> None:
+        self._flush_requested = True
+        try:
+            self.ten_env.log_debug(f"Executing cancel_tts")
+            if self.client is not None:
+                    self.ten_env.log_info(
                         "Flushing Google TTS client - cleaning old connection"
                     )
                     self.client.clean()  # Clean up old connection first
 
                     await self.client.reset()  # Initialize new connection
-                else:
-                    ten_env.log_warning(
-                        "Client is not initialized, skipping reset"
-                    )
-            except Exception as e:
-                ten_env.log_error(f"Error in handle_flush: {e}")
-                # Check if ten_env is available before calling send_tts_error
-                if self.ten_env is not None:
-                    await self.send_tts_error(
-                        request_id=self.current_request_id,
-                        error=ModuleError(
-                            message=str(e),
-                            module=ModuleType.TTS,
-                            code=ModuleErrorCode.NON_FATAL_ERROR,
-                            vendor_info=ModuleErrorVendorInfo(
-                                vendor=self.vendor()
-                            ),
-                        ),
-                    )
-                else:
-                    ten_env.log_error(
-                        "Cannot send error: ten_env is not initialized"
-                    )
-
-            # Check if ten_env is available before calling handle_completed_request
+            else:
+                self.ten_env.log_warning(
+                    "Client is not initialized, skipping reset"
+                )
+        except Exception as e:
+            self.ten_env.log_error(f"Error in handle_flush: {e}")
+            # Check if ten_env is available before calling send_tts_error
             if self.ten_env is not None:
-                await self.handle_completed_request(
-                    TTSAudioEndReason.INTERRUPTED
+                await self.send_tts_error(
+                    request_id=self.current_request_id,
+                    error=ModuleError(
+                        message=str(e),
+                        module=ModuleType.TTS,
+                        code=ModuleErrorCode.NON_FATAL_ERROR,
+                        vendor_info=ModuleErrorVendorInfo(
+                            vendor=self.vendor()
+                        ),
+                    ),
                 )
             else:
-                ten_env.log_warning(
-                    "Cannot handle completed request: ten_env is not initialized"
+                self.ten_env.log_error(
+                    "Cannot send error: ten_env is not initialized"
                 )
-        await super().on_data(ten_env, data)
+
+        # Check if ten_env is available before calling handle_completed_request
+        await self.handle_completed_request(
+            TTSAudioEndReason.INTERRUPTED
+        )
+
 
     async def handle_completed_request(self, reason: TTSAudioEndReason):
         # update request_id
