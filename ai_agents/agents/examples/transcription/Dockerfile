@@ -1,4 +1,4 @@
-FROM ghcr.io/ten-framework/ten_agent_build:0.7.7 AS builder
+FROM ghcr.io/ten-framework/ten_agent_build:0.7.9 AS builder
 
 ARG USE_AGENT=agents/examples/transcription
 
