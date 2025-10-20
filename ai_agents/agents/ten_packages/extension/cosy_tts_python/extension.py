@@ -19,7 +19,7 @@ from ten_ai_base.message import (
     TTSAudioEndReason,
 )
 from ten_ai_base.struct import TTSTextInput
-from ten_ai_base.tts2 import AsyncTTS2BaseExtension, DATA_FLUSH
+from ten_ai_base.tts2 import AsyncTTS2BaseExtension
 from ten_runtime import AsyncTenEnv
 
 from .config import CosyTTSConfig
@@ -120,21 +120,26 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
         await super().on_deinit(ten_env)
         ten_env.log_debug("on_deinit")
 
-    async def on_data(self, ten_env: AsyncTenEnv, data) -> None:
-        data_name = data.get_name()
-        ten_env.log_info(f"on_data: {data_name}")
+    async def cancel_tts(self) -> None:
+        """
+        Override cancel_tts to implement TTS-specific cancellation logic.
+        This is called when a flush request is received.
+        """
+        self.ten_env.log_info(
+            f"cancel_tts called, current_request_id: {self.current_request_id}"
+        )
 
-        if data.get_name() == DATA_FLUSH:
-            # Flush the current request
-            ten_env.log_info(
-                f"Received flush request, current_request_id: {self.current_request_id}"
+        # Cancel the TTS client
+        if self.client:
+            self.ten_env.log_info(
+                f"Cancelling TTS client for request ID: {self.current_request_id}"
             )
-            await self._flush()
-            if self.request_start_ts and self.current_request_id:
-                await self._handle_tts_audio_end(TTSAudioEndReason.INTERRUPTED)
-                self.current_request_finished = True
+            self.client.cancel()
 
-        await super().on_data(ten_env, data)
+        # Handle audio end if there's an active request
+        if self.request_start_ts and self.current_request_id:
+            await self._handle_tts_audio_end(TTSAudioEndReason.INTERRUPTED)
+            self.current_request_finished = True
 
     async def request_tts(self, t: TTSTextInput) -> None:
         """
@@ -413,16 +418,6 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
 
         # Clear the recorder map
         self.recorder_map.clear()
-
-    async def _flush(self) -> None:
-        """
-        Flush the TTS request.
-        """
-        if self.client:
-            self.ten_env.log_info(
-                f"Flushing TTS for request ID: {self.current_request_id}"
-            )
-            self.client.cancel()
 
     def _get_pcm_dump_file_path(self, request_id: str) -> str:
         """
