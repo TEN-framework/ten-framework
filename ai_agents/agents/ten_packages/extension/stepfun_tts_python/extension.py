@@ -32,7 +32,6 @@ from .stepfun_tts import (
 )
 from ten_runtime import (
     AsyncTenEnv,
-    Data,
 )
 
 
@@ -103,35 +102,6 @@ class StepFunTTSExtension(AsyncTTS2BaseExtension):
                 ),
             )
 
-    async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
-        data_name = data.get_name()
-        ten_env.log_info(f"on_data: {data_name}")
-
-        if data_name == "tts_flush":
-            flush_id, _ = data.get_property_string("flush_id")
-            if flush_id:
-                ten_env.log_info(f"Received flush request for ID: {flush_id}")
-                await self.client.cancel()
-                if self.current_request_id and self.sent_ts:
-                    ten_env.log_info(
-                        f"Current request {self.current_request_id} is being flushed. Sending INTERRUPTED."
-                    )
-                    request_event_interval = int(
-                        (datetime.now() - self.sent_ts).total_seconds() * 1000
-                    )
-                    duration_ms = self._calculate_audio_duration_ms()
-                    await self.send_tts_audio_end(
-                        request_id=self.current_request_id,
-                        request_event_interval_ms=request_event_interval,
-                        request_total_audio_duration_ms=duration_ms,
-                        reason=TTSAudioEndReason.INTERRUPTED,
-                    )
-                    # Reset state
-                    self.sent_ts = None
-                    self.total_audio_bytes = 0
-                    self.current_request_finished = True
-        await super().on_data(ten_env, data)
-
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
         # Clean up client if exists
         if self.client:
@@ -157,6 +127,39 @@ class StepFunTTSExtension(AsyncTTS2BaseExtension):
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
         await super().on_deinit(ten_env)
         ten_env.log_info("on_deinit")
+
+    async def cancel_tts(self) -> None:
+        """
+        Override cancel_tts to implement TTS-specific cancellation logic.
+        This is called when a flush request is received.
+        """
+        self.ten_env.log_info(
+            f"cancel_tts called, current_request_id: {self.current_request_id}"
+        )
+
+        # Cancel the TTS client
+        if self.client:
+            await self.client.cancel()
+            self.ten_env.log_info(
+                f"Cancelled TTS client for request ID: {self.current_request_id}"
+            )
+
+        # Handle audio end if there's an active request
+        if self.current_request_id and self.sent_ts:
+            request_event_interval = int(
+                (datetime.now() - self.sent_ts).total_seconds() * 1000
+            )
+            duration_ms = self._calculate_audio_duration_ms()
+            await self.send_tts_audio_end(
+                request_id=self.current_request_id,
+                request_event_interval_ms=request_event_interval,
+                request_total_audio_duration_ms=duration_ms,
+                reason=TTSAudioEndReason.INTERRUPTED,
+            )
+            # Reset state
+            self.sent_ts = None
+            self.total_audio_bytes = 0
+            self.current_request_finished = True
 
     def vendor(self) -> str:
         return "stepfun"
