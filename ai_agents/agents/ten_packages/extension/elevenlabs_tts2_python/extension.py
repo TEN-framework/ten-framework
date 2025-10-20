@@ -22,7 +22,6 @@ from ten_ai_base.tts2 import AsyncTTS2BaseExtension
 from .elevenlabs_tts import ElevenLabsTTS2Client, ElevenLabsTTS2Config
 from ten_runtime import (
     AsyncTenEnv,
-    Data,
 )
 from ten_ai_base.const import LOG_CATEGORY_KEY_POINT
 from ten_ai_base.const import LOG_CATEGORY_VENDOR
