@@ -131,7 +131,7 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
         else:
             if self.ten_env:
                 self.ten_env.log_warn(
-                    f"No current request found, skipping TTS cancellation."
+                    "No current request found, skipping TTS cancellation."
                 )
 
     def vendor(self) -> str:
