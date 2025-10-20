@@ -34,7 +34,6 @@ from .tencent_tts import (
 class TencentTTSExtension(AsyncTTS2BaseExtension):
     def __init__(self, name: str) -> None:
         super().__init__(name)
-        self.ten_env: AsyncTenEnv | None = None
         self.client: TencentTTSClient | None = None
         self.config: TencentTTSConfig | None = None
         self.current_request_finished: bool = True
@@ -51,7 +50,6 @@ class TencentTTSExtension(AsyncTTS2BaseExtension):
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         try:
             await super().on_init(ten_env)
-            self.ten_env = ten_env
             ten_env.log_debug("on_init")
 
             if self.config is None:

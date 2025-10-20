@@ -35,7 +35,6 @@ from ten_runtime import AsyncTenEnv
 class OpenaiTTSExtension(AsyncTTS2BaseExtension):
     def __init__(self, name: str) -> None:
         super().__init__(name)
-        self.ten_env: AsyncTenEnv | None = None
         self.config: OpenaiTTSConfig | None = None
         self.client: OpenaiTTSClient | None = None
         self.current_request_id: str | None = None
@@ -52,7 +51,6 @@ class OpenaiTTSExtension(AsyncTTS2BaseExtension):
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         try:
             await super().on_init(ten_env)
-            self.ten_env = ten_env
             config_json_str, _ = await self.ten_env.get_property_to_json("")
 
             if not config_json_str or config_json_str.strip() == "{}":
