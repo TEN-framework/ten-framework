@@ -22,7 +22,6 @@ from ten_ai_base.tts2 import AsyncTTS2BaseExtension
 from ten_ai_base.const import LOG_CATEGORY_KEY_POINT, LOG_CATEGORY_VENDOR
 from ten_runtime import (
     AsyncTenEnv,
-    Data,
 )
 
 from .config import GroqTTSConfig
@@ -38,12 +37,14 @@ class GroqTTSExtension(AsyncTTS2BaseExtension):
         self.current_request_id: str | None = None
         self.request_start_ts: float = 0
         self.first_chunk_ts: float = 0
-        self.current_turn_id: int = -1
         self.audio_dumper: Dumper | dict[str, Dumper] | None = None
-        self.flush_request_ids: set[str] = set()
-        self.last_end_request_ids: set[str] = set()
+        self.flush_request_id: str | None = None
+        self.last_end_request_id: str | None = None
         self.request_total_audio_duration: int = 0
         self.heartbeat_task: asyncio.Task | None = None
+        self.request_done: asyncio.Event = asyncio.Event()
+        self.request_task: asyncio.Task | None = None
+        self.request_done.set()
 
     @override
     def vendor(self) -> str:
@@ -116,32 +117,21 @@ class GroqTTSExtension(AsyncTTS2BaseExtension):
         if self.heartbeat_task is not None:
             self.heartbeat_task.cancel()
 
-    async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
-        name = data.get_name()
-        if name == "tts_flush":
-            # get flush_id and record to flush_request_ids
-            flush_id, _ = data.get_property_string("flush_id")
-            if flush_id:
-                self.flush_request_ids.add(flush_id)
-
-            if self.first_chunk_ts > 0 and self.current_request_id is not None:
-                request_event_interval = int(
-                    (time.time() - self.first_chunk_ts) * 1000
-                )
-                await self.send_tts_audio_end(
-                    self.current_request_id,
-                    request_event_interval,
-                    self.request_total_audio_duration,
-                    self.current_turn_id,
-                    TTSAudioEndReason.INTERRUPTED,
-                )
-        await super().on_data(ten_env, data)
+    @override
+    async def cancel_tts(self) -> None:
+        self.ten_env.log_info(
+            f"cancel_tts current_request_id: {self.current_request_id}"
+        )
+        if self.current_request_id is not None:
+            self.flush_request_id = self.current_request_id
+        if self.request_task is not None:
+            self.request_task.cancel()
+        await self.request_done.wait()
 
     async def _async_synthesize(self, text_input: TTSTextInput):
         assert self.client is not None
         text = text_input.text
         request_id = text_input.request_id
-        turn_id = text_input.metadata.get("turn_id", -1)
         text_input_end = text_input.text_input_end
 
         is_new_request = self.current_request_id != request_id
@@ -169,7 +159,7 @@ class GroqTTSExtension(AsyncTTS2BaseExtension):
 
                 if not received_first_chunk:
                     received_first_chunk = True
-                    await self.send_tts_audio_start(request_id, turn_id)
+                    await self.send_tts_audio_start(request_id)
                     if is_new_request:
                         # send ttfb metrics for new request
                         self.first_chunk_ts = time.time()
@@ -177,10 +167,15 @@ class GroqTTSExtension(AsyncTTS2BaseExtension):
                             (self.first_chunk_ts - self.request_start_ts) * 1000
                         )
                         await self.send_tts_ttfb_metrics(
-                            request_id, elapsed_time, turn_id
+                            request_id=request_id,
+                            ttfb_ms=elapsed_time,
+                            extra_metadata={
+                                "model": self.client.params.model,
+                                "voice": self.client.params.voice,
+                            },
                         )
 
-                if request_id in self.flush_request_ids:
+                if request_id == self.flush_request_id:
                     # flush request, break current synthesize task
                     break
 
@@ -209,6 +204,9 @@ class GroqTTSExtension(AsyncTTS2BaseExtension):
                         await _dumper.start()
                         await _dumper.push_bytes(chunk)
                         self.audio_dumper[request_id] = _dumper
+        except asyncio.CancelledError:
+            # interrupt by cancel_tts
+            pass
         except ValueError:
             pass
         except Exception as e:
@@ -223,23 +221,23 @@ class GroqTTSExtension(AsyncTTS2BaseExtension):
                     module="tts",
                     code=ModuleErrorCode.NON_FATAL_ERROR.value,
                 ),
-                turn_id=turn_id,
             )
 
-        if text_input_end and self.first_chunk_ts > 0:
-            self.last_end_request_ids.add(request_id)
+        if (
+            text_input_end or request_id == self.flush_request_id
+        ) and self.first_chunk_ts > 0:
+            self.last_end_request_id = request_id
             reason = TTSAudioEndReason.REQUEST_END
-            if request_id in self.flush_request_ids:
+            if request_id == self.flush_request_id:
                 reason = TTSAudioEndReason.INTERRUPTED
             request_event_interval = int(
                 (time.time() - self.first_chunk_ts) * 1000
             )
             await self.send_tts_audio_end(
-                request_id,
-                request_event_interval,
-                self.request_total_audio_duration,
-                turn_id,
-                reason,
+                request_id=request_id,
+                request_event_interval_ms=request_event_interval,
+                request_total_audio_duration_ms=self.request_total_audio_duration,
+                reason=reason,
             )
 
     @override
@@ -253,20 +251,26 @@ class GroqTTSExtension(AsyncTTS2BaseExtension):
             f"vendor_status: Requesting tts for text: {t.text}, text_input_end: {t.text_input_end} request ID: {t.request_id}",
             category=LOG_CATEGORY_VENDOR,
         )
-        # check if request_id is in flush_request_ids
-        if t.request_id in self.flush_request_ids:
+        # check if request_id is flushed
+        if t.request_id == self.flush_request_id:
             self.ten_env.log_debug(
                 f"Request ID {t.request_id} was flushed, ignoring TTS request"
             )
             return
 
-        if t.request_id in self.last_end_request_ids:
+        if t.request_id == self.last_end_request_id:
             self.ten_env.log_debug(
                 f"Request ID {t.request_id} was ended, ignoring TTS request"
             )
             return
 
-        await self._async_synthesize(t)
+        try:
+            self.request_done.clear()
+            self.request_task = asyncio.create_task(self._async_synthesize(t))
+            await self.request_task
+        finally:
+            self.request_done.set()
+            self.request_task = None
 
     def synthesize_audio_sample_rate(self) -> int:
         assert self.config is not None
