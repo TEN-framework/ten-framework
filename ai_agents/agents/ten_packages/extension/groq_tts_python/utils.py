@@ -60,7 +60,7 @@ class RetryError(Exception):
 
 def with_retry_context(
     max_retries: int = 3,
-    retry_delay: float = 1.0,
+    retry_delay: float = 0.1,
     backoff_factor: float = 2.0,
     exceptions: tuple = (Exception,),
 ):

@@ -268,7 +268,9 @@ class MainControlExtension(AsyncExtension):
             )
             return ""
 
-    async def _retrieve_related_memory(self, query: str, user_id: str = None) -> str:
+    async def _retrieve_related_memory(
+        self, query: str, user_id: str = None
+    ) -> str:
         """Retrieve related memory based on user query using semantic search"""
         if not self.memu_client:
             return ""
@@ -276,28 +278,26 @@ class MainControlExtension(AsyncExtension):
         try:
             user_id = self.config.user_id
             agent_id = self.config.agent_id
-            
+
             self.ten_env.log_info(
                 f"[MainControlExtension] Searching related memory with query: '{query}'"
             )
-            
+
             # Call semantic search API
             resp = await self.memu_client.retrieve_related_clustered_categories(
-                user_id=user_id,
-                agent_id=agent_id,
-                category_query=query
+                user_id=user_id, agent_id=agent_id, category_query=query
             )
-            
+
             # Parse response
             parsed = self.memu_client.parse_related_clustered_categories(resp)
-            
+
             # Extract memory text
             memory_text = self._extract_related_memory_text(parsed)
-            
+
             self.ten_env.log_info(
                 f"[MainControlExtension] Retrieved related memory (length: {len(memory_text)})"
             )
-            
+
             return memory_text
         except Exception as e:
             self.ten_env.log_error(
@@ -442,7 +442,6 @@ class MainControlExtension(AsyncExtension):
 
     # Removed: _update_llm_context and _sync_context_from_llM (no separate context to sync)
 
-
     def _extract_related_memory_text(self, parsed_data: dict) -> str:
         """Extract and format text from related clustered categories search results"""
         if not parsed_data or "categories" not in parsed_data:
@@ -451,26 +450,30 @@ class MainControlExtension(AsyncExtension):
         parts = []
         query = parsed_data.get("query", "")
         total = parsed_data.get("total_categories", 0)
-        
+
         if total == 0:
             return ""
-        
+
         # Add search result header information
-        parts.append(f"Found {total} related memory categories based on query '{query}':\n")
-        
+        parts.append(
+            f"Found {total} related memory categories based on query '{query}':\n"
+        )
+
         # Iterate through each related category
         for cat in parsed_data["categories"]:
             cat_name = cat.get("name", "Unknown Category")
             similarity = cat.get("similarity_score", 0)
             memory_count = cat.get("memory_count", 0)
-            
+
             # Add category information
-            parts.append(f"\n【{cat_name}】(Similarity: {similarity:.2f}, Memory Count: {memory_count})")
-            
+            parts.append(
+                f"\n【{cat_name}】(Similarity: {similarity:.2f}, Memory Count: {memory_count})"
+            )
+
             # Add category summary
             if cat.get("summary"):
                 parts.append(f"  Summary: {cat['summary']}")
-            
+
             # Add recent memory content
             if cat.get("recent_memories"):
                 parts.append("  Recent Memories:")
@@ -481,5 +484,5 @@ class MainControlExtension(AsyncExtension):
                         parts.append(f"    - [{date}] {content}")
                     elif content:
                         parts.append(f"    - {content}")
-        
+
         return "\n".join(parts)
