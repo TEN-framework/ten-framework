@@ -1,61 +1,59 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import NextLink from "next/link"
+import dynamic from "next/dynamic";
+import NextLink from "next/link";
+import * as React from "react";
+import { HexColorPicker } from "react-colorful";
+import {
+  COLOR_LIST,
+  GITHUB_URL,
+  useAppDispatch,
+  useAppSelector,
+} from "@/common";
+import { GitHubIcon, InfoIcon, PaletteIcon } from "@/components/Icon";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
-import { InfoIcon, GitHubIcon, PaletteIcon } from "@/components/Icon"
-import {
-  useAppSelector,
-  useAppDispatch,
-  GITHUB_URL,
-  COLOR_LIST,
-} from "@/common"
-import { setThemeColor } from "@/store/reducers/global"
-import { cn } from "@/lib/utils"
-import { HexColorPicker } from "react-colorful"
-import dynamic from "next/dynamic"
+} from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
+import { setThemeColor } from "@/store/reducers/global";
 
-import styles from "./Header.module.css"
+import styles from "./Header.module.css";
 
 export function HeaderRoomInfo() {
-  const options = useAppSelector((state) => state.global.options)
-  const { channel, userId } = options
+  const options = useAppSelector((state) => state.global.options);
+  const { channel, userId } = options;
 
-  const roomConnected = useAppSelector((state) => state.global.roomConnected)
-  const agentConnected = useAppSelector((state) => state.global.agentConnected)
+  const roomConnected = useAppSelector((state) => state.global.roomConnected);
+  const agentConnected = useAppSelector((state) => state.global.agentConnected);
 
   const roomConnectedText = React.useMemo(() => {
-    return roomConnected ? "TRUE" : "FALSE"
-  }, [roomConnected])
+    return roomConnected ? "TRUE" : "FALSE";
+  }, [roomConnected]);
 
   const agentConnectedText = React.useMemo(() => {
-    return agentConnected ? "TRUE" : "FALSE"
-  }, [agentConnected])
+    return agentConnected ? "TRUE" : "FALSE";
+  }, [agentConnected]);
 
   return (
     <>
       <TooltipProvider delayDuration={200}>
         <Tooltip>
-          <TooltipTrigger className="flex items-center space-x-2 text-lg font-semibold">
+          <TooltipTrigger className="flex items-center space-x-2 font-semibold text-lg">
             <InfoIcon className="h-4 w-4 md:h-5 md:w-5" />
             <span className="hidden text-sm md:inline-block">
               Channel Name:{" "}
             </span>
-            <span className="max-w-24 text-sm md:text-base">
-              {channel}
-            </span>
+            <span className="max-w-24 text-sm md:text-base">{channel}</span>
           </TooltipTrigger>
-          <TooltipContent className="bg-[var(--background-color,#1C1E22)] text-gray-600">
+          <TooltipContent className="bg-(--background-color,#1C1E22) text-gray-600">
             <table className="border-collapse">
               <tbody>
                 <tr>
@@ -72,7 +70,7 @@ export function HeaderRoomInfo() {
                 </tr>
                 <tr>
                   <td colSpan={2}>
-                    <hr className="my-2 border-t border-gray-600" />
+                    <hr className="my-2 border-gray-600 border-t" />
                   </td>
                 </tr>
                 <tr>
@@ -94,7 +92,7 @@ export function HeaderRoomInfo() {
         </Tooltip>
       </TooltipProvider>
     </>
-  )
+  );
 }
 
 export function HeaderActions() {
@@ -107,24 +105,24 @@ export function HeaderActions() {
       <ThemePalettePopover />
       <NetworkIndicator />
     </div>
-  )
+  );
 }
 
 export const ThemePalettePopover = () => {
-  const themeColor = useAppSelector((state) => state.global.themeColor)
-  const dispatch = useAppDispatch()
+  const themeColor = useAppSelector((state) => state.global.themeColor);
+  const dispatch = useAppDispatch();
 
   const onMainClickSelect = (index: number) => {
-    const target = COLOR_LIST[index]
+    const target = COLOR_LIST[index];
     if (target.active !== themeColor) {
-      dispatch(setThemeColor(target.active))
+      dispatch(setThemeColor(target.active));
     }
-  }
+  };
 
   const onColorSliderChange = (color: string) => {
-    console.log(color)
-    dispatch(setThemeColor(color))
-  }
+    console.log(color);
+    dispatch(setThemeColor(color));
+  };
 
   return (
     <>
@@ -132,13 +130,13 @@ export const ThemePalettePopover = () => {
         <PopoverTrigger>
           <PaletteIcon className="h-4 w-4 md:h-5 md:w-5" color={themeColor} />
         </PopoverTrigger>
-        <PopoverContent className="space-y-2 border-none bg-[var(--background-color,#1C1E22)]">
-          <div className="text-sm font-semibold text-[var(--Grey-300,#EAECF0)]">
+        <PopoverContent className="space-y-2 border-none bg-(--background-color,#1C1E22)">
+          <div className="font-semibold text-(--Grey-300,#EAECF0) text-sm">
             STYLE
           </div>
           <div className="mt-4 flex gap-3">
             {COLOR_LIST.map((item, index) => {
-              const isSelected = item.active === themeColor
+              const isSelected = item.active === themeColor;
               return (
                 <button
                   onClick={() => onMainClickSelect(index)}
@@ -147,7 +145,7 @@ export const ThemePalettePopover = () => {
                     {
                       "ring-2 ring-offset-2": isSelected,
                     },
-                    "transition-all duration-200 ease-in-out",
+                    "transition-all duration-200 ease-in-out"
                   )}
                   style={{
                     backgroundColor: item.default,
@@ -162,7 +160,7 @@ export const ThemePalettePopover = () => {
                     }}
                   ></span>
                 </button>
-              )
+              );
             })}
           </div>
           <div className={cn("flex h-6 items-center", styles.colorPicker)}>
@@ -171,8 +169,8 @@ export const ThemePalettePopover = () => {
         </PopoverContent>
       </Popover>
     </>
-  )
-}
+  );
+};
 
 // export const Network = () => {
 //   const [networkQuality, setNetworkQuality] = React.useState<NetworkQuality>()
@@ -201,5 +199,5 @@ const NetworkIndicator = dynamic(
   () => import("@/components/Dynamic/NetworkIndicator"),
   {
     ssr: false,
-  },
-)
+  }
+);

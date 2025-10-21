@@ -1,40 +1,54 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { cn } from "@/lib/utils"
-import { ICameraVideoTrack, ILocalVideoTrack, IMicrophoneAudioTrack } from "agora-rtc-sdk-ng"
-import { useAppSelector, useAppDispatch, VOICE_OPTIONS, VideoSourceType, useIsCompactLayout } from "@/common"
-import { ITextItem, EMessageType, IChatItem } from "@/types"
-import { rtcManager, IUserTracks, IRtcUser } from "@/manager"
+import type {
+  ICameraVideoTrack,
+  ILocalVideoTrack,
+  IMicrophoneAudioTrack,
+} from "agora-rtc-sdk-ng";
+import dynamic from "next/dynamic";
+import * as React from "react";
 import {
-  setRoomConnected,
+  useAppDispatch,
+  useAppSelector,
+  useIsCompactLayout,
+  VideoSourceType,
+  VOICE_OPTIONS,
+} from "@/common";
+import Avatar from "@/components/Agent/AvatarTrulience";
+import VideoBlock from "@/components/Agent/Camera";
+import MicrophoneBlock from "@/components/Agent/Microphone";
+import AgentView from "@/components/Agent/View";
+import AgentVoicePresetSelect from "@/components/Agent/VoicePresetSelect";
+import ChatCard from "@/components/Chat/ChatCard";
+import { cn } from "@/lib/utils";
+import { type IRtcUser, type IUserTracks, rtcManager } from "@/manager";
+import {
   addChatItem,
-  setVoiceType,
   setOptions,
-} from "@/store/reducers/global"
-import AgentVoicePresetSelect from "@/components/Agent/VoicePresetSelect"
-import AgentView from "@/components/Agent/View"
-import Avatar from "@/components/Agent/AvatarTrulience"
-import MicrophoneBlock from "@/components/Agent/Microphone"
-import VideoBlock from "@/components/Agent/Camera"
-import dynamic from "next/dynamic"
-import ChatCard from "@/components/Chat/ChatCard"
+  setRoomConnected,
+  setVoiceType,
+} from "@/store/reducers/global";
+import { EMessageType, type IChatItem, ITextItem } from "@/types";
 
-let hasInit: boolean = false
+let hasInit: boolean = false;
 
 export default function RTCCard(props: { className?: string }) {
-  const { className } = props
+  const { className } = props;
 
-  const dispatch = useAppDispatch()
-  const options = useAppSelector((state) => state.global.options)
-  const trulienceSettings = useAppSelector((state) => state.global.trulienceSettings)
-  const { userId, channel } = options
-  const [videoTrack, setVideoTrack] = React.useState<ICameraVideoTrack>()
-  const [audioTrack, setAudioTrack] = React.useState<IMicrophoneAudioTrack>()
-  const [screenTrack, setScreenTrack] = React.useState<ILocalVideoTrack>()
-  const [remoteuser, setRemoteUser] = React.useState<IRtcUser>()
-  const [videoSourceType, setVideoSourceType] = React.useState<VideoSourceType>(VideoSourceType.CAMERA)
-  const useTrulienceAvatar = trulienceSettings.enabled
+  const dispatch = useAppDispatch();
+  const options = useAppSelector((state) => state.global.options);
+  const trulienceSettings = useAppSelector(
+    (state) => state.global.trulienceSettings
+  );
+  const { userId, channel } = options;
+  const [videoTrack, setVideoTrack] = React.useState<ICameraVideoTrack>();
+  const [audioTrack, setAudioTrack] = React.useState<IMicrophoneAudioTrack>();
+  const [screenTrack, setScreenTrack] = React.useState<ILocalVideoTrack>();
+  const [remoteuser, setRemoteUser] = React.useState<IRtcUser>();
+  const [videoSourceType, setVideoSourceType] = React.useState<VideoSourceType>(
+    VideoSourceType.CAMERA
+  );
+  const useTrulienceAvatar = trulienceSettings.enabled;
   const avatarInLargeWindow = trulienceSettings.avatarDesktopLargeWindow;
 
   const isCompactLayout = useIsCompactLayout();
@@ -45,108 +59,108 @@ export default function RTCCard(props: { className?: string }) {
 
   React.useEffect(() => {
     if (!options.channel) {
-      return
+      return;
     }
     if (hasInit) {
-      return
+      return;
     }
 
-    init()
+    init();
 
     return () => {
       if (hasInit) {
-        destory()
+        destory();
       }
-    }
-  }, [options.channel])
+    };
+  }, [options.channel]);
 
   const init = async () => {
-    console.log("[rtc] init")
-    rtcManager.on("localTracksChanged", onLocalTracksChanged)
-    rtcManager.on("textChanged", onTextChanged)
-    rtcManager.on("remoteUserChanged", onRemoteUserChanged)
-    await rtcManager.createCameraTracks()
-    await rtcManager.createMicrophoneAudioTrack()
+    console.log("[rtc] init");
+    rtcManager.on("localTracksChanged", onLocalTracksChanged);
+    rtcManager.on("textChanged", onTextChanged);
+    rtcManager.on("remoteUserChanged", onRemoteUserChanged);
+    await rtcManager.createCameraTracks();
+    await rtcManager.createMicrophoneAudioTrack();
     await rtcManager.join({
       channel,
       userId,
-    })
+    });
     dispatch(
       setOptions({
         ...options,
         appId: rtcManager.appId ?? "",
         token: rtcManager.token ?? "",
-      }),
-    )
-    await rtcManager.publish()
-    dispatch(setRoomConnected(true))
-    hasInit = true
-  }
+      })
+    );
+    await rtcManager.publish();
+    dispatch(setRoomConnected(true));
+    hasInit = true;
+  };
 
   const destory = async () => {
-    console.log("[rtc] destory")
-    rtcManager.off("textChanged", onTextChanged)
-    rtcManager.off("localTracksChanged", onLocalTracksChanged)
-    rtcManager.off("remoteUserChanged", onRemoteUserChanged)
-    await rtcManager.destroy()
-    dispatch(setRoomConnected(false))
-    hasInit = false
-  }
+    console.log("[rtc] destory");
+    rtcManager.off("textChanged", onTextChanged);
+    rtcManager.off("localTracksChanged", onLocalTracksChanged);
+    rtcManager.off("remoteUserChanged", onRemoteUserChanged);
+    await rtcManager.destroy();
+    dispatch(setRoomConnected(false));
+    hasInit = false;
+  };
 
   const onRemoteUserChanged = (user: IRtcUser) => {
-    console.log("[rtc] onRemoteUserChanged", user)
+    console.log("[rtc] onRemoteUserChanged", user);
     if (useTrulienceAvatar) {
       // trulience SDK will play audio in synch with mouth
       user.audioTrack?.stop();
     }
     if (user.audioTrack) {
-      setRemoteUser(user)
-    } 
-  }
+      setRemoteUser(user);
+    }
+  };
 
   const onLocalTracksChanged = (tracks: IUserTracks) => {
-    console.log("[rtc] onLocalTracksChanged", tracks)
-    const { videoTrack, audioTrack, screenTrack } = tracks
-    setVideoTrack(videoTrack)
-    setScreenTrack(screenTrack)
+    console.log("[rtc] onLocalTracksChanged", tracks);
+    const { videoTrack, audioTrack, screenTrack } = tracks;
+    setVideoTrack(videoTrack);
+    setScreenTrack(screenTrack);
     if (audioTrack) {
-      setAudioTrack(audioTrack)
+      setAudioTrack(audioTrack);
     }
-  }
+  };
 
   const onTextChanged = (text: IChatItem) => {
-    console.log("[rtc] onTextChanged", text)
-    dispatch(
-      addChatItem(text),
-    )
-  }
+    console.log("[rtc] onTextChanged", text);
+    dispatch(addChatItem(text));
+  };
 
   const onVoiceChange = (value: any) => {
-    dispatch(setVoiceType(value))
-  }
+    dispatch(setVoiceType(value));
+  };
 
   const onVideoSourceTypeChange = async (value: VideoSourceType) => {
-    await rtcManager.switchVideoSource(value)
-    setVideoSourceType(value)
-  }
+    await rtcManager.switchVideoSource(value);
+    setVideoSourceType(value);
+  };
 
   return (
-    <div className={cn("flex h-full flex-col min-h-0", className)}>
+    <div className={cn("flex h-full min-h-0 flex-col", className)}>
       {/* Scrollable top region (Avatar or ChatCard) */}
-      <div className="min-h-0 overflow-y-auto z-10">
+      <div className="z-10 min-h-0 overflow-y-auto">
         {useTrulienceAvatar ? (
           !avatarInLargeWindow ? (
             <div className="h-60 w-full p-1">
-              <Avatar localAudioTrack={audioTrack} audioTrack={remoteuser?.audioTrack} />
+              <Avatar
+                localAudioTrack={audioTrack}
+                audioTrack={remoteuser?.audioTrack}
+              />
             </div>
           ) : (
-            !isCompactLayout &&
-            <ChatCard
-              className="m-0 w-full h-full rounded-b-lg bg-[#181a1d] md:rounded-lg"
-            />
+            !isCompactLayout && (
+              <ChatCard className="m-0 h-full w-full rounded-b-lg bg-[#181a1d] md:rounded-lg" />
+            )
           )
         ) : (
-          <AgentView  audioTrack={remoteuser?.audioTrack} />
+          <AgentView audioTrack={remoteuser?.audioTrack} />
         )}
       </div>
 
