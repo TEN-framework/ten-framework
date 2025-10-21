@@ -578,6 +578,8 @@ class MainControlExtension(AsyncExtension):
             greeting_text = self.config.greeting
             await self._send_to_tts(greeting_text, True)
 
-            self.ten_env.log_info(f"Greeting TTS sent for call {call_sid}: {greeting_text}")
+            self.ten_env.log_info(
+                f"Greeting TTS sent for call {call_sid}: {greeting_text}"
+            )
         except Exception as e:
             self.ten_env.log_error(f"Failed to send greeting TTS: {str(e)}")
