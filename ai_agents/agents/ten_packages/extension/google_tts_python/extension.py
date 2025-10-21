@@ -184,9 +184,7 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                 ),
             )
 
-
         await self.handle_completed_request(TTSAudioEndReason.INTERRUPTED)
-
 
     async def handle_completed_request(self, reason: TTSAudioEndReason):
         # update request_id
