@@ -1,5 +1,5 @@
 {
     "params": {
-        "credentials": "invalid"
+        "credentials": "{\"type\": \"invalid\",\"project_id\": \"invalid\",\"private_key_id\": \"invalid\",\"private_key\": \"invalid\",\"client_email\": \"invalid\",\"client_id\": \"invalid\",token_uri: \"invalid\"}"
     }
 }
