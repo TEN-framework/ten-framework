@@ -55,7 +55,6 @@ class MainControlExtension(AsyncExtension):
         self.audio_dump_dir: str = ""
 
         self.stopped: bool = False
-        self._rtc_user_count: int = 0
         self.sentence_fragment: str = ""
         self.turn_id: int = 0
         self.session_id: str = "0"
@@ -186,19 +185,6 @@ class MainControlExtension(AsyncExtension):
             )
 
     # === Register handlers with decorators ===
-    @agent_event_handler(UserJoinedEvent)
-    async def _on_user_joined(self, event: UserJoinedEvent):
-        self._rtc_user_count += 1
-        if self._rtc_user_count == 1 and self.config and self.config.greeting:
-            await self._send_to_tts(self.config.greeting, True)
-            await self._send_transcript(
-                "assistant", self.config.greeting, True, 100
-            )
-
-    @agent_event_handler(UserLeftEvent)
-    async def _on_user_left(self, event: UserLeftEvent):
-        self._rtc_user_count -= 1
-
     @agent_event_handler(ToolRegisterEvent)
     async def _on_tool_register(self, event: ToolRegisterEvent):
         await self.agent.register_llm_tool(event.tool, event.source)
@@ -580,3 +566,18 @@ class MainControlExtension(AsyncExtension):
 
         # Use the new cleanup method
         await self._end_call_and_cleanup(call_sid)
+
+    async def on_websocket_connected(self, call_sid: str):
+        """Called when websocket connection is established for a call"""
+        try:
+            self.ten_env.log_info(
+                f"WebSocket connected for call {call_sid}, sending greeting TTS"
+            )
+
+            # Send greeting TTS using the configured greeting message
+            greeting_text = self.config.greeting
+            await self._send_to_tts(greeting_text, True)
+
+            self.ten_env.log_info(f"Greeting TTS sent for call {call_sid}: {greeting_text}")
+        except Exception as e:
+            self.ten_env.log_error(f"Failed to send greeting TTS: {str(e)}")

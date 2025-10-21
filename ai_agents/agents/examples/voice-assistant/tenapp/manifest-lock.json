@@ -4,8 +4,8 @@
     {
       "type": "system",
       "name": "ten_runtime_go",
-      "version": "0.11.19",
-      "hash": "61c5990dcec3dd7d1bf644633feb0aa6c7e04d0d2388650bd4aefa53f9897045",
+      "version": "0.11.20",
+      "hash": "8886fe1b0d8256f7b0c951dc12b8741c9b05eb6294e552aba72f47672d16ac12",
       "dependencies": [
         {
           "type": "system",
@@ -44,8 +44,8 @@
     {
       "type": "system",
       "name": "ten_ai_base",
-      "version": "0.7.12",
-      "hash": "92e91562b8b13563afa2db0c5101a6dd74f6ce562eb69304e3b32a49e3fc2917",
+      "version": "0.7.14",
+      "hash": "e8b7bf972c736d420178d5e2b838c4085d9c92131da10520b0189757e711071e",
       "dependencies": [
         {
           "type": "system",
@@ -256,8 +256,8 @@
     {
       "type": "extension",
       "name": "soniox_asr_python",
-      "version": "0.3.1",
-      "hash": "eb6b2d9524ae6912ba0817b8f38aecd483a7ace672c80653a8dbe48506b78099",
+      "version": "0.3.2",
+      "hash": "86f92ebb2f31c0dba65a335808792cc041f0960f68d5fe97d99d6923e49b9bca",
       "dependencies": [
         {
           "type": "system",
@@ -460,8 +460,8 @@
     {
       "type": "extension",
       "name": "cosy_tts_python",
-      "version": "0.3.0",
-      "hash": "b837946d3a968b8f0d4dae141f3c0a34abbc5910d4d7aea1c193dab1da1290b6",
+      "version": "0.3.1",
+      "hash": "bce6c8aa7f2050c4920fdec37552f69b642bcff3d4ae99a5e4b0ad1123b10766",
       "dependencies": [
         {
           "type": "system",
@@ -490,8 +490,8 @@
     {
       "type": "extension",
       "name": "elevenlabs_tts2_python",
-      "version": "0.2.3",
-      "hash": "0435ef6f29279fae8b40e6f5b80df9c9f645a409ad1bac8006199f11f057507c",
+      "version": "0.3.1",
+      "hash": "ab5bc9d03f97d15f7b9c5dd60e8653f384c3c148b333e5144677d8c890c28a21",
       "dependencies": [
         {
           "type": "system",
@@ -524,8 +524,8 @@
     {
       "type": "extension",
       "name": "google_tts_python",
-      "version": "0.2.5",
-      "hash": "0d1bd4d55d58799f2abe4f2f6ea42066ab6bda4c67d98a6858cb146be383816b",
+      "version": "0.3.1",
+      "hash": "ea63c3e6f2b82bd09b2b99b9aa4e6af5a2a46c4ee66cc534048f7a1beb09ca4c",
       "dependencies": [
         {
           "type": "system",
@@ -558,8 +558,8 @@
     {
       "type": "extension",
       "name": "humeai_tts_python",
-      "version": "0.2.4",
-      "hash": "d974dfb648a9403203a37f2e325764cd4b7b274e665792ec990e119bd055409d",
+      "version": "0.3.0",
+      "hash": "d184ef0b4c862e6df08a740feb6da87a206a5b9daf354f04ec5d45e7986e6479",
       "dependencies": [
         {
           "type": "system",
@@ -673,8 +673,8 @@
     {
       "type": "extension",
       "name": "stepfun_tts_python",
-      "version": "0.2.0",
-      "hash": "d86fc1656d4ffe41421af8d8dd302a3db5478dc0c60bf92a30a43c2e7667e882",
+      "version": "0.3.0",
+      "hash": "6f05bb0e250e88a394b481ef9c5c050fbdad25bb5779a212dde7735b8729ffe8",
       "dependencies": [
         {
           "type": "system",
@@ -733,8 +733,8 @@
     {
       "type": "system",
       "name": "ten_runtime_python",
-      "version": "0.11.19",
-      "hash": "6b82701eb80121f3155c5d3b51454dd225a8eb79f59546f232aa1162989f9278",
+      "version": "0.11.20",
+      "hash": "336f286b2fccea9015046506546bd026524bbb05ed62a9310f8247612415e890",
       "dependencies": [
         {
           "type": "system",
@@ -755,8 +755,8 @@
     {
       "type": "system",
       "name": "ten_runtime",
-      "version": "0.11.19",
-      "hash": "544116be54231d292c74643cb70267d41e38410e16fe55825abc8156ade278e5",
+      "version": "0.11.20",
+      "hash": "7df4747d962481721dbac01d15c85ca9047df87c12bc97d57d211094e9fef960",
       "supports": [
         {
           "os": "linux",
@@ -779,8 +779,8 @@
     {
       "type": "addon_loader",
       "name": "python_addon_loader",
-      "version": "0.11.19",
-      "hash": "32be695715e6e3dc74866af0b969bf8318ae096658b1495c691e69dda3e664d1",
+      "version": "0.11.20",
+      "hash": "dc178896381d8fab102cd3ce5648248c35b759374fb9f93b8133809e98bb99db",
       "dependencies": [
         {
           "type": "system",

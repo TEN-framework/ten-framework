@@ -133,6 +133,11 @@ jobs:
 
           cargo install --force cbindgen
 
+      - name: Update version
+        run: |
+          python3 tools/version/update_version_in_ten_framework.py
+          python3 tools/version/check_version_in_ten_framework.py
+
       - name: Build
         run: |
           if [ ${{ matrix.build_type }} == "debug" ]; then
