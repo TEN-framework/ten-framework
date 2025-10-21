@@ -1458,7 +1458,10 @@ jobs:
 
       - name: Generate coverage report
         run: |
-          export PATH=$(pwd)/core/ten_gn:$PATH
+          export PATH=$(pwd)/core/ten_gn:/usr/local/go/bin:/root/go/bin:/root/.cargo/bin:$PATH
+          # Ensure go1.24.3 shim is available during build
+          export PATH=$PATH:$(go env GOPATH)/bin
+          go1.24.3 version || { go install golang.org/dl/go1.24.3@latest && go1.24.3 download && go1.24.3 version; }
           ulimit -n 102400
           sysctl -w net.core.somaxconn=8192
           fuser -k 8001/tcp || true
