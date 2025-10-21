@@ -173,29 +173,20 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                 )
         except Exception as e:
             self.ten_env.log_error(f"Error in handle_flush: {e}")
-            # Check if ten_env is available before calling send_tts_error
-            if self.ten_env is not None:
-                await self.send_tts_error(
-                    request_id=self.current_request_id,
-                    error=ModuleError(
-                        message=str(e),
-                        module=ModuleType.TTS,
-                        code=ModuleErrorCode.NON_FATAL_ERROR,
-                        vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
-                    ),
-                )
-            else:
-                self.ten_env.log_error(
-                    "Cannot send error: ten_env is not initialized"
-                )
 
-        # Check if ten_env is available before calling handle_completed_request
-        if self.ten_env is not None:
-            await self.handle_completed_request(TTSAudioEndReason.INTERRUPTED)
-        else:
-            self.ten_env.log_warn(
-                "Cannot handle completed request: ten_env is not initialized"
+            await self.send_tts_error(
+                request_id=self.current_request_id,
+                error=ModuleError(
+                    message=str(e),
+                    module=ModuleType.TTS,
+                    code=ModuleErrorCode.NON_FATAL_ERROR,
+                    vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
+                ),
             )
+
+
+        await self.handle_completed_request(TTSAudioEndReason.INTERRUPTED)
+
 
     async def handle_completed_request(self, reason: TTSAudioEndReason):
         # update request_id
