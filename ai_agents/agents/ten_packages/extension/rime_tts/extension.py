@@ -353,10 +353,9 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
 
     async def cancel_tts(self) -> None:
         if self.current_request_id:
-            if self.ten_env:
-                self.ten_env.log_debug(
-                    f"Current request {self.current_request_id} is being cancelled. Sending INTERRUPTED."
-                )
+            self.ten_env.log_debug(
+                f"Current request {self.current_request_id} is being cancelled. Sending INTERRUPTED."
+            )
             if self.client:
                 self.client.cancel()
                 self.last_completed_has_reset_synthesizer = True
@@ -378,10 +377,9 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                     reason=TTSAudioEndReason.INTERRUPTED,
                 )
         else:
-            if self.ten_env:
-                self.ten_env.log_warn(
-                    "No current request found, skipping TTS cancellation."
-                )
+            self.ten_env.log_warn(
+                "No current request found, skipping TTS cancellation."
+            )
 
     def calculate_audio_duration(
         self,
