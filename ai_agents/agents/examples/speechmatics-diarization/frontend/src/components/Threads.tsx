@@ -130,7 +130,7 @@ type ThreadsProps = {
   enableMouseInteraction?: boolean
   className?: string
   style?: CSSProperties
-} & HTMLAttributes<HTMLDivElement>
+} & Omit<HTMLAttributes<HTMLDivElement>, "color">
 
 export default function Threads({
   color = [1, 1, 1],
