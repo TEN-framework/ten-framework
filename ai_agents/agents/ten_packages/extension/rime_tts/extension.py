@@ -42,6 +42,8 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
         self.msg_polling_task: asyncio.Task = None
         self.recorder: PCMWriter = None
         self.sent_tts: bool = False
+        self.sent_metrics: bool = False
+        self.current_request_finished: bool = False
         self.request_start_ts: datetime | None = None
         self.request_total_audio_duration: int = 0
         self.response_msgs = asyncio.Queue[tuple[int, bytes | int]]()
@@ -154,9 +156,15 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                             "Received empty payload for TTS response"
                         )
                 elif event == EVENT_TTS_TTFB_METRIC:
+                    if self.sent_metrics:
+                        self.ten_env.log_debug(
+                            "Received TTFB metric event for a finished request, skipping"
+                        )
+                        return
                     if data is not None and isinstance(data, int):
                         self.request_start_ts = datetime.now()
                         ttfb = data
+                        self.sent_metrics = True
                         await self.send_tts_audio_start(
                             request_id=self.current_request_id,
                         )
@@ -177,7 +185,7 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                     self.ten_env.log_debug(
                         f"Session finished for request ID: {self.current_request_id}"
                     )
-                    if self.request_start_ts is not None:
+                    if self.request_start_ts and self.current_request_finished:
                         request_event_interval = int(
                             (
                                 datetime.now() - self.request_start_ts
@@ -255,6 +263,8 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                 self.request_start_ts = datetime.now()
                 self.request_total_audio_duration = 0
                 self.sent_tts = False
+                self.current_request_finished = False
+                self.sent_metrics = False
 
                 if self.config.dump:
                     old_request_ids = [
@@ -291,6 +301,7 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                 self.sent_tts = True
                 await self.client.send_text(t)
             if self.request_start_ts and t.text_input_end:
+                self.current_request_finished = True
                 if t.text.strip() == "" and not self.sent_tts:
                     request_event_interval = int(
                         (datetime.now() - self.request_start_ts).total_seconds()
@@ -352,6 +363,7 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
             )
 
     async def cancel_tts(self) -> None:
+        self.current_request_finished = True
         if self.current_request_id:
             self.ten_env.log_debug(
                 f"Current request {self.current_request_id} is being cancelled. Sending INTERRUPTED."
