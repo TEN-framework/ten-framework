@@ -166,7 +166,7 @@ class Agent:
                 await self._emit_turn_detected_asr(
                     TurnDetectedASRResultEvent(
                         text=turn_detected_asr.get("text", ""),
-                        final=turn_detected_asr.get("final", False),
+                        final=turn_detected_asr.get("is_final", False),
                         metadata=turn_detected_asr.get("metadata", {}),
                     )
                 )

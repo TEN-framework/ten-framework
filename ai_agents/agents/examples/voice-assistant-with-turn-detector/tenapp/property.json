@@ -108,8 +108,8 @@
               "addon": "ten_turn_detection",
               "extension_group": "default",
               "property": {
-                "base_url": "https://api.aws.us-east-1.cerebrium.ai/v4/p-714aaad5/ten-turn-detection-project/run",
-                "api_key": "<YOUR_API_KEY>"
+                "base_url": "${env:TTD_BASE_URL|}",
+                "api_key": "${env:TTD_API_KEY|}"
               }
             }
           ],

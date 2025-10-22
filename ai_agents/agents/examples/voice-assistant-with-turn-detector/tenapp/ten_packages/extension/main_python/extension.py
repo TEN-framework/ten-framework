@@ -211,7 +211,7 @@ class MainControlExtension(AsyncExtension):
             self.ten_env,
             "text_data",
             "turn_detector",
-            {"text": text, "final": final, "metadata": self._current_metadata()},
+            {"text": text, "is_final": final, "metadata": self._current_metadata()},
         )
         self.ten_env.log_info(
             f"[MainControlExtension] Sent to turn detector: final={final}, text={text}"
