@@ -1,1 +1,1 @@
-ten-vad
+git+https://github.com/TEN-framework/ten-vad.git
