@@ -160,8 +160,12 @@ class TurnDetector:
 
             # Handle Cerebrium's response wrapper format
             # Cerebrium wraps responses in a 'result' field
-            if hasattr(chat_completion, 'result') and isinstance(chat_completion.result, dict):
-                content = chat_completion.result['choices'][0]['message']['content']
+            if hasattr(chat_completion, "result") and isinstance(
+                chat_completion.result, dict
+            ):
+                content = chat_completion.result["choices"][0]["message"][
+                    "content"
+                ]
             else:
                 # Standard OpenAI format
                 content = chat_completion.choices[0].message.content
@@ -172,11 +176,13 @@ class TurnDetector:
 
             if self.chat_usage_hook:
                 # Handle usage stats for both Cerebrium and standard OpenAI format
-                if hasattr(chat_completion, 'result') and isinstance(chat_completion.result, dict):
-                    usage = chat_completion.result.get('usage', {})
+                if hasattr(chat_completion, "result") and isinstance(
+                    chat_completion.result, dict
+                ):
+                    usage = chat_completion.result.get("usage", {})
                     self.chat_usage_hook(
-                        output_tokens=usage.get('prompt_tokens', 0),
-                        input_tokens=usage.get('completion_tokens', 0),
+                        output_tokens=usage.get("prompt_tokens", 0),
+                        input_tokens=usage.get("completion_tokens", 0),
                     )
                 else:
                     self.chat_usage_hook(

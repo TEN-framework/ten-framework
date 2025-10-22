@@ -19,7 +19,9 @@ class Agent:
 
         # Queues for ordered processing
         self._asr_queue: asyncio.Queue[ASRResultEvent] = asyncio.Queue()
-        self._turn_detected_asr_queue: asyncio.Queue[TurnDetectedASRResultEvent] = asyncio.Queue()
+        self._turn_detected_asr_queue: asyncio.Queue[
+            TurnDetectedASRResultEvent
+        ] = asyncio.Queue()
         self._llm_queue: asyncio.Queue[LLMResponseEvent] = asyncio.Queue()
 
         # Current consumer tasks
@@ -40,7 +42,9 @@ class Agent:
 
         # Start consumers
         self._asr_consumer = asyncio.create_task(self._consume_asr())
-        self._turn_detected_asr_consumer = asyncio.create_task(self._consume_turn_detected_asr())
+        self._turn_detected_asr_consumer = asyncio.create_task(
+            self._consume_turn_detected_asr()
+        )
         self._llm_consumer = asyncio.create_task(self._consume_llm())
 
     # === Register handlers ===
@@ -160,7 +164,10 @@ class Agent:
                         metadata=asr.get("metadata", {}),
                     )
                 )
-            elif src_extname == "turn_detector" and data.get_name() == "text_data":
+            elif (
+                src_extname == "turn_detector"
+                and data.get_name() == "text_data"
+            ):
                 turn_detected_asr_json, _ = data.get_property_to_json(None)
                 turn_detected_asr = json.loads(turn_detected_asr_json)
                 await self._emit_turn_detected_asr(
@@ -170,7 +177,6 @@ class Agent:
                         metadata=turn_detected_asr.get("metadata", {}),
                     )
                 )
-
 
             else:
                 self.ten_env.log_warn(f"Unhandled data: {data.get_name()}")

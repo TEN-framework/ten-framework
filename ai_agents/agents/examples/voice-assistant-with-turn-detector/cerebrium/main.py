@@ -18,14 +18,16 @@ llm = LLM(
     model=MODEL_ID,
     trust_remote_code=True,
     dtype="auto",
-    gpu_memory_utilization=0.9
+    gpu_memory_utilization=0.9,
 )
 
 # --- Pydantic Models for OpenAI Compatibility ---
 
+
 class Message(BaseModel):
     role: str
     content: str
+
 
 class ChatCompletionResponse(BaseModel):
     id: str
@@ -35,7 +37,9 @@ class ChatCompletionResponse(BaseModel):
     choices: List[Any]
     usage: Optional[dict] = None
 
+
 # --- OpenAI-Compatible Endpoint ---
+
 
 def run(
     messages: list,
@@ -45,12 +49,12 @@ def run(
     top_p: float = 0.1,
     max_tokens: int = 1,
     stream: bool = False,
-    **kwargs
+    **kwargs,
 ) -> dict:
     """
     OpenAI-compatible Turn Detection endpoint.
     Works directly with OpenAI Python client.
-    
+
     Args:
         messages: List of message dicts with 'role' and 'content'
         model: Model identifier
@@ -60,72 +64,69 @@ def run(
         max_tokens: Max tokens (always 1 for classification)
         stream: Streaming mode (not supported)
         **kwargs: Additional OpenAI parameters (ignored)
-    
+
     Returns:
         OpenAI-compatible chat completion response
     """
-    
+
     # Extract system prompt and user content
     system_prompt = ""
     user_content = ""
-    
+
     for msg in messages:
         message = Message(**msg)
         if message.role == "system":
             system_prompt = message.content
         elif message.role == "user":
             user_content = message.content
-    
+
     if not user_content:
         return {
             "error": {
                 "message": "At least one user message is required",
-                "type": "invalid_request_error"
+                "type": "invalid_request_error",
             }
         }
-    
+
     # Format using chat template
     formatted_messages = [
         {"role": "system", "content": system_prompt},
-        {"role": "user", "content": user_content}
+        {"role": "user", "content": user_content},
     ]
-    
+
     formatted_prompt = tokenizer.apply_chat_template(
-        formatted_messages,
-        add_generation_prompt=True,
-        tokenize=False
+        formatted_messages, add_generation_prompt=True, tokenize=False
     )
-    
+
     # Configure sampling for single-token classification
     sampling_params = SamplingParams(
         temperature=temperature,
         top_p=top_p,
-        max_tokens=1  # Single token: finished/unfinished/wait
+        max_tokens=1,  # Single token: finished/unfinished/wait
     )
-    
+
     # Generate output
     outputs = llm.generate([formatted_prompt], sampling_params)
     turn_state = outputs[0].outputs[0].text.strip()
-    
+
     # Build OpenAI-compatible response
     response = ChatCompletionResponse(
         id=run_id or f"chatcmpl-{int(time.time())}",
         object="chat.completion",
         created=int(time.time()),
         model=model,
-        choices=[{
-            "index": 0,
-            "message": {
-                "role": "assistant",
-                "content": turn_state
-            },
-            "finish_reason": "stop"
-        }],
+        choices=[
+            {
+                "index": 0,
+                "message": {"role": "assistant", "content": turn_state},
+                "finish_reason": "stop",
+            }
+        ],
         usage={
             "prompt_tokens": len(user_content.split()),
             "completion_tokens": 1,
-            "total_tokens": len(user_content.split()) + 1
-        }
+            "total_tokens": len(user_content.split()) + 1,
+        },
     )
-    
+
     return response.model_dump()

@@ -94,7 +94,9 @@ class MainControlExtension(AsyncExtension):
         await self._send_to_turn_detector(event.text, event.final)
 
     @agent_event_handler(TurnDetectedASRResultEvent)
-    async def _on_turn_detected_asr_result(self, event: TurnDetectedASRResultEvent):
+    async def _on_turn_detected_asr_result(
+        self, event: TurnDetectedASRResultEvent
+    ):
         self.session_id = event.metadata.get("session_id", "100")
         stream_id = int(self.session_id)
         if not event.text:
@@ -211,7 +213,11 @@ class MainControlExtension(AsyncExtension):
             self.ten_env,
             "text_data",
             "turn_detector",
-            {"text": text, "is_final": final, "metadata": self._current_metadata()},
+            {
+                "text": text,
+                "is_final": final,
+                "metadata": self._current_metadata(),
+            },
         )
         self.ten_env.log_info(
             f"[MainControlExtension] Sent to turn detector: final={final}, text={text}"
