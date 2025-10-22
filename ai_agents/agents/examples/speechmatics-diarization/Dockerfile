@@ -9,6 +9,7 @@ COPY server/ server/
 COPY agents/scripts/ agents/scripts/
 COPY agents/ten_packages/ agents/ten_packages/
 COPY playground/ playground/
+COPY ${USE_AGENT}/frontend/ ${USE_AGENT}/frontend/
 
 # Copy tenapp files explicitly to avoid symlink issues
 COPY ${USE_AGENT}/tenapp/go.* ${USE_AGENT}/tenapp/
