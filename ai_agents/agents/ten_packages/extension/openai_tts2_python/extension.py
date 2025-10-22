@@ -29,7 +29,7 @@ from .openai_tts import (
     EVENT_TTS_INVALID_KEY_ERROR,
     OpenaiTTSClient,
 )
-from ten_runtime import AsyncTenEnv, Data
+from ten_runtime import AsyncTenEnv
 
 
 class OpenaiTTSExtension(AsyncTTS2BaseExtension):
@@ -73,8 +73,8 @@ class OpenaiTTSExtension(AsyncTTS2BaseExtension):
         except Exception as e:
             ten_env.log_error(f"on_init failed: {traceback.format_exc()}")
             await self.send_tts_error(
-                "",
-                ModuleError(
+                request_id="",
+                error=ModuleError(
                     message=f"Initialization failed: {e}",
                     module=ModuleType.TTS,
                     code=ModuleErrorCode.FATAL_ERROR,
@@ -106,33 +106,30 @@ class OpenaiTTSExtension(AsyncTTS2BaseExtension):
         await super().on_deinit(ten_env)
         ten_env.log_debug("on_deinit")
 
-    async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
-        data_name = data.get_name()
-
-        if data_name == "tts_flush":
-            flush_id, _ = data.get_property_string("flush_id")
-            if flush_id:
-                ten_env.log_debug(f"Received flush request for ID: {flush_id}")
-                if self.current_request_id:
-                    ten_env.log_debug(
-                        f"Current request {self.current_request_id} is being flushed. Sending INTERRUPTED."
+    async def cancel_tts(self) -> None:
+        self.current_request_finished = True
+        if self.current_request_id:
+            self.ten_env.log_debug(
+                f"Current request {self.current_request_id} is being cancelled. Sending INTERRUPTED."
+            )
+            if self.client:
+                self.client.cancel()
+                if self.request_ts:
+                    request_event_interval = int(
+                        (datetime.now() - self.request_ts).total_seconds()
+                        * 1000
                     )
-                    self.client.cancel()
-                    if self.request_ts:
-                        request_event_interval = int(
-                            (datetime.now() - self.request_ts).total_seconds()
-                            * 1000
-                        )
-                        duration_ms = self._calculate_audio_duration_ms()
-                        await self.send_tts_audio_end(
-                            self.current_request_id,
-                            request_event_interval,
-                            duration_ms,
-                            self.current_turn_id,
-                            TTSAudioEndReason.INTERRUPTED,
-                        )
-                        self.current_request_finished = True
-        await super().on_data(ten_env, data)
+                    duration_ms = self._calculate_audio_duration_ms()
+                    await self.send_tts_audio_end(
+                        request_id=self.current_request_id,
+                        request_event_interval_ms=request_event_interval,
+                        request_total_audio_duration_ms=duration_ms,
+                        reason=TTSAudioEndReason.INTERRUPTED,
+                    )
+        else:
+            self.ten_env.log_warn(
+                "No current request found, skipping TTS cancellation."
+            )
 
     def vendor(self) -> str:
         return "openai"
@@ -245,8 +242,7 @@ class OpenaiTTSExtension(AsyncTTS2BaseExtension):
                                 self.request_ts = datetime.now()
                                 if self.sent_ts:
                                     await self.send_tts_audio_start(
-                                        self.current_request_id,
-                                        self.current_turn_id,
+                                        request_id=self.current_request_id,
                                     )
                                     ttfb = int(
                                         (
@@ -254,10 +250,18 @@ class OpenaiTTSExtension(AsyncTTS2BaseExtension):
                                         ).total_seconds()
                                         * 1000
                                     )
+                                    extra_metadata = {
+                                        "model": self.config.params.get(
+                                            "model", ""
+                                        ),
+                                        "voice": self.config.params.get(
+                                            "voice", ""
+                                        ),
+                                    }
                                     await self.send_tts_ttfb_metrics(
-                                        self.current_request_id,
-                                        ttfb,
-                                        self.current_turn_id,
+                                        request_id=self.current_request_id,
+                                        ttfb_ms=ttfb,
+                                        extra_metadata=extra_metadata,
                                     )
                                     self.ten_env.log_debug(
                                         f"Sent TTS audio start and TTFB metrics: {ttfb}ms"
@@ -297,10 +301,9 @@ class OpenaiTTSExtension(AsyncTTS2BaseExtension):
                                     * 1000
                                 )
                                 await self.send_tts_audio_end(
-                                    self.current_request_id,
-                                    request_event_interval,
-                                    duration_ms,
-                                    self.current_turn_id,
+                                    request_id=self.current_request_id,
+                                    request_event_interval_ms=request_event_interval,
+                                    request_total_audio_duration_ms=duration_ms,
                                 )
                                 self.ten_env.log_debug(
                                     f"Sent TTS audio end event, interval: {request_event_interval}ms, duration: {duration_ms}ms"
@@ -320,10 +323,9 @@ class OpenaiTTSExtension(AsyncTTS2BaseExtension):
                             )
                             duration_ms = self._calculate_audio_duration_ms()
                             await self.send_tts_audio_end(
-                                self.current_request_id,
-                                request_event_interval,
-                                duration_ms,
-                                self.current_turn_id,
+                                request_id=self.current_request_id,
+                                request_event_interval_ms=request_event_interval,
+                                request_total_audio_duration_ms=duration_ms,
                             )
                             self.ten_env.log_debug(
                                 f"Sent TTS audio end event, interval: {request_event_interval}ms, duration: {duration_ms}ms",
@@ -337,8 +339,8 @@ class OpenaiTTSExtension(AsyncTTS2BaseExtension):
                             else "Unknown API key error"
                         )
                         await self.send_tts_error(
-                            self.current_request_id or t.request_id,
-                            ModuleError(
+                            request_id=self.current_request_id or t.request_id,
+                            error=ModuleError(
                                 message=error_msg,
                                 module=ModuleType.TTS,
                                 code=ModuleErrorCode.FATAL_ERROR,
@@ -366,10 +368,9 @@ class OpenaiTTSExtension(AsyncTTS2BaseExtension):
                     (datetime.now() - self.request_ts).total_seconds() * 1000
                 )
                 await self.send_tts_audio_end(
-                    self.current_request_id,
-                    request_event_interval,
-                    duration_ms,
-                    self.current_turn_id,
+                    request_id=self.current_request_id,
+                    request_event_interval_ms=request_event_interval,
+                    request_total_audio_duration_ms=duration_ms,
                 )
                 self.ten_env.log_debug(
                     f"Sent TTS audio end event, interval: {request_event_interval}ms, duration: {duration_ms}ms",
@@ -381,8 +382,8 @@ class OpenaiTTSExtension(AsyncTTS2BaseExtension):
                 f"Error in request_tts: {traceback.format_exc()}"
             )
             await self.send_tts_error(
-                self.current_request_id or t.request_id,
-                ModuleError(
+                request_id=self.current_request_id or t.request_id,
+                error=ModuleError(
                     message=str(e),
                     module=ModuleType.TTS,
                     code=ModuleErrorCode.NON_FATAL_ERROR,

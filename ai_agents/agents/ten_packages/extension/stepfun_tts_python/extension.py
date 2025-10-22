@@ -32,7 +32,6 @@ from .stepfun_tts import (
 )
 from ten_runtime import (
     AsyncTenEnv,
-    Data,
 )
 
 
@@ -42,7 +41,6 @@ class StepFunTTSExtension(AsyncTTS2BaseExtension):
         self.config: StepFunTTSConfig | None = None
         self.client: StepFunTTSWebsocket | None = None
         self.current_request_id: str | None = None
-        self.current_turn_id: int = -1
         self.sent_ts: datetime | None = None
         self.current_request_finished: bool = False
         self.total_audio_bytes: int = 0
@@ -104,36 +102,6 @@ class StepFunTTSExtension(AsyncTTS2BaseExtension):
                 ),
             )
 
-    async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
-        data_name = data.get_name()
-        ten_env.log_info(f"on_data: {data_name}")
-
-        if data_name == "tts_flush":
-            flush_id, _ = data.get_property_string("flush_id")
-            if flush_id:
-                ten_env.log_info(f"Received flush request for ID: {flush_id}")
-                await self.client.cancel()
-                if self.current_request_id and self.sent_ts:
-                    ten_env.log_info(
-                        f"Current request {self.current_request_id} is being flushed. Sending INTERRUPTED."
-                    )
-                    request_event_interval = int(
-                        (datetime.now() - self.sent_ts).total_seconds() * 1000
-                    )
-                    duration_ms = self._calculate_audio_duration_ms()
-                    await self.send_tts_audio_end(
-                        self.current_request_id,
-                        request_event_interval,
-                        duration_ms,
-                        self.current_turn_id,
-                        TTSAudioEndReason.INTERRUPTED,
-                    )
-                    # Reset state
-                    self.sent_ts = None
-                    self.total_audio_bytes = 0
-                    self.current_request_finished = True
-        await super().on_data(ten_env, data)
-
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
         # Clean up client if exists
         if self.client:
@@ -159,6 +127,39 @@ class StepFunTTSExtension(AsyncTTS2BaseExtension):
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
         await super().on_deinit(ten_env)
         ten_env.log_info("on_deinit")
+
+    async def cancel_tts(self) -> None:
+        """
+        Override cancel_tts to implement TTS-specific cancellation logic.
+        This is called when a flush request is received.
+        """
+        self.ten_env.log_info(
+            f"cancel_tts called, current_request_id: {self.current_request_id}"
+        )
+
+        # Cancel the TTS client
+        if self.client:
+            await self.client.cancel()
+            self.ten_env.log_info(
+                f"Cancelled TTS client for request ID: {self.current_request_id}"
+            )
+
+        # Handle audio end if there's an active request
+        if self.current_request_id and self.sent_ts:
+            request_event_interval = int(
+                (datetime.now() - self.sent_ts).total_seconds() * 1000
+            )
+            duration_ms = self._calculate_audio_duration_ms()
+            await self.send_tts_audio_end(
+                request_id=self.current_request_id,
+                request_event_interval_ms=request_event_interval,
+                request_total_audio_duration_ms=duration_ms,
+                reason=TTSAudioEndReason.INTERRUPTED,
+            )
+            # Reset state
+            self.sent_ts = None
+            self.total_audio_bytes = 0
+            self.current_request_finished = True
 
     def vendor(self) -> str:
         return "stepfun"
@@ -208,11 +209,6 @@ class StepFunTTSExtension(AsyncTTS2BaseExtension):
                 self.current_request_id = t.request_id
                 self.current_request_finished = False
                 self.total_audio_bytes = 0  # Reset for new request
-
-                # Reset request start time for new request - this is now managed internally by the client instance
-                if t.metadata is not None:
-                    self.session_id = t.metadata.get("session_id", "")
-                    self.current_turn_id = t.metadata.get("turn_id", -1)
 
                 # Create new PCMWriter for new request_id and clean up old ones
                 if self.config and self.config.dump:
@@ -324,7 +320,7 @@ class StepFunTTSExtension(AsyncTTS2BaseExtension):
                     if self.first_chunk:
                         if self.sent_ts and self.current_request_id:
                             await self.send_tts_audio_start(
-                                self.current_request_id, self.current_turn_id
+                                self.current_request_id
                             )
                             ttfb = int(
                                 (datetime.now() - self.sent_ts).total_seconds()
@@ -332,9 +328,20 @@ class StepFunTTSExtension(AsyncTTS2BaseExtension):
                             )
                             if self.current_request_id:
                                 await self.send_tts_ttfb_metrics(
-                                    self.current_request_id,
-                                    ttfb,
-                                    self.current_turn_id,
+                                    request_id=self.current_request_id,
+                                    ttfb_ms=ttfb,
+                                    extra_metadata={
+                                        "model": (
+                                            self.config.model
+                                            if self.config
+                                            else ""
+                                        ),
+                                        "voice_id": (
+                                            self.config.voice_id
+                                            if self.config
+                                            else ""
+                                        ),
+                                    },
                                 )
                         self.first_chunk = False
 
@@ -380,10 +387,9 @@ class StepFunTTSExtension(AsyncTTS2BaseExtension):
                     )
                     duration_ms = self._calculate_audio_duration_ms()
                     await self.send_tts_audio_end(
-                        self.current_request_id,
-                        request_event_interval,
-                        duration_ms,
-                        self.current_turn_id,
+                        request_id=self.current_request_id,
+                        request_event_interval_ms=request_event_interval,
+                        request_total_audio_duration_ms=duration_ms,
                     )
                     await self.client.cancel()
                     # Reset state for the next request

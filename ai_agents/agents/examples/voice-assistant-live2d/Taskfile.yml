@@ -8,7 +8,7 @@ tasks:
     desc: install frontend dependencies
     dir: ./frontend
     cmds:
-      - npm install --verbose
+      - bun install --verbose
 
   install-tenapp:
     desc: install tenapp dependencies
@@ -58,7 +58,7 @@ tasks:
     desc: run frontend
     dir: ./frontend
     cmds:
-      - npm run dev
+      - bun run dev
 
   run-api-server:
     desc: run api server

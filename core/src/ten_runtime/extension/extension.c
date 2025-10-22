@@ -665,7 +665,7 @@ static void ten_extension_on_configure(ten_env_t *ten_env) {
     return;
   }
 
-  TEN_LOGD("[%s] on_configure()", ten_extension_get_name(self, true));
+  TEN_LOGI("[%s] on_configure()", ten_extension_get_name(self, true));
 
   self->manifest_info =
       ten_metadata_info_create(TEN_METADATA_ATTACH_TO_MANIFEST, self->ten_env);
@@ -702,7 +702,7 @@ void ten_extension_on_init(ten_extension_t *self) {
     return;
   }
 
-  TEN_LOGD("[%s] on_init()", ten_extension_get_name(self, true));
+  TEN_LOGI("[%s] on_init()", ten_extension_get_name(self, true));
 
   self->state = TEN_EXTENSION_STATE_ON_INIT;
 
@@ -795,7 +795,7 @@ void ten_extension_on_deinit(ten_extension_t *self) {
   TEN_ASSERT(ten_extension_check_integrity(self, true),
              "Invalid use of extension %p.", self);
 
-  TEN_LOGD("[%s] on_deinit()", ten_extension_get_name(self, true));
+  TEN_LOGI("[%s] on_deinit()", ten_extension_get_name(self, true));
 
   self->state = TEN_EXTENSION_STATE_ON_DEINIT;
 

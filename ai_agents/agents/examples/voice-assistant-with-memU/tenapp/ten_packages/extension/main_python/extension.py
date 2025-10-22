@@ -114,7 +114,14 @@ class MainControlExtension(AsyncExtension):
             await self._interrupt()
         if event.final:
             self.turn_id += 1
-            await self.agent.queue_llm_input(event.text)
+            # Use user's query to search for related memories and pass to LLM
+            related_memory = await self._retrieve_related_memory(event.text)
+            if related_memory:
+                # Add related memory as context to LLM input
+                context_message = f"[Related Memory Context]\n{related_memory}\n\n[Current User Question]\n{event.text}"
+                await self.agent.queue_llm_input(context_message)
+            else:
+                await self.agent.queue_llm_input(event.text)
         await self._send_transcript("user", event.text, event.final, stream_id)
 
     @agent_event_handler(LLMResponseEvent)
@@ -261,6 +268,43 @@ class MainControlExtension(AsyncExtension):
             )
             return ""
 
+    async def _retrieve_related_memory(
+        self, query: str, user_id: str = None
+    ) -> str:
+        """Retrieve related memory based on user query using semantic search"""
+        if not self.memu_client:
+            return ""
+
+        try:
+            user_id = self.config.user_id
+            agent_id = self.config.agent_id
+
+            self.ten_env.log_info(
+                f"[MainControlExtension] Searching related memory with query: '{query}'"
+            )
+
+            # Call semantic search API
+            resp = await self.memu_client.retrieve_related_clustered_categories(
+                user_id=user_id, agent_id=agent_id, category_query=query
+            )
+
+            # Parse response
+            parsed = self.memu_client.parse_related_clustered_categories(resp)
+
+            # Extract memory text
+            memory_text = self._extract_related_memory_text(parsed)
+
+            self.ten_env.log_info(
+                f"[MainControlExtension] Retrieved related memory (length: {len(memory_text)})"
+            )
+
+            return memory_text
+        except Exception as e:
+            self.ten_env.log_error(
+                f"[MainControlExtension] Failed to retrieve related memory: {e}"
+            )
+            return ""
+
     def _parse_memory_summary(self, data) -> dict:
         """Parse memory data and create summary"""
         summary = {
@@ -397,3 +441,48 @@ class MainControlExtension(AsyncExtension):
             )
 
     # Removed: _update_llm_context and _sync_context_from_llM (no separate context to sync)
+
+    def _extract_related_memory_text(self, parsed_data: dict) -> str:
+        """Extract and format text from related clustered categories search results"""
+        if not parsed_data or "categories" not in parsed_data:
+            return ""
+
+        parts = []
+        query = parsed_data.get("query", "")
+        total = parsed_data.get("total_categories", 0)
+
+        if total == 0:
+            return ""
+
+        # Add search result header information
+        parts.append(
+            f"Found {total} related memory categories based on query '{query}':\n"
+        )
+
+        # Iterate through each related category
+        for cat in parsed_data["categories"]:
+            cat_name = cat.get("name", "Unknown Category")
+            similarity = cat.get("similarity_score", 0)
+            memory_count = cat.get("memory_count", 0)
+
+            # Add category information
+            parts.append(
+                f"\n【{cat_name}】(Similarity: {similarity:.2f}, Memory Count: {memory_count})"
+            )
+
+            # Add category summary
+            if cat.get("summary"):
+                parts.append(f"  Summary: {cat['summary']}")
+
+            # Add recent memory content
+            if cat.get("recent_memories"):
+                parts.append("  Recent Memories:")
+                for mem in cat["recent_memories"][:3]:  # Only take the first 3
+                    date = mem.get("date", "")
+                    content = mem.get("content", "")
+                    if date and content:
+                        parts.append(f"    - [{date}] {content}")
+                    elif content:
+                        parts.append(f"    - {content}")
+
+        return "\n".join(parts)

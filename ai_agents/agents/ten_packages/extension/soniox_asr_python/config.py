@@ -1,7 +1,14 @@
 from typing import Any
+from enum import Enum
 
 from pydantic import BaseModel, Field
 from ten_ai_base.utils import encrypt
+
+
+class FinalizeMode(str, Enum):
+    DEFAULT = "default"
+    IGNORE = "ignore"
+    MUTE_PKG = "mute_pkg"
 
 
 class SonioxASRConfig(BaseModel):
@@ -10,9 +17,20 @@ class SonioxASRConfig(BaseModel):
     params: dict[str, Any] = Field(default_factory=dict)
     dump: bool = False
     dump_path: str = "."
+    finalize_mode: FinalizeMode = FinalizeMode.DEFAULT
+    finalize_holding: bool = False
+    mute_pkg_duration_ms: int = 800
 
     def update(self, params: dict[str, Any]):
-        special_params = ["url", "sample_rate", "dump", "dump_path"]
+        special_params = [
+            "url",
+            "sample_rate",
+            "dump",
+            "dump_path",
+            "finalize_mode",
+            "finalize_holding",
+            "mute_pkg_duration_ms",
+        ]
         for key in special_params:
             if key in params:
                 setattr(self, key, params[key])

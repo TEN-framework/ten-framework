@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "elevenlabs_tts2_python",
-  "version": "0.2.3",
+  "version": "0.3.1",
   "dependencies": [
     {
       "type": "system",

@@ -55,7 +55,6 @@ class MainControlExtension(AsyncExtension):
         self.audio_dump_dir: str = ""
 
         self.stopped: bool = False
-        self._rtc_user_count: int = 0
         self.sentence_fragment: str = ""
         self.turn_id: int = 0
         self.session_id: str = "0"
@@ -129,9 +128,7 @@ class MainControlExtension(AsyncExtension):
                 try:
                     await asyncio.wait_for(self.server_task, timeout=5.0)
                 except asyncio.TimeoutError:
-                    self.ten_env.log_warn(
-                        "Server task didn't stop gracefully"
-                    )
+                    self.ten_env.log_warn("Server task didn't stop gracefully")
                 except asyncio.CancelledError:
                     pass  # Expected when cancelling
 
@@ -188,19 +185,6 @@ class MainControlExtension(AsyncExtension):
             )
 
     # === Register handlers with decorators ===
-    @agent_event_handler(UserJoinedEvent)
-    async def _on_user_joined(self, event: UserJoinedEvent):
-        self._rtc_user_count += 1
-        if self._rtc_user_count == 1 and self.config and self.config.greeting:
-            await self._send_to_tts(self.config.greeting, True)
-            await self._send_transcript(
-                "assistant", self.config.greeting, True, 100
-            )
-
-    @agent_event_handler(UserLeftEvent)
-    async def _on_user_left(self, event: UserLeftEvent):
-        self._rtc_user_count -= 1
-
     @agent_event_handler(ToolRegisterEvent)
     async def _on_tool_register(self, event: ToolRegisterEvent):
         await self.agent.register_llm_tool(event.tool, event.source)
@@ -282,10 +266,10 @@ class MainControlExtension(AsyncExtension):
             if audio_frame.get_name() == "pcm_frame":
                 audio_data = audio_frame.get_buf()
                 # Send audio to all active Twilio calls
-                for call_sid in self.server_instance.active_call_sessions.keys():
-                    await self.send_audio_to_twilio(
-                        audio_data, call_sid
-                    )
+                for (
+                    call_sid
+                ) in self.server_instance.active_call_sessions.keys():
+                    await self.send_audio_to_twilio(audio_data, call_sid)
         except Exception as e:
             ten_env.log_error(f"Failed to handle audio frame: {e}")
 
@@ -485,7 +469,9 @@ class MainControlExtension(AsyncExtension):
             if self.ten_env:
                 self.ten_env.log_error(f"Failed to dump PCM audio: {e}")
 
-    def _downsample_audio(self, audio_data: bytes, source_rate: int, target_rate: int) -> bytes:
+    def _downsample_audio(
+        self, audio_data: bytes, source_rate: int, target_rate: int
+    ) -> bytes:
         """Downsample audio data from source rate to target rate"""
         try:
             if source_rate == target_rate:
@@ -499,9 +485,13 @@ class MainControlExtension(AsyncExtension):
             if source_rate == 16000 and target_rate == 8000:
                 # Simple decimation: take every 2nd sample (16-bit = 2 bytes per sample)
                 decimated_audio = bytearray()
-                for i in range(0, len(audio_data), 4):  # Skip every 2nd sample (4 bytes = 2 samples)
+                for i in range(
+                    0, len(audio_data), 4
+                ):  # Skip every 2nd sample (4 bytes = 2 samples)
                     if i + 1 < len(audio_data):
-                        decimated_audio.extend(audio_data[i:i+2])  # Take first sample (2 bytes)
+                        decimated_audio.extend(
+                            audio_data[i : i + 2]
+                        )  # Take first sample (2 bytes)
 
                 return bytes(decimated_audio)
 
@@ -531,14 +521,18 @@ class MainControlExtension(AsyncExtension):
             if call_sid not in self.server_instance.active_call_sessions:
                 return
 
-            websocket = self.server_instance.active_call_sessions[call_sid].get("websocket")
+            websocket = self.server_instance.active_call_sessions[call_sid].get(
+                "websocket"
+            )
             if not websocket:
                 return
 
             # Downsample audio from 16000 Hz to 8000 Hz for Twilio
             source_rate = 16000  # TTS generated audio sample rate
-            target_rate = 8000   # Twilio required sample rate
-            downsampled_audio = self._downsample_audio(audio_data, source_rate, target_rate)
+            target_rate = 8000  # Twilio required sample rate
+            downsampled_audio = self._downsample_audio(
+                audio_data, source_rate, target_rate
+            )
 
             # Convert PCM to μ-law for Twilio
             mulaw_data = audioop.lin2ulaw(
@@ -548,7 +542,9 @@ class MainControlExtension(AsyncExtension):
             # Encode μ-law audio data to base64
             audio_base64 = base64.b64encode(mulaw_data).decode("utf-8")
 
-            stream_sid = self.server_instance.active_call_sessions[call_sid].get("stream_sid")
+            stream_sid = self.server_instance.active_call_sessions[
+                call_sid
+            ].get("stream_sid")
 
             message = {
                 "event": "media",
@@ -570,3 +566,20 @@ class MainControlExtension(AsyncExtension):
 
         # Use the new cleanup method
         await self._end_call_and_cleanup(call_sid)
+
+    async def on_websocket_connected(self, call_sid: str):
+        """Called when websocket connection is established for a call"""
+        try:
+            self.ten_env.log_info(
+                f"WebSocket connected for call {call_sid}, sending greeting TTS"
+            )
+
+            # Send greeting TTS using the configured greeting message
+            greeting_text = self.config.greeting
+            await self._send_to_tts(greeting_text, True)
+
+            self.ten_env.log_info(
+                f"Greeting TTS sent for call {call_sid}: {greeting_text}"
+            )
+        except Exception as e:
+            self.ten_env.log_error(f"Failed to send greeting TTS: {str(e)}")

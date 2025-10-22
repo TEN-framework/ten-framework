@@ -28,10 +28,7 @@ from .rime_tts import (
     EVENT_TTS_TTFB_METRIC,
     RimeTTSClient,
 )
-from ten_runtime import (
-    AsyncTenEnv,
-    Data,
-)
+from ten_runtime import AsyncTenEnv
 
 
 class RimeTTSExtension(AsyncTTS2BaseExtension):
@@ -82,8 +79,8 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
         except Exception as e:
             ten_env.log_error(f"on_init failed: {traceback.format_exc()}")
             await self.send_tts_error(
-                "",
-                ModuleError(
+                request_id="",
+                error=ModuleError(
                     message=f"Initialization failed: {e}",
                     module=ModuleType.TTS,
                     code=ModuleErrorCode.FATAL_ERROR,
@@ -161,13 +158,16 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                         self.request_start_ts = datetime.now()
                         ttfb = data
                         await self.send_tts_audio_start(
-                            self.current_request_id,
-                            self.current_turn_id,
+                            request_id=self.current_request_id,
                         )
+                        extra_metadata = {
+                            "speaker": self.config.params.get("speaker", ""),
+                            "modelId": self.config.params.get("modelId", ""),
+                        }
                         await self.send_tts_ttfb_metrics(
-                            self.current_request_id,
-                            ttfb,
-                            self.current_turn_id,
+                            request_id=self.current_request_id,
+                            ttfb_ms=ttfb,
+                            extra_metadata=extra_metadata,
                         )
 
                         self.ten_env.log_debug(
@@ -185,10 +185,9 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                             * 1000
                         )
                         await self.send_tts_audio_end(
-                            self.current_request_id,
-                            request_event_interval,
-                            self.request_total_audio_duration,
-                            self.current_turn_id,
+                            request_id=self.current_request_id,
+                            request_event_interval_ms=request_event_interval,
+                            request_total_audio_duration_ms=self.request_total_audio_duration,
                         )
 
                         self.ten_env.log_debug(
@@ -219,6 +218,11 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
             self.ten_env.log_debug(
                 f"current_request_id: {self.current_request_id}, new request_id: {t.request_id}"
             )
+            if self.client is None:
+                self.client = RimeTTSClient(
+                    self.config, self.ten_env, self.vendor(), self.response_msgs
+                )
+                self.ten_env.log_debug("TTS client reinitialized successfully.")
 
             if (
                 self.last_completed_request_id
@@ -227,8 +231,8 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                 error_msg = f"Request ID {t.request_id} has already been completed (last completed: {self.last_completed_request_id})"
                 self.ten_env.log_warn(error_msg)
                 await self.send_tts_error(
-                    t.request_id,
-                    ModuleError(
+                    request_id=t.request_id,
+                    error=ModuleError(
                         message=error_msg,
                         module=ModuleType.TTS,
                         code=ModuleErrorCode.NON_FATAL_ERROR,
@@ -293,10 +297,9 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                         * 1000
                     )
                     await self.send_tts_audio_end(
-                        self.current_request_id,
-                        request_event_interval,
-                        self.request_total_audio_duration,
-                        self.current_turn_id,
+                        request_id=self.current_request_id,
+                        request_event_interval_ms=request_event_interval,
+                        request_total_audio_duration_ms=self.request_total_audio_duration,
                     )
                     self.ten_env.log_debug(
                         f"Sent TTS audio end event,text is empty, interval: {request_event_interval}ms, duration: {self.request_total_audio_duration}ms"
@@ -326,8 +329,8 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                 f"ModuleVendorException in request_tts: {traceback.format_exc()}. text: {t.text}"
             )
             await self.send_tts_error(
-                self.current_request_id,
-                ModuleError(
+                request_id=self.current_request_id,
+                error=ModuleError(
                     message=str(e),
                     module=ModuleType.TTS,
                     code=ModuleErrorCode.NON_FATAL_ERROR,
@@ -339,8 +342,8 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                 f"Error in request_tts: {traceback.format_exc()}. text: {t.text}"
             )
             await self.send_tts_error(
-                self.current_request_id,
-                ModuleError(
+                request_id=self.current_request_id,
+                error=ModuleError(
                     message=str(e),
                     module=ModuleType.TTS,
                     code=ModuleErrorCode.NON_FATAL_ERROR,
@@ -348,10 +351,11 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                 ),
             )
 
-    async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
-        name = data.get_name()
-        if name == "tts_flush":
-            # Cancel current connection (maintain original flush disconnect behavior)
+    async def cancel_tts(self) -> None:
+        if self.current_request_id:
+            self.ten_env.log_debug(
+                f"Current request {self.current_request_id} is being cancelled. Sending INTERRUPTED."
+            )
             if self.client:
                 self.client.cancel()
                 self.last_completed_has_reset_synthesizer = True
@@ -361,23 +365,21 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                 self.stop_event.set()
                 self.stop_event = None
 
-            ten_env.log_debug(f"Received tts_flush data: {name}")
             if self.request_start_ts is not None:
                 request_event_interval = int(
                     (datetime.now() - self.request_start_ts).total_seconds()
                     * 1000
                 )
                 await self.send_tts_audio_end(
-                    self.current_request_id,
-                    request_event_interval,
-                    self.request_total_audio_duration,
-                    self.current_turn_id,
-                    TTSAudioEndReason.INTERRUPTED,
+                    request_id=self.current_request_id,
+                    request_event_interval_ms=request_event_interval,
+                    request_total_audio_duration_ms=self.request_total_audio_duration,
+                    reason=TTSAudioEndReason.INTERRUPTED,
                 )
-            ten_env.log_debug(
-                f"Sent tts_audio_end with INTERRUPTED reason for request_id: {self.current_request_id}"
+        else:
+            self.ten_env.log_warn(
+                "No current request found, skipping TTS cancellation."
             )
-        await super().on_data(ten_env, data)
 
     def calculate_audio_duration(
         self,

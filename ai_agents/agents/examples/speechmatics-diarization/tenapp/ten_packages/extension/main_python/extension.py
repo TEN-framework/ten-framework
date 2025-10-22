@@ -152,7 +152,9 @@ class MainControlExtension(AsyncExtension):
 
         # Debug logging to check if speaker info is received
         if event.final:
-            self.ten_env.log_info(f"[ASR] Received metadata: speaker='{speaker}', channel='{channel}', metadata={event.metadata}")
+            self.ten_env.log_info(
+                f"[ASR] Received metadata: speaker='{speaker}', channel='{channel}', metadata={event.metadata}"
+            )
 
         # Format speaker label as [S1], [S2], etc.
         speaker_label = ""
@@ -176,10 +178,14 @@ class MainControlExtension(AsyncExtension):
             # If no speaker/channel info, use last known speaker or default
             if self.last_speaker:
                 speaker_label = f"[{self.last_speaker}] "
-                self.ten_env.log_info(f"[ASR] Using last speaker label: {speaker_label}")
+                self.ten_env.log_info(
+                    f"[ASR] Using last speaker label: {speaker_label}"
+                )
             else:
                 speaker_label = "[USER] "
-                self.ten_env.log_info(f"[ASR] Using default label: {speaker_label}")
+                self.ten_env.log_info(
+                    f"[ASR] Using default label: {speaker_label}"
+                )
 
         if not event.text:
             return
@@ -224,7 +230,9 @@ class MainControlExtension(AsyncExtension):
         # Add speaker label to transcript display (always include label)
         transcript_text = f"{speaker_label}{event.text}"
         self.ten_env.log_info(f"[ASR] Sending transcript: {transcript_text}")
-        await self._send_transcript("user", transcript_text, event.final, stream_id)
+        await self._send_transcript(
+            "user", transcript_text, event.final, stream_id
+        )
 
     @agent_event_handler(LLMResponseEvent)
     async def _on_llm_response(self, event: LLMResponseEvent):

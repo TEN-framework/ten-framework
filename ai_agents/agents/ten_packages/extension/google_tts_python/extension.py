@@ -36,7 +36,6 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
         self.client: GoogleTTS | None = None
         self.sent_ts: datetime | None = None
         self.current_request_id: str | None = None
-        self.current_turn_id: int = -1
         self.total_audio_bytes: int = 0
         self.current_request_finished: bool = False
         self.recorder_map: dict[str, PCMWriter] = (
@@ -76,26 +75,24 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
         except ValueError as e:
             ten_env.log_error(f"on_init failed: {traceback.format_exc()}")
             await self.send_tts_error(
-                "",
-                ModuleError(
+                request_id="",
+                error=ModuleError(
                     message=f"Initialization failed: {e}",
                     module=ModuleType.TTS,
                     code=ModuleErrorCode.FATAL_ERROR,
                     vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
                 ),
-                self.current_turn_id,
             )
         except Exception as e:
             ten_env.log_error(f"on_init failed: {traceback.format_exc()}")
             await self.send_tts_error(
-                "",
-                ModuleError(
+                request_id="",
+                error=ModuleError(
                     message=f"Initialization failed: {e}",
                     module=ModuleType.TTS,
                     code=ModuleErrorCode.FATAL_ERROR,
                     vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
                 ),
-                self.current_turn_id,
             )
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
@@ -160,56 +157,34 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
         self.current_request_finished = False
         self.sent_ts = None
 
-    async def on_data(self, ten_env: AsyncTenEnv, data) -> None:
-        name = data.get_name()
-        if name == "tts_flush":
-            ten_env.log_info(f"Received tts_flush data: {name}")
-            # Set flush flag to stop processing audio
-            self._flush_requested = True
-
-            try:
-                if self.client is not None:
-                    ten_env.log_info(
-                        "Flushing Google TTS client - cleaning old connection"
-                    )
-                    self.client.clean()  # Clean up old connection first
-
-                    await self.client.reset()  # Initialize new connection
-                else:
-                    ten_env.log_warning(
-                        "Client is not initialized, skipping reset"
-                    )
-            except Exception as e:
-                ten_env.log_error(f"Error in handle_flush: {e}")
-                # Check if ten_env is available before calling send_tts_error
-                if self.ten_env is not None:
-                    await self.send_tts_error(
-                        self.current_request_id,
-                        ModuleError(
-                            message=str(e),
-                            module=ModuleType.TTS,
-                            code=ModuleErrorCode.NON_FATAL_ERROR,
-                            vendor_info=ModuleErrorVendorInfo(
-                                vendor=self.vendor()
-                            ),
-                        ),
-                        self.current_turn_id,
-                    )
-                else:
-                    ten_env.log_error(
-                        "Cannot send error: ten_env is not initialized"
-                    )
-
-            # Check if ten_env is available before calling handle_completed_request
-            if self.ten_env is not None:
-                await self.handle_completed_request(
-                    TTSAudioEndReason.INTERRUPTED
+    async def cancel_tts(self) -> None:
+        self._flush_requested = True
+        try:
+            if self.client is not None:
+                self.ten_env.log_info(
+                    "Flushing Google TTS client - cleaning old connection"
                 )
+                self.client.clean()  # Clean up old connection first
+
+                await self.client.reset()  # Initialize new connection
             else:
-                ten_env.log_warning(
-                    "Cannot handle completed request: ten_env is not initialized"
+                self.ten_env.log_warn(
+                    "Client is not initialized, skipping reset"
                 )
-        await super().on_data(ten_env, data)
+        except Exception as e:
+            self.ten_env.log_error(f"Error in handle_flush: {e}")
+
+            await self.send_tts_error(
+                request_id=self.current_request_id,
+                error=ModuleError(
+                    message=str(e),
+                    module=ModuleType.TTS,
+                    code=ModuleErrorCode.NON_FATAL_ERROR,
+                    vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
+                ),
+            )
+
+        await self.handle_completed_request(TTSAudioEndReason.INTERRUPTED)
 
     async def handle_completed_request(self, reason: TTSAudioEndReason):
         # update request_id
@@ -224,11 +199,10 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                 (datetime.now() - self.sent_ts).total_seconds() * 1000
             )
         await self.send_tts_audio_end(
-            self.current_request_id,
-            request_event_interval,
-            self._calculate_audio_duration_ms(),
-            self.current_turn_id,
-            reason,
+            request_id=self.current_request_id or "",
+            request_event_interval_ms=request_event_interval,
+            request_total_audio_duration_ms=self._calculate_audio_duration_ms(),
+            reason=reason,
         )
         self.ten_env.log_debug(
             f"Sent tts_audio_end with INTERRUPTED reason for request_id: {self.current_request_id}"
@@ -255,9 +229,6 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                 self._reset_request_state()
                 # Reset flush flag for new request
                 self._flush_requested = False
-                if t.metadata:
-                    self.current_turn_id = t.metadata.get("turn_id", -1)
-                    self.session_id = t.metadata.get("session_id", "")
 
                 # reset connection if needed
                 if self.client and self.client.send_text_in_connection == True:
@@ -337,14 +308,18 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                                 self.sent_ts = datetime.now()
 
                                 await self.send_tts_audio_start(
-                                    self.current_request_id,
-                                    self.current_turn_id,
+                                    request_id=self.current_request_id,
                                 )
+                                extra_metadata = {
+                                    "name": self.config.params.get(
+                                        "VoiceSelectionParams", {}
+                                    ).get("name", ""),
+                                }
                                 if ttfb_ms is not None:
                                     await self.send_tts_ttfb_metrics(
-                                        self.current_request_id,
-                                        ttfb_ms,
-                                        self.current_turn_id,
+                                        request_id=self.current_request_id,
+                                        ttfb_ms=ttfb_ms,
+                                        extra_metadata=extra_metadata,
                                     )
 
                             if (
@@ -368,8 +343,9 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                                 else "Unknown API key error"
                             )
                             await self.send_tts_error(
-                                self.current_request_id or t.request_id,
-                                ModuleError(
+                                request_id=self.current_request_id
+                                or t.request_id,
+                                error=ModuleError(
                                     message=error_msg,
                                     module=ModuleType.TTS,
                                     code=ModuleErrorCode.FATAL_ERROR,
@@ -377,7 +353,6 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                                         vendor=self.vendor()
                                     ),
                                 ),
-                                self.current_turn_id,
                             )
                             return  # Exit early on error, don't send audio_end
 
@@ -394,8 +369,8 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                         f"Error in audio processing: {traceback.format_exc()}"
                     )
                     await self.send_tts_error(
-                        self.current_request_id or t.request_id,
-                        ModuleError(
+                        request_id=self.current_request_id or t.request_id,
+                        error=ModuleError(
                             message=str(e),
                             module=ModuleType.TTS,
                             code=ModuleErrorCode.NON_FATAL_ERROR,
@@ -403,7 +378,6 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                                 vendor=self.vendor()
                             ),
                         ),
-                        self.current_turn_id,
                     )
 
                 finally:
@@ -444,12 +418,11 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                 f"Error in request_tts: {traceback.format_exc()}"
             )
             await self.send_tts_error(
-                self.current_request_id or t.request_id,
-                ModuleError(
+                request_id=self.current_request_id or t.request_id,
+                error=ModuleError(
                     message=str(e),
                     module=ModuleType.TTS,
                     code=ModuleErrorCode.NON_FATAL_ERROR,
                     vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
                 ),
-                self.current_turn_id,
             )

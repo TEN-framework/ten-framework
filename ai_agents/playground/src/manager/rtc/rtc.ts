@@ -1,15 +1,20 @@
 "use client";
 
 import AgoraRTC, {
-  IAgoraRTCClient,
-  IMicrophoneAudioTrack,
-  IRemoteAudioTrack,
-  UID,
+  type IAgoraRTCClient,
+  type IMicrophoneAudioTrack,
+  type IRemoteAudioTrack,
+  type UID,
 } from "agora-rtc-sdk-ng";
-import { EMessageDataType, EMessageType, IChatItem, ITextItem } from "@/types";
-import { AGEventEmitter } from "../events";
-import { RtcEvents, IUserTracks } from "./types";
 import { apiGenAgoraData, VideoSourceType } from "@/common";
+import {
+  EMessageDataType,
+  EMessageType,
+  type IChatItem,
+  type ITextItem,
+} from "@/types";
+import { AGEventEmitter } from "../events";
+import type { IUserTracks, RtcEvents } from "./types";
 
 const TIMEOUT_MS = 5000; // Timeout for incomplete messages
 
@@ -74,13 +79,16 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
 
   async createScreenShareTrack() {
     try {
-      const screenTrack = await AgoraRTC.createScreenVideoTrack({
-        encoderConfig: {
-          width: 1200,
-          height: 800,
-          frameRate: 5
-        }
-      }, "disable");
+      const screenTrack = await AgoraRTC.createScreenVideoTrack(
+        {
+          encoderConfig: {
+            width: 1200,
+            height: 800,
+            frameRate: 5,
+          },
+        },
+        "disable"
+      );
       this.localTracks.screenTrack = screenTrack;
     } catch (err) {
       console.error("Failed to create screen track", err);
@@ -229,11 +237,12 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
         const completeMessage = this.reconstructMessage(
           this.messageCache[message_id]
         );
-        const { stream_id, is_final, text, text_ts, data_type, role } = JSON.parse(
-          this.base64ToUtf8(completeMessage)
+        const { stream_id, is_final, text, text_ts, data_type, role } =
+          JSON.parse(this.base64ToUtf8(completeMessage));
+        console.log(
+          `[test] message_id: ${message_id} stream_id: ${stream_id}, text: ${text}, data_type: ${data_type}`
         );
-        console.log(`[test] message_id: ${message_id} stream_id: ${stream_id}, text: ${text}, data_type: ${data_type}`);
-        const isAgent = role === "assistant"
+        const isAgent = role === "assistant";
         let textItem: IChatItem = {
           type: isAgent ? EMessageType.AGENT : EMessageType.USER,
           time: text_ts,
@@ -241,10 +250,10 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
           data_type: EMessageDataType.TEXT,
           userId: stream_id,
           isFinal: is_final,
-        };;
+        };
 
         if (data_type === "raw") {
-          let { data, type } = JSON.parse(text);
+          const { data, type } = JSON.parse(text);
           if (type === "image_url") {
             textItem = {
               ...textItem,
@@ -258,11 +267,11 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
               text: data.text,
             };
           } else if (type === "action") {
-            const { action, data: actionData } = data
+            const { action, data: actionData } = data;
             if (action === "browse_website") {
-              console.log("Opening website", actionData.url)
-              window.open(actionData.url, "_blank")
-              return
+              console.log("Opening website", actionData.url);
+              window.open(actionData.url, "_blank");
+              return;
             }
           }
         }
@@ -294,7 +303,7 @@ export class RtcManager extends AGEventEmitter<RtcEvents> {
     for (let i = 0; i < binaryString.length; i++) {
       bytes[i] = binaryString.charCodeAt(i);
     }
-    return new TextDecoder('utf-8').decode(bytes);
+    return new TextDecoder("utf-8").decode(bytes);
   }
 
   _playAudio(
