@@ -36,7 +36,7 @@ class TencentTTSExtension(AsyncTTS2BaseExtension):
         super().__init__(name)
         self.client: TencentTTSClient | None = None
         self.config: TencentTTSConfig | None = None
-        self.current_request_finished: bool = True
+        self.current_request_finished: bool = False
         self.current_request_id: str | None = None
         self.current_turn_id: int = -1
         self.name: str = name
@@ -111,6 +111,7 @@ class TencentTTSExtension(AsyncTTS2BaseExtension):
         ten_env.log_debug("on_deinit")
 
     async def cancel_tts(self) -> None:
+        self.current_request_finished = True
         if self.current_request_id:
             self.ten_env.log_debug(
                 f"Current request {self.current_request_id} is being cancelled. Sending INTERRUPTED."
@@ -175,7 +176,7 @@ class TencentTTSExtension(AsyncTTS2BaseExtension):
                     self.current_turn_id = t.metadata.get("turn_id", -1)
                 self.request_total_audio_duration = 0
                 self.request_first_received = True
-
+                self.current_request_finished = False
                 if self.config.dump:
                     old_request_ids = [
                         rid
@@ -206,6 +207,11 @@ class TencentTTSExtension(AsyncTTS2BaseExtension):
                             f"Created PCMWriter for request_id: {t.request_id}, file: {dump_file_path}"
                         )
 
+            elif self.current_request_finished:
+                self.ten_env.log_warn(
+                    f"Received a message for a finished request_id '{t.request_id}' with text_input_end=False."
+                )
+                return
             if t.text.strip() != "":
                 self.ten_env.log_debug(
                     f"send_text_to_tts_server:  {t.text} of request_id: {t.request_id}",
@@ -218,6 +224,7 @@ class TencentTTSExtension(AsyncTTS2BaseExtension):
                 )
 
                 self.last_completed_request_id = t.request_id
+                self.current_request_finished = True
                 self.ten_env.log_debug(
                     f"Updated last completed request_id to: {t.request_id}"
                 )
