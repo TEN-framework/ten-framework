@@ -192,6 +192,6 @@ class TurnDetector:
             return content
         except Exception as e:
             self.ten_env.log_warn(
-                f"eval error {traceback.format_exc()}, cost time: {TimeHelper.duration_ms_since(start_time)}ms"
+                f"eval error {e}, cost time: {TimeHelper.duration_ms_since(start_time)}ms"
             )
             return ""
