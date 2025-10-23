@@ -129,15 +129,13 @@ jobs:
           fi
           ls -al out/linux/x64/tests/standalone/coverage
 
-      - name: Install cpp-coveralls
-        run: |
-          pip install --user cpp-coveralls
-          echo "cpp-coveralls installed successfully"
-
       - name: Upload coverage to Coveralls
         env:
           COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
         run: |
+          pip install --user cpp-coveralls
+          echo "cpp-coveralls installed successfully"
+
           if [ -f "out/linux/x64/tests/standalone/coverage/coverage.lcov" ]; then
             echo "Uploading coverage to Coveralls..."
             coveralls --lcov-file out/linux/x64/tests/standalone/coverage/coverage.lcov --verbose
