@@ -1,4 +1,3 @@
-import traceback
 from .config import TENTurnDetectorConfig
 from .utils import remove_punctuation, TimeHelper
 
