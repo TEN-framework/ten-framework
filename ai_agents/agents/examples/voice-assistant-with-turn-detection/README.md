@@ -29,7 +29,7 @@ The turn detection model requires GPU deployment on Cerebrium:
 
 4. **Deploy the Turn Detection Model**:
    ```bash
-   cd agents/examples/voice-assistant-with-turn-detector/cerebrium
+   cd agents/examples/voice-assistant-with-turn-detection/cerebrium
    cerebrium deploy
    ```
 
@@ -49,7 +49,7 @@ The turn detection model requires GPU deployment on Cerebrium:
 6. **Verify Your Deployment**:
    Test that everything is working properly using the included test script:
    ```bash
-   cd agents/examples/voice-assistant-with-turn-detector/cerebrium
+   cd agents/examples/voice-assistant-with-turn-detection/cerebrium
 
    # Export your Cerebrium credentials
    export TTD_BASE_URL="https://api.cortex.cerebrium.ai/v4/p-xxxxx/ten-turn-detection-project/run"
@@ -95,7 +95,7 @@ WEATHERAPI_API_KEY=your_weather_api_key_here  # for weather tool
 ### 1. Install Voice Assistant Dependencies
 
 ```bash
-cd agents/examples/voice-assistant-with-turn-detector
+cd agents/examples/voice-assistant-with-turn-detection
 task install
 ```
 
@@ -114,7 +114,7 @@ task run
 ## How Turn Detection Works
 
 1. **Speech Input**: User speaks → Deepgram STT transcribes in real-time
-2. **Turn Analysis**: Each transcription chunk is sent to the turn detector
+2. **Turn Analysis**: Each transcription chunk is sent to the turn detection model
 3. **Classification**: The model returns one of three states:
    - `finished` - Turn is complete, send to LLM
    - `unfinished` - Continue listening, user still speaking
@@ -147,13 +147,13 @@ For detailed usage, see [TMAN Designer documentation](https://theten.ai/docs/ten
 
 ```bash
 cd ai_agents
-docker build -f agents/examples/voice-assistant-with-turn-detector/Dockerfile -t voice-assistant-turn-detector .
+docker build -f agents/examples/voice-assistant-with-turn-detection/Dockerfile -t voice-assistant-turn-detection .
 ```
 
 ### Run
 
 ```bash
-docker run --rm -it --env-file .env -p 8080:8080 -p 3000:3000 voice-assistant-turn-detector
+docker run --rm -it --env-file .env -p 8080:8080 -p 3000:3000 voice-assistant-turn-detection
 ```
 
 ### Access
