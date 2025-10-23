@@ -1,11 +1,12 @@
 from typing import Any
 import copy
 from ten_ai_base import utils
+from ten_ai_base.tts2_http import AsyncTTS2HttpConfig
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 
-class RimeTTSConfig(BaseModel):
+class RimeTTSConfig(AsyncTTS2HttpConfig):
     # RIME TTS API credentials
     api_key: str = ""
     # Debug and logging
@@ -50,3 +51,8 @@ class RimeTTSConfig(BaseModel):
             config.params["api_key"] = utils.encrypt(config.params["api_key"])
 
         return f"{config}"
+
+    def validate(self) -> None:
+        """Validate Rime-specific configuration."""
+        if not self.api_key:
+            raise ValueError("API key is required for Rime TTS")

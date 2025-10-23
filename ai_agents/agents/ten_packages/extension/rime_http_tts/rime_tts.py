@@ -1,16 +1,10 @@
-from typing import AsyncIterator
+from typing import Any, AsyncIterator, Tuple
 from httpx import AsyncClient, Timeout, Limits
 
 from .config import RimeTTSConfig
 from ten_runtime import AsyncTenEnv
 from ten_ai_base.const import LOG_CATEGORY_VENDOR
-
-# Custom event types to communicate status back to the extension
-EVENT_TTS_RESPONSE = 1
-EVENT_TTS_END = 2
-EVENT_TTS_ERROR = 3
-EVENT_TTS_INVALID_KEY_ERROR = 4
-EVENT_TTS_FLUSH = 5
+from ten_ai_base.struct import TTS2HttpResponseEventType
 
 
 BYTES_PER_SAMPLE = 2
@@ -50,13 +44,13 @@ class RimeTTSClient:
             self.ten_env.log_debug("stop the client")
             self.client = None
 
-    def cancel(self):
+    async def cancel(self):
         self.ten_env.log_debug("RimeTTS: cancel() called.")
         self._is_cancelled = True
 
     async def get(
         self, text: str
-    ) -> AsyncIterator[tuple[bytes | None, int | None]]:
+    ) -> AsyncIterator[Tuple[bytes, TTS2HttpResponseEventType]]:
         """Process a single TTS request in serial manner"""
         self._is_cancelled = False
         if not self.client:
@@ -77,7 +71,7 @@ class RimeTTSClient:
                         self.ten_env.log_debug(
                             "Cancellation flag detected, sending flush event and stopping TTS stream."
                         )
-                        yield None, EVENT_TTS_FLUSH
+                        yield None, TTS2HttpResponseEventType.FLUSH
                         break
 
                     self.ten_env.log_debug(
@@ -85,13 +79,13 @@ class RimeTTSClient:
                     )
 
                     if len(chunk) > 0:
-                        yield bytes(chunk), EVENT_TTS_RESPONSE
+                        yield bytes(chunk), TTS2HttpResponseEventType.RESPONSE
                     else:
-                        yield None, EVENT_TTS_END
+                        yield None, TTS2HttpResponseEventType.END
 
             if not self._is_cancelled:
                 self.ten_env.log_debug("RimeTTS: sending EVENT_TTS_END")
-                yield None, EVENT_TTS_END
+                yield None, TTS2HttpResponseEventType.END
 
         except Exception as e:
             # Check if it's an API key authentication error
@@ -101,11 +95,18 @@ class RimeTTSClient:
                 category=LOG_CATEGORY_VENDOR,
             )
             if "401" in error_message:
-                yield error_message.encode("utf-8"), EVENT_TTS_INVALID_KEY_ERROR
+                yield error_message.encode("utf-8"), TTS2HttpResponseEventType.INVALID_KEY_ERROR
             else:
-                yield error_message.encode("utf-8"), EVENT_TTS_ERROR
+                yield error_message.encode("utf-8"), TTS2HttpResponseEventType.ERROR
 
-    def clean(self):
+    async def clean(self):
         # In this new model, most cleanup is handled by the connection object's lifecycle.
         # This can be used for any additional cleanup if needed.
         self.ten_env.log_debug("RimeTTS: clean() called.")
+
+    def get_extra_metadata(self) -> dict[str, Any]:
+        """Return extra metadata for TTFB metrics."""
+        return {
+            "speaker": self.config.params.get("speaker", ""),
+            "modelId": self.config.params.get("modelId", ""),
+        }
