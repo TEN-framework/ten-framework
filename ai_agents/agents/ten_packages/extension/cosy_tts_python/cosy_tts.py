@@ -93,7 +93,7 @@ class AsyncIteratorCallback(ResultCallback):
         # Send error signal only if not cancelled
         if not self._cancelled:
             asyncio.run_coroutine_threadsafe(
-                self._queue.put((True, MESSAGE_TYPE_CMD_ERROR, message)),
+                self._queue.put((False, MESSAGE_TYPE_CMD_ERROR, message)),
                 self._loop,
             )
 
@@ -120,7 +120,7 @@ class AsyncIteratorCallback(ResultCallback):
                         asyncio.run_coroutine_threadsafe(
                             self._queue.put(
                                 (
-                                    True,
+                                    False,
                                     MESSAGE_TYPE_CMD_RESULT_GENERATED,
                                     char_count,
                                 )

@@ -328,7 +328,6 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
                             f"All pcm received done, current_request_id: {self.current_request_id}"
                         )
                         await self._handle_tts_audio_end()
-                        self.current_request_id = None
 
                 except asyncio.CancelledError:
                     self.ten_env.log_info("Audio consumer task was cancelled.")
