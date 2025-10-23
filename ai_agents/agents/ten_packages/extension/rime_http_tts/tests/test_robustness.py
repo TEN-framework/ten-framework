@@ -22,11 +22,7 @@ from ten_runtime import (
     TenEnvTester,
     Data,
 )
-from ten_ai_base.struct import TTSTextInput
-from ..rime_tts import (
-    EVENT_TTS_END,
-    EVENT_TTS_RESPONSE,
-)
+from ten_ai_base.struct import TTSTextInput, TTS2HttpResponseEventType
 
 
 # ================ test reconnect after connection drop(robustness) ================
@@ -138,8 +134,8 @@ def test_reconnect_after_connection_drop(MockRimeTTSClient):
             raise ConnectionRefusedError("Simulated connection drop from test")
         else:
             # On the second call, simulate a successful audio stream
-            yield (b"\x44\x55\x66", EVENT_TTS_RESPONSE)
-            yield (None, EVENT_TTS_END)
+            yield (b"\x44\x55\x66", TTS2HttpResponseEventType.RESPONSE)
+            yield (None, TTS2HttpResponseEventType.END)
 
     mock_instance.get.side_effect = mock_get_stateful
 

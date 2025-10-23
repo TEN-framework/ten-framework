@@ -23,11 +23,7 @@ from ten_runtime import (
     TenEnvTester,
     Data,
 )
-from ten_ai_base.struct import TTSTextInput
-from ..rime_tts import (
-    EVENT_TTS_RESPONSE,
-    EVENT_TTS_END,
-)
+from ten_ai_base.struct import TTSTextInput, TTS2HttpResponseEventType
 
 
 # ================ test metrics ================
@@ -101,9 +97,9 @@ def test_ttfb_metric_is_sent(MockRimeTTSClient):
     async def mock_get_audio_with_delay(text: str):
         # Simulate network latency or processing time before the first byte
         await asyncio.sleep(0.2)
-        yield (b"\x11\x22\x33", EVENT_TTS_RESPONSE)
+        yield (b"\x11\x22\x33", TTS2HttpResponseEventType.RESPONSE)
         # Simulate the end of the stream
-        yield (None, EVENT_TTS_END)
+        yield (None, TTS2HttpResponseEventType.END)
 
     mock_instance.get.side_effect = mock_get_audio_with_delay
 
