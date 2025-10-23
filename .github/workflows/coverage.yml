@@ -136,6 +136,14 @@ jobs:
           pip install --user cpp-coveralls
           echo "cpp-coveralls installed successfully"
 
+          # Add user bin directory to PATH
+          export PATH="$HOME/.local/bin:$PATH"
+          echo "Updated PATH: $PATH"
+
+          # Verify coveralls command is available
+          which coveralls || echo "coveralls command not found in PATH"
+          coveralls --version || echo "coveralls version check failed"
+
           if [ -f "out/linux/x64/tests/standalone/coverage/coverage.lcov" ]; then
             echo "Uploading coverage to Coveralls..."
             coveralls --lcov-file out/linux/x64/tests/standalone/coverage/coverage.lcov --verbose
