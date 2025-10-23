@@ -62,6 +62,12 @@ class TurnDetectedASRResultEvent(AgentEventBase):
     metadata: Dict[str, Any]
 
 
+class TurnInterruptedEvent(AgentEventBase):
+    """Event triggered when turn is interrupted."""
+
+    type: Literal["cmd"] = "cmd"
+    name: Literal["turn_interrupted"] = "turn_interrupted"
+
 class LLMResponseEvent(AgentEventBase):
     """Event triggered when LLM returns a streaming response."""
 
