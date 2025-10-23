@@ -102,7 +102,7 @@
             },
             {
               "type": "extension",
-              "name": "turn_detector",
+              "name": "turn_detection",
               "addon": "ten_turn_detection",
               "extension_group": "default",
               "property": {
@@ -193,7 +193,7 @@
               ]
             },
             {
-              "extension": "turn_detector",
+              "extension": "turn_detection",
               "data": [
                 {
                   "name": "text_data",
