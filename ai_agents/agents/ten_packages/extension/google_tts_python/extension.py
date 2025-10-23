@@ -41,9 +41,7 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
         self.recorder_map: dict[str, PCMWriter] = (
             {}
         )  # Store PCMWriter instances for different request_ids
-        self.completed_request_ids: set[str] = (
-            set()
-        )  # Track completed request IDs
+        self.last_complete_request_id: str | None = None
         self._flush_requested = False  # Track if flush has been requested
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
@@ -121,7 +119,6 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
 
         # Clear all maps and sets
         self.recorder_map.clear()
-        self.completed_request_ids.clear()
 
         await super().on_stop(ten_env)
         ten_env.log_debug("on_stop")
@@ -188,9 +185,14 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
 
     async def handle_completed_request(self, reason: TTSAudioEndReason):
         # update request_id
-        self.completed_request_ids.add(self.current_request_id)
+        if self.last_complete_request_id == self.current_request_id:
+            self.ten_env.log_debug(
+                f"{self.current_request_id} was completed, skip."
+            )
+            return
+        self.last_complete_request_id = self.current_request_id
         self.ten_env.log_debug(
-            f"add completed request_id to: {self.current_request_id}"
+            f"update last_complete_request_id to: {self.current_request_id}"
         )
         # send audio_end
         request_event_interval = 0
@@ -214,10 +216,7 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                 raise RuntimeError("Extension is not initialized properly.")
 
             # Check if request_id has already been completed
-            if (
-                self.completed_request_ids
-                and t.request_id in self.completed_request_ids
-            ):
+            if self.last_complete_request_id == t.request_id:
                 self.ten_env.log_debug(
                     f"Request ID {t.request_id} has already been completed, ignoring TTS request"
                 )
