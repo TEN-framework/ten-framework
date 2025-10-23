@@ -354,7 +354,7 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                             self.ten_env.log_debug(
                                 f"Sent TTS audio end event, interval: {request_event_interval}ms, duration: {duration_ms}ms"
                             )
-                            break
+                        break
 
                 self.ten_env.log_debug(
                     f"TTS processing completed, total chunks: {chunk_count}"
