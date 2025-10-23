@@ -17,6 +17,7 @@ from .agent.events import (
     LLMResponseEvent,
     ToolRegisterEvent,
     TurnDetectedASRResultEvent,
+    TurnInterruptedEvent,
     UserJoinedEvent,
     UserLeftEvent,
 )
@@ -105,6 +106,10 @@ class MainControlExtension(AsyncExtension):
             self.turn_id += 1
             await self.agent.queue_llm_input(event.text)
         await self._send_transcript("user", event.text, event.final, stream_id)
+
+    @agent_event_handler(TurnInterruptedEvent)
+    async def _on_turn_interrupted(self, event: TurnInterruptedEvent):
+        await self._interrupt()
 
     @agent_event_handler(LLMResponseEvent)
     async def _on_llm_response(self, event: LLMResponseEvent):
@@ -219,15 +224,13 @@ class MainControlExtension(AsyncExtension):
                 "metadata": self._current_metadata(),
             },
         )
-        self.ten_env.log_info(
-            f"[MainControlExtension] Sent to turn detector: final={final}, text={text}"
-        )
 
     async def _interrupt(self):
         """
         Interrupts ongoing LLM and TTS generation. Typically called when user speech is detected.
         """
         self.sentence_fragment = ""
+        await _send_cmd(self.ten_env, "flush", "turn_detector")
         await self.agent.flush_llm()
         await _send_data(
             self.ten_env, "tts_flush", "tts", {"flush_id": str(uuid.uuid4())}

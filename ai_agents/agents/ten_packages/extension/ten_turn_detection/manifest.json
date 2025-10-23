@@ -17,7 +17,51 @@
       "README.md"
     ]
   },
-  "api": {},
+  "api": {
+    "property": {
+      "properties": {
+        "base_url": {
+          "type": "string"
+        },
+        "api_key": {
+          "type": "string"
+        }
+      }
+    },
+    "data_in": [
+      {
+        "name": "text_data",
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string"
+          },
+          "is_final": {
+            "type": "boolean"
+          }
+        }
+      }
+    ],
+    "data_out": [
+      {
+        "name": "text_data",
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string"
+          },
+          "is_final": {
+            "type": "boolean"
+          }
+        }
+      }
+    ],
+    "cmd_out": [
+      {
+        "name": "flush"
+      }
+    ]
+  },
   "scripts": {
     "test": "tests/bin/start"
   }
