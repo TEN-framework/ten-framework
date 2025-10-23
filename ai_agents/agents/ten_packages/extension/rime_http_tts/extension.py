@@ -10,7 +10,11 @@ This extension implements text-to-speech using the Rime AI TTS API.
 It extends the AsyncTTS2HttpExtension for HTTP-based TTS services.
 """
 
-from ten_ai_base.tts2_http import AsyncTTS2HttpExtension, AsyncTTS2HttpConfig, AsyncTTS2HttpClient
+from ten_ai_base.tts2_http import (
+    AsyncTTS2HttpExtension,
+    AsyncTTS2HttpConfig,
+    AsyncTTS2HttpClient,
+)
 from ten_runtime import AsyncTenEnv
 
 from .config import RimeTTSConfig
@@ -39,7 +43,9 @@ class RimeTTSExtension(AsyncTTS2HttpExtension):
         """Create Rime TTS configuration from JSON string."""
         return RimeTTSConfig.model_validate_json(config_json_str)
 
-    async def create_client(self, config: AsyncTTS2HttpConfig, ten_env: AsyncTenEnv) -> AsyncTTS2HttpClient:
+    async def create_client(
+        self, config: AsyncTTS2HttpConfig, ten_env: AsyncTenEnv
+    ) -> AsyncTTS2HttpClient:
         """Create Rime TTS client."""
         return RimeTTSClient(config=config, ten_env=ten_env)
 

@@ -95,9 +95,13 @@ class RimeTTSClient:
                 category=LOG_CATEGORY_VENDOR,
             )
             if "401" in error_message:
-                yield error_message.encode("utf-8"), TTS2HttpResponseEventType.INVALID_KEY_ERROR
+                yield error_message.encode(
+                    "utf-8"
+                ), TTS2HttpResponseEventType.INVALID_KEY_ERROR
             else:
-                yield error_message.encode("utf-8"), TTS2HttpResponseEventType.ERROR
+                yield error_message.encode(
+                    "utf-8"
+                ), TTS2HttpResponseEventType.ERROR
 
     async def clean(self):
         # In this new model, most cleanup is handled by the connection object's lifecycle.
