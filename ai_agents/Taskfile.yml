@@ -129,7 +129,7 @@ tasks:
     desc: format python code with black
     internal: true
     cmds:
-      - black --exclude "third_party/|agents/ten_packages/extension/http_server_python/|ten_packages/system|.ten/|node_modules|__pycache__" --line-length 80 agents/examples {{ .CLI_ARGS }}
+      - black --exclude "third_party/|agents/ten_packages/extension/http_server_python/|ten_packages/system|.ten/|node_modules|__pycache__|frontend/|.next/|.release/|addon_loader/|system/|ten_ai_base/" --line-length 80 agents/examples {{ .CLI_ARGS }}
 
   check:
     desc: check code

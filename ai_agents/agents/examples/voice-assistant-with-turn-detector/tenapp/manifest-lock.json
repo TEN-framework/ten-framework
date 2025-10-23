@@ -744,6 +744,19 @@
       "path": "../../../ten_packages/extension/ten_vad_python"
     },
     {
+      "type": "extension",
+      "name": "ten_turn_detection",
+      "version": "0.2.0",
+      "hash": "1fa0fa78f004e9f1fdf5616ea35d43d8ff248ec3a5a387abbe38337cba393651",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime_python"
+        }
+      ],
+      "path": "../../../ten_packages/extension/ten_turn_detection"
+    },
+    {
       "type": "system",
       "name": "ten_runtime_python",
       "version": "0.11.21",
