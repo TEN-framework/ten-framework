@@ -1,11 +1,19 @@
 name: Coverage Report
 
 on:
-  push:
-    branches: [ main, develop ]
+  release:
+    types: [created]
   pull_request:
-    branches: [ main, develop ]
-  workflow_dispatch:
+    types: [opened, synchronize, reopened]
+    paths-ignore:
+      - "tools/**"
+      - ".vscode/**"
+      - ".devcontainer/**"
+      - ".github/**"
+      - "!.github/workflows/linux_ubuntu2204.yml"
+      - "core/src/ten_manager/designer_frontend/**"
+      - "**.md"
+      - "ai_agents/**"
 
 permissions:
   contents: write
