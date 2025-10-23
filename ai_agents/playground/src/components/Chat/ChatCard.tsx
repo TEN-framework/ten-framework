@@ -1,20 +1,19 @@
 "use client";
 
+import { Send } from "lucide-react";
 import * as React from "react";
-import { cn } from "@/lib/utils";
-import {
-  useAppDispatch,
-  useAutoScroll,
-  useAppSelector,
-} from "@/common";
-import {
-  addChatItem,
-} from "@/store/reducers/global";
+import { useAppDispatch, useAppSelector, useAutoScroll } from "@/common";
 import MessageList from "@/components/Chat/MessageList";
 import { Button } from "@/components/ui/button";
-import { Send } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { rtmManager } from "@/manager/rtm";
-import { type IRTMTextItem, EMessageDataType, EMessageType, ERTMTextType } from "@/types";
+import { addChatItem } from "@/store/reducers/global";
+import {
+  EMessageDataType,
+  EMessageType,
+  ERTMTextType,
+  type IRTMTextItem,
+} from "@/types";
 
 export default function ChatCard(props: { className?: string }) {
   const { className } = props;
@@ -95,8 +94,8 @@ export default function ChatCard(props: { className?: string }) {
   return (
     <>
       {/* Chat Card */}
-      <div className={cn("h-full overflow-hidden min-h-0 flex", className)}>
-        <div className="flex w-full flex-col p-4 flex-1">
+      <div className={cn("flex h-full min-h-0 overflow-hidden", className)}>
+        <div className="flex w-full flex-1 flex-col p-4">
           {/* Scrollable messages container */}
           <div className="flex-1 overflow-y-auto" ref={chatRef}>
             <MessageList />
@@ -107,7 +106,10 @@ export default function ChatCard(props: { className?: string }) {
               ["hidden"]: !graphName.includes("rtm"), // TODO: TMP use rtm key word
             })}
           >
-            <form onSubmit={handleInputSubmit} className="flex items-center space-x-2">
+            <form
+              onSubmit={handleInputSubmit}
+              className="flex items-center space-x-2"
+            >
               <input
                 type="text"
                 disabled={disableInputMemo}
@@ -115,7 +117,7 @@ export default function ChatCard(props: { className?: string }) {
                 value={inputValue}
                 onChange={handleInputChange}
                 className={cn(
-                  "flex-grow rounded-md border bg-background p-1.5 focus:outline-none focus:ring-1 focus:ring-ring",
+                  "grow rounded-md border bg-background p-1.5 focus:outline-hidden focus:ring-1 focus:ring-ring",
                   {
                     ["cursor-not-allowed"]: disableInputMemo,
                   }
@@ -140,5 +142,4 @@ export default function ChatCard(props: { className?: string }) {
       </div>
     </>
   );
-
 }

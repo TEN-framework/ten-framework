@@ -75,7 +75,7 @@ class PlayHTTTS:
         self,
         params: PlayHTParams,
         timeout: float = 30.0,
-        max_retries: int = 3,
+        max_retries: int = 2,
         retry_delay: float = 0.05,
     ):
         self.timeout = timeout
@@ -138,18 +138,18 @@ if __name__ == "__main__":
     import time
     import asyncio
 
-    params = PlayHTParams(
+    playht_params = PlayHTParams(
         api_key=os.getenv("PLAYHT_TTS_SECRET_KEY", ""),
         user_id=os.getenv("PLAYHT_TTS_USER_ID", ""),
         voice_engine="PlayDialog",
         voice="s3://voice-cloning-zero-shot/d9ff78ba-d016-47f6-b0ef-dd630f59414e/female-cs/manifest.json",
     )
 
-    print(params.model_dump_json())
+    print(playht_params.model_dump_json())
 
     # test async
     async def test_async():
-        tts = PlayHTTTS(params)
+        tts = PlayHTTTS(playht_params)
         t = time.time()
         print(f"start synthesize with retry - {t}")
 

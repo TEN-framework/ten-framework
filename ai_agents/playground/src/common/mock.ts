@@ -1,5 +1,5 @@
+import { EMessageDataType, EMessageType, type IChatItem } from "@/types";
 import { getRandomUserId } from "./utils";
-import { IChatItem, EMessageType, EMessageDataType } from "@/types";
 
 const SENTENCES = [
   "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",

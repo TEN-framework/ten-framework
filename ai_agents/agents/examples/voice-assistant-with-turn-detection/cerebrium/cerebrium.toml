@@ -1,0 +1,27 @@
+[cerebrium.deployment]
+name = "ten-turn-detection-project"
+python_version = "3.12"
+docker_base_image_url = "nvidia/cuda:12.1.1-runtime-ubuntu22.04"
+disable_auth = true
+include = ['./*', 'main.py', 'cerebrium.toml']
+exclude = ['.*']
+
+[cerebrium.hardware]
+cpu = 2.0
+memory = 14.0
+compute = "AMPERE_A10"
+gpu_count = 1
+
+[cerebrium.dependencies.pip]
+# Install vLLM and Transformers for model access and loading
+vllm = "latest"
+transformers = "latest"
+pydantic = "latest"
+
+[cerebrium.scaling]
+min_replicas = 1
+max_replicas = 2
+cooldown = 300
+replica_concurrency = 1
+scaling_metric = "concurrency_utilization"
+
