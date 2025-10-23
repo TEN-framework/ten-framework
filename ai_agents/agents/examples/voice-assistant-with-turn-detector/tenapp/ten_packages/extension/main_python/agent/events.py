@@ -87,4 +87,5 @@ AgentEvent = Union[
     ToolRegisterEvent,
     ASRResultEvent,
     LLMResponseEvent,
+    TurnInterruptedEvent,
 ]
