@@ -75,6 +75,7 @@ def main() -> int:
     parser.add_argument("--root-out", required=True)
     parser.add_argument("--report-out", required=True)
     parser.add_argument("--is-clang", required=True, choices=["true", "false"])
+    parser.add_argument("--generate-lcov", action="store_true", help="Generate lcov format file for Coveralls")
     args: argparse.Namespace = parser.parse_args()
 
     root_out = os.path.abspath(args.root_out)
@@ -86,6 +87,18 @@ def main() -> int:
     # Run tests to generate coverage artifacts
     unit = find_executable(root_out, "ten_runtime_unit_test")
     smoke = find_executable(root_out, "ten_runtime_smoke_test")
+
+    # Find integration test executables (C++ parts)
+    integration_tests = []
+    integration_dir = os.path.join(root_out, "tests", "ten_runtime", "integration", "cpp")
+    if os.path.exists(integration_dir):
+        for item in os.listdir(integration_dir):
+            item_path = os.path.join(integration_dir, item)
+            if os.path.isdir(item_path):
+                # Look for client executables in each integration test directory
+                client_exe = os.path.join(item_path, f"{item}_app_client")
+                if os.path.isfile(client_exe) and os.access(client_exe, os.X_OK):
+                    integration_tests.append(client_exe)
 
     env = os.environ.copy()
 
@@ -167,6 +180,8 @@ def main() -> int:
             objects.append(unit)
         if smoke:
             objects.append(smoke)
+        # Add integration test executables
+        objects.extend(integration_tests)
         rt_so = os.path.join(root_out, "libten_runtime.so")
         if os.path.exists(rt_so):
             objects.append(rt_so)
@@ -223,6 +238,23 @@ def main() -> int:
         with open(line_txt, "w", encoding="utf-8") as f:
             print("$", " ".join(cmd_txt))
             subprocess.call(cmd_txt, stdout=f)
+
+        # Generate lcov format for Coveralls if requested
+        if args.generate_lcov:
+            lcov_file = os.path.join(report_out, "coverage.lcov")
+            lcov_cmd = [
+                "llvm-cov",
+                "export",
+                "--format=lcov",
+                "-instr-profile",
+                merged,
+                "-ignore-filename-regex",
+                _ignore,
+            ] + obj_args
+            with open(lcov_file, "w", encoding="utf-8") as f:
+                print("$", " ".join(lcov_cmd))
+                subprocess.call(lcov_cmd, stdout=f)
+            print(f"Coverage LCOV: {lcov_file}")
 
         print(f"Coverage HTML: {html}")
         return 0

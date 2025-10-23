@@ -98,6 +98,9 @@ if (ten_runtime_enable_coverage && is_debug && is_linux) {
       args += [ "false" ]
     }
 
+    # Always generate lcov format for Coveralls
+    args += [ "--generate-lcov" ]
+
     # Declare the marker files in the output directory to avoid re-running each time
     outputs = [ "${_out_dir}/index.html" ]
   }
