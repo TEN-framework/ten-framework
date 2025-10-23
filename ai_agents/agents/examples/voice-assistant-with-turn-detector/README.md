@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Voice Assistant with Turn Detection
 
 A voice assistant enhanced with AI-powered turn detection using a fine-tuned LLM model deployed on Cerebrium GPUs. Unlike traditional Voice Activity Detection (VAD) which only detects when speech starts/stops, turn detection intelligently determines when a speaker has finished their conversational turn by understanding context and intent.
@@ -172,25 +171,3 @@ docker run --rm -it --env-file .env -p 8080:8080 -p 3000:3000 voice-assistant-tu
 - [Agora RTC Documentation](https://docs.agora.io/en/voice-calling/overview/product-overview)
 - [Deepgram API Documentation](https://developers.deepgram.com/)
 - [ElevenLabs API Documentation](https://docs.elevenlabs.io/)
-=======
-# Voice Assistant (with TEN VAD)
-
-A voice assistant enhanced with TEN Voice Activity Detection (VAD) for improved speech detection and processing.
-
-## Quick Start
-
-1. **Install dependencies:**
-   ```bash
-   task install
-   ```
-
-2. **Run the voice assistant with TEN VAD:**
-   ```bash
-   task run
-   ```
-
-3. **Access the application:**
-   - Frontend: http://localhost:3000
-   - API Server: http://localhost:8080
-   - TMAN Designer: http://localhost:49483
->>>>>>> origin
