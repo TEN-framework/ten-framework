@@ -26,12 +26,13 @@
             {
               "type": "extension",
               "name": "stt",
-              "addon": "azure_asr_python",
+              "addon": "deepgram_asr_python",
               "extension_group": "stt",
               "property": {
                 "params": {
-                  "key": "${env:AZURE_STT_KEY}",
-                  "region": "${env:AZURE_STT_REGION}"
+                  "language": "en-US",
+                  "model": "nova-3",
+                  "api_key": "${env:DEEPGRAM_API_KEY|}"
                 }
               }
             },
@@ -55,20 +56,17 @@
             {
               "type": "extension",
               "name": "tts",
-              "addon": "minimax_tts_websocket_python",
+              "addon": "elevenlabs_tts2_python",
               "extension_group": "tts",
               "property": {
                 "params": {
-                  "api_key": "${env:MINIMAX_TTS_API_KEY|}",
-                  "group_id": "${env:MINIMAX_TTS_GROUP_ID|}",
-                  "model": "speech-02-turbo",
-                  "audio_setting": {
-                    "sample_rate": 16000
-                  },
-                  "voice_setting": {
-                    "voice_id": "female-shaonv"
-                  }
-                }
+                  "output_format": "pcm_16000",
+                  "voice_id": "pNInz6obpgDQGcFmaJgB",
+                  "model_id": "eleven_multilingual_v2",
+                  "key": "${env:ELEVENLABS_TTS_KEY|}"
+                },
+                "dump": false,
+                "dump_path": "./"
               }
             },
             {
@@ -199,6 +197,16 @@
               "data": [
                 {
                   "name": "text_data",
+                  "dest": [
+                    {
+                      "extension": "main_control"
+                    }
+                  ]
+                }
+              ],
+              "cmd": [
+                {
+                  "name": "flush",
                   "dest": [
                     {
                       "extension": "main_control"
