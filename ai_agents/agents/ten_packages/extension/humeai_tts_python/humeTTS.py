@@ -148,6 +148,7 @@ class HumeAiTTS(AsyncTTS2HttpClient):
         # In this new model, most cleanup is handled by the connection object's lifecycle.
         # This can be used for any additional cleanup if needed.
         self.ten_env.log_debug("HumeAiTTS: clean() called.")
+        self.connection = None
 
     def get_extra_metadata(self) -> dict[str, Any]:
         """Return extra metadata for metrics."""
