@@ -12,7 +12,7 @@ BYTES_PER_SAMPLE = 2
 NUMBER_OF_CHANNELS = 1
 
 
-class RimeTTSClient(AsyncTTS2HttpClient):
+class RimeTTSClient:
     def __init__(
         self,
         config: RimeTTSConfig,
