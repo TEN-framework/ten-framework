@@ -12,12 +12,13 @@ BYTES_PER_SAMPLE = 2
 NUMBER_OF_CHANNELS = 1
 
 
-class RimeTTSClient:
+class RimeTTSClient(AsyncTTS2HttpClient):
     def __init__(
         self,
         config: RimeTTSConfig,
         ten_env: AsyncTenEnv,
     ):
+        super().__init__()
         self.config = config
         self.api_key = config.api_key
         self.ten_env: AsyncTenEnv = ten_env
@@ -70,13 +71,13 @@ class RimeTTSClient:
                 async for chunk in response.aiter_bytes(chunk_size=4096):
                     if self._is_cancelled:
                         self.ten_env.log_debug(
-                            "Cancellation flag detected, sending flush event and stopping TTS stream."
+                            f"Cancellation flag detected, sending flush event and stopping TTS stream of request_id: {request_id}."
                         )
                         yield None, TTS2HttpResponseEventType.FLUSH
                         break
 
                     self.ten_env.log_debug(
-                        f"RimeTTS: sending EVENT_TTS_RESPONSE, length: {len(chunk)}"
+                        f"RimeTTS: sending EVENT_TTS_RESPONSE, length: {len(chunk)} of request_id: {request_id}."
                     )
 
                     if len(chunk) > 0:
@@ -85,14 +86,16 @@ class RimeTTSClient:
                         yield None, TTS2HttpResponseEventType.END
 
             if not self._is_cancelled:
-                self.ten_env.log_debug("RimeTTS: sending EVENT_TTS_END")
+                self.ten_env.log_debug(
+                    f"RimeTTS: sending EVENT_TTS_END of request_id: {request_id}."
+                )
                 yield None, TTS2HttpResponseEventType.END
 
         except Exception as e:
             # Check if it's an API key authentication error
             error_message = str(e)
             self.ten_env.log_error(
-                f"vendor_error: {error_message}",
+                f"vendor_error: {error_message} of request_id: {request_id}.",
                 category=LOG_CATEGORY_VENDOR,
             )
             if "401" in error_message:
