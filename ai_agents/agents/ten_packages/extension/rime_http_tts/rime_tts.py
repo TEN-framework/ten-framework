@@ -50,8 +50,8 @@ class RimeTTSClient:
         self._is_cancelled = True
 
     async def get(
-        self, text: str, request_id: str | None = None
-    ) -> AsyncIterator[Tuple[bytes, TTS2HttpResponseEventType]]:
+        self, text: str, request_id: str
+    ) -> AsyncIterator[Tuple[bytes | None, TTS2HttpResponseEventType]]:
         """Process a single TTS request in serial manner"""
         self._is_cancelled = False
         if not self.client:

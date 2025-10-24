@@ -94,7 +94,9 @@ def test_ttfb_metric_is_sent(MockRimeTTSClient):
 
     # This async generator simulates the TTS client's get() method with a delay
     # to produce a measurable TTFB.
-    async def mock_get_audio_with_delay(text: str, request_id: str | None = None):
+    async def mock_get_audio_with_delay(
+        text: str, request_id: str | None = None
+    ):
         # Simulate network latency or processing time before the first byte
         await asyncio.sleep(0.2)
         yield (b"\x11\x22\x33", TTS2HttpResponseEventType.RESPONSE)

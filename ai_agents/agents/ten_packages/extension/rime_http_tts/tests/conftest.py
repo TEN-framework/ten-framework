@@ -33,7 +33,6 @@ class FakeApp(App):
 
         ten_env.on_init_done()
 
-
     @override
     def on_configure(self, ten_env: TenEnv) -> None:
         ten_env.init_property_from_json(

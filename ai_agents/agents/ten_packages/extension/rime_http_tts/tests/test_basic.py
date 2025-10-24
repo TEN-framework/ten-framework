@@ -290,7 +290,9 @@ def test_flush_logic(MockRimeTTSClient):
     mock_instance.clean = AsyncMock()
     mock_instance.cancel = AsyncMock()
 
-    async def mock_get_long_audio_stream(text: str, request_id: str | None = None):
+    async def mock_get_long_audio_stream(
+        text: str, request_id: str | None = None
+    ):
         for _ in range(20):
             # In a real scenario, the cancel() call would set a flag.
             # We simulate this by checking the mock's 'called' status.

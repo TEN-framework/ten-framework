@@ -30,8 +30,8 @@ class HumeAiTTS(AsyncTTS2HttpClient):
         self._is_cancelled = False
 
     async def get(
-        self, text: str, request_id: str | None = None
-    ) -> AsyncIterator[Tuple[bytes, TTS2HttpResponseEventType]]:
+        self, text: str, request_id: str
+    ) -> AsyncIterator[Tuple[bytes | None, TTS2HttpResponseEventType]]:
         """
         Get audio stream from Hume AI TTS.
 
