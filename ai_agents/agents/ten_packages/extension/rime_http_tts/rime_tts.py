@@ -30,21 +30,14 @@ class RimeTTSClient(AsyncTTS2HttpClient):
             "Accept": "audio/pcm",
         }
         self.client = AsyncClient(
-            timeout=Timeout(timeout=5.0),
+            timeout=Timeout(timeout=20.0),
             limits=Limits(
                 max_connections=100,
                 max_keepalive_connections=20,
                 keepalive_expiry=600.0,  # 10 minutes keepalive
             ),
             http2=True,  # Enable HTTP/2 if server supports it
-            follow_redirects=True,
         )
-
-    async def stop(self):
-        # Stop the client if it exists
-        if self.client:
-            self.ten_env.log_debug("stop the client")
-            self.client = None
 
     async def cancel(self):
         self.ten_env.log_debug("RimeTTS: cancel() called.")
@@ -60,7 +53,9 @@ class RimeTTSClient(AsyncTTS2HttpClient):
                 f"RimeTTS: client not initialized for request_id: {request_id}.",
                 category=LOG_CATEGORY_VENDOR,
             )
-            raise Exception(f"RimeTTS: client not initialized for request_id: {request_id}.")
+            raise RuntimeError(
+                f"RimeTTS: client not initialized for request_id: {request_id}."
+            )
 
         try:
             async with self.client.stream(
@@ -115,6 +110,10 @@ class RimeTTSClient(AsyncTTS2HttpClient):
         # In this new model, most cleanup is handled by the connection object's lifecycle.
         # This can be used for any additional cleanup if needed.
         self.ten_env.log_debug("RimeTTS: clean() called.")
+        try:
+            await self.client.aclose()
+        finally:
+            pass
 
     def get_extra_metadata(self) -> dict[str, Any]:
         """Return extra metadata for TTFB metrics."""
