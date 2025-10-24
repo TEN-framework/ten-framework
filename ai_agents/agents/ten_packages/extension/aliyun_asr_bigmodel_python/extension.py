@@ -55,11 +55,15 @@ class AliyunRecognitionCallback(RecognitionCallback):
             "vendor_status_changed: on_open",
             category=LOG_CATEGORY_VENDOR,
         )
-        self.loop.create_task(self.extension.on_asr_open())
+        asyncio.run_coroutine_threadsafe(
+            self.extension.on_asr_open(), self.loop
+        )
 
     def on_complete(self) -> None:
         """Callback when recognition is completed"""
-        self.loop.create_task(self.extension.on_asr_complete())
+        asyncio.run_coroutine_threadsafe(
+            self.extension.on_asr_complete(), self.loop
+        )
 
     def on_error(self, result: RecognitionResult) -> None:
         """Error handling callback"""
@@ -67,11 +71,16 @@ class AliyunRecognitionCallback(RecognitionCallback):
             f"vendor_error: code: {result.status_code}, reason: {result.message}",
             category=LOG_CATEGORY_VENDOR,
         )
-        self.loop.create_task(self.extension.on_asr_error(result))
+        asyncio.run_coroutine_threadsafe(
+            self.extension.on_asr_error(result), self.loop
+        )
 
     def on_event(self, result: RecognitionResult) -> None:
         """Recognition result event callback"""
-        self.loop.create_task(self.extension.on_asr_event(result))
+        self.ten_env.log_info(f"Aliyun ASR result event: {result}")
+        asyncio.run_coroutine_threadsafe(
+            self.extension.on_asr_event(result), self.loop
+        )
 
     def on_close(self) -> None:
         """Callback when connection is closed"""
@@ -79,7 +88,9 @@ class AliyunRecognitionCallback(RecognitionCallback):
             "vendor_status_changed: on_close",
             category=LOG_CATEGORY_VENDOR,
         )
-        self.loop.create_task(self.extension.on_asr_close())
+        asyncio.run_coroutine_threadsafe(
+            self.extension.on_asr_close(), self.loop
+        )
 
 
 class AliyunASRBigmodelExtension(AsyncASRBaseExtension):
@@ -105,6 +116,7 @@ class AliyunASRBigmodelExtension(AsyncASRBaseExtension):
     @override
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
         await super().on_deinit(ten_env)
+        ten_env.log_info("Deinitializing Aliyun ASR Bigmodel Extension")
         if self.audio_dumper:
             await self.audio_dumper.stop()
             self.audio_dumper = None
@@ -505,13 +517,24 @@ class AliyunASRBigmodelExtension(AsyncASRBaseExtension):
                 int(len(audio_data) / (self.config.sample_rate / 1000 * 2))
             )
 
+            # self.ten_env.log_info(f"Sending audio data: {len(audio_data)} bytes")
+
             # Send audio data to recognition service
-            self.recognition.send_audio_frame(audio_data)
+            try:
+                self.recognition.send_audio_frame(audio_data)
+                # self.ten_env.log_info("Audio frame sent successfully")
+            except Exception as e:
+                self.ten_env.log_error(f"Error in send_audio_frame: {e}")
+                return False
 
             frame.unlock_buf(buf)
+            # self.ten_env.log_info("Audio frame successfully processed, returning True")
             return True
 
         except Exception as e:
             self.ten_env.log_error(f"Error sending audio to Aliyun ASR: {e}")
             frame.unlock_buf(buf)
+            self.ten_env.log_error(
+                "Failed to process audio frame, returning False"
+            )
             return False
