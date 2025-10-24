@@ -5,7 +5,6 @@ from typing import Any, AsyncIterator, Tuple
 from hume import AsyncHumeClient
 from hume.tts import (
     FormatPcm,
-    PostedContextWithUtterances,
     PostedUtterance,
     PostedUtteranceVoiceWithId,
     PostedUtteranceVoiceWithName,
@@ -72,14 +71,6 @@ class HumeAiTTS(AsyncTTS2HttpClient):
                 return
 
             async for snippet in self.connection.tts.synthesize_json_streaming(
-                context=PostedContextWithUtterances(
-                    utterances=[
-                        PostedUtterance(
-                            text="How can people see beauty so differently?",
-                            description="A curious student with a clear and respectful tone, seeking clarification on Hume's ideas with a straightforward question.",
-                        )
-                    ],
-                ),
                 utterances=[
                     PostedUtterance(
                         text=text,

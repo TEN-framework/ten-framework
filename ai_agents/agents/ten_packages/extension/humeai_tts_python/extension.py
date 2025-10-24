@@ -32,8 +32,8 @@ class HumeaiTTSExtension(AsyncTTS2HttpExtension):
     def __init__(self, name: str) -> None:
         super().__init__(name)
         # Type hints for better IDE support
-        self.config: HumeAiTTSConfig | None = None
-        self.client: HumeAiTTS | None = None
+        self.config: HumeAiTTSConfig = None
+        self.client: HumeAiTTS = None
 
     # ============================================================
     # Required method implementations

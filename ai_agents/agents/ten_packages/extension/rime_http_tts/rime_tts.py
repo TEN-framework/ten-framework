@@ -56,7 +56,11 @@ class RimeTTSClient(AsyncTTS2HttpClient):
         """Process a single TTS request in serial manner"""
         self._is_cancelled = False
         if not self.client:
-            return
+            self.ten_env.log_error(
+                f"RimeTTS: client not initialized for request_id: {request_id}.",
+                category=LOG_CATEGORY_VENDOR,
+            )
+            raise Exception(f"RimeTTS: client not initialized for request_id: {request_id}.")
 
         try:
             async with self.client.stream(

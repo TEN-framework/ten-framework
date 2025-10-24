@@ -32,8 +32,8 @@ class RimeTTSExtension(AsyncTTS2HttpExtension):
     def __init__(self, name: str) -> None:
         super().__init__(name)
         # Type hints for better IDE support
-        self.config: RimeTTSConfig | None = None
-        self.client: RimeTTSClient | None = None
+        self.config: RimeTTSConfig = None
+        self.client: RimeTTSClient = None
 
     # ============================================================
     # Required method implementations
