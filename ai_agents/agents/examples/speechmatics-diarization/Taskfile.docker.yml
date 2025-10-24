@@ -11,7 +11,7 @@ tasks:
 
   run-frontend-prod:
     desc: run frontend in production
-    dir: ./playground
+    dir: ./frontend
     cmds:
       - bun start
     background: true

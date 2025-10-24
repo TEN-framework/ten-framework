@@ -1,7 +1,6 @@
-import asyncio
 import json
 import time
-from typing import Literal
+from typing import Literal, Optional
 
 from .agent.decorators import agent_event_handler
 from ten_runtime import (
@@ -21,6 +20,7 @@ from .agent.events import (
 )
 from .helper import _send_cmd, _send_data, parse_sentences
 from .config import MainControlConfig  # assume extracted from your base model
+from .game_logic import WhoLikesWhatGame
 
 import uuid
 
@@ -42,7 +42,8 @@ class MainControlExtension(AsyncExtension):
         self.sentence_fragment: str = ""
         self.turn_id: int = 0
         self.session_id: str = "0"
-        self.last_speaker: str = ""  # Track the last speaker for context
+        self.pending_response_target: Optional[str] = None
+        self.game: Optional[WhoLikesWhatGame] = None
 
     def _current_metadata(self) -> dict:
         return {"session_id": self.session_id, "turn_id": self.turn_id}
@@ -55,6 +56,7 @@ class MainControlExtension(AsyncExtension):
         self.config = MainControlConfig.model_validate_json(config_json)
 
         self.agent = Agent(ten_env)
+        self.game = WhoLikesWhatGame(self)
 
         # Now auto-register decorated methods
         for attr_name in dir(self):
@@ -73,6 +75,8 @@ class MainControlExtension(AsyncExtension):
             await self._send_transcript(
                 "assistant", self.config.greeting, True, 100
             )
+        if self.game and not self.game.enrollment_prompted:
+            await self.game.start_enrollment_flow()
 
     @agent_event_handler(UserLeftEvent)
     async def _on_user_left(self, event: UserLeftEvent):
@@ -84,14 +88,34 @@ class MainControlExtension(AsyncExtension):
 
     @agent_event_handler(ASRResultEvent)
     async def _on_asr_result(self, event: ASRResultEvent):
-        self.session_id = event.metadata.get("session_id", "100")
-        stream_id = int(self.session_id)
+        game = self.game
+        if not game:
+            return
+
+        raw_session_id = event.metadata.get("session_id", "100")
+        self.session_id = str(raw_session_id)
+        stream_id = 100
+        for candidate in (
+            event.metadata.get("stream_id"),
+            raw_session_id,
+        ):
+            try:
+                if candidate is not None:
+                    stream_id = int(candidate)
+                    break
+            except (TypeError, ValueError):
+                continue
+        else:
+            self.ten_env.log_warn(
+                f"[ASR] Unable to parse stream_id from metadata; defaulting to {stream_id}. metadata={event.metadata}"
+            )
 
         # Extract speaker information for diarization
         speaker = event.metadata.get("speaker", "")
         channel = event.metadata.get("channel", "")
-        speaker_str = self._normalize_label(speaker)
-        channel_str = self._normalize_label(channel)
+        speaker_str = game.normalize_label(speaker)
+        channel_str = game.normalize_label(channel)
+        speaker_key = game.build_speaker_key(speaker_str, channel_str)
 
         # Debug logging to check if speaker info is received
         if event.final:
@@ -101,7 +125,17 @@ class MainControlExtension(AsyncExtension):
 
         # Format speaker label as [S1], [S2], etc.
         speaker_label = ""
-        if speaker_str:
+        assigned_name = (
+            game.speaker_assignments[speaker_key]
+            if speaker_key and speaker_key in game.speaker_assignments
+            else None
+        )
+        if assigned_name:
+            speaker_label = f"[{assigned_name}] "
+            self.ten_env.log_info(
+                f"[ASR] Using enrolled label: {speaker_label}"
+            )
+        elif speaker_str:
             speaker_label = f"[{speaker_str}] "
             self.ten_env.log_info(f"[ASR] Using speaker label: {speaker_label}")
         elif channel_str:
@@ -109,8 +143,8 @@ class MainControlExtension(AsyncExtension):
             self.ten_env.log_info(f"[ASR] Using channel label: {speaker_label}")
         else:
             # If no speaker/channel info, use last known speaker or default
-            if self.last_speaker:
-                speaker_label = f"[{self.last_speaker}] "
+            if game.last_speaker:
+                speaker_label = f"[{game.last_speaker}] "
                 self.ten_env.log_info(
                     f"[ASR] Using last speaker label: {speaker_label}"
                 )
@@ -124,14 +158,41 @@ class MainControlExtension(AsyncExtension):
             return
         if event.final or len(event.text) > 2:
             await self._interrupt()
+        queue_text: Optional[str] = None
         if event.final:
             self.turn_id += 1
             # Track the current speaker
-            if speaker_str or channel_str:
-                self.last_speaker = speaker_str if speaker_str else channel_str
-            # Include speaker info in LLM context
-            text_with_speaker = f"{speaker_label}{event.text}"
-            await self.agent.queue_llm_input(text_with_speaker)
+            resolved_label = speaker_str if speaker_str else channel_str
+            registered_name = await game.assign_player_if_needed(
+                speaker_key, event.text, not game.enrollment_complete
+            )
+            if registered_name:
+                assigned_name = registered_name
+                speaker_label = f"[{assigned_name}] "
+            elif speaker_key and speaker_key in game.speaker_assignments:
+                assigned_name = game.speaker_assignments[speaker_key]
+                speaker_label = f"[{assigned_name}] "
+            if assigned_name:
+                resolved_label = assigned_name
+            if resolved_label:
+                game.last_speaker = resolved_label
+
+            if not game.enrollment_complete:
+                await game.handle_enrollment_stage(
+                    assigned_name or resolved_label,
+                    speaker_key,
+                    event.text,
+                )
+            else:
+                handled = await game.handle_game_flow(
+                    assigned_name or resolved_label, event.text
+                )
+                if not handled and not assigned_name:
+                    await game.handle_unknown_speaker(event.text)
+                queue_text = None
+
+        if queue_text:
+            await self.agent.queue_llm_input(queue_text)
 
         # Add speaker label to transcript display (always include label)
         transcript_text = f"{speaker_label}{event.text}"
@@ -142,36 +203,34 @@ class MainControlExtension(AsyncExtension):
 
     @agent_event_handler(LLMResponseEvent)
     async def _on_llm_response(self, event: LLMResponseEvent):
+        target_player = self.pending_response_target
         if not event.is_final and event.type == "message":
             sentences, self.sentence_fragment = parse_sentences(
                 self.sentence_fragment, event.delta
             )
             for s in sentences:
-                await self._send_to_tts(s, False)
+                if target_player:
+                    await self._send_to_tts(s, False, target_player)
 
         if event.is_final and event.type == "message":
             remaining_text = self.sentence_fragment or ""
             self.sentence_fragment = ""
-            await self._send_to_tts(remaining_text, True)
+            if target_player and remaining_text:
+                await self._send_to_tts(remaining_text, True, target_player)
+            # Clear target when the turn is done
+            self.pending_response_target = None
 
         # No label for assistant responses
+        display_text = event.text
+        if target_player and display_text:
+            display_text = f"[{target_player}] {display_text}"
         await self._send_transcript(
             "assistant",
-            event.text,
+            display_text,
             event.is_final,
             100,
             data_type=("reasoning" if event.type == "reasoning" else "text"),
         )
-
-    @staticmethod
-    def _normalize_label(value) -> str:
-        if value is None:
-            return ""
-        if isinstance(value, str):
-            value = value.strip()
-        if value == "":
-            return ""
-        return str(value).upper()
 
     async def on_start(self, ten_env: AsyncTenEnv):
         ten_env.log_info("[MainControlExtension] on_start")
@@ -179,7 +238,12 @@ class MainControlExtension(AsyncExtension):
     async def on_stop(self, ten_env: AsyncTenEnv):
         ten_env.log_info("[MainControlExtension] on_stop")
         self.stopped = True
+        self.pending_response_target = None
+        if self.game:
+            self.game.reset_state()
+        ten_env.log_info("[MainControlExtension] stopping agent...")
         await self.agent.stop()
+        ten_env.log_info("[MainControlExtension] agent stopped")
 
     async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd):
         await self.agent.on_cmd(cmd)
@@ -238,11 +302,16 @@ class MainControlExtension(AsyncExtension):
             f"[MainControlExtension] Sent transcript: {role}, final={final}, text={text}"
         )
 
-    async def _send_to_tts(self, text: str, is_final: bool):
+    async def _send_to_tts(
+        self, text: str, is_final: bool, target_player: Optional[str] = None
+    ):
         """
         Sends a sentence to the TTS system.
         """
-        request_id = f"tts-request-{self.turn_id}"
+        request_id = f"tts-request-{self.turn_id}-{uuid.uuid4().hex[:8]}"
+        metadata = self._current_metadata()
+        if target_player:
+            metadata = {**metadata, "target_player": target_player}
         await _send_data(
             self.ten_env,
             "tts_text_input",
@@ -251,7 +320,7 @@ class MainControlExtension(AsyncExtension):
                 "request_id": request_id,
                 "text": text,
                 "text_input_end": is_final,
-                "metadata": self._current_metadata(),
+                "metadata": metadata,
             },
         )
         self.ten_env.log_info(
@@ -269,3 +338,10 @@ class MainControlExtension(AsyncExtension):
         )
         await _send_cmd(self.ten_env, "flush", "agora_rtc")
         self.ten_env.log_info("[MainControlExtension] Interrupt signal sent")
+    def _player_pronoun(self, player_name: str) -> tuple[str, str]:
+        pronoun_map = {
+            "Elliot": ("he", "loves"),
+            "Musk": ("he", "loves"),
+            "Taytay": ("she", "loves"),
+        }
+        return pronoun_map.get(player_name, ("they", "love"))

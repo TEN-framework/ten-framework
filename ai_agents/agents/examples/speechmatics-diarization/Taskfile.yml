@@ -7,7 +7,7 @@ tasks:
   install-frontend:
     desc: install frontend dependencies
     internal: true
-    dir: ../../../playground
+    dir: ./frontend
     cmds:
       - bun install --verbose
 
@@ -57,7 +57,7 @@ tasks:
 
   run-frontend:
     desc: run frontend
-    dir: ../../../playground
+    dir: ./frontend
     cmds:
       - bun run dev
 
@@ -73,6 +73,48 @@ tasks:
       - task: run-gd-server
       - task: run-frontend
       - task: run-api-server
+
+  clean:
+    desc: clean caches and stop background services
+    cmds:
+      - task: clean-tenapp-cache
+      - task: clean-frontend-cache
+      - task: clean-node-modules
+      - task: kill-dev-processes
+
+  clean-tenapp-cache:
+    desc: remove TEN app cache files
+    silent: true
+    cmds:
+      - rm -rf ./tenapp/agora_cache.db ./tenapp/agoradns.dat ./tenapp/agorareport.dat
+
+  clean-frontend-cache:
+    desc: remove frontend build artifacts
+    silent: true
+    cmds:
+      - rm -rf ./frontend/.next ./frontend/.turbo ./frontend/.cache
+
+  clean-node-modules:
+    desc: remove node_modules (frontend + playground)
+    silent: true
+    cmds:
+      - rm -rf ./frontend/node_modules
+      - rm -rf ../../../playground/node_modules
+
+  kill-dev-processes:
+    desc: kill dev servers using default ports (requires macOS / lsof + kill)
+    silent: true
+    cmds:
+      - |
+        set +e
+        for port in 3000 49483 8080; do
+          pid=$(lsof -ti tcp:$port 2>/dev/null | head -n 1)
+          if [ -n "$pid" ]; then
+            echo "Killing process $pid on port $port"
+            kill "$pid" >/dev/null 2>&1 || true
+          fi
+        done
+        set -e
 
 
   # release scripts
