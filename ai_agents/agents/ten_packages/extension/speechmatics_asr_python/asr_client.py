@@ -514,13 +514,14 @@ class SpeechmaticsASRClient:
                         f"[SENTENCE_EOS] Final metadata: {result_metadata}, sentence: '{sentence}'"
                     )
 
+                    word_payload = self.get_words(self.cache_words)
                     asr_result = ASRResult(
                         text=sentence,
                         final=True,
                         start_ms=start_ms,
                         duration_ms=duration_ms,
                         language=self.config.language,
-                        words=[],
+                        words=word_payload,
                         metadata=result_metadata,
                     )
 
@@ -559,13 +560,14 @@ class SpeechmaticsASRClient:
                     f"[SENTENCE_PARTIAL] Final metadata: {result_metadata}, sentence: '{sentence}'"
                 )
 
+                word_payload = self.get_words(self.cache_words)
                 asr_result_partial = ASRResult(
                     text=sentence,
                     final=False,
                     start_ms=start_ms,
                     duration_ms=duration_ms,
                     language=self.config.language,
-                    words=[],
+                    words=word_payload,
                     metadata=result_metadata,
                 )
 
