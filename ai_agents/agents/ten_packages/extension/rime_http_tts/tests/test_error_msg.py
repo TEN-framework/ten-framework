@@ -146,9 +146,8 @@ class ExtensionTesterInvalidApiKey(ExtensionTester):
 from unittest.mock import AsyncMock
 
 
-@patch("rime_http_tts.extension.RimeTTSClient")
 @patch("rime_http_tts.rime_tts.AsyncClient")
-def test_invalid_api_key_error(MockAsyncClient, MockRimeTTSClient):
+def test_invalid_api_key_error(MockAsyncClient):
     """Test that an invalid API key is handled correctly with a mock."""
     print("Starting test_invalid_api_key_error with mock...")
 
@@ -157,10 +156,8 @@ def test_invalid_api_key_error(MockAsyncClient, MockRimeTTSClient):
     mock_client.stream.side_effect = Exception(
         "Client error '401 Unauthorized' for url 'https://users.rime.ai/v1/rime-tts'"
     )
-
-    # Make RimeTTSClient's clean an AsyncMock
-    mock_rime_client = MockRimeTTSClient.return_value
-    mock_rime_client.clean = AsyncMock()
+    # Make aclose an AsyncMock so it can be awaited in clean()
+    mock_client.aclose = AsyncMock()
 
     # Config with invalid API key
     invalid_key_config = {
