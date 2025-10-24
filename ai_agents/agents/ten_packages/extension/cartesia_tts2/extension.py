@@ -25,6 +25,7 @@ from .cartesia_tts import (
     EVENT_TTS_END,
     EVENT_TTS_RESPONSE,
     EVENT_TTS_TTFB_METRIC,
+    EVENT_TTS_ERROR,
     CartesiaTTSClient,
     CartesiaTTSConnectionException,
 )
@@ -317,6 +318,26 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                     elif event_status == EVENT_TTS_END:
                         self.ten_env.log_info(
                             "Received TTS_END event from Cartesia TTS"
+                        )
+                        # Send TTS audio end event
+                        if self.sent_ts and t.text_input_end:
+                            request_event_interval = int(
+                                (datetime.now() - self.sent_ts).total_seconds()
+                                * 1000
+                            )
+                            duration_ms = self._calculate_audio_duration_ms()
+                            await self.send_tts_audio_end(
+                                request_id=self.current_request_id,
+                                request_event_interval_ms=request_event_interval,
+                                request_total_audio_duration_ms=duration_ms,
+                            )
+                            self.ten_env.log_debug(
+                                f"Sent TTS audio end event, interval: {request_event_interval}ms, duration: {duration_ms}ms"
+                            )
+                        break
+                    elif event_status == EVENT_TTS_ERROR:
+                        self.ten_env.log_error(
+                            "Received TTS_ERROR event from Cartesia TTS"
                         )
                         # Send TTS audio end event
                         if self.sent_ts and t.text_input_end:
