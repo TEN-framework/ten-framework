@@ -1,4 +1,21 @@
 #!/usr/bin/env python3
+"""
+Ten Runtime Coverage Report Generator
+
+This script generates coverage reports for ten_runtime tests using either:
+1. Clang toolchain (LLVM profdata/llvm-cov) - Currently used in CI
+2. GCC toolchain (gcov/lcov/genhtml) - Available for local development
+
+Current CI Configuration:
+- Uses Clang toolchain (is_clang=true)
+- Generates lcov format for Coveralls integration
+- Includes file cleanup to reduce artifact size
+
+GCC Support:
+- Code is preserved for future compatibility
+- Currently missing lcov format generation for Coveralls
+- Can be used for local development and testing
+"""
 import argparse
 import os
 import subprocess
@@ -257,9 +274,63 @@ def main() -> int:
             print(f"Coverage LCOV: {lcov_file}")
 
         print(f"Coverage HTML: {html}")
+
+        # Clean up large files to reduce artifact size
+        print("Cleaning up large files to reduce artifact size...")
+
+        # Remove HTML coverage directory (contains source code copies)
+        # NOTE: This removes the detailed HTML reports with source code
+        # The main index.html still works but links to individual files will be broken
+        html_coverage_dir = os.path.join(report_out, "coverage")
+        if os.path.exists(html_coverage_dir):
+            shutil.rmtree(html_coverage_dir)
+            print(f"Removed HTML coverage directory: {html_coverage_dir}")
+
+        # Remove large log files (keep only summary)
+        logs_dir = os.path.join(report_out, "logs")
+        if os.path.exists(logs_dir):
+            for log_file in os.listdir(logs_dir):
+                log_path = os.path.join(logs_dir, log_file)
+                if os.path.getsize(log_path) > 1024 * 1024:  # > 1MB
+                    os.remove(log_path)
+                    print(f"Removed large log file: {log_file}")
+
+        # Remove large JSON file (keep lcov for Coveralls)
+        json_file = os.path.join(report_out, "coverage.json")
+        if os.path.exists(json_file):
+            os.remove(json_file)
+            print(f"Removed large JSON file: coverage.json")
+
+        # Remove profdata file (not needed for final report)
+        profdata_file = os.path.join(report_out, "coverage.profdata")
+        if os.path.exists(profdata_file):
+            os.remove(profdata_file)
+            print(f"Removed profdata file: coverage.profdata")
+
+        # Create a summary of what was removed for debugging
+        summary_file = os.path.join(report_out, "cleanup_summary.txt")
+        with open(summary_file, "w") as f:
+            f.write("Coverage Report Cleanup Summary\n")
+            f.write("===============================\n\n")
+            f.write("Removed files to reduce artifact size:\n")
+            f.write("- coverage/ directory (HTML reports with source code copies)\n")
+            f.write("- Large log files (>1MB)\n")
+            f.write("- coverage.json (raw coverage data)\n")
+            f.write("- coverage.profdata (LLVM profdata)\n\n")
+            f.write("Retained files for artifacts:\n")
+            f.write("- index.html (main coverage summary)\n")
+            f.write("- coverage.lcov (for Coveralls integration)\n")
+            f.write("- line_coverage.txt (text format coverage report)\n")
+            f.write("- style.css, control.js (HTML styling)\n")
+            f.write("- Small log files (for debugging)\n")
+            f.write("- cleanup_summary.txt (this file)\n")
+        print(f"Created cleanup summary: {summary_file}")
+
         return 0
     else:
         # GCC gcov/lcov -> genhtml
+        # NOTE: Currently only Clang toolchain is used in CI (is_clang=true)
+        # This GCC path is kept for future compatibility and local development
         if not shutil.which("lcov") or not shutil.which("genhtml"):
             print("Missing lcov/genhtml in PATH", file=sys.stderr)
             return 1
@@ -278,6 +349,52 @@ def main() -> int:
             return 1
 
         print(f"Coverage HTML: {os.path.join(report_out, 'index.html')}")
+
+        # TODO: Add lcov format generation for GCC toolchain
+        # Currently GCC path doesn't generate coverage.lcov for Coveralls
+        # This would require additional lcov commands to create lcov format
+
+        # Clean up large files to reduce artifact size
+        print("Cleaning up large files to reduce artifact size...")
+
+        # Remove HTML coverage directory (contains source code copies)
+        html_coverage_dir = os.path.join(report_out, "coverage")
+        if os.path.exists(html_coverage_dir):
+            shutil.rmtree(html_coverage_dir)
+            print(f"Removed HTML coverage directory: {html_coverage_dir}")
+
+        # Remove large log files (keep only summary)
+        logs_dir = os.path.join(report_out, "logs")
+        if os.path.exists(logs_dir):
+            for log_file in os.listdir(logs_dir):
+                log_path = os.path.join(logs_dir, log_file)
+                if os.path.getsize(log_path) > 1024 * 1024:  # > 1MB
+                    os.remove(log_path)
+                    print(f"Removed large log file: {log_file}")
+
+        # Remove large info file (keep lcov for Coveralls)
+        info_file = os.path.join(report_out, "coverage.info")
+        if os.path.exists(info_file):
+            os.remove(info_file)
+            print(f"Removed large info file: coverage.info")
+
+        # Create a summary of what was removed for debugging
+        summary_file = os.path.join(report_out, "cleanup_summary.txt")
+        with open(summary_file, "w") as f:
+            f.write("Coverage Report Cleanup Summary (GCC)\n")
+            f.write("====================================\n\n")
+            f.write("Removed files to reduce artifact size:\n")
+            f.write("- coverage/ directory (HTML reports with source code copies)\n")
+            f.write("- Large log files (>1MB)\n")
+            f.write("- coverage.info (raw coverage data)\n\n")
+            f.write("Retained files for artifacts:\n")
+            f.write("- index.html (main coverage summary)\n")
+            f.write("- line_coverage.txt (text format coverage report)\n")
+            f.write("- style.css, control.js (HTML styling)\n")
+            f.write("- Small log files (for debugging)\n")
+            f.write("- cleanup_summary.txt (this file)\n")
+        print(f"Created cleanup summary: {summary_file}")
+
         return 0
 
 
