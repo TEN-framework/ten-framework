@@ -145,6 +145,7 @@ class ExtensionTesterInvalidApiKey(ExtensionTester):
 
 from unittest.mock import AsyncMock
 
+
 @patch("rime_http_tts.extension.RimeTTSClient")
 @patch("rime_http_tts.rime_tts.AsyncClient")
 def test_invalid_api_key_error(MockAsyncClient, MockRimeTTSClient):
