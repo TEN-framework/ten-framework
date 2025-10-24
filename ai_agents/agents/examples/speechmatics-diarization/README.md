@@ -1,13 +1,13 @@
-# Speaker Diarization Demo
+# Who Likes What – Speaker Diarization Demo
 
-This example demonstrates TEN Framework's speaker diarization capabilities using Speechmatics ASR. Speaker diarization identifies "who said what" in conversations with multiple speakers.
+This example demonstrates TEN Framework's speaker diarization capabilities using Speechmatics ASR in a conversational game called **Who Likes What**, where the agent figures out “who said what” across multiple voices.
 
 ## Features
 
 - **Real-time speaker identification**: Automatically detects and labels different speakers (S1, S2, S3, etc.)
 - **Configurable sensitivity**: Adjust how aggressively the system detects new speakers
-- **Multi-speaker conversations**: Supports up to 100 speakers (configurable)
-- **Visual speaker labels**: Speaker information is displayed in the transcript UI
+- **Multi-speaker conversations**: Supports up to 100 speakers (configurable) and powers the Who Likes What game loop
+- **Visual speaker labels**: Speaker information is displayed in the transcript UI so the agent can call players by name
 
 ## Prerequisites
 
@@ -103,15 +103,15 @@ You can customize diarization settings in `property.json`:
 
 ## Example Interaction
 
-**User 1 speaks**: "Hello, what's the weather today?"
+**Elliot**: "Hello, this is Elliot."
 
-**Transcript**: "Hello, what's the weather today? [S1]"
+**Transcript**: "[Elliot] Hello, this is Elliot."
 
-**User 2 speaks**: "I also want to know"
+**Musk**: "This is Elon."
 
-**Transcript**: "I also want to know [S2]"
+**Transcript**: "[Musk] This is Elon."
 
-**Agent**: "Hi S1! The weather today is sunny. S2, I can check for you too!"
+**Agent**: "Elliot's voice is locked in. Waiting for Taytay to give me a quick hello so I can lock in their voice."
 
 ## Troubleshooting
 

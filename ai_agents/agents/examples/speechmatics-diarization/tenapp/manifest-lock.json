@@ -4,8 +4,8 @@
     {
       "type": "system",
       "name": "ten_runtime_go",
-      "version": "0.11.16",
-      "hash": "48eda442dca7f56ea86056311a5ca11962bbb8ce4ce5fb4cc1c990becdbf5ec1",
+      "version": "0.11.20",
+      "hash": "8886fe1b0d8256f7b0c951dc12b8741c9b05eb6294e552aba72f47672d16ac12",
       "dependencies": [
         {
           "type": "system",
@@ -137,8 +137,8 @@
     {
       "type": "extension",
       "name": "azure_tts_python",
-      "version": "0.2.3",
-      "hash": "493402fc24dc7451b1ba0fb76b3cc86d4574b44061142ef4ac7be67fa2f6493f",
+      "version": "0.3.0",
+      "hash": "2cb8ff4f0927e283c9e9a78cef7f241792f058fbbc7ac5e83e2bf679e9192c07",
       "dependencies": [
         {
           "type": "system",
@@ -171,8 +171,8 @@
     {
       "type": "extension",
       "name": "cartesia_tts2",
-      "version": "0.2.7",
-      "hash": "bad6f58dc848ffd8e2abeb92bf345868cb2b3a5ac23f575e31aed80ba6ef8859",
+      "version": "0.3.0",
+      "hash": "71ebe5ff1ea4ad0d1c5d5d8d67f057645d9d356034d9864561bd814f1244c7ec",
       "dependencies": [
         {
           "type": "system",
@@ -188,8 +188,8 @@
     {
       "type": "extension",
       "name": "cosy_tts_python",
-      "version": "0.2.3",
-      "hash": "b6713574576dcb4bc9091474852a088c0ab821fcec9b5f12bd52f28b47e1106d",
+      "version": "0.3.2",
+      "hash": "acfd5cf008e5201515bedd4ecdb74459c8d6ed4f20d19e8b2ea98fa1ff2a3219",
       "dependencies": [
         {
           "type": "system",
@@ -218,8 +218,8 @@
     {
       "type": "extension",
       "name": "elevenlabs_tts2_python",
-      "version": "0.2.3",
-      "hash": "0435ef6f29279fae8b40e6f5b80df9c9f645a409ad1bac8006199f11f057507c",
+      "version": "0.3.1",
+      "hash": "ab5bc9d03f97d15f7b9c5dd60e8653f384c3c148b333e5144677d8c890c28a21",
       "dependencies": [
         {
           "type": "system",
@@ -235,8 +235,8 @@
     {
       "type": "extension",
       "name": "fish_audio_tts_python",
-      "version": "0.2.2",
-      "hash": "b79dccdf2eef96f5576a919da3a1d16185350660e66214f6e659c625caf50950",
+      "version": "0.3.0",
+      "hash": "9100e5a516219b9cb5d910cd88c80f9e1c761f24230f19f36c5d506f384fe30e",
       "dependencies": [
         {
           "type": "system",
@@ -252,8 +252,8 @@
     {
       "type": "extension",
       "name": "google_tts_python",
-      "version": "0.2.4",
-      "hash": "fe8b40faee44d0c5d19f9f666f898ec2454439ad00dd4f48c4edc17d3379d5ed",
+      "version": "0.3.1",
+      "hash": "ea63c3e6f2b82bd09b2b99b9aa4e6af5a2a46c4ee66cc534048f7a1beb09ca4c",
       "dependencies": [
         {
           "type": "system",
@@ -269,8 +269,8 @@
     {
       "type": "extension",
       "name": "groq_tts_python",
-      "version": "0.2.4",
-      "hash": "6c277deea67015eb0c8f3bc2e02bd146ca09cc6a85297b45f03087d0dc77aa73",
+      "version": "0.3.0",
+      "hash": "35e0146e34a33c482b08fea45d65dd612bd7a03a67dfc7bb36ef3f2b3c4a0ce2",
       "dependencies": [
         {
           "type": "system",
@@ -286,8 +286,8 @@
     {
       "type": "extension",
       "name": "humeai_tts_python",
-      "version": "0.2.4",
-      "hash": "d974dfb648a9403203a37f2e325764cd4b7b274e665792ec990e119bd055409d",
+      "version": "0.3.1",
+      "hash": "b5bb163414c26f2c0d5cdaf47355793cee7d9f32846a2070f67f37d46430d169",
       "dependencies": [
         {
           "type": "system",
@@ -333,8 +333,8 @@
     {
       "type": "extension",
       "name": "openai_tts2_python",
-      "version": "0.2.4",
-      "hash": "13f2122d9fcfedd09aaaa2e9edabdb83934188b0267d64981461552063784747",
+      "version": "0.3.0",
+      "hash": "cb448a30a7f8d90ed0d100d4eaa01e6b0d366fa5bb6a6e98d0422c97232cd7cf",
       "dependencies": [
         {
           "type": "system",
@@ -350,8 +350,8 @@
     {
       "type": "extension",
       "name": "polly_tts",
-      "version": "0.2.6",
-      "hash": "5645ca50969b270a480ec4608f6602b7fc6274c7654d90697dd9155bd965eb7d",
+      "version": "0.3.0",
+      "hash": "cb09c700e7b2941a68215a9c95ddab2ca8fb426e32ee62c51190d2108f4c7108",
       "dependencies": [
         {
           "type": "system",
@@ -367,8 +367,8 @@
     {
       "type": "extension",
       "name": "rime_http_tts",
-      "version": "0.2.2",
-      "hash": "6841d03416a3909c90250ad1e7bea4a1432fb67a699185567d20ceea84a390fb",
+      "version": "0.3.0",
+      "hash": "3bd36e724c54aa7ca1a5ffde810ba831590635eab3127616f5f593a849f7b154",
       "dependencies": [
         {
           "type": "system",
@@ -384,8 +384,8 @@
     {
       "type": "extension",
       "name": "rime_tts",
-      "version": "0.2.2",
-      "hash": "3136f3f9270e99e4c88361b2ca0d3051949ce2e463cfbd6ce1d239fcffa0c5b0",
+      "version": "0.3.0",
+      "hash": "feca8669aaf33f38a6f0eb763f030dba809d5464efe617c9f2bf6b49e21157fb",
       "dependencies": [
         {
           "type": "system",
@@ -401,8 +401,8 @@
     {
       "type": "extension",
       "name": "stepfun_tts_python",
-      "version": "0.2.0",
-      "hash": "d86fc1656d4ffe41421af8d8dd302a3db5478dc0c60bf92a30a43c2e7667e882",
+      "version": "0.3.1",
+      "hash": "53a078bb7c71e0f6f74013ad516cfed13ffd8ebe1b63e2e8a8a1e78db49c64b1",
       "dependencies": [
         {
           "type": "system",
@@ -418,8 +418,8 @@
     {
       "type": "extension",
       "name": "tencent_tts_python",
-      "version": "0.2.10",
-      "hash": "8c6a6e13097639c5ec71b9a92155068ffac60373fd4695360bb7b586d5a5c462",
+      "version": "0.3.0",
+      "hash": "bb10e325317a534e4be4b80ed1a3b036c61c909a92b949576c510c5af35b0658",
       "dependencies": [
         {
           "type": "system",
@@ -448,8 +448,8 @@
     {
       "type": "system",
       "name": "ten_runtime_python",
-      "version": "0.11.16",
-      "hash": "4322d3e83b73e1b949e7104f0c540f8cf04fa1a45e1b630f2c73a08729eb44e7",
+      "version": "0.11.20",
+      "hash": "336f286b2fccea9015046506546bd026524bbb05ed62a9310f8247612415e890",
       "dependencies": [
         {
           "type": "system",
@@ -470,8 +470,8 @@
     {
       "type": "system",
       "name": "ten_runtime",
-      "version": "0.11.16",
-      "hash": "0c0c30343eea5d58ccbe56174aab5fe13c6b09b1e149dff1e05309e323d32bfd",
+      "version": "0.11.20",
+      "hash": "7df4747d962481721dbac01d15c85ca9047df87c12bc97d57d211094e9fef960",
       "supports": [
         {
           "os": "linux",
@@ -494,8 +494,8 @@
     {
       "type": "addon_loader",
       "name": "python_addon_loader",
-      "version": "0.11.16",
-      "hash": "4461d42bca063b9fc17163c11d9d620677e19cfcc9d28fd931534d5aaf49c6c0",
+      "version": "0.11.20",
+      "hash": "dc178896381d8fab102cd3ce5648248c35b759374fb9f93b8133809e98bb99db",
       "dependencies": [
         {
           "type": "system",
