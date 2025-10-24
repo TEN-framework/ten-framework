@@ -34,14 +34,7 @@ from ten_runtime import (
     Data,
     TenError,
 )
-from ten_ai_base.struct import TTSTextInput, TTSFlush
-from humeai_tts_python.humeTTS import (
-    EVENT_TTS_RESPONSE,
-    EVENT_TTS_END,
-    EVENT_TTS_ERROR,
-    EVENT_TTS_INVALID_KEY_ERROR,
-    EVENT_TTS_FLUSH,
-)
+from ten_ai_base.struct import TTSTextInput, TTS2HttpResponseEventType
 
 
 # ================ test params passthrough ================
@@ -102,10 +95,11 @@ def test_params_passthrough(MockHumeAiTTS):
     mock_instance.cancel = (
         AsyncMock()
     )  # Required for clean shutdown in on_flush
+    mock_instance.clean = AsyncMock()
 
     async def mock_get_audio_stream(text: str, request_id: str):
-        yield (b"\x11\x22\x33", EVENT_TTS_RESPONSE)
-        yield (None, EVENT_TTS_END)
+        yield (b"\x11\x22\x33", TTS2HttpResponseEventType.RESPONSE)
+        yield (None, TTS2HttpResponseEventType.END)
 
     mock_instance.get.side_effect = mock_get_audio_stream
 

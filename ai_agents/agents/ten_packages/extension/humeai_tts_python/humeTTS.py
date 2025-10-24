@@ -1,5 +1,5 @@
 import base64
-from typing import AsyncIterator
+from typing import Any, AsyncIterator, Tuple
 
 # Only import the specific TTS modules we need to avoid PortAudio dependency
 from hume import AsyncHumeClient
@@ -13,16 +13,16 @@ from hume.tts import (
 from ten_runtime import AsyncTenEnv
 from .config import HumeAiTTSConfig
 from ten_ai_base.const import LOG_CATEGORY_VENDOR
-
-# Custom event types to communicate status back to the extension
-EVENT_TTS_RESPONSE = 1
-EVENT_TTS_END = 2
-EVENT_TTS_ERROR = 3
-EVENT_TTS_INVALID_KEY_ERROR = 4
-EVENT_TTS_FLUSH = 5
+from ten_ai_base.struct import TTS2HttpResponseEventType
+from ten_ai_base.tts2_http import AsyncTTS2HttpClient
 
 
-class HumeAiTTS:
+class HumeAiTTS(AsyncTTS2HttpClient):
+    config: HumeAiTTSConfig
+    ten_env: AsyncTenEnv
+    connection: AsyncHumeClient
+    _is_cancelled: bool
+
     def __init__(self, config: HumeAiTTSConfig, ten_env: AsyncTenEnv):
         self.config = config
         self.ten_env = ten_env
@@ -30,8 +30,15 @@ class HumeAiTTS:
         self._is_cancelled = False
 
     async def get(
-        self, text: str, request_id: str
-    ) -> AsyncIterator[tuple[bytes | None, int]]:
+        self, text: str, request_id: str | None = None
+    ) -> AsyncIterator[Tuple[bytes, TTS2HttpResponseEventType]]:
+        """
+        Get audio stream from Hume AI TTS.
+
+        Args:
+            text: The text to synthesize
+            request_id: Optional request ID for backward compatibility with tests
+        """
         self._is_cancelled = False
 
         self.ten_env.log_debug(
@@ -60,7 +67,7 @@ class HumeAiTTS:
                 self.ten_env.log_info(
                     "Request was cancelled before streaming started."
                 )
-                yield None, EVENT_TTS_FLUSH
+                yield None, TTS2HttpResponseEventType.FLUSH
                 return
 
             async for snippet in self.connection.tts.synthesize_json_streaming(
@@ -88,7 +95,7 @@ class HumeAiTTS:
                     self.ten_env.log_info(
                         "Cancellation flag detected, sending flush event and stopping TTS stream."
                     )
-                    yield None, EVENT_TTS_FLUSH
+                    yield None, TTS2HttpResponseEventType.FLUSH
                     return
 
                 audio_bytes = base64.b64decode(snippet.audio)
@@ -98,17 +105,17 @@ class HumeAiTTS:
                     self.ten_env.log_info(
                         "Cancellation detected after decoding audio, discarding data."
                     )
-                    yield None, EVENT_TTS_FLUSH
+                    yield None, TTS2HttpResponseEventType.FLUSH
                     return
 
-                yield audio_bytes, EVENT_TTS_RESPONSE
+                yield audio_bytes, TTS2HttpResponseEventType.RESPONSE
 
                 if snippet.is_last_chunk:
                     break
 
             # Only send EVENT_TTS_END if not cancelled
             if not self._is_cancelled:
-                yield None, EVENT_TTS_END
+                yield None, TTS2HttpResponseEventType.END
             else:
                 self.ten_env.log_info(
                     "TTS stream was cancelled, not sending END event."
@@ -131,15 +138,30 @@ class HumeAiTTS:
                 or ("Invalid ApiKey" in error_message)
                 or ("oauth.v2.InvalidApiKey" in error_message)
             ):
-                yield error_message.encode("utf-8"), EVENT_TTS_INVALID_KEY_ERROR
+                yield error_message.encode(
+                    "utf-8"
+                ), TTS2HttpResponseEventType.INVALID_KEY_ERROR
             else:
-                yield error_message.encode("utf-8"), EVENT_TTS_ERROR
+                yield error_message.encode(
+                    "utf-8"
+                ), TTS2HttpResponseEventType.ERROR
 
-    async def cancel(self):
+    async def cancel(self) -> None:
+        """Cancel the current TTS request."""
         self.ten_env.log_debug("HumeAiTTS: cancel() called.")
         self._is_cancelled = True
 
-    def clean(self):
+    async def clean(self) -> None:
+        """Clean up resources."""
         # In this new model, most cleanup is handled by the connection object's lifecycle.
         # This can be used for any additional cleanup if needed.
         self.ten_env.log_debug("HumeAiTTS: clean() called.")
+
+    def get_extra_metadata(self) -> dict[str, Any]:
+        """Return extra metadata for metrics."""
+        return {
+            "voice_id": self.config.voice_id if self.config.voice_id else "",
+            "voice_name": (
+                self.config.voice_name if self.config.voice_name else ""
+            ),
+        }

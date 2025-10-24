@@ -5,13 +5,14 @@ from .config import RimeTTSConfig
 from ten_runtime import AsyncTenEnv
 from ten_ai_base.const import LOG_CATEGORY_VENDOR
 from ten_ai_base.struct import TTS2HttpResponseEventType
+from ten_ai_base.tts2_http import AsyncTTS2HttpClient
 
 
 BYTES_PER_SAMPLE = 2
 NUMBER_OF_CHANNELS = 1
 
 
-class RimeTTSClient:
+class RimeTTSClient(AsyncTTS2HttpClient):
     def __init__(
         self,
         config: RimeTTSConfig,
@@ -49,7 +50,7 @@ class RimeTTSClient:
         self._is_cancelled = True
 
     async def get(
-        self, text: str
+        self, text: str, request_id: str | None = None
     ) -> AsyncIterator[Tuple[bytes, TTS2HttpResponseEventType]]:
         """Process a single TTS request in serial manner"""
         self._is_cancelled = False
