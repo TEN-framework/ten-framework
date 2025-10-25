@@ -1,0 +1,189 @@
+name: Coverage Report
+
+on:
+  release:
+    types: [created]
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths-ignore:
+      - "tools/**"
+      - ".vscode/**"
+      - ".devcontainer/**"
+      - ".github/**"
+      - "!.github/workflows/linux_ubuntu2204.yml"
+      - "core/src/ten_manager/designer_frontend/**"
+      - "**.md"
+      - "ai_agents/**"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: coverage-${{ github.head_ref }}
+  cancel-in-progress: true
+
+jobs:
+  call-check-pr-status:
+    uses: ./.github/workflows/_check_pr_status.yml
+  coverage-build:
+    needs: call-check-pr-status
+    if: ${{ needs.call-check-pr-status.outputs.should_continue == 'true' }}
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/ten-framework/ten_building_ubuntu2204
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Debug context
+        run: |
+          echo "event_name=${{ github.event_name }}"
+          echo "event_action=${{ github.event.action }}"
+          echo "ref=${{ github.ref }}"
+          echo "ref_name=${{ github.ref_name }}"
+          echo "ref_type=${{ github.ref_type }}"
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+
+      - name: Trust working directory
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
+      - name: Initialize and update submodules except portal/
+        run: |
+          submodules=$(git config --file .gitmodules --get-regexp path | awk '$2 != "portal" { print $2 }')
+          git submodule init
+          for s in $submodules; do
+            git submodule update --init --recursive --depth 1 "$s"
+          done
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Tgn gen (clang + debug + x64) with coverage enabled
+        run: |
+          export PATH=$(pwd)/core/ten_gn:/usr/local/go/bin:/root/go/bin:/root/.cargo/bin:$PATH
+          echo $PATH
+          rustup default nightly-2025-09-18
+
+          # Align Go toolchain with build job
+          go env -w GOFLAGS="-buildvcs=false"
+          go install golang.org/dl/go1.24.3@latest
+          export PATH=$PATH:$(go env GOPATH)/bin
+          go1.24.3 download
+          go1.24.3 version
+
+          tgn gen linux x64 debug -- is_clang=true ten_runtime_enable_coverage=true ten_rust_force_release=true log_level=1 enable_serialized_actions=true ten_enable_serialized_rust_action=true ten_rust_enable_gen_cargo_config=false ten_enable_cargo_clean=true ten_enable_go_lint=true ten_enable_rust_incremental_build=false ten_manager_enable_frontend=false ten_enable_integration_tests_prebuilt=false ten_enable_ffmpeg_extensions=true
+
+      - name: Ensure llvm-profdata/llvm-cov available
+        run: |
+          set -euxo pipefail
+          found_ver="$(ls /usr/bin/llvm-profdata-* 2>/dev/null | sed 's|.*/llvm-profdata-||' | sort -V | tail -1 || true)"
+          if [ -n "$found_ver" ]; then
+            ln -sf "/usr/bin/llvm-profdata-${found_ver}" /usr/local/bin/llvm-profdata || true
+            ln -sf "/usr/bin/llvm-cov-${found_ver}" /usr/local/bin/llvm-cov || true
+          fi
+          if ! command -v llvm-profdata >/dev/null 2>&1 || ! command -v llvm-cov >/dev/null 2>&1; then
+            apt-get update
+            apt-get install -y llvm
+            found_ver="$(ls /usr/bin/llvm-profdata-* 2>/dev/null | sed 's|.*/llvm-profdata-||' | sort -V | tail -1 || true)"
+            if [ -n "$found_ver" ]; then
+              ln -sf "/usr/bin/llvm-profdata-${found_ver}" /usr/local/bin/llvm-profdata || true
+              ln -sf "/usr/bin/llvm-cov-${found_ver}" /usr/local/bin/llvm-cov || true
+            fi
+          fi
+          which -a llvm-profdata || true
+          which -a llvm-cov || true
+          llvm-profdata --version || true
+          llvm-cov --version || true
+
+      - name: Install Python dependencies via script
+        run: |
+          python .github/tools/setup_pytest_dependencies.py
+          python -c "import sys; print('Python:', sys.version)"
+
+      - name: Generate coverage report
+        run: |
+          export PATH=$(pwd)/core/ten_gn:/usr/local/go/bin:/root/go/bin:/root/.cargo/bin:$PATH
+          # Ensure go1.24.3 shim is available during build
+          export PATH=$PATH:$(go env GOPATH)/bin
+          go1.24.3 version || { go install golang.org/dl/go1.24.3@latest && go1.24.3 download && go1.24.3 version; }
+          export PYTHONUNBUFFERED=1
+
+          # Ensure tests output dirs exist and are writable
+          mkdir -p out/linux/x64/tests/standalone/ten_manager || true
+          chmod -R u+w out/linux/x64/tests || true
+
+          ulimit -n 102400
+          sysctl -w net.core.somaxconn=8192
+          fuser -k 8001/tcp || true
+          tgn build linux x64 debug -- tests/ten_runtime:gen_coverage_report
+          ls -al out/linux/x64/tests/standalone/coverage
+
+      - name: Upload coverage to Coveralls
+        env:
+          COVERALLS_REPO_TOKEN: ${{ secrets.TEN_COVERALLS_REPO_TOKEN }}
+        run: |
+          pip install --user cpp-coveralls
+          echo "cpp-coveralls installed successfully"
+
+          # Add user bin directory to PATH
+          export PATH="$HOME/.local/bin:$PATH"
+          echo "Updated PATH: $PATH"
+
+          # Verify coveralls command is available
+          which coveralls || echo "coveralls command not found in PATH"
+          coveralls --version || echo "coveralls version check failed"
+
+          if [ -f "out/linux/x64/tests/standalone/coverage/coverage.lcov" ]; then
+            echo "Uploading coverage to Coveralls..."
+            coveralls --lcov-file out/linux/x64/tests/standalone/coverage/coverage.lcov --verbose
+            echo "Coverage uploaded to Coveralls successfully"
+          else
+            echo "Warning: coverage.lcov file not found, skipping Coveralls upload"
+            ls -la out/linux/x64/tests/standalone/coverage/ || true
+          fi
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-reports
+          path: |
+            out/linux/x64/tests/standalone/coverage/coverage.lcov
+
+            # HTML report generated by llvm-cov
+            # hyperlinks on the page unavailable, since the source code is not included to reduce artifact size
+            out/linux/x64/tests/standalone/coverage/index.html
+            out/linux/x64/tests/standalone/coverage/style.css
+            out/linux/x64/tests/standalone/coverage/control.js
+          if-no-files-found: error
+
+  publish-coverage:
+    needs: coverage-build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download coverage artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-reports
+          path: coverage-reports
+
+      - name: Add coverage link to job summary
+        shell: bash
+        run: |
+          REPO_NAME=$(echo "$GITHUB_REPOSITORY" | awk -F/ '{print $2}')
+          echo "Repository: $GITHUB_REPOSITORY (branch/tag: $GITHUB_REF_NAME)" >> "$GITHUB_STEP_SUMMARY"
+
+          # Coveralls link (assuming standard Coveralls URL format)
+          COVERALLS_URL="https://coveralls.io/github/${{ github.repository }}?branch=${GITHUB_REF_NAME}"
+          echo "📊 **Coverage Reports:** ${COVERALLS_URL}" >> "$GITHUB_STEP_SUMMARY"
+
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "📁 **Artifacts:**" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Download 'coverage-reports' artifact from workflow artifacts" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Includes:" >> "$GITHUB_STEP_SUMMARY"
+          echo "  - HTML report generated by llvm-cov (index.html, a substitute for Coveralls)" >> "$GITHUB_STEP_SUMMARY"
+          echo "  - the lcov format file that is used by Coveralls (coverage.lcov)" >> "$GITHUB_STEP_SUMMARY"

@@ -98,5 +98,27 @@ template("ten_runtime_glob") {
     if (defined(invoker.cflags_objc)) {
       cflags_objcc += invoker.cflags_objcc
     }
+
+    # Inject coverage flags for source sets when requested (Debug + Linux)
+    if (ten_runtime_enable_coverage && is_debug && is_linux) {
+      if (is_clang) {
+        cflags += [
+          "-fprofile-instr-generate",
+          "-fcoverage-mapping",
+        ]
+        cflags_c += [
+          "-fprofile-instr-generate",
+          "-fcoverage-mapping",
+        ]
+        cflags_cc += [
+          "-fprofile-instr-generate",
+          "-fcoverage-mapping",
+        ]
+      } else {
+        cflags += [ "--coverage" ]
+        cflags_c += [ "--coverage" ]
+        cflags_cc += [ "--coverage" ]
+      }
+    }
   }
 }

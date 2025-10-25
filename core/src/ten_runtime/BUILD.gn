@@ -15,6 +15,32 @@ config("ten_runtime_config") {
   include_dirs = [ "//core/include" ]
 }
 
+# Coverage compile/link configuration, only enabled in Debug + Linux.
+config("ten_runtime_coverage_config") {
+  cflags = []
+  cflags_cc = []
+  ldflags = []
+
+  if (ten_runtime_enable_coverage && is_debug && is_linux) {
+    if (is_clang) {
+      cflags += [
+        "-fprofile-instr-generate",
+        "-fcoverage-mapping",
+      ]
+      cflags_cc += [
+        "-fprofile-instr-generate",
+        "-fcoverage-mapping",
+      ]
+      ldflags += [ "-fprofile-instr-generate" ]
+    } else {
+      # GCC
+      cflags += [ "--coverage" ]
+      cflags_cc += [ "--coverage" ]
+      ldflags += [ "--coverage" ]
+    }
+  }
+}
+
 if (enable_sanitizer) {
   package_asan_lib("package_asan_lib_for_ten_runtime_system_package") {
     dest_asan_lib_dir = "${root_out_dir}/ten_packages/system/ten_runtime/lib"
@@ -31,6 +57,13 @@ ten_target("ten_runtime_library") {
   }
 
   public_configs = [ ":ten_runtime_config" ]
+
+  if (ten_runtime_enable_coverage && is_debug && is_linux) {
+    if (!defined(configs)) {
+      configs = []
+    }
+    configs += [ ":ten_runtime_coverage_config" ]
+  }
 
   public_deps = [
     "addon",
