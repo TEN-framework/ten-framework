@@ -41,7 +41,10 @@ if (ten_runtime_enable_coverage && is_debug && is_linux) {
       args += [ "false" ]
     }
 
-    args += [ "--done-file", rebase_path(_done) ]
+    args += [
+      "--done-file",
+      rebase_path(_done),
+    ]
 
     deps = [ ":integration" ]
 

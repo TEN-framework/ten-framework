@@ -23,8 +23,14 @@ config("ten_runtime_coverage_config") {
 
   if (ten_runtime_enable_coverage && is_debug && is_linux) {
     if (is_clang) {
-      cflags += [ "-fprofile-instr-generate", "-fcoverage-mapping" ]
-      cflags_cc += [ "-fprofile-instr-generate", "-fcoverage-mapping" ]
+      cflags += [
+        "-fprofile-instr-generate",
+        "-fcoverage-mapping",
+      ]
+      cflags_cc += [
+        "-fprofile-instr-generate",
+        "-fcoverage-mapping",
+      ]
       ldflags += [ "-fprofile-instr-generate" ]
     } else {
       # GCC

@@ -23,7 +23,9 @@ import sys
 import shutil
 
 
-def run(cmd: list[str], cwd: str | None = None, env: dict[str, str] | None = None) -> int:
+def run(
+    cmd: list[str], cwd: str | None = None, env: dict[str, str] | None = None
+) -> int:
     print("$", " ".join(cmd))
     return subprocess.call(cmd, cwd=cwd, env=env)
 
@@ -57,8 +59,16 @@ def run_logged(
                 proc.kill()
             except Exception:
                 pass
-            f.write("\n[TIMEOUT] Process terminated after {} seconds.\n".format(timeout_sec))
-            print("[TIMEOUT] Process terminated after {} seconds.".format(timeout_sec))
+            f.write(
+                "\n[TIMEOUT] Process terminated after {} seconds.\n".format(
+                    timeout_sec
+                )
+            )
+            print(
+                "[TIMEOUT] Process terminated after {} seconds.".format(
+                    timeout_sec
+                )
+            )
             return 124
 
 
@@ -92,7 +102,11 @@ def main() -> int:
     parser.add_argument("--root-out", required=True)
     parser.add_argument("--report-out", required=True)
     parser.add_argument("--is-clang", required=True, choices=["true", "false"])
-    parser.add_argument("--generate-lcov", action="store_true", help="Generate lcov format file for Coveralls")
+    parser.add_argument(
+        "--generate-lcov",
+        action="store_true",
+        help="Generate lcov format file for Coveralls",
+    )
     args: argparse.Namespace = parser.parse_args()
 
     root_out = os.path.abspath(args.root_out)
@@ -107,14 +121,18 @@ def main() -> int:
 
     # Find integration test executables (C++ parts)
     integration_tests = []
-    integration_dir = os.path.join(root_out, "tests", "ten_runtime", "integration", "cpp")
+    integration_dir = os.path.join(
+        root_out, "tests", "ten_runtime", "integration", "cpp"
+    )
     if os.path.exists(integration_dir):
         for item in os.listdir(integration_dir):
             item_path = os.path.join(integration_dir, item)
             if os.path.isdir(item_path):
                 # Look for client executables in each integration test directory
                 client_exe = os.path.join(item_path, f"{item}_app_client")
-                if os.path.isfile(client_exe) and os.access(client_exe, os.X_OK):
+                if os.path.isfile(client_exe) and os.access(
+                    client_exe, os.X_OK
+                ):
                     integration_tests.append(client_exe)
 
     env = os.environ.copy()
@@ -123,7 +141,9 @@ def main() -> int:
     if is_clang:
         prof_dir = os.path.join(root_out, "cov")
         ensure_dir(prof_dir)
-        env["LLVM_PROFILE_FILE"] = os.path.join(prof_dir, "profile-%p-%m.profraw")
+        env["LLVM_PROFILE_FILE"] = os.path.join(
+            prof_dir, "profile-%p-%m.profraw"
+        )
 
     # Clean previous data
     for ext in (".gcda", ".gcno", ".profraw", ".profdata", ".info"):
@@ -138,10 +158,16 @@ def main() -> int:
     # Logging and controls
     logs_dir = os.path.join(report_out, "logs")
     ensure_dir(logs_dir)
-    skip_smoke = os.environ.get("TEN_COV_SKIP_SMOKE", "0").lower() in ("1", "true", "yes")
+    skip_smoke = os.environ.get("TEN_COV_SKIP_SMOKE", "0").lower() in (
+        "1",
+        "true",
+        "yes",
+    )
     smoke_filter = os.environ.get("TEN_COV_SMOKE_FILTER", "").strip()
     timeout_env = os.environ.get("TEN_COV_TEST_TIMEOUT_SEC", "")
-    timeout_sec: int | None = int(timeout_env) if timeout_env.isdigit() else None
+    timeout_sec: int | None = (
+        int(timeout_env) if timeout_env.isdigit() else None
+    )
 
     rc = 0
     if unit:
@@ -280,7 +306,8 @@ def main() -> int:
 
         # Remove HTML coverage directory (contains source code copies)
         # NOTE: This removes the detailed HTML reports with source code
-        # The main index.html still works but links to individual files will be broken
+        # The main index.html still works but links to individual files will be
+        # broken
         html_coverage_dir = os.path.join(report_out, "coverage")
         if os.path.exists(html_coverage_dir):
             shutil.rmtree(html_coverage_dir)
@@ -313,7 +340,9 @@ def main() -> int:
             f.write("Coverage Report Cleanup Summary\n")
             f.write("===============================\n\n")
             f.write("Removed files to reduce artifact size:\n")
-            f.write("- coverage/ directory (HTML reports with source code copies)\n")
+            f.write(
+                "- coverage/ directory (HTML reports with source code copies)\n"
+            )
             f.write("- Large log files (>1MB)\n")
             f.write("- coverage.json (raw coverage data)\n")
             f.write("- coverage.profdata (LLVM profdata)\n\n")
@@ -340,7 +369,20 @@ def main() -> int:
             print("lcov capture failed", file=sys.stderr)
             return 1
 
-        if run(["lcov", "-e", info, "*/core/src/ten_runtime/*", "*/tests/ten_runtime/*", "-o", info]) != 0:
+        if (
+            run(
+                [
+                    "lcov",
+                    "-e",
+                    info,
+                    "*/core/src/ten_runtime/*",
+                    "*/tests/ten_runtime/*",
+                    "-o",
+                    info,
+                ]
+            )
+            != 0
+        ):
             print("lcov filter failed", file=sys.stderr)
             return 1
 
@@ -384,7 +426,9 @@ def main() -> int:
             f.write("Coverage Report Cleanup Summary (GCC)\n")
             f.write("====================================\n\n")
             f.write("Removed files to reduce artifact size:\n")
-            f.write("- coverage/ directory (HTML reports with source code copies)\n")
+            f.write(
+                "- coverage/ directory (HTML reports with source code copies)\n"
+            )
             f.write("- Large log files (>1MB)\n")
             f.write("- coverage.info (raw coverage data)\n\n")
             f.write("Retained files for artifacts:\n")

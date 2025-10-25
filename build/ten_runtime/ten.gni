@@ -93,9 +93,18 @@ template("ten_target") {
     # Enable coverage flags for all TEN runtime C/C++ targets when requested
     if (ten_runtime_enable_coverage && is_debug && is_linux) {
       if (is_clang) {
-        cflags += [ "-fprofile-instr-generate", "-fcoverage-mapping" ]
-        cflags_c += [ "-fprofile-instr-generate", "-fcoverage-mapping" ]
-        cflags_cc += [ "-fprofile-instr-generate", "-fcoverage-mapping" ]
+        cflags += [
+          "-fprofile-instr-generate",
+          "-fcoverage-mapping",
+        ]
+        cflags_c += [
+          "-fprofile-instr-generate",
+          "-fcoverage-mapping",
+        ]
+        cflags_cc += [
+          "-fprofile-instr-generate",
+          "-fcoverage-mapping",
+        ]
       } else {
         cflags += [ "--coverage" ]
         cflags_c += [ "--coverage" ]
