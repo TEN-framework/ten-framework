@@ -3,7 +3,9 @@
 # Licensed under the Apache License, Version 2.0.
 # See the LICENSE file for more information.
 #
+import json
 import threading
+from typing_extensions import override
 import pytest
 from ten_runtime import (
     App,
@@ -30,6 +32,34 @@ class FakeApp(App):
         self.event.set()
 
         ten_env.on_init_done()
+
+    @override
+    def on_configure(self, ten_env: TenEnv) -> None:
+        ten_env.init_property_from_json(
+            json.dumps(
+                {
+                    "ten": {
+                        "log": {
+                            "handlers": [
+                                {
+                                    "matchers": [{"level": "debug"}],
+                                    "formatter": {
+                                        "type": "plain",
+                                        "colored": True,
+                                    },
+                                    "emitter": {
+                                        "type": "console",
+                                        "config": {"stream": "stdout"},
+                                    },
+                                }
+                            ]
+                        }
+                    }
+                }
+            ),
+        )
+
+        ten_env.on_configure_done()
 
 
 class FakeAppCtx:

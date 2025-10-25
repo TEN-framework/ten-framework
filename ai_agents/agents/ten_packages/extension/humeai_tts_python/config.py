@@ -1,9 +1,10 @@
 from typing import Any, Dict
-from pydantic import BaseModel, Field
+from pydantic import Field
 from ten_ai_base import utils
+from ten_ai_base.tts2_http import AsyncTTS2HttpConfig
 
 
-class HumeAiTTSConfig(BaseModel):
+class HumeAiTTSConfig(AsyncTTS2HttpConfig):
     # Hume AI TTS credentials
     key: str = ""
 
@@ -40,7 +41,7 @@ class HumeAiTTSConfig(BaseModel):
         if "generation_id" in self.params:
             self.generation_id = self.params["generation_id"]
 
-    def validate_params(self) -> None:
+    def validate(self) -> None:
         """Validate required configuration parameters."""
         required_fields = ["key"]
 

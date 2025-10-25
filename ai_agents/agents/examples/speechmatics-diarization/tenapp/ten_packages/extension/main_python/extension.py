@@ -338,6 +338,7 @@ class MainControlExtension(AsyncExtension):
         )
         await _send_cmd(self.ten_env, "flush", "agora_rtc")
         self.ten_env.log_info("[MainControlExtension] Interrupt signal sent")
+
     def _player_pronoun(self, player_name: str) -> tuple[str, str]:
         pronoun_map = {
             "Elliot": ("he", "loves"),

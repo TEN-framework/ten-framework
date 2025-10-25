@@ -122,7 +122,7 @@ class WhoLikesWhatGame:
             match = re.match(pattern, lowered)
             if match:
                 span = match.span()
-                working = working[span[1]:]
+                working = working[span[1] :]
                 break
 
         def _strip_prefix(text: str) -> str:
@@ -141,7 +141,7 @@ class WhoLikesWhatGame:
                 lowered_text = trimmed.lower()
                 for prefix in prefixes:
                     if lowered_text.startswith(prefix):
-                        trimmed = trimmed[len(prefix):]
+                        trimmed = trimmed[len(prefix) :]
                         changed = True
                         break
             return trimmed
@@ -334,7 +334,10 @@ class WhoLikesWhatGame:
         )
 
         should_announce = True
-        if self.enrollment_prompted and candidate not in self.completed_enrollments:
+        if (
+            self.enrollment_prompted
+            and candidate not in self.completed_enrollments
+        ):
             should_announce = False
 
         if not self.enrollment_complete and should_announce:
@@ -365,9 +368,7 @@ class WhoLikesWhatGame:
             return
 
         self.last_unknown_speaker_ts = now
-        message = (
-            "I don't recognize that voice. Only Elliot, Taytay, and Musk are part of Who Likes What."
-        )
+        message = "I don't recognize that voice. Only Elliot, Taytay, and Musk are part of Who Likes What."
         await self.ext._send_transcript("assistant", message, True, 100)
         await self.ext._send_to_tts(message, True)
         self.ext.ten_env.log_warn(
@@ -381,9 +382,7 @@ class WhoLikesWhatGame:
         self.game_stage = "await_elliot_food"
         self.food_preferences = {}
         self.questions_answered = set()
-        intro = (
-            "Time for Guess Who Likes What! Elliot, Taytay, and Musk: we're guessing favorite foods."
-        )
+        intro = "Time for Guess Who Likes What! Elliot, Taytay, and Musk: we're guessing favorite foods."
         await self.ext._send_transcript("assistant", intro, True, 100)
         await self.ext._send_to_tts(intro, True)
         await self.prompt_player_for_food("Elliot")
@@ -405,13 +404,13 @@ class WhoLikesWhatGame:
         normalized_text = self.normalize_food_text(food_text)
         printable = normalized_text.rstrip(".!?") or food_text.strip()
         pronoun, verb = self.player_pronoun(player_name)
-        summary = (
-            f"Got it, {player_name}! {pronoun.capitalize()} {verb} to eat {printable}."
-        )
+        summary = f"Got it, {player_name}! {pronoun.capitalize()} {verb} to eat {printable}."
         await self.ext._send_transcript("assistant", summary, True, 100)
         await self.ext._send_to_tts(summary, True, player_name)
 
-    async def remind_turn(self, expected_player: str, interrupting_player: str) -> None:
+    async def remind_turn(
+        self, expected_player: str, interrupting_player: str
+    ) -> None:
         now = time.time()
         last_reminder = self.last_turn_reminder_ts.get(interrupting_player, 0.0)
         if now - last_reminder < 4.0:
@@ -420,9 +419,7 @@ class WhoLikesWhatGame:
             )
             return
         self.last_turn_reminder_ts[interrupting_player] = now
-        reminder = (
-            f"Hang tight, {interrupting_player}. It's {expected_player}'s turn to share their food."
-        )
+        reminder = f"Hang tight, {interrupting_player}. It's {expected_player}'s turn to share their food."
         await self.ext._send_transcript("assistant", reminder, True, 100)
         await self.ext._send_to_tts(reminder, True, interrupting_player)
 
@@ -431,16 +428,18 @@ class WhoLikesWhatGame:
         self.questions_answered = set()
         self.awaiting_additional_request = False
         self.last_turn_reminder_ts.clear()
-        cue = (
-            "Elliot, now quiz me! Ask what Musk likes to eat, then Taytay, and finally ask what you like to eat."
-        )
+        cue = "Elliot, now quiz me! Ask what Musk likes to eat, then Taytay, and finally ask what you like to eat."
         await self.ext._send_transcript("assistant", cue, True, 100)
         await self.ext._send_to_tts(cue, True, "Elliot")
 
-    async def respond_with_food(self, about_player: str, recipient: str) -> None:
+    async def respond_with_food(
+        self, about_player: str, recipient: str
+    ) -> None:
         food_text = self.food_preferences.get(about_player)
         if not food_text:
-            reply = f"I'm still waiting to hear what {about_player} loves to eat."
+            reply = (
+                f"I'm still waiting to hear what {about_player} loves to eat."
+            )
         else:
             pronoun, verb = self.player_pronoun(about_player)
             reply = f"{about_player} said {pronoun} {verb} to eat {food_text}."
@@ -480,7 +479,9 @@ class WhoLikesWhatGame:
 
     def question_mentions_player(self, normalized: str, target: str) -> bool:
         aliases = {target.lower()}
-        aliases.update(alias.lower() for alias in self.PLAYER_ALIAS_MAP.get(target, []))
+        aliases.update(
+            alias.lower() for alias in self.PLAYER_ALIAS_MAP.get(target, [])
+        )
         for alias in aliases:
             if re.search(rf"\b{re.escape(alias)}\b", normalized):
                 return True
@@ -488,7 +489,9 @@ class WhoLikesWhatGame:
 
     def is_follow_up_question_for(self, normalized: str, target: str) -> bool:
         aliases = {target.lower()}
-        aliases.update(alias.lower() for alias in self.PLAYER_ALIAS_MAP.get(target, []))
+        aliases.update(
+            alias.lower() for alias in self.PLAYER_ALIAS_MAP.get(target, [])
+        )
         for alias in aliases:
             if any(
                 re.search(pattern, normalized)
@@ -515,7 +518,9 @@ class WhoLikesWhatGame:
             "can you tell",
             "remind me",
         ]
-        has_question_marker = any(marker in normalized for marker in question_markers)
+        has_question_marker = any(
+            marker in normalized for marker in question_markers
+        )
         if not has_question_marker and not follow_up:
             if "?" in normalized:
                 implied_patterns = [
@@ -539,12 +544,19 @@ class WhoLikesWhatGame:
             "love",
             "enjoy",
         ]
-        if not follow_up and not any(marker in normalized for marker in preference_markers):
+        if not follow_up and not any(
+            marker in normalized for marker in preference_markers
+        ):
             return False
 
-        if not follow_up and "like" not in normalized and "love" not in normalized:
+        if (
+            not follow_up
+            and "like" not in normalized
+            and "love" not in normalized
+        ):
             if not any(
-                marker in normalized for marker in ["eat", "food", "favorite", "favourite"]
+                marker in normalized
+                for marker in ["eat", "food", "favorite", "favourite"]
             ):
                 return False
 
@@ -587,7 +599,9 @@ class WhoLikesWhatGame:
 
         if stage == "await_elliot_food":
             if speaker == "Elliot":
-                self.food_preferences["Elliot"] = self.normalize_food_text(clean_text)
+                self.food_preferences["Elliot"] = self.normalize_food_text(
+                    clean_text
+                )
                 await self.acknowledge_food("Elliot", clean_text)
                 await self.prompt_player_for_food("Musk")
                 return True
@@ -598,7 +612,9 @@ class WhoLikesWhatGame:
 
         if stage == "await_musk_food":
             if speaker == "Musk":
-                self.food_preferences["Musk"] = self.normalize_food_text(clean_text)
+                self.food_preferences["Musk"] = self.normalize_food_text(
+                    clean_text
+                )
                 await self.acknowledge_food("Musk", clean_text)
                 await self.prompt_player_for_food("Taytay")
                 return True
@@ -609,7 +625,9 @@ class WhoLikesWhatGame:
 
         if stage == "await_taytay_food":
             if speaker == "Taytay":
-                self.food_preferences["Taytay"] = self.normalize_food_text(clean_text)
+                self.food_preferences["Taytay"] = self.normalize_food_text(
+                    clean_text
+                )
                 await self.acknowledge_food("Taytay", clean_text)
                 await self.prompt_question_round()
                 return True
@@ -639,12 +657,9 @@ class WhoLikesWhatGame:
                 await self.respond_with_food("Taytay", "Elliot")
                 self.questions_answered.add("taytay")
                 handled = True
-            elif (
-                "elliot" not in self.questions_answered
-                and (
-                    self.is_food_question_for(normalized, "Elliot")
-                    or self.is_self_food_question(normalized)
-                )
+            elif "elliot" not in self.questions_answered and (
+                self.is_food_question_for(normalized, "Elliot")
+                or self.is_self_food_question(normalized)
             ):
                 await self.respond_with_food("Elliot", "Elliot")
                 self.questions_answered.add("elliot")
@@ -668,4 +683,3 @@ class WhoLikesWhatGame:
             return False
 
         return False
-
