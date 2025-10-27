@@ -35,26 +35,26 @@ def install_pip_tools_if_needed(index_url: str) -> bool:
         except Exception:
             return None, None
 
-    # Check pip version, if it's 25+, ensure pip-tools >= 7.4.0
-    # For any pip version, we recommend pip-tools >= 7.4.0 for better compatibility
-    pip_major_version, pip_full_version = get_pip_version()
-    print(f"Detected pip version: {pip_full_version}")
-
-    # IMPORTANT: pip 25+ has compatibility issues with all currently available
-    # pip-tools versions (as of pip-tools 7.5.1).
+    # IMPORTANT: Check and fix pip version FIRST before installing pip-tools.
+    # pip-tools has pip as a dependency, and installing pip-tools can upgrade pip
+    # to 25.x, which is incompatible with all current pip-tools versions.
+    #
     # Issue: pip 25.0+ removed the `InstallRequirement.use_pep517` attribute,
     # but pip-tools <= 7.5.1 still tries to access it, causing:
     # AttributeError: 'InstallRequirement' object has no attribute 'use_pep517'
     #
-    # We need to downgrade pip to 24.x for now until pip-tools releases a
-    # compatible version.
+    # We need to ensure pip stays at 24.x until pip-tools releases a compatible version.
     #
     # TODO: Once pip-tools releases a version that supports pip 25+ (likely
     # pip-tools >= 7.6.0 or 8.0.0), update this logic to:
-    # 1. Remove the pip downgrade logic below
+    # 1. Remove the pip version constraint in installation commands
     # 2. Update min_pip_tools_version to the new compatible version
     # 3. Let pip remain at its latest version
     # Track: https://github.com/jazzband/pip-tools/issues (check for pip 25 support)
+    
+    pip_major_version, pip_full_version = get_pip_version()
+    print(f"Detected pip version: {pip_full_version}")
+    
     if pip_major_version and pip_major_version >= 25:
         print(
             f"Warning: pip {pip_full_version} has compatibility issues with pip-tools."
@@ -83,7 +83,7 @@ def install_pip_tools_if_needed(index_url: str) -> bool:
         except subprocess.CalledProcessError as e:
             print(f"Failed to downgrade pip: {e}")
             print("Continuing anyway...")
-
+    
     # Always require pip-tools >= 7.4.0 for maximum compatibility
     min_pip_tools_version = "7.4.0"
 
@@ -124,6 +124,7 @@ def install_pip_tools_if_needed(index_url: str) -> bool:
                 )
                 import subprocess
 
+                # Constrain pip to <25 to prevent automatic upgrade to incompatible version
                 args = [
                     sys.executable,
                     "-m",
@@ -131,6 +132,7 @@ def install_pip_tools_if_needed(index_url: str) -> bool:
                     "install",
                     "--upgrade",
                     f"pip-tools>={min_pip_tools_version}",
+                    "pip<25",
                 ]
 
                 if index_url:
@@ -153,12 +155,14 @@ def install_pip_tools_if_needed(index_url: str) -> bool:
             f"pip-tools is not installed. Installing pip-tools>={min_pip_tools_version}..."
         )
 
+        # Constrain pip to <25 to prevent automatic upgrade to incompatible version
         args = [
             sys.executable,
             "-m",
             "pip",
             "install",
             f"pip-tools>={min_pip_tools_version}",
+            "pip<25",
         ]
 
         if index_url:
