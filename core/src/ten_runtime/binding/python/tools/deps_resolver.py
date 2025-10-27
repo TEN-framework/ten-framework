@@ -51,10 +51,10 @@ def install_pip_tools_if_needed(index_url: str) -> bool:
     # 2. Update min_pip_tools_version to the new compatible version
     # 3. Let pip remain at its latest version
     # Track: https://github.com/jazzband/pip-tools/issues (check for pip 25 support)
-    
+
     pip_major_version, pip_full_version = get_pip_version()
     print(f"Detected pip version: {pip_full_version}")
-    
+
     if pip_major_version and pip_major_version >= 25:
         print(
             f"Warning: pip {pip_full_version} has compatibility issues with pip-tools."
@@ -83,7 +83,7 @@ def install_pip_tools_if_needed(index_url: str) -> bool:
         except subprocess.CalledProcessError as e:
             print(f"Failed to downgrade pip: {e}")
             print("Continuing anyway...")
-    
+
     # Always require pip-tools >= 7.4.0 for maximum compatibility
     min_pip_tools_version = "7.4.0"
 
