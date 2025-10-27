@@ -19,6 +19,7 @@ from .video_frame import VideoFrame
 from .audio_frame import AudioFrame
 from .cmd_result import CmdResult
 from .global_thread_manager import GlobalThreadManager
+from .send_options import SendOptions
 
 CmdResultTuple = tuple[CmdResult | None, TenError | None]
 ResultHandlerResultType = TypeVar(
@@ -110,7 +111,16 @@ class AsyncTenEnv(TenEnvBase):
                 # This is the final result, so break the while loop.
                 break
 
-    async def send_data(self, data: Data) -> TenError | None:
+    async def send_data(
+        self, data: Data, options: SendOptions | None = None
+    ) -> TenError | None:
+        # If options is None or doesn't wait for result, use fire-and-forget
+        # mode.
+        if options is None or not options.wait_for_result:
+            err = self._internal.send_data(data, None)
+            return err
+
+        # If wait for result, use the original async waiting mode.
         q = asyncio.Queue[TenError | None](maxsize=1)
         err = self._internal.send_data(
             data,
@@ -123,8 +133,15 @@ class AsyncTenEnv(TenEnvBase):
         return err
 
     async def send_video_frame(
-        self, video_frame: VideoFrame
+        self, video_frame: VideoFrame, options: SendOptions | None = None
     ) -> TenError | None:
+        # If options is None or doesn't wait for result, use fire-and-forget
+        # mode.
+        if options is None or not options.wait_for_result:
+            err = self._internal.send_video_frame(video_frame, None)
+            return err
+
+        # If wait for result, use the original async waiting mode.
         q = asyncio.Queue[TenError | None](maxsize=1)
         err = self._internal.send_video_frame(
             video_frame,
@@ -137,8 +154,15 @@ class AsyncTenEnv(TenEnvBase):
         return err
 
     async def send_audio_frame(
-        self, audio_frame: AudioFrame
+        self, audio_frame: AudioFrame, options: SendOptions | None = None
     ) -> TenError | None:
+        # If options is None or doesn't wait for result, use fire-and-forget
+        # mode.
+        if options is None or not options.wait_for_result:
+            err = self._internal.send_audio_frame(audio_frame, None)
+            return err
+
+        # If wait for result, use the original async waiting mode.
         q = asyncio.Queue[TenError | None](maxsize=1)
         err = self._internal.send_audio_frame(
             audio_frame,
@@ -150,7 +174,16 @@ class AsyncTenEnv(TenEnvBase):
         err = await q.get()
         return err
 
-    async def return_result(self, result: CmdResult) -> TenError | None:
+    async def return_result(
+        self, result: CmdResult, options: SendOptions | None = None
+    ) -> TenError | None:
+        # If options is None or doesn't wait for result, use fire-and-forget
+        # mode.
+        if options is None or not options.wait_for_result:
+            err = self._internal.return_result(result, None)
+            return err
+
+        # If wait for result, use the original async waiting mode.
         q = asyncio.Queue[TenError | None](maxsize=1)
         err = self._internal.return_result(
             result,
