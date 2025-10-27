@@ -17,6 +17,14 @@ ten_runtime_glob("ten_runtime_smoke_tests") {
   ]
 
   include_dirs = [ "//core/include" ]
+
+  # coverage flags for smoke test sources (Debug + Linux)
+  if (ten_runtime_enable_coverage && is_debug && is_linux) {
+    if (!defined(configs)) {
+      configs = []
+    }
+    configs += [ "//core/src/ten_runtime:ten_runtime_coverage_config" ]
+  }
 }
 
 ten_executable("ten_runtime_smoke_test") {
@@ -110,6 +118,14 @@ ten_executable("ten_runtime_smoke_test") {
     "//third_party/googlemock",
     "//third_party/googletest",
   ]
+
+  # coverage flags (only enabled in Debug + Linux, with need)
+  if (ten_runtime_enable_coverage && is_debug && is_linux) {
+    if (!defined(configs)) {
+      configs = []
+    }
+    configs += [ "//core/src/ten_runtime:ten_runtime_coverage_config" ]
+  }
 
   if (ten_enable_libwebsockets && ten_enable_curl) {
     deps += [ "http_server_extension" ]
