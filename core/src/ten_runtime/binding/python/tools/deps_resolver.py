@@ -23,17 +23,100 @@ def install_pip_tools_if_needed(index_url: str) -> bool:
         except importlib.metadata.PackageNotFoundError:
             return False
 
+    def get_pip_version():
+        """Get the major version number of the current pip installation."""
+        import importlib.metadata
+
+        try:
+            version_str = importlib.metadata.version("pip")
+            # Parse major version number
+            major_version = int(version_str.split(".")[0])
+            return major_version
+        except Exception:
+            return None
+
+    # Check pip version, if it's 25+, ensure pip-tools >= 7.4.0
+    pip_major_version = get_pip_version()
+    min_pip_tools_version = (
+        "7.4.0" if pip_major_version and pip_major_version >= 25 else "7.0.0"
+    )
+
     if is_package_installed("pip-tools"):
-        print("pip-tools is already installed")
+        # Check if pip-tools version is new enough
+        import importlib.metadata
+
+        try:
+            current_version = importlib.metadata.version("pip-tools")
+            print(f"pip-tools {current_version} is already installed")
+
+            # If pip is 25+, check if pip-tools version is compatible
+            if pip_major_version and pip_major_version >= 25:
+                # Simple version comparison: compare major and minor version numbers
+                current_parts = current_version.split(".")
+                min_parts = min_pip_tools_version.split(".")
+
+                needs_upgrade = False
+                try:
+                    current_major = int(current_parts[0])
+                    current_minor = (
+                        int(current_parts[1]) if len(current_parts) > 1 else 0
+                    )
+                    min_major = int(min_parts[0])
+                    min_minor = int(min_parts[1]) if len(min_parts) > 1 else 0
+
+                    if current_major < min_major or (
+                        current_major == min_major and current_minor < min_minor
+                    ):
+                        needs_upgrade = True
+                except (ValueError, IndexError):
+                    # If version parsing fails, try to upgrade to be safe
+                    needs_upgrade = True
+
+                if needs_upgrade:
+                    print(
+                        f"pip-tools {current_version} is too old for pip "
+                        f"{pip_major_version}, upgrading to >={min_pip_tools_version}..."
+                    )
+                    import subprocess
+
+                    args = [
+                        sys.executable,
+                        "-m",
+                        "pip",
+                        "install",
+                        "--upgrade",
+                        f"pip-tools>={min_pip_tools_version}",
+                    ]
+
+                    if index_url:
+                        args.extend(["-i", index_url])
+
+                    try:
+                        subprocess.check_call(args)
+                        print("pip-tools upgraded successfully")
+                    except subprocess.CalledProcessError as e:
+                        print(f"Failed to upgrade pip-tools: {e}")
+                        return False
+        except Exception as e:
+            print(f"Warning: Could not check pip-tools version: {e}")
+
         return True
     else:
         import subprocess
 
-        print("pip-tools is not installed. Installing pip-tools...")
+        print(
+            f"pip-tools is not installed. Installing pip-tools>={min_pip_tools_version}..."
+        )
 
-        args = [sys.executable, "-m", "pip", "install", "pip-tools"]
+        args = [
+            sys.executable,
+            "-m",
+            "pip",
+            "install",
+            f"pip-tools>={min_pip_tools_version}",
+        ]
 
-        if index_url is not None and index_url != "":
+        if index_url:
             args.extend(["-i", index_url])
 
         try:
@@ -149,14 +232,20 @@ class DepsManager:
 
         import subprocess
 
+        # Use 'python -m piptools compile' instead of calling pip-compile command directly.
+        # This ensures we use the pip-tools from the current Python environment,
+        # rather than the globally installed version.
         args = [
-            "pip-compile",
+            sys.executable,
+            "-m",
+            "piptools",
+            "compile",
             self.requirements_in_file,
             "--output-file",
             output,
         ]
 
-        if self.index_url is not None and self.index_url != "":
+        if self.index_url:
             args.extend(["-i", self.index_url])
 
         try:
