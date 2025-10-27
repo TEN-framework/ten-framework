@@ -48,6 +48,45 @@ class DumperByRequestTester(AsyncExtensionTester):
         self.text: str = text
         self.dump_file_name = f"tts_dump_{self.session_id}.pcm"
         self.count_audio_end = 0
+        self.sent_metadata = None  # Store sent metadata for validation
+        self.current_request_id = None  # Store current request_id for validation
+        self.audio_start_time = None  # Store tts_audio_start timestamp
+        self.total_audio_bytes = 0  # Track total audio bytes received
+        self.current_request_audio_bytes = 0  # Track current request audio bytes
+        self.sample_rate = 0  # Store sample rate
+
+    def _calculate_pcm_audio_duration_ms(self) -> int:
+        """Calculate PCM audio duration in milliseconds based on current request audio bytes"""
+        if self.current_request_audio_bytes == 0 or self.sample_rate == 0:
+            return 0
+        
+        # Try different format assumptions for Google TTS PCM encoding
+        # Google TTS PCM might be 8-bit instead of 16-bit
+        format_attempts = [
+            {"bytes_per_sample": 1, "channels": 1, "name": "8-bit mono"},
+            {"bytes_per_sample": 2, "channels": 1, "name": "16-bit mono"},
+            {"bytes_per_sample": 1, "channels": 2, "name": "8-bit stereo"},
+            {"bytes_per_sample": 2, "channels": 2, "name": "16-bit stereo"},
+        ]
+        
+        # Debug logging
+        print(f"DEBUG: PCM duration calculation:")
+        print(f"  current_request_audio_bytes: {self.current_request_audio_bytes}")
+        print(f"  total_audio_bytes: {self.total_audio_bytes}")
+        print(f"  sample_rate: {self.sample_rate}")
+        
+        for attempt in format_attempts:
+            duration_sec = self.current_request_audio_bytes / (self.sample_rate * attempt["bytes_per_sample"] * attempt["channels"])
+            duration_ms = int(duration_sec * 1000)
+            print(f"  {attempt['name']}: {duration_ms}ms ({duration_sec:.3f}s)")
+        
+        # Default to 16-bit mono (original assumption)
+        bytes_per_sample = 2
+        channels = 1
+        duration_sec = self.current_request_audio_bytes / (self.sample_rate * bytes_per_sample * channels)
+        duration_ms = int(duration_sec * 1000)
+        
+        return duration_ms
 
     async def _send_finalize_signal(self, ten_env: AsyncTenEnvTester) -> None:
         """Send tts_finalize signal to trigger finalization."""
@@ -89,6 +128,9 @@ class DumperByRequestTester(AsyncExtensionTester):
             "session_id": "test_dump_each_request_id_session_123",
             "turn_id": 1,
         }
+        # Store sent metadata and request_id for validation
+        self.sent_metadata = metadata
+        self.current_request_id = f"test_dump_each_request_id_request_id_{request_num}"
         tts_text_input_obj.set_property_from_json("metadata", json.dumps(metadata))
         await ten_env.send_data(tts_text_input_obj)
         ten_env.log_info(f"✅ tts text input sent: {text}")
@@ -151,9 +193,93 @@ class DumperByRequestTester(AsyncExtensionTester):
 
             self._stop_test_with_error(ten_env, f"Received error data")
             return
+        elif name == "tts_audio_start":
+            ten_env.log_info("Received tts_audio_start")
+            self.audio_start_time = time.time()
+            
+            # 校验request_id
+            received_request_id, _ = data.get_property_string("request_id")
+            if received_request_id != self.current_request_id:
+                self._stop_test_with_error(ten_env, f"Request ID mismatch in tts_audio_start. Expected: {self.current_request_id}, Received: {received_request_id}")
+                return
+            
+            # 校验metadata (基类实现中tts_audio_start的metadata只包含session_id和turn_id)
+            metadata_str, _ = data.get_property_to_json("metadata")
+            if metadata_str:
+                try:
+                    received_metadata = json.loads(metadata_str)
+                    expected_metadata = {
+                        "session_id": self.sent_metadata.get("session_id", ""),
+                        "turn_id": self.sent_metadata.get("turn_id", -1)
+                    }
+                    if received_metadata != expected_metadata:
+                        self._stop_test_with_error(ten_env, f"Metadata mismatch in tts_audio_start. Expected: {expected_metadata}, Received: {received_metadata}")
+                        return
+                except json.JSONDecodeError:
+                    self._stop_test_with_error(ten_env, f"Invalid JSON in tts_audio_start metadata: {metadata_str}")
+                    return
+            else:
+                self._stop_test_with_error(ten_env, f"Missing metadata in tts_audio_start response")
+                return
+            
+            ten_env.log_info(f"✅ tts_audio_start received with correct request_id and metadata")
+            return
         elif name == "tts_audio_end":
+            # 校验request_id
+            received_request_id, _ = data.get_property_string("request_id")
+            if received_request_id != self.current_request_id:
+                self._stop_test_with_error(ten_env, f"Request ID mismatch. Expected: {self.current_request_id}, Received: {received_request_id}")
+                return
+            
+            # 校验metadata (基类实现中tts_audio_end的metadata只包含session_id和turn_id)
+            metadata_str, _ = data.get_property_to_json("metadata")
+            if metadata_str:
+                try:
+                    received_metadata = json.loads(metadata_str)
+                    expected_metadata = {
+                        "session_id": self.sent_metadata.get("session_id", ""),
+                        "turn_id": self.sent_metadata.get("turn_id", -1)
+                    }
+                    if received_metadata != expected_metadata:
+                        self._stop_test_with_error(ten_env, f"Metadata mismatch in tts_audio_end. Expected: {expected_metadata}, Received: {received_metadata}")
+                        return
+                except json.JSONDecodeError:
+                    self._stop_test_with_error(ten_env, f"Invalid JSON in tts_audio_end metadata: {metadata_str}")
+                    return
+            else:
+                self._stop_test_with_error(ten_env, f"Missing metadata in tts_audio_end response")
+                return
+            
+            # 校验音频长度
+            if self.audio_start_time is not None:
+                current_time = time.time()
+                actual_duration_ms = (current_time - self.audio_start_time) * 1000
+                
+                # 获取request_total_audio_duration_ms（音频实际长度）
+                received_audio_duration_ms, _ = data.get_property_int("request_total_audio_duration_ms")
+                
+                # 校验音频长度：request_total_audio_duration_ms 应该与 PCM 文件计算出的长度一致
+                pcm_audio_duration_ms = self._calculate_pcm_audio_duration_ms()
+                if pcm_audio_duration_ms > 0 and received_audio_duration_ms > 0:
+                    audio_duration_diff = abs(received_audio_duration_ms - pcm_audio_duration_ms)
+                    if audio_duration_diff > 50:  # 允许50ms误差
+                        self._stop_test_with_error(ten_env, f"Audio duration mismatch. PCM calculated: {pcm_audio_duration_ms}ms, Reported: {received_audio_duration_ms}ms, Diff: {audio_duration_diff}ms")
+                        return
+                    ten_env.log_info(f"✅ Audio duration validation passed. PCM: {pcm_audio_duration_ms}ms, Reported: {received_audio_duration_ms}ms, Diff: {audio_duration_diff}ms")
+                else:
+                    ten_env.log_info(f"Skipping audio duration validation - PCM: {pcm_audio_duration_ms}ms, Reported: {received_audio_duration_ms}ms")
+                
+                # 记录实际经过的时间（用于调试）
+                ten_env.log_info(f"Actual event duration: {actual_duration_ms:.2f}ms")
+            else:
+                ten_env.log_warn("tts_audio_start not received before tts_audio_end")
+            
+            ten_env.log_info(f"✅ tts_audio_end received with correct request_id and metadata")
+            
             if self.count_audio_end == 0:
                 self.count_audio_end += 1
+                # Reset current request audio bytes for the next request
+                self.current_request_audio_bytes = 0
                 time.sleep(1)
                 await self._send_tts_text_input(ten_env, "second request id" + self.text, 2)
                 return
@@ -199,7 +325,24 @@ class DumperByRequestTester(AsyncExtensionTester):
     @override
     async def on_audio_frame(self, ten_env: AsyncTenEnvTester, audio_frame: AudioFrame) -> None:
         """Handle received audio frame from TTS extension."""
-        pass
+        # Check sample_rate
+        sample_rate = audio_frame.get_sample_rate()
+        ten_env.log_info(f"Received audio frame with sample_rate: {sample_rate}")
+
+        # Store current test sample_rate
+        if self.sample_rate == 0:
+            self.sample_rate = sample_rate
+            ten_env.log_info(f"First audio frame received with sample_rate: {sample_rate}")
+
+        # Accumulate audio bytes for duration calculation
+        try:
+            audio_data = audio_frame.get_buf()
+            if audio_data:
+                self.total_audio_bytes += len(audio_data)
+                self.current_request_audio_bytes += len(audio_data)
+                ten_env.log_info(f"Audio frame size: {len(audio_data)} bytes, Current request: {self.current_request_audio_bytes} bytes, Total: {self.total_audio_bytes} bytes")
+        except Exception as e:
+            ten_env.log_warn(f"Failed to get audio data: {e}")
 
     @override
     async def on_stop(self, ten_env: AsyncTenEnvTester) -> None:

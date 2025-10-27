@@ -20,6 +20,7 @@ import json
 import asyncio
 import os
 import glob
+import time
 
 TTS_FLUSH_CONFIG_FILE="property_dump.json"
 
@@ -37,10 +38,12 @@ class FlushTester(AsyncExtensionTester):
         print("🧪 TEST CASE: TTS Flush Test")
         print("=" * 80)
         print(
-            "📋 Test Description: Validate TTS flush"
+            "📋 Test Description: Validate TTS flush with comprehensive checks"
         )
         print("🎯 Test Objectives:")
         print("   - Verify flush is generated")
+        print("   - Validate flush_id and metadata consistency in flush_end response")
+        print("   - Ensure no audio/text data after flush_end for 5 seconds")
         print("=" * 80)
 
         self.session_id: str = session_id
@@ -48,6 +51,12 @@ class FlushTester(AsyncExtensionTester):
         self.count_audio_end = 0
         self.flush_send = False
         self.audio_end_received = False
+        self.flush_end_received = False
+        self.flush_id = "test_flush_request_id_1"
+        self.post_flush_end_audio_count = 0
+        self.post_flush_end_data_count = 0
+        self.flush_end_timestamp = None
+        self.sent_flush_metadata = None
 
     async def _send_finalize_signal(self, ten_env: AsyncTenEnvTester) -> None:
         """Send tts_finalize signal to trigger finalization."""
@@ -161,11 +170,44 @@ class FlushTester(AsyncExtensionTester):
             else:
                 self.audio_end_received = True
         elif name == "tts_flush_end":
-            if self.audio_end_received:
-                ten_env.stop_test()
-                return
-            else:
+            if not self.audio_end_received:
                 self._stop_test_with_error(ten_env, f"Received tts_flush_end before tts_audio_end")
+                return
+            
+            # 校验flush_id
+            received_flush_id, _ = data.get_property_string("flush_id")
+            if received_flush_id != self.flush_id:
+                self._stop_test_with_error(ten_env, f"Flush ID mismatch. Expected: {self.flush_id}, Received: {received_flush_id}")
+                return
+            
+            # 校验metadata完全一致
+            metadata_str, _ = data.get_property_to_json("metadata")
+            if metadata_str:
+                try:
+                    received_metadata = json.loads(metadata_str)
+                    if received_metadata != self.sent_flush_metadata:
+                        self._stop_test_with_error(ten_env, f"Metadata mismatch in flush_end. Expected: {self.sent_flush_metadata}, Received: {received_metadata}")
+                        return
+                except json.JSONDecodeError:
+                    self._stop_test_with_error(ten_env, f"Invalid JSON in flush_end metadata: {metadata_str}")
+                    return
+            else:
+                # 如果没有收到metadata，但发送时有metadata，则报错
+                if self.sent_flush_metadata is not None:
+                    self._stop_test_with_error(ten_env, f"Missing metadata in flush_end response. Expected: {self.sent_flush_metadata}")
+                    return
+            
+            ten_env.log_info(f"✅ tts_flush_end received with correct flush_id: {received_flush_id} and metadata: {received_metadata}")
+            self.flush_end_received = True
+            self.flush_end_timestamp = time.time()
+            
+            # 启动5秒监控任务，检查是否还有音频/文本数据
+            asyncio.create_task(self._monitor_post_flush_end_data(ten_env))
+        else:
+            # 检查是否在flush_end之后收到其他数据
+            if self.flush_end_received:
+                self.post_flush_end_data_count += 1
+                ten_env.log_info(f"⚠️ Received data '{name}' after flush_end (count: {self.post_flush_end_data_count})")
                 return
 
                 
@@ -173,6 +215,12 @@ class FlushTester(AsyncExtensionTester):
     @override
     async def on_audio_frame(self, ten_env: AsyncTenEnvTester, audio_frame: AudioFrame) -> None:
         """Handle received audio frame from TTS extension."""
+        # 检查是否在flush_end之后收到音频
+        if self.flush_end_received:
+            self.post_flush_end_audio_count += 1
+            ten_env.log_info(f"⚠️ Received audio frame after flush_end (count: {self.post_flush_end_audio_count})")
+            return
+        
         if not self.flush_send:
             self.flush_send = True
             ten_env.log_info("Received audio frame, sending flush")
@@ -188,12 +236,30 @@ class FlushTester(AsyncExtensionTester):
     async def _send_flush(self, ten_env: AsyncTenEnvTester) -> None:
         ten_env.log_info("Sending flush")
         flush_data = Data.create("tts_flush")
-        flush_data.set_property_string("flush_id", "test_flush_request_id_1")
+        flush_data.set_property_string("flush_id", self.flush_id)
         metadata = {
-            "session_id": "test_flush_session_123",
+            "session_id": self.session_id,
         }
-        #flush_data.set_property_from_json("metadata", json.dumps(metadata))
+        # 保存发送的metadata用于后续校验
+        self.sent_flush_metadata = metadata
+        flush_data.set_property_from_json("metadata", json.dumps(metadata))
         await ten_env.send_data(flush_data)
+
+    async def _monitor_post_flush_end_data(self, ten_env: AsyncTenEnvTester) -> None:
+        """监控flush_end后5秒内是否还有音频/文本数据"""
+        ten_env.log_info("开始监控flush_end后的数据...")
+        
+        # 等待5秒
+        await asyncio.sleep(5.0)
+        
+        # 检查是否有额外的数据
+        if self.post_flush_end_audio_count > 0 or self.post_flush_end_data_count > 0:
+            error_msg = f"在flush_end后5秒内收到了额外数据: 音频帧 {self.post_flush_end_audio_count} 个, 其他数据 {self.post_flush_end_data_count} 个"
+            ten_env.log_info(f"❌ {error_msg}")
+            self._stop_test_with_error(ten_env, error_msg)
+        else:
+            ten_env.log_info("✅ flush_end后5秒内未收到额外数据，测试通过")
+            ten_env.stop_test()
 
 def test_flush(extension_name: str, config_dir: str) -> None:
     """Verify TTS result flush."""
