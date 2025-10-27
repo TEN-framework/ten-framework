@@ -48,8 +48,7 @@ template("rust_target") {
       _rustflags = invoker._rustflags
     }
 
-    if (!ten_rust_enable_gen_cargo_config && enable_sanitizer &&
-        ten_rust_enable_asan) {
+    if (!ten_rust_enable_gen_cargo_config && enable_sanitizer) {
       asan_args = [
         "--action",
         "print",
@@ -241,8 +240,7 @@ template("rust_test") {
       _rustflags = invoker._rustflags
     }
 
-    if (!ten_rust_enable_gen_cargo_config && enable_sanitizer &&
-        ten_rust_enable_asan) {
+    if (!ten_rust_enable_gen_cargo_config && enable_sanitizer) {
       asan_args = [
         "--action",
         "print",
