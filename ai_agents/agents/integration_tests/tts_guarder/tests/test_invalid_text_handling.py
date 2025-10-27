@@ -139,7 +139,7 @@ class SingleTestCaseTester(AsyncExtensionTester):
 
         # Wait for TTS output and audio frame
         # Due to the tts extension may take over 2 seconds to process the text, we need to wait for a longer time
-        await asyncio.sleep(30)
+        await asyncio.sleep(5)
 
         # Check test results
 

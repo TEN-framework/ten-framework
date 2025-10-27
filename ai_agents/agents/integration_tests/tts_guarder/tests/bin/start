@@ -15,4 +15,4 @@ else
     exportENABLE_SAMPLE_RATE="True"
 fi
 
-pytest tests/test_basic_audio_setting.py -s "$@"
+pytest tests/ "$@"
