@@ -45,9 +45,9 @@ export class TenEnvTester {
     data: Data,
     options?: SendOptions,
   ): Promise<TenError | undefined> {
-    // If options is undefined or doesn't care about result, use fire-and-forget
+    // If options is undefined or doesn't wait for result, use fire-and-forget
     // mode.
-    if (!options || !options.careAboutResult) {
+    if (!options || !options.waitForResult) {
       return ten_addon.ten_nodejs_ten_env_tester_send_data(
         this,
         data,
@@ -75,9 +75,9 @@ export class TenEnvTester {
     videoFrame: VideoFrame,
     options?: SendOptions,
   ): Promise<TenError | undefined> {
-    // If options is undefined or doesn't care about result, use fire-and-forget
+    // If options is undefined or doesn't wait for result, use fire-and-forget
     // mode.
-    if (!options || !options.careAboutResult) {
+    if (!options || !options.waitForResult) {
       return ten_addon.ten_nodejs_ten_env_tester_send_video_frame(
         this,
         videoFrame,
@@ -105,9 +105,9 @@ export class TenEnvTester {
     audioFrame: AudioFrame,
     options?: SendOptions,
   ): Promise<TenError | undefined> {
-    // If options is undefined or doesn't care about result, use fire-and-forget
+    // If options is undefined or doesn't wait for result, use fire-and-forget
     // mode.
-    if (!options || !options.careAboutResult) {
+    if (!options || !options.waitForResult) {
       return ten_addon.ten_nodejs_ten_env_tester_send_audio_frame(
         this,
         audioFrame,
@@ -135,9 +135,9 @@ export class TenEnvTester {
     cmdResult: CmdResult,
     options?: SendOptions,
   ): Promise<TenError | undefined> {
-    // If options is undefined or doesn't care about result, use fire-and-forget
+    // If options is undefined or doesn't wait for result, use fire-and-forget
     // mode.
-    if (!options || !options.careAboutResult) {
+    if (!options || !options.waitForResult) {
       return ten_addon.ten_nodejs_ten_env_tester_return_result(
         this,
         cmdResult,

@@ -10,20 +10,20 @@ class SendOptions:
     """Configuration options for sending messages.
 
     Attributes:
-        care_about_result: Whether to care about the send result. If False,
-                          the send operation will not wait for completion and
-                          will not return error information, thus avoiding the
-                          creation of additional asyncio tasks.
-                          Defaults to False for optimal performance.
+        wait_for_result: Whether to wait for the send result. If False,
+                         the send operation will not wait for completion and
+                         will not return error information, thus avoiding the
+                         creation of additional asyncio tasks.
+                         Defaults to False for optimal performance.
     """
 
-    care_about_result: bool
+    wait_for_result: bool
 
-    def __init__(self, care_about_result: bool = False) -> None:
+    def __init__(self, wait_for_result: bool = False) -> None:
         """Initialize SendOptions.
 
         Args:
-            care_about_result: Whether to care about the send result.
-                              Defaults to False.
+            wait_for_result: Whether to wait for the send result.
+                             Defaults to False for optimal performance.
         """
-        self.care_about_result = care_about_result
+        self.wait_for_result = wait_for_result

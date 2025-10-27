@@ -10,10 +10,10 @@
  */
 export interface SendOptions {
     /**
-     * Whether to care about the send result. If false, the send operation will
+     * Whether to wait for the send result. If false, the send operation will
      * not wait for completion and will not return error information, thus
      * avoiding the creation of additional async tasks.
      * Defaults to false for optimal performance.
      */
-    careAboutResult?: boolean;
+    waitForResult?: boolean;
 }

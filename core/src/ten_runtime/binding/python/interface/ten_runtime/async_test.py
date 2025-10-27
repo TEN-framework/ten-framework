@@ -108,13 +108,13 @@ class AsyncTenEnvTester(TenEnvTesterBase):
     async def send_data(
         self, data: Data, options: SendOptions | None = None
     ) -> TenError | None:
-        # If options is None or doesn't care about result, use fire-and-forget
+        # If options is None or doesn't wait for result, use fire-and-forget
         # mode.
-        if options is None or not options.care_about_result:
+        if options is None or not options.wait_for_result:
             err = self._internal.send_data(data, None)
             return err
 
-        # If care about result, use the original async waiting mode.
+        # If wait for result, use the original async waiting mode.
         q = asyncio.Queue[TenError | None](maxsize=1)
         err = self._internal.send_data(
             data,
@@ -129,13 +129,13 @@ class AsyncTenEnvTester(TenEnvTesterBase):
     async def send_audio_frame(
         self, audio_frame: AudioFrame, options: SendOptions | None = None
     ) -> TenError | None:
-        # If options is None or doesn't care about result, use fire-and-forget
+        # If options is None or doesn't wait for result, use fire-and-forget
         # mode.
-        if options is None or not options.care_about_result:
+        if options is None or not options.wait_for_result:
             err = self._internal.send_audio_frame(audio_frame, None)
             return err
 
-        # If care about result, use the original async waiting mode.
+        # If wait for result, use the original async waiting mode.
         q = asyncio.Queue[TenError | None](maxsize=1)
         err = self._internal.send_audio_frame(
             audio_frame,
@@ -150,13 +150,13 @@ class AsyncTenEnvTester(TenEnvTesterBase):
     async def send_video_frame(
         self, video_frame: VideoFrame, options: SendOptions | None = None
     ) -> TenError | None:
-        # If options is None or doesn't care about result, use fire-and-forget
+        # If options is None or doesn't wait for result, use fire-and-forget
         # mode.
-        if options is None or not options.care_about_result:
+        if options is None or not options.wait_for_result:
             err = self._internal.send_video_frame(video_frame, None)
             return err
 
-        # If care about result, use the original async waiting mode.
+        # If wait for result, use the original async waiting mode.
         q = asyncio.Queue[TenError | None](maxsize=1)
         err = self._internal.send_video_frame(
             video_frame,
@@ -173,13 +173,13 @@ class AsyncTenEnvTester(TenEnvTesterBase):
         cmd_result: CmdResult,
         options: SendOptions | None = None,
     ) -> TenError | None:
-        # If options is None or doesn't care about result, use fire-and-forget
+        # If options is None or doesn't wait for result, use fire-and-forget
         # mode.
-        if options is None or not options.care_about_result:
+        if options is None or not options.wait_for_result:
             err = self._internal.return_result(cmd_result, None)
             return err
 
-        # If care about result, use the original async waiting mode.
+        # If wait for result, use the original async waiting mode.
         q = asyncio.Queue[TenError | None](maxsize=1)
         err = self._internal.return_result(
             cmd_result,

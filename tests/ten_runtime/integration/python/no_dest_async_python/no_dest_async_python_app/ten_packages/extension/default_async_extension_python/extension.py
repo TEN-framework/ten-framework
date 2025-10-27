@@ -40,7 +40,7 @@ class DefaultAsyncExtension(AsyncExtension):
         ten_env.log(LogLevel.ERROR, f"Error: {err.error_message()}")
 
         err = await ten_env.send_data(
-            Data.create("unknown_data"), SendOptions(care_about_result=True)
+            Data.create("unknown_data"), SendOptions(wait_for_result=True)
         )
         assert err is not None
 
@@ -48,7 +48,7 @@ class DefaultAsyncExtension(AsyncExtension):
 
         err = await ten_env.send_audio_frame(
             AudioFrame.create("unknown_audio_frame"),
-            SendOptions(care_about_result=True),
+            SendOptions(wait_for_result=True),
         )
         assert err is not None
 
@@ -56,7 +56,7 @@ class DefaultAsyncExtension(AsyncExtension):
 
         err = await ten_env.send_video_frame(
             VideoFrame.create("unknown_video_frame"),
-            SendOptions(care_about_result=True),
+            SendOptions(wait_for_result=True),
         )
         assert err is not None
 
