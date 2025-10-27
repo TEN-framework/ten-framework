@@ -5,13 +5,6 @@
 # Refer to the "LICENSE" file in the root directory for more information.
 #
 declare_args() {
-  # Rust AddressSanitizer is supported on Linux x64 and macOS x64/arm64. Refer
-  # to: https://doc.rust-lang.org/stable/unstable-book/compiler-flags/sanitizer.html#addresssanitizer
-  #
-  # rustc finds the asan runtime library in ~/.rustup/toolchains/<target_cpu>/
-  # lib/rustlib/<target_cpu>/lib/librustc-nightly_rt.asan.a
-  ten_rust_enable_asan = is_mac || (is_linux && target_cpu == "x64")
-
   # The rust projects (i.e., ten_rust and ten_manager) depend on the C static
   # library (ex: ten_utils), thus the rust projects must be compiled with asan
   # enabled if the C library is compiled with asan. There are two ways to
