@@ -75,7 +75,7 @@ jobs:
           # Generate build configuration
           # disable_asan=true - disable ASAN because it conflicts with coverage instrumentation
           # ten_enable_go_lint=false - disable Go lint to avoid installing Go toolchain (coverage test doesn't need it)
-          EXTRA_ARGS="is_clang=true log_level=1 disable_asan=true enable_serialized_actions=true ten_rust_enable_gen_cargo_config=false ten_enable_cargo_clean=true ten_enable_go_lint=false ten_enable_rust_incremental_build=false ten_manager_enable_frontend=false ten_enable_integration_tests_prebuilt=false"
+          EXTRA_ARGS="is_clang=true log_level=1 enable_sanitizer=false enable_serialized_actions=true ten_rust_enable_gen_cargo_config=false ten_enable_cargo_clean=true ten_enable_go_lint=false ten_enable_rust_incremental_build=false ten_manager_enable_frontend=false ten_enable_integration_tests_prebuilt=false"
 
           echo "Generating build configuration: $EXTRA_ARGS"
           tgn gen linux x64 debug -- $EXTRA_ARGS
@@ -88,6 +88,9 @@ jobs:
           rustup component add llvm-tools-preview
 
           export RUSTFLAGS="-C instrument-coverage"
+
+          # Ensure ten_rust links against the non-ASAN ten_utils built above
+          export TEN_UTILS_LIBRARY_PATH="$(pwd)/out/linux/x64/gen/core/src/ten_utils"
 
           export PROFRAW_DIR="$(pwd)/out/linux/x64/tests/standalone/ten_rust"
           export LLVM_PROFILE_FILE="$PROFRAW_DIR/rust-%p-%m.profraw"
