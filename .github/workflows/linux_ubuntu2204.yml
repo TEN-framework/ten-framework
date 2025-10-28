@@ -182,6 +182,7 @@ jobs:
             "system/ten_runtime"
             "system/ten_runtime_go"
             "system/ten_runtime_python"
+            "system/ten_runtime_nodejs"
             "addon_loader/python_addon_loader"
           )
 
