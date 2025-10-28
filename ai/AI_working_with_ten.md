@@ -223,6 +223,42 @@ ten_packages/extension/my_extension_python/
 └── README.md             # Documentation
 ```
 
+### Learning from Existing Extensions
+
+**Before creating a new extension, ALWAYS explore existing similar extensions:**
+
+```bash
+# Find all extensions
+ls -la /app/agents/ten_packages/extension/
+ls -la /app/agents/examples/voice-assistant/tenapp/ten_packages/extension/
+
+# Search for similar patterns
+grep -r "AsyncLLMToolBaseExtension" --include="*.py"  # LLM tools
+grep -r "on_audio_frame" --include="*.py"             # Audio processing
+grep -r "websockets" --include="*.py"                 # WebSocket usage
+```
+
+**Study existing property.json files:**
+
+```bash
+# Find all graph configurations
+find /app/agents -name "property.json" -type f
+
+# Look for similar connection patterns
+grep -A 10 "audio_frame" /app/agents/examples/*/tenapp/property.json
+grep -A 10 "tool_register" /app/agents/examples/*/tenapp/property.json
+```
+
+**Use existing extensions as templates:**
+- **weatherapi_tool_python**: Simple LLM tool pattern
+- **deepgram_asr_python**: Audio frame processing
+- **openai_llm2_python**: LLM integration
+- **elevenlabs_tts2_python**: TTS with audio generation
+- **agora_rtc**: Real-time communication
+- **main_python**: Control flow and coordination
+
+Copy similar extension structure, then modify for your needs.
+
 ### Required Files
 
 #### 1. `addon.py`
@@ -833,6 +869,8 @@ When something isn't working:
 - Add `.env` files to `.gitignore`
 
 ### Development
+- **Study existing extensions first** - Find similar patterns in existing code before writing new extensions
+- Explore property.json files for connection examples matching your use case
 - Always use `ten_runtime` imports (not `ten`)
 - Extract values from property getter tuples
 - Test health endpoint before testing graphs
