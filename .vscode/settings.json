@@ -99,6 +99,7 @@
   "rust-analyzer.cargo.extraEnv": {
     "CARGO_TARGET_DIR": "out/rust-analyzer"
   },
+  "rust-analyzer.cargo.targetDir": "out/rust-analyzer",
   "rust-analyzer.check.command": "clippy",
   "rust-analyzer.linkedProjects": [
     "${workspaceFolder}/core/src/ten_manager/Cargo.toml",
