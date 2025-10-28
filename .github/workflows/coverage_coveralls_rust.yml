@@ -86,7 +86,6 @@ jobs:
       - name: Generate Rust coverage
         run: |
           rustup component add llvm-tools-preview
-          llvm-profdata --version
 
           export RUSTFLAGS="-C instrument-coverage"
 
