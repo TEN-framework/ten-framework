@@ -1,219 +1,671 @@
-# AI Working with TEN Framework - Quick Reference
+# TEN Framework Development Guide
 
+**Purpose**: Complete onboarding guide for developing with TEN Framework v0.11+
 **Last Updated**: 2025-10-28
-**Purpose**: Quick onboarding guide for AI assistants working on TEN Framework projects
 
 ---
 
-## Environment Overview
+## Table of Contents
 
-**Server**: AWS EC2 (eu-west-2)
-**IP**: 18.132.202.170
-**Container**: ten_agent_dev
-**Framework**: TEN Framework v0.11
-**Current Branch**: avatar-integration
-
-### Key Ports
-- 8080: API Server
-- 3000: Playground Frontend
-- 9000/9001: TMAN Designer
-- 49483: Cloudflare tunnel
-
-### API Keys Location
-See `/home/ubuntu/PERSISTENT_KEYS_CONFIG.md` for all API keys and configuration.
+1. [Framework Overview](#framework-overview)
+2. [Environment Setup](#environment-setup)
+3. [Building and Running](#building-and-running)
+4. [Creating Extensions](#creating-extensions)
+5. [Graph Configuration](#graph-configuration)
+6. [Debugging](#debugging)
+7. [Remote Access](#remote-access)
+8. [Common Issues](#common-issues)
 
 ---
 
-## Docker Environment Management
+## Framework Overview
 
-### Quick Commands
+### What is TEN Framework?
 
-**Check Container Status:**
-```bash
-docker ps | grep ten_agent_dev
-```
+TEN (Temporal Event Network) is a graph-based AI agent framework that connects modular extensions (nodes) through defined data flows (connections). Version 0.11+ uses the `ten_runtime` Python API.
 
-**Restart Container (Picks up .env changes):**
-```bash
-cd /home/ubuntu/ten-framework/ai_agents
-docker compose down
-docker compose up -d
-```
+### Key Concepts
 
-**Restart Services Inside Container:**
-```bash
-docker exec ten_agent_dev bash -c "fuser -k 8080/tcp 2>/dev/null; fuser -k 49483/tcp 2>/dev/null; fuser -k 3001/tcp 2>/dev/null"
-docker exec -d ten_agent_dev bash -c "cd /app/agents/examples/voice-assistant && task run > /tmp/task_run.log 2>&1"
-```
+**Extensions**: Modular components that process data (e.g., speech-to-text, LLM, TTS, custom analyzers)
 
-**View Logs:**
-```bash
-# Container logs
-docker logs --tail 100 ten_agent_dev
+**Graphs**: Configurations that define which extensions run and how they connect
 
-# Task logs
-docker exec ten_agent_dev tail -f /tmp/task_run.log
+**Connections**: Data flows between extensions via:
+- `cmd`: Commands (e.g., tool_register, on_user_joined)
+- `data`: Data messages (e.g., asr_result, text_data)
+- `audio_frame`: PCM audio streams
+- `video_frame`: Video streams
 
-# Session logs
-docker exec ten_agent_dev ls -lt /tmp/ten_agent/*.log | head
-```
-
-**Enter Container:**
-```bash
-docker exec -it ten_agent_dev bash
-```
+**Property Files**: JSON configurations with environment variable substitution:
+- `${env:VAR_NAME}` - Required variable (error if missing)
+- `${env:VAR_NAME|}` - Optional variable (empty string if missing)
 
 ---
 
-## Environment Variable Configuration
+## Environment Setup
 
-### CRITICAL: How Environment Variables Work
+### Docker Environment
 
-Environment variables in TEN Framework can be loaded in several ways, but **they must be available when the process starts**:
+TEN Framework projects typically run in Docker containers for consistency.
+
+**Key Files:**
+- `docker-compose.yml` - Container configuration
+- `Dockerfile` - Build instructions
+- `.env` - Environment variables (mount into container)
+
+**Standard Container Structure:**
+```
+/app/agents/examples/voice-assistant/
+├── .env                    # API keys and config
+├── Taskfile.yaml          # Build/run automation
+└── tenapp/
+    ├── property.json      # Graph definitions
+    ├── manifest.json      # App manifest
+    └── ten_packages/
+        └── extension/     # Custom extensions
+```
+
+### API Keys Management
+
+**Best Practice**: Keep API keys in a file OUTSIDE the git repository (e.g., `/home/ubuntu/PERSISTENT_KEYS_CONFIG.md` or `~/api_keys.txt`). This allows you to:
+- Switch git branches without losing keys
+- Never accidentally commit secrets
+- Reference keys when creating new `.env` files
+
+**Create .env file:**
+```bash
+# Example .env structure
+AGORA_APP_ID=your_app_id
+AGORA_APP_CERTIFICATE=your_certificate
+
+OPENAI_API_KEY=sk-...
+OPENAI_MODEL=gpt-4o-mini
+
+DEEPGRAM_API_KEY=...
+ELEVENLABS_TTS_KEY=...
+
+# Custom extension keys
+YOUR_API_KEY=...
+```
+
+### Environment Variable Loading
+
+**CRITICAL**: Environment variables must be available when the container/process starts.
 
 #### ❌ Does NOT Work:
-1. Editing `.env` files while services are running - container already loaded env vars at startup
-2. Restarting services with `task run` - doesn't reload environment from .env files
-3. Expecting environment variables to propagate automatically
+1. Editing `.env` while services are running
+2. Restarting services with `task run` (doesn't reload .env)
+3. Expecting variables to propagate automatically
 
 #### ✅ Works:
-1. **Restart Docker Container** (recommended for development):
+1. **Restart Docker container** (recommended):
    ```bash
-   cd /home/ubuntu/ten-framework/ai_agents
    docker compose down
    docker compose up -d
-   # Wait for container to start
-   docker exec -d ten_agent_dev bash -c "cd /app/agents/examples/voice-assistant && task run > /tmp/task_run.log 2>&1"
    ```
 
-2. **Source .env before starting services**:
+2. **Source .env before starting**:
    ```bash
-   docker exec -d ten_agent_dev bash -c '
+   docker exec -d container_name bash -c '
    set -a
-   source /app/agents/examples/voice-assistant/.env
+   source /path/to/.env
    set +a
    cd /app/agents/examples/voice-assistant
    task run > /tmp/task_run.log 2>&1
    '
    ```
 
-3. **Hardcode values in property.json** (for testing):
+3. **Hardcode in property.json** (testing only):
    ```json
    {
-     "addon": "heygen_avatar_python",
      "property": {
-       "heygen_api_key": "actual_key_value",
-       "agora_appid": "actual_app_id"
+       "api_key": "actual_value_here"
      }
    }
    ```
 
-### .env File Locations
-
-**Host:**
-- `/home/ubuntu/ten-framework/ai_agents/agents/examples/voice-assistant/.env`
-
-**Container:**
-- `/app/agents/examples/voice-assistant/.env` (primary)
-- `/app/agents/examples/voice-assistant/tenapp/.env` (copy for redundancy)
-- `/app/agents/.env` (Taskfile dotenv location)
-
-### Property File Location
-
-**Graph definitions with env var placeholders:**
-- `/app/agents/examples/voice-assistant/tenapp/property.json`
-
-This is where graph structures are defined. Environment variables use syntax:
-- `${env:VAR_NAME}` - Required, error if missing
-- `${env:VAR_NAME|}` - Optional, empty string if missing
-
 ---
 
-## Testing Workflow
+## Building and Running
 
-### 1. Health Check
+### Docker Commands
+
+**Check container status:**
+```bash
+docker ps | grep your_container_name
+```
+
+**Restart container (picks up .env changes):**
+```bash
+cd /path/to/docker-compose-dir
+docker compose down
+docker compose up -d
+```
+
+**Enter container:**
+```bash
+docker exec -it container_name bash
+```
+
+**View logs:**
+```bash
+# Container logs
+docker logs --tail 100 container_name
+
+# Application logs
+docker exec container_name tail -f /tmp/task_run.log
+```
+
+### Running Services
+
+**Inside container, start services:**
+```bash
+cd /app/agents/examples/voice-assistant
+task run > /tmp/task_run.log 2>&1 &
+```
+
+**Or from outside (detached):**
+```bash
+docker exec -d container_name bash -c \
+  "cd /app/agents/examples/voice-assistant && task run > /tmp/task_run.log 2>&1"
+```
+
+### Health Checks
+
+**API server:**
 ```bash
 curl -s http://localhost:8080/health
 # Expected: {"code":"0","data":null,"msg":"ok"}
 ```
 
-### 2. List Available Graphs
+**List available graphs:**
 ```bash
-curl -s http://localhost:8080/graphs | jq '.'
+curl -s http://localhost:8080/graphs | jq '.data[].name'
 ```
 
-### 3. Start a Session
+**Check ports:**
+```bash
+# Common ports:
+# 8080: API Server
+# 3000: Playground Frontend
+# Other ports depend on your setup
+netstat -tlnp | grep -E ":(8080|3000)"
+```
+
+### Installing Python Dependencies
+
+Python dependencies are **NOT persisted** across container restarts. After restarting:
+
+```bash
+docker exec container_name pip3 install pydantic aiohttp aiofiles websockets
+```
+
+Or create an install script in your extension:
+```bash
+docker exec container_name bash -c \
+  "cd /app/agents/examples/voice-assistant/tenapp && ./scripts/install_python_deps.sh"
+```
+
+---
+
+## Creating Extensions
+
+### Extension Directory Structure
+
+```
+ten_packages/extension/my_extension_python/
+├── __init__.py           # Empty or package init
+├── addon.py              # Extension registration
+├── extension.py          # Main extension logic
+├── manifest.json         # Extension metadata
+├── property.json         # Default properties
+├── requirements.txt      # Python dependencies
+└── README.md             # Documentation
+```
+
+### Required Files
+
+#### 1. `addon.py`
+```python
+from ten_runtime import Addon, register_addon_as_extension
+from .extension import MyExtension
+
+@register_addon_as_extension("my_extension_python")
+class MyExtensionAddon(Addon):
+    def on_create_instance(self, ten_env, name, context):
+        from ten_runtime import Extension
+        return MyExtension(name)
+```
+
+#### 2. `extension.py`
+
+**Basic Extension:**
+```python
+from ten_runtime import (
+    AsyncExtension,
+    AsyncTenEnv,
+    Cmd,
+    Data,
+    AudioFrame,
+)
+
+class MyExtension(AsyncExtension):
+    async def on_start(self, ten_env: AsyncTenEnv) -> None:
+        # Load properties
+        api_key_result = await ten_env.get_property_string("api_key")
+        # CRITICAL: Extract value from tuple!
+        self.api_key = api_key_result[0] if isinstance(api_key_result, tuple) else api_key_result
+
+        ten_env.log_info("Extension started")
+        ten_env.on_start_done()
+
+    async def on_stop(self, ten_env: AsyncTenEnv) -> None:
+        ten_env.log_info("Extension stopped")
+        ten_env.on_stop_done()
+
+    async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
+        # Handle commands
+        cmd_name = cmd.get_name()
+        ten_env.log_info(f"Received command: {cmd_name}")
+
+        # Send response
+        cmd_result = Cmd.create("cmd_result")
+        await ten_env.return_result(cmd_result, cmd)
+
+    async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
+        # Handle data messages
+        data_name = data.get_name()
+        ten_env.log_info(f"Received data: {data_name}")
+
+    async def on_audio_frame(self, ten_env: AsyncTenEnv, audio_frame: AudioFrame) -> None:
+        # Handle audio frames
+        pcm_data = audio_frame.get_buf()
+        # Process audio...
+```
+
+**LLM Tool Extension:**
+```python
+from ten_ai_base.llm_tool import AsyncLLMToolBaseExtension
+from ten_ai_base.types import LLMToolMetadata, LLMToolResult
+
+class MyToolExtension(AsyncLLMToolBaseExtension):
+    def get_tool_metadata(self, ten_env) -> list[LLMToolMetadata]:
+        """Register tools for LLM to call"""
+        return [
+            LLMToolMetadata(
+                name="my_tool",
+                description="Tool description for LLM",
+                parameters=[
+                    {
+                        "name": "param1",
+                        "type": "string",
+                        "description": "Parameter description"
+                    }
+                ]
+            )
+        ]
+
+    async def run_tool(self, ten_env, name: str, args: dict) -> LLMToolResult:
+        """Called when LLM invokes the tool"""
+        ten_env.log_info(f"Tool called: {name} with args: {args}")
+
+        # Process and return result
+        return LLMToolResult(
+            type="text",
+            content="Tool execution result"
+        )
+```
+
+#### 3. `manifest.json`
+```json
+{
+  "type": "extension",
+  "name": "my_extension_python",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.11"
+    }
+  ],
+  "api": {
+    "property": {
+      "api_key": {
+        "type": "string"
+      },
+      "param1": {
+        "type": "int64"
+      },
+      "param2": {
+        "type": "float64"
+      }
+    }
+  }
+}
+```
+
+#### 4. `property.json`
+```json
+{
+  "api_key": "${env:MY_API_KEY|}",
+  "param1": 100,
+  "param2": 0.5
+}
+```
+
+### Critical Patterns
+
+#### Property Loading (MUST KNOW!)
+
+**ALL** TEN Framework property getters return tuples `(value, error_or_none)`, NOT just the value:
+
+```python
+# ❌ WRONG - Will cause TypeError in comparisons
+self.threshold = await ten_env.get_property_float("threshold")
+self.count = await ten_env.get_property_int("count")
+self.api_key = await ten_env.get_property_string("api_key")
+
+# ✅ CORRECT - Extract first element from tuple
+threshold_result = await ten_env.get_property_float("threshold")
+self.threshold = threshold_result[0] if isinstance(threshold_result, tuple) else threshold_result
+
+count_result = await ten_env.get_property_int("count")
+self.count = count_result[0] if isinstance(count_result, tuple) else count_result
+
+api_key_result = await ten_env.get_property_string("api_key")
+self.api_key = api_key_result[0] if isinstance(api_key_result, tuple) else api_key_result
+```
+
+**This applies to ALL property types**: `get_property_string()`, `get_property_int()`, `get_property_float()`, `get_property_bool()`
+
+#### Import Statements
+
+TEN Framework v0.11+ uses `ten_runtime`, NOT `ten`:
+
+```python
+# ✅ CORRECT (v0.11+)
+from ten_runtime import (
+    AsyncExtension,
+    AsyncTenEnv,
+    Cmd,
+    Data,
+    AudioFrame,
+)
+
+# ❌ WRONG (v0.8.x - old API)
+from ten import (
+    AsyncExtension,
+    AsyncTenEnv,
+)
+```
+
+If you see `ModuleNotFoundError: No module named 'ten'`, change imports to `ten_runtime`.
+
+---
+
+## Graph Configuration
+
+### Adding Extension to Graph
+
+Edit `tenapp/property.json` to add your extension as a node:
+
+```json
+{
+  "ten": {
+    "predefined_graphs": [
+      {
+        "name": "my_graph",
+        "auto_start": false,
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "my_extension",
+              "addon": "my_extension_python",
+              "extension_group": "default",
+              "property": {
+                "api_key": "${env:MY_API_KEY|}",
+                "param1": 123
+              }
+            }
+          ],
+          "connections": [
+            // ... connection definitions
+          ]
+        }
+      }
+    ]
+  }
+}
+```
+
+### Configuring Connections
+
+Connections define data flow between extensions:
+
+```json
+{
+  "connections": [
+    {
+      "extension": "main_control",
+      "cmd": [
+        {
+          "names": ["tool_register"],
+          "source": [{"extension": "my_extension"}]
+        }
+      ],
+      "data": [
+        {
+          "name": "asr_result",
+          "source": [{"extension": "stt"}]
+        },
+        {
+          "name": "text_data",
+          "source": [{"extension": "my_extension"}]
+        }
+      ]
+    },
+    {
+      "extension": "agora_rtc",
+      "audio_frame": [
+        {
+          "name": "pcm_frame",
+          "dest": [
+            {"extension": "stt"},
+            {"extension": "my_extension"}
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Parallel Audio Routing
+
+To send audio to multiple extensions, split at the **source**, not intermediate nodes:
+
+```json
+{
+  "extension": "agora_rtc",
+  "audio_frame": [
+    {
+      "name": "pcm_frame",
+      "dest": [
+        {"extension": "streamid_adapter"},
+        {"extension": "my_analyzer"}
+      ]
+    }
+  ]
+}
+```
+
+**Note**: Splitting from intermediate nodes (like `streamid_adapter`) may cause crashes.
+
+---
+
+## Debugging
+
+### Log Locations
+
+**Application logs:**
+```bash
+/tmp/task_run.log              # Main service logs
+```
+
+**Session logs:**
+```bash
+/tmp/ten_agent/
+├── property-{channel}-{timestamp}.json  # Session config
+├── app-{channel}-{timestamp}.log         # App logs
+└── log-{channel}-{timestamp}.log         # Session logs
+```
+
+**Agora logs:**
+```bash
+/tmp/agoraapi.log              # Connection logs
+/tmp/agorasdk.log              # SDK logs
+```
+
+### Finding Errors
+
+**Python tracebacks:**
+```bash
+docker exec container_name tail -200 /tmp/task_run.log | grep -A 20 "Traceback"
+```
+
+**Extension errors:**
+```bash
+docker exec container_name tail -200 /tmp/task_run.log | grep -E "(ERROR|Uncaught exception)"
+```
+
+**Check loaded extensions:**
+```bash
+docker exec container_name tail -200 /tmp/task_run.log | grep "Successfully registered addon"
+```
+
+**Session-specific logs:**
+```bash
+# Find latest session
+docker exec container_name ls -lt /tmp/ten_agent/*.json | head -1
+
+# Check session logs
+docker exec container_name tail -200 /tmp/task_run.log | grep -E "(channel_name|ERROR)"
+```
+
+### Testing Workflow
+
+**1. Health check:**
+```bash
+curl -s http://localhost:8080/health
+```
+
+**2. List graphs:**
+```bash
+curl -s http://localhost:8080/graphs | jq '.data[].name'
+```
+
+**3. Start session:**
 ```bash
 curl -X POST http://localhost:8080/start \
   -H "Content-Type: application/json" \
   -d '{
-    "graph_name": "voice_assistant_with_avatar",
-    "channel_name": "test_session",
-    "remote_stream_id": 123456,
-    "language": "en-US"
+    "graph_name": "my_graph",
+    "channel_name": "test_channel",
+    "remote_stream_id": 123456
   }'
 ```
 
-### 4. Generate Token for Client
+**4. Generate token:**
 ```bash
 curl -X POST http://localhost:8080/token/generate \
   -H "Content-Type: application/json" \
   -d '{
-    "channel_name": "test_session",
+    "channel_name": "test_channel",
     "uid": 0
   }' | jq '.'
 ```
 
-### 5. List Active Sessions
+**5. List active sessions:**
 ```bash
 curl -s http://localhost:8080/list | jq '.'
 ```
 
-### 6. Stop Session
+**6. Stop session:**
 ```bash
 curl -X POST http://localhost:8080/stop \
   -H "Content-Type: application/json" \
-  -d '{
-    "channel_name": "test_session"
-  }'
+  -d '{"channel_name": "test_channel"}'
 ```
 
-### 7. Check Session Logs
-```bash
-# Find session property file
-docker exec ten_agent_dev ls -lt /tmp/ten_agent/property-*.json | head -3
+### Restarting Services
 
-# Check session logs
-docker exec ten_agent_dev tail -200 /tmp/task_run.log | grep -E "(test_session|ERROR|error)"
+**Kill services on specific ports:**
+```bash
+docker exec container_name bash -c "fuser -k 8080/tcp 2>/dev/null"
+docker exec container_name bash -c "fuser -k 3001/tcp 2>/dev/null"
+```
+
+**Restart services:**
+```bash
+docker exec -d container_name bash -c \
+  "cd /app/agents/examples/voice-assistant && task run > /tmp/task_run.log 2>&1"
+```
+
+**Full container restart:**
+```bash
+cd /path/to/docker-compose-dir
+docker compose down
+docker compose up -d
 ```
 
 ---
 
-## Cloudflare Tunnel Setup
+## Remote Access
 
-For accessing the playground frontend from outside:
+### Cloudflare Tunnel (HTTPS)
 
+To access the playground frontend remotely via HTTPS:
+
+**1. Kill existing tunnels:**
 ```bash
-# Kill existing tunnels
 pkill cloudflared
+```
 
-# Start new tunnel
+**2. Start new tunnel:**
+```bash
 nohup cloudflared tunnel --url http://localhost:3000 > /tmp/cloudflare_tunnel.log 2>&1 &
+```
 
-# Get URL (wait 5-8 seconds for tunnel to start)
+**3. Get public URL (wait 5-8 seconds for startup):**
+```bash
 sleep 8
 cat /tmp/cloudflare_tunnel.log | grep -o 'https://[^[:space:]]*\.trycloudflare\.com'
 ```
 
-**URL Format**: `https://random-words-here.trycloudflare.com`
+**URL format**: `https://random-words.trycloudflare.com`
 
-Share this URL with users to access the playground.
+Share this URL to access the playground from anywhere.
+
+**Script for convenience:**
+```bash
+#!/bin/bash
+# Save as setup_cloudflare_tunnel.sh
+
+pkill cloudflared
+nohup cloudflared tunnel --url http://localhost:3000 > /tmp/cloudflare_tunnel.log 2>&1 &
+echo "Waiting for tunnel to start..."
+sleep 8
+URL=$(cat /tmp/cloudflare_tunnel.log | grep -o 'https://[^[:space:]]*\.trycloudflare\.com' | head -1)
+echo "Tunnel URL: $URL"
+```
 
 ---
 
-## Common Issues and Solutions
+## Common Issues
 
-### Issue 1: Extension Fails with "ModuleNotFoundError: No module named 'ten'"
+### Issue 1: ModuleNotFoundError: No module named 'ten'
 
 **Cause**: Extension using old TEN Framework v0.8.x API
 **Solution**: Change imports from `from ten import` to `from ten_runtime import`
@@ -222,7 +674,7 @@ Share this URL with users to access the playground.
 # Find all files with old imports
 grep -r "from ten import" --include="*.py"
 
-# Fix manually or with sed
+# Fix with sed
 sed -i 's/from ten import/from ten_runtime import/g' file.py
 ```
 
@@ -230,95 +682,19 @@ sed -i 's/from ten import/from ten_runtime import/g' file.py
 
 **Symptoms**:
 ```
-Environment variable HEYGEN_API_KEY is not found, using default value .
+Environment variable MY_API_KEY is not found, using default value .
 ```
 
-**Cause**: Container loaded environment at startup, edits to .env not picked up
-**Solution**: Restart container (see "Environment Variable Configuration" above)
+**Cause**: Container loaded environment at startup, edits to `.env` not picked up
+**Solution**: Restart container to reload environment variables
 
-### Issue 3: WebSocket Timeout Errors
-
-**Symptoms**:
-```
-Error processing audio frame: sent 1011 (internal error) keepalive ping timeout
-```
-
-**Cause**: WebSocket connection missing keepalive configuration
-**Solution**: Add ping_interval and ping_timeout to websockets.connect():
-```python
-async with websockets.connect(
-    url,
-    ping_interval=20,
-    ping_timeout=10
-) as ws:
-```
-
-### Issue 4: Agora RTC Mutex Errors
-
-**Symptoms**:
-```
-terminating with uncaught exception of type std::__1::system_error:
-mutex lock failed: Invalid argument
-```
-
-**Status**: Identified as specific to ben-dev branch modifications, NOT present in clean avatar-integration
-**Solution**: Use avatar-integration branch (tested and confirmed working)
-
-### Issue 5: Port Already in Use
-
-**Symptoms**:
-```
-[ERROR] listen tcp :8080: bind: address already in use
-```
-
-**Solution**: Kill processes on ports:
 ```bash
-docker exec ten_agent_dev bash -c "fuser -k 8080/tcp 2>/dev/null"
-docker exec ten_agent_dev bash -c "fuser -k 3001/tcp 2>/dev/null"
-docker exec ten_agent_dev bash -c "fuser -k 49483/tcp 2>/dev/null"
+cd /path/to/docker-compose-dir
+docker compose down
+docker compose up -d
 ```
 
-### Issue 6: Python Dependencies Missing
-
-**Symptoms**:
-```
-ModuleNotFoundError: No module named 'aiohttp'
-```
-
-**Solution**: Install dependencies:
-```bash
-docker exec ten_agent_dev bash -c "cd /app/agents/examples/voice-assistant/tenapp && ./scripts/install_python_deps.sh"
-```
-
-**Note**: Python dependencies are NOT persisted across docker restarts. If you restart the container, you must reinstall with:
-```bash
-docker exec ten_agent_dev pip3 install pydantic aiohttp aiofiles
-```
-
-### Issue 7: Agent Server Not Running
-
-**Symptoms**:
-- Health check fails: `curl http://localhost:8080/health` returns connection refused
-- Runtime tests show "Cannot connect to Agent server"
-- Only Next.js frontend is running (port 3000)
-
-**Cause**: The backend API server process has stopped or crashed
-**Solution**: Start the agent server:
-```bash
-docker exec -d ten_agent_dev bash -c "cd /app/agents/examples/voice-assistant && task run > /tmp/task_run.log 2>&1"
-```
-
-**Verification**:
-```bash
-# Check server is responding
-curl -s http://localhost:8080/health
-# Expected: {"code":"0","data":null,"msg":"ok"}
-
-# Check available graphs
-curl -s http://localhost:8080/graphs | jq '.data[].name'
-```
-
-### Issue 8: TypeError with float/tuple/int comparison in Python
+### Issue 3: TypeError with Property Comparisons
 
 **Symptoms**:
 ```
@@ -326,218 +702,159 @@ TypeError: '>' not supported between instances of 'float' and 'tuple'
 TypeError: '<' not supported between instances of 'int' and 'tuple'
 ```
 
-**Cause**: TEN Framework's property getters return tuples `(value, error_or_none)` instead of just the value
-**Solution**: Extract first element from tuple:
+**Cause**: TEN Framework property getters return tuples `(value, None)`, not just values
+**Solution**: Extract first element from tuple
+
 ```python
-# INCORRECT - Will cause TypeError in comparisons:
-self.silence_threshold = await ten_env.get_property_float("silence_threshold")
-self.max_analyses_per_session = await ten_env.get_property_int("max_analyses_per_session")
+# ❌ WRONG
+self.threshold = await ten_env.get_property_float("threshold")
+if self.threshold > 0.5:  # TypeError!
 
-# CORRECT - Extract value from tuple:
-silence_result = await ten_env.get_property_float("silence_threshold")
-self.silence_threshold = silence_result[0] if isinstance(silence_result, tuple) else silence_result
-
-max_analyses_result = await ten_env.get_property_int("max_analyses_per_session")
-self.max_analyses_per_session = max_analyses_result[0] if isinstance(max_analyses_result, tuple) else max_analyses_result
+# ✅ CORRECT
+threshold_result = await ten_env.get_property_float("threshold")
+self.threshold = threshold_result[0] if isinstance(threshold_result, tuple) else threshold_result
+if self.threshold > 0.5:  # Works!
 ```
 
-**Applies to**: `get_property_string()`, `get_property_float()`, `get_property_int()` - ALL return tuples `(value, error_or_none)`
+**Applies to ALL property types**: string, int, float, bool
 
-**Critical Pattern**: ALWAYS extract the first element from the tuple when loading ANY property in TEN Framework extensions:
+### Issue 4: Port Already in Use
+
+**Symptoms**:
+```
+[ERROR] listen tcp :8080: bind: address already in use
+```
+
+**Solution**: Kill processes on ports
+
+```bash
+docker exec container_name bash -c "fuser -k 8080/tcp 2>/dev/null"
+docker exec container_name bash -c "fuser -k 3001/tcp 2>/dev/null"
+```
+
+### Issue 5: Python Dependencies Missing
+
+**Symptoms**:
+```
+ModuleNotFoundError: No module named 'aiohttp'
+```
+
+**Solution**: Install dependencies (NOT persisted across restarts)
+
+```bash
+docker exec container_name pip3 install aiohttp aiofiles pydantic websockets
+```
+
+### Issue 6: Agent Server Not Running
+
+**Symptoms**:
+- `curl http://localhost:8080/health` returns connection refused
+- Only Next.js frontend running (port 3000)
+
+**Cause**: Backend API server stopped or crashed
+**Solution**: Start the agent server
+
+```bash
+docker exec -d container_name bash -c \
+  "cd /app/agents/examples/voice-assistant && task run > /tmp/task_run.log 2>&1"
+```
+
+**Verify:**
+```bash
+curl -s http://localhost:8080/health
+# Expected: {"code":"0","data":null,"msg":"ok"}
+```
+
+### Issue 7: WebSocket Timeout Errors
+
+**Symptoms**:
+```
+Error processing frame: sent 1011 (internal error) keepalive ping timeout
+```
+
+**Cause**: WebSocket connection missing keepalive configuration
+**Solution**: Add ping_interval and ping_timeout
+
 ```python
-# Works for string, int, float properties
-result = await ten_env.get_property_string("api_key")
-self.api_key = result[0] if isinstance(result, tuple) else result
+async with websockets.connect(
+    url,
+    ping_interval=20,
+    ping_timeout=10
+) as ws:
+    # Process frames
+```
+
+### Issue 8: Parallel Audio Routing Crashes
+
+**Symptoms**: Worker crashes when trying to route audio to multiple destinations from intermediate node
+
+**Cause**: TEN Framework doesn't support splitting audio from intermediate nodes
+**Solution**: Split audio at source (agora_rtc)
+
+```json
+{
+  "extension": "agora_rtc",
+  "audio_frame": [
+    {
+      "name": "pcm_frame",
+      "dest": [
+        {"extension": "stt"},
+        {"extension": "my_analyzer"}
+      ]
+    }
+  ]
+}
 ```
 
 ---
-
-## Project Structure
-
-### Key Directories (inside container)
-
-```
-/app/agents/examples/voice-assistant/
-├── .env                          # API keys
-├── Taskfile.yaml                 # Task automation
-└── tenapp/
-    ├── .env                      # Duplicate of parent .env
-    ├── property.json             # Graph definitions
-    ├── manifest.json             # App manifest
-    ├── scripts/
-    │   └── install_python_deps.sh
-    └── ten_packages/
-        ├── extension/
-        │   ├── heygen_avatar_python/
-        │   ├── generic_video_python/
-        │   ├── agora_rtc/
-        │   ├── deepgram_asr_python/
-        │   ├── elevenlabs_tts2_python/
-        │   └── openai_llm2_python/
-        └── system/
-            └── ten_ai_base/
-```
-
-### Log Locations
-
-```
-/tmp/
-├── task_run.log              # Service logs
-├── agoraapi.log              # Agora RTC connection logs
-├── agorasdk.log              # Agora SDK logs
-└── ten_agent/
-    ├── property-{channel}-{timestamp}.json
-    ├── app-{channel}-{timestamp}.log
-    └── log-{channel}-{timestamp}.log (if created)
-```
-
----
-
-## Available Graphs
-
-### voice_assistant (Standard)
-- STT: Deepgram
-- LLM: OpenAI GPT-4
-- TTS: ElevenLabs
-- RTC: Agora
-
-### voice_assistant_with_avatar (HeyGen)
-- All of above +
-- Avatar: HeyGen API (real-time avatar video)
-- Publishes avatar video to Agora channel as UID 12345
-
-### voice_assistant_with_generic_avatar (Generic Video)
-- All of standard +
-- Avatar: Generic Video Protocol (custom video server)
-
----
-
-## Debugging Python Extensions
-
-### Finding Extension Errors
-
-When a Python extension fails:
-
-1. **Check task_run.log** for Python tracebacks:
-```bash
-docker exec ten_agent_dev tail -200 /tmp/task_run.log | grep -A 20 "Traceback"
-```
-
-2. **Look for the exact error** in session logs:
-```bash
-docker exec ten_agent_dev tail -200 /tmp/task_run.log | grep -E "(ERROR|Uncaught exception)"
-```
-
-3. **Check which addons loaded successfully**:
-```bash
-docker exec ten_agent_dev tail -200 /tmp/task_run.log | grep "Successfully registered addon"
-```
-
-### Common Python Extension Errors
-
-**Extension crashes on first audio frame**:
-- Check if `on_audio_frame` method has proper error handling
-- Verify audio frame access uses correct API (lock_buf/unlock_buf pattern)
-- Look for TypeError or AttributeError in traceback
-
-**Extension loads but tools not working**:
-- Check if extension inherits from `AsyncLLMToolBaseExtension`
-- Verify tool_register command is in graph connections
-- Check LLM receives tool metadata in logs
-
-**Import errors at runtime**:
-- Check all imports use `ten_runtime` not `ten_runtime_python`
-- Verify all Python dependencies are installed in container
-- Check sys.path includes extension directory
 
 ## Quick Troubleshooting Checklist
 
 When something isn't working:
 
-- [ ] Is Docker container running? `docker ps | grep ten_agent_dev`
+- [ ] Is Docker container running? `docker ps`
 - [ ] Are services running inside container? `curl http://localhost:8080/health`
-- [ ] Check recent logs: `docker exec ten_agent_dev tail -50 /tmp/task_run.log`
+- [ ] Check recent logs: `docker exec container_name tail -50 /tmp/task_run.log`
 - [ ] Are environment variables set? Check logs for "Environment variable X is not found"
-- [ ] Did you restart container after editing .env? `docker compose down && docker compose up -d`
+- [ ] Did you restart container after editing .env?
 - [ ] Are ports available? Try killing services and restarting
-- [ ] Are Python dependencies installed? `docker exec ten_agent_dev pip3 install pydantic aiohttp aiofiles`
-- [ ] Is the extension using correct API? Check for `from ten import` (old) vs `from ten_runtime import` (new)
-- [ ] Is the agent server running? Check if port 8080 responds to curl
+- [ ] Are Python dependencies installed? `pip3 install ...`
+- [ ] Is extension using correct API? Check for `from ten import` (old) vs `from ten_runtime import` (new)
+- [ ] Are property values being extracted from tuples?
 
 ---
 
-## Extension Development Tips
+## Best Practices
 
-### Testing New Extensions
+### Security
+- **Never commit API keys** to git
+- Store keys in a persistent file outside the repo (e.g., `/home/ubuntu/api_keys.txt`)
+- Use environment variable placeholders: `${env:VAR_NAME|}`
+- Add `.env` files to `.gitignore`
 
-1. Add extension to `ten_packages/extension/`
-2. Add to property.json graph nodes
-3. Add connections in property.json
-4. Restart container or services
-5. Check logs for initialization errors
-6. Test with `/start` API call
+### Development
+- Always use `ten_runtime` imports (not `ten`)
+- Extract values from property getter tuples
+- Test health endpoint before testing graphs
+- Check logs frequently during development
+- Use descriptive extension and graph names
 
-### Common Extension Patterns
-
-**Receiving Audio:**
-```python
-async def on_audio_frame(self, ten_env: AsyncTenEnv, audio_frame: AudioFrame) -> None:
-    frame_buf = audio_frame.get_buf()
-    # Process audio...
-```
-
-**Sending Data:**
-```python
-data = Data.create("data_name")
-data.set_property_string("text", "hello")
-await ten_env.send_data(data)
-```
-
-**Lifecycle:**
-```python
-async def on_start(self, ten_env: AsyncTenEnv) -> None:
-    # Initialize extension
-    ten_env.on_start_done()
-
-async def on_stop(self, ten_env: AsyncTenEnv) -> None:
-    # Cleanup
-    ten_env.on_stop_done()
-```
+### Debugging
+- Start with simple health checks
+- Test individual extensions before complex graphs
+- Use `ten_env.log_info()` liberally for debugging
+- Check session-specific logs for runtime errors
+- Monitor resource usage (memory, CPU) during development
 
 ---
 
-## Performance Notes
+## Additional Resources
 
-- Fresh Docker container takes ~10 seconds to fully start
-- Service restart (task run) takes ~5-8 seconds
-- First API call may be slower due to extension initialization
-- Session startup takes 2-3 seconds (Agora RTC connection)
-- HeyGen session creation takes 1-2 seconds
-
----
-
-## Useful Commands Reference
-
-```bash
-# Quick health check
-curl -s http://localhost:8080/health && echo " ✓ API healthy"
-
-# Watch logs in real-time
-docker exec ten_agent_dev tail -f /tmp/task_run.log
-
-# Find latest session
-docker exec ten_agent_dev ls -lt /tmp/ten_agent/*.json | head -1
-
-# Check active Agora sessions
-docker exec ten_agent_dev grep "onConnected" /tmp/agoraapi.log | tail -5
-
-# Search logs for errors
-docker exec ten_agent_dev grep -i error /tmp/task_run.log | tail -20
-
-# Check Python extension imports
-docker exec ten_agent_dev bash -c 'grep -r "from ten import" /app/agents/examples/voice-assistant/tenapp/ten_packages/extension/ --include="*.py"'
-```
+- [TEN Framework Documentation](https://doc.theten.ai)
+- Python dependencies: `aiohttp`, `pydantic`, `websockets`
+- Agora RTC: Audio/video streaming
+- LLM tool pattern: `AsyncLLMToolBaseExtension`
 
 ---
 
-**Pro Tip**: Always check the logs first. Most issues show clear error messages in `/tmp/task_run.log` or the extension's log output.
+**Pro Tip**: Always check the logs first. Most issues show clear error messages in `/tmp/task_run.log` or session logs.
