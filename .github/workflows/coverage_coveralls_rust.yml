@@ -1,4 +1,4 @@
-name: Rust Code Coverage
+name: Coverage Report for rust on Coveralls and Codecov
 on:
   release:
     types: [created]
@@ -17,11 +17,46 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: coverage-${{ github.head_ref || github.ref }}-${{ github.sha }}
+  cancel-in-progress: false
+
 jobs:
+  call-check-pr-status:
+    uses: ./.github/workflows/_check_pr_status.yml
   coverage:
+    needs: call-check-pr-status
+    if: ${{ needs.call-check-pr-status.outputs.should_continue == 'true' }}
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/ten-framework/ten_building_ubuntu2204
+    defaults:
+      run:
+        shell: bash
     steps:
+      - name: Debug context
+        run: |
+          echo "event_name=${{ github.event_name }}"
+          echo "event_action=${{ github.event.action }}"
+          echo "ref=${{ github.ref }}"
+          echo "ref_name=${{ github.ref_name }}"
+          echo "ref_type=${{ github.ref_type }}"
+
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+
+      - name: Trust working directory
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
+      - name: Initialize and update submodules except portal/
+        run: |
+          submodules=$(git config --file .gitmodules --get-regexp path | awk '$2 != "portal" { print $2 }')
+          git submodule init
+          for s in $submodules; do
+            git submodule update --init --recursive --depth 1 "$s"
+          done
 
       - name: Setup (nightly for coverage)
         run: rustup default nightly-2025-09-18

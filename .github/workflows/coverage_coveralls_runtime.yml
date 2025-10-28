@@ -1,4 +1,4 @@
-name: Coverage Report
+name: Coverage Report for runtime on Coveralls
 
 on:
   release:
@@ -19,8 +19,8 @@ permissions:
   contents: write
 
 concurrency:
-  group: coverage-${{ github.head_ref }}
-  cancel-in-progress: true
+  group: coverage-${{ github.head_ref || github.ref }}-${{ github.sha }}
+  cancel-in-progress: false
 
 jobs:
   call-check-pr-status:
