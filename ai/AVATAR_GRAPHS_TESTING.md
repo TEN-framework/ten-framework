@@ -136,17 +136,57 @@ User → STT → LLM → TTS → Generic Video → External Service → Agora RT
 - Uses `agora_channel_name` instead of standard `channel` property
 - Backend's `startPropMap` may need update to support override
 
-## Known Issues
+## Channel Override Mechanism
 
-### 1. generic_video_python Channel Property
+### How startPropMap Works
 
-**Issue**: The `generic_video_python` extension uses `agora_channel_name` property instead of the standard `channel` property.
+The backend server has a `startPropMap` (in `server/internal/config.go`) that automatically overrides certain properties:
 
-**Impact**: The backend API's `/start` endpoint may not override this property dynamically. Only properties listed in `startPropMap` get overridden.
+```go
+startPropMap = map[string][]Prop{
+    "ChannelName": {
+        {ExtensionName: "agora_rtc", Property: "channel"},
+        {ExtensionName: "agora_rtm", Property: "channel"},
+    },
+    // ... other mappings
+}
+```
 
-**Workaround**: Hardcode the channel name in property.json or update backend's `startPropMap` to include `generic_video_python.agora_channel_name`.
+**Important**: Avatar extensions are NOT in this map, so they don't automatically receive the dynamic channel name.
 
-**Recommended Fix**: Update `generic_video_python` extension to use `channel` property like `heygen_avatar_python` does.
+### Solution: Use the `properties` Parameter
+
+The `/start` API accepts a `properties` parameter that allows clients to override any extension property:
+
+```json
+{
+  "channel_name": "your_channel",
+  "graph_name": "voice_assistant_heygen",
+  "properties": {
+    "avatar": {
+      "channel": "your_channel"
+    }
+  }
+}
+```
+
+The backend processes properties in this order:
+1. First applies custom `properties` from request (http_server.go:612-644)
+2. Then applies `startPropMap` overrides (http_server.go:647-666)
+
+### Property Names by Extension
+
+- **heygen_avatar_python**: Uses `channel` property
+  ```json
+  "properties": {"avatar": {"channel": "your_channel"}}
+  ```
+
+- **generic_video_python**: Uses `agora_channel_name` property
+  ```json
+  "properties": {"avatar": {"agora_channel_name": "your_channel"}}
+  ```
+
+**Note**: The key `"avatar"` refers to the node NAME in the graph, not the addon name.
 
 ### 2. Manifest vs Code Inconsistency
 
@@ -176,23 +216,66 @@ python3 test_start_api.py
 
 Expected output: All 4 tests pass
 
+### Property Override Tests
+
+```bash
+cd /home/ubuntu/ten-framework/ai_agents/agents/examples/voice-assistant/tenapp
+python3 test_properties_override.py
+```
+
+This test simulates the backend's property override logic and demonstrates:
+- ✓ heygen_avatar_python receives correct channel with `properties.avatar.channel`
+- ✓ generic_video_python receives correct channel with `properties.avatar.agora_channel_name`
+- ✓ Without custom properties, avatar extensions keep hardcoded channel (showing the issue)
+
+Expected output: All 3 tests pass
+
 ## Client Usage
 
-### Selecting a Graph
+### Selecting a Graph and Setting Channel
 
-When starting a session via the `/start` API, clients can specify which graph to use:
+When starting a session via the `/start` API, clients MUST pass the channel name to both the top-level `channel_name` field AND via the `properties` parameter for avatar extensions:
+
+**For voice_assistant_heygen:**
 
 ```bash
 curl -X POST http://localhost:8080/api/agents/start \
   -H "Content-Type: application/json" \
   -d '{
-    "graph_name": "voice_assistant_heygen",
+    "request_id": "unique_request_id",
     "channel_name": "my_channel",
-    "property": {
-      "heygen_api_key": "your_key_here"
+    "user_uid": 123,
+    "graph_name": "voice_assistant_heygen",
+    "properties": {
+      "avatar": {
+        "channel": "my_channel"
+      }
     }
   }'
 ```
+
+**For voice_assistant_generic_video:**
+
+```bash
+curl -X POST http://localhost:8080/api/agents/start \
+  -H "Content-Type: application/json" \
+  -d '{
+    "request_id": "unique_request_id",
+    "channel_name": "my_channel",
+    "user_uid": 123,
+    "graph_name": "voice_assistant_generic_video",
+    "properties": {
+      "avatar": {
+        "agora_channel_name": "my_channel"
+      }
+    }
+  }'
+```
+
+**Important Notes:**
+- The `channel_name` field sets the channel for `agora_rtc` automatically via `startPropMap`
+- The `properties.avatar.channel` (or `agora_channel_name`) must be set manually for avatar extensions
+- Both values should be the same channel name
 
 Supported graph names:
 - `voice_assistant` - Standard voice assistant (no avatar)
