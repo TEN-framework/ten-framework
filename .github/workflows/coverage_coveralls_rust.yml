@@ -1,4 +1,4 @@
-name: Coverage Report for rust on Coveralls and Codecov
+name: Coverage Report for rust on Coveralls
 on:
   release:
     types: [created]
@@ -61,12 +61,16 @@ jobs:
       - name: Setup (nightly for coverage)
         run: rustup default nightly-2025-09-18
 
-      - name: Install grcov
-        run: cargo install grcov
+      - name: Install cargo-llvm-cov
+        run: |
+          cargo install cargo-llvm-cov
+          cargo llvm-cov --version
 
-      - name: Build ten_utils (required by ten_rust) and ten_rust
+
+      - name: Build ten_utils (required by ten_rust)
         run: |
           export PATH=$(pwd)/core/ten_gn:/root/.cargo/bin:$PATH
+          echo $PATH
 
           # Generate build configuration
           # disable_asan=true - disable ASAN because it conflicts with coverage instrumentation
@@ -79,66 +83,47 @@ jobs:
           echo "Building ten_utils..."
           tgn build:core/src/ten_utils linux x64 debug
 
-          export CARGO_INCREMENTAL=0
-          export RUSTFLAGS="-C instrument-coverage -Ccodegen-units=1 -Cinline-threshold=0 -Clink-dead-code -Coverflow-checks=off"
-
-          echo "Building ten_rust_test..."
-          tgn build:core/src/ten_rust linux x64 debug
-
-      - name: Run Rust tests
-        run: |
-          cd out/linux/x64/tests/standalone/ten_rust
-          ./unit_test
-          ./integration_test
-
       - name: Generate Rust coverage
         run: |
           rustup component add llvm-tools-preview
+          llvm-profdata --version
 
-          # Use absolute path for source to avoid path mismatches
-          grcov out/linux/x64/tests/standalone/ten_rust \
-          --binary-path out/linux/x64/tests/standalone/ten_rust/ \
-          -s $(pwd)/core/src/ten_rust \
-          -t lcov \
-          --branch \
-          --ignore-not-existing \
-          -o out/linux/x64/tests/standalone/ten_rust/rust-coverage.lcov
+          export RUSTFLAGS="-C instrument-coverage"
 
-      - name: Upload to Codecov
-        uses: codecov/codecov-action@v3
-        with:
-          files: out/linux/x64/tests/standalone/ten_rust/rust-coverage.lcov
-
-      - name: Upload coverage to Coveralls
-        env:
-          COVERALLS_REPO_TOKEN: ${{ secrets.TEN_COVERALLS_REPO_TOKEN }}
-        run: |
-          pip install --user cpp-coveralls
-          echo "cpp-coveralls installed successfully"
-
-          # Add user bin directory to PATH
-          export PATH="$HOME/.local/bin:$PATH"
-          echo "Updated PATH: $PATH"
-
-          # Verify coveralls command is available
-          which coveralls || echo "coveralls command not found in PATH"
-          coveralls --version || echo "coveralls version check failed"
-
-          if [ -f "out/linux/x64/tests/standalone/ten_rust/rust-coverage.lcov" ]; then
-            echo "Uploading coverage to Coveralls..."
-            coveralls --lcov-file out/linux/x64/tests/standalone/ten_rust/rust-coverage.lcov --verbose
-            echo "Coverage uploaded to Coveralls successfully"
-          else
-            echo "Warning: rust-coverage.lcov file not found, skipping Coveralls upload"
-            ls -la out/linux/x64/tests/standalone/ten_rust/ || true
+          export PROFRAW_DIR="$(pwd)/out/linux/x64/tests/standalone/ten_rust"
+          export LLVM_PROFILE_FILE="$PROFRAW_DIR/rust-%p-%m.profraw"
+          if [ ! -d "$PROFRAW_DIR" ]; then
+              echo "Creating directory: $PROFRAW_DIR"
+              mkdir -p "$PROFRAW_DIR"
           fi
 
-      - name: Add coverage link to job summary
-        shell: bash
-        run: |
-          REPO_NAME=$(echo "$GITHUB_REPOSITORY" | awk -F/ '{print $2}')
-          echo "Repository: $GITHUB_REPOSITORY (branch/tag: $GITHUB_REF_NAME)" >> "$GITHUB_STEP_SUMMARY"
+          cd core/src/ten_rust
 
-          # Coveralls link (assuming standard Coveralls URL format)
-          COVERALLS_URL="https://coveralls.io/github/${{ github.repository }}?branch=${GITHUB_REF_NAME}"
-          echo "📊 **Coverage Reports:** ${COVERALLS_URL}" >> "$GITHUB_STEP_SUMMARY"
+          cargo llvm-cov \
+          --package ten_rust \
+          --lcov \
+          --output-path "../../../out/linux/x64/tests/standalone/ten_rust/rust-coverage-llvmcov.lcov" \
+          --ignore-filename-regex="/.cargo/|/target/"
+
+          cd ../../../
+
+          # Verify coverage file was generated
+          if [ -f "out/linux/x64/tests/standalone/ten_rust/rust-coverage-llvmcov.lcov" ]; then
+            echo "Coverage file generated successfully"
+            ls -lh out/linux/x64/tests/standalone/ten_rust/rust-coverage-llvmcov.lcov
+          else
+            echo "ERROR: Coverage file not generated!"
+            exit 1
+          fi
+
+      - name: Upload coverage to Coveralls
+        uses: coverallsapp/github-action@v2
+        env:
+          COVERALLS_REPO_TOKEN: ${{ secrets.TEN_COVERALLS_REPO_TOKEN }}
+        with:
+          file: out/linux/x64/tests/standalone/ten_rust/rust-coverage-llvmcov.lcov
+          base-path: .
+          format: lcov
+          coverage-endpoint: https://coveralls.io
+          fail-on-error: true
+          threshold: 50
