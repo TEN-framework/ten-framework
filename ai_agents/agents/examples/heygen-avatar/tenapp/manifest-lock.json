@@ -4,8 +4,8 @@
     {
       "type": "system",
       "name": "ten_runtime_go",
-      "version": "0.11.20",
-      "hash": "8886fe1b0d8256f7b0c951dc12b8741c9b05eb6294e552aba72f47672d16ac12",
+      "version": "0.11.23",
+      "hash": "88ffba1903bc14c229e1ac207d4a49582e5a49e7c65180fca28eeee4d06b09a3",
       "dependencies": [
         {
           "type": "system",
@@ -731,10 +731,36 @@
       "path": "../../../ten_packages/extension/weatherapi_tool_python"
     },
     {
+      "type": "extension",
+      "name": "heygen_avatar_python",
+      "version": "0.1.0",
+      "hash": "d9dc24628c469909d705a0f133c8adc191c5010c7ffe4df4cd78fc94ebf32c22",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime_python"
+        }
+      ],
+      "path": "../../../ten_packages/extension/heygen_avatar_python"
+    },
+    {
+      "type": "extension",
+      "name": "generic_video_python",
+      "version": "0.1.0",
+      "hash": "9b864d1e2bf24d3f03616614b813addb8f7af279a72231b091683497c1632a1a",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime_python"
+        }
+      ],
+      "path": "../../../ten_packages/extension/generic_video_python"
+    },
+    {
       "type": "system",
       "name": "ten_runtime_python",
-      "version": "0.11.20",
-      "hash": "336f286b2fccea9015046506546bd026524bbb05ed62a9310f8247612415e890",
+      "version": "0.11.23",
+      "hash": "7af528b9d6dfd18dd5c5a9fc8b2ed5aa2e11eb527100891a8fb620d33216e294",
       "dependencies": [
         {
           "type": "system",
@@ -755,8 +781,8 @@
     {
       "type": "system",
       "name": "ten_runtime",
-      "version": "0.11.20",
-      "hash": "7df4747d962481721dbac01d15c85ca9047df87c12bc97d57d211094e9fef960",
+      "version": "0.11.23",
+      "hash": "cfdc12b26871378439448266774f8d36e36c4cbdf8a4dbca6555ac08cc6aa042",
       "supports": [
         {
           "os": "linux",
@@ -779,8 +805,8 @@
     {
       "type": "addon_loader",
       "name": "python_addon_loader",
-      "version": "0.11.20",
-      "hash": "dc178896381d8fab102cd3ce5648248c35b759374fb9f93b8133809e98bb99db",
+      "version": "0.11.23",
+      "hash": "c81ec7d38361463a657229e4f3521a740c87d810ec8a1ac7155efb805be5b430",
       "dependencies": [
         {
           "type": "system",
