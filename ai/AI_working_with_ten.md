@@ -290,6 +290,66 @@ ModuleNotFoundError: No module named 'aiohttp'
 docker exec ten_agent_dev bash -c "cd /app/agents/examples/voice-assistant/tenapp && ./scripts/install_python_deps.sh"
 ```
 
+**Note**: Python dependencies are NOT persisted across docker restarts. If you restart the container, you must reinstall with:
+```bash
+docker exec ten_agent_dev pip3 install pydantic aiohttp aiofiles
+```
+
+### Issue 7: Agent Server Not Running
+
+**Symptoms**:
+- Health check fails: `curl http://localhost:8080/health` returns connection refused
+- Runtime tests show "Cannot connect to Agent server"
+- Only Next.js frontend is running (port 3000)
+
+**Cause**: The backend API server process has stopped or crashed
+**Solution**: Start the agent server:
+```bash
+docker exec -d ten_agent_dev bash -c "cd /app/agents/examples/voice-assistant && task run > /tmp/task_run.log 2>&1"
+```
+
+**Verification**:
+```bash
+# Check server is responding
+curl -s http://localhost:8080/health
+# Expected: {"code":"0","data":null,"msg":"ok"}
+
+# Check available graphs
+curl -s http://localhost:8080/graphs | jq '.data[].name'
+```
+
+### Issue 8: TypeError with float/tuple/int comparison in Python
+
+**Symptoms**:
+```
+TypeError: '>' not supported between instances of 'float' and 'tuple'
+TypeError: '<' not supported between instances of 'int' and 'tuple'
+```
+
+**Cause**: TEN Framework's property getters return tuples `(value, error_or_none)` instead of just the value
+**Solution**: Extract first element from tuple:
+```python
+# INCORRECT - Will cause TypeError in comparisons:
+self.silence_threshold = await ten_env.get_property_float("silence_threshold")
+self.max_analyses_per_session = await ten_env.get_property_int("max_analyses_per_session")
+
+# CORRECT - Extract value from tuple:
+silence_result = await ten_env.get_property_float("silence_threshold")
+self.silence_threshold = silence_result[0] if isinstance(silence_result, tuple) else silence_result
+
+max_analyses_result = await ten_env.get_property_int("max_analyses_per_session")
+self.max_analyses_per_session = max_analyses_result[0] if isinstance(max_analyses_result, tuple) else max_analyses_result
+```
+
+**Applies to**: `get_property_string()`, `get_property_float()`, `get_property_int()` - ALL return tuples `(value, error_or_none)`
+
+**Critical Pattern**: ALWAYS extract the first element from the tuple when loading ANY property in TEN Framework extensions:
+```python
+# Works for string, int, float properties
+result = await ten_env.get_property_string("api_key")
+self.api_key = result[0] if isinstance(result, tuple) else result
+```
+
 ---
 
 ## Project Structure
@@ -352,6 +412,44 @@ docker exec ten_agent_dev bash -c "cd /app/agents/examples/voice-assistant/tenap
 
 ---
 
+## Debugging Python Extensions
+
+### Finding Extension Errors
+
+When a Python extension fails:
+
+1. **Check task_run.log** for Python tracebacks:
+```bash
+docker exec ten_agent_dev tail -200 /tmp/task_run.log | grep -A 20 "Traceback"
+```
+
+2. **Look for the exact error** in session logs:
+```bash
+docker exec ten_agent_dev tail -200 /tmp/task_run.log | grep -E "(ERROR|Uncaught exception)"
+```
+
+3. **Check which addons loaded successfully**:
+```bash
+docker exec ten_agent_dev tail -200 /tmp/task_run.log | grep "Successfully registered addon"
+```
+
+### Common Python Extension Errors
+
+**Extension crashes on first audio frame**:
+- Check if `on_audio_frame` method has proper error handling
+- Verify audio frame access uses correct API (lock_buf/unlock_buf pattern)
+- Look for TypeError or AttributeError in traceback
+
+**Extension loads but tools not working**:
+- Check if extension inherits from `AsyncLLMToolBaseExtension`
+- Verify tool_register command is in graph connections
+- Check LLM receives tool metadata in logs
+
+**Import errors at runtime**:
+- Check all imports use `ten_runtime` not `ten_runtime_python`
+- Verify all Python dependencies are installed in container
+- Check sys.path includes extension directory
+
 ## Quick Troubleshooting Checklist
 
 When something isn't working:
@@ -362,8 +460,9 @@ When something isn't working:
 - [ ] Are environment variables set? Check logs for "Environment variable X is not found"
 - [ ] Did you restart container after editing .env? `docker compose down && docker compose up -d`
 - [ ] Are ports available? Try killing services and restarting
-- [ ] Are Python dependencies installed? Run install_python_deps.sh
+- [ ] Are Python dependencies installed? `docker exec ten_agent_dev pip3 install pydantic aiohttp aiofiles`
 - [ ] Is the extension using correct API? Check for `from ten import` (old) vs `from ten_runtime import` (new)
+- [ ] Is the agent server running? Check if port 8080 responds to curl
 
 ---
 

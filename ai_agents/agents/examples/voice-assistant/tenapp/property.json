@@ -598,6 +598,220 @@
             }
           ]
         }
+      },
+      {
+        "name": "voice_assistant_thymia",
+        "auto_start": false,
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "agora_rtc",
+              "addon": "agora_rtc",
+              "extension_group": "default",
+              "property": {
+                "app_id": "${env:AGORA_APP_ID}",
+                "app_certificate": "${env:AGORA_APP_CERTIFICATE|}",
+                "channel": "ten_agent_test",
+                "stream_id": 1234,
+                "remote_stream_id": 123,
+                "subscribe_audio": true,
+                "publish_audio": true,
+                "publish_data": true,
+                "enable_agora_asr": false
+              }
+            },
+            {
+              "type": "extension",
+              "name": "stt",
+              "addon": "deepgram_asr_python",
+              "extension_group": "stt",
+              "property": {
+                "params": {
+                  "api_key": "${env:DEEPGRAM_API_KEY}",
+                  "language": "en-US",
+                  "model": "nova-3"
+                }
+              }
+            },
+            {
+              "type": "extension",
+              "name": "llm",
+              "addon": "openai_llm2_python",
+              "extension_group": "chatgpt",
+              "property": {
+                "base_url": "https://api.openai.com/v1",
+                "api_key": "${env:OPENAI_API_KEY}",
+                "frequency_penalty": 0.9,
+                "model": "${env:OPENAI_MODEL}",
+                "max_tokens": 512,
+                "prompt": "You are a brief, friendly wellness assistant. WORKFLOW: 1) First, ask for their name, date of birth (YYYY-MM-DD), and birth sex (MALE/FEMALE). 2) Once collected, call set_user_info(name, date_of_birth, birth_sex). 3) Then engage with SHORT questions (max 15 words) about their day, hobbies, interests to gather 22s+ speech. 4) After 22s, check get_wellness_metrics. 5) When available (status='available'), present results. Wellness scale: 0-1 (0=low/none, 0.5=moderate, 1.0=high). Keep responses brief except when presenting full stats.",
+                "proxy_url": "${env:OPENAI_PROXY_URL|}",
+                "greeting": "Hi! I'm your wellness assistant. To start, what's your name?",
+                "max_memory_length": 10
+              }
+            },
+            {
+              "type": "extension",
+              "name": "tts",
+              "addon": "elevenlabs_tts2_python",
+              "extension_group": "tts",
+              "property": {
+                "dump": false,
+                "dump_path": "./",
+                "params": {
+                  "key": "${env:ELEVENLABS_TTS_KEY}",
+                  "model_id": "eleven_multilingual_v2",
+                  "voice_id": "pNInz6obpgDQGcFmaJgB",
+                  "output_format": "pcm_16000"
+                }
+              }
+            },
+            {
+              "type": "extension",
+              "name": "main_control",
+              "addon": "main_python",
+              "extension_group": "control",
+              "property": {
+                "greeting": "Hi! I'm your wellness assistant. To start, what's your name?"
+              }
+            },
+            {
+              "type": "extension",
+              "name": "message_collector",
+              "addon": "message_collector2",
+              "extension_group": "transcriber",
+              "property": {}
+            },
+            {
+              "type": "extension",
+              "name": "weatherapi_tool_python",
+              "addon": "weatherapi_tool_python",
+              "extension_group": "default",
+              "property": {
+                "api_key": "${env:WEATHERAPI_API_KEY|}"
+              }
+            },
+            {
+              "type": "extension",
+              "name": "thymia_analyzer",
+              "addon": "thymia_analyzer_python",
+              "extension_group": "default",
+              "property": {
+                "api_key": "${env:THYMIA_API_KEY|}",
+                "min_speech_duration": 22.0,
+                "silence_threshold": 0.02,
+                "continuous_analysis": true,
+                "min_interval_seconds": 60,
+                "max_analyses_per_session": 10,
+                "poll_timeout": 120,
+                "poll_interval": 5
+              }
+            },
+            {
+              "type": "extension",
+              "name": "streamid_adapter",
+              "addon": "streamid_adapter",
+              "property": {}
+            }
+          ],
+          "connections": [
+            {
+              "extension": "main_control",
+              "cmd": [
+                {
+                  "names": [
+                    "on_user_joined",
+                    "on_user_left"
+                  ],
+                  "source": [
+                    {
+                      "extension": "agora_rtc"
+                    }
+                  ]
+                },
+                {
+                  "names": [
+                    "tool_register"
+                  ],
+                  "source": [
+                    {
+                      "extension": "weatherapi_tool_python"
+                    },
+                    {
+                      "extension": "thymia_analyzer"
+                    }
+                  ]
+                }
+              ],
+              "data": [
+                {
+                  "name": "asr_result",
+                  "source": [
+                    {
+                      "extension": "stt"
+                    }
+                  ]
+                },
+                {
+                  "name": "text_data",
+                  "source": [
+                    {
+                      "extension": "thymia_analyzer"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "agora_rtc",
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "dest": [
+                    {
+                      "extension": "streamid_adapter"
+                    },
+                    {
+                      "extension": "thymia_analyzer"
+                    }
+                  ]
+                },
+                {
+                  "name": "pcm_frame",
+                  "source": [
+                    {
+                      "extension": "tts"
+                    }
+                  ]
+                }
+              ],
+              "data": [
+                {
+                  "name": "data",
+                  "source": [
+                    {
+                      "extension": "message_collector"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "streamid_adapter",
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "dest": [
+                    {
+                      "extension": "stt"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
       }
     ],
     "log": {
