@@ -147,7 +147,6 @@ TEN includes the [TEN Framework](https://github.com/ten-framework/ten-framework)
   </tbody>
 </table>
 
-
 <br>
 <div align="right">
 
@@ -245,11 +244,11 @@ Once the agent example is running, you can access the following interfaces:
   <tr>
     <td align="center">
       <b>localhost:49483</b>
-      <img src="https://github.com/user-attachments/assets/5d8499cb-1d5a-4319-9b68-95c10f86479f" alt="Screenshot 1" /><br/>
+      <img src="https://github.com/user-attachments/assets/191a7c0a-d8e6-48f9-866f-6a70c58f0118" alt="Screenshot 1" /><br/>
     </td>
     <td align="center">
       <b>localhost:3000</b>
-      <img src="https://github.com/user-attachments/assets/dfa7e077-e6b4-4862-9649-8d07f8aa599a" alt="Screenshot 2" /><br/>
+      <img src="https://github.com/user-attachments/assets/13e482b6-d907-4449-a779-9454bb24c0b1" alt="Screenshot 2" /><br/>
     </td>
   </tr>
 </table>
