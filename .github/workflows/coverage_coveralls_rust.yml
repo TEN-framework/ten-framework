@@ -9,7 +9,7 @@ on:
       - ".vscode/**"
       - ".devcontainer/**"
       - ".github/**"
-      - "!.github/workflows/linux_ubuntu2204.yml"
+      - "!.github/workflows/coverage_coveralls_rust.yml"
       - "core/src/ten_manager/designer_frontend/**"
       - "**.md"
       - "ai_agents/**"
