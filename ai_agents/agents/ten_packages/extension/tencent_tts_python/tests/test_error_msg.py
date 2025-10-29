@@ -5,6 +5,7 @@
 # Refer to the "LICENSE" file in the root directory for more information.
 #
 import json
+import asyncio
 from unittest.mock import patch, AsyncMock
 
 from ten_runtime import (
@@ -153,16 +154,22 @@ def test_invalid_params_fatal_error(MockTencentTTSClient):
     # Mock the async methods called on the client instance
     mock_instance.start = AsyncMock()
     mock_instance.stop = AsyncMock()
+    mock_instance.synthesize_audio = AsyncMock()
 
-    async def mock_get_audio_data():
-        return [
+    queue = asyncio.Queue()
+    queue.put_nowait(
+        (
             False,
             MESSAGE_TYPE_CMD_ERROR,
             TencentTTSTaskFailedException(
                 10003,
                 "鉴权失败(AuthorizationFailed:Please check http header 'Authorization' field or request parameter)",
             ),
-        ]
+        )
+    )
+
+    async def mock_get_audio_data():
+        return await queue.get()
 
     mock_instance.get_audio_data.side_effect = mock_get_audio_data
 
