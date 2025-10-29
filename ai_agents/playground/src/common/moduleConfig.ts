@@ -132,8 +132,8 @@ export const ttsModuleRegistry: Record<string, ModuleRegistry.Module> = {
     type: ModuleRegistry.ModuleType.TTS,
     label: "Elevenlabs TTS",
   },
-  fish_audio_tts: {
-    name: "fish_audio_tts",
+  fish_audio_tts_python: {
+    name: "fish_audio_tts_python",
     type: ModuleRegistry.ModuleType.TTS,
     label: "Fish Audio TTS",
   },
