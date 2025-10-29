@@ -124,26 +124,54 @@ jobs:
           echo "=== Detailed coverage file analysis ==="
 
           if [ -f "$COV_FILE" ]; then
-              echo "✅ File exists, size: $(wc -c < "$COV_FILE") bytes"
-              echo "📊 Line count: $(wc -l < "$COV_FILE")"
+            echo "=== 最终统计 ==="
 
-              echo "=== File content (first 30 lines) ==="
-              head -30 "$COV_FILE"
+            # 使用 tr 处理可能的空白字符
+            TOTAL_LF=$(grep "^LF:" "$COV_FILE" | tr -d ' ' | awk -F: '{sum += $2} END {print sum}')
+            TOTAL_LH=$(grep "^LH:" "$COV_FILE" | tr -d ' ' | awk -F: '{sum += $2} END {print sum}')
 
-              echo "=== LCOV structure analysis ==="
-              echo "Test names (TN): $(grep -c "^TN:" "$COV_FILE" || echo 0)"
-              echo "Source files (SF): $(grep -c "^SF:" "$COV_FILE" || echo 0)"
-              echo "Lines found (LF): $(grep "^LF:" "$COV_FILE" | awk '{sum += $2} END {print sum+0}')"
-              echo "Lines hit (LH): $(grep "^LH:" "$COV_FILE" | awk '{sum += $2} END {print sum+0}')"
-              echo "End of record markers: $(grep -c "^end_of_record" "$COV_FILE" || echo 0)"
+            echo "总代码行数: $TOTAL_LF"
+            echo "已覆盖行数: $TOTAL_LH"
 
-              # 列出所有被覆盖的源文件
-              echo "=== Source files in coverage ==="
-              grep "^SF:" "$COV_FILE" | head -10
+            if [ "$TOTAL_LF" -gt 0 ]; then
+                COVERAGE=$(echo "scale=2; $TOTAL_LH * 100 / $TOTAL_LF" | bc)
+                echo "行覆盖率: $COVERAGE%"
           else
               echo "❌ Coverage file not found"
               exit 1
           fi
+
+      - name: Upload coverage and artifact
+        env:
+          COVERALLS_REPO_TOKEN: ${{ secrets.TEN_COVERALLS_REPO_TOKEN }}
+        run: |
+          pip install --user cpp-coveralls
+          echo "cpp-coveralls installed successfully"
+
+          # Add user bin directory to PATH
+          export PATH="$HOME/.local/bin:$PATH"
+          echo "Updated PATH: $PATH"
+
+          # Verify coveralls command is available
+          which coveralls || echo "coveralls command not found in PATH"
+          coveralls --version || echo "coveralls version check failed"
+
+          if [ -f "out/linux/x64/tests/standalone/ten_rust/rust-coverage-llvmcov.lcov" ]; then
+            echo "Uploading coverage to Coveralls..."
+            coveralls --lcov-file out/linux/x64/tests/standalone/ten_rust/rust-coverage-llvmcov.lcov --verbose
+            echo "Coverage uploaded to Coveralls successfully"
+          else
+            echo "Warning: coverage.lcov file not found, skipping Coveralls upload"
+            ls -la out/linux/x64/tests/standalone/ten_rust/ || true
+          fi
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-reports
+          path: |
+            out/linux/x64/tests/standalone/ten_rust/rust-coverage-llvmcov.lcov
+          if-no-files-found: error
 
       - name: Upload coverage to Coveralls
         uses: coverallsapp/github-action@v2
