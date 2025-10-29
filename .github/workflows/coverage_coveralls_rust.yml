@@ -118,6 +118,33 @@ jobs:
             exit 1
           fi
 
+      - name: Debug coverage file content
+        run: |
+          COV_FILE="out/linux/x64/tests/standalone/ten_rust/rust-coverage-llvmcov.lcov"
+          echo "=== Detailed coverage file analysis ==="
+
+          if [ -f "$COV_FILE" ]; then
+              echo "✅ File exists, size: $(wc -c < "$COV_FILE") bytes"
+              echo "📊 Line count: $(wc -l < "$COV_FILE")"
+
+              echo "=== File content (first 30 lines) ==="
+              head -30 "$COV_FILE"
+
+              echo "=== LCOV structure analysis ==="
+              echo "Test names (TN): $(grep -c "^TN:" "$COV_FILE" || echo 0)"
+              echo "Source files (SF): $(grep -c "^SF:" "$COV_FILE" || echo 0)"
+              echo "Lines found (LF): $(grep "^LF:" "$COV_FILE" | awk '{sum += $2} END {print sum+0}')"
+              echo "Lines hit (LH): $(grep "^LH:" "$COV_FILE" | awk '{sum += $2} END {print sum+0}')"
+              echo "End of record markers: $(grep -c "^end_of_record" "$COV_FILE" || echo 0)"
+
+              # 列出所有被覆盖的源文件
+              echo "=== Source files in coverage ==="
+              grep "^SF:" "$COV_FILE" | head -10
+          else
+              echo "❌ Coverage file not found"
+              exit 1
+          fi
+
       - name: Upload coverage to Coveralls
         uses: coverallsapp/github-action@v2
         env:
