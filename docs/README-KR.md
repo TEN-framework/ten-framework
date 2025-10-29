@@ -289,34 +289,64 @@ docker compose up -d
 docker exec -it ten_agent_dev bash
 ```
 
-##### 5. 기본 `graph`로 에이전트 빌드 (약 5분~8분 소요)
+##### 5. 기본 예제로 에이전트 빌드 (약 5~8분)
 
-다른 예제는 `/examples` 폴더를 확인하세요
+추가 시나리오는 `agents/examples` 폴더에서 확인할 수 있습니다.
+다음 기본 예제 중 하나로 시작하세요:
 
 ```bash
-# 기본 에이전트 사용
-task use
+# 체인형 음성 어시스턴트 사용
+cd agents/examples/voice-assistant
 
-# 또는 데모 에이전트 사용
-task use AGENT=agents/examples/demo
+# 또는 실시간 음성-대-음성 어시스턴트 사용
+cd agents/examples/voice-assistant-realtime
 ```
 
 ##### 6. 웹 서버 시작
 
+로컬 소스 코드를 수정했다면 먼저 `task build` 를 실행하세요. 이 단계는 TypeScript나 Go처럼 컴파일 언어에 필요하며, Python에서는 필요하지 않습니다.
+
 ```bash
+task install
 task run
 ```
 
 <br>
 
+##### 7. 에이전트 접속
+
+에이전트 예제가 실행되면 아래 인터페이스를 통해 확인할 수 있습니다.
+
+<table>
+  <tr>
+    <td align="center">
+      <b>localhost:49483</b>
+      <img src="https://github.com/user-attachments/assets/191a7c0a-d8e6-48f9-866f-6a70c58f0118" alt="스크린샷 1" /><br/>
+    </td>
+    <td align="center">
+      <b>localhost:3000</b>
+      <img src="https://github.com/user-attachments/assets/13e482b6-d907-4449-a779-9454bb24c0b1" alt="스크린샷 2" /><br/>
+    </td>
+  </tr>
+</table>
+
+- TMAN Designer: <http://localhost:49483>
+- 예제 UI: <http://localhost:3000>
+
+<br>
+
+![divider](https://github.com/user-attachments/assets/c763ffa6-0b9f-4599-9e50-8ea97021e412)
+
 #### 단계 ⓷ - TMAN Designer로 에이전트 커스터마이징
 
 ![Customize your agent with TMAN Designer](https://github.com/user-attachments/assets/33f8357b-6762-45eb-8231-c2d83bb77591)
 
- 1. [localhost:49483](http://localhost:49483) 열기
- 2. 메뉴에서 해당하는 그래프 로드 (예: Voice Assistant)
- 3. 각 확장 기능의 API 키 입력 및 설정
- 4. Voice Assistant 선택 후 [localhost:3000](http://localhost:3000)을 열어 변경사항 확인
+ 1. [localhost:49483](http://localhost:49483) 을 엽니다.
+ 2. STT, LLM, TTS 확장 프로그램을 마우스 오른쪽 버튼으로 클릭합니다.
+ 3. 속성을 열고 해당 API 키를 입력합니다.
+ 4. 캔버스에서 마우스 오른쪽 버튼을 클릭한 뒤 **Manage Apps** 를 선택해 앱 관리자를 엽니다.
+ 5. **Actions** 열에서 ▶ 버튼을 눌러 앱을 실행합니다.
+ 6. **Run with TEN Agent** 를 선택하고 **Run** 을 클릭합니다.
 
 <div align="right">
 
@@ -368,7 +398,17 @@ Check out [this guide](https://theten.ai/docs/ten_agent/demo) for more details.
 
 #### 🅱️ 다른 클라우드 서비스로 배포
 
-*준비 중*
+[Vercel](https://vercel.com) 또는 [Netlify](https://www.netlify.com) 같은 플랫폼에 TEN을 호스팅하고 싶다면 배포를 두 부분으로 나눌 수 있습니다.
+
+1. Docker가 설치된 VM, Fly.io, Render, ECS, Cloud Run 등 컨테이너 지원 플랫폼에서 TEN 백엔드를 실행합니다. 예제 Docker 이미지를 수정 없이 사용하고 서비스의 `8080` 포트를 노출하세요.
+
+2. 프런트엔드만 Vercel 또는 Netlify에 배포합니다. 프로젝트 루트를 `ai_agents/agents/examples/<example>/frontend` 로 지정한 뒤 `pnpm install`(또는 `bun install`)을 실행하고, 이어서 `pnpm build`(또는 `bun run build`)를 실행해 기본 `.next` 출력 디렉터리를 유지합니다.
+
+3. 호스팅 대시보드에서 환경 변수를 설정하여 `AGENT_SERVER_URL` 이 백엔드 URL을 가리키도록 하고, UI에서 필요한 `NEXT_PUBLIC_*` 키(예: 브라우저에 노출할 Agora 자격 증명)를 추가합니다.
+
+4. 백엔드가 프런트엔드 오리진의 요청을 허용하도록 구성합니다. 개방형 CORS 정책을 적용하거나 내장 프록시 미들웨어를 사용하면 됩니다.
+
+이 구성을 사용하면 백엔드가 장기 실행 작업을 처리하고, 호스팅된 프런트엔드는 API 트래픽을 전달하기만 하면 됩니다.
 
 <div align="right">
 
