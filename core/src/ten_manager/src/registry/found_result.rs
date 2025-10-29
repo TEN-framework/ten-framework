@@ -6,7 +6,7 @@
 //
 use std::sync::Arc;
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use ten_rust::pkg_info::{
     manifest::{dependency::ManifestDependency, Manifest},
@@ -92,40 +92,58 @@ pub async fn get_pkg_registry_info_from_manifest(
     let mut updated_manifest = pkg_info.manifest.clone();
 
     // Check and resolve display_name content
+    // Only attempt to resolve if base_dir is set, otherwise skip
     if let Some(ref mut display_name) = updated_manifest.display_name {
         for (_locale, locale_content) in display_name.locales.iter_mut() {
-            if locale_content.content.is_none() {
-                let content = locale_content
-                    .get_content()
-                    .await
-                    .with_context(|| "Failed to get content for display_name")?;
-                locale_content.content = Some(content);
+            if locale_content.content.is_none() && locale_content.base_dir.is_some() {
+                match locale_content.get_content().await {
+                    Ok(content) => {
+                        locale_content.content = Some(content);
+                    }
+                    Err(_) => {
+                        // If we can't get content, just leave it as is
+                        // This can happen when import_uri is relative but
+                        // base_dir is not set
+                    }
+                }
             }
         }
     }
 
     // Check and resolve description content
+    // Only attempt to resolve if base_dir is set, otherwise skip
     if let Some(ref mut description) = updated_manifest.description {
         for (_locale, locale_content) in description.locales.iter_mut() {
-            if locale_content.content.is_none() {
-                let content = locale_content
-                    .get_content()
-                    .await
-                    .with_context(|| "Failed to get content for description")?;
-                locale_content.content = Some(content);
+            if locale_content.content.is_none() && locale_content.base_dir.is_some() {
+                match locale_content.get_content().await {
+                    Ok(content) => {
+                        locale_content.content = Some(content);
+                    }
+                    Err(_) => {
+                        // If we can't get content, just leave it as is
+                        // This can happen when import_uri is relative but
+                        // base_dir is not set
+                    }
+                }
             }
         }
     }
 
     // Check and resolve readme content
+    // Only attempt to resolve if base_dir is set, otherwise skip
     if let Some(ref mut readme) = updated_manifest.readme {
         for (_locale, locale_content) in readme.locales.iter_mut() {
-            if locale_content.content.is_none() {
-                let content = locale_content
-                    .get_content()
-                    .await
-                    .with_context(|| "Failed to get content for readme")?;
-                locale_content.content = Some(content);
+            if locale_content.content.is_none() && locale_content.base_dir.is_some() {
+                match locale_content.get_content().await {
+                    Ok(content) => {
+                        locale_content.content = Some(content);
+                    }
+                    Err(_) => {
+                        // If we can't get content, just leave it as is
+                        // This can happen when import_uri is relative but
+                        // base_dir is not set
+                    }
+                }
             }
         }
     }
