@@ -158,6 +158,23 @@ jobs:
       # - name: Setup tmate session
       #   uses: mxschmitt/action-tmate@v3
 
+      - name: Debug GitHub context
+        run: |
+          echo "=== GitHub Context Debug Info ==="
+          echo "event_name: ${{ github.event_name }}"
+          echo "ref: ${{ github.ref }}"
+          echo "ref_name: ${{ github.ref_name }}"
+          echo "ref_type: ${{ github.ref_type }}"
+          echo "sha: ${{ github.sha }}"
+          echo "=== Release Event Info (if applicable) ==="
+          echo "release.tag_name: ${{ github.event.release.tag_name }}"
+          echo "release.target_commitish: ${{ github.event.release.target_commitish }}"
+          echo "release.name: ${{ github.event.release.name }}"
+          echo "=== Condition Check ==="
+          echo "startsWith(github.ref, 'refs/tags/'): ${{ startsWith(github.ref, 'refs/tags/') }}"
+          echo "github.event_name == 'release': ${{ github.event_name == 'release' }}"
+          echo "Combined condition: ${{ github.event_name == 'release' || startsWith(github.ref, 'refs/tags/') }}"
+
       # Package the tests artifacts into a tar file while preserving file
       # permissions.
       - name: Package tests relevant artifacts preserving permissions
@@ -181,6 +198,7 @@ jobs:
           if-no-files-found: ignore
 
       - name: Update supports before upload or publish
+        if: github.event_name == 'release' || (github.ref != '' && startsWith(github.ref, 'refs/tags/'))
         continue-on-error: true
         run: |
           UPDATE_SUPPORTS_SCRIPT=$(pwd)/tools/supports/update_supports_in_manifest_json.py
@@ -209,7 +227,7 @@ jobs:
         shell: bash
 
       - name: Package assets
-        if: startsWith(github.ref, 'refs/tags/')
+        if: github.event_name == 'release' || (github.ref != '' && startsWith(github.ref, 'refs/tags/'))
         continue-on-error: true
         run: |
           cd out/mac/x64
@@ -249,13 +267,13 @@ jobs:
 
       - name: Publish to release assets
         uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/')
+        if: github.event_name == 'release' || (github.ref != '' && startsWith(github.ref, 'refs/tags/'))
         with:
           files: |
             out/mac/x64/ten_packages-mac-${{ matrix.build_type }}-x64.zip
 
       - name: Clean up
-        if: startsWith(github.ref, 'refs/tags/')
+        if: github.event_name == 'release' || (github.ref != '' && startsWith(github.ref, 'refs/tags/'))
         continue-on-error: true
         run: |
           rm -rf out/mac/x64/ten_packages-mac-${{ matrix.build_type }}-x64.zip
@@ -263,7 +281,7 @@ jobs:
           df -h .
 
       - name: Publish release to TEN cloud store
-        if: ${{ startsWith(github.ref, 'refs/tags/') && matrix.build_type == 'release' }}
+        if: ${{ (github.event_name == 'release' || (github.ref != '' && startsWith(github.ref, 'refs/tags/'))) && matrix.build_type == 'release' }}
         continue-on-error: true
         run: |
           TMAN_BIN=$(pwd)/out/mac/x64/ten_manager/bin/tman
@@ -330,7 +348,7 @@ jobs:
         shell: bash
 
       - name: Clean up
-        if: ${{ startsWith(github.ref, 'refs/tags/') && matrix.build_type == 'release' }}
+        if: ${{ (github.event_name == 'release' || (github.ref != '' && startsWith(github.ref, 'refs/tags/'))) && matrix.build_type == 'release' }}
         continue-on-error: true
         run: |
           cd out/mac/x64
