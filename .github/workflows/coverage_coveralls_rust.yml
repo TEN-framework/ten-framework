@@ -132,11 +132,6 @@ jobs:
 
             echo "总代码行数: $TOTAL_LF"
             echo "已覆盖行数: $TOTAL_LH"
-
-            if [ "$TOTAL_LF" -gt 0 ]; then
-                COVERAGE=$(echo "scale=2; $TOTAL_LH * 100 / $TOTAL_LF" | bc)
-                echo "行覆盖率: $COVERAGE%"
-            fi
           else
               echo "❌ Coverage file not found"
           fi
