@@ -126,6 +126,6 @@ jobs:
           file: out/linux/x64/tests/standalone/ten_rust/rust-coverage-llvmcov.lcov
           base-path: .
           format: lcov
-          coverage-endpoint: https://coveralls.io
+          coveralls-endpoint: https://coveralls.io
           fail-on-error: true
-          threshold: 50
+          debug: true
