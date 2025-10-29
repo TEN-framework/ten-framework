@@ -1,5 +1,8 @@
 name: Coverage Report for rust on Coveralls
 on:
+  push:
+    branches:
+      - feat/rust-coverage
   release:
     types: [created]
   pull_request:
