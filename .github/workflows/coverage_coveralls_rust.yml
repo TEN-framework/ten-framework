@@ -2,7 +2,7 @@ name: Coverage Report for rust on Coveralls
 on:
   push:
     branches:
-      - feat/rust-coverage
+      - feat/rust_coverage
   release:
     types: [created]
   pull_request:
@@ -21,8 +21,8 @@ permissions:
   contents: write
 
 concurrency:
-  group: coverage-${{ github.head_ref || github.ref }}-${{ github.sha }}
-  cancel-in-progress: false
+  group: rust-coverage-${{ github.head_ref || github.ref }}-${{ github.sha }}
+  cancel-in-progress: true
 
 jobs:
   call-check-pr-status:
