@@ -77,24 +77,6 @@ TEN 包括 [TEN Framework](https://github.com/ten-framework/ten-framework)、[TE
 | [![Hugging Face Space](https://img.shields.io/badge/Hugging%20Face-TEN%20Framework-yellow?style=flat&logo=huggingface)](https://huggingface.co/TEN-framework) | 关注我们的 Hugging Face 社区，体验空间与模型 |
 | [![WeChat](https://img.shields.io/badge/TEN_Framework-WeChat_Group-%2307C160?logo=wechat&labelColor=darkgreen&color=gray)](https://github.com/TEN-framework/ten-agent/discussions/170) | 加入我们的微信中文讨论群 |
 
-<br>
-
-> \[!提示]
->
-> **欢迎点赞 ⭐️ TEN 仓库**
->
-> 关注新版本与更新，您的支持帮助我们让 TEN 更进一步！
-
-<br>
-
-![TEN star us gif](https://github.com/user-attachments/assets/eeebe996-8c14-4bf7-82ae-f1a1f7e30705)
-
-<br>
-<div align="right">
-
-[![][back-to-top]](#readme-top)
-
-</div>
 
 <br>
 
