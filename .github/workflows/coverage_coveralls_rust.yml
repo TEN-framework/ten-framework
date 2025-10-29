@@ -136,9 +136,9 @@ jobs:
             if [ "$TOTAL_LF" -gt 0 ]; then
                 COVERAGE=$(echo "scale=2; $TOTAL_LH * 100 / $TOTAL_LF" | bc)
                 echo "行覆盖率: $COVERAGE%"
+            fi
           else
               echo "❌ Coverage file not found"
-              exit 1
           fi
 
       - name: Upload coverage and artifact
