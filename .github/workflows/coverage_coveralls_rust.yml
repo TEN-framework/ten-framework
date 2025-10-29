@@ -21,7 +21,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: rust-coverage-${{ github.head_ref || github.ref }}-${{ github.sha }}
+  group: rust-coverage--${{ github.head_ref }}
   cancel-in-progress: true
 
 jobs:
@@ -121,25 +121,7 @@ jobs:
             exit 1
           fi
 
-      - name: Debug coverage file content
-        run: |
-          COV_FILE="out/linux/x64/tests/standalone/ten_rust/rust-coverage-llvmcov.lcov"
-          echo "=== Detailed coverage file analysis ==="
-
-          if [ -f "$COV_FILE" ]; then
-            echo "=== 最终统计 ==="
-
-            # 使用 tr 处理可能的空白字符
-            TOTAL_LF=$(grep "^LF:" "$COV_FILE" | tr -d ' ' | awk -F: '{sum += $2} END {print sum}')
-            TOTAL_LH=$(grep "^LH:" "$COV_FILE" | tr -d ' ' | awk -F: '{sum += $2} END {print sum}')
-
-            echo "总代码行数: $TOTAL_LF"
-            echo "已覆盖行数: $TOTAL_LH"
-          else
-              echo "❌ Coverage file not found"
-          fi
-
-      - name: Upload coverage and artifact
+      - name: Upload coverage to coveralls
         env:
           COVERALLS_REPO_TOKEN: ${{ secrets.TEN_COVERALLS_REPO_TOKEN }}
         run: |
@@ -170,15 +152,3 @@ jobs:
           path: |
             out/linux/x64/tests/standalone/ten_rust/rust-coverage-llvmcov.lcov
           if-no-files-found: error
-
-      - name: Upload coverage to Coveralls
-        uses: coverallsapp/github-action@v2
-        env:
-          COVERALLS_REPO_TOKEN: ${{ secrets.TEN_COVERALLS_REPO_TOKEN }}
-        with:
-          file: out/linux/x64/tests/standalone/ten_rust/rust-coverage-llvmcov.lcov
-          base-path: .
-          format: lcov
-          coveralls-endpoint: https://coveralls.io
-          fail-on-error: true
-          debug: true
