@@ -9,6 +9,9 @@
     "editor.wordWrap": "bounded",
     "editor.wordWrapColumn": 80
   },
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter"
+  },
   "biome.configurationPath": "biome.json",
   "biome.enabled": true,
   "biome.lsp.bin": "node_modules/.bin/biome",
@@ -92,6 +95,11 @@
     "./core/ten_gn/.gnfiles"
   ],
   "python.analysis.typeCheckingMode": "basic",
+  "python.formatting.provider": "black",
+  "rust-analyzer.cargo.extraEnv": {
+    "CARGO_TARGET_DIR": "out/rust-analyzer"
+  },
+  "rust-analyzer.cargo.targetDir": "out/rust-analyzer",
   "rust-analyzer.check.command": "clippy",
   "rust-analyzer.linkedProjects": [
     "${workspaceFolder}/core/src/ten_manager/Cargo.toml",
@@ -110,9 +118,5 @@
     "**/node_modules/*/**": true,
     "**/out/*/**": true,
     "**/third_party/*/**": true
-  },
-  "[python]": {
-    "editor.defaultFormatter": "ms-python.black-formatter"
-  },
-  "python.formatting.provider": "black"
+  }
 }

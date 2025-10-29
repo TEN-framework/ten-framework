@@ -56,6 +56,7 @@ group("python") {
         "standalone_ollama_python",
         "standalone_test_async_tmpl_python",
         "standalone_test_tmpl_python",
+        "start_graph_and_communicate_python",
         "start_graph_and_set_dests_from_new_graph_python",
         "subgraph_python",
         "trigger_life_cycle_python",

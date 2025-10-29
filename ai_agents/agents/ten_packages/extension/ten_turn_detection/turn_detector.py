@@ -157,17 +157,37 @@ class TurnDetector:
             )
             self.ten_env.log_debug(f"got result: {chat_completion}")
 
-            content = chat_completion.choices[0].message.content
+            # Handle Cerebrium's response wrapper format
+            # Cerebrium wraps responses in a 'result' field
+            if hasattr(chat_completion, "result") and isinstance(
+                chat_completion.result, dict
+            ):
+                content = chat_completion.result["choices"][0]["message"][
+                    "content"
+                ]
+            else:
+                # Standard OpenAI format
+                content = chat_completion.choices[0].message.content
             self.ten_env.log_debug(f"got content: {content}")
 
             ttfb = TimeHelper.duration_ms_since(start_time)
             self.ten_env.log_info(f"KEYPOINT [ttfb:{ttfb}ms], [text:{content}]")
 
             if self.chat_usage_hook:
-                self.chat_usage_hook(
-                    output_tokens=chat_completion.usage.prompt_tokens,
-                    input_tokens=chat_completion.usage.completion_tokens,
-                )
+                # Handle usage stats for both Cerebrium and standard OpenAI format
+                if hasattr(chat_completion, "result") and isinstance(
+                    chat_completion.result, dict
+                ):
+                    usage = chat_completion.result.get("usage", {})
+                    self.chat_usage_hook(
+                        output_tokens=usage.get("prompt_tokens", 0),
+                        input_tokens=usage.get("completion_tokens", 0),
+                    )
+                else:
+                    self.chat_usage_hook(
+                        output_tokens=chat_completion.usage.prompt_tokens,
+                        input_tokens=chat_completion.usage.completion_tokens,
+                    )
             return content
         except Exception as e:
             self.ten_env.log_warn(

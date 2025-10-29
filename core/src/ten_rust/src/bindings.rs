@@ -233,6 +233,7 @@ pub unsafe extern "C" fn ten_rust_predefined_graph_validate_complete_flatten(
 pub unsafe extern "C" fn ten_rust_manifest_api_flatten(
     manifest_api_json_str: *const c_char,
     current_base_dir: *const c_char,
+    app_base_dir: *const c_char,
     err_msg: *mut *mut c_char,
 ) -> *const c_char {
     if manifest_api_json_str.is_null() {
@@ -269,6 +270,19 @@ pub unsafe extern "C" fn ten_rust_manifest_api_flatten(
         }
     };
 
+    // app_base_dir should be a valid null-terminated C string.
+    let app_base_dir_rust_str = CStr::from_ptr(app_base_dir);
+    let app_base_dir_rust_str = match app_base_dir_rust_str.to_str() {
+        Ok(s) => s,
+        Err(e) => {
+            if !err_msg.is_null() {
+                let err_msg_c_str = CString::new(e.to_string()).unwrap();
+                *err_msg = err_msg_c_str.into_raw();
+            }
+            return std::ptr::null(); // Invalid UTF-8
+        }
+    };
+
     // Parse the JSON string into a ManifestApi
     let mut manifest_api: ManifestApi = match serde_json::from_str(manifest_api_json_str_rust_str) {
         Ok(m) => m,
@@ -282,7 +296,8 @@ pub unsafe extern "C" fn ten_rust_manifest_api_flatten(
     };
 
     let runtime = Runtime::new().unwrap();
-    let flattened_api = runtime.block_on(manifest_api.get_flattened_api(current_base_dir_rust_str));
+    let flattened_api = runtime
+        .block_on(manifest_api.get_flattened_api(current_base_dir_rust_str, app_base_dir_rust_str));
 
     if flattened_api.is_err() {
         if !err_msg.is_null() {
@@ -429,6 +444,7 @@ pub unsafe extern "C" fn ten_rust_validate_graph_json_string(
 pub unsafe extern "C" fn ten_rust_graph_validate_complete_flatten(
     json_str: *const c_char,
     current_base_dir: *const c_char,
+    src_loc_json_str: *const c_char,
     err_msg: *mut *mut c_char,
 ) -> *const c_char {
     if json_str.is_null() {
@@ -469,6 +485,23 @@ pub unsafe extern "C" fn ten_rust_graph_validate_complete_flatten(
         Some(current_base_dir_rust_str)
     };
 
+    let src_loc_json_str_rust_str = if src_loc_json_str.is_null() {
+        None
+    } else {
+        let src_loc_json_str_c_str = CStr::from_ptr(src_loc_json_str);
+        let src_loc_json_str_rust_str = match src_loc_json_str_c_str.to_str() {
+            Ok(s) => s,
+            Err(e) => {
+                if !err_msg.is_null() {
+                    let err_msg_c_str = CString::new(e.to_string()).unwrap();
+                    *err_msg = err_msg_c_str.into_raw();
+                }
+                return std::ptr::null(); // Invalid UTF-8
+            }
+        };
+        Some(src_loc_json_str_rust_str)
+    };
+
     // Parse the JSON string into a Graph
     let graph = {
         let rt = Runtime::new().unwrap();
@@ -486,7 +519,7 @@ pub unsafe extern "C" fn ten_rust_graph_validate_complete_flatten(
         };
 
         // Flatten the graph
-        match rt.block_on(graph.flatten_graph(current_base_dir_rust_str)) {
+        let flattened_graph = match rt.block_on(graph.flatten_graph(current_base_dir_rust_str)) {
             Ok(g) => {
                 if let Some(g) = g {
                     g
@@ -500,6 +533,24 @@ pub unsafe extern "C" fn ten_rust_graph_validate_complete_flatten(
                     *err_msg = err_msg_c_str.into_raw();
                 }
                 return std::ptr::null(); // Flattening failed
+            }
+        };
+
+        // Inject graph_proxy from exposed messages
+        match flattened_graph.inject_graph_proxy_from_exposed_messages(src_loc_json_str_rust_str) {
+            Ok(g) => {
+                if let Some(g) = g {
+                    g
+                } else {
+                    flattened_graph
+                }
+            }
+            Err(e) => {
+                if !err_msg.is_null() {
+                    let err_msg_c_str = CString::new(e.to_string()).unwrap();
+                    *err_msg = err_msg_c_str.into_raw();
+                }
+                return std::ptr::null(); // Injecting graph_proxy failed
             }
         }
     };

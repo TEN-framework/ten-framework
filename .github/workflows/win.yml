@@ -131,6 +131,11 @@ jobs:
           rustup default nightly-2025-09-18
           cargo install --force cbindgen
 
+      - name: Update version
+        run: |
+          python tools/version/update_version_in_ten_framework.py
+          python tools/version/check_version_in_ten_framework.py
+
       - name: Get Python executable path
         run: |
           $pythonPath = python -c "import sys; print(sys.executable)"
@@ -163,7 +168,7 @@ jobs:
             out/win/x64/ten_packages/extension/default_extension_cpp
 
       - name: Package assets
-        if: startsWith(github.ref, 'refs/tags/')
+        if: github.event_name == 'release' || (github.ref != '' && startsWith(github.ref, 'refs/tags/'))
         shell: pwsh
         working-directory: out/win/x64
         run: |
@@ -175,7 +180,7 @@ jobs:
 
       - name: Publish to release assets
         uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/')
+        if: github.event_name == 'release' || (github.ref != '' && startsWith(github.ref, 'refs/tags/'))
         with:
           files: |
             out/win/x64/tman-win-${{ matrix.build_type }}-x64.zip

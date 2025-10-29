@@ -18,6 +18,13 @@ declare_args() {
   ten_enable_curl = true
 }
 
+declare_args() {
+  # Enable C/C++ code coverage for TEN Runtime and its tests.
+  # If set, we will add coverage related flags to the C/C++ compile and link.
+  # Only enabled in Debug build, Linux.
+  ten_runtime_enable_coverage = false
+}
+
 # ten_runtime binding
 declare_args() {
   ten_enable_go_binding = true

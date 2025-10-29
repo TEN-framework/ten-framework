@@ -35,6 +35,7 @@ group("go") {
       "standalone_test_1_go",
       "standalone_test_2_go",
       "start_app_sync_go",
+      "start_graph_and_communicate_go",
       "start_graph_and_set_dests_from_new_graph_go",
       "start_graph_go",
       "start_predefined_graph_go",

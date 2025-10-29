@@ -44,7 +44,11 @@ pub struct ManifestApi {
 impl ManifestApi {
     /// Return the flattened API.
     /// If the api has no interface, return None.
-    pub async fn get_flattened_api(&mut self, base_dir: &str) -> Result<Option<ManifestApi>> {
+    pub async fn get_flattened_api(
+        &mut self,
+        base_dir: &str,
+        app_base_dir: &str,
+    ) -> Result<Option<ManifestApi>> {
         if let Some(interface) = &mut self.interface {
             // Set the base_dir for each interface.
             for interface in interface.iter_mut() {
@@ -53,7 +57,8 @@ impl ManifestApi {
 
             // Flatten the api.
             let mut flattened_api = None;
-            flatten_manifest_api(&Some(self.clone()), &mut flattened_api).await?;
+            flatten_manifest_api(&Some(self.clone()), &mut flattened_api, Some(app_base_dir))
+                .await?;
             Ok(flattened_api)
         } else {
             Ok(None)

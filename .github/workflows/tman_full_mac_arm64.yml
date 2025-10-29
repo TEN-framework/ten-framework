@@ -135,6 +135,11 @@ jobs:
           go env -w GOFLAGS="-buildvcs=false"
           cargo install --force cbindgen
 
+      - name: Update version
+        run: |
+          python3 tools/version/update_version_in_ten_framework.py
+          python3 tools/version/check_version_in_ten_framework.py
+
       - name: Build
         run: |
           if [ ${{ matrix.build_type }} == "debug" ]; then
@@ -159,7 +164,7 @@ jobs:
           tree -I 'gen|obj' out
 
       - name: Package assets
-        if: startsWith(github.ref, 'refs/tags/')
+        if: github.event_name == 'release' || (github.ref != '' && startsWith(github.ref, 'refs/tags/'))
         run: |
           cd out/mac/arm64
           zip -vr tman-mac-${{ matrix.build_type }}-arm64.zip ten_manager/bin/tman
@@ -168,7 +173,7 @@ jobs:
 
       - name: Publish to release assets
         uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/')
+        if: github.event_name == 'release' || (github.ref != '' && startsWith(github.ref, 'refs/tags/'))
         with:
           files: |
             out/mac/arm64/tman-mac-${{ matrix.build_type }}-arm64.zip

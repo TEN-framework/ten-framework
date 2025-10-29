@@ -90,6 +90,28 @@ template("ten_target") {
       cflags_objcc = common_cflags_objcc
     }
 
+    # Enable coverage flags for all TEN runtime C/C++ targets when requested
+    if (ten_runtime_enable_coverage && is_debug && is_linux) {
+      if (is_clang) {
+        cflags += [
+          "-fprofile-instr-generate",
+          "-fcoverage-mapping",
+        ]
+        cflags_c += [
+          "-fprofile-instr-generate",
+          "-fcoverage-mapping",
+        ]
+        cflags_cc += [
+          "-fprofile-instr-generate",
+          "-fcoverage-mapping",
+        ]
+      } else {
+        cflags += [ "--coverage" ]
+        cflags_c += [ "--coverage" ]
+        cflags_cc += [ "--coverage" ]
+      }
+    }
+
     if (defined(invoker.lib_dirs)) {
       lib_dirs += common_lib_dirs
     } else {
@@ -120,6 +142,14 @@ template("ten_target") {
         ldflags += common_ldflags
       } else {
         ldflags = common_ldflags
+      }
+
+      if (ten_runtime_enable_coverage && is_debug && is_linux) {
+        if (is_clang) {
+          ldflags += [ "-fprofile-instr-generate" ]
+        } else {
+          ldflags += [ "--coverage" ]
+        }
       }
 
       if (is_mac) {

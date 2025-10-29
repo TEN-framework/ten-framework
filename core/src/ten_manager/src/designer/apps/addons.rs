@@ -46,10 +46,11 @@ pub struct GetAppAddonsSingleResponseData {
 
 async fn convert_pkg_info_to_addon(
     pkg_info_with_src: &PkgInfo,
+    app_base_dir: Option<&str>,
 ) -> Result<GetAppAddonsSingleResponseData, ErrorResponse> {
     let manifest_api = pkg_info_with_src
         .manifest
-        .get_flattened_api()
+        .get_flattened_api(app_base_dir)
         .await
         .map_err(|e| ErrorResponse::from_error(&e, "Failed to flatten API for extension"));
 
@@ -129,7 +130,8 @@ pub async fn get_app_addons_endpoint(
             // Extract extension packages if they exist.
             if let Some(extensions) = &base_dir_pkg_info.extension_pkgs_info {
                 for ext in extensions {
-                    let addon = convert_pkg_info_to_addon(ext).await;
+                    let addon =
+                        convert_pkg_info_to_addon(ext, Some(&request_payload.base_dir)).await;
 
                     if addon.is_err() {
                         return Ok(HttpResponse::InternalServerError().json(addon.err().unwrap()));
@@ -146,7 +148,8 @@ pub async fn get_app_addons_endpoint(
             // Extract protocol packages if they exist.
             if let Some(protocols) = &base_dir_pkg_info.protocol_pkgs_info {
                 for protocol in protocols {
-                    let addon = convert_pkg_info_to_addon(protocol).await;
+                    let addon =
+                        convert_pkg_info_to_addon(protocol, Some(&request_payload.base_dir)).await;
 
                     if addon.is_err() {
                         return Ok(HttpResponse::InternalServerError().json(addon.err().unwrap()));
@@ -163,7 +166,8 @@ pub async fn get_app_addons_endpoint(
             // Extract addon loader packages if they exist.
             if let Some(addon_loaders) = &base_dir_pkg_info.addon_loader_pkgs_info {
                 for loader in addon_loaders {
-                    let addon = convert_pkg_info_to_addon(loader).await;
+                    let addon =
+                        convert_pkg_info_to_addon(loader, Some(&request_payload.base_dir)).await;
 
                     if addon.is_err() {
                         return Ok(HttpResponse::InternalServerError().json(addon.err().unwrap()));
@@ -180,7 +184,8 @@ pub async fn get_app_addons_endpoint(
             // Extract system packages if they exist.
             if let Some(systems) = &base_dir_pkg_info.system_pkgs_info {
                 for system in systems {
-                    let addon = convert_pkg_info_to_addon(system).await;
+                    let addon =
+                        convert_pkg_info_to_addon(system, Some(&request_payload.base_dir)).await;
 
                     if addon.is_err() {
                         return Ok(HttpResponse::InternalServerError().json(addon.err().unwrap()));

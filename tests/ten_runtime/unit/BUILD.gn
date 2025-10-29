@@ -20,6 +20,14 @@ ten_runtime_glob("ten_unit_tests") {
     "//third_party/googletest",
   ]
   include_dirs = [ "//core/include" ]
+
+  # coverage flags for test sources (Debug + Linux)
+  if (ten_runtime_enable_coverage && is_debug && is_linux) {
+    if (!defined(configs)) {
+      configs = []
+    }
+    configs += [ "//core/src/ten_runtime:ten_runtime_coverage_config" ]
+  }
 }
 
 ten_executable("ten_runtime_unit_test") {
@@ -43,6 +51,14 @@ ten_executable("ten_runtime_unit_test") {
     "//third_party/googletest",
     "//third_party/googletest:gtest_main",
   ]
+
+  # coverage flags (only enabled in Debug + Linux, with need)
+  if (ten_runtime_enable_coverage && is_debug && is_linux) {
+    if (!defined(configs)) {
+      configs = []
+    }
+    configs += [ "//core/src/ten_runtime:ten_runtime_coverage_config" ]
+  }
 }
 
 group("unit") {

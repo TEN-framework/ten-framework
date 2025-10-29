@@ -18,6 +18,8 @@ from .data import Data
 from .video_frame import VideoFrame
 from .audio_frame import AudioFrame
 from .cmd_result import CmdResult
+from .global_thread_manager import GlobalThreadManager
+from .send_options import SendOptions
 
 CmdResultTuple = tuple[CmdResult | None, TenError | None]
 ResultHandlerResultType = TypeVar(
@@ -29,15 +31,21 @@ class AsyncTenEnv(TenEnvBase):
     _ten_loop: AbstractEventLoop
     _ten_thread: threading.Thread
     _ten_all_tasks_done_event: asyncio.Event
+    _global_thread_manager: GlobalThreadManager | None
 
     def __init__(
-        self, ten_env: TenEnv, loop: AbstractEventLoop, thread: threading.Thread
+        self,
+        ten_env: TenEnv,
+        loop: AbstractEventLoop,
+        thread: threading.Thread,
+        global_thread_manager: GlobalThreadManager | None,
     ) -> None:
         super().__init__(ten_env._internal)
 
         self._ten_loop = loop
         self._ten_thread = thread
         self._ten_all_tasks_done_event = asyncio.Event()
+        self._global_thread_manager = global_thread_manager
         ten_env._set_release_handler(  # pyright: ignore[reportPrivateUsage]
             self._on_release
         )
@@ -103,7 +111,16 @@ class AsyncTenEnv(TenEnvBase):
                 # This is the final result, so break the while loop.
                 break
 
-    async def send_data(self, data: Data) -> TenError | None:
+    async def send_data(
+        self, data: Data, options: SendOptions | None = None
+    ) -> TenError | None:
+        # If options is None or doesn't wait for result, use fire-and-forget
+        # mode.
+        if options is None or not options.wait_for_result:
+            err = self._internal.send_data(data, None)
+            return err
+
+        # If wait for result, use the original async waiting mode.
         q = asyncio.Queue[TenError | None](maxsize=1)
         err = self._internal.send_data(
             data,
@@ -116,8 +133,15 @@ class AsyncTenEnv(TenEnvBase):
         return err
 
     async def send_video_frame(
-        self, video_frame: VideoFrame
+        self, video_frame: VideoFrame, options: SendOptions | None = None
     ) -> TenError | None:
+        # If options is None or doesn't wait for result, use fire-and-forget
+        # mode.
+        if options is None or not options.wait_for_result:
+            err = self._internal.send_video_frame(video_frame, None)
+            return err
+
+        # If wait for result, use the original async waiting mode.
         q = asyncio.Queue[TenError | None](maxsize=1)
         err = self._internal.send_video_frame(
             video_frame,
@@ -130,8 +154,15 @@ class AsyncTenEnv(TenEnvBase):
         return err
 
     async def send_audio_frame(
-        self, audio_frame: AudioFrame
+        self, audio_frame: AudioFrame, options: SendOptions | None = None
     ) -> TenError | None:
+        # If options is None or doesn't wait for result, use fire-and-forget
+        # mode.
+        if options is None or not options.wait_for_result:
+            err = self._internal.send_audio_frame(audio_frame, None)
+            return err
+
+        # If wait for result, use the original async waiting mode.
         q = asyncio.Queue[TenError | None](maxsize=1)
         err = self._internal.send_audio_frame(
             audio_frame,
@@ -143,7 +174,16 @@ class AsyncTenEnv(TenEnvBase):
         err = await q.get()
         return err
 
-    async def return_result(self, result: CmdResult) -> TenError | None:
+    async def return_result(
+        self, result: CmdResult, options: SendOptions | None = None
+    ) -> TenError | None:
+        # If options is None or doesn't wait for result, use fire-and-forget
+        # mode.
+        if options is None or not options.wait_for_result:
+            err = self._internal.return_result(result, None)
+            return err
+
+        # If wait for result, use the original async waiting mode.
         q = asyncio.Queue[TenError | None](maxsize=1)
         err = self._internal.return_result(
             result,
@@ -350,5 +390,21 @@ class AsyncTenEnv(TenEnvBase):
         # `ten_env_proxy == NULL`.
         asyncio.run_coroutine_threadsafe(self._close_loop(), self._ten_loop)
 
-        # Wait for the internal thread to finish.
-        self._ten_thread.join()
+        # Check if we need to join the thread based on reference count
+        if self._global_thread_manager is not None:
+            # Decrement reference count and check if it reaches 0
+            ref_count = self._global_thread_manager.decrement_ref_count()
+
+            # Only join the thread if reference count reaches 0
+            if ref_count <= 0:
+                # Wait for the internal thread to finish.
+                #
+                # Note: This action is needed if each async extension has its
+                # own asyncio thread, but is not needed when all async
+                # extensions use a single shared asyncio thread.
+                self._ten_thread.join()
+                self._global_thread_manager.reset()
+        else:
+            # Fallback: if no global thread manager reference, join the thread
+            # This maintains backward compatibility
+            self._ten_thread.join()

@@ -1,7 +1,15 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { Button } from "@/components/ui/button"
+import { FileTextIcon } from "lucide-react";
+import * as React from "react";
+import { toast } from "sonner";
+import {
+  apiGetDocumentList,
+  apiUpdateDocument,
+  genUUID,
+  useAppSelector,
+} from "@/common";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -10,52 +18,43 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { FileTextIcon } from "lucide-react"
-
-import { OptionType, IPdfData } from "@/types"
-import {
-  apiGetDocumentList,
-  apiUpdateDocument,
-  useAppSelector,
-  genUUID,
-} from "@/common"
-import { toast } from "sonner"
+} from "@/components/ui/select";
+import type { IPdfData, OptionType } from "@/types";
 
 export default function PdfSelect() {
-  const options = useAppSelector((state) => state.global.options)
-  const { channel, userId } = options
-  const [pdfOptions, setPdfOptions] = React.useState<OptionType[]>([])
-  const [selectedPdf, setSelectedPdf] = React.useState<string>("")
-  const agentConnected = useAppSelector((state) => state.global.agentConnected)
+  const options = useAppSelector((state) => state.global.options);
+  const { channel, userId } = options;
+  const [pdfOptions, setPdfOptions] = React.useState<OptionType[]>([]);
+  const [selectedPdf, setSelectedPdf] = React.useState<string>("");
+  const agentConnected = useAppSelector((state) => state.global.agentConnected);
 
   React.useEffect(() => {
     if (agentConnected) {
-      getPDFOptions()
+      getPDFOptions();
     }
-  }, [agentConnected])
+  }, [agentConnected]);
 
   const getPDFOptions = async () => {
-    const res = await apiGetDocumentList()
+    const res = await apiGetDocumentList();
     setPdfOptions(
       res.data.map((item: any) => {
         return {
           value: item.collection,
           label: item.file_name,
-        }
-      }),
-    )
-    setSelectedPdf("")
-  }
+        };
+      })
+    );
+    setSelectedPdf("");
+  };
 
   const onUploadSuccess = (data: IPdfData) => {
     setPdfOptions([
@@ -64,23 +63,23 @@ export default function PdfSelect() {
         value: data.collection,
         label: data.fileName,
       },
-    ])
-    setSelectedPdf(data.collection)
-  }
+    ]);
+    setSelectedPdf(data.collection);
+  };
 
   const onSelectPdf = async (val: string) => {
-    const item = pdfOptions.find((item) => item.value === val)
+    const item = pdfOptions.find((item) => item.value === val);
     if (!item) {
       //   return message.error("Please select a PDF file")
-      return
+      return;
     }
-    setSelectedPdf(val)
+    setSelectedPdf(val);
     await apiUpdateDocument({
       collection: val,
       fileName: item.label,
       channel,
-    })
-  }
+    });
+  };
 
   return (
     <>
@@ -117,59 +116,59 @@ export default function PdfSelect() {
         </DialogContent>
       </Dialog>
     </>
-  )
+  );
 }
 
 export function UploadPdf({
   onSuccess,
 }: {
-  onSuccess?: (data: IPdfData) => void
+  onSuccess?: (data: IPdfData) => void;
 }) {
-  const agentConnected = useAppSelector((state) => state.global.agentConnected)
-  const options = useAppSelector((state) => state.global.options)
-  const { channel, userId } = options
-  const [uploading, setUploading] = React.useState(false)
+  const agentConnected = useAppSelector((state) => state.global.agentConnected);
+  const options = useAppSelector((state) => state.global.options);
+  const { channel, userId } = options;
+  const [uploading, setUploading] = React.useState(false);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!agentConnected) {
-      toast.error("Please connect to agent first")
-      return
+      toast.error("Please connect to agent first");
+      return;
     }
 
-    const file = e.target.files?.[0]
-    if (!file) return
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-    setUploading(true)
+    setUploading(true);
 
-    const formData = new FormData()
-    formData.append("file", file)
-    formData.append("channel_name", channel)
-    formData.append("uid", String(userId))
-    formData.append("request_id", genUUID())
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("channel_name", channel);
+    formData.append("uid", String(userId));
+    formData.append("request_id", genUUID());
 
     try {
       const response = await fetch("/api/vector/document/upload", {
         method: "POST",
         body: formData,
-      })
-      const data = await response.json()
+      });
+      const data = await response.json();
 
       if (data.code === "0") {
-        toast.success(`Upload ${file.name} success`)
-        const { collection, file_name } = data.data
+        toast.success(`Upload ${file.name} success`);
+        const { collection, file_name } = data.data;
         onSuccess?.({
           fileName: file_name,
           collection,
-        })
+        });
       } else {
-        toast.info(data.msg)
+        toast.info(data.msg);
       }
     } catch (err) {
-      toast.error(`Upload ${file.name} failed`)
+      toast.error(`Upload ${file.name} failed`);
     } finally {
-      setUploading(false)
+      setUploading(false);
     }
-  }
+  };
 
   return (
     <div>
@@ -187,5 +186,5 @@ export function UploadPdf({
         </Button>
       </Label>
     </div>
-  )
+  );
 }

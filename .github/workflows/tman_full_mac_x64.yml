@@ -140,6 +140,11 @@ jobs:
 
           cargo install --force cbindgen
 
+      - name: Update version
+        run: |
+          python3 tools/version/update_version_in_ten_framework.py
+          python3 tools/version/check_version_in_ten_framework.py
+
       - name: Build
         run: |
           if [ ${{ matrix.build_type }} == "debug" ]; then
@@ -161,7 +166,7 @@ jobs:
       #   uses: mxschmitt/action-tmate@v3
 
       - name: Package assets
-        if: startsWith(github.ref, 'refs/tags/')
+        if: github.event_name == 'release' || (github.ref != '' && startsWith(github.ref, 'refs/tags/'))
         run: |
           cd out/mac/x64
           zip -vr tman-mac-${{ matrix.build_type }}-x64.zip ten_manager/bin/tman
@@ -170,7 +175,7 @@ jobs:
 
       - name: Publish to release assets
         uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/')
+        if: github.event_name == 'release' || (github.ref != '' && startsWith(github.ref, 'refs/tags/'))
         with:
           files: |
             out/mac/x64/tman-mac-${{ matrix.build_type }}-x64.zip

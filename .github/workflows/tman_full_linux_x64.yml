@@ -122,6 +122,11 @@ jobs:
         run: |
           pip3 install --use-pep517 python-dotenv jinja2
 
+      - name: Update version
+        run: |
+          python3 tools/version/update_version_in_ten_framework.py
+          python3 tools/version/check_version_in_ten_framework.py
+
       - name: Install dependencies
         run: |
           cd core/src/ten_manager/designer_frontend
@@ -152,7 +157,7 @@ jobs:
       #     bun run build
 
       - name: Package assets
-        if: matrix.arch == 'x64' && startsWith(github.ref, 'refs/tags/')
+        if: matrix.arch == 'x64' && (github.event_name == 'release' || (github.ref != '' && startsWith(github.ref, 'refs/tags/')))
         run: |
           cd out/linux/${{ matrix.arch }}
           zip -vr tman-linux-${{ matrix.build_type }}-${{ matrix.arch }}.zip ten_manager/bin/tman
@@ -160,7 +165,7 @@ jobs:
 
       - name: Publish to release assets
         uses: softprops/action-gh-release@v2
-        if: matrix.arch == 'x64' && startsWith(github.ref, 'refs/tags/')
+        if: matrix.arch == 'x64' && (github.event_name == 'release' || (github.ref != '' && startsWith(github.ref, 'refs/tags/')))
         with:
           files: |
             out/linux/${{ matrix.arch }}/tman-linux-${{ matrix.build_type }}-${{ matrix.arch }}.zip

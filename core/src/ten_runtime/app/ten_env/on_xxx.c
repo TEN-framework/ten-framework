@@ -21,6 +21,7 @@
 #include "include_internal/ten_runtime/app/predefined_graph.h"
 #include "include_internal/ten_runtime/common/constant_str.h"
 #include "include_internal/ten_runtime/extension_group/builtin/builtin_extension_group.h"
+#include "include_internal/ten_runtime/graph_proxy/graph_proxy_extension.h"
 #include "include_internal/ten_runtime/metadata/manifest.h"
 #include "include_internal/ten_runtime/metadata/metadata.h"
 #include "include_internal/ten_runtime/metadata/metadata_info.h"
@@ -294,6 +295,7 @@ void ten_app_on_configure_done(ten_env_t *ten_env) {
   }
 
   ten_metadata_init_schema_store(&self->manifest, &self->schema_store,
+                                 ten_app_get_base_dir(self),
                                  ten_app_get_base_dir(self));
   ten_app_adjust_and_validate_property_on_configure_done(self);
 
@@ -338,6 +340,7 @@ void ten_app_on_configure_done(ten_env_t *ten_env) {
   // will handle their phase 2 registration process.
   ten_addon_manager_add_builtin_extension_group(manager);
   ten_addon_manager_add_builtin_test_extension(manager);
+  ten_addon_manager_add_builtin_graph_proxy_extension(manager);
 
   // Addon registration phase 1: adding a function, which will perform the
   // actual registration in the phase 2, into the `addon_manager`.

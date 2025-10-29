@@ -31,7 +31,7 @@ jobs:
   asr-guarder-test:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/ten-framework/ten_agent_build:0.7.3
+      image: ghcr.io/ten-framework/ten_agent_build:0.7.9
 
     env:
       # Import all secrets as environment variables for dynamic access

@@ -27,6 +27,7 @@ type Worker struct {
 	Log2Stdout         bool
 	PropertyJsonFile   string
 	GraphName          string // New field to store the graphName
+	TenappDir          string // Base directory for tman run start
 	Pid                int
 	QuitTimeoutSeconds int
 	CreateTs           int64
@@ -60,12 +61,13 @@ var (
 	httpServerPortMax = int32(30000)
 )
 
-func newWorker(channelName string, logFile string, log2Stdout bool, propertyJsonFile string) *Worker {
+func newWorker(channelName string, logFile string, log2Stdout bool, propertyJsonFile string, tenappDir string) *Worker {
 	return &Worker{
 		ChannelName:        channelName,
 		LogFile:            logFile,
 		Log2Stdout:         log2Stdout,
 		PropertyJsonFile:   propertyJsonFile,
+		TenappDir:          tenappDir,
 		QuitTimeoutSeconds: 60,
 		CreateTs:           time.Now().Unix(),
 		UpdateTs:           time.Now().Unix(),
@@ -124,11 +126,17 @@ func isInProcessGroup(pid, pgid int) bool {
 }
 
 func (w *Worker) start(req *StartReq) (err error) {
-	shell := fmt.Sprintf("cd /app/agents && %s --property %s", workerExec, w.PropertyJsonFile)
-	slog.Info("Worker start", "requestId", req.RequestId, "shell", shell, logTag)
+	shell := fmt.Sprintf("tman run start -- --property %s", w.PropertyJsonFile)
+	slog.Info("Worker start", "requestId", req.RequestId, "shell", shell, "tenappDir", w.TenappDir, logTag)
 	cmd := exec.Command("sh", "-c", shell)
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Setpgid: true, // Start a new process group
+	}
+
+	// Set working directory if tenapp_dir is specified
+	if w.TenappDir != "" {
+		cmd.Dir = w.TenappDir
+		slog.Info("Worker start with tenapp_dir", "requestId", req.RequestId, "tenappDir", w.TenappDir, logTag)
 	}
 
 	var stdoutWriter, stderrWriter io.Writer

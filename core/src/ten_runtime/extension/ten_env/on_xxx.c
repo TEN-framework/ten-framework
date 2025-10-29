@@ -6,6 +6,7 @@
 //
 #include "include_internal/ten_runtime/extension/on_xxx.h"
 
+#include "include_internal/ten_runtime/app/base_dir.h"
 #include "include_internal/ten_runtime/common/constant_str.h"
 #include "include_internal/ten_runtime/common/loc.h"
 #include "include_internal/ten_runtime/extension/base_dir.h"
@@ -23,6 +24,7 @@
 #include "include_internal/ten_runtime/msg/msg.h"
 #include "include_internal/ten_runtime/ten_env/ten_env.h"
 #include "include_internal/ten_runtime/timer/timer.h"
+#include "ten_runtime/app/app.h"
 #include "ten_utils/log/log.h"
 #include "ten_utils/macro/check.h"
 #include "ten_utils/macro/mark.h"
@@ -93,7 +95,7 @@ bool ten_extension_on_configure_done(ten_env_t *self) {
     return false;
   }
 
-  TEN_LOGD("[%s] on_configure() done", ten_extension_get_name(extension, true));
+  TEN_LOGI("[%s] on_configure() done", ten_extension_get_name(extension, true));
 
   extension->state = TEN_EXTENSION_STATE_ON_CONFIGURE_DONE;
 
@@ -151,8 +153,15 @@ bool ten_extension_on_configure_done(ten_env_t *self) {
   TEN_ASSERT(rc, "[%s] Failed to handle 'ten' properties.",
              ten_string_get_raw_str(&extension->name));
 
+  ten_app_t *app = extension->app;
+  TEN_ASSERT(app, "Should not happen.");
+  // TEN_NOLINTNEXTLINE(thread-check)
+  // thread-check: This function is called on the extension thread.
+  TEN_ASSERT(ten_app_check_integrity(app, false), "Should not happen.");
+
   ten_metadata_init_schema_store(&extension->manifest, &extension->schema_store,
-                                 ten_extension_get_base_dir(extension));
+                                 ten_extension_get_base_dir(extension),
+                                 ten_app_get_base_dir(app));
 
   ten_extension_adjust_and_validate_property_on_configure_done(extension);
 
@@ -224,6 +233,12 @@ static void ten_extension_trigger_on_start_task(void *self_,
   TEN_ASSERT(ten_extension_check_integrity(self, true),
              "Invalid use of extension %p.", self);
 
+  if (self->state >= TEN_EXTENSION_STATE_ON_START) {
+    TEN_LOGW("[%s] on_start() skipped: Extension is already in the start flow",
+             ten_extension_get_name(self, true));
+    return;
+  }
+
   ten_extension_on_start(self);
 }
 
@@ -250,7 +265,7 @@ bool ten_extension_on_init_done(ten_env_t *self) {
     return false;
   }
 
-  TEN_LOGD("[%s] on_init() done", ten_extension_get_name(extension, true));
+  TEN_LOGI("[%s] on_init() done", ten_extension_get_name(extension, true));
 
   extension->state = TEN_EXTENSION_STATE_ON_INIT_DONE;
 
@@ -487,7 +502,7 @@ bool ten_extension_on_deinit_done(ten_env_t *self) {
 
   extension->state = TEN_EXTENSION_STATE_ON_DEINIT_DONE;
 
-  TEN_LOGD("[%s] on_deinit() done", ten_extension_get_name(extension, true));
+  TEN_LOGI("[%s] on_deinit() done", ten_extension_get_name(extension, true));
 
   // Close the ten_env so that any apis called on the ten_env will return
   // TEN_ERROR_ENV_CLOSED.

@@ -1,9 +1,11 @@
 // import { ConfigProvider } from "antd";
-import { StoreProvider } from "@/store"
-import type { Metadata, Viewport } from "next"
-import { Toaster } from "@/components/ui/sonner"
 
-import "./global.css"
+import type { Metadata, Viewport } from "next";
+import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/sonner";
+import { StoreProvider } from "@/store";
+
+import "./global.css";
 
 export const metadata: Metadata = {
   title: "TEN Agent | Real-Time Multimodal AI Agent",
@@ -13,7 +15,7 @@ export const metadata: Metadata = {
     capable: true,
     statusBarStyle: "black",
   },
-}
+};
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -22,16 +24,16 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover",
-}
+};
 
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode
+  children: React.ReactNode;
 }>) {
   return (
     <html lang="en">
-      <body className="dark">
+      <body className="antialiased">
         {/* <ConfigProvider
           theme={{
             components: {
@@ -41,10 +43,18 @@ export default function RootLayout({
             },
           }}
         > */}
-        <StoreProvider>{children}</StoreProvider>
-        {/* </ConfigProvider> */}
-        <Toaster richColors closeButton theme="dark" />
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          forcedTheme="dark"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <StoreProvider>{children}</StoreProvider>
+          {/* </ConfigProvider> */}
+          <Toaster richColors closeButton theme="dark" />
+        </ThemeProvider>
       </body>
     </html>
-  )
+  );
 }

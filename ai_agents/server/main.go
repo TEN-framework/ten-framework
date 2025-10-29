@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log/slog"
 	"os"
@@ -14,6 +15,19 @@ import (
 )
 
 func main() {
+	// Parse command line arguments
+	var tenappDir string
+	flag.StringVar(&tenappDir, "tenapp_dir", "", "The base folder path for tman run start command (required)")
+	flag.Parse()
+
+	// Validate required tenapp_dir parameter
+	if tenappDir == "" {
+		slog.Error("tenapp_dir parameter is required")
+		fmt.Println("Usage: ./api -tenapp_dir=<path>")
+		fmt.Println("  -tenapp_dir: The base folder path for tman run start command (required)")
+		os.Exit(1)
+	}
+
 	// Load .env
 	err := godotenv.Load()
 	if err != nil {
@@ -48,16 +62,16 @@ func main() {
 		os.Exit(1)
 	}
 
-    // Read worker quit timeout with support for legacy misspelled var
-    workerQuitTimeoutEnv := os.Getenv("WORKER_QUIT_TIMEOUT_SECONDS")
-    if workerQuitTimeoutEnv == "" {
-        workerQuitTimeoutEnv = os.Getenv("WORKER_QUIT_TIMEOUT_SECONDES")
-    }
-    workerQuitTimeoutSeconds, err := strconv.Atoi(workerQuitTimeoutEnv)
-    if err != nil || workerQuitTimeoutSeconds <= 0 {
-        slog.Error("environment WORKER_QUIT_TIMEOUT_SECONDS invalid")
-        os.Exit(1)
-    }
+	// Read worker quit timeout with support for legacy misspelled var
+	workerQuitTimeoutEnv := os.Getenv("WORKER_QUIT_TIMEOUT_SECONDS")
+	if workerQuitTimeoutEnv == "" {
+		workerQuitTimeoutEnv = os.Getenv("WORKER_QUIT_TIMEOUT_SECONDES")
+	}
+	workerQuitTimeoutSeconds, err := strconv.Atoi(workerQuitTimeoutEnv)
+	if err != nil || workerQuitTimeoutSeconds <= 0 {
+		slog.Error("environment WORKER_QUIT_TIMEOUT_SECONDS invalid")
+		os.Exit(1)
+	}
 
 	// Set up signal handler to clean up all workers on Ctrl+C
 	sigs := make(chan os.Signal, 1)
@@ -79,7 +93,11 @@ func main() {
 		WorkersMax:               workersMax,
 		WorkerQuitTimeoutSeconds: workerQuitTimeoutSeconds,
 		Log2Stdout:               log2Stdout,
+		TenappDir:                tenappDir,
 	}
+
+	slog.Info("Server configured with tenapp_dir", "tenappDir", tenappDir)
+
 	httpServer := internal.NewHttpServer(httpServerConfig)
 	httpServer.Start()
 }

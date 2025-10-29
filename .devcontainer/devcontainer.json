@@ -1,6 +1,6 @@
 {
   "name": "ten_framework",
-  "image": "ghcr.io/ten-framework/ten_agent_build:0.7.3",
+  "image": "ghcr.io/ten-framework/ten_agent_build:0.7.9",
   "customizations": {
     "vscode": {
       "extensions": [
@@ -9,14 +9,27 @@
       ]
     }
   },
-  "workspaceMount": "source=${localWorkspaceFolder}/ai_agents,target=/app,type=bind",
-  "workspaceFolder": "/app",
+  "workspaceFolder": "/workspaces/ten-framework/ai_agents",
   "forwardPorts": [
     3000,
-    8080,
     49483,
+    8080,
     49484
   ],
+  "portsAttributes": {
+    "3000": {
+      "label": "Agent Example UI"
+    },
+    "49483": {
+      "label": "TMAN Designer"
+    },
+    "8080": {
+      "label": "TEN API Server"
+    },
+    "49484": {
+      "label": "TEN Service Hub"
+    }
+  },
   "features": {
     "ghcr.io/devcontainers/features/git:1": {},
     "ghcr.io/devcontainers/features/python:1": {},

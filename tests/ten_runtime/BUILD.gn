@@ -9,9 +9,9 @@ import("//build/ten_runtime/ten.gni")
 import("//core/src/ten_runtime/output_libs.gni")
 import("//core/src/ten_utils/output_libs.gni")
 import("//third_party/curl/output_libs.gni")
-import("//third_party/yyjson/output_libs.gni")
 import("//third_party/libwebsockets/output_libs.gni")
 import("//third_party/mbedtls/output_libs.gni")
+import("//third_party/yyjson/output_libs.gni")
 import("//third_party/zlib/output_libs.gni")
 
 # Because there is no 'rpath' mechanism in Windows, we need to copy all the
@@ -63,5 +63,46 @@ group("ten_runtime") {
       # Almost all integration test cases needs ten_manager.
       ten_enable_ten_manager) {
     deps += [ "integration" ]
+  }
+}
+
+# Generate coverage report action (optional enabled)
+if (ten_runtime_enable_coverage && is_debug && is_linux) {
+  action("gen_coverage_report") {
+    script = "//tools/coverage/ten_runtime_coverage.py"
+
+    _out_dir = "${root_out_dir}/tests/standalone/coverage"
+
+    # Depend on the built test executables and (optionally) integration run
+    deps = []
+    if (ten_enable_tests && ten_enable_unit_tests) {
+      deps += [ "unit:ten_runtime_unit_test" ]
+    }
+    if (ten_enable_tests && ten_enable_smoke_tests) {
+      deps += [ "smoke:ten_runtime_smoke_test" ]
+    }
+    if (ten_enable_tests && ten_enable_integration_tests &&
+        ten_enable_ten_manager) {
+      deps += [ "integration:run_for_coverage" ]
+    }
+
+    args = [
+      "--root-out",
+      rebase_path(root_out_dir),
+      "--report-out",
+      rebase_path(_out_dir),
+      "--is-clang",
+    ]
+    if (is_clang) {
+      args += [ "true" ]
+    } else {
+      args += [ "false" ]
+    }
+
+    # Always generate lcov format for Coveralls
+    args += [ "--generate-lcov" ]
+
+    # Declare the marker files in the output directory to avoid re-running each time
+    outputs = [ "${_out_dir}/index.html" ]
   }
 }

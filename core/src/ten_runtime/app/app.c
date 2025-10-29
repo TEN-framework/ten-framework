@@ -10,6 +10,7 @@
 #include "include_internal/ten_runtime/app/close.h"
 #include "include_internal/ten_runtime/app/engine_interface.h"
 #include "include_internal/ten_runtime/app/migration.h"
+#include "include_internal/ten_runtime/common/constant_str.h"
 #include "include_internal/ten_runtime/connection/connection.h"
 #include "include_internal/ten_runtime/extension_group/extension_group.h"
 #include "include_internal/ten_runtime/global/global.h"
@@ -242,8 +243,12 @@ bool ten_app_run(ten_app_t *self, bool run_in_background,
   }
 
   if (run_in_background) {
-    ten_thread_create(ten_string_get_raw_str(&self->uri), ten_app_routine,
-                      self);
+    const char *thread_name = ten_string_get_raw_str(&self->uri);
+    if (!thread_name || strlen(thread_name) == 0) {
+      thread_name = TEN_STR_APP_THREAD;
+    }
+
+    ten_thread_create(thread_name, ten_app_routine, self);
     ten_event_wait(self->belonging_thread_is_set, -1);
   } else {
     ten_app_routine(self);

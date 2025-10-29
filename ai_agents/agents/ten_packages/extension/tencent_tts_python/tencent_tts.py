@@ -183,7 +183,7 @@ class TencentTTSClient:
         """Stop the TTS client and clean up resources."""
         self.close()
         # restart the synthesizer
-        await self.start()
+        asyncio.create_task(self.start())
 
     def close(self) -> None:
         """
@@ -230,6 +230,9 @@ class TencentTTSClient:
         )
 
         await self.conn_ready_event.wait()
+        if not self.synthesizer or not self.synthesizer.is_alive():
+            self.ten_env.log_error("Synthesizer is not alive, reinitializing")
+            await self.start()
 
         # Start streaming TTS synthesis
         self._callback.set_sent_ts()

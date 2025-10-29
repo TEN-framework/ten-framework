@@ -16,15 +16,28 @@ class SpeechmaticsASRWord:
     start_ms: int = 0
     duration_ms: int = 0
     is_punctuation: bool = False
+    speaker: str = ""  # Speaker label like "S1", "S2", "UU"
+    channel: str = ""  # Channel label if channel diarization is used
 
 
 def convert_words_to_sentence(
     words: List[SpeechmaticsASRWord], config: SpeechmaticsASRConfig
 ) -> str:
     if is_space_separated_language(config.language):
-        return " ".join([word.word for word in words])
-    else:
-        return "".join([word.word for word in words])
+        tokens: List[str] = []
+        for word in words:
+            token = word.word or ""
+            if not token:
+                continue
+
+            if word.is_punctuation and tokens:
+                tokens[-1] = f"{tokens[-1]}{token}"
+            else:
+                tokens.append(token)
+
+        return " ".join(tokens)
+
+    return "".join([word.word for word in words])
 
 
 def get_sentence_start_ms(words: List[SpeechmaticsASRWord]) -> int:

@@ -18,7 +18,6 @@ typedef struct ten_env_notify_log_ctx_t {
   int32_t line_no;
   ten_string_t category;
   ten_string_t msg;
-  ten_event_t *completed;
 } ten_env_notify_log_ctx_t;
 
 static ten_env_notify_log_ctx_t *ten_env_notify_log_ctx_create(void) {
@@ -31,7 +30,6 @@ static ten_env_notify_log_ctx_t *ten_env_notify_log_ctx_create(void) {
   ctx->line_no = 0;
   TEN_STRING_INIT(ctx->category);
   TEN_STRING_INIT(ctx->msg);
-  ctx->completed = ten_event_create(0, 1);
 
   return ctx;
 }
@@ -43,7 +41,6 @@ static void ten_env_notify_log_ctx_destroy(ten_env_notify_log_ctx_t *ctx) {
   ten_string_deinit(&ctx->file_name);
   ten_string_deinit(&ctx->category);
   ten_string_deinit(&ctx->msg);
-  ten_event_destroy(ctx->completed);
 
   TEN_FREE(ctx);
 }
@@ -61,7 +58,7 @@ static void ten_env_proxy_notify_log(ten_env_t *ten_env, void *user_data) {
               ten_string_get_raw_str(&ctx->msg),
               ten_string_get_raw_str(&ctx->category), NULL);
 
-  ten_event_set(ctx->completed);
+  ten_env_notify_log_ctx_destroy(ctx);
 }
 
 napi_value ten_nodejs_ten_env_log_internal(napi_env env,
@@ -139,12 +136,9 @@ napi_value ten_nodejs_ten_env_log_internal(napi_env env,
     ten_env_notify_log_ctx_destroy(notify_info);
 
     return js_error;
-  } else {
-    ten_event_wait(notify_info->completed, -1);
   }
 
   ten_error_deinit(&err);
-  ten_env_notify_log_ctx_destroy(notify_info);
 
   return js_undefined(env);
 }
