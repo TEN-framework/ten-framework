@@ -1,0 +1,28 @@
+{
+  "type": "app",
+  "name": "voice_assistant_tavus",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_go",
+      "version": "0.11"
+    },
+    {
+      "type": "extension",
+      "name": "agora_rtc",
+      "version": "=0.23.9-t1"
+    },
+    {
+      "type": "system",
+      "name": "ten_ai_base",
+      "version": "0.7"
+    },
+    {
+      "path": "../../tavus/ten_packages/extension/tavus_python"
+    }
+  ],
+  "scripts": {
+    "start": "scripts/start.sh"
+  }
+}

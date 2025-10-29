@@ -31,10 +31,26 @@ class TavusExtension(AsyncExtension):
         self.enable_recording: bool = False
         self.language: str = "en"
 
+        # Persona creation configuration
+        self.auto_create_persona: bool = False
+        self.persona_name: str = ""
+        self.system_prompt: str = ""
+        self.context: str = ""
+        self.enable_perception: bool = False
+        self.perception_model: str = "raven-0"
+        self.enable_smart_turn_detection: bool = True
+        self.llm_provider: str = ""
+        self.llm_model: str = ""
+        self.llm_base_url: str = ""
+        self.llm_api_key: str = ""
+        self.tts_provider: str = ""
+        self.tts_voice_id: str = ""
+
         # Conversation state
         self.conversation_id: Optional[str] = None
         self.conversation_url: Optional[str] = None
         self.is_active: bool = False
+        self.created_persona_id: Optional[str] = None
 
         # HTTP session
         self.session: Optional[aiohttp.ClientSession] = None
@@ -51,11 +67,15 @@ class TavusExtension(AsyncExtension):
         # Load configuration from property
         try:
             self.api_key = await ten_env.get_property_string("tavus_api_key")
-            self.persona_id = await ten_env.get_property_string("persona_id")
             self.replica_id = await ten_env.get_property_string("replica_id")
             self.conversation_name = await ten_env.get_property_string("conversation_name")
 
-            # Optional properties
+            # Optional properties with defaults
+            try:
+                self.persona_id = await ten_env.get_property_string("persona_id")
+            except:
+                self.persona_id = ""
+
             try:
                 self.max_call_duration = await ten_env.get_property_int("max_call_duration")
             except:
@@ -71,6 +91,72 @@ class TavusExtension(AsyncExtension):
             except:
                 self.language = "en"
 
+            # Persona creation configuration
+            try:
+                self.auto_create_persona = await ten_env.get_property_bool("auto_create_persona")
+            except:
+                self.auto_create_persona = False
+
+            try:
+                self.persona_name = await ten_env.get_property_string("persona_name")
+            except:
+                self.persona_name = ""
+
+            try:
+                self.system_prompt = await ten_env.get_property_string("system_prompt")
+            except:
+                self.system_prompt = ""
+
+            try:
+                self.context = await ten_env.get_property_string("context")
+            except:
+                self.context = ""
+
+            try:
+                self.enable_perception = await ten_env.get_property_bool("enable_perception")
+            except:
+                self.enable_perception = False
+
+            try:
+                self.perception_model = await ten_env.get_property_string("perception_model")
+            except:
+                self.perception_model = "raven-0"
+
+            try:
+                self.enable_smart_turn_detection = await ten_env.get_property_bool("enable_smart_turn_detection")
+            except:
+                self.enable_smart_turn_detection = True
+
+            try:
+                self.llm_provider = await ten_env.get_property_string("llm_provider")
+            except:
+                self.llm_provider = ""
+
+            try:
+                self.llm_model = await ten_env.get_property_string("llm_model")
+            except:
+                self.llm_model = ""
+
+            try:
+                self.llm_base_url = await ten_env.get_property_string("llm_base_url")
+            except:
+                self.llm_base_url = ""
+
+            try:
+                self.llm_api_key = await ten_env.get_property_string("llm_api_key")
+            except:
+                self.llm_api_key = ""
+
+            try:
+                self.tts_provider = await ten_env.get_property_string("tts_provider")
+            except:
+                self.tts_provider = ""
+
+            try:
+                self.tts_voice_id = await ten_env.get_property_string("tts_voice_id")
+            except:
+                self.tts_voice_id = ""
+
             # Create HTTP session
             self.session = aiohttp.ClientSession(
                 headers={
@@ -79,7 +165,11 @@ class TavusExtension(AsyncExtension):
                 }
             )
 
-            ten_env.log_info(f"Tavus configuration loaded: persona_id={self.persona_id}")
+            ten_env.log_info(f"Tavus configuration loaded: persona_id={self.persona_id}, auto_create_persona={self.auto_create_persona}")
+
+            # Create persona if auto_create_persona is enabled
+            if self.auto_create_persona and not self.persona_id:
+                await self._create_persona(ten_env)
 
         except Exception as e:
             ten_env.log_error(f"Failed to load Tavus configuration: {e}")
@@ -168,6 +258,88 @@ class TavusExtension(AsyncExtension):
         await self._end_conversation()
         await ten_env.return_result(Cmd.create("result"), cmd)
 
+    async def _create_persona(self, ten_env: AsyncTenEnv):
+        """Create a Tavus persona using the full pipeline."""
+        if not self.session:
+            ten_env.log_error("HTTP session not initialized")
+            return
+
+        try:
+            # Build layers configuration
+            layers = {}
+
+            # Perception layer (screen sharing capabilities)
+            if self.enable_perception:
+                layers["perception"] = {
+                    "model": self.perception_model
+                }
+
+            # STT layer (Speech-to-Text with smart turn detection)
+            if self.enable_smart_turn_detection:
+                layers["stt"] = {
+                    "smart_endpointing": True
+                }
+
+            # LLM layer (Language Model)
+            if self.llm_provider:
+                llm_config = {
+                    "provider": self.llm_provider
+                }
+                if self.llm_model:
+                    llm_config["model"] = self.llm_model
+                if self.llm_base_url:
+                    llm_config["base_url"] = self.llm_base_url
+                if self.llm_api_key:
+                    llm_config["api_key"] = self.llm_api_key
+                layers["llm"] = llm_config
+
+            # TTS layer (Text-to-Speech)
+            if self.tts_provider:
+                tts_config = {
+                    "provider": self.tts_provider
+                }
+                if self.tts_voice_id:
+                    tts_config["voice_id"] = self.tts_voice_id
+                layers["tts"] = tts_config
+
+            # Create persona payload
+            payload = {
+                "persona_name": self.persona_name or "TEN Framework Persona",
+                "system_prompt": self.system_prompt or "You are a helpful AI assistant.",
+                "default_replica_id": self.replica_id,
+                "pipeline_mode": "full"
+            }
+
+            if self.context:
+                payload["context"] = self.context
+
+            if layers:
+                payload["layers"] = layers
+
+            ten_env.log_info(f"Creating Tavus persona with payload: {json.dumps(payload, indent=2)}")
+
+            async with self.session.post(
+                "https://tavusapi.com/v2/personas",
+                json=payload
+            ) as response:
+                if response.status == 200 or response.status == 201:
+                    result = await response.json()
+                    self.created_persona_id = result.get("persona_id")
+                    self.persona_id = self.created_persona_id
+
+                    ten_env.log_info(f"Tavus persona created successfully: {self.persona_id}")
+
+                    # Send persona created event
+                    data = Data.create("tavus_persona_created")
+                    data.set_property_string("persona_id", self.persona_id)
+                    await ten_env.send_data(data)
+                else:
+                    error_text = await response.text()
+                    ten_env.log_error(f"Failed to create Tavus persona: {response.status} - {error_text}")
+
+        except Exception as e:
+            ten_env.log_error(f"Error creating Tavus persona: {e}")
+
     async def _start_conversation(self, ten_env: AsyncTenEnv):
         """Start a Tavus conversation."""
         if self.is_active:
@@ -176,6 +348,11 @@ class TavusExtension(AsyncExtension):
 
         if not self.session:
             ten_env.log_error("HTTP session not initialized")
+            return
+
+        # Make sure we have a persona_id
+        if not self.persona_id:
+            ten_env.log_error("No persona_id available. Set persona_id or enable auto_create_persona.")
             return
 
         try:

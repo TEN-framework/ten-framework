@@ -26,8 +26,15 @@ Set the following environment variables:
 ```bash
 # Tavus Configuration
 export TAVUS_API_KEY="your_tavus_api_key"
-export TAVUS_PERSONA_ID="your_persona_id"
 export TAVUS_REPLICA_ID="your_replica_id"
+
+# Optional: Use existing persona
+export TAVUS_PERSONA_ID="your_persona_id"
+
+# Optional: LLM Configuration (for auto-created personas)
+export TAVUS_LLM_PROVIDER="openai"
+export TAVUS_LLM_MODEL="gpt-4"
+export TAVUS_LLM_API_KEY="your_openai_api_key"
 
 # Agora RTC (required for TEN framework)
 export AGORA_APP_ID="your_agora_app_id"
@@ -37,6 +44,8 @@ export AGORA_APP_CERTIFICATE="your_agora_app_certificate"
 ### Property Configuration
 
 Edit `property.json` to customize conversation settings:
+
+#### Basic Configuration (Using Existing Persona)
 
 ```json
 {
@@ -50,9 +59,46 @@ Edit `property.json` to customize conversation settings:
 }
 ```
 
-## Creating a Persona
+#### Full Pipeline Configuration (Auto-Create Persona)
 
-Use the Tavus API to create a persona:
+```json
+{
+  "tavus_api_key": "${env:TAVUS_API_KEY}",
+  "replica_id": "${env:TAVUS_REPLICA_ID}",
+  "conversation_name": "TEN Agent Conversation",
+  "max_call_duration": 3600,
+  "enable_recording": false,
+  "language": "en",
+  "auto_create_persona": true,
+  "persona_name": "TEN Assistant",
+  "system_prompt": "You are a helpful AI assistant integrated with the TEN framework. Help users with conversational AI tasks.",
+  "context": "You are running in a real-time conversational environment.",
+  "enable_perception": false,
+  "perception_model": "raven-0",
+  "enable_smart_turn_detection": true,
+  "llm_provider": "${env:TAVUS_LLM_PROVIDER}",
+  "llm_model": "${env:TAVUS_LLM_MODEL}",
+  "llm_api_key": "${env:TAVUS_LLM_API_KEY}",
+  "tts_provider": "",
+  "tts_voice_id": ""
+}
+```
+
+## Persona Management
+
+### Option 1: Auto-Create Persona (Recommended)
+
+Set `auto_create_persona: true` in your property.json and configure the persona settings. The extension will automatically create a persona on startup using the Tavus Full Pipeline API.
+
+**Benefits:**
+- Automatic persona creation and management
+- Full control over all pipeline layers (Perception, STT, LLM, TTS)
+- Customizable system prompts and context
+- Persona is created once per agent startup
+
+### Option 2: Manual Persona Creation
+
+Create a persona manually via the Tavus API:
 
 ```bash
 curl -X POST https://tavusapi.com/v2/personas \
@@ -65,12 +111,64 @@ curl -X POST https://tavusapi.com/v2/personas \
     "context": "You help users with conversational AI tasks.",
     "default_replica_id": "YOUR_REPLICA_ID",
     "layers": {
+      "perception": {
+        "model": "raven-0"
+      },
       "stt": {
         "smart_endpointing": true
+      },
+      "llm": {
+        "provider": "openai",
+        "model": "gpt-4",
+        "api_key": "YOUR_OPENAI_API_KEY"
+      },
+      "tts": {
+        "provider": "cartesia",
+        "voice_id": "YOUR_VOICE_ID"
       }
     }
   }'
 ```
+
+Then set the returned `persona_id` in your property.json.
+
+## Full Pipeline Layers
+
+The Tavus Full Pipeline supports four customizable layers:
+
+### 1. Perception Layer (Optional)
+- **Purpose**: Enable screen sharing and visual understanding capabilities
+- **Model**: `raven-0` (default)
+- **Configuration**: Set `enable_perception: true`
+
+### 2. Speech-to-Text (STT) Layer
+- **Purpose**: Convert user speech to text
+- **Smart Turn Detection**: Automatically detects when the user has finished speaking
+- **Configuration**: Set `enable_smart_turn_detection: true` (enabled by default)
+
+### 3. Language Model (LLM) Layer
+- **Purpose**: Generate conversational responses
+- **Supported Providers**: OpenAI, Anthropic, custom endpoints
+- **Configuration**:
+  ```json
+  {
+    "llm_provider": "openai",
+    "llm_model": "gpt-4",
+    "llm_api_key": "your_api_key",
+    "llm_base_url": "https://api.openai.com/v1"
+  }
+  ```
+
+### 4. Text-to-Speech (TTS) Layer
+- **Purpose**: Convert AI responses to natural speech
+- **Supported Providers**: Various TTS providers
+- **Configuration**:
+  ```json
+  {
+    "tts_provider": "cartesia",
+    "tts_voice_id": "your_voice_id"
+  }
+  ```
 
 ## How It Works
 
@@ -89,6 +187,9 @@ curl -X POST https://tavusapi.com/v2/personas \
 - `end_conversation`: Manually end the conversation
 
 ### Data Out
+
+- `tavus_persona_created`: Emitted when persona is auto-created
+  - `persona_id` (string): Unique persona identifier
 
 - `tavus_conversation_created`: Emitted when conversation is created
   - `conversation_id` (string): Unique conversation identifier

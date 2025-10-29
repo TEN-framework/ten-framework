@@ -1,0 +1,10 @@
+*.log
+*.pyc
+__pycache__/
+.DS_Store
+node_modules/
+.vscode/
+.idea/
+*.db
+go.sum
+manifest-lock.json

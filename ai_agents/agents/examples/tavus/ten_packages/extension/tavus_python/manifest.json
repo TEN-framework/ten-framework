@@ -31,7 +31,7 @@
         },
         "persona_id": {
           "type": "string",
-          "description": "Tavus persona ID for conversation behavior"
+          "description": "Tavus persona ID for conversation behavior. Leave empty if auto_create_persona is true"
         },
         "replica_id": {
           "type": "string",
@@ -52,6 +52,58 @@
         "language": {
           "type": "string",
           "description": "Conversation language (e.g., 'en', 'es', 'multilingual')"
+        },
+        "auto_create_persona": {
+          "type": "bool",
+          "description": "Automatically create a persona on startup using the full pipeline configuration"
+        },
+        "persona_name": {
+          "type": "string",
+          "description": "Name for the auto-created persona"
+        },
+        "system_prompt": {
+          "type": "string",
+          "description": "System prompt for the persona's behavior"
+        },
+        "context": {
+          "type": "string",
+          "description": "Additional context for the persona"
+        },
+        "enable_perception": {
+          "type": "bool",
+          "description": "Enable perception layer (screen sharing capabilities)"
+        },
+        "perception_model": {
+          "type": "string",
+          "description": "Perception model to use (default: raven-0)"
+        },
+        "enable_smart_turn_detection": {
+          "type": "bool",
+          "description": "Enable smart turn detection in STT layer"
+        },
+        "llm_provider": {
+          "type": "string",
+          "description": "LLM provider (e.g., openai, anthropic, custom)"
+        },
+        "llm_model": {
+          "type": "string",
+          "description": "LLM model name"
+        },
+        "llm_base_url": {
+          "type": "string",
+          "description": "Base URL for custom LLM provider"
+        },
+        "llm_api_key": {
+          "type": "string",
+          "description": "API key for LLM provider"
+        },
+        "tts_provider": {
+          "type": "string",
+          "description": "TTS provider name"
+        },
+        "tts_voice_id": {
+          "type": "string",
+          "description": "TTS voice ID"
         }
       }
     },
@@ -74,6 +126,10 @@
       }
     ],
     "data_out": [
+      {
+        "name": "tavus_persona_created",
+        "description": "Persona created successfully"
+      },
       {
         "name": "tavus_conversation_created",
         "description": "Conversation created with URL"
