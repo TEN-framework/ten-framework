@@ -541,6 +541,418 @@ To send audio to multiple extensions, split at the **source**, not intermediate 
 
 ---
 
+## Creating Example Variants
+
+### When to Create a New Example
+
+Create a new example variant when you want to:
+- Add advanced features without affecting the basic example
+- Test experimental configurations
+- Separate different use cases (e.g., HeyGen avatars, mental wellness analysis)
+- Avoid impacting other developers working on the main example
+
+### Creating a New Example from Existing One
+
+**Example: Creating `voice-assistant-advanced` from `voice-assistant`**
+
+#### Step 1: Copy Directory Structure
+
+```bash
+cd /app/agents/examples/
+cp -r voice-assistant voice-assistant-advanced
+cd voice-assistant-advanced
+```
+
+#### Step 2: Split Graphs in property.json
+
+Use Python to programmatically split graphs:
+
+```python
+import json
+
+# Load existing property.json
+with open('tenapp/property.json', 'r') as f:
+    data = json.load(f)
+
+# Get all graphs
+all_graphs = data['ten']['predefined_graphs']
+
+# Split into basic and advanced
+basic_graphs = [g for g in all_graphs if g['name'] in ['voice_assistant']]
+advanced_graphs = [g for g in all_graphs if g['name'] in ['voice_assistant_thymia', 'voice_assistant_heygen', 'voice_assistant_generic_video']]
+
+# Update advanced example with only advanced graphs
+data['ten']['predefined_graphs'] = advanced_graphs
+with open('tenapp/property.json', 'w') as f:
+    json.dump(data, f, indent=2)
+
+# Update basic example (in original directory)
+basic_data = {'ten': {'predefined_graphs': basic_graphs}}
+with open('../voice-assistant/tenapp/property.json', 'w') as f:
+    json.dump(basic_data, f, indent=2)
+```
+
+**Key Points:**
+- Each example has its own `property.json` with different graphs
+- Graphs can use different extensions (e.g., different STT providers)
+- Set `"auto_start": true` on the default graph for each example
+
+#### Step 3: Update manifest.json with New Dependencies
+
+If your graphs use new extensions, add them to `tenapp/manifest.json`:
+
+```json
+{
+  "type": "app",
+  "name": "agent_demo",
+  "version": "0.10.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_go",
+      "version": "0.11"
+    },
+    {
+      "path": "../../../ten_packages/extension/deepgram_asr_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/deepgram_ws_asr_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/thymia_analyzer_python"
+    }
+  ]
+}
+```
+
+**Critical:** If you add a new extension to a graph but forget to add it to `manifest.json`, the worker process will fail silently!
+
+#### Step 4: Create Extension Symlinks
+
+Extensions are shared across examples via symlinks:
+
+```bash
+cd tenapp/ten_packages/extension/
+
+# Create symlink to shared extension library
+ln -s /app/agents/ten_packages/extension/deepgram_ws_asr_python deepgram_ws_asr_python
+ln -s /app/agents/ten_packages/extension/thymia_analyzer_python thymia_analyzer_python
+
+# Verify symlinks
+ls -la | grep deepgram
+# Should show: deepgram_ws_asr_python -> /app/agents/ten_packages/extension/deepgram_ws_asr_python
+```
+
+**Why symlinks?**
+- Extensions are stored once in `/app/agents/ten_packages/extension/`
+- Each example links to them rather than copying
+- Saves space and keeps extensions in sync
+
+#### Step 5: Install Dependencies
+
+After updating `manifest.json`, install dependencies:
+
+```bash
+cd tenapp
+tman install
+```
+
+**What `tman install` does:**
+- Resolves dependencies from `manifest.json`
+- Downloads/links required packages
+- Updates `manifest-lock.json`
+- Installs Python packages from `requirements.txt`
+
+**Output example:**
+```
+Get all installed packages...
+Filter compatible packages...
+Resolving packages...
+The following packages will be replaced:
+ system:ten_runtime_go@0.11.20 -> system:ten_runtime_go@0.11.25
+```
+
+**Important:**
+- Run `tman install` inside the Docker container if using Docker
+- Run it after every `manifest.json` change
+- Python dependencies may need separate `pip install` after container restarts
+
+#### Step 6: Update README.md
+
+Document your new example:
+
+```bash
+cd voice-assistant-advanced
+cat > README.md << 'EOF'
+# Voice Assistant Advanced
+
+Advanced voice assistant configurations with specialized features.
+
+## Graphs
+
+1. **voice_assistant_thymia** (auto_start: true)
+   - Mental wellness analysis with Thymia
+   - Deepgram Flux STT with turn detection
+   - ElevenLabs TTS
+
+2. **voice_assistant_heygen**
+   - HeyGen avatar integration
+   - Standard Deepgram Nova-3 STT
+
+3. **voice_assistant_generic_video**
+   - Generic video avatar protocol
+   - Standard Deepgram Nova-3 STT
+
+## Running
+
+```bash
+cd /app/server
+./bin/api -tenapp_dir=/app/agents/examples/voice-assistant-advanced/tenapp
+```
+
+## Testing
+
+```bash
+curl -X POST http://localhost:8080/start \
+  -H "Content-Type: application/json" \
+  -d '{"graph_name": "voice_assistant_thymia", "channel_name": "test", "remote_stream_id": 123}'
+```
+EOF
+```
+
+### Running Different Examples
+
+The API server can only load one example at a time via the `-tenapp_dir` flag.
+
+#### In Docker Container
+
+**Option 1: Use existing container**
+```bash
+# Enter container
+docker exec -it container_name bash
+
+# Kill existing API server
+pkill -9 -f "bin/api"
+
+# Start server pointing to advanced example
+cd /app/server
+./bin/api -tenapp_dir=/app/agents/examples/voice-assistant-advanced/tenapp > /tmp/api_advanced.log 2>&1 &
+
+# Verify graphs loaded
+curl http://localhost:8080/graphs | python3 -m json.tool
+```
+
+**Option 2: Copy files and restart server**
+```bash
+# From host, copy updated files to container
+docker cp voice-assistant-advanced/tenapp/manifest.json container_name:/app/agents/examples/voice-assistant-advanced/tenapp/
+docker cp voice-assistant-advanced/tenapp/property.json container_name:/app/agents/examples/voice-assistant-advanced/tenapp/
+
+# Restart API server inside container
+docker exec container_name bash -c "pkill -9 -f 'bin/api'"
+docker exec -d container_name bash -c "cd /app/server && ./bin/api -tenapp_dir=/app/agents/examples/voice-assistant-advanced/tenapp > /tmp/api_advanced.log 2>&1"
+```
+
+#### Using Docker Build (Production)
+
+```bash
+# Build image for specific example
+cd ai_agents
+docker build -f agents/examples/voice-assistant-advanced/Dockerfile \
+  -t voice-assistant-advanced \
+  --build-arg USE_AGENT=agents/examples/voice-assistant-advanced .
+
+# Run container
+docker run --rm -it --env-file .env \
+  -p 8080:8080 -p 3000:3000 \
+  voice-assistant-advanced
+```
+
+**Note:** Dockerfile may need adjustments for new examples. See `ai/deepgram/DOCKER_BUILD_NOTES.md` for details.
+
+#### Verifying the Correct Example is Loaded
+
+```bash
+# Check which graphs are available
+curl -s http://localhost:8080/graphs | python3 -c "import json,sys; data=json.load(sys.stdin); print('\\n'.join([g['name'] for g in data['data']]))"
+
+# Expected output for voice-assistant-advanced:
+# voice_assistant_heygen
+# voice_assistant_generic_video
+# voice_assistant_thymia
+```
+
+### Common Issues When Creating Examples
+
+#### Issue 1: Worker Process Fails Silently
+
+**Symptoms:**
+- Session starts successfully (`/start` returns `{"code":"0"}`)
+- Worker process dies after exactly 60 seconds
+- No log file created in `/tmp/ten_agent/`
+- Session shows as active but no activity
+
+**Causes:**
+1. **Missing extension in manifest.json** ← Most common!
+   - Graph references `deepgram_ws_asr_python`
+   - But `manifest.json` doesn't include it as dependency
+   - Worker fails during initialization, no logs written
+
+2. **Missing symlink**
+   - Extension listed in manifest.json
+   - But symlink doesn't exist in `tenapp/ten_packages/extension/`
+
+3. **Python import error**
+   - Extension depends on package not installed
+   - Check with: `docker exec container pip3 list | grep aiohttp`
+
+**Solutions:**
+
+```bash
+# 1. Verify extension is in manifest.json
+cat tenapp/manifest.json | grep -A2 "deepgram_ws_asr_python"
+
+# 2. Verify symlink exists
+ls -la tenapp/ten_packages/extension/ | grep deepgram_ws_asr_python
+
+# 3. Run tman install after manifest changes
+cd tenapp && tman install
+
+# 4. Check Python dependencies
+docker exec container pip3 install aiohttp pydantic
+```
+
+#### Issue 2: Wrong API Server Running
+
+**Symptoms:**
+- Start session for `voice_assistant_thymia`
+- But only basic graphs are available
+- `/graphs` endpoint shows wrong graphs
+
+**Cause:** API server still pointing to old tenapp directory
+
+**Solution:**
+```bash
+# Check API server logs for tenapp_dir
+docker exec container tail -20 /tmp/api_advanced.log | grep tenappDir
+
+# Should show: tenappDir=/app/agents/examples/voice-assistant-advanced/tenapp
+# If not, kill and restart pointing to correct directory
+```
+
+#### Issue 3: Environment Variables Not Loading
+
+**Symptoms:**
+- Session starts but extension can't connect to API
+- Logs show: `Environment variable DEEPGRAM_API_KEY is not found`
+
+**Cause:** `.env` file not in the example directory or not sourced
+
+**Solutions:**
+```bash
+# Option 1: Copy .env to new example
+cp agents/.env agents/examples/voice-assistant-advanced/
+
+# Option 2: Source before starting (in container)
+docker exec container bash -c "set -a; source /app/agents/.env; set +a; cd /app/server && ./bin/api -tenapp_dir=/app/agents/examples/voice-assistant-advanced/tenapp"
+
+# Option 3: Hardcode for testing (temporary)
+# Edit property.json: "api_key": "actual_key_here"
+```
+
+#### Issue 4: Graph Configuration Errors
+
+**Symptoms:**
+- Extension loads successfully
+- But graph fails to start or crashes
+
+**Common mistakes:**
+1. **Wrong extension name in graph:**
+   ```json
+   // ❌ WRONG - addon name doesn't match
+   {"addon": "deepgram_asr", "extension_group": "stt"}
+
+   // ✅ CORRECT
+   {"addon": "deepgram_asr_python", "extension_group": "stt"}
+   ```
+
+2. **Missing required properties:**
+   ```json
+   // ❌ WRONG - missing api_key
+   {"addon": "deepgram_ws_asr_python", "property": {"params": {"model": "flux"}}}
+
+   // ✅ CORRECT
+   {"addon": "deepgram_ws_asr_python", "property": {"params": {"api_key": "${env:DEEPGRAM_API_KEY}", "model": "flux"}}}
+   ```
+
+3. **Wrong property nesting:**
+   - Some extensions expect `property.params.api_key`
+   - Others expect `property.api_key`
+   - Check existing extension's `property.json` for correct structure
+
+### Best Practices for Example Variants
+
+1. **Naming Convention:**
+   - Basic: `voice-assistant`
+   - Advanced: `voice-assistant-advanced`
+   - Specialized: `voice-assistant-live2d`, `voice-assistant-avatar`
+
+2. **Graph Organization:**
+   - Keep simple, common use case in basic example
+   - Move experimental/specialized features to variant
+   - Each example should have clear, focused purpose
+
+3. **Documentation:**
+   - Update README.md for each example
+   - Document which graphs are included
+   - Explain differences from basic example
+   - Provide testing instructions
+
+4. **Dependency Management:**
+   - Only include extensions actually used in graphs
+   - Run `tman install` after manifest changes
+   - Document any special Python dependencies
+
+5. **Testing New Examples:**
+   ```bash
+   # 1. Verify manifest is valid
+   cd tenapp && tman install
+
+   # 2. Verify symlinks exist
+   ls -la tenapp/ten_packages/extension/ | grep your_extension
+
+   # 3. Start server with correct tenapp_dir
+   ./bin/api -tenapp_dir=/path/to/your/example/tenapp
+
+   # 4. Check graphs loaded
+   curl http://localhost:8080/graphs | jq '.data[].name'
+
+   # 5. Test session start
+   curl -X POST http://localhost:8080/start \
+     -H "Content-Type: application/json" \
+     -d '{"graph_name": "your_graph", "channel_name": "test", "remote_stream_id": 123}'
+
+   # 6. Monitor logs
+   tail -f /tmp/api_advanced.log
+   ```
+
+### Checklist for Creating New Example
+
+- [ ] Copy existing example directory
+- [ ] Split/update `property.json` with desired graphs
+- [ ] Update `manifest.json` with all extension dependencies
+- [ ] Create symlinks for new extensions
+- [ ] Run `tman install` in tenapp directory
+- [ ] Update README.md with graph descriptions
+- [ ] Copy or reference `.env` file
+- [ ] Test API server startup with new tenapp_dir
+- [ ] Verify graphs load correctly (`/graphs` endpoint)
+- [ ] Test session start with each graph
+- [ ] Check worker logs for errors
+- [ ] Document any special configuration needs
+
+---
+
 ## Debugging
 
 ### Log Locations

@@ -46,6 +46,9 @@
       "path": "../../../ten_packages/extension/deepgram_asr_python"
     },
     {
+      "path": "../../../ten_packages/extension/deepgram_ws_asr_python"
+    },
+    {
       "path": "../../../ten_packages/extension/gladia_asr_python"
     },
     {

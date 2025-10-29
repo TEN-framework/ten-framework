@@ -34,7 +34,7 @@ WORKDIR /app
 
 FROM ubuntu:22.04
 
-ARG USE_AGENT=agents/examples/voice-assistant
+ARG USE_AGENT=agents/examples/voice-assistant-advanced
 
 RUN apt-get clean && apt-get update && apt-get install -y --no-install-recommends \
   libasound2 \
