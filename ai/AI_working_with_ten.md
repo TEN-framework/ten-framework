@@ -22,7 +22,7 @@
 
 ### What is TEN Framework?
 
-TEN (Temporal Event Network) is a graph-based AI agent framework that connects modular extensions (nodes) through defined data flows (connections). Version 0.11+ uses the `ten_runtime` Python API.
+TEN (Transformative Extensions Network) is a graph-based AI agent framework that connects modular extensions (nodes) through defined data flows (connections). Version 0.11+ uses the `ten_runtime` Python API.
 
 ### Key Concepts
 
