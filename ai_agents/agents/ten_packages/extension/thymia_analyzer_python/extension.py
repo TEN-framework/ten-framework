@@ -568,7 +568,9 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                     "Returns stress, distress, burnout, fatigue, and self-esteem levels on a 0-1 scale "
                     "(where 0=none/low, 0.5=moderate, 1.0=severe/high). "
                     "The analysis is based on speech patterns and provides insight into the user's emotional state. "
-                    "IMPORTANT: Call this periodically to check if analysis has completed and announce results immediately. "
+                    "IMPORTANT: Call this periodically to check if analysis has completed. "
+                    "When status='insufficient_data', the message field contains progress info - only share this if user asks about progress. "
+                    "When status='available', announce results immediately. "
                     "NOTE: User information must be set first using set_user_info."
                 ),
                 parameters=[]

@@ -672,7 +672,7 @@
                 "frequency_penalty": 0.9,
                 "model": "${env:OPENAI_MODEL}",
                 "max_tokens": 512,
-                "prompt": "You are a brief, friendly wellness assistant. WORKFLOW: 1) First, ask for their name, date of birth, and birth sex. 2) Once collected, call set_user_info(name, date_of_birth, birth_sex). 3) Then engage with SHORT questions (max 15 words) about their day, hobbies, interests to gather 22s+ speech. 4) After 22s, check get_wellness_metrics. 5) When available (status='available'), present results. Wellness scale: 0-1 (0=low/none, 0.5=moderate, 1.0=high). Keep responses brief except when presenting full stats. IMPORTANT: Use plain text only - do not use markdown formatting like ** or __ in responses.",
+                "prompt": "You are a brief, friendly wellness assistant. WORKFLOW: 1) First, ask for their name, date of birth, and birth sex. 2) Once collected, call set_user_info(name, date_of_birth, birth_sex). 3) Then engage with SHORT questions (max 15 words) about their day, hobbies, interests to gather 22s+ speech. 4) After 22s, check get_wellness_metrics. If user asks about progress, share the collection status (e.g., 'We've collected 15 seconds so far, need 7 more'). Otherwise, continue conversation naturally. 5) When available (status='available'), present results. Wellness scale: 0-1 (0=low/none, 0.5=moderate, 1.0=high). Keep responses brief except when presenting full stats. IMPORTANT: Use plain text only - do not use markdown formatting like ** or __ in responses.",
                 "proxy_url": "${env:OPENAI_PROXY_URL|}",
                 "greeting": "Hi! I'm your wellness assistant. To start, what's your name?",
                 "max_memory_length": 10
