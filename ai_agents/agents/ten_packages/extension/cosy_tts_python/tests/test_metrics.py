@@ -85,21 +85,24 @@ def test_ttfb_metric_is_sent(MockCosyTTSClient):
     mock_instance = MockCosyTTSClient.return_value
     mock_instance.synthesize_audio = AsyncMock()
 
-    # Create a mock that simulates the delay *before* returning the first audio chunk
-    async def get_audio_data_with_delay():
-        await asyncio.sleep(
-            0.25
-        )  # Use 250ms to have margin for timing variations
-        return (False, MESSAGE_TYPE_PCM, b"\x11\x22\x33")
+    # Use a counter-driven async side_effect to avoid pre-created coroutines
+    # which can be flaky under the new thread/event-loop model
+    call_state = {"n": 0}
 
-    # This async function will wrap the tuple to make it awaitable
-    async def get_end_signal():
-        return (True, MESSAGE_TYPE_CMD_COMPLETE, None)
+    async def get_audio_data():
+        idx = call_state["n"]
+        call_state["n"] += 1
+        if idx == 0:
+            # Intentionally delay before the first chunk to generate measurable TTFB
+            await asyncio.sleep(0.25)  # 250ms with slack for scheduler jitter
+            return (False, MESSAGE_TYPE_PCM, b"\x11\x22\x33")
+        if idx == 1:
+            # Second call returns the completion signal
+            return (True, MESSAGE_TYPE_CMD_COMPLETE, None)
+        # Subsequent calls: actively stop pulling to avoid repeated "done"
+        raise asyncio.CancelledError()
 
-    mock_instance.get_audio_data.side_effect = [
-        get_audio_data_with_delay(),
-        get_end_signal(),
-    ]
+    mock_instance.get_audio_data.side_effect = get_audio_data
 
     # --- Test Setup ---
     # A minimal config is needed for the extension to initialize correctly.

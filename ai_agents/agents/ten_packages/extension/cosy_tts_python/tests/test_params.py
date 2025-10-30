@@ -5,6 +5,7 @@
 # Refer to the "LICENSE" file in the root directory for more information.
 #
 from unittest.mock import patch, AsyncMock
+import asyncio
 import json
 
 from ten_runtime import (
@@ -15,6 +16,7 @@ from ten_runtime import (
     TenEnvTester,
     TenError,
 )
+from ..cosy_tts import MESSAGE_TYPE_CMD_COMPLETE
 
 
 # ================ test params passthrough ================
@@ -52,6 +54,26 @@ def test_params_passthrough(MockCosyTTSClient):
     forwarded to the CosyTTSClient client constructor.
     """
     print("Starting test_params_passthrough with mock...")
+
+    # --- Mock Setup ---
+    # Create a mock instance with properly configured async methods
+    mock_instance = MockCosyTTSClient.return_value
+    mock_instance.synthesize_audio = AsyncMock()
+
+    # Mock get_audio_data to return completion signal once, then raise CancelledError
+    # Since done=True no longer breaks the loop, we need to stop it explicitly
+    call_count = {"n": 0}
+
+    async def get_audio_data():
+        idx = call_count["n"]
+        call_count["n"] += 1
+        if idx == 0:
+            # First call: return completion signal
+            return (True, MESSAGE_TYPE_CMD_COMPLETE, None)
+        # Subsequent calls: raise CancelledError to stop the loop
+        raise asyncio.CancelledError()
+
+    mock_instance.get_audio_data.side_effect = get_audio_data
 
     # --- Test Setup ---
     # Define a configuration with custom, arbitrary parameters inside 'params'.
