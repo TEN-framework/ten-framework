@@ -494,6 +494,13 @@ async fn create_input_str_for_pkg_info_dependencies(
                     if version_matches {
                         found_matched_count += 1;
 
+                        // Before adding this package into the computation of the result,
+                        // first check whether all of this package’s dependencies are valid.
+                        // For example, some packages that this one depends on might not exist
+                        // in the cloud marketplace or the local file system.
+                        // Including such a package — one that cannot actually be used in the
+                        // computation — would cause problems and make no
+                        // sense.
                         let dep_is_valid = Box::pin(create_input_str_for_pkg_info_dependencies(
                             input_str,
                             candidate,
