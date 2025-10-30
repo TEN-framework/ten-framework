@@ -244,6 +244,22 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
     def __init__(self, name: str):
         super().__init__(name)
 
+        # DEBUG: Write to file to verify Python is running
+        import sys
+        try:
+            with open("/tmp/thymia_extension_init.log", "a") as f:
+                f.write(f"[INIT] ThymiaAnalyzerExtension __init__ called at {time.time()}\n")
+                f.write(f"[INIT] Python version: {sys.version}\n")
+                f.write(f"[INIT] stdout: {sys.stdout}, stderr: {sys.stderr}\n")
+                f.flush()
+            # Try stdout too
+            print(f"[THYMIA_INIT] Extension initializing at {time.time()}", flush=True)
+            sys.stdout.flush()
+            sys.stderr.write(f"[THYMIA_INIT_STDERR] Extension initializing at {time.time()}\n")
+            sys.stderr.flush()
+        except Exception as e:
+            pass  # Silently fail if logging fails
+
         # Configuration
         self.api_key: str = ""
         self.min_speech_duration: float = 30.0
@@ -270,6 +286,17 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
 
     async def on_start(self, ten_env: AsyncTenEnv) -> None:
         """Called when extension starts"""
+        # DEBUG: Write to file to verify on_start is called
+        import sys
+        try:
+            with open("/tmp/thymia_extension_on_start.log", "a") as f:
+                f.write(f"[ON_START] on_start called at {time.time()}\n")
+                f.flush()
+            print(f"[THYMIA_ON_START] on_start called at {time.time()}", flush=True)
+            sys.stdout.flush()
+        except:
+            pass
+
         ten_env.log_info("ThymiaAnalyzerExtension starting...")
 
         # Load configuration
@@ -336,10 +363,11 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
     async def on_audio_frame(self, ten_env: AsyncTenEnv, audio_frame: AudioFrame) -> None:
         """Process incoming audio frames"""
         try:
-            # Log every 100th frame to confirm audio is being received
+            # Log every 50th frame to confirm audio is being received
             self._audio_frame_count += 1
-            if self._audio_frame_count % 100 == 1:
-                ten_env.log_info(f"[thymia_analyzer] Received audio frame #{self._audio_frame_count}")
+            if self._audio_frame_count % 50 == 1:
+                print(f"[THYMIA_AUDIO] ✅ Received audio frame #{self._audio_frame_count}", flush=True)
+                ten_env.log_info(f"[thymia_analyzer] ✅ Received audio frame #{self._audio_frame_count}")
 
             if not self.audio_buffer:
                 ten_env.log_warn(f"[thymia_analyzer] Audio buffer not initialized")
@@ -354,11 +382,18 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
             pcm_data = bytes(buf)
             audio_frame.unlock_buf(buf)
 
-            if self._audio_frame_count % 100 == 1:
+            if self._audio_frame_count % 50 == 1:
                 ten_env.log_info(f"[thymia_analyzer] PCM data size: {len(pcm_data)} bytes")
 
             # Add to buffer with VAD
             speech_duration = self.audio_buffer.add_frame(pcm_data)
+
+            # Log speech accumulation every 50 frames (~ every 0.5 seconds)
+            if self._audio_frame_count % 50 == 1:
+                ten_env.log_info(
+                    f"[thymia_analyzer] 📊 Speech buffer status: {speech_duration:.1f}s / {self.min_speech_duration:.1f}s "
+                    f"(need {self.min_speech_duration - speech_duration:.1f}s more)"
+                )
 
             # Check if we have enough speech to analyze
             if self.audio_buffer.has_enough_speech(self.min_speech_duration):
@@ -370,13 +405,13 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                 )
 
                 if should_analyze:
-                    ten_env.log_info(f"Starting wellness analysis ({speech_duration:.1f}s speech collected)")
+                    ten_env.log_info(f"[thymia_analyzer] 🚀 Starting wellness analysis ({speech_duration:.1f}s speech collected)")
 
                     # Start analysis in background
                     asyncio.create_task(self._run_analysis(ten_env))
         except Exception as e:
             import traceback
-            ten_env.log_error(f"[thymia_analyzer] Error in on_audio_frame: {e}\n{traceback.format_exc()}")
+            ten_env.log_error(f"[thymia_analyzer] ❌ Error in on_audio_frame: {e}\n{traceback.format_exc()}")
 
     async def _run_analysis(self, ten_env: AsyncTenEnv):
         """Run Thymia analysis workflow in background"""
@@ -509,7 +544,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                     {
                         "name": "date_of_birth",
                         "type": "string",
-                        "description": "Date of birth in YYYY-MM-DD format (e.g., 1974-04-27)",
+                        "description": "User's date of birth",
                         "required": True
                     },
                     {

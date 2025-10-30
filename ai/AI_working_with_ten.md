@@ -1,7 +1,7 @@
 # TEN Framework Development Guide
 
 **Purpose**: Complete onboarding guide for developing with TEN Framework v0.11+
-**Last Updated**: 2025-10-28
+**Last Updated**: 2025-10-30
 
 ---
 
@@ -98,21 +98,25 @@ YOUR_API_KEY=...
 3. Expecting variables to propagate automatically
 
 #### ✅ Works:
-1. **Restart Docker container** (recommended):
+1. **Source .env before starting** (fastest - no container restart):
+   ```bash
+   # Stop current server
+   docker exec container_name bash -c "pkill -f 'task run'"
+
+   # Source .env and restart server
+   docker exec -d container_name bash -c '
+   set -a
+   source /app/.env
+   set +a
+   cd /app/agents/examples/voice-assistant-advanced
+   task run > /tmp/task_run.log 2>&1
+   '
+   ```
+
+2. **Restart Docker container** (if sourcing doesn't work):
    ```bash
    docker compose down
    docker compose up -d
-   ```
-
-2. **Source .env before starting**:
-   ```bash
-   docker exec -d container_name bash -c '
-   set -a
-   source /path/to/.env
-   set +a
-   cd /app/agents/examples/voice-assistant
-   task run > /tmp/task_run.log 2>&1
-   '
    ```
 
 3. **Hardcode in property.json** (testing only):
@@ -156,7 +160,41 @@ docker logs --tail 100 container_name
 docker exec container_name tail -f /tmp/task_run.log
 ```
 
-### Running Services
+### Build and Run Workflow
+
+**IMPORTANT**: Always use `task` commands, NOT direct binary execution!
+
+**First time setup or after code changes:**
+```bash
+# Inside container
+cd /app/agents/examples/voice-assistant-advanced
+task install  # Installs dependencies, builds Go binary (~5-8 mins first time)
+```
+
+**After container restart, install Python dependencies:**
+```bash
+# Python packages don't persist across container restarts!
+cd /app/agents/examples/voice-assistant-advanced/tenapp
+bash scripts/install_python_deps.sh
+```
+
+**Start the server:**
+```bash
+# Inside container
+cd /app/agents/examples/voice-assistant-advanced
+task run > /tmp/task_run.log 2>&1 &
+
+# Or from outside (detached)
+docker exec -d ten_agent_dev bash -c \
+  "cd /app/agents/examples/voice-assistant-advanced && task run > /tmp/task_run.log 2>&1"
+```
+
+**Why use `task run` instead of `./bin/main`?**
+- `task run` sets up PYTHONPATH correctly for ten_runtime and ten_ai_base
+- `./bin/main` directly will fail with Python import errors
+- `task` commands are documented in Taskfile.yaml
+
+### Running Services (Legacy/Alternative Methods)
 
 **Inside container, start services:**
 ```bash
@@ -955,11 +993,35 @@ docker exec container bash -c "set -a; source /app/agents/.env; set +a; cd /app/
 
 ## Debugging
 
+### Log Monitoring
+
+**CRITICAL**: All Python extension logs appear in `/tmp/task_run.log` inside the container, NOT in docker logs.
+
+**Primary monitoring command (real-time):**
+```bash
+docker exec ten_agent_dev tail -f /tmp/task_run.log
+```
+
+**Filter for specific channel:**
+```bash
+docker exec ten_agent_dev tail -f /tmp/task_run.log | grep --line-buffered "channel_name"
+```
+
+**Filter for specific extension:**
+```bash
+docker exec ten_agent_dev tail -f /tmp/task_run.log | grep --line-buffered -i "thymia"
+```
+
+**View recent logs:**
+```bash
+docker exec ten_agent_dev tail -200 /tmp/task_run.log | grep -a "pattern"
+```
+
 ### Log Locations
 
 **Application logs:**
 ```bash
-/tmp/task_run.log              # Main service logs
+/tmp/task_run.log              # Main service logs + ALL Python extension output
 ```
 
 **Session logs:**
@@ -976,30 +1038,129 @@ docker exec container bash -c "set -a; source /app/agents/.env; set +a; cd /app/
 /tmp/agorasdk.log              # SDK logs
 ```
 
+### Log Format
+
+All worker/extension logs are prefixed with the channel name:
+```
+[channel_name] Successfully registered addon 'my_extension'
+[channel_name] Extension message here
+```
+
+Server-level logs have no prefix or include `service=HTTP_SERVER`.
+
 ### Finding Errors
 
 **Python tracebacks:**
 ```bash
-docker exec container_name tail -200 /tmp/task_run.log | grep -A 20 "Traceback"
+docker exec ten_agent_dev tail -200 /tmp/task_run.log | grep -A 20 "Traceback"
 ```
 
 **Extension errors:**
 ```bash
-docker exec container_name tail -200 /tmp/task_run.log | grep -E "(ERROR|Uncaught exception)"
+docker exec ten_agent_dev tail -200 /tmp/task_run.log | grep -E "(ERROR|Uncaught exception)"
 ```
 
 **Check loaded extensions:**
 ```bash
-docker exec container_name tail -200 /tmp/task_run.log | grep "Successfully registered addon"
+docker exec ten_agent_dev tail -200 /tmp/task_run.log | grep "Successfully registered addon"
 ```
 
 **Session-specific logs:**
 ```bash
 # Find latest session
-docker exec container_name ls -lt /tmp/ten_agent/*.json | head -1
+docker exec ten_agent_dev ls -lt /tmp/ten_agent/*.json | head -1
 
-# Check session logs
-docker exec container_name tail -200 /tmp/task_run.log | grep -E "(channel_name|ERROR)"
+# Monitor specific channel in real-time
+docker exec ten_agent_dev tail -f /tmp/task_run.log | grep --line-buffered "channel_name"
+```
+
+### Python Extension Logging
+
+**Using TEN framework logging (recommended):**
+```python
+async def on_start(self, ten_env: AsyncTenEnv) -> None:
+    ten_env.log_info("Extension starting...")
+    ten_env.log_warn("Warning message")
+    ten_env.log_error("Error message")
+```
+
+**Using print() for debugging:**
+```python
+import sys
+print(f"Debug message", flush=True)
+sys.stdout.flush()
+```
+
+Both methods output to `/tmp/task_run.log` with the channel name prefix.
+
+### Log Configuration Requirements ✅
+
+**CRITICAL**: For TEN framework logging to work, you need proper configuration in both `.env` and `property.json`.
+
+**Required Configuration:**
+
+**1. .env variables** (use standard variables from `.env.example`):
+```bash
+# Log & Server & Worker
+LOG_PATH=/tmp/ten_agent
+LOG_STDOUT=true                    # ← CRITICAL: Enables worker stdout/stderr output
+GRAPH_DESIGNER_SERVER_PORT=49483
+SERVER_PORT=8080
+WORKERS_MAX=100
+WORKER_QUIT_TIMEOUT_SECONDS=60
+
+# Optional but helpful for logging
+TEN_LOG_FORMATTER=json
+PYTHONUNBUFFERED=1
+```
+
+**Key variable**: `LOG_STDOUT=true` is the official way to enable log output from worker processes.
+
+**2. property.json log configuration** (CRITICAL - without this, `ten_env.log_info()` is silent):
+```json
+{
+  "ten": {
+    "log": {
+      "handlers": [
+        {
+          "matchers": [
+            {
+              "level": "debug"
+            }
+          ],
+          "formatter": {
+            "type": "plain",
+            "colored": false
+          },
+          "emitter": {
+            "type": "console",
+            "config": {
+              "stream": "stdout"
+            }
+          }
+        }
+      ]
+    },
+    "predefined_graphs": [...]
+  }
+}
+```
+
+**Important notes:**
+- Use lowercase `"level": "debug"` (not "DEBUG")
+- Use `"colored": false` (not "with_color")
+- Nest stream in config object: `"config": {"stream": "stdout"}` (not `"stream": "stdout"` directly)
+- Without this configuration, Python `ten_env.log_*()` calls will be completely silent
+- `print()` statements work regardless of this configuration
+- **No worker.go modifications needed** - the original platform code works correctly with proper configuration
+
+**After changing property.json:**
+```bash
+# Just restart the server (no rebuild needed)
+docker exec ten_agent_dev bash -c "pkill -f 'task run'"
+docker exec -d ten_agent_dev bash -c \
+  "cd /app/agents/examples/voice-assistant-advanced && \
+   task run > /tmp/task_run.log 2>&1"
 ```
 
 ### Testing Workflow

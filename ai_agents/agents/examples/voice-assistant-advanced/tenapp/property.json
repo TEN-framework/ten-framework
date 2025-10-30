@@ -1,5 +1,26 @@
 {
   "ten": {
+    "log": {
+      "handlers": [
+        {
+          "matchers": [
+            {
+              "level": "debug"
+            }
+          ],
+          "formatter": {
+            "type": "plain",
+            "colored": false
+          },
+          "emitter": {
+            "type": "console",
+            "config": {
+              "stream": "stdout"
+            }
+          }
+        }
+      ]
+    },
     "predefined_graphs": [
       {
         "name": "voice_assistant",
@@ -59,18 +80,16 @@
             {
               "type": "extension",
               "name": "tts",
-              "addon": "rime_tts",
+              "addon": "elevenlabs_tts2_python",
               "extension_group": "tts",
               "property": {
                 "dump": false,
                 "dump_path": "./",
                 "params": {
-                  "api_key": "${env:RIME_TTS_API_KEY}",
-                  "speaker": "cove",
-                  "modelId": "mistv2",
-                  "lang": "eng",
-                  "samplingRate": 16000,
-                  "speedAlpha": 1.0
+                  "key": "${env:ELEVENLABS_TTS_KEY}",
+                  "model_id": "eleven_multilingual_v2",
+                  "voice_id": "pNInz6obpgDQGcFmaJgB",
+                  "output_format": "pcm_16000"
                 }
               }
             },
@@ -653,7 +672,7 @@
                 "frequency_penalty": 0.9,
                 "model": "${env:OPENAI_MODEL}",
                 "max_tokens": 512,
-                "prompt": "You are a brief, friendly wellness assistant. WORKFLOW: 1) First, ask for their name, date of birth (YYYY-MM-DD), and birth sex (MALE/FEMALE). 2) Once collected, call set_user_info(name, date_of_birth, birth_sex). 3) Then engage with SHORT questions (max 15 words) about their day, hobbies, interests to gather 22s+ speech. 4) After 22s, check get_wellness_metrics. 5) When available (status='available'), present results. Wellness scale: 0-1 (0=low/none, 0.5=moderate, 1.0=high). Keep responses brief except when presenting full stats.",
+                "prompt": "You are a brief, friendly wellness assistant. WORKFLOW: 1) First, ask for their name, date of birth, and birth sex. 2) Once collected, call set_user_info(name, date_of_birth, birth_sex). 3) Then engage with SHORT questions (max 15 words) about their day, hobbies, interests to gather 22s+ speech. 4) After 22s, check get_wellness_metrics. 5) When available (status='available'), present results. Wellness scale: 0-1 (0=low/none, 0.5=moderate, 1.0=high). Keep responses brief except when presenting full stats. IMPORTANT: Use plain text only - do not use markdown formatting like ** or __ in responses.",
                 "proxy_url": "${env:OPENAI_PROXY_URL|}",
                 "greeting": "Hi! I'm your wellness assistant. To start, what's your name?",
                 "max_memory_length": 10
@@ -662,16 +681,18 @@
             {
               "type": "extension",
               "name": "tts",
-              "addon": "elevenlabs_tts2_python",
+              "addon": "rime_tts",
               "extension_group": "tts",
               "property": {
                 "dump": false,
                 "dump_path": "./",
                 "params": {
-                  "key": "${env:ELEVENLABS_TTS_KEY}",
-                  "model_id": "eleven_multilingual_v2",
-                  "voice_id": "pNInz6obpgDQGcFmaJgB",
-                  "output_format": "pcm_16000"
+                  "api_key": "${env:RIME_TTS_API_KEY}",
+                  "speaker": "cove",
+                  "modelId": "mistv2",
+                  "lang": "eng",
+                  "samplingRate": 16000,
+                  "speedAlpha": 1.0
                 }
               }
             },
