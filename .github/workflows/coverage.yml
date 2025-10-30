@@ -1,4 +1,4 @@
-name: Coverage Report for runtime on Coveralls
+name: Coverage Report for runtime and rust on Coveralls
 
 on:
   release:
@@ -10,7 +10,7 @@ on:
       - ".vscode/**"
       - ".devcontainer/**"
       - ".github/**"
-      - "!.github/workflows/linux_ubuntu2204.yml"
+      - "!.github/workflows/coverage_coveralls_runtime.yml"
       - "core/src/ten_manager/designer_frontend/**"
       - "**.md"
       - "ai_agents/**"
@@ -19,8 +19,8 @@ permissions:
   contents: write
 
 concurrency:
-  group: coverage-${{ github.head_ref || github.ref }}-${{ github.sha }}
-  cancel-in-progress: false
+  group: coverage-${{ github.head_ref }}
+  cancel-in-progress: true
 
 jobs:
   call-check-pr-status:
@@ -53,52 +53,45 @@ jobs:
 
       - name: Initialize and update submodules except portal/
         run: |
+          # Retrieve all submodule paths, excluding `portal/`.
           submodules=$(git config --file .gitmodules --get-regexp path | awk '$2 != "portal" { print $2 }')
+
           git submodule init
-          for s in $submodules; do
-            git submodule update --init --recursive --depth 1 "$s"
+
+          for submodule in $submodules; do
+            echo "Initializing submodule: $submodule"
+            git submodule update --init --recursive --depth 1 "$submodule"
           done
 
       - uses: actions/setup-node@v4
         with:
           node-version: 20
 
+      - name: Update version
+        run: |
+          python3 tools/version/update_version_in_ten_framework.py
+          python3 tools/version/check_version_in_ten_framework.py
+
       - name: Tgn gen (clang + debug + x64) with coverage enabled
         run: |
           export PATH=$(pwd)/core/ten_gn:/usr/local/go/bin:/root/go/bin:/root/.cargo/bin:$PATH
           echo $PATH
-          rustup default nightly-2025-09-18
 
-          # Align Go toolchain with build job
           go env -w GOFLAGS="-buildvcs=false"
           go install golang.org/dl/go1.24.3@latest
           export PATH=$PATH:$(go env GOPATH)/bin
           go1.24.3 download
           go1.24.3 version
+          rustup default nightly-2025-09-18
 
-          tgn gen linux x64 debug -- is_clang=true ten_runtime_enable_coverage=true ten_rust_force_release=true log_level=1 enable_serialized_actions=true ten_rust_enable_gen_cargo_config=false ten_enable_cargo_clean=true ten_enable_go_lint=true ten_enable_rust_incremental_build=false ten_manager_enable_frontend=false ten_enable_integration_tests_prebuilt=false ten_enable_ffmpeg_extensions=true
+          df -h .
 
-      - name: Ensure llvm-profdata/llvm-cov available
-        run: |
-          set -euxo pipefail
-          found_ver="$(ls /usr/bin/llvm-profdata-* 2>/dev/null | sed 's|.*/llvm-profdata-||' | sort -V | tail -1 || true)"
-          if [ -n "$found_ver" ]; then
-            ln -sf "/usr/bin/llvm-profdata-${found_ver}" /usr/local/bin/llvm-profdata || true
-            ln -sf "/usr/bin/llvm-cov-${found_ver}" /usr/local/bin/llvm-cov || true
-          fi
-          if ! command -v llvm-profdata >/dev/null 2>&1 || ! command -v llvm-cov >/dev/null 2>&1; then
-            apt-get update
-            apt-get install -y llvm
-            found_ver="$(ls /usr/bin/llvm-profdata-* 2>/dev/null | sed 's|.*/llvm-profdata-||' | sort -V | tail -1 || true)"
-            if [ -n "$found_ver" ]; then
-              ln -sf "/usr/bin/llvm-profdata-${found_ver}" /usr/local/bin/llvm-profdata || true
-              ln -sf "/usr/bin/llvm-cov-${found_ver}" /usr/local/bin/llvm-cov || true
-            fi
-          fi
-          which -a llvm-profdata || true
-          which -a llvm-cov || true
-          llvm-profdata --version || true
-          llvm-cov --version || true
+          # Use alias to instrument coverage for rust code
+          export ABS_LCOV_DIR="$(pwd)/out/linux/x64/tests/standalone/rust"
+          alias cargo='cargo llvm-cov --lcov --package ten_rust --ignore-filename-regex="/.cargo/|/target/" --output-path "$ABS_LCOV_DIR/rust-coverage-llvmcov.lcov" --ignore-filename-regex="/.cargo/|/target/'
+          tgn gen linux x64 debug -- is_clang=true enable_sanitizer=false ten_runtime_enable_coverage=true ten_rust_force_release=true log_level=1 enable_serialized_actions=true ten_rust_enable_gen_cargo_config=false ten_enable_cargo_clean=true ten_enable_go_lint=true ten_enable_rust_incremental_build=false ten_manager_enable_frontend=false ten_enable_integration_tests_prebuilt=false ten_enable_ffmpeg_extensions=true
+
+          tgn build linux x64 debug -- tests/ten_runtime:gen_coverage_report
 
       - name: Install Python dependencies via script
         run: |
