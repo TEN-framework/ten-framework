@@ -37,6 +37,8 @@ class FishAudioTTSClient:
 
         start_time = time.time()
 
+        gen: AsyncIterator[bytes] | None = None
+
         try:
             gen = self.client.tts(
                 request=tts_request,
@@ -50,6 +52,7 @@ class FishAudioTTSClient:
                     )
                     yield None, EVENT_TTS_FLUSH
                     await gen.aclose()
+                    gen = None
                     return
 
                 self.ten_env.log_debug(
@@ -81,7 +84,13 @@ class FishAudioTTSClient:
             else:
                 yield error_message.encode("utf-8"), EVENT_TTS_ERROR
         finally:
-            await gen.aclose()
+            if gen is not None:
+                try:
+                    await gen.aclose()
+                except Exception as close_error:
+                    self.ten_env.log_warn(
+                        f"FishAudioTTS: failed to close generator cleanly: {close_error}"
+                    )
 
     def cancel(self):
         self.ten_env.log_debug("FishAudioTTS: cancel() called.")

@@ -107,6 +107,7 @@ def test_reconnect_after_connection_drop(MockCosyTTSClient):
         class Session:
             def __init__(self, should_fail: bool):
                 self.should_fail = should_fail
+                self.call_count = 0
 
             async def get_audio_data(self):
                 if self.should_fail:
@@ -114,8 +115,12 @@ def test_reconnect_after_connection_drop(MockCosyTTSClient):
                         "Simulated connection drop from test"
                     )
                 # On the second request, simulate a successful audio stream
-                # that completes immediately.
-                return (True, MESSAGE_TYPE_CMD_COMPLETE, None)
+                # that completes immediately on first call, then stops loop
+                self.call_count += 1
+                if self.call_count == 1:
+                    return (True, MESSAGE_TYPE_CMD_COMPLETE, None)
+                # Subsequent calls: raise CancelledError to stop the loop
+                raise asyncio.CancelledError()
 
         def __init__(self):
             self.session_count = 0

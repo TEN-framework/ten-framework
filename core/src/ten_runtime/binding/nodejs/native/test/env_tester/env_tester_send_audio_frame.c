@@ -147,11 +147,20 @@ static void ten_env_tester_proxy_notify_send_audio_frame(
   ten_error_t err;
   TEN_ERROR_INIT(err);
 
-  bool rc = ten_env_tester_send_audio_frame(ten_env_tester, ctx->c_audio_frame,
-                                            proxy_send_audio_frame_callback,
-                                            ctx, &err);
-  if (!rc) {
-    proxy_send_audio_frame_callback(ten_env_tester, NULL, ctx, &err);
+  bool rc = false;
+  if (ctx->js_cb) {
+    // Callback is provided, use it.
+    rc = ten_env_tester_send_audio_frame(ten_env_tester, ctx->c_audio_frame,
+                                         proxy_send_audio_frame_callback, ctx,
+                                         &err);
+    if (!rc) {
+      proxy_send_audio_frame_callback(ten_env_tester, NULL, ctx, &err);
+    }
+  } else {
+    // No callback provided, use fire-and-forget mode.
+    rc = ten_env_tester_send_audio_frame(ten_env_tester, ctx->c_audio_frame,
+                                         NULL, NULL, &err);
+    ten_env_tester_notify_send_audio_frame_ctx_destroy(ctx);
   }
 
   ten_error_deinit(&err);
@@ -202,10 +211,20 @@ napi_value ten_nodejs_ten_env_tester_send_audio_frame(napi_env env,
   RETURN_UNDEFINED_IF_NAPI_FAIL(status == napi_ok && audio_frame_bridge != NULL,
                                 "Failed to unwrap audio_frame object");
 
-  ten_nodejs_tsfn_t *cb_tsfn = ten_nodejs_tsfn_create(
-      env, "[TSFN] TenEnvTester::send_audio_frame callback", args[2],
-      tsfn_proxy_send_audio_frame_callback);
-  RETURN_UNDEFINED_IF_NAPI_FAIL(cb_tsfn, "Failed to create TSFN");
+  // Check if callback is undefined.
+  napi_valuetype callback_type = napi_undefined;
+  status = napi_typeof(env, args[2], &callback_type);
+  RETURN_UNDEFINED_IF_NAPI_FAIL(status == napi_ok,
+                                "Failed to get callback type");
+
+  ten_nodejs_tsfn_t *cb_tsfn = NULL;
+  if (callback_type != napi_undefined) {
+    // Callback is provided, create TSFN.
+    cb_tsfn = ten_nodejs_tsfn_create(
+        env, "[TSFN] TenEnvTester::send_audio_frame callback", args[2],
+        tsfn_proxy_send_audio_frame_callback);
+    RETURN_UNDEFINED_IF_NAPI_FAIL(cb_tsfn, "Failed to create TSFN");
+  }
 
   ten_error_t err;
   TEN_ERROR_INIT(err);
@@ -223,7 +242,9 @@ napi_value ten_nodejs_ten_env_tester_send_audio_frame(napi_env env,
     RETURN_UNDEFINED_IF_NAPI_FAIL(js_error, "Failed to create JS error");
 
     // The JS callback will not be called, so release the TSFN here.
-    ten_nodejs_tsfn_release(cb_tsfn);
+    if (cb_tsfn) {
+      ten_nodejs_tsfn_release(cb_tsfn);
+    }
 
     ten_env_tester_notify_send_audio_frame_ctx_destroy(notify_info);
     ten_error_deinit(&err);

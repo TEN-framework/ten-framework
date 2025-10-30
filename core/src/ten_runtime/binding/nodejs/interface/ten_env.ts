@@ -15,6 +15,7 @@ import { LogLevel } from "./log_level.js";
 import type { Value } from "./value.js";
 import type { LogOption } from "./log_option.js";
 import { DefaultLogOption } from "./log_option.js";
+import type { SendOptions } from "./send_options.js";
 
 export class TenEnv {
   async sendCmd(
@@ -90,7 +91,17 @@ export class TenEnv {
     }
   }
 
-  async sendData(data: Data): Promise<TenError | undefined> {
+  async sendData(
+    data: Data,
+    options?: SendOptions,
+  ): Promise<TenError | undefined> {
+    // If options is undefined or doesn't wait for result, use fire-and-forget
+    // mode.
+    if (!options || !options.waitForResult) {
+      return ten_addon.ten_nodejs_ten_env_send_data(this, data, undefined);
+    }
+
+    // If wait for result, use the original async waiting mode.
     return new Promise<TenError | undefined>((resolve) => {
       const err = ten_addon.ten_nodejs_ten_env_send_data(
         this,
@@ -106,7 +117,21 @@ export class TenEnv {
     });
   }
 
-  async sendVideoFrame(videoFrame: VideoFrame): Promise<TenError | undefined> {
+  async sendVideoFrame(
+    videoFrame: VideoFrame,
+    options?: SendOptions,
+  ): Promise<TenError | undefined> {
+    // If options is undefined or doesn't wait for result, use fire-and-forget
+    // mode.
+    if (!options || !options.waitForResult) {
+      return ten_addon.ten_nodejs_ten_env_send_video_frame(
+        this,
+        videoFrame,
+        undefined,
+      );
+    }
+
+    // If wait for result, use the original async waiting mode.
     return new Promise<TenError | undefined>((resolve) => {
       const err = ten_addon.ten_nodejs_ten_env_send_video_frame(
         this,
@@ -122,7 +147,21 @@ export class TenEnv {
     });
   }
 
-  async sendAudioFrame(audioFrame: AudioFrame): Promise<TenError | undefined> {
+  async sendAudioFrame(
+    audioFrame: AudioFrame,
+    options?: SendOptions,
+  ): Promise<TenError | undefined> {
+    // If options is undefined or doesn't wait for result, use fire-and-forget
+    // mode.
+    if (!options || !options.waitForResult) {
+      return ten_addon.ten_nodejs_ten_env_send_audio_frame(
+        this,
+        audioFrame,
+        undefined,
+      );
+    }
+
+    // If wait for result, use the original async waiting mode.
     return new Promise<TenError | undefined>((resolve) => {
       const err = ten_addon.ten_nodejs_ten_env_send_audio_frame(
         this,
@@ -138,7 +177,21 @@ export class TenEnv {
     });
   }
 
-  async returnResult(cmdResult: CmdResult): Promise<TenError | undefined> {
+  async returnResult(
+    cmdResult: CmdResult,
+    options?: SendOptions,
+  ): Promise<TenError | undefined> {
+    // If options is undefined or doesn't wait for result, use fire-and-forget
+    // mode.
+    if (!options || !options.waitForResult) {
+      return ten_addon.ten_nodejs_ten_env_return_result(
+        this,
+        cmdResult,
+        undefined,
+      );
+    }
+
+    // If wait for result, use the original async waiting mode.
     return new Promise<TenError | undefined>((resolve) => {
       const err = ten_addon.ten_nodejs_ten_env_return_result(
         this,

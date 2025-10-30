@@ -61,7 +61,7 @@
               "property": {
                 "params": {
                   "key": "${env:ELEVENLABS_TTS_KEY|}",
-                  "voice_id": "lhTvHflPVOqgSWyuWQry",
+                  "voice_id": "pNInz6obpgDQGcFmaJgB",
                   "model_id": "eleven_multilingual_v2"
                 },
                 "dump": false,

@@ -155,6 +155,19 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
                 self.ten_env.log_error("Client is not initialized")
                 return
 
+            # Check if audio processor task is still running, restart if needed
+            if (
+                self.audio_processor_task is None
+                or self.audio_processor_task.done()
+            ):
+                self.ten_env.log_info(
+                    "Audio processor task not running, restarting..."
+                )
+                self.audio_processor_task = asyncio.create_task(
+                    self._process_audio_data()
+                )
+                self.ten_env.log_info("Audio processor task restarted")
+
             if t.request_id != self.current_request_id:
                 self.ten_env.log_info(
                     f"KEYPOINT New TTS request with ID: {t.request_id}"
@@ -247,11 +260,14 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
         """
         Independent audio data process loop.
         This runs in the background and processes audio data from the client.
+        Continuously processes data stream for multiple requests.
+        done=True only marks end of current request, loop continues for next request.
+        Only breaks on errors, reconnection happens on next synthesize_audio call.
         """
         try:
             self.ten_env.log_info("Starting audio process loop")
 
-            while True:  # Loop until we get a done signal or error
+            while True:  # Continuous loop for processing multiple requests
                 try:
                     self.ten_env.log_info(
                         "Waiting for audio data from client..."
@@ -322,10 +338,10 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
                             f"Received cancel message from client: {data}"
                         )
 
-                    # Handle TTS audio end - this is when we should stop
+                    # Handle TTS audio end - current request done, continue for next
                     if done:
                         self.ten_env.log_info(
-                            f"All pcm received done, current_request_id: {self.current_request_id}"
+                            f"Current request done (request_id: {self.current_request_id}), ready for next request"
                         )
                         await self._handle_tts_audio_end()
 
@@ -343,6 +359,8 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
                         code=ModuleErrorCode.NON_FATAL_ERROR.value,
                         vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
                     )
+                    # Break loop on error, will reconnect on next synthesize_audio
+                    break
 
         except Exception as e:
             self.ten_env.log_error(f"Fatal error in audio consumer: {e}")
