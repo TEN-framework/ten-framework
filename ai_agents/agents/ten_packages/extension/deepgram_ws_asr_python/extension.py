@@ -252,6 +252,14 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
             # Determine if final (EndOfTurn event or specific event type)
             is_final = event_type == "EndOfTurn"
 
+            # Get confidence from words array
+            words = data.get("words", [])
+            confidence = words[0].get("confidence", 0.0) if words else 0.0
+
+            # Filter out low-confidence interim results to avoid false positives from noise
+            if not is_final and confidence < 0.5:
+                return
+
             # Log transcript
             self.ten_env.log_info(
                 f"[DEEPGRAM-FLUX-TRANSCRIPT] Text: '{transcript_text}' | "
@@ -298,6 +306,13 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
             # Convert to milliseconds
             start_ms = int(start_time * 1000)
             duration_ms = int(duration * 1000)
+
+            # Get confidence for filtering
+            confidence = alternative.get("confidence", 0.0)
+
+            # Filter out low-confidence interim results to avoid false positives from noise
+            if not is_final and confidence < 0.5:
+                return
 
             # Log transcript
             self.ten_env.log_info(
@@ -374,16 +389,9 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
             self.audio_timeline.add_user_audio(
                 int(len(buf) / (self.config.sample_rate / 1000 * 2))
             )
+
             await self.ws.send_bytes(bytes(buf))
             self.audio_frame_count += 1
-
-            if self.audio_frame_count % 100 == 0:
-                duration_ms = int(len(buf) / (self.config.sample_rate / 1000 * 2))
-                total_audio_ms = self.audio_timeline.get_total_user_audio_duration()
-                self.ten_env.log_info(
-                    f"[DEEPGRAM-AUDIO] Sent frame #{self.audio_frame_count}, "
-                    f"{len(buf)} bytes, ~{duration_ms}ms audio, total: {total_audio_ms}ms"
-                )
 
             frame.unlock_buf(buf)
             return True

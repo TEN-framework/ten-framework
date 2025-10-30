@@ -86,9 +86,8 @@ class MainControlExtension(AsyncExtension):
         stream_id = int(self.session_id)
         if not event.text:
             return
-        if event.final or len(event.text) > 2:
-            await self._interrupt()
         if event.final:
+            await self._interrupt()
             self.turn_id += 1
             await self.agent.queue_llm_input(event.text)
         await self._send_transcript("user", event.text, event.final, stream_id)

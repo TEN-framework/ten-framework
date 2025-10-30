@@ -55,6 +55,7 @@
                   "url": "wss://api.deepgram.com/v2/listen",
                   "model": "flux-general-en",
                   "language": "en-US",
+                  "interim_results": true,
                   "eot_threshold": 0.7,
                   "eot_timeout_ms": 3000
                 }
@@ -69,7 +70,7 @@
                 "base_url": "https://api.openai.com/v1",
                 "api_key": "${env:OPENAI_API_KEY}",
                 "frequency_penalty": 0.9,
-                "model": "gpt-4o",
+                "model": "${env:OPENAI_MODEL}",
                 "max_tokens": 512,
                 "prompt": "",
                 "proxy_url": "${env:OPENAI_PROXY_URL|}",
@@ -625,7 +626,7 @@
       },
       {
         "name": "voice_assistant_thymia",
-        "auto_start": true,
+        "auto_start": false,
         "graph": {
           "nodes": [
             {
@@ -653,11 +654,9 @@
               "property": {
                 "params": {
                   "api_key": "${env:DEEPGRAM_API_KEY}",
-                  "url": "wss://api.deepgram.com/v2/listen",
-                  "model": "flux-general-en",
-                  "language": "en-US",
-                  "eot_threshold": 0.7,
-                  "eot_timeout_ms": 3000
+                  "url": "wss://api.deepgram.com/v1/listen",
+                  "model": "nova-3",
+                  "language": "en-US"
                 }
               }
             },
@@ -692,7 +691,7 @@
                   "modelId": "mistv2",
                   "lang": "eng",
                   "samplingRate": 16000,
-                  "speedAlpha": 1.0
+                  "speedAlpha": 1
                 }
               }
             },
@@ -728,7 +727,7 @@
               "extension_group": "default",
               "property": {
                 "api_key": "${env:THYMIA_API_KEY|}",
-                "min_speech_duration": 22.0,
+                "min_speech_duration": 22,
                 "silence_threshold": 0.02,
                 "continuous_analysis": true,
                 "min_interval_seconds": 60,
