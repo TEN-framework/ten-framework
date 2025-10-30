@@ -13,6 +13,7 @@ from .app import App
 from .extension import Extension
 from .async_extension import AsyncExtension
 from .async_ten_env import AsyncTenEnv
+from .send_options import SendOptions
 from .ten_env import TenEnv
 from .log_level import LogLevel
 from .log_option import LogOption, DefaultLogOption
@@ -42,6 +43,7 @@ __all__ = [
     "TenEnv",
     "TenErrorCode",
     "AsyncTenEnv",
+    "SendOptions",
     "Cmd",
     "StatusCode",
     "StartGraphCmd",

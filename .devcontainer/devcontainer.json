@@ -12,10 +12,24 @@
   "workspaceFolder": "/workspaces/ten-framework/ai_agents",
   "forwardPorts": [
     3000,
-    8080,
     49483,
+    8080,
     49484
   ],
+  "portsAttributes": {
+    "3000": {
+      "label": "Agent Example UI"
+    },
+    "49483": {
+      "label": "TMAN Designer"
+    },
+    "8080": {
+      "label": "TEN API Server"
+    },
+    "49484": {
+      "label": "TEN Service Hub"
+    }
+  },
   "features": {
     "ghcr.io/devcontainers/features/git:1": {},
     "ghcr.io/devcontainers/features/python:1": {},
