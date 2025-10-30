@@ -60,18 +60,27 @@ def test_params_passthrough(MockCosyTTSClient):
     mock_instance = MockCosyTTSClient.return_value
     mock_instance.synthesize_audio = AsyncMock()
 
-    # Mock get_audio_data to return completion signal once, then raise CancelledError
-    # Since done=True no longer breaks the loop, we need to stop it explicitly
-    call_count = {"n": 0}
+    # Create state to hold the queue and task
+    stream_state = {"queue": None, "task": None}
 
     async def get_audio_data():
-        idx = call_count["n"]
-        call_count["n"] += 1
-        if idx == 0:
-            # First call: return completion signal
-            return (True, MESSAGE_TYPE_CMD_COMPLETE, None)
-        # Subsequent calls: raise CancelledError to stop the loop
-        raise asyncio.CancelledError()
+        """Simulate async streaming data from queue"""
+        # Lazy initialization: create queue and start producer on first call
+        if stream_state["queue"] is None:
+            stream_state["queue"] = asyncio.Queue()
+
+            async def simulate_audio_stream():
+                """Simulate TTS service completing immediately"""
+                queue = stream_state["queue"]
+                await asyncio.sleep(
+                    0.01
+                )  # Small delay to ensure proper initialization
+                await queue.put((True, MESSAGE_TYPE_CMD_COMPLETE, None))
+
+            # Start producer task in background
+            stream_state["task"] = asyncio.create_task(simulate_audio_stream())
+
+        return await stream_state["queue"].get()
 
     mock_instance.get_audio_data.side_effect = get_audio_data
 

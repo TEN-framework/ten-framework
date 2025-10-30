@@ -85,22 +85,39 @@ def test_ttfb_metric_is_sent(MockCosyTTSClient):
     mock_instance = MockCosyTTSClient.return_value
     mock_instance.synthesize_audio = AsyncMock()
 
-    # Use a counter-driven async side_effect to avoid pre-created coroutines
-    # which can be flaky under the new thread/event-loop model
-    call_state = {"n": 0}
+    # Create state to hold the queue and task
+    stream_state = {"queue": None, "task": None}
 
     async def get_audio_data():
-        idx = call_state["n"]
-        call_state["n"] += 1
-        if idx == 0:
-            # Intentionally delay before the first chunk to generate measurable TTFB
-            await asyncio.sleep(0.25)  # 250ms with slack for scheduler jitter
-            return (False, MESSAGE_TYPE_PCM, b"\x11\x22\x33")
-        if idx == 1:
-            # Second call returns the completion signal
-            return (True, MESSAGE_TYPE_CMD_COMPLETE, None)
-        # Subsequent calls: actively stop pulling to avoid repeated "done"
-        raise asyncio.CancelledError()
+        """Simulate async streaming data from queue"""
+        # Lazy initialization: create queue and start producer on first call
+        if stream_state["queue"] is None:
+            stream_state["queue"] = asyncio.Queue()
+
+            async def simulate_audio_stream():
+                """Simulate TTS service sending data asynchronously"""
+                queue = stream_state["queue"]
+                # Delay to simulate network latency and TTS processing time
+                await asyncio.sleep(0.25)  # 250ms TTFB
+
+                # Send first audio chunk
+                await queue.put((False, MESSAGE_TYPE_PCM, b"\x11\x22\x33"))
+
+                # Simulate more chunks arriving
+                await asyncio.sleep(0.05)
+                await queue.put((False, MESSAGE_TYPE_PCM, b"\x44\x55\x66"))
+
+                await asyncio.sleep(0.05)
+                await queue.put((False, MESSAGE_TYPE_PCM, b"\x77\x88\x99"))
+
+                # Send completion signal
+                await asyncio.sleep(0.05)
+                await queue.put((True, MESSAGE_TYPE_CMD_COMPLETE, None))
+
+            # Start producer task in background
+            stream_state["task"] = asyncio.create_task(simulate_audio_stream())
+
+        return await stream_state["queue"].get()
 
     mock_instance.get_audio_data.side_effect = get_audio_data
 
