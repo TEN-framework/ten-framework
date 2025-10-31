@@ -1,13 +1,17 @@
 # TEN Framework Quick Reference - voice-assistant-advanced
 
 **Target**: Working with `voice-assistant-advanced` example
-**Last Updated**: 2025-10-30
+**Last Updated**: 2025-10-31
+
+> **For comprehensive documentation**, see [AI_working_with_ten.md](./AI_working_with_ten.md)
 
 ---
 
 ## 1. Environment Setup (.env file)
 
-**Location**: `/home/ubuntu/ten-framework/ai_agents/.env`
+**IMPORTANT**: Only ONE .env file is used: `/home/ubuntu/ten-framework/ai_agents/.env`
+
+All other .env files (previously under `agents/`, `server/`, etc.) have been removed as redundant.
 
 **Required variables**:
 ```bash
@@ -35,10 +39,23 @@ RIME_TTS_API_KEY=your_key
 ELEVENLABS_TTS_KEY=your_key
 ```
 
-**After editing .env**, must restart container:
+**After editing .env**, choose one option:
+
+**Option 1: Restart container** (slower, guaranteed to work):
 ```bash
 cd /home/ubuntu/ten-framework/ai_agents
 docker compose down && docker compose up -d
+```
+
+**Option 2: Source .env and restart server** (faster, no container restart):
+```bash
+# Stop server
+docker exec ten_agent_dev bash -c "pkill -9 -f 'bin/api'"
+
+# Source .env and restart
+docker exec -d ten_agent_dev bash -c \
+  "set -a && source /app/.env && set +a && \
+   cd /app/server && ./bin/api -tenapp_dir=/app/agents/examples/voice-assistant-advanced/tenapp > /tmp/task_run.log 2>&1"
 ```
 
 ---
@@ -256,29 +273,42 @@ sleep 5 && grep -o 'https://[^[:space:]]*\.trycloudflare\.com' /tmp/cloudflare_t
 
 ### After Changing property.json
 
+**Server restart: NOT needed!** Property.json is loaded when each new session starts (when user joins a channel).
+
+**Frontend restart: NEEDED if graph list changed!** The playground frontend caches the graph list from `/graphs` API.
+
 ```bash
-# Just restart the server (no rebuild needed)
-docker exec ten_agent_dev bash -c "pkill -f 'task run'"
+# If you added/removed graphs, restart frontend to clear cache
+docker exec ten_agent_dev bash -c "pkill -9 -f 'bun.*dev'"
 docker exec -d ten_agent_dev bash -c \
-  "cd /app/agents/examples/voice-assistant-advanced && \
-   task run > /tmp/task_run.log 2>&1"
+  "cd /app/agents/examples/voice-assistant-advanced/playground && \
+   bun run dev > /tmp/playground.log 2>&1"
+
+# Check which port it started on
+docker exec ten_agent_dev tail -10 /tmp/playground.log | grep "Local:"
+```
+
+To apply property changes to an existing session, stop and restart that session:
+```bash
+curl -X POST http://localhost:8080/stop \
+  -H "Content-Type: application/json" \
+  -d '{"channel_name": "test123"}'
 ```
 
 ### After Changing .env
 
-**Option 1: Source .env (Faster - No container restart needed)**
+**Option 1: Source .env and restart server** (Faster - No container restart):
 ```bash
 # Stop current server
-docker exec ten_agent_dev bash -c "pkill -f 'task run'"
+docker exec ten_agent_dev bash -c "pkill -9 -f 'bin/api'"
 
-# Source .env and restart server
+# Source .env and restart server (MUST be in one command!)
 docker exec -d ten_agent_dev bash -c \
   "set -a && source /app/.env && set +a && \
-   cd /app/agents/examples/voice-assistant-advanced && \
-   task run > /tmp/task_run.log 2>&1"
+   cd /app/server && ./bin/api -tenapp_dir=/app/agents/examples/voice-assistant-advanced/tenapp > /tmp/task_run.log 2>&1"
 ```
 
-**Option 2: Restart container (If sourcing doesn't work)**
+**Option 2: Restart container** (Guaranteed to work, but slower):
 ```bash
 cd /home/ubuntu/ten-framework/ai_agents
 docker compose down && docker compose up -d
@@ -351,7 +381,22 @@ sleep 5 && grep -o 'https://[^[:space:]]*\.trycloudflare\.com' /tmp/cloudflare_t
 
 ---
 
-## 9. Essential Workflows
+## 9. When to Restart What (Quick Reference)
+
+| What Changed | Restart Container? | Restart Server? | Restart Frontend? | Notes |
+|--------------|-------------------|-----------------|-------------------|-------|
+| **property.json** | ❌ No | ❌ No | ⚠️ Yes if graphs added/removed | Server loads per session. Frontend caches graph list. |
+| **.env file** | ⚠️ Option 1: Yes<br>✅ Option 2: No, source instead | ✅ Yes | ❌ No | Option 1: `docker compose down && up`<br>Option 2: Source .env + restart server (faster) |
+| **Python code** | ❌ No | ✅ Yes | ❌ No | Stop and restart server to reload Python extensions |
+| **Go code** | ❌ No | ✅ Yes + rebuild | ❌ No | Run `task install` first, then restart server |
+
+**Key Findings**:
+- Only ONE .env file is active: `/home/ubuntu/ten-framework/ai_agents/.env`
+- Frontend caches `/graphs` API response - restart to see new/removed graphs
+
+---
+
+## 10. Essential Workflows
 
 ### Starting the Server
 1. Use `task run` to start the server

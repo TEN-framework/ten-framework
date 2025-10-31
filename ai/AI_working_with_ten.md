@@ -1,7 +1,7 @@
 # TEN Framework Development Guide
 
 **Purpose**: Complete onboarding guide for developing with TEN Framework v0.11+
-**Last Updated**: 2025-10-30
+**Last Updated**: 2025-10-31
 
 ---
 
@@ -56,7 +56,6 @@ TEN Framework projects typically run in Docker containers for consistency.
 **Standard Container Structure:**
 ```
 /app/agents/examples/voice-assistant/
-├── .env                    # API keys and config
 ├── Taskfile.yaml          # Build/run automation
 └── tenapp/
     ├── property.json      # Graph definitions
@@ -65,6 +64,12 @@ TEN Framework projects typically run in Docker containers for consistency.
         └── extension/     # Custom extensions
 ```
 
+**IMPORTANT: .env File Location**
+
+**Only ONE .env file is used**: `/home/ubuntu/ten-framework/ai_agents/.env`
+
+This file is loaded by `docker-compose.yml` and becomes the container's environment. All other .env files (previously found under `agents/`, `server/`, `playground/`, example subdirectories) have been removed as they were redundant.
+
 ### API Keys Management
 
 **Best Practice**: Keep API keys in a file OUTSIDE the git repository (e.g., `/home/ubuntu/PERSISTENT_KEYS_CONFIG.md` or `~/api_keys.txt`). This allows you to:
@@ -72,7 +77,7 @@ TEN Framework projects typically run in Docker containers for consistency.
 - Never accidentally commit secrets
 - Reference keys when creating new `.env` files
 
-**Create .env file:**
+**Create .env file at `/home/ubuntu/ten-framework/ai_agents/.env`:**
 ```bash
 # Example .env structure
 AGORA_APP_ID=your_app_id
@@ -83,6 +88,7 @@ OPENAI_MODEL=gpt-4o-mini
 
 DEEPGRAM_API_KEY=...
 ELEVENLABS_TTS_KEY=...
+RIME_TTS_API_KEY=...
 
 # Custom extension keys
 YOUR_API_KEY=...
@@ -92,41 +98,58 @@ YOUR_API_KEY=...
 
 **CRITICAL**: Environment variables must be available when the container/process starts.
 
+#### When Do You Need to Restart?
+
+| What Changed | Restart Container? | Restart Server? | Restart Frontend? | Notes |
+|--------------|-------------------|-----------------|-------------------|-------|
+| **property.json** | ❌ No | ❌ No | ⚠️ Yes if graphs added/removed | Server loads per session. Frontend caches graph list from `/graphs` API. |
+| **.env file** | ⚠️ Option 1: Yes<br>✅ Option 2: No | ✅ Yes | ❌ No | Option 1: Full restart (`docker compose down && up`)<br>Option 2: Source .env + restart server (faster) |
+| **Python code** | ❌ No | ✅ Yes | ❌ No | Python extensions are reloaded when server restarts |
+| **Go code** | ❌ No | ✅ Yes + rebuild | ❌ No | Must run `task install` to rebuild, then restart server |
+
 #### ❌ Does NOT Work:
-1. Editing `.env` while services are running
-2. Restarting services with `task run` (doesn't reload .env)
+1. Editing `.env` while services are running and expecting immediate effect
+2. Restarting server without sourcing .env (server inherits old environment)
 3. Expecting variables to propagate automatically
 
-#### ✅ Works:
-1. **Source .env before starting** (fastest - no container restart):
-   ```bash
-   # Stop current server
-   docker exec container_name bash -c "pkill -f 'task run'"
+#### ✅ Works - Two Options:
 
-   # Source .env and restart server
-   docker exec -d container_name bash -c '
-   set -a
-   source /app/.env
-   set +a
-   cd /app/agents/examples/voice-assistant-advanced
-   task run > /tmp/task_run.log 2>&1
-   '
-   ```
+**Option 1: Source .env and restart server** (Fastest - no container restart):
+```bash
+# Stop current server
+docker exec ten_agent_dev bash -c "pkill -9 -f 'bin/api'"
 
-2. **Restart Docker container** (if sourcing doesn't work):
-   ```bash
-   docker compose down
-   docker compose up -d
-   ```
+# Source .env and restart server (MUST be in ONE command!)
+docker exec -d ten_agent_dev bash -c \
+  "set -a && source /app/.env && set +a && \
+   cd /app/server && ./bin/api -tenapp_dir=/app/agents/examples/voice-assistant-advanced/tenapp > /tmp/task_run.log 2>&1"
+```
 
-3. **Hardcode in property.json** (testing only):
-   ```json
-   {
-     "property": {
-       "api_key": "actual_value_here"
-     }
-   }
-   ```
+**Why one command?** Sourcing .env in one shell session and running the server in another doesn't work - the environment variables won't carry over.
+
+**Option 2: Restart Docker container** (Slower but guaranteed):
+```bash
+cd /home/ubuntu/ten-framework/ai_agents
+docker compose down
+docker compose up -d
+
+# Then reinstall Python deps and restart server
+docker exec ten_agent_dev bash -c \
+  "cd /app/agents/examples/voice-assistant-advanced/tenapp && \
+   bash scripts/install_python_deps.sh"
+
+docker exec -d ten_agent_dev bash -c \
+  "cd /app/server && ./bin/api -tenapp_dir=/app/agents/examples/voice-assistant-advanced/tenapp > /tmp/task_run.log 2>&1"
+```
+
+**Option 3: Hardcode in property.json** (testing only, not recommended):
+```json
+{
+  "property": {
+    "api_key": "actual_value_here"
+  }
+}
+```
 
 ---
 
@@ -577,6 +600,30 @@ To send audio to multiple extensions, split at the **source**, not intermediate 
 
 **Note**: Splitting from intermediate nodes (like `streamid_adapter`) may cause crashes.
 
+### After Modifying property.json
+
+**Server restart: NOT needed!** The API server loads property.json when each new session starts (when user joins a channel).
+
+**Frontend restart: NEEDED if graph list changed!** The playground frontend caches the graph list from the `/graphs` API endpoint.
+
+```bash
+# If you added/removed graphs, restart frontend to clear cache
+docker exec ten_agent_dev bash -c "pkill -9 -f 'bun.*dev'"
+docker exec -d ten_agent_dev bash -c \
+  "cd /app/agents/examples/voice-assistant-advanced/playground && \
+   bun run dev > /tmp/playground.log 2>&1"
+
+# Check which port it started on
+docker exec ten_agent_dev tail -10 /tmp/playground.log | grep "Local:"
+```
+
+**To apply changes to existing session**, stop and restart that specific session:
+```bash
+curl -X POST http://localhost:8080/stop \
+  -H "Content-Type: application/json" \
+  -d '{"channel_name": "your_channel"}'
+```
+
 ---
 
 ## Creating Example Variants
@@ -884,19 +931,24 @@ docker exec container tail -20 /tmp/api_advanced.log | grep tenappDir
 - Session starts but extension can't connect to API
 - Logs show: `Environment variable DEEPGRAM_API_KEY is not found`
 
-**Cause:** `.env` file not in the example directory or not sourced
+**Cause:** Server not started with environment variables from .env file
 
 **Solutions:**
 ```bash
-# Option 1: Copy .env to new example
-cp agents/.env agents/examples/voice-assistant-advanced/
+# Option 1: Source .env and start server (faster)
+docker exec -d ten_agent_dev bash -c \
+  "set -a && source /app/.env && set +a && \
+   cd /app/server && ./bin/api -tenapp_dir=/app/agents/examples/voice-assistant-advanced/tenapp > /tmp/task_run.log 2>&1"
 
-# Option 2: Source before starting (in container)
-docker exec container bash -c "set -a; source /app/agents/.env; set +a; cd /app/server && ./bin/api -tenapp_dir=/app/agents/examples/voice-assistant-advanced/tenapp"
+# Option 2: Restart container (slower but guaranteed)
+cd /home/ubuntu/ten-framework/ai_agents
+docker compose down && docker compose up -d
 
-# Option 3: Hardcode for testing (temporary)
+# Option 3: Hardcode for testing (temporary, not recommended)
 # Edit property.json: "api_key": "actual_key_here"
 ```
+
+**Remember**: Only `/home/ubuntu/ten-framework/ai_agents/.env` is used. All other .env files have been removed.
 
 #### Issue 4: Graph Configuration Errors
 
@@ -1295,13 +1347,25 @@ Environment variable MY_API_KEY is not found, using default value .
 ```
 
 **Cause**: Container loaded environment at startup, edits to `.env` not picked up
-**Solution**: Restart container to reload environment variables
 
+**Solution - Two Options**:
+
+**Option 1: Source .env and restart server** (faster):
 ```bash
-cd /path/to/docker-compose-dir
+docker exec ten_agent_dev bash -c "pkill -9 -f 'bin/api'"
+docker exec -d ten_agent_dev bash -c \
+  "set -a && source /app/.env && set +a && \
+   cd /app/server && ./bin/api -tenapp_dir=/app/agents/examples/voice-assistant-advanced/tenapp > /tmp/task_run.log 2>&1"
+```
+
+**Option 2: Restart container** (guaranteed):
+```bash
+cd /home/ubuntu/ten-framework/ai_agents
 docker compose down
 docker compose up -d
 ```
+
+**Remember**: Only `/home/ubuntu/ten-framework/ai_agents/.env` is used. All other .env files have been removed.
 
 ### Issue 3: TypeError with Property Comparisons
 
