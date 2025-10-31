@@ -1,0 +1,131 @@
+{
+  "ten": {
+    "predefined_graphs": [
+      {
+        "name": "default",
+        "auto_start": true,
+        "singleton": true,
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "azure_asr_python",
+              "addon": "azure_asr_python",
+              "extension_group": "asr",
+              "property": {
+                "key": "${env:AZURE_STT_KEY|}",
+                "region": "${env:AZURE_STT_REGION|}",
+                "language": "${env:AZURE_STT_LANGUAGE|en-US}"
+              }
+            },
+            {
+              "type": "extension",
+              "name": "web_audio_control_go",
+              "addon": "web_audio_control_go",
+              "extension_group": "web_server"
+            },
+            {
+              "type": "extension",
+              "name": "audio_file_player_python",
+              "addon": "audio_file_player_python",
+              "extension_group": "audio_player"
+            }
+          ],
+          "connections": [
+            {
+              "extension": "web_audio_control_go",
+              "cmd": [
+                {
+                  "name": "start_play",
+                  "dest": [
+                    {
+                      "extension": "audio_file_player_python"
+                    }
+                  ]
+                }
+              ],
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "dest": [
+                    {
+                      "extension": "azure_asr_python"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "audio_file_player_python",
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "dest": [
+                    {
+                      "extension": "azure_asr_python"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "azure_asr_python",
+              "data": [
+                {
+                  "name": "asr_result",
+                  "dest": [
+                    {
+                      "extension": "web_audio_control_go"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ],
+    "log": {
+      "handlers": [
+        {
+          "matchers": [
+            {
+              "level": "debug"
+            }
+          ],
+          "formatter": {
+            "type": "plain",
+            "colored": true
+          },
+          "emitter": {
+            "type": "file",
+            "config": {
+              "path": "logs/debug.log"
+            }
+          }
+        },
+        {
+          "matchers": [
+            {
+              "category": "key_point",
+              "level": "debug"
+            },
+            {
+              "level": "warn"
+            }
+          ],
+          "formatter": {
+            "type": "plain",
+            "colored": true
+          },
+          "emitter": {
+            "type": "console",
+            "config": {
+              "stream": "stderr"
+            }
+          }
+        }
+      ]
+    }
+  }
+}
