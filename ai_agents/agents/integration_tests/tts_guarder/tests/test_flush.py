@@ -105,7 +105,6 @@ class FlushTester(AsyncExtensionTester):
     def _stop_test_with_error(
         self, ten_env: AsyncTenEnvTester, error_message: str
     ) -> None:
-        ten_env.log_info(f"Stopping test with error message: {error_message}")
         """Stop test with error message."""
         ten_env.stop_test(
             TenError.create(TenErrorCode.ErrorCodeGeneric, error_message)
@@ -174,13 +173,13 @@ class FlushTester(AsyncExtensionTester):
                 self._stop_test_with_error(ten_env, f"Received tts_flush_end before tts_audio_end")
                 return
             
-            # 校验flush_id
+            # Validate flush_id
             received_flush_id, _ = data.get_property_string("flush_id")
             if received_flush_id != self.flush_id:
                 self._stop_test_with_error(ten_env, f"Flush ID mismatch. Expected: {self.flush_id}, Received: {received_flush_id}")
                 return
             
-            # 校验metadata完全一致
+            # Validate metadata completely consistent
             metadata_str, _ = data.get_property_to_json("metadata")
             if metadata_str:
                 try:
@@ -192,7 +191,7 @@ class FlushTester(AsyncExtensionTester):
                     self._stop_test_with_error(ten_env, f"Invalid JSON in flush_end metadata: {metadata_str}")
                     return
             else:
-                # 如果没有收到metadata，但发送时有metadata，则报错
+                # If no metadata is received, but there is metadata sent, report an error
                 if self.sent_flush_metadata is not None:
                     self._stop_test_with_error(ten_env, f"Missing metadata in flush_end response. Expected: {self.sent_flush_metadata}")
                     return
@@ -201,10 +200,10 @@ class FlushTester(AsyncExtensionTester):
             self.flush_end_received = True
             self.flush_end_timestamp = time.time()
             
-            # 启动5秒监控任务，检查是否还有音频/文本数据
+            # Start a 5-second monitoring task to check if there is any audio/text data after flush_end
             asyncio.create_task(self._monitor_post_flush_end_data(ten_env))
         else:
-            # 检查是否在flush_end之后收到其他数据
+            # Check if any other data is received after flush_end
             if self.flush_end_received:
                 self.post_flush_end_data_count += 1
                 ten_env.log_info(f"⚠️ Received data '{name}' after flush_end (count: {self.post_flush_end_data_count})")
@@ -215,7 +214,7 @@ class FlushTester(AsyncExtensionTester):
     @override
     async def on_audio_frame(self, ten_env: AsyncTenEnvTester, audio_frame: AudioFrame) -> None:
         """Handle received audio frame from TTS extension."""
-        # 检查是否在flush_end之后收到音频
+        # Check if any audio frame is received after flush_end
         if self.flush_end_received:
             self.post_flush_end_audio_count += 1
             ten_env.log_info(f"⚠️ Received audio frame after flush_end (count: {self.post_flush_end_audio_count})")
@@ -240,25 +239,25 @@ class FlushTester(AsyncExtensionTester):
         metadata = {
             "session_id": self.session_id,
         }
-        # 保存发送的metadata用于后续校验
+        # Save the sent metadata for subsequent verification
         self.sent_flush_metadata = metadata
         flush_data.set_property_from_json("metadata", json.dumps(metadata))
         await ten_env.send_data(flush_data)
 
     async def _monitor_post_flush_end_data(self, ten_env: AsyncTenEnvTester) -> None:
-        """监控flush_end后5秒内是否还有音频/文本数据"""
-        ten_env.log_info("开始监控flush_end后的数据...")
+        """Monitor if there is any audio/text data after flush_end for 5 seconds"""
+        ten_env.log_info("Start monitoring data after flush_end...")
         
-        # 等待5秒
+        # Wait for 5 seconds
         await asyncio.sleep(5.0)
         
-        # 检查是否有额外的数据
+        # Check if there is any additional data
         if self.post_flush_end_audio_count > 0 or self.post_flush_end_data_count > 0:
-            error_msg = f"在flush_end后5秒内收到了额外数据: 音频帧 {self.post_flush_end_audio_count} 个, 其他数据 {self.post_flush_end_data_count} 个"
+            error_msg = f"Received additional data after flush_end for 5 seconds: audio frames {self.post_flush_end_audio_count} , other data {self.post_flush_end_data_count} "
             ten_env.log_info(f"❌ {error_msg}")
             self._stop_test_with_error(ten_env, error_msg)
         else:
-            ten_env.log_info("✅ flush_end后5秒内未收到额外数据，测试通过")
+            ten_env.log_info("✅ No additional data received after flush_end for 5 seconds, test passed")
             ten_env.stop_test()
 
 def test_flush(extension_name: str, config_dir: str) -> None:

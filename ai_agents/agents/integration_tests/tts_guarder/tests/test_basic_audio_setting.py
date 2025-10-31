@@ -25,7 +25,7 @@ TTS_BASIC_AUDIO_SETTING_CONFIG_FILE1 = "property_basic_audio_setting1.json"
 TTS_BASIC_AUDIO_SETTING_CONFIG_FILE2 = "property_basic_audio_setting2.json"
 CASE1_SAMPLE_RATE = 0
 CASE2_SAMPLE_RATE = 0
-
+AUDIO_DURATION_TOLERANCE_MS = 50
 
 class BasicAudioSettingTester(AsyncExtensionTester):
     """Test class for TTS extension basic audio setting"""
@@ -128,7 +128,6 @@ class BasicAudioSettingTester(AsyncExtensionTester):
     def _stop_test_with_error(
         self, ten_env: AsyncTenEnvTester, error_message: str
     ) -> None:
-        ten_env.log_info(f"Stopping test with error message: {error_message}")
         """Stop test with error message."""
         ten_env.stop_test(
             TenError.create(TenErrorCode.ErrorCodeGeneric, error_message)
@@ -190,13 +189,13 @@ class BasicAudioSettingTester(AsyncExtensionTester):
             ten_env.log_info(f"[{self.test_name}] Received tts_audio_start")
             self.audio_start_time = time.time()
             
-            # 校验request_id
+            # Validate request_id
             received_request_id, _ = data.get_property_string("request_id")
             if received_request_id != str(self.request_id):
                 self._stop_test_with_error(ten_env, f"Request ID mismatch in tts_audio_start. Expected: {self.request_id}, Received: {received_request_id}")
                 return
             
-            # 校验metadata (基类实现中tts_audio_start的metadata只包含session_id和turn_id)
+            # Validate metadata (Base class implementation only contains session_id and turn_id in tts_audio_start)
             metadata_str, _ = data.get_property_to_json("metadata")
             if metadata_str:
                 try:
@@ -220,13 +219,13 @@ class BasicAudioSettingTester(AsyncExtensionTester):
         elif name == "tts_audio_end":
             ten_env.log_info(f"[{self.test_name}] Received tts_audio_end")
             
-            # 校验request_id
+            # Validate request_id
             received_request_id, _ = data.get_property_string("request_id")
             if received_request_id != str(self.request_id):
                 self._stop_test_with_error(ten_env, f"Request ID mismatch. Expected: {self.request_id}, Received: {received_request_id}")
                 return
             
-            # 校验metadata (基类实现中tts_audio_end的metadata只包含session_id和turn_id)
+            # Validate metadata (Base class implementation only contains session_id and turn_id in tts_audio_end)
             metadata_str, _ = data.get_property_to_json("metadata")
             if metadata_str:
                 try:
@@ -245,26 +244,26 @@ class BasicAudioSettingTester(AsyncExtensionTester):
                 self._stop_test_with_error(ten_env, f"Missing metadata in tts_audio_end response")
                 return
             
-            # 校验音频长度
+            #Validate audio duration
             if self.audio_start_time is not None:
                 current_time = time.time()
                 actual_duration_ms = (current_time - self.audio_start_time) * 1000
                 
-                # 获取request_total_audio_duration_ms（音频实际长度）
+                # Get request_total_audio_duration_ms (actual audio duration)
                 received_audio_duration_ms, _ = data.get_property_int("request_total_audio_duration_ms")
                 
-                # 校验音频长度：request_total_audio_duration_ms 应该与 PCM 文件计算出的长度一致
+                # Validate audio duration: request_total_audio_duration_ms should be consistent with the length calculated from the PCM file
                 pcm_audio_duration_ms = self._calculate_pcm_audio_duration_ms()
                 if pcm_audio_duration_ms > 0 and received_audio_duration_ms > 0:
                     audio_duration_diff = abs(received_audio_duration_ms - pcm_audio_duration_ms)
-                    if audio_duration_diff > 50:  # 允许50ms误差
+                    if audio_duration_diff > AUDIO_DURATION_TOLERANCE_MS:  # Allow 50ms error
                         self._stop_test_with_error(ten_env, f"Audio duration mismatch. PCM calculated: {pcm_audio_duration_ms}ms, Reported: {received_audio_duration_ms}ms, Diff: {audio_duration_diff}ms")
                         return
                     ten_env.log_info(f"✅ [{self.test_name}] Audio duration validation passed. PCM: {pcm_audio_duration_ms}ms, Reported: {received_audio_duration_ms}ms, Diff: {audio_duration_diff}ms")
                 else:
                     ten_env.log_info(f"[{self.test_name}] Skipping audio duration validation - PCM: {pcm_audio_duration_ms}ms, Reported: {received_audio_duration_ms}ms")
                 
-                # 记录实际经过的时间（用于调试）
+                # Record actual elapsed time (for debugging)
                 ten_env.log_info(f"[{self.test_name}] Actual event duration: {actual_duration_ms:.2f}ms")
             else:
                 ten_env.log_warn(f"[{self.test_name}] tts_audio_start not received before tts_audio_end")
