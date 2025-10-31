@@ -34,14 +34,7 @@ from ten_runtime import (
     Data,
     TenError,
 )
-from ten_ai_base.struct import TTSTextInput, TTSFlush
-from humeai_tts_python.humeTTS import (
-    EVENT_TTS_RESPONSE,
-    EVENT_TTS_END,
-    EVENT_TTS_ERROR,
-    EVENT_TTS_INVALID_KEY_ERROR,
-    EVENT_TTS_FLUSH,
-)
+from ten_ai_base.struct import TTSTextInput, TTSFlush, TTS2HttpResponseEventType
 
 
 # ================ test metrics ================
@@ -108,15 +101,16 @@ def test_ttfb_metric_is_sent(MockHumeAiTTS):
 
     # --- Mock Configuration ---
     mock_instance = MockHumeAiTTS.return_value
+    mock_instance.clean = AsyncMock()
 
     # This async generator simulates the TTS client's get() method with a delay
     # to produce a measurable TTFB.
     async def mock_get_audio_with_delay(text: str, request_id: str):
         # Simulate network latency or processing time before the first byte
         await asyncio.sleep(0.2)
-        yield (b"\x11\x22\x33", EVENT_TTS_RESPONSE)
+        yield (b"\x11\x22\x33", TTS2HttpResponseEventType.RESPONSE)
         # Simulate the end of the stream
-        yield (None, EVENT_TTS_END)
+        yield (None, TTS2HttpResponseEventType.END)
 
     mock_instance.get.side_effect = mock_get_audio_with_delay
 

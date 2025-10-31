@@ -34,12 +34,7 @@ from ten_runtime import (
     Data,
     TenError,
 )
-from ten_ai_base.struct import TTSTextInput, TTSFlush
-from humeai_tts_python.humeTTS import (
-    EVENT_TTS_RESPONSE,
-    EVENT_TTS_END,
-    EVENT_TTS_FLUSH,
-)
+from ten_ai_base.struct import TTSTextInput, TTSFlush, TTS2HttpResponseEventType
 
 
 # ================ test dump file functionality ================
@@ -121,6 +116,7 @@ def test_dump_functionality(MockHumeClient):
 
     # --- Mock Configuration ---
     mock_client = MockHumeClient.return_value
+    mock_client.clean = AsyncMock()
 
     # Create some fake audio data to be streamed
     fake_audio_chunk_1 = b"\x11\x22\x33\x44" * 20  # 80 bytes
@@ -441,6 +437,7 @@ def test_flush_logic(MockHumeAiTTS):
 
     mock_instance = MockHumeAiTTS.return_value
     mock_instance.cancel = AsyncMock()
+    mock_instance.clean = AsyncMock()
 
     async def mock_get_long_audio_stream(text: str, request_id: str):
         for _ in range(20):
@@ -448,13 +445,13 @@ def test_flush_logic(MockHumeAiTTS):
             # We simulate this by checking the mock's 'called' status.
             if mock_instance.cancel.called:
                 print("Mock detected cancel call, sending EVENT_TTS_FLUSH.")
-                yield (None, EVENT_TTS_FLUSH)
+                yield (None, TTS2HttpResponseEventType.FLUSH)
                 return  # Stop the generator immediately after flush
-            yield (b"\x11\x22\x33" * 100, EVENT_TTS_RESPONSE)
+            yield (b"\x11\x22\x33" * 100, TTS2HttpResponseEventType.RESPONSE)
             await asyncio.sleep(0.1)
 
         # This part is only reached if not cancelled - normal completion
-        yield (None, EVENT_TTS_END)
+        yield (None, TTS2HttpResponseEventType.END)
 
     mock_instance.get.side_effect = mock_get_long_audio_stream
 
