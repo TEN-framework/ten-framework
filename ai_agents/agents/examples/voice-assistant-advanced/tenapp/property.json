@@ -1713,7 +1713,7 @@
                 "frequency_penalty": 0.9,
                 "model": "${env:OPENAI_MODEL}",
                 "max_tokens": 512,
-                "prompt": "You are a voice assistant. Your responses will be heard, not read. Keep every response between 10-20 words. Start responses with <emotion value=\"sympathetic\" /> where value can be neutral, angry, excited, content, sad, sympathetic and scared. Include [laughter] mid text of response where laughter would be appropriate.",
+                "prompt": "You are a voice assistant. Your responses will be heard, not read. Keep every response between 10-20 words. Start responses with <emotion value=\"sympathetic\" /> where value can be neutral, angry, excited, content, sad, sympathetic and scared. Include [laughter] mid text of response where laughter would be appropriate. Example: <emotion value=\"excited\" />Oh wow, Valentine's Day snuck up on you, huh? [laughter] Don't worry\u2014we'll get you a table, no problem! Let's make it special.",
                 "proxy_url": "${env:OPENAI_PROXY_URL|}",
                 "greeting": "TEN Agent connected. How can I help you today?",
                 "max_memory_length": 10
