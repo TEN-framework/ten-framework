@@ -929,67 +929,90 @@ HTTP模式使用标准的HTTP流式请求，适合传统的REST API TTS服务。
 
 ### 实现规范
 
-#### 1. HTTP客户端配置
+HTTP模式基于`AsyncTTS2HttpExtension`基类实现，该基类已经提供了完整的请求处理逻辑、TTFB计算、音频数据处理等功能。开发者只需要实现客户端接口和配置类即可。
 
-**客户端初始化：**
+#### 1. HTTP客户端接口实现
+
+**客户端必须实现`AsyncTTS2HttpClient`接口：**
 ```python
-class VendorTTSClient:
+from ten_ai_base.tts2_http import AsyncTTS2HttpClient
+from ten_ai_base.struct import TTS2HttpResponseEventType
+from httpx import AsyncClient, Timeout, Limits
+
+class VendorTTSClient(AsyncTTS2HttpClient):
+    """HTTP流式TTS客户端，实现AsyncTTS2HttpClient接口"""
+    
     def __init__(self, config: VendorTTSConfig, ten_env: AsyncTenEnv):
         self.config = config
         self.api_key = config.api_key
         self.ten_env: AsyncTenEnv = ten_env
         self._is_cancelled = False
         
-        # API端点配置
-        self.endpoint = "https://api.vendor.com/v1/tts"
+        # API端点配置（使用抽象方法）
+        self.endpoint = self._get_api_endpoint()
         
-        # 请求头配置
-        self.headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json",
-            "Accept": "audio/pcm",
-        }
+        # 请求头配置（使用抽象方法）
+        self.headers = self._create_headers()
         
         # HTTP客户端配置
         self.client = AsyncClient(
+            timeout=Timeout(timeout=5.0),
+            limits=Limits(
+                max_connections=100,
+                max_keepalive_connections=20,
+                keepalive_expiry=600.0,  # 10 minutes keepalive
+            ),
             http2=True,  # 启用HTTP/2
             follow_redirects=True,
-            ......
         )
+    
+    def _get_api_endpoint(self) -> str:
+        """获取API端点 - 子类实现"""
+        raise NotImplementedError("Subclasses must implement _get_api_endpoint")
+    
+    def _create_headers(self) -> dict:
+        """创建请求头 - 子类实现"""
+        raise NotImplementedError("Subclasses must implement _create_headers")
 ```
 
-**连接池管理：**
+**资源管理方法：**
 ```python
-async def stop(self):
-    """停止HTTP客户端"""
+async def clean(self) -> None:
+    """清理资源 - AsyncTTS2HttpClient接口要求"""
     if self.client:
-        self.ten_env.log_debug("Stopping HTTP client")
-        await self.client.aclose()
+        self.ten_env.log_debug("Cleaning HTTP client")
+        # 注意：根据实际实现，可能只需要设置client为None
+        # 或者调用await self.client.aclose()
         self.client = None
 
-def cancel(self):
-    """取消当前请求"""
+async def cancel(self) -> None:
+    """取消当前请求 - AsyncTTS2HttpClient接口要求"""
     self.ten_env.log_debug("VendorTTS: cancel() called.")
     self._is_cancelled = True
 ```
 
 #### 2. 流式请求处理
 
-**TTS请求处理：**
+**TTS请求处理（实现AsyncTTS2HttpClient接口）：**
 ```python
-async def get(self, text: str) -> AsyncIterator[tuple[bytes | None, int | None]]:
-    """处理单个TTS请求"""
+from typing import AsyncIterator, Tuple
+from ten_ai_base.struct import TTS2HttpResponseEventType
+
+async def get(
+    self, text: str, request_id: str
+) -> AsyncIterator[Tuple[bytes | None, TTS2HttpResponseEventType]]:
+    """处理单个TTS请求 - AsyncTTS2HttpClient接口要求
+    
+    注意：返回类型使用TTS2HttpResponseEventType枚举，而不是整数
+    """
     self._is_cancelled = False
     
     if not self.client:
         return
     
     try:
-        # 构建请求数据
-        request_data = {
-            "text": text,
-            **self.config.params,
-        }
+        # 构建请求数据（使用抽象方法）
+        request_data = self._create_request_data(text)
         
         # 发送流式请求
         async with self.client.stream(
@@ -1001,7 +1024,7 @@ async def get(self, text: str) -> AsyncIterator[tuple[bytes | None, int | None]]
             # 检查响应状态
             if response.status_code != 200:
                 error_msg = f"HTTP {response.status_code}: {response.reason_phrase}"
-                yield error_msg.encode("utf-8"), EVENT_TTS_ERROR
+                yield error_msg.encode("utf-8"), TTS2HttpResponseEventType.ERROR
                 return
             
             # 处理流式响应
@@ -1010,98 +1033,159 @@ async def get(self, text: str) -> AsyncIterator[tuple[bytes | None, int | None]]
                     self.ten_env.log_debug(
                         "Cancellation flag detected, sending flush event and stopping TTS stream."
                     )
-                    yield None, EVENT_TTS_FLUSH
+                    yield None, TTS2HttpResponseEventType.FLUSH
                     break
                 
                 self.ten_env.log_debug(
-                    f"VendorTTS: sending EVENT_TTS_RESPONSE, length: {len(chunk)}"
+                    f"VendorTTS: sending RESPONSE event, length: {len(chunk)}"
                 )
                 
                 if len(chunk) > 0:
-                    yield bytes(chunk), EVENT_TTS_RESPONSE
+                    yield bytes(chunk), TTS2HttpResponseEventType.RESPONSE
                 else:
-                    yield None, EVENT_TTS_END
+                    yield None, TTS2HttpResponseEventType.END
             
             # 请求完成
             if not self._is_cancelled:
-                self.ten_env.log_debug("VendorTTS: sending EVENT_TTS_END")
-                yield None, EVENT_TTS_END
+                self.ten_env.log_debug("VendorTTS: sending END event")
+                yield None, TTS2HttpResponseEventType.END
     
     except Exception as e:
         # 错误处理
         error_message = str(e)
-        self.ten_env.log_error(f"vendor_error: {error_message}")
+        self.ten_env.log_error(
+            f"vendor_error: {error_message}",
+            category=LOG_CATEGORY_VENDOR,
+        )
         
         # 检查错误类型
         if self._is_authentication_error(error_message):
-            yield error_message.encode("utf-8"), EVENT_TTS_INVALID_KEY_ERROR
+            yield error_message.encode("utf-8"), TTS2HttpResponseEventType.INVALID_KEY_ERROR
         else:
-            yield error_message.encode("utf-8"), EVENT_TTS_ERROR
+            yield error_message.encode("utf-8"), TTS2HttpResponseEventType.ERROR
+
+def _create_request_data(self, text: str) -> dict:
+    """创建请求数据 - 子类实现"""
+    raise NotImplementedError("Subclasses must implement _create_request_data")
+
+def get_extra_metadata(self) -> dict[str, Any]:
+    """获取额外元数据 - AsyncTTS2HttpClient接口要求
+    
+    用于TTFB指标上报，返回供应商特定的元数据，如voice_id、model_id等
+    """
+    return {
+        "voice_id": self.config.params.get("voice_id", ""),
+        "model_id": self.config.params.get("model_id", ""),
+    }
 ```
 
-#### 3. 错误处理和重试机制
+#### 3. 错误处理
 
 **错误分类：**
 ```python
 def _is_authentication_error(self, error_message: str) -> bool:
     """检查是否为认证错误"""
+    # 根据TTS厂商返回值分类，此处以通用实现为例
     auth_keywords = [
         "401", "unauthorized", "authentication", "credentials",
         "invalid token", "expired token", "forbidden"
     ]
     return any(keyword in error_message.lower() for keyword in auth_keywords)
-
-def _is_network_error(self, error_message: str) -> bool:
-    """检查是否为网络错误"""
-    network_keywords = [
-        "timeout", "connection", "network", "dns", "socket",
-        "connection refused", "connection reset"
-    ]
-    return any(keyword in error_message.lower() for keyword in network_keywords)
-
-def _is_retryable_error(self, error_message: str) -> bool:
-    """检查是否为可重试错误"""
-    retryable_keywords = [
-        "timeout", "connection", "503", "502", "504",
-        "service unavailable", "bad gateway", "gateway timeout"
-    ]
-    return any(keyword in error_message.lower() for keyword in retryable_keywords)
 ```
 
-**重试机制：**
+**注意**：HTTP模式的错误处理由Extension基类统一处理，客户端只需要正确返回事件类型即可。
+
+#### 4. 配置类实现
+
+**配置类必须继承`AsyncTTS2HttpConfig`：**
 ```python
-async def get_with_retry(self, text: str, max_retries: int = 3) -> AsyncIterator[tuple[bytes | None, int | None]]:
-    """带重试的TTS请求"""
-    retry_count = 0
-    base_delay = 1.0
+from ten_ai_base.tts2_http import AsyncTTS2HttpConfig
+from pydantic import BaseModel
+
+class VendorTTSConfig(AsyncTTS2HttpConfig):
+    """TTS供应商配置类"""
     
-    while retry_count < max_retries:
-        try:
-            async for result in self.get(text):
-                yield result
-            return  # 成功完成
-            
-        except Exception as e:
-            error_message = str(e)
-            
-            if not self._is_retryable_error(error_message):
-                # 不可重试的错误，直接返回
-                yield error_message.encode("utf-8"), EVENT_TTS_ERROR
-                return
-            
-            retry_count += 1
-            if retry_count >= max_retries:
-                self.ten_env.log_error(f"TTS request failed after {max_retries} retries: {error_message}")
-                yield error_message.encode("utf-8"), EVENT_TTS_ERROR
-                return
-            
-            # 指数退避延迟
-            delay = base_delay * (2 ** (retry_count - 1))
-            self.ten_env.log_info(f"Retrying TTS request in {delay}s (attempt {retry_count + 1}/{max_retries})")
-            await asyncio.sleep(delay)
+    api_key: str = ""
+    dump: bool = False
+    dump_path: str = "/tmp"
+    sample_rate: int = 16000
+    params: dict[str, Any] = Field(default_factory=dict)
+    black_list_keys: list[str] = ["api_key", "text"]
+    
+    def update_params(self) -> None:
+        """更新配置参数 - AsyncTTS2HttpConfig接口要求"""
+        # 提取API密钥
+        if "api_key" in self.params:
+            self.api_key = self.params["api_key"]
+            del self.params["api_key"]
+        
+        # 处理采样率等参数
+        if "samplingRate" in self.params:
+            self.sample_rate = int(self.params["samplingRate"])
+        
+        # 设置固定参数
+        self.params["audioFormat"] = "pcm"
+        
+        # 删除黑名单参数
+        for key in self.black_list_keys:
+            if key in self.params:
+                del self.params[key]
+    
+    def to_str(self, sensitive_handling: bool = True) -> str:
+        """转换为字符串 - AsyncTTS2HttpConfig接口要求"""
+        if not sensitive_handling:
+            return f"{self}"
+        
+        config = copy.deepcopy(self)
+        # 加密敏感字段
+        if config.api_key:
+            config.api_key = utils.encrypt(config.api_key)
+        return f"{config}"
+    
+    def validate(self) -> None:
+        """验证配置 - AsyncTTS2HttpConfig接口要求"""
+        if not self.api_key:
+            raise ValueError("API key is required")
 ```
 
-#### 4. 请求优化
+#### 5. Extension实现
+
+**Extension必须继承`AsyncTTS2HttpExtension`：**
+```python
+from ten_ai_base.tts2_http import AsyncTTS2HttpExtension, AsyncTTS2HttpConfig, AsyncTTS2HttpClient
+
+class VendorTTSExtension(AsyncTTS2HttpExtension):
+    """TTS Extension实现，继承AsyncTTS2HttpExtension基类"""
+    
+    async def create_config(self, config_json_str: str) -> AsyncTTS2HttpConfig:
+        """创建配置对象 - AsyncTTS2HttpExtension接口要求"""
+        return VendorTTSConfig.model_validate_json(config_json_str)
+    
+    async def create_client(
+        self, config: AsyncTTS2HttpConfig, ten_env: AsyncTenEnv
+    ) -> AsyncTTS2HttpClient:
+        """创建客户端对象 - AsyncTTS2HttpExtension接口要求"""
+        return VendorTTSClient(config=config, ten_env=ten_env)
+    
+    def vendor(self) -> str:
+        """返回供应商名称"""
+        return "vendor_name"
+    
+    def synthesize_audio_sample_rate(self) -> int:
+        """返回音频采样率"""
+        return self.config.sample_rate if self.config else 16000
+```
+
+**注意**：`AsyncTTS2HttpExtension`基类已经实现了完整的`request_tts()`方法，包括：
+- 请求处理逻辑
+- TTFB计算和上报
+- 音频数据处理
+- 错误处理
+- PCM文件写入
+
+开发者只需要实现上述抽象方法即可。
+
+#### 6. 请求优化
 
 **连接复用：**
 ```python
@@ -1140,69 +1224,209 @@ def _get_headers(self) -> dict:
 
 ### 实现模板
 
-基于Rime TTS的完整实现模板：
+基于Rime TTS的完整实现模板（使用AsyncTTS2HttpExtension架构）：
 
 ```python
-class VendorTTSClient:
+from typing import AsyncIterator, Tuple
+from httpx import AsyncClient, Timeout, Limits
+from ten_ai_base.tts2_http import (
+    AsyncTTS2HttpExtension,
+    AsyncTTS2HttpConfig,
+    AsyncTTS2HttpClient,
+)
+from ten_ai_base.struct import TTS2HttpResponseEventType
+
+# 1. 配置类
+class VendorTTSConfig(AsyncTTS2HttpConfig):
+    api_key: str = ""
+    dump: bool = False
+    dump_path: str = "/tmp"
+    sample_rate: int = 16000
+    params: dict[str, Any] = Field(default_factory=dict)
+    
+    def update_params(self) -> None:
+        """更新配置参数"""
+        if "api_key" in self.params:
+            self.api_key = self.params["api_key"]
+            del self.params["api_key"]
+    
+    def to_str(self, sensitive_handling: bool = True) -> str:
+        """转换为字符串"""
+        # 实现细节...
+    
+    def validate(self) -> None:
+        """验证配置"""
+        if not self.api_key:
+            raise ValueError("API key is required")
+
+# 2. 客户端类
+class VendorTTSClient(AsyncTTS2HttpClient):
     """HTTP流式TTS客户端"""
     
     def __init__(self, config: VendorTTSConfig, ten_env: AsyncTenEnv):
-        # 初始化代码...
-        
-    async def get(self, text: str) -> AsyncIterator[tuple[bytes | None, int | None]]:
+        self.config = config
+        self.ten_env = ten_env
+        self._is_cancelled = False
+        self.endpoint = self._get_api_endpoint()
+        self.headers = self._create_headers()
+        self.client = AsyncClient(
+            timeout=Timeout(timeout=5.0),
+            limits=Limits(max_connections=100, max_keepalive_connections=20),
+            http2=True,
+            follow_redirects=True,
+        )
+    
+    def _get_api_endpoint(self) -> str:
+        """获取API端点"""
+        return "https://api.vendor.com/v1/tts"
+    
+    def _create_headers(self) -> dict:
+        """创建请求头"""
+        return {
+            "Authorization": f"Bearer {self.config.api_key}",
+            "Content-Type": "application/json",
+            "Accept": "audio/pcm",
+        }
+    
+    def _create_request_data(self, text: str) -> dict:
+        """创建请求数据"""
+        return {
+            "text": text,
+            **self.config.params,
+        }
+    
+    async def get(
+        self, text: str, request_id: str
+    ) -> AsyncIterator[Tuple[bytes | None, TTS2HttpResponseEventType]]:
         """处理TTS请求"""
-        # 请求处理代码...
+        self._is_cancelled = False
+        if not self.client:
+            return
         
-    async def get_with_retry(self, text: str, max_retries: int = 3) -> AsyncIterator[tuple[bytes | None, int | None]]:
-        """带重试的TTS请求"""
-        # 重试逻辑代码...
+        try:
+            async with self.client.stream(
+                "POST", self.endpoint, headers=self.headers, json=self._create_request_data(text)
+            ) as response:
+                if response.status_code != 200:
+                    error_msg = f"HTTP {response.status_code}: {response.reason_phrase}"
+                    yield error_msg.encode("utf-8"), TTS2HttpResponseEventType.ERROR
+                    return
+                
+                async for chunk in response.aiter_bytes(chunk_size=4096):
+                    if self._is_cancelled:
+                        yield None, TTS2HttpResponseEventType.FLUSH
+                        break
+                    
+                    if len(chunk) > 0:
+                        yield bytes(chunk), TTS2HttpResponseEventType.RESPONSE
+                    else:
+                        yield None, TTS2HttpResponseEventType.END
+                
+                if not self._is_cancelled:
+                    yield None, TTS2HttpResponseEventType.END
         
-    def cancel(self):
+        except Exception as e:
+            error_message = str(e)
+            if "401" in error_message:
+                yield error_message.encode("utf-8"), TTS2HttpResponseEventType.INVALID_KEY_ERROR
+            else:
+                yield error_message.encode("utf-8"), TTS2HttpResponseEventType.ERROR
+    
+    def get_extra_metadata(self) -> dict[str, Any]:
+        """获取额外元数据"""
+        return {
+            "voice_id": self.config.params.get("voice_id", ""),
+            "model_id": self.config.params.get("model_id", ""),
+        }
+    
+    async def clean(self) -> None:
+        """清理资源"""
+        if self.client:
+            self.client = None
+    
+    async def cancel(self) -> None:
         """取消当前请求"""
-        # 取消代码...
-        
-    async def stop(self):
-        """停止客户端"""
-        # 停止代码...
-        
-    def _is_authentication_error(self, error_message: str) -> bool:
-        """检查认证错误"""
-        # 错误检查代码...
-        
-    def _is_retryable_error(self, error_message: str) -> bool:
-        """检查可重试错误"""
-        # 错误检查代码...
+        self._is_cancelled = True
 
-class VendorTTS Extension(AsyncTTS2BaseExtension):
+# 3. Extension类
+class VendorTTSExtension(AsyncTTS2HttpExtension):
     """TTS Extension实现"""
     
-    def __init__(self, name: str) -> None:
-        super().__init__(name)
-        # 初始化代码...
-        
-    async def on_init(self, ten_env: AsyncTenEnv) -> None:
-        # 初始化代码...
-        
-    async def request_tts(self, t: TTSTextInput) -> None:
-        # TTS请求处理...
-        
+    async def create_config(self, config_json_str: str) -> AsyncTTS2HttpConfig:
+        """创建配置对象"""
+        return VendorTTSConfig.model_validate_json(config_json_str)
+    
+    async def create_client(
+        self, config: AsyncTTS2HttpConfig, ten_env: AsyncTenEnv
+    ) -> AsyncTTS2HttpClient:
+        """创建客户端对象"""
+        return VendorTTSClient(config=config, ten_env=ten_env)
+    
     def vendor(self) -> str:
+        """返回供应商名称"""
         return "vendor_name"
-        
+    
     def synthesize_audio_sample_rate(self) -> int:
-        return self.config.sample_rate
+        """返回音频采样率"""
+        return self.config.sample_rate if self.config else 16000
+```
+
+### 关键接口说明
+
+#### AsyncTTS2HttpClient接口
+
+所有HTTP模式客户端必须实现以下接口：
+
+1. **`async def get(text: str, request_id: str) -> AsyncIterator[Tuple[bytes | None, TTS2HttpResponseEventType]]`**
+   - 处理TTS请求，返回音频流和事件类型
+   - 使用`TTS2HttpResponseEventType`枚举，而不是整数
+
+2. **`async def clean() -> None`**
+   - 清理客户端资源
+
+3. **`async def cancel() -> None`**
+   - 取消当前请求
+
+4. **`def get_extra_metadata() -> dict[str, Any]`**
+   - 返回供应商特定的元数据，用于TTFB指标上报
+
+#### AsyncTTS2HttpExtension接口
+
+所有HTTP模式Extension必须实现以下接口：
+
+1. **`async def create_config(config_json_str: str) -> AsyncTTS2HttpConfig`**
+   - 从JSON字符串创建配置对象
+
+2. **`async def create_client(config: AsyncTTS2HttpConfig, ten_env: AsyncTenEnv) -> AsyncTTS2HttpClient`**
+   - 创建客户端对象
+
+3. **`def vendor() -> str`**
+   - 返回供应商名称
+
+4. **`def synthesize_audio_sample_rate() -> int`**
+   - 返回音频采样率
+
+#### TTS2HttpResponseEventType枚举
+
+```python
+class TTS2HttpResponseEventType(Enum):
+    RESPONSE = 1          # 音频数据块
+    END = 2              # 流正常结束
+    ERROR = 3            # 一般错误
+    INVALID_KEY_ERROR = 4 # API密钥认证失败
+    FLUSH = 5            # 刷新/取消事件
 ```
 
 ### 最佳实践
 
-1. **连接池管理**：使用HTTP连接池，减少连接建立开销
-2. **超时控制**：设置合理的连接、读取、写入超时时间
-3. **重试策略**：实现指数退避的重试机制
-4. **错误分类**：区分认证错误、网络错误和业务错误
-5. **压缩支持**：启用HTTP压缩，减少传输数据量
-6. **HTTP/2支持**：使用HTTP/2协议，提高性能
-7. **资源清理**：及时关闭HTTP客户端，释放资源
-8. **请求优化**：使用适当的chunk大小，平衡内存使用和性能
+1. **使用基类**：继承`AsyncTTS2HttpExtension`基类，避免重复实现请求处理逻辑
+2. **接口实现**：严格按照`AsyncTTS2HttpClient`接口实现客户端
+3. **事件类型**：使用`TTS2HttpResponseEventType`枚举，确保类型安全
+4. **抽象方法**：使用抽象方法（`_get_api_endpoint()`, `_create_headers()`等）分离厂商特定逻辑
+5. **连接池管理**：使用HTTP连接池，减少连接建立开销
+6. **超时控制**：设置合理的超时时间
+7. **错误处理**：正确返回事件类型，让Extension基类统一处理错误
+8. **元数据上报**：实现`get_extra_metadata()`方法，支持TTFB指标上报
 
 ## SDK模式规范
 
