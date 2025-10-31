@@ -125,4 +125,30 @@ config("utils_private_config") {
   } else if (is_win) {
     ldflags += [ "/ignore:4099" ]
   }
+
+  if (enable_coverage) {
+    assert(
+      is_linux && target_cpu == "x64",
+      "Coverage instrumentation should only be enabled in Linux + x64"
+    )
+    if (is_clang) {
+      cflags += [
+        "-fprofile-instr-generate",
+        "-fcoverage-mapping",
+      ]
+      cflags_c += [
+        "-fprofile-instr-generate",
+        "-fcoverage-mapping",
+      ]
+      cflags_cc += [
+        "-fprofile-instr-generate",
+        "-fcoverage-mapping",
+      ]
+      # ldflags for shared/executable are applied at those targets; utils is mostly static
+    } else {
+      cflags += [ "--coverage" ]
+      cflags_c += [ "--coverage" ]
+      cflags_cc += [ "--coverage" ]
+    }
+  }
 }
