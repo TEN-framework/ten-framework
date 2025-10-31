@@ -956,12 +956,6 @@ class VendorTTSClient(AsyncTTS2HttpClient):
         
         # HTTP客户端配置
         self.client = AsyncClient(
-            timeout=Timeout(timeout=5.0),
-            limits=Limits(
-                max_connections=100,
-                max_keepalive_connections=20,
-                keepalive_expiry=600.0,  # 10 minutes keepalive
-            ),
             http2=True,  # 启用HTTP/2
             follow_redirects=True,
         )
