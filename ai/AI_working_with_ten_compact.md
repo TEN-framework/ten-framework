@@ -128,6 +128,46 @@ grep -o 'https://[^[:space:]]*\.trycloudflare\.com' /tmp/cloudflare_tunnel.log |
 
 **Note**: Free tunnels get random URLs that change on restart
 
+### Nginx (Production HTTPS)
+
+For production with custom domain and SSL:
+
+```nginx
+server {
+    listen [::]:453 ssl ipv6only=on;
+    listen 453 ssl;
+    ssl_certificate /etc/letsencrypt/live/oai.agora.io/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/oai.agora.io/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    # API endpoints
+    location ~ ^/(health|ping|token|start|stop|graphs|list)(/|$) {
+        proxy_pass http://localhost:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Playground
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+}
+```
+
+**Apply:** `sudo nginx -t && sudo systemctl reload nginx`
+
+**Access:** `https://oai.agora.io:453/`
+
 ---
 
 ## 5. Testing with Users in RTC Channel

@@ -1322,6 +1322,80 @@ URL=$(cat /tmp/cloudflare_tunnel.log | grep -o 'https://[^[:space:]]*\.trycloudf
 echo "Tunnel URL: $URL"
 ```
 
+### Nginx Reverse Proxy (Production)
+
+For production deployments with a custom domain and SSL certificate, use nginx as a reverse proxy.
+
+**Prerequisites:**
+- Domain name (e.g., oai.agora.io)
+- SSL certificate (Let's Encrypt recommended)
+- Nginx installed on server
+
+**Configuration Pattern:**
+
+The TEN Framework requires proxying two services:
+1. **API Server** (port 8080) - Handles `/health`, `/ping`, `/token`, `/start`, `/stop`, `/graphs`, `/list`
+2. **Playground Frontend** (port 3000) - Next.js app with WebSocket support
+
+**Add to `/etc/nginx/sites-enabled/default`:**
+
+```nginx
+server {
+    listen [::]:453 ssl ipv6only=on;
+    listen 453 ssl;
+    ssl_certificate /etc/letsencrypt/live/oai.agora.io/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/oai.agora.io/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    # Proxy TEN Framework API endpoints to localhost:8080
+    location ~ ^/(health|ping|token|start|stop|graphs|list)(/|$) {
+        proxy_pass http://localhost:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Proxy TEN Framework Playground to localhost:3000
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # WebSocket support for Next.js hot reload
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+}
+```
+
+**Apply configuration:**
+```bash
+# Test nginx configuration
+sudo nginx -t
+
+# Reload nginx
+sudo systemctl reload nginx
+
+# Verify port is listening
+sudo netstat -tlnp | grep :453
+```
+
+**Access:**
+- Playground: `https://oai.agora.io:453/`
+- API Health: `https://oai.agora.io:453/health`
+- Graphs List: `https://oai.agora.io:453/graphs`
+
+**Notes:**
+- Use custom SSL ports (e.g., 453, 454) to host multiple playgrounds on the same server
+- Each port can point to a different Docker container with different TEN Framework configurations
+- WebSocket support is essential for Next.js development mode hot reload
+- For standard HTTPS (port 443), change `listen 453 ssl` to `listen 443 ssl`
+
 ---
 
 ## Common Issues
