@@ -29,7 +29,7 @@ from ten_ai_base.const import (
 
 import asyncio
 from deepgram import (
-    DeepgramClientOptions,
+    DeepgramClient,
     LiveTranscriptionEvents,
     LiveOptions,
 )
@@ -46,11 +46,22 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
         self.client: deepgram.AsyncListenWebSocketClient | None = None
         self.config: DeepgramASRConfig | None = None
         self.audio_dumper: Dumper | None = None
+        self.audio_frame_count: int = 0
         self.sent_user_audio_duration_ms_before_last_reset: int = 0
         self.last_finalize_timestamp: int = 0
+        self.using_v2: bool = False  # Track if we're using v2 API
 
         # Reconnection manager with retry limits and backoff strategy
         self.reconnect_manager: ReconnectManager | None = None
+
+    def _is_v2_endpoint(self) -> bool:
+        """Detect if we should use v2 API based on URL or model."""
+        if not self.config:
+            return False
+        # Check if URL contains v2 or model is flux
+        url_is_v2 = "/v2/" in self.config.url
+        model_is_flux = self.config.model.startswith("flux")
+        return url_is_v2 or model_is_flux
 
     @override
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
@@ -80,6 +91,19 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
                 f"KEYPOINT vendor_config: {self.config.to_json(sensitive_handling=True)}",
                 category=LOG_CATEGORY_KEY_POINT,
             )
+            ten_env.log_info("=" * 60)
+            ten_env.log_info("[DEEPGRAM-INIT] Deepgram ASR Configuration")
+            ten_env.log_info("=" * 60)
+            ten_env.log_info(f"[DEEPGRAM-INIT] Model: {self.config.model}")
+            ten_env.log_info(f"[DEEPGRAM-INIT] Language: {self.config.language}")
+            ten_env.log_info(f"[DEEPGRAM-INIT] URL: {self.config.url}")
+            ten_env.log_info(f"[DEEPGRAM-INIT] Sample Rate: {self.config.sample_rate}")
+            ten_env.log_info(f"[DEEPGRAM-INIT] Encoding: {self.config.encoding}")
+            ten_env.log_info(f"[DEEPGRAM-INIT] Interim Results: {self.config.interim_results}")
+            ten_env.log_info(f"[DEEPGRAM-INIT] Punctuate: {self.config.punctuate}")
+            ten_env.log_info(f"[DEEPGRAM-INIT] Finalize Mode: {self.config.finalize_mode}")
+            ten_env.log_info(f"[DEEPGRAM-INIT] Params: {self.config.params}")
+            ten_env.log_info("=" * 60)
 
             if self.config.dump:
                 dump_file_path = os.path.join(
@@ -105,75 +129,15 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
         try:
             await self.stop_connection()
 
-            self.client = deepgram.AsyncListenWebSocketClient(
-                config=DeepgramClientOptions(
-                    url=self.config.url,
-                    api_key=self.config.key or self.config.api_key,
-                    options={"keepalive": "true"},
-                )
-            )
+            # Detect if we should use v2 API
+            self.using_v2 = self._is_v2_endpoint()
 
-            if self.audio_dumper:
-                await self.audio_dumper.start()
-
-            await self._register_deepgram_event_handlers()
-
-            keywords = []
-            if self.config.hotwords:
-                for hw in self.config.hotwords:
-                    tokens = hw.split("|")
-                    if len(tokens) == 2 and tokens[1].isdigit():
-                        keywords.append(":".join(tokens))  # replase to ":"
-                    else:
-                        self.ten_env.log_warn("invalid hotword format: " + hw)
-
-            options = LiveOptions(
-                language=self.config.language,
-                model=self.config.model,
-                sample_rate=self.input_audio_sample_rate(),
-                channels=self.input_audio_channels(),
-                encoding=self.config.encoding,
-                interim_results=self.config.interim_results,
-                punctuate=self.config.punctuate,
-                keywords=keywords,
-                extra=(
-                    {"mid_opt_out": "true"} if self.config.mid_opt_out else None
-                ),
-            )
-
-            # Update options with advanced params
-            if self.config.advanced_params_json:
-                try:
-                    params: dict[str, str] = json.loads(
-                        self.config.advanced_params_json
-                    )
-                    for key, value in params.items():
-                        if hasattr(
-                            options, key
-                        ) and not self.config.is_black_list_params(key):
-                            self.ten_env.log_debug(
-                                f"set deepgram param: {key} = {value}"
-                            )
-                            setattr(options, key, value)
-                except Exception as e:
-                    self.ten_env.log_error(f"set deepgram param failed: {e}")
-
-            self.ten_env.log_info(f"deepgram options: {options}")
-
-            # Connect to websocket
-            result = await self.client.start(options)
-            if not result:
-                self.ten_env.log_error("failed to connect to deepgram")
-                await self.send_asr_error(
-                    ModuleError(
-                        module=MODULE_NAME_ASR,
-                        code=ModuleErrorCode.NON_FATAL_ERROR.value,
-                        message="failed to connect to deepgram",
-                    )
-                )
-                asyncio.create_task(self._handle_reconnect())
+            if self.using_v2:
+                self.ten_env.log_info("[DEEPGRAM] Using v2 API for Flux")
+                await self._start_connection_v2()
             else:
-                self.ten_env.log_info("start_connection completed")
+                self.ten_env.log_info("[DEEPGRAM] Using v1 API")
+                await self._start_connection_v1()
 
         except Exception as e:
             self.ten_env.log_error(
@@ -187,6 +151,134 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
                 ),
             )
 
+    async def _start_connection_v1(self) -> None:
+        """Start connection using v1 API (Nova models)."""
+        assert self.config is not None
+
+        # Create DeepgramClient for v1 API (SDK 5.x)
+        dg_client = DeepgramClient(api_key=self.config.key or self.config.api_key)
+
+        if self.audio_dumper:
+            await self.audio_dumper.start()
+
+        keywords = []
+        if self.config.hotwords:
+            for hw in self.config.hotwords:
+                tokens = hw.split("|")
+                if len(tokens) == 2 and tokens[1].isdigit():
+                    keywords.append(":".join(tokens))  # replase to ":"
+                else:
+                    self.ten_env.log_warn("invalid hotword format: " + hw)
+
+        # Build connection parameters for SDK 5.x
+        connect_params = {
+            "model": self.config.model,
+            "encoding": self.config.encoding,
+            "sample_rate": self.input_audio_sample_rate(),
+            "channels": self.input_audio_channels(),
+            "language": self.config.language,
+            "interim_results": self.config.interim_results,
+            "punctuate": self.config.punctuate,
+        }
+
+        if keywords:
+            connect_params["keywords"] = keywords
+
+        self.ten_env.log_info("=" * 60)
+        self.ten_env.log_info("[DEEPGRAM-CONNECT] Connecting to Deepgram v1")
+        self.ten_env.log_info("=" * 60)
+        self.ten_env.log_info(f"[DEEPGRAM-CONNECT] Model: {self.config.model}")
+        self.ten_env.log_info(f"[DEEPGRAM-CONNECT] Parameters: {connect_params}")
+        self.ten_env.log_info("=" * 60)
+
+        # Connect using v1 API (SDK 5.x)
+        self.client = dg_client.listen.v1.connect(**connect_params)
+
+        # Register v1 event handlers
+        await self._register_deepgram_event_handlers()
+
+        # Start listening
+        result = await self.client.start()
+        if not result:
+            self.ten_env.log_error("failed to connect to deepgram v1")
+            await self.send_asr_error(
+                ModuleError(
+                    module=MODULE_NAME_ASR,
+                    code=ModuleErrorCode.NON_FATAL_ERROR.value,
+                    message="failed to connect to deepgram v1",
+                )
+            )
+            asyncio.create_task(self._handle_reconnect())
+        else:
+            self.ten_env.log_info("=" * 60)
+            self.ten_env.log_info(f"[DEEPGRAM-CONNECT] ✅ CONNECTED to Deepgram v1 {self.config.model}")
+            self.ten_env.log_info("=" * 60)
+
+    async def _start_connection_v2(self) -> None:
+        """Start connection using v2 API (Flux models)."""
+        assert self.config is not None
+
+        # Parse Flux parameters from URL query string or advanced_params_json
+        flux_params = {}
+
+        # Extract params from URL query string if present
+        if "?" in self.config.url:
+            from urllib.parse import parse_qs, urlsplit
+            url_parts = urlsplit(self.config.url)
+            query_params = parse_qs(url_parts.query)
+            for key, value in query_params.items():
+                flux_params[key] = float(value[0]) if key == "eot_threshold" else int(value[0])
+
+        # Create DeepgramClient for v2 API
+        dg_client = DeepgramClient(api_key=self.config.key or self.config.api_key)
+
+        # Build connection parameters
+        connect_params = {
+            "model": self.config.model,
+            "encoding": self.config.encoding,
+            "sample_rate": self.input_audio_sample_rate(),
+            "channels": self.input_audio_channels(),
+            "language": self.config.language,
+            "interim_results": self.config.interim_results,
+            "punctuate": self.config.punctuate,
+        }
+
+        # Add Flux-specific parameters
+        connect_params.update(flux_params)
+
+        self.ten_env.log_info("=" * 60)
+        self.ten_env.log_info("[DEEPGRAM-CONNECT] Connecting to Deepgram v2 (Flux)")
+        self.ten_env.log_info("=" * 60)
+        self.ten_env.log_info(f"[DEEPGRAM-CONNECT] Model: {self.config.model}")
+        self.ten_env.log_info(f"[DEEPGRAM-CONNECT] Parameters: {connect_params}")
+        self.ten_env.log_info("=" * 60)
+
+        # Connect using v2 API
+        self.client = dg_client.listen.v2.connect(**connect_params)
+
+        if self.audio_dumper:
+            await self.audio_dumper.start()
+
+        # Register v2 event handlers
+        await self._register_deepgram_v2_event_handlers()
+
+        # Start listening
+        result = await self.client.start()
+        if not result:
+            self.ten_env.log_error("failed to connect to deepgram v2")
+            await self.send_asr_error(
+                ModuleError(
+                    module=MODULE_NAME_ASR,
+                    code=ModuleErrorCode.NON_FATAL_ERROR.value,
+                    message="failed to connect to deepgram v2",
+                )
+            )
+            asyncio.create_task(self._handle_reconnect())
+        else:
+            self.ten_env.log_info("=" * 60)
+            self.ten_env.log_info(f"[DEEPGRAM-CONNECT] ✅ CONNECTED to Deepgram v2 {self.config.model}")
+            self.ten_env.log_info("=" * 60)
+
     @override
     async def finalize(self, session_id: str | None) -> None:
         assert self.config is not None
@@ -199,7 +291,7 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
         await self._handle_finalize_api()
 
     async def _register_deepgram_event_handlers(self):
-        """Register event handlers for Deepgram WebSocket client."""
+        """Register event handlers for Deepgram WebSocket client (v1)."""
         assert self.client is not None
         self.client.on(
             LiveTranscriptionEvents.Open, self._deepgram_event_handler_on_open
@@ -214,6 +306,42 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
         self.client.on(
             LiveTranscriptionEvents.Error, self._deepgram_event_handler_on_error
         )
+
+    async def _register_deepgram_v2_event_handlers(self):
+        """Register event handlers for Deepgram v2 WebSocket client (Flux)."""
+        assert self.client is not None
+
+        # Register standard events (same as v1)
+        self.client.on(
+            LiveTranscriptionEvents.Open, self._deepgram_event_handler_on_open
+        )
+        self.client.on(
+            LiveTranscriptionEvents.Close, self._deepgram_event_handler_on_close
+        )
+        self.client.on(
+            LiveTranscriptionEvents.Transcript,
+            self._deepgram_event_handler_on_transcript,
+        )
+        self.client.on(
+            LiveTranscriptionEvents.Error, self._deepgram_event_handler_on_error
+        )
+
+        # Register Flux-specific events
+        try:
+            # EndOfTurn event for Flux turn detection
+            self.client.on("EndOfTurn", self._deepgram_event_handler_on_end_of_turn)
+            self.ten_env.log_info("[DEEPGRAM-V2] Registered EndOfTurn event handler")
+        except Exception as e:
+            self.ten_env.log_warn(f"Could not register EndOfTurn handler: {e}")
+
+    async def _deepgram_event_handler_on_end_of_turn(self, _, event):
+        """Handle the EndOfTurn event from Deepgram Flux."""
+        self.ten_env.log_info(
+            f"[DEEPGRAM-FLUX] EndOfTurn event received: {event}",
+            category=LOG_CATEGORY_VENDOR,
+        )
+        # Flux detected end of turn - could trigger LLM response here
+        # For now, just log it
 
     async def _handle_asr_result(
         self,
@@ -276,6 +404,7 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
         # SimpleNamespace
         try:
             result_json = result.to_json()
+            self.ten_env.log_info(f"[DEEPGRAM-RESPONSE] Transcript event received")
             self.ten_env.log_debug(
                 f"vendor_result: on_transcript: {result_json}",
                 category=LOG_CATEGORY_VENDOR,
@@ -305,6 +434,9 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
             is_final = result.is_final
             language = self.config.language
 
+            self.ten_env.log_info(
+                f"[DEEPGRAM-TRANSCRIPT] Text: '{sentence}' | Final: {is_final} | Start: {actual_start_ms}ms | Duration: {duration_ms}ms"
+            )
             self.ten_env.log_debug(
                 f"deepgram event callback on_transcript: {sentence}, language: {language}, is_final: {is_final}"
             )
@@ -447,6 +579,12 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
             int(len(buf) / (self.config.sample_rate / 1000 * 2))
         )
         await self.client.send(bytes(buf))
+        self.audio_frame_count += 1
+        # Log every 100 frames to avoid spam (~2 seconds of audio at 50fps)
+        if self.audio_frame_count % 100 == 0:
+            duration_ms = int(len(buf) / (self.config.sample_rate / 1000 * 2))
+            total_audio_ms = self.audio_timeline.get_total_user_audio_duration()
+            self.ten_env.log_info(f"[DEEPGRAM-AUDIO] Sent frame #{self.audio_frame_count}, {len(buf)} bytes, ~{duration_ms}ms audio, total: {total_audio_ms}ms")
         frame.unlock_buf(buf)
 
         return True
