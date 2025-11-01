@@ -2,6 +2,7 @@
 from datetime import datetime
 import json
 import asyncio
+import traceback
 from typing import Optional
 from urllib.parse import urlencode
 
@@ -42,6 +43,7 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
         self.config: Optional[DeepgramWSASRConfig] = None
         self.audio_frame_count: int = 0
         self.receive_task: Optional[asyncio.Task] = None
+        self._connection_lock: asyncio.Lock = asyncio.Lock()
 
     @override
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
@@ -129,34 +131,35 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
         assert self.config is not None
         self.ten_env.log_info("[DEEPGRAM-WS] Starting WebSocket connection")
 
-        try:
-            await self.stop_connection()
+        async with self._connection_lock:
+            try:
+                await self.stop_connection()
 
-            url = self._build_websocket_url()
-            self.ten_env.log_info(f"[DEEPGRAM-WS] Connecting to: {url}")
+                url = self._build_websocket_url()
+                self.ten_env.log_info(f"[DEEPGRAM-WS] Connecting to: {url}")
 
-            self.session = aiohttp.ClientSession()
-            headers = {"Authorization": f"Token {self.config.api_key}"}
+                self.session = aiohttp.ClientSession()
+                headers = {"Authorization": f"Token {self.config.api_key}"}
 
-            self.ws = await self.session.ws_connect(
-                url,
-                headers=headers,
-                timeout=aiohttp.ClientTimeout(total=30),
-            )
+                self.ws = await self.session.ws_connect(
+                    url,
+                    headers=headers,
+                    timeout=aiohttp.ClientTimeout(total=30),
+                )
 
-            self.connected = True
-            self.ten_env.log_info("[DEEPGRAM-WS] WebSocket connected successfully")
-            self.receive_task = asyncio.create_task(self._receive_loop())
+                self.connected = True
+                self.ten_env.log_info("[DEEPGRAM-WS] WebSocket connected successfully")
+                self.receive_task = asyncio.create_task(self._receive_loop())
 
-        except Exception as e:
-            self.ten_env.log_error(f"[DEEPGRAM-WS] Failed to start connection: {e}")
-            await self.send_asr_error(
-                ModuleError(
-                    module=MODULE_NAME_ASR,
-                    code=ModuleErrorCode.FATAL_ERROR.value,
-                    message=str(e),
-                ),
-            )
+            except Exception as e:
+                self.ten_env.log_error(f"[DEEPGRAM-WS] Failed to start connection: {e}\n{traceback.format_exc()}")
+                await self.send_asr_error(
+                    ModuleError(
+                        module=MODULE_NAME_ASR,
+                        code=ModuleErrorCode.FATAL_ERROR.value,
+                        message=str(e),
+                    ),
+                )
 
     async def _receive_loop(self):
         try:
@@ -257,7 +260,7 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
             confidence = words[0].get("confidence", 0.0) if words else 0.0
 
             # Filter out low-confidence interim results to avoid false positives from noise
-            if not is_final and confidence < 0.5:
+            if not is_final and confidence < self.config.min_interim_confidence:
                 return
 
             # Log transcript
@@ -311,7 +314,7 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
             confidence = alternative.get("confidence", 0.0)
 
             # Filter out low-confidence interim results to avoid false positives from noise
-            if not is_final and confidence < 0.5:
+            if not is_final and confidence < self.config.min_interim_confidence:
                 return
 
             # Log transcript
@@ -350,14 +353,17 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
                 self.ws = None
 
             if self.session and not self.session.closed:
-                await self.session.close()
+                try:
+                    await asyncio.wait_for(self.session.close(), timeout=5.0)
+                except asyncio.TimeoutError:
+                    self.ten_env.log_warn("[DEEPGRAM-WS] Session close timed out")
                 self.session = None
 
             self.connected = False
             self.ten_env.log_info("[DEEPGRAM-WS] Connection stopped")
 
         except Exception as e:
-            self.ten_env.log_error(f"[DEEPGRAM-WS] Error stopping connection: {e}")
+            self.ten_env.log_error(f"[DEEPGRAM-WS] Error stopping connection: {e}\n{traceback.format_exc()}")
 
     @override
     def is_connected(self) -> bool:

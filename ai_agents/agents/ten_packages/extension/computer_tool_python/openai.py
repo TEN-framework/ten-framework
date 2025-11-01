@@ -50,7 +50,8 @@ class OpenAIChatGPT:
 
     def __init__(self, ten_env: AsyncTenEnv, config: OpenAIChatGPTConfig):
         self.config = config
-        ten_env.log_info(f"apikey {config.api_key}, base_url {config.base_url}")
+        masked_key = f"...{config.api_key[-4:]}" if len(config.api_key) > 4 else "****"
+        ten_env.log_info(f"apikey {masked_key}, base_url {config.base_url}")
         self.client = AsyncOpenAI(
             api_key=config.api_key, base_url=config.base_url
         )

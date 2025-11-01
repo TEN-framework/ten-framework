@@ -575,7 +575,8 @@ class AsrWsClient:
         return {"Authorization": "Bearer; {}".format(self.token)}
 
     def api_key_auth(self):
-        self.ten_env.log_info(f"api_key_auth: {self.api_key}")
+        masked_key = f"...{self.api_key[-4:]}" if len(self.api_key) > 4 else "****"
+        self.ten_env.log_info(f"api_key_auth: {masked_key}")
         return {"x-api-key": "{}".format(self.api_key)}
 
     def signature_auth(self, data):

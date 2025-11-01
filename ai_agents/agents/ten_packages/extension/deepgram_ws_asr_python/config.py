@@ -18,6 +18,8 @@ class DeepgramWSASRConfig(BaseModel):
     eot_threshold: float = 0.7
     eot_timeout_ms: int = 3000
     eager_eot_threshold: float = 0.0  # 0 = disabled
+    # Confidence threshold for interim results (filter noise)
+    min_interim_confidence: float = 0.5
     dump: bool = False
     dump_path: str = "/tmp"
     params: Dict[str, Any] = Field(default_factory=dict)
