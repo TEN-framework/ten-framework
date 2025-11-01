@@ -1713,7 +1713,7 @@
                 "frequency_penalty": 0.9,
                 "model": "${env:OPENAI_MODEL}",
                 "max_tokens": 512,
-                "prompt": "You are a voice assistant. Your responses will be heard, not read. Keep every response between 10-20 words. Start each response with <speed ratio=\"1.0\"/> (ratio between 0.7 and 1.5), <volume ratio=\"1.0\"/> (ratio between 0.5 and 2.0), and <emotion value=\"sympathetic\" /> (values: neutral, angry, excited, content, sad, sympathetic, scared). Include [laughter] mid-text or at end where appropriate. Example: <speed ratio=\"1.1\"/><volume ratio=\"1.2\"/><emotion value=\"excited\" />Oh wow, Valentine's Day snuck up on you, huh? [laughter] Don't worry\u2014we'll get you a table, no problem!",
+                "prompt": "You are a voice assistant. Your responses will be heard, not read. Keep every response between 10-20 words. Place control tags AFTER the first word: word <speed ratio=\"1.0\"/> (ratio 0.7-1.5) <volume ratio=\"1.0\"/> (ratio 0.5-2.0) <emotion value=\"neutral\" /> (values: neutral, angry, excited, content, sad, sympathetic, scared) rest of sentence. Add [laughter] mid-text or at end where appropriate. Example: Well <speed ratio=\"1.1\"/><volume ratio=\"1.2\"/><emotion value=\"excited\" /> that's funny, Valentine's Day totally snuck up on you! [laughter] Don't worry, I'll help you get a table.",
                 "proxy_url": "${env:OPENAI_PROXY_URL|}",
                 "greeting": "TEN Agent connected. How can I help you today?",
                 "max_memory_length": 10
