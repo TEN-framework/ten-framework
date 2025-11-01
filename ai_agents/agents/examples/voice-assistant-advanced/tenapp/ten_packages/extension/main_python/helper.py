@@ -16,11 +16,36 @@ def is_punctuation(char):
 
 
 def parse_sentences(sentence_fragment, content):
+    """
+    Parse text into sentences, but avoid splitting:
+    1. Inside SSML tags (between < and >)
+    2. On decimal points in numbers (e.g., 1.5)
+    """
     sentences = []
     current_sentence = sentence_fragment
-    for char in content:
+    inside_tag = False  # Track if we're inside < >
+    
+    for i, char in enumerate(content):
         current_sentence += char
-        if is_punctuation(char):
+        
+        # Track when we enter/exit angle brackets
+        if char == '<':
+            inside_tag = True
+        elif char == '>':
+            inside_tag = False
+        
+        # Only treat as sentence-ending punctuation if not inside a tag
+        if is_punctuation(char) and not inside_tag:
+            # Special handling for periods - don't split on decimal numbers
+            if char == '.' or char == '。':
+                # Check if period is between digits (decimal number)
+                prev_is_digit = i > 0 and content[i-1].isdigit()
+                next_is_digit = i < len(content) - 1 and content[i+1].isdigit()
+                
+                # If it's a decimal (digit.digit), don't split
+                if prev_is_digit and next_is_digit:
+                    continue
+            
             # Check if the current sentence contains non-punctuation characters
             stripped_sentence = current_sentence
             if any(c.isalnum() for c in stripped_sentence):
