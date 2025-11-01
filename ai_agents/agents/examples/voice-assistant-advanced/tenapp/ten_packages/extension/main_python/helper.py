@@ -44,15 +44,18 @@ def parse_sentences(sentence_fragment, content):
                 
                 # If it's a decimal (digit.digit), don't split
                 if prev_is_digit and next_is_digit:
+                    print(f"[parse_sentences] Skipping decimal point at position {i}")
                     continue
             
             # Check if the current sentence contains non-punctuation characters
             stripped_sentence = current_sentence
             if any(c.isalnum() for c in stripped_sentence):
+                print(f"[parse_sentences] Split sentence: {stripped_sentence[:80]}")
                 sentences.append(stripped_sentence)
             current_sentence = ""  # Reset for the next sentence
 
     remain = current_sentence  # Any remaining characters form the incomplete sentence
+    print(f"[parse_sentences] Remaining fragment: {remain[:80] if remain else '(none)'}")
     return sentences, remain
 
 
