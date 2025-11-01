@@ -12,7 +12,7 @@ if (!TEN_DEV_SERVER_URL) {
   throw "Environment variables TEN_DEV_SERVER_URL are not available";
 }
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const url = req.nextUrl.clone();
 
