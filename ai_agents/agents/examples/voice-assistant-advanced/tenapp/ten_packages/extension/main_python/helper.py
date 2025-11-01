@@ -23,39 +23,33 @@ def parse_sentences(sentence_fragment, content):
     """
     sentences = []
     current_sentence = sentence_fragment
-    inside_tag = False  # Track if we're inside < >
-    
-    for i, char in enumerate(content):
+    inside_tag = '<' in sentence_fragment and '>' not in sentence_fragment
+
+    for char in content:
         current_sentence += char
-        
+
         # Track when we enter/exit angle brackets
         if char == '<':
             inside_tag = True
         elif char == '>':
             inside_tag = False
-        
+
         # Only treat as sentence-ending punctuation if not inside a tag
         if is_punctuation(char) and not inside_tag:
             # Special handling for periods - don't split on decimal numbers
             if char == '.' or char == '。':
-                # Check if period is between digits (decimal number)
-                prev_is_digit = i > 0 and content[i-1].isdigit()
-                next_is_digit = i < len(content) - 1 and content[i+1].isdigit()
-                
-                # If it's a decimal (digit.digit), don't split
-                if prev_is_digit and next_is_digit:
-                    print(f"[parse_sentences] Skipping decimal point at position {i}")
+                # Skip period if it follows a digit (likely decimal like "1.0")
+                curr_len = len(current_sentence)
+                if curr_len >= 2 and current_sentence[-2].isdigit():
                     continue
-            
+
             # Check if the current sentence contains non-punctuation characters
             stripped_sentence = current_sentence
             if any(c.isalnum() for c in stripped_sentence):
-                print(f"[parse_sentences] Split sentence: {stripped_sentence[:80]}")
                 sentences.append(stripped_sentence)
             current_sentence = ""  # Reset for the next sentence
 
     remain = current_sentence  # Any remaining characters form the incomplete sentence
-    print(f"[parse_sentences] Remaining fragment: {remain[:80] if remain else '(none)'}")
     return sentences, remain
 
 
