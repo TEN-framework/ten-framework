@@ -1,0 +1,151 @@
+{
+  "ten": {
+    "predefined_graphs": [
+      {
+        "name": "tavus_full_pipeline",
+        "auto_start": true,
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "agora_rtc",
+              "addon": "agora_rtc",
+              "extension_group": "default",
+              "property": {
+                "app_id": "${env:AGORA_APP_ID}",
+                "app_certificate": "${env:AGORA_APP_CERTIFICATE|}",
+                "channel": "tavus_conversation",
+                "stream_id": 1234,
+                "remote_stream_id": 123,
+                "subscribe_audio": true,
+                "subscribe_video": true,
+                "publish_audio": true,
+                "publish_video": true,
+                "publish_data": true
+              }
+            },
+            {
+              "type": "extension",
+              "name": "tavus_control",
+              "addon": "tavus_python",
+              "extension_group": "control",
+              "property": {
+                "tavus_api_key": "${env:TAVUS_API_KEY}",
+                "replica_id": "${env:TAVUS_REPLICA_ID}",
+                "conversation_name": "TEN Agent Full Pipeline Conversation",
+                "max_call_duration": 3600,
+                "enable_recording": false,
+                "language": "en",
+                "auto_create_persona": true,
+                "persona_name": "TEN Framework Assistant",
+                "system_prompt": "You are a helpful AI assistant integrated with the TEN framework. You help developers build real-time, multimodal conversational AI applications. Be friendly, informative, and concise in your responses.",
+                "context": "You are running in a real-time conversational environment with video capabilities powered by Tavus.",
+                "enable_perception": false,
+                "perception_model": "raven-0",
+                "enable_smart_turn_detection": true,
+                "llm_provider": "${env:TAVUS_LLM_PROVIDER}",
+                "llm_model": "${env:TAVUS_LLM_MODEL}",
+                "llm_api_key": "${env:TAVUS_LLM_API_KEY}",
+                "llm_base_url": "${env:TAVUS_LLM_BASE_URL|}",
+                "tts_provider": "${env:TAVUS_TTS_PROVIDER|}",
+                "tts_voice_id": "${env:TAVUS_TTS_VOICE_ID|}"
+              }
+            }
+          ],
+          "connections": [
+            {
+              "extension": "tavus_control",
+              "cmd": [
+                {
+                  "names": [
+                    "on_user_joined",
+                    "on_user_left"
+                  ],
+                  "source": [
+                    {
+                      "extension": "agora_rtc"
+                    }
+                  ]
+                }
+              ],
+              "video_frame": [
+                {
+                  "name": "video_frame",
+                  "source": [
+                    {
+                      "extension": "agora_rtc"
+                    }
+                  ]
+                }
+              ],
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "source": [
+                    {
+                      "extension": "agora_rtc"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "agora_rtc",
+              "video_frame": [
+                {
+                  "name": "video_frame",
+                  "source": [
+                    {
+                      "extension": "tavus_control"
+                    }
+                  ]
+                }
+              ],
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "source": [
+                    {
+                      "extension": "tavus_control"
+                    }
+                  ]
+                }
+              ],
+              "data": [
+                {
+                  "name": "data",
+                  "source": [
+                    {
+                      "extension": "tavus_control"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ],
+    "log": {
+      "handlers": [
+        {
+          "matchers": [
+            {
+              "level": "info"
+            }
+          ],
+          "formatter": {
+            "type": "plain",
+            "colored": true
+          },
+          "emitter": {
+            "type": "console",
+            "config": {
+              "stream": "stdout"
+            }
+          }
+        }
+      ]
+    }
+  }
+}
