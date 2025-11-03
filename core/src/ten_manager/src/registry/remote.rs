@@ -112,29 +112,19 @@ async fn get_package_upload_info(
 
         Box::pin(async move {
             // Resolve LocaleContent fields before creating payload
-            // Only attempt to resolve if base_dir is set, otherwise keep original
-            // content/import_uri
             let mut description = None;
             if let Some(desc) = &pkg_info.manifest.description {
                 let mut resolved_locales = HashMap::new();
                 for (locale, locale_content) in &desc.locales {
-                    let resolved_content =
-                        if locale_content.content.is_some() || locale_content.base_dir.is_some() {
-                            match locale_content.get_content().await {
-                                Ok(content) => ten_rust::pkg_info::manifest::LocaleContent {
-                                    content: Some(content),
-                                    import_uri: None,
-                                    base_dir: None,
-                                },
-                                Err(_) => {
-                                    // If we can't get content, keep the original
-                                    locale_content.clone()
-                                }
-                            }
-                        } else {
-                            // No content and no base_dir, keep original
-                            locale_content.clone()
-                        };
+                    let content = locale_content
+                        .get_content()
+                        .await
+                        .map_err(|e| anyhow!("Failed to resolve description content: {}", e))?;
+                    let resolved_content = ten_rust::pkg_info::manifest::LocaleContent {
+                        content: Some(content),
+                        import_uri: None,
+                        base_dir: None,
+                    };
                     resolved_locales.insert(locale.clone(), resolved_content);
                 }
                 description = Some(ten_rust::pkg_info::manifest::LocalizedField {
@@ -146,23 +136,15 @@ async fn get_package_upload_info(
             if let Some(name) = &pkg_info.manifest.display_name {
                 let mut resolved_locales = HashMap::new();
                 for (locale, locale_content) in &name.locales {
-                    let resolved_content =
-                        if locale_content.content.is_some() || locale_content.base_dir.is_some() {
-                            match locale_content.get_content().await {
-                                Ok(content) => ten_rust::pkg_info::manifest::LocaleContent {
-                                    content: Some(content),
-                                    import_uri: None,
-                                    base_dir: None,
-                                },
-                                Err(_) => {
-                                    // If we can't get content, keep the original
-                                    locale_content.clone()
-                                }
-                            }
-                        } else {
-                            // No content and no base_dir, keep original
-                            locale_content.clone()
-                        };
+                    let content = locale_content
+                        .get_content()
+                        .await
+                        .map_err(|e| anyhow!("Failed to resolve display_name content: {}", e))?;
+                    let resolved_content = ten_rust::pkg_info::manifest::LocaleContent {
+                        content: Some(content),
+                        import_uri: None,
+                        base_dir: None,
+                    };
                     resolved_locales.insert(locale.clone(), resolved_content);
                 }
                 display_name = Some(ten_rust::pkg_info::manifest::LocalizedField {
@@ -174,23 +156,15 @@ async fn get_package_upload_info(
             if let Some(rm) = &pkg_info.manifest.readme {
                 let mut resolved_locales = HashMap::new();
                 for (locale, locale_content) in &rm.locales {
-                    let resolved_content =
-                        if locale_content.content.is_some() || locale_content.base_dir.is_some() {
-                            match locale_content.get_content().await {
-                                Ok(content) => ten_rust::pkg_info::manifest::LocaleContent {
-                                    content: Some(content),
-                                    import_uri: None,
-                                    base_dir: None,
-                                },
-                                Err(_) => {
-                                    // If we can't get content, keep the original
-                                    locale_content.clone()
-                                }
-                            }
-                        } else {
-                            // No content and no base_dir, keep original
-                            locale_content.clone()
-                        };
+                    let content = locale_content
+                        .get_content()
+                        .await
+                        .map_err(|e| anyhow!("Failed to resolve readme content: {}", e))?;
+                    let resolved_content = ten_rust::pkg_info::manifest::LocaleContent {
+                        content: Some(content),
+                        import_uri: None,
+                        base_dir: None,
+                    };
                     resolved_locales.insert(locale.clone(), resolved_content);
                 }
                 readme = Some(ten_rust::pkg_info::manifest::LocalizedField {

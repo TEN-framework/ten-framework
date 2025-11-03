@@ -419,10 +419,12 @@ async fn create_input_str_for_pkg_info_dependencies(
     dumped_pkgs_info: &mut HashSet<PkgBasicInfo>,
     all_candidates: &HashMap<PkgTypeAndName, HashMap<PkgBasicInfo, PkgInfo>>,
     max_latest_versions: i32,
-) -> Result<bool> {
+g i    has_valid_dependencies: &mut bool,
+) -> Result<()> {
     // If this package has already been dumped, skip it.
     if dumped_pkgs_info.contains(&pkg_info.into()) {
-        return Ok(true);
+        *has_valid_dependencies = true;
+        return Ok(());
     }
     dumped_pkgs_info.insert(pkg_info.into());
 
@@ -495,18 +497,20 @@ async fn create_input_str_for_pkg_info_dependencies(
                         found_matched_count += 1;
 
                         // Before adding this package into the computation of the result,
-                        // first check whether all of this package’s dependencies are valid.
+                        // first check whether all of this package's dependencies are valid.
                         // For example, some packages that this one depends on might not exist
                         // in the cloud marketplace or the local file system.
                         // Including such a package — one that cannot actually be used in the
                         // computation — would cause problems and make no
                         // sense.
-                        let dep_is_valid = Box::pin(create_input_str_for_pkg_info_dependencies(
+                        let mut dep_is_valid = false;
+                        Box::pin(create_input_str_for_pkg_info_dependencies(
                             input_str,
                             candidate,
                             dumped_pkgs_info,
                             all_candidates,
                             max_latest_versions,
+                            &mut dep_is_valid,
                         ))
                         .await?;
 
@@ -533,22 +537,27 @@ async fn create_input_str_for_pkg_info_dependencies(
                 }
 
                 if found_matched_count == 0 {
-                    // No versions match the requirement - return false
-                    return Ok(false);
+                    // No versions match the requirement - mark as invalid
+                    *has_valid_dependencies = false;
+                    return Ok(());
                 }
 
                 if !found_any_valid_dep {
                     // We found matching versions, but none of them have valid dependencies
-                    return Ok(false);
+                    *has_valid_dependencies = false;
+                    return Ok(());
                 }
             } else {
-                // No candidates found for this dependency - return false
-                return Ok(false);
+                // No candidates found for this dependency - mark as invalid
+                *has_valid_dependencies = false;
+                return Ok(());
             }
         }
     }
 
-    Ok(true)
+    // All dependencies are valid
+    *has_valid_dependencies = true;
+    Ok(())
 }
 
 fn create_input_str_for_pkg_info_without_dependencies(
@@ -654,12 +663,14 @@ async fn create_input_str(
 
     for candidates in all_candidates {
         for candidate in candidates.1 {
-            let is_valid = create_input_str_for_pkg_info_dependencies(
+            let mut is_valid = false;
+            create_input_str_for_pkg_info_dependencies(
                 &mut input_str,
                 candidate.1,
                 &mut dumped_pkgs_info,
                 all_candidates,
                 max_latest_versions,
+                &mut is_valid,
             )
             .await?;
 
