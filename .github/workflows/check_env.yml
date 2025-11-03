@@ -1,22 +1,30 @@
-name: Check Environment (Mac x64)
+name: Check Environment
 
 on:
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
       - "tools/tman/install_tman.sh"
-      - ".github/workflows/check_env_mac_x64.yml"
+      - ".github/workflows/check_env.yml"
 
 permissions:
   contents: read
 
 concurrency:
-  group: check-env-mac-x64-${{ github.head_ref }}
+  group: check-env-${{ github.head_ref }}
   cancel-in-progress: true
 
 jobs:
   verify-tman-install:
-    runs-on: macos-13
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-13, ubuntu-22.04]
+        include:
+          - os: macos-13
+            platform_name: "macOS x64"
+          - os: ubuntu-22.04
+            platform_name: "Linux x64"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -37,7 +45,7 @@ jobs:
       - name: Install tman using the install script
         run: |
           echo "================================================"
-          echo "Testing tman installation script"
+          echo "Testing tman installation script on ${{ matrix.platform_name }}"
           echo "Script: tools/tman/install_tman.sh"
           echo "================================================"
 
@@ -185,7 +193,7 @@ jobs:
       - name: Run app with tman
         run: |
           echo "================================================"
-          echo "Running transcriber_demo app"
+          echo "Running transcriber_demo app on ${{ matrix.platform_name }}"
           echo "================================================"
 
           cd /tmp/transcriber_demo
@@ -223,16 +231,18 @@ jobs:
           # Gracefully stop the app by sending SIGTERM
           echo ""
           echo "Stopping app gracefully (sending SIGTERM to PID: $APP_PID)..."
-          kill -TERM $APP_PID || true
+
+          # Kill the process group to ensure all child processes are terminated
+          kill -TERM -$APP_PID 2>/dev/null || kill -TERM $APP_PID || true
 
           # Wait for the app to shut down gracefully
           echo "Waiting for app to shut down..."
           sleep 3
 
           # Check if the app has stopped
-          if ps -p $APP_PID > /dev/null; then
+          if ps -p $APP_PID > /dev/null 2>&1; then
             echo "⚠ App did not stop gracefully, sending SIGKILL..."
-            kill -KILL $APP_PID || true
+            kill -KILL -$APP_PID 2>/dev/null || kill -KILL $APP_PID || true
             sleep 1
           fi
 
@@ -243,7 +253,12 @@ jobs:
             echo "✓ App stopped successfully"
           fi
 
+          # Extra cleanup: kill any remaining transcriber_demo processes
+          echo "Cleaning up any remaining processes..."
+          pkill -f "transcriber_demo" || true
+          pkill -f "bin/main" || true
+
           echo ""
           echo "================================================"
-          echo "✅ All verifications completed successfully"
+          echo "✅ All verifications completed successfully on ${{ matrix.platform_name }}"
           echo "================================================"
