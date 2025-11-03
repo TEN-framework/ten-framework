@@ -133,7 +133,6 @@ jobs:
           is_clang=true \
           enable_sanitizer=false \
           enable_coverage=true \
-          ten_rust_force_release=true \
           log_level=1 \
           enable_serialized_actions=true \
           ten_rust_enable_gen_cargo_config=false \
@@ -146,8 +145,8 @@ jobs:
 
           echo $EXTRA_ARGS
 
-          tgn gen linux x64 debug -- $EXTRA_ARGS
-          tgn build linux x64 debug
+          tgn gen linux x64 release -- $EXTRA_ARGS
+          tgn build linux x64 release
 
           df -h .
           tree -I 'gen|obj' out
