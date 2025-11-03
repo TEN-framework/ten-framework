@@ -25,3 +25,4 @@ export * from "./value.js";
 export * from "./log_level.js";
 export * from "./log_option.js";
 export * from "./loc.js";
+export * from "./send_options.js";

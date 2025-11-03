@@ -40,6 +40,9 @@ class InvalidRequiredParamsTester(AsyncExtensionTester):
         print("=" * 80)
 
         self.session_id: str = session_id
+        self.sent_metadata = None  # Store sent metadata for validation
+        self.request_id = "1"
+        self.receive_error = False
 
     async def _send_finalize_signal(self, ten_env: AsyncTenEnvTester) -> None:
         """Send tts_finalize signal to trigger finalization."""
@@ -77,6 +80,8 @@ class InvalidRequiredParamsTester(AsyncExtensionTester):
             "session_id": self.session_id,
             "turn_id": 1,
         }
+        # Store sent metadata for validation
+        self.sent_metadata = metadata
         tts_text_input_obj.set_property_from_json("metadata", json.dumps(metadata))
         await ten_env.send_data(tts_text_input_obj)
         ten_env.log_info(f"✅ tts text input sent: {text}")
@@ -84,7 +89,6 @@ class InvalidRequiredParamsTester(AsyncExtensionTester):
     def _stop_test_with_error(
         self, ten_env: AsyncTenEnvTester, error_message: str
     ) -> None:
-        ten_env.log_info(f"Stopping test with error message: {error_message}")
         """Stop test with error message."""
         ten_env.stop_test(TenError.create(TenErrorCode.ErrorCodeGeneric, error_message))
 
@@ -134,11 +138,12 @@ class InvalidRequiredParamsTester(AsyncExtensionTester):
             ten_env.log_info(f"Received error data: {json_str}")
             code, _ = data.get_property_int("code")
             if code == -1000:
+                self.receive_error = True
                 ten_env.log_info(
                     "✅ TTS invalid required params test passed with final result"
                 )
                 ten_env.stop_test()
-            else:
+            elif self.receive_error == False:
                 self._stop_test_with_error(
                     ten_env, f"Received wrong error code: {code}"
                 )
