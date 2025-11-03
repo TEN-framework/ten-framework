@@ -1,0 +1,8 @@
+{
+    "agora_appid": "${env:AGORA_APP_ID}",
+    "agora_appcert": "${env:AGORA_APP_CERTIFICATE}",
+    "agora_channel_name": "ten_agent_test",
+    "agora_avatar_uid": 12345,
+    "generic_video_api_key": "${env:GENERIC_VIDEO_API_KEY}",
+    "input_audio_sample_rate": 16000
+}
