@@ -481,6 +481,7 @@ jobs:
             "out/linux/x64/libten_runtime_nodejs.node"
           )
 
+          mkdir -p out/linux/x64/coverage
           llvm-profdata merge -sparse $(find . -name "*.profraw") -o out/linux/x64/coverage/merged.profdata
 
           echo "😎Intermediate .profdata file:"
