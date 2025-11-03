@@ -15,20 +15,9 @@ from ten import AsyncTenEnv
 
 class AgoraHeygenRecorder:
     SESSION_CACHE_PATH = "/tmp/heygen_session_id.txt"
-
-    def __init__(
-        self,
-        app_id: str,
-        app_cert: str,
-        heygen_api_key: str,
-        channel_name: str,
-        avatar_uid: int,
-        ten_env: AsyncTenEnv,
-    ):
+    def __init__(self, app_id: str, app_cert: str, heygen_api_key: str, channel_name: str, avatar_uid: int, ten_env: AsyncTenEnv):
         if not app_id or not heygen_api_key:
-            raise ValueError(
-                "AGORA_APP_ID, AGORA_APP_CERT, and HEYGEN_API_KEY must be provided."
-            )
+            raise ValueError("AGORA_APP_ID, AGORA_APP_CERT, and HEYGEN_API_KEY must be provided.")
 
         self.app_id = app_id
         self.app_cert = app_cert
@@ -91,9 +80,7 @@ class AgoraHeygenRecorder:
         old_session_id = self._load_cached_session_id()
         if old_session_id:
             try:
-                self.ten_env.log_info(
-                    f"Found previous session id: {old_session_id}, attempting to stop it."
-                )
+                self.ten_env.log_info(f"Found previous session id: {old_session_id}, attempting to stop it.")
                 await self._stop_session(old_session_id)
                 self.ten_env.log_info("Previous session stopped.")
                 self._clear_session_id_cache()
@@ -103,9 +90,7 @@ class AgoraHeygenRecorder:
         await self._create_session()
         await self._start_session()
         self._save_session_id(self.session_id)
-        self.websocket_task = asyncio.create_task(
-            self._connect_websocket_loop()
-        )
+        self.websocket_task = asyncio.create_task(self._connect_websocket_loop())
 
     async def disconnect(self):
         self._should_reconnect = False
@@ -118,17 +103,13 @@ class AgoraHeygenRecorder:
         await self._stop_session(self.session_id)
 
     async def _create_token(self):
-        response = requests.post(
-            "https://api.heygen.com/v1/streaming.create_token",
-            json={},
-            headers=self.headers,
-        )
+        response = requests.post("https://api.heygen.com/v1/streaming.create_token", json={}, headers=self.headers)
         self._raise_for_status_verbose(response)
         self.session_token = response.json()["data"]["token"]
         self.session_headers = {
             "accept": "application/json",
             "content-type": "application/json",
-            "authorization": f"Bearer {self.session_token}",
+            "authorization": f"Bearer {self.session_token}"
         }
 
     async def _create_session(self):
@@ -151,16 +132,10 @@ class AgoraHeygenRecorder:
         # Log the request details using existing logging mechanism
         self.ten_env.log_info("Creating new session with details:")
         self.ten_env.log_info(f"URL: https://api.heygen.com/v1/streaming.new")
-        self.ten_env.log_info(
-            f"Headers: {json.dumps(self.session_headers, indent=2)}"
-        )
+        self.ten_env.log_info(f"Headers: {json.dumps(self.session_headers, indent=2)}")
         self.ten_env.log_info(f"Payload: {json.dumps(payload, indent=2)}")
 
-        response = requests.post(
-            "https://api.heygen.com/v1/streaming.new",
-            json=payload,
-            headers=self.session_headers,
-        )
+        response = requests.post("https://api.heygen.com/v1/streaming.new", json=payload, headers=self.session_headers)
         self._raise_for_status_verbose(response)
         data = response.json()["data"]
         self.session_id = data["session_id"]
@@ -176,29 +151,17 @@ class AgoraHeygenRecorder:
     async def _start_session(self):
         payload = {"session_id": self.session_id}
         self.ten_env.log_info(f"Starting session with payload: {payload}")
-        response = requests.post(
-            "https://api.heygen.com/v1/streaming.start",
-            json=payload,
-            headers=self.session_headers,
-        )
+        response = requests.post("https://api.heygen.com/v1/streaming.start", json=payload, headers=self.session_headers)
         self._raise_for_status_verbose(response)
 
     async def _stop_session(self, session_id: str):
         try:
             payload = {"session_id": session_id}
             self.ten_env.log_info("_stop_session with details:")
-            self.ten_env.log_info(
-                f"URL: https://api.heygen.com/v1/streaming.stop"
-            )
-            self.ten_env.log_info(
-                f"Headers: {json.dumps(self.headers, indent=2)}"
-            )
+            self.ten_env.log_info(f"URL: https://api.heygen.com/v1/streaming.stop")
+            self.ten_env.log_info(f"Headers: {json.dumps(self.headers, indent=2)}")
             self.ten_env.log_info(f"Payload: {json.dumps(payload, indent=2)}")
-            response = requests.post(
-                "https://api.heygen.com/v1/streaming.stop",
-                json=payload,
-                headers=self.headers,
-            )
+            response = requests.post("https://api.heygen.com/v1/streaming.stop", json=payload, headers=self.headers)
             self._raise_for_status_verbose(response)
             self._clear_session_id_cache()
         except Exception as e:
@@ -219,31 +182,23 @@ class AgoraHeygenRecorder:
         """Restart debounce timer every time this is called."""
         self._speak_end_event.set()  # signal to reset timer
 
-        if (
-            self._speak_end_timer_task is None
-            or self._speak_end_timer_task.done()
-        ):
+        if self._speak_end_timer_task is None or self._speak_end_timer_task.done():
             self._speak_end_event = asyncio.Event()
-            self._speak_end_timer_task = asyncio.create_task(
-                self._debounced_speak_end()
-            )
+            self._speak_end_timer_task = asyncio.create_task(self._debounced_speak_end())
 
     async def _debounced_speak_end(self):
         while True:
             try:
-                await asyncio.wait_for(
-                    self._speak_end_event.wait(), timeout=0.5
-                )
+                await asyncio.wait_for(self._speak_end_event.wait(), timeout=0.5)
                 # Reset the event and loop again
                 self._speak_end_event.clear()
             except asyncio.TimeoutError:
                 # 500ms passed with no reset — now send
                 end_evt_id = str(uuid.uuid4())
-                await self.websocket.send(
-                    json.dumps(
-                        {"type": "agent.speak_end", "event_id": end_evt_id}
-                    )
-                )
+                await self.websocket.send(json.dumps({
+                    "type": "agent.speak_end",
+                    "event_id": end_evt_id
+                }))
                 self.ten_env.log_info("Sent agent.speak_end.")
                 break  # Exit the task
             except Exception as e:
@@ -254,15 +209,11 @@ class AgoraHeygenRecorder:
         if self.websocket is None:
             raise RuntimeError("WebSocket is not connected.")
         event_id = uuid.uuid4().hex
-        await self.websocket.send(
-            json.dumps(
-                {
-                    "type": "agent.speak",
-                    "audio": audio_base64,
-                    "event_id": event_id,
-                }
-            )
-        )
+        await self.websocket.send(json.dumps({
+            "type": "agent.speak",
+            "audio": audio_base64,
+            "event_id": event_id
+        }))
 
         # Schedule agent.speak_end after a short delay
         self._schedule_speak_end()

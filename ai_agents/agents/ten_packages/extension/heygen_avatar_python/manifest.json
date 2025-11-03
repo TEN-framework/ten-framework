@@ -6,7 +6,7 @@
     {
       "type": "system",
       "name": "ten_runtime_python",
-      "version": "0.8.18"
+      "version": "0.11"
     }
   ],
   "package": {
@@ -19,23 +19,25 @@
   },
   "api": {
     "property": {
-      "heygen_api_key": {
-        "type": "string"
-      },
-      "agora_appid": {
-        "type": "string"
-      },
-      "agora_appcert": {
-        "type": "string"
-      },
-      "agora_channel_name": {
-        "type": "string"
-      },
-      "agora_avatar_uid": {
-        "type": "int64"
-      },
-      "input_audio_sample_rate": {
-        "type": "int64"
+      "properties": {
+        "heygen_api_key": {
+          "type": "string"
+        },
+        "agora_appid": {
+          "type": "string"
+        },
+        "agora_appcert": {
+          "type": "string"
+        },
+        "agora_channel_name": {
+          "type": "string"
+        },
+        "agora_avatar_uid": {
+          "type": "int64"
+        },
+        "input_audio_sample_rate": {
+          "type": "int64"
+        }
       }
     }
   },
