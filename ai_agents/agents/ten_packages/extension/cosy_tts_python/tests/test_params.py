@@ -5,6 +5,7 @@
 # Refer to the "LICENSE" file in the root directory for more information.
 #
 from unittest.mock import patch, AsyncMock
+import asyncio
 import json
 
 from ten_runtime import (
@@ -15,6 +16,7 @@ from ten_runtime import (
     TenEnvTester,
     TenError,
 )
+from ..cosy_tts import MESSAGE_TYPE_CMD_COMPLETE
 
 
 # ================ test params passthrough ================
@@ -52,6 +54,35 @@ def test_params_passthrough(MockCosyTTSClient):
     forwarded to the CosyTTSClient client constructor.
     """
     print("Starting test_params_passthrough with mock...")
+
+    # --- Mock Setup ---
+    # Create a mock instance with properly configured async methods
+    mock_instance = MockCosyTTSClient.return_value
+    mock_instance.synthesize_audio = AsyncMock()
+
+    # Create state to hold the queue and task
+    stream_state = {"queue": None, "task": None}
+
+    async def get_audio_data():
+        """Simulate async streaming data from queue"""
+        # Lazy initialization: create queue and start producer on first call
+        if stream_state["queue"] is None:
+            stream_state["queue"] = asyncio.Queue()
+
+            async def simulate_audio_stream():
+                """Simulate TTS service completing immediately"""
+                queue = stream_state["queue"]
+                await asyncio.sleep(
+                    0.01
+                )  # Small delay to ensure proper initialization
+                await queue.put((True, MESSAGE_TYPE_CMD_COMPLETE, None))
+
+            # Start producer task in background
+            stream_state["task"] = asyncio.create_task(simulate_audio_stream())
+
+        return await stream_state["queue"].get()
+
+    mock_instance.get_audio_data.side_effect = get_audio_data
 
     # --- Test Setup ---
     # Define a configuration with custom, arbitrary parameters inside 'params'.
