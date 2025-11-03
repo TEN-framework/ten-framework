@@ -1,0 +1,108 @@
+name: Check Environment (Mac x64)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - "tools/tman/install_tman.sh"
+      - ".github/workflows/check_env_mac_x64.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: check-env-mac-x64-${{ github.head_ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify-tman-install:
+    runs-on: macos-13
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Install tman using the install script
+        run: |
+          echo "================================================"
+          echo "Testing tman installation script"
+          echo "Script: tools/tman/install_tman.sh"
+          echo "================================================"
+
+          # Since the script prompts for confirmation if tman is already installed,
+          # we need to pipe 'y' to automatically confirm the reinstallation.
+          # For CI environment, we'll use 'yes' command to auto-answer.
+          yes y | bash tools/tman/install_tman.sh || true
+
+      - name: Verify tman installation
+        run: |
+          echo "================================================"
+          echo "Verifying tman installation"
+          echo "================================================"
+
+          # Check if tman is installed
+          if ! command -v tman &> /dev/null; then
+            echo "❌ ERROR: tman is not installed"
+            exit 1
+          fi
+
+          # Display tman version and location
+          echo "✓ tman is installed successfully"
+          echo "  Version: $(tman --version 2>&1 || tman -v 2>&1)"
+          echo "  Location: $(which tman)"
+
+          # Verify tman can run basic commands
+          echo ""
+          echo "Testing basic tman commands:"
+          tman --help
+
+      - name: Create transcriber_demo app using tman
+        run: |
+          echo "================================================"
+          echo "Creating transcriber_demo app"
+          echo "================================================"
+
+          # Create a temporary directory for the app
+          cd /tmp
+
+          # Create the app using tman
+          tman create app transcriber_demo --template transcriber_demo
+
+          # Verify the app was created
+          if [ ! -d "transcriber_demo" ]; then
+            echo "❌ ERROR: transcriber_demo app was not created"
+            exit 1
+          fi
+
+          echo "✓ transcriber_demo app created successfully"
+
+      - name: Verify app installation
+        run: |
+          echo "================================================"
+          echo "Verifying transcriber_demo app structure"
+          echo "================================================"
+
+          cd /tmp/transcriber_demo
+
+          # List the app structure
+          echo "App directory structure:"
+          ls -la
+
+          # Check for common files/directories that should exist
+          if [ -f "manifest.json" ]; then
+            echo "✓ manifest.json exists"
+          else
+            echo "❌ WARNING: manifest.json not found"
+          fi
+
+          if [ -f "property.json" ]; then
+            echo "✓ property.json exists"
+          else
+            echo "⚠ WARNING: property.json not found (may be optional)"
+          fi
+
+          echo ""
+          echo "================================================"
+          echo "✅ Verification completed successfully"
+          echo "================================================"
