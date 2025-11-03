@@ -1,0 +1,59 @@
+{
+    "type": "extension",
+    "name": "deepgram_ws_asr_python",
+    "version": "0.1.0",
+    "dependencies": [
+        {
+            "type": "system",
+            "name": "ten_runtime_python",
+            "version": "0.11"
+        },
+        {
+            "type": "system",
+            "name": "ten_ai_base",
+            "version": "0.7"
+        }
+    ],
+    "api": {
+        "interface": [
+            {
+                "import_uri": "../../system/ten_ai_base/api/asr-interface.json"
+            }
+        ],
+        "property": {
+            "properties": {
+                "params": {
+                    "type": "object",
+                    "properties": {
+                        "url": {
+                            "type": "string"
+                        },
+                        "api_key": {
+                            "type": "string"
+                        },
+                        "model": {
+                            "type": "string"
+                        },
+                        "language": {
+                            "type": "string"
+                        },
+                        "eot_threshold": {
+                            "type": "float64"
+                        },
+                        "eot_timeout_ms": {
+                            "type": "int32"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "package": {
+        "include": [
+            "manifest.json",
+            "property.json",
+            "**.py",
+            "requirements.txt"
+        ]
+    }
+}
