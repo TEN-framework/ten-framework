@@ -1,4 +1,4 @@
-name: Coverage Report for runtime and rust on Coveralls
+name: Coverage Report on Coveralls
 
 on:
   release:
@@ -73,6 +73,13 @@ jobs:
           python3 tools/version/update_version_in_ten_framework.py
           python3 tools/version/check_version_in_ten_framework.py
 
+      - name: Install llvm-cov
+        run: |
+          apt-get update
+          apt-get install -y llvm
+
+          llvm-cov --version
+          llvm-profdata --version
 
       - name: Build (clang + debug + x64) with coverage instrumentation enabled
         run: |
@@ -456,7 +463,7 @@ jobs:
           llvm-profdata show out/linux/x64/coverage/merged.profdata
 
           llvm-cov export \
-          --sources ./core \
+          --ignore-filename-regex='(^|/)\.cargo/|(^|/).rustup/|(^|/)out/' \
           --format=lcov \
           --instr-profile="out/linux/x64/coverage/merged.profdata" \
           "${CORE_BINARIES[@]}" \
