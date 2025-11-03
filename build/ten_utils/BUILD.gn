@@ -9,6 +9,7 @@ import("//build/ten_utils/options.gni")
 
 config("utils_public_config") {
   cflags = []
+  cflags_c = []
   cflags_cc = []
   cflags_objc = []
   cflags_objcc = []
@@ -51,6 +52,8 @@ config("utils_private_config") {
   }
 
   cflags = []
+  cflags_c = []
+  cflags_cc = []
   ldflags = []
 
   if (is_linux) {
@@ -144,7 +147,6 @@ config("utils_private_config") {
         "-fprofile-instr-generate",
         "-fcoverage-mapping",
       ]
-      # ldflags for shared/executable are applied at those targets; utils is mostly static
     } else {
       cflags += [ "--coverage" ]
       cflags_c += [ "--coverage" ]

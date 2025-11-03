@@ -25,7 +25,8 @@ concurrency:
 jobs:
   call-check-pr-status:
     uses: ./.github/workflows/_check_pr_status.yml
-  coverage-build:
+
+  build:
     needs: call-check-pr-status
     if: ${{ needs.call-check-pr-status.outputs.should_continue == 'true' }}
     runs-on: ubuntu-latest
@@ -72,7 +73,8 @@ jobs:
           python3 tools/version/update_version_in_ten_framework.py
           python3 tools/version/check_version_in_ten_framework.py
 
-      - name: Tgn gen (clang + debug + x64) with coverage enabled
+
+      - name: Build (clang + debug + x64) with coverage instrumentation enabled
         run: |
           export PATH=$(pwd)/core/ten_gn:/usr/local/go/bin:/root/go/bin:/root/.cargo/bin:$PATH
           echo $PATH
@@ -84,39 +86,395 @@ jobs:
           go1.24.3 version
           rustup default nightly-2025-09-18
 
+          # print rustc and llvm-cov's llvm version, make sure they are compatible
+          rustc -vV | grep LLVM
+          llvm-cov --version
+
           df -h .
 
-          # Use alias to instrument coverage for rust code
-          export ABS_LCOV_DIR="$(pwd)/out/linux/x64/tests/standalone/rust"
-          alias cargo='cargo llvm-cov --lcov --package ten_rust --ignore-filename-regex="/.cargo/|/target/" --output-path "$ABS_LCOV_DIR/rust-coverage-llvmcov.lcov" --ignore-filename-regex="/.cargo/|/target/'
-          tgn gen linux x64 debug -- is_clang=true enable_sanitizer=false ten_runtime_enable_coverage=true ten_rust_force_release=true log_level=1 enable_serialized_actions=true ten_rust_enable_gen_cargo_config=false ten_enable_cargo_clean=true ten_enable_go_lint=true ten_enable_rust_incremental_build=false ten_manager_enable_frontend=false ten_enable_integration_tests_prebuilt=false ten_enable_ffmpeg_extensions=true
+          # enable_coverage=true: generate instrumented test executables and dynamic libraries
+          # which will be used to generate coverage report
 
-          tgn build linux x64 debug -- tests/ten_runtime:gen_coverage_report
+          # enable_sanitizer=false: disable AddressSanitizer because it conflicts with coverage
+          # instrumentation
+
+          EXTRA_ARGS=" \
+          is_clang=true \
+          enable_sanitizer=false \
+          enable_coverage=true \
+          ten_rust_force_release=true \
+          log_level=1 \
+          enable_serialized_actions=true \
+          ten_rust_enable_gen_cargo_config=false \
+          ten_enable_cargo_clean=true \
+          ten_enable_go_lint=true \
+          ten_enable_rust_incremental_build=false \
+          ten_manager_enable_frontend=false \
+          ten_enable_integration_tests_prebuilt=false \
+          ten_enable_ffmpeg_extensions=true"
+
+          echo $EXTRA_ARGS
+
+          tgn gen linux x64 debug -- $EXTRA_ARGS
+          tgn build linux x64 debug
+
+          df -h .
+          tree -I 'gen|obj' out
+
+        # Package the tests artifacts into a tar file while preserving file
+        # permissions.
+      - name: Package tests relevant artifacts preserving permissions
+        run: |
+          files=""
+          for item in tests ten_manager tgn_args.txt; do
+            if [ -e "out/linux/x64/$item" ]; then
+              files="$files out/linux/x64/$item"
+            fi
+          done
+
+          if [ -n "$files" ]; then
+            tar -czvf tests-artifacts.tar.gz $files
+          fi
+
+      - name: Upload tests relevant artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: tests-artifacts-for-coverage
+          path: tests-artifacts.tar.gz
+          if-no-files-found: ignore
+
+  test-and-check-coverage:
+    needs: build
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/ten-framework/ten_building_ubuntu2204
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+
+      - name: Trust working directory
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
+      - name: Initialize and update submodules except portal/
+        run: |
+          # Retrieve all submodule paths, excluding `portal/`.
+          submodules=$(git config --file .gitmodules --get-regexp path | awk '$2 != "portal" { print $2 }')
+
+          git submodule init
+
+          for submodule in $submodules; do
+            echo "Initializing submodule: $submodule"
+            git submodule update --init --recursive --depth 1 "$submodule"
+          done
+
+      - name: Download build artifacts (tar archive)
+        uses: actions/download-artifact@v4
+        with:
+          name: tests-artifacts-for-coverage
+          path: out/linux/x64
+
+      - name: Extract tests artifacts preserving permissions
+        run: |
+          tar -xzf out/linux/x64/tests-artifacts.tar.gz
+
+      - name: View folder structure content
+        run: |
+          df -h .
+          tree -I ".*|*.h|*.hpp|*.py" out/linux/x64
+
+      - name: Set ulimit and sysctl
+        run: |
+          # Because there are concurrent test cases which involves many
+          # concurrent socket connections, we need to enlarge the maximum number
+          # of the opened file descriptor.
+          ulimit -n 102400
+
+          # Because there are concurrent test cases (in 'smoke' and
+          # 'integration') which will create many concurrent connections
+          # simutaneously, we increase the TCP listening backlog value to 8192.
+          sysctl -w net.core.somaxconn=8192
+        shell: bash
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Update tman config.json
+        run: |
+          CONFIG_FILE="out/linux/x64/tests/local_registry/config.json"
+          echo "Before update:"
+          cat $CONFIG_FILE
+          sed -i "s|\(file://\)[^\"]*\(out\/linux\/x64\/tests\/local_registry\)|\1${GITHUB_WORKSPACE}/\2|" $CONFIG_FILE
+          echo "After update:"
+          cat $CONFIG_FILE
 
       - name: Install Python dependencies via script
         run: |
           python .github/tools/setup_pytest_dependencies.py
-          python -c "import sys; print('Python:', sys.version)"
 
-      - name: Generate coverage report
+          df -h .
+
+      # test-standalone (utils, runtime, rust, manager)
+      - name: Run Tests (ten_utils_unit_test)
+        env:
+          ASAN_OPTIONS: detect_leaks=1:detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
+          MALLOC_CHECK_: 3
+          TEN_ENABLE_MEMORY_TRACKING: "true"
+          TEN_ENABLE_BACKTRACE_DUMP: "true"
         run: |
-          export PATH=$(pwd)/core/ten_gn:/usr/local/go/bin:/root/go/bin:/root/.cargo/bin:$PATH
-          # Ensure go1.24.3 shim is available during build
-          export PATH=$PATH:$(go env GOPATH)/bin
-          go1.24.3 version || { go install golang.org/dl/go1.24.3@latest && go1.24.3 download && go1.24.3 version; }
-          export PYTHONUNBUFFERED=1
+          chmod +x out/linux/x64/tests/standalone/ten_utils_unit_test
+          out/linux/x64/tests/standalone/ten_utils_unit_test || { echo "test failed"; exit 1; }
 
-          # Ensure tests output dirs exist and are writable
-          mkdir -p out/linux/x64/tests/standalone/ten_manager || true
-          chmod -R u+w out/linux/x64/tests || true
+          df -h .
 
-          ulimit -n 102400
-          sysctl -w net.core.somaxconn=8192
-          fuser -k 8001/tcp || true
-          tgn build linux x64 debug -- tests/ten_runtime:gen_coverage_report
-          ls -al out/linux/x64/tests/standalone/coverage
+      - name: Clean up
+        continue-on-error: true
+        run: |
+          find out/linux/x64/tests/standalone/ten_utils_unit_test -type f ! -name "*.profraw" -delete
 
-      - name: Upload coverage to Coveralls
+          df -h .
+
+      - name: Run Tests (ten_runtime_unit_test)
+        env:
+          ASAN_OPTIONS: detect_leaks=1:detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
+          MALLOC_CHECK_: 3
+          TEN_ENABLE_MEMORY_TRACKING: "true"
+          TEN_ENABLE_BACKTRACE_DUMP: "true"
+        run: |
+          chmod +x out/linux/x64/tests/standalone/ten_runtime_unit_test
+          out/linux/x64/tests/standalone/ten_runtime_unit_test || { echo "test failed"; exit 1; }
+
+          df -h
+
+      - name: Clean up
+        continue-on-error: true
+        run: |
+          find out/linux/x64/tests/standalone/ten_runtime_unit_test -type f ! -name "*.profraw" -delete
+
+          df -h .
+
+      - name: Run Tests (ten_rust standalone tests)
+        env:
+          ASAN_OPTIONS: detect_leaks=1:detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
+          MALLOC_CHECK_: 3
+          TEN_ENABLE_MEMORY_TRACKING: "true"
+          TEN_ENABLE_BACKTRACE_DUMP: "true"
+          RUST_BACKTRACE: "full"
+        run: |
+          cd out/linux/x64/tests/standalone/ten_rust
+
+          chmod +x unit_test
+          chmod +x integration_test
+
+          ./unit_test --nocapture --test-threads=1 || { echo "ten_rust unit test failed"; exit 1; }
+          ./integration_test --nocapture --test-threads=1 || { echo "ten_rust integration test failed"; exit 1; }
+
+          df -h .
+
+      - name: Clean up
+        continue-on-error: true
+        run: |
+          find out/linux/x64/tests/standalone/ten_rust -type f ! -name "*.profraw" -delete
+
+          df -h .
+
+      - name: Run Tests (ten_manager standalone tests)
+        env:
+          ASAN_OPTIONS: detect_leaks=1:detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
+          MALLOC_CHECK_: 3
+          TEN_ENABLE_MEMORY_TRACKING: "true"
+          TEN_ENABLE_BACKTRACE_DUMP: "true"
+          RUST_BACKTRACE: "full"
+        run: |
+          cd out/linux/x64/tests/standalone/ten_manager
+
+          chmod +x unit_test
+          chmod +x integration_test
+
+          ./unit_test --nocapture --test-threads=1 || { echo "ten_manager unit test failed"; exit 1; }
+          ./integration_test --nocapture --test-threads=1 || { echo "ten_manager integration test failed"; exit 1; }
+
+          df -h .
+
+      - name: Clean up
+        continue-on-error: true
+        run: |
+          find out/linux/x64/tests/standalone/ten_manager -type f ! -name "*.profraw" -delete
+
+          df -h .
+
+      - name: Run Tests (ten_runtime_smoke_test)
+        env:
+          ASAN_OPTIONS: detect_leaks=1:detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
+          MALLOC_CHECK_: 3
+          TEN_ENABLE_MEMORY_TRACKING: "true"
+          TEN_ENABLE_BACKTRACE_DUMP: "true"
+        run: |
+          chmod +x out/linux/x64/tests/standalone/ten_runtime_smoke_test
+          out/linux/x64/tests/standalone/ten_runtime_smoke_test || { echo "test failed"; exit 1; }
+
+          df -h .
+
+      - name: Clean up
+        continue-on-error: true
+        run: |
+          find out/linux/x64/tests/standalone/ten_runtime_smoke_test -type f ! -name "*.profraw" -delete
+
+          df -h .
+
+      # test-integration-ten-manager
+      - name: Run Tests (ten_manager pytest tests)
+        env:
+          ASAN_OPTIONS: detect_leaks=1:detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
+          MALLOC_CHECK_: 3
+          TEN_ENABLE_MEMORY_TRACKING: "true"
+          TEN_ENABLE_BACKTRACE_DUMP: "true"
+        run: |
+          cd out/linux/x64/
+          pytest -s tests/ten_manager/
+
+          df -h .
+
+      - name: Clean up
+        continue-on-error: true
+        run: |
+          find out/linux/x64/tests/ten_manager -type f ! -name "*.profraw" -delete
+
+          df -h .
+
+      # test-integration-cpp
+      - name: Run tests (ten_runtime C++ integration tests)
+        env:
+          ASAN_OPTIONS: detect_leaks=1:detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
+          MALLOC_CHECK_: 3
+          TEN_ENABLE_MEMORY_TRACKING: "true"
+          TEN_ENABLE_BACKTRACE_DUMP: "true"
+          GOTRACEBACK: crash
+        run: |
+          df -h .
+
+          export PATH=$(pwd)/core/ten_gn:$PATH
+          cd out/linux/x64/
+          pytest -s tests/ten_runtime/integration/cpp/
+
+          df -h .
+
+      # test-integration-go
+      - name: Run tests (ten_runtime Go integration tests)
+        env:
+          ASAN_OPTIONS: detect_leaks=1:detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
+          MALLOC_CHECK_: 3
+          TEN_ENABLE_MEMORY_TRACKING: "true"
+          TEN_ENABLE_BACKTRACE_DUMP: "true"
+          GOTRACEBACK: crash
+        run: |
+          df -h .
+
+          export PATH=$(pwd)/core/ten_gn:$PATH
+          cd out/linux/x64/
+          pytest -s tests/ten_runtime/integration/go/
+
+          df -h .
+
+      # test-integration-python
+      - name: Run tests (ten_runtime Python integration tests)
+        env:
+          ASAN_OPTIONS: detect_leaks=1:detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
+          MALLOC_CHECK_: 3
+          TEN_ENABLE_MEMORY_TRACKING: "true"
+          TEN_ENABLE_BACKTRACE_DUMP: "true"
+          GOTRACEBACK: crash
+        run: |
+          curl -fsSL https://ollama.com/install.sh | sh
+
+          # Start Ollama service.
+          ollama serve &
+
+          # Wait for Ollama to be fully operational.
+          for i in {1..30}; do
+            if curl -s http://localhost:11434 >/dev/null; then
+              echo "✓ Ollama is running"
+              break
+            fi
+            echo "Waiting for Ollama to start..."
+            sleep 2
+          done
+
+          ollama pull smollm:135m
+
+          # Verify model is pulled correctly.
+          ollama list
+
+          df -h .
+
+          export PATH=$(pwd)/core/ten_gn:$PATH
+          cd out/linux/x64/
+          pytest -s tests/ten_runtime/integration/python/
+
+          df -h .
+
+      # test-integration-nodejs
+      - name: Run tests (ten_runtime Nodejs integration tests)
+        env:
+          ASAN_OPTIONS: detect_leaks=1:detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
+          MALLOC_CHECK_: 3
+          TEN_ENABLE_MEMORY_TRACKING: "true"
+          TEN_ENABLE_BACKTRACE_DUMP: "true"
+          GOTRACEBACK: crash
+        run: |
+          df -h .
+
+          export PATH=$(pwd)/core/ten_gn:$PATH
+          cd out/linux/x64/
+          pytest -s tests/ten_runtime/integration/nodejs/
+
+          df -h .
+
+      - name: gather coverage information
+        run: |
+          CORE_BINARIES=(
+            "out/linux/x64/ten_manager/bin/tman"
+            "out/linux/x64/tests/standalone/ten_utils_unit_test"
+            "out/linux/x64/libten_utils.so"
+            "out/linux/x64/tests/standalone/ten_manager/integration_test"
+            "out/linux/x64/tests/standalone/ten_rust/integration_test"
+            "out/linux/x64/tests/standalone/ten_runtime_smoke_test"
+            "out/linux/x64/tests/standalone/ten_runtime_unit_test"
+            "out/linux/x64/libten_runtime.so"
+            "out/linux/x64/libten_runtime_go.so"
+            "out/linux/x64/libten_runtime_python.so"
+            "out/linux/x64/libten_runtime_go.so"
+            "out/linux/x64/libten_runtime_python.so"
+            "out/linux/x64/libten_runtime_nodejs.node"
+          )
+
+          llvm-profdata merge -sparse $(find . -name "*.profraw") -o out/linux/x64/coverage/merged.profdata
+
+          echo "😎Intermediate .profdata file:"
+          llvm-profdata show out/linux/x64/coverage/merged.profdata
+
+          llvm-cov export \
+          --sources ./core \
+          --format=lcov \
+          --instr-profile="out/linux/x64/coverage/merged.profdata" \
+          "${CORE_BINARIES[@]}" \
+          > "out/linux/x64/coverage/coverage.lcov"
+
+      - name: Clean up profraw files
+        continue-on-error: true
+        run: |
+          rm -rf out/linux/x64/tests/standalone/ten_utils_unit_test
+          rm -rf out/linux/x64/tests/standalone/ten_runtime_unit_test
+          rm -rf out/linux/x64/tests/standalone/ten_rust
+          rm -rf out/linux/x64/tests/standalone/ten_manager
+          rm -rf out/linux/x64/tests/standalone/ten_runtime_smoke_test
+          rm -rf out/linux/x64/tests/ten_manager
+
+          df -h .
+
+      - name: Upload coverage report
         env:
           COVERALLS_REPO_TOKEN: ${{ secrets.TEN_COVERALLS_REPO_TOKEN }}
         run: |
@@ -131,39 +489,19 @@ jobs:
           which coveralls || echo "coveralls command not found in PATH"
           coveralls --version || echo "coveralls version check failed"
 
-          if [ -f "out/linux/x64/tests/standalone/coverage/coverage.lcov" ]; then
+          if [ -f "out/linux/x64/coverage/coverage.lcov" ]; then
             echo "Uploading coverage to Coveralls..."
-            coveralls --lcov-file out/linux/x64/tests/standalone/coverage/coverage.lcov --verbose
+            coveralls --lcov-file out/linux/x64/coverage/coverage.lcov --verbose
             echo "Coverage uploaded to Coveralls successfully"
           else
             echo "Warning: coverage.lcov file not found, skipping Coveralls upload"
-            ls -la out/linux/x64/tests/standalone/coverage/ || true
+            ls -la out/linux/x64/coverage/ || true
           fi
 
-      - name: Upload coverage artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-reports
-          path: |
-            out/linux/x64/tests/standalone/coverage/coverage.lcov
-
-            # HTML report generated by llvm-cov
-            # hyperlinks on the page unavailable, since the source code is not included to reduce artifact size
-            out/linux/x64/tests/standalone/coverage/index.html
-            out/linux/x64/tests/standalone/coverage/style.css
-            out/linux/x64/tests/standalone/coverage/control.js
-          if-no-files-found: error
-
   publish-coverage:
-    needs: coverage-build
+    needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Download coverage artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: coverage-reports
-          path: coverage-reports
-
       - name: Add coverage link to job summary
         shell: bash
         run: |
@@ -173,10 +511,3 @@ jobs:
           # Coveralls link (assuming standard Coveralls URL format)
           COVERALLS_URL="https://coveralls.io/github/${{ github.repository }}?branch=${GITHUB_REF_NAME}"
           echo "📊 **Coverage Reports:** ${COVERALLS_URL}" >> "$GITHUB_STEP_SUMMARY"
-
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "📁 **Artifacts:**" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Download 'coverage-reports' artifact from workflow artifacts" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Includes:" >> "$GITHUB_STEP_SUMMARY"
-          echo "  - HTML report generated by llvm-cov (index.html, a substitute for Coveralls)" >> "$GITHUB_STEP_SUMMARY"
-          echo "  - the lcov format file that is used by Coveralls (coverage.lcov)" >> "$GITHUB_STEP_SUMMARY"
