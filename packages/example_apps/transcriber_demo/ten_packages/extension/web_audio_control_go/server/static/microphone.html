@@ -283,9 +283,12 @@
         }
 
         @keyframes blink {
-            0%, 100% {
+
+            0%,
+            100% {
                 opacity: 1;
             }
+
             50% {
                 opacity: 0.3;
             }
@@ -447,21 +450,33 @@
                     interimElement.className = 'text-item interim';
                     box.appendChild(interimElement);
                 }
-                
-                // Update interim text with badge
-                interimElement.innerHTML = text + '<span class="text-badge interim">识别中...</span>';
+
+                // Update interim text with badge (prevent XSS attack)
+                interimElement.textContent = text;
+                const interimBadge = document.createElement('span');
+                interimBadge.className = 'text-badge interim';
+                interimBadge.textContent = 'Recognizing...';
+                interimElement.appendChild(interimBadge);
             } else {
                 // For final results, convert interim to final or create new final element
                 if (interimElement) {
-                    // Convert interim to final
+                    // Convert interim to final (prevent XSS attack)
                     interimElement.className = 'text-item final';
-                    interimElement.innerHTML = text + '<span class="text-badge final">完成</span>';
+                    interimElement.textContent = text;
+                    const finalBadge = document.createElement('span');
+                    finalBadge.className = 'text-badge final';
+                    finalBadge.textContent = 'Done';
+                    interimElement.appendChild(finalBadge);
                     interimElement = null; // Clear interim reference
                 } else {
-                    // Create new final element
+                    // Create new final element (prevent XSS attack)
                     const textItem = document.createElement('div');
                     textItem.className = 'text-item final';
-                    textItem.innerHTML = text + '<span class="text-badge final">完成</span>';
+                    textItem.textContent = text;
+                    const finalBadge = document.createElement('span');
+                    finalBadge.className = 'text-badge final';
+                    finalBadge.textContent = 'Done';
+                    textItem.appendChild(finalBadge);
                     box.appendChild(textItem);
                 }
             }
@@ -501,17 +516,17 @@
                 });
 
                 const source = audioContext.createMediaStreamSource(mediaStream);
-                
+
                 // Use ScriptProcessorNode for audio processing (4096 buffer size)
                 const processor = audioContext.createScriptProcessor(4096, 1, 1);
-                
+
                 processor.onaudioprocess = (e) => {
                     if (!isRecording || ws.readyState !== WebSocket.OPEN) {
                         return;
                     }
 
                     const inputData = e.inputBuffer.getChannelData(0);
-                    
+
                     // Convert Float32Array to Int16Array (PCM 16-bit)
                     const pcmData = new Int16Array(inputData.length);
                     for (let i = 0; i < inputData.length; i++) {
@@ -528,7 +543,7 @@
                             channels: 1,
                             samples_per_channel: pcmData.length
                         });
-                        
+
                         // Send metadata as text first
                         ws.send(message);
                         // Then send audio data as binary
@@ -589,4 +604,3 @@
 </body>
 
 </html>
-

@@ -332,14 +332,17 @@
                 <div class="form-group">
                     <label for="filePath">Audio File Path:</label>
                     <div style="display: flex; gap: 10px; align-items: center;">
-                        <input type="text" id="filePath" name="file_path" placeholder="/path/to/your/audio.wav" required style="flex: 1;">
-                        <input type="file" id="fileSelector" accept="audio/*,.wav,.mp3,.flac,.ogg,.m4a" style="display: none;">
-                        <button type="button" class="btn-primary" id="selectFileBtn" style="flex: 0 0 auto; padding: 12px 20px;">
-                            📁 选择文件
+                        <input type="text" id="filePath" name="file_path" placeholder="/path/to/your/audio.wav" required
+                            style="flex: 1;">
+                        <input type="file" id="fileSelector" accept="audio/*,.wav,.mp3,.flac,.ogg,.m4a"
+                            style="display: none;">
+                        <button type="button" class="btn-primary" id="selectFileBtn"
+                            style="flex: 0 0 auto; padding: 12px 20px;">
+                            📁 Select File
                         </button>
                     </div>
                     <small style="color: #666; font-size: 0.85em; margin-top: 5px; display: block;">
-                        可以手动输入服务器上的文件路径，或点击"选择文件"上传本地文件
+                        Enter the file path on the server manually, or click "Select File" to upload a local file
                     </small>
                 </div>
 
@@ -440,21 +443,33 @@
                     interimElement.className = 'text-item interim';
                     box.appendChild(interimElement);
                 }
-                
-                // Update interim text with badge
-                interimElement.innerHTML = text + '<span class="text-badge interim">识别中...</span>';
+
+                // Update interim text with badge (prevent XSS attack)
+                interimElement.textContent = text;
+                const interimBadge = document.createElement('span');
+                interimBadge.className = 'text-badge interim';
+                interimBadge.textContent = 'Recognizing...';
+                interimElement.appendChild(interimBadge);
             } else {
                 // For final results, convert interim to final or create new final element
                 if (interimElement) {
-                    // Convert interim to final
+                    // Convert interim to final (prevent XSS attack)
                     interimElement.className = 'text-item final';
-                    interimElement.innerHTML = text + '<span class="text-badge final">完成</span>';
+                    interimElement.textContent = text;
+                    const finalBadge = document.createElement('span');
+                    finalBadge.className = 'text-badge final';
+                    finalBadge.textContent = 'Done';
+                    interimElement.appendChild(finalBadge);
                     interimElement = null; // Clear interim reference
                 } else {
-                    // Create new final element
+                    // Create new final element (prevent XSS attack)
                     const textItem = document.createElement('div');
                     textItem.className = 'text-item final';
-                    textItem.innerHTML = text + '<span class="text-badge final">完成</span>';
+                    textItem.textContent = text;
+                    const finalBadge = document.createElement('span');
+                    finalBadge.className = 'text-badge final';
+                    finalBadge.textContent = 'Done';
+                    textItem.appendChild(finalBadge);
                     box.appendChild(textItem);
                 }
             }
@@ -498,7 +513,7 @@
             const selectBtn = document.getElementById('selectFileBtn');
             const originalText = selectBtn.textContent;
             selectBtn.disabled = true;
-            selectBtn.textContent = '⏳ 上传中...';
+            selectBtn.textContent = '⏳ Uploading...';
 
             try {
                 const formData = new FormData();
@@ -514,14 +529,14 @@
                 if (response.ok) {
                     // Fill the file path input with the uploaded file path
                     document.getElementById('filePath').value = result.file_path;
-                    showStatus('✅ 文件上传成功: ' + file.name, 'success');
+                    showStatus('✅ File uploaded successfully: ' + file.name, 'success');
                     console.log('File uploaded:', result);
                 } else {
-                    showStatus('❌ 文件上传失败: ' + result.message, 'error');
+                    showStatus('❌ File upload failed: ' + result.message, 'error');
                     console.error('Upload failed:', result);
                 }
             } catch (error) {
-                showStatus('❌ 上传错误: ' + error.message, 'error');
+                showStatus('❌ Upload error: ' + error.message, 'error');
                 console.error('Upload error:', error);
             } finally {
                 selectBtn.disabled = false;
