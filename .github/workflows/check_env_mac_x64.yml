@@ -159,6 +159,24 @@ jobs:
           echo ""
           echo "✓ Build verification completed"
 
+      - name: Install Python dependencies
+        run: |
+          echo "================================================"
+          echo "Installing Python dependencies for transcriber_demo app"
+          echo "================================================"
+
+          cd /tmp/transcriber_demo
+
+          # Install Python dependencies using tman
+          tman run install_python_deps
+
+          if [ $? -eq 0 ]; then
+            echo "✓ Python dependencies installed successfully"
+          else
+            echo "❌ ERROR: Failed to install Python dependencies"
+            exit 1
+          fi
+
       - name: Run app with tman
         run: |
           echo "================================================"
