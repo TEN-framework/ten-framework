@@ -73,13 +73,30 @@ jobs:
           python3 tools/version/update_version_in_ten_framework.py
           python3 tools/version/check_version_in_ten_framework.py
 
-      - name: Install llvm-cov
+      - name: Install LLVM 21 tools
         run: |
+          # Add LLVM official repository for LLVM 21
           apt-get update
-          apt-get install -y llvm
+          apt-get install -y wget software-properties-common gnupg
 
+          # Add LLVM repository
+          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
+          add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main"
+
+          apt-get update
+          apt-get install -y llvm-21 clang-21
+
+          # Create symlinks to make llvm-cov and llvm-profdata available without version suffix
+          ln -sf /usr/bin/llvm-cov-21 /usr/local/bin/llvm-cov
+          ln -sf /usr/bin/llvm-profdata-21 /usr/local/bin/llvm-profdata
+          ln -sf /usr/bin/llvm-objdump-21 /usr/local/bin/llvm-objdump
+
+          # Verify installation
           llvm-cov --version
-          llvm-profdata --version
+          llvm-profdata merge --version 2>&1 | head -3 || echo "llvm-profdata installed (note: --version flag not supported in some versions)"
+
+          # Show actual LLVM version
+          /usr/bin/llvm-cov-21 --version | head -3
 
       - name: Build (clang + debug + x64) with coverage instrumentation enabled
         run: |
@@ -94,8 +111,15 @@ jobs:
           rustup default nightly-2025-09-18
 
           # print rustc and llvm-cov's llvm version, make sure they are compatible
+          # or else the profdata file cannot be interpreted by llvm-cov, because:
+          # C/C++ code uses LLVM 21.x.x to generate coverage data (__llvm_prf_* section)
+          # Rust code uses LLVM 20.x.x to generate coverage data (__llvm_prf_* section)
+          # these two formats are mixed in the same binary file (e.g. ten_utils_unit_test)
+
           rustc -vV | grep LLVM
-          llvm-cov --version
+          llvm-cov --version | head -3
+          echo "llvm-profdata path: $(which llvm-profdata)"
+          llvm-profdata merge --version 2>&1 | head -3 || echo "(llvm-profdata --version not supported)"
 
           df -h .
 
