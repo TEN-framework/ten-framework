@@ -419,7 +419,7 @@ async fn create_input_str_for_pkg_info_dependencies(
     dumped_pkgs_info: &mut HashSet<PkgBasicInfo>,
     all_candidates: &HashMap<PkgTypeAndName, HashMap<PkgBasicInfo, PkgInfo>>,
     max_latest_versions: i32,
-g i    has_valid_dependencies: &mut bool,
+    has_valid_dependencies: &mut bool,
 ) -> Result<()> {
     // If this package has already been dumped, skip it.
     if dumped_pkgs_info.contains(&pkg_info.into()) {
