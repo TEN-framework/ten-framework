@@ -23,6 +23,12 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "stable"
+          cache: false
+
       - name: Install tman using the install script
         run: |
           echo "================================================"
@@ -103,6 +109,54 @@ jobs:
           fi
 
           echo ""
+          echo "✓ App structure verification completed"
+
+      - name: Install app dependencies with tman
+        run: |
           echo "================================================"
-          echo "✅ Verification completed successfully"
+          echo "Installing transcriber_demo app dependencies"
+          echo "================================================"
+
+          cd /tmp/transcriber_demo
+
+          # Install dependencies using tman
+          tman install
+
+          if [ $? -eq 0 ]; then
+            echo "✓ tman install completed successfully"
+          else
+            echo "❌ ERROR: tman install failed"
+            exit 1
+          fi
+
+      - name: Build app with tman
+        run: |
+          echo "================================================"
+          echo "Building transcriber_demo app"
+          echo "================================================"
+
+          cd /tmp/transcriber_demo
+
+          # Build the app using tman
+          tman run build
+
+          if [ $? -ne 0 ]; then
+            echo "❌ ERROR: tman run build failed"
+            exit 1
+          fi
+
+          # Verify that bin/main was generated
+          if [ -f "bin/main" ]; then
+            echo "✓ bin/main generated successfully"
+            ls -lh bin/main
+          else
+            echo "❌ ERROR: bin/main not found"
+            echo "Contents of bin directory:"
+            ls -la bin/ || echo "bin directory does not exist"
+            exit 1
+          fi
+
+          echo ""
+          echo "================================================"
+          echo "✅ All verifications completed successfully"
           echo "================================================"
