@@ -147,10 +147,17 @@ config("utils_private_config") {
         "-fprofile-instr-generate",
         "-fcoverage-mapping",
       ]
+      # needs to add ldflags, because ten_utils_test will generate executable file
+      # use -Wl prefix to ensure passing to linker, and force link profile runtime
+      ldflags += [
+        "-fprofile-instr-generate",
+        "-Wl,-u,__llvm_profile_runtime",
+      ]
     } else {
       cflags += [ "--coverage" ]
       cflags_c += [ "--coverage" ]
       cflags_cc += [ "--coverage" ]
+      ldflags += [ "--coverage" ]
     }
   }
 }
