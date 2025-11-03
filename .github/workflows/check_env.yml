@@ -15,7 +15,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  verify-tman-install:
+  check-environment:
+    name: Check Environment - ${{ matrix.platform_name }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
