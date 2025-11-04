@@ -318,7 +318,7 @@
                 "heygen_api_key": "${env:HEYGEN_API_KEY|}",
                 "agora_appid": "${env:AGORA_APP_ID}",
                 "agora_appcert": "${env:AGORA_APP_CERTIFICATE|}",
-                "channel": "ten_agent_test",
+                "channel": "agora_rqkxw1",
                 "agora_avatar_uid": 12345,
                 "input_audio_sample_rate": 16000
               }
@@ -521,7 +521,7 @@
                 "generic_video_api_key": "${env:GENERIC_VIDEO_API_KEY|}",
                 "agora_appid": "${env:AGORA_APP_ID}",
                 "agora_appcert": "${env:AGORA_APP_CERTIFICATE|}",
-                "agora_channel_name": "ten_agent_test",
+                "agora_channel_name": "agora_rqkxw1",
                 "agora_video_uid": 12345,
                 "avatar_id": "16cb73e7de08",
                 "quality": "high",
@@ -1734,6 +1734,9 @@
                     "mode": "id",
                     "id": "cbaf8084-f009-4838-a096-07ee2e6612b1"
                   },
+                  "generation_config": {
+                    "speed": 1.2
+                  },
                   "output_format": {
                     "container": "raw",
                     "sample_rate": 44100
@@ -1850,6 +1853,254 @@
                   "dest": [
                     {
                       "extension": "stt"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "name": "flux_thymia_heygen_cartesia",
+        "auto_start": false,
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "agora_rtc",
+              "addon": "agora_rtc",
+              "extension_group": "default",
+              "property": {
+                "app_id": "${env:AGORA_APP_ID}",
+                "app_certificate": "${env:AGORA_APP_CERTIFICATE|}",
+                "channel": "agora_ant2w9",
+                "stream_id": 1234,
+                "remote_stream_id": 123,
+                "subscribe_audio": true,
+                "publish_audio": true,
+                "publish_data": true,
+                "enable_agora_asr": false
+              }
+            },
+            {
+              "type": "extension",
+              "name": "stt",
+              "addon": "deepgram_ws_asr_python",
+              "extension_group": "stt",
+              "property": {
+                "params": {
+                  "api_key": "${env:DEEPGRAM_API_KEY}",
+                  "url": "wss://api.deepgram.com/v2/listen",
+                  "model": "flux-general-en",
+                  "language": "en-US",
+                  "interim_results": true,
+                  "eot_threshold": 0.8,
+                  "eot_timeout_ms": 5000
+                }
+              }
+            },
+            {
+              "type": "extension",
+              "name": "llm",
+              "addon": "openai_llm2_python",
+              "extension_group": "chatgpt",
+              "property": {
+                "base_url": "https://api.openai.com/v1",
+                "api_key": "${env:OPENAI_API_KEY}",
+                "frequency_penalty": 0.9,
+                "model": "${env:OPENAI_MODEL}",
+                "max_tokens": 512,
+                "prompt": "You are a voice assistant. Your responses will be heard, not read. Keep every response between 10-20 words. Start each response with control tags: <speed ratio=\"1.0\"/><volume ratio=\"1.0\"/><emotion value=\"neutral\"/> your sentence. Speed ratio: 0.6 (slow) to 1.5 (fast), default 1.0. Volume ratio: 0.5 (quiet) to 2.0 (loud), default 1.0. Emotions: neutral, angry, excited, content, sad, sympathetic, scared. Add [laughter] where appropriate. Example: <speed ratio=\"1.2\"/><volume ratio=\"1.3\"/><emotion value=\"excited\"/>That is hilarious, Valentine Day snuck up on you! [laughter] Don't worry, I will help you get a table.",
+                "proxy_url": "${env:OPENAI_PROXY_URL|}",
+                "greeting": "TEN Agent connected. How can I help you today?",
+                "max_memory_length": 10
+              }
+            },
+            {
+              "type": "extension",
+              "name": "tts",
+              "addon": "cartesia_tts2",
+              "extension_group": "tts",
+              "property": {
+                "dump": false,
+                "dump_path": "./",
+                "params": {
+                  "api_key": "${env:CARTESIA_TTS_KEY}",
+                  "model_id": "sonic-3",
+                  "voice": {
+                    "mode": "id",
+                    "id": "cbaf8084-f009-4838-a096-07ee2e6612b1"
+                  },
+                  "generation_config": {
+                    "speed": 1.2
+                  },
+                  "output_format": {
+                    "container": "raw",
+                    "sample_rate": 44100
+                  },
+                  "language": "en"
+                }
+              }
+            },
+            {
+              "type": "extension",
+              "name": "main_control",
+              "addon": "main_python",
+              "extension_group": "control",
+              "property": {
+                "greeting": "TEN Agent connected. How can I help you today?"
+              }
+            },
+            {
+              "type": "extension",
+              "name": "message_collector",
+              "addon": "message_collector2",
+              "extension_group": "transcriber",
+              "property": {}
+            },
+            {
+              "type": "extension",
+              "name": "weatherapi_tool_python",
+              "addon": "weatherapi_tool_python",
+              "extension_group": "default",
+              "property": {
+                "api_key": "${env:WEATHERAPI_API_KEY|}"
+              }
+            },
+            {
+              "type": "extension",
+              "name": "thymia_analyzer",
+              "addon": "thymia_analyzer_python",
+              "extension_group": "default",
+              "property": {
+                "api_key": "${env:THYMIA_API_KEY|}",
+                "min_speech_duration": 22,
+                "silence_threshold": 0.02,
+                "continuous_analysis": true,
+                "min_interval_seconds": 60,
+                "max_analyses_per_session": 10,
+                "poll_timeout": 120,
+                "poll_interval": 5
+              }
+            },
+            {
+              "type": "extension",
+              "name": "streamid_adapter",
+              "addon": "streamid_adapter",
+              "property": {}
+            },
+            {
+              "type": "extension",
+              "name": "avatar",
+              "addon": "heygen_avatar_python",
+              "extension_group": "default",
+              "property": {
+                "heygen_api_key": "${env:HEYGEN_API_KEY|}",
+                "agora_appid": "${env:AGORA_APP_ID}",
+                "agora_appcert": "${env:AGORA_APP_CERTIFICATE|}",
+                "channel": "agora_ant2w9",
+                "agora_avatar_uid": 12345,
+                "input_audio_sample_rate": 44100,
+                "avatar_name": "Katya_Chair_Sitting_public"
+              }
+            }
+          ],
+          "connections": [
+            {
+              "extension": "main_control",
+              "cmd": [
+                {
+                  "names": [
+                    "on_user_joined",
+                    "on_user_left"
+                  ],
+                  "source": [
+                    {
+                      "extension": "agora_rtc"
+                    }
+                  ]
+                },
+                {
+                  "names": [
+                    "tool_register"
+                  ],
+                  "source": [
+                    {
+                      "extension": "weatherapi_tool_python"
+                    },
+                    {
+                      "extension": "thymia_analyzer"
+                    }
+                  ]
+                }
+              ],
+              "data": [
+                {
+                  "name": "asr_result",
+                  "source": [
+                    {
+                      "extension": "stt"
+                    }
+                  ]
+                },
+                {
+                  "name": "text_data",
+                  "source": [
+                    {
+                      "extension": "thymia_analyzer"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "agora_rtc",
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "dest": [
+                    {
+                      "extension": "streamid_adapter"
+                    },
+                    {
+                      "extension": "thymia_analyzer"
+                    }
+                  ]
+                }
+              ],
+              "data": [
+                {
+                  "name": "data",
+                  "source": [
+                    {
+                      "extension": "message_collector"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "streamid_adapter",
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "dest": [
+                    {
+                      "extension": "stt"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "tts",
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "dest": [
+                    {
+                      "extension": "avatar"
                     }
                   ]
                 }

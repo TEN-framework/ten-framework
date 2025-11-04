@@ -20,6 +20,7 @@ class AgoraHeygenRecorder:
         heygen_api_key: str,
         channel_name: str,
         avatar_uid: int,
+        avatar_name: str,
         ten_env: AsyncTenEnv,
     ):
         if not app_id or not heygen_api_key:
@@ -32,6 +33,7 @@ class AgoraHeygenRecorder:
         self.api_key = heygen_api_key
         self.channel_name = channel_name
         self.uid_avatar = avatar_uid
+        self.avatar_name = avatar_name
         self.ten_env = ten_env
 
         self.token_server = self._generate_token(self.uid_avatar, 1)
@@ -106,14 +108,19 @@ class AgoraHeygenRecorder:
         )
 
     async def disconnect(self):
+        self.ten_env.log_info("[HEYGEN DISCONNECT] Starting disconnect sequence")
         self._should_reconnect = False
         if self.websocket_task:
+            self.ten_env.log_info("[HEYGEN DISCONNECT] Cancelling websocket task")
             self.websocket_task.cancel()
             try:
                 await self.websocket_task
             except asyncio.CancelledError:
+                self.ten_env.log_info("[HEYGEN DISCONNECT] Websocket task cancelled")
                 pass
+        self.ten_env.log_info(f"[HEYGEN DISCONNECT] Stopping session: {self.session_id}")
         await self._stop_session(self.session_id)
+        self.ten_env.log_info("[HEYGEN DISCONNECT] Disconnect completed")
 
     async def _create_token(self):
         response = requests.post(
@@ -132,7 +139,7 @@ class AgoraHeygenRecorder:
 
     async def _create_session(self):
         payload = {
-            "avatar_name": "Wayne_20240711",
+            "avatar_name": self.avatar_name,
             "quality": "high",
             "version": "agora_v1",
             "video_encoding": "H264",
@@ -211,13 +218,17 @@ class AgoraHeygenRecorder:
     async def _connect_websocket_loop(self):
         while self._should_reconnect:
             try:
-                self.ten_env.log_info(f"Connecting to WebSocket: {self.realtime_endpoint}")
+                self.ten_env.log_info(
+                    f"Connecting to WebSocket: {self.realtime_endpoint}"
+                )
                 async with websockets.connect(self.realtime_endpoint) as ws:
                     self.websocket = ws
                     self.ten_env.log_info("WebSocket connected successfully")
                     await asyncio.Future()  # Wait forever unless cancelled
             except Exception as e:
-                self.ten_env.log_error(f"WebSocket error: {e}. Reconnecting in 3 seconds...")
+                self.ten_env.log_error(
+                    f"WebSocket error: {e}. Reconnecting in 3 seconds..."
+                )
                 self.websocket = None
                 await asyncio.sleep(3)
 
@@ -258,12 +269,16 @@ class AgoraHeygenRecorder:
 
     async def send(self, audio_base64: str):
         if self.websocket is None:
-            self.ten_env.log_error("Cannot send audio: WebSocket is not connected")
+            self.ten_env.log_error(
+                "Cannot send audio: WebSocket is not connected"
+            )
             raise RuntimeError("WebSocket is not connected.")
 
         event_id = uuid.uuid4().hex
         audio_len = len(audio_base64)
-        self.ten_env.log_debug(f"Sending audio chunk: {audio_len} bytes, event_id: {event_id}")
+        self.ten_env.log_debug(
+            f"Sending audio chunk: {audio_len} bytes, event_id: {event_id}"
+        )
 
         try:
             await self.websocket.send(
