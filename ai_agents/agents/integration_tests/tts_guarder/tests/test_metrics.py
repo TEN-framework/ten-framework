@@ -20,9 +20,10 @@ import json
 import asyncio
 import os
 import glob
+import time
 
 TTS_METRICS_CONFIG_FILE="property_basic_audio_setting1.json"
-
+AUDIO_DURATION_TOLERANCE_MS = 50
 
 class MetricsTester(AsyncExtensionTester):
     """Test class for TTS extension metrics"""
@@ -46,7 +47,24 @@ class MetricsTester(AsyncExtensionTester):
         self.session_id: str = session_id
         self.text: str = text
         self.receive_metircs = False
+        self.sent_metadata = None  # Store sent metadata for validation
+        self.request_id = "test_metric_request_id_1"
+        self.audio_start_time = None  # Store tts_audio_start timestamp
+        self.total_audio_bytes = 0  # Track total audio bytes received
+        self.sample_rate = 0  # Store sample rate
 
+    def _calculate_pcm_audio_duration_ms(self) -> int:
+        """Calculate PCM audio duration in milliseconds based on received audio bytes"""
+        if self.total_audio_bytes == 0 or self.sample_rate == 0:
+            return 0
+        
+        # PCM format: 16-bit (2 bytes per sample), mono (1 channel)
+        bytes_per_sample = 2
+        channels = 1
+        
+        # Calculate duration in seconds, then convert to milliseconds
+        duration_sec = self.total_audio_bytes / (self.sample_rate * bytes_per_sample * channels)
+        return int(duration_sec * 1000)
 
     async def _send_finalize_signal(self, ten_env: AsyncTenEnvTester) -> None:
         """Send tts_finalize signal to trigger finalization."""
@@ -88,6 +106,8 @@ class MetricsTester(AsyncExtensionTester):
             "session_id": "test_metric_session_123",
             "turn_id": 1,
         }
+        # Store sent metadata for validation
+        self.sent_metadata = metadata
         tts_text_input_obj.set_property_from_json("metadata", json.dumps(metadata))
         await ten_env.send_data(tts_text_input_obj)
         ten_env.log_info(f"✅ tts text input sent: {text}")
@@ -95,7 +115,6 @@ class MetricsTester(AsyncExtensionTester):
     def _stop_test_with_error(
         self, ten_env: AsyncTenEnvTester, error_message: str
     ) -> None:
-        ten_env.log_info(f"Stopping test with error message: {error_message}")
         """Stop test with error message."""
         ten_env.stop_test(
             TenError.create(TenErrorCode.ErrorCodeGeneric, error_message)
@@ -151,11 +170,116 @@ class MetricsTester(AsyncExtensionTester):
             return
         elif name == "metrics":
             self.receive_metircs = True
+        elif name == "tts_audio_start":
+            ten_env.log_info("Received tts_audio_start")
+            self.audio_start_time = time.time()
+            
+            # Validate request_id
+            received_request_id, _ = data.get_property_string("request_id")
+            if received_request_id != self.request_id:
+                self._stop_test_with_error(ten_env, f"Request ID mismatch in tts_audio_start. Expected: {self.request_id}, Received: {received_request_id}")
+                return
+            
+            # Validate metadata (Base class implementation only contains session_id and turn_id in tts_audio_start)
+            metadata_str, _ = data.get_property_to_json("metadata")
+            if metadata_str:
+                try:
+                    received_metadata = json.loads(metadata_str)
+                    expected_metadata = {
+                        "session_id": self.sent_metadata.get("session_id", ""),
+                        "turn_id": self.sent_metadata.get("turn_id", -1)
+                    }
+                    if received_metadata != expected_metadata:
+                        self._stop_test_with_error(ten_env, f"Metadata mismatch in tts_audio_start. Expected: {expected_metadata}, Received: {received_metadata}")
+                        return
+                except json.JSONDecodeError:
+                    self._stop_test_with_error(ten_env, f"Invalid JSON in tts_audio_start metadata: {metadata_str}")
+                    return
+            else:
+                self._stop_test_with_error(ten_env, f"Missing metadata in tts_audio_start response")
+                return
+            
+            ten_env.log_info(f"✅ tts_audio_start received with correct request_id and metadata")
+            return
         elif name == "tts_audio_end":
+            # Validate request_id
+            received_request_id, _ = data.get_property_string("request_id")
+            if received_request_id != self.request_id:
+                self._stop_test_with_error(ten_env, f"Request ID mismatch. Expected: {self.request_id}, Received: {received_request_id}")
+                return
+            
+            # Validate metadata (Base class implementation only contains session_id and turn_id in tts_audio_end)
+            metadata_str, _ = data.get_property_to_json("metadata")
+            if metadata_str:
+                try:
+                    received_metadata = json.loads(metadata_str)
+                    expected_metadata = {
+                        "session_id": self.sent_metadata.get("session_id", ""),
+                        "turn_id": self.sent_metadata.get("turn_id", -1)
+                    }
+                    if received_metadata != expected_metadata:
+                        self._stop_test_with_error(ten_env, f"Metadata mismatch in tts_audio_end. Expected: {expected_metadata}, Received: {received_metadata}")
+                        return
+                except json.JSONDecodeError:
+                    self._stop_test_with_error(ten_env, f"Invalid JSON in tts_audio_end metadata: {metadata_str}")
+                    return
+            else:
+                self._stop_test_with_error(ten_env, f"Missing metadata in tts_audio_end response")
+                return
+            
+            # Validate audio duration
+            if self.audio_start_time is not None:
+                current_time = time.time()
+                actual_duration_ms = (current_time - self.audio_start_time) * 1000
+                
+                # Get request_total_audio_duration_ms (actual audio duration)
+                received_audio_duration_ms, _ = data.get_property_int("request_total_audio_duration_ms")
+                
+                # Validate audio duration: request_total_audio_duration_ms should be consistent with the length calculated from the PCM file
+                pcm_audio_duration_ms = self._calculate_pcm_audio_duration_ms()
+                if pcm_audio_duration_ms > 0 and received_audio_duration_ms > 0:
+                    audio_duration_diff = abs(received_audio_duration_ms - pcm_audio_duration_ms)
+                    if audio_duration_diff > AUDIO_DURATION_TOLERANCE_MS:  # Allow AUDIO_DURATION_TOLERANCE_MS ms error
+                        self._stop_test_with_error(ten_env, f"Audio duration mismatch. PCM calculated: {pcm_audio_duration_ms}ms, Reported: {received_audio_duration_ms}ms, Diff: {audio_duration_diff}ms")
+                        return
+                    ten_env.log_info(f"✅ Audio duration validation passed. PCM: {pcm_audio_duration_ms}ms, Reported: {received_audio_duration_ms}ms, Diff: {audio_duration_diff}ms")
+                else:
+                    ten_env.log_info(f"Skipping audio duration validation - PCM: {pcm_audio_duration_ms}ms, Reported: {received_audio_duration_ms}ms")
+                
+                # Record actual elapsed time (for debugging)
+                ten_env.log_info(f"Actual event duration: {actual_duration_ms:.2f}ms")
+            else:
+                ten_env.log_warn("tts_audio_start not received before tts_audio_end")
+            
+            ten_env.log_info(f"✅ tts_audio_end received with correct request_id and metadata")
+            
             if not self.receive_metircs:
                 self._stop_test_with_error(ten_env, f"no metrics data before tts_audio_end")
             else:
                 ten_env.stop_test()
+
+    @override
+    async def on_audio_frame(
+        self, ten_env: AsyncTenEnvTester, audio_frame: AudioFrame
+    ) -> None:
+        """Handle received audio frame from TTS extension."""
+        # Check sample_rate
+        sample_rate = audio_frame.get_sample_rate()
+        ten_env.log_info(f"Received audio frame with sample_rate: {sample_rate}")
+
+        # Store current test sample_rate
+        if self.sample_rate == 0:
+            self.sample_rate = sample_rate
+            ten_env.log_info(f"First audio frame received with sample_rate: {sample_rate}")
+
+        # Accumulate audio bytes for duration calculation
+        try:
+            audio_data = audio_frame.get_buf()
+            if audio_data:
+                self.total_audio_bytes += len(audio_data)
+                ten_env.log_info(f"Audio frame size: {len(audio_data)} bytes, Total: {self.total_audio_bytes} bytes")
+        except Exception as e:
+            ten_env.log_warn(f"Failed to get audio data: {e}")
 
 
 def test_metrics(extension_name: str, config_dir: str) -> None:

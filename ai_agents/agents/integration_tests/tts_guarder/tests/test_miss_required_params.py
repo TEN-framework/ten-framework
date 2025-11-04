@@ -70,7 +70,6 @@ class MissRequiredParamsTester(AsyncExtensionTester):
     def _stop_test_with_error(
         self, ten_env: AsyncTenEnvTester, error_message: str
     ) -> None:
-        ten_env.log_info(f"Stopping test with error message: {error_message}")
         """Stop test with error message."""
         ten_env.stop_test(TenError.create(TenErrorCode.ErrorCodeGeneric, error_message))
 
