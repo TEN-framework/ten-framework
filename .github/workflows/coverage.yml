@@ -1091,6 +1091,8 @@ jobs:
   gather-coverage-information:
     needs: [test-standalone, test-integration-cpp, test-integration-go, test-integration-python, test-integration-nodejs]
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/ten-framework/ten_building_ubuntu2204
     steps:
       - name: Install LLVM 21 tools
         run: |
