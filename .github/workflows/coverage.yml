@@ -170,6 +170,47 @@ jobs:
           df -h .
           tree -I 'gen|obj' out
 
+        # Package CORE_BINARIES_AND_LIBS for coverage analysis
+      - name: Package binaries and libraries for coverage analysis
+        run: |
+          mkdir -p coverage_binaries_and_libs
+
+          # List of files needed for llvm-cov
+          CORE_BINARIES_AND_LIBS=(
+            "out/linux/x64/tests/standalone/ten_utils_unit_test"
+            "out/linux/x64/tests/standalone/ten_rust/integration_test"
+            "out/linux/x64/tests/standalone/ten_runtime_smoke_test"
+            "out/linux/x64/tests/standalone/ten_runtime_unit_test"
+            "out/linux/x64/libten_runtime.so"
+            "out/linux/x64/libten_runtime_go.so"
+            "out/linux/x64/libten_runtime_python.so"
+            "out/linux/x64/libten_runtime_nodejs.node"
+            "out/linux/x64/libten_utils.so"
+            "out/linux/x64/gen/core/src/ten_rust/libten_rust.a"
+          )
+
+          for file in "${CORE_BINARIES_AND_LIBS[@]}"; do
+            if [ -e "$file" ]; then
+              # Copy file directly to coverage_binaries_and_libs (no subdirectories)
+              cp "$file" coverage_binaries_and_libs/
+              echo "✓ Copied: $file -> $(basename $file)"
+            else
+              echo "✗ Missing: $file"
+            fi
+          done
+
+          echo "Files packaged for coverage analysis:"
+          ls -lh coverage_binaries_and_libs/
+
+          # Create tar archive
+          tar -czf coverage-binaries-and-libs.tar.gz coverage_binaries_and_libs
+
+      - name: Upload binaries and libraries for coverage analysis
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-binaries-and-libs
+          path: coverage-binaries-and-libs.tar.gz
+
         # Package the tests artifacts into a tar file while preserving file
         # permissions.
       - name: Package tests relevant artifacts preserving permissions
@@ -1073,16 +1114,22 @@ jobs:
           llvm-cov --version
           llvm-profdata merge --version 2>&1 | head -3 || echo "llvm-profdata installed"
 
-      - name: Download build artifacts (binaries and libraries)
+      - name: Download binaries and libraries for coverage analysis
         uses: actions/download-artifact@v4
         with:
-          name: tests-artifacts-for-coverage
+          name: coverage-binaries-and-libs
           path: .
 
-      - name: Extract tests artifacts preserving permissions
+      - name: Extract binaries and libraries
         run: |
-          tar -xzf tests-artifacts.tar.gz
-          ls -la out/linux/x64/
+          tar -xzf coverage-binaries-and-libs.tar.gz
+
+          # Move to target location
+          mkdir -p out/linux/coverage
+          mv coverage_binaries_and_libs out/linux/coverage/binaries_and_libs
+
+          echo "Extracted binaries and libraries:"
+          find out/linux/coverage/binaries_and_libs -type f
 
       - name: Download all profdata files
         uses: actions/download-artifact@v4
@@ -1102,18 +1149,16 @@ jobs:
       - name: Gather coverage information
         run: |
           CORE_BINARIES_AND_LIBS=(
-            "out/linux/x64/tests/standalone/ten_utils_unit_test"
-            "out/linux/x64/tests/standalone/ten_rust/integration_test"
-            "out/linux/x64/tests/standalone/ten_runtime_smoke_test"
-            "out/linux/x64/tests/standalone/ten_runtime_unit_test"
-            "out/linux/x64/libten_runtime.so"
-            "out/linux/x64/libten_runtime_go.so"
-            "out/linux/x64/libten_runtime_python.so"
-            "out/linux/x64/libten_runtime_go.so"
-            "out/linux/x64/libten_runtime_python.so"
-            "out/linux/x64/libten_runtime_nodejs.node"
-            "out/linux/x64/libten_utils.so"
-            "out/linux/x64/gen/core/src/ten_rust/libten_rust.a"
+            "out/linux/coverage/binaries_and_libs/ten_utils_unit_test"
+            "out/linux/coverage/binaries_and_libs/integration_test"
+            "out/linux/coverage/binaries_and_libs/ten_runtime_smoke_test"
+            "out/linux/coverage/binaries_and_libs/ten_runtime_unit_test"
+            "out/linux/coverage/binaries_and_libs/libten_runtime.so"
+            "out/linux/coverage/binaries_and_libs/libten_runtime_go.so"
+            "out/linux/coverage/binaries_and_libs/libten_runtime_python.so"
+            "out/linux/coverage/binaries_and_libs/libten_runtime_nodejs.node"
+            "out/linux/coverage/binaries_and_libs/libten_utils.so"
+            "out/linux/coverage/binaries_and_libs/libten_rust.a"
           )
 
           # Find and merge all profdata files
