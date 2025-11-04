@@ -401,6 +401,59 @@ pkill cloudflared
 nohup cloudflared tunnel --url http://localhost:3000 > /tmp/cloudflare_tunnel.log 2>&1 &
 ```
 
+### Agent Server Not Running After Container Restart
+
+**Symptom**: Playground shows "502 Bad Gateway" or `/api/agents/graphs` returns empty/error
+
+**Cause**: The agent server (`task run`) is not running inside the container. This happens after:
+- Container restart (`docker restart ten_agent_dev`)
+- Host machine reboot
+- Container crash/stop
+
+**Solution**:
+```bash
+# 1. Check if server is running
+docker exec ten_agent_dev bash -c "ps aux | grep -E 'bin/api|go run' | grep -v grep"
+
+# If nothing shows, start the server:
+docker exec -d ten_agent_dev bash -c \
+  "cd /app/agents/examples/voice-assistant-advanced && \
+   task run > /tmp/task_run.log 2>&1"
+
+# 2. Wait 5-8 seconds for startup, then verify
+sleep 5
+curl -s http://localhost:8080/health
+# Expected: {"code":"0","data":null,"msg":"ok"}
+
+# 3. Check graphs API
+curl -s http://localhost:8080/graphs | jq '.graphs[].name'
+```
+
+**Note**: The server does NOT auto-start when container starts. You must manually start it after every container restart.
+
+### Playground Node.js Version Issue
+
+**Symptom**: When starting playground from host machine, get error: `Node.js version ">=20.9.0" is required`
+
+**Cause**: Host machine has Node 18.x but playground requires Node 20+
+
+**Solution**: Run playground from INSIDE container which has Node 22:
+```bash
+# DON'T run from host:
+# cd /home/ubuntu/ten-framework/ai_agents/playground && npm run dev  # ❌ Fails with Node 18
+
+# DO run from inside container:
+docker exec -d ten_agent_dev bash -c \
+  "cd /app/playground && npm run dev > /tmp/playground_container.log 2>&1"
+
+# Verify it started
+sleep 3
+docker exec ten_agent_dev bash -c "curl -s -o /dev/null -w '%{http_code}' http://localhost:3000"
+# Expected: 200
+```
+
+**Note**: The `task run` command in step 3 automatically starts BOTH the agent server AND the playground. So you usually don't need to start playground separately.
+
 ---
 
 ## 8. Quick Reference Commands

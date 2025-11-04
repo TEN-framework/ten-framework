@@ -160,7 +160,7 @@ export default function RTCCard(props: { className?: string }) {
             )
           )
         ) : (
-          <AgentView audioTrack={remoteuser?.audioTrack} />
+          <AgentView audioTrack={remoteuser?.audioTrack} videoTrack={remoteuser?.videoTrack} />
         )}
       </div>
 

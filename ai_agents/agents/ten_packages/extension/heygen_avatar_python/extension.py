@@ -7,6 +7,8 @@ import asyncio
 import base64
 import traceback
 import numpy as np
+import signal
+import atexit
 
 from ten_runtime import (  # pylint: disable=import-error
     AudioFrame,
@@ -24,15 +26,49 @@ from .heygen import AgoraHeygenRecorder
 # from .heygen_bak import HeyGenRecorder
 from dataclasses import dataclass
 
+# Global reference for cleanup on signal
+_global_recorder = None
+_global_ten_env = None
+
+
+def _emergency_cleanup(signum=None, frame=None):
+    """Emergency cleanup on signal - runs synchronously."""
+    global _global_recorder, _global_ten_env
+    if _global_ten_env:
+        _global_ten_env.log_info(f"[SIGNAL HANDLER] Received signal {signum}, attempting emergency cleanup")
+    if _global_recorder and _global_recorder.session_id:
+        try:
+            import requests
+            headers = {
+                "accept": "application/json",
+                "content-type": "application/json",
+                "x-api-key": _global_recorder.api_key,
+            }
+            payload = {"session_id": _global_recorder.session_id}
+            if _global_ten_env:
+                _global_ten_env.log_info(f"[SIGNAL HANDLER] Stopping session: {_global_recorder.session_id}")
+            response = requests.post(
+                "https://api.heygen.com/v1/streaming.stop",
+                json=payload,
+                headers=headers,
+                timeout=5,
+            )
+            if _global_ten_env:
+                _global_ten_env.log_info(f"[SIGNAL HANDLER] Stop response: {response.status_code}")
+        except Exception as e:
+            if _global_ten_env:
+                _global_ten_env.log_error(f"[SIGNAL HANDLER] Emergency cleanup failed: {e}")
+
 
 @dataclass
 class HeygenAvatarConfig(BaseConfig):
     agora_appid: str = ""
     agora_appcert: str = ""
-    agora_channel_name: str = ""
+    channel: str = ""
     agora_avatar_uid: int = 0
     heygen_api_key: str = ""
     input_audio_sample_rate: int = 48000
+    avatar_name: str = "Wayne_20240711"
 
 
 class HeygenAvatarExtension(AsyncExtension):
@@ -54,6 +90,7 @@ class HeygenAvatarExtension(AsyncExtension):
 
         try:
             self.config = await HeygenAvatarConfig.create_async(ten_env)
+            ten_env.log_info(f"[AVATAR CONFIG] avatar_name={self.config.avatar_name}, channel={self.config.channel}")
 
             # recorder = HeyGenRecorder(
             #     self.config.api_key,
@@ -67,12 +104,22 @@ class HeygenAvatarExtension(AsyncExtension):
                 heygen_api_key=self.config.heygen_api_key,
                 app_id=self.config.agora_appid,
                 app_cert=self.config.agora_appcert,
-                channel_name=self.config.agora_channel_name,
+                channel_name=self.config.channel,
                 avatar_uid=self.config.agora_avatar_uid,
+                avatar_name=self.config.avatar_name,
                 ten_env=ten_env,
             )
 
             self.recorder = recorder
+
+            # Register signal handlers for emergency cleanup
+            global _global_recorder, _global_ten_env
+            _global_recorder = recorder
+            _global_ten_env = ten_env
+            signal.signal(signal.SIGTERM, _emergency_cleanup)
+            signal.signal(signal.SIGINT, _emergency_cleanup)
+            atexit.register(_emergency_cleanup)
+            ten_env.log_info("[SIGNAL HANDLER] Registered emergency cleanup handlers")
 
             asyncio.create_task(self._loop_input_audio_sender(ten_env))
 
@@ -136,10 +183,14 @@ class HeygenAvatarExtension(AsyncExtension):
             dump_file.write(buf)
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
-        ten_env.log_error("BBBBB on_stop")
+        ten_env.log_info("[AVATAR DISCONNECT] on_stop called")
         if self.recorder:
+            ten_env.log_info("[AVATAR DISCONNECT] Calling recorder.disconnect()")
             await self.recorder.disconnect()
-        # TODO: clean up resources
+            ten_env.log_info("[AVATAR DISCONNECT] recorder.disconnect() completed")
+        else:
+            ten_env.log_warn("[AVATAR DISCONNECT] No recorder to disconnect")
+        ten_env.log_info("[AVATAR DISCONNECT] on_stop completed")
 
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_debug("on_deinit")
