@@ -86,6 +86,18 @@ func (s *WebServer) Start() {
 	// API endpoint for starting playback
 	mux.HandleFunc("/api/start_play", s.handleStartPlay)
 
+	// API endpoints for recording control
+	mux.HandleFunc("/api/start_recording", s.handleStartRecording)
+	mux.HandleFunc("/api/stop_recording", s.handleStopRecording)
+	mux.HandleFunc("/api/list_sessions", s.handleListSessions)
+
+	// Serve recordings directory
+	recordingsDir := "./recordings"
+	if _, err := os.Stat(recordingsDir); os.IsNotExist(err) {
+		os.MkdirAll(recordingsDir, 0755)
+	}
+	mux.Handle("/recordings/", http.StripPrefix("/recordings/", http.FileServer(http.Dir(recordingsDir))))
+
 	// Root path handler - redirect to index.html
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {
@@ -328,4 +340,131 @@ func (s *WebServer) BroadcastAsrResult(text string, final bool) {
 			delete(s.clients, client)
 		}
 	}
+}
+
+// handleStartRecording starts a new recording session
+func (s *WebServer) handleStartRecording(w http.ResponseWriter, r *http.Request) {
+	sendJSONError := func(message string, statusCode int) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(statusCode)
+		json.NewEncoder(w).Encode(map[string]string{
+			"status":  "error",
+			"message": message,
+		})
+	}
+
+	if r.Method != http.MethodPost {
+		sendJSONError("Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Create TEN command
+	cmd, err := ten.NewCmd("start_recording")
+	if err != nil {
+		s.tenEnv.LogError(fmt.Sprintf("Failed to create command: %v", err))
+		sendJSONError("Failed to create command", http.StatusInternalServerError)
+		return
+	}
+
+	// Send command (fire and forget)
+	if err := s.tenEnv.SendCmd(cmd, nil); err != nil {
+		s.tenEnv.LogError(fmt.Sprintf("Failed to send command: %v", err))
+		sendJSONError("Failed to send command", http.StatusInternalServerError)
+		return
+	}
+
+	s.tenEnv.LogInfo("start_recording command sent")
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{
+		"status":  "ok",
+		"message": "Recording started",
+	})
+}
+
+// handleStopRecording stops the current recording session
+func (s *WebServer) handleStopRecording(w http.ResponseWriter, r *http.Request) {
+	sendJSONError := func(message string, statusCode int) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(statusCode)
+		json.NewEncoder(w).Encode(map[string]string{
+			"status":  "error",
+			"message": message,
+		})
+	}
+
+	if r.Method != http.MethodPost {
+		sendJSONError("Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Create TEN command
+	cmd, err := ten.NewCmd("stop_recording")
+	if err != nil {
+		s.tenEnv.LogError(fmt.Sprintf("Failed to create command: %v", err))
+		sendJSONError("Failed to create command", http.StatusInternalServerError)
+		return
+	}
+
+	// Send command (fire and forget)
+	if err := s.tenEnv.SendCmd(cmd, nil); err != nil {
+		s.tenEnv.LogError(fmt.Sprintf("Failed to send command: %v", err))
+		sendJSONError("Failed to send command", http.StatusInternalServerError)
+		return
+	}
+
+	s.tenEnv.LogInfo("stop_recording command sent")
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{
+		"status":  "ok",
+		"message": "Recording stopped",
+	})
+}
+
+// handleListSessions lists all recording sessions
+func (s *WebServer) handleListSessions(w http.ResponseWriter, r *http.Request) {
+	sendJSONError := func(message string, statusCode int) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(statusCode)
+		json.NewEncoder(w).Encode(map[string]string{
+			"status":  "error",
+			"message": message,
+		})
+	}
+
+	if r.Method != http.MethodGet {
+		sendJSONError("Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// Create TEN command
+	cmd, err := ten.NewCmd("list_sessions")
+	if err != nil {
+		s.tenEnv.LogError(fmt.Sprintf("Failed to create command: %v", err))
+		sendJSONError("Failed to create command", http.StatusInternalServerError)
+		return
+	}
+
+	// Send command (fire and forget)
+	if err := s.tenEnv.SendCmd(cmd, nil); err != nil {
+		s.tenEnv.LogError(fmt.Sprintf("Failed to send command: %v", err))
+		sendJSONError("Failed to send command", http.StatusInternalServerError)
+		return
+	}
+
+	s.tenEnv.LogInfo("list_sessions command sent")
+
+	// For now, return empty list since we can't wait for the result synchronously
+	// In a real implementation, you'd need to use channels or other async mechanisms
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"status":   "ok",
+		"count":    0,
+		"sessions": []interface{}{},
+		"message":  "Command sent, check recordings directory for files",
+	})
 }

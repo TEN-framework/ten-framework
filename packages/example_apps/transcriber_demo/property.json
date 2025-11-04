@@ -29,6 +29,12 @@
               "name": "audio_file_player_python",
               "addon": "audio_file_player_python",
               "extension_group": "audio_player"
+            },
+            {
+              "type": "extension",
+              "name": "vtt_nodejs",
+              "addon": "vtt_nodejs",
+              "extension_group": "vtt"
             }
           ],
           "connections": [
@@ -42,6 +48,22 @@
                       "extension": "audio_file_player_python"
                     }
                   ]
+                },
+                {
+                  "name": "start_recording",
+                  "dest": [
+                    {
+                      "extension": "vtt_nodejs"
+                    }
+                  ]
+                },
+                {
+                  "name": "stop_recording",
+                  "dest": [
+                    {
+                      "extension": "vtt_nodejs"
+                    }
+                  ]
                 }
               ],
               "audio_frame": [
@@ -50,6 +72,9 @@
                   "dest": [
                     {
                       "extension": "azure_asr_python"
+                    },
+                    {
+                      "extension": "vtt_nodejs"
                     }
                   ]
                 }
@@ -63,6 +88,9 @@
                   "dest": [
                     {
                       "extension": "azure_asr_python"
+                    },
+                    {
+                      "extension": "vtt_nodejs"
                     }
                   ]
                 }
@@ -76,6 +104,9 @@
                   "dest": [
                     {
                       "extension": "web_audio_control_go"
+                    },
+                    {
+                      "extension": "vtt_nodejs"
                     }
                   ]
                 }

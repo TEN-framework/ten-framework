@@ -1,6 +1,6 @@
 module ten_packages/extension/web_audio_control_go
 
-go 1.23
+go 1.20
 
 replace ten_framework => ../../../ten_packages/system/ten_runtime_go/interface
 

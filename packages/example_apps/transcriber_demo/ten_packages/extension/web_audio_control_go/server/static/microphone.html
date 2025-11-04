@@ -499,6 +499,12 @@
         // Audio processing using ScriptProcessorNode (more compatible than AudioWorklet)
         async function startRecording() {
             try {
+                // Check browser support
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    showStatus('Your browser does not support microphone access. Please use Chrome, Firefox, or Edge with HTTPS/localhost.', 'error');
+                    return;
+                }
+
                 // Request microphone access
                 mediaStream = await navigator.mediaDevices.getUserMedia({
                     audio: {

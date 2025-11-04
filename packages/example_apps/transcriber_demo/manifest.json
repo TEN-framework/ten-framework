@@ -51,6 +51,11 @@
       "type": "extension",
       "name": "azure_asr_python",
       "version": "0.2"
+    },
+    {
+      "type": "extension",
+      "name": "vtt_nodejs",
+      "version": "0.1.0"
     }
   ],
   "scripts": {
@@ -68,6 +73,8 @@
       ".env",
       "ten_packages/extension/audio_file_player_python/**",
       "ten_packages/extension/web_audio_control_go/**",
+      "ten_packages/extension/vtt_nodejs/**",
+      "recordings/**",
       "scripts/**",
       "docs/**",
       "bin/start",
