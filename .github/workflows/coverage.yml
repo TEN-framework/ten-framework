@@ -86,22 +86,41 @@ jobs:
           apt-get update
           apt-get install -y llvm-21 clang-21
 
-          # Create symlinks to make llvm-cov and llvm-profdata available without version suffix
+          # CRITICAL: GN build system hardcodes "clang"/"clang++" (without version suffix)
+          # We must override these to point to clang-21 to ensure profraw format version 10
+          # Put /usr/local/bin at the front of PATH so our symlinks take precedence
+          ln -sf /usr/bin/clang-21 /usr/local/bin/clang
+          ln -sf /usr/bin/clang++-21 /usr/local/bin/clang++
+          ln -sf /usr/bin/llvm-ar-21 /usr/local/bin/llvm-ar
+          ln -sf /usr/bin/llvm-nm-21 /usr/local/bin/llvm-nm
+          ln -sf /usr/bin/llvm-ranlib-21 /usr/local/bin/llvm-ranlib
+
+          # Create symlinks for coverage tools
           ln -sf /usr/bin/llvm-cov-21 /usr/local/bin/llvm-cov
           ln -sf /usr/bin/llvm-profdata-21 /usr/local/bin/llvm-profdata
           ln -sf /usr/bin/llvm-objdump-21 /usr/local/bin/llvm-objdump
 
-          # Verify installation
-          llvm-cov --version
-          llvm-profdata merge --version 2>&1 | head -3 || echo "llvm-profdata installed (note: --version flag not supported in some versions)"
-
-          # Show actual LLVM version
-          /usr/bin/llvm-cov-21 --version | head -3
+          # Verify installation - should all show LLVM 21
+          echo "=== Verifying LLVM 21 tools are correctly linked ==="
+          which clang
+          clang --version | head -3
+          which clang++
+          clang++ --version | head -3
+          llvm-cov --version | head -3
+          llvm-profdata merge --version 2>&1 | head -3 || echo "llvm-profdata installed"
 
       - name: Build (clang + debug + x64) with coverage instrumentation enabled
         run: |
-          export PATH=$(pwd)/core/ten_gn:/usr/local/go/bin:/root/go/bin:/root/.cargo/bin:$PATH
-          echo $PATH
+          # Ensure /usr/local/bin is at the front of PATH so our clang-21 symlinks are used
+          export PATH=/usr/local/bin:$(pwd)/core/ten_gn:/usr/local/go/bin:/root/go/bin:/root/.cargo/bin:$PATH
+          echo "PATH: $PATH"
+
+          # Verify we're using the correct clang version
+          echo "=== Compiler verification before build ==="
+          which clang
+          clang --version | head -3
+          which clang++
+          clang++ --version | head -3
 
           go env -w GOFLAGS="-buildvcs=false"
           go install golang.org/dl/go1.24.3@latest
@@ -1082,9 +1101,8 @@ jobs:
 
       - name: Gather coverage information
         run: |
-          CORE_BINARIES=(
+          CORE_BINARIES_AND_LIBS=(
             "out/linux/x64/tests/standalone/ten_utils_unit_test"
-            "out/linux/x64/libten_utils.so"
             "out/linux/x64/tests/standalone/ten_rust/integration_test"
             "out/linux/x64/tests/standalone/ten_runtime_smoke_test"
             "out/linux/x64/tests/standalone/ten_runtime_unit_test"
@@ -1094,6 +1112,8 @@ jobs:
             "out/linux/x64/libten_runtime_go.so"
             "out/linux/x64/libten_runtime_python.so"
             "out/linux/x64/libten_runtime_nodejs.node"
+            "out/linux/x64/libten_utils.so"
+            "out/linux/x64/gen/core/src/ten_rust/libten_rust.a"
           )
 
           # Find and merge all profdata files
@@ -1108,10 +1128,10 @@ jobs:
           llvm-profdata show out/linux/x64/coverage/merged.profdata
 
           llvm-cov export \
-          --ignore-filename-regex='(^|/)\.cargo/|(^|/).rustup/|(^|/)out/' \
+          --ignore-filename-regex='(^|/)\.cargo/|(^|/).rustup/|(^|/)out/|(^|/)tests/|(^|/)third_party/' \
           --format=lcov \
           --instr-profile="out/linux/x64/coverage/merged.profdata" \
-          "${CORE_BINARIES[@]}" \
+          "${CORE_BINARIES_AND_LIBS[@]}" \
           > "out/linux/x64/coverage/coverage.lcov"
 
       - name: Upload coverage report
