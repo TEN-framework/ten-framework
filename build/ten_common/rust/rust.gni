@@ -48,7 +48,9 @@ template("rust_target") {
       _rustflags = invoker._rustflags
     }
 
-    if (enable_coverage) {
+    # Inject Rust coverage instrumentation globally for TEN Rust crates when enabled.
+    # Exclude tman (TEN Manager) from coverage instrumentation to reduce memory usage.
+    if (enable_coverage && _target_name != "tman") {
       assert(
         is_linux && target_cpu == "x64",
         "Coverage instrumentation should only be enabled in Linux + x64"
@@ -248,7 +250,9 @@ template("rust_test") {
       _rustflags = invoker._rustflags
     }
 
-    if (enable_coverage) {
+    # Inject Rust coverage instrumentation globally for TEN Rust crates when enabled.
+    # Exclude tman tests from coverage instrumentation.
+    if (enable_coverage && _target_name != "tman_test_cargo_build") {
       assert(
         is_linux && target_cpu == "x64",
         "Coverage instrumentation should only be enabled in Linux + x64"
