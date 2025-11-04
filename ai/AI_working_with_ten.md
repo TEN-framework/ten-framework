@@ -980,6 +980,35 @@ docker compose down && docker compose up -d
    - Others expect `property.api_key`
    - Check existing extension's `property.json` for correct structure
 
+### Testing Individual Extensions
+
+Test extensions locally before pushing to avoid CI failures. The task command handles dependency installation and runs pytest in the correct environment.
+
+**Command:**
+```bash
+cd /home/ubuntu/ten-framework/ai_agents
+docker exec ten_agent_dev bash -c "cd /app && task test-extension EXTENSION=agents/ten_packages/extension/<ext_name> -- -s -v"
+```
+
+**What it does:**
+1. `cd` into the extension directory
+2. `tman -y install --standalone` - Installs extension dependencies in standalone mode
+3. `./tests/bin/start -s -v` - Runs pytest with verbose output and no output capture
+
+**Example:**
+```bash
+# Test heygen_avatar_python extension
+docker exec ten_agent_dev bash -c "cd /app && task test-extension EXTENSION=agents/ten_packages/extension/heygen_avatar_python -- -s -v"
+```
+
+**Common test failures:**
+- **Permission denied on start script**: `chmod +x tests/bin/start`
+- **ModuleNotFoundError for 'ten'**: Use `from ten_runtime import` not `from ten import`
+- **Missing required argument in API calls**: Check CmdResult.create() signature requires `(status, cmd)`
+- **Missing environment variables**: Add empty defaults in property.json: `"api_key": "${env:API_KEY|}"`
+
+**Best practice:** Always test extensions locally before committing. Run tests for all modified extensions before pushing.
+
 ### Best Practices for Example Variants
 
 1. **Naming Convention:**
@@ -1594,6 +1623,134 @@ When something isn't working:
 - Use `ten_env.log_info()` liberally for debugging
 - Check session-specific logs for runtime errors
 - Monitor resource usage (memory, CPU) during development
+
+### Commit Messages
+
+Follow conventional commits format strictly. A local git hook (`.git/hooks/commit-msg`) validates commit messages before they're created, and the CI will reject commits that don't follow these rules.
+
+**Rules:**
+- **Subject must be lowercase** - No Sentence-case, Start-case, UPPER-CASE allowed
+- **Valid types**: build, chore, ci, docs, feat, fix, perf, refactor, revert, style, test
+- **Body/footer lines must be ≤100 characters**
+- **No references to AI assistants or code generation tools**
+
+**Examples:**
+```bash
+# ✅ CORRECT
+fix: correct import statements in heygen extension
+
+feat: add deepgram flux v2 support
+
+chore: add execute permissions to test script
+
+test: update heygen extension test configuration
+
+# ❌ WRONG - subject not lowercase
+Fix: Correct import statements in heygen extension
+
+# ❌ WRONG - invalid type
+update: add new feature
+
+# ❌ WRONG - AI assistant reference
+fix: correct imports
+
+Generated with Claude Code
+```
+
+**Wrapping long commit bodies:**
+```bash
+# Use fold to wrap lines at 100 characters
+git commit -m "$(cat <<'EOF'
+fix: correct multiple import errors in extensions
+
+This commit addresses several import issues that were causing test
+failures. Changed from legacy 'ten' imports to 'ten_runtime' across
+all affected files.
+EOF
+)"
+```
+
+**Setting up the git hook:**
+
+If the hook is missing or needs to be updated, create/update it with:
+
+```bash
+cat > .git/hooks/commit-msg << 'EOF'
+#!/bin/bash
+
+# Read commit message
+COMMIT_MSG_FILE="$1"
+COMMIT_MSG=$(cat "$COMMIT_MSG_FILE")
+
+# Check for Claude mentions in commit message
+if grep -qi "claude\|anthropic" "$COMMIT_MSG_FILE"; then
+    echo "ERROR: Commit message contains references to Claude or Anthropic."
+    echo "Please remove these mentions and try again."
+    exit 1
+fi
+
+# Get subject line (first line)
+SUBJECT=$(head -n1 "$COMMIT_MSG_FILE")
+
+# Check if subject starts with valid conventional commit type
+VALID_TYPES="^(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\(.+\))?:"
+if ! echo "$SUBJECT" | grep -qE "$VALID_TYPES"; then
+    echo "ERROR: Commit subject must start with a valid type."
+    echo "Valid types: build, chore, ci, docs, feat, fix, perf, refactor, revert, style, test"
+    echo "Example: 'fix: correct import statements'"
+    echo ""
+    echo "Your subject: $SUBJECT"
+    exit 1
+fi
+
+# Check if subject is lowercase after the type:
+# Extract the part after "type:" or "type(scope):"
+SUBJECT_TEXT=$(echo "$SUBJECT" | sed -E 's/^[a-z]+(\([^)]+\))?:\s*//')
+if echo "$SUBJECT_TEXT" | grep -qE '^[A-Z]'; then
+    echo "ERROR: Commit subject must be lowercase (no Sentence-case, Start-case, UPPER-CASE)."
+    echo "Example: 'fix: correct import statements' (not 'fix: Correct import statements')"
+    echo ""
+    echo "Your subject: $SUBJECT"
+    exit 1
+fi
+
+# Check body/footer lines are ≤100 characters (skip first line and empty lines)
+LINE_NUM=0
+while IFS= read -r line; do
+    LINE_NUM=$((LINE_NUM + 1))
+    # Skip first line (subject) and empty lines
+    if [ $LINE_NUM -eq 1 ] || [ -z "$line" ]; then
+        continue
+    fi
+
+    # Check line length
+    if [ ${#line} -gt 100 ]; then
+        echo "ERROR: Commit message body/footer lines must be ≤100 characters."
+        echo "Line $LINE_NUM is ${#line} characters long:"
+        echo "$line"
+        echo ""
+        echo "Use 'fold -w 100 -s' to wrap long lines, or break into multiple lines."
+        exit 1
+    fi
+done < "$COMMIT_MSG_FILE"
+
+exit 0
+EOF
+
+chmod +x .git/hooks/commit-msg
+```
+
+**Testing the git hook:**
+```bash
+# The hook at .git/hooks/commit-msg automatically validates all commits
+# Test it manually:
+echo "fix: test commit message" > /tmp/test_msg.txt
+bash .git/hooks/commit-msg /tmp/test_msg.txt && echo "Valid" || echo "Invalid"
+
+# The hook will automatically run on every commit and reject invalid messages
+```
+
+**Note:** The hook must be set up in each clone of the repository, as `.git/hooks/` is not tracked by git.
 
 ---
 

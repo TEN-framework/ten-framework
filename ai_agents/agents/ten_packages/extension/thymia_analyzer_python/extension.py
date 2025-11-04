@@ -146,6 +146,12 @@ class AudioBuffer:
         if not pcm_data:
             return 0.0
 
+        # Ensure even length for 16-bit samples
+        if len(pcm_data) % 2 != 0:
+            pcm_data = pcm_data[:-1]  # Truncate last byte
+            if not pcm_data:
+                return 0.0
+
         # Convert bytes to 16-bit integers
         samples = struct.unpack(f"{len(pcm_data)//2}h", pcm_data)
 

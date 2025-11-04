@@ -165,6 +165,8 @@ class AgoraHeygenRecorder:
         data = response.json()["data"]
         self.session_id = data["session_id"]
         self.realtime_endpoint = data["realtime_endpoint"]
+        self.ten_env.log_info(f"Session created: {self.session_id}")
+        self.ten_env.log_info(f"WebSocket endpoint: {self.realtime_endpoint}")
 
     def _raise_for_status_verbose(self, response):
         try:
@@ -204,17 +206,19 @@ class AgoraHeygenRecorder:
             self._raise_for_status_verbose(response)
             self._clear_session_id_cache()
         except Exception as e:
-            print(f"Failed to stop session: {e}")
+            self.ten_env.log_error(f"Failed to stop session: {e}")
 
     async def _connect_websocket_loop(self):
         while self._should_reconnect:
             try:
-                self.ten_env.log_info("Connecting to WebSocket...")
+                self.ten_env.log_info(f"Connecting to WebSocket: {self.realtime_endpoint}")
                 async with websockets.connect(self.realtime_endpoint) as ws:
                     self.websocket = ws
+                    self.ten_env.log_info("WebSocket connected successfully")
                     await asyncio.Future()  # Wait forever unless cancelled
             except Exception as e:
-                print(f"WebSocket error: {e}. Reconnecting in 3 seconds...")
+                self.ten_env.log_error(f"WebSocket error: {e}. Reconnecting in 3 seconds...")
+                self.websocket = None
                 await asyncio.sleep(3)
 
     def _schedule_speak_end(self):
@@ -249,22 +253,32 @@ class AgoraHeygenRecorder:
                 self.ten_env.log_info("Sent agent.speak_end.")
                 break  # Exit the task
             except Exception as e:
-                print(f"Error in speak_end task: {e}")
+                self.ten_env.log_error(f"Error in speak_end task: {e}")
                 break
 
     async def send(self, audio_base64: str):
         if self.websocket is None:
+            self.ten_env.log_error("Cannot send audio: WebSocket is not connected")
             raise RuntimeError("WebSocket is not connected.")
+
         event_id = uuid.uuid4().hex
-        await self.websocket.send(
-            json.dumps(
-                {
-                    "type": "agent.speak",
-                    "audio": audio_base64,
-                    "event_id": event_id,
-                }
+        audio_len = len(audio_base64)
+        self.ten_env.log_debug(f"Sending audio chunk: {audio_len} bytes, event_id: {event_id}")
+
+        try:
+            await self.websocket.send(
+                json.dumps(
+                    {
+                        "type": "agent.speak",
+                        "audio": audio_base64,
+                        "event_id": event_id,
+                    }
+                )
             )
-        )
+            self.ten_env.log_debug(f"Audio chunk sent successfully: {event_id}")
+        except Exception as e:
+            self.ten_env.log_error(f"Failed to send audio chunk: {e}")
+            raise
 
         # Schedule agent.speak_end after a short delay
         self._schedule_speak_end()

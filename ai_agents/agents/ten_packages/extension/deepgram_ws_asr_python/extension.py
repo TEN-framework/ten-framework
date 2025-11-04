@@ -110,7 +110,8 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
             )
 
     def _build_websocket_url(self) -> str:
-        assert self.config is not None
+        if self.config is None:
+            raise RuntimeError("Configuration not initialized")
 
         if self.config.is_v2_endpoint():
             params = {
@@ -144,7 +145,8 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
 
     @override
     async def start_connection(self) -> None:
-        assert self.config is not None
+        if self.config is None:
+            raise RuntimeError("Configuration not initialized")
         self.ten_env.log_info("[DEEPGRAM-WS] Starting WebSocket connection")
 
         async with self._connection_lock:
@@ -183,7 +185,8 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
 
     async def _receive_loop(self):
         try:
-            assert self.ws is not None
+            if self.ws is None:
+                raise RuntimeError("WebSocket not initialized")
 
             async for msg in self.ws:
                 if msg.type == aiohttp.WSMsgType.TEXT:
@@ -416,14 +419,16 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
 
     @override
     def input_audio_sample_rate(self) -> int:
-        assert self.config is not None
+        if self.config is None:
+            raise RuntimeError("Configuration not initialized")
         return self.config.sample_rate
 
     @override
     async def send_audio(
         self, frame: AudioFrame, session_id: str | None
     ) -> bool:
-        assert self.config is not None
+        if self.config is None:
+            raise RuntimeError("Configuration not initialized")
 
         if not self.is_connected():
             self.ten_env.log_warn(
@@ -431,7 +436,8 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
             )
             return False
 
-        assert self.ws is not None
+        if self.ws is None:
+            raise RuntimeError("WebSocket not initialized")
 
         try:
             buf = frame.lock_buf()
