@@ -64,7 +64,7 @@ action("create_symlink") {
 config("nodejs_addon_loader_config") {
   cflags_cc = [ "-std=c++17" ]
 
-  if (is_clang) {
+  if (is_clang && !is_mac) {
     cflags_cc += [ "-stdlib=libstdc++" ]
     libs = [ "stdc++" ]
   }
