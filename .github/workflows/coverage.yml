@@ -310,31 +310,6 @@ jobs:
 
           df -h .
 
-      - name: Run Tests (ten_manager standalone tests)
-        env:
-          ASAN_OPTIONS: detect_leaks=1:detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
-          MALLOC_CHECK_: 3
-          TEN_ENABLE_MEMORY_TRACKING: "true"
-          TEN_ENABLE_BACKTRACE_DUMP: "true"
-          RUST_BACKTRACE: "full"
-        run: |
-          cd out/linux/x64/tests/standalone/ten_manager
-
-          chmod +x unit_test
-          chmod +x integration_test
-
-          ./unit_test --nocapture --test-threads=1 || { echo "ten_manager unit test failed"; exit 1; }
-          ./integration_test --nocapture --test-threads=1 || { echo "ten_manager integration test failed"; exit 1; }
-
-          df -h .
-
-      - name: Clean up
-        continue-on-error: true
-        run: |
-          find out/linux/x64/tests/standalone/ten_manager -type f ! -name "*.profraw" -delete
-
-          df -h .
-
       - name: Run Tests (ten_runtime_smoke_test)
         env:
           ASAN_OPTIONS: detect_leaks=1:detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
@@ -351,26 +326,6 @@ jobs:
         continue-on-error: true
         run: |
           find out/linux/x64/tests/standalone/ten_runtime_smoke_test -type f ! -name "*.profraw" -delete
-
-          df -h .
-
-      # test-integration-ten-manager
-      - name: Run Tests (ten_manager pytest tests)
-        env:
-          ASAN_OPTIONS: detect_leaks=1:detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
-          MALLOC_CHECK_: 3
-          TEN_ENABLE_MEMORY_TRACKING: "true"
-          TEN_ENABLE_BACKTRACE_DUMP: "true"
-        run: |
-          cd out/linux/x64/
-          pytest -s tests/ten_manager/
-
-          df -h .
-
-      - name: Clean up
-        continue-on-error: true
-        run: |
-          find out/linux/x64/tests/ten_manager -type f ! -name "*.profraw" -delete
 
           df -h .
 
