@@ -7,7 +7,7 @@ import websockets
 from time import time
 from agora_token_builder import RtcTokenBuilder
 
-from ten import AsyncTenEnv  # pylint: disable=import-error
+from ten_runtime import AsyncTenEnv  # pylint: disable=import-error
 
 
 class AgoraHeygenRecorder:

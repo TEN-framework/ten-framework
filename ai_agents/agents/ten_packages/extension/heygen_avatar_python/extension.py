@@ -8,7 +8,7 @@ import base64
 import traceback
 import numpy as np
 
-from ten import (  # pylint: disable=import-error
+from ten_runtime import (  # pylint: disable=import-error
     AudioFrame,
     VideoFrame,
     AsyncExtension,
@@ -137,7 +137,8 @@ class HeygenAvatarExtension(AsyncExtension):
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_error("BBBBB on_stop")
-        await self.recorder.disconnect()
+        if self.recorder:
+            await self.recorder.disconnect()
         # TODO: clean up resources
 
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
@@ -149,8 +150,8 @@ class HeygenAvatarExtension(AsyncExtension):
 
         # TODO: process cmd
 
-        cmd_result = CmdResult.create(StatusCode.OK)
-        await ten_env.return_result(cmd_result, cmd)
+        cmd_result = CmdResult.create(StatusCode.OK, cmd)
+        await ten_env.return_result(cmd_result)
 
     async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
         data_name = data.get_name()
