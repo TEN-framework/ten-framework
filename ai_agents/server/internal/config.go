@@ -29,8 +29,6 @@ var (
 	logTag = slog.String("service", "HTTP_SERVER")
 
 	// Retrieve parameters from the request and map them to the property.json file
-	// Note: ChannelName is handled via property-based auto-injection in http_server.go
-	// It automatically injects channel into any node that has a "channel" property
 	startPropMap = map[string][]Prop{
 		"ChannelName": {
 			{ExtensionName: extensionNameAgoraRTC, Property: "channel"},
