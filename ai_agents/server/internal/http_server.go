@@ -644,7 +644,31 @@ func (s *HttpServer) processProperty(req *StartReq, tenappDir string) (propertyJ
 	}
 
 	// Set start parameters to property.json
+	// Special handling for ChannelName: inject into ALL nodes that have a "channel" property
+	if req.ChannelName != "" {
+		for _, graph := range newGraphs {
+			graphMap, _ := graph.(map[string]interface{})
+			graphData, _ := graphMap["graph"].(map[string]interface{})
+			nodes, _ := graphData["nodes"].([]interface{})
+			for _, node := range nodes {
+				nodeMap, _ := node.(map[string]interface{})
+				if properties, ok := nodeMap["property"].(map[string]interface{}); ok {
+					// If this node has a "channel" property, inject the dynamic value
+					if _, hasChannel := properties["channel"]; hasChannel {
+						properties["channel"] = req.ChannelName
+						slog.Debug("Injected channel into node", "node", nodeMap["name"], "channel", req.ChannelName, "requestId", req.RequestId, logTag)
+					}
+				}
+			}
+		}
+	}
+
+	// Handle other start parameters using the existing map approach
 	for key, props := range startPropMap {
+		// Skip ChannelName as we handled it above with property-based injection
+		if key == "ChannelName" {
+			continue
+		}
 		val := getFieldValue(req, key)
 		if val != "" {
 			for _, prop := range props {
