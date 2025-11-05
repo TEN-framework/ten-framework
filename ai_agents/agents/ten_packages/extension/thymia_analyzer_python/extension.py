@@ -627,17 +627,17 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
             speech_duration = self.audio_buffer.add_frame(pcm_data)
 
             # Log speech accumulation every 50 frames (~ every 0.5 seconds)
-            if self._audio_frame_count % 50 == 1:
-                ten_env.log_info(
-                    f"[thymia_analyzer] 📊 Speech buffer status: {speech_duration:.1f}s / {self.min_speech_duration:.1f}s "
-                    f"(need {self.min_speech_duration - speech_duration:.1f}s more)"
-                )
-
             # Determine required speech duration based on analysis mode
             required_duration = self.min_speech_duration
             if self.analysis_mode == "demo_dual":
                 # Need enough for both mood (22s) and reading (30s)
                 required_duration = self.apollo_mood_duration + self.apollo_read_duration
+
+            if self._audio_frame_count % 50 == 1:
+                ten_env.log_info(
+                    f"[thymia_analyzer] 📊 Speech buffer status: {speech_duration:.1f}s / {required_duration:.1f}s "
+                    f"(mode={self.analysis_mode}, need {required_duration - speech_duration:.1f}s more)"
+                )
 
             # Check if we have enough speech to analyze
             if self.audio_buffer.has_enough_speech(required_duration):
@@ -695,10 +695,15 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
         """Run Thymia analysis workflow in background"""
         self.active_analysis = True
 
+        ten_env.log_info(
+            f"[ANALYSIS START] Mode={self.analysis_mode}, "
+            f"User={self.user_name}, DOB={self.user_dob}, Sex={self.user_sex}"
+        )
+
         try:
             # Get raw PCM data from buffer
             if not self.audio_buffer.speech_buffer:
-                ten_env.log_warn("No audio data available for analysis")
+                ten_env.log_warn("[ANALYSIS] No audio data available for analysis")
                 return
 
             # Concatenate all PCM frames
@@ -722,10 +727,14 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                 ten_env.log_warn(f"Failed to save debug audio: {e}")
 
             ten_env.log_info(
-                f"Starting Thymia API workflow ({len(wav_data)} bytes)"
+                f"[HELLOS] Starting Thymia API workflow ({len(wav_data)} bytes)"
             )
 
             # Step 1: Create session with user info
+            ten_env.log_info(
+                f"[HELLOS] Creating session for user={self.user_name}, "
+                f"dob={self.user_dob}, sex={self.user_sex}"
+            )
             session_response = await self.api_client.create_session(
                 user_label=self.user_name or "anonymous",
                 date_of_birth=self.user_dob or "1990-01-01",
@@ -735,19 +744,20 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
             session_id = session_response["id"]
             upload_url = session_response["recordingUploadUrl"]
 
-            ten_env.log_info(f"Created Thymia session: {session_id}")
+            ten_env.log_info(f"[HELLOS] Created session: {session_id}")
 
             # Step 2: Upload audio
+            ten_env.log_info(f"[HELLOS] Uploading {len(wav_data)} bytes of audio...")
             upload_success = await self.api_client.upload_audio(
                 upload_url, wav_data
             )
 
             if not upload_success:
-                ten_env.log_error("Failed to upload audio to Thymia")
+                ten_env.log_error("[HELLOS] Failed to upload audio to Thymia")
                 return
 
             ten_env.log_info(
-                "Audio uploaded successfully, polling for results..."
+                f"[HELLOS] Audio uploaded successfully, polling for results (timeout={self.poll_timeout}s)..."
             )
 
             # Step 3: Poll for results
@@ -759,9 +769,11 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
 
             if not results:
                 ten_env.log_warn(
-                    f"Thymia analysis timed out after {self.poll_timeout}s"
+                    f"[HELLOS] Analysis timed out after {self.poll_timeout}s"
                 )
                 return
+
+            ten_env.log_info(f"[HELLOS] Received results for session {session_id}")
 
             # Step 4: Extract metrics from results.sections[0]
             sections = results.get("results", {}).get("sections", [])
@@ -843,6 +855,10 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                         )
 
                     # Run Apollo analysis
+                    ten_env.log_info(
+                        f"[APOLLO] Starting depression/anxiety analysis for user={self.user_name}, "
+                        f"dob={self.user_dob}, sex={self.user_sex}"
+                    )
                     apollo_result = await self.apollo_client.analyze(
                         mood_audio_pcm=mood_pcm,
                         read_aloud_audio_pcm=read_pcm,
@@ -925,8 +941,8 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                 description=(
                     "Set user information required for mental wellness analysis. "
                     "This should be called BEFORE analyzing wellness metrics. "
-                    "Ask the user naturally for their name, date of birth, and sex. "
-                    "Example: 'To better understand your wellness, may I ask your name, date of birth, and sex?'"
+                    "Ask the user naturally for their name, year of birth, and sex. "
+                    "Example: 'To better understand your wellness, may I ask your name, year of birth, and sex?'"
                 ),
                 parameters=[
                     {
@@ -936,9 +952,9 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                         "required": True,
                     },
                     {
-                        "name": "date_of_birth",
+                        "name": "year_of_birth",
                         "type": "string",
-                        "description": "User's date of birth in any common format (e.g., 'April 27, 1974', '04/27/1974', '1974-04-27')",
+                        "description": "User's year of birth (e.g., '1974', '1990')",
                         "required": True,
                     },
                     {
@@ -1011,15 +1027,28 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
             if name == "set_user_info":
                 # Extract parameters
                 self.user_name = args.get("name", "").strip()
-                raw_dob = args.get("date_of_birth", "").strip()
+                year_of_birth = args.get("year_of_birth", "").strip()
                 self.user_sex = args.get("sex", "").strip().upper()
                 self.user_locale = args.get("locale", "en-US").strip()
 
-                # Convert date to YYYY-MM-DD format
-                self.user_dob = self._parse_date_to_iso(raw_dob)
-                ten_env.log_info(
-                    f"Converted DOB from '{raw_dob}' to '{self.user_dob}'"
-                )
+                # Convert year to YYYY-01-01 format (using Jan 1st)
+                if year_of_birth:
+                    # Extract just the 4-digit year
+                    import re
+                    year_match = re.search(r'(\d{4})', year_of_birth)
+                    if year_match:
+                        year = year_match.group(1)
+                        self.user_dob = f"{year}-01-01"
+                        ten_env.log_info(
+                            f"Converted year '{year_of_birth}' to DOB '{self.user_dob}'"
+                        )
+                    else:
+                        self.user_dob = "1990-01-01"  # Default fallback
+                        ten_env.log_warn(
+                            f"Could not parse year '{year_of_birth}', using default"
+                        )
+                else:
+                    self.user_dob = ""
 
                 # Validate required fields
                 if not self.user_name or not self.user_dob or not self.user_sex:
@@ -1028,7 +1057,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                         content=json.dumps(
                             {
                                 "status": "error",
-                                "message": "Missing required fields: name, date_of_birth, and sex are all required",
+                                "message": "Missing required fields: name, year_of_birth, and sex are all required",
                             }
                         ),
                     )
@@ -1053,8 +1082,20 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
 
             # Handle get_wellness_metrics tool
             if name == "get_wellness_metrics":
+                ten_env.log_info(
+                    f"[TOOL CALL] get_wellness_metrics - "
+                    f"active_analysis={self.active_analysis}, "
+                    f"has_results={self.latest_results is not None}, "
+                    f"speech_duration={self.audio_buffer.speech_duration if self.audio_buffer else 0:.1f}s"
+                )
+
                 # Check if we have results
                 if not self.latest_results:
+                    # Calculate required duration based on mode
+                    required_duration = self.min_speech_duration
+                    if self.analysis_mode == "demo_dual":
+                        required_duration = self.apollo_mood_duration + self.apollo_read_duration
+
                     # Determine status
                     if self.active_analysis:
                         status = "analyzing"
@@ -1064,7 +1105,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                         and self.audio_buffer.speech_duration > 0
                     ):
                         status = "insufficient_data"
-                        message = f"Collecting speech for analysis ({self.audio_buffer.speech_duration:.1f}s / {self.min_speech_duration:.1f}s)"
+                        message = f"Collecting speech for analysis ({self.audio_buffer.speech_duration:.1f}s / {required_duration:.1f}s needed)"
                     else:
                         status = "no_data"
                         message = "No speech data collected yet for analysis"
