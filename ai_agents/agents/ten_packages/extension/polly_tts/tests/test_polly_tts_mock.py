@@ -66,7 +66,9 @@ class MockPollyTTSExtensionTester(AsyncExtensionTester):
         if name == "error":
             # If we already received and validated an error, ignore subsequent errors
             if self.error_received:
-                ten_env.log_info("Already received an error, ignoring this one.")
+                ten_env.log_info(
+                    "Already received an error, ignoring this one."
+                )
                 return
 
             ten_env.log_info("Received error, stopping test.")
