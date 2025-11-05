@@ -6,8 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "lint": "eslint .",
-    "check": "biome check --write",
+    "lint": "biome check --write",
     "preview": "vite preview",
     "test:prepare": "playwright install",
     "test:e2e": "playwright test",
@@ -85,6 +84,7 @@
     "zustand": "^5.0.8"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.3.0",
     "@eslint/js": "^9.39.1",
     "@playwright/test": "^1.56.1",
     "@tailwindcss/postcss": "^4.1.16",
