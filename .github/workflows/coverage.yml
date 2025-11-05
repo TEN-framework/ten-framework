@@ -170,26 +170,6 @@ jobs:
           df -h .
           tree -I 'gen|obj' out
 
-        # Package source code (core folder) for coveralls
-      - name: Package source code for coverage analysis
-        run: |
-          echo "Packaging core folder (excluding ten_gn) for coverage analysis..."
-
-          # Create tar archive of core folder, excluding ten_gn subfolder
-          tar -czf core-source.tar.gz \
-            --exclude='core/ten_gn' \
-            --exclude='core/.git' \
-            core/
-
-          echo "Source code packaged successfully"
-          ls -lh core-source.tar.gz
-
-      - name: Upload source code for coverage analysis
-        uses: actions/upload-artifact@v4
-        with:
-          name: core-source
-          path: core-source.tar.gz
-
         # Package CORE_BINARIES_AND_LIBS for coverage analysis
       - name: Package binaries and libraries for coverage analysis
         run: |
@@ -1117,6 +1097,11 @@ jobs:
       run:
         shell: bash
     steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          submodules: false
+
       - name: Install LLVM 21 tools
         run: |
           # Add LLVM official repository for LLVM 21
@@ -1138,21 +1123,6 @@ jobs:
           # Verify installation
           llvm-cov --version
           llvm-profdata merge --version 2>&1 | head -3 || echo "llvm-profdata installed"
-
-      - name: Download source code for coverage analysis
-        uses: actions/download-artifact@v4
-        with:
-          name: core-source
-          path: .
-
-      - name: Extract source code
-        run: |
-          echo "Extracting source code..."
-          tar -xzf core-source.tar.gz
-          echo "Source code extracted successfully"
-
-          echo "Verifying core folder structure:"
-          ls -la core/ | head -20
 
       - name: Download binaries and libraries for coverage analysis
         uses: actions/download-artifact@v4
@@ -1222,13 +1192,13 @@ jobs:
           done
 
           llvm-cov export \
-          --ignore-filename-regex='(^|/)\.cargo/|(^|/).rustup/|(^|/)out/|(^|/)tests/|(^|/)third_party/' \
+          --ignore-filename-regex='(^|/)\.cargo/|(^|/).rustup/|(^|/)out/|(^|/)tests/|(^|/)third_party/|(^|/)python3.10/' \
           --format=lcov \
           --instr-profile="out/linux/x64/coverage/merged.profdata" \
           "${OBJECT_ARGS[@]}" \
           > "out/linux/x64/coverage/coverage.lcov"
 
-      - name: Upload coverage report
+      - name: Upload coverage report to Coveralls
         env:
           COVERALLS_REPO_TOKEN: ${{ secrets.TEN_COVERALLS_REPO_TOKEN }}
         run: |
@@ -1244,13 +1214,31 @@ jobs:
           coveralls --version || echo "coveralls version check failed"
 
           if [ -f "out/linux/x64/coverage/coverage.lcov" ]; then
-            echo "Uploading coverage to Coveralls..."
-            coveralls --lcov-file out/linux/x64/coverage/coverage.lcov --verbose
+            echo "Filtering coverage.lcov to include only core directory..."
+
+            # Use lcov to extract only core directory coverage
+            lcov --extract out/linux/x64/ci_coverage/coverage.lcov \
+              "core/*" \
+              --output-file out/linux/x64/ci_coverage/coverage_filtered.lcov \
+              --ignore-errors source
+
+            echo "Filtered coverage file created"
+            ls -lh out/linux/x64/coverage/coverage_filtered.lcov
+
+            echo "Uploading filtered coverage to Coveralls..."
+            coveralls --lcov-file out/linux/x64/coverage/coverage_filtered.lcov --verbose
             echo "Coverage uploaded to Coveralls successfully"
           else
             echo "Warning: coverage.lcov file not found, skipping Coveralls upload"
             ls -la out/linux/x64/coverage/ || true
           fi
+
+      - name: Upload filtered coverage report to artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report-filtered
+          path: out/linux/x64/coverage/coverage_filtered.lcov
+          if-no-files-found: warn
 
   publish-coverage:
     needs: build
