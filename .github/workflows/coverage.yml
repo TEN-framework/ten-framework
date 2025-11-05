@@ -1113,7 +1113,7 @@ jobs:
           add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main"
 
           apt-get update
-          apt-get install -y llvm-21 clang-21
+          apt-get install -y llvm-21 clang-21 lcov
 
           # Create symlinks to make llvm-cov and llvm-profdata available without version suffix
           ln -sf /usr/bin/llvm-cov-21 /usr/local/bin/llvm-cov
@@ -1123,6 +1123,7 @@ jobs:
           # Verify installation
           llvm-cov --version
           llvm-profdata merge --version 2>&1 | head -3 || echo "llvm-profdata installed"
+          lcov --version
 
       - name: Download binaries and libraries for coverage analysis
         uses: actions/download-artifact@v4
@@ -1217,9 +1218,9 @@ jobs:
             echo "Filtering coverage.lcov to include only core directory..."
 
             # Use lcov to extract only core directory coverage
-            lcov --extract out/linux/x64/ci_coverage/coverage.lcov \
+            lcov --extract out/linux/x64/coverage/coverage.lcov \
               "core/*" \
-              --output-file out/linux/x64/ci_coverage/coverage_filtered.lcov \
+              --output-file out/linux/x64/coverage/coverage_filtered.lcov \
               --ignore-errors source
 
             echo "Filtered coverage file created"
