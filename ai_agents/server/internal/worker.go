@@ -225,17 +225,48 @@ func (w *Worker) start(req *StartReq) (err error) {
 func (w *Worker) stop(requestId string, channelName string) (err error) {
 	slog.Info("Worker stop start", "channelName", channelName, "requestId", requestId, "pid", w.Pid, logTag)
 
-	// TODO: SIGTERM is somehow ignored by subprocess before agent is fully initialized
-	// use SIGKILL for now
+	// First try graceful shutdown with SIGTERM
+	slog.Info("Worker sending SIGTERM", "channelName", channelName, "requestId", requestId, "pid", w.Pid, logTag)
+	err = syscall.Kill(-w.Pid, syscall.SIGTERM)
+	if err != nil {
+		slog.Error("Worker SIGTERM failed", "err", err, "channelName", channelName, "worker", w, "requestId", requestId, logTag)
+		// If SIGTERM fails, try SIGKILL immediately
+		err = syscall.Kill(-w.Pid, syscall.SIGKILL)
+		if err != nil {
+			slog.Error("Worker SIGKILL failed", "err", err, "channelName", channelName, "worker", w, "requestId", requestId, logTag)
+			return
+		}
+		workers.Remove(channelName)
+		slog.Info("Worker stop end (SIGKILL after SIGTERM failure)", "channelName", channelName, "worker", w, "requestId", requestId, logTag)
+		return
+	}
+
+	// Wait up to 2 seconds for graceful shutdown
+	gracefulTimeout := 2
+	for i := 0; i < gracefulTimeout*10; i++ {
+		// Check if process still exists by sending signal 0
+		err = syscall.Kill(-w.Pid, 0)
+		if err != nil {
+			// Process is gone, graceful shutdown succeeded
+			slog.Info("Worker graceful shutdown succeeded", "channelName", channelName, "requestId", requestId, "pid", w.Pid, "waitTime", float64(i)*0.1, logTag)
+			workers.Remove(channelName)
+			slog.Info("Worker stop end (graceful)", "channelName", channelName, "worker", w, "requestId", requestId, logTag)
+			return nil
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+
+	// Process still running after timeout, force kill with SIGKILL
+	slog.Warn("Worker graceful shutdown timeout, sending SIGKILL", "channelName", channelName, "requestId", requestId, "pid", w.Pid, logTag)
 	err = syscall.Kill(-w.Pid, syscall.SIGKILL)
 	if err != nil {
-		slog.Error("Worker kill failed", "err", err, "channelName", channelName, "worker", w, "requestId", requestId, logTag)
+		slog.Error("Worker SIGKILL failed", "err", err, "channelName", channelName, "worker", w, "requestId", requestId, logTag)
 		return
 	}
 
 	workers.Remove(channelName)
 
-	slog.Info("Worker stop end", "channelName", channelName, "worker", w, "requestId", requestId, logTag)
+	slog.Info("Worker stop end (forced SIGKILL)", "channelName", channelName, "worker", w, "requestId", requestId, logTag)
 	return
 }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import type { IMicrophoneAudioTrack } from "agora-rtc-sdk-ng";
+import type { IMicrophoneAudioTrack, IRemoteAudioTrack } from "agora-rtc-sdk-ng";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useDispatch, useSelector, useStore } from "react-redux";
 import type { AddonDef, Graph, Node } from "@/common/graph";
@@ -21,7 +21,7 @@ export const useAppSelector = useSelector.withTypes<RootState>();
 export const useAppStore = useStore.withTypes<AppStore>();
 
 export const useMultibandTrackVolume = (
-  track?: IMicrophoneAudioTrack | MediaStreamTrack,
+  track?: IMicrophoneAudioTrack | IRemoteAudioTrack | MediaStreamTrack,
   bands: number = 5,
   loPass: number = 100,
   hiPass: number = 600
