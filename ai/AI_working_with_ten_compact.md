@@ -3,7 +3,14 @@
 **Target**: Working with `voice-assistant-advanced` example
 **Last Updated**: 2025-10-31
 
-> **For comprehensive documentation**, see [AI_working_with_ten.md](./AI_working_with_ten.md)
+---
+
+## ⚠️ IMPORTANT: Documentation Structure
+
+This is the **QUICK REFERENCE** with essential commands only.
+
+**For detailed information, see:**
+- **[AI_working_with_ten.md](./AI_working_with_ten.md)** - Complete reference with all workflows, troubleshooting, extension creation, graph configuration, and production deployment guides.
 
 ---
 
@@ -72,6 +79,8 @@ docker ps | grep ten_agent_dev  # Verify running
 
 ## 3. Build & Run voice-assistant-advanced
 
+**CRITICAL: ALWAYS use `task run` to start the server, NEVER use `./bin/api` or `./bin/main` directly!**
+
 ### First Time or After Code Changes
 
 ```bash
@@ -108,7 +117,113 @@ curl -s http://localhost:8080/graphs | jq -r '.data[].name'
 
 ---
 
-## 4. Cloudflare Tunnel (HTTPS Access)
+## 4. Running Playground Client
+
+### ⚠️ CRITICAL: Node.js Version Requirement
+
+**Playground requires Node.js 20.9.0+**
+
+- ✅ Docker container has Node 22
+- ❌ Host machine may have older version
+
+**❌ WRONG:**
+```bash
+# Running from host with Node 18 - FAILS
+cd /home/ubuntu/ten-framework/ai_agents/playground
+npm run dev  # Error: Node.js version ">=20.9.0" is required
+```
+
+**✅ CORRECT:**
+```bash
+# Run from inside Docker container
+docker exec -d ten_agent_dev bash -c \
+  "cd /app/playground && npm run dev > /tmp/playground.log 2>&1"
+```
+
+### Automatic Startup (Recommended)
+
+**`task run` starts BOTH API server AND playground:**
+
+```bash
+docker exec -d ten_agent_dev bash -c \
+  "cd /app/agents/examples/voice-assistant-advanced && \
+   task run > /tmp/task_run.log 2>&1"
+
+# Verify both services
+sleep 5
+curl -s http://localhost:8080/health  # API server
+curl -s http://localhost:3000         # Playground
+```
+
+### Manual Startup (If Needed)
+
+```bash
+# 1. Start API server only
+docker exec -d ten_agent_dev bash -c \
+  "cd /app/server && \
+   ./bin/api -tenapp_dir=/app/agents/examples/voice-assistant-advanced/tenapp > /tmp/api.log 2>&1"
+
+# 2. Start playground separately
+docker exec -d ten_agent_dev bash -c \
+  "cd /app/playground && npm run dev > /tmp/playground.log 2>&1"
+```
+
+### Production Build
+
+```bash
+# Build for production
+docker exec ten_agent_dev bash -c "cd /app/playground && npm run build"
+
+# Start production server
+docker exec -d ten_agent_dev bash -c \
+  "cd /app/playground && npm start > /tmp/playground_prod.log 2>&1"
+```
+
+### Verify Playground is Running
+
+```bash
+# Check process
+docker exec ten_agent_dev bash -c "ps aux | grep -E 'npm.*dev|node.*next' | grep -v grep"
+
+# Check port
+docker exec ten_agent_dev bash -c "netstat -tlnp | grep :3000"
+
+# Test HTTP
+curl -s -o /dev/null -w '%{http_code}' http://localhost:3000
+# Expected: 200
+```
+
+### Common Issues
+
+**Playground not accessible:**
+```bash
+# Start it
+docker exec -d ten_agent_dev bash -c \
+  "cd /app/playground && npm run dev > /tmp/playground.log 2>&1"
+```
+
+**"502 Bad Gateway":**
+```bash
+# API server not running - start it
+docker exec -d ten_agent_dev bash -c \
+  "cd /app/agents/examples/voice-assistant-advanced && \
+   task run > /tmp/task_run.log 2>&1"
+```
+
+**"No graphs available":**
+```bash
+# Hard refresh browser (Ctrl+Shift+R)
+# Or restart playground
+docker exec ten_agent_dev bash -c "pkill -9 -f 'npm.*dev'"
+docker exec -d ten_agent_dev bash -c \
+  "cd /app/playground && npm run dev > /tmp/playground.log 2>&1"
+```
+
+> **For complete deployment guide** (nginx setup, production deployment, troubleshooting), see [AI_working_with_ten.md - Running Playground Client](./AI_working_with_ten.md#running-playground-client)
+
+---
+
+## 5. Cloudflare Tunnel (HTTPS Access)
 
 ### Start Tunnel
 
@@ -170,7 +285,7 @@ server {
 
 ---
 
-## 5. Testing with Users in RTC Channel
+## 6. Testing with Users in RTC Channel
 
 ### Playground URL
 Open tunnel URL in browser (e.g., `https://your-random-name.trycloudflare.com`)
@@ -290,7 +405,7 @@ When a user is in channel "test123":
 
 ---
 
-## 6. Common Operations
+## 7. Common Operations
 
 ### After Container Restart
 
@@ -337,23 +452,20 @@ curl -X POST http://localhost:8080/stop \
 
 ### After Changing .env
 
-**Option 1: Source .env and restart server** (Faster - No container restart):
-```bash
-# Stop current server
-docker exec ten_agent_dev bash -c "pkill -9 -f 'bin/api'"
+**CRITICAL: MUST restart container - Option 1 doesn't work reliably!**
 
-# Source .env and restart server (MUST be in one command!)
-docker exec -d ten_agent_dev bash -c \
-  "set -a && source /app/.env && set +a && \
-   cd /app/server && ./bin/api -tenapp_dir=/app/agents/examples/voice-assistant-advanced/tenapp > /tmp/task_run.log 2>&1"
-```
-
-**Option 2: Restart container** (Guaranteed to work, but slower):
 ```bash
 cd /home/ubuntu/ten-framework/ai_agents
 docker compose down && docker compose up -d
 
-# Then reinstall deps and restart server (see "After Container Restart" above)
+# Reinstall deps and restart server
+docker exec ten_agent_dev bash -c \
+  "cd /app/agents/examples/voice-assistant-advanced/tenapp && \
+   bash scripts/install_python_deps.sh"
+
+docker exec -d ten_agent_dev bash -c \
+  "cd /app/agents/examples/voice-assistant-advanced && \
+   task run > /tmp/task_run.log 2>&1"
 ```
 
 ### Check Logs
@@ -371,7 +483,7 @@ docker exec ten_agent_dev tail -f /tmp/task_run.log
 
 ---
 
-## 7. Troubleshooting
+## 8. Troubleshooting
 
 ### Server Won't Start
 ```bash
@@ -456,7 +568,7 @@ docker exec ten_agent_dev bash -c "curl -s -o /dev/null -w '%{http_code}' http:/
 
 ---
 
-## 8. Quick Reference Commands
+## 9. Quick Reference Commands
 
 ```bash
 # Complete restart from scratch
@@ -474,7 +586,7 @@ sleep 5 && grep -o 'https://[^[:space:]]*\.trycloudflare\.com' /tmp/cloudflare_t
 
 ---
 
-## 9. When to Restart What (Quick Reference)
+## 10. When to Restart What (Quick Reference)
 
 | What Changed | Restart Container? | Restart Server? | Restart Frontend? | Notes |
 |--------------|-------------------|-----------------|-------------------|-------|
@@ -489,7 +601,7 @@ sleep 5 && grep -o 'https://[^[:space:]]*\.trycloudflare\.com' /tmp/cloudflare_t
 
 ---
 
-## 10. Essential Workflows
+## 11. Essential Workflows
 
 ### Starting the Server
 1. Use `task run` to start the server
