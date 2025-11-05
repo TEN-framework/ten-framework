@@ -223,7 +223,7 @@
               "property": {
                 "app_id": "${env:AGORA_APP_ID}",
                 "app_certificate": "${env:AGORA_APP_CERTIFICATE|}",
-                "channel": "agora_ant2w9",
+                "channel": "agora_g3qhjr",
                 "stream_id": 0,
                 "remote_stream_id": 182837,
                 "subscribe_audio": true,
@@ -318,7 +318,7 @@
                 "heygen_api_key": "${env:HEYGEN_API_KEY|}",
                 "agora_appid": "${env:AGORA_APP_ID}",
                 "agora_appcert": "${env:AGORA_APP_CERTIFICATE|}",
-                "channel": "agora_ant2w9",
+                "channel": "agora_g3qhjr",
                 "agora_avatar_uid": 12345,
                 "input_audio_sample_rate": 16000
               }
@@ -1894,7 +1894,7 @@
               "property": {
                 "app_id": "${env:AGORA_APP_ID}",
                 "app_certificate": "${env:AGORA_APP_CERTIFICATE|}",
-                "channel": "agora_ant2w9",
+                "channel": "agora_g3qhjr",
                 "stream_id": 1234,
                 "remote_stream_id": 123,
                 "subscribe_audio": true,
@@ -2019,7 +2019,7 @@
                 "heygen_api_key": "${env:HEYGEN_API_KEY|}",
                 "agora_appid": "${env:AGORA_APP_ID}",
                 "agora_appcert": "${env:AGORA_APP_CERTIFICATE|}",
-                "channel": "agora_ant2w9",
+                "channel": "agora_g3qhjr",
                 "agora_avatar_uid": 12345,
                 "input_audio_sample_rate": 44100,
                 "avatar_name": "Katya_Chair_Sitting_public"
@@ -2152,7 +2152,7 @@
               "property": {
                 "app_id": "${env:AGORA_APP_ID}",
                 "app_certificate": "${env:AGORA_APP_CERTIFICATE|}",
-                "channel": "agora_ant2w9",
+                "channel": "agora_g3qhjr",
                 "stream_id": 1234,
                 "remote_stream_id": 123,
                 "subscribe_audio": true,
@@ -2269,7 +2269,7 @@
                 "heygen_api_key": "${env:HEYGEN_API_KEY|}",
                 "agora_appid": "${env:AGORA_APP_ID}",
                 "agora_appcert": "${env:AGORA_APP_CERTIFICATE|}",
-                "channel": "agora_ant2w9",
+                "channel": "agora_g3qhjr",
                 "agora_avatar_uid": 12345,
                 "input_audio_sample_rate": 16000,
                 "avatar_name": "Katya_Chair_Sitting_public"
