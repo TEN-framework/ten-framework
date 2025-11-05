@@ -94,6 +94,36 @@ shared_library("ten_utils_shared") {
       ldflags = []
     }
   }
+
+  if (enable_coverage) {
+    assert(
+      is_linux && target_cpu == "x64",
+      "Coverage instrumentation should only be enabled in Linux + x64"
+    )
+    if (!defined(ldflags)) {
+      ldflags = []
+    }
+    if (is_clang) {
+      ldflags += [ "-fprofile-instr-generate" ]
+
+      # When Rust static library is linked into this shared library,
+      # we need to ensure all Rust coverage runtime symbols are included.
+      # Without --whole-archive, the linker may drop Rust's __llvm_profile_*
+      # constructor functions, causing Rust code coverage data to be missing.
+      if (ten_enable_ten_rust) {
+        # Get the path to libten_rust.a
+        _ten_rust_lib_path = rebase_path("${root_gen_dir}/core/src/ten_rust/libten_rust.a", root_build_dir)
+
+        ldflags += [
+          "-Wl,--whole-archive",
+          _ten_rust_lib_path,
+          "-Wl,--no-whole-archive",
+        ]
+      }
+    } else {
+      ldflags += [ "--coverage" ]
+    }
+  }
 }
 
 ten_utils_group("ten_utils") {
