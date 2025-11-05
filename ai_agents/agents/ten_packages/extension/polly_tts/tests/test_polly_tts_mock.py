@@ -18,6 +18,7 @@ class MockPollyTTSExtensionTester(AsyncExtensionTester):
         super().__init__()
         self.expect_error_code = ModuleErrorCode.NON_FATAL_ERROR.value
         self.max_wait_time = 10
+        self.error_received = False
 
     def stop_test_if_checking_failed(
         self,
@@ -63,6 +64,11 @@ class MockPollyTTSExtensionTester(AsyncExtensionTester):
         ten_env.log_info(f"on_data name: {name}")
 
         if name == "error":
+            # If we already received and validated an error, ignore subsequent errors
+            if self.error_received:
+                ten_env.log_info("Already received an error, ignoring this one.")
+                return
+
             ten_env.log_info("Received error, stopping test.")
             data_json, _ = data.get_property_to_json()
             data_dict = json.loads(data_json)
@@ -76,6 +82,8 @@ class MockPollyTTSExtensionTester(AsyncExtensionTester):
                 data_dict["code"] == int(self.expect_error_code),
                 f"error_code is not {self.expect_error_code}: {data_dict}",
             )
+            # Mark that we received an error
+            self.error_received = True
             # success stop test
             ten_env.stop_test()
         elif name == "tts_audio_end":
