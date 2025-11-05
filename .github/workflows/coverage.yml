@@ -1193,7 +1193,7 @@ jobs:
           done
 
           llvm-cov export \
-          --ignore-filename-regex='(^|/)\.cargo/|(^|/).rustup/|(^|/)out/|(^|/)tests/|(^|/)third_party/|(^|/)python3.10/' \
+          --ignore-filename-regex='(^|/)\.cargo/|(^|/).rustup/|(^|/)out/|(^|/)tests/|(^|/)third_party/|(^|/)python3.10/|(^|/)packages/' \
           --format=lcov \
           --instr-profile="out/linux/x64/coverage/merged.profdata" \
           "${OBJECT_ARGS[@]}" \
