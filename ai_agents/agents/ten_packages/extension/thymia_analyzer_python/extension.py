@@ -397,6 +397,12 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
         self.analysis_count: int = 0
         self.last_analysis_time: float = 0.0
 
+        # Phased analysis state (demo_dual mode only)
+        self.hellos_complete: bool = False
+        self.apollo_complete: bool = False
+        self.hellos_analysis_running: bool = False
+        self.apollo_analysis_running: bool = False
+
         # User information for Thymia API
         self.user_name: Optional[str] = None
         self.user_dob: Optional[str] = None
@@ -626,37 +632,84 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
             # Add to buffer with VAD
             speech_duration = self.audio_buffer.add_frame(pcm_data)
 
-            # Log speech accumulation every 50 frames (~ every 0.5 seconds)
-            # Determine required speech duration based on analysis mode
-            required_duration = self.min_speech_duration
-            if self.analysis_mode == "demo_dual":
-                # Need enough for both mood (22s) and reading (30s)
-                required_duration = self.apollo_mood_duration + self.apollo_read_duration
+            # === SEPARATE LOGIC FOR EACH MODE ===
 
-            if self._audio_frame_count % 50 == 1:
-                ten_env.log_info(
-                    f"[thymia_analyzer] 📊 Speech buffer status: {speech_duration:.1f}s / {required_duration:.1f}s "
-                    f"(mode={self.analysis_mode}, need {required_duration - speech_duration:.1f}s more)"
-                )
+            if self.analysis_mode == "hellos_only":
+                # ============ HELLOS_ONLY MODE ============
+                required_duration = self.min_speech_duration
 
-            # Check if we have enough speech to analyze
-            if self.audio_buffer.has_enough_speech(required_duration):
-                # Check if we should start a new analysis
-                should_analyze = (
-                    not self.active_analysis
-                    and self.analysis_count < self.max_analyses_per_session
-                    and (time.time() - self.last_analysis_time)
-                    >= self.min_interval_seconds
-                )
-
-                if should_analyze:
+                if self._audio_frame_count % 50 == 1:
                     ten_env.log_info(
-                        f"[thymia_analyzer] 🚀 Starting wellness analysis "
-                        f"(mode={self.analysis_mode}, {speech_duration:.1f}s speech collected)"
+                        f"[thymia_analyzer] 📊 Speech buffer status: {speech_duration:.1f}s / {required_duration:.1f}s "
+                        f"(mode=hellos_only, need {max(0, required_duration - speech_duration):.1f}s more)"
                     )
 
-                    # Start analysis in background
-                    asyncio.create_task(self._run_analysis(ten_env))
+                # Check if we have enough speech to analyze
+                if self.audio_buffer.has_enough_speech(required_duration):
+                    should_analyze = (
+                        not self.active_analysis
+                        and self.analysis_count < self.max_analyses_per_session
+                        and (time.time() - self.last_analysis_time)
+                        >= self.min_interval_seconds
+                    )
+
+                    if should_analyze:
+                        ten_env.log_info(
+                            f"[thymia_analyzer] 🚀 Starting Hellos analysis "
+                            f"({speech_duration:.1f}s speech collected)"
+                        )
+                        asyncio.create_task(self._run_hellos_only_analysis(ten_env))
+
+            elif self.analysis_mode == "demo_dual":
+                # ============ DEMO_DUAL MODE (PHASED) ============
+                # Phase 1: Hellos at 22s
+                # Phase 2: Apollo at 44s (uses 0-22s for mood, 22-44s for read)
+
+                if not self.hellos_complete:
+                    # Waiting for 22s to run Hellos
+                    required_duration = self.min_speech_duration  # 22s
+                    phase = "hellos (1/2)"
+
+                    if self._audio_frame_count % 50 == 1:
+                        ten_env.log_info(
+                            f"[thymia_analyzer] 📊 Speech buffer status: {speech_duration:.1f}s / {required_duration:.1f}s "
+                            f"(mode=demo_dual, phase={phase}, need {max(0, required_duration - speech_duration):.1f}s more)"
+                        )
+
+                    if self.audio_buffer.has_enough_speech(required_duration) and not self.hellos_analysis_running:
+                        ten_env.log_info(
+                            f"[thymia_analyzer] 🚀 Starting Hellos analysis (phase 1/2) "
+                            f"({speech_duration:.1f}s speech collected)"
+                        )
+                        self.hellos_analysis_running = True
+                        asyncio.create_task(self._run_hellos_phase(ten_env))
+
+                elif not self.apollo_complete:
+                    # Waiting for 44s to run Apollo
+                    required_duration = self.apollo_mood_duration + self.apollo_read_duration  # 44s
+                    phase = "apollo (2/2)"
+
+                    if self._audio_frame_count % 50 == 1:
+                        ten_env.log_info(
+                            f"[thymia_analyzer] 📊 Speech buffer status: {speech_duration:.1f}s / {required_duration:.1f}s "
+                            f"(mode=demo_dual, phase={phase}, need {max(0, required_duration - speech_duration):.1f}s more)"
+                        )
+
+                    if self.audio_buffer.has_enough_speech(required_duration) and not self.apollo_analysis_running:
+                        ten_env.log_info(
+                            f"[thymia_analyzer] 🚀 Starting Apollo analysis (phase 2/2) "
+                            f"({speech_duration:.1f}s speech collected)"
+                        )
+                        self.apollo_analysis_running = True
+                        asyncio.create_task(self._run_apollo_phase(ten_env))
+
+                else:
+                    # Both phases complete
+                    if self._audio_frame_count % 50 == 1:
+                        ten_env.log_info(
+                            f"[thymia_analyzer] 📊 Speech buffer status: {speech_duration:.1f}s "
+                            f"(mode=demo_dual, phase=complete, all analysis done)"
+                        )
         except Exception as e:
             import traceback
 
@@ -691,8 +744,233 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
 
         return first_part, second_part
 
+    async def _run_hellos_only_analysis(self, ten_env: AsyncTenEnv):
+        """Run Hellos analysis for hellos_only mode"""
+        self.active_analysis = True
+
+        ten_env.log_info(
+            f"[HELLOS_ONLY] Starting analysis - "
+            f"User={self.user_name}, DOB={self.user_dob}, Sex={self.user_sex}"
+        )
+
+        try:
+            wav_data = self.audio_buffer.get_wav_data()
+            if not wav_data:
+                ten_env.log_warn("[HELLOS_ONLY] No audio data available")
+                return
+
+            ten_env.log_info(f"[HELLOS_ONLY] Starting API workflow ({len(wav_data)} bytes)")
+
+            # Create session
+            session_response = await self.api_client.create_session(
+                user_label=self.user_name or "anonymous",
+                date_of_birth=self.user_dob or "1990-01-01",
+                birth_sex=self.user_sex or "UNSPECIFIED",
+                locale=self.user_locale,
+            )
+            session_id = session_response["id"]
+            upload_url = session_response["recordingUploadUrl"]
+
+            ten_env.log_info(f"[HELLOS_ONLY] Created session: {session_id}")
+
+            # Upload audio
+            upload_success = await self.api_client.upload_audio(upload_url, wav_data)
+            if not upload_success:
+                ten_env.log_error("[HELLOS_ONLY] Failed to upload audio")
+                return
+
+            # Poll for results
+            results = await self.api_client.poll_results(
+                session_id,
+                max_wait_seconds=self.poll_timeout,
+                poll_interval=self.poll_interval,
+            )
+
+            if not results:
+                ten_env.log_warn(f"[HELLOS_ONLY] Analysis timed out after {self.poll_timeout}s")
+                return
+
+            # Extract metrics
+            sections = results.get("results", {}).get("sections", [])
+            if not sections:
+                ten_env.log_error("[HELLOS_ONLY] No sections found in response")
+                return
+
+            section = sections[0]
+            self.latest_results = WellnessMetrics(
+                distress=section.get("uniformDistress", {}).get("value", 0.0),
+                stress=section.get("uniformStress", {}).get("value", 0.0),
+                burnout=section.get("uniformExhaustion", {}).get("value", 0.0),
+                fatigue=section.get("uniformSleepPropensity", {}).get("value", 0.0),
+                low_self_esteem=section.get("uniformLowSelfEsteem", {}).get("value", 0.0),
+                timestamp=time.time(),
+                session_id=session_id,
+            )
+
+            self.analysis_count += 1
+            self.last_analysis_time = time.time()
+
+            ten_env.log_info(
+                f"[HELLOS_ONLY] Analysis complete: "
+                f"distress={self.latest_results.distress:.4f}, "
+                f"stress={self.latest_results.stress:.4f}, "
+                f"burnout={self.latest_results.burnout:.4f}, "
+                f"fatigue={self.latest_results.fatigue:.4f}, "
+                f"low_self_esteem={self.latest_results.low_self_esteem:.4f}"
+            )
+
+        except Exception as e:
+            ten_env.log_error(f"[HELLOS_ONLY] Error: {e}")
+            import traceback
+            ten_env.log_error(traceback.format_exc())
+        finally:
+            self.active_analysis = False
+
+    async def _run_hellos_phase(self, ten_env: AsyncTenEnv):
+        """Run Hellos analysis for demo_dual mode (phase 1/2)"""
+        ten_env.log_info(
+            f"[HELLOS PHASE 1/2] Starting analysis - "
+            f"User={self.user_name}, DOB={self.user_dob}, Sex={self.user_sex}"
+        )
+
+        try:
+            wav_data = self.audio_buffer.get_wav_data()
+            if not wav_data:
+                ten_env.log_warn("[HELLOS PHASE 1/2] No audio data available")
+                return
+
+            ten_env.log_info(f"[HELLOS PHASE 1/2] Starting API workflow ({len(wav_data)} bytes)")
+
+            # Create session
+            session_response = await self.api_client.create_session(
+                user_label=self.user_name or "anonymous",
+                date_of_birth=self.user_dob or "1990-01-01",
+                birth_sex=self.user_sex or "UNSPECIFIED",
+                locale=self.user_locale,
+            )
+            session_id = session_response["id"]
+            upload_url = session_response["recordingUploadUrl"]
+
+            ten_env.log_info(f"[HELLOS PHASE 1/2] Created session: {session_id}")
+
+            # Upload audio
+            upload_success = await self.api_client.upload_audio(upload_url, wav_data)
+            if not upload_success:
+                ten_env.log_error("[HELLOS PHASE 1/2] Failed to upload audio")
+                return
+
+            # Poll for results
+            results = await self.api_client.poll_results(
+                session_id,
+                max_wait_seconds=self.poll_timeout,
+                poll_interval=self.poll_interval,
+            )
+
+            if not results:
+                ten_env.log_warn(f"[HELLOS PHASE 1/2] Analysis timed out after {self.poll_timeout}s")
+                return
+
+            # Extract metrics
+            sections = results.get("results", {}).get("sections", [])
+            if not sections:
+                ten_env.log_error("[HELLOS PHASE 1/2] No sections found in response")
+                return
+
+            section = sections[0]
+            self.latest_results = WellnessMetrics(
+                distress=section.get("uniformDistress", {}).get("value", 0.0),
+                stress=section.get("uniformStress", {}).get("value", 0.0),
+                burnout=section.get("uniformExhaustion", {}).get("value", 0.0),
+                fatigue=section.get("uniformSleepPropensity", {}).get("value", 0.0),
+                low_self_esteem=section.get("uniformLowSelfEsteem", {}).get("value", 0.0),
+                timestamp=time.time(),
+                session_id=session_id,
+            )
+
+            ten_env.log_info(
+                f"[HELLOS PHASE 1/2] Complete: "
+                f"distress={self.latest_results.distress:.4f}, "
+                f"stress={self.latest_results.stress:.4f}, "
+                f"burnout={self.latest_results.burnout:.4f}, "
+                f"fatigue={self.latest_results.fatigue:.4f}, "
+                f"low_self_esteem={self.latest_results.low_self_esteem:.4f}"
+            )
+
+            # Mark Hellos phase complete
+            self.hellos_complete = True
+
+        except Exception as e:
+            ten_env.log_error(f"[HELLOS PHASE 1/2] Error: {e}")
+            import traceback
+            ten_env.log_error(traceback.format_exc())
+        finally:
+            self.hellos_analysis_running = False
+
+    async def _run_apollo_phase(self, ten_env: AsyncTenEnv):
+        """Run Apollo analysis for demo_dual mode (phase 2/2)"""
+        ten_env.log_info(
+            f"[APOLLO PHASE 2/2] Starting analysis - "
+            f"User={self.user_name}, DOB={self.user_dob}, Sex={self.user_sex}"
+        )
+
+        try:
+            # Get full PCM data
+            if not self.audio_buffer.speech_buffer:
+                ten_env.log_warn("[APOLLO PHASE 2/2] No audio data available")
+                return
+
+            full_pcm_data = b"".join(self.audio_buffer.speech_buffer)
+
+            # Split audio into mood (first 22s) and read (next 22s)
+            mood_pcm, read_pcm = self._split_pcm_by_duration(
+                full_pcm_data, self.apollo_mood_duration
+            )
+
+            ten_env.log_info(
+                f"[APOLLO PHASE 2/2] Split audio: mood={len(mood_pcm)} bytes "
+                f"({self.apollo_mood_duration}s), read={len(read_pcm)} bytes"
+            )
+
+            # Call Apollo API
+            apollo_result = await self.apollo_client.analyze(
+                mood_audio_pcm=mood_pcm,
+                read_aloud_audio_pcm=read_pcm,
+                user_label=self.user_name or "anonymous",
+                date_of_birth=self.user_dob or "1990-01-01",
+                birth_sex=self.user_sex or "OTHER",
+                sample_rate=16000,
+                language="en-GB",
+            )
+
+            # Store Apollo results
+            self.apollo_results = apollo_result
+
+            if apollo_result.status == "COMPLETE_OK":
+                ten_env.log_info(
+                    f"[APOLLO PHASE 2/2] Complete: "
+                    f"depression={apollo_result.depression_probability:.2%} "
+                    f"({apollo_result.depression_severity}), "
+                    f"anxiety={apollo_result.anxiety_probability:.2%} "
+                    f"({apollo_result.anxiety_severity})"
+                )
+            else:
+                ten_env.log_warn(
+                    f"[APOLLO PHASE 2/2] Failed: {apollo_result.status} - "
+                    f"{apollo_result.error_message}"
+                )
+
+            # Mark Apollo phase complete
+            self.apollo_complete = True
+
+        except Exception as e:
+            ten_env.log_error(f"[APOLLO PHASE 2/2] Error: {e}")
+            import traceback
+            ten_env.log_error(traceback.format_exc())
+        finally:
+            self.apollo_analysis_running = False
+
     async def _run_analysis(self, ten_env: AsyncTenEnv):
-        """Run Thymia analysis workflow in background"""
+        """Run Thymia analysis workflow in background (DEPRECATED - use specific methods)"""
         self.active_analysis = True
 
         ten_env.log_info(
