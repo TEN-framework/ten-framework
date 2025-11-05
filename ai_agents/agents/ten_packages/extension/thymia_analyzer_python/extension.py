@@ -578,6 +578,13 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
         # Register as LLM tool (parent class handles this)
         await super().on_start(ten_env)
 
+        # Log tool registration
+        tools = self.get_tool_metadata(ten_env)
+        tool_names = [t.name for t in tools]
+        ten_env.log_info(
+            f"[TOOL_REGISTRATION] Registered {len(tools)} tools: {', '.join(tool_names)}"
+        )
+
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
         """Called when extension stops"""
         ten_env.log_info("ThymiaAnalyzerExtension stopping...")
@@ -1229,6 +1236,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
 
     def get_tool_metadata(self, ten_env: AsyncTenEnv) -> list[LLMToolMetadata]:
         """Register wellness analysis tools"""
+        ten_env.log_info("[TOOL_METADATA] get_tool_metadata called - defining set_user_info and get_wellness_metrics tools")
         return [
             LLMToolMetadata(
                 name="set_user_info",
