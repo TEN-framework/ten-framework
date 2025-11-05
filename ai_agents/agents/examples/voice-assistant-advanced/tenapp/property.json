@@ -2461,7 +2461,7 @@
                     "id": "71a7ad14-091c-4e8e-a314-022ece01c121"
                   },
                   "generation_config": {
-                    "speed": 1.2
+                    "speed": 1.0
                   },
                   "output_format": {
                     "container": "raw",
