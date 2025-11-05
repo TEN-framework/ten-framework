@@ -215,16 +215,46 @@ class AgoraHeygenRecorder:
         except Exception as e:
             self.ten_env.log_error(f"Failed to stop session: {e}")
 
+    async def _send_keep_alive(self):
+        """Send periodic keep_alive messages to maintain HeyGen connection"""
+        while self._should_reconnect and self.websocket:
+            try:
+                await asyncio.sleep(10)  # Send keep_alive every 10 seconds
+                if self.websocket and not self.websocket.closed:
+                    keep_alive_msg = json.dumps({"type": "streaming.keep_alive"})
+                    await self.websocket.send(keep_alive_msg)
+                    self.ten_env.log_debug("[avatar] Sent streaming.keep_alive")
+            except Exception as e:
+                self.ten_env.log_error(f"[avatar] Keep-alive error: {e}")
+                break
+
     async def _connect_websocket_loop(self):
         while self._should_reconnect:
             try:
                 self.ten_env.log_info(
                     f"Connecting to WebSocket: {self.realtime_endpoint}"
                 )
-                async with websockets.connect(self.realtime_endpoint) as ws:
+                async with websockets.connect(
+                    self.realtime_endpoint,
+                    ping_interval=20,
+                    ping_timeout=60
+                ) as ws:
                     self.websocket = ws
-                    self.ten_env.log_info("WebSocket connected successfully")
-                    await asyncio.Future()  # Wait forever unless cancelled
+                    self.ten_env.log_info("WebSocket connected successfully with ping_interval=20s, ping_timeout=60s")
+
+                    # Start keep_alive task
+                    keep_alive_task = asyncio.create_task(self._send_keep_alive())
+
+                    try:
+                        # Consume messages from HeyGen to prevent buffer overflow
+                        async for message in ws:
+                            self.ten_env.log_debug(f"[avatar] Received message from HeyGen: {message[:100]}")
+                    finally:
+                        keep_alive_task.cancel()
+                        try:
+                            await keep_alive_task
+                        except asyncio.CancelledError:
+                            pass
             except Exception as e:
                 self.ten_env.log_error(
                     f"WebSocket error: {e}. Reconnecting in 3 seconds..."

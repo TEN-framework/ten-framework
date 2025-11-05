@@ -23,6 +23,7 @@ from ten_ai_base.types import (
 )
 from ten_runtime.audio_frame import AudioFrame
 from ten_runtime.data import Data
+from .apollo_api import ApolloAPI, ApolloResult
 
 
 class ThymiaAPIError(Exception):
@@ -381,10 +382,17 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
         self.poll_timeout: int = 120
         self.poll_interval: int = 5
 
+        # Analysis mode configuration (for backwards compatibility)
+        self.analysis_mode: str = "hellos_only"  # "hellos_only" or "demo_dual"
+        self.apollo_mood_duration: float = 22.0  # Duration of mood audio for Apollo
+        self.apollo_read_duration: float = 30.0  # Duration of reading audio for Apollo
+
         # State
         self.audio_buffer: Optional[AudioBuffer] = None
         self.api_client: Optional[ThymiaAPIClient] = None
+        self.apollo_client: Optional[ApolloAPI] = None
         self.latest_results: Optional[WellnessMetrics] = None
+        self.apollo_results: Optional[ApolloResult] = None
         self.active_analysis: bool = False
         self.analysis_count: int = 0
         self.last_analysis_time: float = 0.0
@@ -482,8 +490,49 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                 else poll_interval_result
             )
 
+            # Load analysis mode (defaults to hellos_only for backwards compatibility)
+            try:
+                analysis_mode_result = await ten_env.get_property_string(
+                    "analysis_mode"
+                )
+                self.analysis_mode = (
+                    analysis_mode_result[0]
+                    if isinstance(analysis_mode_result, tuple)
+                    else analysis_mode_result
+                )
+            except Exception:
+                # Property not set, use default
+                self.analysis_mode = "hellos_only"
+
+            # Load Apollo-specific durations if specified
+            try:
+                apollo_mood_result = await ten_env.get_property_float(
+                    "apollo_mood_duration"
+                )
+                self.apollo_mood_duration = (
+                    apollo_mood_result[0]
+                    if isinstance(apollo_mood_result, tuple)
+                    else apollo_mood_result
+                )
+            except Exception:
+                pass  # Use default
+
+            try:
+                apollo_read_result = await ten_env.get_property_float(
+                    "apollo_read_duration"
+                )
+                self.apollo_read_duration = (
+                    apollo_read_result[0]
+                    if isinstance(apollo_read_result, tuple)
+                    else apollo_read_result
+                )
+            except Exception:
+                pass  # Use default
+
             ten_env.log_info(
-                f"Loaded config: silence_threshold={self.silence_threshold}, min_speech_duration={self.min_speech_duration}"
+                f"Loaded config: analysis_mode={self.analysis_mode}, "
+                f"silence_threshold={self.silence_threshold}, "
+                f"min_speech_duration={self.min_speech_duration}"
             )
         except Exception as e:
             ten_env.log_warn(
@@ -506,9 +555,19 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
         )
         self.api_client = ThymiaAPIClient(api_key=self.api_key)
 
-        ten_env.log_info(
-            f"ThymiaAnalyzerExtension started (min_speech={self.min_speech_duration}s)"
-        )
+        # Initialize Apollo client if in demo_dual mode
+        if self.analysis_mode == "demo_dual":
+            self.apollo_client = ApolloAPI(api_key=self.api_key)
+            ten_env.log_info(
+                f"ThymiaAnalyzerExtension started in DEMO_DUAL mode "
+                f"(Hellos + Apollo, mood={self.apollo_mood_duration}s, "
+                f"read={self.apollo_read_duration}s)"
+            )
+        else:
+            ten_env.log_info(
+                f"ThymiaAnalyzerExtension started in HELLOS_ONLY mode "
+                f"(min_speech={self.min_speech_duration}s)"
+            )
 
         # Register as LLM tool (parent class handles this)
         await super().on_start(ten_env)
@@ -519,6 +578,9 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
 
         if self.api_client:
             await self.api_client.close()
+
+        if self.apollo_client:
+            await self.apollo_client.close()
 
         await super().on_stop(ten_env)
 
@@ -571,8 +633,14 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                     f"(need {self.min_speech_duration - speech_duration:.1f}s more)"
                 )
 
+            # Determine required speech duration based on analysis mode
+            required_duration = self.min_speech_duration
+            if self.analysis_mode == "demo_dual":
+                # Need enough for both mood (22s) and reading (30s)
+                required_duration = self.apollo_mood_duration + self.apollo_read_duration
+
             # Check if we have enough speech to analyze
-            if self.audio_buffer.has_enough_speech(self.min_speech_duration):
+            if self.audio_buffer.has_enough_speech(required_duration):
                 # Check if we should start a new analysis
                 should_analyze = (
                     not self.active_analysis
@@ -583,7 +651,8 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
 
                 if should_analyze:
                     ten_env.log_info(
-                        f"[thymia_analyzer] 🚀 Starting wellness analysis ({speech_duration:.1f}s speech collected)"
+                        f"[thymia_analyzer] 🚀 Starting wellness analysis "
+                        f"(mode={self.analysis_mode}, {speech_duration:.1f}s speech collected)"
                     )
 
                     # Start analysis in background
@@ -595,12 +664,47 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                 f"[thymia_analyzer] ❌ Error in on_audio_frame: {e}\n{traceback.format_exc()}"
             )
 
+    def _split_pcm_by_duration(
+        self, pcm_data: bytes, split_duration: float, sample_rate: int = 16000
+    ) -> tuple[bytes, bytes]:
+        """
+        Split PCM data at a specific duration point.
+
+        Args:
+            pcm_data: Raw PCM audio data
+            split_duration: Duration in seconds where to split
+            sample_rate: Sample rate in Hz
+
+        Returns:
+            Tuple of (first_part, second_part)
+        """
+        # Calculate byte offset for split point
+        # 16-bit samples = 2 bytes per sample, mono = 1 channel
+        bytes_per_second = sample_rate * 2
+        split_byte_offset = int(split_duration * bytes_per_second)
+
+        # Ensure we don't exceed data length
+        split_byte_offset = min(split_byte_offset, len(pcm_data))
+
+        first_part = pcm_data[:split_byte_offset]
+        second_part = pcm_data[split_byte_offset:]
+
+        return first_part, second_part
+
     async def _run_analysis(self, ten_env: AsyncTenEnv):
         """Run Thymia analysis workflow in background"""
         self.active_analysis = True
 
         try:
-            # Get WAV data from buffer
+            # Get raw PCM data from buffer
+            if not self.audio_buffer.speech_buffer:
+                ten_env.log_warn("No audio data available for analysis")
+                return
+
+            # Concatenate all PCM frames
+            full_pcm_data = b"".join(self.audio_buffer.speech_buffer)
+
+            # Get WAV data for Hellos API (existing behavior)
             wav_data = self.audio_buffer.get_wav_data()
 
             if not wav_data:
@@ -706,13 +810,71 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
             self.last_analysis_time = time.time()
 
             ten_env.log_info(
-                f"Wellness analysis complete: "
+                f"Hellos wellness analysis complete: "
                 f"distress={self.latest_results.distress:.4f}, "
                 f"stress={self.latest_results.stress:.4f}, "
                 f"burnout={self.latest_results.burnout:.4f}, "
                 f"fatigue={self.latest_results.fatigue:.4f}, "
                 f"low_self_esteem={self.latest_results.low_self_esteem:.4f}"
             )
+
+            # Run Apollo API in demo_dual mode
+            if self.analysis_mode == "demo_dual" and self.apollo_client:
+                ten_env.log_info(
+                    "[APOLLO] Starting Apollo API analysis for depression/anxiety"
+                )
+
+                try:
+                    # Split audio into mood and read segments
+                    mood_pcm, read_pcm = self._split_pcm_by_duration(
+                        full_pcm_data, self.apollo_mood_duration
+                    )
+
+                    ten_env.log_info(
+                        f"[APOLLO] Split audio: mood={len(mood_pcm)} bytes "
+                        f"({self.apollo_mood_duration}s), "
+                        f"read={len(read_pcm)} bytes"
+                    )
+
+                    # Validate user info for Apollo
+                    if not self.user_dob or not self.user_sex:
+                        ten_env.log_warn(
+                            "[APOLLO] Missing user DOB or sex, using defaults"
+                        )
+
+                    # Run Apollo analysis
+                    apollo_result = await self.apollo_client.analyze(
+                        mood_audio_pcm=mood_pcm,
+                        read_aloud_audio_pcm=read_pcm,
+                        user_label=self.user_name or "anonymous",
+                        date_of_birth=self.user_dob or "1990-01-01",
+                        birth_sex=self.user_sex or "OTHER",
+                        sample_rate=16000,
+                        language="en-GB",
+                    )
+
+                    # Store Apollo results
+                    self.apollo_results = apollo_result
+
+                    if apollo_result.status == "COMPLETE_OK":
+                        ten_env.log_info(
+                            f"[APOLLO] Analysis complete: "
+                            f"depression={apollo_result.depression_probability:.2%} "
+                            f"({apollo_result.depression_severity}), "
+                            f"anxiety={apollo_result.anxiety_probability:.2%} "
+                            f"({apollo_result.anxiety_severity})"
+                        )
+                    else:
+                        ten_env.log_warn(
+                            f"[APOLLO] Analysis failed: {apollo_result.status} - "
+                            f"{apollo_result.error_message}"
+                        )
+
+                except Exception as apollo_error:
+                    ten_env.log_error(
+                        f"[APOLLO] Apollo API failed: {apollo_error}"
+                    )
+                    # Continue with Hellos-only results
 
             # Send proactive notification to LLM
             await self._notify_llm_of_results(ten_env)
@@ -796,14 +958,15 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
             LLMToolMetadata(
                 name="get_wellness_metrics",
                 description=(
-                    "Get user's current mental wellness metrics from voice analysis. "
-                    "Returns stress, distress, burnout, fatigue, and low_self_esteem as whole number PERCENTAGES from 0-100 "
-                    "(where 0=none/low, 50=moderate, 100=severe/high). "
-                    "Values are integers (e.g., 3%, 27%, 9%). "
-                    "The analysis is based on speech patterns and provides insight into the user's emotional state. "
+                    "Get user's mental wellness and clinical indicators from voice analysis. "
+                    "Returns wellness metrics (stress, distress, burnout, fatigue, low_self_esteem) as PERCENTAGES from 0-100. "
+                    "May also return clinical indicators (depression, anxiety) if available, as probabilities from 0-100 with severity levels. "
+                    "Values are integers (e.g., stress: 27%, depression: 15%). "
+                    "The analysis is based on speech patterns and provides insight into the user's emotional and mental health state. "
                     "IMPORTANT: Call this periodically to check if analysis has completed. "
                     "When status='insufficient_data', the message field contains progress info - only share this if user asks about progress. "
-                    "When status='available', announce results immediately with percentages (e.g., 'fatigue: 3%', 'distress: 27%'). "
+                    "When status='available', announce ALL results immediately with percentages. "
+                    "Frame clinical indicators (depression/anxiety) as research indicators, not clinical diagnosis. "
                     "NOTE: User information must be set first using set_user_info."
                 ),
                 parameters=[],
@@ -952,6 +1115,31 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                         else 0
                     ),
                 }
+
+                # Add Apollo clinical indicators if available
+                if (
+                    self.apollo_results
+                    and self.apollo_results.status == "COMPLETE_OK"
+                ):
+                    response_data["clinical_indicators"] = {
+                        "depression": {
+                            "probability": round(
+                                self.apollo_results.depression_probability * 100
+                            ),
+                            "severity": self.apollo_results.depression_severity,
+                        },
+                        "anxiety": {
+                            "probability": round(
+                                self.apollo_results.anxiety_probability * 100
+                            ),
+                            "severity": self.apollo_results.anxiety_severity,
+                        },
+                    }
+                    ten_env.log_info(
+                        f"[APOLLO_RETURNED_TO_LLM] Added clinical indicators: "
+                        f"depression={response_data['clinical_indicators']['depression']}, "
+                        f"anxiety={response_data['clinical_indicators']['anxiety']}"
+                    )
 
                 # Log what's being returned to LLM
                 ten_env.log_info(
