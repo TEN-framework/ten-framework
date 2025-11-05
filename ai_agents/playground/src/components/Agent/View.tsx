@@ -20,6 +20,10 @@ export default function AgentView(props: AgentViewProps) {
   useEffect(() => {
     if (videoTrack) {
       videoTrack.play(`remote-video-${videoTrack.getUserId()}`, { fit: "cover" });
+
+      return () => {
+        videoTrack.stop();
+      };
     }
   }, [videoTrack]);
 
@@ -34,18 +38,19 @@ export default function AgentView(props: AgentViewProps) {
     ) : (
       <div
         className={cn(
-          "flex h-auto w-full flex-col items-center justify-center px-4 py-5",
+          "flex w-full flex-col items-center justify-center px-4",
           "bg-[#0F0F11] bg-linear-to-br from-[rgba(27,66,166,0.16)] via-[rgba(27,45,140,0.00)] to-[#11174E] shadow-[0px_3.999px_48.988px_0px_rgba(0,7,72,0.12)] backdrop-blur-[7px]"
         )}
+        style={{ height: '240px' }}
       >
-        <div className="mb-2 font-semibold text-[#EAECF0] text-lg">Agent</div>
-        <div className="mt-8 h-14 w-full">
+        <div className="mb-4 font-semibold text-[#EAECF0] text-lg">Agent</div>
+        <div className="h-20 w-full">
           <AudioVisualizer
             type="agent"
             frequencies={subscribedVolumes}
             barWidth={6}
             minBarHeight={6}
-            maxBarHeight={56}
+            maxBarHeight={80}
             borderRadius={2}
             gap={6}
           />
