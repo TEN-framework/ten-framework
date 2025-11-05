@@ -1254,3 +1254,5 @@ jobs:
           # Coveralls link (assuming standard Coveralls URL format)
           COVERALLS_URL="https://coveralls.io/github/${{ github.repository }}?branch=${GITHUB_REF_NAME}"
           echo "📊 **Coverage Reports:** ${COVERALLS_URL}" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Please refresh the website after several minutes to see the correct coverage data, especially for the tree structure view**" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Sometimes when the tree structure view is displayed, but actually the coverage data is not fully loaded, please refresh again for correct coverage data.**" >> "$GITHUB_STEP_SUMMARY"
