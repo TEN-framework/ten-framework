@@ -2388,6 +2388,247 @@
             }
           ]
         }
+      },
+      {
+        "name": "flux_apollo_cartesia_heygen",
+        "auto_start": false,
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "agora_rtc",
+              "addon": "agora_rtc",
+              "extension_group": "default",
+              "property": {
+                "app_id": "${env:AGORA_APP_ID}",
+                "app_certificate": "${env:AGORA_APP_CERTIFICATE|}",
+                "channel": "agora_g3qhjr",
+                "stream_id": 0,
+                "remote_stream_id": 182837,
+                "subscribe_audio": true,
+                "publish_audio": true,
+                "publish_data": true,
+                "enable_agora_asr": false
+              }
+            },
+            {
+              "type": "extension",
+              "name": "stt",
+              "addon": "deepgram_ws_asr_python",
+              "extension_group": "stt",
+              "property": {
+                "params": {
+                  "api_key": "${env:DEEPGRAM_API_KEY}",
+                  "url": "wss://api.deepgram.com/v2/listen",
+                  "model": "flux-general-en",
+                  "language": "en-US",
+                  "interim_results": true,
+                  "eot_threshold": 0.8,
+                  "eot_timeout_ms": 5000
+                }
+              }
+            },
+            {
+              "type": "extension",
+              "name": "llm",
+              "addon": "openai_llm2_python",
+              "extension_group": "chatgpt",
+              "property": {
+                "base_url": "https://api.openai.com/v1",
+                "api_key": "${env:OPENAI_API_KEY}",
+                "frequency_penalty": 0.9,
+                "model": "${env:OPENAI_MODEL}",
+                "max_tokens": 512,
+                "prompt": "You are a mental wellness research assistant conducting a demonstration. Guide the conversation efficiently:\n\n1. First, collect name, sex, year of birth\n2. Ask: 'How are you feeling today? Please describe your mood and energy level.' (wait for response)\n3. Ask: 'Tell me about your interests and hobbies.' (wait for response - this gets us to 22+ seconds)\n4. Say: 'Thank you. While I analyze that, please read this text aloud for about 30 seconds: The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog.'\n5. After reading, say: 'Perfect. I'm processing your responses now, this will take about a minute.'\n6. Wait ~60 seconds for both APIs to complete\n7. Use get_wellness_metrics tool to retrieve all results\n8. Present all 7 metrics (5 from Hellos: stress, distress, burnout, fatigue, low_self_esteem + 2 from Apollo: depression, anxiety) with empathy\n9. Frame as research indicators, not clinical diagnosis\n10. Thank them for participating in the demonstration\n\nTotal session time: ~2-3 minutes (30s user info + 30s mood/interests + 30s reading + 60s processing)",
+                "proxy_url": "${env:OPENAI_PROXY_URL|}",
+                "greeting": "Hi there! I would like to talk to you for a couple of minutes and use your voice to predict your mood and energy levels including any depression, anxiety, stress, and fatigue. Nothing will be recorded and this is purely a demonstration of what is possible now that we have trained our models with many hours of professionally labelled data. Please begin by telling me your name, sex and year of birth.",
+                "max_memory_length": 10
+              }
+            },
+            {
+              "type": "extension",
+              "name": "tts",
+              "addon": "cartesia_tts2",
+              "extension_group": "tts",
+              "property": {
+                "dump": false,
+                "dump_path": "./",
+                "params": {
+                  "api_key": "${env:CARTESIA_TTS_KEY}",
+                  "model_id": "sonic-3",
+                  "voice": {
+                    "mode": "id",
+                    "id": "71a7ad14-091c-4e8e-a314-022ece01c121"
+                  },
+                  "generation_config": {
+                    "speed": 1.2
+                  },
+                  "output_format": {
+                    "container": "raw",
+                    "sample_rate": 44100
+                  },
+                  "language": "en"
+                }
+              }
+            },
+            {
+              "type": "extension",
+              "name": "thymia_analyzer",
+              "addon": "thymia_analyzer_python",
+              "extension_group": "default",
+              "property": {
+                "api_key": "${env:THYMIA_API_KEY}",
+                "min_speech_duration": 22.0,
+                "analysis_mode": "demo_dual"
+              }
+            },
+            {
+              "type": "extension",
+              "name": "avatar",
+              "addon": "heygen_avatar_python",
+              "extension_group": "default",
+              "property": {
+                "heygen_api_key": "${env:HEYGEN_API_KEY|}",
+                "agora_appid": "${env:AGORA_APP_ID}",
+                "agora_appcert": "${env:AGORA_APP_CERTIFICATE|}",
+                "channel": "agora_g3qhjr",
+                "agora_avatar_uid": 12345,
+                "input_audio_sample_rate": 44100,
+                "avatar_name": "Katya_Chair_Sitting_public"
+              }
+            },
+            {
+              "type": "extension",
+              "name": "main_control",
+              "addon": "main_python",
+              "extension_group": "control",
+              "property": {
+                "greeting": "Hi there! I would like to talk to you for a couple of minutes and use your voice to predict your mood and energy levels including any depression, anxiety, stress, and fatigue. Nothing will be recorded and this is purely a demonstration of what is possible now that we have trained our models with many hours of professionally labelled data. Please begin by telling me your name, sex and year of birth."
+              }
+            },
+            {
+              "type": "extension",
+              "name": "message_collector",
+              "addon": "message_collector2",
+              "extension_group": "transcriber",
+              "property": {}
+            },
+            {
+              "type": "extension",
+              "name": "streamid_adapter",
+              "addon": "streamid_adapter",
+              "property": {}
+            }
+          ],
+          "connections": [
+            {
+              "extension": "main_control",
+              "cmd": [
+                {
+                  "names": [
+                    "on_user_joined",
+                    "on_user_left"
+                  ],
+                  "source": [
+                    {
+                      "extension": "agora_rtc"
+                    }
+                  ]
+                },
+                {
+                  "names": [
+                    "tool_register"
+                  ],
+                  "source": [
+                    {
+                      "extension": "thymia_analyzer"
+                    }
+                  ]
+                }
+              ],
+              "data": [
+                {
+                  "name": "asr_result",
+                  "source": [
+                    {
+                      "extension": "stt"
+                    }
+                  ]
+                },
+                {
+                  "name": "text_data",
+                  "source": [
+                    {
+                      "extension": "thymia_analyzer"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "agora_rtc",
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "dest": [
+                    {
+                      "extension": "streamid_adapter"
+                    },
+                    {
+                      "extension": "thymia_analyzer"
+                    }
+                  ]
+                }
+              ],
+              "data": [
+                {
+                  "name": "data",
+                  "source": [
+                    {
+                      "extension": "message_collector"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "streamid_adapter",
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "dest": [
+                    {
+                      "extension": "stt"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "tts",
+              "cmd": [
+                {
+                  "name": "flush",
+                  "dest": [
+                    {
+                      "extension": "avatar"
+                    }
+                  ]
+                }
+              ],
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "dest": [
+                    {
+                      "extension": "avatar"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
       }
     ]
   }
