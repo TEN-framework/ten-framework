@@ -113,8 +113,10 @@ export default function RTCCard(props: { className?: string }) {
       // trulience SDK will play audio in synch with mouth
       user.audioTrack?.stop();
     }
-    if (user.audioTrack) {
+    if (user.audioTrack || user.videoTrack) {
       setRemoteUser(user);
+    } else {
+      setRemoteUser(undefined);
     }
   };
 
