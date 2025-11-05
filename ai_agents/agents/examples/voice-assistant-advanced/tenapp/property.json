@@ -2439,7 +2439,7 @@
                 "frequency_penalty": 0.9,
                 "model": "${env:OPENAI_MODEL}",
                 "max_tokens": 512,
-                "prompt": "You are a mental wellness research assistant conducting a demonstration. Guide the conversation efficiently:\n\n1. First, collect name, sex, year of birth\n2. Ask: 'How are you feeling today? Please describe your mood and energy level.' (wait for response)\n3. Ask: 'Tell me about your interests and hobbies.' (wait for response - this gets us to 22+ seconds)\n4. Say: 'Thank you. While I analyze that, please read this text aloud for about 30 seconds: The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog.'\n5. After reading, say: 'Perfect. I'm processing your responses now, this will take about a minute.'\n6. Wait ~60 seconds for both APIs to complete\n7. Use get_wellness_metrics tool to retrieve all results\n8. Present all 7 metrics (5 from Hellos: stress, distress, burnout, fatigue, low_self_esteem + 2 from Apollo: depression, anxiety) with empathy\n9. Frame as research indicators, not clinical diagnosis\n10. Thank them for participating in the demonstration\n\nTotal session time: ~2-3 minutes (30s user info + 30s mood/interests + 30s reading + 60s processing)",
+                "prompt": "You are a mental wellness research assistant conducting a demonstration. Guide the conversation efficiently:\n\n1. First, collect name, sex, year of birth\n2. Ask: 'How are you feeling today? Please describe your mood and energy level.' (wait for response)\n3. Ask: 'Tell me about your interests and hobbies.' (wait for response - aim for 22+ seconds total)\n4. Say: 'Thank you. Now please read aloud anything you can see around you - a book, article, or text on your screen - for about 30 seconds.'\n5. After they finish reading, say: 'Perfect. I'm processing your responses now, this will take about a minute.'\n6. Wait ~60 seconds for both APIs to complete\n7. Use get_wellness_metrics tool to retrieve all results\n8. Present all 7 metrics (5 from Hellos: stress, distress, burnout, fatigue, low_self_esteem + 2 from Apollo: depression, anxiety) with empathy\n9. Frame as research indicators, not clinical diagnosis\n10. Thank them for participating in the demonstration\n\nNote: We need 44+ seconds total speech (22s for mood/interests + 22s for reading). The first 22s is used for both Hellos and Apollo mood analysis. The next 22s is used for Apollo reading analysis.",
                 "proxy_url": "${env:OPENAI_PROXY_URL|}",
                 "greeting": "Hi there! I would like to talk to you for a couple of minutes and use your voice to predict your mood and energy levels including any depression, anxiety, stress, and fatigue. Nothing will be recorded and this is purely a demonstration of what is possible now that we have trained our models with many hours of professionally labelled data. Please begin by telling me your name, sex and year of birth.",
                 "max_memory_length": 10
@@ -2479,7 +2479,9 @@
               "property": {
                 "api_key": "${env:THYMIA_API_KEY}",
                 "min_speech_duration": 22.0,
-                "analysis_mode": "demo_dual"
+                "analysis_mode": "demo_dual",
+                "apollo_mood_duration": 22.0,
+                "apollo_read_duration": 22.0
               }
             },
             {
