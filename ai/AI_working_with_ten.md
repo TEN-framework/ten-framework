@@ -1,7 +1,7 @@
 # TEN Framework Development Guide
 
 **Purpose**: Complete onboarding guide for developing with TEN Framework v0.11+
-**Last Updated**: 2025-10-31
+**Last Updated**: 2025-11-05
 
 > **Quick Reference**: See [AI_working_with_ten_compact.md](./AI_working_with_ten_compact.md) for essential commands and common workflows.
 
@@ -13,11 +13,12 @@
 2. [Environment Setup](#environment-setup)
 3. [Building and Running](#building-and-running)
 4. [Running Playground Client](#running-playground-client)
-5. [Creating Extensions](#creating-extensions)
-6. [Graph Configuration](#graph-configuration)
-7. [Debugging](#debugging)
-8. [Remote Access](#remote-access)
-9. [Common Issues](#common-issues)
+5. [Server Architecture & Property Injection](#server-architecture--property-injection)
+6. [Creating Extensions](#creating-extensions)
+7. [Graph Configuration](#graph-configuration)
+8. [Debugging](#debugging)
+9. [Remote Access](#remote-access)
+10. [Common Issues](#common-issues)
 
 ---
 
@@ -775,6 +776,70 @@ Use this checklist when deploying playground to production:
 
 ---
 
+## Server Architecture & Property Injection
+
+### Dynamic Property Injection
+
+The TEN Framework Go server (`ai_agents/server/internal/http_server.go`) implements property-based auto-injection for dynamic configuration values. This allows request parameters to be automatically injected into graph nodes without hardcoding extension names.
+
+**Key Feature: Channel Name Auto-Injection**
+
+When a client calls the `/start` API endpoint with a `channel_name` parameter, the server automatically injects this value into **all nodes that have a "channel" property** defined in their configuration.
+
+**How it works:**
+
+1. Client sends `/start` request with `{"channel_name": "user_channel_123", ...}`
+2. Server loads the base `property.json` template for the selected graph
+3. Server scans all nodes in the graph for a "channel" property
+4. Any node with a "channel" property receives the dynamic channel value
+5. Session starts with properly configured channel across all extensions
+
+**Example:**
+
+```json
+{
+  "nodes": [
+    {
+      "name": "agora_rtc",
+      "addon": "agora_rtc",
+      "property": {
+        "channel": "default_channel",  // ← Will be replaced with dynamic value
+        "app_id": "${env:AGORA_APP_ID}"
+      }
+    },
+    {
+      "name": "avatar",
+      "addon": "heygen_avatar_python",
+      "property": {
+        "channel": "default_channel",  // ← Will be replaced with same dynamic value
+        "heygen_api_key": "${env:HEYGEN_API_KEY}"
+      }
+    }
+  ]
+}
+```
+
+**Benefits:**
+- **Future-proof**: New extensions with "channel" properties automatically receive dynamic values
+- **No code changes needed**: Adding new extensions that need channel forwarding requires no server code changes
+- **Type-safe**: Works for any extension type (audio, video, avatar, analytics)
+
+**Implementation location:**
+- Server logic: `ai_agents/server/internal/http_server.go:646-690`
+- Configuration mapping: `ai_agents/server/internal/config.go:31-52`
+
+**Other injected parameters:**
+
+The server also injects other request parameters using the `startPropMap` configuration:
+- `RemoteStreamId` → `agora_rtc.remote_stream_id`
+- `BotStreamId` → `agora_rtc.stream_id`
+- `Token` → `agora_rtc.token` and `agora_rtm.token`
+- `WorkerHttpServerPort` → `http_server.listen_port`
+
+To add new parameters, update `startPropMap` in `server/internal/config.go`.
+
+---
+
 ## Creating Extensions
 
 ### Extension Directory Structure
@@ -958,6 +1023,51 @@ class MyToolExtension(AsyncLLMToolBaseExtension):
 ```
 
 ### Critical Patterns
+
+#### Signal Handlers (NEVER USE!)
+
+**❌ CRITICAL: Do NOT use signal handlers in TEN extensions!**
+
+Signal handlers (`signal.signal()`, `atexit.register()`) **only work in the main thread** of a process. TEN Framework extensions run in worker threads, not the main thread, causing runtime errors.
+
+**❌ WRONG - This will fail:**
+```python
+import signal
+import atexit
+
+class MyExtension(AsyncExtension):
+    async def on_start(self, ten_env: AsyncTenEnv) -> None:
+        # This will raise: ValueError: signal only works in main thread
+        signal.signal(signal.SIGTERM, self._cleanup)
+        signal.signal(signal.SIGINT, self._cleanup)
+        atexit.register(self._emergency_cleanup)
+```
+
+**Error you'll see:**
+```
+ValueError: signal only works in main thread of the main interpreter
+```
+
+**✅ CORRECT - Use lifecycle methods instead:**
+```python
+class MyExtension(AsyncExtension):
+    async def on_start(self, ten_env: AsyncTenEnv) -> None:
+        ten_env.log_info("Extension starting")
+        # Initialize resources here
+
+    async def on_stop(self, ten_env: AsyncTenEnv) -> None:
+        ten_env.log_info("Extension stopping - cleanup here")
+        # Clean up resources here (close connections, flush data, etc.)
+        if self.websocket:
+            await self.websocket.close()
+```
+
+**Why this matters:**
+- TEN Framework's worker processes handle cleanup automatically
+- `on_stop()` is always called before worker termination
+- Signal handlers are unnecessary and cause production failures
+
+**Real-world issue:** The heygen_avatar_python extension had signal handlers that caused production failures. These were removed and replaced with proper `on_stop()` cleanup, resolving the issue completely.
 
 #### Property Loading (MUST KNOW!)
 
@@ -1920,7 +2030,45 @@ sudo netstat -tlnp | grep :453
 
 ## Common Issues
 
-### Issue 1: ModuleNotFoundError: No module named 'ten'
+### Issue 1: ValueError: signal only works in main thread
+
+**Symptoms**:
+```
+ValueError: signal only works in main thread of the main interpreter
+```
+
+**Cause**: Extension attempting to register signal handlers (`signal.signal()`, `atexit.register()`)
+
+**Why it fails**: TEN Framework extensions run in worker threads, not the main thread. Signal handlers only work in the main thread.
+
+**Solution**: Remove all signal handler code and use lifecycle methods instead
+
+```python
+# ❌ Remove signal handler imports
+# import signal
+# import atexit
+
+class MyExtension(AsyncExtension):
+    async def on_start(self, ten_env: AsyncTenEnv) -> None:
+        # ❌ Remove signal handler registration
+        # signal.signal(signal.SIGTERM, self._cleanup)
+        # atexit.register(self._emergency_cleanup)
+
+        # ✅ Just initialize resources
+        ten_env.log_info("Extension starting")
+
+    async def on_stop(self, ten_env: AsyncTenEnv) -> None:
+        # ✅ Cleanup happens here
+        ten_env.log_info("Extension stopping - performing cleanup")
+        if self.websocket:
+            await self.websocket.close()
+```
+
+**See also**: [Signal Handlers (NEVER USE!)](#signal-handlers-never-use) in the Creating Extensions section.
+
+---
+
+### Issue 2: ModuleNotFoundError: No module named 'ten'
 
 **Cause**: Extension using old TEN Framework v0.8.x API
 **Solution**: Change imports from `from ten import` to `from ten_runtime import`

@@ -1,7 +1,7 @@
 # TEN Framework Quick Reference - voice-assistant-advanced
 
 **Target**: Working with `voice-assistant-advanced` example
-**Last Updated**: 2025-10-31
+**Last Updated**: 2025-11-05
 
 ---
 
@@ -285,7 +285,35 @@ server {
 
 ---
 
-## 6. Testing with Users in RTC Channel
+## 6. Server Architecture Notes
+
+### Dynamic Channel Forwarding
+
+The TEN Framework server automatically injects the `channel_name` from `/start` API requests into **all nodes that have a "channel" property**. This is future-proof - any new extension with a "channel" property will automatically receive the dynamic value without code changes.
+
+**Example**: If you call `/start` with `{"channel_name": "user_123", ...}`, both `agora_rtc` and `heygen_avatar_python` extensions will receive `channel: "user_123"` if they have a "channel" property defined.
+
+**Implementation**:
+- `ai_agents/server/internal/http_server.go:646-690` (property-based auto-injection)
+- `ai_agents/server/internal/config.go:31-52` (parameter mapping configuration)
+
+### Extension Development - Signal Handlers
+
+**⚠️ NEVER use signal handlers in extensions!**
+
+Signal handlers (`signal.signal()`, `atexit.register()`) only work in main threads. TEN extensions run in worker threads and will fail with: `ValueError: signal only works in main thread`
+
+**Use lifecycle methods instead:**
+- `on_start()` - Initialize resources
+- `on_stop()` - Cleanup resources (always called before termination)
+
+> **For detailed information**, see [AI_working_with_ten.md](./AI_working_with_ten.md):
+> - [Server Architecture & Property Injection](./AI_working_with_ten.md#server-architecture--property-injection)
+> - [Signal Handlers (NEVER USE!)](./AI_working_with_ten.md#signal-handlers-never-use)
+
+---
+
+## 7. Testing with Users in RTC Channel
 
 ### Playground URL
 Open tunnel URL in browser (e.g., `https://your-random-name.trycloudflare.com`)
@@ -405,7 +433,7 @@ When a user is in channel "test123":
 
 ---
 
-## 7. Common Operations
+## 8. Common Operations
 
 ### After Container Restart
 
@@ -483,7 +511,7 @@ docker exec ten_agent_dev tail -f /tmp/task_run.log
 
 ---
 
-## 8. Troubleshooting
+## 9. Troubleshooting
 
 ### Server Won't Start
 ```bash
@@ -588,7 +616,7 @@ docker exec ten_agent_dev bash -c "curl -s -o /dev/null -w '%{http_code}' http:/
 
 ---
 
-## 9. Quick Reference Commands
+## 10. Quick Reference Commands
 
 ```bash
 # Complete restart from scratch
@@ -606,7 +634,7 @@ sleep 5 && grep -o 'https://[^[:space:]]*\.trycloudflare\.com' /tmp/cloudflare_t
 
 ---
 
-## 10. When to Restart What (Quick Reference)
+## 11. When to Restart What (Quick Reference)
 
 | What Changed | Restart Container? | Restart Server? | Restart Frontend? | Notes |
 |--------------|-------------------|-----------------|-------------------|-------|
@@ -621,7 +649,7 @@ sleep 5 && grep -o 'https://[^[:space:]]*\.trycloudflare\.com' /tmp/cloudflare_t
 
 ---
 
-## 11. Essential Workflows
+## 12. Essential Workflows
 
 ### Starting the Server
 1. Use `task run` to start the server
