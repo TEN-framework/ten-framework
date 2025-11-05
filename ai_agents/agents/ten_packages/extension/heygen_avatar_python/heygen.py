@@ -328,5 +328,37 @@ class AgoraHeygenRecorder:
         # Schedule agent.speak_end after a short delay
         self._schedule_speak_end()
 
+    async def interrupt(self) -> bool:
+        """Send agent.interrupt message to HeyGen service to stop current speech."""
+        # Cancel any pending speak_end timer
+        if self._speak_end_timer_task and not self._speak_end_timer_task.done():
+            self._speak_end_timer_task.cancel()
+            self._speak_end_timer_task = None
+
+        success = await self._send_message(
+            {"type": "agent.interrupt", "event_id": uuid.uuid4().hex}
+        )
+
+        if success:
+            self.ten_env.log_debug("Sent agent.interrupt")
+        else:
+            self.ten_env.log_error("Failed to send interrupt message")
+
+        return success
+
+    async def _send_message(self, message: dict) -> bool:
+        """Send a message to HeyGen WebSocket without waiting for confirmation."""
+        if self.websocket is None:
+            self.ten_env.log_error("Cannot send message: WebSocket not connected")
+            return False
+
+        try:
+            await self.websocket.send(json.dumps(message))
+            self.ten_env.log_debug(f"Sent message: {message.get('type', 'unknown')}")
+            return True
+        except Exception as e:
+            self.ten_env.log_error(f"Failed to send message: {e}")
+            return False
+
     def ws_connected(self):
         return self.websocket is not None
