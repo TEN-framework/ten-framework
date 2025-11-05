@@ -3,6 +3,8 @@
 **Purpose**: Complete onboarding guide for developing with TEN Framework v0.11+
 **Last Updated**: 2025-10-31
 
+> **Quick Reference**: See [AI_working_with_ten_compact.md](./AI_working_with_ten_compact.md) for essential commands and common workflows.
+
 ---
 
 ## Table of Contents
@@ -10,11 +12,12 @@
 1. [Framework Overview](#framework-overview)
 2. [Environment Setup](#environment-setup)
 3. [Building and Running](#building-and-running)
-4. [Creating Extensions](#creating-extensions)
-5. [Graph Configuration](#graph-configuration)
-6. [Debugging](#debugging)
-7. [Remote Access](#remote-access)
-8. [Common Issues](#common-issues)
+4. [Running Playground Client](#running-playground-client)
+5. [Creating Extensions](#creating-extensions)
+6. [Graph Configuration](#graph-configuration)
+7. [Debugging](#debugging)
+8. [Remote Access](#remote-access)
+9. [Common Issues](#common-issues)
 
 ---
 
@@ -266,6 +269,509 @@ Or create an install script in your extension:
 docker exec container_name bash -c \
   "cd /app/agents/examples/voice-assistant/tenapp && ./scripts/install_python_deps.sh"
 ```
+
+---
+
+## Running Playground Client
+
+The TEN Framework includes a Next.js-based playground frontend that provides a web UI for testing voice agents. This section covers how to run and deploy the playground client.
+
+### Playground Architecture
+
+**Components:**
+- **Frontend**: Next.js app (React) on port 3000
+- **Backend API**: TEN Framework agent server (Go + Python extensions) on port 8080
+- **Agora RTC**: Real-time audio/video communication
+
+**Communication Flow:**
+```
+Browser → Playground (3000) → API Server (8080) → Extensions
+                    ↓
+               Agora RTC SDK
+```
+
+### ⚠️ CRITICAL: Node.js Version Requirement
+
+**The playground requires Node.js 20.9.0 or higher.**
+
+- ✅ Docker container (`ten_agent_dev`) has Node 22 installed
+- ❌ Host machine may have older version (e.g., Node 18)
+
+**❌ WRONG - Running from host with old Node version:**
+```bash
+# This FAILS if host has Node < 20.9.0
+cd /home/ubuntu/ten-framework/ai_agents/playground
+npm run dev  # Error: Node.js version ">=20.9.0" is required
+```
+
+**✅ CORRECT - Run from inside Docker container:**
+```bash
+docker exec -d ten_agent_dev bash -c \
+  "cd /app/playground && npm run dev > /tmp/playground.log 2>&1"
+```
+
+### Starting Playground: Automatic vs Manual
+
+#### Option 1: Automatic Startup (Recommended)
+
+The `task run` command automatically starts BOTH the agent server AND the playground:
+
+```bash
+# This starts everything
+docker exec -d ten_agent_dev bash -c \
+  "cd /app/agents/examples/voice-assistant-advanced && \
+   task run > /tmp/task_run.log 2>&1"
+
+# Wait a few seconds for startup
+sleep 5
+
+# Verify both services are running
+curl -s http://localhost:8080/health  # API server
+curl -s http://localhost:3000         # Playground
+```
+
+**This is the easiest method for development and testing.**
+
+#### Option 2: Manual Startup (For Custom Configuration)
+
+Start components separately if you need custom playground configuration or different port:
+
+```bash
+# 1. Start agent server only
+docker exec -d ten_agent_dev bash -c \
+  "cd /app/server && \
+   ./bin/api -tenapp_dir=/app/agents/examples/voice-assistant-advanced/tenapp > /tmp/api.log 2>&1"
+
+# 2. Start playground separately (development mode)
+docker exec -d ten_agent_dev bash -c \
+  "cd /app/playground && npm run dev > /tmp/playground.log 2>&1"
+
+# Or on custom port
+docker exec -d ten_agent_dev bash -c \
+  "cd /app/playground && PORT=3001 npm run dev > /tmp/playground.log 2>&1"
+```
+
+### Building for Production
+
+For production deployment, build the playground for optimized performance:
+
+```bash
+# 1. Build playground inside container
+docker exec ten_agent_dev bash -c "cd /app/playground && npm run build"
+
+# 2. Start production server
+docker exec -d ten_agent_dev bash -c \
+  "cd /app/playground && npm start > /tmp/playground_prod.log 2>&1"
+```
+
+**Production vs Development:**
+- **Development** (`npm run dev`): Hot reload, source maps, slower
+- **Production** (`npm run build && npm start`): Optimized bundles, faster, no hot reload
+
+### Testing TypeScript Build
+
+Before pushing code changes to the playground, test the TypeScript compilation locally to catch type errors early:
+
+```bash
+# Run TypeScript build test inside container
+docker exec ten_agent_dev bash -c "cd /app/playground && npm run build"
+```
+
+**What this does:**
+1. Compiles TypeScript files to check for type errors
+2. Runs Next.js production build
+3. Outputs any TypeScript errors with file location and line number
+
+**Example output on error:**
+```
+Failed to compile.
+
+./src/components/Agent/View.tsx:18:53
+Type error: Argument of type 'IRemoteAudioTrack | undefined' is not assignable to parameter of type 'IMicrophoneAudioTrack | MediaStreamTrack | undefined'.
+
+  > 18 |   const subscribedVolumes = useMultibandTrackVolume(audioTrack, 12);
+       |                                                     ^
+```
+
+**Example output on success:**
+```
+ ✓ Compiled successfully in 8.0s
+   Running TypeScript ...
+   Collecting page data ...
+   Generating static pages (0/5) ...
+ ✓ Generating static pages (5/5) in 413.0ms
+```
+
+**When to run this test:**
+- Before committing playground code changes
+- After modifying TypeScript types or interfaces
+- Before pushing to CI/CD pipelines
+- When adding new components or hooks
+
+**Note:** This is the same test that runs during Docker build, so running it locally helps avoid CI failures.
+
+### Accessing Playground
+
+#### Local Access (Same Machine)
+
+```bash
+# From host browser
+http://localhost:3000
+
+# Test with curl
+curl -s http://localhost:3000 | head -20
+```
+
+#### Remote Access via Cloudflare Tunnel (HTTPS)
+
+For remote testing without domain setup (free, temporary HTTPS):
+
+```bash
+# 1. Kill existing tunnels
+pkill cloudflared
+
+# 2. Start new tunnel
+nohup cloudflared tunnel --url http://localhost:3000 > /tmp/cloudflare_tunnel.log 2>&1 &
+
+# 3. Get public URL (wait 5-8 seconds for startup)
+sleep 8
+cat /tmp/cloudflare_tunnel.log | grep -o 'https://[^[:space:]]*\.trycloudflare\.com'
+```
+
+**Example output**: `https://films-colon-msgid-incentives.trycloudflare.com`
+
+**⚠️ Important**: Free Cloudflare tunnels get random URLs that change on every restart. For permanent URLs, use named tunnels or nginx.
+
+#### Remote Access via Nginx (Production)
+
+For production deployment with custom domain and SSL certificate:
+
+See the [Remote Access - Nginx Reverse Proxy](#nginx-reverse-proxy-production) section for complete nginx configuration.
+
+**Quick setup:**
+1. Point domain to server IP
+2. Get SSL certificate (Let's Encrypt)
+3. Configure nginx to proxy port 3000 (playground) and 8080 (API)
+4. Reload nginx
+
+### Verifying Playground is Running
+
+**Check playground process:**
+```bash
+docker exec ten_agent_dev bash -c "ps aux | grep -E 'npm.*dev|node.*next' | grep -v grep"
+# Expected: Shows node/npm process running
+```
+
+**Check port 3000 is listening:**
+```bash
+docker exec ten_agent_dev bash -c "netstat -tlnp | grep :3000"
+# Expected: Shows process listening on port 3000
+```
+
+**Test HTTP response:**
+```bash
+curl -s -o /dev/null -w '%{http_code}' http://localhost:3000
+# Expected: 200
+```
+
+**View playground logs:**
+```bash
+# Last 50 lines
+docker exec ten_agent_dev tail -50 /tmp/playground.log
+
+# Real-time monitoring
+docker exec ten_agent_dev tail -f /tmp/playground.log
+```
+
+### Playground Environment Configuration
+
+The playground reads configuration from environment variables and API endpoints.
+
+**Environment variables** (from `.env` file mounted into Docker):
+```bash
+# API server endpoint (defaults to localhost:8080)
+NEXT_PUBLIC_API_URL=http://localhost:8080
+
+# Agora configuration (read from API server)
+AGORA_APP_ID=${env:AGORA_APP_ID}
+AGORA_APP_CERTIFICATE=${env:AGORA_APP_CERTIFICATE|}
+```
+
+**API endpoints the playground uses:**
+- `/graphs` - List available voice agent graphs
+- `/start` - Start agent session in a channel
+- `/stop` - Stop agent session
+- `/token/generate` - Generate Agora RTC token for client
+- `/list` - List active sessions
+- `/health` - Health check
+
+**⚠️ CRITICAL**: If the playground shows "No graphs available", the API server (port 8080) is likely not running.
+
+### Deploying Playground to Public Demo Server
+
+Complete workflow for deploying the playground to a production server:
+
+#### Step 1: Prepare Environment
+
+```bash
+# 1. Update .env with production API keys
+cd /home/ubuntu/ten-framework/ai_agents
+nano .env
+
+# Add/update production keys:
+# AGORA_APP_ID=production_app_id
+# AGORA_APP_CERTIFICATE=production_cert
+# DEEPGRAM_API_KEY=production_key
+# OPENAI_API_KEY=production_key
+# ... other production keys
+
+# 2. Restart container to load new environment
+docker compose down && docker compose up -d
+```
+
+#### Step 2: Build Playground for Production
+
+```bash
+# Build optimized production bundle
+docker exec ten_agent_dev bash -c "cd /app/playground && npm run build"
+
+# Verify build succeeded
+docker exec ten_agent_dev bash -c "ls -lh /app/playground/.next"
+```
+
+#### Step 3: Configure Nginx Reverse Proxy
+
+**Create nginx configuration** (`/etc/nginx/sites-enabled/ten-framework`):
+
+```nginx
+server {
+    listen [::]:443 ssl ipv6only=on;
+    listen 443 ssl;
+    server_name your-domain.com;
+
+    ssl_certificate /etc/letsencrypt/live/your-domain.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/your-domain.com/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    # Proxy TEN Framework API endpoints to localhost:8080
+    location ~ ^/(health|ping|token|start|stop|graphs|list)(/|$) {
+        proxy_pass http://localhost:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Proxy TEN Framework Playground to localhost:3000
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # WebSocket support for Next.js (required!)
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+}
+```
+
+**Apply nginx configuration:**
+```bash
+# Test configuration
+sudo nginx -t
+
+# Reload nginx
+sudo systemctl reload nginx
+
+# Verify nginx is listening
+sudo netstat -tlnp | grep :443
+```
+
+#### Step 4: Start Production Services
+
+```bash
+# 1. Start agent server
+docker exec -d ten_agent_dev bash -c \
+  "cd /app/agents/examples/voice-assistant-advanced && \
+   task run > /tmp/task_run.log 2>&1"
+
+# 2. Wait for server startup
+sleep 5
+
+# 3. Verify API server
+curl -s http://localhost:8080/health
+# Expected: {"code":"0","data":null,"msg":"ok"}
+
+# 4. Verify playground is running
+curl -s -o /dev/null -w '%{http_code}' http://localhost:3000
+# Expected: 200
+```
+
+#### Step 5: Test Public Access
+
+```bash
+# Test from external machine
+curl -s https://your-domain.com/health
+# Expected: {"code":"0","data":null,"msg":"ok"}
+
+# Access playground in browser
+# https://your-domain.com/
+```
+
+#### Step 6: Monitor Logs
+
+```bash
+# Monitor API server logs
+docker exec ten_agent_dev tail -f /tmp/task_run.log
+
+# Monitor playground logs
+docker exec ten_agent_dev tail -f /tmp/playground.log
+
+# Monitor nginx access logs
+sudo tail -f /var/log/nginx/access.log
+
+# Monitor nginx error logs
+sudo tail -f /var/log/nginx/error.log
+```
+
+### Troubleshooting Playground
+
+#### Issue: Playground Not Accessible (localhost:3000 fails)
+
+**Symptom**: `curl http://localhost:3000` returns "Connection refused"
+
+**Cause**: Playground not running
+
+**Solution:**
+```bash
+# Check if playground is running
+docker exec ten_agent_dev bash -c "ps aux | grep npm | grep dev | grep -v grep"
+
+# If not running, start it
+docker exec -d ten_agent_dev bash -c \
+  "cd /app/playground && npm run dev > /tmp/playground.log 2>&1"
+
+# Check logs for errors
+docker exec ten_agent_dev tail -50 /tmp/playground.log
+```
+
+#### Issue: "502 Bad Gateway" When Accessing Playground
+
+**Symptom**: Playground loads but shows "502 Bad Gateway" error on certain API calls
+
+**Cause**: Agent server (port 8080) is not running
+
+**Solution:**
+```bash
+# Verify agent server is running
+curl -s http://localhost:8080/health
+
+# If fails, start agent server
+docker exec -d ten_agent_dev bash -c \
+  "cd /app/agents/examples/voice-assistant-advanced && \
+   task run > /tmp/task_run.log 2>&1"
+
+# Wait and verify
+sleep 5
+curl -s http://localhost:8080/health
+```
+
+#### Issue: Playground Shows "No Graphs Available"
+
+**Symptom**: Playground loads but graph dropdown is empty
+
+**Cause 1**: Frontend cached `/graphs` API response before server started
+
+**Solution:**
+```bash
+# Hard refresh browser (Ctrl+Shift+R or Cmd+Shift+R)
+# Or restart playground to clear cache
+docker exec ten_agent_dev bash -c "pkill -9 -f 'npm.*dev'"
+docker exec -d ten_agent_dev bash -c \
+  "cd /app/playground && npm run dev > /tmp/playground.log 2>&1"
+```
+
+**Cause 2**: API server not running or no graphs configured
+
+**Solution:**
+```bash
+# Check API server
+curl -s http://localhost:8080/graphs | jq '.data[].name'
+
+# If empty, check property.json
+docker exec ten_agent_dev cat \
+  /app/agents/examples/voice-assistant-advanced/tenapp/property.json | \
+  jq '.ten.predefined_graphs[].name'
+```
+
+#### Issue: Playground Won't Start After Container Restart
+
+**Symptom**: After `docker restart ten_agent_dev`, playground not accessible
+
+**Cause**: Services don't auto-start when container starts
+
+**Solution:**
+```bash
+# Manual startup after container restart:
+
+# 1. Reinstall Python dependencies
+docker exec ten_agent_dev bash -c \
+  "cd /app/agents/examples/voice-assistant-advanced/tenapp && \
+   bash scripts/install_python_deps.sh"
+
+# 2. Start agent server (this also starts playground)
+docker exec -d ten_agent_dev bash -c \
+  "cd /app/agents/examples/voice-assistant-advanced && \
+   task run > /tmp/task_run.log 2>&1"
+
+# 3. Verify both services
+sleep 5
+curl -s http://localhost:8080/health  # API
+curl -s http://localhost:3000 | head   # Playground
+```
+
+#### Issue: "EADDRINUSE: Port 3000 Already in Use"
+
+**Symptom**: Playground won't start, logs show port 3000 already in use
+
+**Solution:**
+```bash
+# Find process using port 3000
+docker exec ten_agent_dev bash -c "lsof -i :3000"
+
+# Kill the process
+docker exec ten_agent_dev bash -c "fuser -k 3000/tcp"
+
+# Or kill all npm dev processes
+docker exec ten_agent_dev bash -c "pkill -9 -f 'npm.*dev'"
+
+# Restart playground
+docker exec -d ten_agent_dev bash -c \
+  "cd /app/playground && npm run dev > /tmp/playground.log 2>&1"
+```
+
+### Playground Deployment Checklist
+
+Use this checklist when deploying playground to production:
+
+- [ ] Production `.env` file configured with all API keys
+- [ ] Container restarted to load new environment: `docker compose down && up -d`
+- [ ] Python dependencies installed: `bash scripts/install_python_deps.sh`
+- [ ] Playground built for production: `npm run build`
+- [ ] Nginx configured with SSL certificate and reverse proxy
+- [ ] Nginx configuration tested: `sudo nginx -t`
+- [ ] Nginx reloaded: `sudo systemctl reload nginx`
+- [ ] Agent server running: `curl http://localhost:8080/health` returns OK
+- [ ] Playground running: `curl http://localhost:3000` returns 200
+- [ ] Graphs available: `curl http://localhost:8080/graphs` shows graphs
+- [ ] Public HTTPS access working: `curl https://your-domain.com/health`
+- [ ] Browser access working: Open `https://your-domain.com/` in browser
+- [ ] WebSocket connection working: Test voice agent session
+- [ ] Monitoring logs: `tail -f /tmp/task_run.log` and `/tmp/playground.log`
 
 ---
 
