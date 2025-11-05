@@ -1093,6 +1093,9 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/ten-framework/ten_building_ubuntu2204
+    defaults:
+      run:
+        shell: bash
     steps:
       - name: Install LLVM 21 tools
         run: |
@@ -1174,11 +1177,20 @@ jobs:
           echo "😎Intermediate .profdata file:"
           llvm-profdata show out/linux/x64/coverage/merged.profdata
 
+          # Use --object flag to ensure all binaries and libraries are processed correctly
+          # This prevents llvm-cov from ignoring shared libraries when executables are present
+          OBJECT_ARGS=()
+          for bin in "${CORE_BINARIES_AND_LIBS[@]}"; do
+            if [ -f "$bin" ]; then
+              OBJECT_ARGS+=(--object "$bin")
+            fi
+          done
+
           llvm-cov export \
           --ignore-filename-regex='(^|/)\.cargo/|(^|/).rustup/|(^|/)out/|(^|/)tests/|(^|/)third_party/' \
           --format=lcov \
           --instr-profile="out/linux/x64/coverage/merged.profdata" \
-          "${CORE_BINARIES_AND_LIBS[@]}" \
+          "${OBJECT_ARGS[@]}" \
           > "out/linux/x64/coverage/coverage.lcov"
 
       - name: Upload coverage report
