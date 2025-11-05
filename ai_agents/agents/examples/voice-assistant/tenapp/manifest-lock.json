@@ -4,8 +4,8 @@
     {
       "type": "system",
       "name": "ten_runtime_go",
-      "version": "0.11.21",
-      "hash": "b1dbf1656398df51ee2964aa42ad832a8d62bae6551208af032baeb66e1568a6",
+      "version": "0.11.25",
+      "hash": "a927432535a874a46ec9040fcbe46a290b536f11ebae7126939f615ec248ce67",
       "dependencies": [
         {
           "type": "system",
@@ -22,8 +22,8 @@
     {
       "type": "extension",
       "name": "agora_rtc",
-      "version": "0.23.0-rc2",
-      "hash": "fc135467d95795a9e5776c298af3e2efbfc8652150abb612bae27e63b8eedc27",
+      "version": "0.23.9-t1",
+      "hash": "6f08c87c362d30bbfd831899435fec06982a2924bd9cc0f5cb7e936974bf5731",
       "dependencies": [
         {
           "type": "system",
@@ -44,8 +44,8 @@
     {
       "type": "system",
       "name": "ten_ai_base",
-      "version": "0.7.15",
-      "hash": "08a288c151cb980f7508e303d2669d5c6563521815a78181e3a19b70c6f63ccf",
+      "version": "0.7.18",
+      "hash": "b4b6881741d8735187d928edbbac607546f0b0e7c3e830a7682195ebc59e2d47",
       "dependencies": [
         {
           "type": "system",
@@ -86,8 +86,8 @@
     {
       "type": "extension",
       "name": "aliyun_asr_bigmodel_python",
-      "version": "0.2.2",
-      "hash": "29dcb768fb1a0df0de0c96afc0bba293e71d7735f4c45850a7804b702c9822ac",
+      "version": "0.2.3",
+      "hash": "985fa8b143a30d483dc385bcb08b8d0aa50a8d4562563ff5e94c218ef904c3b5",
       "dependencies": [
         {
           "type": "system",
@@ -443,8 +443,8 @@
     {
       "type": "extension",
       "name": "cartesia_tts2",
-      "version": "0.3.0",
-      "hash": "71ebe5ff1ea4ad0d1c5d5d8d67f057645d9d356034d9864561bd814f1244c7ec",
+      "version": "0.3.1",
+      "hash": "4f8f399116e00f706544eb316e3f072f3444a242be1c8d0d113f5aa4936cb4d7",
       "dependencies": [
         {
           "type": "system",
@@ -460,8 +460,8 @@
     {
       "type": "extension",
       "name": "cosy_tts_python",
-      "version": "0.3.3",
-      "hash": "81670fae222f5ceb9fb3a7770fbea1719258aa83551048d6a20366ce3d3f9f93",
+      "version": "0.3.4",
+      "hash": "296613afd20dab256968e29e9ce061e7843ec1a155d0cd515df35ec8bcdaf57c",
       "dependencies": [
         {
           "type": "system",
@@ -690,8 +690,8 @@
     {
       "type": "extension",
       "name": "tencent_tts_python",
-      "version": "0.3.0",
-      "hash": "bb10e325317a534e4be4b80ed1a3b036c61c909a92b949576c510c5af35b0658",
+      "version": "0.3.3",
+      "hash": "d3c3f81f2e26b7d716eb569adf936cffc6b2e328bbfa6e592571db3161939c73",
       "dependencies": [
         {
           "type": "system",
@@ -733,8 +733,8 @@
     {
       "type": "system",
       "name": "ten_runtime_python",
-      "version": "0.11.21",
-      "hash": "8246a719feb5a1f58dae696088d9b1572b39bbdedbd1d20a4d4986695033e5ce",
+      "version": "0.11.25",
+      "hash": "93e9e381e2d5562b9543807fe9b948c090236b7cee8edbb5e07c9d2db6f2e97d",
       "dependencies": [
         {
           "type": "system",
@@ -755,8 +755,8 @@
     {
       "type": "system",
       "name": "ten_runtime",
-      "version": "0.11.21",
-      "hash": "892e3ceaf7fc58b8c6edf3f4dc0897e06cc4095d225f6edbaac4b14ab5936d77",
+      "version": "0.11.25",
+      "hash": "eab45b60fadb1d8e9bbff559a0cdda36506c4199c3ed21690a87768bd689be46",
       "supports": [
         {
           "os": "linux",
@@ -767,8 +767,8 @@
     {
       "type": "system",
       "name": "agora_rtc_sdk",
-      "version": "4.4.32-140",
-      "hash": "8ef4d46f8b3cb9a7e7874abb412cfaf6a1098ec37623f188d13399927d75ade6",
+      "version": "4.4.32-141",
+      "hash": "d0a96b4672127492eee249f123750638071f9bcb673b5371320c8e16cdaff1b5",
       "supports": [
         {
           "os": "linux",
@@ -779,8 +779,8 @@
     {
       "type": "addon_loader",
       "name": "python_addon_loader",
-      "version": "0.11.21",
-      "hash": "c8d16c68f08529dd6c022cc42f33ad3ff63b119f45b4e5c0beaadb4b98d8c51c",
+      "version": "0.11.25",
+      "hash": "7e3547e491a745de7a513bdc64bc7de92c9b2754a52144d06dbaa27fd44c7cae",
       "dependencies": [
         {
           "type": "system",

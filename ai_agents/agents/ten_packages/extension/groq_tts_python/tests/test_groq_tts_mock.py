@@ -1,6 +1,6 @@
 import asyncio
 import json
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 from ten_runtime import (
     AsyncExtensionTester,
     AsyncTenEnvTester,
@@ -124,6 +124,9 @@ def test_groq_tts_extension_success():
         mock_groq_instance = MagicMock()
         mock_groq_class.return_value = mock_groq_instance
 
+        # Mock close as an async method
+        mock_groq_instance.close = AsyncMock()
+
         # mock the streaming response
         mock_streaming_response = MagicMock()
         mock_groq_instance.with_streaming_response.audio.speech.create.return_value = (
@@ -187,6 +190,7 @@ def test_groq_tts_extension_success():
                 "groq_tts_python", json.dumps(property_json)
             )
             tester.max_wait_time = 30
+
             err = tester.run()
 
             # simple assert - as long as no exception is thrown, it is considered successful
