@@ -419,11 +419,9 @@ async fn create_input_str_for_pkg_info_dependencies(
     dumped_pkgs_info: &mut HashSet<PkgBasicInfo>,
     all_candidates: &HashMap<PkgTypeAndName, HashMap<PkgBasicInfo, PkgInfo>>,
     max_latest_versions: i32,
-    has_valid_dependencies: &mut bool,
 ) -> Result<()> {
     // If this package has already been dumped, skip it.
     if dumped_pkgs_info.contains(&pkg_info.into()) {
-        *has_valid_dependencies = true;
         return Ok(());
     }
     dumped_pkgs_info.insert(pkg_info.into());
@@ -503,20 +501,18 @@ async fn create_input_str_for_pkg_info_dependencies(
                         // Including such a package — one that cannot actually be used in the
                         // computation — would cause problems and make no
                         // sense.
-                        let mut dep_is_valid = false;
-                        Box::pin(create_input_str_for_pkg_info_dependencies(
+                        let dep_result = Box::pin(create_input_str_for_pkg_info_dependencies(
                             input_str,
                             candidate,
                             dumped_pkgs_info,
                             all_candidates,
                             max_latest_versions,
-                            &mut dep_is_valid,
                         ))
-                        .await?;
+                        .await;
 
                         // Only add the dependency declaration if the candidate's dependencies are
                         // valid
-                        if dep_is_valid {
+                        if dep_result.is_ok() {
                             input_str.push_str(&format!(
                                 "depends_on_declared(\"{}\", \"{}\", \"{}\", \"{}\", \"{}\", \
                                  \"{}\").\n",
@@ -537,26 +533,34 @@ async fn create_input_str_for_pkg_info_dependencies(
                 }
 
                 if found_matched_count == 0 {
-                    // No versions match the requirement - mark as invalid
-                    *has_valid_dependencies = false;
-                    return Ok(());
+                    // No versions match the requirement - return error
+                    return Err(anyhow!(
+                        "No matching versions found for dependency {}:{}",
+                        pkg_type_and_name.pkg_type,
+                        pkg_type_and_name.name
+                    ));
                 }
 
                 if !found_any_valid_dep {
                     // We found matching versions, but none of them have valid dependencies
-                    *has_valid_dependencies = false;
-                    return Ok(());
+                    return Err(anyhow!(
+                        "No valid dependencies found for {}:{}",
+                        pkg_type_and_name.pkg_type,
+                        pkg_type_and_name.name
+                    ));
                 }
             } else {
-                // No candidates found for this dependency - mark as invalid
-                *has_valid_dependencies = false;
-                return Ok(());
+                // No candidates found for this dependency - return error
+                return Err(anyhow!(
+                    "No candidates found for dependency {}:{}",
+                    pkg_type_and_name.pkg_type,
+                    pkg_type_and_name.name
+                ));
             }
         }
     }
 
     // All dependencies are valid
-    *has_valid_dependencies = true;
     Ok(())
 }
 
@@ -663,18 +667,16 @@ async fn create_input_str(
 
     for candidates in all_candidates {
         for candidate in candidates.1 {
-            let mut is_valid = false;
-            create_input_str_for_pkg_info_dependencies(
+            let result = create_input_str_for_pkg_info_dependencies(
                 &mut input_str,
                 candidate.1,
                 &mut dumped_pkgs_info,
                 all_candidates,
                 max_latest_versions,
-                &mut is_valid,
             )
-            .await?;
+            .await;
 
-            if !is_valid {
+            if result.is_err() {
                 // Skip this candidate package if its dependencies cannot be satisfied
                 skipped_packages.push(format!(
                     "{}:{}@{}",
