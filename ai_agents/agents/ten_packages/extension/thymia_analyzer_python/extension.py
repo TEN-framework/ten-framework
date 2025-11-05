@@ -654,11 +654,19 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                     )
 
                     if should_analyze:
-                        ten_env.log_info(
-                            f"[thymia_analyzer] 🚀 Starting Hellos analysis "
-                            f"({speech_duration:.1f}s speech collected)"
-                        )
-                        asyncio.create_task(self._run_hellos_only_analysis(ten_env))
+                        # Validate user info before starting
+                        if not self.user_name or not self.user_dob or not self.user_sex:
+                            if self._audio_frame_count % 100 == 1:  # Log every 1 second
+                                ten_env.log_warn(
+                                    f"[thymia_analyzer] ⚠️ Waiting for user info before analysis "
+                                    f"(have: name={self.user_name}, dob={self.user_dob}, sex={self.user_sex})"
+                                )
+                        else:
+                            ten_env.log_info(
+                                f"[thymia_analyzer] 🚀 Starting Hellos analysis "
+                                f"({speech_duration:.1f}s speech collected)"
+                            )
+                            asyncio.create_task(self._run_hellos_only_analysis(ten_env))
 
             elif self.analysis_mode == "demo_dual":
                 # ============ DEMO_DUAL MODE (PHASED) ============
@@ -677,12 +685,20 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                         )
 
                     if self.audio_buffer.has_enough_speech(required_duration) and not self.hellos_analysis_running:
-                        ten_env.log_info(
-                            f"[thymia_analyzer] 🚀 Starting Hellos analysis (phase 1/2) "
-                            f"({speech_duration:.1f}s speech collected)"
-                        )
-                        self.hellos_analysis_running = True
-                        asyncio.create_task(self._run_hellos_phase(ten_env))
+                        # Validate user info before starting
+                        if not self.user_name or not self.user_dob or not self.user_sex:
+                            if self._audio_frame_count % 100 == 1:  # Log every 1 second
+                                ten_env.log_warn(
+                                    f"[thymia_analyzer] ⚠️ Waiting for user info before analysis "
+                                    f"(have: name={self.user_name}, dob={self.user_dob}, sex={self.user_sex})"
+                                )
+                        else:
+                            ten_env.log_info(
+                                f"[thymia_analyzer] 🚀 Starting Hellos analysis (phase 1/2) "
+                                f"({speech_duration:.1f}s speech collected)"
+                            )
+                            self.hellos_analysis_running = True
+                            asyncio.create_task(self._run_hellos_phase(ten_env))
 
                 elif not self.apollo_complete:
                     # Waiting for 44s to run Apollo
