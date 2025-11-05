@@ -8,7 +8,7 @@ import * as wav from "node-wav";
 import { AudioFrame } from "ten-runtime-nodejs";
 
 /**
- * AudioRecorder - 音频录制器，将 PCM 数据流写入 WAV 文件
+ * AudioRecorder - Audio recorder that writes PCM data stream to WAV file
  */
 export class AudioRecorder {
     private audioPath: string;
@@ -19,24 +19,28 @@ export class AudioRecorder {
     private currentTimestamp: number = 0;
     private isRecording: boolean = false;
     private totalBytesWritten: number = 0;
+    private startTime: number = 0;
+    private totalSamplesReceived: number = 0;
 
     constructor(audioPath: string) {
         this.audioPath = audioPath;
     }
 
     /**
-     * 开始录制
+     * Start recording
      */
     start(): void {
         this.isRecording = true;
         this.audioBuffers = [];
         this.totalBytesWritten = 0;
         this.currentTimestamp = 0;
+        this.startTime = Date.now();
+        this.totalSamplesReceived = 0;
         console.log(`[AudioRecorder] Started recording to: ${this.audioPath}`);
     }
 
     /**
-     * 写入音频帧
+     * Write audio frame
      */
     writeFrame(audioFrame: AudioFrame): void {
         if (!this.isRecording) {
@@ -44,14 +48,14 @@ export class AudioRecorder {
         }
 
         try {
-            // 获取音频帧参数
+            // Get audio frame parameters
             const sampleRate = audioFrame.getSampleRate();
             const channels = audioFrame.getNumberOfChannels();
             const bytesPerSample = audioFrame.getBytesPerSample();
             const samplesPerChannel = audioFrame.getSamplesPerChannel();
             const timestamp = audioFrame.getTimestamp();
 
-            // 更新参数（以第一帧为准）
+            // Update parameters (based on first frame)
             if (this.audioBuffers.length === 0) {
                 this.sampleRate = sampleRate;
                 this.channels = channels;
@@ -61,19 +65,23 @@ export class AudioRecorder {
                 );
             }
 
-            // 获取音频数据
+            // Get audio data
             const buf = audioFrame.lockBuf();
             const audioData = Buffer.from(buf);
             audioFrame.unlockBuf(buf);
 
-            // 存入缓冲区
+            // Store in buffer
             this.audioBuffers.push(audioData);
             this.totalBytesWritten += audioData.length;
 
-            // 更新时间戳（微秒转换为毫秒）
-            this.currentTimestamp = timestamp / 1000;
+            // Update total samples received
+            this.totalSamplesReceived += samplesPerChannel;
 
-            // 每100帧打印一次日志
+            // Calculate timestamp from samples (milliseconds)
+            // timestamp = (samples / sampleRate) * 1000
+            this.currentTimestamp = (this.totalSamplesReceived / this.sampleRate) * 1000;
+
+            // Log every 100 frames
             if (this.audioBuffers.length % 100 === 0) {
                 console.log(
                     `[AudioRecorder] Buffered ${this.audioBuffers.length} frames, ${(this.totalBytesWritten / 1024).toFixed(2)}KB, time: ${(this.currentTimestamp / 1000).toFixed(2)}s`
@@ -85,21 +93,21 @@ export class AudioRecorder {
     }
 
     /**
-     * 获取当前时间戳（毫秒）
+     * Get current timestamp (milliseconds)
      */
     getCurrentTimestamp(): number {
         return this.currentTimestamp;
     }
 
     /**
-     * 获取录制时长（秒）
+     * Get recording duration (seconds)
      */
     getDuration(): number {
         return this.currentTimestamp / 1000;
     }
 
     /**
-     * 停止录制并保存文件
+     * Stop recording and save file
      */
     async stop(): Promise<void> {
         if (!this.isRecording) {
@@ -113,10 +121,10 @@ export class AudioRecorder {
         );
 
         try {
-            // 合并所有音频缓冲区
+            // Merge all audio buffers
             const audioData = Buffer.concat(this.audioBuffers);
 
-            // 计算采样数
+            // Calculate sample count
             const bytesPerSample = this.bitDepth / 8;
             const totalSamples = audioData.length / (bytesPerSample * this.channels);
 
@@ -124,15 +132,15 @@ export class AudioRecorder {
                 `[AudioRecorder] Total samples: ${totalSamples}, duration: ${(totalSamples / this.sampleRate).toFixed(2)}s`
             );
 
-            // 转换为 Float32Array（node-wav 需要）
+            // Convert to Float32Array (required by node-wav)
             const audioFloat32 = this.convertToFloat32(audioData, this.bitDepth);
 
-            // 按声道分离（如果是多声道）
+            // Separate by channels (if multi-channel)
             const channelData: Float32Array[] = [];
             if (this.channels === 1) {
                 channelData.push(audioFloat32);
             } else {
-                // 交错数据转为分离声道
+                // Interleaved data to separated channels
                 for (let c = 0; c < this.channels; c++) {
                     const channelBuffer = new Float32Array(audioFloat32.length / this.channels);
                     for (let i = 0; i < channelBuffer.length; i++) {
@@ -142,21 +150,21 @@ export class AudioRecorder {
                 }
             }
 
-            // 编码为 WAV
+            // Encode to WAV
             const wavBuffer = wav.encode(channelData, {
                 sampleRate: this.sampleRate,
                 float: false,
                 bitDepth: 16,
             });
 
-            // 写入文件
+            // Write to file
             await fs.promises.writeFile(this.audioPath, Buffer.from(wavBuffer));
 
             console.log(
                 `[AudioRecorder] WAV file saved: ${this.audioPath}, size: ${(wavBuffer.byteLength / 1024).toFixed(2)}KB`
             );
 
-            // 清空缓冲区
+            // Clear buffers
             this.audioBuffers = [];
         } catch (error) {
             console.error("[AudioRecorder] Error saving WAV file:", error);
@@ -165,7 +173,7 @@ export class AudioRecorder {
     }
 
     /**
-     * 将 PCM 数据转换为 Float32Array
+     * Convert PCM data to Float32Array
      */
     private convertToFloat32(buffer: Buffer, bitDepth: number): Float32Array {
         const float32Array = new Float32Array(buffer.length / (bitDepth / 8));
@@ -174,13 +182,13 @@ export class AudioRecorder {
             // 16-bit PCM (signed int16)
             for (let i = 0; i < float32Array.length; i++) {
                 const int16 = buffer.readInt16LE(i * 2);
-                float32Array[i] = int16 / 32768.0; // 归一化到 [-1, 1]
+                float32Array[i] = int16 / 32768.0; // Normalize to [-1, 1]
             }
         } else if (bitDepth === 8) {
             // 8-bit PCM (unsigned int8)
             for (let i = 0; i < float32Array.length; i++) {
                 const uint8 = buffer.readUInt8(i);
-                float32Array[i] = (uint8 - 128) / 128.0; // 归一化到 [-1, 1]
+                float32Array[i] = (uint8 - 128) / 128.0; // Normalize to [-1, 1]
             }
         } else if (bitDepth === 24) {
             // 24-bit PCM (signed int24)
@@ -189,17 +197,17 @@ export class AudioRecorder {
                 const byte2 = buffer.readUInt8(i * 3 + 1);
                 const byte3 = buffer.readUInt8(i * 3 + 2);
                 let int24 = (byte3 << 16) | (byte2 << 8) | byte1;
-                // 处理符号位
+                // Handle sign bit
                 if (int24 & 0x800000) {
                     int24 |= ~0xffffff;
                 }
-                float32Array[i] = int24 / 8388608.0; // 归一化到 [-1, 1]
+                float32Array[i] = int24 / 8388608.0; // Normalize to [-1, 1]
             }
         } else if (bitDepth === 32) {
             // 32-bit PCM (signed int32)
             for (let i = 0; i < float32Array.length; i++) {
                 const int32 = buffer.readInt32LE(i * 4);
-                float32Array[i] = int32 / 2147483648.0; // 归一化到 [-1, 1]
+                float32Array[i] = int32 / 2147483648.0; // Normalize to [-1, 1]
             }
         } else {
             throw new Error(`Unsupported bit depth: ${bitDepth}`);
@@ -209,7 +217,7 @@ export class AudioRecorder {
     }
 
     /**
-     * 取消录制（不保存）
+     * Cancel recording (without saving)
      */
     cancel(): void {
         this.isRecording = false;
@@ -218,7 +226,7 @@ export class AudioRecorder {
     }
 
     /**
-     * 检查是否正在录制
+     * Check if recording is active
      */
     isActive(): boolean {
         return this.isRecording;

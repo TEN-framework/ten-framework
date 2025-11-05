@@ -100,11 +100,17 @@
         "name": "asr_result",
         "property": {
           "properties": {
-          "text": {
-            "type": "string"
-          },
+            "text": {
+              "type": "string"
+            },
             "final": {
               "type": "bool"
+            },
+            "start_ms": {
+              "type": "int64"
+            },
+            "duration_ms": {
+              "type": "int64"
             }
           }
         }

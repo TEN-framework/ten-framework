@@ -22,10 +22,10 @@ import * as fs from "fs";
 
 /**
  * VTT Recorder Extension
- * 功能：
- * 1. 接收音频帧（audio_frame）并录制为 WAV 文件
- * 2. 接收 ASR 结果（asr_result）并生成 VTT 字幕文件
- * 3. 提供会话管理功能
+ * Features:
+ * 1. Receive audio frames (audio_frame) and record to WAV file
+ * 2. Receive ASR results (asr_result) and generate VTT subtitle file
+ * 3. Provide session management functionality
  */
 class VttExtension extends Extension {
   private sessionManager: SessionManager;
@@ -46,18 +46,22 @@ class VttExtension extends Extension {
   async onInit(tenEnv: TenEnv): Promise<void> {
     tenEnv.logInfo("[VttExtension] onInit");
 
-    // 从 property 读取配置（如果有）
+    // Read configuration from property (if available)
     try {
-      const recordingsPath = tenEnv.getPropertyString("recordings_path");
-      if (recordingsPath) {
+      const [recordingsPath, error] = await tenEnv.getPropertyString("recordings_path");
+      if (error) {
+        tenEnv.logWarn(`[VttExtension] Error getting recordings path: ${error}, using default path`);
+        this.recordingsPath = "./recordings";
+      } else {
         this.recordingsPath = recordingsPath;
-        this.sessionManager = new SessionManager(this.recordingsPath);
-        tenEnv.logInfo(`[VttExtension] Using recordings path: ${this.recordingsPath}`);
       }
     } catch (error) {
-      // 使用默认值
-      tenEnv.logDebug("[VttExtension] Using default recordings path");
+      tenEnv.logError(`[VttExtension] Error getting recordings path: ${error}`);
+      this.recordingsPath = "./recordings";
     }
+
+    this.sessionManager = new SessionManager(this.recordingsPath);
+    tenEnv.logInfo(`[VttExtension] Using recordings path: ${this.recordingsPath}`);
   }
 
   async onStart(tenEnv: TenEnv): Promise<void> {
@@ -104,7 +108,7 @@ class VttExtension extends Extension {
   }
 
   /**
-   * 处理开始录制命令
+   * Handle start recording command
    */
   private async handleStartRecording(tenEnv: TenEnv, cmd: Cmd): Promise<void> {
     if (this.audioRecorder && this.audioRecorder.isActive()) {
@@ -114,25 +118,25 @@ class VttExtension extends Extension {
       return;
     }
 
-    // 创建新会话
+    // Create new session
     const session = this.sessionManager.createSession();
     this.currentSessionId = session.sessionId;
 
     tenEnv.log(
       LogLevel.INFO,
       `[VttExtension] Starting new recording session: ${this.currentSessionId}`,
-      { category: "key_point" }
+      "key_point"
     );
 
-    // 初始化录制器和 VTT 生成器
+    // Initialize recorder and VTT generator
     const audioPath = this.sessionManager.getAudioPath(this.currentSessionId);
     this.audioRecorder = new AudioRecorder(audioPath);
     this.vttGenerator = new VTTGenerator();
 
-    // 开始录制
+    // Start recording
     this.audioRecorder.start();
 
-    // 返回成功结果
+    // Return success result
     const cmdResult = CmdResult.Create(StatusCode.OK, cmd);
     cmdResult.setPropertyString("session_id", this.currentSessionId);
     cmdResult.setPropertyString("detail", "Recording started");
@@ -140,7 +144,7 @@ class VttExtension extends Extension {
   }
 
   /**
-   * 处理停止录制命令
+   * Handle stop recording command
    */
   private async handleStopRecording(tenEnv: TenEnv, cmd: Cmd): Promise<void> {
     if (!this.audioRecorder || !this.audioRecorder.isActive()) {
@@ -160,22 +164,22 @@ class VttExtension extends Extension {
     tenEnv.log(
       LogLevel.INFO,
       `[VttExtension] Stopping recording session: ${this.currentSessionId}`,
-      { category: "key_point" }
+      "key_point"
     );
 
     try {
-      // 完成 VTT 生成
+      // Finalize VTT generation
       const currentTime = this.audioRecorder.getCurrentTimestamp();
       this.vttGenerator.finalize(currentTime);
 
-      // 停止音频录制并保存
+      // Stop audio recording and save
       await this.audioRecorder.stop();
 
-      // 保存 VTT 文件
+      // Save VTT file
       const vttPath = this.sessionManager.getVTTPath(this.currentSessionId);
       await this.vttGenerator.save(vttPath);
 
-      // 保存 JSON 格式
+      // Save JSON format
       const jsonPath = this.sessionManager
         .getSessionPath(this.currentSessionId)
         .concat("/transcript.json");
@@ -185,7 +189,7 @@ class VttExtension extends Extension {
         "utf-8"
       );
 
-      // 结束会话并保存元数据
+      // End session and save metadata
       await this.sessionManager.endSession(this.currentSessionId, {
         totalWords: this.vttGenerator.getTotalWords(),
         totalSegments: this.vttGenerator.getSegmentCount(),
@@ -196,19 +200,19 @@ class VttExtension extends Extension {
       tenEnv.log(
         LogLevel.INFO,
         `[VttExtension] Recording completed: ${this.currentSessionId}, duration: ${duration.toFixed(2)}s, segments: ${this.vttGenerator.getSegmentCount()}`,
-        { category: "key_point" }
+        "key_point"
       );
 
-      // 返回成功结果
+      // Return success result
       const cmdResult = CmdResult.Create(StatusCode.OK, cmd);
       cmdResult.setPropertyString("session_id", this.currentSessionId);
       cmdResult.setPropertyString("detail", "Recording stopped");
-      cmdResult.setPropertyInt64("duration", Math.floor(duration * 1000));
-      cmdResult.setPropertyInt64("segments", this.vttGenerator.getSegmentCount());
-      cmdResult.setPropertyInt64("words", this.vttGenerator.getTotalWords());
+      cmdResult.setPropertyNumber("duration", Math.floor(duration * 1000));
+      cmdResult.setPropertyNumber("segments", this.vttGenerator.getSegmentCount());
+      cmdResult.setPropertyNumber("words", this.vttGenerator.getTotalWords());
       tenEnv.returnResult(cmdResult);
 
-      // 清理
+      // Cleanup
       this.audioRecorder = null;
       this.vttGenerator = null;
       this.currentSessionId = null;
@@ -221,7 +225,7 @@ class VttExtension extends Extension {
   }
 
   /**
-   * 处理列出会话命令
+   * Handle list sessions command
    */
   private async handleListSessions(tenEnv: TenEnv, cmd: Cmd): Promise<void> {
     try {
@@ -229,10 +233,10 @@ class VttExtension extends Extension {
 
       tenEnv.logInfo(`[VttExtension] Listed ${sessions.length} sessions`);
 
-      // 返回结果（通过 JSON 字符串）
+      // Return result (via JSON string)
       const cmdResult = CmdResult.Create(StatusCode.OK, cmd);
       cmdResult.setPropertyString("sessions", JSON.stringify(sessions));
-      cmdResult.setPropertyInt64("count", sessions.length);
+      cmdResult.setPropertyNumber("count", sessions.length);
       tenEnv.returnResult(cmdResult);
     } catch (error) {
       tenEnv.logError(`[VttExtension] Error listing sessions: ${error}`);
@@ -243,11 +247,18 @@ class VttExtension extends Extension {
   }
 
   /**
-   * 处理删除会话命令
+   * Handle delete session command
    */
   private async handleDeleteSession(tenEnv: TenEnv, cmd: Cmd): Promise<void> {
     try {
-      const sessionId = cmd.getPropertyString("session_id");
+      const [sessionId, error] = await cmd.getPropertyString("session_id");
+      if (error) {
+        tenEnv.logError(`[VttExtension] Error getting session_id: ${error}`);
+        const cmdResult = CmdResult.Create(StatusCode.ERROR, cmd);
+        cmdResult.setPropertyString("detail", `Error: ${error}`);
+        tenEnv.returnResult(cmdResult);
+        return;
+      }
 
       if (!sessionId) {
         const cmdResult = CmdResult.Create(StatusCode.ERROR, cmd);
@@ -277,11 +288,18 @@ class VttExtension extends Extension {
   }
 
   /**
-   * 处理获取会话命令
+   * Handle get session command
    */
   private async handleGetSession(tenEnv: TenEnv, cmd: Cmd): Promise<void> {
     try {
-      const sessionId = cmd.getPropertyString("session_id");
+      const [sessionId, error] = await cmd.getPropertyString("session_id");
+      if (error) {
+        tenEnv.logError(`[VttExtension] Error getting session_id: ${error}`);
+        const cmdResult = CmdResult.Create(StatusCode.ERROR, cmd);
+        cmdResult.setPropertyString("detail", `Error: ${error}`);
+        tenEnv.returnResult(cmdResult);
+        return;
+      }
 
       if (!sessionId) {
         const cmdResult = CmdResult.Create(StatusCode.ERROR, cmd);
@@ -291,6 +309,12 @@ class VttExtension extends Extension {
       }
 
       const metadata = await this.sessionManager.getSessionMetadata(sessionId);
+      if (!metadata) {
+        const cmdResult = CmdResult.Create(StatusCode.ERROR, cmd);
+        cmdResult.setPropertyString("detail", "Session not found");
+        tenEnv.returnResult(cmdResult);
+        return;
+      }
 
       if (metadata) {
         const cmdResult = CmdResult.Create(StatusCode.OK, cmd);
@@ -310,7 +334,7 @@ class VttExtension extends Extension {
   }
 
   /**
-   * 接收音频帧
+   * Receive audio frames
    */
   async onAudioFrame(tenEnv: TenEnv, audioFrame: AudioFrame): Promise<void> {
     if (this.audioRecorder && this.audioRecorder.isActive()) {
@@ -319,30 +343,78 @@ class VttExtension extends Extension {
   }
 
   /**
-   * 接收数据（ASR 结果）
+   * Receive data (ASR results)
    */
   async onData(tenEnv: TenEnv, data: Data): Promise<void> {
     const dataName = data.getName();
 
     if (dataName === "asr_result") {
       try {
-        const text = data.getPropertyString("text");
-        const isFinal = data.getPropertyBool("final");
+        // First try to get the complete JSON data (pass empty string to get root object)
+        const [jsonStr, jsonError] = await data.getPropertyToJson("");
+        
+        let text = "";
+        let isFinal = false;
+        let actualStartMs = 0;
+        let actualDurationMs = 0;
 
-        tenEnv.logDebug(
-          `[VttExtension] Received ASR result: final=${isFinal}, text="${text}"`
-        );
+        if (!jsonError && jsonStr) {
+          // Parse JSON to get all fields
+          try {
+            const asrResult = JSON.parse(jsonStr);
+            text = asrResult.text || "";
+            isFinal = asrResult.final || false;
+            actualStartMs = asrResult.start_ms || 0;
+            actualDurationMs = asrResult.duration_ms || 0;
 
-        if (this.vttGenerator && this.audioRecorder) {
-          const timestamp = this.audioRecorder.getCurrentTimestamp();
-          this.vttGenerator.addAsrResult(text, timestamp, isFinal);
+            tenEnv.logDebug(
+              `[VttExtension] Received ASR result from JSON: final=${isFinal}, start_ms=${actualStartMs}, duration_ms=${actualDurationMs}, text="${text}"`
+            );
+          } catch (parseError) {
+            tenEnv.logError(`[VttExtension] Error parsing JSON: ${parseError}`);
+            return;
+          }
+        } else {
+          // Fallback to getting fields individually
+          const [textVal, error1] = await data.getPropertyString("text");
+          if (error1) {
+            tenEnv.logError(`[VttExtension] Error getting text: ${error1}`);
+            return;
+          }
+          const [finalVal, error2] = await data.getPropertyBool("final");
+          if (error2) {
+            tenEnv.logError(`[VttExtension] Error getting final: ${error2}`);
+            return;
+          }
 
-          // 记录 final 结果
+          text = textVal;
+          isFinal = finalVal;
+
+          // Try to get timestamps
+          const [startMs, error3] = await data.getPropertyNumber("start_ms");
+          if (!error3) {
+            actualStartMs = startMs;
+          }
+          const [durationMs, error4] = await data.getPropertyNumber("duration_ms");
+          if (!error4) {
+            actualDurationMs = durationMs;
+          }
+
+          tenEnv.logDebug(
+            `[VttExtension] Received ASR result: final=${isFinal}, start_ms=${actualStartMs}, duration_ms=${actualDurationMs}, text="${text}"`
+          );
+        }
+
+        if (this.vttGenerator) {
+          // Use the actual timestamp provided by ASR instead of recorder's cumulative time
+          this.vttGenerator.addAsrResult(text, actualStartMs, isFinal, actualDurationMs);
+
+          // Log final results
           if (isFinal) {
             tenEnv.log(
               LogLevel.INFO,
-              `[VttExtension] ASR final result at ${(timestamp / 1000).toFixed(2)}s: "${text}"`,
-              { category: "key_point" }
+              `[VttExtension] ASR final result at ${(actualStartMs / 1000).toFixed(2)}s (duration: ${(actualDurationMs / 1000).toFixed(2)}s): "${text}"`,
+              "key_point"
             );
           }
         }
@@ -355,7 +427,7 @@ class VttExtension extends Extension {
   async onStop(tenEnv: TenEnv): Promise<void> {
     tenEnv.logInfo("[VttExtension] onStop");
 
-    // 如果正在录制，自动停止
+    // If recording, automatically stop
     if (this.audioRecorder && this.audioRecorder.isActive()) {
       tenEnv.logWarn("[VttExtension] Force stopping active recording");
       this.audioRecorder.cancel();

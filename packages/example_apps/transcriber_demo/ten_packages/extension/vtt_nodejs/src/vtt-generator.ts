@@ -6,153 +6,184 @@
 import * as fs from "fs";
 
 /**
- * VTT 字幕片段接口
+ * VTT subtitle segment interface
  */
 export interface VTTSegment {
-    start: number; // 开始时间（毫秒）
-    end: number; // 结束时间（毫秒）
-    text: string; // 文本内容
+    start: number; // Start time (milliseconds)
+    end: number; // End time (milliseconds)
+    text: string; // Text content
 }
 
 /**
- * VTTGenerator - 生成 WebVTT 格式字幕文件
+ * VTTGenerator - Generate WebVTT format subtitle file
  */
 export class VTTGenerator {
     private segments: VTTSegment[] = [];
     private currentText: string = "";
-    private lastTimestamp: number = 0;
-    private segmentStartTime: number = 0;
-    private maxSegmentDuration: number = 7000; // 最大片段时长（毫秒）
-    private minSegmentDuration: number = 1000; // 最小片段时长（毫秒）
+    private currentStartTime: number = 0;
+    private currentEndTime: number = 0;
+    private maxSegmentDuration: number = 7000; // Max segment duration (milliseconds)
+    private minSegmentDuration: number = 1000; // Min segment duration (milliseconds)
 
     /**
-     * 添加 ASR 结果
+     * Add ASR result
+     * @param text Recognized text
+     * @param startMs ASR recognition start time (relative to audio timeline)
+     * @param isFinal Whether it is the final result
+     * @param durationMs ASR recognition duration
      */
-    addAsrResult(text: string, timestamp: number, isFinal: boolean): void {
-        // 只处理 final 结果
+    addAsrResult(text: string, startMs: number, isFinal: boolean, durationMs: number = 0): void {
+        // Only process final results
         if (!isFinal) {
             return;
         }
 
-        // 格式化文本
+        // Format text
         const formattedText = this.formatText(text);
 
         if (!formattedText) {
             return;
         }
 
-        // 如果是第一个片段，设置开始时间
-        if (this.segments.length === 0 && !this.currentText) {
-            this.segmentStartTime = timestamp;
-        }
+        // Calculate end time: start_ms + duration_ms
+        const endMs = startMs + durationMs;
 
-        // 累积文本
-        if (this.currentText) {
-            this.currentText += " " + formattedText;
-        } else {
+        console.log(
+            `[VTTGenerator] Adding ASR result: start=${startMs}ms, duration=${durationMs}ms, end=${endMs}ms, text="${formattedText}"`
+        );
+
+        // If first segment or large time gap, create new segment directly
+        if (this.segments.length === 0 || startMs - this.currentEndTime > 2000) {
+            // If there is accumulated text, save it first
+            if (this.currentText) {
+                this.createSegmentDirect(this.currentStartTime, this.currentEndTime, this.currentText);
+            }
+            
+            // Start new segment
             this.currentText = formattedText;
-            this.segmentStartTime = this.lastTimestamp || timestamp;
-        }
+            this.currentStartTime = startMs;
+            this.currentEndTime = endMs;
+        } else {
+            // Accumulate text
+            if (this.currentText) {
+                this.currentText += " " + formattedText;
+            } else {
+                this.currentText = formattedText;
+                this.currentStartTime = startMs;
+            }
+            this.currentEndTime = endMs;
 
-        this.lastTimestamp = timestamp;
+            // Check if need to create new segment
+            const duration = this.currentEndTime - this.currentStartTime;
+            const shouldCreateSegment =
+                duration >= this.maxSegmentDuration || this.isEndOfSentence(formattedText);
 
-        // 检查是否需要创建新片段
-        const duration = timestamp - this.segmentStartTime;
-        const shouldCreateSegment =
-            duration >= this.maxSegmentDuration || this.isEndOfSentence(formattedText);
-
-        if (shouldCreateSegment && duration >= this.minSegmentDuration) {
-            this.createSegment(timestamp);
+            if (shouldCreateSegment && duration >= this.minSegmentDuration) {
+                this.createSegmentDirect(this.currentStartTime, this.currentEndTime, this.currentText);
+                this.currentText = "";
+            }
         }
     }
 
     /**
-     * 格式化文本
+     * Format text
      */
     private formatText(text: string): string {
-        // 去除首尾空格
+        // Trim whitespace
         text = text.trim();
 
         if (!text) {
             return "";
         }
 
-        // 首字母大写
+        // Capitalize first letter
         if (text.length > 0) {
             text = text.charAt(0).toUpperCase() + text.slice(1);
         }
 
-        // 确保句子结尾有标点
+        // Ensure sentence ends with punctuation
         if (this.isEndOfSentence(text)) {
             return text;
         }
 
-        // 如果没有结尾标点，暂时不添加（等待更多上下文）
+        // If no ending punctuation, don't add yet (wait for more context)
         return text;
     }
 
     /**
-     * 判断是否为句子结尾
+     * Check if it's the end of a sentence
      */
     private isEndOfSentence(text: string): boolean {
         return /[.!?。！？]$/.test(text.trim());
     }
 
     /**
-     * 创建新片段
+     * Create new segment (old method, kept for compatibility)
      */
     private createSegment(endTime: number): void {
         if (!this.currentText) {
             return;
         }
 
-        // 确保文本有结尾标点
-        let finalText = this.currentText.trim();
+        this.createSegmentDirect(this.currentStartTime, endTime, this.currentText);
+        
+        // Reset current text
+        this.currentText = "";
+        this.currentStartTime = endTime;
+    }
+
+    /**
+     * Create new segment directly
+     */
+    private createSegmentDirect(startTime: number, endTime: number, text: string): void {
+        if (!text) {
+            return;
+        }
+
+        // Ensure text ends with punctuation
+        let finalText = text.trim();
         if (!this.isEndOfSentence(finalText)) {
             finalText += ".";
         }
 
         this.segments.push({
-            start: this.segmentStartTime,
+            start: startTime,
             end: endTime,
             text: finalText,
         });
 
         console.log(
-            `[VTTGenerator] Created segment ${this.segments.length}: ${this.formatTimestamp(this.segmentStartTime)} --> ${this.formatTimestamp(endTime)}, text: "${finalText}"`
+            `[VTTGenerator] Created segment ${this.segments.length}: ${this.formatTimestamp(startTime)} --> ${this.formatTimestamp(endTime)}, text: "${finalText}"`
         );
-
-        // 重置当前文本
-        this.currentText = "";
-        this.segmentStartTime = endTime;
     }
 
     /**
-     * 完成录制（处理最后的片段）
+     * Finalize recording (process final segment)
      */
     finalize(endTime?: number): void {
         if (this.currentText) {
-            const finalEndTime = endTime || this.lastTimestamp || 0;
-            this.createSegment(finalEndTime);
+            const finalEndTime = endTime || this.currentEndTime || 0;
+            this.createSegmentDirect(this.currentStartTime, finalEndTime, this.currentText);
+            this.currentText = "";
         }
 
         console.log(`[VTTGenerator] Finalized with ${this.segments.length} segments`);
     }
 
     /**
-     * 生成 VTT 内容
+     * Generate VTT content
      */
     generate(): string {
         let vtt = "WEBVTT\n\n";
 
         this.segments.forEach((segment, index) => {
-            // 序号
+            // Sequence number
             vtt += `${index + 1}\n`;
 
-            // 时间范围
+            // Time range
             vtt += `${this.formatTimestamp(segment.start)} --> ${this.formatTimestamp(segment.end)}\n`;
 
-            // 文本内容
+            // Text content
             vtt += `${segment.text}\n\n`;
         });
 
@@ -160,7 +191,7 @@ export class VTTGenerator {
     }
 
     /**
-     * 格式化时间戳（毫秒转 VTT 时间格式）
+     * Format timestamp (milliseconds to VTT time format)
      */
     private formatTimestamp(ms: number): string {
         const totalSeconds = Math.floor(ms / 1000);
@@ -173,14 +204,14 @@ export class VTTGenerator {
     }
 
     /**
-     * 数字补零
+     * Pad number with zeros
      */
     private pad(num: number, size: number): string {
         return String(num).padStart(size, "0");
     }
 
     /**
-     * 保存 VTT 文件
+     * Save VTT file
      */
     async save(vttPath: string): Promise<void> {
         const vttContent = this.generate();
@@ -193,14 +224,14 @@ export class VTTGenerator {
     }
 
     /**
-     * 获取片段数量
+     * Get segment count
      */
     getSegmentCount(): number {
         return this.segments.length;
     }
 
     /**
-     * 获取总词数（粗略估计）
+     * Get total word count (rough estimate)
      */
     getTotalWords(): number {
         return this.segments.reduce((count, segment) => {
@@ -209,21 +240,21 @@ export class VTTGenerator {
     }
 
     /**
-     * 获取所有片段
+     * Get all segments
      */
     getSegments(): VTTSegment[] {
         return [...this.segments];
     }
 
     /**
-     * 获取纯文本（所有片段拼接）
+     * Get plain text (all segments concatenated)
      */
     getPlainText(): string {
         return this.segments.map((seg) => seg.text).join(" ");
     }
 
     /**
-     * 生成 JSON 格式（用于前端展示）
+     * Generate JSON format (for frontend display)
      */
     generateJSON(): string {
         return JSON.stringify(
@@ -239,14 +270,14 @@ export class VTTGenerator {
     }
 
     /**
-     * 设置最大片段时长
+     * Set max segment duration
      */
     setMaxSegmentDuration(ms: number): void {
         this.maxSegmentDuration = ms;
     }
 
     /**
-     * 设置最小片段时长
+     * Set min segment duration
      */
     setMinSegmentDuration(ms: number): void {
         this.minSegmentDuration = ms;

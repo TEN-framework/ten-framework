@@ -440,31 +440,38 @@ func (s *WebServer) handleListSessions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create TEN command
-	cmd, err := ten.NewCmd("list_sessions")
+	// Read sessions from recordings directory
+	recordingsDir := "./recordings"
+	sessions := []map[string]interface{}{}
+
+	entries, err := os.ReadDir(recordingsDir)
 	if err != nil {
-		s.tenEnv.LogError(fmt.Sprintf("Failed to create command: %v", err))
-		sendJSONError("Failed to create command", http.StatusInternalServerError)
-		return
+		s.tenEnv.LogError(fmt.Sprintf("Failed to read recordings directory: %v", err))
+	} else {
+		for _, entry := range entries {
+			if entry.IsDir() {
+				sessionId := entry.Name()
+				metadataPath := filepath.Join(recordingsDir, sessionId, "metadata.json")
+
+				// Read metadata file
+				if metadataBytes, err := os.ReadFile(metadataPath); err == nil {
+					var metadata map[string]interface{}
+					if err := json.Unmarshal(metadataBytes, &metadata); err == nil {
+						sessions = append(sessions, metadata)
+					}
+				}
+			}
+		}
 	}
 
-	// Send command (fire and forget)
-	if err := s.tenEnv.SendCmd(cmd, nil); err != nil {
-		s.tenEnv.LogError(fmt.Sprintf("Failed to send command: %v", err))
-		sendJSONError("Failed to send command", http.StatusInternalServerError)
-		return
-	}
+	s.tenEnv.LogInfo(fmt.Sprintf("list_sessions: found %d sessions", len(sessions)))
 
-	s.tenEnv.LogInfo("list_sessions command sent")
-
-	// For now, return empty list since we can't wait for the result synchronously
-	// In a real implementation, you'd need to use channels or other async mechanisms
+	// Return sessions list
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"status":   "ok",
-		"count":    0,
-		"sessions": []interface{}{},
-		"message":  "Command sent, check recordings directory for files",
+		"count":    len(sessions),
+		"sessions": sessions,
 	})
 }

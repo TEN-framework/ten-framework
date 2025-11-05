@@ -22,7 +22,7 @@ export interface SessionMetadata {
 }
 
 /**
- * SessionManager - 管理录制会话
+ * SessionManager - Manages recording sessions
  */
 export class SessionManager {
     private basePath: string;
@@ -34,7 +34,7 @@ export class SessionManager {
     }
 
     /**
-     * 确保基础目录存在
+     * Ensure base directory exists
      */
     private ensureBaseDirectory(): void {
         if (!fs.existsSync(this.basePath)) {
@@ -43,13 +43,13 @@ export class SessionManager {
     }
 
     /**
-     * 创建新会话
+     * Create new session
      */
     createSession(): SessionMetadata {
         const sessionId = uuidv4();
         const sessionPath = path.join(this.basePath, sessionId);
 
-        // 创建会话目录
+        // Create session directory
         fs.mkdirSync(sessionPath, { recursive: true });
 
         this.currentSession = {
@@ -61,42 +61,42 @@ export class SessionManager {
     }
 
     /**
-     * 获取当前会话
+     * Get current session
      */
     getCurrentSession(): SessionMetadata | null {
         return this.currentSession;
     }
 
     /**
-     * 获取会话路径
+     * Get session path
      */
     getSessionPath(sessionId: string): string {
         return path.join(this.basePath, sessionId);
     }
 
     /**
-     * 获取音频文件路径
+     * Get audio file path
      */
     getAudioPath(sessionId: string): string {
         return path.join(this.getSessionPath(sessionId), "audio.wav");
     }
 
     /**
-     * 获取 VTT 文件路径
+     * Get VTT file path
      */
     getVTTPath(sessionId: string): string {
         return path.join(this.getSessionPath(sessionId), "transcript.vtt");
     }
 
     /**
-     * 获取元数据文件路径
+     * Get metadata file path
      */
     getMetadataPath(sessionId: string): string {
         return path.join(this.getSessionPath(sessionId), "metadata.json");
     }
 
     /**
-     * 结束会话并保存元数据
+     * End session and save metadata
      */
     async endSession(
         sessionId: string,
@@ -107,23 +107,23 @@ export class SessionManager {
             this.currentSession.duration =
                 this.currentSession.endTime - this.currentSession.startTime;
 
-            // 合并额外的元数据
+            // Merge additional metadata
             Object.assign(this.currentSession, metadata);
 
-            // 设置文件路径
+            // Set file paths
             this.currentSession.audioFile = this.getAudioPath(sessionId);
             this.currentSession.vttFile = this.getVTTPath(sessionId);
 
-            // 保存元数据到文件
+            // Save metadata to file
             await this.saveMetadata(sessionId, this.currentSession);
 
-            // 清空当前会话
+            // Clear current session
             this.currentSession = null;
         }
     }
 
     /**
-     * 保存元数据到文件
+     * Save metadata to file
      */
     private async saveMetadata(
         sessionId: string,
@@ -138,7 +138,7 @@ export class SessionManager {
     }
 
     /**
-     * 列出所有会话
+     * List all sessions
      */
     async listSessions(): Promise<SessionMetadata[]> {
         const sessions: SessionMetadata[] = [];
@@ -154,7 +154,7 @@ export class SessionManager {
                 }
             }
 
-            // 按时间倒序排序
+            // Sort by time in descending order
             sessions.sort((a, b) => b.startTime - a.startTime);
         } catch (error) {
             console.error("Error listing sessions:", error);
@@ -164,7 +164,7 @@ export class SessionManager {
     }
 
     /**
-     * 删除会话
+     * Delete session
      */
     async deleteSession(sessionId: string): Promise<boolean> {
         try {
@@ -180,7 +180,7 @@ export class SessionManager {
     }
 
     /**
-     * 获取会话元数据
+     * Get session metadata
      */
     async getSessionMetadata(sessionId: string): Promise<SessionMetadata | null> {
         try {

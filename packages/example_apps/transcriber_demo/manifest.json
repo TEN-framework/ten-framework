@@ -60,8 +60,8 @@
   ],
   "scripts": {
     "start": "bin/start",
-    "build": "go run ten_packages/system/ten_runtime_go/tools/build/main.go",
-    "install_python_deps": "python3 scripts/install_python_deps.py"
+    "build": "python3 scripts/build.py",
+    "install_deps": "python3 scripts/install_deps.py"
   },
   "package": {
     "include": [

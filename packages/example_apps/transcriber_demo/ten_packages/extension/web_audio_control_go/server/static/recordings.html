@@ -190,6 +190,42 @@
             color: #555;
         }
 
+        .live-subtitle {
+            background: #f0f8ff;
+            border: 2px solid #4a90e2;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            min-height: 60px;
+            display: none;
+        }
+
+        .live-subtitle.active {
+            display: block;
+        }
+
+        .live-subtitle-text {
+            font-size: 1.1em;
+            font-weight: 500;
+            color: #333;
+            text-align: center;
+            line-height: 1.8;
+        }
+
+        .live-subtitle-text:empty::before {
+            content: 'Subtitles will appear here during playback...';
+            color: #999;
+            font-style: italic;
+            font-weight: normal;
+        }
+
+        .live-subtitle-time {
+            font-size: 0.85em;
+            color: #666;
+            text-align: center;
+            margin-top: 8px;
+        }
+
         .empty-state {
             text-align: center;
             padding: 60px 20px;
@@ -245,6 +281,110 @@
         .nav a:hover {
             text-decoration: underline;
         }
+
+        .live-transcription {
+            padding: 20px 30px;
+            border-bottom: 1px solid #e0e0e0;
+            display: none;
+        }
+
+        .live-transcription.active {
+            display: block;
+        }
+
+        .live-transcription h3 {
+            margin-bottom: 15px;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .recording-indicator-dot {
+            width: 12px;
+            height: 12px;
+            background: #ff0000;
+            border-radius: 50%;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .transcription-box {
+            background: #f8f9fa;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            min-height: 150px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 1em;
+            line-height: 1.8;
+            color: #333;
+        }
+
+        .transcription-box:empty::before {
+            content: 'Waiting for recognition results...';
+            color: #999;
+            font-style: italic;
+        }
+
+        .text-item {
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            background: white;
+            border-radius: 6px;
+            border-left: 4px solid #667eea;
+            animation: slideIn 0.3s ease-out;
+            line-height: 1.8;
+        }
+
+        .text-item.interim {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            font-style: italic;
+            opacity: 0.9;
+        }
+
+        .text-item.final {
+            background: white;
+            border-left: 4px solid #28a745;
+        }
+
+        .text-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75em;
+            font-weight: 600;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+
+        .text-badge.interim {
+            background: #ffc107;
+            color: #856404;
+        }
+
+        .text-badge.final {
+            background: #28a745;
+            color: white;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
     </style>
 </head>
 
@@ -270,6 +410,14 @@
             <div id="status" class="status" style="display: none;"></div>
         </div>
 
+        <div class="live-transcription" id="liveTranscription">
+            <h3>
+                <div class="recording-indicator-dot"></div>
+                📝 Real-time Subtitles
+            </h3>
+            <div class="transcription-box" id="transcriptionBox"></div>
+        </div>
+
         <div class="sessions-list">
             <h2>📚 Recording Sessions</h2>
             <div id="sessionsList"></div>
@@ -279,16 +427,218 @@
     <script>
         let isRecording = false;
         let currentSessionId = null;
+        let ws = null;
+        let reconnectInterval = null;
+        let audioContext = null;
+        let mediaStream = null;
+        let audioWorkletNode = null;
 
         const btnStartRecording = document.getElementById('btnStartRecording');
         const btnStopRecording = document.getElementById('btnStopRecording');
         const btnRefresh = document.getElementById('btnRefresh');
         const status = document.getElementById('status');
         const sessionsList = document.getElementById('sessionsList');
+        const liveTranscription = document.getElementById('liveTranscription');
+        const transcriptionBox = document.getElementById('transcriptionBox');
+        let interimElement = null;
+
+        // Initialize WebSocket connection
+        function connectWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws`;
+
+            console.log('Connecting to WebSocket:', wsUrl);
+
+            ws = new WebSocket(wsUrl);
+            ws.binaryType = 'arraybuffer';
+
+            ws.onopen = () => {
+                console.log('WebSocket connected');
+                if (reconnectInterval) {
+                    clearInterval(reconnectInterval);
+                    reconnectInterval = null;
+                }
+            };
+
+            ws.onmessage = (event) => {
+                if (typeof event.data === 'string') {
+                    console.log('WebSocket message received:', event.data);
+                    try {
+                        const message = JSON.parse(event.data);
+                        if (message.type === 'asr_result') {
+                            addAsrResult(message.text, message.final);
+                        }
+                    } catch (e) {
+                        console.error('Failed to parse WebSocket message:', e);
+                    }
+                }
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
+
+            ws.onclose = () => {
+                console.log('WebSocket disconnected');
+                // Attempt to reconnect
+                if (!reconnectInterval) {
+                    reconnectInterval = setInterval(connectWebSocket, 3000);
+                }
+            };
+        }
+
+        // Start recording with microphone
+        async function startMicrophoneRecording() {
+            try {
+                // Check browser support
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    showStatus('Browser does not support microphone access. Please use Chrome, Firefox, or Edge, and ensure you are using HTTPS or localhost.', 'error');
+                    return false;
+                }
+
+                // Request microphone access
+                mediaStream = await navigator.mediaDevices.getUserMedia({
+                    audio: {
+                        channelCount: 1,
+                        sampleRate: 16000,
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    }
+                });
+
+                // Create audio context with 16kHz sample rate
+                audioContext = new (window.AudioContext || window.webkitAudioContext)({
+                    sampleRate: 16000
+                });
+
+                const source = audioContext.createMediaStreamSource(mediaStream);
+
+                // Use ScriptProcessorNode for audio processing (4096 buffer size)
+                const processor = audioContext.createScriptProcessor(4096, 1, 1);
+
+                processor.onaudioprocess = (e) => {
+                    if (!isRecording || !ws || ws.readyState !== WebSocket.OPEN) {
+                        return;
+                    }
+
+                    const inputData = e.inputBuffer.getChannelData(0);
+
+                    // Convert Float32Array to Int16Array (PCM 16-bit)
+                    const pcmData = new Int16Array(inputData.length);
+                    for (let i = 0; i < inputData.length; i++) {
+                        // Clamp to [-1, 1] and convert to 16-bit PCM
+                        const s = Math.max(-1, Math.min(1, inputData[i]));
+                        pcmData[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+                    }
+
+                    // Send binary audio data via WebSocket
+                    if (ws.readyState === WebSocket.OPEN) {
+                        const message = JSON.stringify({
+                            type: 'audio_data',
+                            sample_rate: 16000,
+                            channels: 1,
+                            samples_per_channel: pcmData.length
+                        });
+
+                        // Send metadata as text first
+                        ws.send(message);
+                        // Then send audio data as binary
+                        ws.send(pcmData.buffer);
+                    }
+                };
+
+                source.connect(processor);
+                processor.connect(audioContext.destination);
+
+                audioWorkletNode = processor;
+                return true;
+
+            } catch (error) {
+                console.error('Error starting microphone:', error);
+                showStatus('Failed to start microphone: ' + error.message, 'error');
+                return false;
+            }
+        }
+
+        // Add ASR result to transcription box
+        function addAsrResult(text, isFinal) {
+            if (!isFinal) {
+                // For non-final results, update or create interim element
+                if (!interimElement) {
+                    interimElement = document.createElement('div');
+                    interimElement.className = 'text-item interim';
+                    transcriptionBox.appendChild(interimElement);
+                }
+
+                // Update interim text with badge (prevent XSS attack)
+                interimElement.textContent = text;
+                const interimBadge = document.createElement('span');
+                interimBadge.className = 'text-badge interim';
+                interimBadge.textContent = 'Recognizing...';
+                interimElement.appendChild(interimBadge);
+            } else {
+                // For final results, convert interim to final or create new final element
+                if (interimElement) {
+                    // Convert interim to final (prevent XSS attack)
+                    interimElement.className = 'text-item final';
+                    interimElement.textContent = text;
+                    const finalBadge = document.createElement('span');
+                    finalBadge.className = 'text-badge final';
+                    finalBadge.textContent = 'Complete';
+                    interimElement.appendChild(finalBadge);
+                    interimElement = null; // Clear interim reference
+                } else {
+                    // Create new final element (prevent XSS attack)
+                    const textItem = document.createElement('div');
+                    textItem.className = 'text-item final';
+                    textItem.textContent = text;
+                    const finalBadge = document.createElement('span');
+                    finalBadge.className = 'text-badge final';
+                    finalBadge.textContent = 'Complete';
+                    textItem.appendChild(finalBadge);
+                    transcriptionBox.appendChild(textItem);
+                }
+            }
+
+            // Auto-scroll to bottom
+            transcriptionBox.scrollTop = transcriptionBox.scrollHeight;
+        }
+
+        function stopMicrophoneRecording() {
+            if (audioWorkletNode) {
+                audioWorkletNode.disconnect();
+                audioWorkletNode = null;
+            }
+
+            if (audioContext) {
+                audioContext.close();
+                audioContext = null;
+            }
+
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(track => track.stop());
+                mediaStream = null;
+            }
+        }
 
         // Start recording
         btnStartRecording.addEventListener('click', async () => {
             try {
+                // Ensure WebSocket is connected
+                if (!ws || ws.readyState !== WebSocket.OPEN) {
+                    showStatus('WebSocket not connected, reconnecting...', 'error');
+                    connectWebSocket();
+                    return;
+                }
+
+                // Start microphone first
+                const micStarted = await startMicrophoneRecording();
+                if (!micStarted) {
+                    return;
+                }
+
+                // Then send start_recording command
                 const response = await fetch('/api/start_recording', {
                     method: 'POST'
                 });
@@ -296,14 +646,23 @@
 
                 if (data.status === 'ok') {
                     isRecording = true;
-                    currentSessionId = data.session_id;
+                    currentSessionId = data.session_id || 'New Session';
                     btnStartRecording.disabled = true;
                     btnStopRecording.disabled = false;
+                    
+                    // Show live transcription area
+                    liveTranscription.classList.add('active');
+                    transcriptionBox.innerHTML = '';
+                    interimElement = null;
+                    
                     showStatus(`Recording started! Session: ${currentSessionId}`, 'recording');
                 } else {
-                    showStatus(`Error: ${data.message}`, 'error');
+                    // Stop microphone if command fails
+                    stopMicrophoneRecording();
+                    showStatus(`Error: ${data.message || 'Unknown error'}`, 'error');
                 }
             } catch (error) {
+                stopMicrophoneRecording();
                 showStatus(`Error: ${error.message}`, 'error');
             }
         });
@@ -311,21 +670,34 @@
         // Stop recording
         btnStopRecording.addEventListener('click', async () => {
             try {
+                // Stop microphone first
+                isRecording = false;
+                stopMicrophoneRecording();
+
+                // Then send stop_recording command
                 const response = await fetch('/api/stop_recording', {
                     method: 'POST'
                 });
                 const data = await response.json();
 
                 if (data.status === 'ok') {
-                    isRecording = false;
                     btnStartRecording.disabled = false;
                     btnStopRecording.disabled = true;
-                    showStatus(`Recording stopped! Duration: ${(data.duration / 1000).toFixed(2)}s, Segments: ${data.segments}, Words: ${data.words}`, 'success');
+                    
+                    // Hide live transcription area
+                    setTimeout(() => {
+                        liveTranscription.classList.remove('active');
+                    }, 2000); // Keep it visible for 2 seconds to review final result
+                    
+                    const duration = data.duration ? (data.duration / 1000).toFixed(2) : 'N/A';
+                    const segments = data.segments || 'N/A';
+                    const words = data.words || 'N/A';
+                    showStatus(`Recording stopped! Duration: ${duration}s, Segments: ${segments}, Words: ${words}`, 'success');
 
                     // Refresh list after 1 second
                     setTimeout(() => loadSessions(), 1000);
                 } else {
-                    showStatus(`Error: ${data.message}`, 'error');
+                    showStatus(`Error: ${data.message || 'Unknown error'}`, 'error');
                 }
             } catch (error) {
                 showStatus(`Error: ${error.message}`, 'error');
@@ -389,15 +761,19 @@
                         <span>📝 ${session.totalWords || 0} words</span>
                     </div>
                     <div class="player-container">
-                        <audio controls>
+                        <audio id="audio-${session.sessionId}" controls onplay="setupSubtitles('${session.sessionId}')" onpause="hideSubtitles('${session.sessionId}')" onended="hideSubtitles('${session.sessionId}')">
                             <source src="${audioUrl}" type="audio/wav">
-                            <track src="${vttUrl}" kind="subtitles" srclang="en" label="Transcript" default>
+                            <track src="${vttUrl}" kind="subtitles" srclang="en" label="Subtitles" default>
                             Your browser does not support the audio element.
                         </audio>
-                        <small style="color: #999;">💡 Tip: Enable captions/subtitles in the player to see the transcript</small>
+                        <div class="live-subtitle" id="subtitle-${session.sessionId}">
+                            <div class="live-subtitle-text" id="subtitle-text-${session.sessionId}"></div>
+                            <div class="live-subtitle-time" id="subtitle-time-${session.sessionId}"></div>
+                        </div>
+                        <small style="color: #999;">💡 Subtitles will automatically appear above during audio playback</small>
                     </div>
                     <div class="transcript-box">
-                        <h4>📄 Transcript</h4>
+                        <h4>📄 Full Transcript</h4>
                         <div class="transcript-text" id="transcript-${session.sessionId}">Loading...</div>
                     </div>
                 </div>
@@ -430,6 +806,139 @@
             setTimeout(() => window.open(jsonUrl, '_blank'), 200);
         }
 
+        // VTT Subtitle handling
+        const subtitleCache = {};
+        const subtitleUpdateIntervals = {};
+
+        // Parse VTT file
+        async function parseVTT(sessionId) {
+            if (subtitleCache[sessionId]) {
+                return subtitleCache[sessionId];
+            }
+
+            try {
+                const response = await fetch(`/recordings/${sessionId}/transcript.vtt`);
+                const text = await response.text();
+                const cues = [];
+
+                // Simple VTT parser
+                const lines = text.split('\n');
+                let i = 0;
+                
+                // Skip WEBVTT header
+                while (i < lines.length && !lines[i].includes('-->')) {
+                    i++;
+                }
+
+                while (i < lines.length) {
+                    const line = lines[i].trim();
+                    
+                    if (line.includes('-->')) {
+                        const [startStr, endStr] = line.split('-->').map(s => s.trim());
+                        const start = parseVTTTime(startStr);
+                        const end = parseVTTTime(endStr);
+                        
+                        i++;
+                        let text = '';
+                        while (i < lines.length && lines[i].trim() !== '') {
+                            text += lines[i].trim() + ' ';
+                            i++;
+                        }
+                        
+                        cues.push({ start, end, text: text.trim() });
+                    }
+                    i++;
+                }
+
+                subtitleCache[sessionId] = cues;
+                return cues;
+            } catch (error) {
+                console.error('Error parsing VTT:', error);
+                return [];
+            }
+        }
+
+        // Parse VTT timestamp (HH:MM:SS.mmm) to seconds
+        function parseVTTTime(timeStr) {
+            const parts = timeStr.split(':');
+            const seconds = parts[parts.length - 1].split('.');
+            
+            let totalSeconds = 0;
+            if (parts.length === 3) {
+                // HH:MM:SS.mmm
+                totalSeconds = parseInt(parts[0]) * 3600 + parseInt(parts[1]) * 60 + parseFloat(seconds[0]);
+            } else {
+                // MM:SS.mmm
+                totalSeconds = parseInt(parts[0]) * 60 + parseFloat(seconds[0]);
+            }
+            
+            if (seconds[1]) {
+                totalSeconds += parseFloat('0.' + seconds[1]);
+            }
+            
+            return totalSeconds;
+        }
+
+        // Format seconds to MM:SS
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        // Setup subtitles for an audio element
+        async function setupSubtitles(sessionId) {
+            const audioElement = document.getElementById(`audio-${sessionId}`);
+            const subtitleContainer = document.getElementById(`subtitle-${sessionId}`);
+            const subtitleText = document.getElementById(`subtitle-text-${sessionId}`);
+            const subtitleTime = document.getElementById(`subtitle-time-${sessionId}`);
+
+            if (!audioElement || !subtitleContainer) return;
+
+            // Show subtitle container
+            subtitleContainer.classList.add('active');
+
+            // Parse VTT if not already cached
+            const cues = await parseVTT(sessionId);
+
+            // Clear any existing interval
+            if (subtitleUpdateIntervals[sessionId]) {
+                clearInterval(subtitleUpdateIntervals[sessionId]);
+            }
+
+            // Update subtitles as audio plays
+            subtitleUpdateIntervals[sessionId] = setInterval(() => {
+                const currentTime = audioElement.currentTime;
+                
+                // Find the current cue
+                const currentCue = cues.find(cue => 
+                    currentTime >= cue.start && currentTime <= cue.end
+                );
+
+                if (currentCue) {
+                    subtitleText.textContent = currentCue.text;
+                    subtitleTime.textContent = `${formatTime(currentCue.start)} - ${formatTime(currentCue.end)}`;
+                } else {
+                    subtitleText.textContent = '';
+                    subtitleTime.textContent = '';
+                }
+            }, 100); // Update every 100ms
+        }
+
+        // Hide subtitles when audio is paused or ended
+        function hideSubtitles(sessionId) {
+            const subtitleContainer = document.getElementById(`subtitle-${sessionId}`);
+            
+            if (subtitleUpdateIntervals[sessionId]) {
+                clearInterval(subtitleUpdateIntervals[sessionId]);
+                delete subtitleUpdateIntervals[sessionId];
+            }
+
+            if (subtitleContainer) {
+                subtitleContainer.classList.remove('active');
+            }
+        }
+
         // Load transcript for each session
         async function loadTranscript(sessionId) {
             try {
@@ -449,6 +958,9 @@
 
         // Initial load
         loadSessions();
+
+        // Initialize WebSocket connection on page load
+        connectWebSocket();
 
         // Use MutationObserver to load transcripts when sessions are rendered
         const observer = new MutationObserver(() => {
