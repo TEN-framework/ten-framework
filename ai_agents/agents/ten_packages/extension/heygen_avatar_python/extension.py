@@ -44,6 +44,7 @@ class HeygenAvatarExtension(AsyncExtension):
         self.video_queue = asyncio.Queue()
         self.recorder: AgoraHeygenRecorder = None
         self.ten_env: AsyncTenEnv = None
+        self.is_speaking = False  # Track if we're currently sending audio
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_debug("on_init")
@@ -83,59 +84,113 @@ class HeygenAvatarExtension(AsyncExtension):
             ten_env.log_error(f"error on_start, {traceback.format_exc()}")
 
     async def _loop_input_audio_sender(self, _: AsyncTenEnv):
+        frame_count = 0
+        idle_reset_task = None
+
         while True:
             audio_frame = await self.input_audio_queue.get()
-            if self.recorder is not None and self.recorder.ws_connected():
-                try:
-                    original_rate = self.config.input_audio_sample_rate
-                    target_rate = 24000
+            frame_count += 1
 
-                    audio_data = np.frombuffer(audio_frame, dtype=np.int16)
-                    if len(audio_data) == 0:
-                        continue
+            # If we're starting a new audio stream (was idle), send interrupt first
+            if not self.is_speaking:
+                self.ten_env.log_debug("Starting new audio stream, sending interrupt first")
+                if self.recorder and self.recorder.ws_connected():
+                    await self.recorder.interrupt()
+                self.is_speaking = True
 
-                    # Skip resampling if rates are the same
-                    if original_rate == target_rate:
-                        resampled_frame = audio_frame
-                    else:
-                        # Calculate resampling ratio
-                        resample_ratio = target_rate / original_rate
+            # Cancel previous idle reset task
+            if idle_reset_task and not idle_reset_task.done():
+                idle_reset_task.cancel()
 
-                        if resample_ratio > 1:
-                            # Upsampling: create more samples
-                            new_length = int(len(audio_data) * resample_ratio)
-                            old_indices = np.linspace(
-                                0, len(audio_data) - 1, new_length
-                            )
-                            resampled_audio = audio_data[
-                                np.round(old_indices).astype(int)
-                            ]
-                        else:
-                            # Downsampling: select fewer samples
-                            step = 1 / resample_ratio
-                            indices = np.round(
-                                np.arange(0, len(audio_data), step)
-                            ).astype(int)
-                            indices = indices[indices < len(audio_data)]
-                            resampled_audio = audio_data[indices]
+            if self.recorder is None:
+                self.ten_env.log_warn("Recorder is None, dropping audio")
+                continue
 
-                        resampled_frame = resampled_audio.tobytes()
+            if not self.recorder.ws_connected():
+                self.ten_env.log_warn("WebSocket not connected, dropping audio")
+                continue
 
-                    # Encode and send
-                    base64_audio_data = base64.b64encode(
-                        resampled_frame
-                    ).decode("utf-8")
-                    await self.recorder.send(base64_audio_data)
+            try:
+                original_rate = self.config.input_audio_sample_rate
+                target_rate = 24000
 
-                except Exception as e:
-                    self.ten_env.log_error(f"Error processing audio frame: {e}")
+                audio_data = np.frombuffer(audio_frame, dtype=np.int16)
+                if len(audio_data) == 0:
+                    self.ten_env.log_warn("Empty audio data")
                     continue
+
+                # Skip resampling if rates are the same
+                if original_rate == target_rate:
+                    resampled_frame = audio_frame
+                else:
+                    # Calculate resampling ratio
+                    resample_ratio = target_rate / original_rate
+
+                    if resample_ratio > 1:
+                        # Upsampling: create more samples
+                        new_length = int(len(audio_data) * resample_ratio)
+                        old_indices = np.linspace(
+                            0, len(audio_data) - 1, new_length
+                        )
+                        resampled_audio = audio_data[
+                            np.round(old_indices).astype(int)
+                        ]
+                    else:
+                        # Downsampling: select fewer samples
+                        step = 1 / resample_ratio
+                        indices = np.round(
+                            np.arange(0, len(audio_data), step)
+                        ).astype(int)
+                        indices = indices[indices < len(audio_data)]
+                        resampled_audio = audio_data[indices]
+
+                    resampled_frame = resampled_audio.tobytes()
+
+                # Encode and send
+                base64_audio_data = base64.b64encode(
+                    resampled_frame
+                ).decode("utf-8")
+                await self.recorder.send(base64_audio_data)
+
+                # Set up task to reset is_speaking after 1 second of no audio
+                async def reset_speaking_state():
+                    await asyncio.sleep(1.0)
+                    self.is_speaking = False
+                    self.ten_env.log_debug("Audio stream ended")
+
+                idle_reset_task = asyncio.create_task(reset_speaking_state())
+
+            except Exception as e:
+                self.ten_env.log_error(f"Error processing audio frame: {e}")
+                continue
 
     def _dump_audio_if_need(self, buf: bytearray) -> None:
         with open(
             "{}_{}.pcm".format("tts", self.config.agora_channel_name), "ab"
         ) as dump_file:
             dump_file.write(buf)
+
+    async def _handle_interrupt(self) -> None:
+        """Handle audio interrupt by clearing the audio queue and interrupting the client."""
+        self.ten_env.log_debug("Handling interrupt")
+        await self._clear_audio_queue()
+        if self.recorder and self.recorder.ws_connected():
+            await self.recorder.interrupt()
+        else:
+            self.ten_env.log_warn("Recorder not available or not connected")
+
+    async def _clear_audio_queue(self) -> None:
+        """Clear audio queue before interrupt."""
+        queue_size = self.input_audio_queue.qsize()
+        cleared_count = 0
+        for _ in range(queue_size):
+            try:
+                self.input_audio_queue.get_nowait()
+                cleared_count += 1
+            except asyncio.QueueEmpty:
+                break
+        if cleared_count > 0:
+            self.ten_env.log_debug(f"Cleared {cleared_count} audio frames from queue")
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_info("[AVATAR DISCONNECT] on_stop called")
@@ -154,7 +209,11 @@ class HeygenAvatarExtension(AsyncExtension):
         cmd_name = cmd.get_name()
         ten_env.log_debug("on_cmd name {}".format(cmd_name))
 
-        # TODO: process cmd
+        if cmd_name == "flush":
+            ten_env.log_debug("Handling flush command")
+            await self._handle_interrupt()
+            # Send flush command downstream
+            await ten_env.send_cmd(Cmd.create("flush"))
 
         cmd_result = CmdResult.create(StatusCode.OK, cmd)
         await ten_env.return_result(cmd_result)
@@ -166,9 +225,6 @@ class HeygenAvatarExtension(AsyncExtension):
     async def on_audio_frame(
         self, ten_env: AsyncTenEnv, audio_frame: AudioFrame
     ) -> None:
-        audio_frame_name = audio_frame.get_name()
-        ten_env.log_debug("on_audio_frame name {}".format(audio_frame_name))
-
         frame_buf = audio_frame.get_buf()
         self.input_audio_queue.put_nowait(frame_buf)
 
