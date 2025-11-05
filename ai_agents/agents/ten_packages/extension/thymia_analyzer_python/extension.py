@@ -864,7 +864,13 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                 ten_env.log_warn("[HELLOS PHASE 1/2] No audio data available")
                 return
 
-            ten_env.log_info(f"[HELLOS PHASE 1/2] Starting API workflow ({len(wav_data)} bytes)")
+            # Calculate audio duration (16kHz, mono, 16-bit = 32000 bytes/sec, WAV has 44-byte header)
+            pcm_bytes = len(wav_data) - 44
+            audio_duration = pcm_bytes / 32000.0
+            ten_env.log_info(
+                f"[HELLOS PHASE 1/2] Starting API workflow: {len(wav_data)} bytes total "
+                f"({pcm_bytes} PCM = {audio_duration:.1f}s audio)"
+            )
 
             # Create session
             session_response = await self.api_client.create_session(
@@ -946,14 +952,26 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
 
             full_pcm_data = b"".join(self.audio_buffer.speech_buffer)
 
+            # Calculate total audio duration (16kHz, mono, 16-bit = 32000 bytes/sec)
+            total_duration = len(full_pcm_data) / 32000.0
+            ten_env.log_info(
+                f"[APOLLO PHASE 2/2] Total audio: {len(full_pcm_data)} bytes = {total_duration:.1f}s"
+            )
+            ten_env.log_info(
+                f"[APOLLO PHASE 2/2] Target split: mood={self.apollo_mood_duration}s, read={self.apollo_read_duration}s"
+            )
+
             # Split audio into mood (first 22s) and read (next 22s)
             mood_pcm, read_pcm = self._split_pcm_by_duration(
                 full_pcm_data, self.apollo_mood_duration
             )
 
+            # Calculate actual durations after split
+            mood_duration = len(mood_pcm) / 32000.0
+            read_duration = len(read_pcm) / 32000.0
             ten_env.log_info(
-                f"[APOLLO PHASE 2/2] Split audio: mood={len(mood_pcm)} bytes "
-                f"({self.apollo_mood_duration}s), read={len(read_pcm)} bytes"
+                f"[APOLLO PHASE 2/2] Split result: mood={len(mood_pcm)} bytes ({mood_duration:.1f}s), "
+                f"read={len(read_pcm)} bytes ({read_duration:.1f}s)"
             )
 
             # Call Apollo API
