@@ -170,6 +170,26 @@ jobs:
           df -h .
           tree -I 'gen|obj' out
 
+        # Package source code (core folder) for coveralls
+      - name: Package source code for coverage analysis
+        run: |
+          echo "Packaging core folder (excluding ten_gn) for coverage analysis..."
+
+          # Create tar archive of core folder, excluding ten_gn subfolder
+          tar -czf core-source.tar.gz \
+            --exclude='core/ten_gn' \
+            --exclude='core/.git' \
+            core/
+
+          echo "Source code packaged successfully"
+          ls -lh core-source.tar.gz
+
+      - name: Upload source code for coverage analysis
+        uses: actions/upload-artifact@v4
+        with:
+          name: core-source
+          path: core-source.tar.gz
+
         # Package CORE_BINARIES_AND_LIBS for coverage analysis
       - name: Package binaries and libraries for coverage analysis
         run: |
@@ -1118,6 +1138,21 @@ jobs:
           # Verify installation
           llvm-cov --version
           llvm-profdata merge --version 2>&1 | head -3 || echo "llvm-profdata installed"
+
+      - name: Download source code for coverage analysis
+        uses: actions/download-artifact@v4
+        with:
+          name: core-source
+          path: .
+
+      - name: Extract source code
+        run: |
+          echo "Extracting source code..."
+          tar -xzf core-source.tar.gz
+          echo "Source code extracted successfully"
+
+          echo "Verifying core folder structure:"
+          ls -la core/ | head -20
 
       - name: Download binaries and libraries for coverage analysis
         uses: actions/download-artifact@v4
