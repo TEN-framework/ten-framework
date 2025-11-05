@@ -774,6 +774,19 @@
       "path": "../../../ten_packages/extension/generic_video_python"
     },
     {
+      "type": "extension",
+      "name": "heygen_avatar_python",
+      "version": "0.1.0",
+      "hash": "d9dc24628c469909d705a0f133c8adc191c5010c7ffe4df4cd78fc94ebf32c22",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime_python"
+        }
+      ],
+      "path": "../../../ten_packages/extension/heygen_avatar_python"
+    },
+    {
       "type": "system",
       "name": "ten_runtime_python",
       "version": "0.11.25",

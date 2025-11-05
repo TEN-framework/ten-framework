@@ -1218,19 +1218,27 @@ If your graphs use new extensions, add them to `tenapp/manifest.json`:
 
 **Critical:** If you add a new extension to a graph but forget to add it to `manifest.json`, the worker process will fail silently!
 
-#### Step 4: Create Extension Symlinks
+#### Step 4: Install Dependencies
 
-Extensions are shared across examples via symlinks:
+After updating `manifest.json`, run `tman install` to automatically create symlinks and install dependencies:
 
 ```bash
-cd tenapp/ten_packages/extension/
+cd tenapp
+tman install
+```
 
-# Create symlink to shared extension library
-ln -s /app/agents/ten_packages/extension/deepgram_ws_asr_python deepgram_ws_asr_python
-ln -s /app/agents/ten_packages/extension/thymia_analyzer_python thymia_analyzer_python
+> **⚠️ IMPORTANT**: `tman install` creates symlinks automatically. Never manually create symlinks with `ln -s`.
 
-# Verify symlinks
-ls -la | grep deepgram
+**What `tman install` does:**
+- Resolves dependencies from `manifest.json`
+- **Automatically creates symlinks** from shared extensions to `tenapp/ten_packages/extension/`
+- Downloads external packages if needed
+- Updates `manifest-lock.json`
+- Installs Python packages from `requirements.txt`
+
+**Verify symlinks were created:**
+```bash
+ls -la tenapp/ten_packages/extension/ | grep deepgram_ws_asr_python
 # Should show: deepgram_ws_asr_python -> /app/agents/ten_packages/extension/deepgram_ws_asr_python
 ```
 
@@ -1239,36 +1247,12 @@ ls -la | grep deepgram
 - Each example links to them rather than copying
 - Saves space and keeps extensions in sync
 
-#### Step 5: Install Dependencies
-
-After updating `manifest.json`, install dependencies:
-
-```bash
-cd tenapp
-tman install
-```
-
-**What `tman install` does:**
-- Resolves dependencies from `manifest.json`
-- Downloads/links required packages
-- Updates `manifest-lock.json`
-- Installs Python packages from `requirements.txt`
-
-**Output example:**
-```
-Get all installed packages...
-Filter compatible packages...
-Resolving packages...
-The following packages will be replaced:
- system:ten_runtime_go@0.11.20 -> system:ten_runtime_go@0.11.25
-```
-
 **Important:**
 - Run `tman install` inside the Docker container if using Docker
 - Run it after every `manifest.json` change
 - Python dependencies may need separate `pip install` after container restarts
 
-#### Step 6: Update README.md
+#### Step 5: Update README.md
 
 Document your new example:
 
@@ -1403,11 +1387,12 @@ curl -s http://localhost:8080/graphs | python3 -c "import json,sys; data=json.lo
 # 1. Verify extension is in manifest.json
 cat tenapp/manifest.json | grep -A2 "deepgram_ws_asr_python"
 
-# 2. Verify symlink exists
-ls -la tenapp/ten_packages/extension/ | grep deepgram_ws_asr_python
-
-# 3. Run tman install after manifest changes
+# 2. Add extension to manifest.json if missing, then run tman install
+# This creates the symlink automatically - never create manually!
 cd tenapp && tman install
+
+# 3. Verify symlink was created
+ls -la tenapp/ten_packages/extension/ | grep deepgram_ws_asr_python
 
 # 4. Check Python dependencies
 docker exec container pip3 install aiohttp pydantic
@@ -1540,10 +1525,10 @@ docker exec ten_agent_dev bash -c "cd /app && task test-extension EXTENSION=agen
 
 5. **Testing New Examples:**
    ```bash
-   # 1. Verify manifest is valid
+   # 1. Run tman install (creates symlinks automatically)
    cd tenapp && tman install
 
-   # 2. Verify symlinks exist
+   # 2. Verify symlinks were created
    ls -la tenapp/ten_packages/extension/ | grep your_extension
 
    # 3. Start server with correct tenapp_dir
@@ -1566,8 +1551,8 @@ docker exec ten_agent_dev bash -c "cd /app && task test-extension EXTENSION=agen
 - [ ] Copy existing example directory
 - [ ] Split/update `property.json` with desired graphs
 - [ ] Update `manifest.json` with all extension dependencies
-- [ ] Create symlinks for new extensions
-- [ ] Run `tman install` in tenapp directory
+- [ ] Run `tman install` in tenapp directory (creates symlinks automatically)
+- [ ] Verify symlinks were created: `ls -la tenapp/ten_packages/extension/`
 - [ ] Update README.md with graph descriptions
 - [ ] Copy or reference `.env` file
 - [ ] Test API server startup with new tenapp_dir
