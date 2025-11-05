@@ -224,8 +224,9 @@ func (s *HttpServer) handlerPing(c *gin.Context) {
 		return
 	}
 
-	// Get worker (don't update timestamp - let natural timeout occur)
+	// Update worker timestamp - ping indicates active frontend connection
 	worker := workers.Get(req.ChannelName).(*Worker)
+	worker.UpdateTs = time.Now().Unix()
 
 	slog.Info("handlerPing end", "worker", worker, "requestId", req.RequestId, logTag)
 	s.output(c, codeSuccess, nil)
