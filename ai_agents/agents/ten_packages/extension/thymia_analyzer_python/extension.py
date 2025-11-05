@@ -716,15 +716,15 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                 ten_env.log_warn("No audio data available for analysis")
                 return
 
-            # Save WAV to disk for debugging
-            timestamp = int(time.time())
-            wav_filename = f"/tmp/thymia_audio_{timestamp}_{self.user_name or 'unknown'}.wav"
-            try:
-                with open(wav_filename, "wb") as f:
-                    f.write(wav_data)
-                ten_env.log_info(f"Saved audio for debugging: {wav_filename}")
-            except Exception as e:
-                ten_env.log_warn(f"Failed to save debug audio: {e}")
+            # Debug: Uncomment to save WAV files (WARNING: can fill disk quickly!)
+            # timestamp = int(time.time())
+            # wav_filename = f"/tmp/thymia_audio_{timestamp}_{self.user_name or 'unknown'}.wav"
+            # try:
+            #     with open(wav_filename, "wb") as f:
+            #         f.write(wav_data)
+            #     ten_env.log_info(f"Saved audio for debugging: {wav_filename}")
+            # except Exception as e:
+            #     ten_env.log_warn(f"Failed to save debug audio: {e}")
 
             ten_env.log_info(
                 f"[HELLOS] Starting Thymia API workflow ({len(wav_data)} bytes)"
