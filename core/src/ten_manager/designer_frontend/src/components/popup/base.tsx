@@ -287,14 +287,15 @@ export const PopupBase = (props: IPopupBaseProps) => {
     (widget_id?: string) => {
       const highestZIndex = Math.max(
         ...Array.from(document.querySelectorAll(".popup")).map(
-          (el) => parseInt(window.getComputedStyle(el).zIndex) || 0
+          (el) => parseInt(window.getComputedStyle(el).zIndex, 10) || 0
         )
       );
       if (widget_id) {
         onSelectWidget?.(widget_id);
       }
       if (popupRef.current) {
-        if (highestZIndex === parseInt(popupRef.current.style.zIndex)) return;
+        if (highestZIndex === parseInt(popupRef.current.style.zIndex, 10))
+          return;
         popupRef.current.style.zIndex = (highestZIndex + 1).toString();
       }
     },
