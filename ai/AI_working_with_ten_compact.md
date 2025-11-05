@@ -503,6 +503,26 @@ docker exec ten_agent_dev cat \
   /app/agents/examples/voice-assistant-advanced/tenapp/property.json | jq '.predefined_graphs[].name'
 ```
 
+### Worker Process Crashes (Missing Extension)
+
+**Symptom**: Worker fails with `ModuleNotFoundError: No module named 'ten_packages.extension.xxx'`
+
+**Cause**: Extension used in graph is missing from `manifest.json`
+
+**Solution**:
+```bash
+# 1. Add extension to manifest.json, then run tman install (creates symlinks automatically)
+docker exec ten_agent_dev bash -c \
+  "cd /app/agents/examples/voice-assistant-advanced/tenapp && tman install"
+
+# 2. Restart server
+docker exec ten_agent_dev bash -c "pkill -9 -f 'bin/api'"
+docker exec -d ten_agent_dev bash -c \
+  "cd /app/agents/examples/voice-assistant-advanced && task run > /tmp/task_run.log 2>&1"
+```
+
+**Note**: Never manually create symlinks with `ln -s`. Always use `tman install`.
+
 ### Tunnel Not Working
 ```bash
 # Check if cloudflared is running
