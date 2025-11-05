@@ -47,7 +47,10 @@ class TestPlayHTParams(unittest.TestCase):
         # Required params should be present
         self.assertEqual(config.params["api_key"], "test_api_key")
         self.assertEqual(config.params["user_id"], "test_user_id")
-        self.assertEqual(config.params["voice"], "s3://voice-cloning-zero-shot/d9ff78ba-d016-47f6-b0ef-dd630f59414e/female-cs/manifest.json")
+        self.assertEqual(
+            config.params["voice"],
+            "s3://voice-cloning-zero-shot/d9ff78ba-d016-47f6-b0ef-dd630f59414e/female-cs/manifest.json",
+        )
 
     def test_playht_params_format_validation(self):
         """Test format handling in params - format is removed by update_params"""

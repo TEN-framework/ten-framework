@@ -314,7 +314,9 @@ def test_polly_tts_config_validation():
     try:
         invalid_config = PollyTTSConfig(params={})
         invalid_config.validate()
-        assert False, "Should have raised ValueError for missing aws_access_key_id"
+        assert (
+            False
+        ), "Should have raised ValueError for missing aws_access_key_id"
     except ValueError as e:
         assert "aws_access_key_id" in str(e)
 

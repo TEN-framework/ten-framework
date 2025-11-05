@@ -63,7 +63,9 @@ class TestPollyTTSClient(unittest.TestCase):
         client = PollyTTSClient(self.config, self.mock_ten_env)
 
         self.assertEqual(client.config, self.config)
-        self.assertEqual(client.frame_size, 50 * 16000 * 1 * 2 / 1000)  # hardcoded 50ms
+        self.assertEqual(
+            client.frame_size, 50 * 16000 * 1 * 2 / 1000
+        )  # hardcoded 50ms
         self.assertFalse(client._closed)
         self.assertFalse(client._is_cancelled)
 
@@ -87,7 +89,18 @@ class TestPollyTTSClient(unittest.TestCase):
 
         # create polly tts client
         client = PollyTTSClient(self.config, self.mock_ten_env)
-        result = list(client._synthesize_speech({"Text": "Hello world", "Engine": "neural", "VoiceId": "Joanna", "SampleRate": "16000", "LanguageCode": "en-US", "OutputFormat": "pcm"}))
+        result = list(
+            client._synthesize_speech(
+                {
+                    "Text": "Hello world",
+                    "Engine": "neural",
+                    "VoiceId": "Joanna",
+                    "SampleRate": "16000",
+                    "LanguageCode": "en-US",
+                    "OutputFormat": "pcm",
+                }
+            )
+        )
 
         # check result
         self.assertEqual(len(result), 1)

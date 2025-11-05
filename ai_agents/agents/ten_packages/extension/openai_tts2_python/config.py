@@ -11,7 +11,9 @@ class OpenAITTSConfig(AsyncTTS2HttpConfig):
 
     dump: bool = Field(default=False, description="OpenAI TTS dump")
     dump_path: str = Field(
-        default_factory=lambda: str(Path(__file__).parent / "openai_tts_in.pcm"),
+        default_factory=lambda: str(
+            Path(__file__).parent / "openai_tts_in.pcm"
+        ),
         description="OpenAI TTS dump path",
     )
     params: dict[str, Any] = Field(
@@ -47,9 +49,9 @@ class OpenAITTSConfig(AsyncTTS2HttpConfig):
 
     def validate(self) -> None:
         """Validate OpenAI-specific configuration."""
-        if not self.params.get("api_key"):
+        if "api_key" not in self.params or not self.params["api_key"]:
             raise ValueError("API key is required for OpenAI TTS")
-        if not self.params.get("model"):
+        if "model" not in self.params or not self.params["model"]:
             raise ValueError("Model is required for OpenAI TTS")
-        if not self.params.get("voice"):
+        if "voice" not in self.params or not self.params["voice"]:
             raise ValueError("Voice is required for OpenAI TTS")

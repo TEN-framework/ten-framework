@@ -67,15 +67,21 @@ class PlayHTTTSClient(AsyncTTS2HttpClient):
             # Add language if present
             if "language" in self.config.params:
                 language_value = self.config.params["language"]
-                if isinstance(language_value, str) and hasattr(Language, language_value):
-                    tts_options_dict["language"] = getattr(Language, language_value)
+                if isinstance(language_value, str) and hasattr(
+                    Language, language_value
+                ):
+                    tts_options_dict["language"] = getattr(
+                        Language, language_value
+                    )
                 elif isinstance(language_value, Language):
                     tts_options_dict["language"] = language_value
 
             # Add format if present
             if "format" in self.config.params:
                 format_value = self.config.params["format"]
-                if isinstance(format_value, str) and hasattr(Format, format_value):
+                if isinstance(format_value, str) and hasattr(
+                    Format, format_value
+                ):
                     tts_options_dict["format"] = getattr(Format, format_value)
                 elif isinstance(format_value, Format):
                     tts_options_dict["format"] = format_value
@@ -84,12 +90,22 @@ class PlayHTTTSClient(AsyncTTS2HttpClient):
 
             # Add sample_rate if present
             if "sample_rate" in self.config.params:
-                tts_options_dict["sample_rate"] = self.config.params["sample_rate"]
+                tts_options_dict["sample_rate"] = self.config.params[
+                    "sample_rate"
+                ]
             else:
                 tts_options_dict["sample_rate"] = 16000
 
             # Add any other extra params (like voice, speed, etc.)
-            excluded_keys = {"api_key", "user_id", "voice_engine", "protocol", "language", "format", "sample_rate"}
+            excluded_keys = {
+                "api_key",
+                "user_id",
+                "voice_engine",
+                "protocol",
+                "language",
+                "format",
+                "sample_rate",
+            }
             for key, value in self.config.params.items():
                 if key not in excluded_keys and value is not None:
                     tts_options_dict[key] = value
@@ -130,12 +146,18 @@ class PlayHTTTSClient(AsyncTTS2HttpClient):
             )
 
             # Check for authentication errors
-            if "401" in error_message or "unauthorized" in error_message.lower() or "authentication" in error_message.lower():
+            if (
+                "401" in error_message
+                or "unauthorized" in error_message.lower()
+                or "authentication" in error_message.lower()
+            ):
                 yield error_message.encode(
                     "utf-8"
                 ), TTS2HttpResponseEventType.INVALID_KEY_ERROR
             else:
-                yield error_message.encode("utf-8"), TTS2HttpResponseEventType.ERROR
+                yield error_message.encode(
+                    "utf-8"
+                ), TTS2HttpResponseEventType.ERROR
 
     async def clean(self):
         """Clean up resources"""

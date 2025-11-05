@@ -295,7 +295,9 @@ def test_flush_logic(MockOpenAITTSClient):
             # In a real scenario, the cancel() call would set a flag.
             # We simulate this by checking the mock's 'called' status.
             if mock_instance.cancel.called:
-                print("Mock detected cancel call, sending TTS2HttpResponseEventType.FLUSH.")
+                print(
+                    "Mock detected cancel call, sending TTS2HttpResponseEventType.FLUSH."
+                )
                 yield (None, TTS2HttpResponseEventType.FLUSH)
                 return  # Stop the generator immediately after flush
             yield (b"\x11\x22\x33" * 100, TTS2HttpResponseEventType.RESPONSE)

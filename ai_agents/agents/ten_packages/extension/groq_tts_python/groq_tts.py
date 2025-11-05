@@ -39,9 +39,7 @@ class GroqTTSClient(AsyncTTS2HttpClient):
                 f"error when initializing GroqTTS: {e}",
                 category=LOG_CATEGORY_VENDOR,
             )
-            raise RuntimeError(
-                f"error when initializing GroqTTS: {e}"
-            ) from e
+            raise RuntimeError(f"error when initializing GroqTTS: {e}") from e
 
     async def cancel(self):
         self.ten_env.log_debug("GroqTTS: cancel() called.")
@@ -99,7 +97,10 @@ class GroqTTSClient(AsyncTTS2HttpClient):
                 f"vendor_error: {error_message} of request_id: {request_id}.",
                 category=LOG_CATEGORY_VENDOR,
             )
-            if "401" in error_message or "authentication" in error_message.lower():
+            if (
+                "401" in error_message
+                or "authentication" in error_message.lower()
+            ):
                 yield error_message.encode(
                     "utf-8"
                 ), TTS2HttpResponseEventType.INVALID_KEY_ERROR
@@ -124,8 +125,7 @@ class GroqTTSClient(AsyncTTS2HttpClient):
             request_params["speed"] = self.config.params["speed"]
 
         response = self.client.with_streaming_response.audio.speech.create(
-            input=text,
-            **request_params
+            input=text, **request_params
         )
         async with response as stream:
             stream_parser = WavStreamParser(stream.iter_bytes())
@@ -134,7 +134,7 @@ class GroqTTSClient(AsyncTTS2HttpClient):
                 yield chunk
 
     async def _synthesize_with_retry(
-        self, text: str, request_id: str
+        self, text: str, request_id: str  # pylint: disable=unused-argument
     ) -> AsyncIterator[bytes]:
         """Synthesize with retry logic"""
         assert self.client is not None

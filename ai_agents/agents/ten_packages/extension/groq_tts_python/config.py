@@ -14,11 +14,12 @@ class GroqTTSConfig(AsyncTTS2HttpConfig):
         default_factory=lambda: str(Path(__file__).parent / "groq_tts_in.pcm"),
         description="Groq TTS dump path",
     )
-    params: dict[str, Any] = Field(default_factory=dict, description="Groq TTS params")
+    params: dict[str, Any] = Field(
+        default_factory=dict, description="Groq TTS params"
+    )
 
     def update_params(self) -> None:
         """Update configuration from params dictionary"""
-        pass
 
     def to_str(self, sensitive_handling: bool = True) -> str:
         """Convert config to string with optional sensitive data handling."""
@@ -35,5 +36,5 @@ class GroqTTSConfig(AsyncTTS2HttpConfig):
 
     def validate(self) -> None:
         """Validate Groq-specific configuration."""
-        if not self.params.get("api_key"):
+        if "api_key" not in self.params or not self.params["api_key"]:
             raise ValueError("API key is required for Groq TTS")

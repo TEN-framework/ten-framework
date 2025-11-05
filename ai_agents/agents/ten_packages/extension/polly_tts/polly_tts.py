@@ -37,11 +37,17 @@ class PollyTTSClient(AsyncTTS2HttpClient):
         # Build session params
         session_params = {}
         if config.params.get("aws_access_key_id"):
-            session_params["aws_access_key_id"] = config.params["aws_access_key_id"]
+            session_params["aws_access_key_id"] = config.params[
+                "aws_access_key_id"
+            ]
         if config.params.get("aws_secret_access_key"):
-            session_params["aws_secret_access_key"] = config.params["aws_secret_access_key"]
+            session_params["aws_secret_access_key"] = config.params[
+                "aws_secret_access_key"
+            ]
         if config.params.get("aws_session_token"):
-            session_params["aws_session_token"] = config.params["aws_session_token"]
+            session_params["aws_session_token"] = config.params[
+                "aws_session_token"
+            ]
         if config.params.get("region_name"):
             session_params["region_name"] = config.params["region_name"]
         if config.params.get("profile_name"):
@@ -51,7 +57,9 @@ class PollyTTSClient(AsyncTTS2HttpClient):
 
         try:
             self.session = boto3.Session(**session_params)
-            self.client = self.session.client("polly", config=Config(tcp_keepalive=True))
+            self.client = self.session.client(
+                "polly", config=Config(tcp_keepalive=True)
+            )
         except NoCredentialsError as e:
             ten_env.log_error(
                 f"error when initializing PollyTTS: {e}",
@@ -92,7 +100,9 @@ class PollyTTSClient(AsyncTTS2HttpClient):
                 "Engine": self.config.params.get("engine", "neural"),
                 "VoiceId": self.config.params.get("voice", "Joanna"),
                 "OutputFormat": self.config.params.get("audio_format", "pcm"),
-                "SampleRate": str(self.config.params.get("sample_rate", "16000")),
+                "SampleRate": str(
+                    self.config.params.get("sample_rate", "16000")
+                ),
                 "LanguageCode": self.config.params.get("lang_code", "en-US"),
             }
 
@@ -125,7 +135,9 @@ class PollyTTSClient(AsyncTTS2HttpClient):
                 f"vendor_error: {error_message} of request_id: {request_id}.",
                 category=LOG_CATEGORY_VENDOR,
             )
-            yield error_message.encode("utf-8"), TTS2HttpResponseEventType.INVALID_KEY_ERROR
+            yield error_message.encode(
+                "utf-8"
+            ), TTS2HttpResponseEventType.INVALID_KEY_ERROR
         except ClientError as e:
             error_code = e.response.get("Error", {}).get("Code", "Unknown")
             error_message = str(e)
@@ -143,9 +155,13 @@ class PollyTTSClient(AsyncTTS2HttpClient):
                 "ValidationError",
             ]
             if error_code in fatal_error_codes:
-                yield error_message.encode("utf-8"), TTS2HttpResponseEventType.INVALID_KEY_ERROR
+                yield error_message.encode(
+                    "utf-8"
+                ), TTS2HttpResponseEventType.INVALID_KEY_ERROR
             else:
-                yield error_message.encode("utf-8"), TTS2HttpResponseEventType.ERROR
+                yield error_message.encode(
+                    "utf-8"
+                ), TTS2HttpResponseEventType.ERROR
         except Exception as e:
             error_message = str(e)
             self.ten_env.log_error(

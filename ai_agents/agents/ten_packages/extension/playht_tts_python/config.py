@@ -11,7 +11,9 @@ class PlayHTTTSConfig(AsyncTTS2HttpConfig):
 
     dump: bool = Field(default=False, description="PlayHT TTS dump")
     dump_path: str = Field(
-        default_factory=lambda: str(Path(__file__).parent / "playht_tts_in.pcm"),
+        default_factory=lambda: str(
+            Path(__file__).parent / "playht_tts_in.pcm"
+        ),
         description="PlayHT TTS dump path",
     )
     params: dict[str, Any] = Field(
@@ -38,15 +40,19 @@ class PlayHTTTSConfig(AsyncTTS2HttpConfig):
         # Encrypt sensitive fields in params
         if config.params:
             if "api_key" in config.params:
-                config.params["api_key"] = utils.encrypt(config.params["api_key"])
+                config.params["api_key"] = utils.encrypt(
+                    config.params["api_key"]
+                )
             if "user_id" in config.params:
-                config.params["user_id"] = utils.encrypt(config.params["user_id"])
+                config.params["user_id"] = utils.encrypt(
+                    config.params["user_id"]
+                )
 
         return f"{config}"
 
     def validate(self) -> None:
         """Validate PlayHT-specific configuration."""
-        if not self.params.get("api_key"):
+        if "api_key" not in self.params or not self.params["api_key"]:
             raise ValueError("API key is required for PlayHT TTS")
-        if not self.params.get("user_id"):
+        if "user_id" not in self.params or not self.params["user_id"]:
             raise ValueError("User ID is required for PlayHT TTS")

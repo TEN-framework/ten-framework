@@ -82,7 +82,9 @@ class OpenAITTSClient(AsyncTTS2HttpClient):
                         chunk = cache_audio_bytes + chunk
                         cache_audio_bytes = bytearray()
 
-                    left_size = len(chunk) % (BYTES_PER_SAMPLE * NUMBER_OF_CHANNELS)
+                    left_size = len(chunk) % (
+                        BYTES_PER_SAMPLE * NUMBER_OF_CHANNELS
+                    )
 
                     if left_size > 0:
                         cache_audio_bytes = chunk[-left_size:]
@@ -105,14 +107,16 @@ class OpenAITTSClient(AsyncTTS2HttpClient):
             )
 
             # Check if it's an API key authentication error
-            if ("401" in error_message and "invalid_api_key" in error_message) or (
-                "invalid_api_key" in error_message
-            ):
+            if (
+                "401" in error_message and "invalid_api_key" in error_message
+            ) or ("invalid_api_key" in error_message):
                 yield error_message.encode(
                     "utf-8"
                 ), TTS2HttpResponseEventType.INVALID_KEY_ERROR
             else:
-                yield error_message.encode("utf-8"), TTS2HttpResponseEventType.ERROR
+                yield error_message.encode(
+                    "utf-8"
+                ), TTS2HttpResponseEventType.ERROR
 
     async def clean(self):
         """Clean up resources"""

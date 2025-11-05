@@ -14,11 +14,13 @@ class PollyTTSConfig(AsyncTTS2HttpConfig):
         default_factory=lambda: str(Path(__file__).parent / "polly_tts_in.pcm"),
         description="Amazon Polly TTS dump path",
     )
-    params: dict[str, Any] = Field(default_factory=dict, description="Amazon Polly TTS params")
+    params: dict[str, Any] = Field(
+        default_factory=dict, description="Amazon Polly TTS params"
+    )
 
     def update_params(self) -> None:
         """Update configuration from params dictionary"""
-        pass
+        # No cleanup needed - all params are valid for Polly
 
     def to_str(self, sensitive_handling: bool = True) -> str:
         """Convert config to string with optional sensitive data handling."""
@@ -29,7 +31,11 @@ class PollyTTSConfig(AsyncTTS2HttpConfig):
 
         # Encrypt sensitive fields in params
         if config.params:
-            for key in ["aws_access_key_id", "aws_secret_access_key", "aws_session_token"]:
+            for key in [
+                "aws_access_key_id",
+                "aws_secret_access_key",
+                "aws_session_token",
+            ]:
                 if key in config.params:
                     config.params[key] = utils.encrypt(config.params[key])
 
@@ -37,7 +43,17 @@ class PollyTTSConfig(AsyncTTS2HttpConfig):
 
     def validate(self) -> None:
         """Validate Polly-specific configuration."""
-        if not self.params.get("aws_access_key_id"):
-            raise ValueError("aws_access_key_id is required for Amazon Polly TTS")
-        if not self.params.get("aws_secret_access_key"):
-            raise ValueError("aws_secret_access_key is required for Amazon Polly TTS")
+        if (
+            "aws_access_key_id" not in self.params
+            or not self.params["aws_access_key_id"]
+        ):
+            raise ValueError(
+                "aws_access_key_id is required for Amazon Polly TTS"
+            )
+        if (
+            "aws_secret_access_key" not in self.params
+            or not self.params["aws_secret_access_key"]
+        ):
+            raise ValueError(
+                "aws_secret_access_key is required for Amazon Polly TTS"
+            )
