@@ -224,9 +224,8 @@ func (s *HttpServer) handlerPing(c *gin.Context) {
 		return
 	}
 
-	// Update worker
+	// Get worker (don't update timestamp - let natural timeout occur)
 	worker := workers.Get(req.ChannelName).(*Worker)
-	worker.UpdateTs = time.Now().Unix()
 
 	slog.Info("handlerPing end", "worker", worker, "requestId", req.RequestId, logTag)
 	s.output(c, codeSuccess, nil)
