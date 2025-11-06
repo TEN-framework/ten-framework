@@ -7,15 +7,13 @@
         "language": "zh-CN",
         "resource_id": "${env:BYTEDANCE_ASR_LLM_RESOURCE_ID|}",
         "model_version": "${env:BYTEDANCE_ASR_LLM_MODEL_VERSION|}",
-        "payload": {
-            "audio": {
-                "format": "pcm"
-            },
-            "request": {
-                "model_name": "bigmodel",
-                "model_version": "${env:BYTEDANCE_ASR_LLM_MODEL_VERSION|}",
-                "enable_nonstream": true
-            }
+        "audio": {
+            "format": "pcm"
+        },
+        "request": {
+            "model_name": "bigmodel",
+            "model_version": "${env:BYTEDANCE_ASR_LLM_MODEL_VERSION|}",
+            "enable_nonstream": true
         }
     }
 }

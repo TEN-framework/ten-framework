@@ -405,7 +405,7 @@ class VolcengineASRClient:
     def _calculate_segment_size(self) -> int:
         """Calculate audio segment size based on configuration."""
         # Calculate bytes per second
-        # Get audio parameters from payload.audio
+        # Get audio parameters from params.audio
         bytes_per_sec = (
             (self.config.get_bits() // 8)
             * self.config.get_channel()

@@ -61,10 +61,10 @@ class BytedanceASRLLMConfig(BaseModel):
     # Language Configuration
     language: str = "zh-CN"
 
-    # Payload for full passthrough mode (optional)
-    # If set, user/audio/request in payload will override individual config fields
-    # Allows complete control over the full client request parameters
-    payload: dict[str, Any] = Field(default_factory=dict)
+    # Audio/Request/User configuration for passthrough mode
+    audio: dict[str, Any] = Field(default_factory=dict)
+    request: dict[str, Any] = Field(default_factory=dict)
+    user: dict[str, Any] = Field(default_factory=dict)
 
     # Params field for property.json compatibility
     params: dict[str, Any] = Field(default_factory=dict)
@@ -72,75 +72,65 @@ class BytedanceASRLLMConfig(BaseModel):
     def get_audio_config(self) -> dict[str, Any]:
         """Get audio configuration for ASR request.
 
-        Must be provided via payload.audio (passthrough mode).
+        Must be provided via params.audio.
         Raises ValueError if not provided.
         """
-        # pylint: disable=no-member
-        audio_config = self.payload.get("audio") if self.payload else None
-        if not audio_config:
+        if not self.audio:
             raise ValueError(
-                "Missing required parameter: payload.audio must be provided. "
+                "Missing required parameter: audio must be provided in params. "
             )
-        return audio_config
+        return self.audio
 
     def get_request_config(self) -> dict[str, Any]:
         """Get request configuration for ASR.
 
-        Must be provided via payload.request (passthrough mode).
+        Must be provided via params.request.
         Raises ValueError if not provided.
         """
-        # pylint: disable=no-member
-        request_config = self.payload.get("request") if self.payload else None
-        if not request_config:
+        if not self.request:
             raise ValueError(
-                "Missing required parameter: payload.request must be provided. "
+                "Missing required parameter: request must be provided in params. "
             )
-        return request_config
+        return self.request
 
     def get_user_config(self) -> Optional[dict[str, Any]]:
         """Get user configuration for ASR.
 
-        If payload.user is set, use it directly (passthrough mode).
+        If params.user is set, use it directly.
         Otherwise, build from user_uid field.
         Returns None if user config should not be included in request.
         """
-        # pylint: disable=no-member
-        user_config = self.payload.get("user") if self.payload else None
-        if user_config:
-            # Return None for empty dict to omit user field from request
-            return user_config if user_config else None
-
-        # For backward compatibility, return uid only if not default
-        if self.user_uid and self.user_uid != "default_user":
-            return {"uid": self.user_uid}
+        # Use params.user if provided
+        if self.user:
+            return self.user if self.user else None
         return None
 
     def get_sample_rate(self) -> int:
-        """Get sample rate from payload.audio.
+        """Get sample rate from params.audio.
 
-        Returns the sample rate configured in payload.
-        Raises ValueError if payload.audio is not configured.
+        Returns the sample rate configured in params.audio.
+        Raises ValueError if params.audio is not configured.
         """
         audio_config = self.get_audio_config()
-        return audio_config.get("rate", 16000)
+        return audio_config.get("rate", 16000)  # pylint: disable=no-member
 
     def get_bits(self) -> int:
-        """Get bits from payload.audio.
+        """Get bits from params.audio.
 
-        Returns the bits configured in payload.
-        Raises ValueError if payload.audio is not configured.
+        Returns the bits configured in params.audio.
+        Raises ValueError if params.audio is not configured.
         """
         audio_config = self.get_audio_config()
-        return audio_config.get("bits", 16)
+        return audio_config.get("bits", 16)  # pylint: disable=no-member
 
     def get_channel(self) -> int:
-        """Get channel from payload.audio.
+        """Get channel from params.audio.
 
-        Returns the channel configured in payload.
-        Raises ValueError if payload.audio is not configured.
+        Returns the channel configured in params.audio.
+        Raises ValueError if params.audio is not configured.
         """
         audio_config = self.get_audio_config()
-        return audio_config.get("channel", 1)
+        return audio_config.get("channel", 1)  # pylint: disable=no-member
 
     def update(self, params: dict[str, Any]) -> None:
         """Update configuration with params from property.json."""
