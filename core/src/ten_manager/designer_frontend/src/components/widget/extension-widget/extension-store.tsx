@@ -71,6 +71,26 @@ import {
   EWidgetDisplayType,
 } from "@/types/widgets";
 
+const DEFAULT_SEARCH_FILTER = {
+  field: "name",
+  operator: "regex",
+  value: ".*default.*",
+};
+
+const DEFAULT_SEARCH_OPTIONS = {
+  scope: [
+    "name",
+    "version",
+    "hash",
+    "display_name",
+    "tags",
+    "dependencies",
+    "downloadUrl",
+    "type",
+    "description",
+  ].join(","),
+};
+
 export const ExtensionStoreWidget = (props: {
   className?: string;
   toolTipSide?: TooltipContentProps["side"];
@@ -88,35 +108,42 @@ export const ExtensionStoreWidget = (props: {
   const { t } = useTranslation();
   const { setDefaultOsArch } = useAppStore();
 
+  const searchFilter = React.useMemo(() => {
+    if (!deferredSearch) {
+      return DEFAULT_SEARCH_FILTER;
+    }
+
+    const regexValue = `.*${deferredSearch}.*`;
+
+    return {
+      or: [
+        {
+          field: "name",
+          operator: "regex",
+          value: regexValue,
+        },
+        {
+          field: "display_name",
+          operator: "regex",
+          value: regexValue,
+        },
+      ],
+    };
+  }, [deferredSearch]);
+
+  const searchPayload = React.useMemo(
+    () => ({
+      filter: searchFilter,
+      options: DEFAULT_SEARCH_OPTIONS,
+    }),
+    [searchFilter]
+  );
+
   const {
     data: searchedData,
     error: searchedDataError,
     isLoading: isSearchedDataLoading,
-  } = useSearchTenCloudStorePackages(
-    deferredSearch
-      ? {
-          filter: {
-            or: [
-              {
-                field: "name",
-                operator: "regex",
-                value: `.*${deferredSearch}.*`,
-              },
-              {
-                field: "display_name",
-                operator: "regex",
-                value: `.*${deferredSearch}.*`,
-              },
-            ],
-          },
-          options: {
-            scope:
-              // eslint-disable-next-line max-len
-              "name,version,hash,display_name,tags,dependencies,downloadUrl,type,description",
-          },
-        }
-      : undefined
-  );
+  } = useSearchTenCloudStorePackages(searchPayload);
   const { data: envData, error: envError, isLoading: isLoadingEnv } = useEnv();
   const {
     data: addons,
@@ -272,22 +299,24 @@ export const ExtensionStoreWidget = (props: {
       </AnimatePresence>
 
       <div className="h-full flex-1">
-        <AnimatePresence mode="popLayout">
-          {isLoading && (
-            <div
-              className={cn(
-                "flex h-full w-full items-center justify-center",
-                className
-              )}
-            >
-              <SpinnerLoading />
-            </div>
-          )}
-          {!isLoading && (
-            <div className="flex h-full flex-col gap-2 py-1">
-              <AutoSizer>
-                {({ width, height }: { width: number; height: number }) => (
+        {/* <AnimatePresence mode="popLayout"> */}
+        {isLoading && (
+          <div
+            className={cn(
+              "flex h-full w-full items-center justify-center",
+              className
+            )}
+          >
+            <SpinnerLoading />
+          </div>
+        )}
+        {!isLoading && (
+          <div className="flex h-full flex-col gap-2 py-1">
+            <AutoSizer key={`ExtensionStoreWidget-AutoSizer-${deferredSearch}`}>
+              {({ width, height }: { width: number; height: number }) => {
+                return (
                   <VirtualList
+                    key={`ExtensionStoreWidget-VirtualList-${deferredSearch}`}
                     width={width}
                     height={height}
                     itemCount={displayedItems.length}
@@ -296,41 +325,46 @@ export const ExtensionStoreWidget = (props: {
                     {(virtualProps) => (
                       <VirtualListItem
                         {...virtualProps}
+                        key={`VirtualListItem-${
+                          displayedItems[virtualProps.index]?.hash ||
+                          virtualProps.index
+                        }`}
                         items={displayedItems}
                         apps={apps?.app_info || []}
                         addons={addons || []}
                       />
                     )}
                   </VirtualList>
-                )}
-              </AutoSizer>
-            </div>
-          )}
-          {!isLoading && latestUniqueItems.length === 0 && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className={cn(
-                "flex h-full flex-col items-center justify-center",
-                "p-6 text-center",
-                "my-auto"
-              )}
-            >
-              <BlocksIcon className="mb-3 h-12 w-12 text-muted-foreground" />
-              <h3 className="mb-1 font-medium text-foreground text-sm">
-                {t("extensionStore.noExtensions", {
-                  defaultValue: "No extensions found",
-                })}
-              </h3>
-              <p className="text-muted-foreground text-xs">
-                {t("extensionStore.tryAdjusting", {
-                  defaultValue: "Try adjusting your search or filters",
-                })}
-              </p>
-            </motion.div>
-          )}
-        </AnimatePresence>
+                );
+              }}
+            </AutoSizer>
+          </div>
+        )}
+        {!isLoading && latestUniqueItems.length === 0 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className={cn(
+              "flex h-full flex-col items-center justify-center",
+              "p-6 text-center",
+              "my-auto"
+            )}
+          >
+            <BlocksIcon className="mb-3 h-12 w-12 text-muted-foreground" />
+            <h3 className="mb-1 font-medium text-foreground text-sm">
+              {t("extensionStore.noExtensions", {
+                defaultValue: "No extensions found",
+              })}
+            </h3>
+            <p className="text-muted-foreground text-xs">
+              {t("extensionStore.tryAdjusting", {
+                defaultValue: "Try adjusting your search or filters",
+              })}
+            </p>
+          </motion.div>
+        )}
+        {/* </AnimatePresence> */}
       </div>
 
       {/* Footer */}
@@ -493,7 +527,7 @@ const ExtensionItem = (props: {
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, y: 20 }}
+      // initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.2 }}
@@ -638,7 +672,7 @@ const VirtualListItem = (props: {
   return (
     <ExtensionItem
       style={props.style}
-      key={item.name}
+      key={`ExtensionItem-${item.hash}`}
       apps={apps}
       item={{
         ...item,
