@@ -134,11 +134,15 @@ def test_params_passthrough(MockHumeAiTTS):
     called_config = call_kwargs["config"]
 
     # Verify that the params dictionary contains our expected parameters
-    assert "speed" in called_config.params, "Config params should have speed parameter"
+    assert (
+        "speed" in called_config.params
+    ), "Config params should have speed parameter"
     assert (
         called_config.params["speed"] == 1.5
     ), f"Expected speed to be 1.5, but got {called_config.params['speed']}"
-    assert "trailing_silence" in called_config.params, "Config params should have trailing_silence parameter"
+    assert (
+        "trailing_silence" in called_config.params
+    ), "Config params should have trailing_silence parameter"
     assert (
         called_config.params["trailing_silence"] == 0.8
     ), f"Expected trailing_silence to be 0.8, but got {called_config.params['trailing_silence']}"
