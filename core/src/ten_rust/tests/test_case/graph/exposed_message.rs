@@ -476,4 +476,151 @@ mod tests {
         assert!(err_msg.contains("ten:graph_proxy"));
         assert!(err_msg.contains("already contains"));
     }
+
+    #[test]
+    fn test_inject_graph_proxy_with_same_msg_name_different_extensions() {
+        // Create a graph with multiple extensions exposing the same message name.
+        // This tests the fix for the bug where same msg name from different
+        // extensions would overwrite each other instead of being added to the same
+        // flow's dest vector.
+        let graph = Graph {
+            nodes: vec![
+                GraphNode::new_extension_node(
+                    "ext_1".to_string(),
+                    "ext_1_addon".to_string(),
+                    Some("some_group".to_string()),
+                    None,
+                    None,
+                ),
+                GraphNode::new_extension_node(
+                    "ext_2".to_string(),
+                    "ext_2_addon".to_string(),
+                    Some("some_group".to_string()),
+                    None,
+                    None,
+                ),
+                GraphNode::new_extension_node(
+                    "ext_3".to_string(),
+                    "ext_3_addon".to_string(),
+                    Some("some_group".to_string()),
+                    None,
+                    None,
+                ),
+            ],
+            connections: None,
+            exposed_messages: Some(vec![
+                GraphExposedMessage {
+                    msg_type: GraphExposedMessageType::CmdIn,
+                    name: "shared_cmd".to_string(),
+                    extension: Some("ext_1".to_string()),
+                    subgraph: None,
+                },
+                GraphExposedMessage {
+                    msg_type: GraphExposedMessageType::CmdIn,
+                    name: "shared_cmd".to_string(),
+                    extension: Some("ext_2".to_string()),
+                    subgraph: None,
+                },
+                GraphExposedMessage {
+                    msg_type: GraphExposedMessageType::DataOut,
+                    name: "shared_data".to_string(),
+                    extension: Some("ext_1".to_string()),
+                    subgraph: None,
+                },
+                GraphExposedMessage {
+                    msg_type: GraphExposedMessageType::DataOut,
+                    name: "shared_data".to_string(),
+                    extension: Some("ext_3".to_string()),
+                    subgraph: None,
+                },
+            ]),
+            exposed_properties: None,
+        };
+
+        // Inject graph_proxy
+        let result = graph.inject_graph_proxy_from_exposed_messages(None);
+        assert!(result.is_ok());
+
+        let new_graph = result.unwrap();
+        assert!(new_graph.is_some());
+
+        let new_graph = new_graph.unwrap();
+
+        // Verify that ten:graph_proxy node was added
+        assert_eq!(new_graph.nodes.len(), 4);
+
+        // Verify connections were created
+        let connections = new_graph.connections.as_ref().unwrap();
+
+        // Find the connection from ten:graph_proxy (for CmdIn messages)
+        let proxy_conn = connections
+            .iter()
+            .find(|conn| conn.loc.extension == Some("ten:graph_proxy".to_string()))
+            .expect("Connection from ten:graph_proxy should exist");
+
+        // Verify cmd connection exists with only ONE flow for "shared_cmd"
+        assert!(proxy_conn.cmd.is_some());
+        let cmd_flows = proxy_conn.cmd.as_ref().unwrap();
+        assert_eq!(cmd_flows.len(), 1, "There should be only one flow for the shared message name");
+
+        // Verify the flow has the correct name
+        assert_eq!(cmd_flows[0].name, Some("shared_cmd".to_string()));
+
+        // Verify the flow has TWO destinations (ext_1 and ext_2)
+        assert_eq!(
+            cmd_flows[0].dest.len(),
+            2,
+            "The flow should have two destinations for ext_1 and ext_2"
+        );
+
+        // Verify the destinations are ext_1 and ext_2
+        let dest_extensions: Vec<_> =
+            cmd_flows[0].dest.iter().map(|d| d.loc.extension.as_ref().unwrap().as_str()).collect();
+        assert!(dest_extensions.contains(&"ext_1"));
+        assert!(dest_extensions.contains(&"ext_2"));
+
+        // Find connections from ext_1 (for DataOut messages)
+        let ext1_conn = connections
+            .iter()
+            .find(|conn| conn.loc.extension == Some("ext_1".to_string()))
+            .expect("Connection from ext_1 should exist");
+
+        // Verify data connection exists with only ONE flow for "shared_data"
+        assert!(ext1_conn.data.is_some());
+        let data_flows = ext1_conn.data.as_ref().unwrap();
+        assert_eq!(
+            data_flows.len(),
+            1,
+            "There should be only one flow for the shared message name"
+        );
+
+        // Verify the flow has the correct name
+        assert_eq!(data_flows[0].name, Some("shared_data".to_string()));
+
+        // Verify the flow has one destination (ten:graph_proxy)
+        assert_eq!(data_flows[0].dest.len(), 1);
+        assert_eq!(data_flows[0].dest[0].loc.extension, Some("ten:graph_proxy".to_string()));
+
+        // Find connections from ext_3 (for DataOut messages)
+        let ext3_conn = connections
+            .iter()
+            .find(|conn| conn.loc.extension == Some("ext_3".to_string()))
+            .expect("Connection from ext_3 should exist");
+
+        // Verify data connection exists with only ONE flow for "shared_data"
+        assert!(ext3_conn.data.is_some());
+        let data_flows_ext3 = ext3_conn.data.as_ref().unwrap();
+        assert_eq!(
+            data_flows_ext3.len(),
+            1,
+            "There should be only one flow for the shared message name"
+        );
+
+        // Verify the flow has the correct name
+        assert_eq!(data_flows_ext3[0].name, Some("shared_data".to_string()));
+
+        // Verify the flow has one destination (ten:graph_proxy)
+        assert_eq!(data_flows_ext3[0].dest.len(), 1);
+        assert_eq!(data_flows_ext3[0].dest[0].loc.extension, Some("ten:graph_proxy".to_string()));
+    }
 }

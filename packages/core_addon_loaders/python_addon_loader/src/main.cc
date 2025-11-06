@@ -395,6 +395,9 @@ class python_addon_loader_t : public ten::addon_loader_t {
   }
 
   static void load_python_lib() {
+    // According to the explanation in https://bugs.python.org/issue43898, even
+    // on macOS, when Python imports a Python C extension, the file extension
+    // must be `.so` and cannot be `.dylib`.
     ten_string_t *python_lib_path =
         ten_string_create_formatted("libten_runtime_python.so");
 
