@@ -649,7 +649,7 @@ impl Graph {
                     )
                 })?;
 
-            use connection::{GraphDestination, GraphMessageFlow};
+            use connection::GraphDestination;
 
             match exposed_msg.msg_type {
                 // For *_in messages: ten:graph_proxy -> target extension
@@ -667,14 +667,11 @@ impl Graph {
                         target_extension.clone(),
                     )?;
 
-                    let flow = GraphMessageFlow::new(
-                        Some(exposed_msg.name.clone()),
-                        None,
-                        vec![dest],
-                        vec![],
+                    Self::add_dest_to_flow(
+                        connection.cmd.get_or_insert_with(Vec::new),
+                        &exposed_msg.name,
+                        dest,
                     );
-
-                    connection.cmd.get_or_insert_with(Vec::new).push(flow);
                 }
                 GraphExposedMessageType::DataIn => {
                     let connection = Self::find_or_create_connection(
@@ -690,14 +687,11 @@ impl Graph {
                         target_extension.clone(),
                     )?;
 
-                    let flow = GraphMessageFlow::new(
-                        Some(exposed_msg.name.clone()),
-                        None,
-                        vec![dest],
-                        vec![],
+                    Self::add_dest_to_flow(
+                        connection.data.get_or_insert_with(Vec::new),
+                        &exposed_msg.name,
+                        dest,
                     );
-
-                    connection.data.get_or_insert_with(Vec::new).push(flow);
                 }
                 GraphExposedMessageType::AudioFrameIn => {
                     let connection = Self::find_or_create_connection(
@@ -713,14 +707,11 @@ impl Graph {
                         target_extension.clone(),
                     )?;
 
-                    let flow = GraphMessageFlow::new(
-                        Some(exposed_msg.name.clone()),
-                        None,
-                        vec![dest],
-                        vec![],
+                    Self::add_dest_to_flow(
+                        connection.audio_frame.get_or_insert_with(Vec::new),
+                        &exposed_msg.name,
+                        dest,
                     );
-
-                    connection.audio_frame.get_or_insert_with(Vec::new).push(flow);
                 }
                 GraphExposedMessageType::VideoFrameIn => {
                     let connection = Self::find_or_create_connection(
@@ -736,14 +727,11 @@ impl Graph {
                         target_extension.clone(),
                     )?;
 
-                    let flow = GraphMessageFlow::new(
-                        Some(exposed_msg.name.clone()),
-                        None,
-                        vec![dest],
-                        vec![],
+                    Self::add_dest_to_flow(
+                        connection.video_frame.get_or_insert_with(Vec::new),
+                        &exposed_msg.name,
+                        dest,
                     );
-
-                    connection.video_frame.get_or_insert_with(Vec::new).push(flow);
                 }
                 // For *_out messages: source extension -> ten:graph_proxy
                 GraphExposedMessageType::CmdOut => {
@@ -760,14 +748,11 @@ impl Graph {
                         GRAPH_PROXY_NAME.to_string(),
                     )?;
 
-                    let flow = GraphMessageFlow::new(
-                        Some(exposed_msg.name.clone()),
-                        None,
-                        vec![dest],
-                        vec![],
+                    Self::add_dest_to_flow(
+                        connection.cmd.get_or_insert_with(Vec::new),
+                        &exposed_msg.name,
+                        dest,
                     );
-
-                    connection.cmd.get_or_insert_with(Vec::new).push(flow);
                 }
                 GraphExposedMessageType::DataOut => {
                     let connection = Self::find_or_create_connection(
@@ -783,14 +768,11 @@ impl Graph {
                         GRAPH_PROXY_NAME.to_string(),
                     )?;
 
-                    let flow = GraphMessageFlow::new(
-                        Some(exposed_msg.name.clone()),
-                        None,
-                        vec![dest],
-                        vec![],
+                    Self::add_dest_to_flow(
+                        connection.data.get_or_insert_with(Vec::new),
+                        &exposed_msg.name,
+                        dest,
                     );
-
-                    connection.data.get_or_insert_with(Vec::new).push(flow);
                 }
                 GraphExposedMessageType::AudioFrameOut => {
                     let connection = Self::find_or_create_connection(
@@ -806,14 +788,11 @@ impl Graph {
                         GRAPH_PROXY_NAME.to_string(),
                     )?;
 
-                    let flow = GraphMessageFlow::new(
-                        Some(exposed_msg.name.clone()),
-                        None,
-                        vec![dest],
-                        vec![],
+                    Self::add_dest_to_flow(
+                        connection.audio_frame.get_or_insert_with(Vec::new),
+                        &exposed_msg.name,
+                        dest,
                     );
-
-                    connection.audio_frame.get_or_insert_with(Vec::new).push(flow);
                 }
                 GraphExposedMessageType::VideoFrameOut => {
                     let connection = Self::find_or_create_connection(
@@ -829,14 +808,11 @@ impl Graph {
                         GRAPH_PROXY_NAME.to_string(),
                     )?;
 
-                    let flow = GraphMessageFlow::new(
-                        Some(exposed_msg.name.clone()),
-                        None,
-                        vec![dest],
-                        vec![],
+                    Self::add_dest_to_flow(
+                        connection.video_frame.get_or_insert_with(Vec::new),
+                        &exposed_msg.name,
+                        dest,
                     );
-
-                    connection.video_frame.get_or_insert_with(Vec::new).push(flow);
                 }
             }
         }
@@ -868,6 +844,33 @@ impl Graph {
         let new_conn = GraphConnection::new(loc);
         connections.push(new_conn);
         connections.last_mut().unwrap()
+    }
+
+    /// Helper function to add a destination to an existing flow or create a new
+    /// flow if none exists for the given message name.
+    ///
+    /// This function searches for an existing GraphMessageFlow with the given
+    /// message name. If found, it adds the destination to that flow's dest
+    /// vector. If not found, it creates a new flow with the message name and
+    /// destination.
+    fn add_dest_to_flow(
+        flows: &mut Vec<GraphMessageFlow>,
+        msg_name: &str,
+        dest: connection::GraphDestination,
+    ) {
+        use connection::GraphMessageFlow;
+
+        // Try to find existing flow with the same message name
+        if let Some(existing_flow) =
+            flows.iter_mut().find(|flow| flow.name.as_ref().is_some_and(|n| n == msg_name))
+        {
+            // Add destination to existing flow
+            existing_flow.dest.push(dest);
+        } else {
+            // Create new flow
+            let flow = GraphMessageFlow::new(Some(msg_name.to_string()), None, vec![dest], vec![]);
+            flows.push(flow);
+        }
     }
 }
 
