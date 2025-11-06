@@ -104,11 +104,10 @@ def test_params_passthrough(MockHumeAiTTS):
     mock_instance.get.side_effect = mock_get_audio_stream
 
     # --- Test Setup ---
-    # Define a configuration with custom parameters.
-    # key is now a top-level field, not in params
+    # Define a configuration with custom parameters inside 'params'.
     passthrough_config = {
-        "key": "test_api_key",
         "params": {
+            "key": "test_api_key",
             "voice_name": "Female English Actor",
             "speed": 1.5,
             "trailing_silence": 0.8,
@@ -134,20 +133,17 @@ def test_params_passthrough(MockHumeAiTTS):
     call_args, call_kwargs = MockHumeAiTTS.call_args
     called_config = call_kwargs["config"]
 
-    # Verify that the configuration object contains our expected parameters
-    # Note: HumeAi uses update_params() to merge params into the config
-    assert hasattr(called_config, "speed"), "Config should have speed parameter"
+    # Verify that the params dictionary contains our expected parameters
+    assert "speed" in called_config.params, "Config params should have speed parameter"
     assert (
-        called_config.speed == 1.5
-    ), f"Expected speed to be 1.5, but got {called_config.speed}"
-    assert hasattr(
-        called_config, "trailing_silence"
-    ), "Config should have trailing_silence parameter"
+        called_config.params["speed"] == 1.5
+    ), f"Expected speed to be 1.5, but got {called_config.params['speed']}"
+    assert "trailing_silence" in called_config.params, "Config params should have trailing_silence parameter"
     assert (
-        called_config.trailing_silence == 0.8
-    ), f"Expected trailing_silence to be 0.8, but got {called_config.trailing_silence}"
+        called_config.params["trailing_silence"] == 0.8
+    ), f"Expected trailing_silence to be 0.8, but got {called_config.params['trailing_silence']}"
 
     print("✅ Params passthrough test passed successfully.")
     print(
-        f"✅ Verified config speed: {called_config.speed}, trailing_silence: {called_config.trailing_silence}"
+        f"✅ Verified params speed: {called_config.params['speed']}, trailing_silence: {called_config.params['trailing_silence']}"
     )
