@@ -54,4 +54,5 @@ class RimeTTSExtension(AsyncTTS2HttpExtension):
         return "rime"
 
     def synthesize_audio_sample_rate(self) -> int:
-        return self.config.sample_rate
+        """Return the sample rate for synthesized audio."""
+        return int(self.config.params.get("sample_rate", "16000"))

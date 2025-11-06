@@ -20,7 +20,7 @@ class RimeTTSClient(AsyncTTS2HttpClient):
     ):
         super().__init__()
         self.config = config
-        self.api_key = config.api_key
+        self.api_key = config.params.get("api_key", "")
         self.ten_env: AsyncTenEnv = ten_env
         self._is_cancelled = False
         self.endpoint = "https://users.rime.ai/v1/rime-tts"
@@ -56,6 +56,14 @@ class RimeTTSClient(AsyncTTS2HttpClient):
             raise RuntimeError(
                 f"RimeTTS: client not initialized for request_id: {request_id}."
             )
+
+        if len(text.strip()) == 0:
+            self.ten_env.log_warning(
+                f"RimeTTS: empty text for request_id: {request_id}.",
+                category=LOG_CATEGORY_VENDOR,
+            )
+            yield None, TTS2HttpResponseEventType.END
+            return
 
         try:
             async with self.client.stream(

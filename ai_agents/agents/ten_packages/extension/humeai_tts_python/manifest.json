@@ -38,6 +38,9 @@
             "key": {
               "type": "string"
             },
+            "voice_id": {
+              "type": "string"
+            },
             "voice_name": {
               "type": "string"
             },

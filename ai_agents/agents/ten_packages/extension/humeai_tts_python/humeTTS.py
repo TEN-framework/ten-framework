@@ -26,7 +26,8 @@ class HumeAiTTS(AsyncTTS2HttpClient):
         super().__init__()
         self.config = config
         self.ten_env = ten_env
-        self.connection = AsyncHumeClient(api_key=config.key)
+        api_key = config.params.get("key", "")
+        self.connection = AsyncHumeClient(api_key=api_key)
         self._is_cancelled = False
 
     async def get(
@@ -41,20 +42,30 @@ class HumeAiTTS(AsyncTTS2HttpClient):
         """
         self._is_cancelled = False
 
+        if len(text.strip()) == 0:
+            self.ten_env.log_warning(
+                f"HumeAiTTS: empty text for request_id: {request_id}.",
+                category=LOG_CATEGORY_VENDOR,
+            )
+            yield None, TTS2HttpResponseEventType.END
+            return
+
         self.ten_env.log_debug(
             f"send_text_to_tts_server: {text} of request_id: {request_id}",
             category=LOG_CATEGORY_VENDOR,
         )
 
         voice = None
-        if self.config.voice_name:
+        voice_name = self.config.params.get("voice_name", "")
+        voice_id = self.config.params.get("voice_id", "")
+        provider = self.config.params.get("provider", "HUME_AI")
+
+        if voice_name:
             voice = PostedUtteranceVoiceWithName(
-                name=self.config.voice_name, provider=self.config.provider
+                name=voice_name, provider=provider
             )
-        elif self.config.voice_id:
-            voice = PostedUtteranceVoiceWithId(
-                id=self.config.voice_id, provider=self.config.provider
-            )
+        elif voice_id:
+            voice = PostedUtteranceVoiceWithId(id=voice_id, provider=provider)
 
         try:
             self.ten_env.log_debug(
@@ -75,8 +86,10 @@ class HumeAiTTS(AsyncTTS2HttpClient):
                     PostedUtterance(
                         text=text,
                         voice=voice,
-                        speed=self.config.speed,
-                        trailing_silence=self.config.trailing_silence,
+                        speed=self.config.params.get("speed", 1.0),
+                        trailing_silence=self.config.params.get(
+                            "trailing_silence", 0.35
+                        ),
                     )
                 ],
                 format=FormatPcm(type="pcm"),
@@ -152,8 +165,6 @@ class HumeAiTTS(AsyncTTS2HttpClient):
     def get_extra_metadata(self) -> dict[str, Any]:
         """Return extra metadata for metrics."""
         return {
-            "voice_id": self.config.voice_id if self.config.voice_id else "",
-            "voice_name": (
-                self.config.voice_name if self.config.voice_name else ""
-            ),
+            "voice_id": self.config.params.get("voice_id", ""),
+            "voice_name": self.config.params.get("voice_name", ""),
         }
