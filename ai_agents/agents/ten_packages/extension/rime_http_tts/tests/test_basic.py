@@ -136,8 +136,8 @@ def test_dump_functionality(MockRimeTTSClient):
     dump_config = {
         "dump": True,
         "dump_path": DUMP_PATH,
+        "api_key": "test_api_key",
         "params": {
-            "api_key": "test_api_key",
         },
     }
 

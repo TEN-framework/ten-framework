@@ -20,7 +20,7 @@ class RimeTTSClient(AsyncTTS2HttpClient):
     ):
         super().__init__()
         self.config = config
-        self.api_key = config.params.get("api_key", "")
+        self.api_key = config.api_key
         self.ten_env: AsyncTenEnv = ten_env
         self._is_cancelled = False
         self.endpoint = "https://users.rime.ai/v1/rime-tts"

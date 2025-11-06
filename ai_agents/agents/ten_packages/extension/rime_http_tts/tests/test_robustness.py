@@ -141,7 +141,8 @@ def test_reconnect_after_connection_drop(MockRimeTTSClient):
 
     # --- Test Setup ---
     config = {
-        "params": {"api_key": "a_valid_key"},
+        "api_key": "a_valid_key",
+        "params": {},
     }
     tester = ExtensionTesterRobustness()
     tester.set_test_mode_single("rime_http_tts", json.dumps(config))

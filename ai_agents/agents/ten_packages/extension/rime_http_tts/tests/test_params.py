@@ -71,7 +71,6 @@ def test_params_passthrough(MockRimeTTSClient):
     # Define a configuration with custom parameters inside 'params'.
     # These are the parameters we expect to be "passed through".
     real_params = {
-        "api_key": "a_test_api_key",
         "speaker": "celeste",
         "modelId": "arcana",
         "samplingRate": 24000,

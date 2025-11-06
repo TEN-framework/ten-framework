@@ -10,6 +10,9 @@ from pydantic import Field
 class RimeTTSConfig(AsyncTTS2HttpConfig):
     """Rime TTS Config"""
 
+    # Top-level configuration fields
+    api_key: str = Field(default="", description="Rime API key")
+
     # Debug and logging
     dump: bool = Field(default=False, description="Rime TTS dump")
     dump_path: str = Field(
@@ -22,8 +25,8 @@ class RimeTTSConfig(AsyncTTS2HttpConfig):
 
     def update_params(self) -> None:
         """Update configuration from params dictionary"""
-        # Keys to exclude from params after processing
-        blacklist_keys = ["text"]
+        # Keys to exclude from params after processing (not passthrough params)
+        blacklist_keys = ["text", "sample_rate"]
 
         self.params["audioFormat"] = "pcm"
 
@@ -48,13 +51,13 @@ class RimeTTSConfig(AsyncTTS2HttpConfig):
 
         config = copy.deepcopy(self)
 
-        # Encrypt sensitive fields in params
-        if config.params and "api_key" in config.params:
-            config.params["api_key"] = utils.encrypt(config.params["api_key"])
+        # Encrypt sensitive fields
+        if config.api_key:
+            config.api_key = utils.encrypt(config.api_key)
 
         return f"{config}"
 
     def validate(self) -> None:
         """Validate Rime-specific configuration."""
-        if "api_key" not in self.params or not self.params["api_key"]:
+        if not self.api_key:
             raise ValueError("API key is required for Rime TTS")

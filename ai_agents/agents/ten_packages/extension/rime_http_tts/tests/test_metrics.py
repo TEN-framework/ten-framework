@@ -108,8 +108,8 @@ def test_ttfb_metric_is_sent(MockRimeTTSClient):
     # --- Test Setup ---
     # A minimal config is needed for the extension to initialize correctly.
     metrics_config = {
+        "api_key": "test_api_key",
         "params": {
-            "api_key": "test_api_key",
         }
     }
     tester = ExtensionTesterMetrics()
