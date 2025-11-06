@@ -6,7 +6,7 @@
     "format:write": "biome format --write --config-path biome.json"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.1.4",
+    "@biomejs/biome": "2.3.0",
     "@types/mocha": "^10.0.10",
     "@types/node": "^22.17.1"
   }
