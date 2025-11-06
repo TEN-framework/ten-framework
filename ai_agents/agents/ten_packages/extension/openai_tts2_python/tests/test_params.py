@@ -68,19 +68,17 @@ def test_params_passthrough(MockOpenAITTSClient):
     mock_instance.clean = AsyncMock()  # Required for clean shutdown in on_flush
 
     # --- Test Setup ---
-    # Define a configuration with custom parameters inside 'params'.
-    # These are the parameters we expect to be "passed through".
-    real_params = {
-        "api_key": "a_test_api_key",
-        "model": "gpt-4o-mini-tts",
-    }
-
+    # Define a configuration with custom parameters.
+    # api_key is now a top-level field, not in params
     real_config = {
-        "params": real_params,
+        "api_key": "a_test_api_key",
+        "params": {
+            "model": "gpt-4o-mini-tts",
+        },
     }
 
+    # Expected params after processing (api_key should NOT be here)
     passthrough_params = {
-        "api_key": "a_test_api_key",
         "model": "gpt-4o-mini-tts",
         "voice": "coral",
         "speed": 1.0,
@@ -107,7 +105,7 @@ def test_params_passthrough(MockOpenAITTSClient):
 
     # Verify that the 'params' dictionary in the config object passed to the
     # client constructor contains all expected parameters.
-    # Note: api_key stays in params (used by the client), and response_format
+    # Note: api_key is NOT in params (it's a top-level field), and response_format
     # is added by update_params(). Other params come from property.json defaults.
     print(f"called_config: {called_config.params}")
     assert (

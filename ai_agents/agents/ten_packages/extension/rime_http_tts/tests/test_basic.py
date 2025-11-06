@@ -137,8 +137,7 @@ def test_dump_functionality(MockRimeTTSClient):
         "dump": True,
         "dump_path": DUMP_PATH,
         "api_key": "test_api_key",
-        "params": {
-        },
+        "params": {},
     }
 
     tester.set_test_mode_single("rime_http_tts", json.dumps(dump_config))

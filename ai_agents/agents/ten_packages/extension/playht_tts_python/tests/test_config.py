@@ -11,61 +11,67 @@ class TestPlayHTTTSConfig(unittest.TestCase):
 
     def test_config_creation_with_defaults(self):
         """Test creating config with default values"""
-        params = {
-            "api_key": "test_api_key",
-            "user_id": "test_user_id",
-        }
-
-        config = PlayHTTTSConfig(params=params)
+        config = PlayHTTTSConfig(
+            api_key="test_api_key", user_id="test_user_id", params={}
+        )
 
         self.assertFalse(config.dump)
         self.assertIsInstance(config.dump_path, str)
         self.assertIn("playht_tts_in.pcm", config.dump_path)
-        self.assertEqual(config.params, params)
+        self.assertEqual(config.api_key, "test_api_key")
+        self.assertEqual(config.user_id, "test_user_id")
 
     def test_config_creation_with_custom_values(self):
         """Test creating config with custom values"""
         params = {
-            "api_key": "test_api_key",
-            "user_id": "test_user_id",
             "voice_engine": "PlayDialog",
             "sample_rate": 16000,
         }
 
         config = PlayHTTTSConfig(
-            dump=True, dump_path="/custom/path/test.pcm", params=params
+            api_key="test_api_key",
+            user_id="test_user_id",
+            dump=True,
+            dump_path="/custom/path/test.pcm",
+            params=params,
         )
 
         self.assertTrue(config.dump)
         self.assertEqual(config.dump_path, "/custom/path/test.pcm")
-        self.assertEqual(config.params["api_key"], "test_api_key")
-        self.assertEqual(config.params["user_id"], "test_user_id")
+        self.assertEqual(config.api_key, "test_api_key")
+        self.assertEqual(config.user_id, "test_user_id")
         self.assertEqual(config.params["voice_engine"], "PlayDialog")
         self.assertEqual(config.params["sample_rate"], 16000)
 
     def test_config_validation_with_missing_api_key(self):
         """Test config validation with missing api_key"""
         with self.assertRaises(ValueError):
-            config = PlayHTTTSConfig(params={"user_id": "test_user_id"})
+            config = PlayHTTTSConfig(
+                api_key="", user_id="test_user_id", params={}
+            )
             config.validate()
 
     def test_config_validation_with_missing_user_id(self):
         """Test config validation with missing user_id"""
         with self.assertRaises(ValueError):
-            config = PlayHTTTSConfig(params={"api_key": "test_api_key"})
+            config = PlayHTTTSConfig(
+                api_key="test_api_key", user_id="", params={}
+            )
             config.validate()
 
     def test_config_serialization(self):
         """Test config serialization to JSON"""
         params = {
-            "api_key": "test_api_key",
-            "user_id": "test_user_id",
             "voice_engine": "PlayDialog",
             "sample_rate": 16000,
         }
 
         config = PlayHTTTSConfig(
-            dump=True, dump_path="/custom/path/test.pcm", params=params
+            api_key="test_api_key",
+            user_id="test_user_id",
+            dump=True,
+            dump_path="/custom/path/test.pcm",
+            params=params,
         )
 
         # Test model_dump_json
@@ -78,12 +84,9 @@ class TestPlayHTTTSConfig(unittest.TestCase):
 
     def test_config_to_str_with_sensitive_handling(self):
         """Test config to_str with sensitive data handling"""
-        params = {
-            "api_key": "test_api_key",
-            "user_id": "test_user_id",
-        }
-
-        config = PlayHTTTSConfig(params=params)
+        config = PlayHTTTSConfig(
+            api_key="test_api_key", user_id="test_user_id", params={}
+        )
         config_str = config.to_str(sensitive_handling=True)
 
         # Check that sensitive fields are encrypted (encrypt uses "..." format)
@@ -94,12 +97,12 @@ class TestPlayHTTTSConfig(unittest.TestCase):
     def test_config_update_params_removes_format(self):
         """Test that update_params removes format from params"""
         params = {
-            "api_key": "test_api_key",
-            "user_id": "test_user_id",
             "format": "FORMAT_MP3",  # Should be removed
         }
 
-        config = PlayHTTTSConfig(params=params)
+        config = PlayHTTTSConfig(
+            api_key="test_api_key", user_id="test_user_id", params=params
+        )
         config.update_params()
 
         # Format should be removed
@@ -112,53 +115,53 @@ class TestPlayHTTTSConfig(unittest.TestCase):
         for sample_rate in sample_rates_to_test:
             with self.subTest(sample_rate=sample_rate):
                 params = {
-                    "api_key": "test_api_key",
-                    "user_id": "test_user_id",
                     "sample_rate": sample_rate,
                 }
 
-                config = PlayHTTTSConfig(params=params)
+                config = PlayHTTTSConfig(
+                    api_key="test_api_key",
+                    user_id="test_user_id",
+                    params=params,
+                )
                 self.assertEqual(config.params["sample_rate"], sample_rate)
 
     def test_config_dump_path_handling(self):
         """Test config dump path handling"""
         # Test with relative path
-        params = {
-            "api_key": "test_api_key",
-            "user_id": "test_user_id",
-        }
-
         config = PlayHTTTSConfig(
-            dump=True, dump_path="relative/path/test.pcm", params=params
+            api_key="test_api_key",
+            user_id="test_user_id",
+            dump=True,
+            dump_path="relative/path/test.pcm",
+            params={},
         )
 
         self.assertEqual(config.dump_path, "relative/path/test.pcm")
 
         # Test with absolute path
         config = PlayHTTTSConfig(
-            dump=True, dump_path="/absolute/path/test.pcm", params=params
+            api_key="test_api_key",
+            user_id="test_user_id",
+            dump=True,
+            dump_path="/absolute/path/test.pcm",
+            params={},
         )
 
         self.assertEqual(config.dump_path, "/absolute/path/test.pcm")
 
     def test_config_minimal_params(self):
         """Test config with minimal required parameters"""
-        params = {
-            "api_key": "minimal_api_key",
-            "user_id": "minimal_user_id",
-        }
-
-        config = PlayHTTTSConfig(params=params)
+        config = PlayHTTTSConfig(
+            api_key="minimal_api_key", user_id="minimal_user_id", params={}
+        )
 
         self.assertFalse(config.dump)
-        self.assertEqual(config.params["api_key"], "minimal_api_key")
-        self.assertEqual(config.params["user_id"], "minimal_user_id")
+        self.assertEqual(config.api_key, "minimal_api_key")
+        self.assertEqual(config.user_id, "minimal_user_id")
 
     def test_config_comprehensive_params(self):
         """Test config with all parameters specified"""
         params = {
-            "api_key": "comprehensive_api_key",
-            "user_id": "comprehensive_user_id",
             "voice_engine": "PlayDialog",
             "protocol": "ws",
             "sample_rate": 44100,
@@ -168,13 +171,17 @@ class TestPlayHTTTSConfig(unittest.TestCase):
         }
 
         config = PlayHTTTSConfig(
-            dump=True, dump_path="/comprehensive/path/test.pcm", params=params
+            api_key="comprehensive_api_key",
+            user_id="comprehensive_user_id",
+            dump=True,
+            dump_path="/comprehensive/path/test.pcm",
+            params=params,
         )
 
         self.assertTrue(config.dump)
         self.assertEqual(config.dump_path, "/comprehensive/path/test.pcm")
-        self.assertEqual(config.params["api_key"], "comprehensive_api_key")
-        self.assertEqual(config.params["user_id"], "comprehensive_user_id")
+        self.assertEqual(config.api_key, "comprehensive_api_key")
+        self.assertEqual(config.user_id, "comprehensive_user_id")
         self.assertEqual(config.params["voice_engine"], "PlayDialog")
         self.assertEqual(config.params["protocol"], "ws")
         self.assertEqual(config.params["sample_rate"], 44100)

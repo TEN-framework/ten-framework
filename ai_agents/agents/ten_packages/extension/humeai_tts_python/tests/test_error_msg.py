@@ -75,12 +75,12 @@ def test_empty_params_fatal_error():
     """Test that empty params raises FATAL ERROR with code -1000"""
     print("Starting test_empty_params_fatal_error...")
 
-    # Empty params configuration
+    # Empty key configuration (top-level field)
     empty_params_config = {
+        "key": "",
         "params": {
-            "key": "",
             "voice_name": "Female English Actor",
-        }
+        },
     }
 
     tester = ExtensionTesterEmptyParams()

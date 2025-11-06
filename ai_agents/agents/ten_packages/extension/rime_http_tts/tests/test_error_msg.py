@@ -67,11 +67,7 @@ def test_empty_params_fatal_error():
     print("Starting test_empty_params_fatal_error...")
 
     # Empty params configuration
-    empty_params_config = {
-        "api_key": "",
-        "params": {
-        }
-    }
+    empty_params_config = {"api_key": "", "params": {}}
 
     tester = ExtensionTesterEmptyParams()
     tester.set_test_mode_single(
@@ -162,8 +158,7 @@ def test_invalid_api_key_error(MockAsyncClient):
     # Config with invalid API key
     invalid_key_config = {
         "api_key": "invalid_api_key_test",
-        "params": {
-        },
+        "params": {},
     }
 
     tester = ExtensionTesterInvalidApiKey()

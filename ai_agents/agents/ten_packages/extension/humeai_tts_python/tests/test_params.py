@@ -104,16 +104,15 @@ def test_params_passthrough(MockHumeAiTTS):
     mock_instance.get.side_effect = mock_get_audio_stream
 
     # --- Test Setup ---
-    # Define a configuration with custom parameters inside 'params'.
-    # These are the parameters we expect to be "passed through".
-    passthrough_params = {
-        "key": "test_api_key",
-        "voice_name": "Female English Actor",
-        "speed": 1.5,
-        "trailing_silence": 0.8,
-    }
+    # Define a configuration with custom parameters.
+    # key is now a top-level field, not in params
     passthrough_config = {
-        "params": passthrough_params,
+        "key": "test_api_key",
+        "params": {
+            "voice_name": "Female English Actor",
+            "speed": 1.5,
+            "trailing_silence": 0.8,
+        },
     }
 
     tester = ExtensionTesterForPassthrough()
