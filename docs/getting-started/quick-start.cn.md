@@ -30,6 +30,17 @@ python3 --version
 # 应显示: Python 3.10.x
 ```
 
+> 💡 **建议**：推荐使用 `pyenv` 或 `venv` 创建 Python 3.10 虚拟环境，以避免与系统 Python 版本冲突：
+> ```bash
+> # 使用 venv 创建虚拟环境（示例）
+> python3.10 -m venv ~/ten-venv
+> source ~/ten-venv/bin/activate
+>
+> # 或使用 pyenv 管理多个 Python 版本（示例）
+> pyenv install 3.10.18
+> pyenv local 3.10.18
+> ```
+
 ### Go 1.20+
 
 ```bash
@@ -107,7 +118,23 @@ tman run build
 
 > ⏱️ **预计时间**：30 秒
 
-### 4. 运行应用
+### 4. 配置环境变量
+
+在运行应用前，需要配置 ASR（语音识别）服务的密钥。当前示例使用 Azure ASR extension，你需要在 `transcriber_demo/.env` 文件中填写相关配置：
+
+```bash
+# 创建 .env 文件
+cat > .env << EOF
+# Azure Speech Service 配置
+AZURE_STT_KEY=your_azure_speech_api_key
+AZURE_STT_REGION=your_azure_region      # 例如：eastus
+AZURE_STT_LANGUAGE=en-US                # 根据你的音频语种或实时录音语种设置，如：zh-CN, ja-JP, ko-KR 等
+EOF
+```
+
+> 💡 **提示**：如果你想使用其他 ASR extension（如 OpenAI Whisper、Google Speech 等），可以从云商店下载并替换，同样将相应的 API key 等环境变量配置在 `.env` 文件中。
+
+### 5. 运行应用
 
 ```bash
 tman run start
@@ -120,7 +147,7 @@ tman run start
 [audio_file_player_python] AudioFilePlayerExtension on_start
 ```
 
-### 5. 体验 Demo
+### 6. 体验 Demo
 
 打开浏览器访问：
 

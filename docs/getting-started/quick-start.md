@@ -30,6 +30,17 @@ python3 --version
 # Should display: Python 3.10.x
 ```
 
+> 💡 **Recommendation**: It's recommended to use `pyenv` or `venv` to create a Python 3.10 virtual environment to avoid conflicts with your system Python version:
+> ```bash
+> # Create virtual environment using venv (example)
+> python3.10 -m venv ~/ten-venv
+> source ~/ten-venv/bin/activate
+>
+> # Or use pyenv to manage multiple Python versions (example)
+> pyenv install 3.10.14
+> pyenv local 3.10.14
+> ```
+
 ### Go 1.20+
 
 ```bash
@@ -107,7 +118,23 @@ tman run build
 
 > ⏱️ **Estimated Time**: 30 seconds
 
-### 4. Run the App
+### 4. Configure Environment Variables
+
+Before running the app, you need to configure the ASR (Automatic Speech Recognition) service credentials. The current example uses Azure ASR extension. You need to fill in the configuration in the `transcriber_demo/.env` file:
+
+```bash
+# Create .env file
+cat > .env << EOF
+# Azure Speech Service Configuration
+AZURE_STT_KEY=your_azure_speech_api_key
+AZURE_STT_REGION=your_azure_region      # e.g., eastus
+AZURE_STT_LANGUAGE=en-US                # Set according to your audio language or real-time recording language, e.g., zh-CN, ja-JP, ko-KR, etc.
+EOF
+```
+
+> 💡 **Tip**: If you want to use other ASR extensions (such as OpenAI Whisper, Google Speech, etc.), you can download and replace them from the cloud store. Similarly, configure the corresponding API keys and environment variables in the `.env` file.
+
+### 5. Run the App
 
 ```bash
 tman run start
@@ -120,7 +147,7 @@ If everything is working correctly, you should see output similar to:
 [audio_file_player_python] AudioFilePlayerExtension on_start
 ```
 
-### 5. Experience the Demo
+### 6. Experience the Demo
 
 Open your browser and visit:
 
