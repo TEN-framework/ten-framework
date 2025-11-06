@@ -16,6 +16,7 @@ from ten_runtime import (
     TenErrorCode,
 )
 import json
+import asyncio
 import os
 import glob
 import time
@@ -32,47 +33,55 @@ class GroupState:
     COMPLETED = "completed"
 
 
-class AppendInputTester(AsyncExtensionTester):
-    """Test class for TTS extension append input"""
+class AppendInterruptTester(AsyncExtensionTester):
+    """Test class for TTS extension append input with flush interrupt"""
 
     def __init__(
         self,
-        session_id: str = "test_append_input_session_123",
+        session_id: str = "test_append_interrupt_session_123",
     ):
         super().__init__()
         print("=" * 80)
-        print("🧪 TEST CASE: Append Input TTS Test")
+        print("🧪 TEST CASE: Append Interrupt TTS Test")
         print("=" * 80)
-        print("📋 Test Description: Validate TTS append input with multiple text inputs")
+        print("📋 Test Description: Validate TTS append input with flush interrupt")
         print("🎯 Test Objectives:")
         print("   - Verify append input with multiple text inputs")
+        print("   - Verify flush interrupt functionality")
+        print("   - Verify interrupted group receives INTERRUPTED reason")
         print("   - Verify strict event sequence order")
         print("   - Verify dump file generation")
         print("=" * 80)
 
         self.session_id: str = session_id
-        self.dump_file_name = f"tts_append_input_{self.session_id}.pcm"
+        self.dump_file_name = f"tts_append_interrupt_{self.session_id}.pcm"
         
         # Define groups of text inputs, each group can have different number of texts
         # Each group uses the same request_id and metadata within the group
         # You can customize the number of groups and texts in each group
         self.text_groups = [
-            # Group 1: Define texts for group 1
-            ["Hello world, this is the first text input.", "This is the second text input for testing.", ""],
-            # Group 2: Define texts for group 2
-            ["And this is the third text input message.", ","],
-            # Group 3: Define texts for group 3
-            ["Now we start the second group of inputs.", "This is the fifth text input message.", " "],
-            # Group 4: Define texts for group 4
-            ["And finally the sixth text input message.", "😊"],
-            # Group 5: Define texts for group 5
-            ["This is group 5, first text.", "This is group 5, second text.", "This is group 5, third text."],
-            # Group 6: Define texts for group 6
-            [""],
-            # Group 7: Define texts for group 7
-            ["This is group 7, first text.", "This is group 7, second text."],
+            # Group 1: Define texts for group 1 (this group will be flushed after first audio frame)
+            # Use longer texts to ensure first group is still processing when flush is sent
+            [
+                "Hello world, this is the first text input with longer content.",
+                "This is the second text input for testing with more words and sentences.",
+                "This is the third text input in the first group, containing even more content.",
+                "This is the fourth text input in the first group, with additional text to ensure sufficient length.",
+                "This is the fifth text input in the first group, providing more content for testing.",
+            ],
+            # Group 2: Define texts for group 2 (should not generate audio after flush)
+            ["And this is the third text input message.", "This group should not generate audio after flush."],
+            # Group 3: Define texts for group 3 (should not generate audio after flush)
+            ["Now we start the third group of inputs.", "This is the fifth text input message."],
+            # Group 4: Define texts for group 4 (should not generate audio after flush)
+            ["And finally the fourth group text input message."],
             # Add more groups as needed...
         ]
+        
+        # Specify which group will be flushed (0-based index)
+        # Group 1 (index 0) will be flushed - flush will be sent after receiving first audio frame
+        # After flush, subsequent groups should not generate audio
+        self.flush_group_index = 0
         
         # Calculate expected group count from text_groups
         self.expected_group_count = len(self.text_groups)
@@ -88,7 +97,7 @@ class AppendInputTester(AsyncExtensionTester):
         
         # Request IDs and metadata for all groups (dynamically generated based on group count)
         self.request_ids = [
-            f"test_append_input_request_id_{i+1}" for i in range(self.expected_group_count)
+            f"test_append_interrupt_request_id_{i+1}" for i in range(self.expected_group_count)
         ]
         self.metadatas = [
             {
@@ -97,6 +106,12 @@ class AppendInputTester(AsyncExtensionTester):
             }
             for i in range(self.expected_group_count)
         ]
+        
+        # Flush ID for the flush operation
+        self.flush_id = f"test_append_interrupt_flush_{self.session_id}"
+        self.sent_flush_metadata = {
+            "session_id": self.session_id,
+        }
         
         # Event sequence tracking - track state for each group
         self.current_group_index = 0
@@ -110,6 +125,13 @@ class AppendInputTester(AsyncExtensionTester):
             if is_empty:
                 self.group_states[group_idx] = GroupState.COMPLETED
                 self.audio_end_received[group_idx] = True  # Mark as received to skip
+        
+        # Flush tracking
+        self.flush_sent = False
+        self.flush_end_received = False
+        self.flush_end_timestamp = None
+        self.post_flush_end_audio_count = 0
+        self.post_flush_end_data_count = 0
         
         # Audio tracking
         self.current_request_id = None
@@ -133,16 +155,18 @@ class AppendInputTester(AsyncExtensionTester):
 
     @override
     async def on_start(self, ten_env: AsyncTenEnvTester) -> None:
-        """Start the TTS append input test - send all text inputs sequentially without waiting."""
-        ten_env.log_info("Starting TTS append input test")
+        """Start the TTS append interrupt test - send first two groups of text inputs sequentially without waiting."""
+        ten_env.log_info("Starting TTS append interrupt test")
         
-        # Send all groups of text inputs sequentially
-        for group_idx, texts in enumerate(self.text_groups):
+        # Send only first two groups (group 0 and 1) of text inputs sequentially
+        # Third and fourth groups will be sent after receiving flush_end
+        for group_idx in range(min(2, len(self.text_groups))):
             # Skip empty groups
             if self.empty_groups[group_idx]:
                 ten_env.log_info(f"Skipping group {group_idx + 1} (empty group)")
                 continue
             
+            texts = self.text_groups[group_idx]
             request_id = self.request_ids[group_idx]
             metadata = self.metadatas[group_idx]
             ten_env.log_info(f"Sending group {group_idx + 1} with {len(texts)} text input(s) using {request_id}...")
@@ -154,9 +178,10 @@ class AppendInputTester(AsyncExtensionTester):
                     ten_env, text, request_id, metadata, is_last_in_group
                 )
         
-        total_texts = sum(len(texts) for texts in self.text_groups)
-        non_empty_groups = sum(1 for is_empty in self.empty_groups if not is_empty)
-        ten_env.log_info(f"✅ All {total_texts} text inputs in {len(self.text_groups)} groups ({non_empty_groups} non-empty) sent sequentially")
+        total_texts = sum(len(self.text_groups[i]) for i in range(min(2, len(self.text_groups))))
+        non_empty_groups = sum(1 for i in range(min(2, len(self.text_groups))) if not self.empty_groups[i])
+        ten_env.log_info(f"✅ First two groups: {total_texts} text inputs in {min(2, len(self.text_groups))} groups ({non_empty_groups} non-empty) sent sequentially")
+        ten_env.log_info(f"⏳ Waiting for flush_end before sending groups 3 and 4...")
 
     async def _send_tts_text_input(
         self,
@@ -175,6 +200,43 @@ class AppendInputTester(AsyncExtensionTester):
         tts_text_input_obj.set_property_from_json("metadata", json.dumps(metadata))
         await ten_env.send_data(tts_text_input_obj)
         ten_env.log_info(f"✅ tts text input sent: {text}")
+
+    async def _send_flush(self, ten_env: AsyncTenEnvTester) -> None:
+        """Send flush signal to interrupt current group."""
+        ten_env.log_info(f"Sending flush for group {self.flush_group_index + 1}")
+        flush_data = Data.create("tts_flush")
+        flush_data.set_property_string("flush_id", self.flush_id)
+        flush_data.set_property_from_json("metadata", json.dumps(self.sent_flush_metadata))
+        await ten_env.send_data(flush_data)
+        self.flush_sent = True
+        ten_env.log_info(f"✅ Flush sent with flush_id: {self.flush_id}")
+
+    async def _send_remaining_groups(self, ten_env: AsyncTenEnvTester) -> None:
+        """Send third and fourth groups after receiving flush_end."""
+        ten_env.log_info("Sending remaining groups (3 and 4) after flush_end...")
+        
+        # Send groups 3 and 4 (group_idx 2 and 3)
+        for group_idx in range(2, min(4, len(self.text_groups))):
+            # Skip empty groups
+            if self.empty_groups[group_idx]:
+                ten_env.log_info(f"Skipping group {group_idx + 1} (empty group)")
+                continue
+            
+            texts = self.text_groups[group_idx]
+            request_id = self.request_ids[group_idx]
+            metadata = self.metadatas[group_idx]
+            ten_env.log_info(f"Sending group {group_idx + 1} with {len(texts)} text input(s) using {request_id}...")
+            
+            # Send all texts in this group with same request_id and metadata
+            for i, text in enumerate(texts):
+                is_last_in_group = (i == len(texts) - 1)
+                await self._send_tts_text_input(
+                    ten_env, text, request_id, metadata, is_last_in_group
+                )
+        
+        total_texts = sum(len(self.text_groups[i]) for i in range(2, min(4, len(self.text_groups))))
+        non_empty_groups = sum(1 for i in range(2, min(4, len(self.text_groups))) if not self.empty_groups[i])
+        ten_env.log_info(f"✅ Remaining groups (3 and 4): {total_texts} text inputs in {min(2, max(0, len(self.text_groups) - 2))} groups ({non_empty_groups} non-empty) sent sequentially")
 
     def _stop_test_with_error(
         self, ten_env: AsyncTenEnvTester, error_message: str
@@ -202,6 +264,15 @@ class AppendInputTester(AsyncExtensionTester):
 
     def _check_event_sequence(self, ten_env: AsyncTenEnvTester, received_event: str) -> None:
         """Check if received event matches expected sequence for current group."""
+        # After flush is sent, subsequent groups (group 2, index 1) should not generate any audio events
+        # But groups 3 and 4 (index 2 and 3) sent after flush_end should be allowed
+        if self.flush_sent and not self.flush_end_received and self.current_group_index > self.flush_group_index:
+            self._stop_test_with_error(
+                ten_env,
+                f"Received event {received_event} for group {self.current_group_index + 1} after flush was sent but before flush_end. Subsequent groups should not generate any audio events (tts_audio_start, audio_frame, tts_audio_end) until flush_end is received."
+            )
+            return
+        
         if self.current_group_index >= self.expected_group_count:
             self._stop_test_with_error(ten_env, f"Received event {received_event} but all {self.expected_group_count} groups are completed")
             return
@@ -348,18 +419,32 @@ class AppendInputTester(AsyncExtensionTester):
                 self._stop_test_with_error(ten_env, f"Missing metadata in tts_audio_end response")
                 return
             
-            # Validate reason is REQUEST_END (1)
-            # TTSAudioEndReason.REQUEST_END = 1
+            # Validate reason - first group should be INTERRUPTED (reason=2)
+            # TTSAudioEndReason.REQUEST_END = 1, INTERRUPTED = 2
             received_reason, _ = data.get_property_int("reason")
-            if received_reason != 1:
-                self._stop_test_with_error(
-                    ten_env,
-                    f"Reason mismatch in tts_audio_end. Expected: 1 (REQUEST_END), Received: {received_reason}",
-                )
-                return
             
-            # Validate audio duration
-            if self.audio_start_time is not None:
+            if group_idx_before_check == 0:
+                # First group should have INTERRUPTED reason (2) because flush was sent
+                if received_reason != 2:
+                    self._stop_test_with_error(
+                        ten_env,
+                        f"Reason mismatch in group {group_idx_before_check + 1} tts_audio_end. Expected: 2 (INTERRUPTED), Received: {received_reason}",
+                    )
+                    return
+                ten_env.log_info(f"✅ Group {group_idx_before_check + 1} received INTERRUPTED reason (2) as expected")
+            else:
+                # Other groups should have REQUEST_END reason (1)
+                if received_reason != 1:
+                    self._stop_test_with_error(
+                        ten_env,
+                        f"Reason mismatch in group {group_idx_before_check + 1} tts_audio_end. Expected: 1 (REQUEST_END), Received: {received_reason}",
+                    )
+                    return
+                ten_env.log_info(f"✅ Group {group_idx_before_check + 1} received REQUEST_END reason (1) as expected")
+            
+            # Validate audio duration (skip for interrupted group as it may be incomplete)
+            # First group (index 0) is interrupted, skip duration validation
+            if group_idx_before_check != 0 and self.audio_start_time is not None:
                 current_time = time.time()
                 actual_duration_ms = (current_time - self.audio_start_time) * 1000
                 
@@ -388,16 +473,99 @@ class AppendInputTester(AsyncExtensionTester):
                 
                 ten_env.log_info(f"Actual event duration: {actual_duration_ms:.2f}ms")
             else:
-                ten_env.log_warn("tts_audio_start not received before tts_audio_end")
+                if group_idx_before_check == 0:
+                    ten_env.log_info(f"Skipping audio duration validation for interrupted group {group_idx_before_check + 1}")
+                else:
+                    ten_env.log_warn("tts_audio_start not received before tts_audio_end")
             
             ten_env.log_info(f"✅ tts_audio_end received with correct request_id, metadata, and reason for group {group_idx_before_check + 1}")
             
-            # If all groups completed, check dump files
-            if all(self.audio_end_received):
-                ten_env.log_info(f"✅ All {self.expected_group_count} groups completed, checking dump files")
-                self._check_dump_file_number(ten_env)
+            # If first group (interrupted group) completed, wait for flush_end to check dump files
+            # Subsequent groups should not generate audio after flush
+            if group_idx_before_check == 0:
+                ten_env.log_info(f"✅ Interrupted group {group_idx_before_check + 1} completed, waiting for flush_end to check dump files")
+            
+            # Check if the last expected group (group 3 or 4) is completed - this is the end condition
+            # Groups 3 and 4 (index 2 and 3) are sent after flush_end
+            # When the last non-empty group's tts_audio_end is received, check all dump files and end test
+            if group_idx_before_check >= 2:  # Group 3 (index 2) or Group 4 (index 3)
+                # Check if this is the last non-empty group that should complete
+                # Expected groups: 1 (index 0), 3 (index 2), 4 (index 3)
+                # Group 2 (index 1) should NOT complete (not processed due to flush)
+                expected_completed_groups = [0, 2, 3]  # Group 1, 3, 4 should complete
+                # Find the last non-empty group in expected_completed_groups
+                last_expected_group = None
+                for i in reversed(expected_completed_groups):
+                    if i < len(self.empty_groups) and not self.empty_groups[i]:
+                        last_expected_group = i
+                        break
+                
+                # If this is the last expected group, end the test
+                if last_expected_group is not None and group_idx_before_check == last_expected_group:
+                    ten_env.log_info(f"✅ Last expected group {group_idx_before_check + 1} completed, checking final dump files and ending test...")
+                    self._check_final_dump_file_number(ten_env)
+                    ten_env.log_info("✅ All expected groups completed, test passed")
+                    ten_env.stop_test()
+                    return
             
             return
+        elif name == "tts_flush_end":
+            if not self.flush_sent:
+                self._stop_test_with_error(ten_env, f"Received tts_flush_end but flush was not sent")
+                return
+            
+            # Validate flush_id
+            received_flush_id, _ = data.get_property_string("flush_id")
+            if received_flush_id != self.flush_id:
+                self._stop_test_with_error(ten_env, f"Flush ID mismatch. Expected: {self.flush_id}, Received: {received_flush_id}")
+                return
+            
+            # Validate metadata completely consistent
+            metadata_str, _ = data.get_property_to_json("metadata")
+            if metadata_str:
+                try:
+                    received_metadata = json.loads(metadata_str)
+                    if received_metadata != self.sent_flush_metadata:
+                        self._stop_test_with_error(ten_env, f"Metadata mismatch in flush_end. Expected: {self.sent_flush_metadata}, Received: {received_metadata}")
+                        return
+                except json.JSONDecodeError:
+                    self._stop_test_with_error(ten_env, f"Invalid JSON in flush_end metadata: {metadata_str}")
+                    return
+            else:
+                # If no metadata is received, but there is metadata sent, report an error
+                if self.sent_flush_metadata is not None:
+                    self._stop_test_with_error(ten_env, f"Missing metadata in flush_end response. Expected: {self.sent_flush_metadata}")
+                    return
+            
+            ten_env.log_info(f"✅ tts_flush_end received with correct flush_id: {received_flush_id} and metadata: {received_metadata}")
+            self.flush_end_received = True
+            self.flush_end_timestamp = time.time()
+            
+            # Check dump files after flush_end
+            self._check_dump_file_number(ten_env)
+            
+            # Send third and fourth groups after receiving flush_end
+            asyncio.create_task(self._send_remaining_groups(ten_env))
+            
+            return
+        else:
+            # Check if any unexpected data is received after flush_end
+            # Groups 3 and 4 (index 2 and 3) are sent after flush_end, so their data events are expected
+            if self.flush_end_received:
+                # Only count unexpected data (not from groups 3 and 4)
+                # Note: current_group_index might not be accurate for all data types, so we check based on event type
+                # For tts_audio_start, tts_audio_end, we can check current_group_index
+                # For other data types, we might need to check the data content
+                if name in ["tts_audio_start", "tts_audio_end"]:
+                    if self.current_group_index not in [2, 3]:
+                        self.post_flush_end_data_count += 1
+                        ten_env.log_info(f"⚠️ Received unexpected data '{name}' after flush_end for group {self.current_group_index + 1} (count: {self.post_flush_end_data_count})")
+                        return
+                else:
+                    # For other data types, count as unexpected
+                    self.post_flush_end_data_count += 1
+                    ten_env.log_info(f"⚠️ Received unexpected data '{name}' after flush_end (count: {self.post_flush_end_data_count})")
+                    return
 
     def _check_dump_file_number(self, ten_env: AsyncTenEnvTester) -> None:
         """Check if there are exactly expected number of dump files in the directory."""
@@ -421,19 +589,74 @@ class AppendInputTester(AsyncExtensionTester):
         for i, file_path in enumerate(dump_files):
             ten_env.log_info(f"  {i+1}. {os.path.basename(file_path)}")
         
-        # Check if there are exactly expected number of dump files (one per non-empty group)
-        expected_count = sum(1 for is_empty in self.empty_groups if not is_empty)
-        if len(dump_files) == expected_count:
-            ten_env.log_info(f"✅ Found exactly {expected_count} dump files as expected (one per non-empty group)")
-            ten_env.stop_test()
-        elif len(dump_files) > expected_count:
-            self._stop_test_with_error(ten_env, f"Found {len(dump_files)} dump files, expected exactly {expected_count} (one per non-empty group)")
+        # After flush_end, check dump files:
+        # - First group (index 0): should have dump file (interrupted by flush)
+        # - Second group (index 1): should NOT have dump file (not processed due to flush)
+        # - Third and fourth groups (index 2, 3): will be sent after flush_end, so not checked here yet
+        # At flush_end time, only first group should have dump file
+        # If first group is empty, then no dump files expected
+        expected_count_at_flush_end = 1 if (self.expected_group_count > 0 and not self.empty_groups[0]) else 0
+        if len(dump_files) == expected_count_at_flush_end:
+            ten_env.log_info(f"✅ Found exactly {expected_count_at_flush_end} dump file(s) as expected at flush_end (only first group)")
+            # Don't stop test here, wait for remaining groups to complete
+        elif len(dump_files) > expected_count_at_flush_end:
+            self._stop_test_with_error(ten_env, f"Found {len(dump_files)} dump files at flush_end, expected exactly {expected_count_at_flush_end} (only first group)")
         else:
-            self._stop_test_with_error(ten_env, f"Found {len(dump_files)} dump files, expected exactly {expected_count} (one per non-empty group)")
+            self._stop_test_with_error(ten_env, f"Found {len(dump_files)} dump files at flush_end, expected exactly {expected_count_at_flush_end} (only first group)")
+
+    def _check_final_dump_file_number(self, ten_env: AsyncTenEnvTester) -> None:
+        """Check if there are exactly expected number of dump files after all groups completed."""
+        if not hasattr(self, 'tts_extension_dump_folder') or not self.tts_extension_dump_folder:
+            ten_env.log_error("tts_extension_dump_folder not set")
+            self._stop_test_with_error(ten_env, "tts_extension_dump_folder not configured")
+            return
+
+        if not os.path.exists(self.tts_extension_dump_folder):
+            self._stop_test_with_error(ten_env, f"TTS extension dump folder not found: {self.tts_extension_dump_folder}")
+            return
+        
+        # Get all files in the directory
+        time.sleep(1)
+        dump_files = []
+        for file_path in glob.glob(os.path.join(self.tts_extension_dump_folder, "*")):
+            if os.path.isfile(file_path):
+                dump_files.append(file_path)
+
+        ten_env.log_info(f"Found {len(dump_files)} dump files in {self.tts_extension_dump_folder}")
+        for i, file_path in enumerate(dump_files):
+            ten_env.log_info(f"  {i+1}. {os.path.basename(file_path)}")
+        
+        # After all groups completed, check dump files:
+        # - First group (index 0): should have dump file (interrupted by flush)
+        # - Second group (index 1): should NOT have dump file (not processed due to flush)
+        # - Third and fourth groups (index 2, 3): should have dump files (sent after flush_end)
+        # Expected: groups 1, 3, 4 should have dump files (3 files if all 4 groups are non-empty)
+        # If first group is empty, then no dump files expected
+        expected_completed_groups = [0, 2, 3]  # Group 1, 3, 4 should complete and have dump files
+        expected_count_final = sum(
+            1 for i in expected_completed_groups
+            if i < len(self.empty_groups) and not self.empty_groups[i]
+        )
+        
+        if len(dump_files) == expected_count_final:
+            ten_env.log_info(f"✅ Found exactly {expected_count_final} dump file(s) as expected after all groups completed (groups 1, 3, 4)")
+        elif len(dump_files) > expected_count_final:
+            self._stop_test_with_error(ten_env, f"Found {len(dump_files)} dump files after all groups completed, expected exactly {expected_count_final} (groups 1, 3, 4)")
+        else:
+            self._stop_test_with_error(ten_env, f"Found {len(dump_files)} dump files after all groups completed, expected exactly {expected_count_final} (groups 1, 3, 4)")
 
     @override
     async def on_audio_frame(self, ten_env: AsyncTenEnvTester, audio_frame: AudioFrame) -> None:
         """Handle received audio frame from TTS extension."""
+        # Check if any unexpected audio frame is received after flush_end
+        # Groups 3 and 4 (index 2 and 3) are sent after flush_end, so their audio frames are expected
+        if self.flush_end_received:
+            # Only count unexpected audio frames (not from groups 3 and 4)
+            if self.current_group_index not in [2, 3]:
+                self.post_flush_end_audio_count += 1
+                ten_env.log_info(f"⚠️ Received unexpected audio frame after flush_end for group {self.current_group_index + 1} (count: {self.post_flush_end_audio_count})")
+                return
+        
         # Check event sequence
         self._check_event_sequence(ten_env, "audio_frame")
         
@@ -449,6 +672,11 @@ class AppendInputTester(AsyncExtensionTester):
         # Mark that audio frames have been received for current group
         if self.current_group_index < len(self.audio_frames_received):
             self.audio_frames_received[self.current_group_index] = True
+
+        # Send flush when receiving first audio frame of the flush group
+        if not self.flush_sent and self.current_group_index == self.flush_group_index:
+            ten_env.log_info(f"Received first audio frame for flush group {self.current_group_index + 1}, sending flush")
+            await self._send_flush(ten_env)
 
         # Accumulate audio bytes for duration calculation
         try:
@@ -480,8 +708,8 @@ def _delete_dump_file(dump_path: str) -> None:
             shutil.rmtree(file_path)
 
 
-def test_append_input(extension_name: str, config_dir: str) -> None:
-    """Verify TTS append input with multiple text inputs."""
+def test_append_interrupt(extension_name: str, config_dir: str) -> None:
+    """Verify TTS append input with flush interrupt."""
     # Get config file path
     config_file_path = os.path.join(config_dir, TTS_DUMP_CONFIG_FILE)
     if not os.path.exists(config_file_path):
@@ -500,8 +728,8 @@ def test_append_input(extension_name: str, config_dir: str) -> None:
         _delete_dump_file(config["dump_path"])
 
     # Create and run tester
-    tester = AppendInputTester(
-        session_id="test_append_input_session_123",
+    tester = AppendInterruptTester(
+        session_id="test_append_interrupt_session_123",
     )
 
     # Set the tts_extension_dump_folder for the tester
