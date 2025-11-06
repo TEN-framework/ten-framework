@@ -522,9 +522,9 @@ class nodejs_addon_loader_t : public ten::addon_loader_t {
 
     // Determine the platform-specific library name and extension.
     const char *lib_name = nullptr;
-#if defined(__APPLE__)
+#if defined(OS_MACOS)
     lib_name = "libnode.dylib";
-#elif defined(_WIN32)
+#elif defined(OS_WINDOWS)
     lib_name = "libnode.dll";
 #else
     // Linux and other Unix-like systems.
