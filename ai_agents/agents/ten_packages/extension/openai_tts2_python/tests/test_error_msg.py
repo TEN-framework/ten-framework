@@ -66,8 +66,12 @@ def test_empty_params_fatal_error():
 
     print("Starting test_empty_params_fatal_error...")
 
-    # Empty api_key configuration (top-level field)
-    empty_params_config = {"api_key": "", "params": {}}
+    # Empty api_key configuration (in params)
+    empty_params_config = {
+        "params": {
+            "api_key": "",
+        }
+    }
 
     tester = ExtensionTesterEmptyParams()
     tester.set_test_mode_single(
@@ -151,8 +155,12 @@ def test_invalid_api_key_error(MockOpenaiTTSClient):
         "Error code: 401 - {'error': {'message': 'Incorrect API key provided: 'invalid_api_key_test', 'type': 'invalid_request_error', 'param': None, 'code': 'invalid_api_key'}}"
     )
 
-    # Config with invalid API key (top-level field)
-    invalid_key_config = {"api_key": "invalid_api_key_test", "params": {}}
+    # Config with invalid API key (in params)
+    invalid_key_config = {
+        "params": {
+            "api_key": "invalid_api_key_test",
+        }
+    }
 
     tester = ExtensionTesterInvalidApiKey()
     tester.set_test_mode_single(
