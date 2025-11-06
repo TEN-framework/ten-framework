@@ -1212,14 +1212,13 @@ jobs:
 
           # Verify coveralls command is available
           which coveralls || echo "coveralls command not found in PATH"
-          coveralls --version || echo "coveralls version check failed"
 
           if [ -f "out/linux/x64/coverage/coverage.lcov" ]; then
             echo "Filtering coverage.lcov to include only core directory..."
 
             # Use lcov to extract only core directory coverage
             lcov --extract out/linux/x64/coverage/coverage.lcov \
-              "core/*" \
+              "*/core/*" \
               --output-file out/linux/x64/coverage/coverage_filtered.lcov \
               --ignore-errors source
 
