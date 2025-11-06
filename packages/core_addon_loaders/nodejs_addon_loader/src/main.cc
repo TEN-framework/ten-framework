@@ -513,17 +513,28 @@ class nodejs_addon_loader_t : public ten::addon_loader_t {
     return exit_code;
   }
 
-  // Dynamically load the `libnode.so` shared library to ensure the Node.js
+  // Dynamically load the Node.js shared library to ensure the Node.js
   // runtime environment is available.
   static void load_nodejs_lib() {
     ten_string_t *module_path =
         ten_path_get_module_path(reinterpret_cast<const void *>(foo));
     TEN_ASSERT(module_path, "Failed to get module path.");
 
-    ten_string_t *nodejs_lib_path = ten_string_create_formatted(
-        "%s/libnode.so", ten_string_get_raw_str(module_path));
+    // Determine the platform-specific library name and extension.
+    const char *lib_name = nullptr;
+#if defined(OS_MACOS)
+    lib_name = "libnode.dylib";
+#elif defined(OS_WINDOWS)
+    lib_name = "libnode.dll";
+#else
+    // Linux and other Unix-like systems.
+    lib_name = "libnode.so";
+#endif
 
-    // The `libnode.so` must be loaded globally using `dlopen` to ensure that
+    ten_string_t *nodejs_lib_path = ten_string_create_formatted(
+        "%s/%s", ten_string_get_raw_str(module_path), lib_name);
+
+    // The Node.js library must be loaded globally using `dlopen` to ensure that
     // all Node.js components can access it. Note that the second parameter must
     // be `0` (`as_local = false`).
     ten_module_load(nodejs_lib_path, 0);

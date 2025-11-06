@@ -184,6 +184,7 @@ jobs:
             "system/ten_runtime_python"
             "system/ten_runtime_nodejs"
             "addon_loader/python_addon_loader"
+            "addon_loader/nodejs_addon_loader"
           )
 
           for item in "${ARRAY[@]}"; do

@@ -111,22 +111,8 @@ jobs:
           python3 tools/version/update_version_in_ten_framework.py
           python3 tools/version/check_version_in_ten_framework.py
 
-      - name: Update supports
+      - name: Create out directory
         run: |
-          UPDATE_SUPPORTS_SCRIPT=$(pwd)/tools/supports/update_supports_in_manifest_json.py
-
-          ARRAY=(
-            "core/src/ten_runtime"
-            "core/src/ten_runtime/binding/go"
-            "core/src/ten_runtime/binding/python"
-            "packages/core_addon_loaders/python_addon_loader"
-          )
-
-          for item in "${ARRAY[@]}"; do
-            python3 ${UPDATE_SUPPORTS_SCRIPT} --os-arch-pairs linux:arm64 --input-file ${item}/manifest.json --output-file ${item}/manifest.json --log-level 1
-            cat ${item}/manifest.json
-          done
-
           # Due to the use of QEMU, running as root inside the Docker container
           # is required. However, outside the container, the user is not root.
           # This causes issues when trying to handle the contents of the out/
@@ -159,11 +145,39 @@ jobs:
               apt-get install -y nodejs && \
               rustup default nightly-2025-09-18 && \
               df -h . && \
-              tgn gen linux arm64 ${{ matrix.build_type }} -- is_clang=${{ matrix.compiler == 'gcc' && 'false' || 'true' }} log_level=1 enable_serialized_actions=true  ten_enable_tests=false ten_rust_enable_tests=false ten_manager_enable_tests=false ten_enable_libwebsockets=false ten_enable_cargo_clean=true ten_enable_rust_incremental_build=false ten_manager_enable_frontend=false ten_enable_integration_tests_prebuilt=false ten_enable_nodejs_binding=false && \
+              tgn gen linux arm64 ${{ matrix.build_type }} -- is_clang=${{ matrix.compiler == 'gcc' && 'false' || 'true' }} log_level=1 enable_serialized_actions=true  ten_enable_tests=false ten_rust_enable_tests=false ten_manager_enable_tests=false ten_enable_libwebsockets=false ten_enable_cargo_clean=true ten_enable_rust_incremental_build=false ten_manager_enable_frontend=false ten_enable_integration_tests_prebuilt=false && \
               tgn build linux arm64 ${{ matrix.build_type }} && \
               df -h . && \
               tree -I 'gen|obj' out \
             "
+
+      - name: Update supports before upload or publish
+        continue-on-error: true
+        run: |
+          UPDATE_SUPPORTS_SCRIPT=$(pwd)/tools/supports/update_supports_in_manifest_json.py
+
+          cd out/linux/arm64/ten_packages
+          ARRAY=(
+            "system/ten_runtime"
+            "system/ten_runtime_go"
+            "system/ten_runtime_python"
+            "system/ten_runtime_nodejs"
+            "addon_loader/python_addon_loader"
+            "addon_loader/nodejs_addon_loader"
+          )
+
+          for item in "${ARRAY[@]}"; do
+            echo "Processing item: $item"
+            if python3 ${UPDATE_SUPPORTS_SCRIPT} --os-arch-pairs linux:arm64 --input-file ${item}/manifest.json --output-file ${item}/manifest.json --log-level 1; then
+              echo "✓ Successfully updated supports for $item"
+              cat ${item}/manifest.json
+            else
+              echo "✗ Failed to update supports for $item, continuing with next item..."
+            fi
+          done
+
+          df -h .
+        shell: bash
 
       - name: Upload tman
         uses: actions/upload-artifact@v4
@@ -187,54 +201,151 @@ jobs:
 
       - name: Package assets
         if: github.event_name == 'release' || (github.ref != '' && startsWith(github.ref, 'refs/tags/'))
+        continue-on-error: true
         run: |
           cd out/linux/arm64
-          zip -vr tman-linux-arm64-${{ matrix.compiler }}-${{ matrix.build_type }}.zip ten_manager/bin/tman
-          zip -vr ten_packages-linux-arm64-${{ matrix.compiler }}-${{ matrix.build_type }}.zip \
-            ten_packages/system/ten_runtime \
-            ten_packages/system/ten_runtime_go \
-            ten_packages/system/ten_runtime_python \
-            ten_packages/extension/default_extension_cpp \
-            ten_packages/extension/default_extension_go \
-            ten_packages/extension/default_extension_python \
-            ten_packages/extension/default_async_extension_python \
-            ten_packages/addon_loader/python_addon_loader
+
+          # Define array of platform-specific packages to package
+          # (apps and extensions are platform-independent and handled in linux_ubuntu2204.yml)
+          FILES_TO_PACKAGE=(
+            "ten_packages/system/ten_runtime"
+            "ten_packages/system/ten_runtime_go"
+            "ten_packages/system/ten_runtime_python"
+            "ten_packages/system/ten_runtime_nodejs"
+            "ten_packages/addon_loader/python_addon_loader"
+            "ten_packages/addon_loader/nodejs_addon_loader"
+          )
+
+          # Create zip archive with existing files only
+          EXISTING_FILES=()
+          for file in "${FILES_TO_PACKAGE[@]}"; do
+            if [ -e "$file" ]; then
+              EXISTING_FILES+=("$file")
+              echo "✓ Found: $file"
+            else
+              echo "✗ Missing: $file (will be skipped)"
+            fi
+          done
+
+          if [ ${#EXISTING_FILES[@]} -gt 0 ]; then
+            echo "Creating zip archive with ${#EXISTING_FILES[@]} items..."
+            zip -vr ten_packages-linux-arm64-${{ matrix.compiler }}-${{ matrix.build_type }}.zip "${EXISTING_FILES[@]}" || {
+              echo "Warning: zip command failed, but continuing..."
+            }
+          else
+            echo "Warning: No files found to package"
+          fi
+
+          df -h .
+        shell: bash
 
       - name: Publish to release assets
         uses: softprops/action-gh-release@v2
         if: github.event_name == 'release' || (github.ref != '' && startsWith(github.ref, 'refs/tags/'))
         with:
           files: |
-            out/linux/arm64/tman-linux-arm64-${{ matrix.compiler }}-${{ matrix.build_type }}.zip
             out/linux/arm64/ten_packages-linux-arm64-${{ matrix.compiler }}-${{ matrix.build_type }}.zip
+
+      - name: Clean up
+        if: github.event_name == 'release' || (github.ref != '' && startsWith(github.ref, 'refs/tags/'))
+        continue-on-error: true
+        run: |
+          rm -rf out/linux/arm64/ten_packages-linux-arm64-${{ matrix.compiler }}-${{ matrix.build_type }}.zip
+
+          df -h .
 
       - name: Publish release to TEN cloud store
         if: ${{ (github.event_name == 'release' || (github.ref != '' && startsWith(github.ref, 'refs/tags/'))) && matrix.compiler == 'gcc' && matrix.build_type == 'release' }}
+        continue-on-error: true
         run: |
           docker run --rm --platform linux/arm64 \
               -v $(pwd):/${{ github.workspace }} -w ${{ github.workspace }} --entrypoint /bin/bash \
               ghcr.io/ten-framework/ten_building_ubuntu2204 -c "\
               set -x && \
-              cd out/linux/arm64/ten_packages && \
-              cd system/ten_runtime && \
-              identity=\$(../../../ten_manager/bin/tman package --get-identity) && \
-              echo \$identity && \
-              ../../../ten_manager/bin/tman --verbose --admin-token ${{ secrets.TEN_CLOUD_STORE_ADMIN_TOKEN }} delete \$identity || true && \
-              ../../../ten_manager/bin/tman --verbose --user-token ${{ secrets.TEN_CLOUD_STORE }} publish && cd - && \
-              cd system/ten_runtime_go && \
-              identity=\$(../../../ten_manager/bin/tman package --get-identity) && \
-              echo \$identity && \
-              ../../../ten_manager/bin/tman --verbose --admin-token ${{ secrets.TEN_CLOUD_STORE_ADMIN_TOKEN }} delete \$identity || true && \
-              ../../../ten_manager/bin/tman --verbose --user-token ${{ secrets.TEN_CLOUD_STORE }} publish && cd - && \
-              cd system/ten_runtime_python && \
-              identity=\$(../../../ten_manager/bin/tman package --get-identity) && \
-              echo \$identity && \
-              ../../../ten_manager/bin/tman --verbose --admin-token ${{ secrets.TEN_CLOUD_STORE_ADMIN_TOKEN }} delete \$identity || true && \
-              ../../../ten_manager/bin/tman --verbose --user-token ${{ secrets.TEN_CLOUD_STORE }} publish && cd - && \
-              cd addon_loader/python_addon_loader && \
-              identity=\$(../../../ten_manager/bin/tman package --get-identity) && \
-              echo \$identity && \
-              ../../../ten_manager/bin/tman --verbose --admin-token ${{ secrets.TEN_CLOUD_STORE_ADMIN_TOKEN }} delete \$identity || true && \
-              ../../../ten_manager/bin/tman --verbose --user-token ${{ secrets.TEN_CLOUD_STORE }} publish && cd - \
+              TMAN_BIN=$(pwd)/out/linux/arm64/ten_manager/bin/tman && \
+              cd out/linux/arm64 && \
+              ARRAY=(
+                \"ten_packages/system/ten_runtime\"
+                \"ten_packages/system/ten_runtime_go\"
+                \"ten_packages/system/ten_runtime_python\"
+                \"ten_packages/system/ten_runtime_nodejs\"
+                \"ten_packages/addon_loader/python_addon_loader\"
+                \"ten_packages/addon_loader/nodejs_addon_loader\"
+              ) && \
+              SUCCESSFUL_PUBLISHES=0 && \
+              FAILED_PUBLISHES=0 && \
+              for item in \"\${ARRAY[@]}\"; do
+                echo \"Processing: \$item\" && \
+                if [ ! -d \"\$item\" ]; then
+                  echo \"✗ Directory not found: \$item, skipping...\" && \
+                  FAILED_PUBLISHES=\$((FAILED_PUBLISHES + 1)) && \
+                  continue
+                fi && \
+                cd \"\$item\" || {
+                  echo \"✗ Failed to enter directory: \$item, skipping...\" && \
+                  FAILED_PUBLISHES=\$((FAILED_PUBLISHES + 1)) && \
+                  continue
+                } && \
+                if identity=\$(\\$TMAN_BIN package --get-identity 2>/dev/null); then
+                  echo \"Identity: \$identity\" && \
+                  echo \"Attempting to delete existing package...\" && \
+                  read -r pkg_type pkg_name pkg_version pkg_hash <<< \"\$identity\" && \
+                  \\$TMAN_BIN --verbose --admin-token ${{ secrets.TEN_CLOUD_STORE_ADMIN_TOKEN }} delete \"\$pkg_type\" \"\$pkg_name\" \"\$pkg_version\" \"\$pkg_hash\" || {
+                    echo \"Warning: Failed to delete existing package (this is normal if package doesn't exist)\"
+                  } && \
+                  echo \"Attempting to publish package...\" && \
+                  if \\$TMAN_BIN --verbose --user-token ${{ secrets.TEN_CLOUD_STORE }} publish; then
+                    echo \"✓ Successfully published: \$item\" && \
+                    SUCCESSFUL_PUBLISHES=\$((SUCCESSFUL_PUBLISHES + 1))
+                  else
+                    echo \"✗ Failed to publish: \$item\" && \
+                    FAILED_PUBLISHES=\$((FAILED_PUBLISHES + 1))
+                  fi
+                else
+                  echo \"✗ Failed to get identity for: \$item\" && \
+                  FAILED_PUBLISHES=\$((FAILED_PUBLISHES + 1))
+                fi && \
+                cd - >/dev/null
+              done && \
+              echo \"Publication summary: \$SUCCESSFUL_PUBLISHES successful, \$FAILED_PUBLISHES failed\" && \
+              df -h . \
+          "
+        shell: bash
+
+      - name: Clean up
+        if: ${{ (github.event_name == 'release' || (github.ref != '' && startsWith(github.ref, 'refs/tags/'))) && matrix.compiler == 'gcc' && matrix.build_type == 'release' }}
+        continue-on-error: true
+        run: |
+          docker run --rm --platform linux/arm64 \
+              -v $(pwd):/${{ github.workspace }} -w ${{ github.workspace }} --entrypoint /bin/bash \
+              ghcr.io/ten-framework/ten_building_ubuntu2204 -c "\
+              cd out/linux/arm64 && \
+              ARRAY=(
+                \"ten_packages/system/ten_runtime\"
+                \"ten_packages/system/ten_runtime_go\"
+                \"ten_packages/system/ten_runtime_python\"
+                \"ten_packages/system/ten_runtime_nodejs\"
+                \"ten_packages/addon_loader/python_addon_loader\"
+                \"ten_packages/addon_loader/nodejs_addon_loader\"
+              ) && \
+              SUCCESSFUL_CLEANUPS=0 && \
+              FAILED_CLEANUPS=0 && \
+              for item in \"\${ARRAY[@]}\"; do
+                echo \"Cleaning up: \$item\" && \
+                if [ -e \"\$item\" ]; then
+                  if rm -rf \"\$item\"; then
+                    echo \"✓ Successfully removed: \$item\" && \
+                    SUCCESSFUL_CLEANUPS=\$((SUCCESSFUL_CLEANUPS + 1))
+                  else
+                    echo \"✗ Failed to remove: \$item\" && \
+                    FAILED_CLEANUPS=\$((FAILED_CLEANUPS + 1))
+                  fi
+                else
+                  echo \"• Already absent: \$item\" && \
+                  SUCCESSFUL_CLEANUPS=\$((SUCCESSFUL_CLEANUPS + 1))
+                fi
+              done && \
+              echo \"Cleanup summary: \$SUCCESSFUL_CLEANUPS successful, \$FAILED_CLEANUPS failed\" && \
+              df -h . \
           "
         shell: bash

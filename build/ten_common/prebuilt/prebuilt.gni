@@ -44,7 +44,12 @@ template("ten_prebuilt_library") {
     } else if (is_win) {
       _lib_postfix = ".dll"
     } else if (is_mac) {
-      _lib_postfix = ".dylib"
+      if (defined(invoker.lib_version)) {
+        lib_version = invoker.lib_version
+        _lib_postfix = ".${lib_version}.dylib"
+      } else {
+        _lib_postfix = ".dylib"
+      }
     } else {
       assert(0, "Unsupported platform.")
     }
