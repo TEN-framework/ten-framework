@@ -46,13 +46,17 @@ class TestPlayHTTTSConfig(unittest.TestCase):
     def test_config_validation_with_missing_api_key(self):
         """Test config validation with missing api_key"""
         with self.assertRaises(ValueError):
-            config = PlayHTTTSConfig(params={"api_key": "", "user_id": "test_user_id"})
+            config = PlayHTTTSConfig(
+                params={"api_key": "", "user_id": "test_user_id"}
+            )
             config.validate()
 
     def test_config_validation_with_missing_user_id(self):
         """Test config validation with missing user_id"""
         with self.assertRaises(ValueError):
-            config = PlayHTTTSConfig(params={"api_key": "test_api_key", "user_id": ""})
+            config = PlayHTTTSConfig(
+                params={"api_key": "test_api_key", "user_id": ""}
+            )
             config.validate()
 
     def test_config_serialization(self):
