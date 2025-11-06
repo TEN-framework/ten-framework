@@ -9,10 +9,6 @@ from ten_ai_base.tts2_http import AsyncTTS2HttpConfig
 class PlayHTTTSConfig(AsyncTTS2HttpConfig):
     """PlayHT TTS Config"""
 
-    # Top-level configuration fields
-    api_key: str = Field(default="", description="PlayHT API key")
-    user_id: str = Field(default="", description="PlayHT User ID")
-
     dump: bool = Field(default=False, description="PlayHT TTS dump")
     dump_path: str = Field(
         default_factory=lambda: str(
@@ -41,17 +37,22 @@ class PlayHTTTSConfig(AsyncTTS2HttpConfig):
 
         config = copy.deepcopy(self)
 
-        # Encrypt sensitive fields
-        if config.api_key:
-            config.api_key = utils.encrypt(config.api_key)
-        if config.user_id:
-            config.user_id = utils.encrypt(config.user_id)
+        # Encrypt sensitive fields in params
+        if config.params:
+            if "api_key" in config.params:
+                config.params["api_key"] = utils.encrypt(
+                    config.params["api_key"]
+                )
+            if "user_id" in config.params:
+                config.params["user_id"] = utils.encrypt(
+                    config.params["user_id"]
+                )
 
         return f"{config}"
 
     def validate(self) -> None:
         """Validate PlayHT-specific configuration."""
-        if not self.api_key:
+        if "api_key" not in self.params or not self.params["api_key"]:
             raise ValueError("API key is required for PlayHT TTS")
-        if not self.user_id:
+        if "user_id" not in self.params or not self.params["user_id"]:
             raise ValueError("User ID is required for PlayHT TTS")

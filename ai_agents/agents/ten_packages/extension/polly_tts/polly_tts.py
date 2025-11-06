@@ -36,18 +36,24 @@ class PollyTTSClient(AsyncTTS2HttpClient):
 
         # Build session params
         session_params = {}
-        if config.aws_access_key_id:
-            session_params["aws_access_key_id"] = config.aws_access_key_id
-        if config.aws_secret_access_key:
-            session_params["aws_secret_access_key"] = config.aws_secret_access_key
-        if config.aws_session_token:
-            session_params["aws_session_token"] = config.aws_session_token
-        if config.region_name:
-            session_params["region_name"] = config.region_name
-        if config.profile_name:
-            session_params["profile_name"] = config.profile_name
-        if config.aws_account_id:
-            session_params["aws_account_id"] = config.aws_account_id
+        if config.params.get("aws_access_key_id"):
+            session_params["aws_access_key_id"] = config.params[
+                "aws_access_key_id"
+            ]
+        if config.params.get("aws_secret_access_key"):
+            session_params["aws_secret_access_key"] = config.params[
+                "aws_secret_access_key"
+            ]
+        if config.params.get("aws_session_token"):
+            session_params["aws_session_token"] = config.params[
+                "aws_session_token"
+            ]
+        if config.params.get("region_name"):
+            session_params["region_name"] = config.params["region_name"]
+        if config.params.get("profile_name"):
+            session_params["profile_name"] = config.params["profile_name"]
+        if config.params.get("aws_account_id"):
+            session_params["aws_account_id"] = config.params["aws_account_id"]
 
         try:
             self.session = boto3.Session(**session_params)

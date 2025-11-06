@@ -24,8 +24,8 @@ class PlayHTTTSClient(AsyncTTS2HttpClient):
 
         try:
             self.client = AsyncClient(
-                api_key=config.api_key,
-                user_id=config.user_id,
+                api_key=config.params["api_key"],
+                user_id=config.params["user_id"],
             )
         except Exception as e:
             ten_env.log_error(
