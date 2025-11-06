@@ -303,7 +303,7 @@ def test_multi_language(extension_name: str, config_dir: str) -> None:
         },
         {
             "name": "Chinese",
-            "audio_file": "16k_zh_cn.pcm",
+            "audio_file": "16k_zh_cn_hotwords.pcm",
             "config_file": MULTI_LANGUAGE_CONFIG_FILE_ZH,
             "expected_language": MULTI_LANGUAGE_EXPECTED_LANGUAGE_ZH,
         },
