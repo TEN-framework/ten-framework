@@ -1226,32 +1226,72 @@ jobs:
             ls -lh out/linux/x64/coverage/coverage_filtered.lcov
 
             echo "Uploading filtered coverage to Coveralls..."
-            coveralls --lcov-file out/linux/x64/coverage/coverage_filtered.lcov --verbose
-            echo "Coverage uploaded to Coveralls successfully"
+
+            # Capture coveralls output to extract the job URL
+            COVERALLS_OUTPUT=$(coveralls --lcov-file out/linux/x64/coverage/coverage_filtered.lcov --verbose 2>&1)
+            COVERALLS_EXIT_CODE=$?
+
+            echo "$COVERALLS_OUTPUT"
+
+            if [ $COVERALLS_EXIT_CODE -eq 0 ]; then
+              echo "Coverage uploaded to Coveralls successfully"
+
+              # Extract the URL from coveralls output
+              # The output format is: {'message': 'Job ##125.1', 'url': 'https://coveralls.io/jobs/173760015'}
+              # Use sed as fallback if grep -P is not available
+              if echo "$COVERALLS_OUTPUT" | grep -P "'url'" > /dev/null 2>&1; then
+                COVERALLS_JOB_URL=$(echo "$COVERALLS_OUTPUT" | grep -oP "(?<='url': ')[^']*" | tail -1)
+              else
+                # Fallback to sed for systems without grep -P
+                COVERALLS_JOB_URL=$(echo "$COVERALLS_OUTPUT" | sed -n "s/.*'url': '\([^']*\)'.*/\1/p" | tail -1)
+              fi
+
+              if [ -n "$COVERALLS_JOB_URL" ]; then
+                echo "Coveralls job URL: $COVERALLS_JOB_URL"
+                echo "COVERALLS_JOB_URL=$COVERALLS_JOB_URL" >> "$GITHUB_ENV"
+              else
+                echo "Could not extract Coveralls job URL from output"
+                # Fallback to repository URL
+                COVERALLS_JOB_URL="https://coveralls.io/github/${{ github.repository }}?branch=${{ github.ref_name }}"
+                echo "COVERALLS_JOB_URL=$COVERALLS_JOB_URL" >> "$GITHUB_ENV"
+              fi
+            else
+              echo "Error: Coverage upload to Coveralls failed with exit code $COVERALLS_EXIT_CODE"
+              # Set fallback URL even on failure
+              COVERALLS_JOB_URL="https://coveralls.io/github/${{ github.repository }}?branch=${{ github.ref_name }}"
+              echo "COVERALLS_JOB_URL=$COVERALLS_JOB_URL" >> "$GITHUB_ENV"
+              exit 1
+            fi
           else
             echo "Warning: coverage.lcov file not found, skipping Coveralls upload"
             ls -la out/linux/x64/coverage/ || true
+            exit 1
           fi
 
       - name: Upload filtered coverage report to artifacts
+        if: success() || failure()
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report-filtered
           path: out/linux/x64/coverage/coverage_filtered.lcov
           if-no-files-found: warn
 
-  publish-coverage:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
       - name: Add coverage link to job summary
-        shell: bash
+        if: always()
         run: |
-          REPO_NAME=$(echo "$GITHUB_REPOSITORY" | awk -F/ '{print $2}')
-          echo "Repository: $GITHUB_REPOSITORY (branch/tag: $GITHUB_REF_NAME)" >> "$GITHUB_STEP_SUMMARY"
+          echo "## 📊 Coverage Report" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Repository**: ${{ github.repository }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Branch/Tag**: ${{ github.ref_name }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
 
-          # Coveralls link (assuming standard Coveralls URL format)
-          COVERALLS_URL="https://coveralls.io/github/${{ github.repository }}?branch=${GITHUB_REF_NAME}"
-          echo "📊 **Coverage Reports:** ${COVERALLS_URL}" >> "$GITHUB_STEP_SUMMARY"
+          # Use the URL from coveralls output if available
+          if [ -n "${COVERALLS_JOB_URL:-}" ]; then
+            echo "**Coverage Report**: [${COVERALLS_JOB_URL}](${COVERALLS_JOB_URL})" >> "$GITHUB_STEP_SUMMARY"
+          else
+            # Fallback URL
+            COVERALLS_URL="https://coveralls.io/github/${{ github.repository }}?branch=${{ github.ref_name }}"
+            echo "**Coverage Report**: [${COVERALLS_URL}](${COVERALLS_URL})" >> "$GITHUB_STEP_SUMMARY"
+          fi
           echo "**Please refresh the website after several minutes to see the correct coverage data, especially for the tree structure view**" >> "$GITHUB_STEP_SUMMARY"
           echo "**Sometimes when the tree structure view is displayed, but actually the coverage data is not fully loaded, please refresh again for correct coverage data.**" >> "$GITHUB_STEP_SUMMARY"
