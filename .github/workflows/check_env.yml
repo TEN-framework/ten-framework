@@ -43,6 +43,11 @@ jobs:
           go-version: "stable"
           cache: false
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
       - name: Install tman using the install script
         run: |
           echo "================================================"
@@ -128,18 +133,36 @@ jobs:
       - name: Install app dependencies with tman
         run: |
           echo "================================================"
-          echo "Installing transcriber_demo app dependencies"
+          echo "Installing transcriber_demo ten packages"
           echo "================================================"
 
           cd /tmp/transcriber_demo
 
-          # Install dependencies using tman
+          # Install TEN package dependencies using tman
           tman install
 
           if [ $? -eq 0 ]; then
             echo "✓ tman install completed successfully"
           else
             echo "❌ ERROR: tman install failed"
+            exit 1
+          fi
+
+      - name: Install pip and npm dependencies
+        run: |
+          echo "================================================"
+          echo "Installing pip and npm dependencies"
+          echo "================================================"
+
+          cd /tmp/transcriber_demo
+
+          # Install Python and npm dependencies using tman
+          tman run install_deps
+
+          if [ $? -eq 0 ]; then
+            echo "✓ Dependencies installed successfully"
+          else
+            echo "❌ ERROR: Failed to install dependencies"
             exit 1
           fi
 
@@ -151,7 +174,7 @@ jobs:
 
           cd /tmp/transcriber_demo
 
-          # Build the app using tman
+          # Build the app using tman (includes go build and tsc compilation)
           tman run build
 
           if [ $? -ne 0 ]; then
@@ -172,24 +195,6 @@ jobs:
 
           echo ""
           echo "✓ Build verification completed"
-
-      - name: Install Python dependencies
-        run: |
-          echo "================================================"
-          echo "Installing Python dependencies for transcriber_demo app"
-          echo "================================================"
-
-          cd /tmp/transcriber_demo
-
-          # Install Python dependencies using tman
-          tman run install_python_deps
-
-          if [ $? -eq 0 ]; then
-            echo "✓ Python dependencies installed successfully"
-          else
-            echo "❌ ERROR: Failed to install Python dependencies"
-            exit 1
-          fi
 
       - name: Run app with tman
         run: |
