@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Optional
 from pydantic import BaseModel, Field, ConfigDict
 from ten_ai_base.utils import encrypt  # type: ignore
 
@@ -61,42 +61,92 @@ class BytedanceASRLLMConfig(BaseModel):
     # Language Configuration
     language: str = "zh-CN"
 
+    # Payload for full passthrough mode (optional)
+    # If set, user/audio/request in payload will override individual config fields
+    # Allows complete control over the full client request parameters
+    payload: dict[str, Any] = Field(default_factory=dict)
+
     # Params field for property.json compatibility
-    params: dict[str, Any] = Field(default_factory=dict)  # type: ignore
+    params: dict[str, Any] = Field(default_factory=dict)
 
-    def get_audio_config(self) -> dict[str, Any]:  # type: ignore
-        """Get audio configuration for ASR request."""
-        return {
-            "format": self.audio_format,
-            "codec": self.codec,
-            "rate": self.sample_rate,
-            "bits": self.bits,
-            "channel": self.channel,
-        }
+    def get_audio_config(self) -> dict[str, Any]:
+        """Get audio configuration for ASR request.
 
-    def get_request_config(self) -> dict[str, Any]:  # type: ignore
-        """Get request configuration for ASR."""
-        return {
-            "model_name": self.model_name,
-            "model_version": self.model_version,
-            "enable_itn": self.enable_itn,
-            "enable_punc": self.enable_punc,
-            "enable_ddc": self.enable_ddc,
-            "enable_nonstream": self.enable_nonstream,
-            "show_utterances": self.show_utterances,
-            "result_type": "single",
-            "end_window_size": self.end_window_size,
-        }
+        Must be provided via payload.audio (passthrough mode).
+        Raises ValueError if not provided.
+        """
+        # pylint: disable=no-member
+        audio_config = self.payload.get("audio") if self.payload else None
+        if not audio_config:
+            raise ValueError(
+                "Missing required parameter: payload.audio must be provided. "
+            )
+        return audio_config
 
-    def get_user_config(self) -> dict[str, Any]:  # type: ignore
-        """Get user configuration for ASR."""
-        return {"uid": self.user_uid}
+    def get_request_config(self) -> dict[str, Any]:
+        """Get request configuration for ASR.
 
-    def update(self, params: dict[str, Any]) -> None:  # type: ignore
+        Must be provided via payload.request (passthrough mode).
+        Raises ValueError if not provided.
+        """
+        # pylint: disable=no-member
+        request_config = self.payload.get("request") if self.payload else None
+        if not request_config:
+            raise ValueError(
+                "Missing required parameter: payload.request must be provided. "
+            )
+        return request_config
+
+    def get_user_config(self) -> Optional[dict[str, Any]]:
+        """Get user configuration for ASR.
+
+        If payload.user is set, use it directly (passthrough mode).
+        Otherwise, build from user_uid field.
+        Returns None if user config should not be included in request.
+        """
+        # pylint: disable=no-member
+        user_config = self.payload.get("user") if self.payload else None
+        if user_config:
+            # Return None for empty dict to omit user field from request
+            return user_config if user_config else None
+
+        # For backward compatibility, return uid only if not default
+        if self.user_uid and self.user_uid != "default_user":
+            return {"uid": self.user_uid}
+        return None
+
+    def get_sample_rate(self) -> int:
+        """Get sample rate from payload.audio.
+
+        Returns the sample rate configured in payload.
+        Raises ValueError if payload.audio is not configured.
+        """
+        audio_config = self.get_audio_config()
+        return audio_config.get("rate", 16000)
+
+    def get_bits(self) -> int:
+        """Get bits from payload.audio.
+
+        Returns the bits configured in payload.
+        Raises ValueError if payload.audio is not configured.
+        """
+        audio_config = self.get_audio_config()
+        return audio_config.get("bits", 16)
+
+    def get_channel(self) -> int:
+        """Get channel from payload.audio.
+
+        Returns the channel configured in payload.
+        Raises ValueError if payload.audio is not configured.
+        """
+        audio_config = self.get_audio_config()
+        return audio_config.get("channel", 1)
+
+    def update(self, params: dict[str, Any]) -> None:
         """Update configuration with params from property.json."""
         for key, value in params.items():
             if hasattr(self, key):
-                setattr(self, key, value)  # type: ignore
+                setattr(self, key, value)
 
     def to_json(self, sensitive_handling: bool = False) -> str:
         """Convert configuration to JSON string with optional sensitive data handling."""
@@ -113,14 +163,14 @@ class BytedanceASRLLMConfig(BaseModel):
 
         params_dict = config.params
         if params_dict:
-            encrypted_params: dict[str, Any] = {}  # type: ignore
+            encrypted_params: dict[str, Any] = {}
             for key, value in params_dict.items():
                 if key in ["app_key", "access_key", "api_key"] and isinstance(
                     value, str
                 ):
-                    encrypted_params[key] = encrypt(value)  # type: ignore
+                    encrypted_params[key] = encrypt(value)
                 else:
-                    encrypted_params[key] = value  # type: ignore
+                    encrypted_params[key] = value
             config.params = encrypted_params
 
         return config.model_dump_json()

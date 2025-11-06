@@ -281,17 +281,17 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
     @override
     def input_audio_sample_rate(self) -> int:
         """Get required input audio sample rate."""
-        return self.config.sample_rate if self.config else 16000
+        return self.config.get_sample_rate() if self.config else 16000
 
     @override
     def input_audio_channels(self) -> int:
         """Get the number of audio channels for input."""
-        return self.config.channel if self.config else 1
+        return self.config.get_channel() if self.config else 1
 
     @override
     def input_audio_sample_width(self) -> int:
         """Get the sample width in bytes for input audio."""
-        return self.config.bits // 8 if self.config else 2
+        return self.config.get_bits() // 8 if self.config else 2
 
     async def _handle_error(self, error: Exception) -> None:
         """Handle ASR errors."""
