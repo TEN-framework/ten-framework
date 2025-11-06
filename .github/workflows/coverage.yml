@@ -173,7 +173,7 @@ jobs:
         # Package CORE_BINARIES_AND_LIBS for coverage analysis
       - name: Package binaries and libraries for coverage analysis
         run: |
-          mkdir -p coverage_binaries_and_libs
+          mkdir -p binaries_and_libs
 
           # List of files needed for llvm-cov
           CORE_BINARIES_AND_LIBS=(
@@ -191,8 +191,8 @@ jobs:
 
           for file in "${CORE_BINARIES_AND_LIBS[@]}"; do
             if [ -e "$file" ]; then
-              # Copy file directly to coverage_binaries_and_libs (no subdirectories)
-              cp "$file" coverage_binaries_and_libs/
+              # Copy file directly to binaries_and_libs (no subdirectories)
+              cp "$file" binaries_and_libs/
               echo "✓ Copied: $file -> $(basename $file)"
             else
               echo "✗ Missing: $file"
@@ -200,10 +200,10 @@ jobs:
           done
 
           echo "Files packaged for coverage analysis:"
-          ls -lh coverage_binaries_and_libs/
+          ls -lh binaries_and_libs/
 
           # Create tar archive
-          tar -czf coverage-binaries-and-libs.tar.gz coverage_binaries_and_libs
+          tar -czf coverage-binaries-and-libs.tar.gz binaries_and_libs
 
       - name: Upload binaries and libraries for coverage analysis
         uses: actions/upload-artifact@v4
@@ -1136,11 +1136,11 @@ jobs:
           tar -xzf coverage-binaries-and-libs.tar.gz
 
           # Move to target location
-          mkdir -p out/linux/coverage
-          mv coverage_binaries_and_libs out/linux/coverage/binaries_and_libs
+          mkdir -p out/linux/x64/coverage
+          mv binaries_and_libs out/linux/x64/coverage/binaries_and_libs
 
           echo "Extracted binaries and libraries:"
-          find out/linux/coverage/binaries_and_libs -type f
+          find out/linux/x64/coverage/binaries_and_libs -type f
 
       - name: Download all profdata files
         uses: actions/download-artifact@v4
@@ -1160,16 +1160,16 @@ jobs:
       - name: Gather coverage information
         run: |
           CORE_BINARIES_AND_LIBS=(
-            "out/linux/coverage/binaries_and_libs/ten_utils_unit_test"
-            "out/linux/coverage/binaries_and_libs/integration_test"
-            "out/linux/coverage/binaries_and_libs/ten_runtime_smoke_test"
-            "out/linux/coverage/binaries_and_libs/ten_runtime_unit_test"
-            "out/linux/coverage/binaries_and_libs/libten_runtime.so"
-            "out/linux/coverage/binaries_and_libs/libten_runtime_go.so"
-            "out/linux/coverage/binaries_and_libs/libten_runtime_python.so"
-            "out/linux/coverage/binaries_and_libs/libten_runtime_nodejs.node"
-            "out/linux/coverage/binaries_and_libs/libten_utils.so"
-            "out/linux/coverage/binaries_and_libs/libten_rust.a"
+            "out/linux/x64/coverage/binaries_and_libs/ten_utils_unit_test"
+            "out/linux/x64/coverage/binaries_and_libs/integration_test"
+            "out/linux/x64/coverage/binaries_and_libs/ten_runtime_smoke_test"
+            "out/linux/x64/coverage/binaries_and_libs/ten_runtime_unit_test"
+            "out/linux/x64/coverage/binaries_and_libs/libten_runtime.so"
+            "out/linux/x64/coverage/binaries_and_libs/libten_runtime_go.so"
+            "out/linux/x64/coverage/binaries_and_libs/libten_runtime_python.so"
+            "out/linux/x64/coverage/binaries_and_libs/libten_runtime_nodejs.node"
+            "out/linux/x64/coverage/binaries_and_libs/libten_utils.so"
+            "out/linux/x64/coverage/binaries_and_libs/libten_rust.a"
           )
 
           # Find and merge all profdata files
