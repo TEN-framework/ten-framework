@@ -293,6 +293,107 @@ Use `${env:VAR_NAME}` or `${env:VAR_NAME|}` (with fallback) in property.json:
 - `await self.send_asr_error(module_error, vendor_info)`
 - `await self.send_asr_finalize_end()`
 
+### Config Management Best Practices
+
+**Separating Authentication vs Passthrough Parameters:**
+
+Extensions should distinguish between two types of parameters:
+1. **Non-passthrough params** - Used for authentication/initialization, NOT sent in API request body
+2. **Passthrough params** - Sent directly in the API request body/query
+
+**Non-Passthrough Parameters (Top-Level Config Fields):**
+- API keys used in Authorization headers
+- User IDs for client initialization
+- AWS credentials for session creation
+- Any parameter used before making the actual API request
+
+**Example Pattern:**
+
+```python
+# config.py
+class MyTTSConfig(AsyncTTS2HttpConfig):
+    """My TTS Config"""
+
+    # Top-level fields for non-passthrough params
+    api_key: str = Field(default="", description="API key")
+    user_id: str = Field(default="", description="User ID")
+
+    # Passthrough parameters sent in API requests
+    params: dict[str, Any] = Field(
+        default_factory=dict, description="API request params"
+    )
+
+    def update_params(self) -> None:
+        """Process params before sending to API"""
+        # Add fixed values that should always be sent
+        self.params["response_format"] = "pcm"
+
+        # Remove params that shouldn't be sent to API
+        # (e.g., sample_rate if it's used elsewhere but not a valid API param)
+        if "sample_rate" in self.params:
+            del self.params["sample_rate"]
+
+    def validate(self) -> None:
+        """Validate required config - check top-level fields"""
+        if not self.api_key:
+            raise ValueError("API key is required")
+
+    def to_str(self, sensitive_handling: bool = True) -> str:
+        """Encrypt sensitive top-level fields for logging"""
+        if not sensitive_handling:
+            return f"{self}"
+
+        config = copy.deepcopy(self)
+        if config.api_key:
+            config.api_key = utils.encrypt(config.api_key)
+
+        return f"{config}"
+```
+
+```json
+// property.json - Top-level fields outside params
+{
+    "api_key": "${env:MY_TTS_API_KEY|}",
+    "user_id": "${env:MY_TTS_USER_ID|}",
+    "params": {
+        "model": "gpt-4o-mini-tts",
+        "voice": "coral",
+        "speed": 1.0
+    }
+}
+```
+
+```python
+# client.py - Use top-level fields for initialization
+class MyTTSClient(AsyncTTS2HttpClient):
+    def __init__(self, config: MyTTSConfig, ten_env: AsyncTenEnv):
+        super().__init__()
+        # Use top-level fields for authentication
+        self.client = AsyncClient(
+            api_key=config.api_key,
+            user_id=config.user_id
+        )
+
+    async def get(self, text: str, request_id: str):
+        # Spread params into API request - api_key won't be here
+        response = await self.client.synthesize(
+            text=text,
+            **self.config.params
+        )
+```
+
+**Key Rules:**
+1. If a parameter is used for headers, authentication, or client initialization → **Top-level field**
+2. If a parameter is sent in the request body → **Keep in params dict**
+3. Never manually remove top-level fields from params - they shouldn't be there by design
+4. Use `update_params()` to strip params that are computed/derived (like `sample_rate`) before API requests
+
+**Common Examples:**
+- `api_key` → Top-level (used in Authorization header)
+- `aws_access_key_id`, `aws_secret_access_key` → Top-level (used for boto3 session)
+- `model`, `voice`, `speed`, `temperature` → params (sent in API request)
+- `sample_rate` → Either top-level (if used by extension) or remove in `update_params()` (if derived)
+
 ## TMAN Tool
 
 `tman` is the TEN package manager used for:

@@ -9,6 +9,9 @@ from ten_ai_base.tts2_http import AsyncTTS2HttpConfig
 class OpenAITTSConfig(AsyncTTS2HttpConfig):
     """OpenAI TTS Config"""
 
+    # Top-level configuration fields
+    api_key: str = Field(default="", description="OpenAI API key")
+
     dump: bool = Field(default=False, description="OpenAI TTS dump")
     dump_path: str = Field(
         default_factory=lambda: str(
@@ -41,15 +44,15 @@ class OpenAITTSConfig(AsyncTTS2HttpConfig):
 
         config = copy.deepcopy(self)
 
-        # Encrypt sensitive fields in params
-        if config.params and "api_key" in config.params:
-            config.params["api_key"] = utils.encrypt(config.params["api_key"])
+        # Encrypt sensitive fields
+        if config.api_key:
+            config.api_key = utils.encrypt(config.api_key)
 
         return f"{config}"
 
     def validate(self) -> None:
         """Validate OpenAI-specific configuration."""
-        if "api_key" not in self.params or not self.params["api_key"]:
+        if not self.api_key:
             raise ValueError("API key is required for OpenAI TTS")
         if "model" not in self.params or not self.params["model"]:
             raise ValueError("Model is required for OpenAI TTS")

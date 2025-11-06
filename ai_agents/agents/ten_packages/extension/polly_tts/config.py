@@ -9,6 +9,14 @@ from ten_ai_base.tts2_http import AsyncTTS2HttpConfig
 class PollyTTSConfig(AsyncTTS2HttpConfig):
     """Amazon Polly TTS Config"""
 
+    # Top-level configuration fields (AWS credentials and session config)
+    aws_access_key_id: str = Field(default="", description="AWS Access Key ID")
+    aws_secret_access_key: str = Field(default="", description="AWS Secret Access Key")
+    aws_session_token: str = Field(default="", description="AWS Session Token")
+    region_name: str = Field(default="", description="AWS Region Name")
+    profile_name: str = Field(default="", description="AWS Profile Name")
+    aws_account_id: str = Field(default="", description="AWS Account ID")
+
     dump: bool = Field(default=False, description="Amazon Polly TTS dump")
     dump_path: str = Field(
         default_factory=lambda: str(Path(__file__).parent / "polly_tts_in.pcm"),
@@ -29,31 +37,23 @@ class PollyTTSConfig(AsyncTTS2HttpConfig):
 
         config = copy.deepcopy(self)
 
-        # Encrypt sensitive fields in params
-        if config.params:
-            for key in [
-                "aws_access_key_id",
-                "aws_secret_access_key",
-                "aws_session_token",
-            ]:
-                if key in config.params:
-                    config.params[key] = utils.encrypt(config.params[key])
+        # Encrypt sensitive fields
+        if config.aws_access_key_id:
+            config.aws_access_key_id = utils.encrypt(config.aws_access_key_id)
+        if config.aws_secret_access_key:
+            config.aws_secret_access_key = utils.encrypt(config.aws_secret_access_key)
+        if config.aws_session_token:
+            config.aws_session_token = utils.encrypt(config.aws_session_token)
 
         return f"{config}"
 
     def validate(self) -> None:
         """Validate Polly-specific configuration."""
-        if (
-            "aws_access_key_id" not in self.params
-            or not self.params["aws_access_key_id"]
-        ):
+        if not self.aws_access_key_id:
             raise ValueError(
                 "aws_access_key_id is required for Amazon Polly TTS"
             )
-        if (
-            "aws_secret_access_key" not in self.params
-            or not self.params["aws_secret_access_key"]
-        ):
+        if not self.aws_secret_access_key:
             raise ValueError(
                 "aws_secret_access_key is required for Amazon Polly TTS"
             )

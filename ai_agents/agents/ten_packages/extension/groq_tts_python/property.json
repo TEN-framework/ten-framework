@@ -1,6 +1,6 @@
 {
+    "api_key": "${env:GROQ_TTS_API_KEY}",
     "params": {
-        "api_key": "${env:GROQ_TTS_API_KEY}",
         "model": "playai-tts",
         "voice": "Arista-PlayAI",
         "sample_rate": 16000

@@ -27,7 +27,7 @@ class OpenAITTSClient(AsyncTTS2HttpClient):
 
         try:
             self.client = AsyncOpenAI(
-                api_key=config.params["api_key"],
+                api_key=config.api_key,
             )
         except Exception as e:
             ten_env.log_error(

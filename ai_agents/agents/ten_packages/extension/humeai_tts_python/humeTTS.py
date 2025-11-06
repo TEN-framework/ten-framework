@@ -26,7 +26,7 @@ class HumeAiTTS(AsyncTTS2HttpClient):
         super().__init__()
         self.config = config
         self.ten_env = ten_env
-        api_key = config.params.get("key", "")
+        api_key = config.key
         self.connection = AsyncHumeClient(api_key=api_key)
         self._is_cancelled = False
 
