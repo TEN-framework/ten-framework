@@ -80,10 +80,9 @@ template("ten_runtime_glob") {
     }
 
     if (enable_coverage) {
-      assert(
-        is_linux && target_cpu == "x64",
-        "Coverage instrumentation should only be enabled in Linux + x64"
-      )
+      assert(is_linux && target_cpu == "x64",
+             "Coverage instrumentation should only be enabled in Linux + x64")
+
       if (is_clang) {
         cflags += [
           "-fprofile-instr-generate",
@@ -101,10 +100,9 @@ template("ten_runtime_glob") {
     }
 
     if (enable_coverage) {
-      assert(
-        is_linux && target_cpu == "x64",
-        "Coverage instrumentation should only be enabled in Linux + x64"
-      )
+      assert(is_linux && target_cpu == "x64",
+             "Coverage instrumentation should only be enabled in Linux + x64")
+
       if (is_clang) {
         cflags_c += [
           "-fprofile-instr-generate",
@@ -121,10 +119,9 @@ template("ten_runtime_glob") {
     }
 
     if (enable_coverage) {
-      assert(
-        is_linux && target_cpu == "x64",
-        "Coverage instrumentation should only be enabled in Linux + x64"
-      )
+      assert(is_linux && target_cpu == "x64",
+             "Coverage instrumentation should only be enabled in Linux + x64")
+
       if (is_clang) {
         cflags_cc += [
           "-fprofile-instr-generate",

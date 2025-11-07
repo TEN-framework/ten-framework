@@ -10,7 +10,7 @@ on:
       - ".vscode/**"
       - ".devcontainer/**"
       - ".github/**"
-      - "!.github/workflows/coverage_coveralls_runtime.yml"
+      - "!.github/workflows/coverage.yml"
       - "core/src/ten_manager/designer_frontend/**"
       - "**.md"
       - "ai_agents/**"
@@ -1089,7 +1089,14 @@ jobs:
           df -h .
 
   gather-coverage-information:
-    needs: [test-standalone, test-integration-cpp, test-integration-go, test-integration-python, test-integration-nodejs]
+    needs:
+      [
+        test-standalone,
+        test-integration-cpp,
+        test-integration-go,
+        test-integration-python,
+        test-integration-nodejs,
+      ]
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/ten-framework/ten_building_ubuntu2204
@@ -1293,5 +1300,7 @@ jobs:
             COVERALLS_URL="https://coveralls.io/github/${{ github.repository }}?branch=${{ github.ref_name }}"
             echo "**Coverage Report**: [${COVERALLS_URL}](${COVERALLS_URL})" >> "$GITHUB_STEP_SUMMARY"
           fi
+
           echo "**Please refresh the website after several minutes to see the correct coverage data, especially for the tree structure view**" >> "$GITHUB_STEP_SUMMARY"
+
           echo "**Sometimes when the tree structure view is displayed, but actually the coverage data is not fully loaded, please refresh again for correct coverage data.**" >> "$GITHUB_STEP_SUMMARY"
