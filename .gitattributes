@@ -4,7 +4,6 @@
 ai_agents/agents/bin/* text eol=lf
 ai_agents/agents/scripts/* text eol=lf
 
-
 # Ensure .dockerignore and .tenignore files always use LF line endings
 .dockerignore text eol=lf
 .tenignore text eol=lf
