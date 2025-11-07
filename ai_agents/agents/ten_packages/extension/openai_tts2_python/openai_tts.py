@@ -1,52 +1,65 @@
-from typing import AsyncIterator
+from typing import Any, AsyncIterator, Tuple
 from openai import AsyncOpenAI
 
-from .config import OpenaiTTSConfig
 from ten_runtime import AsyncTenEnv
 from ten_ai_base.const import LOG_CATEGORY_VENDOR
+from ten_ai_base.struct import TTS2HttpResponseEventType
+from ten_ai_base.tts2_http import AsyncTTS2HttpClient
 
-# Custom event types to communicate status back to the extension
-EVENT_TTS_RESPONSE = 1
-EVENT_TTS_END = 2
-EVENT_TTS_ERROR = 3
-EVENT_TTS_INVALID_KEY_ERROR = 4
-EVENT_TTS_FLUSH = 5
+from .config import OpenAITTSConfig
 
 
 BYTES_PER_SAMPLE = 2
 NUMBER_OF_CHANNELS = 1
 
 
-class OpenaiTTSClient:
+class OpenAITTSClient(AsyncTTS2HttpClient):
     def __init__(
         self,
-        config: OpenaiTTSConfig,
+        config: OpenAITTSConfig,
         ten_env: AsyncTenEnv,
     ):
+        super().__init__()
         self.config = config
-        self.api_key = config.api_key
         self.ten_env: AsyncTenEnv = ten_env
         self._is_cancelled = False
-        self.client = AsyncOpenAI(
-            api_key=self.config.api_key,
-        )
+        self.client: AsyncOpenAI | None = None
 
-    async def stop(self):
-        # Stop the client if it exists
-        if self.client:
-            await self.client.close()
-            self.client = None
+        try:
+            self.client = AsyncOpenAI(
+                api_key=config.params["api_key"],
+            )
+        except Exception as e:
+            ten_env.log_error(
+                f"error when initializing OpenAITTS: {e}",
+                category=LOG_CATEGORY_VENDOR,
+            )
+            raise RuntimeError(f"error when initializing OpenAITTS: {e}") from e
 
-    def cancel(self):
-        self.ten_env.log_debug("OpenaiTTS: cancel() called.")
+    async def cancel(self):
+        self.ten_env.log_debug("OpenAITTS: cancel() called.")
         self._is_cancelled = True
 
     async def get(
-        self, text: str
-    ) -> AsyncIterator[tuple[bytes | None, int | None]]:
-        """Process a single TTS request in serial manner"""
+        self, text: str, request_id: str
+    ) -> AsyncIterator[Tuple[bytes | None, TTS2HttpResponseEventType]]:
+        """Process a single TTS request"""
         self._is_cancelled = False
         if not self.client:
+            self.ten_env.log_error(
+                f"OpenAITTS: client not initialized for request_id: {request_id}.",
+                category=LOG_CATEGORY_VENDOR,
+            )
+            raise RuntimeError(
+                f"OpenAITTS: client not initialized for request_id: {request_id}."
+            )
+
+        if len(text.strip()) == 0:
+            self.ten_env.log_warning(
+                f"OpenAITTS: empty text for request_id: {request_id}.",
+                category=LOG_CATEGORY_VENDOR,
+            )
+            yield None, TTS2HttpResponseEventType.END
             return
 
         try:
@@ -57,13 +70,13 @@ class OpenaiTTSClient:
                 async for chunk in response.iter_bytes():
                     if self._is_cancelled:
                         self.ten_env.log_debug(
-                            "Cancellation flag detected, sending flush event and stopping TTS stream."
+                            f"Cancellation flag detected, sending flush event and stopping TTS stream of request_id: {request_id}."
                         )
-                        yield None, EVENT_TTS_FLUSH
+                        yield None, TTS2HttpResponseEventType.FLUSH
                         break
 
                     self.ten_env.log_debug(
-                        f"OpenaiTTS: sending EVENT_TTS_RESPONSE, length: {len(chunk)}"
+                        f"OpenAITTS: sending EVENT_TTS_RESPONSE, length: {len(chunk)} of request_id: {request_id}."
                     )
                     if len(cache_audio_bytes) > 0:
                         chunk = cache_audio_bytes + chunk
@@ -78,16 +91,18 @@ class OpenaiTTSClient:
                         chunk = chunk[:-left_size]
 
                     if len(chunk) > 0:
-                        yield bytes(chunk), EVENT_TTS_RESPONSE
+                        yield bytes(chunk), TTS2HttpResponseEventType.RESPONSE
 
             if not self._is_cancelled:
-                self.ten_env.log_debug("OpenaiTTS: sending EVENT_TTS_END")
-                yield None, EVENT_TTS_END
+                self.ten_env.log_debug(
+                    f"OpenAITTS: sending EVENT_TTS_END of request_id: {request_id}."
+                )
+                yield None, TTS2HttpResponseEventType.END
 
         except Exception as e:
             error_message = str(e)
             self.ten_env.log_error(
-                f"vendor_error: {error_message}",
+                f"vendor_error: {error_message} of request_id: {request_id}.",
                 category=LOG_CATEGORY_VENDOR,
             )
 
@@ -95,11 +110,26 @@ class OpenaiTTSClient:
             if (
                 "401" in error_message and "invalid_api_key" in error_message
             ) or ("invalid_api_key" in error_message):
-                yield error_message.encode("utf-8"), EVENT_TTS_INVALID_KEY_ERROR
+                yield error_message.encode(
+                    "utf-8"
+                ), TTS2HttpResponseEventType.INVALID_KEY_ERROR
             else:
-                yield error_message.encode("utf-8"), EVENT_TTS_ERROR
+                yield error_message.encode(
+                    "utf-8"
+                ), TTS2HttpResponseEventType.ERROR
 
-    def clean(self):
-        # In this new model, most cleanup is handled by the connection object's lifecycle.
-        # This can be used for any additional cleanup if needed.
-        self.ten_env.log_debug("OpenaiTTS: clean() called.")
+    async def clean(self):
+        """Clean up resources"""
+        self.ten_env.log_debug("OpenAITTS: clean() called.")
+        try:
+            if self.client:
+                await self.client.close()
+        finally:
+            pass
+
+    def get_extra_metadata(self) -> dict[str, Any]:
+        """Return extra metadata for TTFB metrics."""
+        return {
+            "model": self.config.params.get("model", ""),
+            "voice": self.config.params.get("voice", ""),
+        }

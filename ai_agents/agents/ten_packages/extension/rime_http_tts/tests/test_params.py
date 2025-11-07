@@ -15,7 +15,7 @@ if project_root not in sys.path:
 #
 from pathlib import Path
 import json
-from unittest.mock import patch, MagicMock
+from unittest.mock import AsyncMock, patch, MagicMock
 
 from ten_runtime import (
     ExtensionTester,
@@ -65,13 +65,13 @@ def test_params_passthrough(MockRimeTTSClient):
 
     # --- Mock Configuration ---
     mock_instance = MockRimeTTSClient.return_value
-    mock_instance.clean = MagicMock()  # Required for clean shutdown in on_flush
+    mock_instance.clean = AsyncMock()  # Required for clean shutdown in on_flush
 
     # --- Test Setup ---
     # Define a configuration with custom parameters inside 'params'.
-    # These are the parameters we expect to be "passed through".
+    # api_key stays in params and is only stripped when making HTTP request
     real_params = {
-        "api_key": "a_test_api_key",
+        "api_key": "test_api_key",
         "speaker": "celeste",
         "modelId": "arcana",
         "samplingRate": 24000,
@@ -82,6 +82,7 @@ def test_params_passthrough(MockRimeTTSClient):
     }
 
     passthrough_params = {
+        "api_key": "test_api_key",
         "speaker": "celeste",
         "modelId": "arcana",
         "lang": "eng",

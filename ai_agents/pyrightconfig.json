@@ -28,28 +28,87 @@
     ],
     "executionEnvironments": [
         {
-            "root": "agents/examples",
+            "root": "agents/examples/demo",
             "extraPaths": [
-                "/app/agents/examples/demo/tenapp/ten_packages/system/ten_runtime_python/interface",
-                "/app/agents/examples/stepfun-demo/tenapp/ten_packages/system/ten_runtime_python/interface",
-                "/app/agents/examples/transcription/tenapp/ten_packages/system/ten_runtime_python/interface",
-                "/app/agents/examples/voice-assistant/tenapp/ten_packages/system/ten_runtime_python/interface",
-                "/app/agents/examples/voice-assistant-nodejs/tenapp/ten_packages/system/ten_runtime_python/interface",
-                "/app/agents/examples/voice-assistant-realtime/tenapp/ten_packages/system/ten_runtime_python/interface",
-                "/app/agents/examples/voice-assistant-sip-twilio/tenapp/ten_packages/system/ten_runtime_python/interface",
-                "/app/agents/examples/voice-assistant-video/tenapp/ten_packages/system/ten_runtime_python/interface",
-                "/app/agents/examples/voice-assistant-with-memU/tenapp/ten_packages/system/ten_runtime_python/interface",
-                "/app/agents/examples/voice-assistant-with-ten-vad/tenapp/ten_packages/system/ten_runtime_python/interface",
-                "/app/agents/examples/demo/tenapp/ten_packages/system/ten_ai_base/interface",
-                "/app/agents/examples/stepfun-demo/tenapp/ten_packages/system/ten_ai_base/interface",
-                "/app/agents/examples/transcription/tenapp/ten_packages/system/ten_ai_base/interface",
-                "/app/agents/examples/voice-assistant/tenapp/ten_packages/system/ten_ai_base/interface",
-                "/app/agents/examples/voice-assistant-nodejs/tenapp/ten_packages/system/ten_ai_base/interface",
-                "/app/agents/examples/voice-assistant-realtime/tenapp/ten_packages/system/ten_ai_base/interface",
-                "/app/agents/examples/voice-assistant-sip-twilio/tenapp/ten_packages/system/ten_ai_base/interface",
-                "/app/agents/examples/voice-assistant-video/tenapp/ten_packages/system/ten_ai_base/interface",
-                "/app/agents/examples/voice-assistant-with-memU/tenapp/ten_packages/system/ten_ai_base/interface",
-                "/app/agents/examples/voice-assistant-with-ten-vad/tenapp/ten_packages/system/ten_ai_base/interface"
+                "agents/examples/demo/tenapp/ten_packages/system/ten_runtime_python/interface",
+                "agents/examples/demo/tenapp/ten_packages/system/ten_ai_base/interface"
+            ]
+        },
+        {
+            "root": "agents/examples/stepfun-demo",
+            "extraPaths": [
+                "agents/examples/stepfun-demo/tenapp/ten_packages/system/ten_runtime_python/interface",
+                "agents/examples/stepfun-demo/tenapp/ten_packages/system/ten_ai_base/interface"
+            ]
+        },
+        {
+            "root": "agents/examples/transcription",
+            "extraPaths": [
+                "agents/examples/transcription/tenapp/ten_packages/system/ten_runtime_python/interface",
+                "agents/examples/transcription/tenapp/ten_packages/system/ten_ai_base/interface"
+            ]
+        },
+        {
+            "root": "agents/examples/voice-assistant",
+            "extraPaths": [
+                "agents/examples/voice-assistant/tenapp/ten_packages/system/ten_runtime_python/interface",
+                "agents/examples/voice-assistant/tenapp/ten_packages/system/ten_ai_base/interface"
+            ]
+        },
+        {
+            "root": "agents/examples/voice-assistant-nodejs",
+            "extraPaths": [
+                "agents/examples/voice-assistant-nodejs/tenapp/ten_packages/system/ten_runtime_python/interface",
+                "agents/examples/voice-assistant-nodejs/tenapp/ten_packages/system/ten_ai_base/interface"
+            ]
+        },
+        {
+            "root": "agents/examples/voice-assistant-realtime",
+            "extraPaths": [
+                "agents/examples/voice-assistant-realtime/tenapp/ten_packages/system/ten_runtime_python/interface",
+                "agents/examples/voice-assistant-realtime/tenapp/ten_packages/system/ten_ai_base/interface"
+            ]
+        },
+        {
+            "root": "agents/examples/voice-assistant-sip-twilio",
+            "extraPaths": [
+                "agents/examples/voice-assistant-sip-twilio/tenapp/ten_packages/system/ten_runtime_python/interface",
+                "agents/examples/voice-assistant-sip-twilio/tenapp/ten_packages/system/ten_ai_base/interface"
+            ]
+        },
+        {
+            "root": "agents/examples/voice-assistant-video",
+            "extraPaths": [
+                "agents/examples/voice-assistant-video/tenapp/ten_packages/system/ten_runtime_python/interface",
+                "agents/examples/voice-assistant-video/tenapp/ten_packages/system/ten_ai_base/interface"
+            ]
+        },
+        {
+            "root": "agents/examples/voice-assistant-with-memU",
+            "extraPaths": [
+                "agents/examples/voice-assistant-with-memU/tenapp/ten_packages/system/ten_runtime_python/interface",
+                "agents/examples/voice-assistant-with-memU/tenapp/ten_packages/system/ten_ai_base/interface"
+            ]
+        },
+        {
+            "root": "agents/examples/voice-assistant-with-ten-vad",
+            "extraPaths": [
+                "agents/examples/voice-assistant-with-ten-vad/tenapp/ten_packages/system/ten_runtime_python/interface",
+                "agents/examples/voice-assistant-with-ten-vad/tenapp/ten_packages/system/ten_ai_base/interface"
+            ]
+        },
+        {
+            "root": "agents/examples/voice-assistant-with-turn-detection",
+            "extraPaths": [
+                "agents/examples/voice-assistant-with-turn-detection/tenapp/ten_packages/system/ten_runtime_python/interface",
+                "agents/examples/voice-assistant-with-turn-detection/tenapp/ten_packages/system/ten_ai_base/interface"
+            ]
+        },
+        {
+            "root": "agents/ten_packages",
+            "extraPaths": [
+                "agents/ten_packages/system/ten_runtime_python/interface",
+                "agents/ten_packages/system/ten_ai_base/interface"
             ]
         }
     ]
