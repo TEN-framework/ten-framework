@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "rime_http_tts",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "dependencies": [
     {
       "type": "system",
@@ -34,7 +34,35 @@
       "properties": {
         "params": {
           "type": "object",
-          "properties": {}
+          "properties": {
+            "api_key": {
+              "type": "string"
+            },
+            "speaker": {
+              "type": "string"
+            },
+            "modelId": {
+              "type": "string"
+            },
+            "repetition_penalty": {
+              "type": "float64"
+            },
+            "temperature": {
+              "type": "float64"
+            },
+            "top_p": {
+              "type": "int32"
+            },
+            "max_tokens": {
+              "type": "int32"
+            },
+            "lang": {
+              "type": "string"
+            },
+            "samplingRate": {
+              "type": "int32"
+            }
+          }
         }
       }
     }
