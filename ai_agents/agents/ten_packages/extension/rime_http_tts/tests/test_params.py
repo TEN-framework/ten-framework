@@ -69,19 +69,20 @@ def test_params_passthrough(MockRimeTTSClient):
 
     # --- Test Setup ---
     # Define a configuration with custom parameters inside 'params'.
-    # api_key is at top-level (not passed in request body)
+    # api_key stays in params and is only stripped when making HTTP request
     real_params = {
+        "api_key": "test_api_key",
         "speaker": "celeste",
         "modelId": "arcana",
         "samplingRate": 24000,
     }
 
     real_config = {
-        "api_key": "test_api_key",
         "params": real_params,
     }
 
     passthrough_params = {
+        "api_key": "test_api_key",
         "speaker": "celeste",
         "modelId": "arcana",
         "lang": "eng",

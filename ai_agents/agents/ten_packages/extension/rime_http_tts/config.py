@@ -10,9 +10,6 @@ from pydantic import Field
 class RimeTTSConfig(AsyncTTS2HttpConfig):
     """Rime TTS Config"""
 
-    # Top-level configuration fields
-    api_key: str = Field(default="", description="Rime API key")
-
     # Debug and logging
     dump: bool = Field(default=False, description="Rime TTS dump")
     dump_path: str = Field(
@@ -26,16 +23,14 @@ class RimeTTSConfig(AsyncTTS2HttpConfig):
     def update_params(self) -> None:
         """Update configuration from params dictionary"""
         # Keys to exclude from params after processing (not passthrough params)
-        blacklist_keys = ["text", "sample_rate"]
+        blacklist_keys = ["text"]
 
         self.params["audioFormat"] = "pcm"
 
-        # Normalize sample rate key
-        if "samplingRate" in self.params:
-            sample_rate = int(self.params["samplingRate"])
-            self.params["sample_rate"] = sample_rate
-        elif "sampling_rate" in self.params:
-            self.params["sample_rate"] = int(self.params["sampling_rate"])
+        # Normalize sample rate key - convert sampling_rate to samplingRate if needed
+        if "sampling_rate" in self.params:
+            self.params["samplingRate"] = int(self.params["sampling_rate"])
+            del self.params["sampling_rate"]
 
         self.params["segment"] = "immediate"
 
@@ -51,13 +46,13 @@ class RimeTTSConfig(AsyncTTS2HttpConfig):
 
         config = copy.deepcopy(self)
 
-        # Encrypt sensitive fields
-        if config.api_key:
-            config.api_key = utils.encrypt(config.api_key)
+        # Encrypt sensitive fields in params
+        if config.params and "api_key" in config.params:
+            config.params["api_key"] = utils.encrypt(config.params["api_key"])
 
         return f"{config}"
 
     def validate(self) -> None:
         """Validate Rime-specific configuration."""
-        if not self.api_key:
+        if "api_key" not in self.params or not self.params["api_key"]:
             raise ValueError("API key is required for Rime TTS")

@@ -136,8 +136,9 @@ def test_dump_functionality(MockRimeTTSClient):
     dump_config = {
         "dump": True,
         "dump_path": DUMP_PATH,
-        "api_key": "test_api_key",
-        "params": {},
+        "params": {
+            "api_key": "test_api_key",
+        },
     }
 
     tester.set_test_mode_single("rime_http_tts", json.dumps(dump_config))
@@ -308,7 +309,9 @@ def test_flush_logic(MockRimeTTSClient):
     mock_instance.get.side_effect = mock_get_long_audio_stream
 
     config = {
-        "api_key": "test_api_key",
+        "params": {
+            "api_key": "test_api_key",
+        },
     }
     tester = ExtensionTesterFlush()
     tester.set_test_mode_single("rime_http_tts", json.dumps(config))

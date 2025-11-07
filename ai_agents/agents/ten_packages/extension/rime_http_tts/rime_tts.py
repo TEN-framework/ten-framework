@@ -20,7 +20,7 @@ class RimeTTSClient(AsyncTTS2HttpClient):
     ):
         super().__init__()
         self.config = config
-        self.api_key = config.api_key
+        self.api_key = config.params.get("api_key", "")
         self.ten_env: AsyncTenEnv = ten_env
         self._is_cancelled = False
         self.endpoint = "https://users.rime.ai/v1/rime-tts"
@@ -66,13 +66,17 @@ class RimeTTSClient(AsyncTTS2HttpClient):
             return
 
         try:
+            # Shallow copy params and strip api_key before sending to API
+            payload = {**self.config.params}
+            payload.pop("api_key", None)
+
             async with self.client.stream(
                 "POST",
                 self.endpoint,
                 headers=self.headers,
                 json={
                     "text": text,
-                    **self.config.params,
+                    **payload,
                 },
             ) as response:
                 async for chunk in response.aiter_bytes(chunk_size=4096):

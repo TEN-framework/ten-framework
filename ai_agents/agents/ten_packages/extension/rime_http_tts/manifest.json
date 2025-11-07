@@ -51,7 +51,7 @@
               "type": "float64"
             },
             "top_p": {
-              "type": "float64"
+              "type": "int32"
             },
             "max_tokens": {
               "type": "int32"

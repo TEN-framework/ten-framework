@@ -1,8 +1,8 @@
 {
-    "api_key": "${env:RIME_TTS_API_KEY|}",
     "dump": false,
     "dump_path": "./",
     "params": {
+        "api_key": "${env:RIME_TTS_API_KEY|}",
         "speaker": "celeste",
         "modelId": "arcana",
         "repetition_penalty": 1.5,
