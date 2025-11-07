@@ -23,31 +23,3 @@ group("integration") {
     deps += [ "nodejs" ]
   }
 }
-
-if (ten_runtime_enable_coverage && is_debug && is_linux) {
-  action("run_for_coverage") {
-    script = "//tools/coverage/run_integration_tests_for_coverage.py"
-
-    _done = "${target_gen_dir}/run_integration_tests_for_coverage.done"
-
-    args = [
-      "--root-out",
-      rebase_path(root_out_dir),
-      "--is-clang",
-    ]
-    if (is_clang) {
-      args += [ "true" ]
-    } else {
-      args += [ "false" ]
-    }
-
-    args += [
-      "--done-file",
-      rebase_path(_done),
-    ]
-
-    deps = [ ":integration" ]
-
-    outputs = [ _done ]
-  }
-}
