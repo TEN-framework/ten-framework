@@ -24,7 +24,7 @@ from ten_runtime import (
     Data,
 )
 from ten_ai_base.struct import TTSTextInput
-from cartesia_tts2.cartesia_tts import (
+from cartesia_tts.cartesia_tts import (
     EVENT_TTS_RESPONSE,
     EVENT_TTS_END,
     EVENT_TTS_TTFB_METRIC,
@@ -85,7 +85,7 @@ class ExtensionTesterMetrics(ExtensionTester):
             ten_env.log_info("First audio frame received.")
 
 
-@patch("cartesia_tts2.extension.CartesiaTTSClient")
+@patch("cartesia_tts.extension.CartesiaTTSClient")
 def test_ttfb_metric_is_sent(MockCartesiaTTSClient):
     """
     Tests that a TTFB (Time To First Byte) metric is correctly sent after
@@ -119,7 +119,7 @@ def test_ttfb_metric_is_sent(MockCartesiaTTSClient):
         }
     }
     tester = ExtensionTesterMetrics()
-    tester.set_test_mode_single("cartesia_tts2", json.dumps(metrics_config))
+    tester.set_test_mode_single("cartesia_tts", json.dumps(metrics_config))
 
     print("Running TTFB metrics test...")
     tester.run()

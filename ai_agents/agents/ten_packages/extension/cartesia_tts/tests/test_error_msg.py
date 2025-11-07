@@ -74,9 +74,7 @@ def test_empty_params_fatal_error():
     }
 
     tester = ExtensionTesterEmptyParams()
-    tester.set_test_mode_single(
-        "cartesia_tts2", json.dumps(empty_params_config)
-    )
+    tester.set_test_mode_single("cartesia_tts", json.dumps(empty_params_config))
 
     print("Running test...")
     tester.run()
@@ -143,7 +141,7 @@ class ExtensionTesterInvalidApiKey(ExtensionTester):
             ten_env.stop_test()
 
 
-@patch("cartesia_tts2.cartesia_tts.AsyncCartesia")
+@patch("cartesia_tts.cartesia_tts.AsyncCartesia")
 def test_invalid_api_key_error(MockAsyncCartesia):
     """Test that an invalid API key is handled correctly with a mock."""
     print("Starting test_invalid_api_key_error with mock...")
@@ -173,7 +171,7 @@ def test_invalid_api_key_error(MockAsyncCartesia):
     }
 
     tester = ExtensionTesterInvalidApiKey()
-    tester.set_test_mode_single("cartesia_tts2", json.dumps(invalid_key_config))
+    tester.set_test_mode_single("cartesia_tts", json.dumps(invalid_key_config))
 
     print("Running test with mock...")
     tester.run()

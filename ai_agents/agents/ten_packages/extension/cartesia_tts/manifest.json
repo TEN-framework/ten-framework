@@ -1,0 +1,127 @@
+{
+  "type": "extension",
+  "name": "cartesia_tts",
+  "version": "0.5.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.11"
+    },
+    {
+      "type": "system",
+      "name": "ten_ai_base",
+      "version": "0.7"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "BUILD.gn",
+      "**.tent",
+      "**.py",
+      "README.md",
+      "requirements.txt"
+    ]
+  },
+  "api": {
+    "interface": [
+      {
+        "import_uri": "../../system/ten_ai_base/api/tts-interface.json"
+      }
+    ],
+    "property": {
+      "properties": {
+        "dump": {
+          "type": "bool"
+        },
+        "dump_path": {
+          "type": "string"
+        },
+        "enable_words": {
+          "type": "bool"
+        },
+        "params": {
+          "type": "object",
+          "properties": {
+            "api_key": {
+              "type": "string"
+            },
+            "model_id": {
+              "type": "string"
+            },
+            "language": {
+              "type": "string"
+            },
+            "voice": {
+              "type": "object",
+              "properties": {
+                "mode": {
+                  "type": "string"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                }
+              }
+            },
+            "generation_config": {
+              "type": "object",
+              "properties": {
+                "speed": {
+                  "type": "float64"
+                },
+                "volume": {
+                  "type": "float64"
+                }
+              }
+            },
+            "output_format": {
+              "type": "object",
+              "properties": {
+                "container": {
+                  "type": "string"
+                },
+                "sample_rate": {
+                  "type": "int64"
+                }
+              }
+            }
+          }
+        },
+        "ssml": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "bool"
+            },
+            "speed_ratio": {
+              "type": "float64"
+            },
+            "volume_ratio": {
+              "type": "float64"
+            },
+            "emotion": {
+              "type": "string"
+            },
+            "pre_break_time": {
+              "type": "string"
+            },
+            "post_break_time": {
+              "type": "string"
+            },
+            "spell_words": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
