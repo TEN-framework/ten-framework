@@ -293,6 +293,100 @@ Use `${env:VAR_NAME}` or `${env:VAR_NAME|}` (with fallback) in property.json:
 - `await self.send_asr_error(module_error, vendor_info)`
 - `await self.send_asr_finalize_end()`
 
+### Configuration and Params Handling
+
+**Params Dict Pattern:**
+Extensions using HTTP-based services (TTS, ASR, etc.) typically store all configuration in a `params` dictionary that gets passed to the vendor API. Follow these patterns:
+
+**1. Sensitive Parameters (API Keys):**
+- Store `api_key` inside `params` dict in property.json and config
+- Extract for authentication headers in the client constructor
+- Strip from params **only when creating the HTTP request payload** (not during config processing)
+
+Example from `rime_http_tts`:
+```python
+# config.py - Keep api_key in params throughout
+class RimeTTSConfig(AsyncTTS2HttpConfig):
+    params: dict[str, Any] = Field(default_factory=dict)
+
+    def validate(self) -> None:
+        if "api_key" not in self.params or not self.params["api_key"]:
+            raise ValueError("API key is required")
+
+# rime_tts.py - Extract for headers, strip from payload
+class RimeTTSClient(AsyncTTS2HttpClient):
+    def __init__(self, config: RimeTTSConfig, ten_env: AsyncTenEnv):
+        self.api_key = config.params.get("api_key", "")
+        self.headers = {"Authorization": f"Bearer {self.api_key}"}
+
+    async def get(self, text: str, request_id: str):
+        # Shallow copy and strip api_key before sending
+        payload = {**self.config.params}
+        payload.pop("api_key", None)
+
+        async with self.client.stream("POST", url, json={"text": text, **payload}):
+            # ...
+```
+
+**2. Parameter Type Preservation:**
+- Define param types correctly in `manifest.json` `api.property.properties`
+- Use `"int32"` for integer params, `"float64"` for floats, `"string"` for strings
+- Pydantic will coerce types based on manifest.json schema definitions
+
+Example:
+```json
+// manifest.json
+"params": {
+  "type": "object",
+  "properties": {
+    "api_key": {"type": "string"},
+    "top_p": {"type": "int32"},      // Integer param
+    "temperature": {"type": "float64"},  // Float param
+    "samplingRate": {"type": "int32"}
+  }
+}
+```
+
+**3. Param Transformations in update_params():**
+- Add vendor-required params (e.g., `audioFormat`, `segment`)
+- Normalize alternative key names (e.g., `sampling_rate` → `samplingRate`)
+- Remove internal-only params from blacklist
+- DO NOT strip api_key here (strip only when making requests)
+
+Example:
+```python
+def update_params(self) -> None:
+    # Add required params
+    self.params["audioFormat"] = "pcm"
+    self.params["segment"] = "immediate"
+
+    # Normalize keys
+    if "sampling_rate" in self.params:
+        self.params["samplingRate"] = int(self.params["sampling_rate"])
+        del self.params["sampling_rate"]
+
+    # Remove internal-only params (NOT api_key)
+    blacklist = ["text"]
+    for key in blacklist:
+        self.params.pop(key, None)
+```
+
+**4. Sensitive Data in Logging:**
+- Implement `to_str()` method that encrypts sensitive fields
+- Use `utils.encrypt()` for api_key before logging
+
+Example:
+```python
+def to_str(self, sensitive_handling: bool = True) -> str:
+    if not sensitive_handling:
+        return f"{self}"
+
+    config = copy.deepcopy(self)
+    if config.params and "api_key" in config.params:
+        config.params["api_key"] = utils.encrypt(config.params["api_key"])
+    return f"{config}"
+```
+
 ## TMAN Tool
 
 `tman` is the TEN package manager used for:
