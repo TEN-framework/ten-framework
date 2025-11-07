@@ -55,7 +55,7 @@ class ExtensionTesterForPassthrough(ExtensionTester):
         ten_env_tester.on_start_done()
 
 
-@patch("cartesia_tts2.extension.CartesiaTTSClient")
+@patch("cartesia_tts.extension.CartesiaTTSClient")
 def test_params_passthrough(MockCartesiaTTSClient):
     """
     Tests that custom parameters passed in the configuration are correctly
@@ -81,18 +81,19 @@ def test_params_passthrough(MockCartesiaTTSClient):
     }
 
     passthrough_params = {
-        "model_id": "sonic-2",
+        "model_id": "sonic-3",
         "voice": {"mode": "id", "id": "a0e99841-438c-4a64-b679-ae501e7d6091"},
         "output_format": {
             "container": "raw",
             "sample_rate": 44100,
             "encoding": "pcm_s16le",
         },
+        "generation_config": {"speed": 1.0, "volume": 1.0},
         "language": "en",
     }
 
     tester = ExtensionTesterForPassthrough()
-    tester.set_test_mode_single("cartesia_tts2", json.dumps(real_config))
+    tester.set_test_mode_single("cartesia_tts", json.dumps(real_config))
 
     print("Running passthrough test...")
     tester.run()

@@ -23,7 +23,7 @@ from ten_runtime import (
     Data,
 )
 from ten_ai_base.struct import TTSTextInput
-from cartesia_tts2.cartesia_tts import (
+from cartesia_tts.cartesia_tts import (
     EVENT_TTS_END,
     EVENT_TTS_RESPONSE,
     EVENT_TTS_TTFB_METRIC,
@@ -113,7 +113,7 @@ class ExtensionTesterRobustness(ExtensionTester):
                 ten_env.stop_test()
 
 
-@patch("cartesia_tts2.extension.CartesiaTTSClient")
+@patch("cartesia_tts.extension.CartesiaTTSClient")
 def test_reconnect_after_connection_drop(MockCartesiaTTSClient):
     """
     Tests that the extension can recover from a connection drop, report a
@@ -151,7 +151,7 @@ def test_reconnect_after_connection_drop(MockCartesiaTTSClient):
         "params": {"api_key": "a_valid_key"},
     }
     tester = ExtensionTesterRobustness()
-    tester.set_test_mode_single("cartesia_tts2", json.dumps(config))
+    tester.set_test_mode_single("cartesia_tts", json.dumps(config))
 
     print("Running robustness test...")
     tester.run()

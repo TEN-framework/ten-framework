@@ -170,8 +170,8 @@
     },
     {
       "type": "extension",
-      "name": "cartesia_tts2",
-      "version": "0.3.0",
+      "name": "cartesia_tts",
+      "version": "0.5.0",
       "hash": "71ebe5ff1ea4ad0d1c5d5d8d67f057645d9d356034d9864561bd814f1244c7ec",
       "dependencies": [
         {
@@ -183,7 +183,7 @@
           "name": "ten_ai_base"
         }
       ],
-      "path": "../../../ten_packages/extension/cartesia_tts2"
+      "path": "../../../ten_packages/extension/cartesia_tts"
     },
     {
       "type": "extension",

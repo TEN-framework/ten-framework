@@ -29,7 +29,7 @@ from ten_runtime import (
     Data,
 )
 from ten_ai_base.struct import TTSTextInput, TTSFlush
-from cartesia_tts2.cartesia_tts import (
+from cartesia_tts.cartesia_tts import (
     EVENT_TTS_RESPONSE,
     EVENT_TTS_END,
     EVENT_TTS_FLUSH,
@@ -105,7 +105,7 @@ class ExtensionTesterDump(ExtensionTester):
         return None
 
 
-@patch("cartesia_tts2.extension.CartesiaTTSClient")
+@patch("cartesia_tts.extension.CartesiaTTSClient")
 def test_dump_functionality(MockCartesiaTTSClient):
     """Tests that the dump file from the TTS extension matches the audio received by the test extension."""
     print("Starting test_dump_functionality with mock...")
@@ -150,7 +150,7 @@ def test_dump_functionality(MockCartesiaTTSClient):
         },
     }
 
-    tester.set_test_mode_single("cartesia_tts2", json.dumps(dump_config))
+    tester.set_test_mode_single("cartesia_tts", json.dumps(dump_config))
 
     print("Running dump test...")
     tester.run()
@@ -287,7 +287,7 @@ class ExtensionTesterFlush(ExtensionTester):
         return int(duration_sec * 1000)
 
 
-@patch("cartesia_tts2.extension.CartesiaTTSClient")
+@patch("cartesia_tts.extension.CartesiaTTSClient")
 def test_flush_logic(MockCartesiaTTSClient):
     """
     Tests that sending a flush command during TTS streaming correctly stops
@@ -326,7 +326,7 @@ def test_flush_logic(MockCartesiaTTSClient):
         },
     }
     tester = ExtensionTesterFlush()
-    tester.set_test_mode_single("cartesia_tts2", json.dumps(config))
+    tester.set_test_mode_single("cartesia_tts", json.dumps(config))
 
     print("Running flush logic test...")
     tester.run()
@@ -350,3 +350,125 @@ def test_flush_logic(MockCartesiaTTSClient):
     ), f"Mismatch in audio duration. Calculated: {calculated_duration}ms, From event: {event_duration}ms"
 
     print("✅ Flush logic test passed successfully.")
+
+
+class ExtensionTesterSSML(ExtensionTester):
+    def __init__(self, metadata=None):
+        super().__init__()
+        self.metadata = metadata or {}
+        self.audio_end_received = False
+
+    def on_start(self, ten_env_tester: TenEnvTester) -> None:
+        tts_input = TTSTextInput(
+            request_id="ssml_request",
+            text="TEN loves 1234",
+            text_input_end=True,
+            metadata=self.metadata,
+        )
+        data = Data.create("tts_text_input")
+        data.set_property_from_json(None, tts_input.model_dump_json())
+        ten_env_tester.send_data(data)
+        ten_env_tester.on_start_done()
+
+    def on_data(self, ten_env: TenEnvTester, data) -> None:
+        if data.get_name() == "tts_audio_end":
+            self.audio_end_received = True
+            ten_env.stop_test()
+
+
+@patch("cartesia_tts.extension.CartesiaTTSClient")
+def test_ssml_presets(MockCartesiaTTSClient):
+    """Ensure SSML presets from configuration are applied."""
+
+    mock_instance = MockCartesiaTTSClient.return_value
+    mock_instance.start = AsyncMock()
+    mock_instance.stop = AsyncMock()
+
+    captured_text: str | None = None
+
+    async def mock_get(text: str):
+        nonlocal captured_text
+        captured_text = text
+        yield (None, EVENT_TTS_END)
+
+    mock_instance.get.side_effect = mock_get
+
+    tester = ExtensionTesterSSML()
+    config = {
+        "params": {
+            "api_key": "test_key",
+        },
+        "ssml": {
+            "enabled": True,
+            "speed_ratio": 1.2,
+            "volume_ratio": 0.8,
+            "emotion": "happy",
+            "post_break_time": "500ms",
+            "spell_words": ["TEN"],
+        },
+    }
+
+    tester.set_test_mode_single("cartesia_tts", json.dumps(config))
+    tester.run()
+
+    assert (
+        tester.audio_end_received
+    ), "Expected SSML test to finish with audio end"
+    assert captured_text is not None, "Expected Cartesia client to receive text"
+    assert captured_text.startswith('<speed ratio="1.2"/>'), captured_text
+    assert '<volume ratio="0.8"/>' in captured_text
+    assert '<emotion value="happy"/>' in captured_text
+    assert "<spell>TEN</spell>" in captured_text
+    assert captured_text.endswith('<break time="500ms"/>'), captured_text
+
+
+@patch("cartesia_tts.extension.CartesiaTTSClient")
+def test_ssml_metadata_overrides(MockCartesiaTTSClient):
+    """Metadata overrides should clamp ratios and honour breaks."""
+
+    mock_instance = MockCartesiaTTSClient.return_value
+    mock_instance.start = AsyncMock()
+    mock_instance.stop = AsyncMock()
+
+    captured_text: str | None = None
+
+    async def mock_get(text: str):
+        nonlocal captured_text
+        captured_text = text
+        yield (None, EVENT_TTS_END)
+
+    mock_instance.get.side_effect = mock_get
+
+    metadata = {
+        "ssml": {
+            "enabled": True,
+            "speed_ratio": 5.0,  # clamp to 1.5
+            "volume_ratio": 0.1,  # clamp to 0.5
+            "emotion": "sad",
+            "pre_break_time": "1s",
+            "spell_words": ["1234"],
+        }
+    }
+
+    tester = ExtensionTesterSSML(metadata=metadata)
+    config = {
+        "params": {
+            "api_key": "test_key",
+        },
+        "ssml": {
+            "enabled": False,
+        },
+    }
+
+    tester.set_test_mode_single("cartesia_tts", json.dumps(config))
+    tester.run()
+
+    assert (
+        tester.audio_end_received
+    ), "Expected metadata override test to finish"
+    assert captured_text is not None, "Expected metadata override to send text"
+    assert captured_text.startswith('<break time="1s"/>'), captured_text
+    assert '<speed ratio="1.5"/>' in captured_text
+    assert '<volume ratio="0.5"/>' in captured_text
+    assert '<emotion value="sad"/>' in captured_text
+    assert "<spell>1234</spell>" in captured_text

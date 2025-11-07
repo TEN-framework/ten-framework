@@ -7,6 +7,7 @@ import asyncio
 from datetime import datetime
 import os
 import traceback
+from typing import Any
 
 from ten_ai_base.helper import PCMWriter
 from ten_ai_base.message import (
@@ -45,6 +46,154 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
         self.recorder_map: dict[str, PCMWriter] = (
             {}
         )  # Store PCMWriter instances for different request_ids
+
+    @staticmethod
+    def _clamp_float(value: Any, lower: float, upper: float) -> float | None:
+        """Clamp value into [lower, upper] returning None when not a number."""
+        if value is None:
+            return None
+
+        try:
+            numeric = float(value)
+        except (TypeError, ValueError):
+            return None
+
+        if numeric < lower:
+            return lower
+        if numeric > upper:
+            return upper
+        return numeric
+
+    @staticmethod
+    def _format_ratio(value: float) -> str:
+        """Format ratios while trimming trailing zeros for cleaner SSML."""
+        return f"{value:.3f}".rstrip("0").rstrip(".")
+
+    @staticmethod
+    def _normalize_time_string(value: Any) -> str | None:
+        if value is None:
+            return None
+
+        if isinstance(value, str):
+            stripped = value.strip()
+            return stripped or None
+
+        try:
+            stripped = str(value).strip()
+        except Exception:
+            return None
+
+        return stripped or None
+
+    def _compose_ssml_text(
+        self, text: str, metadata: dict[str, Any] | None
+    ) -> str:
+        """Compose SSML directives based on config/metadata overrides."""
+        if not self.config:
+            return text
+
+        overrides: dict[str, Any] = {}
+        if metadata:
+            overrides_candidate = metadata.get("ssml") or metadata.get(
+                "ssml_tags"
+            )
+            if isinstance(overrides_candidate, dict):
+                overrides = overrides_candidate
+
+        ssml_cfg = self.config.ssml
+        enabled = overrides.get("enabled", ssml_cfg.enabled)
+        if not enabled:
+            return text
+
+        speed_ratio = overrides.get("speed_ratio", ssml_cfg.speed_ratio)
+        speed_ratio = self._clamp_float(speed_ratio, 0.6, 1.5)
+
+        volume_ratio = overrides.get("volume_ratio", ssml_cfg.volume_ratio)
+        volume_ratio = self._clamp_float(volume_ratio, 0.5, 2.0)
+
+        emotion = overrides.get("emotion", ssml_cfg.emotion)
+        if isinstance(emotion, str):
+            emotion = emotion.strip() or None
+        else:
+            emotion = None
+
+        pre_break_time = overrides.get(
+            "pre_break_time", ssml_cfg.pre_break_time
+        )
+        pre_break_time = self._normalize_time_string(pre_break_time)
+
+        post_break_time = overrides.get(
+            "post_break_time", ssml_cfg.post_break_time
+        )
+        post_break_time = self._normalize_time_string(post_break_time)
+
+        spell_words_override = overrides.get("spell_words")
+        if spell_words_override is not None:
+            if isinstance(spell_words_override, str):
+                spell_words = [spell_words_override]
+            elif isinstance(spell_words_override, (list, tuple, set)):
+                spell_words = list(spell_words_override)
+            else:
+                spell_words = []
+        else:
+            spell_words = list(ssml_cfg.spell_words)
+
+        cleaned_spell_words: list[str] = []
+        for word in spell_words:
+            if isinstance(word, str):
+                trimmed = word.strip()
+                if trimmed and trimmed not in cleaned_spell_words:
+                    cleaned_spell_words.append(trimmed)
+
+        mutated_text = text
+        if cleaned_spell_words:
+            # Replace longest words first for deterministic wrapping.
+            for word in sorted(cleaned_spell_words, key=len, reverse=True):
+                mutated_text = mutated_text.replace(
+                    word, f"<spell>{word}</spell>"
+                )
+
+        prefix_tags: list[str] = []
+        if pre_break_time:
+            prefix_tags.append(f'<break time="{pre_break_time}"/>')
+        if speed_ratio is not None and abs(speed_ratio - 1.0) > 1e-3:
+            prefix_tags.append(
+                f'<speed ratio="{self._format_ratio(speed_ratio)}"/>'
+            )
+        if volume_ratio is not None and abs(volume_ratio - 1.0) > 1e-3:
+            prefix_tags.append(
+                f'<volume ratio="{self._format_ratio(volume_ratio)}"/>'
+            )
+        if emotion:
+            prefix_tags.append(f'<emotion value="{emotion}"/>')
+
+        prefix = " ".join(prefix_tags)
+        if prefix:
+            mutated_text = f"{prefix} {mutated_text}".strip()
+
+        if post_break_time:
+            mutated_text = f'{mutated_text} <break time="{post_break_time}"/>'
+
+        return mutated_text
+
+    def _apply_ssml_tags_safe(
+        self, text: str, metadata: dict[str, Any] | None
+    ) -> str:
+        """Wrapper that guards SSML composition errors."""
+        try:
+            mutated = self._compose_ssml_text(text, metadata)
+            if mutated != text:
+                self.ten_env.log_debug(
+                    f"Applied SSML tags: {mutated[:500]}",
+                    category=LOG_CATEGORY_VENDOR,
+                )
+            return mutated
+        except Exception as exc:  # pragma: no cover - defensive path
+            self.ten_env.log_error(
+                f"Failed to compose SSML tags: {exc}",
+                category=LOG_CATEGORY_VENDOR,
+            )
+            return text
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         try:
@@ -180,6 +329,7 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                 self.current_request_id = t.request_id
                 self.current_request_finished = False
                 self.total_audio_bytes = 0  # Reset for new request
+                self.sent_ts = None
                 if t.metadata is not None:
                     self.session_id = t.metadata.get("session_id", "")
                     self.current_turn_id = t.metadata.get("turn_id", -1)
@@ -227,15 +377,19 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                 )
                 self.current_request_finished = True
 
-            if t.text.strip() != "":
+            prepared_text = self._apply_ssml_tags_safe(t.text, t.metadata)
+
+            if prepared_text.strip() != "":
                 # Get audio stream from Cartesia TTS
                 self.ten_env.log_debug(
-                    f"send_text_to_tts_server:  {t.text} of request_id: {t.request_id}",
+                    f"send_text_to_tts_server:  {prepared_text} of request_id: {t.request_id}",
                     category=LOG_CATEGORY_VENDOR,
                 )
-                data = self.client.get(t.text)
+                data = self.client.get(prepared_text)
 
                 chunk_count = 0
+                if self.sent_ts is None:
+                    self.sent_ts = datetime.now()
                 async for data_msg, event_status in data:
                     self.ten_env.log_debug(
                         f"Received event_status: {event_status}"
@@ -273,21 +427,19 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                             self.ten_env.log_debug(
                                 "Received empty payload for TTS response"
                             )
-                            if self.sent_ts and t.text_input_end:
+                            if t.text_input_end:
                                 duration_ms = (
                                     self._calculate_audio_duration_ms()
                                 )
-                                request_event_interval = int(
-                                    (
-                                        datetime.now() - self.sent_ts
-                                    ).total_seconds()
-                                    * 1000
+                                request_event_interval = (
+                                    self._current_request_interval_ms()
                                 )
                                 await self.send_tts_audio_end(
                                     request_id=self.current_request_id,
                                     request_event_interval_ms=request_event_interval,
                                     request_total_audio_duration_ms=duration_ms,
                                 )
+                                self.sent_ts = None
                                 self.ten_env.log_debug(
                                     f"Sent TTS audio end event, interval: {request_event_interval}ms, duration: {duration_ms}ms"
                                 )
@@ -320,10 +472,9 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                             "Received TTS_END event from Cartesia TTS"
                         )
                         # Send TTS audio end event
-                        if self.sent_ts and t.text_input_end:
-                            request_event_interval = int(
-                                (datetime.now() - self.sent_ts).total_seconds()
-                                * 1000
+                        if t.text_input_end:
+                            request_event_interval = (
+                                self._current_request_interval_ms()
                             )
                             duration_ms = self._calculate_audio_duration_ms()
                             await self.send_tts_audio_end(
@@ -331,6 +482,7 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                                 request_event_interval_ms=request_event_interval,
                                 request_total_audio_duration_ms=duration_ms,
                             )
+                            self.sent_ts = None
                             self.ten_env.log_debug(
                                 f"Sent TTS audio end event, interval: {request_event_interval}ms, duration: {duration_ms}ms"
                             )
@@ -340,10 +492,9 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                             "Received TTS_ERROR event from Cartesia TTS"
                         )
                         # Send TTS audio end event
-                        if self.sent_ts and t.text_input_end:
-                            request_event_interval = int(
-                                (datetime.now() - self.sent_ts).total_seconds()
-                                * 1000
+                        if t.text_input_end:
+                            request_event_interval = (
+                                self._current_request_interval_ms()
                             )
                             duration_ms = self._calculate_audio_duration_ms()
                             await self.send_tts_audio_end(
@@ -351,6 +502,7 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                                 request_event_interval_ms=request_event_interval,
                                 request_total_audio_duration_ms=duration_ms,
                             )
+                            self.sent_ts = None
                             self.ten_env.log_debug(
                                 f"Sent TTS audio end event, interval: {request_event_interval}ms, duration: {duration_ms}ms"
                             )
@@ -359,16 +511,15 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                 self.ten_env.log_debug(
                     f"TTS processing completed, total chunks: {chunk_count}"
                 )
-            elif self.sent_ts and t.text_input_end:
+            elif t.text_input_end:
                 duration_ms = self._calculate_audio_duration_ms()
-                request_event_interval = int(
-                    (datetime.now() - self.sent_ts).total_seconds() * 1000
-                )
+                request_event_interval = self._current_request_interval_ms()
                 await self.send_tts_audio_end(
                     request_id=self.current_request_id,
                     request_event_interval_ms=request_event_interval,
                     request_total_audio_duration_ms=duration_ms,
                 )
+                self.sent_ts = None
                 self.ten_env.log_debug(
                     f"Sent TTS audio end event, interval: {request_event_interval}ms, duration: {duration_ms}ms"
                 )
@@ -450,6 +601,11 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                 vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
             ),
         )
+
+    def _current_request_interval_ms(self) -> int:
+        if not self.sent_ts:
+            return 0
+        return int((datetime.now() - self.sent_ts).total_seconds() * 1000)
 
     def _calculate_audio_duration_ms(self) -> int:
         if self.config is None:
