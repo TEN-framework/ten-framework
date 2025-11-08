@@ -520,8 +520,9 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                     if isinstance(apollo_mood_result, tuple)
                     else apollo_mood_result
                 )
-            except Exception:
-                pass  # Use default
+                ten_env.log_info(f"Loaded apollo_mood_duration: {self.apollo_mood_duration}")
+            except Exception as e:
+                ten_env.log_warn(f"Failed to load apollo_mood_duration, using default {self.apollo_mood_duration}: {e}")
 
             try:
                 apollo_read_result = await ten_env.get_property_float(
@@ -532,8 +533,9 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                     if isinstance(apollo_read_result, tuple)
                     else apollo_read_result
                 )
-            except Exception:
-                pass  # Use default
+                ten_env.log_info(f"Loaded apollo_read_duration: {self.apollo_read_duration}")
+            except Exception as e:
+                ten_env.log_warn(f"Failed to load apollo_read_duration, using default {self.apollo_read_duration}: {e}")
 
             ten_env.log_info(
                 f"Loaded config: analysis_mode={self.analysis_mode}, "
