@@ -513,6 +513,32 @@ docker exec ten_agent_dev tail -f /tmp/task_run.log
 
 ## 9. Troubleshooting
 
+### Zombie Worker Processes (STT/Audio still running after restart)
+
+**Symptom**: Client shows STT transcribing even after server restart, or old sessions appear active
+
+**Cause**: Worker processes (`bin/main`) survive server restart and container restart
+
+**Solution**:
+```bash
+# Check for zombie workers
+ps -elf | grep 'bin/main' | grep -v grep
+
+# Kill all zombie workers
+ps -elf | grep 'bin/main' | grep -v grep | awk '{print $4}' | xargs -r sudo kill -9
+
+# Verify they're gone
+curl -s http://localhost:8080/list | jq '.data | length'
+# Expected: 0
+```
+
+**Prevention**: Always kill workers before restarting:
+```bash
+# Complete cleanup before restart
+ps -elf | grep 'bin/main' | grep -v grep | awk '{print $4}' | xargs -r sudo kill -9
+sudo docker exec ten_agent_dev bash -c "pkill -9 -f 'bin/api'"
+```
+
 ### Server Won't Start
 ```bash
 # Check if Python dependencies are installed
@@ -662,8 +688,17 @@ sleep 5 && grep -o 'https://[^[:space:]]*\.trycloudflare\.com' /tmp/cloudflare_t
 3. Restart cloudflare tunnel
 
 ### After Code Changes
-1. Run `task install` to rebuild (5-8 minutes first time)
-2. Start server with `task run`
+1. Kill any zombie processes:
+   ```bash
+   # Kill log monitors and API server
+   sudo pkill -9 -f 'tail.*task_run.log' 2>/dev/null || true
+   sudo docker exec ten_agent_dev bash -c "pkill -9 -f 'bin/api'" 2>/dev/null || true
+
+   # Kill zombie workers (these can persist across restarts)
+   ps -elf | grep 'bin/main' | grep -v grep | awk '{print $4}' | xargs -r sudo kill -9 2>/dev/null || true
+   ```
+2. Run `task install` to rebuild (5-8 minutes first time)
+3. Start server with `task run`
 
 ### After .env Changes
 1. Restart container: `docker compose down && docker compose up -d`
@@ -677,3 +712,15 @@ sleep 5 && grep -o 'https://[^[:space:]]*\.trycloudflare\.com' /tmp/cloudflare_t
 - All logs in `/tmp/task_run.log` with `[channel-name]` prefix
 - Use `tail -f` for real-time monitoring
 - Use `grep` to filter by channel or extension name
+
+### Before Committing
+**Always run Black formatter to avoid CI failures:**
+```bash
+# From ai_agents directory
+sudo docker exec ten_agent_dev bash -c \
+  "cd /app/agents && black --line-length 80 \
+  --exclude 'third_party/|http_server_python/|ten_packages/system' \
+  ten_packages/extension"
+```
+
+> **For full pre-commit checklist and commit message rules**, see [AI_working_with_ten.md](./AI_working_with_ten.md#pre-commit-checks)
