@@ -46,6 +46,7 @@ class HeygenAvatarExtension(AsyncExtension):
         self.recorder: AgoraHeygenRecorder = None
         self.ten_env: AsyncTenEnv = None
         self.is_speaking = False  # Track if we're currently sending audio
+        self.speaking_lock = asyncio.Lock()  # Protect is_speaking state
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_debug("on_init")
@@ -95,13 +96,14 @@ class HeygenAvatarExtension(AsyncExtension):
             frame_count += 1
 
             # If we're starting a new audio stream (was idle), send interrupt first
-            if not self.is_speaking:
-                self.ten_env.log_debug(
-                    "Starting new audio stream, sending interrupt first"
-                )
-                if self.recorder and self.recorder.ws_connected():
-                    await self.recorder.interrupt()
-                self.is_speaking = True
+            async with self.speaking_lock:
+                if not self.is_speaking:
+                    self.ten_env.log_debug(
+                        "Starting new audio stream, sending interrupt first"
+                    )
+                    if self.recorder and self.recorder.ws_connected():
+                        await self.recorder.interrupt()
+                    self.is_speaking = True
 
             # Cancel previous idle reset task
             if idle_reset_task and not idle_reset_task.done():
@@ -160,7 +162,8 @@ class HeygenAvatarExtension(AsyncExtension):
                 # Set up task to reset is_speaking after 1 second of no audio
                 async def reset_speaking_state():
                     await asyncio.sleep(1.0)
-                    self.is_speaking = False
+                    async with self.speaking_lock:
+                        self.is_speaking = False
                     self.ten_env.log_debug("Audio stream ended")
 
                 idle_reset_task = asyncio.create_task(reset_speaking_state())
