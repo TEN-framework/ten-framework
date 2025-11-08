@@ -9,6 +9,7 @@ import json
 import math
 import struct
 import time
+from collections import deque
 from dataclasses import dataclass
 from typing import Optional
 from datetime import datetime
@@ -54,7 +55,8 @@ class AudioBuffer:
         self.speech_duration = 0.0
 
         # Circular buffer for 0.5 second of recent audio (pre-speech capture)
-        self.circular_buffer = []
+        # Using deque for O(1) popleft() performance
+        self.circular_buffer = deque()
         self.circular_buffer_max_duration = 0.5  # seconds
 
         # Track speech state
@@ -82,12 +84,12 @@ class AudioBuffer:
             # Currently not speaking - maintain circular buffer
             self.circular_buffer.append(pcm_data)
 
-            # Trim circular buffer to 1 second
+            # Trim circular buffer to 0.5 seconds (O(1) with deque)
             while (
                 self._get_circular_buffer_duration()
                 > self.circular_buffer_max_duration
             ):
-                self.circular_buffer.pop(0)
+                self.circular_buffer.popleft()
 
             # Check for speech onset
             if is_speech:

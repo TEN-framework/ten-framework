@@ -15,11 +15,13 @@ class DeepgramWSASRConfig(BaseModel):
     interim_results: bool = True
     punctuate: bool = True
     # Flux-specific parameters
-    eot_threshold: float = 0.7
-    eot_timeout_ms: int = 3000
-    eager_eot_threshold: float = 0.0  # 0 = disabled
+    eot_threshold: float = 0.7  # End-of-turn probability threshold (0.0-1.0)
+    eot_timeout_ms: int = 3000  # Max time to wait for EOT confirmation (ms)
+    eager_eot_threshold: float = 0.0  # Eager EOT threshold (0 = disabled)
     # Confidence threshold for interim results (filter noise)
-    min_interim_confidence: float = 0.5
+    min_interim_confidence: float = (
+        0.5  # Minimum confidence to accept interim results (0.0-1.0)
+    )
     dump: bool = False
     dump_path: str = "/tmp"
     params: Dict[str, Any] = Field(default_factory=dict)
