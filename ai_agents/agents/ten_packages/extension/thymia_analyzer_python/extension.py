@@ -9,6 +9,7 @@ import json
 import math
 import struct
 import time
+from collections import deque
 from dataclasses import dataclass
 from typing import Optional
 from datetime import datetime
@@ -52,9 +53,11 @@ class AudioBuffer:
         self.silence_threshold = silence_threshold
         self.speech_buffer = []
         self.speech_duration = 0.0
+        self.max_speech_duration = 300.0  # 5 minutes safety limit
 
         # Circular buffer for 0.5 second of recent audio (pre-speech capture)
-        self.circular_buffer = []
+        # Using deque for O(1) popleft() performance
+        self.circular_buffer = deque()
         self.circular_buffer_max_duration = 0.5  # seconds
 
         # Track speech state
@@ -82,21 +85,22 @@ class AudioBuffer:
             # Currently not speaking - maintain circular buffer
             self.circular_buffer.append(pcm_data)
 
-            # Trim circular buffer to 1 second
+            # Trim circular buffer to 0.5 seconds (O(1) with deque)
             while (
                 self._get_circular_buffer_duration()
                 > self.circular_buffer_max_duration
             ):
-                self.circular_buffer.pop(0)
+                self.circular_buffer.popleft()
 
             # Check for speech onset
             if is_speech:
                 # Speech detected! Add circular buffer contents (pre-speech context)
                 for buffered_frame in self.circular_buffer:
-                    self.speech_buffer.append(buffered_frame)
-                    self.speech_duration += len(buffered_frame) / (
-                        self.sample_rate * self.channels * 2
-                    )
+                    if self.speech_duration < self.max_speech_duration:
+                        self.speech_buffer.append(buffered_frame)
+                        self.speech_duration += len(buffered_frame) / (
+                            self.sample_rate * self.channels * 2
+                        )
 
                 self.is_speaking = True
                 self.circular_buffer.clear()  # Clear after using contents
@@ -105,18 +109,24 @@ class AudioBuffer:
             # Currently speaking
             if is_speech:
                 # Continue speaking - add frame to speech buffer
-                # Also flush any accumulated silence frames (they were part of speech)
-                for silence_frame in self.silence_frames:
-                    self.speech_buffer.append(silence_frame)
-                    self.speech_duration += len(silence_frame) / (
-                        self.sample_rate * self.channels * 2
-                    )
-                self.silence_frames.clear()
-                self.silence_duration = 0.0
+                # Check max duration to prevent unbounded memory growth
+                if self.speech_duration < self.max_speech_duration:
+                    # Also flush any accumulated silence frames (they were part of speech)
+                    for silence_frame in self.silence_frames:
+                        self.speech_buffer.append(silence_frame)
+                        self.speech_duration += len(silence_frame) / (
+                            self.sample_rate * self.channels * 2
+                        )
+                    self.silence_frames.clear()
+                    self.silence_duration = 0.0
 
-                # Add current frame
-                self.speech_buffer.append(pcm_data)
-                self.speech_duration += frame_duration
+                    # Add current frame
+                    self.speech_buffer.append(pcm_data)
+                    self.speech_duration += frame_duration
+                else:
+                    # Buffer full - clear silence frames but don't add more audio
+                    self.silence_frames.clear()
+                    self.silence_duration = 0.0
 
             else:
                 # Silence during speech - accumulate for potential end-of-speech
@@ -175,7 +185,6 @@ class AudioBuffer:
             max_duration_seconds: Maximum duration in seconds to extract. If None, extracts all.
                                  If specified, extracts only the first N seconds of speech.
         """
-
         start_time = time.time()
 
         print(
@@ -224,7 +233,7 @@ class AudioBuffer:
 
         # Convert to WAV
         print("[THYMIA_BUFFER_GET_WAV] Starting WAV conversion...", flush=True)
-        wav_data = self._pcm_to_wav(pcm_data, self.sample_rate, self.channels)
+        wav_data = self.pcm_to_wav(pcm_data, self.sample_rate, self.channels)
         total_time = time.time() - start_time
 
         # Calculate actual audio duration (16kHz, mono, 16-bit = 32000 bytes/sec)
@@ -237,7 +246,7 @@ class AudioBuffer:
         return wav_data
 
     @staticmethod
-    def _pcm_to_wav(
+    def pcm_to_wav(
         pcm_data: bytes,
         sample_rate: int,
         channels: int,
@@ -1321,8 +1330,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                 ten_env.log_warn(
                     "[THYMIA_APOLLO_PHASE_2] No saved mood.wav, creating new one"
                 )
-                # pylint: disable=protected-access
-                mood_wav = AudioBuffer._pcm_to_wav(mood_pcm, 16000, 1)
+                mood_wav = AudioBuffer.pcm_to_wav(mood_pcm, 16000, 1)
                 mood_filename = f"/tmp/thymia_audio_{timestamp}_{self.user_name or 'unknown'}_mood.wav"
                 try:
                     with open(mood_filename, "wb") as f:
@@ -1333,8 +1341,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                     )
 
             # Reading audio: save only this one
-            # pylint: disable=protected-access
-            read_wav = AudioBuffer._pcm_to_wav(read_pcm, 16000, 1)
+            read_wav = AudioBuffer.pcm_to_wav(read_pcm, 16000, 1)
             read_filename = f"/tmp/thymia_audio_{timestamp}_{self.user_name or 'unknown'}_reading.wav"
 
             try:
