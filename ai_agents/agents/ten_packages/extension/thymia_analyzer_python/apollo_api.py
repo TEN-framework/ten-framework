@@ -24,6 +24,7 @@ from dataclasses import dataclass
 @dataclass
 class ApolloResult:
     """Apollo API result with depression and anxiety metrics."""
+
     status: str  # COMPLETE_OK, COMPLETE_ERROR, FAILED, PROCESSING
     depression_probability: Optional[float] = None  # 0.0 - 1.0
     depression_severity: Optional[str] = None  # NONE, MILD, MODERATE, SEVERE
@@ -50,10 +51,12 @@ class ApolloAPI:
         if self.session and not self.session.closed:
             await self.session.close()
 
-    def _pcm_to_wav_bytes(self, pcm_data: bytes, sample_rate: int = 16000, channels: int = 1) -> bytes:
+    def _pcm_to_wav_bytes(
+        self, pcm_data: bytes, sample_rate: int = 16000, channels: int = 1
+    ) -> bytes:
         """Convert PCM audio data to WAV format bytes."""
         wav_buffer = io.BytesIO()
-        with wave.open(wav_buffer, 'wb') as wav_file:
+        with wave.open(wav_buffer, "wb") as wav_file:
             wav_file.setnchannels(channels)
             wav_file.setsampwidth(2)  # 16-bit = 2 bytes
             wav_file.setframerate(sample_rate)
@@ -66,7 +69,7 @@ class ApolloAPI:
         date_of_birth: str,  # YYYY-MM-DD
         birth_sex: str,  # MALE, FEMALE, OTHER
         language: str = "en-GB",
-        delete_data: bool = True
+        delete_data: bool = True,
     ) -> Tuple[str, str, str]:
         """
         Create Apollo model run and get upload URLs.
@@ -89,22 +92,26 @@ class ApolloAPI:
         url = f"{self.base_url}/v1/models/apollo"
         headers = {
             "x-api-key": self.api_key,
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
         }
         payload = {
             "user": {
                 "userLabel": user_label,
                 "dateOfBirth": date_of_birth,
-                "birthSex": birth_sex
+                "birthSex": birth_sex,
             },
             "language": language,
-            "deleteData": delete_data
+            "deleteData": delete_data,
         }
 
-        async with self.session.post(url, json=payload, headers=headers) as response:
+        async with self.session.post(
+            url, json=payload, headers=headers
+        ) as response:
             if response.status != 200:
                 error_text = await response.text()
-                raise Exception(f"Apollo create model run failed: {response.status} - {error_text}")
+                raise Exception(
+                    f"Apollo create model run failed: {response.status} - {error_text}"
+                )
 
             data = await response.json()
             model_run_id = data["id"]
@@ -113,7 +120,9 @@ class ApolloAPI:
 
             return model_run_id, mood_url, read_url
 
-    async def upload_audio(self, upload_url: str, pcm_data: bytes, sample_rate: int = 16000):
+    async def upload_audio(
+        self, upload_url: str, pcm_data: bytes, sample_rate: int = 16000
+    ):
         """
         Upload audio to presigned URL.
 
@@ -130,20 +139,22 @@ class ApolloAPI:
         # Convert PCM to WAV format
         wav_data = self._pcm_to_wav_bytes(pcm_data, sample_rate)
 
-        headers = {
-            "Content-Type": "audio/wav"
-        }
+        headers = {"Content-Type": "audio/wav"}
 
-        async with self.session.put(upload_url, data=wav_data, headers=headers) as response:
+        async with self.session.put(
+            upload_url, data=wav_data, headers=headers
+        ) as response:
             if response.status not in (200, 201, 204):
                 error_text = await response.text()
-                raise Exception(f"Apollo audio upload failed: {response.status} - {error_text}")
+                raise Exception(
+                    f"Apollo audio upload failed: {response.status} - {error_text}"
+                )
 
     async def poll_results(
         self,
         model_run_id: str,
         max_attempts: int = 60,
-        poll_interval: float = 2.0
+        poll_interval: float = 2.0,
     ) -> ApolloResult:
         """
         Poll for Apollo results.
@@ -162,9 +173,7 @@ class ApolloAPI:
         await self._ensure_session()
 
         url = f"{self.base_url}/v1/models/apollo/{model_run_id}"
-        headers = {
-            "x-api-key": self.api_key
-        }
+        headers = {"x-api-key": self.api_key}
 
         for attempt in range(max_attempts):
             async with self.session.get(url, headers=headers) as response:
@@ -172,7 +181,7 @@ class ApolloAPI:
                     error_text = await response.text()
                     return ApolloResult(
                         status="FAILED",
-                        error_message=f"Poll failed: {response.status} - {error_text}"
+                        error_message=f"Poll failed: {response.status} - {error_text}",
                     )
 
                 data = await response.json()
@@ -188,13 +197,13 @@ class ApolloAPI:
                         depression_probability=depression.get("probability"),
                         depression_severity=depression.get("severity"),
                         anxiety_probability=anxiety.get("probability"),
-                        anxiety_severity=anxiety.get("severity")
+                        anxiety_severity=anxiety.get("severity"),
                     )
 
                 elif status in ("COMPLETE_ERROR", "FAILED"):
                     return ApolloResult(
                         status=status,
-                        error_message=data.get("error", "Unknown error")
+                        error_message=data.get("error", "Unknown error"),
                     )
 
                 # Still processing, continue polling
@@ -203,7 +212,7 @@ class ApolloAPI:
         # Timeout
         return ApolloResult(
             status="FAILED",
-            error_message=f"Polling timeout after {max_attempts * poll_interval} seconds"
+            error_message=f"Polling timeout after {max_attempts * poll_interval} seconds",
         )
 
     async def analyze(
@@ -214,7 +223,7 @@ class ApolloAPI:
         date_of_birth: str,
         birth_sex: str,
         sample_rate: int = 16000,
-        language: str = "en-GB"
+        language: str = "en-GB",
     ) -> ApolloResult:
         """
         High-level method to run complete Apollo analysis.
@@ -237,7 +246,7 @@ class ApolloAPI:
                 user_label=user_label,
                 date_of_birth=date_of_birth,
                 birth_sex=birth_sex,
-                language=language
+                language=language,
             )
 
             # Step 2: Upload both audio files
@@ -250,7 +259,4 @@ class ApolloAPI:
             return result
 
         except Exception as e:
-            return ApolloResult(
-                status="FAILED",
-                error_message=str(e)
-            )
+            return ApolloResult(status="FAILED", error_message=str(e))

@@ -24,6 +24,7 @@ from .heygen import AgoraHeygenRecorder
 # from .heygen_bak import HeyGenRecorder
 from dataclasses import dataclass
 
+
 @dataclass
 class HeygenAvatarConfig(BaseConfig):
     agora_appid: str = ""
@@ -55,7 +56,9 @@ class HeygenAvatarExtension(AsyncExtension):
 
         try:
             self.config = await HeygenAvatarConfig.create_async(ten_env)
-            ten_env.log_info(f"[AVATAR CONFIG] avatar_name={self.config.avatar_name}, channel={self.config.channel}")
+            ten_env.log_info(
+                f"[AVATAR CONFIG] avatar_name={self.config.avatar_name}, channel={self.config.channel}"
+            )
 
             # recorder = HeyGenRecorder(
             #     self.config.api_key,
@@ -93,7 +96,9 @@ class HeygenAvatarExtension(AsyncExtension):
 
             # If we're starting a new audio stream (was idle), send interrupt first
             if not self.is_speaking:
-                self.ten_env.log_debug("Starting new audio stream, sending interrupt first")
+                self.ten_env.log_debug(
+                    "Starting new audio stream, sending interrupt first"
+                )
                 if self.recorder and self.recorder.ws_connected():
                     await self.recorder.interrupt()
                 self.is_speaking = True
@@ -147,9 +152,9 @@ class HeygenAvatarExtension(AsyncExtension):
                     resampled_frame = resampled_audio.tobytes()
 
                 # Encode and send
-                base64_audio_data = base64.b64encode(
-                    resampled_frame
-                ).decode("utf-8")
+                base64_audio_data = base64.b64encode(resampled_frame).decode(
+                    "utf-8"
+                )
                 await self.recorder.send(base64_audio_data)
 
                 # Set up task to reset is_speaking after 1 second of no audio
@@ -190,14 +195,20 @@ class HeygenAvatarExtension(AsyncExtension):
             except asyncio.QueueEmpty:
                 break
         if cleared_count > 0:
-            self.ten_env.log_debug(f"Cleared {cleared_count} audio frames from queue")
+            self.ten_env.log_debug(
+                f"Cleared {cleared_count} audio frames from queue"
+            )
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
         ten_env.log_info("[AVATAR DISCONNECT] on_stop called")
         if self.recorder:
-            ten_env.log_info("[AVATAR DISCONNECT] Calling recorder.disconnect()")
+            ten_env.log_info(
+                "[AVATAR DISCONNECT] Calling recorder.disconnect()"
+            )
             await self.recorder.disconnect()
-            ten_env.log_info("[AVATAR DISCONNECT] recorder.disconnect() completed")
+            ten_env.log_info(
+                "[AVATAR DISCONNECT] recorder.disconnect() completed"
+            )
         else:
             ten_env.log_warn("[AVATAR DISCONNECT] No recorder to disconnect")
         ten_env.log_info("[AVATAR DISCONNECT] on_stop completed")
