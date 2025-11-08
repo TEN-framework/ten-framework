@@ -224,7 +224,7 @@ func (s *HttpServer) handlerPing(c *gin.Context) {
 		return
 	}
 
-	// Update worker
+	// Update worker timestamp - ping indicates active frontend connection
 	worker := workers.Get(req.ChannelName).(*Worker)
 	worker.UpdateTs = time.Now().Unix()
 

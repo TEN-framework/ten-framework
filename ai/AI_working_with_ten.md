@@ -2225,8 +2225,42 @@ async with websockets.connect(
 
 ## Quick Troubleshooting Checklist
 
+### ⚠️ CRITICAL: Zombie Worker Processes
+
+**Symptom**: Client shows STT transcribing even after server restart, or old sessions appear active
+
+**Cause**: Worker processes (`bin/main`) survive server restart AND container restart. They run on the host, not in Docker.
+
+**Solution**:
+```bash
+# Check for zombie workers
+ps -elf | grep 'bin/main' | grep -v grep
+
+# Kill all zombie workers
+ps -elf | grep 'bin/main' | grep -v grep | awk '{print $4}' | xargs -r sudo kill -9
+
+# Verify they're gone
+curl -s http://localhost:8080/list | jq '.data | length'
+# Expected: 0
+```
+
+**Complete cleanup script** (use before every restart):
+```bash
+# Kill zombie workers (on host - NOT in container!)
+ps -elf | grep 'bin/main' | grep -v grep | awk '{print $4}' | xargs -r sudo kill -9
+
+# Kill log monitors
+sudo pkill -9 -f 'tail.*task_run.log' 2>/dev/null || true
+
+# Kill API server (in container)
+sudo docker exec ten_agent_dev bash -c "pkill -9 -f 'bin/api'" 2>/dev/null || true
+```
+
+---
+
 When something isn't working:
 
+- [ ] **Are zombie workers running?** `ps -elf | grep 'bin/main' | grep -v grep` (kill them!)
 - [ ] Is Docker container running? `docker ps`
 - [ ] Are services running inside container? `curl http://localhost:8080/health`
 - [ ] Check recent logs: `docker exec container_name tail -50 /tmp/task_run.log`
@@ -2262,6 +2296,35 @@ When something isn't working:
 - Use `ten_env.log_info()` liberally for debugging
 - Check session-specific logs for runtime errors
 - Monitor resource usage (memory, CPU) during development
+
+### Pre-commit Checks
+
+**IMPORTANT:** Always run these checks before committing to avoid CI failures:
+
+```bash
+# Run from ai_agents directory
+cd ai_agents
+
+# 1. Check Python formatting (required for Python files)
+sudo docker exec ten_agent_dev bash -c \
+  "cd /app/agents && black --check --line-length 80 \
+  --exclude 'third_party/|agents/ten_packages/extension/http_server_python/|ten_packages/system' \
+  ten_packages/extension"
+
+# If formatting fails, auto-fix with:
+sudo docker exec ten_agent_dev bash -c \
+  "cd /app/agents && black --line-length 80 \
+  --exclude 'third_party/|agents/ten_packages/extension/http_server_python/|ten_packages/system' \
+  ten_packages/extension"
+
+# 2. Run all checks (includes formatting, linting, tests)
+sudo docker exec ten_agent_dev bash -c "cd /app/agents && task check"
+```
+
+**Common formatting issues:**
+- Lines longer than 80 characters will be auto-wrapped by Black
+- Black reformats imports, spacing, quotes to match PEP 8
+- Run `black` formatter before committing to avoid CI failures
 
 ### Commit Messages
 

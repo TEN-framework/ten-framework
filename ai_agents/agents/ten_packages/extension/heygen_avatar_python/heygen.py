@@ -228,11 +228,15 @@ class AgoraHeygenRecorder:
             try:
                 await asyncio.sleep(10)  # Send keep_alive every 10 seconds
                 if self.websocket and not self.websocket.closed:
+                    # Use new session.keep_alive format with event_id
+                    event_id = f"keepalive_{int(time.time() * 1000)}"
                     keep_alive_msg = json.dumps(
-                        {"type": "streaming.keep_alive"}
+                        {"type": "session.keep_alive", "event_id": event_id}
                     )
                     await self.websocket.send(keep_alive_msg)
-                    self.ten_env.log_debug("[avatar] Sent streaming.keep_alive")
+                    self.ten_env.log_debug(
+                        f"[avatar] Sent session.keep_alive (event_id={event_id})"
+                    )
             except Exception as e:
                 self.ten_env.log_error(f"[avatar] Keep-alive error: {e}")
                 break
