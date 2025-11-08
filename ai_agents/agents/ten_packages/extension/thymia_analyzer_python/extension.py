@@ -175,8 +175,6 @@ class AudioBuffer:
             max_duration_seconds: Maximum duration in seconds to extract. If None, extracts all.
                                  If specified, extracts only the first N seconds of speech.
         """
-        import time
-
         start_time = time.time()
 
         print(
@@ -186,7 +184,7 @@ class AudioBuffer:
 
         if not self.speech_buffer:
             print(
-                f"[THYMIA_BUFFER_GET_WAV] Empty buffer, returning empty bytes",
+                "[THYMIA_BUFFER_GET_WAV] Empty buffer, returning empty bytes",
                 flush=True,
             )
             return b""
@@ -224,8 +222,8 @@ class AudioBuffer:
         )
 
         # Convert to WAV
-        print(f"[THYMIA_BUFFER_GET_WAV] Starting WAV conversion...", flush=True)
-        wav_data = self._pcm_to_wav(pcm_data, self.sample_rate, self.channels)
+        print("[THYMIA_BUFFER_GET_WAV] Starting WAV conversion...", flush=True)
+        wav_data = self.pcm_to_wav(pcm_data, self.sample_rate, self.channels)
         total_time = time.time() - start_time
 
         # Calculate actual audio duration (16kHz, mono, 16-bit = 32000 bytes/sec)
@@ -238,7 +236,7 @@ class AudioBuffer:
         return wav_data
 
     @staticmethod
-    def _pcm_to_wav(
+    def pcm_to_wav(
         pcm_data: bytes,
         sample_rate: int,
         channels: int,
@@ -317,10 +315,6 @@ class ThymiaAPIClient:
             "recordingUploadUrl": "presigned_s3_url"
         }
         """
-        import json
-        import subprocess
-        import asyncio
-
         payload = {
             "user": {
                 "userLabel": user_label,
@@ -353,7 +347,7 @@ class ThymiaAPIClient:
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )
-        stdout, stderr = await process.communicate()
+        stdout, _stderr = await process.communicate()
 
         # Parse response
         stdout_str = stdout.decode("utf-8")
@@ -379,7 +373,6 @@ class ThymiaAPIClient:
         """Upload WAV audio file to presigned S3 URL using curl"""
         import tempfile
         import os
-        import asyncio
 
         # Write audio to temporary file for curl upload
         with tempfile.NamedTemporaryFile(
@@ -410,7 +403,7 @@ class ThymiaAPIClient:
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
             )
-            stdout, stderr = await process.communicate()
+            stdout, _stderr = await process.communicate()
 
             # Parse response
             stdout_str = stdout.decode("utf-8")
@@ -1327,7 +1320,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                 ten_env.log_warn(
                     "[THYMIA_APOLLO_PHASE_2] No saved mood.wav, creating new one"
                 )
-                mood_wav = AudioBuffer._pcm_to_wav(mood_pcm, 16000, 1)
+                mood_wav = AudioBuffer.pcm_to_wav(mood_pcm, 16000, 1)
                 mood_filename = f"/tmp/thymia_audio_{timestamp}_{self.user_name or 'unknown'}_mood.wav"
                 try:
                     with open(mood_filename, "wb") as f:
@@ -1338,7 +1331,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                     )
 
             # Reading audio: save only this one
-            read_wav = AudioBuffer._pcm_to_wav(read_pcm, 16000, 1)
+            read_wav = AudioBuffer.pcm_to_wav(read_pcm, 16000, 1)
             read_filename = f"/tmp/thymia_audio_{timestamp}_{self.user_name or 'unknown'}_reading.wav"
 
             try:
@@ -2117,7 +2110,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                         },
                     }
                     ten_env.log_info(
-                        f"[THYMIA_APOLLO_ONLY] Returning Apollo-only results (Hellos not available)"
+                        "[THYMIA_APOLLO_ONLY] Returning Apollo-only results (Hellos not available)"
                     )
                     return LLMToolResultLLMResult(
                         type="llmresult",
