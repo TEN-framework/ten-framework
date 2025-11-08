@@ -123,7 +123,6 @@ class AgoraHeygenRecorder:
                 self.ten_env.log_info(
                     "[HEYGEN DISCONNECT] Websocket task cancelled"
                 )
-                pass
         self.ten_env.log_info(
             f"[HEYGEN DISCONNECT] Stopping session: {self.session_id}"
         )

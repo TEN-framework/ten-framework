@@ -234,7 +234,7 @@ class HeygenAvatarExtension(AsyncExtension):
         ten_env.log_debug("on_data name {}".format(data_name))
 
     async def on_audio_frame(
-        self, ten_env: AsyncTenEnv, audio_frame: AudioFrame
+        self, _ten_env: AsyncTenEnv, audio_frame: AudioFrame
     ) -> None:
         frame_buf = audio_frame.get_buf()
         self.input_audio_queue.put_nowait(frame_buf)
