@@ -17,7 +17,7 @@ import asyncio
 import aiohttp
 import io
 import wave
-from typing import Dict, Optional, Tuple
+from typing import Optional, Tuple
 from dataclasses import dataclass
 
 
@@ -57,6 +57,7 @@ class ApolloAPI:
         """Convert PCM audio data to WAV format bytes."""
         wav_buffer = io.BytesIO()
         with wave.open(wav_buffer, "wb") as wav_file:
+            # pylint: disable=no-member  # Wave_write has these methods
             wav_file.setnchannels(channels)
             wav_file.setsampwidth(2)  # 16-bit = 2 bytes
             wav_file.setframerate(sample_rate)
@@ -109,6 +110,7 @@ class ApolloAPI:
         ) as response:
             if response.status != 200:
                 error_text = await response.text()
+                # pylint: disable=broad-exception-raised
                 raise Exception(
                     f"Apollo create model run failed: {response.status} - {error_text}"
                 )
@@ -146,6 +148,7 @@ class ApolloAPI:
         ) as response:
             if response.status not in (200, 201, 204):
                 error_text = await response.text()
+                # pylint: disable=broad-exception-raised
                 raise Exception(
                     f"Apollo audio upload failed: {response.status} - {error_text}"
                 )
@@ -175,7 +178,7 @@ class ApolloAPI:
         url = f"{self.base_url}/v1/models/apollo/{model_run_id}"
         headers = {"x-api-key": self.api_key}
 
-        for attempt in range(max_attempts):
+        for _ in range(max_attempts):
             async with self.session.get(url, headers=headers) as response:
                 if response.status != 200:
                     error_text = await response.text()
