@@ -384,8 +384,12 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
 
         # Analysis mode configuration (for backwards compatibility)
         self.analysis_mode: str = "hellos_only"  # "hellos_only" or "demo_dual"
-        self.apollo_mood_duration: float = 22.0  # Duration of mood audio for Apollo
-        self.apollo_read_duration: float = 30.0  # Duration of reading audio for Apollo
+        self.apollo_mood_duration: float = (
+            22.0  # Duration of mood audio for Apollo
+        )
+        self.apollo_read_duration: float = (
+            30.0  # Duration of reading audio for Apollo
+        )
 
         # State
         self.audio_buffer: Optional[AudioBuffer] = None
@@ -658,7 +662,9 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                             f"[thymia_analyzer] 🚀 Starting Hellos analysis "
                             f"({speech_duration:.1f}s speech collected)"
                         )
-                        asyncio.create_task(self._run_hellos_only_analysis(ten_env))
+                        asyncio.create_task(
+                            self._run_hellos_only_analysis(ten_env)
+                        )
 
             elif self.analysis_mode == "demo_dual":
                 # ============ DEMO_DUAL MODE (PHASED) ============
@@ -676,7 +682,10 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                             f"(mode=demo_dual, phase={phase}, need {max(0, required_duration - speech_duration):.1f}s more)"
                         )
 
-                    if self.audio_buffer.has_enough_speech(required_duration) and not self.hellos_analysis_running:
+                    if (
+                        self.audio_buffer.has_enough_speech(required_duration)
+                        and not self.hellos_analysis_running
+                    ):
                         ten_env.log_info(
                             f"[thymia_analyzer] 🚀 Starting Hellos analysis (phase 1/2) "
                             f"({speech_duration:.1f}s speech collected)"
@@ -686,7 +695,9 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
 
                 elif not self.apollo_complete:
                     # Waiting for 44s to run Apollo
-                    required_duration = self.apollo_mood_duration + self.apollo_read_duration  # 44s
+                    required_duration = (
+                        self.apollo_mood_duration + self.apollo_read_duration
+                    )  # 44s
                     phase = "apollo (2/2)"
 
                     if self._audio_frame_count % 50 == 1:
@@ -695,7 +706,10 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                             f"(mode=demo_dual, phase={phase}, need {max(0, required_duration - speech_duration):.1f}s more)"
                         )
 
-                    if self.audio_buffer.has_enough_speech(required_duration) and not self.apollo_analysis_running:
+                    if (
+                        self.audio_buffer.has_enough_speech(required_duration)
+                        and not self.apollo_analysis_running
+                    ):
                         ten_env.log_info(
                             f"[thymia_analyzer] 🚀 Starting Apollo analysis (phase 2/2) "
                             f"({speech_duration:.1f}s speech collected)"
@@ -759,7 +773,9 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                 ten_env.log_warn("[HELLOS_ONLY] No audio data available")
                 return
 
-            ten_env.log_info(f"[HELLOS_ONLY] Starting API workflow ({len(wav_data)} bytes)")
+            ten_env.log_info(
+                f"[HELLOS_ONLY] Starting API workflow ({len(wav_data)} bytes)"
+            )
 
             # Create session
             session_response = await self.api_client.create_session(
@@ -774,7 +790,9 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
             ten_env.log_info(f"[HELLOS_ONLY] Created session: {session_id}")
 
             # Upload audio
-            upload_success = await self.api_client.upload_audio(upload_url, wav_data)
+            upload_success = await self.api_client.upload_audio(
+                upload_url, wav_data
+            )
             if not upload_success:
                 ten_env.log_error("[HELLOS_ONLY] Failed to upload audio")
                 return
@@ -787,7 +805,9 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
             )
 
             if not results:
-                ten_env.log_warn(f"[HELLOS_ONLY] Analysis timed out after {self.poll_timeout}s")
+                ten_env.log_warn(
+                    f"[HELLOS_ONLY] Analysis timed out after {self.poll_timeout}s"
+                )
                 return
 
             # Extract metrics
@@ -801,8 +821,12 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                 distress=section.get("uniformDistress", {}).get("value", 0.0),
                 stress=section.get("uniformStress", {}).get("value", 0.0),
                 burnout=section.get("uniformExhaustion", {}).get("value", 0.0),
-                fatigue=section.get("uniformSleepPropensity", {}).get("value", 0.0),
-                low_self_esteem=section.get("uniformLowSelfEsteem", {}).get("value", 0.0),
+                fatigue=section.get("uniformSleepPropensity", {}).get(
+                    "value", 0.0
+                ),
+                low_self_esteem=section.get("uniformLowSelfEsteem", {}).get(
+                    "value", 0.0
+                ),
                 timestamp=time.time(),
                 session_id=session_id,
             )
@@ -822,6 +846,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
         except Exception as e:
             ten_env.log_error(f"[HELLOS_ONLY] Error: {e}")
             import traceback
+
             ten_env.log_error(traceback.format_exc())
         finally:
             self.active_analysis = False
@@ -839,7 +864,9 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                 ten_env.log_warn("[HELLOS PHASE 1/2] No audio data available")
                 return
 
-            ten_env.log_info(f"[HELLOS PHASE 1/2] Starting API workflow ({len(wav_data)} bytes)")
+            ten_env.log_info(
+                f"[HELLOS PHASE 1/2] Starting API workflow ({len(wav_data)} bytes)"
+            )
 
             # Create session
             session_response = await self.api_client.create_session(
@@ -851,10 +878,14 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
             session_id = session_response["id"]
             upload_url = session_response["recordingUploadUrl"]
 
-            ten_env.log_info(f"[HELLOS PHASE 1/2] Created session: {session_id}")
+            ten_env.log_info(
+                f"[HELLOS PHASE 1/2] Created session: {session_id}"
+            )
 
             # Upload audio
-            upload_success = await self.api_client.upload_audio(upload_url, wav_data)
+            upload_success = await self.api_client.upload_audio(
+                upload_url, wav_data
+            )
             if not upload_success:
                 ten_env.log_error("[HELLOS PHASE 1/2] Failed to upload audio")
                 return
@@ -867,13 +898,17 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
             )
 
             if not results:
-                ten_env.log_warn(f"[HELLOS PHASE 1/2] Analysis timed out after {self.poll_timeout}s")
+                ten_env.log_warn(
+                    f"[HELLOS PHASE 1/2] Analysis timed out after {self.poll_timeout}s"
+                )
                 return
 
             # Extract metrics
             sections = results.get("results", {}).get("sections", [])
             if not sections:
-                ten_env.log_error("[HELLOS PHASE 1/2] No sections found in response")
+                ten_env.log_error(
+                    "[HELLOS PHASE 1/2] No sections found in response"
+                )
                 return
 
             section = sections[0]
@@ -881,8 +916,12 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                 distress=section.get("uniformDistress", {}).get("value", 0.0),
                 stress=section.get("uniformStress", {}).get("value", 0.0),
                 burnout=section.get("uniformExhaustion", {}).get("value", 0.0),
-                fatigue=section.get("uniformSleepPropensity", {}).get("value", 0.0),
-                low_self_esteem=section.get("uniformLowSelfEsteem", {}).get("value", 0.0),
+                fatigue=section.get("uniformSleepPropensity", {}).get(
+                    "value", 0.0
+                ),
+                low_self_esteem=section.get("uniformLowSelfEsteem", {}).get(
+                    "value", 0.0
+                ),
                 timestamp=time.time(),
                 session_id=session_id,
             )
@@ -902,6 +941,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
         except Exception as e:
             ten_env.log_error(f"[HELLOS PHASE 1/2] Error: {e}")
             import traceback
+
             ten_env.log_error(traceback.format_exc())
         finally:
             self.hellos_analysis_running = False
@@ -965,6 +1005,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
         except Exception as e:
             ten_env.log_error(f"[APOLLO PHASE 2/2] Error: {e}")
             import traceback
+
             ten_env.log_error(traceback.format_exc())
         finally:
             self.apollo_analysis_running = False
@@ -981,7 +1022,9 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
         try:
             # Get raw PCM data from buffer
             if not self.audio_buffer.speech_buffer:
-                ten_env.log_warn("[ANALYSIS] No audio data available for analysis")
+                ten_env.log_warn(
+                    "[ANALYSIS] No audio data available for analysis"
+                )
                 return
 
             # Concatenate all PCM frames
@@ -1025,7 +1068,9 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
             ten_env.log_info(f"[HELLOS] Created session: {session_id}")
 
             # Step 2: Upload audio
-            ten_env.log_info(f"[HELLOS] Uploading {len(wav_data)} bytes of audio...")
+            ten_env.log_info(
+                f"[HELLOS] Uploading {len(wav_data)} bytes of audio..."
+            )
             upload_success = await self.api_client.upload_audio(
                 upload_url, wav_data
             )
@@ -1051,7 +1096,9 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                 )
                 return
 
-            ten_env.log_info(f"[HELLOS] Received results for session {session_id}")
+            ten_env.log_info(
+                f"[HELLOS] Received results for session {session_id}"
+            )
 
             # Step 4: Extract metrics from results.sections[0]
             sections = results.get("results", {}).get("sections", [])
@@ -1313,7 +1360,8 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                 if year_of_birth:
                     # Extract just the 4-digit year
                     import re
-                    year_match = re.search(r'(\d{4})', year_of_birth)
+
+                    year_match = re.search(r"(\d{4})", year_of_birth)
                     if year_match:
                         year = year_match.group(1)
                         self.user_dob = f"{year}-01-01"
@@ -1372,7 +1420,10 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                     # Calculate required duration based on mode
                     required_duration = self.min_speech_duration
                     if self.analysis_mode == "demo_dual":
-                        required_duration = self.apollo_mood_duration + self.apollo_read_duration
+                        required_duration = (
+                            self.apollo_mood_duration
+                            + self.apollo_read_duration
+                        )
 
                     # Determine status
                     if self.active_analysis:
