@@ -108,17 +108,25 @@ class AgoraHeygenRecorder:
         )
 
     async def disconnect(self):
-        self.ten_env.log_info("[HEYGEN DISCONNECT] Starting disconnect sequence")
+        self.ten_env.log_info(
+            "[HEYGEN DISCONNECT] Starting disconnect sequence"
+        )
         self._should_reconnect = False
         if self.websocket_task:
-            self.ten_env.log_info("[HEYGEN DISCONNECT] Cancelling websocket task")
+            self.ten_env.log_info(
+                "[HEYGEN DISCONNECT] Cancelling websocket task"
+            )
             self.websocket_task.cancel()
             try:
                 await self.websocket_task
             except asyncio.CancelledError:
-                self.ten_env.log_info("[HEYGEN DISCONNECT] Websocket task cancelled")
+                self.ten_env.log_info(
+                    "[HEYGEN DISCONNECT] Websocket task cancelled"
+                )
                 pass
-        self.ten_env.log_info(f"[HEYGEN DISCONNECT] Stopping session: {self.session_id}")
+        self.ten_env.log_info(
+            f"[HEYGEN DISCONNECT] Stopping session: {self.session_id}"
+        )
         await self._stop_session(self.session_id)
         self.ten_env.log_info("[HEYGEN DISCONNECT] Disconnect completed")
 
@@ -221,9 +229,15 @@ class AgoraHeygenRecorder:
             try:
                 await asyncio.sleep(10)  # Send keep_alive every 10 seconds
                 if self.websocket and not self.websocket.closed:
-                    keep_alive_msg = json.dumps({"type": "streaming.keep_alive"})
+                    # Use new session.keep_alive format with event_id
+                    event_id = f"keepalive_{int(time.time() * 1000)}"
+                    keep_alive_msg = json.dumps(
+                        {"type": "session.keep_alive", "event_id": event_id}
+                    )
                     await self.websocket.send(keep_alive_msg)
-                    self.ten_env.log_debug("[avatar] Sent streaming.keep_alive")
+                    self.ten_env.log_debug(
+                        f"[avatar] Sent session.keep_alive (event_id={event_id})"
+                    )
             except Exception as e:
                 self.ten_env.log_error(f"[avatar] Keep-alive error: {e}")
                 break
@@ -235,20 +249,24 @@ class AgoraHeygenRecorder:
                     f"Connecting to WebSocket: {self.realtime_endpoint}"
                 )
                 async with websockets.connect(
-                    self.realtime_endpoint,
-                    ping_interval=20,
-                    ping_timeout=60
+                    self.realtime_endpoint, ping_interval=20, ping_timeout=60
                 ) as ws:
                     self.websocket = ws
-                    self.ten_env.log_info("WebSocket connected successfully with ping_interval=20s, ping_timeout=60s")
+                    self.ten_env.log_info(
+                        "WebSocket connected successfully with ping_interval=20s, ping_timeout=60s"
+                    )
 
                     # Start keep_alive task
-                    keep_alive_task = asyncio.create_task(self._send_keep_alive())
+                    keep_alive_task = asyncio.create_task(
+                        self._send_keep_alive()
+                    )
 
                     try:
                         # Consume messages from HeyGen to prevent buffer overflow
                         async for message in ws:
-                            self.ten_env.log_debug(f"[avatar] Received message from HeyGen: {message[:100]}")
+                            self.ten_env.log_debug(
+                                f"[avatar] Received message from HeyGen: {message[:100]}"
+                            )
                     finally:
                         keep_alive_task.cancel()
                         try:
@@ -349,12 +367,16 @@ class AgoraHeygenRecorder:
     async def _send_message(self, message: dict) -> bool:
         """Send a message to HeyGen WebSocket without waiting for confirmation."""
         if self.websocket is None:
-            self.ten_env.log_error("Cannot send message: WebSocket not connected")
+            self.ten_env.log_error(
+                "Cannot send message: WebSocket not connected"
+            )
             return False
 
         try:
             await self.websocket.send(json.dumps(message))
-            self.ten_env.log_debug(f"Sent message: {message.get('type', 'unknown')}")
+            self.ten_env.log_debug(
+                f"Sent message: {message.get('type', 'unknown')}"
+            )
             return True
         except Exception as e:
             self.ten_env.log_error(f"Failed to send message: {e}")
