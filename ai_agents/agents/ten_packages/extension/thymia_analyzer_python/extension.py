@@ -53,6 +53,7 @@ class AudioBuffer:
         self.silence_threshold = silence_threshold
         self.speech_buffer = []
         self.speech_duration = 0.0
+        self.max_speech_duration = 300.0  # 5 minutes safety limit
 
         # Circular buffer for 0.5 second of recent audio (pre-speech capture)
         # Using deque for O(1) popleft() performance
@@ -95,10 +96,11 @@ class AudioBuffer:
             if is_speech:
                 # Speech detected! Add circular buffer contents (pre-speech context)
                 for buffered_frame in self.circular_buffer:
-                    self.speech_buffer.append(buffered_frame)
-                    self.speech_duration += len(buffered_frame) / (
-                        self.sample_rate * self.channels * 2
-                    )
+                    if self.speech_duration < self.max_speech_duration:
+                        self.speech_buffer.append(buffered_frame)
+                        self.speech_duration += len(buffered_frame) / (
+                            self.sample_rate * self.channels * 2
+                        )
 
                 self.is_speaking = True
                 self.circular_buffer.clear()  # Clear after using contents
@@ -107,18 +109,24 @@ class AudioBuffer:
             # Currently speaking
             if is_speech:
                 # Continue speaking - add frame to speech buffer
-                # Also flush any accumulated silence frames (they were part of speech)
-                for silence_frame in self.silence_frames:
-                    self.speech_buffer.append(silence_frame)
-                    self.speech_duration += len(silence_frame) / (
-                        self.sample_rate * self.channels * 2
-                    )
-                self.silence_frames.clear()
-                self.silence_duration = 0.0
+                # Check max duration to prevent unbounded memory growth
+                if self.speech_duration < self.max_speech_duration:
+                    # Also flush any accumulated silence frames (they were part of speech)
+                    for silence_frame in self.silence_frames:
+                        self.speech_buffer.append(silence_frame)
+                        self.speech_duration += len(silence_frame) / (
+                            self.sample_rate * self.channels * 2
+                        )
+                    self.silence_frames.clear()
+                    self.silence_duration = 0.0
 
-                # Add current frame
-                self.speech_buffer.append(pcm_data)
-                self.speech_duration += frame_duration
+                    # Add current frame
+                    self.speech_buffer.append(pcm_data)
+                    self.speech_duration += frame_duration
+                else:
+                    # Buffer full - clear silence frames but don't add more audio
+                    self.silence_frames.clear()
+                    self.silence_duration = 0.0
 
             else:
                 # Silence during speech - accumulate for potential end-of-speech
