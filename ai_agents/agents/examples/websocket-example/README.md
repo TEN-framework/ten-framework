@@ -1,30 +1,58 @@
-# Voice Assistant
+# WebSocket Voice Assistant
 
-A comprehensive voice assistant with real-time conversation capabilities using Agora RTC, Deepgram STT, OpenAI LLM, and ElevenLabs TTS.
+A comprehensive voice assistant with real-time conversation capabilities using WebSocket communication, Deepgram STT, OpenAI LLM, and ElevenLabs TTS.
 
 ## Features
 
-- **Chained Model Real-time Voice Interaction**: Complete voice conversation pipeline with STT → LLM → TTS processing
+- **WebSocket-Based Real-time Voice Interaction**: Bidirectional audio streaming over WebSocket with complete STT → LLM → TTS processing
+- **Base64 Audio Encoding**: Simple JSON message format for audio transmission
+- **Multi-Client Support**: Multiple WebSocket clients can connect simultaneously
+- **Automatic Response Broadcasting**: Text and audio responses are automatically sent to all connected clients
+
+## Architecture
+
+This example demonstrates a WebSocket-based voice assistant where:
+
+1. **Audio Input**: Clients send base64-encoded PCM audio via WebSocket → STT → LLM → TTS
+2. **Audio Output**: TTS audio is sent back to clients as base64-encoded JSON messages
+3. **Data Messages**: ASR results, LLM responses, and other data are automatically broadcast to all clients
+
+```
+┌─────────────────┐
+│ WebSocket Client│
+└────────┬────────┘
+         │ {"audio": "<base64>"}
+         ▼
+┌─────────────────┐  pcm_frame  ┌─────┐  asr_result  ┌──────────────┐
+│ websocket_server├────────────▶│ STT ├─────────────▶│ main_control │
+└────────┬────────┘              └─────┘              └──────┬───────┘
+         │                                                    │
+         │ {"type": "audio|data"}                            ▼
+         ▲                                                 ┌─────┐
+         │                                                 │ LLM │
+         │                                                 └──┬──┘
+         │                                                    │
+         │ pcm_frame                                          ▼
+         │                                                 ┌─────┐
+         └─────────────────────────────────────────────────┤ TTS │
+                                                           └─────┘
+```
 
 ## Prerequisites
 
 ### Required Environment Variables
 
-1. **Agora Account**: Get credentials from [Agora Console](https://console.agora.io/)
-   - `AGORA_APP_ID` - Your Agora App ID (required)
-
-2. **Deepgram Account**: Get credentials from [Deepgram Console](https://console.deepgram.com/)
+1. **Deepgram Account**: Get credentials from [Deepgram Console](https://console.deepgram.com/)
    - `DEEPGRAM_API_KEY` - Your Deepgram API key (required)
 
-3. **OpenAI Account**: Get credentials from [OpenAI Platform](https://platform.openai.com/)
+2. **OpenAI Account**: Get credentials from [OpenAI Platform](https://platform.openai.com/)
    - `OPENAI_API_KEY` - Your OpenAI API key (required)
 
-4. **ElevenLabs Account**: Get credentials from [ElevenLabs](https://elevenlabs.io/)
+3. **ElevenLabs Account**: Get credentials from [ElevenLabs](https://elevenlabs.io/)
    - `ELEVENLABS_TTS_KEY` - Your ElevenLabs API key (required)
 
 ### Optional Environment Variables
 
-- `AGORA_APP_CERTIFICATE` - Agora App Certificate (optional)
 - `OPENAI_MODEL` - OpenAI model name (optional, defaults to configured model)
 - `OPENAI_PROXY_URL` - Proxy URL for OpenAI API (optional)
 - `WEATHERAPI_API_KEY` - Weather API key for weather tool (optional)
@@ -36,10 +64,6 @@ A comprehensive voice assistant with real-time conversation capabilities using A
 Add to your `.env` file:
 
 ```bash
-# Agora (required for audio streaming)
-AGORA_APP_ID=your_agora_app_id_here
-AGORA_APP_CERTIFICATE=your_agora_certificate_here
-
 # Deepgram (required for speech-to-text)
 DEEPGRAM_API_KEY=your_deepgram_api_key_here
 
@@ -58,7 +82,7 @@ WEATHERAPI_API_KEY=your_weather_api_key_here
 ### 2. Install Dependencies
 
 ```bash
-cd agents/examples/voice-assistant
+cd agents/examples/websocket-example
 task install
 ```
 
@@ -67,17 +91,100 @@ This installs Python dependencies and frontend components.
 ### 3. Run the Voice Assistant
 
 ```bash
-cd agents/examples/voice-assistant
+cd agents/examples/websocket-example
 task run
 ```
 
-The voice assistant starts with all capabilities enabled.
+The voice assistant starts with WebSocket server listening on port 8765.
 
 ### 4. Access the Application
 
-- **Frontend**: http://localhost:3000
+- **WebSocket Server**: `ws://localhost:8765`
 - **API Server**: http://localhost:8080
+- **Frontend**: http://localhost:3000
 - **TMAN Designer**: http://localhost:49483
+
+## WebSocket Protocol
+
+### Connecting to the WebSocket Server
+
+```javascript
+const ws = new WebSocket('ws://localhost:8765');
+
+ws.onopen = () => {
+  console.log('Connected to voice assistant');
+};
+```
+
+### Sending Audio (Client → Server)
+
+Send base64-encoded PCM audio in JSON format:
+
+```javascript
+// PCM audio format: 16kHz, mono, 16-bit
+const audioBase64 = btoa(String.fromCharCode(...pcmData));
+
+ws.send(JSON.stringify({
+  audio: audioBase64,
+  metadata: {
+    session_id: "optional-session-id",
+    // any other custom metadata
+  }
+}));
+```
+
+**Audio Requirements:**
+- **Format**: Raw PCM (uncompressed)
+- **Sample Rate**: 16000 Hz
+- **Channels**: 1 (mono)
+- **Bit Depth**: 16-bit (2 bytes per sample)
+- **Encoding**: Base64
+
+### Receiving Messages (Server → Client)
+
+The server sends three types of messages:
+
+#### 1. Audio Messages (TTS Output)
+
+```javascript
+ws.onmessage = (event) => {
+  const message = JSON.parse(event.data);
+
+  if (message.type === 'audio') {
+    // Decode base64 audio
+    const pcmData = atob(message.audio);
+
+    // Get audio properties from metadata
+    const sampleRate = message.metadata.sample_rate; // 16000
+    const channels = message.metadata.channels; // 1
+    const bytesPerSample = message.metadata.bytes_per_sample; // 2
+
+    // Play audio using Web Audio API or other audio playback
+    playAudio(pcmData, sampleRate, channels);
+  }
+};
+```
+
+#### 2. Data Messages (ASR Results, LLM Responses)
+
+```javascript
+if (message.type === 'data') {
+  console.log('Received data:', message.name, message.data);
+
+  // Example: ASR result
+  if (message.name === 'asr_result') {
+    console.log('Transcription:', message.data.text);
+  }
+}
+```
+
+#### 3. Error Messages
+
+```javascript
+if (message.type === 'error') {
+  console.error('Server error:', message.error);
+}
+```
 
 ## Configuration
 
@@ -93,15 +200,14 @@ The voice assistant is configured in `tenapp/property.json`:
         "graph": {
           "nodes": [
             {
-              "name": "agora_rtc",
-              "addon": "agora_rtc",
+              "name": "websocket_server",
+              "addon": "websocket_server",
               "property": {
-                "app_id": "${env:AGORA_APP_ID}",
-                "app_certificate": "${env:AGORA_APP_CERTIFICATE|}",
-                "channel": "ten_agent_test",
-                "subscribe_audio": true,
-                "publish_audio": true,
-                "publish_data": true
+                "port": 8765,
+                "host": "0.0.0.0",
+                "sample_rate": 16000,
+                "channels": 1,
+                "bytes_per_sample": 2
               }
             },
             {
@@ -148,14 +254,88 @@ The voice assistant is configured in `tenapp/property.json`:
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `AGORA_APP_ID` | string | - | Your Agora App ID (required) |
-| `AGORA_APP_CERTIFICATE` | string | - | Your Agora App Certificate (optional) |
+| `websocket_server.port` | int | 8765 | WebSocket server port |
+| `websocket_server.host` | string | 0.0.0.0 | WebSocket server host |
 | `DEEPGRAM_API_KEY` | string | - | Deepgram API key (required) |
 | `OPENAI_API_KEY` | string | - | OpenAI API key (required) |
 | `OPENAI_MODEL` | string | - | OpenAI model name (optional) |
 | `OPENAI_PROXY_URL` | string | - | Proxy URL for OpenAI API (optional) |
 | `ELEVENLABS_TTS_KEY` | string | - | ElevenLabs API key (required) |
 | `WEATHERAPI_API_KEY` | string | - | Weather API key (optional) |
+
+## Client Example
+
+Here's a complete example of a WebSocket client:
+
+```javascript
+class VoiceAssistantClient {
+  constructor(wsUrl = 'ws://localhost:8765') {
+    this.ws = new WebSocket(wsUrl);
+    this.setupHandlers();
+  }
+
+  setupHandlers() {
+    this.ws.onopen = () => {
+      console.log('Connected to voice assistant');
+    };
+
+    this.ws.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+
+      switch (message.type) {
+        case 'audio':
+          this.handleAudio(message);
+          break;
+        case 'data':
+          this.handleData(message);
+          break;
+        case 'error':
+          console.error('Error:', message.error);
+          break;
+      }
+    };
+
+    this.ws.onerror = (error) => {
+      console.error('WebSocket error:', error);
+    };
+
+    this.ws.onclose = () => {
+      console.log('Disconnected from voice assistant');
+    };
+  }
+
+  sendAudio(pcmData) {
+    const audioBase64 = btoa(String.fromCharCode(...new Uint8Array(pcmData)));
+    this.ws.send(JSON.stringify({
+      audio: audioBase64,
+      metadata: {
+        timestamp: Date.now()
+      }
+    }));
+  }
+
+  handleAudio(message) {
+    // Decode and play TTS audio
+    const pcmData = atob(message.audio);
+    console.log('Received audio:', pcmData.length, 'bytes');
+    // Implement audio playback here
+  }
+
+  handleData(message) {
+    console.log('Data:', message.name, message.data);
+  }
+
+  close() {
+    this.ws.close();
+  }
+}
+
+// Usage
+const client = new VoiceAssistantClient();
+
+// Send audio from microphone or file
+client.sendAudio(pcmAudioData);
+```
 
 ## Customization
 
@@ -171,24 +351,25 @@ Access the visual designer at http://localhost:49483 to customize your voice age
 
 ```bash
 cd ai_agents
-docker build -f agents/examples/voice-assistant/Dockerfile -t voice-assistant-app .
+docker build -f agents/examples/websocket-example/Dockerfile -t websocket-voice-assistant .
 ```
 
 ### Run
 
 ```bash
-docker run --rm -it --env-file .env -p 8080:8080 -p 3000:3000 voice-assistant-app
+docker run --rm -it --env-file .env -p 8080:8080 -p 3000:3000 -p 8765:8765 websocket-voice-assistant
 ```
 
 ### Access
 
+- WebSocket Server: ws://localhost:8765
 - Frontend: http://localhost:3000
 - API Server: http://localhost:8080
 
 ## Learn More
 
-- [Agora RTC Documentation](https://docs.agora.io/en/rtc/overview/product-overview)
 - [Deepgram API Documentation](https://developers.deepgram.com/)
 - [OpenAI API Documentation](https://platform.openai.com/docs)
 - [ElevenLabs API Documentation](https://docs.elevenlabs.io/)
 - [TEN Framework Documentation](https://doc.theten.ai)
+- [WebSocket API (MDN)](https://developer.mozilla.org/en-US/docs/Web/API/WebSocket)

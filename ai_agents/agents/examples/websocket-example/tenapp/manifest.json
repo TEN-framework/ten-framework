@@ -9,17 +9,12 @@
       "version": "0.11"
     },
     {
-      "type": "extension",
-      "name": "agora_rtc",
-      "version": "=0.23.9-t1"
-    },
-    {
       "type": "system",
       "name": "ten_ai_base",
       "version": "0.7"
     },
     {
-      "path": "../../../ten_packages/extension/streamid_adapter"
+      "path": "../../../ten_packages/extension/websocket_server"
     },
     {
       "path": "../../../ten_packages/extension/aliyun_asr"

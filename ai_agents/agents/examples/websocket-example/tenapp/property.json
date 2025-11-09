@@ -8,19 +8,15 @@
           "nodes": [
             {
               "type": "extension",
-              "name": "agora_rtc",
-              "addon": "agora_rtc",
+              "name": "websocket_server",
+              "addon": "websocket_server",
               "extension_group": "default",
               "property": {
-                "app_id": "${env:AGORA_APP_ID}",
-                "app_certificate": "${env:AGORA_APP_CERTIFICATE|}",
-                "channel": "ten_agent_test",
-                "stream_id": 1234,
-                "remote_stream_id": 123,
-                "subscribe_audio": true,
-                "publish_audio": true,
-                "publish_data": true,
-                "enable_agora_asr": false
+                "port": 8765,
+                "host": "0.0.0.0",
+                "sample_rate": 16000,
+                "channels": 1,
+                "bytes_per_sample": 2
               }
             },
             {
@@ -93,29 +89,12 @@
               "property": {
                 "api_key": "${env:WEATHERAPI_API_KEY|}"
               }
-            },
-            {
-              "type": "extension",
-              "name": "streamid_adapter",
-              "addon": "streamid_adapter",
-              "property": {}
             }
           ],
           "connections": [
             {
               "extension": "main_control",
               "cmd": [
-                {
-                  "names": [
-                    "on_user_joined",
-                    "on_user_left"
-                  ],
-                  "source": [
-                    {
-                      "extension": "agora_rtc"
-                    }
-                  ]
-                },
                 {
                   "names": [
                     "tool_register"
@@ -139,13 +118,13 @@
               ]
             },
             {
-              "extension": "agora_rtc",
+              "extension": "websocket_server",
               "audio_frame": [
                 {
                   "name": "pcm_frame",
                   "dest": [
                     {
-                      "extension": "streamid_adapter"
+                      "extension": "stt"
                     }
                   ]
                 },
@@ -154,29 +133,6 @@
                   "source": [
                     {
                       "extension": "tts"
-                    }
-                  ]
-                }
-              ],
-              "data": [
-                {
-                  "name": "data",
-                  "source": [
-                    {
-                      "extension": "message_collector"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "extension": "streamid_adapter",
-              "audio_frame": [
-                {
-                  "name": "pcm_frame",
-                  "dest": [
-                    {
-                      "extension": "stt"
                     }
                   ]
                 }
