@@ -387,6 +387,72 @@ def to_str(self, sensitive_handling: bool = True) -> str:
     return f"{config}"
 ```
 
+### Advanced Extension Patterns
+
+**1. Bidirectional Extensions (Input + Output)**
+
+Extensions can both receive from and send to the TEN graph. This pattern is useful for bridges, proxies, and transport layers.
+
+Key techniques:
+- Store `self.ten_env` reference in `__init__` for use in callbacks
+- Implement `on_audio_frame()` or `on_data()` to receive from graph
+- Use callbacks to bridge external systems with TEN graph
+
+Example:
+```python
+class MyExtension(AsyncExtension):
+    def __init__(self, name: str):
+        super().__init__(name)
+        self.ten_env: AsyncTenEnv = None  # Store for callbacks
+
+    async def on_init(self, ten_env: AsyncTenEnv):
+        self.ten_env = ten_env  # Save reference
+
+    async def on_audio_frame(self, ten_env, audio_frame):
+        # Receive from graph → forward to external system
+        buf = audio_frame.lock_buf()
+        pcm_data = bytes(buf)
+        audio_frame.unlock_buf(buf)
+        self.external_system.send(pcm_data)
+
+    async def _external_callback(self, data):
+        # Receive from external system → send to graph
+        audio_frame = AudioFrame.create("pcm_frame")
+        # ... configure frame ...
+        await self.ten_env.send_audio_frame(audio_frame)
+```
+
+**2. AudioFrame Creation Pattern**
+
+Standard pattern for creating and sending AudioFrames:
+
+```python
+# Create frame
+audio_frame = AudioFrame.create("pcm_frame")
+
+# Set properties (order matters - do before alloc_buf)
+audio_frame.set_sample_rate(16000)
+audio_frame.set_bytes_per_sample(2)  # 16-bit audio
+audio_frame.set_number_of_channels(1)  # mono
+audio_frame.set_data_fmt(AudioFrameDataFmt.INTERLEAVE)
+audio_frame.set_samples_per_channel(len(pcm_data) // 2)
+
+# Allocate and fill buffer
+audio_frame.alloc_buf(len(pcm_data))
+buf = audio_frame.lock_buf()
+buf[:] = pcm_data
+audio_frame.unlock_buf(buf)
+
+# Send to graph
+await ten_env.send_audio_frame(audio_frame)
+```
+
+Key points:
+- Always use `AudioFrame.create()` factory method (not `__init__`)
+- Set all properties before calling `alloc_buf()`
+- Lock/unlock buffer pattern ensures thread safety
+- Calculate samples: `samples_per_channel = total_bytes / (bytes_per_sample * channels)`
+
 ## TMAN Tool
 
 `tman` is the TEN package manager used for:
