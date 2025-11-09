@@ -1,0 +1,38 @@
+{
+  "name": "websocket-voice-assistant",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --port 3000 --turbopack",
+    "build": "next build",
+    "start": "next start --port 3000",
+    "lint": "biome check --write src",
+    "format": "biome format --write src"
+  },
+  "dependencies": {
+    "@radix-ui/react-dialog": "^1.2.1",
+    "@radix-ui/react-select": "^2.2.1",
+    "@radix-ui/react-slot": "^1.2.1",
+    "@radix-ui/react-tabs": "^1.2.1",
+    "axios": "^1.13.1",
+    "class-variance-authority": "^0.7.5",
+    "clsx": "^2.2.4",
+    "lucide-react": "^0.546.0",
+    "next": "16.0.1",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "tailwind-merge": "^3.0.2",
+    "tailwindcss-animate": "^1.0.7",
+    "zustand": "^5.0.2"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@types/node": "^22.13.5",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "postcss": "^9.0.3",
+    "tailwindcss": "^4.1.16",
+    "typescript": "^5.9.3"
+  },
+  "packageManager": "bun@1.2.1"
+}
