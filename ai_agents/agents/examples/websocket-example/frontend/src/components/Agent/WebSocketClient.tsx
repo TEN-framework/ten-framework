@@ -184,16 +184,16 @@ export function WebSocketClient() {
                   )}
 
                   {/* Audio Visualizer */}
-                  <div className="flex justify-center rounded-xl bg-muted-a30 overflow-hidden p-0 ring-1 ring-border-a40 border border-border-a30">
-                    <AudioVisualizer
-                      stream={getMediaStream()}
-                      isActive={isRecording}
-                      barCount={40}
-                      barWidth={4}
-                      barGap={2}
-                      height={48}
-                    />
-                  </div>
+              <div className="relative rounded-xl bg-muted/30 overflow-hidden p-0 ring-1 ring-border/40 border border-border/30" style={{height: 48}}>
+                <AudioVisualizer
+                  stream={getMediaStream()}
+                  isActive={isRecording}
+                  barCount={40}
+                  barWidth={4}
+                  barGap={2}
+                  height={48}
+                />
+              </div>
 
                   {/* Status Text */}
                   <div className="text-center">

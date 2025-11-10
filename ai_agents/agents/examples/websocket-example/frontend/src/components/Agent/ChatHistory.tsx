@@ -19,7 +19,7 @@ export function ChatHistory() {
 
   if (messages.length === 0) {
     return (
-      <div className="flex h-[360px] md:h-[420px] items-center justify-center rounded-xl bg-muted-a20 shadow-sm">
+      <div className="flex h-[360px] md:h-[420px] items-center justify-center rounded-xl bg-muted/20 shadow-sm">
         <div className="flex flex-col items-center gap-4 text-center">
           <div className="rounded-full bg-muted p-4 shadow-sm">
             <Bot className="h-8 w-8 text-muted-foreground" />
@@ -33,7 +33,7 @@ export function ChatHistory() {
   }
 
   return (
-    <ScrollArea className="h-[360px] md:h-[420px] w-full rounded-xl ring-1 ring-border-a40 border border-border-a30">
+    <ScrollArea className="h-[360px] md:h-[420px] w-full rounded-xl ring-1 ring-border/40 border border-border/30">
       <div ref={scrollRef} className="p-4 space-y-4">
         {messages.map((message, index) => (
           <div
@@ -66,7 +66,7 @@ export function ChatHistory() {
                 className={`max-w-[85%] rounded-lg px-4 py-2.5 ${
                   message.role === "user"
                     ? "bg-primary text-primary-foreground"
-                    : "text-foreground bg-muted-a60"
+                    : "bg-muted/60 text-foreground"
                 }`}
               >
                 <p className="text-sm leading-relaxed whitespace-pre-wrap">

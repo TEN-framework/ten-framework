@@ -97,7 +97,7 @@ export function AudioVisualizer({
     <div
       suppressHydrationWarning
       className={cn(
-        "relative flex w-full items-end justify-center gap-0.5",
+        "absolute inset-0 flex w-full h-full items-end justify-center gap-0.5",
         className,
       )}
       style={{

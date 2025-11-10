@@ -1,100 +1,76 @@
-@import "tailwindcss";
-@plugin "tailwindcss-animate";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-/* Tailwind v4 CSS-first theme tokens */
-@theme {
-  /* Light mode */
-  --radius: 0.5rem;
-  --color-background: 0 0% 100%;
-  --color-foreground: 222.2 84% 4.9%;
-  --color-card: 0 0% 100%;
-  --color-card-foreground: 222.2 84% 4.9%;
-  --color-popover: 0 0% 100%;
-  --color-popover-foreground: 222.2 84% 4.9%;
-  --color-primary: 222.2 47.4% 11.2%;
-  --color-primary-foreground: 210 40% 98%;
-  --color-secondary: 210 40% 96.1%;
-  --color-secondary-foreground: 222.2 47.4% 11.2%;
-  --color-muted: 210 40% 96.1%;
-  --color-muted-foreground: 215.4 16.3% 46.9%;
-  --color-accent: 210 40% 96.1%;
-  --color-accent-foreground: 222.2 47.4% 11.2%;
-  --color-destructive: 0 84.2% 60.2%;
-  --color-destructive-foreground: 210 40% 98%;
-  --color-border: 214.3 31.8% 91.4%;
-  --color-input: 214.3 31.8% 91.4%;
-  --color-ring: 222.2 84% 4.9%;
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 47.4% 10.4%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 47.4% 12.5%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 47.4% 11.2%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 217.2 32.6% 18.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 30%;
+    --input: 217.2 32.6% 26%;
+    --ring: 217.2 91.2% 59.8%;
+  }
 }
 
-/* Dark mode overrides */
-@theme .dark {
-  --color-background: 222.2 47.4% 10.4%;
-  --color-foreground: 210 40% 98%;
-  --color-card: 222.2 47.4% 12.5%;
-  --color-card-foreground: 210 40% 98%;
-  --color-popover: 222.2 47.4% 11.2%;
-  --color-popover-foreground: 210 40% 98%;
-  --color-primary: 217.2 91.2% 59.8%;
-  --color-primary-foreground: 210 40% 98%;
-  --color-secondary: 217.2 32.6% 18.5%;
-  --color-secondary-foreground: 210 40% 98%;
-  --color-muted: 217.2 32.6% 17.5%;
-  --color-muted-foreground: 215 20.2% 65.1%;
-  --color-accent: 217.2 32.6% 17.5%;
-  --color-accent-foreground: 210 40% 98%;
-  --color-destructive: 0 62.8% 30.6%;
-  --color-destructive-foreground: 210 40% 98%;
-  /* Slightly brighter border/input for better contrast on dark */
-  --color-border: 217.2 32.6% 30%;
-  --color-input: 217.2 32.6% 26%;
-  --color-ring: 217.2 91.2% 59.8%;
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-feature-settings: "rlig" 1, "calt" 1;
+    background-image:
+      radial-gradient(1200px 600px at 50% -10%, hsl(var(--primary)/0.08), transparent),
+      radial-gradient(800px 400px at 100% 0%, hsl(var(--muted)/0.3), transparent);
+    background-repeat: no-repeat;
+  }
 }
 
-/* Base styles */
-* { border-color: hsl(var(--color-border)); }
-body {
-  background-color: hsl(var(--color-background));
-  color: hsl(var(--color-foreground));
-  font-feature-settings: "rlig" 1, "calt" 1;
-  background-image:
-    radial-gradient(1200px 600px at 50% -10%, hsl(var(--color-primary)/0.08), transparent),
-    radial-gradient(800px 400px at 100% 0%, hsl(var(--color-muted)/0.3), transparent);
-  background-repeat: no-repeat;
+@layer utilities {
+  .animate-fade-in { animation: fadeIn 0.3s ease-in; }
+  .animate-slide-up { animation: slideUp 0.3s ease-out; }
+  .animate-pulse-subtle { animation: pulseSubtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes pulseSubtle { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
 }
 
-/* Custom utility animations used by components */
-.animate-fade-in { animation: fadeIn 0.3s ease-in; }
-.animate-slide-up { animation: slideUp 0.3s ease-out; }
-.animate-pulse-subtle { animation: pulseSubtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
-
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-@keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes pulseSubtle { 0%,100% { opacity: 1; } 50% { opacity: 0.7; } }
-
-/*
-  Fallbacks when color-mix is unsupported.
-  Some browsers pass @supports for lab but not for oklab, which Tailwind v4 uses
-  for `/opacity` utilities. Ensure the handful of `/xx` utilities we use render
-  with plain HSL alpha instead of `color-mix`.
-*/
-@supports not (color: color-mix(in oklab, red, red)) {
-  .bg-foreground\/50 { background-color: hsl(var(--color-foreground) / 0.5) !important; }
-  .bg-card\/60 { background-color: hsl(var(--color-card) / 0.6) !important; }
-  .bg-muted\/30 { background-color: hsl(var(--color-muted) / 0.3) !important; }
-  .bg-primary\/60 { background-color: hsl(var(--color-primary) / 0.6) !important; }
-
-  .text-foreground\/50 { color: hsl(var(--color-foreground) / 0.5) !important; }
-
-  .border-border\/30 { border-color: hsl(var(--color-border) / 0.3) !important; }
-  .ring-border\/40 { --tw-ring-color: hsl(var(--color-border) / 0.4) !important; }
-}
-
-/* Explicit alpha utilities (browser-agnostic) */
-.bg-card-a60 { background-color: hsl(var(--color-card) / 0.6); }
-.bg-muted-a20 { background-color: hsl(var(--color-muted) / 0.2); }
-.bg-muted-a30 { background-color: hsl(var(--color-muted) / 0.3); }
-.bg-muted-a60 { background-color: hsl(var(--color-muted) / 0.6); }
-.bg-primary-a10 { background-color: hsl(var(--color-primary) / 0.1); }
-.border-primary-a20 { border-color: hsl(var(--color-primary) / 0.2); }
-.border-border-a30 { border-color: hsl(var(--color-border) / 0.3); }
-.ring-border-a40 { --tw-ring-color: hsl(var(--color-border) / 0.4); }
