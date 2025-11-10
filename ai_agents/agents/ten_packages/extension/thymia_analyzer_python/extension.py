@@ -351,6 +351,27 @@ class ThymiaAPIClient:
             "\n%{http_code}",  # Silent mode, write HTTP code at end
         ]
 
+        # Log full curl command for manual testing (properly escaped)
+        curl_parts = []
+        skip_next = False
+        for i, arg in enumerate(curl_cmd[:-2]):  # Exclude -w and http_code
+            if skip_next:
+                skip_next = False
+                continue
+            if arg == "-d" and i + 1 < len(curl_cmd):
+                # Use single quotes for JSON payload to preserve internal double quotes
+                curl_parts.append(f"-d '{curl_cmd[i + 1]}'")
+                skip_next = True
+            elif " " in arg:
+                curl_parts.append(f'"{arg}"')
+            else:
+                curl_parts.append(arg)
+        curl_cmd_str = " ".join(curl_parts)
+        print(
+            f"[THYMIA_HELLOS_CURL_CREATE] {curl_cmd_str}",
+            flush=True,
+        )
+
         # Run curl asynchronously
         process = await asyncio.create_subprocess_exec(
             *curl_cmd,
@@ -444,6 +465,13 @@ class ThymiaAPIClient:
         Returns None if still processing, dict with results if complete.
         """
         await self._ensure_session()
+
+        # Log equivalent curl command for manual testing
+        curl_equivalent = f'curl -X GET "{self.base_url}/v1/models/mental-wellness/{session_id}" -H "x-api-key: {self.api_key}"'
+        print(
+            f"[THYMIA_HELLOS_CURL_GET_RESULTS] {curl_equivalent}",
+            flush=True,
+        )
 
         async with self.session.get(
             f"{self.base_url}/v1/models/mental-wellness/{session_id}"
@@ -608,9 +636,11 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
         self.hellos_shared_with_user: bool = False
         self.apollo_shared_with_user: bool = False
 
-        # Activity tracking (to avoid interrupting user)
+        # Activity tracking (to avoid interrupting user or agent)
         self.last_user_speech_time: float = 0.0
         self.user_currently_speaking: bool = False
+        self.agent_currently_speaking: bool = False  # Track TTS playback state
+        self.last_agent_speech_end_time: float = 0.0
 
         # User information for Thymia API
         self.user_name: Optional[str] = None
@@ -724,13 +754,13 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
             # Load Apollo-specific durations if specified
             try:
                 ten_env.log_info(
-                    f"[PROPERTY_LOAD] Attempting to load apollo_mood_duration (default={self.apollo_mood_duration})"
+                    f"[THYMIA_PROPERTY_LOAD] Attempting to load apollo_mood_duration (default={self.apollo_mood_duration})"
                 )
                 apollo_mood_result = await ten_env.get_property_float(
                     "apollo_mood_duration"
                 )
                 ten_env.log_info(
-                    f"[PROPERTY_LOAD] Raw result: {apollo_mood_result}, type: {type(apollo_mood_result)}"
+                    f"[THYMIA_PROPERTY_LOAD] Raw result={apollo_mood_result}"
                 )
 
                 # Check if result is valid (not an error tuple)
@@ -739,37 +769,37 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                     if error is None and value > 0:
                         self.apollo_mood_duration = value
                         ten_env.log_info(
-                            f"[PROPERTY_LOAD] Loaded apollo_mood_duration: {self.apollo_mood_duration}"
+                            f"[THYMIA_PROPERTY_LOAD] Loaded apollo_mood_duration: {self.apollo_mood_duration}"
                         )
                     else:
                         ten_env.log_warn(
-                            f"[PROPERTY_LOAD] Property returned error or 0, using default {self.apollo_mood_duration}"
+                            f"[THYMIA_PROPERTY_LOAD] Property returned error={error}, apollo_mood_duration"
                         )
                 else:
                     if apollo_mood_result > 0:
                         self.apollo_mood_duration = apollo_mood_result
                         ten_env.log_info(
-                            f"[PROPERTY_LOAD] Loaded apollo_mood_duration: {self.apollo_mood_duration}"
+                            f"[THYMIA_PROPERTY_LOAD] Loaded apollo_mood_duration: {self.apollo_mood_duration}"
                         )
             except Exception as e:
                 ten_env.log_warn(
-                    f"[PROPERTY_LOAD] Failed to load apollo_mood_duration, using default {self.apollo_mood_duration}: {e}"
+                    f"[THYMIA_PROPERTY_LOAD] Failed to load apollo_mood_duration, using default {self.apollo_mood_duration}: {e}"
                 )
                 import traceback
 
                 ten_env.log_warn(
-                    f"[PROPERTY_LOAD] Traceback: {traceback.format_exc()}"
+                    f"[THYMIA_PROPERTY_LOAD] Traceback: {traceback.format_exc()}"
                 )
 
             try:
                 ten_env.log_info(
-                    f"[PROPERTY_LOAD] Attempting to load apollo_read_duration (default={self.apollo_read_duration})"
+                    f"[THYMIA_PROPERTY_LOAD] Attempting to load apollo_read_duration (default={self.apollo_read_duration})"
                 )
                 apollo_read_result = await ten_env.get_property_float(
                     "apollo_read_duration"
                 )
                 ten_env.log_info(
-                    f"[PROPERTY_LOAD] Raw result: {apollo_read_result}, type: {type(apollo_read_result)}"
+                    f"[THYMIA_PROPERTY_LOAD] Raw result={apollo_read_result}"
                 )
 
                 # Check if result is valid (not an error tuple)
@@ -778,26 +808,26 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                     if error is None and value > 0:
                         self.apollo_read_duration = value
                         ten_env.log_info(
-                            f"[PROPERTY_LOAD] Loaded apollo_read_duration: {self.apollo_read_duration}"
+                            f"[THYMIA_PROPERTY_LOAD] Loaded apollo_read_duration: {self.apollo_read_duration}"
                         )
                     else:
                         ten_env.log_warn(
-                            f"[PROPERTY_LOAD] Property returned error or 0, using default {self.apollo_read_duration}"
+                            f"[THYMIA_PROPERTY_LOAD] Property returned error={error}, apollo_read_duration"
                         )
                 else:
                     if apollo_read_result > 0:
                         self.apollo_read_duration = apollo_read_result
                         ten_env.log_info(
-                            f"[PROPERTY_LOAD] Loaded apollo_read_duration: {self.apollo_read_duration}"
+                            f"[THYMIA_PROPERTY_LOAD] Loaded apollo_read_duration: {self.apollo_read_duration}"
                         )
             except Exception as e:
                 ten_env.log_warn(
-                    f"[PROPERTY_LOAD] Failed to load apollo_read_duration, using default {self.apollo_read_duration}: {e}"
+                    f"[THYMIA_PROPERTY_LOAD] Failed to load apollo_read_duration, using default {self.apollo_read_duration}: {e}"
                 )
                 import traceback
 
                 ten_env.log_warn(
-                    f"[PROPERTY_LOAD] Traceback: {traceback.format_exc()}"
+                    f"[THYMIA_PROPERTY_LOAD] Traceback: {traceback.format_exc()}"
                 )
 
             ten_env.log_info(
@@ -853,6 +883,30 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
         # Start unified results poller (handles both APIs and announcement retries)
         asyncio.create_task(self._unified_results_poller(ten_env))
 
+        # TEST: Send a test announcement after 5 seconds to verify text_data mechanism
+        # asyncio.create_task(self._test_announcement_after_delay(ten_env))  # DISABLED - test passed
+
+    async def _test_announcement_after_delay(self, ten_env: AsyncTenEnv):
+        """TEST: Send announcement after 5 seconds to verify LLM receives text_data"""
+        try:
+            await asyncio.sleep(5)
+            test_message = "[TEST MESSAGE] Please respond with the word PINEAPPLE to confirm you received this test announcement."
+
+            ten_env.log_info(
+                f"[THYMIA_TEST] Sending test announcement after 5s: {test_message}"
+            )
+
+            text_data = Data.create("text_data")
+            text_data.set_property_string("text", test_message)
+            text_data.set_property_bool("end_of_segment", True)
+            await ten_env.send_data(text_data)
+
+            ten_env.log_info(
+                "[THYMIA_TEST] Test announcement sent - check if LLM responds with PINEAPPLE"
+            )
+        except Exception as e:
+            ten_env.log_error(f"[THYMIA_TEST] Test announcement failed: {e}")
+
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
         """Called when extension stops"""
         ten_env.log_info("[THYMIA_STOP] ThymiaAnalyzerExtension stopping...")
@@ -864,6 +918,25 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
             await self.apollo_client.close()
 
         await super().on_stop(ten_env)
+
+    async def on_data(self, ten_env: AsyncTenEnv, data: Data) -> None:
+        """Handle incoming data messages (e.g., TTS state events)"""
+        try:
+            data_name = data.get_name()
+
+            if data_name == "tts_audio_start":
+                # Agent started speaking - don't send announcements during this time
+                self.agent_currently_speaking = True
+                ten_env.log_debug("[THYMIA_TTS] Agent started speaking (tts_audio_start)")
+
+            elif data_name == "tts_audio_end":
+                # Agent finished speaking - can send announcements again
+                self.agent_currently_speaking = False
+                self.last_agent_speech_end_time = time.time()
+                ten_env.log_debug("[THYMIA_TTS] Agent stopped speaking (tts_audio_end)")
+
+        except Exception as e:
+            ten_env.log_error(f"[THYMIA_TTS] Error handling data '{data.get_name()}': {e}")
 
     # Counter for logging
     _audio_frame_count = 0
@@ -950,8 +1023,10 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                 # Apollo: Triggered at 60s total speech (30s mood + 30s reading)
                 # These run independently - Apollo doesn't wait for Hellos to complete
 
-                # Log buffer status every 5 seconds
-                if self._audio_frame_count % 500 == 1:
+                # Log buffer status every 5 seconds (stop when both analyses complete)
+                if self._audio_frame_count % 500 == 1 and not (
+                    self.hellos_complete and self.apollo_complete
+                ):
                     hellos_status = (
                         "complete"
                         if self.hellos_complete
@@ -1374,8 +1449,8 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
 
             if apollo_result.status == "COMPLETE_OK":
                 ten_env.log_info(
-                    f"[THYMIA_APOLLO_DONE] depression={apollo_result.depression_probability:.2%}, "
-                    f"anxiety={apollo_result.anxiety_probability:.2%} (API took {api_time:.1f}s)"
+                    f"[THYMIA_APOLLO_DONE] depression={apollo_result.depression_probability:.2%} (severity={apollo_result.depression_severity!r}), "
+                    f"anxiety={apollo_result.anxiety_probability:.2%} (severity={apollo_result.anxiety_severity!r}) (API took {api_time:.1f}s)"
                 )
             else:
                 ten_env.log_warn(
@@ -1385,8 +1460,11 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
             # Mark Apollo API complete
             self.apollo_complete = True
 
-            # Check if both input phases are complete before announcing
+            # Check if ready to announce
             if apollo_result.status == "COMPLETE_OK":
+                ten_env.log_info(
+                    "[THYMIA_APOLLO_DONE] Apollo API completed successfully - checking if ready to announce"
+                )
                 await self._check_and_trigger_ready_announcements(ten_env)
 
         except Exception as e:
@@ -1402,7 +1480,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
         self.active_analysis = True
 
         ten_env.log_info(
-            f"[ANALYSIS START] Mode={self.analysis_mode}, "
+            f"[THYMIA_ANALYSIS_START] Mode={self.analysis_mode}, "
             f"User={self.user_name}, DOB={self.user_dob}, Sex={self.user_sex}"
         )
 
@@ -1410,7 +1488,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
             # Get raw PCM data from buffer
             if not self.audio_buffer.speech_buffer:
                 ten_env.log_warn(
-                    "[ANALYSIS] No audio data available for analysis"
+                    "[THYMIA_ANALYSIS] No audio data available for analysis"
                 )
                 return
 
@@ -1435,12 +1513,12 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
             #     ten_env.log_warn(f"Failed to save debug audio: {e}")
 
             ten_env.log_info(
-                f"[HELLOS] Starting Thymia API workflow ({len(wav_data)} bytes)"
+                f"[THYMIA_HELLOS] Starting Thymia API workflow ({len(wav_data)} bytes)"
             )
 
             # Step 1: Create session with user info
             ten_env.log_info(
-                f"[HELLOS] Creating session for user={self.user_name}, "
+                f"[THYMIA_HELLOS] Creating session for user={self.user_name}, "
                 f"dob={self.user_dob}, sex={self.user_sex}"
             )
             session_response = await self.api_client.create_session(
@@ -1452,22 +1530,22 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
             session_id = session_response["id"]
             upload_url = session_response["recordingUploadUrl"]
 
-            ten_env.log_info(f"[HELLOS] Created session: {session_id}")
+            ten_env.log_info(f"[THYMIA_HELLOS] Created session: {session_id}")
 
             # Step 2: Upload audio
             ten_env.log_info(
-                f"[HELLOS] Uploading {len(wav_data)} bytes of audio..."
+                f"[THYMIA_HELLOS] Uploading {len(wav_data)} bytes of audio..."
             )
             upload_success = await self.api_client.upload_audio(
                 upload_url, wav_data
             )
 
             if not upload_success:
-                ten_env.log_error("[HELLOS] Failed to upload audio to Thymia")
+                ten_env.log_error("[THYMIA_HELLOS] Failed to upload audio to Thymia")
                 return
 
             ten_env.log_info(
-                f"[HELLOS] Audio uploaded successfully, polling for results (timeout={self.poll_timeout}s)..."
+                f"[THYMIA_HELLOS] Audio uploaded successfully, polling for results (timeout={self.poll_timeout}s)..."
             )
 
             # Step 3: Poll for results
@@ -1479,12 +1557,12 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
 
             if not results:
                 ten_env.log_warn(
-                    f"[HELLOS] Analysis timed out after {self.poll_timeout}s"
+                    f"[THYMIA_HELLOS] Analysis timed out after {self.poll_timeout}s"
                 )
                 return
 
             ten_env.log_info(
-                f"[HELLOS] Received results for session {session_id}"
+                f"[THYMIA_HELLOS] Received results for session {session_id}"
             )
 
             # Step 4: Extract metrics from results.sections[0]
@@ -1545,7 +1623,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
             # Run Apollo API in demo_dual mode
             if self.analysis_mode == "demo_dual" and self.apollo_client:
                 ten_env.log_info(
-                    "[APOLLO] Starting Apollo API analysis for depression/anxiety"
+                    "[THYMIA_APOLLO] Starting Apollo API analysis for depression/anxiety"
                 )
 
                 try:
@@ -1555,7 +1633,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                     )
 
                     ten_env.log_info(
-                        f"[APOLLO] Split audio: mood={len(mood_pcm)} bytes "
+                        f"[THYMIA_APOLLO] Split audio: mood={len(mood_pcm)} bytes "
                         f"({self.apollo_mood_duration}s), "
                         f"read={len(read_pcm)} bytes"
                     )
@@ -1563,12 +1641,12 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                     # Validate user info for Apollo
                     if not self.user_dob or not self.user_sex:
                         ten_env.log_warn(
-                            "[APOLLO] Missing user DOB or sex, using defaults"
+                            "[THYMIA_APOLLO] Missing user DOB or sex, using defaults"
                         )
 
                     # Run Apollo analysis
                     ten_env.log_info(
-                        f"[APOLLO] Starting depression/anxiety analysis for user={self.user_name}, "
+                        f"[THYMIA_APOLLO] Starting depression/anxiety analysis for user={self.user_name}, "
                         f"dob={self.user_dob}, sex={self.user_sex}"
                     )
                     apollo_result = await self.apollo_client.analyze(
@@ -1586,7 +1664,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
 
                     if apollo_result.status == "COMPLETE_OK":
                         ten_env.log_info(
-                            f"[APOLLO] Analysis complete: "
+                            f"[THYMIA_APOLLO] Analysis complete: "
                             f"depression={apollo_result.depression_probability:.2%} "
                             f"({apollo_result.depression_severity}), "
                             f"anxiety={apollo_result.anxiety_probability:.2%} "
@@ -1594,13 +1672,13 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                         )
                     else:
                         ten_env.log_warn(
-                            f"[APOLLO] Analysis failed: {apollo_result.status} - "
+                            f"[THYMIA_APOLLO] Analysis failed: {apollo_result.status} - "
                             f"{apollo_result.error_message}"
                         )
 
                 except Exception as apollo_error:
                     ten_env.log_error(
-                        f"[APOLLO] Apollo API failed: {apollo_error}"
+                        f"[THYMIA_APOLLO] Apollo API failed: {apollo_error}"
                     )
                     # Continue with Hellos-only results
 
@@ -1612,7 +1690,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                 self.audio_buffer.clear()
 
         except Exception as e:
-            ten_env.log_error(f"[thymia_analyzer] Thymia analysis failed: {e}")
+            ten_env.log_error(f"[THYMIA_ANALYZER] Thymia analysis failed: {e}")
             # Set last_analysis_time even on failure to prevent immediate retry spam
             self.last_analysis_time = time.time()
 
@@ -1637,18 +1715,18 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
             await ten_env.send_data(notification)
 
             ten_env.log_info(
-                "[thymia_analyzer] Sent wellness notification to LLM"
+                "[THYMIA_ANALYZER] Sent wellness notification to LLM"
             )
 
         except Exception as e:
             ten_env.log_error(
-                f"[thymia_analyzer] Failed to send notification: {e}"
+                f"[THYMIA_ANALYZER] Failed to send notification: {e}"
             )
 
     def get_tool_metadata(self, ten_env: AsyncTenEnv) -> list[LLMToolMetadata]:
         """Register wellness analysis tools"""
         ten_env.log_info(
-            "[TOOL_METADATA] get_tool_metadata called - defining set_user_info and get_wellness_metrics tools"
+            "[THYMIA_TOOL_METADATA] get_tool_metadata called - defining set_user_info and get_wellness_metrics tools"
         )
         return [
             LLMToolMetadata(
@@ -1695,9 +1773,15 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                     "Values are integers (e.g., stress: 27%, depression: 15%). "
                     "The analysis is based on speech patterns and provides insight into the user's emotional and mental health state. "
                     "IMPORTANT: Call this periodically to check if analysis has completed. "
-                    "When status='insufficient_data', the message field contains progress info - only share this if user asks about progress. "
-                    "When status='available', announce ALL results immediately with percentages. "
+                    "Response status field indicates results: "
+                    "- 'insufficient_data': Still collecting - only mention if user asks about progress. "
+                    "- 'available': ALL results ready - announce with percentages. "
+                    "- 'partial': WELLNESS METRICS UNAVAILABLE (API failed). ONLY clinical indicators available. "
+                    "  When status='partial', you MUST tell user: 'Wellness metrics (stress, distress, burnout, fatigue, low self-esteem) are currently unavailable due to API limitations.' "
+                    "  Then announce ONLY the clinical indicators (depression, anxiety) that ARE available. "
+                    "  DO NOT make up or infer wellness metric values - if status='partial' and wellness_metrics is null, they are UNAVAILABLE. "
                     "Frame clinical indicators (depression/anxiety) as research indicators, not clinical diagnosis. "
+                    "Do not use markdown bullet points (*) in your response - use plain numbered lists or paragraphs. "
                     "NOTE: User information must be set first using set_user_info."
                 ),
                 parameters=[],
@@ -1733,75 +1817,69 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                 ),
                 parameters=[],
             ),
+            LLMToolMetadata(
+                name="test_announcement_system",
+                description=(
+                    "TEST TOOL: Send a test announcement to verify the text_data mechanism is working. "
+                    "When called, sends a text_data message with code 'TEST-12345' that you should acknowledge. "
+                    "Only call this when explicitly requested by the user to test the system."
+                ),
+                parameters=[],
+            ),
         ]
 
-    async def _trigger_hellos_announcement(self, ten_env: AsyncTenEnv):
-        """Send async trigger to LLM to announce Hellos results"""
+    async def _trigger_hellos_announcement(self, ten_env: AsyncTenEnv) -> bool:
+        """
+        Send async trigger to LLM to announce Hellos results (success or failure).
+        Returns True if announcement was sent, False if skipped.
+        """
         try:
             await asyncio.sleep(1)  # Small delay to avoid race conditions
+
+            # Conditional hint text based on whether Hellos succeeded
+            if self.hellos_success:
+                hint_text = "[SYSTEM ALERT] Wellness metrics ready. IMMEDIATELY call get_wellness_metrics and announce all 5 results (stress, distress, burnout, fatigue, low_self_esteem) to user."
+            else:
+                # Hellos failed - skip announcement entirely
+                # LLM will discover wellness unavailable when it calls get_wellness_metrics
+                ten_env.log_info(
+                    "[THYMIA_TRIGGER] Skipping Hellos announcement - API failed, LLM will discover via get_wellness_metrics"
+                )
+                return False  # No announcement sent
+
             ten_env.log_info(
-                "[THYMIA_TRIGGER] Sending Hellos announcement to LLM"
+                f"[THYMIA_TRIGGER] Sending Hellos announcement to LLM: {hint_text}"
             )
 
             text_data = Data.create("text_data")
-            text_data.set_property_string(
-                "text",
-                "Wellness analysis complete. Please tell me the 5 wellness metrics.",
-            )
+            text_data.set_property_string("text", hint_text)
             text_data.set_property_bool("end_of_segment", True)
             await ten_env.send_data(text_data)
 
-            ten_env.log_info("[THYMIA_TRIGGER_OK] Hellos announcement sent")
+            ten_env.log_info("[THYMIA_TRIGGER_OK] Hellos announcement sent to LLM via text_data")
+            return True  # Announcement sent
         except Exception as e:
             ten_env.log_error(f"[THYMIA_TRIGGER_FAIL] Hellos: {e}")
+            return False
 
     async def _trigger_apollo_announcement(self, ten_env: AsyncTenEnv):
         """Send async trigger to LLM to announce Apollo results"""
         try:
             await asyncio.sleep(1)  # Small delay to avoid race conditions
+            hint_text = "[SYSTEM ALERT] Clinical indicators ready. IMMEDIATELY call get_wellness_metrics and announce depression and anxiety probabilities with severity to user."
+
             ten_env.log_info(
-                "[THYMIA_TRIGGER] Sending Apollo announcement to LLM"
+                f"[THYMIA_TRIGGER] Sending Apollo announcement to LLM: {hint_text}"
             )
 
             text_data = Data.create("text_data")
-            text_data.set_property_string(
-                "text",
-                "Clinical analysis complete. Please tell me the depression and anxiety probabilities.",
-            )
+            text_data.set_property_string("text", hint_text)
             text_data.set_property_bool("end_of_segment", True)
             await ten_env.send_data(text_data)
 
-            ten_env.log_info("[THYMIA_TRIGGER_OK] Apollo announcement sent")
+            ten_env.log_info("[THYMIA_TRIGGER_OK] Apollo announcement sent to LLM via text_data")
         except Exception as e:
             ten_env.log_error(f"[THYMIA_TRIGGER_FAIL] Apollo: {e}")
-
-    async def _trigger_hellos_failure_notification(
-        self, ten_env: AsyncTenEnv, error_code: str, error_reason: str
-    ):
-        """Send notification to LLM that Hellos analysis failed"""
-        try:
-            await asyncio.sleep(1)  # Small delay to avoid race conditions
-            ten_env.log_info(
-                f"[THYMIA_FAILURE_NOTIFY] Notifying LLM about Hellos failure: {error_code}"
-            )
-
-            text_data = Data.create("text_data")
-            text_data.set_property_string(
-                "text",
-                f"Wellness analysis unavailable ({error_code}: {error_reason}). Only clinical indicators will be provided when ready.",
-            )
-            text_data.set_property_bool("end_of_segment", True)
-            await ten_env.send_data(text_data)
-
-            ten_env.log_info(
-                "[THYMIA_FAILURE_NOTIFY_OK] Hellos failure notification sent"
-            )
-            # Mark as shared to prevent retries
-            self.hellos_shared_with_user = True
-        except Exception as e:
-            ten_env.log_error(
-                f"[THYMIA_FAILURE_NOTIFY_FAIL] Hellos notification: {e}"
-            )
 
     async def _unified_results_poller(self, ten_env: AsyncTenEnv):
         """
@@ -1814,7 +1892,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
         Runs every 5 seconds from extension startup.
         """
         ten_env.log_info(
-            "[UNIFIED_POLLER] Starting unified results poller (polls both APIs + handles announcements)"
+            "[THYMIA_UNIFIED_POLLER] Starting unified results poller (polls both APIs + handles announcements)"
         )
 
         while True:
@@ -1828,9 +1906,12 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                     # Check timeout
                     if elapsed > self.poll_timeout:
                         ten_env.log_warn(
-                            f"[UNIFIED_POLLER] Hellos timeout after {elapsed:.1f}s, session={self.hellos_session_id}"
+                            f"[THYMIA_UNIFIED_POLLER] Hellos timeout after {elapsed:.1f}s, session={self.hellos_session_id}"
                         )
-                        self.hellos_complete = True  # Prevent infinite retry
+                        self.hellos_complete = True  # Mark as complete
+                        self.hellos_analysis_running = False
+                        # Trigger announcement even on timeout
+                        await self._check_and_trigger_ready_announcements(ten_env)
                         continue
 
                     # Poll API
@@ -1846,7 +1927,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                                 "FAILED",
                             ):
                                 ten_env.log_info(
-                                    f"[UNIFIED_POLLER] Hellos complete: status={status}, elapsed={elapsed:.1f}s"
+                                    f"[THYMIA_UNIFIED_POLLER] Hellos complete: status={status}, elapsed={elapsed:.1f}s"
                                 )
 
                                 if status == "COMPLETE_OK":
@@ -1876,7 +1957,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                                             session_id=self.hellos_session_id,
                                         )
                                         ten_env.log_info(
-                                            f"[UNIFIED_POLLER] Hellos metrics: distress={self.latest_results.distress:.2f}, "
+                                            f"[THYMIA_UNIFIED_POLLER] Hellos metrics: distress={self.latest_results.distress:.2f}, "
                                             f"stress={self.latest_results.stress:.2f}, burnout={self.latest_results.burnout:.2f}"
                                         )
                                 elif status in ("COMPLETE_ERROR", "FAILED"):
@@ -1888,12 +1969,9 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                                         "errorCode", "UNKNOWN"
                                     )
                                     ten_env.log_error(
-                                        f"[UNIFIED_POLLER] Hellos API FAILED: {error_code} - {error_reason}"
+                                        f"[THYMIA_UNIFIED_POLLER] Hellos API FAILED: {error_code} - {error_reason}"
                                     )
-                                    # Send immediate notification to LLM (don't wait for retry loop)
-                                    await self._trigger_hellos_failure_notification(
-                                        ten_env, error_code, error_reason
-                                    )
+                                    # Announcement will be sent via normal trigger flow
 
                                 self.hellos_complete = True
                                 self.hellos_analysis_running = (
@@ -1905,12 +1983,15 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                                     self.hellos_success = (
                                         True  # Mark as successful
                                     )
+                                    ten_env.log_info(
+                                        "[THYMIA_HELLOS_DONE] Hellos API completed successfully - checking if ready to announce"
+                                    )
                                     await self._check_and_trigger_ready_announcements(
                                         ten_env
                                     )
                     except Exception as e:
                         ten_env.log_error(
-                            f"[UNIFIED_POLLER] Hellos polling error: {e}"
+                            f"[THYMIA_UNIFIED_POLLER] Hellos polling error: {e}"
                         )
 
                 # ===== APOLLO HANDLED BY ITS OWN ASYNC TASK =====
@@ -1941,13 +2022,13 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                     # Timeout fallback - force complete after 90s
                     if time_since_first_announcement >= self.announcement_timeout:
                         ten_env.log_warn(
-                            f"[UNIFIED_POLLER] Hellos announcement timeout ({self.announcement_timeout}s) - marking as shared"
+                            f"[THYMIA_UNIFIED_POLLER] Hellos announcement timeout ({self.announcement_timeout}s) - marking as shared"
                         )
                         self.hellos_shared_with_user = True
                     # Max retries exceeded
                     elif self.hellos_retry_count >= self.max_announcement_retries:
                         ten_env.log_warn(
-                            f"[UNIFIED_POLLER] Hellos max retries ({self.max_announcement_retries}) exceeded - giving up"
+                            f"[THYMIA_UNIFIED_POLLER] Hellos max retries ({self.max_announcement_retries}) exceeded - giving up"
                         )
                         self.hellos_shared_with_user = True
                     # Retry if interval elapsed
@@ -1957,7 +2038,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                         >= self.announcement_retry_interval
                     ):
                         ten_env.log_info(
-                            f"[UNIFIED_POLLER] Retrying Hellos announcement (attempt {self.hellos_retry_count + 1}/{self.max_announcement_retries}, last sent {time_since_first_announcement:.0f}s ago)"
+                            f"[THYMIA_UNIFIED_POLLER] Retrying Hellos announcement (attempt {self.hellos_retry_count + 1}/{self.max_announcement_retries}, last sent {time_since_first_announcement:.0f}s ago)"
                         )
                         await self._trigger_hellos_announcement(ten_env)
                         self.hellos_last_announcement_time = current_time
@@ -1975,13 +2056,13 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                     # Timeout fallback - force complete after 90s
                     if time_since_first_announcement >= self.announcement_timeout:
                         ten_env.log_warn(
-                            f"[UNIFIED_POLLER] Apollo announcement timeout ({self.announcement_timeout}s) - marking as shared"
+                            f"[THYMIA_UNIFIED_POLLER] Apollo announcement timeout ({self.announcement_timeout}s) - marking as shared"
                         )
                         self.apollo_shared_with_user = True
                     # Max retries exceeded
                     elif self.apollo_retry_count >= self.max_announcement_retries:
                         ten_env.log_warn(
-                            f"[UNIFIED_POLLER] Apollo max retries ({self.max_announcement_retries}) exceeded - giving up"
+                            f"[THYMIA_UNIFIED_POLLER] Apollo max retries ({self.max_announcement_retries}) exceeded - giving up"
                         )
                         self.apollo_shared_with_user = True
                     # Retry if interval elapsed
@@ -1991,17 +2072,53 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                         >= self.announcement_retry_interval
                     ):
                         ten_env.log_info(
-                            f"[UNIFIED_POLLER] Retrying Apollo announcement (attempt {self.apollo_retry_count + 1}/{self.max_announcement_retries}, last sent {time_since_first_announcement:.0f}s ago)"
+                            f"[THYMIA_UNIFIED_POLLER] Retrying Apollo announcement (attempt {self.apollo_retry_count + 1}/{self.max_announcement_retries}, last sent {time_since_first_announcement:.0f}s ago)"
                         )
                         await self._trigger_apollo_announcement(ten_env)
                         self.apollo_last_announcement_time = current_time
                         self.apollo_retry_count += 1
 
+                # ===== PERIODIC PROGRESS CHECKER =====
+                # Check if user has been silent for a while and phases aren't complete
+                # If so, send a hint to LLM to prompt user to continue speaking/reading
+                if self.user_name is not None:  # Only if user info has been set
+                    time_since_last_speech = current_time - self.last_user_speech_time
+
+                    # Check if user has been silent for 15+ seconds AND agent is not speaking
+                    if (
+                        time_since_last_speech > 15.0
+                        and not self.user_currently_speaking
+                        and not self.agent_currently_speaking
+                    ):
+                        # Check if mood phase is incomplete (need 30s, haven't started analysis yet)
+                        if not self.mood_phase_complete and self.speech_duration < 30.0:
+                            speech_remaining = 30.0 - self.speech_duration
+                            hint_text = f"[PROGRESS CHECK] User has provided {self.speech_duration:.0f}s of speech. Need {speech_remaining:.0f}s more for mood analysis. User has been silent for {time_since_last_speech:.0f}s. Ask them to continue sharing about their day, feelings, or interests."
+
+                            ten_env.log_info(f"[THYMIA_PROGRESS_CHECK] Sending mood phase progress reminder: {self.speech_duration:.0f}s/{30.0:.0f}s collected")
+
+                            text_data = Data.create("text_data")
+                            text_data.set_property_string("text", hint_text)
+                            text_data.set_property_bool("end_of_segment", True)
+                            await ten_env.send_data(text_data)
+
+                        # Check if reading phase is incomplete (need 60s total, mood phase done)
+                        elif self.mood_phase_complete and not self.reading_phase_complete and self.speech_duration < 60.0:
+                            speech_remaining = 60.0 - self.speech_duration
+                            hint_text = f"[PROGRESS CHECK] User has provided {self.speech_duration:.0f}s of speech. Need {speech_remaining:.0f}s more for reading analysis. User has been silent for {time_since_last_speech:.0f}s. Ask them to continue reading aloud from text on their screen."
+
+                            ten_env.log_info(f"[THYMIA_PROGRESS_CHECK] Sending reading phase progress reminder: {self.speech_duration:.0f}s/{60.0:.0f}s collected")
+
+                            text_data = Data.create("text_data")
+                            text_data.set_property_string("text", hint_text)
+                            text_data.set_property_bool("end_of_segment", True)
+                            await ten_env.send_data(text_data)
+
             except asyncio.CancelledError:
-                ten_env.log_info("[UNIFIED_POLLER] Task cancelled, stopping")
+                ten_env.log_info("[THYMIA_UNIFIED_POLLER] Task cancelled, stopping")
                 break
             except Exception as e:
-                ten_env.log_error(f"[UNIFIED_POLLER] Unexpected error: {e}")
+                ten_env.log_error(f"[THYMIA_UNIFIED_POLLER] Unexpected error: {e}")
                 import traceback
 
                 ten_env.log_error(traceback.format_exc())
@@ -2011,50 +2128,97 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
         self, ten_env: AsyncTenEnv
     ):
         """
-        Check if both input phases are complete, and trigger announcements for any
-        APIs that have finished but haven't been announced yet.
+        Check if APIs have completed and trigger announcements immediately.
 
         This is called:
-        1. When mood_phase_complete transitions to True
-        2. When reading_phase_complete transitions to True
-        3. When either API completes
+        1. When Hellos API completes
+        2. When Apollo API completes
+        3. Periodically by unified poller
 
         IMPORTANT: Only sends triggers when user is NOT currently speaking to avoid interruption.
+        IMPORTANT: Phases (mood/reading) are about AUDIO CAPTURE, not API completion!
         """
-        if not (self.mood_phase_complete and self.reading_phase_complete):
-            ten_env.log_debug(
-                "[THYMIA_PHASE_CHECK] Skipping trigger check - both phases not yet complete"
-            )
-            return
+        # Log current state for debugging
+        ten_env.log_debug(
+            f"[THYMIA_TRIGGER_CHECK] State: hellos_complete={self.hellos_complete}, "
+            f"apollo_complete={self.apollo_complete}, "
+            f"hellos_trigger_sent={self.hellos_trigger_sent}, "
+            f"apollo_trigger_sent={self.apollo_trigger_sent}, "
+            f"user_speaking={self.user_currently_speaking}, "
+            f"mood_phase={self.mood_phase_complete}, "
+            f"reading_phase={self.reading_phase_complete}"
+        )
 
-        # Don't interrupt user if they're currently speaking
+        # Don't interrupt user or agent if they're currently speaking
         if self.user_currently_speaking:
-            ten_env.log_debug(
-                "[THYMIA_PHASE_CHECK] Skipping trigger - user currently speaking"
+            ten_env.log_info(
+                "[THYMIA_TRIGGER_CHECK] Skipping trigger - user currently speaking"
             )
             return
 
-        # Trigger Hellos if ready and not yet triggered (only if successful)
-        if self.hellos_success and not self.hellos_trigger_sent:
+        if self.agent_currently_speaking:
             ten_env.log_info(
-                "[THYMIA_PHASE_TRIGGER] Triggering Hellos announcement (both phases complete, user silent, Hellos succeeded)"
+                "[THYMIA_TRIGGER_CHECK] Skipping trigger - agent currently speaking"
             )
-            await self._trigger_hellos_announcement(ten_env)
-            self.hellos_trigger_sent = True
-            self.hellos_last_announcement_time = time.time()
-        elif self.hellos_complete and not self.hellos_success:
+            return
+
+        # Trigger Hellos if ready and READING PHASE COMPLETE (wait for all audio collection)
+        # This ensures we don't announce Hellos until user has provided enough audio for Apollo too
+        if self.hellos_complete and self.reading_phase_complete and not self.hellos_trigger_sent:
+            # Check if Apollo is also complete - if so, LLM will get all 7 metrics in one call
+            apollo_also_ready = self.apollo_complete
+
             ten_env.log_info(
-                "[THYMIA_PHASE_TRIGGER] Skipping Hellos announcement - Hellos failed (ERR_RECORDING_TOO_SHORT or other error)"
+                f"[THYMIA_PHASE_TRIGGER] Checking Hellos announcement (API complete, reading phase complete, user silent, apollo_also_ready={apollo_also_ready})"
+            )
+            announcement_sent = await self._trigger_hellos_announcement(ten_env)
+            self.hellos_trigger_sent = True  # Mark as processed even if skipped
+            if announcement_sent:
+                self.hellos_last_announcement_time = time.time()  # Only set time if actually sent
+
+                # If Apollo was already complete, mark it as triggered too (no need for second announcement)
+                if apollo_also_ready:
+                    ten_env.log_info(
+                        "[THYMIA_PHASE_TRIGGER] Apollo also complete - LLM will receive all 7 metrics from first get_wellness_metrics call. Skipping separate Apollo announcement."
+                    )
+                    self.apollo_trigger_sent = True  # Skip Apollo announcement to avoid interrupting
+        elif self.hellos_complete and self.hellos_trigger_sent:
+            ten_env.log_debug(
+                "[THYMIA_TRIGGER_CHECK] Hellos trigger already sent previously"
+            )
+        elif not self.hellos_complete:
+            ten_env.log_debug(
+                "[THYMIA_TRIGGER_CHECK] Hellos API not yet complete"
             )
 
         # Trigger Apollo if ready and not yet triggered
+        # Space it 5+ seconds after Hellos if both ready at same time
         if self.apollo_complete and not self.apollo_trigger_sent:
-            ten_env.log_info(
-                "[THYMIA_PHASE_TRIGGER] Triggering Apollo announcement (both phases complete, user silent)"
+            time_since_hellos = (
+                time.time() - self.hellos_last_announcement_time
+                if self.hellos_trigger_sent
+                else 999
             )
-            await self._trigger_apollo_announcement(ten_env)
-            self.apollo_trigger_sent = True
-            self.apollo_last_announcement_time = time.time()
+
+            if time_since_hellos >= 5.0:
+                ten_env.log_info(
+                    "[THYMIA_PHASE_TRIGGER] Triggering Apollo announcement (API complete, user silent)"
+                )
+                await self._trigger_apollo_announcement(ten_env)
+                self.apollo_trigger_sent = True
+                self.apollo_last_announcement_time = time.time()
+            else:
+                ten_env.log_debug(
+                    f"[THYMIA_PHASE_TRIGGER] Apollo ready but waiting {5.0 - time_since_hellos:.1f}s after Hellos announcement"
+                )
+        elif self.apollo_complete and self.apollo_trigger_sent:
+            ten_env.log_debug(
+                "[THYMIA_TRIGGER_CHECK] Apollo trigger already sent previously"
+            )
+        elif not self.apollo_complete:
+            ten_env.log_debug(
+                "[THYMIA_TRIGGER_CHECK] Apollo API not yet complete"
+            )
 
     def _parse_date_to_iso(self, date_str: str) -> str:
         """Convert various date formats to YYYY-MM-DD format required by Thymia API"""
@@ -2153,7 +2317,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
             # Handle get_wellness_metrics tool
             if name == "get_wellness_metrics":
                 ten_env.log_info(
-                    f"[TOOL CALL] get_wellness_metrics - "
+                    f"[THYMIA_TOOL_CALL] get_wellness_metrics - "
                     f"active_analysis={self.active_analysis}, "
                     f"has_results={self.latest_results is not None}, "
                     f"has_apollo={self.apollo_results is not None and self.apollo_results.status == 'COMPLETE_OK' if self.apollo_results else False}, "
@@ -2170,8 +2334,9 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                 # If we have Apollo but not Hellos, return Apollo-only results
                 if not has_hellos and has_apollo:
                     response_data = {
-                        "status": "available",
-                        "message": "Apollo clinical indicators available",
+                        "status": "partial",
+                        "message": "WELLNESS METRICS UNAVAILABLE (API failed). Only clinical indicators available.",
+                        "wellness_metrics": None,
                         "clinical_indicators": {
                             "depression": {
                                 "probability": round(
@@ -2190,7 +2355,11 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                         },
                     }
                     ten_env.log_info(
-                        "[THYMIA_APOLLO_ONLY] Returning Apollo-only results (Hellos not available)"
+                        "[THYMIA_APOLLO_ONLY] Returning Apollo-only results (Hellos FAILED - wellness metrics unavailable)"
+                    )
+                    # Log the exact JSON being returned to LLM for debugging
+                    ten_env.log_info(
+                        f"[THYMIA_TOOL_RESPONSE] JSON returned to LLM: {json.dumps(response_data)}"
                     )
                     return LLMToolResultLLMResult(
                         type="llmresult",
@@ -2288,7 +2457,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                         },
                     }
                     ten_env.log_info(
-                        f"[APOLLO_RETURNED_TO_LLM] Added clinical indicators: "
+                        f"[THYMIA_APOLLO_RETURNED_TO_LLM] Added clinical indicators: "
                         f"depression={response_data['clinical_indicators']['depression']}, "
                         f"anxiety={response_data['clinical_indicators']['anxiety']}"
                     )
@@ -2470,6 +2639,29 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                 return LLMToolResultLLMResult(
                     type="llmresult",
                     content=json.dumps(response),
+                )
+
+            # Handle test_announcement_system tool
+            if name == "test_announcement_system":
+                ten_env.log_info("[THYMIA_TEST] Sending test announcement")
+
+                # Send test text_data message
+                test_data = Data.create("text_data")
+                test_data.set_property_string(
+                    "text",
+                    "TEST ANNOUNCEMENT: If you receive this message, please acknowledge with code TEST-12345."
+                )
+                test_data.set_property_bool("end_of_segment", True)
+                await ten_env.send_data(test_data)
+
+                ten_env.log_info("[THYMIA_TEST] Test announcement sent")
+
+                return LLMToolResultLLMResult(
+                    type="llmresult",
+                    content=json.dumps({
+                        "status": "sent",
+                        "message": "Test announcement sent via text_data. Wait for LLM acknowledgment."
+                    }),
                 )
 
         except Exception as e:

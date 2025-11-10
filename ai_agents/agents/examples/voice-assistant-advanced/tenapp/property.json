@@ -206,6 +206,27 @@
                   ]
                 }
               ]
+            },
+            {
+              "extension": "thymia_analyzer",
+              "data": [
+                {
+                  "name": "tts_audio_start",
+                  "source": [
+                    {
+                      "extension": "tts"
+                    }
+                  ]
+                },
+                {
+                  "name": "tts_audio_end",
+                  "source": [
+                    {
+                      "extension": "tts"
+                    }
+                  ]
+                }
+              ]
             }
           ]
         }
@@ -827,6 +848,27 @@
                   ]
                 }
               ]
+            },
+            {
+              "extension": "thymia_analyzer",
+              "data": [
+                {
+                  "name": "tts_audio_start",
+                  "source": [
+                    {
+                      "extension": "tts"
+                    }
+                  ]
+                },
+                {
+                  "name": "tts_audio_end",
+                  "source": [
+                    {
+                      "extension": "tts"
+                    }
+                  ]
+                }
+              ]
             }
           ]
         }
@@ -934,12 +976,12 @@
               "extension_group": "default",
               "property": {
                 "api_key": "${env:THYMIA_API_KEY|}",
-                "min_speech_duration": 22,
+                "min_speech_duration": 30,
                 "silence_threshold": 0.02,
                 "continuous_analysis": true,
                 "min_interval_seconds": 60,
                 "max_analyses_per_session": 10,
-                "poll_timeout": 120,
+                "poll_timeout": 60,
                 "poll_interval": 5
               }
             },
@@ -1040,6 +1082,27 @@
                   "dest": [
                     {
                       "extension": "stt"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "thymia_analyzer",
+              "data": [
+                {
+                  "name": "tts_audio_start",
+                  "source": [
+                    {
+                      "extension": "tts"
+                    }
+                  ]
+                },
+                {
+                  "name": "tts_audio_end",
+                  "source": [
+                    {
+                      "extension": "tts"
                     }
                   ]
                 }
@@ -1154,12 +1217,12 @@
               "extension_group": "default",
               "property": {
                 "api_key": "${env:THYMIA_API_KEY|}",
-                "min_speech_duration": 22,
+                "min_speech_duration": 30,
                 "silence_threshold": 0.02,
                 "continuous_analysis": true,
                 "min_interval_seconds": 60,
                 "max_analyses_per_session": 10,
-                "poll_timeout": 120,
+                "poll_timeout": 60,
                 "poll_interval": 5
               }
             },
@@ -1260,6 +1323,27 @@
                   "dest": [
                     {
                       "extension": "stt"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "thymia_analyzer",
+              "data": [
+                {
+                  "name": "tts_audio_start",
+                  "source": [
+                    {
+                      "extension": "tts"
+                    }
+                  ]
+                },
+                {
+                  "name": "tts_audio_end",
+                  "source": [
+                    {
+                      "extension": "tts"
                     }
                   ]
                 }
@@ -1379,12 +1463,12 @@
               "extension_group": "default",
               "property": {
                 "api_key": "${env:THYMIA_API_KEY|}",
-                "min_speech_duration": 22,
+                "min_speech_duration": 30,
                 "silence_threshold": 0.02,
                 "continuous_analysis": true,
                 "min_interval_seconds": 60,
                 "max_analyses_per_session": 10,
-                "poll_timeout": 120,
+                "poll_timeout": 60,
                 "poll_interval": 5
               }
             },
@@ -1485,6 +1569,27 @@
                   "dest": [
                     {
                       "extension": "stt"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "thymia_analyzer",
+              "data": [
+                {
+                  "name": "tts_audio_start",
+                  "source": [
+                    {
+                      "extension": "tts"
+                    }
+                  ]
+                },
+                {
+                  "name": "tts_audio_end",
+                  "source": [
+                    {
+                      "extension": "tts"
                     }
                   ]
                 }
@@ -1675,6 +1780,27 @@
                   "dest": [
                     {
                       "extension": "stt"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "thymia_analyzer",
+              "data": [
+                {
+                  "name": "tts_audio_start",
+                  "source": [
+                    {
+                      "extension": "tts"
+                    }
+                  ]
+                },
+                {
+                  "name": "tts_audio_end",
+                  "source": [
+                    {
+                      "extension": "tts"
                     }
                   ]
                 }
@@ -1877,6 +2003,27 @@
                   ]
                 }
               ]
+            },
+            {
+              "extension": "thymia_analyzer",
+              "data": [
+                {
+                  "name": "tts_audio_start",
+                  "source": [
+                    {
+                      "extension": "tts"
+                    }
+                  ]
+                },
+                {
+                  "name": "tts_audio_end",
+                  "source": [
+                    {
+                      "extension": "tts"
+                    }
+                  ]
+                }
+              ]
             }
           ]
         }
@@ -1995,12 +2142,12 @@
               "extension_group": "default",
               "property": {
                 "api_key": "${env:THYMIA_API_KEY|}",
-                "min_speech_duration": 22,
+                "min_speech_duration": 30,
                 "silence_threshold": 0.02,
                 "continuous_analysis": true,
                 "min_interval_seconds": 60,
                 "max_analyses_per_session": 10,
-                "poll_timeout": 120,
+                "poll_timeout": 60,
                 "poll_interval": 5
               }
             },
@@ -2245,12 +2392,12 @@
               "extension_group": "default",
               "property": {
                 "api_key": "${env:THYMIA_API_KEY|}",
-                "min_speech_duration": 22,
+                "min_speech_duration": 30,
                 "silence_threshold": 0.02,
                 "continuous_analysis": true,
                 "min_interval_seconds": 60,
                 "max_analyses_per_session": 10,
-                "poll_timeout": 120,
+                "poll_timeout": 60,
                 "poll_interval": 5
               }
             },
@@ -2439,7 +2586,7 @@
                 "frequency_penalty": 0.9,
                 "model": "${env:OPENAI_MODEL}",
                 "max_tokens": 512,
-                "prompt": "You are a mental wellness research assistant conducting a demonstration. Guide the conversation efficiently:\n\n1. First, collect name, sex, and year of birth\n2. IMMEDIATELY call set_user_info(name, year_of_birth, birth_sex) - this is REQUIRED before analysis can start\n3. Ask: 'Please tell me a little about your day so far and how you are feeling.' (wait for response)\n4. Ask: 'Tell me about your interests and hobbies.' (wait for response - aim for 22+ seconds total)\n5. Say: 'Thank you. Now please read aloud anything you can see around you - a book, article, or text on your screen - for about 30 seconds.'\n6. After they finish reading, say: 'Perfect. I'm processing your responses now, this will take about a minute.'\n7. Wait ~60 seconds for both APIs to complete\n8. Use get_wellness_metrics tool to retrieve all results\n9. Present all 7 metrics (5 from Hellos: stress, distress, burnout, fatigue, low_self_esteem + 2 from Apollo: depression, anxiety) with empathy\n10. Frame as research indicators, not clinical diagnosis\n11. Thank them for participating in the demonstration\n\nNote: We need 44+ seconds total speech (22s for mood/interests + 22s for reading). The first 22s is used for both Hellos and Apollo mood analysis. The next 22s is used for Apollo reading analysis.",
+                "prompt": "You are a mental wellness research assistant conducting a demonstration. Guide the conversation efficiently:\n\n1. First, collect name, sex, and year of birth\n2. IMMEDIATELY call set_user_info(name, year_of_birth, birth_sex) - this is REQUIRED before analysis can start\n3. Ask: 'Please tell me a little about your day so far and how you are feeling.' (wait for response)\n4. Ask: 'Tell me about your interests and hobbies.' (wait for response - aim for 30+ seconds total)\n5. CRITICAL: Before moving to reading phase or saying you're processing, you MUST call check_phase_progress to verify enough speech has been collected. If phase_complete=false, ask another question to gather more speech. Only proceed when phase_complete=true.\n6. Once check_phase_progress confirms phase_complete=true, say: 'Thank you. Now please read aloud anything you can see around you - a book, article, or text on your screen - for about 30 seconds.'\n7. CRITICAL: After user finishes reading, you MUST call check_phase_progress again before saying you're processing. If reading_phase_complete=false, ask them to continue reading. Only when reading_phase_complete=true, say: 'Perfect. I'm processing your responses now, this will take about a minute.'\n8. Wait for system announcements indicating analysis is complete (you will receive [SYSTEM ALERT] messages)\n9. When prompted, use get_wellness_metrics tool to retrieve results\n10. Present all 7 metrics (5 from Hellos: stress, distress, burnout, fatigue, low_self_esteem + 2 from Apollo: depression, anxiety) with empathy. Values are PERCENTAGES 0-100, not 0-1 scale.\n11. Frame as research indicators, not clinical diagnosis\n12. Thank them for participating in the demonstration\n\nNote: We need 60 seconds total speech (30s for mood/interests + 30s for reading). The first 30s is used for both Hellos and Apollo mood analysis. The next 30s is used for Apollo reading analysis.",
                 "proxy_url": "${env:OPENAI_PROXY_URL|}",
                 "greeting": "Hi there! I would like to talk to you for a couple of minutes and use your voice to predict your mood and energy levels including any depression, anxiety, stress, and fatigue. Nothing will be recorded and this is purely a demonstration of what is possible now that we have trained our models with many hours of professionally labelled data. Please begin by telling me your name, sex and year of birth.",
                 "max_memory_length": 10
@@ -2478,7 +2625,7 @@
               "extension_group": "default",
               "property": {
                 "api_key": "${env:THYMIA_API_KEY}",
-                "min_speech_duration": 22.0,
+                "min_speech_duration": 30.0,
                 "analysis_mode": "demo_dual",
                 "apollo_mood_duration": 22.0,
                 "apollo_read_duration": 22.0
