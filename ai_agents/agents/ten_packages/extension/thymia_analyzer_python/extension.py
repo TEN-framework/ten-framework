@@ -927,13 +927,33 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
             if data_name == "tts_audio_start":
                 # Agent started speaking - don't send announcements during this time
                 self.agent_currently_speaking = True
-                ten_env.log_debug("[THYMIA_TTS] Agent started speaking (tts_audio_start)")
+
+                # Get full payload for analysis
+                json_str, _ = data.get_property_to_json(None)
+                ten_env.log_info(f"[THYMIA_TTS_START] tts_audio_start received. Payload: {json_str}")
 
             elif data_name == "tts_audio_end":
-                # Agent finished speaking - can send announcements again
+                # Get full payload for analysis
+                json_str, _ = data.get_property_to_json(None)
+                payload = json.loads(json_str) if json_str else {}
+
+                request_id = payload.get("request_id", "unknown")
+                reason = payload.get("reason", "unknown")
+                duration_ms = payload.get("request_total_audio_duration_ms", 0)
+                interval_ms = payload.get("request_event_interval_ms", 0)
+
+                ten_env.log_info(
+                    f"[THYMIA_TTS_END] tts_audio_end received. "
+                    f"request_id={request_id}, reason={reason}, "
+                    f"audio_duration={duration_ms}ms, generation_time={interval_ms}ms. "
+                    f"Full payload: {json_str}"
+                )
+
+                # TODO: Currently sets agent_currently_speaking=False immediately
+                # This is WRONG - audio still playing for duration_ms more!
+                # Need to verify reason codes and implement proper playback tracking
                 self.agent_currently_speaking = False
                 self.last_agent_speech_end_time = time.time()
-                ten_env.log_debug("[THYMIA_TTS] Agent stopped speaking (tts_audio_end)")
 
         except Exception as e:
             ten_env.log_error(f"[THYMIA_TTS] Error handling data '{data.get_name()}': {e}")
