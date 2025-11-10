@@ -144,8 +144,8 @@ class MainControlExtension(AsyncExtension):
         if data_type == "text":
             await _send_data(
                 self.ten_env,
-                "message",
-                "message_collector",
+                "text_data",
+                "websocket_server",
                 {
                     "data_type": "transcribe",
                     "role": role,
@@ -158,8 +158,8 @@ class MainControlExtension(AsyncExtension):
         elif data_type == "reasoning":
             await _send_data(
                 self.ten_env,
-                "message",
-                "message_collector",
+                "text_data",
+                "websocket_server",
                 {
                     "data_type": "raw",
                     "role": role,

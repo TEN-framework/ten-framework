@@ -136,6 +136,16 @@
                     }
                   ]
                 }
+              ],
+              "data": [
+                {
+                  "name": "data",
+                  "source": [
+                    {
+                      "extension": "message_collector"
+                    }
+                  ]
+                }
               ]
             }
           ]

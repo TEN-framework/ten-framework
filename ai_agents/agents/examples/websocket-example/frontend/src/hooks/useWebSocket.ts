@@ -93,9 +93,33 @@ export function useWebSocket(options: UseWebSocketOptions | string) {
         }
       }
 
-      // Handle LLM text responses
+      // Handle transcript messages (text_data with data_type: 'transcribe')
+      if (message.name === "text_data" && message.data?.data_type === "transcribe") {
+        const transcript = message.data;
+        const text = transcript.text || "";
+        const isFinal = transcript.is_final || false;
+        const role = transcript.role === "user" ? "user" : "assistant";
+
+        if (isFinal) {
+          // Final transcription - add to chat history
+          if (text) {
+            addMessage({
+              role,
+              content: text,
+            });
+          }
+          // Clear transcribing state for final messages
+          clearTranscribing();
+        } else {
+          // Partial transcription - show in transcription display
+          if (text) {
+            setTranscribing(text);
+          }
+        }
+      }
+
+      // Handle other LLM text responses (non-transcribe)
       if (
-        message.name === "text_data" ||
         message.name === "llm_response" ||
         message.name === "chat_message"
       ) {

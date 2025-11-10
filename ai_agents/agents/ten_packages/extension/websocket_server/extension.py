@@ -133,17 +133,18 @@ class WebsocketServerExtension(AsyncExtension):
         """
         data_name = data.get_name()
         ten_env.log_debug(f"Received data: {data_name}")
-
         try:
-            # Convert data to JSON
-            data_json = data.to_json()
-            data_dict = json.loads(data_json)
+            if data_name == "text_data":
+                # Convert data to JSON
+                data_json, _ = data.get_property_to_json(None)
+                ten_env.log_info(f"Data: {data_json}")
+                data_dict = json.loads(data_json)
 
-            # Broadcast to all WebSocket clients
-            if self.ws_server:
-                message = {"type": "data", "name": data_name, "data": data_dict}
-                await self.ws_server.broadcast(message)
-                ten_env.log_debug(f"Broadcasted data {data_name} to WebSocket clients")
+                # Broadcast to all WebSocket clients
+                if self.ws_server:
+                    message = {"type": "data", "name": data_name, "data": data_dict}
+                    await self.ws_server.broadcast(message)
+                    ten_env.log_debug(f"Broadcasted data {data_name} to WebSocket clients")
 
         except Exception as e:
             ten_env.log_error(f"Error forwarding data to WebSocket clients: {e}")
