@@ -143,7 +143,7 @@ class AudioBuffer:
                     self.silence_duration = 0.0
 
                     # Start new circular buffer with current frame
-                    self.circular_buffer = [pcm_data]
+                    self.circular_buffer = deque([pcm_data])
 
         return self.speech_duration
 
