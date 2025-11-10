@@ -1,280 +1,223 @@
-# AI Agents Status Update - 2025-11-10
+# Thymia Analyzer - Quick Debug Guide
 
-## Session Summary - Critical Fixes & Documentation
-
-### Timeline of Work Completed
-
-**Start**: 2025-11-10 06:00 UTC (approximately)
-**End**: 2025-11-10 09:00 UTC (approximately)
-**Duration**: ~3 hours
-**Branch**: `feat/deepgram-v2`
-
-#### Phase 1: CI Failure Resolution (30 minutes)
-- **Issue**: GitHub Actions CI failing on Black formatting and pylint warnings
-- **Files affected**: 4 Python extensions (thymia, heygen, apollo_api, deepgram config)
-- **Root cause**: Previous fixes incomplete, pylint warnings still present
-- **Resolution**:
-  - Removed ALL unused imports (time, json, asyncio, subprocess, Dict)
-  - Fixed f-strings without interpolation
-  - Prefixed unused variables with underscore (_stderr, _attempt)
-  - Changed broad Exception to specific RuntimeError
-  - Made AudioBuffer._pcm_to_wav public → pcm_to_wav
-  - Added pylint disable comment for wave module false positive
-- **Commit**: `032df46fd` - chore: fix pylint warnings in Python extensions
-- **Result**: ✅ All pre-commit checks passing
-
-#### Phase 2: Code Review Issues (45 minutes)
-- **Review findings**: 6 issues identified, 2 critical (memory leak, race condition)
-- **Scope**: Only modify Python extensions in voice-assistant-advanced
-
-**2a. Performance Optimization (thymia_analyzer_python)**:
-- **Issue**: Audio buffer using `list.pop(0)` → O(n) performance
-- **Fix**: Changed circular buffer from list to deque → O(1) popleft()
-- **Lines**: 59-60 (deque initialization), 92 (popleft usage)
-- **Config documentation**: Added explanatory comments for magic numbers in deepgram config
-  - eot_threshold: 0.7 (End-of-turn probability threshold)
-  - eot_timeout_ms: 3000 (Max time to wait for EOT confirmation)
-  - eager_eot_threshold: 0.0 (Eager EOT disabled)
-  - min_interim_confidence: 0.5 (Minimum confidence to accept interim results)
-- **Commit**: `44b505ce1` - perf: optimize audio buffer with deque and add config docs
-
-**2b. Critical Memory Leak Fix (thymia_analyzer_python)**:
-- **Issue**: Unbounded speech_buffer growth in extended conversations
-- **Risk**: OOM in sessions > 5 minutes of continuous speech
-- **Fix implemented**:
-  ```python
-  # Line 56: Added safety limit
-  self.max_speech_duration = 300.0  # 5 minutes safety limit
-
-  # Lines 99, 113: Check before appending
-  if self.speech_duration < self.max_speech_duration:
-      self.speech_buffer.append(buffered_frame)
-      self.speech_duration += len(buffered_frame) / (
-          self.sample_rate * self.channels * 2
-      )
-  ```
-- **Impact**: Normal operation unaffected (typical sessions 30-60s), prevents memory leak in edge cases
-- **Location**: extension.py lines 56, 99, 113
-
-**2c. Critical Race Condition Fix (heygen_avatar_python)**:
-- **Issue**: Multiple concurrent frames sending duplicate interrupts
-- **Symptom**: is_speaking state modified without synchronization
-- **Fix implemented**:
-  ```python
-  # Line 49: Added lock
-  self.speaking_lock = asyncio.Lock()
-
-  # Lines 99-106: Protected state transition
-  async with self.speaking_lock:
-      if not self.is_speaking:
-          self.ten_env.log_debug("Starting new audio stream, sending interrupt first")
-          if self.recorder and self.recorder.ws_connected():
-              await self.recorder.interrupt()
-          self.is_speaking = True
-
-  # Lines 165-166: Protected state reset
-  async def reset_speaking_state():
-      await asyncio.sleep(1.0)
-      async with self.speaking_lock:
-          self.is_speaking = False
-  ```
-- **Impact**: Prevents race condition with minimal performance overhead
-- **Location**: extension.py lines 49, 99-106, 165-166
-
-- **Commit**: `0b97286dc` - fix: prevent memory leak and race condition in extensions
-
-#### Phase 3: Production System Ready for Testing (60 minutes)
-- **Issue**: https://oai.agora.io:453/ showing "No graphs available"
-- **Diagnosis process**:
-  1. API server running but serving wrong path: `/tenapp/tenapp` (duplicate)
-  2. Frontend cached empty graphs list before server was ready
-  3. Multiple failed restart attempts using various methods
-- **Solution**: Nuclear restart procedure
-  ```bash
-  # Kill everything
-  sudo docker exec ten_agent_dev bash -c "pkill -9 -f 'bin/api'; pkill -9 node; pkill -9 bun"
-  # Clean lock files
-  sudo docker exec ten_agent_dev bash -c "rm -f /app/playground/.next/dev/lock"
-  # Start fresh with task run
-  sudo docker exec -d ten_agent_dev bash -c \
-    "cd /app/agents/examples/voice-assistant-advanced && \
-     task run > /tmp/task_run.log 2>&1"
-  sleep 12
-  ```
-- **Result**: ✅ System operational, 12 graphs available
-- **Learning**: Documented proper troubleshooting procedure for future
-
-#### Phase 4: Documentation Review & Planning (45 minutes)
-- **Request**: Review AI_working_with_ten.md (2468 lines) and AI_working_with_ten_compact.md (727 lines)
-- **Goal**: Identify errors, gaps, redundancies for definitive blueprint
-- **Analysis findings**:
-  - 47 issues identified across 13 categories
-  - 5 critical errors (incorrect ./bin/api commands throughout)
-  - 12 high priority gaps (no troubleshooting for "no graphs", missing nuclear restart)
-  - 18 medium priority redundancies
-  - 12 low priority improvements
-- **Deliverable**: Created comprehensive `/home/ubuntu/ten-framework/ai/docs_plan.md`
-  - 4-phase implementation plan (34 hours estimated)
-  - Prioritized by impact and criticality
-  - Success metrics and maintenance procedures
-- **File**: docs_plan.md (1237 lines)
-
-#### Phase 5: Documentation Implementation - Phase 1 (30 minutes)
-- **Implemented**: All 6 critical fixes from docs_plan.md Phase 1
-- **Changes to AI_working_with_ten.md**:
-  1. ✅ Replaced ALL `./bin/api` direct calls with `task run` (9 locations)
-  2. ✅ Removed manual .env sourcing (container restart only)
-  3. ✅ Added "Nuclear Option: Complete System Reset" section
-  4. ✅ Added "Playground Shows 'No Graphs Available'" troubleshooting
-  5. ✅ Added "Quick System Health Diagnostic" one-command checker
-  6. ✅ Improved intro with "About This Documentation" section
-- **Changes to AI_working_with_ten_compact.md**:
-  1. ✅ Removed excessive cross-links (kept intro link only)
-  2. ✅ Replaced hyperlinks with generic "see full doc" text
-- **Result**:
-  - Full doc: 2468 → 2592 lines (+124 lines of improvements)
-  - Compact doc: 726 → 724 lines (-2 lines from simplification)
-- **Commit**: `7880995e0` - docs: implement Phase 1 critical fixes for TEN Framework docs
+**Last Updated**: 2025-11-10
 
 ---
 
-## Recent Commits Summary
+## 🔍 Quick Session Timeline
 
-All on branch `feat/deepgram-v2`:
+### Find Recent Test Session
 
+```bash
+# 1. Find most recent session
+ls -lt /tmp/ten_agent/property-*.json | head -1
+
+# 2. Extract channel name from property file
+CHANNEL=$(ls -lt /tmp/ten_agent/property-*.json | head -1 | awk '{print $NF}' | xargs basename | cut -d'-' -f2)
+echo "Channel: $CHANNEL"
+
+# 3. Get all THYMIA logs for that session
+sudo docker exec ten_agent_dev bash -c "grep '\[$CHANNEL\]' /tmp/task_run.log | grep 'THYMIA'"
 ```
-7880995e0 - docs: implement Phase 1 critical fixes for TEN Framework docs
-0b97286dc - fix: prevent memory leak and race condition in extensions
-44b505ce1 - perf: optimize audio buffer with deque and add config docs
-032df46fd - chore: fix pylint warnings in Python extensions
-8ddb55457 - docs: add pre-commit checks section for black formatter
-444a08365 - style: apply black formatting to Python extensions
-8e6443d28 - fix: improve Thymia API reliability and reduce logging noise
-7b068b7cc - feat: add detailed audio duration logging for Hellos and Apollo phases
-1068411d8 - chore: add logging for apollo duration property loading
-ffc07bc06 - revert: restore UpdateTs update in ping handler for proper session tracking
+
+### Key THYMIA Log Patterns
+
+All important Thymia logs contain `[thymia_analyzer]` and one of these patterns:
+
+**Initialization**:
+```
+[THYMIA] Thymia analyzer initialized
+[THYMIA] Mode: demo_dual (hellos + apollo)
+```
+
+**Phase Triggers**:
+```
+[HELLOS PHASE 1/2] Starting Hellos API workflow
+[APOLLO PHASE 2/2] Starting Apollo API workflow
+```
+
+**Audio Status**:
+```
+[thymia_analyzer] Speech buffer status: X.Xs / 22.0s (hellos target)
+[thymia_analyzer] Speech buffer status: X.Xs / 44.0s (apollo target)
+```
+
+**API Results**:
+```
+[HELLOS COMPLETE] Results: {stress: X%, distress: Y%, ...}
+[APOLLO COMPLETE] Results: {depression: X%, anxiety: Y%, ...}
+```
+
+**Errors**:
+```
+[THYMIA_ERROR] Error message here
+```
+
+### Extract Full Session Timeline
+
+```bash
+# Get complete timeline for channel
+CHANNEL="agora_XXXXX"  # Replace with actual channel
+sudo docker exec ten_agent_dev bash -c "grep '\[$CHANNEL\]' /tmp/task_run.log | grep -E 'THYMIA|HELLOS|APOLLO|Phase'" | less
 ```
 
 ---
 
-## Thymia Extension: Recent Changes & Current State
+## 🚨 Last Test Session (2025-11-10 08:14)
 
-### API Integration Status
+**Status**: ❌ FAILED - Deque bug incomplete
 
-**Hellos API** (5 wellness metrics):
-- ✅ Fully functional
-- Trigger: 22s of speech audio
-- Returns: stress, distress, burnout, fatigue, low_self_esteem (0-100%)
+**Session**:
+- Channel: `agora_g3qhjr`
+- Graph: `flux_apollo_cartesia_heygen`
+- Start: 08:14:03 UTC
+- End: 08:31:56 UTC (SIGKILL after errors)
 
-**Apollo API** (depression/anxiety indicators):
-- ⚠️ Implementation complete but property loading issue
-- Trigger: 44s of speech audio
-- Requires: Two 22s audio segments (mood + reading)
-- Returns: depression and anxiety probabilities + severity
+**Error**:
+```
+AttributeError: 'list' object has no attribute 'popleft'
+File extension.py, line 93, in add_frame
+    self.circular_buffer.popleft()
+```
 
-**Mode**: `demo_dual` (runs both Hellos and Apollo sequentially)
-
-### Known Issues & Fixes
-
-**Issue 1: Property Loading Bug** (from 2025-11-05 session):
-- **Problem**: `apollo_mood_duration` and `apollo_read_duration` loaded as 0.0 instead of 22.0
-- **Impact**: Incorrect audio split (all bytes to reading, 0 bytes to mood)
-- **Workaround**: Hardcoded MOOD_DURATION = 22.0 in _run_apollo_phase
-- **Status**: Fixed with workaround, root cause investigation deferred
-- **Commit**: Documented in previous session (before recent commits)
-
-**Issue 2: API Reliability** (fixed 2025-11-08):
-- **Problem**: Apollo API sometimes cancelled by immediate subsequent call
-- **Fix**: Added 5-second delay between Hellos upload and Apollo trigger
-- **Fix**: Replaced aiohttp with curl subprocess for more reliable API calls
-- **Fix**: Added hellos_success flag to prevent announcing failed analyses
-- **Commit**: `8e6443d28` - fix: improve Thymia API reliability and reduce logging noise
-
-**Issue 3: Memory Leak** (fixed 2025-11-08):
-- **Problem**: Unbounded speech_buffer growth in long sessions
-- **Fix**: Added 300-second max buffer limit
-- **Impact**: Prevents OOM in extended sessions
-- **Commit**: `0b97286dc` - fix: prevent memory leak and race condition in extensions
-
-**Issue 4: Performance** (fixed 2025-11-08):
-- **Problem**: Circular buffer using O(n) list.pop(0)
-- **Fix**: Changed to deque with O(1) popleft()
-- **Commit**: `44b505ce1` - perf: optimize audio buffer with deque and add config docs
-
-### Code Quality Improvements
-
-- ✅ All pylint warnings resolved (rating 9.76/10)
-- ✅ Black formatting compliant (80-character line length)
-- ✅ Removed unused imports and variables
-- ✅ Changed broad exceptions to specific RuntimeError
-- ✅ Added asyncio.Lock for race condition prevention
+**Root Cause**: Deque fix incomplete - Line 146 resets buffer to `list` instead of `deque`
 
 ---
 
-## File Locations
+## 🐛 CRITICAL BUG: Incomplete Deque Fix
 
-**Extensions**:
-- Thymia Analyzer: `/home/ubuntu/ten-framework/ai_agents/agents/ten_packages/extension/thymia_analyzer_python/extension.py`
-- Apollo API Client: `/home/ubuntu/ten-framework/ai_agents/agents/ten_packages/extension/thymia_analyzer_python/apollo_api.py`
-- HeyGen Avatar: `/home/ubuntu/ten-framework/ai_agents/agents/ten_packages/extension/heygen_avatar_python/extension.py`
-- Deepgram Config: `/home/ubuntu/ten-framework/ai_agents/agents/ten_packages/extension/deepgram_ws_asr_python/config.py`
+### The Problem
 
-**Documentation**:
-- Full Reference: `/home/ubuntu/ten-framework/ai/AI_working_with_ten.md` (2592 lines)
-- Quick Reference: `/home/ubuntu/ten-framework/ai/AI_working_with_ten_compact.md` (724 lines)
-- Improvement Plan: `/home/ubuntu/ten-framework/ai/docs_plan.md` (1237 lines)
-- Apollo Integration: `/home/ubuntu/ten-framework/ai/apollo.md` (29127 bytes)
+**Commit `44b505ce1`** fixed line 60 but missed line 146:
 
-**Configuration**:
-- Base property: `/home/ubuntu/ten-framework/ai_agents/agents/examples/voice-assistant-advanced/tenapp/property.json`
-- Runtime properties: `/tmp/ten_agent/property-agora_*-TIMESTAMP.json`
+```python
+# Line 60 - ✅ FIXED
+self.circular_buffer = deque()
 
----
+# Line 146 - ❌ STILL BROKEN
+self.circular_buffer = [pcm_data]  # Should be deque([pcm_data])
+```
 
-## Testing Status
+**When line 146 executes** (buffer reset during speech), it replaces the deque with a list. Then line 93 tries `popleft()` on a list → crash.
 
-**Production System**: ✅ Operational
-- URL: https://oai.agora.io:453/
-- Graphs available: 12
-- Services: API server + Playground frontend running
+### The Fix Needed
 
-**Code Changes**: ✅ All pushed to `feat/deepgram-v2`
-- CI/CD: Passing (Black + pylint checks)
-- Pre-commit: Configured and tested
+```python
+# Line 146 - Change from:
+self.circular_buffer = [pcm_data]
 
-**Next Testing Steps**:
-1. Test thymia extension with memory leak fix in extended session
-2. Verify HeyGen race condition fix prevents duplicate interrupts
-3. Confirm Apollo API reliability improvements with 5s delay
-4. Test nuclear restart procedure as documented
+# To:
+self.circular_buffer = deque([pcm_data])
+```
 
 ---
 
-## Lessons Learned
+## ⚠️ Python Code Changes Require Service Restart
 
-1. **CI Failures**: Multi-pass fixes needed - first pass didn't catch all pylint warnings
-2. **Production Debugging**: Nuclear restart should be FIRST troubleshooting step, not last
-3. **Documentation**: Incorrect commands throughout docs led to confusion (now fixed)
-4. **System Ready**: Frontend caching + wrong server paths caused "no graphs" - now documented
-5. **Code Review**: Proactive memory leak and race condition fixes prevent future issues
+### Critical Documentation Gap Found
+
+**Issue**: Documentation mentions Python reloads on restart (AI_working_with_ten.md:132) but doesn't emphasize this enough.
+
+**The Rule**:
+1. Python extension code is loaded into memory when worker starts
+2. Code changes on disk are NOT picked up by running workers
+3. **MUST restart services after any Python code changes**
+
+**After Making Python Changes**:
+```bash
+# Nuclear restart to load new code
+sudo docker exec ten_agent_dev bash -c "pkill -9 -f 'bin/api'; pkill -9 node; pkill -9 bun"
+sudo docker exec ten_agent_dev bash -c "rm -f /app/playground/.next/dev/lock"
+sudo docker exec -d ten_agent_dev bash -c \
+  "cd /app/agents/examples/voice-assistant-advanced && \
+   task run > /tmp/task_run.log 2>&1"
+sleep 12
+```
+
+### What Triggers Automatic Reload
+
+| Change Type | Container Restart | Service Restart | No Restart |
+|-------------|------------------|-----------------|------------|
+| **Python code (.py)** | ✅ Yes | ✅ Yes | ❌ No |
+| **Property.json** | ❌ No | ❌ No | ✅ Yes (runtime copy) |
+| **Graph config** | ❌ No | ✅ Yes | ❌ No |
+| **Go server** | ❌ No | ✅ Yes | ❌ No |
+
+**Key Point**: Python extensions are **NOT** hot-reloaded. Always restart after code changes.
 
 ---
 
-## Next Steps
+## 📋 Documentation Updates Needed
 
-**Immediate**:
-- [ ] Monitor production system for any issues with recent fixes
-- [ ] Test extended sessions to verify memory leak fix works as expected
-- [ ] Consider implementing remaining documentation phases (Phase 2-4, ~30 hours)
+### AI_working_with_ten.md - Add Warning Box
 
-**Future**:
-- [ ] Investigate Apollo property loading root cause (low priority)
-- [ ] Consider adding explicit audio duration validation at trigger points
-- [ ] Evaluate need for additional Thymia API error handling
+After line 132 (Python reload mention), add:
+
+```markdown
+### ⚠️ CRITICAL: Python Code Changes
+
+**Python extensions are NOT hot-reloaded!**
+
+After modifying any Python extension code:
+1. ✅ **MUST restart services** (use nuclear restart)
+2. ❌ **Changes will NOT be picked up** by running workers
+3. ⚠️ Old code stays in memory until process exits
+
+**Quick Check - Is My Code Running?**
+```bash
+# Find when worker started
+ps aux | grep "bin/api" | grep -v grep
+
+# Compare to your last git commit
+git log -1 --format="%ai"
+
+# If commit is AFTER worker start → restart needed!
+```
+```
+
+### AI_working_with_ten_compact.md - Add Section
+
+```markdown
+## Python Code Changes
+
+⚠️ **ALWAYS restart after Python changes**
+
+```bash
+# After editing any .py file in extensions:
+sudo docker exec ten_agent_dev bash -c "pkill -9 -f 'bin/api'"
+sudo docker exec -d ten_agent_dev bash -c \
+  "cd /app/agents/examples/voice-assistant-advanced && \
+   task run > /tmp/task_run.log 2>&1"
+```
+
+Python extensions are loaded at worker startup. Changes on disk won't be picked up until restart.
+```
 
 ---
 
-*Status update created: 2025-11-10 09:00 UTC*
-*Session type: CI fixes, code review, production debugging, documentation*
-*Branch: feat/deepgram-v2*
-*Commits: 5 (CI fixes, performance, memory leak, race condition, docs)*
+## 🔧 Immediate Actions
+
+1. **Fix the deque bug** (line 146)
+2. **Restart services** to load the fix
+3. **Update documentation** with Python reload warnings
+4. **Test with new session**
+
+---
+
+## 📝 Testing Checklist
+
+After fixing and restarting:
+
+- [ ] Nuclear restart completed
+- [ ] Wait 12 seconds for full startup
+- [ ] Check system health: `curl http://localhost:8080/health`
+- [ ] Verify graphs available: `curl http://localhost:8080/graphs | jq`
+- [ ] Start test session
+- [ ] Monitor logs: `sudo docker exec ten_agent_dev tail -f /tmp/task_run.log | grep THYMIA`
+- [ ] Verify no `popleft` errors
+- [ ] Confirm Hellos phase completes
+- [ ] Confirm Apollo phase triggers (if enough speech)
+
+---
+
+*For full session history and detailed timeline, see previous status.md version or check /tmp/ten_agent/ logs*
