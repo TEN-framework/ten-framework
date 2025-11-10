@@ -2627,8 +2627,8 @@
                 "api_key": "${env:THYMIA_API_KEY}",
                 "min_speech_duration": 30.0,
                 "analysis_mode": "demo_dual",
-                "apollo_mood_duration": 22.0,
-                "apollo_read_duration": 22.0
+                "apollo_mood_duration": 30.0,
+                "apollo_read_duration": 30.0
               }
             },
             {

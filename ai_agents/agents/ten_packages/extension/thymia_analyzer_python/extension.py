@@ -52,7 +52,8 @@ class AudioBuffer:
         self.channels = channels
         self.silence_threshold = silence_threshold
         self.speech_buffer = []
-        self.speech_duration = 0.0
+        self.speech_duration = 0.0  # Total duration including pre-speech padding
+        self.actual_speech_duration = 0.0  # Only frames where volume > threshold
         self.max_speech_duration = 300.0  # 5 minutes safety limit
 
         # Circular buffer for 0.5 second of recent audio (pre-speech capture)
@@ -101,6 +102,7 @@ class AudioBuffer:
                         self.speech_duration += len(buffered_frame) / (
                             self.sample_rate * self.channels * 2
                         )
+                        # NOTE: Pre-speech padding NOT counted in actual_speech_duration
 
                 self.is_speaking = True
                 self.circular_buffer.clear()  # Clear after using contents
@@ -117,12 +119,14 @@ class AudioBuffer:
                         self.speech_duration += len(silence_frame) / (
                             self.sample_rate * self.channels * 2
                         )
+                        # NOTE: Brief silence during speech NOT counted in actual_speech_duration
                     self.silence_frames.clear()
                     self.silence_duration = 0.0
 
-                    # Add current frame
+                    # Add current frame (THIS IS ACTUAL SPEECH)
                     self.speech_buffer.append(pcm_data)
                     self.speech_duration += frame_duration
+                    self.actual_speech_duration += frame_duration  # Count actual speech!
                 else:
                     # Buffer full - clear silence frames but don't add more audio
                     self.silence_frames.clear()
@@ -174,8 +178,21 @@ class AudioBuffer:
         return rms
 
     def has_enough_speech(self, min_duration: float = 30.0) -> bool:
-        """Check if we have enough speech for analysis"""
-        return self.speech_duration >= min_duration
+        """
+        Check if we have enough ACTUAL speech for analysis.
+        Uses actual_speech_duration (excludes pre-speech padding and silence).
+        """
+        return self.actual_speech_duration >= min_duration
+
+    def clear_buffer(self):
+        """Clear speech buffer after audio has been sent to APIs"""
+        self.speech_buffer.clear()
+        self.speech_duration = 0.0
+        self.actual_speech_duration = 0.0
+        print(
+            "[THYMIA_BUFFER_CLEAR] Speech buffer cleared (all audio sent to APIs)",
+            flush=True,
+        )
 
     def get_wav_data(self, max_duration_seconds: float = None) -> bytes:
         """
@@ -188,7 +205,9 @@ class AudioBuffer:
         start_time = time.time()
 
         print(
-            f"[THYMIA_BUFFER_GET_WAV] get_wav_data() called - buffer has {len(self.speech_buffer)} frames, {self.speech_duration:.1f}s, max_duration={max_duration_seconds}",
+            f"[THYMIA_BUFFER_GET_WAV] get_wav_data() called - buffer has {len(self.speech_buffer)} frames, "
+            f"actual_speech={self.actual_speech_duration:.1f}s, total_with_padding={self.speech_duration:.1f}s, "
+            f"max_duration={max_duration_seconds}",
             flush=True,
         )
 
@@ -401,62 +420,34 @@ class ThymiaAPIClient:
         return response_data
 
     async def upload_audio(self, upload_url: str, wav_data: bytes) -> bool:
-        """Upload WAV audio file to presigned S3 URL using curl"""
-        import tempfile
-        import os
+        """Upload WAV audio to presigned S3 URL using aiohttp (in-memory, no disk I/O)"""
+        await self._ensure_session()
 
-        # Write audio to temporary file for curl upload
-        with tempfile.NamedTemporaryFile(
-            mode="wb", suffix=".wav", delete=False
-        ) as tmp_file:
-            tmp_file.write(wav_data)
-            tmp_filename = tmp_file.name
+        headers = {"Content-Type": "audio/wav"}
 
         try:
-            # Use curl to upload (exactly like manual tests)
-            curl_cmd = [
-                "curl",
-                "-X",
-                "PUT",
-                upload_url,
-                "-H",
-                "Content-Type: audio/wav",
-                "--data-binary",
-                f"@{tmp_filename}",
-                "-s",
-                "-w",
-                "\n%{http_code}",
-            ]
+            async with self.session.put(
+                upload_url, data=wav_data, headers=headers
+            ) as response:
+                if response.status not in (200, 201, 204):
+                    error_text = await response.text()
+                    print(
+                        f"[THYMIA_HELLOS_UPLOAD_ERROR] Upload failed: status={response.status}, error={error_text}",
+                        flush=True,
+                    )
+                    return False
 
-            # Run curl asynchronously
-            process = await asyncio.create_subprocess_exec(
-                *curl_cmd,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-            )
-            stdout, _stderr = await process.communicate()
-
-            # Parse response
-            stdout_str = stdout.decode("utf-8")
-
-            # Extract HTTP code from last line
-            lines = stdout_str.strip().split("\n")
-            http_code = int(lines[-1]) if lines else 0
-
-            if http_code != 200:
                 print(
-                    f"[THYMIA_API_ERROR] upload_audio failed: status={http_code}",
+                    f"[THYMIA_HELLOS_UPLOAD] Upload successful: status={response.status}",
                     flush=True,
                 )
-
-            return http_code == 200
-
-        finally:
-            # Clean up temp file
-            try:
-                os.unlink(tmp_filename)
-            except Exception:
-                pass  # Ignore cleanup errors
+                return True
+        except Exception as e:
+            print(
+                f"[THYMIA_HELLOS_UPLOAD_ERROR] Exception during upload: {e}",
+                flush=True,
+            )
+            return False
 
     async def get_results(self, session_id: str) -> Optional[dict]:
         """
@@ -603,9 +594,6 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
         self.apollo_complete: bool = False
         self.hellos_analysis_running: bool = False
         self.apollo_analysis_running: bool = False
-        self.saved_mood_wav_path: Optional[str] = (
-            None  # Path to saved mood.wav (shared by Hellos and Apollo)
-        )
 
         # API session tracking
         self.hellos_session_id: Optional[str] = None
@@ -984,6 +972,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
             # Add to buffer with VAD
             prev_speech_duration = self.audio_buffer.speech_duration
             speech_duration = self.audio_buffer.add_frame(pcm_data)
+            actual_speech_duration = self.audio_buffer.actual_speech_duration
 
             # Track user speech activity (to avoid interrupting user with triggers)
             if speech_duration > prev_speech_duration:
@@ -1002,7 +991,8 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
 
                 if self._audio_frame_count % 500 == 1:
                     ten_env.log_info(
-                        f"[THYMIA_BUFFER] Speech: {speech_duration:.1f}s/{required_duration:.1f}s (need {max(0, required_duration - speech_duration):.1f}s)"
+                        f"[THYMIA_BUFFER] Actual speech: {actual_speech_duration:.1f}s/{required_duration:.1f}s "
+                        f"(need {max(0, required_duration - actual_speech_duration):.1f}s, total with padding: {speech_duration:.1f}s)"
                     )
 
                 # Check if we have enough speech to analyze
@@ -1031,7 +1021,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                         else:
                             ten_env.log_info(
                                 f"[THYMIA_ANALYSIS_START] Starting Hellos analysis "
-                                f"({speech_duration:.1f}s speech collected)"
+                                f"({actual_speech_duration:.1f}s actual speech collected, {speech_duration:.1f}s total with padding)"
                             )
                             asyncio.create_task(
                                 self._run_hellos_only_analysis(ten_env)
@@ -1066,9 +1056,9 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                         )
                     )
                     ten_env.log_info(
-                        f"[THYMIA_BUFFER] Speech: {speech_duration:.1f}s "
-                        f"(hellos={hellos_status}, apollo={apollo_status}, "
-                        f"mood_phase={self.mood_phase_complete}, reading_phase={self.reading_phase_complete})"
+                        f"[THYMIA_BUFFER] Actual speech: {actual_speech_duration:.1f}s (total with padding: {speech_duration:.1f}s) "
+                        f"- hellos={hellos_status}, apollo={apollo_status}, "
+                        f"mood_phase={self.mood_phase_complete}, reading_phase={self.reading_phase_complete}"
                     )
 
                 # Check Hellos phase (30s mood speech)
@@ -1085,7 +1075,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                             self.mood_phase_complete = True
                             mood_phase_just_completed = True
                             ten_env.log_info(
-                                "[THYMIA_PHASE] Mood phase complete (30s collected)"
+                                f"[THYMIA_PHASE] Mood phase complete ({actual_speech_duration:.1f}s actual speech, {speech_duration:.1f}s total with padding)"
                             )
 
                         # Validate user info before starting
@@ -1104,7 +1094,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                         else:
                             ten_env.log_info(
                                 f"[THYMIA_ANALYSIS_START] Starting Hellos analysis (30s mood) "
-                                f"({speech_duration:.1f}s speech collected)"
+                                f"({actual_speech_duration:.1f}s actual speech collected, {speech_duration:.1f}s total with padding)"
                             )
                             self.hellos_analysis_running = True
                             asyncio.create_task(self._run_hellos_phase(ten_env))
@@ -1133,7 +1123,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                             self.reading_phase_complete = True
                             reading_phase_just_completed = True
                             ten_env.log_info(
-                                "[THYMIA_PHASE] Reading phase complete (60s total collected)"
+                                f"[THYMIA_PHASE] Reading phase complete ({actual_speech_duration:.1f}s actual speech, {speech_duration:.1f}s total with padding)"
                             )
 
                         # Check if we need to wait for Hellos to finish uploading first (avoid cancellation)
@@ -1166,7 +1156,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                         elif not hellos_delay_needed:
                             ten_env.log_info(
                                 f"[THYMIA_ANALYSIS_START] Starting Apollo analysis (60s total: 30s mood + 30s reading) "
-                                f"({speech_duration:.1f}s speech collected)"
+                                f"({actual_speech_duration:.1f}s actual speech collected, {speech_duration:.1f}s total with padding)"
                             )
                             self.apollo_analysis_running = True
                             asyncio.create_task(self._run_apollo_phase(ten_env))
@@ -1324,18 +1314,9 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                 )
                 return
 
-            # Save audio to disk first (more reliable than uploading from memory)
-            timestamp = int(time.time())
-            mood_filename = f"/tmp/thymia_audio_{timestamp}_{self.user_name or 'unknown'}_mood.wav"
-
-            try:
-                with open(mood_filename, "wb") as f:
-                    f.write(wav_data)
-                self.saved_mood_wav_path = mood_filename
-            except Exception as e:
-                ten_env.log_error(
-                    f"[THYMIA_HELLOS_ERROR] Failed to save mood audio: {e}"
-                )
+            ten_env.log_info(
+                f"[THYMIA_HELLOS_PHASE_1] Prepared {len(wav_data)} bytes of WAV data for upload (in-memory, no disk I/O)"
+            )
 
             # Create session
             api_start_time = time.time()
@@ -1353,13 +1334,11 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                 f"[THYMIA_HELLOS_PHASE_1] Created session: {session_id} (took {session_time:.2f}s)"
             )
 
-            # Upload from saved file (more reliable than uploading from memory)
+            # Upload directly from memory (no disk I/O)
             upload_start_time = time.time()
-            with open(mood_filename, "rb") as f:
-                file_bytes = f.read()
-                upload_success = await self.api_client.upload_audio(
-                    upload_url, file_bytes
-                )
+            upload_success = await self.api_client.upload_audio(
+                upload_url, wav_data
+            )
             upload_time = time.time() - upload_start_time
 
             if not upload_success:
@@ -1375,6 +1354,13 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
             # Store session ID and start time - unified poller will poll for results
             self.hellos_session_id = session_id
             self.hellos_session_start_time = time.time()
+
+            # Clear buffer if Apollo also sent (or is currently sending)
+            if self.apollo_complete or self.apollo_analysis_running:
+                ten_env.log_info(
+                    "[THYMIA_BUFFER] Hellos uploaded and Apollo sent/sending - clearing buffer"
+                )
+                self.audio_buffer.clear_buffer()
 
             # IMPORTANT: Don't clear hellos_analysis_running here!
             # Keep it True to prevent re-triggering while unified poller waits for results.
@@ -1412,46 +1398,10 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
 
             ten_env.log_info(
                 f"[THYMIA_APOLLO_PHASE_2] Split at {MOOD_DURATION}s: "
-                f"mood={len(mood_pcm)} bytes, read={len(read_pcm)} bytes"
+                f"mood={len(mood_pcm)} bytes, read={len(read_pcm)} bytes (in-memory, no disk I/O)"
             )
 
-            # Reuse mood.wav saved from Hellos phase, only save reading.wav
-            timestamp = int(time.time())
-
-            # Mood audio: reuse from Hellos phase
-            if self.saved_mood_wav_path:
-                ten_env.log_info(
-                    f"[THYMIA_APOLLO_PHASE_2] Reusing mood audio from: {self.saved_mood_wav_path}"
-                )
-                mood_filename = self.saved_mood_wav_path
-            else:
-                # Fallback: save mood audio if not available
-                ten_env.log_warn(
-                    "[THYMIA_APOLLO_PHASE_2] No saved mood.wav, creating new one"
-                )
-                mood_wav = AudioBuffer.pcm_to_wav(mood_pcm, 16000, 1)
-                mood_filename = f"/tmp/thymia_audio_{timestamp}_{self.user_name or 'unknown'}_mood.wav"
-                try:
-                    with open(mood_filename, "wb") as f:
-                        f.write(mood_wav)
-                except Exception as e:
-                    ten_env.log_error(
-                        f"[THYMIA_APOLLO_ERROR] Failed to save mood audio: {e}"
-                    )
-
-            # Reading audio: save only this one
-            read_wav = AudioBuffer.pcm_to_wav(read_pcm, 16000, 1)
-            read_filename = f"/tmp/thymia_audio_{timestamp}_{self.user_name or 'unknown'}_reading.wav"
-
-            try:
-                with open(read_filename, "wb") as f:
-                    f.write(read_wav)
-            except Exception as e:
-                ten_env.log_error(
-                    f"[THYMIA_APOLLO_ERROR] Failed to save reading audio: {e}"
-                )
-
-            # Call Apollo API
+            # Call Apollo API directly with PCM data (no disk I/O needed)
             api_start_time = time.time()
             apollo_result = await self.apollo_client.analyze(
                 mood_audio_pcm=mood_pcm,
@@ -1479,6 +1429,13 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
 
             # Mark Apollo API complete
             self.apollo_complete = True
+
+            # Clear buffer if Hellos also sent
+            if self.hellos_session_id:
+                ten_env.log_info(
+                    "[THYMIA_BUFFER] Apollo uploaded and Hellos sent - clearing buffer"
+                )
+                self.audio_buffer.clear_buffer()
 
             # Check if ready to announce
             if apollo_result.status == "COMPLETE_OK":
