@@ -1772,7 +1772,8 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                     "  Then announce ONLY the clinical indicators (depression, anxiety) that ARE available. "
                     "  DO NOT make up or infer wellness metric values - if status='partial' and wellness_metrics is null, they are UNAVAILABLE. "
                     "Frame clinical indicators (depression/anxiety) as research indicators, not clinical diagnosis. "
-                    "Do not use markdown bullet points (*) in your response - use plain numbered lists or paragraphs. "
+                    "CRITICAL: Do NOT use markdown formatting (no **, *, _, etc.) - use plain numbered lists or paragraphs only. "
+                    "CRITICAL: After announcing results, IMMEDIATELY call confirm_announcement tool with appropriate phase. "
                     "NOTE: User information must be set first using set_user_info."
                 ),
                 parameters=[],
