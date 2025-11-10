@@ -126,6 +126,12 @@ class MainControlExtension(AsyncExtension):
         await self.agent.on_cmd(cmd)
 
     async def on_data(self, ten_env: AsyncTenEnv, data: Data):
+        # Handle text_data exactly like ASR: interrupt ongoing speech, increment turn, queue to LLM
+        if data.get_name() == "text_data":
+            await self._interrupt()  # Stop ongoing TTS/LLM, just like ASR does
+            self.turn_id += 1
+            ten_env.log_info(f"[MainControlExtension] text_data received, interrupted and turn_id incremented to {self.turn_id}")
+
         await self.agent.on_data(data)
 
     # === helpers ===

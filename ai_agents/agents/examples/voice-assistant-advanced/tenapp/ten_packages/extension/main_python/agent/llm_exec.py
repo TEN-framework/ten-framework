@@ -111,11 +111,17 @@ class LLMExec:
         while not self.stopped:
             try:
                 text = await self.input_queue.get()
+                self.ten_env.log_info(
+                    f"[LLMExec] Processing queued input (len={len(text)} chars): '{text[:100]}...'"
+                )
                 new_message = LLMMessageContent(role="user", content=text)
                 self.current_task = asyncio.create_task(
                     self._send_to_llm(self.ten_env, new_message)
                 )
                 await self.current_task
+                self.ten_env.log_info(
+                    "[LLMExec] Finished sending queued input to LLM"
+                )
             except asyncio.CancelledError:
                 self.ten_env.log_info("LLMExec processing cancelled.")
                 text = self.current_text

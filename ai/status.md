@@ -1,6 +1,103 @@
-# Thymia Analyzer - Quick Debug Guide
+# Thymia Analyzer - Debug Guide
 
-**Last Updated**: 2025-11-10
+**Last Updated**: 2025-11-10 (Post text_data + TTS fix)
+
+---
+
+## 🔄 How Thymia → LLM Communication Works
+
+### The Intended Flow
+
+1. **Thymia Extension** (single unified polling thread):
+   - Polls Hellos API every 5s until complete
+   - Polls Apollo API every 5s until complete
+   - When API completes → sends `text_data` hint to LLM
+
+2. **Graph Routing** (`property.json`):
+   ```
+   thymia_analyzer → text_data → main_control
+   ```
+
+3. **Main Control** (`main_python/agent/agent.py`):
+   - Receives `text_data`
+   - Queues text as LLM input
+   - LLM sees hint: "Clinical analysis complete. Please tell me..."
+
+4. **LLM Response**:
+   - Immediately calls `get_wellness_metrics` tool
+   - Receives results
+   - Announces to user
+
+**Expected Timeline**: Analysis ready → hint sent → LLM responds in <5 seconds
+
+---
+
+## 🐛 Bug Found & Fixed (2025-11-10)
+
+### Root Cause
+
+**File**: `main_python/agent/agent.py:140-155`
+
+**Problem**: Agent only handled `asr_result`, dropped `text_data`:
+```python
+if data.get_name() == "asr_result":
+    # handle ASR
+else:
+    self.ten_env.log_warn(f"Unhandled data: {data.get_name()}")  # ❌ DROPPED
+```
+
+**Impact**:
+- Thymia sent hints correctly
+- Hints were routed correctly
+- Agent logged "Unhandled data: text_data" and dropped them
+- LLM never received hints
+- Eventually called `get_wellness_metrics` on its own after 2-3 minutes
+
+### The Fix
+
+**Added text_data handler** in `agent.py:152-162`:
+```python
+elif data.get_name() == "text_data":
+    # Handle hints from extensions (e.g., Thymia analysis ready)
+    text = data.get_property_string("text")
+    is_final = data.get_property_bool("end_of_segment")
+
+    if text and is_final:
+        self.ten_env.log_info(f"[Agent] Received text_data hint: '{text}'")
+        await self.queue_llm_input(text)  # ✅ Queue to LLM
+```
+
+**What Changed**:
+- This fix was working locally last week
+- Got lost (never committed)
+- Restored today
+
+**Also Fixed**:
+- Updated `min_speech_duration` from 22s to 30s (all 6 graph configs)
+- Added retry limits (3 max) and 90s timeout
+- Hellos failure now sends immediate notification to LLM
+
+---
+
+## 📊 Key Log Patterns
+
+### Successful Flow
+
+```
+[THYMIA_TRIGGER] Sending Apollo announcement to LLM
+[THYMIA_TRIGGER_OK] Apollo announcement sent
+[Agent] Received text_data hint: 'Clinical analysis complete. Please tell me...'
+[llm] Requesting chat completions with: ...get_wellness_metrics...
+```
+
+### Broken Flow (Before Fix)
+
+```
+[THYMIA_TRIGGER] Sending Apollo announcement to LLM
+[THYMIA_TRIGGER_OK] Apollo announcement sent
+[main_control] Unhandled data: text_data  ← ❌ DROPPED HERE
+[UNIFIED_POLLER] Retrying Apollo announcement (not confirmed by LLM, last sent 31s ago)
+```
 
 ---
 
@@ -12,212 +109,199 @@
 # 1. Find most recent session
 ls -lt /tmp/ten_agent/property-*.json | head -1
 
-# 2. Extract channel name from property file
+# 2. Extract channel name
 CHANNEL=$(ls -lt /tmp/ten_agent/property-*.json | head -1 | awk '{print $NF}' | xargs basename | cut -d'-' -f2)
 echo "Channel: $CHANNEL"
 
-# 3. Get all THYMIA logs for that session
+# 3. Get all THYMIA logs
 sudo docker exec ten_agent_dev bash -c "grep '\[$CHANNEL\]' /tmp/task_run.log | grep 'THYMIA'"
+
+# 4. Check for text_data handling
+sudo docker exec ten_agent_dev bash -c "grep '\[$CHANNEL\]' /tmp/task_run.log | grep -E 'text_data|Received text_data hint'"
 ```
 
 ### Key THYMIA Log Patterns
 
-All important Thymia logs contain `[thymia_analyzer]` and one of these patterns:
-
 **Initialization**:
 ```
-[THYMIA] Thymia analyzer initialized
-[THYMIA] Mode: demo_dual (hellos + apollo)
+[THYMIA_START] ThymiaAnalyzerExtension starting...
+[THYMIA_START] ThymiaAnalyzerExtension started in DEMO_DUAL mode
 ```
 
-**Phase Triggers**:
+**Phase Completion**:
 ```
-[HELLOS PHASE 1/2] Starting Hellos API workflow
-[APOLLO PHASE 2/2] Starting Apollo API workflow
-```
-
-**Audio Status**:
-```
-[thymia_analyzer] Speech buffer status: X.Xs / 22.0s (hellos target)
-[thymia_analyzer] Speech buffer status: X.Xs / 44.0s (apollo target)
+[THYMIA_PHASE] Mood phase complete (30s collected)
+[THYMIA_ANALYSIS_START] Starting Hellos analysis (30s mood)
+[THYMIA_PHASE] Reading phase complete (60s total collected)
+[THYMIA_ANALYSIS_START] Starting Apollo analysis (60s total: 30s mood + 30s reading)
 ```
 
 **API Results**:
 ```
-[HELLOS COMPLETE] Results: {stress: X%, distress: Y%, ...}
-[APOLLO COMPLETE] Results: {depression: X%, anxiety: Y%, ...}
+[UNIFIED_POLLER] Hellos API FAILED: ERR_RECORDING_TOO_SHORT - Recording supplied is too short
+[THYMIA_HELLOS_DONE] stress=X%, distress=Y%, burnout=Z%
+[THYMIA_APOLLO_DONE] depression=X%, anxiety=Y%
 ```
 
-**Errors**:
+**Announcement Triggers**:
 ```
-[THYMIA_ERROR] Error message here
-```
-
-### Extract Full Session Timeline
-
-```bash
-# Get complete timeline for channel
-CHANNEL="agora_XXXXX"  # Replace with actual channel
-sudo docker exec ten_agent_dev bash -c "grep '\[$CHANNEL\]' /tmp/task_run.log | grep -E 'THYMIA|HELLOS|APOLLO|Phase'" | less
+[THYMIA_TRIGGER] Sending Hellos announcement to LLM
+[THYMIA_TRIGGER_OK] Hellos announcement sent
+[Agent] Received text_data hint: 'Wellness analysis complete...'
 ```
 
 ---
 
-## 🚨 Last Test Session (2025-11-10 08:14)
+## ⏱️ Expected Timeline for Successful Session
 
-**Status**: ❌ FAILED - Deque bug incomplete
+### DEMO_DUAL Mode (Hellos + Apollo)
 
-**Session**:
-- Channel: `agora_g3qhjr`
-- Graph: `flux_apollo_cartesia_heygen`
-- Start: 08:14:03 UTC
-- End: 08:31:56 UTC (SIGKILL after errors)
-
-**Error**:
 ```
-AttributeError: 'list' object has no attribute 'popleft'
-File extension.py, line 93, in add_frame
-    self.circular_buffer.popleft()
+00:00 - Session starts, user joins
+00:05 - User provides name, DOB, sex → set_user_info called
+00:10 - LLM asks about day/feelings (mood phase begins)
+00:40 - Mood phase complete (30s audio captured)
+00:40 - Hellos API starts (analyzing 30s mood audio)
+00:45 - LLM asks user to read text (reading phase begins)
+01:00 - Hellos API completes (~20s processing)
+01:00 - [SYSTEM ALERT] sent to LLM (if Hellos succeeded)
+01:05 - LLM calls get_wellness_metrics, announces 5 wellness metrics
+01:15 - Reading phase complete (60s total audio captured)
+01:15 - Apollo API starts (analyzing 30s mood + 30s reading)
+01:35 - Apollo API completes (~20s processing)
+01:35 - [SYSTEM ALERT] sent to LLM
+01:40 - LLM calls get_wellness_metrics, announces depression/anxiety
+01:45 - Session complete
 ```
 
-**Root Cause**: Deque fix incomplete - Line 146 resets buffer to `list` instead of `deque`
+**Key Timings**:
+- Mood audio: 30 seconds
+- Reading audio: 30 seconds (60s total from start)
+- Hellos processing: ~15-25 seconds
+- Apollo processing: ~15-25 seconds
+- Total session: ~105 seconds (1:45)
+
+### Failure Cases
+
+**Hellos Fails (ERR_RECORDING_TOO_SHORT)**:
+```
+01:00 - Hellos API fails
+01:00 - NO announcement sent (skipped because hellos_success=False)
+01:35 - Apollo completes
+01:35 - [SYSTEM ALERT] sent for Apollo only
+01:40 - LLM calls get_wellness_metrics
+01:40 - Tool returns status="partial" (only Apollo available)
+01:41 - LLM announces: "Wellness metrics unavailable, but depression: X%, anxiety: Y%"
+```
 
 ---
 
-## 🐛 CRITICAL BUG: Incomplete Deque Fix
+## 🔧 TTS Announcement Fix (2025-11-10)
 
-### The Problem
+### Problem: Announcements Not Spoken
 
-**Commit `44b505ce1`** fixed line 60 but missed line 146:
+**Symptom**: `text_data` hints reached LLM and LLM responded, but response was not spoken via TTS.
 
+**Root Cause**: TTS rejected announcements with error:
+```
+[tts] Received a message for a finished request_id 'tts-request-1' with text_input_end=False
+```
+
+**Why**: TTS request_id is based on `turn_id`:
 ```python
-# Line 60 - ✅ FIXED
-self.circular_buffer = deque()
-
-# Line 146 - ❌ STILL BROKEN
-self.circular_buffer = [pcm_data]  # Should be deque([pcm_data])
+request_id = f"tts-request-{self.turn_id}"
 ```
 
-**When line 146 executes** (buffer reset during speech), it replaces the deque with a list. Then line 93 tries `popleft()` on a list → crash.
+But `turn_id` only incremented on **user ASR** (line 96), not on `text_data`. So announcements reused old, already-finished request_ids → TTS rejected them.
 
-### The Fix Needed
+### The Fix
 
+**File**: `main_python/extension.py:128-134`
+
+Made `text_data` behave **exactly like ASR**:
 ```python
-# Line 146 - Change from:
-self.circular_buffer = [pcm_data]
+async def on_data(self, ten_env: AsyncTenEnv, data: Data):
+    # Handle text_data exactly like ASR: interrupt ongoing speech, increment turn, queue to LLM
+    if data.get_name() == "text_data":
+        await self._interrupt()  # Stop ongoing TTS/LLM, just like ASR does
+        self.turn_id += 1
+        ten_env.log_info(f"[MainControlExtension] text_data received, interrupted and turn_id incremented to {self.turn_id}")
 
-# To:
-self.circular_buffer = deque([pcm_data])
+    await self.agent.on_data(data)
 ```
+
+**Result**:
+- ✅ Announcements get fresh TTS request_id → TTS accepts them
+- ✅ Announcements interrupt ongoing agent speech (natural behavior)
+- ✅ User can interrupt announcement responses (platform handles naturally)
+- ✅ `text_data` behaves **identically** to if user had spoken the text via ASR
+
+### Conditional Hellos Announcement
+
+**File**: `thymia_analyzer_python/extension.py:1786-1803`
+
+**Problem**: Hellos announcement said "Wellness metrics ready" even when Hellos API failed.
+
+**Fix**: Skip announcement entirely if `hellos_success=False`:
+```python
+async def _trigger_hellos_announcement(self, ten_env: AsyncTenEnv) -> bool:
+    if self.hellos_success:
+        hint_text = "[SYSTEM ALERT] Wellness metrics ready. IMMEDIATELY call get_wellness_metrics..."
+        # Send announcement
+        return True
+    else:
+        # Hellos failed - skip announcement entirely
+        ten_env.log_info("[THYMIA_TRIGGER] Skipping Hellos announcement - API failed")
+        return False
+```
+
+**Result**: LLM only receives "ready" announcements when data is actually available.
 
 ---
 
-## ⚠️ Python Code Changes Require Service Restart
+## 🚨 Current Status
 
-### Critical Documentation Gap Found
+**State**: ✅ FIXED - Ready for full testing
 
-**Issue**: Documentation mentions Python reloads on restart (AI_working_with_ten.md:132) but doesn't emphasize this enough.
+**Changes Made** (2025-11-10):
+1. ✅ Restored `text_data` handler in `agent.py`
+2. ✅ Updated `min_speech_duration`: 22s → 30s
+3. ✅ Added retry limits (3 max) and 90s timeout
+4. ✅ Fixed TTS rejection - `turn_id` now increments for text_data
+5. ✅ text_data now behaves exactly like ASR (interrupts, fresh request_id)
+6. ✅ Conditional Hellos announcement (skip if API failed)
+7. ✅ Tested: PINEAPPLE test passed (announcement interrupted agent, was spoken)
 
-**The Rule**:
-1. Python extension code is loaded into memory when worker starts
-2. Code changes on disk are NOT picked up by running workers
-3. **MUST restart services after any Python code changes**
+**Files Modified**:
+- `main_python/extension.py` - text_data interrupt + turn_id increment
+- `main_python/agent/agent.py` - Added text_data handling
+- `tenapp/property.json` - Updated min_speech_duration (6 graphs)
+- `thymia_analyzer_python/extension.py` - Conditional announcements, error handling
 
-**After Making Python Changes**:
-```bash
-# Nuclear restart to load new code
-sudo docker exec ten_agent_dev bash -c "pkill -9 -f 'bin/api'; pkill -9 node; pkill -9 bun"
-sudo docker exec ten_agent_dev bash -c "rm -f /app/playground/.next/dev/lock"
-sudo docker exec -d ten_agent_dev bash -c \
-  "cd /app/agents/examples/voice-assistant-advanced && \
-   task run > /tmp/task_run.log 2>&1"
-sleep 12
-```
+**Test Results**:
+- ✅ text_data reaches agent
+- ✅ LLM receives and responds to announcements
+- ✅ TTS accepts and speaks announcements
+- ✅ User can interrupt announcements naturally
+- ⏳ Full Thymia flow test pending
 
-### What Triggers Automatic Reload
-
-| Change Type | Container Restart | Service Restart | No Restart |
-|-------------|------------------|-----------------|------------|
-| **Python code (.py)** | ✅ Yes | ✅ Yes | ❌ No |
-| **Property.json** | ❌ No | ❌ No | ✅ Yes (runtime copy) |
-| **Graph config** | ❌ No | ✅ Yes | ❌ No |
-| **Go server** | ❌ No | ✅ Yes | ❌ No |
-
-**Key Point**: Python extensions are **NOT** hot-reloaded. Always restart after code changes.
-
----
-
-## 📋 Documentation Updates Needed
-
-### AI_working_with_ten.md - Add Warning Box
-
-After line 132 (Python reload mention), add:
-
-```markdown
-### ⚠️ CRITICAL: Python Code Changes
-
-**Python extensions are NOT hot-reloaded!**
-
-After modifying any Python extension code:
-1. ✅ **MUST restart services** (use nuclear restart)
-2. ❌ **Changes will NOT be picked up** by running workers
-3. ⚠️ Old code stays in memory until process exits
-
-**Quick Check - Is My Code Running?**
-```bash
-# Find when worker started
-ps aux | grep "bin/api" | grep -v grep
-
-# Compare to your last git commit
-git log -1 --format="%ai"
-
-# If commit is AFTER worker start → restart needed!
-```
-```
-
-### AI_working_with_ten_compact.md - Add Section
-
-```markdown
-## Python Code Changes
-
-⚠️ **ALWAYS restart after Python changes**
-
-```bash
-# After editing any .py file in extensions:
-sudo docker exec ten_agent_dev bash -c "pkill -9 -f 'bin/api'"
-sudo docker exec -d ten_agent_dev bash -c \
-  "cd /app/agents/examples/voice-assistant-advanced && \
-   task run > /tmp/task_run.log 2>&1"
-```
-
-Python extensions are loaded at worker startup. Changes on disk won't be picked up until restart.
-```
+**Ready to Test**:
+- Services restarted with all fixes
+- Run full Thymia session
+- Expected: Announcements spoken at ~1:00 (Hellos) and ~1:35 (Apollo)
+- Monitor for proper interrupt behavior
 
 ---
 
-## 🔧 Immediate Actions
+## 🔧 Next Steps
 
-1. **Fix the deque bug** (line 146)
-2. **Restart services** to load the fix
-3. **Update documentation** with Python reload warnings
-4. **Test with new session**
-
----
-
-## 📝 Testing Checklist
-
-After fixing and restarting:
-
-- [ ] Nuclear restart completed
-- [ ] Wait 12 seconds for full startup
-- [ ] Check system health: `curl http://localhost:8080/health`
-- [ ] Verify graphs available: `curl http://localhost:8080/graphs | jq`
-- [ ] Start test session
-- [ ] Monitor logs: `sudo docker exec ten_agent_dev tail -f /tmp/task_run.log | grep THYMIA`
-- [ ] Verify no `popleft` errors
-- [ ] Confirm Hellos phase completes
-- [ ] Confirm Apollo phase triggers (if enough speech)
+1. **Restart services** to load all fixes
+2. **Monitor logs** for text_data flow:
+   ```bash
+   sudo docker exec ten_agent_dev tail -f /tmp/task_run.log | grep -E "THYMIA|text_data|Agent.*Received"
+   ```
+3. **Verify timeline**: Analysis complete → hint received → LLM calls tool → results announced (<60s total)
 
 ---
 
-*For full session history and detailed timeline, see previous status.md version or check /tmp/ten_agent/ logs*
+*For previous session history, see git log for commits on 2025-11-10*
