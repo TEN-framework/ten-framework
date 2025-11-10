@@ -60,8 +60,6 @@ class WebSocketServerConfig(BaseModel):
             )
         if self.dump_max_bytes <= 0:
             raise ValueError(f"Invalid dump_max_bytes: {self.dump_max_bytes}")
-        if self.dump_max_bytes <= 0:
-            raise ValueError(f"Invalid dump_max_bytes: {self.dump_max_bytes}")
 
     def to_str(self) -> str:
         """

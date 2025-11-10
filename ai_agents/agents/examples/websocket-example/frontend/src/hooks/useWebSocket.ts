@@ -28,13 +28,13 @@ export function useWebSocket(options: UseWebSocketOptions | string) {
   const wsManagerRef = useRef<WebSocketManager | null>(null);
   // Expose the manager through state so consumers re-render
   const [wsManagerState, setWsManagerState] = useState<WebSocketManager | null>(null);
-  const {
-    setWsConnected,
-    setError,
-    addMessage,
-    setTranscribing,
-    clearTranscribing,
-  } = useAgentStore();
+  // Select stable action references from Zustand store to avoid unnecessary re-renders
+  // Zustand action function identities are stable; using selectors prevents effect churn
+  const setWsConnected = useAgentStore((s) => s.setWsConnected);
+  const setError = useAgentStore((s) => s.setError);
+  const addMessage = useAgentStore((s) => s.addMessage);
+  const setTranscribing = useAgentStore((s) => s.setTranscribing);
+  const clearTranscribing = useAgentStore((s) => s.clearTranscribing);
 
   // Initialize WebSocket manager
   useEffect(() => {
