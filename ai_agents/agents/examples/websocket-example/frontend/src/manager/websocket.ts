@@ -120,18 +120,30 @@ export class WebSocketManager {
   }
 
   private attemptReconnect(): void {
+    if (this.isIntentionalClose) {
+      console.log("Intentional close - not reconnecting");
+      return;
+    }
+
+    // If maxReconnectAttempts is -1, retry indefinitely
     if (
-      this.isIntentionalClose ||
+      this.config.maxReconnectAttempts !== -1 &&
       this.reconnectAttempts >= this.config.maxReconnectAttempts
     ) {
-      console.log("Max reconnection attempts reached or intentional close");
+      console.log("Max reconnection attempts reached");
       return;
     }
 
     this.reconnectAttempts++;
-    console.log(
-      `Attempting to reconnect... (${this.reconnectAttempts}/${this.config.maxReconnectAttempts})`,
-    );
+    if (this.config.maxReconnectAttempts === -1) {
+      console.log(
+        `Attempting to reconnect... (attempt ${this.reconnectAttempts}, unlimited retries)`,
+      );
+    } else {
+      console.log(
+        `Attempting to reconnect... (${this.reconnectAttempts}/${this.config.maxReconnectAttempts})`,
+      );
+    }
 
     this.reconnectTimeout = setTimeout(() => {
       this.connect();

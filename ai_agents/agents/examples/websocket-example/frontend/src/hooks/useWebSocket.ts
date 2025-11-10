@@ -5,9 +5,26 @@
 
 import { WebSocketManager } from "@/manager/websocket";
 import { useAgentStore } from "@/store/agentStore";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
-export function useWebSocket(url: string) {
+interface UseWebSocketOptions {
+  url: string;
+  autoConnect?: boolean;
+  maxReconnectAttempts?: number;
+  reconnectInterval?: number;
+}
+
+export function useWebSocket(options: UseWebSocketOptions | string) {
+  // Support both object and string parameter for backwards compatibility
+  const {
+    url,
+    autoConnect = false,
+    maxReconnectAttempts,
+    reconnectInterval,
+  } = typeof options === "string"
+      ? { url: options, autoConnect: false }
+      : options;
+
   const wsManagerRef = useRef<WebSocketManager | null>(null);
   const {
     setWsConnected,
@@ -17,9 +34,14 @@ export function useWebSocket(url: string) {
     clearTranscribing,
   } = useAgentStore();
 
+  // Initialize WebSocket manager
   useEffect(() => {
-    // Create WebSocket manager
-    const wsManager = new WebSocketManager({ url });
+    // Create WebSocket manager (but don't connect yet)
+    const wsManager = new WebSocketManager({
+      url,
+      maxReconnectAttempts,
+      reconnectInterval,
+    });
     wsManagerRef.current = wsManager;
 
     // Handle connection open
@@ -98,14 +120,30 @@ export function useWebSocket(url: string) {
       setError(message.error);
     });
 
-    // Connect to WebSocket
-    wsManager.connect();
+    // Auto-connect if enabled
+    if (autoConnect) {
+      wsManager.connect();
+    }
 
     // Cleanup on unmount
     return () => {
       wsManager.disconnect();
     };
-  }, [url, setWsConnected, setError, addMessage, setTranscribing, clearTranscribing]);
+  }, [url, autoConnect, maxReconnectAttempts, reconnectInterval, setWsConnected, setError, addMessage, setTranscribing, clearTranscribing]);
 
-  return wsManagerRef.current;
+  // Manual connect function
+  const connect = useCallback(() => {
+    wsManagerRef.current?.connect();
+  }, []);
+
+  // Manual disconnect function
+  const disconnect = useCallback(() => {
+    wsManagerRef.current?.disconnect();
+  }, []);
+
+  return {
+    wsManager: wsManagerRef.current,
+    connect,
+    disconnect,
+  };
 }

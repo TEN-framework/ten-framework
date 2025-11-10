@@ -9,14 +9,32 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAudioPlayer } from "@/hooks/useAudioPlayer";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
 import { useWebSocket } from "@/hooks/useWebSocket";
+import { useAgentLifecycle } from "@/hooks/useAgentLifecycle";
 import { useAgentStore } from "@/store/agentStore";
+import { getOrGeneratePort, getWebSocketUrl } from "@/lib/portManager";
+import { useEffect, useState } from "react";
 
 export function WebSocketClient() {
-  const wsUrl =
-    process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8765";
+  const [port, setPort] = useState<number | null>(null);
+  const [initError, setInitError] = useState<string | null>(null);
+  const [hasAttemptedStart, setHasAttemptedStart] = useState(false);
 
-  // Initialize WebSocket connection
-  const wsManager = useWebSocket(wsUrl);
+  // Initialize port on mount (client-side only)
+  useEffect(() => {
+    const wsPort = getOrGeneratePort();
+    setPort(wsPort);
+  }, []);
+
+  // Agent lifecycle management
+  const { state: agentState, startAgent, isStarting, isRunning, hasError } = useAgentLifecycle();
+
+  // WebSocket connection (don't auto-connect, but allow unlimited retries)
+  const { wsManager, connect: connectWebSocket } = useWebSocket({
+    url: port ? getWebSocketUrl(port) : "ws://localhost:8765",
+    autoConnect: false,
+    maxReconnectAttempts: -1, // Unlimited retries
+    reconnectInterval: 3000, // 3 seconds between retries
+  });
 
   // Initialize audio recorder
   const { isRecording, startRecording, stopRecording, getMediaStream } =
@@ -27,6 +45,34 @@ export function WebSocketClient() {
 
   // Get store state
   const { wsConnected } = useAgentStore();
+
+  // Start agent when port is available (only once, no retries)
+  useEffect(() => {
+    // Only attempt if:
+    // 1. Port is available
+    // 2. Not already running
+    // 3. Not currently starting
+    // 4. Haven't already attempted (prevents retries on error)
+    // 5. No previous error
+    if (port && !isRunning && !isStarting && !hasAttemptedStart && !hasError) {
+      setHasAttemptedStart(true);
+      startAgent({ port })
+        .then(() => {
+          console.log(`Agent started successfully on port ${port}`);
+          // Wait a bit for the WebSocket server to be ready before connecting
+          // The agent needs time to initialize the WebSocket server extension
+          setTimeout(() => {
+            console.log(`Attempting WebSocket connection to port ${port}...`);
+            connectWebSocket();
+          }, 2000); // 2 second delay to allow server to start
+        })
+        .catch((error) => {
+          console.error("Failed to start agent:", error);
+          setInitError(error.message || "Failed to start agent");
+          // Don't retry - just show the error
+        });
+    }
+  }, [port, isRunning, isStarting, hasAttemptedStart, hasError, startAgent, connectWebSocket]);
 
   const handleStartRecording = async () => {
     await startRecording();
@@ -45,6 +91,7 @@ export function WebSocketClient() {
             <h1 className="text-3xl font-bold">WebSocket Voice Assistant</h1>
             <p className="text-sm text-muted-foreground mt-1">
               Speak to interact with your AI assistant
+              {port && ` • Port: ${port}`}
             </p>
           </div>
           <ConnectionStatus />
@@ -78,9 +125,15 @@ export function WebSocketClient() {
 
             {/* Status Text */}
             <div className="text-center text-sm text-muted-foreground">
-              {!wsConnected && "Waiting for WebSocket connection..."}
-              {wsConnected && !isRecording && "Click the microphone to start speaking"}
-              {wsConnected && isRecording && "Listening... Click to stop"}
+              {(initError || agentState.error) && (
+                <span className="text-red-500">
+                  Error: {initError || agentState.error}
+                </span>
+              )}
+              {!initError && !agentState.error && isStarting && "Starting agent..."}
+              {!initError && !agentState.error && !isStarting && !wsConnected && "Connecting to WebSocket..."}
+              {!initError && !agentState.error && wsConnected && !isRecording && "Click the microphone to start speaking"}
+              {!initError && !agentState.error && wsConnected && isRecording && "Listening... Click to stop"}
             </div>
 
             {/* Live Transcription */}

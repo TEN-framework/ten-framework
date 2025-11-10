@@ -9,7 +9,7 @@ from typing import Callable, Optional, Any
 from dataclasses import dataclass
 import websockets
 from websockets.server import WebSocketServerProtocol
-from ten.async_ten_env import AsyncTenEnv
+from ten_runtime.async_ten_env import AsyncTenEnv
 
 
 @dataclass
@@ -46,7 +46,7 @@ class WebSocketServerManager:
         self.on_audio_callback = on_audio_callback
 
         self.server = None
-        self.clients: set[WebSocketServerProtocol] = set()
+        self.current_client: Optional[WebSocketServerProtocol] = None
         self.running = False
         self._server_task: Optional[asyncio.Task] = None
 
@@ -77,12 +77,10 @@ class WebSocketServerManager:
         self.running = False
         self.ten_env.log_info("Stopping WebSocket server...")
 
-        # Close all client connections
-        if self.clients:
-            await asyncio.gather(
-                *[self._close_client(client) for client in list(self.clients)],
-                return_exceptions=True,
-            )
+        # Close client connection
+        if self.current_client:
+            await self._close_client(self.current_client)
+            self.current_client = None
 
         # Close server
         if self.server:
@@ -99,10 +97,21 @@ class WebSocketServerManager:
             websocket: WebSocket connection
         """
         client_id = f"{websocket.remote_address[0]}:{websocket.remote_address[1]}"
-        self.clients.add(websocket)
-        self.ten_env.log_info(
-            f"Client connected: {client_id} (total clients: {len(self.clients)})"
-        )
+
+        # Reject connection if one already exists
+        if self.current_client is not None:
+            self.ten_env.log_warn(
+                f"Rejecting new connection from {client_id} - only one connection allowed"
+            )
+            await self._send_error(
+                websocket,
+                "Connection rejected: server only accepts one connection at a time"
+            )
+            await websocket.close(1008, "Only one connection allowed")
+            return
+
+        self.current_client = websocket
+        self.ten_env.log_info(f"Client connected: {client_id}")
 
         try:
             async for message in websocket:
@@ -117,10 +126,9 @@ class WebSocketServerManager:
             self.ten_env.log_error(f"Error handling client {client_id}: {e}")
             await self._send_error(websocket, f"Server error: {str(e)}")
         finally:
-            self.clients.discard(websocket)
-            self.ten_env.log_info(
-                f"Client removed: {client_id} (remaining clients: {len(self.clients)})"
-            )
+            if self.current_client == websocket:
+                self.current_client = None
+            self.ten_env.log_info(f"Client removed: {client_id}")
 
     async def _process_message(
         self, message: str, websocket: WebSocketServerProtocol, client_id: str
@@ -191,32 +199,29 @@ class WebSocketServerManager:
 
     async def broadcast(self, message: dict[str, Any]) -> None:
         """
-        Broadcast message to all connected clients
+        Broadcast message to connected client
 
         Args:
             message: Message dictionary to send
         """
-        if not self.clients:
+        if not self.current_client:
             return
 
         message_str = json.dumps(message)
-        await asyncio.gather(
-            *[self._send_to_client(client, message_str) for client in self.clients],
-            return_exceptions=True,
-        )
+        await self._send_to_client(self.current_client, message_str)
 
     async def send_audio_to_clients(
         self, pcm_data: bytes, metadata: Optional[dict[str, Any]] = None
     ) -> None:
         """
-        Send audio data to all connected WebSocket clients
+        Send audio data to connected WebSocket client
 
         Args:
             pcm_data: Raw PCM audio bytes
             metadata: Optional metadata to include with the audio
         """
-        if not self.clients:
-            self.ten_env.log_debug("No clients connected, skipping audio send")
+        if not self.current_client:
+            self.ten_env.log_debug("No client connected, skipping audio send")
             return
 
         try:
@@ -229,15 +234,15 @@ class WebSocketServerManager:
             if metadata:
                 message["metadata"] = metadata
 
-            # Broadcast to all clients
+            # Send to client
             await self.broadcast(message)
 
             self.ten_env.log_debug(
-                f"Sent {len(pcm_data)} bytes of audio to {len(self.clients)} client(s)"
+                f"Sent {len(pcm_data)} bytes of audio to client"
             )
 
         except Exception as e:
-            self.ten_env.log_error(f"Error sending audio to clients: {e}")
+            self.ten_env.log_error(f"Error sending audio to client: {e}")
 
     async def send_to_client(
         self, client_id: str, message: dict[str, Any]
@@ -252,14 +257,17 @@ class WebSocketServerManager:
         Returns:
             True if sent successfully, False otherwise
         """
+        if not self.current_client:
+            self.ten_env.log_warn(f"No client connected")
+            return False
+
+        current_client_id = f"{self.current_client.remote_address[0]}:{self.current_client.remote_address[1]}"
+        if current_client_id != client_id:
+            self.ten_env.log_warn(f"Client {client_id} not found (current: {current_client_id})")
+            return False
+
         message_str = json.dumps(message)
-
-        for client in self.clients:
-            if f"{client.remote_address[0]}:{client.remote_address[1]}" == client_id:
-                return await self._send_to_client(client, message_str)
-
-        self.ten_env.log_warn(f"Client {client_id} not found")
-        return False
+        return await self._send_to_client(self.current_client, message_str)
 
     async def _send_to_client(
         self, websocket: WebSocketServerProtocol, message: str
@@ -294,5 +302,5 @@ class WebSocketServerManager:
             self.ten_env.log_error(f"Error closing client connection: {e}")
 
     def get_client_count(self) -> int:
-        """Get number of connected clients"""
-        return len(self.clients)
+        """Get number of connected clients (0 or 1)"""
+        return 1 if self.current_client else 0
