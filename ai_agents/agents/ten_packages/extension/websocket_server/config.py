@@ -15,14 +15,18 @@ class WebSocketServerConfig(BaseModel):
     host: str = Field(default="0.0.0.0", description="WebSocket server host")
 
     # Fixed audio parameters (16kHz mono 16-bit PCM)
-    sample_rate: int = Field(default=16000, description="Audio sample rate in Hz")
+    sample_rate: int = Field(
+        default=16000, description="Audio sample rate in Hz"
+    )
     channels: int = Field(default=1, description="Number of audio channels")
     bytes_per_sample: int = Field(
         default=2, description="Bytes per sample (2 for 16-bit)"
     )
 
     # Debug settings
-    dump: bool = Field(default=False, description="Enable audio dump for debugging")
+    dump: bool = Field(
+        default=False, description="Enable audio dump for debugging"
+    )
     dump_path: str = Field(
         default_factory=lambda: str(
             Path(__file__).parent / "websocket_server_dump.pcm"

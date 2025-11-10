@@ -117,10 +117,14 @@ class WebsocketServerExtension(AsyncExtension):
             if self.ws_server:
                 message = {"type": "cmd", "name": cmd_name, "data": cmd_data}
                 await self.ws_server.broadcast(message)
-                ten_env.log_debug(f"Broadcasted command {cmd_name} to WebSocket clients")
+                ten_env.log_debug(
+                    f"Broadcasted command {cmd_name} to WebSocket clients"
+                )
 
         except Exception as e:
-            ten_env.log_error(f"Error forwarding command to WebSocket clients: {e}")
+            ten_env.log_error(
+                f"Error forwarding command to WebSocket clients: {e}"
+            )
 
         # Return success
         cmd_result = CmdResult.create(StatusCode.OK, cmd)
@@ -142,12 +146,20 @@ class WebsocketServerExtension(AsyncExtension):
 
                 # Broadcast to all WebSocket clients
                 if self.ws_server:
-                    message = {"type": "data", "name": data_name, "data": data_dict}
+                    message = {
+                        "type": "data",
+                        "name": data_name,
+                        "data": data_dict,
+                    }
                     await self.ws_server.broadcast(message)
-                    ten_env.log_debug(f"Broadcasted data {data_name} to WebSocket clients")
+                    ten_env.log_debug(
+                        f"Broadcasted data {data_name} to WebSocket clients"
+                    )
 
         except Exception as e:
-            ten_env.log_error(f"Error forwarding data to WebSocket clients: {e}")
+            ten_env.log_error(
+                f"Error forwarding data to WebSocket clients: {e}"
+            )
 
     async def on_audio_frame(
         self, ten_env: AsyncTenEnv, audio_frame: AudioFrame
@@ -160,7 +172,9 @@ class WebsocketServerExtension(AsyncExtension):
         ten_env.log_debug(f"Received audio frame: {audio_frame_name}")
 
         if not self.ws_server:
-            ten_env.log_warn("WebSocket server not initialized, dropping audio frame")
+            ten_env.log_warn(
+                "WebSocket server not initialized, dropping audio frame"
+            )
             return
 
         try:
@@ -197,7 +211,9 @@ class WebsocketServerExtension(AsyncExtension):
             )
 
         except Exception as e:
-            ten_env.log_error(f"Error processing audio frame for WebSocket: {e}")
+            ten_env.log_error(
+                f"Error processing audio frame for WebSocket: {e}"
+            )
 
     async def on_video_frame(
         self, ten_env: AsyncTenEnv, video_frame: VideoFrame
@@ -233,7 +249,9 @@ class WebsocketServerExtension(AsyncExtension):
             audio_frame.set_data_fmt(AudioFrameDataFmt.INTERLEAVE)
 
             # Calculate number of samples
-            bytes_per_frame = self.config.bytes_per_sample * self.config.channels
+            bytes_per_frame = (
+                self.config.bytes_per_sample * self.config.channels
+            )
             samples_per_channel = len(audio_data.pcm_data) // bytes_per_frame
             audio_frame.set_samples_per_channel(samples_per_channel)
 

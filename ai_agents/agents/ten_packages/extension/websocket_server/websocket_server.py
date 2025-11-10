@@ -96,7 +96,9 @@ class WebSocketServerManager:
         Args:
             websocket: WebSocket connection
         """
-        client_id = f"{websocket.remote_address[0]}:{websocket.remote_address[1]}"
+        client_id = (
+            f"{websocket.remote_address[0]}:{websocket.remote_address[1]}"
+        )
 
         # Reject connection if one already exists
         if self.current_client is not None:
@@ -105,7 +107,7 @@ class WebSocketServerManager:
             )
             await self._send_error(
                 websocket,
-                "Connection rejected: server only accepts one connection at a time"
+                "Connection rejected: server only accepts one connection at a time",
             )
             await websocket.close(1008, "Only one connection allowed")
             return
@@ -148,7 +150,8 @@ class WebSocketServerManager:
             # Validate message format
             if "audio" not in data:
                 await self._send_error(
-                    websocket, 'Missing required field: "audio" with base64 data'
+                    websocket,
+                    'Missing required field: "audio" with base64 data',
                 )
                 return
 
@@ -157,7 +160,9 @@ class WebSocketServerManager:
                 audio_base64 = data["audio"]
                 pcm_data = base64.b64decode(audio_base64)
             except Exception as e:
-                await self._send_error(websocket, f"Invalid base64 audio data: {e}")
+                await self._send_error(
+                    websocket, f"Invalid base64 audio data: {e}"
+                )
                 return
 
             # Extract metadata
@@ -175,15 +180,21 @@ class WebSocketServerManager:
                     await self.on_audio_callback(audio_data)
                 except Exception as e:
                     self.ten_env.log_error(f"Error in audio callback: {e}")
-                    await self._send_error(websocket, f"Processing error: {str(e)}")
+                    await self._send_error(
+                        websocket, f"Processing error: {str(e)}"
+                    )
 
         except json.JSONDecodeError as e:
             await self._send_error(websocket, f"Invalid JSON: {e}")
         except Exception as e:
-            self.ten_env.log_error(f"Error processing message from {client_id}: {e}")
+            self.ten_env.log_error(
+                f"Error processing message from {client_id}: {e}"
+            )
             await self._send_error(websocket, f"Processing error: {str(e)}")
 
-    async def _send_error(self, websocket: WebSocketServerProtocol, error: str) -> None:
+    async def _send_error(
+        self, websocket: WebSocketServerProtocol, error: str
+    ) -> None:
         """
         Send error message to client
 
@@ -263,7 +274,9 @@ class WebSocketServerManager:
 
         current_client_id = f"{self.current_client.remote_address[0]}:{self.current_client.remote_address[1]}"
         if current_client_id != client_id:
-            self.ten_env.log_warn(f"Client {client_id} not found (current: {current_client_id})")
+            self.ten_env.log_warn(
+                f"Client {client_id} not found (current: {current_client_id})"
+            )
             return False
 
         message_str = json.dumps(message)
