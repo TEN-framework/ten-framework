@@ -15,11 +15,8 @@ export function useAudioRecorder(wsManager: WebSocketManager | null) {
   const { setRecording } = useAgentStore();
 
   const startRecording = useCallback(async () => {
-    if (isRecording || !wsManager?.isConnected()) {
-      console.warn("Cannot start recording:", {
-        isRecording,
-        wsConnected: wsManager?.isConnected(),
-      });
+    if (isRecording) {
+      console.warn("Already recording");
       return;
     }
 
@@ -28,8 +25,10 @@ export function useAudioRecorder(wsManager: WebSocketManager | null) {
       recorderRef.current = recorder;
 
       await recorder.start((audioBase64) => {
-        // Send audio to WebSocket server
-        wsManager.sendAudio(audioBase64);
+        // Only send audio to WebSocket server if connected
+        if (wsManager?.isConnected()) {
+          wsManager.sendAudio(audioBase64);
+        }
       });
 
       setIsRecording(true);

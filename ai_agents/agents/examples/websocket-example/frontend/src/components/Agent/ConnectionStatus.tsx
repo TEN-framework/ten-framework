@@ -14,16 +14,14 @@ export function ConnectionStatus() {
 
   const getStatusColor = () => {
     if (!wsConnected) return "text-red-500";
-    if (status === "connected") return "text-emerald-500";
-    if (status === "connecting") return "text-amber-500";
-    return "text-muted-foreground";
+    // When WebSocket is connected, always show green
+    return "text-emerald-500";
   };
 
   const getStatusText = () => {
     if (!wsConnected) return "Disconnected";
-    if (status === "connected") return "Connected";
-    if (status === "connecting") return "Connecting...";
-    return "Idle";
+    // When WebSocket is connected, always show "Connected"
+    return "Connected";
   };
 
   return (

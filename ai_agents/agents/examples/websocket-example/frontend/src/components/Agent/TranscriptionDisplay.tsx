@@ -14,11 +14,11 @@ export function TranscriptionDisplay() {
   const isLoading = transcribing === "Listening..." || transcribing === "";
 
   return (
-    <Card style={{ borderColor: "hsl(var(--color-primary) / 0.2)" }}>
+    <Card style={{ borderColor: "hsl(var(--primary) / 0.2)" }}>
       <CardContent className="p-4">
         {isLoading ? (
           <div className="flex items-center gap-3">
-            <div className="rounded-full p-2" style={{ backgroundColor: "hsl(var(--color-primary) / 0.1)" }}>
+            <div className="rounded-full p-2" style={{ backgroundColor: "hsl(var(--primary) / 0.1)" }}>
               <Mic2 className="h-4 w-4 text-primary animate-pulse" />
             </div>
             <div className="flex-1 space-y-2">

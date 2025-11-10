@@ -49,6 +49,19 @@ export function WebSocketClient() {
   // Get store state
   const { wsConnected } = useAgentStore();
 
+  // Auto-start recording on mount
+  useEffect(() => {
+    const autoStart = async () => {
+      try {
+        await startRecording();
+      } catch (err) {
+        console.error("Failed to auto-start recording:", err);
+      }
+    };
+    autoStart();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run on mount
+
   // Handle start agent
   const handleStartAgent = async () => {
     if (!port) {
@@ -140,7 +153,7 @@ export function WebSocketClient() {
                       <Button
                         onClick={handleStartAgent}
                         disabled={!port}
-                        size="lg"
+                        size="sm"
                         className="gap-2"
                       >
                         <Play className="h-4 w-4" />
@@ -148,7 +161,7 @@ export function WebSocketClient() {
                       </Button>
                     )}
                     {isStarting && (
-                      <Button disabled size="lg" className="gap-2">
+                      <Button disabled size="sm" className="gap-2">
                         <Loader2 className="h-4 w-4 animate-spin" />
                         Starting...
                       </Button>
@@ -157,7 +170,7 @@ export function WebSocketClient() {
                       <Button
                         onClick={handleStopAgent}
                         variant="destructive"
-                        size="lg"
+                        size="sm"
                         className="gap-2"
                       >
                         <Square className="h-4 w-4" />
@@ -166,7 +179,6 @@ export function WebSocketClient() {
                     )}
                     <AudioControls
                       isRecording={isRecording}
-                      isDisabled={!wsConnected}
                       onStartRecording={handleStartRecording}
                       onStopRecording={handleStopRecording}
                     />
@@ -184,16 +196,16 @@ export function WebSocketClient() {
                   )}
 
                   {/* Audio Visualizer */}
-              <div className="relative rounded-xl bg-muted/30 overflow-hidden p-0 ring-1 ring-border/40 border border-border/30" style={{height: 48}}>
-                <AudioVisualizer
-                  stream={getMediaStream()}
-                  isActive={isRecording}
-                  barCount={40}
-                  barWidth={4}
-                  barGap={2}
-                  height={48}
-                />
-              </div>
+                  <div className="relative rounded-xl bg-muted/30 overflow-hidden p-0 ring-1 ring-border/40 border border-border/30" style={{ height: 48 }}>
+                    <AudioVisualizer
+                      stream={getMediaStream()}
+                      isActive={isRecording}
+                      barCount={40}
+                      barWidth={4}
+                      barGap={2}
+                      height={48}
+                    />
+                  </div>
 
                   {/* Status Text */}
                   <div className="text-center">
@@ -209,8 +221,8 @@ export function WebSocketClient() {
                       </p>
                     )}
                     {isRunning && wsConnected && isRecording && (
-                      <div className="flex items-center justify-center gap-2 text-sm text-destructive">
-                        <div className="h-2 w-2 rounded-full bg-destructive animate-pulse" />
+                      <div className="flex items-center justify-center gap-2 text-sm text-white">
+                        <div className="h-2 w-2 rounded-full bg-white animate-pulse" />
                         <span>Listening... Click to stop</span>
                       </div>
                     )}
