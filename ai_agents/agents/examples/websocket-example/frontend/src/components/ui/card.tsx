@@ -9,10 +9,18 @@ const Card = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "rounded-xl border bg-card text-card-foreground shadow",
+      // Minimal modern surface: bring back subtle border for clarity
+      "rounded-2xl text-card-foreground ring-1 border shadow-sm backdrop-blur-sm",
       className,
     )}
     {...props}
+    style={{
+      // Avoid `/xx` utilities; use explicit HSL alpha values
+      backgroundColor: "hsl(var(--color-card) / 0.6)",
+      borderColor: "hsl(var(--color-border) / 0.3)",
+      // Tailwind ring uses --tw-ring-color variable; we can approximate with box shadow
+      boxShadow: "0 0 0 1px hsl(var(--color-border) / 0.4), var(--tw-shadow, 0 0 #0000)",
+    }}
   />
 ));
 Card.displayName = "Card";
