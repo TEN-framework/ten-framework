@@ -219,7 +219,7 @@ docker exec -d ten_agent_dev bash -c \
   "cd /app/playground && npm run dev > /tmp/playground.log 2>&1"
 ```
 
-> **For complete deployment guide** (nginx setup, production deployment, troubleshooting), see [AI_working_with_ten.md - Running Playground Client](./AI_working_with_ten.md#running-playground-client)
+> **For complete deployment guide** (nginx setup, production deployment, troubleshooting), see full doc.
 
 ---
 
@@ -307,9 +307,7 @@ Signal handlers (`signal.signal()`, `atexit.register()`) only work in main threa
 - `on_start()` - Initialize resources
 - `on_stop()` - Cleanup resources (always called before termination)
 
-> **For detailed information**, see [AI_working_with_ten.md](./AI_working_with_ten.md):
-> - [Server Architecture & Property Injection](./AI_working_with_ten.md#server-architecture--property-injection)
-> - [Signal Handlers (NEVER USE!)](./AI_working_with_ten.md#signal-handlers-never-use)
+> **For detailed information** on server architecture and signal handlers, see full doc.
 
 ---
 
@@ -723,4 +721,4 @@ sudo docker exec ten_agent_dev bash -c \
   ten_packages/extension"
 ```
 
-> **For full pre-commit checklist and commit message rules**, see [AI_working_with_ten.md](./AI_working_with_ten.md#pre-commit-checks)
+> **For full pre-commit checklist and commit message rules**, see full doc.

@@ -3,7 +3,28 @@
 **Purpose**: Complete onboarding guide for developing with TEN Framework v0.11+
 **Last Updated**: 2025-11-05
 
-> **Quick Reference**: See [AI_working_with_ten_compact.md](./AI_working_with_ten_compact.md) for essential commands and common workflows.
+---
+
+## 📚 About This Documentation
+
+This is the **COMPLETE REFERENCE** with detailed explanations, troubleshooting guidance, and step-by-step workflows.
+
+**Two Documentation Files**:
+
+1. **AI_working_with_ten.md** (this file - 2468 lines)
+   - Full explanations of how things work
+   - Comprehensive troubleshooting with root cause analysis
+   - Step-by-step guides for creating extensions
+   - Architecture details and best practices
+   - **Use when**: You're learning TEN Framework OR need to understand "why"
+
+2. **AI_working_with_ten_compact.md** (726 lines)
+   - Copy-paste commands only
+   - Quick syntax reference
+   - Minimal explanation
+   - **Use when**: You know what to do, just need the exact command
+
+**Recommendation**: Read this full doc once, then bookmark compact doc for daily use.
 
 ---
 
@@ -118,35 +139,27 @@ YOUR_API_KEY=...
 
 #### ✅ Works - Two Options:
 
-**Option 1: Source .env and restart server** (Fastest - no container restart):
-```bash
-# Stop current server
-docker exec ten_agent_dev bash -c "pkill -9 -f 'bin/api'"
-
-# Source .env and restart server (MUST be in ONE command!)
-docker exec -d ten_agent_dev bash -c \
-  "set -a && source /app/.env && set +a && \
-   cd /app/server && ./bin/api -tenapp_dir=/app/agents/examples/voice-assistant-advanced/tenapp > /tmp/task_run.log 2>&1"
-```
-
-**Why one command?** Sourcing .env in one shell session and running the server in another doesn't work - the environment variables won't carry over.
-
-**Option 2: Restart Docker container** (Slower but guaranteed):
+**Option 1: Restart Docker container** (Recommended - guaranteed to work):
 ```bash
 cd /home/ubuntu/ten-framework/ai_agents
 docker compose down
 docker compose up -d
 
-# Then reinstall Python deps and restart server
+# Wait for container to start
+sleep 3
+
+# Reinstall Python deps (always needed after container restart)
 docker exec ten_agent_dev bash -c \
   "cd /app/agents/examples/voice-assistant-advanced/tenapp && \
    bash scripts/install_python_deps.sh"
 
+# Start services with task run
 docker exec -d ten_agent_dev bash -c \
-  "cd /app/server && ./bin/api -tenapp_dir=/app/agents/examples/voice-assistant-advanced/tenapp > /tmp/task_run.log 2>&1"
+  "cd /app/agents/examples/voice-assistant-advanced && \
+   task run > /tmp/task_run.log 2>&1"
 ```
 
-**Option 3: Hardcode in property.json** (testing only, not recommended):
+**Option 2: Hardcode in property.json** (testing only, not recommended):
 ```json
 {
   "property": {
@@ -154,6 +167,8 @@ docker exec -d ten_agent_dev bash -c \
   }
 }
 ```
+
+⚠️ **IMPORTANT**: Environment variables are loaded when the container starts. `task run` automatically uses the correct environment if the container was started with the right .env file. Never try to source .env manually - just restart the container.
 
 ---
 
@@ -221,20 +236,6 @@ docker exec -d ten_agent_dev bash -c \
 - `./bin/main` directly will fail with Python import errors
 - `task` commands are documented in Taskfile.yaml
 
-### Running Services (Legacy/Alternative Methods)
-
-**Inside container, start services:**
-```bash
-cd /app/agents/examples/voice-assistant
-task run > /tmp/task_run.log 2>&1 &
-```
-
-**Or from outside (detached):**
-```bash
-docker exec -d container_name bash -c \
-  "cd /app/agents/examples/voice-assistant && task run > /tmp/task_run.log 2>&1"
-```
-
 ### Health Checks
 
 **API server:**
@@ -256,6 +257,39 @@ curl -s http://localhost:8080/graphs | jq '.data[].name'
 # Other ports depend on your setup
 netstat -tlnp | grep -E ":(8080|3000)"
 ```
+
+### Quick System Health Diagnostic
+
+**Run this ONE command to check everything**:
+
+```bash
+echo "=== API Server ===" && \
+curl -s http://localhost:8080/health && \
+echo -e "\n\n=== Graphs Count ===" && \
+curl -s http://localhost:8080/graphs | jq '.data | length' && \
+echo -e "\n=== Playground ===" && \
+curl -s -o /dev/null -w 'HTTP %{http_code}\n' http://localhost:3000 && \
+echo -e "\n=== Running Processes ===" && \
+sudo docker exec ten_agent_dev bash -c "ps aux | grep -E 'bin/api|next.*dev|bun.*dev' | grep -v grep | wc -l" && \
+echo " processes running (expect 2-3)"
+```
+
+**Expected Output**:
+```
+=== API Server ===
+{"code":"0","data":null,"msg":"ok"}
+
+=== Graphs Count ===
+12
+
+=== Playground ===
+HTTP 200
+
+=== Running Processes ===
+3 processes running (expect 2-3)
+```
+
+**If Any Check Fails**, see [Nuclear Option](#nuclear-option-complete-system-reset) or [Common Issues](#common-issues) section.
 
 ### Installing Python Dependencies
 
@@ -333,24 +367,16 @@ curl -s http://localhost:3000         # Playground
 
 **This is the easiest method for development and testing.**
 
-#### Option 2: Manual Startup (For Custom Configuration)
+#### Option 2: Custom Configuration
 
-Start components separately if you need custom playground configuration or different port:
+⚠️ **ALWAYS use `task run`** - never start services manually with `./bin/api`.
 
-```bash
-# 1. Start agent server only
-docker exec -d ten_agent_dev bash -c \
-  "cd /app/server && \
-   ./bin/api -tenapp_dir=/app/agents/examples/voice-assistant-advanced/tenapp > /tmp/api.log 2>&1"
+If you need custom ports or configuration:
+- Edit `/app/agents/examples/voice-assistant-advanced/Taskfile.yml`
+- Modify port settings or add environment variables there
+- Then run `task run` as usual
 
-# 2. Start playground separately (development mode)
-docker exec -d ten_agent_dev bash -c \
-  "cd /app/playground && npm run dev > /tmp/playground.log 2>&1"
-
-# Or on custom port
-docker exec -d ten_agent_dev bash -c \
-  "cd /app/playground && PORT=3001 npm run dev > /tmp/playground.log 2>&1"
-```
+Running `./bin/api` directly will fail with Python import errors because PYTHONPATH won't be set correctly.
 
 ### Building for Production
 
@@ -1390,9 +1416,11 @@ Advanced voice assistant configurations with specialized features.
 
 ## Running
 
+⚠️ **ALWAYS use `task run`** - never run `./bin/api` directly.
+
 ```bash
-cd /app/server
-./bin/api -tenapp_dir=/app/agents/examples/voice-assistant-advanced/tenapp
+cd /app/agents/examples/voice-assistant-advanced
+task run
 ```
 
 ## Testing
@@ -1407,36 +1435,28 @@ EOF
 
 ### Running Different Examples
 
-The API server can only load one example at a time via the `-tenapp_dir` flag.
+The API server can only load one example at a time. To switch examples, use `task run` from the desired example directory.
 
 #### In Docker Container
 
-**Option 1: Use existing container**
+**To switch to a different example:**
 ```bash
-# Enter container
-docker exec -it container_name bash
+# Stop current services
+docker exec ten_agent_dev bash -c "pkill -9 -f 'bin/api'; pkill -9 node; pkill -9 bun"
 
-# Kill existing API server
-pkill -9 -f "bin/api"
+# Start the desired example (e.g., voice-assistant-advanced)
+docker exec -d ten_agent_dev bash -c \
+  "cd /app/agents/examples/voice-assistant-advanced && \
+   task run > /tmp/task_run.log 2>&1"
 
-# Start server pointing to advanced example
-cd /app/server
-./bin/api -tenapp_dir=/app/agents/examples/voice-assistant-advanced/tenapp > /tmp/api_advanced.log 2>&1 &
+# Wait for startup
+sleep 10
 
-# Verify graphs loaded
-curl http://localhost:8080/graphs | python3 -m json.tool
+# Verify correct example loaded
+curl -s http://localhost:8080/graphs | python3 -m json.tool
 ```
 
-**Option 2: Copy files and restart server**
-```bash
-# From host, copy updated files to container
-docker cp voice-assistant-advanced/tenapp/manifest.json container_name:/app/agents/examples/voice-assistant-advanced/tenapp/
-docker cp voice-assistant-advanced/tenapp/property.json container_name:/app/agents/examples/voice-assistant-advanced/tenapp/
-
-# Restart API server inside container
-docker exec container_name bash -c "pkill -9 -f 'bin/api'"
-docker exec -d container_name bash -c "cd /app/server && ./bin/api -tenapp_dir=/app/agents/examples/voice-assistant-advanced/tenapp > /tmp/api_advanced.log 2>&1"
-```
+⚠️ **IMPORTANT**: Always use `task run` from the example directory. Never use `./bin/api` directly as it will fail with incorrect PYTHONPATH.
 
 #### Using Docker Build (Production)
 
@@ -1536,18 +1556,28 @@ docker exec container tail -20 /tmp/api_advanced.log | grep tenappDir
 
 **Solutions:**
 ```bash
-# Option 1: Source .env and start server (faster)
-docker exec -d ten_agent_dev bash -c \
-  "set -a && source /app/.env && set +a && \
-   cd /app/server && ./bin/api -tenapp_dir=/app/agents/examples/voice-assistant-advanced/tenapp > /tmp/task_run.log 2>&1"
-
-# Option 2: Restart container (slower but guaranteed)
+# Option 1: Restart container (recommended - guaranteed to work)
 cd /home/ubuntu/ten-framework/ai_agents
 docker compose down && docker compose up -d
 
-# Option 3: Hardcode for testing (temporary, not recommended)
+# Wait for container to start
+sleep 3
+
+# Reinstall Python deps
+docker exec ten_agent_dev bash -c \
+  "cd /app/agents/examples/voice-assistant-advanced/tenapp && \
+   bash scripts/install_python_deps.sh"
+
+# Start services with task run
+docker exec -d ten_agent_dev bash -c \
+  "cd /app/agents/examples/voice-assistant-advanced && \
+   task run > /tmp/task_run.log 2>&1"
+
+# Option 2: Hardcode for testing (temporary, not recommended)
 # Edit property.json: "api_key": "actual_key_here"
 ```
+
+⚠️ **IMPORTANT**: Never try to source .env manually. Environment variables are loaded at container startup. Always use `task run` to start services.
 
 **Remember**: Only `/home/ubuntu/ten-framework/ai_agents/.env` is used. All other .env files have been removed.
 
@@ -1641,8 +1671,10 @@ docker exec ten_agent_dev bash -c "cd /app && task test-extension EXTENSION=agen
    # 2. Verify symlinks were created
    ls -la tenapp/ten_packages/extension/ | grep your_extension
 
-   # 3. Start server with correct tenapp_dir
-   ./bin/api -tenapp_dir=/path/to/your/example/tenapp
+   # 3. Start server with task run
+   cd /app/agents/examples/your-example
+   task run > /tmp/task_run.log 2>&1 &
+   sleep 10
 
    # 4. Check graphs loaded
    curl http://localhost:8080/graphs | jq '.data[].name'
@@ -2030,6 +2062,96 @@ sudo netstat -tlnp | grep :453
 
 ## Common Issues
 
+### Nuclear Option: Complete System Reset
+
+**When to use**:
+- Multiple services not responding
+- Conflicting processes running
+- Lock file errors
+- "No graphs" issue persists
+- After major configuration changes
+- When you're not sure what's broken
+
+⚠️ **This should be your FIRST troubleshooting step, not your last.**
+
+**The Nuclear Command** (copy-paste this):
+
+```bash
+# Step 1: Kill EVERYTHING
+sudo docker exec ten_agent_dev bash -c "pkill -9 -f 'bin/api'; pkill -9 node; pkill -9 bun"
+rm -f /tmp/cloudflare_tunnel.log
+sleep 2
+
+# Step 2: Clean up lock files
+sudo docker exec ten_agent_dev bash -c "rm -f /app/playground/.next/dev/lock"
+
+# Step 3: Start everything fresh
+sudo docker exec -d ten_agent_dev bash -c \
+  "cd /app/agents/examples/voice-assistant-advanced && \
+   task run > /tmp/task_run.log 2>&1"
+
+# Step 4: Wait for startup (DO NOT SKIP THIS)
+echo "Waiting for services to start..."
+sleep 12
+
+# Step 5: Verify everything is working
+echo "=== API Health ===" && curl -s http://localhost:8080/health
+echo -e "\n=== Graphs ===" && curl -s http://localhost:8080/graphs | jq '.data | length'
+echo -e "\n=== Playground ===" && curl -s -o /dev/null -w 'HTTP %{http_code}\n' http://localhost:3000
+```
+
+**Expected Result**: All three checks pass (health OK, graphs > 0, playground 200)
+
+**If Still Failing**: Container restart required
+```bash
+cd /home/ubuntu/ten-framework/ai_agents
+docker compose down && docker compose up -d
+# Then run nuclear command again
+```
+
+**Success Indicators**:
+- ✅ API health returns `{"code":"0"}`
+- ✅ Graphs count > 0
+- ✅ Playground returns HTTP 200
+- ✅ Can see graphs in dropdown at your URL
+
+---
+
+### Issue: Playground Shows "No Graphs Available"
+
+**Symptoms**:
+- Playground loads successfully
+- Graph dropdown is empty or shows "No graphs available"
+- `/graphs` API endpoint returns correct data when tested with curl
+
+**Cause**: Frontend cached the `/graphs` API response before server was ready
+
+**Diagnosis**:
+```bash
+# 1. Verify API server has graphs
+curl -s http://localhost:8080/graphs | jq '.data | length'
+# If > 0, the problem is frontend cache
+
+# 2. Check frontend is running
+curl -s -o /dev/null -w '%{http_code}' http://localhost:3000
+# Should return 200
+```
+
+**Solution - Use Nuclear Restart** (see above section)
+
+**Why This Happens**:
+- Playground starts before API server is ready
+- Makes /graphs request, gets error or empty response
+- Caches the bad response
+- Server starts correctly later, but frontend still shows cached empty list
+
+**Prevention**:
+- Always start services together with `task run`
+- Wait 10-12 seconds after startup before accessing frontend
+- Use the nuclear restart procedure which ensures correct startup order
+
+---
+
 ### Issue 1: ValueError: signal only works in main thread
 
 **Symptoms**:
@@ -2090,21 +2212,23 @@ Environment variable MY_API_KEY is not found, using default value .
 
 **Cause**: Container loaded environment at startup, edits to `.env` not picked up
 
-**Solution - Two Options**:
-
-**Option 1: Source .env and restart server** (faster):
-```bash
-docker exec ten_agent_dev bash -c "pkill -9 -f 'bin/api'"
-docker exec -d ten_agent_dev bash -c \
-  "set -a && source /app/.env && set +a && \
-   cd /app/server && ./bin/api -tenapp_dir=/app/agents/examples/voice-assistant-advanced/tenapp > /tmp/task_run.log 2>&1"
-```
-
-**Option 2: Restart container** (guaranteed):
+**Solution**:
 ```bash
 cd /home/ubuntu/ten-framework/ai_agents
-docker compose down
-docker compose up -d
+docker compose down && docker compose up -d
+
+# Wait for container
+sleep 3
+
+# Reinstall Python deps
+docker exec ten_agent_dev bash -c \
+  "cd /app/agents/examples/voice-assistant-advanced/tenapp && \
+   bash scripts/install_python_deps.sh"
+
+# Start services
+docker exec -d ten_agent_dev bash -c \
+  "cd /app/agents/examples/voice-assistant-advanced && \
+   task run > /tmp/task_run.log 2>&1"
 ```
 
 **Remember**: Only `/home/ubuntu/ten-framework/ai_agents/.env` is used. All other .env files have been removed.
