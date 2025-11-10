@@ -131,9 +131,6 @@
       "path": "../../../ten_packages/extension/tencent_tts_python"
     },
     {
-      "path": "../../../ten_packages/extension/message_collector2"
-    },
-    {
       "path": "../../../ten_packages/extension/weatherapi_tool_python"
     }
   ],

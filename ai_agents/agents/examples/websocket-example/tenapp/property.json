@@ -76,13 +76,6 @@
             },
             {
               "type": "extension",
-              "name": "message_collector",
-              "addon": "message_collector2",
-              "extension_group": "transcriber",
-              "property": {}
-            },
-            {
-              "type": "extension",
               "name": "weatherapi_tool_python",
               "addon": "weatherapi_tool_python",
               "extension_group": "default",
@@ -133,16 +126,6 @@
                   "source": [
                     {
                       "extension": "tts"
-                    }
-                  ]
-                }
-              ],
-              "data": [
-                {
-                  "name": "data",
-                  "source": [
-                    {
-                      "extension": "message_collector"
                     }
                   ]
                 }

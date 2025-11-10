@@ -6,16 +6,15 @@ A comprehensive voice assistant with real-time conversation capabilities using W
 
 - **WebSocket-Based Real-time Voice Interaction**: Bidirectional audio streaming over WebSocket with complete STT → LLM → TTS processing
 - **Base64 Audio Encoding**: Simple JSON message format for audio transmission
-- **Multi-Client Support**: Multiple WebSocket clients can connect simultaneously
-- **Automatic Response Broadcasting**: Text and audio responses are automatically sent to all connected clients
 
 ## Architecture
 
 This example demonstrates a WebSocket-based voice assistant where:
 
-1. **Audio Input**: Clients send base64-encoded PCM audio via WebSocket → STT → LLM → TTS
+1. **Audio Input**: Clients send base64-encoded PCM audio via WebSocket → STT → main_control → LLM → TTS
 2. **Audio Output**: TTS audio is sent back to clients as base64-encoded JSON messages
-3. **Data Messages**: ASR results, LLM responses, and other data are automatically broadcast to all clients
+3. **Data Messages**: Data messages (e.g., `asr_result`, `text_data`, `llm_response`) can be forwarded to clients if connected to websocket_server in the graph configuration
+4. **Command Messages**: System commands (e.g., `tool_register`) are forwarded to clients as JSON messages if websocket_server receives them
 
 ```
 ┌─────────────────┐
@@ -27,8 +26,9 @@ This example demonstrates a WebSocket-based voice assistant where:
 │ websocket_server├────────────▶│ STT ├─────────────▶│ main_control │
 └────────┬────────┘              └─────┘              └──────┬───────┘
          │                                                    │
-         │ {"type": "audio|data"}                            ▼
-         ▲                                                 ┌─────┐
+         │ {"type": "audio|data|cmd"}                        │
+         │                                                    ▼
+         │                                                 ┌─────┐
          │                                                 │ LLM │
          │                                                 └──┬──┘
          │                                                    │
@@ -95,24 +95,46 @@ cd agents/examples/websocket-example
 task run
 ```
 
-The voice assistant starts with WebSocket server listening on port 8765.
-
 ### 4. Access the Application
 
-- **WebSocket Server**: `ws://localhost:8765`
+- **Frontend**: http://localhost:3000 (The frontend will automatically generate a random WebSocket port between 8000-9000)
 - **API Server**: http://localhost:8080
-- **Frontend**: http://localhost:3000
 - **TMAN Designer**: http://localhost:49483
+
+**Note**: The WebSocket server port is randomly assigned by the frontend client (between 8000-9000) and stored in browser localStorage. The port is displayed in the frontend UI. You can also configure a default port in `tenapp/property.json`, but the frontend will override it when starting the agent.
 
 ## WebSocket Protocol
 
 ### Connecting to the WebSocket Server
 
+The WebSocket server port is randomly assigned by the frontend client (between 8000-9000) and can be configured in `tenapp/property.json`. When using the provided frontend, the port is automatically generated and displayed in the UI.
+
+**Using the Frontend:**
+The frontend automatically generates a random port, stores it in localStorage, and connects to it. The port is displayed in the UI badge.
+
+**Connecting Programmatically:**
+If you need to connect directly, you'll need to know the port. The frontend generates ports between 8000-9000:
+
 ```javascript
-const ws = new WebSocket('ws://localhost:8765');
+// Get the port from localStorage (if using the frontend)
+const port = localStorage.getItem('websocket_port') || 8765; // fallback to default
+const ws = new WebSocket(`ws://localhost:${port}`);
 
 ws.onopen = () => {
   console.log('Connected to voice assistant');
+};
+
+ws.onerror = (error) => {
+  console.error('Connection error:', error);
+  // Check if error is due to existing connection
+};
+
+ws.onclose = (event) => {
+  if (event.code === 1008) {
+    console.log('Connection rejected: Another client is already connected');
+  } else {
+    console.log('Disconnected from voice assistant');
+  }
 };
 ```
 
@@ -142,7 +164,7 @@ ws.send(JSON.stringify({
 
 ### Receiving Messages (Server → Client)
 
-The server sends three types of messages:
+The server sends four types of messages:
 
 #### 1. Audio Messages (TTS Output)
 
@@ -158,6 +180,7 @@ ws.onmessage = (event) => {
     const sampleRate = message.metadata.sample_rate; // 16000
     const channels = message.metadata.channels; // 1
     const bytesPerSample = message.metadata.bytes_per_sample; // 2
+    const samplesPerChannel = message.metadata.samples_per_channel;
 
     // Play audio using Web Audio API or other audio playback
     playAudio(pcmData, sampleRate, channels);
@@ -165,20 +188,64 @@ ws.onmessage = (event) => {
 };
 ```
 
-#### 2. Data Messages (ASR Results, LLM Responses)
+#### 2. Data Messages
 
+The server sends data messages with different `name` fields depending on the message type:
+
+**ASR Results:**
 ```javascript
-if (message.type === 'data') {
-  console.log('Received data:', message.name, message.data);
+if (message.type === 'data' && message.name === 'asr_result') {
+  const text = message.data?.text || message.data?.transcript || '';
+  const isFinal = message.data?.is_final || message.data?.final || false;
 
-  // Example: ASR result
-  if (message.name === 'asr_result') {
-    console.log('Transcription:', message.data.text);
+  if (isFinal) {
+    console.log('Final transcription:', text);
+    // Add to chat history as user message
+  } else {
+    console.log('Partial transcription:', text);
+    // Show as live transcription
   }
 }
 ```
 
-#### 3. Error Messages
+**Text Data (with data_type: 'transcribe'):**
+```javascript
+if (message.type === 'data' && message.name === 'text_data' && message.data?.data_type === 'transcribe') {
+  const text = message.data.text || '';
+  const isFinal = message.data.is_final || false;
+  const role = message.data.role === 'user' ? 'user' : 'assistant';
+
+  if (isFinal && text) {
+    console.log(`Final ${role} message:`, text);
+    // Add to chat history
+  } else if (text && role === 'user') {
+    console.log('Partial transcription:', text);
+    // Show as live transcription
+  }
+}
+```
+
+**LLM Responses:**
+```javascript
+if (message.type === 'data' && (message.name === 'llm_response' || message.name === 'chat_message')) {
+  const text = message.data?.text || message.data?.content || '';
+  if (text) {
+    console.log('LLM response:', text);
+    // Add to chat history as assistant message
+  }
+}
+```
+
+#### 3. Command Messages
+
+```javascript
+if (message.type === 'cmd') {
+  console.log('Received command:', message.name, message.data);
+  // Handle system commands (e.g., tool_register, on_user_joined)
+}
+```
+
+#### 4. Error Messages
 
 ```javascript
 if (message.type === 'error') {
@@ -188,7 +255,18 @@ if (message.type === 'error') {
 
 ## Configuration
 
-The voice assistant is configured in `tenapp/property.json`:
+The voice assistant is configured in `tenapp/property.json`. The graph includes:
+
+- **websocket_server**: Receives audio from clients and sends TTS audio back. Receives data messages forwarded by `main_control`.
+- **stt** (Deepgram ASR): Converts speech to text, sends `asr_result` to main_control
+- **main_control** (main_python): Orchestrates the conversation flow, receives `asr_result` from STT, and forwards transcription data (`text_data` with `data_type: 'transcribe'`) to `websocket_server` programmatically
+- **llm** (OpenAI): Generates responses
+- **tts** (ElevenLabs): Converts text to speech
+- **weatherapi_tool_python**: Optional weather tool for LLM function calling
+
+**Note**: The `main_control` extension handles message forwarding to `websocket_server` programmatically using `ten_env.send_data()`, so explicit data connections in `property.json` are not needed. The `main_control` extension forwards `text_data` messages with transcription information (both user and assistant messages) to `websocket_server` for broadcasting to clients.
+
+Key configuration sections:
 
 ```json
 {
@@ -210,13 +288,16 @@ The voice assistant is configured in `tenapp/property.json`:
                 "bytes_per_sample": 2
               }
             },
+            // Note: The port can be overridden when starting the agent via the API
+            // The frontend automatically generates a random port (8000-9000) and passes it in properties
             {
               "name": "stt",
               "addon": "deepgram_asr_python",
               "property": {
                 "params": {
                   "api_key": "${env:DEEPGRAM_API_KEY}",
-                  "language": "en-US"
+                  "language": "en-US",
+                  "model": "nova-3"
                 }
               }
             },
@@ -224,10 +305,14 @@ The voice assistant is configured in `tenapp/property.json`:
               "name": "llm",
               "addon": "openai_llm2_python",
               "property": {
+                "base_url": "https://api.openai.com/v1",
                 "api_key": "${env:OPENAI_API_KEY}",
                 "model": "${env:OPENAI_MODEL}",
                 "max_tokens": 512,
-                "greeting": "TEN Agent connected. How can I help you today?"
+                "frequency_penalty": 0.9,
+                "proxy_url": "${env:OPENAI_PROXY_URL|}",
+                "greeting": "TEN Agent connected. How can I help you today?",
+                "max_memory_length": 10
               }
             },
             {
@@ -242,6 +327,21 @@ The voice assistant is configured in `tenapp/property.json`:
                 }
               }
             }
+          ],
+          "connections": [
+            {
+              "extension": "websocket_server",
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "dest": [{"extension": "stt"}]
+                },
+                {
+                  "name": "pcm_frame",
+                  "source": [{"extension": "tts"}]
+                }
+              ]
+            }
           ]
         }
       }
@@ -252,16 +352,34 @@ The voice assistant is configured in `tenapp/property.json`:
 
 ### Configuration Parameters
 
+#### WebSocket Server
+
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `websocket_server.port` | int | 8765 | WebSocket server port |
+| `websocket_server.port` | int | 8765 | WebSocket server port. Can be overridden when starting the agent via API `properties` parameter. The frontend automatically generates a random port (8000-9000) and passes it in the start request. |
 | `websocket_server.host` | string | 0.0.0.0 | WebSocket server host |
-| `DEEPGRAM_API_KEY` | string | - | Deepgram API key (required) |
-| `OPENAI_API_KEY` | string | - | OpenAI API key (required) |
-| `OPENAI_MODEL` | string | - | OpenAI model name (optional) |
-| `OPENAI_PROXY_URL` | string | - | Proxy URL for OpenAI API (optional) |
-| `ELEVENLABS_TTS_KEY` | string | - | ElevenLabs API key (required) |
-| `WEATHERAPI_API_KEY` | string | - | Weather API key (optional) |
+| `websocket_server.sample_rate` | int | 16000 | Audio sample rate in Hz |
+| `websocket_server.channels` | int | 1 | Number of audio channels (mono) |
+| `websocket_server.bytes_per_sample` | int | 2 | Bytes per sample (2 for 16-bit) |
+
+**Port Assignment:**
+- The port can be configured in `tenapp/property.json` as a default value
+- When using the frontend, it automatically generates a random port between 8000-9000 and stores it in browser localStorage
+- The frontend passes the port in the `properties` parameter when starting the agent via the API, which overrides the default from property.json
+- The port is displayed in the frontend UI for reference
+
+#### Environment Variables
+
+| Variable | Type | Required | Description |
+|----------|------|----------|-------------|
+| `DEEPGRAM_API_KEY` | string | Yes | Deepgram API key for speech-to-text |
+| `OPENAI_API_KEY` | string | Yes | OpenAI API key for language model |
+| `OPENAI_MODEL` | string | No | OpenAI model name (e.g., gpt-4, gpt-3.5-turbo) |
+| `OPENAI_PROXY_URL` | string | No | Proxy URL for OpenAI API requests |
+| `ELEVENLABS_TTS_KEY` | string | Yes | ElevenLabs API key for text-to-speech |
+| `WEATHERAPI_API_KEY` | string | No | Weather API key for weather tool (optional) |
+
+**Note**: The WebSocket server only accepts one client connection at a time. If a client is already connected, new connection attempts will be rejected with an error message.
 
 ## Client Example
 
@@ -269,7 +387,10 @@ Here's a complete example of a WebSocket client:
 
 ```javascript
 class VoiceAssistantClient {
-  constructor(wsUrl = 'ws://localhost:8765') {
+  constructor(port = 8765) {
+    // Port can be obtained from localStorage if using the frontend,
+    // or passed directly if you know the port
+    const wsUrl = `ws://localhost:${port}`;
     this.ws = new WebSocket(wsUrl);
     this.setupHandlers();
   }
@@ -288,6 +409,9 @@ class VoiceAssistantClient {
           break;
         case 'data':
           this.handleData(message);
+          break;
+        case 'cmd':
+          this.handleCommand(message);
           break;
         case 'error':
           console.error('Error:', message.error);
@@ -323,6 +447,35 @@ class VoiceAssistantClient {
 
   handleData(message) {
     console.log('Data:', message.name, message.data);
+
+    // Handle ASR results
+    if (message.name === 'asr_result') {
+      const text = message.data?.text || message.data?.transcript || '';
+      const isFinal = message.data?.is_final || message.data?.final || false;
+      if (isFinal) {
+        console.log('Final transcription:', text);
+      } else {
+        console.log('Partial transcription:', text);
+      }
+    }
+
+    // Handle text_data with data_type: 'transcribe'
+    if (message.name === 'text_data' && message.data?.data_type === 'transcribe') {
+      const text = message.data.text || '';
+      const isFinal = message.data.is_final || false;
+      const role = message.data.role === 'user' ? 'user' : 'assistant';
+      console.log(`${role} message (${isFinal ? 'final' : 'partial'}):`, text);
+    }
+
+    // Handle LLM responses
+    if (message.name === 'llm_response' || message.name === 'chat_message') {
+      const text = message.data?.text || message.data?.content || '';
+      console.log('LLM response:', text);
+    }
+  }
+
+  handleCommand(message) {
+    console.log('Command:', message.name, message.data);
   }
 
   close() {
@@ -331,7 +484,12 @@ class VoiceAssistantClient {
 }
 
 // Usage
-const client = new VoiceAssistantClient();
+// Get port from localStorage (if using the frontend) or use a known port
+const port = localStorage.getItem('websocket_port')
+  ? parseInt(localStorage.getItem('websocket_port'), 10)
+  : 8765; // fallback to default
+
+const client = new VoiceAssistantClient(port);
 
 // Send audio from microphone or file
 client.sendAudio(pcmAudioData);
@@ -357,14 +515,23 @@ docker build -f agents/examples/websocket-example/Dockerfile -t websocket-voice-
 ### Run
 
 ```bash
+# Note: The WebSocket port is dynamically assigned (8000-9000) by the frontend
+# You'll need to expose the port range. Docker doesn't support port ranges directly,
+# so you may need to expose multiple ports or use a specific port configuration.
+# For a fixed port, configure it in tenapp/property.json and expose that port:
 docker run --rm -it --env-file .env -p 8080:8080 -p 3000:3000 -p 8765:8765 websocket-voice-assistant
 ```
 
+**Note**: If using dynamic ports, you'll need to either:
+1. Configure a fixed port in `tenapp/property.json` and expose that specific port
+2. Use Docker's `--publish-all` flag (not recommended for production)
+3. Manually expose the specific port that the frontend generates
+
 ### Access
 
-- WebSocket Server: ws://localhost:8765
-- Frontend: http://localhost:3000
+- Frontend: http://localhost:3000 (port is randomly assigned and displayed in UI)
 - API Server: http://localhost:8080
+- WebSocket Server: Port is randomly assigned by frontend (8000-9000) or configured in property.json
 
 ## Learn More
 
@@ -372,4 +539,3 @@ docker run --rm -it --env-file .env -p 8080:8080 -p 3000:3000 -p 8765:8765 webso
 - [OpenAI API Documentation](https://platform.openai.com/docs)
 - [ElevenLabs API Documentation](https://docs.elevenlabs.io/)
 - [TEN Framework Documentation](https://doc.theten.ai)
-- [WebSocket API (MDN)](https://developer.mozilla.org/en-US/docs/Web/API/WebSocket)
