@@ -141,9 +141,9 @@ class AsyncIteratorCallback(ResultCallback):
             return
 
         if self._cancelled:
-            self.ten_env.log_debug(
-                f"Filtered {len(data)} bytes audio data due to cancellation"
-            )
+            # self.ten_env.log_debug(
+            #     f"Filtered {len(data)} bytes audio data due to cancellation"
+            # )
             return
 
         self.ten_env.log_info(f"Received audio data: {len(data)} bytes")
