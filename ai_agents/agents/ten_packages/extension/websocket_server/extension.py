@@ -14,7 +14,6 @@ from ten_runtime import (
     StatusCode,
     CmdResult,
     Data,
-    LogLevel,
     AudioFrameDataFmt,
 )
 

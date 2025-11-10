@@ -269,7 +269,7 @@ class WebSocketServerManager:
             True if sent successfully, False otherwise
         """
         if not self.current_client:
-            self.ten_env.log_warn(f"No client connected")
+            self.ten_env.log_warn("No client connected")
             return False
 
         current_client_id = f"{self.current_client.remote_address[0]}:{self.current_client.remote_address[1]}"
