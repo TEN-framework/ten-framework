@@ -55,12 +55,9 @@ class WebSocketServerConfig(BaseModel):
                 f"Invalid bytes_per_sample: {self.bytes_per_sample} (must be 1, 2, or 4)"
             )
 
-    def to_str(self, _sensitive_handling: bool = True) -> str:
+    def to_str(self) -> str:
         """
         Convert config to string for logging
-
-        Args:
-            _sensitive_handling: If True, encrypt sensitive data (currently none)
 
         Returns:
             String representation of config

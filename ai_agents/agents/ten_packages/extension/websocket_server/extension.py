@@ -42,7 +42,7 @@ class WebsocketServerExtension(AsyncExtension):
             self.config.validate_config()
 
             ten_env.log_info(
-                f"Loaded config: {self.config.to_str(sensitive_handling=True)}"
+                f"Loaded config: {self.config.to_str()}"
             )
         except Exception as e:
             ten_env.log_error(f"Failed to load configuration: {e}")

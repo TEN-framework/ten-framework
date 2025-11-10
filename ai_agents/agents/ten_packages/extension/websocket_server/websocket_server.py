@@ -8,7 +8,6 @@ import base64
 from typing import Callable, Optional, Any
 from dataclasses import dataclass
 import websockets
-from websockets.server import WebSocketServerProtocol
 from ten_runtime.async_ten_env import AsyncTenEnv
 
 
@@ -46,7 +45,7 @@ class WebSocketServerManager:
         self.on_audio_callback = on_audio_callback
 
         self.server = None
-        self.current_client: Optional[WebSocketServerProtocol] = None
+        self.current_client: Optional[Any] = None
         self.running = False
         self._server_task: Optional[asyncio.Task] = None
 
@@ -89,7 +88,7 @@ class WebSocketServerManager:
 
         self.ten_env.log_info("WebSocket server stopped")
 
-    async def _handle_client(self, websocket: WebSocketServerProtocol) -> None:
+    async def _handle_client(self, websocket: Any) -> None:
         """
         Handle a single WebSocket client connection
 
@@ -133,7 +132,7 @@ class WebSocketServerManager:
             self.ten_env.log_info(f"Client removed: {client_id}")
 
     async def _process_message(
-        self, message: str, websocket: WebSocketServerProtocol, client_id: str
+        self, message: str, websocket: Any, client_id: str
     ) -> None:
         """
         Process incoming message from client
@@ -193,7 +192,7 @@ class WebSocketServerManager:
             await self._send_error(websocket, f"Processing error: {str(e)}")
 
     async def _send_error(
-        self, websocket: WebSocketServerProtocol, error: str
+        self, websocket: Any, error: str
     ) -> None:
         """
         Send error message to client
@@ -283,7 +282,7 @@ class WebSocketServerManager:
         return await self._send_to_client(self.current_client, message_str)
 
     async def _send_to_client(
-        self, websocket: WebSocketServerProtocol, message: str
+        self, websocket: Any, message: str
     ) -> bool:
         """
         Send message to a WebSocket client
@@ -302,7 +301,7 @@ class WebSocketServerManager:
             self.ten_env.log_error(f"Failed to send message to client: {e}")
             return False
 
-    async def _close_client(self, websocket: WebSocketServerProtocol) -> None:
+    async def _close_client(self, websocket: Any) -> None:
         """
         Close a client connection gracefully
 
