@@ -23,42 +23,42 @@ export function AudioControls({
   onStopRecording,
 }: AudioControlsProps) {
   return (
-    <div className="flex items-center justify-center">
-      <TooltipProvider>
-        {isRecording ? (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                size="lg"
-                variant="destructive"
-                className="h-20 w-20 rounded-full shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 animate-pulse-subtle"
-                onClick={onStopRecording}
-              >
-                <MicOff className="h-8 w-8" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Stop recording</p>
-            </TooltipContent>
-          </Tooltip>
-        ) : (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                size="lg"
-                className="h-20 w-20 rounded-full shadow-md hover:shadow-lg transition-all duration-300 hover:scale-105 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
-                onClick={onStartRecording}
-                disabled={isDisabled}
-              >
-                <Mic className="h-8 w-8" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>{isDisabled ? "Connect agent first" : "Start recording"}</p>
-            </TooltipContent>
-          </Tooltip>
-        )}
-      </TooltipProvider>
-    </div>
+    <TooltipProvider>
+      {isRecording ? (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              size="lg"
+              variant="destructive"
+              className="gap-2"
+              onClick={onStopRecording}
+            >
+              <MicOff className="h-4 w-4" />
+              Recording
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Stop recording</p>
+          </TooltipContent>
+        </Tooltip>
+      ) : (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              size="lg"
+              className="gap-2"
+              onClick={onStartRecording}
+              disabled={isDisabled}
+            >
+              <Mic className="h-4 w-4" />
+              Mic
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{isDisabled ? "Connect agent first" : "Start recording"}</p>
+          </TooltipContent>
+        </Tooltip>
+      )}
+    </TooltipProvider>
   );
 }

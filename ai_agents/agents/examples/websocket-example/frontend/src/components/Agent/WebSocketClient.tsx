@@ -8,8 +8,6 @@ import { TranscriptionDisplay } from "@/components/Agent/TranscriptionDisplay";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-// Minimal design: avoid heavy separators for cleaner cards
-import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useAudioPlayer } from "@/hooks/useAudioPlayer";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
@@ -18,7 +16,7 @@ import { useAgentLifecycle } from "@/hooks/useAgentLifecycle";
 import { useAgentStore } from "@/store/agentStore";
 import { getOrGeneratePort, getWebSocketUrl } from "@/lib/portManager";
 import { useEffect, useState } from "react";
-import { Play, Square, Loader2, Wifi, WifiOff, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Play, Square, Loader2, Wifi, AlertCircle } from "lucide-react";
 
 export function WebSocketClient() {
   const [port, setPort] = useState<number | null>(null);
@@ -124,115 +122,67 @@ export function WebSocketClient() {
 
           {/* Main Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
-            {/* Left column: Connection + Voice stacked */}
-            <div className="space-y-6 lg:col-span-1">
-              {/* Connection Control Card */}
+            {/* Left column: Connection + Voice */}
+            <div className="lg:col-span-1">
               <Card className="shadow-sm">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Wifi className="h-5 w-5" />
-                    Connection
-                  </CardTitle>
-                  <CardDescription>
-                    Start or stop the agent connection
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="pt-2">
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="flex-1 space-y-2">
-                        {!isRunning && !isStarting && (
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <WifiOff className="h-4 w-4" />
-                            <span>Click Start to connect to the agent</span>
-                          </div>
-                        )}
-                        {isStarting && (
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                              <span>Starting agent...</span>
-                            </div>
-                            <Progress value={undefined} className="h-1 opacity-60" />
-                          </div>
-                        )}
-                        {isRunning && !wsConnected && (
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                              <span>Agent running, connecting to WebSocket...</span>
-                            </div>
-                            <Progress value={undefined} className="h-1 opacity-60" />
-                          </div>
-                        )}
-                        {isRunning && wsConnected && (
-                          <div className="flex items-center gap-2 text-sm">
-                            <CheckCircle2 className="h-4 w-4 text-primary" />
-                            <span className="text-foreground">Connected and ready</span>
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex gap-2 items-center">
-                        {!isRunning && !isStarting && (
-                          <Button
-                            onClick={handleStartAgent}
-                            disabled={!port}
-                            size="lg"
-                            className="gap-2"
-                          >
-                            <Play className="h-4 w-4" />
-                            Start
-                          </Button>
-                        )}
-                        {isStarting && (
-                          <Button disabled size="lg" className="gap-2">
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                            Starting...
-                          </Button>
-                        )}
-                        {isRunning && (
-                          <Button
-                            onClick={handleStopAgent}
-                            variant="destructive"
-                            size="lg"
-                            className="gap-2"
-                          >
-                            <Square className="h-4 w-4" />
-                            Stop
-                          </Button>
-                        )}
-                        <div className="flex items-center">
-                          <AudioControls
-                            isRecording={isRecording}
-                            isDisabled={!wsConnected}
-                            onStartRecording={handleStartRecording}
-                            onStopRecording={handleStopRecording}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    {(initError || agentState.error) && (
-                      <Alert variant="destructive">
-                        <AlertCircle className="h-4 w-4" />
-                        <AlertTitle>Connection Error</AlertTitle>
-                        <AlertDescription>
-                          {initError || agentState.error}
-                        </AlertDescription>
-                      </Alert>
-                    )}
+                <CardHeader className="flex flex-row items-center justify-between gap-4">
+                  <div className="flex-1">
+                    <CardTitle className="flex items-center gap-2">
+                      <Wifi className="h-5 w-5" />
+                      Connection
+                    </CardTitle>
+                    <CardDescription>
+                      Start or stop the agent connection and interact with voice
+                    </CardDescription>
                   </div>
-                </CardContent>
-              </Card>
-
-              {/* Audio Controls Card */}
-              <Card className="shadow-sm">
-                <CardHeader>
-                  <CardTitle>Voice Control</CardTitle>
-                  <CardDescription>
-                    Record and interact with the AI assistant using your voice
-                  </CardDescription>
+                  <div className="flex items-center gap-2">
+                    {!isRunning && !isStarting && (
+                      <Button
+                        onClick={handleStartAgent}
+                        disabled={!port}
+                        size="lg"
+                        className="gap-2"
+                      >
+                        <Play className="h-4 w-4" />
+                        Start
+                      </Button>
+                    )}
+                    {isStarting && (
+                      <Button disabled size="lg" className="gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Starting...
+                      </Button>
+                    )}
+                    {isRunning && (
+                      <Button
+                        onClick={handleStopAgent}
+                        variant="destructive"
+                        size="lg"
+                        className="gap-2"
+                      >
+                        <Square className="h-4 w-4" />
+                        Stop
+                      </Button>
+                    )}
+                    <AudioControls
+                      isRecording={isRecording}
+                      isDisabled={!wsConnected}
+                      onStartRecording={handleStartRecording}
+                      onStopRecording={handleStopRecording}
+                    />
+                  </div>
                 </CardHeader>
                 <CardContent className="pt-2 space-y-4">
+                  {(initError || agentState.error) && (
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertTitle>Connection Error</AlertTitle>
+                      <AlertDescription>
+                        {initError || agentState.error}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
                   {/* Audio Visualizer */}
                   <div className="flex justify-center rounded-xl bg-muted-a30 overflow-hidden p-0 ring-1 ring-border-a40 border border-border-a30">
                     <AudioVisualizer
@@ -270,7 +220,6 @@ export function WebSocketClient() {
                   <TranscriptionDisplay />
                 </CardContent>
               </Card>
-
             </div>
 
             {/* Right column: Conversation */}
