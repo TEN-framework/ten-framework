@@ -20,28 +20,6 @@
       ]
     },
     {
-      "type": "extension",
-      "name": "agora_rtc",
-      "version": "0.23.9-t1",
-      "hash": "6f08c87c362d30bbfd831899435fec06982a2924bd9cc0f5cb7e936974bf5731",
-      "dependencies": [
-        {
-          "type": "system",
-          "name": "ten_runtime"
-        },
-        {
-          "type": "system",
-          "name": "agora_rtc_sdk"
-        }
-      ],
-      "supports": [
-        {
-          "os": "linux",
-          "arch": "x64"
-        }
-      ]
-    },
-    {
       "type": "system",
       "name": "ten_ai_base",
       "version": "0.7.18",
@@ -55,16 +33,16 @@
     },
     {
       "type": "extension",
-      "name": "streamid_adapter",
-      "version": "0.2.0",
-      "hash": "6df9a1b48a4007339ccbda84ff96a4ed4eb5df498b8fef021ca2302be7c55051",
+      "name": "websocket_server",
+      "version": "0.0.1",
+      "hash": "208d5fa19ba31765119b7860dd5259c0a2f66e5f7902f80e470054cb5fd6786b",
       "dependencies": [
         {
           "type": "system",
           "name": "ten_runtime_python"
         }
       ],
-      "path": "../../../ten_packages/extension/streamid_adapter"
+      "path": "../../../ten_packages/extension/websocket_server"
     },
     {
       "type": "extension",
@@ -757,18 +735,6 @@
       "name": "ten_runtime",
       "version": "0.11.25",
       "hash": "eab45b60fadb1d8e9bbff559a0cdda36506c4199c3ed21690a87768bd689be46",
-      "supports": [
-        {
-          "os": "linux",
-          "arch": "x64"
-        }
-      ]
-    },
-    {
-      "type": "system",
-      "name": "agora_rtc_sdk",
-      "version": "4.4.32-141",
-      "hash": "d0a96b4672127492eee249f123750638071f9bcb673b5371320c8e16cdaff1b5",
       "supports": [
         {
           "os": "linux",

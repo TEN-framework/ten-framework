@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "websocket_server",
-  "version": "0.10.38",
+  "version": "0.0.1",
   "display_name": {
     "locales": {
       "en-US": {
@@ -70,7 +70,7 @@
     {
       "type": "system",
       "name": "ten_runtime_python",
-      "version": "0.10.38"
+      "version": "0.11"
     }
   ],
   "package": {
@@ -86,36 +86,32 @@
   },
   "api": {
     "property": {
-      "port": {
-        "type": "int32",
-        "default": 8765
-      },
-      "host": {
-        "type": "string",
-        "default": "0.0.0.0"
-      },
-      "sample_rate": {
-        "type": "int32",
-        "default": 16000
-      },
-      "channels": {
-        "type": "int32",
-        "default": 1
-      },
-      "bytes_per_sample": {
-        "type": "int32",
-        "default": 2
-      },
-      "dump": {
-        "type": "bool",
-        "default": false
-      },
-      "dump_path": {
-        "type": "string",
-        "default": ""
-      },
-      "params": {
-        "type": "object"
+      "properties": {
+        "port": {
+          "type": "int32"
+        },
+        "host": {
+          "type": "string"
+        },
+        "sample_rate": {
+          "type": "int32"
+        },
+        "channels": {
+          "type": "int32"
+        },
+        "bytes_per_sample": {
+          "type": "int32"
+        },
+        "dump": {
+          "type": "bool"
+        },
+        "dump_path": {
+          "type": "string"
+        },
+        "params": {
+          "type": "object",
+          "properties": {}
+        }
       }
     },
     "data_in": [],
@@ -123,8 +119,11 @@
       {
         "name": "pcm_frame",
         "property": {
-          "metadata": {
-            "type": "object"
+          "properties": {
+            "metadata": {
+              "type": "object",
+              "properties": {}
+            }
           }
         }
       }

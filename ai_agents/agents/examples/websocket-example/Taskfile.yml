@@ -6,14 +6,12 @@ tasks:
   # install scripts
   install-frontend:
     desc: install frontend dependencies
-    internal: true
     dir: ./frontend
     cmds:
       - bun install --verbose
 
   install-tenapp:
     desc: install tenapp dependencies
-    internal: true
     dir: ./tenapp
     cmds:
       - tman install
@@ -21,7 +19,6 @@ tasks:
   install-tenapp-python-deps:
     desc: install tenapp python dependencies
     deps: [install-tenapp]
-    internal: true
     dir: ./tenapp
     cmds:
       - ./scripts/install_python_deps.sh
