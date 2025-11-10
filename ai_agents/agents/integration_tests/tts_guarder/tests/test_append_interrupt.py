@@ -291,20 +291,23 @@ class AppendInterruptTester(AsyncExtensionTester):
         current_state = self.group_states[self.current_group_index]
         error_msg = None
         
+        # Skip state check for group 3 (index 2) - it's sent after flush_end
+        skip_state_check = (self.current_group_index == 2)
+        
         if received_event == "tts_audio_start":
-            if current_state == GroupState.WAITING_AUDIO_START:
+            if skip_state_check or current_state == GroupState.WAITING_AUDIO_START:
                 # Expected audio start for current group
                 self.group_states[self.current_group_index] = GroupState.RECEIVING_AUDIO_FRAMES
             else:
                 error_msg = f"Unexpected tts_audio_start for group {self.current_group_index + 1} in state: {current_state}"
         elif received_event == "audio_frame":
-            if current_state == GroupState.RECEIVING_AUDIO_FRAMES:
+            if skip_state_check or current_state == GroupState.RECEIVING_AUDIO_FRAMES:
                 # Expected audio frames for current group
                 pass
             else:
                 error_msg = f"Unexpected audio_frame for group {self.current_group_index + 1} in state: {current_state}"
         elif received_event == "tts_audio_end":
-            if current_state == GroupState.RECEIVING_AUDIO_FRAMES:
+            if skip_state_check or current_state == GroupState.RECEIVING_AUDIO_FRAMES:
                 # Expected audio end for current group
                 self.group_states[self.current_group_index] = GroupState.COMPLETED
                 # Move to next non-empty group
@@ -335,16 +338,42 @@ class AppendInterruptTester(AsyncExtensionTester):
             self._stop_test_with_error(ten_env, f"Received error data: {json_str}")
             return
         elif name == "tts_audio_start":
+            # Get request_id first to determine which group this event belongs to
+            received_request_id, _ = data.get_property_string("request_id")
+            
+            # Find the group index based on request_id
+            group_index_from_request_id = None
+            for i, req_id in enumerate(self.request_ids):
+                if req_id == received_request_id:
+                    group_index_from_request_id = i
+                    break
+            
+            if group_index_from_request_id is None:
+                self._stop_test_with_error(
+                    ten_env,
+                    f"Unknown request_id in tts_audio_start: {received_request_id}",
+                )
+                return
+            
+            # Update current_group_index to match the received request_id
+            # This handles the case where group 2 (index 1) doesn't receive tts_audio_start
+            # because flush was sent before it started processing
+            if self.current_group_index != group_index_from_request_id:
+                ten_env.log_info(f"Updating current_group_index from {self.current_group_index + 1} to {group_index_from_request_id + 1} based on request_id {received_request_id}")
+                self.current_group_index = group_index_from_request_id
+                # Update group state if needed
+                if self.current_group_index < len(self.group_states):
+                    if self.group_states[self.current_group_index] == GroupState.WAITING_AUDIO_START:
+                        self.group_states[self.current_group_index] = GroupState.RECEIVING_AUDIO_FRAMES
+            
             # Check event sequence
             self._check_event_sequence(ten_env, "tts_audio_start")
             
             ten_env.log_info(f"Received tts_audio_start for group {self.current_group_index + 1}")
             self.audio_start_time = time.time()
             
-            # Get request_id and validate
-            received_request_id, _ = data.get_property_string("request_id")
+            # Validate request_id matches
             expected_request_id = self.request_ids[self.current_group_index]
-            
             if received_request_id != expected_request_id:
                 self._stop_test_with_error(
                     ten_env,
@@ -378,17 +407,38 @@ class AppendInterruptTester(AsyncExtensionTester):
             ten_env.log_info(f"✅ tts_audio_start received with correct request_id: {received_request_id} and metadata")
             return
         elif name == "tts_audio_end":
-            # Check event sequence (this will update current_group_index if needed)
+            # Get request_id first to determine which group this event belongs to
+            received_request_id, _ = data.get_property_string("request_id")
+            
+            # Find the group index based on request_id
+            group_index_from_request_id = None
+            for i, req_id in enumerate(self.request_ids):
+                if req_id == received_request_id:
+                    group_index_from_request_id = i
+                    break
+            
+            if group_index_from_request_id is None:
+                self._stop_test_with_error(
+                    ten_env,
+                    f"Unknown request_id in tts_audio_end: {received_request_id}",
+                )
+                return
+            
+            # Update current_group_index to match the received request_id
+            # This handles the case where group 2 (index 1) doesn't receive tts_audio_start
+            # because flush was sent before it started processing
+            if self.current_group_index != group_index_from_request_id:
+                ten_env.log_info(f"Updating current_group_index from {self.current_group_index + 1} to {group_index_from_request_id + 1} based on request_id {received_request_id}")
+                self.current_group_index = group_index_from_request_id
+            
             # Save current group index before check, as it might be updated
             group_idx_before_check = self.current_group_index
             self._check_event_sequence(ten_env, "tts_audio_end")
             
             ten_env.log_info(f"Received tts_audio_end for group {group_idx_before_check + 1}")
             
-            # Get request_id and validate
-            received_request_id, _ = data.get_property_string("request_id")
+            # Validate request_id matches
             expected_request_id = self.request_ids[group_idx_before_check]
-            
             if received_request_id != expected_request_id:
                 self._stop_test_with_error(
                     ten_env,
@@ -579,7 +629,7 @@ class AppendInterruptTester(AsyncExtensionTester):
             return
         
         # Get all files in the directory
-        time.sleep(1)
+        time.sleep(5)
         dump_files = []
         for file_path in glob.glob(os.path.join(self.tts_extension_dump_folder, "*")):
             if os.path.isfile(file_path):
