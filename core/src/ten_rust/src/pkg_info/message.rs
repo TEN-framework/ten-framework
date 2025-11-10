@@ -49,7 +49,7 @@ impl fmt::Display for MsgDirection {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Hash, Eq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub enum MsgType {
     #[serde(rename = "cmd")]
     Cmd,
