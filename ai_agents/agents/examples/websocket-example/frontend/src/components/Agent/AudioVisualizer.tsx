@@ -97,12 +97,11 @@ export function AudioVisualizer({
     <div
       suppressHydrationWarning
       className={cn(
-        "relative flex min-w-[260px] items-end justify-center gap-0.5 rounded-lg px-4 py-3 shadow-inner ring-1 ring-border-a40",
+        "relative flex w-full items-end justify-center gap-0.5",
         className,
       )}
       style={{
-        height: `${height + 24}px`,
-        backgroundColor: "hsl(var(--color-card) / 0.6)",
+        height: `${height}px`,
       }}
     >
       {Array.from(frequencyData).map((value, index) => {
