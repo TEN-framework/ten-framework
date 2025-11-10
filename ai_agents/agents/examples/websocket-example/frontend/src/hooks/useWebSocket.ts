@@ -5,7 +5,7 @@
 
 import { WebSocketManager } from "@/manager/websocket";
 import { useAgentStore } from "@/store/agentStore";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface UseWebSocketOptions {
   url: string;
@@ -26,6 +26,8 @@ export function useWebSocket(options: UseWebSocketOptions | string) {
       : options;
 
   const wsManagerRef = useRef<WebSocketManager | null>(null);
+  // Expose the manager through state so consumers re-render
+  const [wsManagerState, setWsManagerState] = useState<WebSocketManager | null>(null);
   const {
     setWsConnected,
     setError,
@@ -43,6 +45,7 @@ export function useWebSocket(options: UseWebSocketOptions | string) {
       reconnectInterval,
     });
     wsManagerRef.current = wsManager;
+    setWsManagerState(wsManager);
 
     // Handle connection open
     wsManager.onOpen(() => {
@@ -166,7 +169,7 @@ export function useWebSocket(options: UseWebSocketOptions | string) {
   }, []);
 
   return {
-    wsManager: wsManagerRef.current,
+    wsManager: wsManagerState,
     connect,
     disconnect,
   };

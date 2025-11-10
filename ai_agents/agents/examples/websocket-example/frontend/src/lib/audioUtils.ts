@@ -185,10 +185,23 @@ export class AudioRecorder {
       },
     });
 
+    // Make sure all audio tracks are enabled
+    this.mediaStream.getAudioTracks().forEach((t) => (t.enabled = true));
+
     // Create audio context
     this.audioContext = new AudioContext({
       sampleRate: this.config.sampleRate,
     });
+
+    // Some browsers start AudioContext in "suspended" even on user gesture.
+    // Explicitly resume to ensure ScriptProcessor receives frames immediately.
+    if (this.audioContext.state === "suspended") {
+      try {
+        await this.audioContext.resume();
+      } catch (_) {
+        // ignore — will resume below after connections
+      }
+    }
 
     // Create source from media stream
     this.sourceNode = this.audioContext.createMediaStreamSource(
@@ -210,6 +223,15 @@ export class AudioRecorder {
     // Connect nodes
     this.sourceNode.connect(this.processorNode);
     this.processorNode.connect(this.audioContext.destination);
+
+    // Final resume to guarantee processing kicks in without needing a re-toggle
+    if (this.audioContext.state !== "running") {
+      try {
+        await this.audioContext.resume();
+      } catch (err) {
+        console.warn("AudioContext resume failed:", err);
+      }
+    }
   }
 
   stop(): void {

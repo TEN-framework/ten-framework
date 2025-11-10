@@ -12,6 +12,9 @@ export function useAudioRecorder(wsManager: WebSocketManager | null) {
   const [isRecording, setIsRecording] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const recorderRef = useRef<AudioRecorder | null>(null);
+  // Track the latest wsManager even if start() was called earlier
+  const wsRef = useRef<WebSocketManager | null>(null);
+  wsRef.current = wsManager;
   const { setRecording } = useAgentStore();
 
   const startRecording = useCallback(async () => {
@@ -25,9 +28,9 @@ export function useAudioRecorder(wsManager: WebSocketManager | null) {
       recorderRef.current = recorder;
 
       await recorder.start((audioBase64) => {
-        // Only send audio to WebSocket server if connected
-        if (wsManager?.isConnected()) {
-          wsManager.sendAudio(audioBase64);
+        const ws = wsRef.current;
+        if (ws?.isConnected()) {
+          ws.sendAudio(audioBase64);
         }
       });
 
