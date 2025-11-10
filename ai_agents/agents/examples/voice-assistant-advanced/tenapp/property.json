@@ -439,6 +439,16 @@
                     }
                   ]
                 }
+              ],
+              "data": [
+                {
+                  "name": "tts_audio_end",
+                  "dest": [
+                    {
+                      "extension": "avatar"
+                    }
+                  ]
+                }
               ]
             }
           ]
@@ -654,6 +664,16 @@
               "audio_frame": [
                 {
                   "name": "pcm_frame",
+                  "dest": [
+                    {
+                      "extension": "avatar"
+                    }
+                  ]
+                }
+              ],
+              "data": [
+                {
+                  "name": "tts_audio_end",
                   "dest": [
                     {
                       "extension": "avatar"
@@ -2281,6 +2301,16 @@
                     }
                   ]
                 }
+              ],
+              "data": [
+                {
+                  "name": "tts_audio_end",
+                  "dest": [
+                    {
+                      "extension": "avatar"
+                    }
+                  ]
+                }
               ]
             }
           ]
@@ -2531,6 +2561,16 @@
                     }
                   ]
                 }
+              ],
+              "data": [
+                {
+                  "name": "tts_audio_end",
+                  "dest": [
+                    {
+                      "extension": "avatar"
+                    }
+                  ]
+                }
               ]
             }
           ]
@@ -2768,6 +2808,16 @@
               "audio_frame": [
                 {
                   "name": "pcm_frame",
+                  "dest": [
+                    {
+                      "extension": "avatar"
+                    }
+                  ]
+                }
+              ],
+              "data": [
+                {
+                  "name": "tts_audio_end",
                   "dest": [
                     {
                       "extension": "avatar"

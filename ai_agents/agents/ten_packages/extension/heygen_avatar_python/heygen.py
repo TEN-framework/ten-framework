@@ -51,8 +51,9 @@ class AgoraHeygenRecorder:
         self.websocket_task = None
         self._should_reconnect = True
 
+        # Legacy timer task variable (kept for safety, but no longer created)
+        # speak_end is now triggered by tts_audio_end event
         self._speak_end_timer_task: asyncio.Task | None = None
-        self._speak_end_event = asyncio.Event()
 
     def _generate_token(self, uid, role):
         # if the app_cert is not required, return an empty string
@@ -279,40 +280,9 @@ class AgoraHeygenRecorder:
                 self.websocket = None
                 await asyncio.sleep(3)
 
-    def _schedule_speak_end(self):
-        """Restart debounce timer every time this is called."""
-        self._speak_end_event.set()  # signal to reset timer
-
-        if (
-            self._speak_end_timer_task is None
-            or self._speak_end_timer_task.done()
-        ):
-            self._speak_end_event = asyncio.Event()
-            self._speak_end_timer_task = asyncio.create_task(
-                self._debounced_speak_end()
-            )
-
-    async def _debounced_speak_end(self):
-        while True:
-            try:
-                await asyncio.wait_for(
-                    self._speak_end_event.wait(), timeout=0.5
-                )
-                # Reset the event and loop again
-                self._speak_end_event.clear()
-            except asyncio.TimeoutError:
-                # 500ms passed with no reset — now send
-                end_evt_id = str(uuid.uuid4())
-                await self.websocket.send(
-                    json.dumps(
-                        {"type": "agent.speak_end", "event_id": end_evt_id}
-                    )
-                )
-                self.ten_env.log_info("Sent agent.speak_end.")
-                break  # Exit the task
-            except Exception as e:
-                self.ten_env.log_error(f"Error in speak_end task: {e}")
-                break
+    # REMOVED: 500ms debounce hack for agent.speak_end
+    # Now using tts_audio_end (reason=1) event to trigger speak_end immediately.
+    # See send_speak_end() method above.
 
     async def send(self, audio_base64: str):
         if self.websocket is None:
@@ -342,8 +312,31 @@ class AgoraHeygenRecorder:
             self.ten_env.log_error(f"Failed to send audio chunk: {e}")
             raise
 
-        # Schedule agent.speak_end after a short delay
-        self._schedule_speak_end()
+        # NOTE: agent.speak_end is now triggered by tts_audio_end (reason=1) event
+        # instead of 500ms debounce timer. See send_speak_end() method.
+
+    async def send_speak_end(self) -> bool:
+        """
+        Send agent.speak_end message to HeyGen immediately.
+        Called when tts_audio_end (reason=1) is received, indicating TTS generation complete.
+        """
+        # Cancel any pending debounce timer
+        if self._speak_end_timer_task and not self._speak_end_timer_task.done():
+            self._speak_end_timer_task.cancel()
+            self._speak_end_timer_task = None
+
+        success = await self._send_message(
+            {"type": "agent.speak_end", "event_id": uuid.uuid4().hex}
+        )
+
+        if success:
+            self.ten_env.log_info(
+                "[HEYGEN] Sent agent.speak_end (triggered by tts_audio_end reason=1)"
+            )
+        else:
+            self.ten_env.log_error("Failed to send agent.speak_end message")
+
+        return success
 
     async def interrupt(self) -> bool:
         """Send agent.interrupt message to HeyGen service to stop current speech."""
