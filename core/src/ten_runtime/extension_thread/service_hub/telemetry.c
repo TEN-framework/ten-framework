@@ -81,4 +81,40 @@ void ten_extension_thread_record_extension_thread_msg_queue_stay_time(
   }
 }
 
+void ten_extension_thread_record_extension_thread_msg_discarded(
+    ten_extension_thread_t *self) {
+  TEN_ASSERT(self, "Invalid argument.");
+  TEN_ASSERT(ten_extension_thread_check_integrity(self, false),
+             "Invalid use of extension_thread %p.", self);
+
+  const char *extension_group_name =
+      ten_extension_group_get_name(self->extension_group, false);
+
+  ten_extension_context_t *extension_context = self->extension_context;
+  TEN_ASSERT(extension_context, "Should not happen.");
+  TEN_ASSERT(ten_extension_context_check_integrity(extension_context, false),
+             "Should not happen.");
+
+  ten_engine_t *engine = extension_context->engine;
+  TEN_ASSERT(engine, "Should not happen.");
+  TEN_ASSERT(ten_engine_check_integrity(engine, false), "Should not happen.");
+
+  const char *graph_id = ten_engine_get_id(engine, false);
+
+  ten_app_t *app = engine->app;
+  TEN_ASSERT(app, "Should not happen.");
+  TEN_ASSERT(ten_app_check_integrity(app, false), "Should not happen.");
+
+  const char *app_uri = ten_app_get_uri(app);
+
+  MetricHandle *metric_extension_thread_msg_discarded_total =
+      app->service_hub.metric_extension_thread_msg_discarded_total;
+  if (metric_extension_thread_msg_discarded_total) {
+    const char *label_values[] = {app_uri, graph_id, extension_group_name};
+
+    ten_metric_counter_inc(metric_extension_thread_msg_discarded_total,
+                           label_values, 3);
+  }
+}
+
 #endif

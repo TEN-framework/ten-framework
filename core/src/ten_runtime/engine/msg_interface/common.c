@@ -20,6 +20,7 @@
 #include "include_internal/ten_runtime/extension_group/extension_group.h"
 #include "include_internal/ten_runtime/extension_thread/extension_thread.h"
 #include "include_internal/ten_runtime/extension_thread/msg_interface/common.h"
+#include "include_internal/ten_runtime/extension_thread/telemetry.h"
 #include "include_internal/ten_runtime/msg/cmd_base/cmd_base.h"
 #include "include_internal/ten_runtime/msg/msg.h"
 #include "include_internal/ten_runtime/msg/msg_info.h"
@@ -329,6 +330,12 @@ static void ten_engine_post_msg_to_extension_thread(
           "Discard a data-like message (%s) because extension thread input "
           "buffer is full.",
           ten_msg_get_name(msg));
+
+#if defined(TEN_ENABLE_TEN_RUST_APIS)
+      ten_extension_thread_record_extension_thread_msg_discarded(
+          extension_thread);
+#endif
+
       return;
     }
   }

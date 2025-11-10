@@ -454,14 +454,10 @@ pub unsafe extern "C" fn ten_service_hub_create(
                 eprintln!("Unexpected error in service hub creation");
                 return ptr::null_mut();
             }
-        } else {
+        } else if let (Some(telemetry), Some(api)) = (&telemetry_endpoint, &api_endpoint) {
             // Both endpoints are different - we'll handle this with one HTTP
             // server instance that uses guards to route based on endpoint.
-            eprintln!(
-                "Creating service with telemetry at {} and API at {}",
-                telemetry_endpoint.as_ref().unwrap(),
-                api_endpoint.as_ref().unwrap()
-            );
+            eprintln!("Creating service with telemetry at {} and API at {}", telemetry, api);
 
             let registry_clone = registry.clone();
 
@@ -472,11 +468,7 @@ pub unsafe extern "C" fn ten_service_hub_create(
             ) {
                 Some(server) => server,
                 None => {
-                    eprintln!(
-                        "Failed to bind server to endpoints {} and {}",
-                        telemetry_endpoint.as_ref().unwrap(),
-                        api_endpoint.as_ref().unwrap()
-                    );
+                    eprintln!("Failed to bind server to endpoints {} and {}", telemetry, api);
                     return ptr::null_mut();
                 }
             };

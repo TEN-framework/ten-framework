@@ -16,6 +16,8 @@ void ten_app_service_hub_create_metric(ten_app_t *self) {
 
   TEN_ASSERT(!self->service_hub.metric_extension_thread_msg_queue_stay_time_us,
              "Should not happen.");
+  TEN_ASSERT(!self->service_hub.metric_extension_thread_msg_discarded_total,
+             "Should not happen.");
 
   if (self->service_hub.service_hub) {
     const char *label_names[] = {"app", "graph", "extension_group"};
@@ -28,6 +30,15 @@ void ten_app_service_hub_create_metric(ten_app_t *self) {
                           "thread before being processed.",
                           label_names, 3);
     TEN_ASSERT(self->service_hub.metric_extension_thread_msg_queue_stay_time_us,
+               "Should not happen.");
+
+    self->service_hub.metric_extension_thread_msg_discarded_total =
+        ten_metric_create(self->service_hub.service_hub, 0,
+                          "extension_thread_msg_discarded_total",
+                          "Total number of messages discarded because extension "
+                          "thread input buffer is full.",
+                          label_names, 3);
+    TEN_ASSERT(self->service_hub.metric_extension_thread_msg_discarded_total,
                "Should not happen.");
   }
 }
@@ -43,6 +54,14 @@ void ten_app_service_hub_destroy_metric(ten_app_t *self) {
     ten_metric_destroy(
         self->service_hub.metric_extension_thread_msg_queue_stay_time_us);
     self->service_hub.metric_extension_thread_msg_queue_stay_time_us = NULL;
+  }
+
+  if (self->service_hub.metric_extension_thread_msg_discarded_total) {
+    TEN_ASSERT(self->service_hub.service_hub, "Should not happen.");
+
+    ten_metric_destroy(
+        self->service_hub.metric_extension_thread_msg_discarded_total);
+    self->service_hub.metric_extension_thread_msg_discarded_total = NULL;
   }
 }
 
