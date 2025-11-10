@@ -1766,7 +1766,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                     "IMPORTANT: Call this periodically to check if analysis has completed. "
                     "Response status field indicates results: "
                     "- 'insufficient_data': Still collecting - only mention if user asks about progress. "
-                    "- 'available': ALL results ready - announce with percentages. "
+                    "- 'available': Wellness metrics ready. If 'clinical_indicators' field is PRESENT, announce all 7 metrics. If 'clinical_indicators' field is MISSING, Apollo isn't ready yet - announce ONLY wellness metrics and WAIT for [SYSTEM ALERT] about clinical indicators. DO NOT make up values when field is missing. "
                     "- 'partial': WELLNESS METRICS UNAVAILABLE (API failed). ONLY clinical indicators available. "
                     "  When status='partial', you MUST tell user: 'Wellness metrics (stress, distress, burnout, fatigue, low self-esteem) are currently unavailable due to API limitations.' "
                     "  Then announce ONLY the clinical indicators (depression, anxiety) that ARE available. "
