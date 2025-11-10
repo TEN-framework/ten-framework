@@ -2023,18 +2023,29 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                             f"[THYMIA_UNIFIED_POLLER] Hellos max retries ({self.max_announcement_retries}) exceeded - giving up"
                         )
                         self.hellos_shared_with_user = True
-                    # Retry if interval elapsed
+                    # Retry if interval elapsed AND agent not speaking
                     elif (
                         not self.user_currently_speaking
                         and time_since_first_announcement
                         >= self.announcement_retry_interval
                     ):
-                        ten_env.log_info(
-                            f"[THYMIA_UNIFIED_POLLER] Retrying Hellos announcement (attempt {self.hellos_retry_count + 1}/{self.max_announcement_retries}, last sent {time_since_first_announcement:.0f}s ago)"
-                        )
-                        await self._trigger_hellos_announcement(ten_env)
-                        self.hellos_last_announcement_time = current_time
-                        self.hellos_retry_count += 1
+                        # Check if agent is still speaking (using timestamp-based check)
+                        if (
+                            self.agent_speaking_until > 0
+                            and current_time < self.agent_speaking_until
+                        ):
+                            remaining_seconds = self.agent_speaking_until - current_time
+                            ten_env.log_info(
+                                f"[THYMIA_UNIFIED_POLLER] Skipping Hellos retry - agent still speaking "
+                                f"(will finish in {remaining_seconds:.1f}s)"
+                            )
+                        else:
+                            ten_env.log_info(
+                                f"[THYMIA_UNIFIED_POLLER] Retrying Hellos announcement (attempt {self.hellos_retry_count + 1}/{self.max_announcement_retries}, last sent {time_since_first_announcement:.0f}s ago)"
+                            )
+                            await self._trigger_hellos_announcement(ten_env)
+                            self.hellos_last_announcement_time = current_time
+                            self.hellos_retry_count += 1
 
                 # Check for timeout or max retries for Apollo
                 if (
@@ -2057,18 +2068,29 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                             f"[THYMIA_UNIFIED_POLLER] Apollo max retries ({self.max_announcement_retries}) exceeded - giving up"
                         )
                         self.apollo_shared_with_user = True
-                    # Retry if interval elapsed
+                    # Retry if interval elapsed AND agent not speaking
                     elif (
                         not self.user_currently_speaking
                         and time_since_first_announcement
                         >= self.announcement_retry_interval
                     ):
-                        ten_env.log_info(
-                            f"[THYMIA_UNIFIED_POLLER] Retrying Apollo announcement (attempt {self.apollo_retry_count + 1}/{self.max_announcement_retries}, last sent {time_since_first_announcement:.0f}s ago)"
-                        )
-                        await self._trigger_apollo_announcement(ten_env)
-                        self.apollo_last_announcement_time = current_time
-                        self.apollo_retry_count += 1
+                        # Check if agent is still speaking (using timestamp-based check)
+                        if (
+                            self.agent_speaking_until > 0
+                            and current_time < self.agent_speaking_until
+                        ):
+                            remaining_seconds = self.agent_speaking_until - current_time
+                            ten_env.log_info(
+                                f"[THYMIA_UNIFIED_POLLER] Skipping Apollo retry - agent still speaking "
+                                f"(will finish in {remaining_seconds:.1f}s)"
+                            )
+                        else:
+                            ten_env.log_info(
+                                f"[THYMIA_UNIFIED_POLLER] Retrying Apollo announcement (attempt {self.apollo_retry_count + 1}/{self.max_announcement_retries}, last sent {time_since_first_announcement:.0f}s ago)"
+                            )
+                            await self._trigger_apollo_announcement(ten_env)
+                            self.apollo_last_announcement_time = current_time
+                            self.apollo_retry_count += 1
 
                 # ===== PERIODIC PROGRESS CHECKER =====
                 # Check if user has been silent for a while and phases aren't complete
