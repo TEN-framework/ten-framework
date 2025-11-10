@@ -15,6 +15,7 @@ use crate::graph::{
     node::{AtomicFilter, Filter, FilterOperator, GraphNode, GraphNodeType, SelectorNode},
     Graph,
 };
+use crate::pkg_info::message::MsgType;
 
 #[derive(Debug)]
 pub struct SelectorError {
@@ -350,5 +351,111 @@ impl Graph {
         })?;
 
         self.get_nodes_by_selector_node(selector_node)
+    }
+
+    /// Populates message_types and message_names for all SelectorNodes based on their filters
+    pub fn populate_selector_message_info(&mut self) -> Result<()> {
+        use std::collections::{HashMap, HashSet};
+
+        // Collect all message types and names from connections
+        let mut node_messages: HashMap<String, (HashSet<MsgType>, HashSet<String>)> = HashMap::new();
+
+        if let Some(connections) = &self.connections {
+            for connection in connections {
+                let node_name = connection.loc.get_node_name().unwrap_or(&String::new()).clone();
+
+                // Process cmd messages
+                if let Some(cmd_flows) = &connection.cmd {
+                    for flow in cmd_flows {
+                        if let Some(msg_name) = &flow.name {
+                            node_messages.entry(node_name.clone())
+                                .or_insert_with(|| (HashSet::new(), HashSet::new()))
+                                .0.insert(MsgType::Cmd);
+                            node_messages.entry(node_name.clone())
+                                .or_insert_with(|| (HashSet::new(), HashSet::new()))
+                                .1.insert(msg_name.clone());
+                        }
+                    }
+                }
+
+                // Process data messages
+                if let Some(data_flows) = &connection.data {
+                    for flow in data_flows {
+                        if let Some(msg_name) = &flow.name {
+                            node_messages.entry(node_name.clone())
+                                .or_insert_with(|| (HashSet::new(), HashSet::new()))
+                                .0.insert(MsgType::Data);
+                            node_messages.entry(node_name.clone())
+                                .or_insert_with(|| (HashSet::new(), HashSet::new()))
+                                .1.insert(msg_name.clone());
+                        }
+                    }
+                }
+
+                // Process audio_frame messages
+                if let Some(audio_flows) = &connection.audio_frame {
+                    for flow in audio_flows {
+                        if let Some(msg_name) = &flow.name {
+                            node_messages.entry(node_name.clone())
+                                .or_insert_with(|| (HashSet::new(), HashSet::new()))
+                                .0.insert(MsgType::AudioFrame);
+                            node_messages.entry(node_name.clone())
+                                .or_insert_with(|| (HashSet::new(), HashSet::new()))
+                                .1.insert(msg_name.clone());
+                        }
+                    }
+                }
+
+                // Process video_frame messages
+                if let Some(video_flows) = &connection.video_frame {
+                    for flow in video_flows {
+                        if let Some(msg_name) = &flow.name {
+                            node_messages.entry(node_name.clone())
+                                .or_insert_with(|| (HashSet::new(), HashSet::new()))
+                                .0.insert(MsgType::VideoFrame);
+                            node_messages.entry(node_name.clone())
+                                .or_insert_with(|| (HashSet::new(), HashSet::new()))
+                                .1.insert(msg_name.clone());
+                        }
+                    }
+                }
+            }
+        }
+
+        // First, collect all SelectorNode information
+        let mut selector_updates: Vec<(usize, Vec<MsgType>, Vec<String>)> = Vec::new();
+
+        for (idx, node) in self.nodes.iter().enumerate() {
+            if let GraphNode::Selector { content } = node {
+                // Get matching nodes using the existing function
+                if let Some(matching_nodes) = self.get_nodes_by_selector_node(content) {
+                    let mut all_message_types = HashSet::new();
+                    let mut all_message_names = HashSet::new();
+
+                    for matching_node in matching_nodes {
+                        if let Some((msg_types, msg_names)) = node_messages.get(matching_node.get_name()) {
+                            all_message_types.extend(msg_types.iter().cloned());
+                            all_message_names.extend(msg_names.iter().cloned());
+                        }
+                    }
+
+                    selector_updates.push((
+                        idx,
+                        all_message_types.into_iter().collect(),
+                        all_message_names.into_iter().collect(),
+                    ));
+                }
+            }
+        }
+
+        // Then update the SelectorNodes
+        for (idx, message_types, message_names) in selector_updates {
+            if let GraphNode::Selector { content } = &mut self.nodes[idx] {
+                content.message_types = message_types;
+                content.message_names = message_names;
+            }
+        }
+
+        Ok(())
     }
 }

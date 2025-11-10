@@ -13,7 +13,7 @@ use crate::{
         ERR_MSG_GRAPH_LOCALHOST_FORBIDDEN_IN_SINGLE_APP_MODE,
     },
     graph::{is_app_default_loc_or_none, AppUriDeclarationState, connection::GraphLoc},
-    pkg_info::localhost,
+    pkg_info::{localhost, message::MsgType},
 };
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -108,13 +108,18 @@ impl Filter {
         }
     }
 }
-
-/// Represents a subgraph node in the graph
+/// Represents a selector node in the graph
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SelectorNode {
     pub name: String,
 
     pub filter: Filter,
+
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub message_types: Vec<MsgType>,
+
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub message_names: Vec<String>,
 }
 
 /// Represents a node in a graph. This enum represents different types of nodes

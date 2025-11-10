@@ -24,6 +24,7 @@ use ten_rust::{
             ManifestApiCmdResult, ManifestApiMsg, ManifestApiProperty,
             ManifestApiPropertyAttributes,
         },
+        message::MsgType,
         value_type::ValueType,
     },
 };
@@ -213,6 +214,12 @@ pub struct DesignerGraphContent {
 pub struct DesignerSelectorNode {
     pub name: String,
     pub filter: DesignerFilter,
+
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub message_types: Vec<MsgType>,
+
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub message_names: Vec<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -351,6 +358,8 @@ impl TryFrom<GraphNode> for DesignerGraphNode {
                 content: Box::new(DesignerSelectorNode {
                     name: content.name,
                     filter: DesignerFilter::from(content.filter),
+                    message_types: content.message_types.clone(),
+                    message_names: content.message_names.clone(),
                 }),
             }),
         }
