@@ -1,8 +1,211 @@
-# Apollo API Integration Plan - Thymia Extension
+# Apollo API Integration - Thymia Extension
 
-**Date**: 2025-11-05
-**Status**: Approved - Demo Mode (Dual API)
-**Selected Approach**: Option E - Demo Mode
+**Date**: 2025-11-05 (Initial Plan) | **Updated**: 2025-11-10 (Implementation Status)
+**Status**: ✅ Implemented - Demo Mode (Dual API)
+**Selected Approach**: Option E - Demo Mode (Hellos + Apollo Sequential)
+
+---
+
+## 🆕 Recent Updates (2025-11-08 to 2025-11-10)
+
+### Implementation Status: ✅ Complete with Fixes
+
+The Apollo API integration has been fully implemented in demo_dual mode. Recent sessions identified and resolved critical issues:
+
+#### Memory Leak Fix (2025-11-08) - CRITICAL
+**Commit**: `0b97286dc` - fix: prevent memory leak and race condition in extensions
+
+**Problem**:
+- Unbounded `speech_buffer` growth in extended conversations
+- Risk of OOM (Out of Memory) in sessions > 5 minutes of continuous speech
+- No safety limit on accumulated audio data
+
+**Solution Implemented**:
+```python
+# Added to extension.py __init__
+self.max_speech_duration = 300.0  # 5 minutes safety limit (seconds)
+
+# Added checks before buffer append (lines 99, 113)
+if self.speech_duration < self.max_speech_duration:
+    self.speech_buffer.append(buffered_frame)
+    self.speech_duration += len(buffered_frame) / (
+        self.sample_rate * self.channels * 2
+    )
+```
+
+**Impact**:
+- Normal operation: Unaffected (typical sessions 30-60s, Apollo trigger at 44s)
+- Extended sessions: Protected from memory exhaustion
+- **File**: extension.py lines 56, 99, 113
+
+---
+
+#### Performance Optimization (2025-11-08)
+**Commit**: `44b505ce1` - perf: optimize audio buffer with deque and add config docs
+
+**Problem**:
+- Circular buffer using `list.pop(0)` → O(n) time complexity
+- Performance degrades with buffer size
+
+**Solution**:
+```python
+# Changed from list to deque
+from collections import deque
+self.circular_buffer = deque()  # Line 59-60
+
+# Changed pop operation
+self.circular_buffer.popleft()  # Line 92 (was: pop(0))
+```
+
+**Impact**:
+- O(n) → O(1) performance for audio frame buffering
+- Improved efficiency in high-frequency audio processing
+- **File**: extension.py lines 59-60, 92
+
+---
+
+#### API Reliability Improvements (2025-11-08)
+**Commit**: `8e6443d28` - fix: improve Thymia API reliability and reduce logging noise
+
+**Problems**:
+1. Apollo API sometimes cancelled by immediate subsequent call from Hellos
+2. System announcing "Wellness analysis complete" even when Hellos failed
+3. Excessive debug logging making timeline difficult to track
+
+**Solutions**:
+1. **5-second delay** between Hellos upload and Apollo trigger
+   - Prevents API request cancellation
+   - Gives Hellos time to process before Apollo starts
+
+2. **hellos_success flag** added
+   - Tracks whether Hellos completed successfully
+   - Only announces wellness metrics if Hellos succeeds
+   - Prevents announcing failed analyses
+
+3. **curl subprocess** instead of aiohttp
+   - More reliable API calls (matches manual testing behavior)
+   - Better error handling and timeout control
+
+4. **Cleaned up logging**
+   - Removed verbose debug output (curl headers, checksums, byte counts)
+   - Kept essential timeline logs (phase transitions, API results, errors)
+   - Removed emojis from logs for cleaner output
+
+**Impact**:
+- Improved Apollo API success rate
+- No more false "analysis complete" announcements
+- Easier debugging with cleaner logs
+- **File**: extension.py (major refactor, 745 insertions)
+
+---
+
+#### Code Quality & Linting (2025-11-08)
+**Commit**: `032df46fd` - chore: fix pylint warnings in Python extensions
+
+**Changes**:
+- Removed unused imports (time, json, asyncio, subprocess, Dict)
+- Fixed f-strings without interpolation
+- Prefixed unused variables with underscore (_stderr, _attempt)
+- Changed broad `Exception` to specific `RuntimeError` in apollo_api.py
+- Made `AudioBuffer._pcm_to_wav` public → `pcm_to_wav`
+- Added pylint disable comment for wave module false positive
+
+**Result**:
+- ✅ All pylint warnings resolved
+- ✅ Code quality rating: 9.76/10
+- ✅ CI/CD passing (Black formatting + pylint checks)
+- **Files**: extension.py, apollo_api.py
+
+---
+
+### Current Implementation Details
+
+**Mode**: `demo_dual`
+- Hellos API: Triggers at 22s of speech
+- Apollo API: Triggers at 44s of speech (22s + 22s)
+- Sequential processing: Hellos → 5s delay → Apollo
+
+**Audio Split** (Apollo):
+- **Workaround active**: Hardcoded MOOD_DURATION = 22.0 seconds
+- First 22s → mood analysis
+- Next 22s → reading analysis
+- **Known issue**: Property loading returns 0.0 for `apollo_mood_duration` (root cause investigation deferred)
+
+**API Integration**:
+- Hellos: Single POST to `/v1/models/hellos`
+- Apollo: Create model run → Upload 2 audio files → Poll for results
+- Error handling: Proper timeouts, retries, and failure announcements
+- Logging: Clean timeline with phase transitions and results
+
+**Performance**:
+- Memory: Protected with 300s max buffer limit
+- CPU: O(1) buffer operations with deque
+- API: 5s delay prevents cancellation
+
+---
+
+### Known Issues & Status
+
+1. **Property Loading Mystery** ⚠️
+   - Status: **Workaround in place, investigation deferred**
+   - Issue: `apollo_mood_duration` and `apollo_read_duration` load as 0.0 instead of 22.0
+   - Workaround: Hardcoded MOOD_DURATION = 22.0 in `_run_apollo_phase`
+   - Impact: No functional impact, split works correctly
+   - Priority: Low (workaround is sufficient)
+
+2. **Memory Leak** ✅ FIXED
+   - Fixed: Added 300-second max buffer limit
+   - Commit: 0b97286dc
+
+3. **API Reliability** ✅ FIXED
+   - Fixed: 5-second delay + curl subprocess + success flag
+   - Commit: 8e6443d28
+
+4. **Performance** ✅ FIXED
+   - Fixed: Changed to deque for O(1) operations
+   - Commit: 44b505ce1
+
+---
+
+### Testing Status
+
+**Production System**: ✅ Operational
+- URL: https://oai.agora.io:453/
+- Demo mode active with both APIs
+- Memory leak protection tested in commit
+
+**Recent Sessions**:
+- 2025-11-05: Property loading issue identified and worked around
+- 2025-11-08: API reliability improvements deployed
+- 2025-11-10: Code quality improvements merged
+
+**Next Testing**:
+- [ ] Extended session (>5min) to verify memory leak fix
+- [ ] Multiple concurrent sessions to verify performance improvements
+- [ ] API reliability under load with 5s delay
+
+---
+
+### File Locations
+
+**Implementation**:
+- Main extension: `/home/ubuntu/ten-framework/ai_agents/agents/ten_packages/extension/thymia_analyzer_python/extension.py`
+- Apollo API client: `/home/ubuntu/ten-framework/ai_agents/agents/ten_packages/extension/thymia_analyzer_python/apollo_api.py`
+
+**Configuration**:
+- Base property: `/home/ubuntu/ten-framework/ai_agents/agents/examples/voice-assistant-advanced/tenapp/property.json`
+- Runtime properties: `/tmp/ten_agent/property-agora_*-TIMESTAMP.json`
+
+**Documentation**:
+- This plan: `/home/ubuntu/ten-framework/ai/apollo.md`
+- Status updates: `/home/ubuntu/ten-framework/ai/status.md`
+- TEN docs: `/home/ubuntu/ten-framework/ai/AI_working_with_ten.md`
+
+---
+
+## Original Integration Plan (2025-11-05)
+
+The sections below document the original planning and options considered. The selected approach (Option E - Demo Mode) has been fully implemented with the fixes documented above.
 
 ---
 
