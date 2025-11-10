@@ -589,6 +589,10 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
         self.hellos_last_announcement_time: float = 0.0
         self.apollo_last_announcement_time: float = 0.0
         self.announcement_retry_interval: float = 30.0  # Retry every 30s
+        self.hellos_retry_count: int = 0  # Track retry attempts
+        self.apollo_retry_count: int = 0  # Track retry attempts
+        self.max_announcement_retries: int = 3  # Give up after 3 retries
+        self.announcement_timeout: float = 90.0  # Force-complete after 90s
 
         # Input phase tracking (independent of API state)
         self.mood_phase_complete: bool = False  # 30s mood speech collected
@@ -1771,6 +1775,34 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
         except Exception as e:
             ten_env.log_error(f"[THYMIA_TRIGGER_FAIL] Apollo: {e}")
 
+    async def _trigger_hellos_failure_notification(
+        self, ten_env: AsyncTenEnv, error_code: str, error_reason: str
+    ):
+        """Send notification to LLM that Hellos analysis failed"""
+        try:
+            await asyncio.sleep(1)  # Small delay to avoid race conditions
+            ten_env.log_info(
+                f"[THYMIA_FAILURE_NOTIFY] Notifying LLM about Hellos failure: {error_code}"
+            )
+
+            text_data = Data.create("text_data")
+            text_data.set_property_string(
+                "text",
+                f"Wellness analysis unavailable ({error_code}: {error_reason}). Only clinical indicators will be provided when ready.",
+            )
+            text_data.set_property_bool("end_of_segment", True)
+            await ten_env.send_data(text_data)
+
+            ten_env.log_info(
+                "[THYMIA_FAILURE_NOTIFY_OK] Hellos failure notification sent"
+            )
+            # Mark as shared to prevent retries
+            self.hellos_shared_with_user = True
+        except Exception as e:
+            ten_env.log_error(
+                f"[THYMIA_FAILURE_NOTIFY_FAIL] Hellos notification: {e}"
+            )
+
     async def _unified_results_poller(self, ten_env: AsyncTenEnv):
         """
         Unified poller that:
@@ -1848,7 +1880,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                                             f"stress={self.latest_results.stress:.2f}, burnout={self.latest_results.burnout:.2f}"
                                         )
                                 elif status in ("COMPLETE_ERROR", "FAILED"):
-                                    # API failed - log error details and stop retrying
+                                    # API failed - log error details and notify LLM immediately
                                     error_reason = result.get(
                                         "errorReason", "Unknown error"
                                     )
@@ -1858,8 +1890,10 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                                     ten_env.log_error(
                                         f"[UNIFIED_POLLER] Hellos API FAILED: {error_code} - {error_reason}"
                                     )
-                                    # Mark as shared to stop announcement retries (no metrics to announce)
-                                    self.hellos_shared_with_user = True
+                                    # Send immediate notification to LLM (don't wait for retry loop)
+                                    await self._trigger_hellos_failure_notification(
+                                        ten_env, error_code, error_reason
+                                    )
 
                                 self.hellos_complete = True
                                 self.hellos_analysis_running = (
@@ -1894,38 +1928,74 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                 # ===== RETRY ANNOUNCEMENTS IF NEEDED (MAX ONCE EVERY 30s) =====
                 current_time = time.time()
 
-                # Only retry if we have actual results to announce
+                # Check for timeout or max retries for Hellos
                 if (
                     self.hellos_trigger_sent
                     and not self.hellos_shared_with_user
-                    and not self.user_currently_speaking
-                    and self.latest_results
-                    is not None  # Only retry if we have metrics
-                    and (current_time - self.hellos_last_announcement_time)
-                    >= self.announcement_retry_interval
+                    and self.latest_results is not None
                 ):
-                    ten_env.log_info(
-                        "[UNIFIED_POLLER] Retrying Hellos announcement (not confirmed by LLM, last sent {:.0f}s ago)".format(
-                            current_time - self.hellos_last_announcement_time
-                        )
+                    time_since_first_announcement = (
+                        current_time - self.hellos_last_announcement_time
                     )
-                    await self._trigger_hellos_announcement(ten_env)
-                    self.hellos_last_announcement_time = current_time
 
+                    # Timeout fallback - force complete after 90s
+                    if time_since_first_announcement >= self.announcement_timeout:
+                        ten_env.log_warn(
+                            f"[UNIFIED_POLLER] Hellos announcement timeout ({self.announcement_timeout}s) - marking as shared"
+                        )
+                        self.hellos_shared_with_user = True
+                    # Max retries exceeded
+                    elif self.hellos_retry_count >= self.max_announcement_retries:
+                        ten_env.log_warn(
+                            f"[UNIFIED_POLLER] Hellos max retries ({self.max_announcement_retries}) exceeded - giving up"
+                        )
+                        self.hellos_shared_with_user = True
+                    # Retry if interval elapsed
+                    elif (
+                        not self.user_currently_speaking
+                        and time_since_first_announcement
+                        >= self.announcement_retry_interval
+                    ):
+                        ten_env.log_info(
+                            f"[UNIFIED_POLLER] Retrying Hellos announcement (attempt {self.hellos_retry_count + 1}/{self.max_announcement_retries}, last sent {time_since_first_announcement:.0f}s ago)"
+                        )
+                        await self._trigger_hellos_announcement(ten_env)
+                        self.hellos_last_announcement_time = current_time
+                        self.hellos_retry_count += 1
+
+                # Check for timeout or max retries for Apollo
                 if (
                     self.apollo_trigger_sent
                     and not self.apollo_shared_with_user
-                    and not self.user_currently_speaking
-                    and (current_time - self.apollo_last_announcement_time)
-                    >= self.announcement_retry_interval
                 ):
-                    ten_env.log_info(
-                        "[UNIFIED_POLLER] Retrying Apollo announcement (not confirmed by LLM, last sent {:.0f}s ago)".format(
-                            current_time - self.apollo_last_announcement_time
-                        )
+                    time_since_first_announcement = (
+                        current_time - self.apollo_last_announcement_time
                     )
-                    await self._trigger_apollo_announcement(ten_env)
-                    self.apollo_last_announcement_time = current_time
+
+                    # Timeout fallback - force complete after 90s
+                    if time_since_first_announcement >= self.announcement_timeout:
+                        ten_env.log_warn(
+                            f"[UNIFIED_POLLER] Apollo announcement timeout ({self.announcement_timeout}s) - marking as shared"
+                        )
+                        self.apollo_shared_with_user = True
+                    # Max retries exceeded
+                    elif self.apollo_retry_count >= self.max_announcement_retries:
+                        ten_env.log_warn(
+                            f"[UNIFIED_POLLER] Apollo max retries ({self.max_announcement_retries}) exceeded - giving up"
+                        )
+                        self.apollo_shared_with_user = True
+                    # Retry if interval elapsed
+                    elif (
+                        not self.user_currently_speaking
+                        and time_since_first_announcement
+                        >= self.announcement_retry_interval
+                    ):
+                        ten_env.log_info(
+                            f"[UNIFIED_POLLER] Retrying Apollo announcement (attempt {self.apollo_retry_count + 1}/{self.max_announcement_retries}, last sent {time_since_first_announcement:.0f}s ago)"
+                        )
+                        await self._trigger_apollo_announcement(ten_env)
+                        self.apollo_last_announcement_time = current_time
+                        self.apollo_retry_count += 1
 
             except asyncio.CancelledError:
                 ten_env.log_info("[UNIFIED_POLLER] Task cancelled, stopping")
