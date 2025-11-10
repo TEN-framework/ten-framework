@@ -48,6 +48,8 @@ class WebSocketServerManager:
         self.current_client: Optional[Any] = None
         self.running = False
         self._server_task: Optional[asyncio.Task] = None
+        # Protects access to current_client during accept/cleanup
+        self._client_lock = asyncio.Lock()
 
     async def start(self) -> None:
         """Start the WebSocket server"""
@@ -99,8 +101,15 @@ class WebSocketServerManager:
             f"{websocket.remote_address[0]}:{websocket.remote_address[1]}"
         )
 
-        # Reject connection if one already exists
-        if self.current_client is not None:
+        # Reject connection if one already exists (protect with lock)
+        reject = False
+        async with self._client_lock:
+            if self.current_client is not None:
+                reject = True
+            else:
+                self.current_client = websocket
+
+        if reject:
             self.ten_env.log_warn(
                 f"Rejecting new connection from {client_id} - only one connection allowed"
             )
@@ -110,8 +119,6 @@ class WebSocketServerManager:
             )
             await websocket.close(1008, "Only one connection allowed")
             return
-
-        self.current_client = websocket
         self.ten_env.log_info(f"Client connected: {client_id}")
 
         try:
@@ -127,8 +134,9 @@ class WebSocketServerManager:
             self.ten_env.log_error(f"Error handling client {client_id}: {e}")
             await self._send_error(websocket, f"Server error: {str(e)}")
         finally:
-            if self.current_client == websocket:
-                self.current_client = None
+            async with self._client_lock:
+                if self.current_client == websocket:
+                    self.current_client = None
             self.ten_env.log_info(f"Client removed: {client_id}")
 
     async def _process_message(
@@ -191,9 +199,7 @@ class WebSocketServerManager:
             )
             await self._send_error(websocket, f"Processing error: {str(e)}")
 
-    async def _send_error(
-        self, websocket: Any, error: str
-    ) -> None:
+    async def _send_error(self, websocket: Any, error: str) -> None:
         """
         Send error message to client
 
@@ -281,9 +287,7 @@ class WebSocketServerManager:
         message_str = json.dumps(message)
         return await self._send_to_client(self.current_client, message_str)
 
-    async def _send_to_client(
-        self, websocket: Any, message: str
-    ) -> bool:
+    async def _send_to_client(self, websocket: Any, message: str) -> bool:
         """
         Send message to a WebSocket client
 

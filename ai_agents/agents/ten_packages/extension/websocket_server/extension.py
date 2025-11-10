@@ -27,6 +27,7 @@ class WebsocketServerExtension(AsyncExtension):
         self.config: WebSocketServerConfig = None
         self.ws_server: WebSocketServerManager = None
         self.dump_file = None
+        self.dump_bytes_written = 0
         self.ten_env: AsyncTenEnv = None
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
@@ -41,9 +42,7 @@ class WebsocketServerExtension(AsyncExtension):
             self.config = WebSocketServerConfig.model_validate_json(config_json)
             self.config.validate_config()
 
-            ten_env.log_info(
-                f"Loaded config: {self.config.to_str()}"
-            )
+            ten_env.log_info(f"Loaded config: {self.config.to_str()}")
         except Exception as e:
             ten_env.log_error(f"Failed to load configuration: {e}")
             raise
@@ -54,6 +53,7 @@ class WebsocketServerExtension(AsyncExtension):
                 dump_path = Path(self.config.dump_path)
                 dump_path.parent.mkdir(parents=True, exist_ok=True)
                 self.dump_file = open(dump_path, "wb")
+                self.dump_bytes_written = 0
                 ten_env.log_info(f"Audio dump enabled: {dump_path}")
             except Exception as e:
                 ten_env.log_error(f"Failed to open dump file: {e}")
@@ -235,8 +235,24 @@ class WebsocketServerExtension(AsyncExtension):
 
             # Dump audio if enabled
             if self.dump_file:
-                self.dump_file.write(audio_data.pcm_data)
-                self.dump_file.flush()
+                try:
+                    self.dump_file.write(audio_data.pcm_data)
+                    self.dump_bytes_written += len(audio_data.pcm_data)
+                    # Truncate when exceeding configured max size
+                    if self.dump_bytes_written >= self.config.dump_max_bytes:
+                        self.dump_file.flush()
+                        self.dump_file.close()
+                        # Reopen same path in write mode to truncate
+                        dump_path = Path(self.config.dump_path)
+                        self.dump_file = open(dump_path, "wb")
+                        self.dump_bytes_written = 0
+                        ten_env.log_info(
+                            f"Audio dump truncated after reaching {self.config.dump_max_bytes} bytes"
+                        )
+                    else:
+                        self.dump_file.flush()
+                except Exception as e:
+                    ten_env.log_error(f"Error writing dump file: {e}")
 
             # Create AudioFrame
             audio_frame = AudioFrame.create("pcm_frame")

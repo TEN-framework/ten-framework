@@ -33,6 +33,10 @@ class WebSocketServerConfig(BaseModel):
         ),
         description="Path to dump audio data",
     )
+    dump_max_bytes: int = Field(
+        default=50 * 1024 * 1024,
+        description="Maximum dump file size in bytes before truncation (default 50MB)",
+    )
 
     # Additional params (for future extensibility)
     params: dict[str, Any] = Field(
@@ -54,6 +58,10 @@ class WebSocketServerConfig(BaseModel):
             raise ValueError(
                 f"Invalid bytes_per_sample: {self.bytes_per_sample} (must be 1, 2, or 4)"
             )
+        if self.dump_max_bytes <= 0:
+            raise ValueError(f"Invalid dump_max_bytes: {self.dump_max_bytes}")
+        if self.dump_max_bytes <= 0:
+            raise ValueError(f"Invalid dump_max_bytes: {self.dump_max_bytes}")
 
     def to_str(self) -> str:
         """
