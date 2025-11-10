@@ -628,6 +628,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
         self.last_user_speech_time: float = 0.0
         self.user_currently_speaking: bool = False
         self.agent_currently_speaking: bool = False  # Track TTS playback state
+        self.agent_speaking_until: float = 0.0  # Timestamp when agent will finish speaking
         self.last_agent_speech_end_time: float = 0.0
 
         # User information for Thymia API
@@ -937,11 +938,24 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                     f"Full payload: {json_str}"
                 )
 
-                # TODO: Currently sets agent_currently_speaking=False immediately
-                # This is WRONG - audio still playing for duration_ms more!
-                # Need to verify reason codes and implement proper playback tracking
-                self.agent_currently_speaking = False
-                self.last_agent_speech_end_time = time.time()
+                if reason == 1:
+                    # TTS generation complete - calculate when audio will finish playing
+                    # Add buffer time for network/processing delays
+                    buffer_seconds = 1.0
+                    self.agent_speaking_until = time.time() + (duration_ms / 1000.0) + buffer_seconds
+                    ten_env.log_info(
+                        f"[THYMIA_TTS_END] TTS generation complete (reason=1). "
+                        f"Audio will play for ~{duration_ms}ms more. "
+                        f"Agent speaking until timestamp: {self.agent_speaking_until:.2f}"
+                    )
+                elif reason == 2:
+                    # Playback interrupted or complete - stop immediately
+                    self.agent_speaking_until = 0.0
+                    self.agent_currently_speaking = False
+                    self.last_agent_speech_end_time = time.time()
+                    ten_env.log_info(
+                        f"[THYMIA_TTS_END] Playback ended (reason=2). Agent stopped speaking."
+                    )
 
         except Exception as e:
             ten_env.log_error(f"[THYMIA_TTS] Error handling data '{data.get_name()}': {e}")
@@ -2061,11 +2075,16 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                 if self.user_name is not None:  # Only if user info has been set
                     time_since_last_speech = current_time - self.last_user_speech_time
 
+                    # Check if agent is still speaking (timestamp-based)
+                    agent_still_speaking = (
+                        self.agent_speaking_until > 0 and current_time < self.agent_speaking_until
+                    ) or self.agent_currently_speaking
+
                     # Check if user has been silent for 15+ seconds AND agent is not speaking
                     if (
                         time_since_last_speech > 15.0
                         and not self.user_currently_speaking
-                        and not self.agent_currently_speaking
+                        and not agent_still_speaking
                     ):
                         # Check if mood phase is incomplete (need 30s, haven't started analysis yet)
                         if not self.mood_phase_complete and self.speech_duration < 30.0:
@@ -2133,9 +2152,19 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
             )
             return
 
-        if self.agent_currently_speaking:
+        # Check if agent is still speaking (using timestamp-based check)
+        current_time = time.time()
+        if self.agent_speaking_until > 0 and current_time < self.agent_speaking_until:
+            remaining_seconds = self.agent_speaking_until - current_time
             ten_env.log_info(
-                "[THYMIA_TRIGGER_CHECK] Skipping trigger - agent currently speaking"
+                f"[THYMIA_TRIGGER_CHECK] Skipping trigger - agent still speaking "
+                f"(will finish in {remaining_seconds:.1f}s, until timestamp {self.agent_speaking_until:.2f})"
+            )
+            return
+        elif self.agent_currently_speaking:
+            # Fallback for immediate speaking detection (tts_audio_start)
+            ten_env.log_info(
+                "[THYMIA_TRIGGER_CHECK] Skipping trigger - agent currently speaking (tts_audio_start)"
             )
             return
 
