@@ -84,7 +84,7 @@ TEN 是一个面向语音对话 AI 代理的开源框架。
 
 <br>
 
-![Image](https://github.com/user-attachments/assets/6f35737d-6697-4860-8915-762553605cc9)
+![Image](https://github.com/user-attachments/assets/dce3db80-fb48-4e2a-8ac7-33f50bcffa32)
 
 <strong>多用途语音助手</strong> —— 低延迟、高质量的实时助手，可通过 <a href="ai_agents/agents/examples/voice-assistant-with-memU">记忆</a>、<a href="ai_agents/agents/examples/voice-assistant-with-ten-vad">VAD</a>、<a href="ai_agents/agents/examples/voice-assistant-with-turn-detection">回合检测</a> 等扩展能力进行增强。
 
@@ -132,7 +132,7 @@ TEN 是一个面向语音对话 AI 代理的开源框架。
 
 <br>
 
-![Image](https://github.com/user-attachments/assets/3fdc9b2e-b20d-4af9-b496-8c6867a6cae9)
+![Image](https://github.com/user-attachments/assets/d793bc6c-c8de-4996-bd85-9ce88c69dd8d)
 
 <strong>转写（Transcription）</strong> —— 将音频实时转换为文本的工具。
 
@@ -144,7 +144,7 @@ TEN 是一个面向语音对话 AI 代理的开源框架。
 
 <br>
 
-![Image](https://github.com/user-attachments/assets/d0330665-84cb-40f3-ab70-2d805d6465fc)
+![Image](https://github.com/user-attachments/assets/3d60f1ff-0f82-4fe7-b5c2-ac03d284f60c)
 
 <strong>ESP32-S3 Korvo V3</strong> —— 在 Espressif ESP32-S3 Korvo V3 开发板上运行 TEN 代理示例，让硬件具备 LLM 驱动的交互能力。
 
@@ -497,20 +497,20 @@ TEN Framework 也可通过以下 AI 驱动的问答平台获取信息，它们�
 [back-to-top]: https://img.shields.io/badge/-Back_to_top-gray?style=flat-square
 
 [ten-framework-shield]: https://img.shields.io/github/stars/ten-framework/ten_framework?color=ffcb47&labelColor=gray&style=flat-square&logo=github
-[ten-framework-banner]: https://github.com/user-attachments/assets/f4a147c2-d8c5-4242-83ce-5360f03539e7
+[ten-framework-banner]: https://github.com/user-attachments/assets/2a560a74-68f3-4f4a-9ec8-89464c42a9c7
 [ten-framework-link]: https://github.com/ten-framework/ten_framework
 
 [ten-vad-link]: https://github.com/ten-framework/ten-vad
 [ten-vad-shield]: https://img.shields.io/github/stars/ten-framework/ten-vad?color=ffcb47&labelColor=gray&style=flat-square&logo=github
-[ten-vad-banner]: https://github.com/user-attachments/assets/55002f66-77a3-4147-8d76-699eb73fd260
+[ten-vad-banner]: https://github.com/user-attachments/assets/e504135e-67fd-4fa1-b0e4-d495358d8aa5
 
 [ten-turn-detection-link]: https://github.com/ten-framework/ten-turn-detection
 [ten-turn-detection-shield]: https://img.shields.io/github/stars/ten-framework/ten-turn-detection?color=ffcb47&labelColor=gray&style=flat-square&logo=github
-[ten-turn-detection-banner]: https://github.com/user-attachments/assets/2af81ec1-2e57-45fa-a73f-b3a911ca414a
+[ten-turn-detection-banner]: https://github.com/user-attachments/assets/c72d82cc-3667-496c-8bd6-3d194a91c452
 
 [ten-agent-link]: https://github.com/TEN-framework/ten-framework/tree/main/ai_agents
-[ten-agent-banner]: https://github.com/user-attachments/assets/a68ba734-3292-456b-9056-54dc126aeec9
+[ten-agent-banner]: https://github.com/user-attachments/assets/7f735633-c7f6-4432-b6b4-d2a2977ca588
 
 [ten-portal-link]: https://github.com/ten-framework/portal
 [ten-portal-shield]: https://img.shields.io/github/stars/ten-framework/portal?color=ffcb47&labelColor=gray&style=flat-square&logo=github
-[ten-portal-banner]: https://github.com/user-attachments/assets/2f8e4459-ba16-4806-87f9-229ad96aa2cb
+[ten-portal-banner]: https://github.com/user-attachments/assets/f56c75b9-722c-4156-902d-ae98ce2b3b5e

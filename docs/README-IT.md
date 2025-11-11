@@ -82,7 +82,7 @@ L’[ecosistema TEN](#ten-ecosystem) comprende [TEN Framework](https://github.co
 
 <br>
 
-![Image](https://github.com/user-attachments/assets/6f35737d-6697-4860-8915-762553605cc9)
+![Image](https://github.com/user-attachments/assets/dce3db80-fb48-4e2a-8ac7-33f50bcffa32)
 
 <strong>Assistente vocale multiuso</strong> — Assistente in tempo reale, a bassa latenza e alta qualità, estendibile con <a href="ai_agents/agents/examples/voice-assistant-with-memU">memoria</a>, <a href="ai_agents/agents/examples/voice-assistant-with-ten-vad">VAD</a>, <a href="ai_agents/agents/examples/voice-assistant-with-turn-detection">rilevamento dei turni</a> e altre estensioni.
 
@@ -130,7 +130,7 @@ Guarda il <a href="https://github.com/TEN-framework/ten-framework/tree/main/ai_a
 
 <br>
 
-![Image](https://github.com/user-attachments/assets/3fdc9b2e-b20d-4af9-b496-8c6867a6cae9)
+![Image](https://github.com/user-attachments/assets/d793bc6c-c8de-4996-bd85-9ce88c69dd8d)
 
 <strong>Trascrizione</strong> — Strumento che trascrive l’audio in testo.
 
@@ -142,7 +142,7 @@ Guarda il <a href="https://github.com/TEN-framework/ten-framework/tree/main/ai_a
 
 <br>
 
-![Image](https://github.com/user-attachments/assets/d0330665-84cb-40f3-ab70-2d805d6465fc)
+![Image](https://github.com/user-attachments/assets/3d60f1ff-0f82-4fe7-b5c2-ac03d284f60c)
 
 <strong>ESP32-S3 Korvo V3</strong> — Esegue un esempio di TEN Agent sulla scheda di sviluppo Espressif ESP32-S3 Korvo V3 per portare comunicazioni basate su LLM sull’hardware.
 
@@ -449,20 +449,20 @@ Le contribuzioni sono benvenute! Leggi prima le [linee guida per contribuire](./
 [back-to-top]: https://img.shields.io/badge/-Back_to_top-gray?style=flat-square
 
 [ten-framework-shield]: https://img.shields.io/github/stars/ten-framework/ten_framework?color=ffcb47&labelColor=gray&style=flat-square&logo=github
-[ten-framework-banner]: https://github.com/user-attachments/assets/f4a147c2-d8c5-4242-83ce-5360f03539e7
+[ten-framework-banner]: https://github.com/user-attachments/assets/2a560a74-68f3-4f4a-9ec8-89464c42a9c7
 [ten-framework-link]: https://github.com/ten-framework/ten_framework
 
 [ten-vad-link]: https://github.com/ten-framework/ten-vad
 [ten-vad-shield]: https://img.shields.io/github/stars/ten-framework/ten-vad?color=ffcb47&labelColor=gray&style=flat-square&logo=github
-[ten-vad-banner]: https://github.com/user-attachments/assets/55002f66-77a3-4147-8d76-699eb73fd260
+[ten-vad-banner]: https://github.com/user-attachments/assets/e504135e-67fd-4fa1-b0e4-d495358d8aa5
 
 [ten-turn-detection-link]: https://github.com/ten-framework/ten-turn-detection
 [ten-turn-detection-shield]: https://img.shields.io/github/stars/ten-framework/ten-turn-detection?color=ffcb47&labelColor=gray&style=flat-square&logo=github
-[ten-turn-detection-banner]: https://github.com/user-attachments/assets/2af81ec1-2e57-45fa-a73f-b3a911ca414a
+[ten-turn-detection-banner]: https://github.com/user-attachments/assets/c72d82cc-3667-496c-8bd6-3d194a91c452
 
 [ten-agent-link]: https://github.com/TEN-framework/ten-framework/tree/main/ai_agents
-[ten-agent-banner]: https://github.com/user-attachments/assets/a68ba734-3292-456b-9056-54dc126aeec9
+[ten-agent-banner]: https://github.com/user-attachments/assets/7f735633-c7f6-4432-b6b4-d2a2977ca588
 
 [ten-portal-link]: https://github.com/ten-framework/portal
 [ten-portal-shield]: https://img.shields.io/github/stars/ten-framework/portal?color=ffcb47&labelColor=gray&style=flat-square&logo=github
-[ten-portal-banner]: https://github.com/user-attachments/assets/2f8e4459-ba16-4806-87f9-229ad96aa2cb
+[ten-portal-banner]: https://github.com/user-attachments/assets/f56c75b9-722c-4156-902d-ae98ce2b3b5e
