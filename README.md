@@ -88,7 +88,7 @@ See the <a href="https://github.com/TEN-framework/ten-framework/tree/main/ai_age
 
 <br>
 
-![divider](https://github.com/user-attachments/assets/2e2bbcc6-e6d8-4227-83c6-0620fc96f761)
+![divider](https://github.com/user-attachments/assets/aec54c94-ced9-4683-ae58-0a5a7ed803bd)
 
 <br>
 
@@ -100,7 +100,7 @@ See the <a href="https://github.com/TEN-framework/ten-framework/tree/main/ai_age
 
 <br>
 
-![divider](https://github.com/user-attachments/assets/2e2bbcc6-e6d8-4227-83c6-0620fc96f761)
+![divider](https://github.com/user-attachments/assets/aec54c94-ced9-4683-ae58-0a5a7ed803bd)
 
 <br>
 
@@ -112,7 +112,7 @@ See the <a href="https://github.com/TEN-framework/ten-framework/tree/main/ai_age
 
 <br>
 
-![divider](https://github.com/user-attachments/assets/2e2bbcc6-e6d8-4227-83c6-0620fc96f761)
+![divider](https://github.com/user-attachments/assets/aec54c94-ced9-4683-ae58-0a5a7ed803bd)
 
 <br>
 
@@ -124,7 +124,7 @@ See the <a href="https://github.com/TEN-framework/ten-framework/tree/main/ai_age
 
 <br>
 
-![divider](https://github.com/user-attachments/assets/2e2bbcc6-e6d8-4227-83c6-0620fc96f761)
+![divider](https://github.com/user-attachments/assets/aec54c94-ced9-4683-ae58-0a5a7ed803bd)
 
 <br>
 
@@ -136,7 +136,7 @@ See the <a href="https://github.com/TEN-framework/ten-framework/tree/main/ai_age
 
 <br>
 
-![divider](https://github.com/user-attachments/assets/2e2bbcc6-e6d8-4227-83c6-0620fc96f761)
+![divider](https://github.com/user-attachments/assets/aec54c94-ced9-4683-ae58-0a5a7ed803bd)
 
 <br>
 
@@ -167,7 +167,7 @@ See the <a href="https://github.com/TEN-framework/ten-framework/tree/main/ai_age
 
 <br>
 
-![divider](https://github.com/user-attachments/assets/2e2bbcc6-e6d8-4227-83c6-0620fc96f761)
+![divider](https://github.com/user-attachments/assets/aec54c94-ced9-4683-ae58-0a5a7ed803bd)
 
 <!-- > [!NOTE]
 > **macOS: Docker setting on Apple Silicon**
@@ -257,7 +257,7 @@ Once the agent example is running, you can access the following interfaces:
 
 <br>
 
-![divider](https://github.com/user-attachments/assets/2e2bbcc6-e6d8-4227-83c6-0620fc96f761)
+![divider](https://github.com/user-attachments/assets/aec54c94-ced9-4683-ae58-0a5a7ed803bd)
 
 #### Step ⓷ - Customize your agent example
 
@@ -268,7 +268,7 @@ Once the agent example is running, you can access the following interfaces:
 
 <br>
 
-![divider](https://github.com/user-attachments/assets/2e2bbcc6-e6d8-4227-83c6-0620fc96f761)
+![divider](https://github.com/user-attachments/assets/aec54c94-ced9-4683-ae58-0a5a7ed803bd)
 
 <br>
 
@@ -314,7 +314,7 @@ docker run --rm -it --env-file .env -p 3000:3000 example-app
 
 <br>
 
-![divider](https://github.com/user-attachments/assets/2e2bbcc6-e6d8-4227-83c6-0620fc96f761)
+![divider](https://github.com/user-attachments/assets/aec54c94-ced9-4683-ae58-0a5a7ed803bd)
 
 ### Deploying with other cloud services
 
@@ -408,7 +408,7 @@ We welcome all forms of open-source collaboration! Whether you're fixing bugs, a
 
 <br>
 
-![divider](https://github.com/user-attachments/assets/2e2bbcc6-e6d8-4227-83c6-0620fc96f761)
+![divider](https://github.com/user-attachments/assets/aec54c94-ced9-4683-ae58-0a5a7ed803bd)
 
 ### Code Contributors
 
@@ -420,7 +420,7 @@ Contributions are welcome! Please read the [contribution guidelines](./docs/code
 
 <br>
 
-![divider](https://github.com/user-attachments/assets/2e2bbcc6-e6d8-4227-83c6-0620fc96f761)
+![divider](https://github.com/user-attachments/assets/aec54c94-ced9-4683-ae58-0a5a7ed803bd)
 
 ### License
 
