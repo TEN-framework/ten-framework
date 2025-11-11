@@ -28,6 +28,7 @@
 | `loop_playback` | bool | ❌ | false | 是否循环播放 |
 
 **示例**：
+
 ```json
 {
   "name": "start_play",
@@ -43,6 +44,7 @@
 停止播放音频。
 
 **示例**：
+
 ```json
 {
   "name": "stop_play"
@@ -52,6 +54,7 @@
 ## 输出
 
 ### 音频帧输出
+
 - **名称**: `pcm_frame`
 - **格式**: INTERLEAVE
 - **采样率**: 16000Hz
@@ -153,6 +156,7 @@ TEN Framework Team
 ## 更新日志
 
 ### v0.11.25 (2025-10-29)
+
 - 初始版本
 - 支持 wav/mp3/pcm 等多种音频格式
 - 实现 16kHz PCM 转换和 10ms 帧间隔发送

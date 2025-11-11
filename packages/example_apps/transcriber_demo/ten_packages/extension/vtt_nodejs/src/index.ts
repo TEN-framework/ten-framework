@@ -352,7 +352,7 @@ class VttExtension extends Extension {
       try {
         // First try to get the complete JSON data (pass empty string to get root object)
         const [jsonStr, jsonError] = await data.getPropertyToJson("");
-        
+
         let text = "";
         let isFinal = false;
         let actualStartMs = 0;

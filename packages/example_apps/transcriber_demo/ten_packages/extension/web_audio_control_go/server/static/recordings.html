@@ -649,12 +649,12 @@
                     currentSessionId = data.session_id || 'New Session';
                     btnStartRecording.disabled = true;
                     btnStopRecording.disabled = false;
-                    
+
                     // Show live transcription area
                     liveTranscription.classList.add('active');
                     transcriptionBox.innerHTML = '';
                     interimElement = null;
-                    
+
                     showStatus(`Recording started! Session: ${currentSessionId}`, 'recording');
                 } else {
                     // Stop microphone if command fails
@@ -683,12 +683,12 @@
                 if (data.status === 'ok') {
                     btnStartRecording.disabled = false;
                     btnStopRecording.disabled = true;
-                    
+
                     // Hide live transcription area
                     setTimeout(() => {
                         liveTranscription.classList.remove('active');
                     }, 2000); // Keep it visible for 2 seconds to review final result
-                    
+
                     const duration = data.duration ? (data.duration / 1000).toFixed(2) : 'N/A';
                     const segments = data.segments || 'N/A';
                     const words = data.words || 'N/A';
@@ -824,7 +824,7 @@
                 // Simple VTT parser
                 const lines = text.split('\n');
                 let i = 0;
-                
+
                 // Skip WEBVTT header
                 while (i < lines.length && !lines[i].includes('-->')) {
                     i++;
@@ -832,19 +832,19 @@
 
                 while (i < lines.length) {
                     const line = lines[i].trim();
-                    
+
                     if (line.includes('-->')) {
                         const [startStr, endStr] = line.split('-->').map(s => s.trim());
                         const start = parseVTTTime(startStr);
                         const end = parseVTTTime(endStr);
-                        
+
                         i++;
                         let text = '';
                         while (i < lines.length && lines[i].trim() !== '') {
                             text += lines[i].trim() + ' ';
                             i++;
                         }
-                        
+
                         cues.push({ start, end, text: text.trim() });
                     }
                     i++;
@@ -862,7 +862,7 @@
         function parseVTTTime(timeStr) {
             const parts = timeStr.split(':');
             const seconds = parts[parts.length - 1].split('.');
-            
+
             let totalSeconds = 0;
             if (parts.length === 3) {
                 // HH:MM:SS.mmm
@@ -871,11 +871,11 @@
                 // MM:SS.mmm
                 totalSeconds = parseInt(parts[0]) * 60 + parseFloat(seconds[0]);
             }
-            
+
             if (seconds[1]) {
                 totalSeconds += parseFloat('0.' + seconds[1]);
             }
-            
+
             return totalSeconds;
         }
 
@@ -909,9 +909,9 @@
             // Update subtitles as audio plays
             subtitleUpdateIntervals[sessionId] = setInterval(() => {
                 const currentTime = audioElement.currentTime;
-                
+
                 // Find the current cue
-                const currentCue = cues.find(cue => 
+                const currentCue = cues.find(cue =>
                     currentTime >= cue.start && currentTime <= cue.end
                 );
 
@@ -928,7 +928,7 @@
         // Hide subtitles when audio is paused or ended
         function hideSubtitles(sessionId) {
             const subtitleContainer = document.getElementById(`subtitle-${sessionId}`);
-            
+
             if (subtitleUpdateIntervals[sessionId]) {
                 clearInterval(subtitleUpdateIntervals[sessionId]);
                 delete subtitleUpdateIntervals[sessionId];

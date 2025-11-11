@@ -58,7 +58,7 @@ export class VTTGenerator {
             if (this.currentText) {
                 this.createSegmentDirect(this.currentStartTime, this.currentEndTime, this.currentText);
             }
-            
+
             // Start new segment
             this.currentText = formattedText;
             this.currentStartTime = startMs;
@@ -126,7 +126,7 @@ export class VTTGenerator {
         }
 
         this.createSegmentDirect(this.currentStartTime, endTime, this.currentText);
-        
+
         // Reset current text
         this.currentText = "";
         this.currentStartTime = endTime;

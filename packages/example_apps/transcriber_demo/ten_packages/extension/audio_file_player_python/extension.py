@@ -39,16 +39,22 @@ class AudioFilePlayerExtension(AsyncExtension):
 
     @override
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
-        ten_env.log_info("AudioFilePlayerExtension on_init", category="key_point")
+        ten_env.log_info(
+            "AudioFilePlayerExtension on_init", category="key_point"
+        )
 
     @override
     async def on_start(self, ten_env: AsyncTenEnv) -> None:
-        ten_env.log_info("AudioFilePlayerExtension on_start", category="key_point")
+        ten_env.log_info(
+            "AudioFilePlayerExtension on_start", category="key_point"
+        )
         # Wait for start_play command to begin playback
 
     @override
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
-        ten_env.log_info("AudioFilePlayerExtension on_stop", category="key_point")
+        ten_env.log_info(
+            "AudioFilePlayerExtension on_stop", category="key_point"
+        )
 
         # Stop playback
         self.is_playing = False
@@ -61,7 +67,9 @@ class AudioFilePlayerExtension(AsyncExtension):
 
     @override
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
-        ten_env.log_info("AudioFilePlayerExtension on_deinit", category="key_point")
+        ten_env.log_info(
+            "AudioFilePlayerExtension on_deinit", category="key_point"
+        )
 
     @override
     async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
@@ -97,14 +105,14 @@ class AudioFilePlayerExtension(AsyncExtension):
 
             ten_env.log_info(
                 f"Start playing: file_path={self.audio_file_path}, loop={self.loop_playback}",
-                category="key_point"
+                category="key_point",
             )
 
             # Verify file exists
             if not os.path.exists(self.audio_file_path):
                 ten_env.log_error(
                     f"Audio file does not exist: {self.audio_file_path}",
-                    category="key_point"
+                    category="key_point",
                 )
                 cmd_result = CmdResult.create(StatusCode.ERROR, cmd)
                 cmd_result.set_property_string(
@@ -153,12 +161,14 @@ class AudioFilePlayerExtension(AsyncExtension):
                 # Load audio file
                 ten_env.log_info(
                     f"Loading audio file: {self.audio_file_path}",
-                    category="key_point"
+                    category="key_point",
                 )
                 audio = await self._load_audio_file(ten_env)
 
                 if audio is None:
-                    ten_env.log_error("Audio loading failed", category="key_point")
+                    ten_env.log_error(
+                        "Audio loading failed", category="key_point"
+                    )
                     break
 
                 # Convert to 16000Hz mono
@@ -182,19 +192,23 @@ class AudioFilePlayerExtension(AsyncExtension):
                 # Get audio raw data
                 raw_data = audio.raw_data  # type: ignore
                 if raw_data is None:
-                    ten_env.log_error("Failed to get audio raw data", category="key_point")
+                    ten_env.log_error(
+                        "Failed to get audio raw data", category="key_point"
+                    )
                     break
                 total_frames = len(raw_data) // bytes_per_frame
 
                 ten_env.log_info(
                     f"Start sending audio frames: total_frames={total_frames}, bytes_per_frame={bytes_per_frame}",
-                    category="key_point"
+                    category="key_point",
                 )
 
                 # Send frames one by one
                 for frame_idx in range(total_frames):
                     if not self.is_playing:
-                        ten_env.log_info("Playback interrupted", category="key_point")
+                        ten_env.log_info(
+                            "Playback interrupted", category="key_point"
+                        )
                         break
 
                     # Extract current frame data
@@ -230,7 +244,7 @@ class AudioFilePlayerExtension(AsyncExtension):
                 if self.is_playing:
                     ten_env.log_info(
                         f"Audio playback completed, sent {total_frames} frames",
-                        category="key_point"
+                        category="key_point",
                     )
 
                 # Exit if not looping
@@ -240,12 +254,16 @@ class AudioFilePlayerExtension(AsyncExtension):
 
                 # Continue to next round if looping
                 if self.loop_playback and self.is_playing:
-                    ten_env.log_info("Loop playback: restarting", category="key_point")
+                    ten_env.log_info(
+                        "Loop playback: restarting", category="key_point"
+                    )
 
         except asyncio.CancelledError:
             ten_env.log_info("Playback task cancelled", category="key_point")
         except Exception as e:
-            ten_env.log_error(f"Error during audio playback: {e}", category="key_point")
+            ten_env.log_error(
+                f"Error during audio playback: {e}", category="key_point"
+            )
             import traceback
 
             ten_env.log_error(traceback.format_exc())
@@ -256,7 +274,9 @@ class AudioFilePlayerExtension(AsyncExtension):
         """Load audio file, supports wav/mp3/pcm formats"""
         try:
             if not self.audio_file_path:
-                ten_env.log_error("Audio file path is not set", category="key_point")
+                ten_env.log_error(
+                    "Audio file path is not set", category="key_point"
+                )
                 return None
 
             file_path = Path(self.audio_file_path)
@@ -278,14 +298,16 @@ class AudioFilePlayerExtension(AsyncExtension):
             else:
                 ten_env.log_error(
                     f"Unsupported audio format: {file_ext}",
-                    category="key_point"
+                    category="key_point",
                 )
                 return None
 
             return audio  # type: ignore
 
         except Exception as e:
-            ten_env.log_error(f"Failed to load audio file: {e}", category="key_point")
+            ten_env.log_error(
+                f"Failed to load audio file: {e}", category="key_point"
+            )
             import traceback
 
             ten_env.log_error(traceback.format_exc())

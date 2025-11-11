@@ -28,6 +28,7 @@ Start playing an audio file.
 | `loop_playback` | bool | ❌ | false | Whether to loop playback |
 
 **Example**:
+
 ```json
 {
   "name": "start_play",
@@ -43,6 +44,7 @@ Start playing an audio file.
 Stop playing audio.
 
 **Example**:
+
 ```json
 {
   "name": "stop_play"
@@ -52,6 +54,7 @@ Stop playing audio.
 ## Output
 
 ### Audio Frame Output
+
 - **Name**: `pcm_frame`
 - **Format**: INTERLEAVE
 - **Sample Rate**: 16000Hz
@@ -153,6 +156,7 @@ TEN Framework Team
 ## Changelog
 
 ### v0.11.25 (2025-10-29)
+
 - Initial release
 - Support wav/mp3/pcm and other audio formats
 - Implement 16kHz PCM conversion and 10ms frame interval sending

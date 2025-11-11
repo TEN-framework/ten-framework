@@ -36,7 +36,7 @@ Transcriber Demo 是一个基于 TEN Framework 实现的实时/离线语音转�
 
 ### 数据流
 
-```
+```text
 用户输入（麦克风/文件）
     ↓
 web_audio_control_go / audio_file_player_python
@@ -72,6 +72,7 @@ AZURE_STT_LANGUAGE=en-US            # 语言代码，默认为 en-US
 ```
 
 支持的语言代码示例：
+
 - `en-US`：美式英语
 - `zh-CN`：简体中文
 - `ja-JP`：日语
@@ -87,6 +88,7 @@ python3 scripts/install_python_deps.py
 ```
 
 该脚本会自动：
+
 - 合并所有 Python 扩展的依赖
 - 安装到 Python 3.10 环境
 
@@ -132,7 +134,7 @@ go run ten_packages/system/ten_runtime_go/tools/build/main.go
 
 ## 目录结构
 
-```
+```text
 transcriber_demo/
 ├── main.go                          # 应用入口
 ├── manifest.json                    # 应用清单
@@ -156,6 +158,7 @@ transcriber_demo/
 ### 修改配置
 
 应用的图配置位于 `property.json` 文件中，可以修改：
+
 - 扩展的连接关系
 - 扩展的属性配置
 - 日志输出配置
@@ -169,6 +172,7 @@ transcriber_demo/
 ### 调试
 
 应用日志输出到：
+
 - 控制台：WARNING 级别及以上
 - 文件：`logs/debug.log`（DEBUG 级别及以上）
 

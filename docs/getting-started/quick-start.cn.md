@@ -10,11 +10,13 @@ _portal_target: getting-started/quick-start.cn.md
 ## 系统要求
 
 **支持的操作系统**：
+
 - Linux (x64)
 - macOS Intel (x64)
 - macOS Apple Silicon (arm64)
 
 **必需的软件环境**：
+
 - Python 3.10
 - Go 1.20+
 - Node.js / npm（用于安装和管理 JavaScript 依赖）
@@ -31,6 +33,7 @@ python3 --version
 ```
 
 > 💡 **建议**：推荐使用 `pyenv` 或 `venv` 创建 Python 3.10 虚拟环境，以避免与系统 Python 版本冲突：
+>
 > ```bash
 > # 使用 venv 创建虚拟环境（示例）
 > python3.10 -m venv ~/ten-venv
@@ -82,6 +85,7 @@ tman --version
 ```
 
 > 💡 **提示**：如果提示 `tman: command not found`，请确保 `/usr/local/bin` 在你的 PATH 中：
+>
 > ```bash
 > echo 'export PATH="/usr/local/bin:$PATH"' >> ~/.bashrc  # Linux
 > echo 'export PATH="/usr/local/bin:$PATH"' >> ~/.zshrc   # macOS
@@ -142,7 +146,7 @@ tman run start
 
 如果一切正常，你应该看到类似以下的输出：
 
-```
+```text
 [web_audio_control_go] Web server started on port 8080
 [audio_file_player_python] AudioFilePlayerExtension on_start
 ```
@@ -151,11 +155,12 @@ tman run start
 
 打开浏览器访问：
 
-```
+```text
 http://localhost:8080
 ```
 
 你应该能看到 Transcriber Demo 的 Web 界面，可以尝试：
+
 - 点击麦克风按钮进行实时语音转录
 - 上传音频文件进行转录
 - 查看实时转录以及字幕结果
@@ -179,6 +184,7 @@ http://localhost:8080
 现在你可以：
 
 1. **从云商店探索和下载更多插件，设计和编排你的应用**
+
    ```bash
    tman designer  # 启动 TMAN Designer，在云商店中探索插件、下载插件并设计编排你的应用
    ```
@@ -194,6 +200,7 @@ http://localhost:8080
 **问题**：运行应用时提示找不到 `libpython3.10.dylib`
 
 **解决方案**：
+
 ```bash
 export DYLD_LIBRARY_PATH=/usr/local/opt/python@3.10/Frameworks/Python.framework/Versions/3.10/lib:$DYLD_LIBRARY_PATH
 ```
@@ -205,6 +212,7 @@ export DYLD_LIBRARY_PATH=/usr/local/opt/python@3.10/Frameworks/Python.framework/
 **问题**：网络连接 GitHub 受限
 
 **解决方案**：
+
 - 手动下载：访问 [Releases 页面](https://github.com/TEN-framework/ten-framework/releases) 下载对应平台的 `tman` 二进制文件
 
 ### 3. 端口 8080 已被占用
@@ -212,6 +220,7 @@ export DYLD_LIBRARY_PATH=/usr/local/opt/python@3.10/Frameworks/Python.framework/
 **问题**：启动时提示端口冲突
 
 **解决方案**：
+
 - 查找占用端口的进程：`lsof -i :8080`（macOS/Linux）
 - 杀掉该进程：`kill -9 <PID>`
 - 或修改应用配置文件（`transcriber_demo/ten_packages/extension/web_audio_control_go/property.json`）中的端口号
@@ -221,6 +230,7 @@ export DYLD_LIBRARY_PATH=/usr/local/opt/python@3.10/Frameworks/Python.framework/
 **问题**：构建时提示 Go module 相关错误
 
 **解决方案**：
+
 ```bash
 # 清理 Go module 缓存
 go clean -modcache
@@ -235,12 +245,13 @@ tman run build
 **问题**：pip 安装超时或失败
 
 **解决方案**：使用国内镜像源
+
 ```bash
 pip3 install --index-url https://pypi.tuna.tsinghua.edu.cn/simple -r requirements.txt
 ```
 
 ## 获取帮助
 
-- **GitHub Issues**：https://github.com/TEN-framework/ten-framework/issues
-- **文档**：https://theten.ai/cn/docs
+- **GitHub Issues**：<https://github.com/TEN-framework/ten-framework/issues>
+- **文档**：<https://theten.ai/cn/docs>
 - **贡献指南**：[contributing.md](../code-of-conduct/contributing.md)

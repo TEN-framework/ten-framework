@@ -15,7 +15,7 @@
 
 ## 架构说明
 
-```
+```text
 用户浏览器 <--HTTP/WebSocket--> Web Server (Go Extension) <--TEN Protocol--> TEN Framework
                                                                    |
                                                                    v
@@ -32,6 +32,7 @@
 HTTP 服务器监听端口。
 
 示例：
+
 ```json
 {
   "http_port": 8080
@@ -47,6 +48,7 @@ HTTP 服务器监听端口。
 发送音频播放命令。
 
 **命令属性**：
+
 - `file_path` (string): 音频文件路径
 - `loop_playback` (bool): 是否循环播放
 
@@ -57,6 +59,7 @@ HTTP 服务器监听端口。
 接收转写文本数据。
 
 **数据属性**：
+
 - `text` (string): 转写的文本内容
 
 ## 使用方法
@@ -133,7 +136,7 @@ HTTP 服务器监听端口。
 
 启动应用后，在浏览器中访问：
 
-```
+```text
 http://localhost:8080
 ```
 
@@ -180,10 +183,12 @@ http://localhost:8080
 启动音频播放。
 
 **请求参数**（Form Data）：
+
 - `file_path`: 音频文件路径（必填）
 - `loop_playback`: 是否循环播放（true/false，可选）
 
 **响应**：
+
 ```json
 {
   "status": "ok",
@@ -192,6 +197,7 @@ http://localhost:8080
 ```
 
 **错误响应**：
+
 ```json
 {
   "error": "错误信息"
@@ -219,7 +225,7 @@ require (
 
 ### 项目结构
 
-```
+```text
 web_audio_control_go/
 ├── main.go                 # 扩展入口
 ├── server/
@@ -243,6 +249,7 @@ TEN Framework Team
 ## 更新日志
 
 ### v0.11.25 (2025-10-29)
+
 - 初始版本
 - Web 界面控制
 - WebSocket 实时通信

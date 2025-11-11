@@ -12,7 +12,7 @@ A Node.js/TypeScript extension for TEN Framework that records audio streams and 
 
 ## Architecture
 
-```
+```text
 ┌─────────────────┐
 │  Audio Source   │ (e.g., Audio Player, Microphone)
 └────────┬────────┘
@@ -42,6 +42,7 @@ A Node.js/TypeScript extension for TEN Framework that records audio streams and 
 Starts a new recording session.
 
 **Response:**
+
 - `session_id`: Unique identifier for the session
 - `detail`: Status message
 
@@ -50,6 +51,7 @@ Starts a new recording session.
 Stops the current recording session and saves all files.
 
 **Response:**
+
 - `session_id`: Session identifier
 - `duration`: Recording duration in milliseconds
 - `segments`: Number of subtitle segments
@@ -60,6 +62,7 @@ Stops the current recording session and saves all files.
 Lists all recorded sessions.
 
 **Response:**
+
 - `sessions`: JSON array of session metadata
 - `count`: Number of sessions
 
@@ -68,9 +71,11 @@ Lists all recorded sessions.
 Retrieves metadata for a specific session.
 
 **Parameters:**
+
 - `session_id`: Session identifier
 
 **Response:**
+
 - `metadata`: JSON object with session details
 
 ### `delete_session`
@@ -78,6 +83,7 @@ Retrieves metadata for a specific session.
 Deletes a recording session and all its files.
 
 **Parameters:**
+
 - `session_id`: Session identifier
 
 ## Input Data
@@ -100,7 +106,7 @@ Deletes a recording session and all its files.
 
 Each recording session creates a directory with the following files:
 
-```
+```text
 recordings/
 └── <session-id>/
     ├── audio.wav          # Recorded audio
@@ -251,14 +257,17 @@ Use the generated files in HTML:
 ## Troubleshooting
 
 ### Recording not starting
+
 - Check if another session is active
 - Verify audio source is sending `pcm_frame` data
 
 ### VTT file is empty
+
 - Ensure ASR results have `final=true`
 - Check that ASR is sending to correct extension
 
 ### Large file sizes
+
 - Default WAV format is uncompressed
 - Consider post-processing compression if needed
 

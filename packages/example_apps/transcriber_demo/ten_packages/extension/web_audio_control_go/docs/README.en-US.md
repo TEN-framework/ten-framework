@@ -15,7 +15,7 @@ This is a TEN Framework Web audio control extension written in Go. It provides a
 
 ## Architecture
 
-```
+```text
 User Browser <--HTTP/WebSocket--> Web Server (Go Extension) <--TEN Protocol--> TEN Framework
                                                                   |
                                                                   v
@@ -32,6 +32,7 @@ User Browser <--HTTP/WebSocket--> Web Server (Go Extension) <--TEN Protocol--> T
 HTTP server listening port.
 
 Example:
+
 ```json
 {
   "http_port": 8080
@@ -47,6 +48,7 @@ Example:
 Send audio playback command.
 
 **Command Properties**:
+
 - `file_path` (string): Audio file path
 - `loop_playback` (bool): Whether to loop playback
 
@@ -57,6 +59,7 @@ Send audio playback command.
 Receive transcription text data.
 
 **Data Properties**:
+
 - `text` (string): Transcribed text content
 
 ## Usage
@@ -133,7 +136,7 @@ Receive transcription text data.
 
 After starting the application, visit in your browser:
 
-```
+```text
 http://localhost:8080
 ```
 
@@ -180,10 +183,12 @@ http://localhost:8080
 Start audio playback.
 
 **Request Parameters** (Form Data):
+
 - `file_path`: Audio file path (required)
 - `loop_playback`: Whether to loop playback (true/false, optional)
 
 **Response**:
+
 ```json
 {
   "status": "ok",
@@ -192,6 +197,7 @@ Start audio playback.
 ```
 
 **Error Response**:
+
 ```json
 {
   "error": "Error message"
@@ -219,7 +225,7 @@ require (
 
 ### Project Structure
 
-```
+```text
 web_audio_control_go/
 ├── main.go                 # Extension entry point
 ├── server/
@@ -243,6 +249,7 @@ TEN Framework Team
 ## Changelog
 
 ### v0.11.25 (2025-10-29)
+
 - Initial release
 - Web interface control
 - WebSocket real-time communication

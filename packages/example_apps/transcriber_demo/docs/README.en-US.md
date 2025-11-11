@@ -36,7 +36,7 @@ This application is based on the TEN Framework's Extension Graph architecture an
 
 ### Data Flow
 
-```
+```text
 User Input (Microphone/File)
     ↓
 web_audio_control_go / audio_file_player_python
@@ -72,6 +72,7 @@ AZURE_STT_LANGUAGE=en-US            # Language code, defaults to en-US
 ```
 
 Supported language code examples:
+
 - `en-US`: American English
 - `zh-CN`: Simplified Chinese
 - `ja-JP`: Japanese
@@ -87,6 +88,7 @@ python3 scripts/install_python_deps.py
 ```
 
 This script will automatically:
+
 - Merge all Python extension dependencies
 - Install to Python 3.10 environment
 
@@ -132,7 +134,7 @@ The application listens on the default port (usually 8002) and can be accessed t
 
 ## Directory Structure
 
-```
+```text
 transcriber_demo/
 ├── main.go                          # Application entry
 ├── manifest.json                    # Application manifest
@@ -156,6 +158,7 @@ transcriber_demo/
 ### Modifying Configuration
 
 The application's graph configuration is located in the `property.json` file, where you can modify:
+
 - Extension connection relationships
 - Extension property configurations
 - Log output configuration
@@ -169,6 +172,7 @@ The application's graph configuration is located in the `property.json` file, wh
 ### Debugging
 
 Application logs are output to:
+
 - Console: WARNING level and above
 - File: `logs/debug.log` (DEBUG level and above)
 

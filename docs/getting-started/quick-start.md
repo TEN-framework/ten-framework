@@ -10,11 +10,13 @@ _portal_target: getting-started/quick-start.md
 ## System Requirements
 
 **Supported Operating Systems**:
+
 - Linux (x64)
 - macOS Intel (x64)
 - macOS Apple Silicon (arm64)
 
 **Required Software**:
+
 - Python 3.10
 - Go 1.20+
 - Node.js / npm (for managing JavaScript dependencies)
@@ -31,6 +33,7 @@ python3 --version
 ```
 
 > 💡 **Recommendation**: It's recommended to use `pyenv` or `venv` to create a Python 3.10 virtual environment to avoid conflicts with your system Python version:
+>
 > ```bash
 > # Create virtual environment using venv (example)
 > python3.10 -m venv ~/ten-venv
@@ -82,6 +85,7 @@ tman --version
 ```
 
 > 💡 **Tip**: If you see `tman: command not found`, make sure `/usr/local/bin` is in your PATH:
+>
 > ```bash
 > echo 'export PATH="/usr/local/bin:$PATH"' >> ~/.bashrc  # Linux
 > echo 'export PATH="/usr/local/bin:$PATH"' >> ~/.zshrc   # macOS
@@ -142,7 +146,7 @@ tman run start
 
 If everything is working correctly, you should see output similar to:
 
-```
+```text
 [web_audio_control_go] Web server started on port 8080
 [audio_file_player_python] AudioFilePlayerExtension on_start
 ```
@@ -151,11 +155,12 @@ If everything is working correctly, you should see output similar to:
 
 Open your browser and visit:
 
-```
+```text
 http://localhost:8080
 ```
 
 You should see the Transcriber Demo web interface. Try:
+
 - Click the microphone button for real-time voice transcription
 - Upload an audio file for transcription
 - View real-time transcription and subtitle results
@@ -179,6 +184,7 @@ This `transcriber_demo` app showcases TEN Framework's multi-language extension c
 Now you can:
 
 1. **Explore and download more extensions from the cloud store, design and orchestrate your app**
+
    ```bash
    tman designer  # Launch TMAN Designer to explore extensions, download them, and design your app
    ```
@@ -194,6 +200,7 @@ Now you can:
 **Problem**: Error indicating `libpython3.10.dylib` cannot be found when running the app
 
 **Solution**:
+
 ```bash
 export DYLD_LIBRARY_PATH=/usr/local/opt/python@3.10/Frameworks/Python.framework/Versions/3.10/lib:$DYLD_LIBRARY_PATH
 ```
@@ -205,6 +212,7 @@ Consider adding this line to your `~/.zshrc` or `~/.bash_profile`.
 **Problem**: Network connection to GitHub is restricted
 
 **Solution**:
+
 - Manual download: Visit the [Releases page](https://github.com/TEN-framework/ten-framework/releases) to download the `tman` binary for your platform
 
 ### 3. Port 8080 Already in Use
@@ -212,6 +220,7 @@ Consider adding this line to your `~/.zshrc` or `~/.bash_profile`.
 **Problem**: Port conflict error when starting the app
 
 **Solution**:
+
 - Find the process using the port: `lsof -i :8080` (macOS/Linux)
 - Kill the process: `kill -9 <PID>`
 - Or modify the port number in the app configuration file (`transcriber_demo/ten_packages/extension/web_audio_control_go/property.json`)
@@ -221,6 +230,7 @@ Consider adding this line to your `~/.zshrc` or `~/.bash_profile`.
 **Problem**: Go module related errors during build
 
 **Solution**:
+
 ```bash
 # Clean Go module cache
 go clean -modcache
@@ -235,12 +245,13 @@ tman run build
 **Problem**: pip installation timeout or failure
 
 **Solution**: Use a mirror source (for users in China)
+
 ```bash
 pip3 install --index-url https://pypi.tuna.tsinghua.edu.cn/simple -r requirements.txt
 ```
 
 ## Get Help
 
-- **GitHub Issues**: https://github.com/TEN-framework/ten-framework/issues
-- **Documentation**: https://theten.ai/docs
+- **GitHub Issues**: <https://github.com/TEN-framework/ten-framework/issues>
+- **Documentation**: <https://theten.ai/docs>
 - **Contributing Guide**: [contributing.md](../code-of-conduct/contributing.md)
