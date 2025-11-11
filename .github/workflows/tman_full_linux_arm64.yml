@@ -25,7 +25,7 @@ jobs:
   build:
     needs: call-check-pr-status
     if: ${{ needs.call-check-pr-status.outputs.should_continue == 'true' }}
-    timeout-minutes: 90
+    timeout-minutes: 240
     runs-on: ubuntu-latest
     strategy:
       matrix:
