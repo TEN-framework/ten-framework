@@ -1,6 +1,4 @@
-import asyncio
-from typing import AsyncIterator
-from pydantic import BaseModel, Field, ConfigDict
+from typing import Any, AsyncIterator, Tuple
 from groq import (
     AsyncGroq,
     APIConnectionError,
@@ -8,74 +6,126 @@ from groq import (
     RateLimitError,
     InternalServerError,
 )
+from ten_runtime import AsyncTenEnv
+from ten_ai_base.const import LOG_CATEGORY_VENDOR
+from ten_ai_base.struct import TTS2HttpResponseEventType
+from ten_ai_base.tts2_http import AsyncTTS2HttpClient
 
-try:
-    from .utils import encrypting_serializer, with_retry_context
-    from .wav_stream_parser import WavStreamParser
-except ImportError:
-    from utils import encrypting_serializer, with_retry_context
-    from wav_stream_parser import WavStreamParser
-
-
-class GroqTTSParams(BaseModel):
-    """
-    GroqTTSParams
-    https://console.groq.com/docs/text-to-speech
-    https://console.groq.com/docs/api-reference#models
-    """
-
-    api_key: str = Field(..., description="the api key to use")
-    model: str = Field("playai-tts", description="the model to use")
-    voice: str = Field(..., description="the voice to use")
-    response_format: str = Field(
-        "wav", description="the format of the response"
-    )
-    sample_rate: int | None = Field(
-        None, description="the sample rate of the response"
-    )
-    speed: float | None = Field(None, description="the speed of the response")
-
-    _encrypt_fields = encrypting_serializer(
-        "api_key",
-    )
-    model_config = ConfigDict(extra="allow")
-
-    def to_request_params(self) -> dict:
-        """
-        convert the params to the params for the request
-        """
-        return self.model_dump(
-            exclude_none=True,
-            exclude={"api_key"},
-        )
+from .config import GroqTTSConfig
+from .utils import with_retry_context
+from .wav_stream_parser import WavStreamParser
 
 
-class GroqTTS:
+class GroqTTSClient(AsyncTTS2HttpClient):
     def __init__(
         self,
-        params: GroqTTSParams,
-        timeout: float = 30.0,
-        max_retries: int = 3,
-        retry_delay: float = 0.1,
+        config: GroqTTSConfig,
+        ten_env: AsyncTenEnv,
     ):
-        self.timeout = timeout
-        self.max_retries = max_retries
-        self.retry_delay = retry_delay
-
-        self.params = params
+        super().__init__()
+        self.config = config
+        self.ten_env: AsyncTenEnv = ten_env
+        self._is_cancelled = False
         self.client: AsyncGroq | None = None
 
-        try:
-            self.client = AsyncGroq(api_key=params.api_key)
-        except Exception as e:
-            raise RuntimeError(
-                f"error when initializing GroqTTS with params: {params.model_dump_json()}\nerror: {e}"
-            ) from e
+        # Retry configuration
+        self.max_retries = 3
+        self.retry_delay = 0.1
 
-    async def synthesize(self, text: str) -> AsyncIterator[bytes]:
+        try:
+            self.client = AsyncGroq(api_key=config.params["api_key"])
+        except Exception as e:
+            ten_env.log_error(
+                f"error when initializing GroqTTS: {e}",
+                category=LOG_CATEGORY_VENDOR,
+            )
+            raise RuntimeError(f"error when initializing GroqTTS: {e}") from e
+
+    async def cancel(self):
+        self.ten_env.log_debug("GroqTTS: cancel() called.")
+        self._is_cancelled = True
+
+    async def get(
+        self, text: str, request_id: str
+    ) -> AsyncIterator[Tuple[bytes | None, TTS2HttpResponseEventType]]:
+        """Process a single TTS request"""
+        self._is_cancelled = False
+        if not self.client:
+            self.ten_env.log_error(
+                f"GroqTTS: client not initialized for request_id: {request_id}.",
+                category=LOG_CATEGORY_VENDOR,
+            )
+            raise RuntimeError(
+                f"GroqTTS: client not initialized for request_id: {request_id}."
+            )
+
+        if len(text.strip()) == 0:
+            self.ten_env.log_warning(
+                f"GroqTTS: empty text for request_id: {request_id}.",
+                category=LOG_CATEGORY_VENDOR,
+            )
+            yield None, TTS2HttpResponseEventType.END
+            return
+
+        try:
+            # Use retry mechanism for robust connection
+            async for chunk in self._synthesize_with_retry(text, request_id):
+                if self._is_cancelled:
+                    self.ten_env.log_debug(
+                        f"Cancellation flag detected, sending flush event and stopping TTS stream of request_id: {request_id}."
+                    )
+                    yield None, TTS2HttpResponseEventType.FLUSH
+                    break
+
+                self.ten_env.log_debug(
+                    f"GroqTTS: sending EVENT_TTS_RESPONSE, length: {len(chunk)} of request_id: {request_id}."
+                )
+
+                if len(chunk) > 0:
+                    yield bytes(chunk), TTS2HttpResponseEventType.RESPONSE
+
+            if not self._is_cancelled:
+                self.ten_env.log_debug(
+                    f"GroqTTS: sending EVENT_TTS_END of request_id: {request_id}."
+                )
+                yield None, TTS2HttpResponseEventType.END
+
+        except Exception as e:
+            # Check if it's an API key authentication error
+            error_message = str(e)
+            self.ten_env.log_error(
+                f"vendor_error: {error_message} of request_id: {request_id}.",
+                category=LOG_CATEGORY_VENDOR,
+            )
+            if (
+                "401" in error_message
+                or "authentication" in error_message.lower()
+            ):
+                yield error_message.encode(
+                    "utf-8"
+                ), TTS2HttpResponseEventType.INVALID_KEY_ERROR
+            else:
+                yield error_message.encode(
+                    "utf-8"
+                ), TTS2HttpResponseEventType.ERROR
+
+    async def _synthesize(self, text: str) -> AsyncIterator[bytes]:
+        """Internal method to synthesize audio from text"""
         assert self.client is not None
+
+        # Build request params from config.params dict
+        request_params = {
+            "model": self.config.params.get("model", "playai-tts"),
+            "voice": self.config.params["voice"],
+            "response_format": self.config.params.get("response_format", "wav"),
+        }
+        if "sample_rate" in self.config.params:
+            request_params["sample_rate"] = self.config.params["sample_rate"]
+        if "speed" in self.config.params:
+            request_params["speed"] = self.config.params["speed"]
+
         response = self.client.with_streaming_response.audio.speech.create(
-            input=text, **self.params.to_request_params()
+            input=text, **request_params
         )
         async with response as stream:
             stream_parser = WavStreamParser(stream.iter_bytes())
@@ -83,11 +133,12 @@ class GroqTTS:
             async for chunk in stream_parser:
                 yield chunk
 
-    async def synthesize_with_retry(self, text: str) -> AsyncIterator[bytes]:
-        """synthesize with retry"""
+    async def _synthesize_with_retry(
+        self, text: str, request_id: str  # pylint: disable=unused-argument
+    ) -> AsyncIterator[bytes]:
+        """Synthesize with retry logic"""
         assert self.client is not None
-        if len(text.strip()) == 0:
-            raise ValueError("text is empty")
+
         response = with_retry_context(
             max_retries=self.max_retries,
             retry_delay=self.retry_delay,
@@ -98,63 +149,23 @@ class GroqTTS:
                 RateLimitError,
                 InternalServerError,
             ),
-        )(self.synthesize)(text)
+        )(self._synthesize)(text)
+
         async for chunk in response:
             yield chunk
 
-    async def _is_valid_text(self, text: str) -> None:
-        """check if the text is valid"""
-        if len(text.strip()) == 0:
-            raise ValueError("text is empty")
-
-
-if __name__ == "__main__":
-    import os
-    import time
-
-    params = GroqTTSParams(
-        api_key=os.getenv("GROQ_API_KEY", ""),
-        model="playai-tts",
-        voice="Arista-PlayAI",
-        response_format="wav",
-        sample_rate=16000,
-        speed=1.0,
-    )
-    print(params.model_dump_json())
-
-    # test async
-    async def test_async():
-        tts = GroqTTS(params)
-        t = time.time()
-        print(f"start synthesize with retry - {t}")
-
-        # test synthesize with retry
-        f = open("test.pcm", "wb")
+    async def clean(self):
+        """Clean up resources"""
+        self.ten_env.log_debug("GroqTTS: clean() called.")
         try:
-            async for chunk in tts.synthesize_with_retry("Hello, world!"):
-                _len = len(chunk)
-                print(
-                    f"received {_len} delay: {time.time() - t} bytes: {chunk[:10]}..."
-                )
-                f.write(chunk)
-        except Exception as e:
-            print(f"error: {e}")
-        f.close()
+            if self.client:
+                await self.client.close()
+        finally:
+            pass
 
-        n = 10
-        while n > 0:
-            assert tts.client is not None
-            # pylint: disable=protected-access
-            await tts.client._client.request("HEAD", "https://api.groq.com")
-            await asyncio.sleep(1)
-            n -= 1
-
-        print("\n--- second test ---")
-        t = time.time()
-        async for chunk in tts.synthesize_with_retry("Hello, world!"):
-            _len = len(chunk)
-            print(
-                f"received {_len} delay: {time.time() - t} bytes: {chunk[:10]}..."
-            )
-
-    asyncio.run(test_async())
+    def get_extra_metadata(self) -> dict[str, Any]:
+        """Return extra metadata for TTFB metrics."""
+        return {
+            "model": self.config.params.get("model", ""),
+            "voice": self.config.params.get("voice", ""),
+        }

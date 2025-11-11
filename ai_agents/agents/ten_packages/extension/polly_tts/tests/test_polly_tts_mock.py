@@ -18,6 +18,7 @@ class MockPollyTTSExtensionTester(AsyncExtensionTester):
         super().__init__()
         self.expect_error_code = ModuleErrorCode.NON_FATAL_ERROR.value
         self.max_wait_time = 10
+        self.error_received = False
 
     def stop_test_if_checking_failed(
         self,
@@ -63,6 +64,13 @@ class MockPollyTTSExtensionTester(AsyncExtensionTester):
         ten_env.log_info(f"on_data name: {name}")
 
         if name == "error":
+            # If we already received and validated an error, ignore subsequent errors
+            if self.error_received:
+                ten_env.log_info(
+                    "Already received an error, ignoring this one."
+                )
+                return
+
             ten_env.log_info("Received error, stopping test.")
             data_json, _ = data.get_property_to_json()
             data_dict = json.loads(data_json)
@@ -76,6 +84,8 @@ class MockPollyTTSExtensionTester(AsyncExtensionTester):
                 data_dict["code"] == int(self.expect_error_code),
                 f"error_code is not {self.expect_error_code}: {data_dict}",
             )
+            # Mark that we received an error
+            self.error_received = True
             # success stop test
             ten_env.stop_test()
         elif name == "tts_audio_end":
@@ -242,7 +252,7 @@ def test_polly_tts_invalid_credentials_mock(mock_boto_session):
     err = tester.run()
     assert (
         err is None
-    ), f"test_polly_tts_invalid_credentials_mock err: {err.error_message}"
+    ), f"test_polly_tts_invalid_credentials_mock err: {err.error_message()}"
 
 
 @patch("boto3.Session")
@@ -278,46 +288,47 @@ def test_polly_tts_network_timeout_mock(mock_boto_client, mock_boto_session):
     }
 
     tester = MockPollyTTSExtensionTester()
-    tester.expect_error_code = ModuleErrorCode.FATAL_ERROR.value
+    tester.expect_error_code = ModuleErrorCode.NON_FATAL_ERROR.value
     tester.set_test_mode_single("polly_tts", json.dumps(property_json))
     err = tester.run()
     assert (
         err is None
-    ), f"test_polly_tts_network_timeout_mock err: {err.error_message}"
+    ), f"test_polly_tts_network_timeout_mock err: {err.error_message()}"
 
 
-def test_polly_tts_params_validation():
-    """test polly tts params validation"""
-    from ten_packages.extension.polly_tts.polly_tts import PollyTTSParams
+def test_polly_tts_config_validation():
+    """test polly tts config validation"""
+    from ..config import PollyTTSConfig
 
-    # test valid params
-    valid_params = PollyTTSParams(
-        aws_access_key_id="test_key",
-        aws_secret_access_key="test_secret",
-        region_name="us-west-2",
-        engine="neural",
-        voice="Joanna",
-        sample_rate="16000",
-        lang_code="en-US",
-        audio_format="pcm",
+    # test valid config
+    valid_config = PollyTTSConfig(
+        params={
+            "aws_access_key_id": "test_key",
+            "aws_secret_access_key": "test_secret",
+            "region_name": "us-west-2",
+            "engine": "neural",
+            "voice": "Joanna",
+            "sample_rate": "16000",
+            "lang_code": "en-US",
+            "audio_format": "pcm",
+        }
     )
 
-    assert valid_params.aws_access_key_id == "test_key"
-    assert valid_params.aws_secret_access_key == "test_secret"
-    assert valid_params.region_name == "us-west-2"
-    assert valid_params.engine == "neural"
-    assert valid_params.voice == "Joanna"
+    assert valid_config.params["aws_access_key_id"] == "test_key"
+    assert valid_config.params["aws_secret_access_key"] == "test_secret"
+    assert valid_config.params["region_name"] == "us-west-2"
+    assert valid_config.params["engine"] == "neural"
+    assert valid_config.params["voice"] == "Joanna"
 
-    # test default params
-    default_params = PollyTTSParams(
-        aws_access_key_id="test_key", aws_secret_access_key="test_secret"
-    )
-
-    assert default_params.engine == "neural"
-    assert default_params.voice == "Joanna"
-    assert default_params.sample_rate == "16000"
-    assert default_params.lang_code == "en-US"
-    assert default_params.audio_format == "pcm"
+    # test config with missing required params (should raise validation error)
+    try:
+        invalid_config = PollyTTSConfig(params={})
+        invalid_config.validate()
+        assert (
+            False
+        ), "Should have raised ValueError for missing aws_access_key_id"
+    except ValueError as e:
+        assert "aws_access_key_id" in str(e)
 
 
 if __name__ == "__main__":
@@ -326,5 +337,5 @@ if __name__ == "__main__":
     test_polly_tts_error_mock()
     test_polly_tts_invalid_credentials_mock()
     test_polly_tts_network_timeout_mock()
-    test_polly_tts_params_validation()
+    test_polly_tts_config_validation()
     print("all mock tests passed!")

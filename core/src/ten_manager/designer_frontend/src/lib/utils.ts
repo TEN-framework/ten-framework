@@ -44,8 +44,8 @@ export function compareVersions(a: string, b: string): number {
   const preReleaseOrder = { alpha: 1, beta: 2, rc: 3 };
   const aType = aPrerelease.match(/^(alpha|beta|rc)/)?.[1] || "";
   const bType = bPrerelease.match(/^(alpha|beta|rc)/)?.[1] || "";
-  const aNum = parseInt(aPrerelease.match(/\d+$/)?.[0] || "0");
-  const bNum = parseInt(bPrerelease.match(/\d+$/)?.[0] || "0");
+  const aNum = parseInt(aPrerelease.match(/\d+$/)?.[0] || "0", 10);
+  const bNum = parseInt(bPrerelease.match(/\d+$/)?.[0] || "0", 10);
 
   if (aType !== bType) {
     return (

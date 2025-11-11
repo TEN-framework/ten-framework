@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audio Transcription Control</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 800px;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 0.95em;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+            font-size: 0.95em;
+        }
+
+        .form-group input[type="text"] {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: all 0.3s;
+        }
+
+        .form-group input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .checkbox-group label {
+            margin: 0;
+            cursor: pointer;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        button {
+            flex: 1;
+            padding: 15px 30px;
+            font-size: 1em;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: 500;
+            display: none;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .transcription-section {
+            margin-top: 30px;
+        }
+
+        .transcription-section h2 {
+            font-size: 1.3em;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .transcription-box {
+            background: #f8f9fa;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            min-height: 200px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95em;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        .transcription-box:empty::before {
+            content: 'Transcription will appear here...';
+            color: #999;
+            font-style: italic;
+        }
+
+        .text-item {
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            background: white;
+            border-radius: 6px;
+            border-left: 4px solid #667eea;
+            animation: slideIn 0.3s ease-out;
+            line-height: 1.8;
+        }
+
+        .text-item.interim {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            font-style: italic;
+            opacity: 0.9;
+        }
+
+        .text-item.final {
+            background: white;
+            border-left: 4px solid #28a745;
+        }
+
+        .text-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75em;
+            font-weight: 600;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+
+        .text-badge.interim {
+            background: #ffc107;
+            color: #856404;
+        }
+
+        .text-badge.final {
+            background: #28a745;
+            color: white;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .connection-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .connection-status.connected {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .connection-status.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .connection-status::before {
+            content: '';
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .connection-status.connected::before {
+            background: #28a745;
+            animation: pulse 2s infinite;
+        }
+
+        .connection-status.disconnected::before {
+            background: #dc3545;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .nav-links {
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .nav-links a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .nav-links a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎵 Audio Transcription Control</h1>
+            <p>Control audio playback and view real-time transcription</p>
+        </div>
+
+        <div class="content">
+            <div class="connection-status disconnected" id="connectionStatus">
+                <span id="statusText">Disconnected</span>
+            </div>
+
+            <div class="status" id="statusMessage"></div>
+
+            <form id="audioForm">
+                <div class="form-group">
+                    <label for="filePath">Audio File Path:</label>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <input type="text" id="filePath" name="file_path" placeholder="/path/to/your/audio.wav" required
+                            style="flex: 1;">
+                        <input type="file" id="fileSelector" accept="audio/*,.wav,.mp3,.flac,.ogg,.m4a"
+                            style="display: none;">
+                        <button type="button" class="btn-primary" id="selectFileBtn"
+                            style="flex: 0 0 auto; padding: 12px 20px;">
+                            📁 Select File
+                        </button>
+                    </div>
+                    <small style="color: #666; font-size: 0.85em; margin-top: 5px; display: block;">
+                        Enter the file path on the server manually, or click "Select File" to upload a local file
+                    </small>
+                </div>
+
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="loopPlayback" name="loop_playback">
+                        <label for="loopPlayback">Loop Playback</label>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button type="submit" class="btn-primary" id="startBtn">
+                        ▶️ Start Transcription
+                    </button>
+                </div>
+            </form>
+
+            <div class="transcription-section">
+                <h2>📝 Transcription Results</h2>
+                <div class="transcription-box" id="transcriptionBox"></div>
+            </div>
+
+            <div class="nav-links">
+                <a href="/static/microphone.html">🎤 Try Microphone Transcription</a> |
+                <a href="/static/recordings.html">📼 View Recordings</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+        let reconnectInterval = null;
+        let interimElement = null; // Track the interim result element
+
+        // Initialize WebSocket connection
+        function connectWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws`;
+
+            console.log('Connecting to WebSocket:', wsUrl);
+
+            ws = new WebSocket(wsUrl);
+
+            ws.onopen = () => {
+                console.log('WebSocket connected');
+                updateConnectionStatus(true);
+                if (reconnectInterval) {
+                    clearInterval(reconnectInterval);
+                    reconnectInterval = null;
+                }
+            };
+
+            ws.onmessage = (event) => {
+                console.log('WebSocket message received:', event.data);
+                try {
+                    const message = JSON.parse(event.data);
+                    if (message.type === 'asr_result') {
+                        addAsrResult(message.text, message.final);
+                    }
+                } catch (e) {
+                    console.error('Failed to parse WebSocket message:', e);
+                }
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
+
+            ws.onclose = () => {
+                console.log('WebSocket disconnected');
+                updateConnectionStatus(false);
+                // Attempt to reconnect
+                if (!reconnectInterval) {
+                    reconnectInterval = setInterval(connectWebSocket, 3000);
+                }
+            };
+        }
+
+        function updateConnectionStatus(connected) {
+            const statusEl = document.getElementById('connectionStatus');
+            const statusText = document.getElementById('statusText');
+
+            if (connected) {
+                statusEl.className = 'connection-status connected';
+                statusText.textContent = 'Connected';
+            } else {
+                statusEl.className = 'connection-status disconnected';
+                statusText.textContent = 'Disconnected';
+            }
+        }
+
+        function addAsrResult(text, isFinal) {
+            const box = document.getElementById('transcriptionBox');
+
+            if (!isFinal) {
+                // For non-final results, update or create interim element
+                if (!interimElement) {
+                    interimElement = document.createElement('div');
+                    interimElement.className = 'text-item interim';
+                    box.appendChild(interimElement);
+                }
+
+                // Update interim text with badge (prevent XSS attack)
+                interimElement.textContent = text;
+                const interimBadge = document.createElement('span');
+                interimBadge.className = 'text-badge interim';
+                interimBadge.textContent = 'Recognizing...';
+                interimElement.appendChild(interimBadge);
+            } else {
+                // For final results, convert interim to final or create new final element
+                if (interimElement) {
+                    // Convert interim to final (prevent XSS attack)
+                    interimElement.className = 'text-item final';
+                    interimElement.textContent = text;
+                    const finalBadge = document.createElement('span');
+                    finalBadge.className = 'text-badge final';
+                    finalBadge.textContent = 'Done';
+                    interimElement.appendChild(finalBadge);
+                    interimElement = null; // Clear interim reference
+                } else {
+                    // Create new final element (prevent XSS attack)
+                    const textItem = document.createElement('div');
+                    textItem.className = 'text-item final';
+                    textItem.textContent = text;
+                    const finalBadge = document.createElement('span');
+                    finalBadge.className = 'text-badge final';
+                    finalBadge.textContent = 'Done';
+                    textItem.appendChild(finalBadge);
+                    box.appendChild(textItem);
+                }
+            }
+
+            // Auto-scroll to bottom
+            box.scrollTop = box.scrollHeight;
+        }
+
+        function addTranscriptionText(text) {
+            const box = document.getElementById('transcriptionBox');
+            const textItem = document.createElement('div');
+            textItem.className = 'text-item';
+            textItem.textContent = text;
+            box.appendChild(textItem);
+
+            // Auto-scroll to bottom
+            box.scrollTop = box.scrollHeight;
+        }
+
+        function showStatus(message, type) {
+            const statusEl = document.getElementById('statusMessage');
+            statusEl.textContent = message;
+            statusEl.className = `status ${type}`;
+            statusEl.style.display = 'block';
+
+            setTimeout(() => {
+                statusEl.style.display = 'none';
+            }, 5000);
+        }
+
+        // Handle file selection button
+        document.getElementById('selectFileBtn').addEventListener('click', () => {
+            document.getElementById('fileSelector').click();
+        });
+
+        // Handle file selection
+        document.getElementById('fileSelector').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const selectBtn = document.getElementById('selectFileBtn');
+            const originalText = selectBtn.textContent;
+            selectBtn.disabled = true;
+            selectBtn.textContent = '⏳ Uploading...';
+
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    // Fill the file path input with the uploaded file path
+                    document.getElementById('filePath').value = result.file_path;
+                    showStatus('✅ File uploaded successfully: ' + file.name, 'success');
+                    console.log('File uploaded:', result);
+                } else {
+                    showStatus('❌ File upload failed: ' + result.message, 'error');
+                    console.error('Upload failed:', result);
+                }
+            } catch (error) {
+                showStatus('❌ Upload error: ' + error.message, 'error');
+                console.error('Upload error:', error);
+            } finally {
+                selectBtn.disabled = false;
+                selectBtn.textContent = originalText;
+                // Clear the file input
+                e.target.value = '';
+            }
+        });
+
+        // Handle form submission
+        document.getElementById('audioForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const filePath = document.getElementById('filePath').value;
+            const loopPlayback = document.getElementById('loopPlayback').checked;
+            const startBtn = document.getElementById('startBtn');
+
+            startBtn.disabled = true;
+            startBtn.textContent = '⏳ Starting...';
+
+            try {
+                const formData = new FormData();
+                formData.append('file_path', filePath);
+                formData.append('loop_playback', loopPlayback);
+
+                const response = await fetch('/api/start_play', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showStatus('✅ Playback started successfully!', 'success');
+                    console.log('Playback started:', result);
+                } else {
+                    showStatus('❌ Failed to start playback: ' + result.message, 'error');
+                    console.error('Playback failed:', result);
+                }
+            } catch (error) {
+                showStatus('❌ Error: ' + error.message, 'error');
+                console.error('Request failed:', error);
+            } finally {
+                startBtn.disabled = false;
+                startBtn.textContent = '▶️ Start Transcription';
+            }
+        });
+
+        // Initialize WebSocket connection on page load
+        connectWebSocket();
+    </script>
+</body>
+
+</html>
