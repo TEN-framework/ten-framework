@@ -458,12 +458,31 @@ sleep 5 && grep -o 'https://[^[:space:]]*\.trycloudflare\.com' /tmp/cloudflare_t
 
 **Frontend restart: NEEDED if graph list changed!** The playground frontend caches the graph list from `/graphs` API.
 
+**⚠️ RECOMMENDED: Use Nuclear Restart to avoid lock file issues:**
+
 ```bash
-# If you added/removed graphs, restart frontend to clear cache
+# Nuclear restart (safest - cleans everything)
+sudo docker exec ten_agent_dev bash -c "pkill -9 -f 'bin/api'; pkill -9 node; pkill -9 bun"
+sudo docker exec ten_agent_dev bash -c "rm -f /app/playground/.next/dev/lock"
+sleep 2
+
+sudo docker exec -d ten_agent_dev bash -c \
+  "cd /app/agents/examples/voice-assistant-advanced && \
+   task run > /tmp/task_run.log 2>&1"
+
+# Wait for startup
+sleep 12
+curl -s http://localhost:8080/health && echo " ✓ API ready"
+curl -s http://localhost:8080/graphs | jq '.data | length' | xargs echo "Graphs available:"
+```
+
+**Alternative (manual frontend restart - can cause lock issues):**
+
+```bash
+# Only if you know what you're doing
 docker exec ten_agent_dev bash -c "pkill -9 -f 'bun.*dev'"
 docker exec -d ten_agent_dev bash -c \
-  "cd /app/agents/examples/voice-assistant-advanced/playground && \
-   bun run dev > /tmp/playground.log 2>&1"
+  "cd /app/playground && npm run dev > /tmp/playground.log 2>&1"
 
 # Check which port it started on
 docker exec ten_agent_dev tail -10 /tmp/playground.log | grep "Local:"
@@ -662,14 +681,16 @@ sleep 5 && grep -o 'https://[^[:space:]]*\.trycloudflare\.com' /tmp/cloudflare_t
 
 | What Changed | Restart Container? | Restart Server? | Restart Frontend? | Notes |
 |--------------|-------------------|-----------------|-------------------|-------|
-| **property.json** | ❌ No | ❌ No | ⚠️ Yes if graphs added/removed | Server loads per session. Frontend caches graph list. |
+| **property.json** (graphs added/removed) | ❌ No | ⚠️ Use Nuclear Restart | ⚠️ Use Nuclear Restart | Frontend caches graph list. Manual frontend restart can cause lock file issues. **Use Nuclear Restart (see section 9).** |
+| **property.json** (config only) | ❌ No | ❌ No | ❌ No | Server loads per session. Existing sessions need reconnect to see changes. |
 | **.env file** | ⚠️ Option 1: Yes<br>✅ Option 2: No, source instead | ✅ Yes | ❌ No | Option 1: `docker compose down && up`<br>Option 2: Source .env + restart server (faster) |
 | **Python code** | ❌ No | ✅ Yes | ❌ No | Stop and restart server to reload Python extensions |
 | **Go code** | ❌ No | ✅ Yes + rebuild | ❌ No | Run `task install` first, then restart server |
 
 **Key Findings**:
 - Only ONE .env file is active: `/home/ubuntu/ten-framework/ai_agents/.env`
-- Frontend caches `/graphs` API response - restart to see new/removed graphs
+- Frontend caches `/graphs` API response - use nuclear restart when adding/removing graphs
+- Frontend and API server are coupled through `task run` - don't restart frontend alone
 
 ---
 
