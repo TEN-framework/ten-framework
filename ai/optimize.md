@@ -138,14 +138,15 @@ alias tail-thymia='sudo docker exec ten_agent_dev tail -f /tmp/task_run.log | gr
 
 ## Implementation Order
 
-1. ✅ Document optimization plan (this file)
-2. ✅ Commit current working state
-3. Add Deepgram confidence logging
-4. Add latency timing logs (STT/LLM/TTS)
-5. Create flux_apollo_cartesia graph
-6. Clean up verbose logs
-7. Test latency measurements
-8. Update ai/status.md with findings
+1. ✅ Document optimization plan (this file) - commit f61984230
+2. ✅ Commit current working state - commit f61984230
+3. ✅ Remove verbose LLM logging - commit 4a02de45b
+4. ✅ Add Deepgram confidence logging - commit 4a02de45b
+5. ⏳ Add latency timing logs (STT/LLM/TTS)
+6. ⏳ Create flux_apollo_cartesia graph
+7. ⏳ Clean up additional verbose logs
+8. ⏳ Test latency measurements
+9. ⏳ Update ai/status.md with findings
 
 ---
 
