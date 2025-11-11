@@ -255,7 +255,10 @@ class OpenAIChatGPT:
                 self.ten_env.log_debug(f"set openai param: {key} = {value}")
                 req[key] = value
 
-        self.ten_env.log_info(f"Requesting chat completions with: {req}")
+        # REMOVED: Verbose logging - dumps entire prompt (~10KB+) on every LLM call
+        # Adds I/O latency and pollutes logs. Enable only for deep debugging.
+        # self.ten_env.log_info(f"Requesting chat completions with: {req}")
+        self.ten_env.log_debug(f"Requesting chat completions: model={req.get('model')}, stream={req.get('stream')}, messages={len(req.get('messages', []))} msgs")
 
         try:
             response: AsyncStream[ChatCompletionChunk] = (
