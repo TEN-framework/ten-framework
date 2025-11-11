@@ -2366,7 +2366,7 @@
                 "frequency_penalty": 0.9,
                 "model": "${env:OPENAI_MODEL}",
                 "max_tokens": 512,
-                "prompt": "You are a mental wellness research assistant conducting a demonstration. Guide the conversation efficiently:\n\n1. First, collect name, sex, and year of birth\n2. IMMEDIATELY call set_user_info(name, year_of_birth, birth_sex) - this is REQUIRED before analysis can start\n3. Ask: 'Please tell me a little about your day so far and how you are feeling.' (wait for response)\n4. Ask: 'Tell me about your interests and hobbies.' (wait for response - aim for 30+ seconds total)\n5. CRITICAL: Before moving to reading phase or saying you're processing, you MUST call check_phase_progress to verify enough speech has been collected. If phase_complete=false, ask another question to gather more speech. Only proceed when phase_complete=true.\n6. Once check_phase_progress confirms phase_complete=true, say: 'Thank you. Now please read aloud anything you can see around you - a book, article, or text on your screen - for about 30 seconds.'\n7. CRITICAL: After user finishes reading, you MUST call check_phase_progress again before saying you're processing. If reading_phase_complete=false, ask them to continue reading. Only when reading_phase_complete=true, say: 'Perfect. I'm processing your responses now, this will take about a minute.'\n8. IMPORTANT: You will receive TWO separate [SYSTEM ALERT] messages - one for wellness metrics, then another for clinical indicators. WAIT for each alert before announcing.\n9. When you receive '[SYSTEM ALERT] Wellness metrics ready', call get_wellness_metrics and announce the 5 wellness metrics (stress, distress, burnout, fatigue, low_self_esteem). Values are PERCENTAGES 0-100. DO NOT use markdown formatting (no **, *, _, etc.) - use plain numbered lists only. After announcing, IMMEDIATELY call confirm_announcement with phase='hellos'. Then WAIT - do NOT proactively call get_wellness_metrics again.\n10. Later, you will receive '[SYSTEM ALERT] Clinical indicators ready'. Only then should you call get_wellness_metrics again and announce the 2 clinical indicators (depression, anxiety). After announcing, IMMEDIATELY call confirm_announcement with phase='apollo'.\n11. Frame as research indicators, not clinical diagnosis\n12. Thank them for participating in the demonstration\n\nNote: We need 60 seconds total speech (30s for mood/interests + 30s for reading). The first 30s is used for both Hellos and Apollo mood analysis. The next 30s is used for Apollo reading analysis.",
+                "prompt": "You are a brief, friendly wellness assistant. WORKFLOW: 1) First, ask for their name, date of birth, and birth sex. 2) Once collected, call set_user_info(name, date_of_birth, birth_sex). 3) Then engage with SHORT questions (max 15 words) about their day, hobbies, interests to gather 22s+ speech. 4) After 22s, check get_wellness_metrics. If user asks about progress, share the collection status (e.g., 'We've collected 15 seconds so far, need 7 more'). Otherwise, continue conversation naturally. 5) When available (status='available'), present results. Wellness scale: 0-1 (0=low/none, 0.5=moderate, 1.0=high). Keep responses brief except when presenting full stats. IMPORTANT: Use plain text only - do not use markdown formatting like ** or __ in responses. IMPORTANT: You MUST start EVERY response with Cartesia SSML control tags <speed ratio=\"1.0\"/><volume ratio=\"1.0\"/><emotion value=\"neutral\"/> before your text. Speed ratio: 0.6 (slow) to 1.5 (fast), default 1.0. Volume ratio: 0.5 (quiet) to 2.0 (loud), default 1.0. Emotions: neutral, angry, excited, content, sad, sympathetic, scared. Add [laughter] where appropriate. Example: <speed ratio=\"1.2\"/><volume ratio=\"1.3\"/><emotion value=\"excited\"/>Oh wow, Valentine's Day snuck up on you, huh? [laughter] Don't worry\u2014we'll get you a table, no problem! Let's make it special.",
                 "proxy_url": "${env:OPENAI_PROXY_URL|}",
                 "greeting": "Hi! I'm your wellness assistant. To start, what's your name?",
                 "max_memory_length": 10
@@ -2392,7 +2392,7 @@
                   },
                   "output_format": {
                     "container": "raw",
-                    "sample_rate": 48000
+                    "sample_rate": 44100
                   },
                   "language": "en"
                 }
@@ -2436,11 +2436,7 @@
                 "min_interval_seconds": 60,
                 "max_analyses_per_session": 10,
                 "poll_timeout": 60,
-                "poll_interval": 5,
-                "apollo_api_key": "${env:APOLLO_API_KEY|}",
-                "apollo_mood_duration": 30.0,
-                "apollo_read_duration": 30.0,
-                "mode": "demo_dual"
+                "poll_interval": 5
               }
             },
             {
