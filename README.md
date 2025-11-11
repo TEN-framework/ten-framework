@@ -84,7 +84,7 @@ TEN is an open-source framework for conversational voice AI agents.
 
 <strong>Multi-Purpose Voice Assistant</strong> — This low-latency, high-quality real-time assistant supports both RTC and [WebSocket](ai_agents/agents/examples/websocket-example) connections, and you can extend it with [Memory](ai_agents/agents/examples/voice-assistant-with-memU), [VAD](ai_agents/agents/examples/voice-assistant-with-ten-vad), [Turn Detection](ai_agents/agents/examples/voice-assistant-with-turn-detection), and other extensions.
 
-See the [Example code](https://github.com/TEN-framework/ten-framework/tree/main/ai_agents/agents/examples/voice-assistant) for more details.
+See the [Example code](ai_agents/agents/examples/voice-assistant) for more details.
 
 <br>
 
@@ -96,7 +96,7 @@ See the [Example code](https://github.com/TEN-framework/ten-framework/tree/main/
 
 <strong>Lip Sync Avatars</strong> — Works with multiple avatar vendors, the demo features Kei, an anime character with Live2D-powered lip sync, and also supports realistic avatars from Trulience, HeyGen, and Tavus (coming soon).
 
-See the [Example code](https://github.com/TEN-framework/ten-framework/tree/main/ai_agents/agents/examples/voice-assistant-live2d) for Live2D avatars.
+See the [Example code](ai_agents/agents/examples/voice-assistant-live2d) for Live2D avatars.
 
 <br>
 
@@ -108,7 +108,7 @@ See the [Example code](https://github.com/TEN-framework/ten-framework/tree/main/
 
 <strong>Speech Diarization</strong> — Real-time diarization that detects and labels speakers, the Who Likes What game shows an interactive use case.
 
-[Example code](https://github.com/TEN-framework/ten-framework/tree/main/ai_agents/agents/examples/speechmatics-diarization)
+[Example code](ai_agents/agents/examples/speechmatics-diarization)
 
 <br>
 
@@ -120,7 +120,7 @@ See the [Example code](https://github.com/TEN-framework/ten-framework/tree/main/
 
 <strong>SIP Call</strong> — SIP extension that enables phone calls powered by TEN.
 
-[Example code](https://github.com/TEN-framework/ten-framework/tree/main/ai_agents/agents/examples/voice-assistant-sip-twilio)
+[Example code](ai_agents/agents/examples/voice-assistant-sip-twilio)
 
 <br>
 
@@ -132,7 +132,7 @@ See the [Example code](https://github.com/TEN-framework/ten-framework/tree/main/
 
 <strong>Transcription</strong> — A transcription tool that transcribes audio to text.
 
-[Example code](https://github.com/TEN-framework/ten-framework/tree/main/ai_agents/agents/examples/transcription)
+[Example code](ai_agents/agents/examples/transcription)
 
 <br>
 
@@ -142,9 +142,9 @@ See the [Example code](https://github.com/TEN-framework/ten-framework/tree/main/
 
 ![Image](https://github.com/user-attachments/assets/3d60f1ff-0f82-4fe7-b5c2-ac03d284f60c)
 
-<strong>ESP32-S3 Korvo V3</strong> — Runs TEN Agent example on the Espressif ESP32-S3 Korvo V3 development board to integrate LLM-powered communication with hardware.
+<strong>ESP32-S3 Korvo V3</strong> — Runs TEN agent example on the Espressif ESP32-S3 Korvo V3 development board to integrate LLM-powered communication with hardware.
 
-See the [integration guide](https://github.com/TEN-framework/ten-framework/tree/main/ai_agents/esp32-client) for more details.
+See the [integration guide](ai_agents/esp32-client) for more details.
 
 <br>
 <div align="right">
