@@ -194,7 +194,7 @@ TEN 에는 [TEN Framework](https://github.com/ten-framework/ten-framework), [TEN
 
 <br>
 
-![divider](https://github.com/user-attachments/assets/c763ffa6-0b9f-4599-9e50-8ea97021e412)
+![divider](https://github.com/user-attachments/assets/aec54c94-ced9-4683-ae58-0a5a7ed803bd)
 
 #### 단계 ⓶ - VM 에서 예시 에이전트 빌드
 
@@ -283,7 +283,7 @@ task run
 
 <br>
 
-![divider](https://github.com/user-attachments/assets/c763ffa6-0b9f-4599-9e50-8ea97021e412)
+![divider](https://github.com/user-attachments/assets/aec54c94-ced9-4683-ae58-0a5a7ed803bd)
 
 #### 단계 ⓷ - TMAN Designer로 에이전트 커스터마이징
 
@@ -315,7 +315,7 @@ task run
 
 <br>
 
-![divider](https://github.com/user-attachments/assets/c763ffa6-0b9f-4599-9e50-8ea97021e412)
+![divider](https://github.com/user-attachments/assets/aec54c94-ced9-4683-ae58-0a5a7ed803bd)
 
 #### 단계 ⓷ - 에이전트 커스터마이징
 
@@ -328,7 +328,7 @@ task run
 
 <br>
 
-![divider](https://github.com/user-attachments/assets/c763ffa6-0b9f-4599-9e50-8ea97021e412)
+![divider](https://github.com/user-attachments/assets/aec54c94-ced9-4683-ae58-0a5a7ed803bd)
 
 <br>
 
@@ -374,7 +374,7 @@ docker run --rm -it --env-file .env -p 3000:3000 example-app
 
 <br>
 
-![divider](https://github.com/user-attachments/assets/c763ffa6-0b9f-4599-9e50-8ea97021e412)
+![divider](https://github.com/user-attachments/assets/aec54c94-ced9-4683-ae58-0a5a7ed803bd)
 
 [Vercel](https://vercel.com) 또는 [Netlify](https://www.netlify.com) 같은 플랫폼에 TEN을 호스팅하고 싶다면 배포를 두 부분으로 나눌 수 있습니다.
 
@@ -467,7 +467,7 @@ TEN Framework 는 AI 기반 Q&A 플랫폼에서도 만나볼 수 있습니다. �
 
 <br>
 
-![divider](https://github.com/user-attachments/assets/c763ffa6-0b9f-4599-9e50-8ea97021e412)
+![divider](https://github.com/user-attachments/assets/aec54c94-ced9-4683-ae58-0a5a7ed803bd)
 
 ### 코드 기여자
 
@@ -479,7 +479,7 @@ TEN Framework 는 AI 기반 Q&A 플랫폼에서도 만나볼 수 있습니다. �
 
 <br>
 
-![divider](https://github.com/user-attachments/assets/c763ffa6-0b9f-4599-9e50-8ea97021e412)
+![divider](https://github.com/user-attachments/assets/aec54c94-ced9-4683-ae58-0a5a7ed803bd)
 
 ### 라이선스
 

@@ -194,7 +194,7 @@ TEN inclut [TEN Framework](https://github.com/ten-framework/ten-framework), [TEN
 
 <br>
 
-![divider](https://github.com/user-attachments/assets/c763ffa6-0b9f-4599-9e50-8ea97021e412)
+![divider](https://github.com/user-attachments/assets/aec54c94-ced9-4683-ae58-0a5a7ed803bd)
 
 #### Étape ⓶ - Construire les exemples dans la VM
 
@@ -279,7 +279,7 @@ Une fois l’agent en marche, accédez aux interfaces suivantes :
 
 <br>
 
-![divider](https://github.com/user-attachments/assets/c763ffa6-0b9f-4599-9e50-8ea97021e412)
+![divider](https://github.com/user-attachments/assets/aec54c94-ced9-4683-ae58-0a5a7ed803bd)
 
 #### Étape ⓷ - Personnaliser votre agent
 
@@ -292,7 +292,7 @@ Une fois l’agent en marche, accédez aux interfaces suivantes :
 
 <br>
 
-![divider](https://github.com/user-attachments/assets/c763ffa6-0b9f-4599-9e50-8ea97021e412)
+![divider](https://github.com/user-attachments/assets/aec54c94-ced9-4683-ae58-0a5a7ed803bd)
 
 <br>
 
@@ -338,7 +338,7 @@ docker run --rm -it --env-file .env -p 3000:3000 example-app
 
 <br>
 
-![divider](https://github.com/user-attachments/assets/c763ffa6-0b9f-4599-9e50-8ea97021e412)
+![divider](https://github.com/user-attachments/assets/aec54c94-ced9-4683-ae58-0a5a7ed803bd)
 
 ### Déployer avec d’autres services cloud
 
@@ -430,7 +430,7 @@ Toutes les formes de collaboration open source sont les bienvenues ! Correction
 
 <br>
 
-![divider](https://github.com/user-attachments/assets/c763ffa6-0b9f-4599-9e50-8ea97021e412)
+![divider](https://github.com/user-attachments/assets/aec54c94-ced9-4683-ae58-0a5a7ed803bd)
 
 ### Contributeurs du code
 
@@ -442,7 +442,7 @@ Les contributions sont les bienvenues ! Merci de lire d’abord le [guide de con
 
 <br>
 
-![divider](https://github.com/user-attachments/assets/c763ffa6-0b9f-4599-9e50-8ea97021e412)
+![divider](https://github.com/user-attachments/assets/aec54c94-ced9-4683-ae58-0a5a7ed803bd)
 
 ### Licence
 

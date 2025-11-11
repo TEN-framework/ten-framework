@@ -176,7 +176,7 @@ TEN 包括 [TEN Framework](https://github.com/ten-framework/ten-framework)、[TE
 
 <br>
 
-![divider](https://github.com/user-attachments/assets/c763ffa6-0b9f-4599-9e50-8ea97021e412)
+![divider](https://github.com/user-attachments/assets/aec54c94-ced9-4683-ae58-0a5a7ed803bd)
 
 如果在国内，我们强烈建议在 SSH 中把代理打开，下载和安装的依赖的时候会更加丝滑。
 
@@ -209,7 +209,7 @@ pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
 export UV_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
 ```
 
-![divider](https://github.com/user-attachments/assets/c763ffa6-0b9f-4599-9e50-8ea97021e412)
+![divider](https://github.com/user-attachments/assets/aec54c94-ced9-4683-ae58-0a5a7ed803bd)
 
 #### 步骤 ⓶ - 在虚拟机中构建示例代理
 
@@ -294,7 +294,7 @@ task run
 
 <br>
 
-![divider](https://github.com/user-attachments/assets/c763ffa6-0b9f-4599-9e50-8ea97021e412)
+![divider](https://github.com/user-attachments/assets/aec54c94-ced9-4683-ae58-0a5a7ed803bd)
 
 #### 步骤 ⓷ - 自定义你的代理
 
@@ -307,7 +307,7 @@ task run
 
 <br>
 
-![divider](https://github.com/user-attachments/assets/c763ffa6-0b9f-4599-9e50-8ea97021e412)
+![divider](https://github.com/user-attachments/assets/aec54c94-ced9-4683-ae58-0a5a7ed803bd)
 
 <br>
 
@@ -353,7 +353,7 @@ docker run --rm -it --env-file .env -p 3000:3000 example-app
 
 <br>
 
-![divider](https://github.com/user-attachments/assets/c763ffa6-0b9f-4599-9e50-8ea97021e412)
+![divider](https://github.com/user-attachments/assets/aec54c94-ced9-4683-ae58-0a5a7ed803bd)
 
 ### 使用其他云服务部署
 
@@ -445,7 +445,7 @@ TEN Framework 已登陆多个 AI 问答平台，可帮助你在多语言环境�
 
 <br>
 
-![divider](https://github.com/user-attachments/assets/c763ffa6-0b9f-4599-9e50-8ea97021e412)
+![divider](https://github.com/user-attachments/assets/aec54c94-ced9-4683-ae58-0a5a7ed803bd)
 
 ### 代码贡献者
 
@@ -457,7 +457,7 @@ TEN Framework 已登陆多个 AI 问答平台，可帮助你在多语言环境�
 
 <br>
 
-![divider](https://github.com/user-attachments/assets/c763ffa6-0b9f-4599-9e50-8ea97021e412)
+![divider](https://github.com/user-attachments/assets/aec54c94-ced9-4683-ae58-0a5a7ed803bd)
 
 ### 许可证
 
