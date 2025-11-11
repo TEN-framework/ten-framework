@@ -9,16 +9,12 @@ import asyncio
 from typing import AsyncGenerator
 
 from ten_ai_base.llm2 import AsyncLLM2BaseExtension
-<<<<<<< HEAD
-from ten_ai_base.struct import LLMRequest, LLMRequestRetrievePrompt, LLMResponse, LLMResponseRetrievePrompt
-=======
 from ten_ai_base.struct import (
     LLMRequest,
     LLMRequestRetrievePrompt,
     LLMResponse,
     LLMResponseRetrievePrompt,
 )
->>>>>>> origin
 from ten_runtime.async_ten_env import AsyncTenEnv
 
 from .openai import OpenAIChatGPT, OpenAILLM2Config

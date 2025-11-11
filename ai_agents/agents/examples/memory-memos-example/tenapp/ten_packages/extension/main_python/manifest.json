@@ -45,6 +45,9 @@
         "memos_api_key": {
           "type": "string"
         },
+        "memos_base_url": {
+          "type": "string"
+        },
         "enable_memorization": {
           "type": "bool"
         }

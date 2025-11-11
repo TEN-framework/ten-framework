@@ -5,5 +5,6 @@
     "user_id": "user",
     "user_name": "User",
     "memos_api_key": "${env:MEMOS_API_KEY}",
+    "memos_base_url": "https://memos.memtensor.cn/api/openmem/v1",
     "enable_memorization": true
 }

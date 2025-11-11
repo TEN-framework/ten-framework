@@ -180,12 +180,12 @@ class Agent:
         """
         await self.llm_exec.register_tool(tool, source)
 
-    async def queue_llm_input(self, text: str):
+    async def queue_llm_input(self, text: str, prompt: str = None):
         """
         Queue a new message to the LLM context.
         This method sends the text input to the LLM for processing.
         """
-        await self.llm_exec.queue_input(text)
+        await self.llm_exec.queue_input(text, prompt)
 
     async def flush_llm(self):
         """

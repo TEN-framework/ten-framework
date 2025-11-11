@@ -163,6 +163,7 @@ class OpenAIChatGPT:
         messages = request_input.messages
         tools = None
         parsed_messages = []
+        system_prompt = request_input.prompt or self.config.prompt
 
         self.ten_env.log_info(
             f"get_chat_completions: {len(messages)} messages, streaming: {request_input.streaming}"
@@ -235,8 +236,7 @@ class OpenAIChatGPT:
             "messages": [
                 {
                     "role": "system",
-                    "content": self.config.prompt
-                    or "you are a helpful assistant",
+                    "content": system_prompt
                 },
                 *parsed_messages,
             ],

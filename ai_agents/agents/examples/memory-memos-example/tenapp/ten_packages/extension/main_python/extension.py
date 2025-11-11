@@ -69,6 +69,7 @@ class MainControlExtension(AsyncExtension):
                 self.memos_client = MemosClient(
                     env=ten_env,
                     api_key=self.config.memos_api_key,
+                    base_url=self.config.memos_base_url,
                 )
             except Exception as e:
                 ten_env.log_error(
@@ -117,10 +118,10 @@ class MainControlExtension(AsyncExtension):
             self.current_user_query = event.text
 
             # Get prompt with memory context and update LLM extension
-            await self._get_prompt_with_memory(event.text)
+            prompt = await self._get_prompt_with_memory(event.text)
 
             # Send user query normally (without memory embedded in message)
-            await self.agent.queue_llm_input(event.text)
+            await self.agent.queue_llm_input(event.text, prompt)
         await self._send_transcript("user", event.text, event.final, stream_id)
 
     @agent_event_handler(LLMResponseEvent)
@@ -252,23 +253,6 @@ class MainControlExtension(AsyncExtension):
 
     # === Memory related methods ===
 
-    async def _retrieve_memory(self, user_id: str = None) -> str:
-        """Retrieve conversation memory from MemOS"""
-        if not self.memos_client:
-            return ""
-
-        try:
-            user_id = user_id or self.config.user_id
-            # Search with empty query to get general memories
-            memories = await self.memos_client.search_memory("", user_id, self.conversation_id)
-            # Format as simple text
-            return "\n".join(memories) if memories else ""
-        except Exception as e:
-            self.ten_env.log_error(
-                f"[MainControlExtension] Failed to retrieve memory: {e}"
-            )
-            return ""
-
     async def _retrieve_related_memory(self, query: str, user_id: str = None) -> str:
         """Retrieve related memory based on user query using MemOS search"""
         if not self.memos_client:
@@ -284,19 +268,26 @@ class MainControlExtension(AsyncExtension):
             # Call MemOS search_memory API directly
             memories = await self.memos_client.search_memory(query, user_id, self.conversation_id)
 
-            # Format as simple text
-            memory_text = "\n".join(memories) if memories else ""
+            # Format memories as numbered list (matching MemOS documentation pattern)
+            # Pattern from: https://memos-docs.openmem.net/cn/usecase/home_assistant
+            if memories:
+                formatted_memories = "## memory context:\n"
+                for i, memory in enumerate(memories, 1):
+                    formatted_memories += f"{i}. {memory}\n"
+                memory_text = formatted_memories
+            else:
+                memory_text = ""
 
             self.ten_env.log_info(
-                f"[MainControlExtension] Retrieved {len(memories)} related memories (length: {len(memory_text)})"
+                f"[MainControlExtension] Retrieved memory context: {memory_text}"
             )
 
             return memory_text
         except Exception as e:
             self.ten_env.log_error(
-                f"[MainControlExtension] Failed to retrieve related memory: {e}"
+                f"[MainControlExtension] Failed to retrieve memory context: {e}"
             )
-            return ""
+            return "", 0
 
     async def _get_prompt_with_memory(self, query: str) -> str:
         """
@@ -309,30 +300,14 @@ class MainControlExtension(AsyncExtension):
         request_id = str(uuid.uuid4())
 
         # Step 1: Retrieve original prompt from LLM extension
-        cmd_result, error = await _send_cmd(
+        cmd_result, _ = await _send_cmd(
             self.ten_env,
             "retrieve_prompt",
             "llm",
             {"request_id": request_id}
         )
 
-        if error:
-            raise RuntimeError(f"Failed to send retrieve_prompt command: {error}")
-
-        if not cmd_result:
-            raise RuntimeError("retrieve_prompt command returned no result")
-
-        if cmd_result.get_status_code() != StatusCode.OK:
-            raise RuntimeError(
-                f"retrieve_prompt command failed with status: {cmd_result.get_status_code()}"
-            )
-
-        result_json, parse_error = cmd_result.get_property_to_json(None)
-        if parse_error:
-            raise RuntimeError(f"Failed to parse retrieve_prompt result: {parse_error}")
-
-        if not result_json:
-            raise RuntimeError("retrieve_prompt result is empty")
+        result_json, _ = cmd_result.get_property_to_json(None)
 
         response = LLMResponseRetrievePrompt.model_validate_json(result_json)
         original_prompt = response.prompt or ""
@@ -350,16 +325,6 @@ class MainControlExtension(AsyncExtension):
         else:
             prompt = f"{original_prompt}\n\n## Memory Context:\n{related_memory}\n\nUse this memory context to provide more personalized and relevant responses."
 
-        # Step 4: Send update_prompt command with combined prompt
-        await _send_cmd(
-            self.ten_env,
-            "update_prompt",
-            "llm",
-            {
-                "request_id": request_id,
-                "prompt": prompt
-            }
-        )
 
         return prompt
 
