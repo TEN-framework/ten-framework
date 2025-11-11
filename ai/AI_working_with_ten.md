@@ -1869,6 +1869,10 @@ PYTHONUNBUFFERED=1
 - **No worker.go modifications needed** - the original platform code works correctly with proper configuration
 
 **After changing property.json:**
+
+**⚠️ If adding/removing graphs:** The playground frontend caches the graph list from `/graphs` API. Use the [Nuclear Restart](#nuclear-option-complete-system-reset) to avoid lock file and cache issues.
+
+**If only modifying existing graph configs:**
 ```bash
 # Just restart the server (no rebuild needed)
 docker exec ten_agent_dev bash -c "pkill -f 'task run'"
@@ -1876,6 +1880,8 @@ docker exec -d ten_agent_dev bash -c \
   "cd /app/agents/examples/voice-assistant-advanced && \
    task run > /tmp/task_run.log 2>&1"
 ```
+
+**Note**: Property.json is loaded when each new session starts (when user joins a channel), so existing sessions won't see changes until they reconnect.
 
 ### Testing Workflow
 
@@ -2149,6 +2155,49 @@ curl -s -o /dev/null -w '%{http_code}' http://localhost:3000
 - Always start services together with `task run`
 - Wait 10-12 seconds after startup before accessing frontend
 - Use the nuclear restart procedure which ensures correct startup order
+
+---
+
+### Issue: Next.js Lock File Error
+
+**Symptoms**:
+```
+⨯ Unable to acquire lock at /app/playground/.next/dev/lock, is another instance of next dev running?
+error: script "dev" exited with code 1
+Received interrupt signal, cleaning up workers...
+```
+
+**Cause**: Multiple scenarios can cause this:
+1. Previous Next.js process didn't clean up properly
+2. Attempting to restart frontend while `task run` is managing it
+3. Manual frontend restart causing conflict with task runner
+4. Container restart without cleaning lock files
+
+**Why It's Serious**: When `task run` starts the frontend and it crashes due to lock file, the **entire task run fails**, taking down the API server too.
+
+**Solution - Use Nuclear Restart:**
+```bash
+# Kill everything cleanly
+sudo docker exec ten_agent_dev bash -c "pkill -9 -f 'bin/api'; pkill -9 node; pkill -9 bun"
+sudo docker exec ten_agent_dev bash -c "rm -f /app/playground/.next/dev/lock"
+sleep 2
+
+# Start fresh
+sudo docker exec -d ten_agent_dev bash -c \
+  "cd /app/agents/examples/voice-assistant-advanced && \
+   task run > /tmp/task_run.log 2>&1"
+
+# Wait and verify
+sleep 12
+curl -s http://localhost:8080/health
+```
+
+**Prevention**:
+- **Don't manually restart the frontend** when it's managed by `task run`
+- When adding/removing graphs from property.json, use nuclear restart instead of selective restarts
+- If you need to restart only the frontend for development, stop `task run` first, then start frontend separately
+
+**Key Insight**: The frontend (playground) and API server are coupled through `task run`. Killing just the frontend can leave the task runner in a bad state, requiring a full nuclear restart.
 
 ---
 
