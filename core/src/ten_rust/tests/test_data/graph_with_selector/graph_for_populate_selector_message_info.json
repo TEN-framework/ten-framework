@@ -1,0 +1,140 @@
+{
+  "nodes": [
+    {
+      "type": "extension",
+      "name": "ext_1",
+      "extension_group": "ext_group_1",
+      "app": "msgpack://127.0.0.1:8001/",
+      "addon": "addon_1"
+    },
+    {
+      "type": "extension",
+      "name": "ext_2",
+      "extension_group": "ext_group_2",
+      "app": "msgpack://127.0.0.1:8001/",
+      "addon": "addon_2"
+    },
+    {
+      "type": "extension",
+      "name": "ext_3",
+      "extension_group": "ext_group_3",
+      "app": "msgpack://127.0.0.1:8001/",
+      "addon": "addon_3"
+    },
+    {
+      "type": "extension",
+      "name": "target_ext",
+      "extension_group": "ext_group_4",
+      "app": "msgpack://127.0.0.1:8001/",
+      "addon": "addon_4"
+    },
+    {
+      "type": "selector",
+      "name": "selector_1_and_2",
+      "filter": {
+        "field": "name",
+        "operator": "regex",
+        "value": "ext_[1-2]"
+      }
+    },
+    {
+      "type": "selector",
+      "name": "selector_all",
+      "filter": {
+        "field": "name",
+        "operator": "regex",
+        "value": "ext_[1-3]"
+      }
+    }
+  ],
+  "connections": [
+    {
+      "app": "msgpack://127.0.0.1:8001/",
+      "extension": "ext_1",
+      "cmd": [
+        {
+          "name": "command_a",
+          "dest": [
+            {
+              "extension": "target_ext"
+            }
+          ]
+        },
+        {
+          "name": "command_b",
+          "dest": [
+            {
+              "extension": "target_ext"
+            }
+          ]
+        }
+      ],
+      "data": [
+        {
+          "name": "data_x",
+          "dest": [
+            {
+              "extension": "target_ext"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "app": "msgpack://127.0.0.1:8001/",
+      "extension": "ext_2",
+      "data": [
+        {
+          "name": "data_y",
+          "dest": [
+            {
+              "extension": "target_ext"
+            }
+          ]
+        }
+      ],
+      "audio_frame": [
+        {
+          "name": "audio_stream_1",
+          "dest": [
+            {
+              "extension": "target_ext"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "app": "msgpack://127.0.0.1:8001/",
+      "extension": "ext_3",
+      "video_frame": [
+        {
+          "name": "video_stream_1",
+          "dest": [
+            {
+              "extension": "target_ext"
+            }
+          ]
+        },
+        {
+          "name": "video_stream_2",
+          "dest": [
+            {
+              "extension": "target_ext"
+            }
+          ]
+        }
+      ],
+      "data": [
+        {
+          "name": "data_z",
+          "dest": [
+            {
+              "extension": "target_ext"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
