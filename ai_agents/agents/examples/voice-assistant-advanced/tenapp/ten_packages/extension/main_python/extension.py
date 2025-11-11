@@ -87,6 +87,9 @@ class MainControlExtension(AsyncExtension):
         if not event.text:
             return
         if event.final:
+            import time
+            stt_final_time = time.time()
+            self.ten_env.log_info(f"[LATENCY_STT_FINAL] t={stt_final_time:.3f} text=\"{event.text}\"")
             await self._interrupt()
             self.turn_id += 1
             await self.agent.queue_llm_input(event.text)
@@ -95,6 +98,14 @@ class MainControlExtension(AsyncExtension):
     @agent_event_handler(LLMResponseEvent)
     async def _on_llm_response(self, event: LLMResponseEvent):
         if not event.is_final and event.type == "message":
+            # Log first LLM response chunk
+            if not hasattr(self, '_logged_llm_first_token') or self.turn_id != getattr(self, '_last_logged_turn', -1):
+                import time
+                llm_first_token_time = time.time()
+                self.ten_env.log_info(f"[LATENCY_LLM_FIRST_TOKEN] t={llm_first_token_time:.3f} turn={self.turn_id}")
+                self._logged_llm_first_token = True
+                self._last_logged_turn = self.turn_id
+
             sentences, self.sentence_fragment = parse_sentences(
                 self.sentence_fragment, event.delta
             )
@@ -189,6 +200,14 @@ class MainControlExtension(AsyncExtension):
         """
         Sends a sentence to the TTS system.
         """
+        # Log first TTS request for latency measurement
+        if not hasattr(self, '_logged_tts_first_request') or self.turn_id != getattr(self, '_last_logged_tts_turn', -1):
+            import time
+            tts_request_time = time.time()
+            self.ten_env.log_info(f"[LATENCY_TTS_REQUEST] t={tts_request_time:.3f} turn={self.turn_id} text=\"{text[:50]}\"")
+            self._logged_tts_first_request = True
+            self._last_logged_tts_turn = self.turn_id
+
         request_id = f"tts-request-{self.turn_id}"
         await _send_data(
             self.ten_env,
