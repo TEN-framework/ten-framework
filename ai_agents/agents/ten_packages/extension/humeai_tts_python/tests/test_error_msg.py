@@ -34,14 +34,7 @@ from ten_runtime import (
     Data,
     TenError,
 )
-from ten_ai_base.struct import TTSTextInput, TTSFlush
-from humeai_tts_python.humeTTS import (
-    EVENT_TTS_RESPONSE,
-    EVENT_TTS_END,
-    EVENT_TTS_ERROR,
-    EVENT_TTS_INVALID_KEY_ERROR,
-    EVENT_TTS_FLUSH,
-)
+from ten_ai_base.struct import TTSTextInput
 
 
 # ================ test empty params ================
@@ -82,12 +75,12 @@ def test_empty_params_fatal_error():
     """Test that empty params raises FATAL ERROR with code -1000"""
     print("Starting test_empty_params_fatal_error...")
 
-    # Empty params configuration
+    # Empty key configuration (in params)
     empty_params_config = {
         "params": {
             "key": "",
             "voice_name": "Female English Actor",
-        }
+        },
     }
 
     tester = ExtensionTesterEmptyParams()
@@ -168,6 +161,7 @@ def test_invalid_api_key_error(MockHumeClient):
 
     # Mock the Hume client to raise an authentication error
     mock_client = MockHumeClient.return_value
+    mock_client.clean = AsyncMock()
 
     # Define an async generator that raises the invalid key exception
     async def mock_tts_error(

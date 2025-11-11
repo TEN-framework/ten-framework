@@ -2,6 +2,8 @@
     "params": {
         "api_key": "${env:PLAYHT_TTS_SECRET_KEY|}",
         "user_id": "${env:PLAYHT_TTS_USER_ID|}",
-        "voice_engine": "PlayDialog"
+        "voice_engine": "PlayDialog",
+        "protocol": "ws",
+        "sample_rate": 16000
     }
 }

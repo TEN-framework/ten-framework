@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "groq_tts_python",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "dependencies": [
     {
       "type": "system",
@@ -25,5 +25,32 @@
       "requirements.txt"
     ]
   },
-  "api": {}
+  "api": {
+    "interface": [
+      {
+        "import_uri": "../../system/ten_ai_base/api/tts-interface.json"
+      }
+    ],
+    "property": {
+      "properties": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "api_key": {
+              "type": "string"
+            },
+            "model": {
+              "type": "string"
+            },
+            "voice": {
+              "type": "string"
+            },
+            "sample_rate": {
+              "type": "int64"
+            }
+          }
+        }
+      }
+    }
+  }
 }

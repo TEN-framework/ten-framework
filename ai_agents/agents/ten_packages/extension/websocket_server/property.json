@@ -1,0 +1,10 @@
+{
+  "port": 8765,
+  "host": "0.0.0.0",
+  "sample_rate": 16000,
+  "channels": 1,
+  "bytes_per_sample": 2,
+  "dump": false,
+  "dump_path": "",
+  "params": {}
+}

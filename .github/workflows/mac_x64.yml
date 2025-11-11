@@ -126,7 +126,7 @@ jobs:
           brew install tree
           brew install gettext
 
-          pip3 install --use-pep517 python-dotenv jinja2
+          pip3 install --use-pep517 python-dotenv jinja2 requests
 
           go install golang.org/dl/go1.24.3@latest && go1.24.3 download
           go env -w GOFLAGS="-buildvcs=false"
@@ -148,7 +148,7 @@ jobs:
 
           df -h .
 
-          tgn gen mac x64 ${{ matrix.build_type }} -- log_level=1 enable_serialized_actions=true  ten_rust_enable_gen_cargo_config=false ten_enable_cargo_clean=true ten_enable_python_binding=true ten_enable_advanced_python_integration_tests=false ten_enable_rust_incremental_build=false ten_manager_enable_frontend=false ten_enable_integration_tests_prebuilt=false ten_enable_nodejs_binding=false
+          tgn gen mac x64 ${{ matrix.build_type }} -- log_level=1 enable_serialized_actions=true  ten_rust_enable_gen_cargo_config=false ten_enable_cargo_clean=true ten_enable_python_binding=true ten_enable_advanced_python_integration_tests=false ten_enable_rust_incremental_build=false ten_manager_enable_frontend=false ten_enable_integration_tests_prebuilt=false
 
           tgn build mac x64 ${{ matrix.build_type }}
 
@@ -440,7 +440,7 @@ jobs:
           rustup default nightly-2025-09-18
 
           brew install tree
-          pip3 install --use-pep517 python-dotenv jinja2
+          pip3 install --use-pep517 python-dotenv jinja2 requests
           go install golang.org/dl/go1.24.3@latest && go1.24.3 download
           go env -w GOFLAGS="-buildvcs=false"
           cargo install --force cbindgen
@@ -587,7 +587,7 @@ jobs:
           brew install llvm
 
           brew install tree
-          pip3 install --use-pep517 python-dotenv jinja2
+          pip3 install --use-pep517 python-dotenv jinja2 requests
           go install golang.org/dl/go1.24.3@latest && go1.24.3 download
           go env -w GOFLAGS="-buildvcs=false"
 
@@ -682,7 +682,7 @@ jobs:
           brew install llvm
 
           brew install tree
-          pip3 install --use-pep517 python-dotenv jinja2
+          pip3 install --use-pep517 python-dotenv jinja2 requests
           go install golang.org/dl/go1.24.3@latest && go1.24.3 download
           go env -w GOFLAGS="-buildvcs=false"
 
@@ -785,7 +785,7 @@ jobs:
           brew install llvm
 
           brew install tree
-          pip3 install --use-pep517 python-dotenv jinja2
+          pip3 install --use-pep517 python-dotenv jinja2 requests
           go install golang.org/dl/go1.24.3@latest && go1.24.3 download
           go env -w GOFLAGS="-buildvcs=false"
 
@@ -888,7 +888,7 @@ jobs:
           brew install llvm
 
           brew install tree
-          pip3 install --use-pep517 python-dotenv jinja2
+          pip3 install --use-pep517 python-dotenv jinja2 requests
           go install golang.org/dl/go1.24.3@latest && go1.24.3 download
           go env -w GOFLAGS="-buildvcs=false"
 

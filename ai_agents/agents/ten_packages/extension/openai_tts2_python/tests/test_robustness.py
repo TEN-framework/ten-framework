@@ -15,18 +15,14 @@ if project_root not in sys.path:
 #
 import json
 from typing import Any
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, AsyncMock, patch
 
 from ten_runtime import (
     ExtensionTester,
     TenEnvTester,
     Data,
 )
-from ten_ai_base.struct import TTSTextInput
-from openai_tts2_python.openai_tts import (
-    EVENT_TTS_END,
-    EVENT_TTS_RESPONSE,
-)
+from ten_ai_base.struct import TTSTextInput, TTS2HttpResponseEventType
 
 
 # ================ test reconnect after connection drop(robustness) ================
@@ -112,8 +108,8 @@ class ExtensionTesterRobustness(ExtensionTester):
                 ten_env.stop_test()
 
 
-@patch("openai_tts2_python.extension.OpenaiTTSClient")
-def test_reconnect_after_connection_drop(MockOpenaiTTSClient):
+@patch("openai_tts2_python.extension.OpenAITTSClient")
+def test_reconnect_after_connection_drop(MockOpenAITTSClient):
     """
     Tests that the extension can recover from a connection drop, report a
     NON_FATAL_ERROR, and then successfully reconnect and process a new request.
@@ -125,11 +121,11 @@ def test_reconnect_after_connection_drop(MockOpenaiTTSClient):
     get_call_count = 0
 
     # --- Mock Configuration ---
-    mock_instance = MockOpenaiTTSClient.return_value
-    mock_instance.clean = MagicMock()
+    mock_instance = MockOpenAITTSClient.return_value
+    mock_instance.clean = AsyncMock()
 
     # This async generator simulates different behaviors on subsequent calls
-    async def mock_get_stateful(text: str):
+    async def mock_get_stateful(text: str, request_id: str):
         nonlocal get_call_count
         get_call_count += 1
 
@@ -138,8 +134,8 @@ def test_reconnect_after_connection_drop(MockOpenaiTTSClient):
             raise ConnectionRefusedError("Simulated connection drop from test")
         else:
             # On the second call, simulate a successful audio stream
-            yield (b"\x44\x55\x66", EVENT_TTS_RESPONSE)
-            yield (None, EVENT_TTS_END)
+            yield (b"\x44\x55\x66", TTS2HttpResponseEventType.RESPONSE)
+            yield (None, TTS2HttpResponseEventType.END)
 
     mock_instance.get.side_effect = mock_get_stateful
 

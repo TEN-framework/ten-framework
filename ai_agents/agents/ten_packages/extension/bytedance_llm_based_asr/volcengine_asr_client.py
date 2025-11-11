@@ -169,6 +169,11 @@ class RequestBuilder:
             "request": config.get_request_config(),
         }
 
+        # Add user config only if it's provided
+        user_config = config.get_user_config()
+        if user_config is not None:
+            payload["user"] = user_config
+
         payload_bytes = json.dumps(payload).encode("utf-8")
         compressed_payload = gzip.compress(payload_bytes)
         payload_size = len(compressed_payload)
@@ -400,10 +405,11 @@ class VolcengineASRClient:
     def _calculate_segment_size(self) -> int:
         """Calculate audio segment size based on configuration."""
         # Calculate bytes per second
+        # Get audio parameters from params.audio
         bytes_per_sec = (
-            (self.config.bits // 8)
-            * self.config.channel
-            * self.config.sample_rate
+            (self.config.get_bits() // 8)
+            * self.config.get_channel()
+            * self.config.get_sample_rate()
         )
         # Calculate segment size in bytes
         segment_size = bytes_per_sec * self.config.segment_duration_ms // 1000
@@ -429,8 +435,6 @@ class VolcengineASRClient:
                 max_size=100_000_000,  # 100MB
                 compression=None,
             )
-            # Note: websockets library may not expose response_headers directly
-            # This is a placeholder for potential future use
 
             # Send initial request
             await self._send_full_client_request()
@@ -541,9 +545,9 @@ class VolcengineASRClient:
         # Calculate silence duration: 800ms
         # For 16kHz, 16-bit, mono: 800ms = 0.8 * 16000 * 2 = 25600 bytes
         silence_duration_ms = 800
-        bytes_per_sample = 2  # 16-bit = 2 bytes
+        bytes_per_sample = self.config.get_bits() // 8  # bits to bytes
         samples_per_ms = (
-            self.config.sample_rate // 1000
+            self.config.get_sample_rate() // 1000
         )  # samples per millisecond
         silence_bytes = silence_duration_ms * samples_per_ms * bytes_per_sample
 

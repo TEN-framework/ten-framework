@@ -9,6 +9,7 @@ import("//build/ten_utils/options.gni")
 
 config("utils_public_config") {
   cflags = []
+  cflags_c = []
   cflags_cc = []
   cflags_objc = []
   cflags_objcc = []
@@ -51,6 +52,8 @@ config("utils_private_config") {
   }
 
   cflags = []
+  cflags_c = []
+  cflags_cc = []
   ldflags = []
 
   if (is_linux) {
@@ -124,5 +127,35 @@ config("utils_private_config") {
     ]
   } else if (is_win) {
     ldflags += [ "/ignore:4099" ]
+  }
+
+  if (enable_coverage) {
+    assert(is_linux && target_cpu == "x64",
+           "Coverage instrumentation should only be enabled in Linux + x64")
+
+    if (is_clang) {
+      cflags += [
+        "-fprofile-instr-generate",
+        "-fcoverage-mapping",
+      ]
+      cflags_c += [
+        "-fprofile-instr-generate",
+        "-fcoverage-mapping",
+      ]
+      cflags_cc += [
+        "-fprofile-instr-generate",
+        "-fcoverage-mapping",
+      ]
+
+      # Needs to add ldflags, because ten_utils_test will generate executable
+      # file use -Wl prefix to ensure passing to linker, and force link profile
+      # runtime
+      ldflags += [ "-fprofile-instr-generate" ]
+    } else {
+      cflags += [ "--coverage" ]
+      cflags_c += [ "--coverage" ]
+      cflags_cc += [ "--coverage" ]
+      ldflags += [ "--coverage" ]
+    }
   }
 }
