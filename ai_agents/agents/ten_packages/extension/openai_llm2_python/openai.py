@@ -234,10 +234,7 @@ class OpenAIChatGPT:
         req = {
             "model": self.config.model,
             "messages": [
-                {
-                    "role": "system",
-                    "content": system_prompt
-                },
+                {"role": "system", "content": system_prompt},
                 *parsed_messages,
             ],
             "tools": tools,

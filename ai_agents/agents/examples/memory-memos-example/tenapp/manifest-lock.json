@@ -44,8 +44,8 @@
     {
       "type": "system",
       "name": "ten_ai_base",
-      "version": "0.7.21",
-      "hash": "593592c113d106243dc61d63ed3e0fc7e447221337a3ab05ecbf0974bdce3d75",
+      "version": "0.7.22",
+      "hash": "27e5467c5dc841757f5a6f52e70b0d2c09903be84ade73b404b45c6cac9888f8",
       "dependencies": [
         {
           "type": "system",
@@ -768,7 +768,7 @@
       "type": "system",
       "name": "agora_rtc_sdk",
       "version": "4.4.32-141",
-      "hash": "ce8f50da194f74610735c74450c5c04bbee7f56959431d628349082b90742eb8",
+      "hash": "d0a96b4672127492eee249f123750638071f9bcb673b5371320c8e16cdaff1b5",
       "supports": [
         {
           "os": "linux",
