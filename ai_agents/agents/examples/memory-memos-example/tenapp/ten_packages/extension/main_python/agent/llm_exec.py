@@ -163,7 +163,7 @@ class LLMExec:
             await self._queue_context(ten_env, new_message)
 
     async def _send_to_llm(
-        self, ten_env: AsyncTenEnv, new_message: LLMMessage, prompt: str
+        self, ten_env: AsyncTenEnv, new_message: LLMMessage, prompt: str = None
     ) -> None:
         messages = self.contexts.copy()
         messages.append(new_message)

@@ -287,7 +287,7 @@ class MainControlExtension(AsyncExtension):
             self.ten_env.log_error(
                 f"[MainControlExtension] Failed to retrieve memory context: {e}"
             )
-            return "", 0
+            return ""
 
     async def _get_prompt_with_memory(self, query: str) -> str:
         """
