@@ -556,6 +556,41 @@ ps -elf | grep 'bin/main' | grep -v grep | awk '{print $4}' | xargs -r sudo kill
 sudo docker exec ten_agent_dev bash -c "pkill -9 -f 'bin/api'"
 ```
 
+### Playground Shows "missing required error components, refreshing..."
+
+**Symptom**: Playground continuously refreshes with error message
+
+**Cause**: Stale/multiple next-server processes or corrupted .next directory
+
+**Solution**:
+```bash
+# 1. Find and kill all next-server processes
+sudo docker exec ten_agent_dev bash -c "ps aux | grep next-server | grep -v grep"
+# Note the PIDs, then:
+sudo docker exec ten_agent_dev bash -c "kill -9 PID1 PID2 PID3 2>/dev/null; exit 0"
+
+# 2. Clean restart
+sleep 3
+sudo docker exec -d ten_agent_dev bash -c \
+  "cd /app/agents/examples/voice-assistant-advanced && \
+   task run > /tmp/task_run.log 2>&1"
+
+# 3. Wait and verify (20+ seconds for .next rebuild)
+sleep 20
+curl -s http://localhost:8080/health
+```
+
+**If that doesn't work** (nuclear option):
+```bash
+sudo docker exec ten_agent_dev bash -c "killall -9 node bun 2>/dev/null; exit 0"
+sudo docker exec ten_agent_dev bash -c "rm -rf /app/playground/.next; rm -f /app/playground/.next/dev/lock"
+sleep 3
+sudo docker exec -d ten_agent_dev bash -c "cd /app/agents/examples/voice-assistant-advanced && task run > /tmp/task_run.log 2>&1"
+sleep 25
+```
+
+**Prevention**: Always check for stale processes before starting: `ps aux | grep next-server`
+
 ### Server Won't Start
 ```bash
 # Check if Python dependencies are installed
