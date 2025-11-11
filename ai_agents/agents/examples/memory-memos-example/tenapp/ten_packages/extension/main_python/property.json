@@ -4,8 +4,6 @@
     "agent_name": "Voice Assistant with Memory",
     "user_id": "user",
     "user_name": "User",
-    "memu_base_url": "https://api.memu.so",
-    "memu_api_key": "",
-    "self_hosting": false,
+    "memos_api_key": "${env:MEMOS_API_KEY}",
     "enable_memorization": true
 }

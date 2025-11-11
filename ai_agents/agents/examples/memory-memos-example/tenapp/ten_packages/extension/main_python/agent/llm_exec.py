@@ -187,9 +187,9 @@ class LLMExec:
             if cmd_result and cmd_result.is_final() is False:
                 if cmd_result.get_status_code() == StatusCode.OK:
                     response_json, _ = cmd_result.get_property_to_json(None)
-                    ten_env.log_info(
-                        f"_send_to_llm: response_json {response_json}"
-                    )
+                    # ten_env.log_info(
+                    #     f"_send_to_llm: response_json {response_json}"
+                    # )
                     completion = parse_llm_response(response_json)
                     await self._handle_llm_response(completion)
 

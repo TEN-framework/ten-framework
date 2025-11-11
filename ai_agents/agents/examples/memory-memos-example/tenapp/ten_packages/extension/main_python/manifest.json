@@ -42,14 +42,8 @@
         "agent_name": {
           "type": "string"
         },
-        "memu_base_url": {
+        "memos_api_key": {
           "type": "string"
-        },
-        "memu_api_key": {
-          "type": "string"
-        },
-        "self_hosting": {
-          "type": "bool"
         },
         "enable_memorization": {
           "type": "bool"

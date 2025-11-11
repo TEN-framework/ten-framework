@@ -8,7 +8,5 @@ class MainControlConfig(BaseModel):
     agent_name: str = "Voice Assistant with Memory"
     user_id: str = "user"
     user_name: str = "User"
-    memu_base_url: str = "https://api.memu.so"
-    memu_api_key: str = ""
-    self_hosting: bool = False
+    memos_api_key: str = ""  # Optional, can also use MEMOS_API_KEY env var
     enable_memorization: bool = False

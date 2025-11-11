@@ -1,7 +1,6 @@
 import asyncio
 import json
 import time
-import os
 from typing import Literal
 
 from .agent.decorators import agent_event_handler
@@ -10,6 +9,7 @@ from ten_runtime import (
     AsyncTenEnv,
     Cmd,
     Data,
+    StatusCode,
 )
 
 from .agent.agent import Agent
@@ -25,8 +25,9 @@ from .config import MainControlConfig  # assume extracted from your base model
 
 import uuid
 
-# Memory store abstraction
-from .memory import MemoryStore, MemuSdkMemoryStore, MemuHttpMemoryStore
+# MemOS client
+from .memory import MemosClient
+from ten_ai_base.struct import LLMResponseRetrievePrompt
 
 
 class MainControlExtension(AsyncExtension):
@@ -46,9 +47,11 @@ class MainControlExtension(AsyncExtension):
         self.sentence_fragment: str = ""
         self.turn_id: int = 0
         self.session_id: str = "0"
+        self.current_user_query: str = ""  # Track current user query for memory storage
 
-        # Memory related attributes (named memu_client by request)
-        self.memu_client: MemoryStore | None = None
+        # MemOS client
+        self.memos_client: MemosClient | None = None
+        self.conversation_id: str = str(uuid.uuid4())
 
     def _current_metadata(self) -> dict:
         return {"session_id": self.session_id, "turn_id": self.turn_id}
@@ -60,24 +63,20 @@ class MainControlExtension(AsyncExtension):
         config_json, _ = await ten_env.get_property_to_json(None)
         self.config = MainControlConfig.model_validate_json(config_json)
 
-        # Initialize memory store per config toggle
-        if self.config.self_hosting:
-            self.memu_client = MemuHttpMemoryStore(
-                env=ten_env,
-                base_url=self.config.memu_base_url,
-                api_key=self.config.memu_api_key,
-            )
-        else:
-            self.memu_client = MemuSdkMemoryStore(
-                env=ten_env,
-                base_url=self.config.memu_base_url,
-                api_key=self.config.memu_api_key,
-            )
+        # Initialize MemOS client
+        if self.config.enable_memorization:
+            try:
+                self.memos_client = MemosClient(
+                    env=ten_env,
+                    api_key=self.config.memos_api_key,
+                )
+            except Exception as e:
+                ten_env.log_error(
+                    f"[MainControlExtension] Failed to initialize MemOS client: {e}"
+                )
+                self.memos_client = None
 
         self.agent = Agent(ten_env)
-
-        # Load memory summary and write into LLM context
-        await self._load_memory_to_context()
 
         # Now auto-register decorated methods
         for attr_name in dir(self):
@@ -114,14 +113,14 @@ class MainControlExtension(AsyncExtension):
             await self._interrupt()
         if event.final:
             self.turn_id += 1
-            # Use user's query to search for related memories and pass to LLM
-            related_memory = await self._retrieve_related_memory(event.text)
-            if related_memory:
-                # Add related memory as context to LLM input
-                context_message = f"[Related Memory Context]\n{related_memory}\n\n[Current User Question]\n{event.text}"
-                await self.agent.queue_llm_input(context_message)
-            else:
-                await self.agent.queue_llm_input(event.text)
+            # Store current user query for memory storage after LLM completion
+            self.current_user_query = event.text
+
+            # Get prompt with memory context and update LLM extension
+            await self._get_prompt_with_memory(event.text)
+
+            # Send user query normally (without memory embedded in message)
+            await self.agent.queue_llm_input(event.text)
         await self._send_transcript("user", event.text, event.final, stream_id)
 
     @agent_event_handler(LLMResponseEvent)
@@ -138,9 +137,12 @@ class MainControlExtension(AsyncExtension):
             self.sentence_fragment = ""
             await self._send_to_tts(remaining_text, True)
 
-            # Memorize every two rounds (when turn_id is even) if memorization is enabled
-            if self.turn_id % 2 == 0 and self.config.enable_memorization:
-                await self._memorize_conversation()
+            # Memorize after every LLM completion (matching MemOS documentation pattern)
+            if self.config.enable_memorization:
+                await self._memorize_conversation(
+                    user_query=self.current_user_query,
+                    assistant_response=event.text
+                )
 
         await self._send_transcript(
             "assistant",
@@ -211,9 +213,10 @@ class MainControlExtension(AsyncExtension):
                     "stream_id": stream_id,
                 },
             )
-        self.ten_env.log_info(
-            f"[MainControlExtension] Sent transcript: {role}, final={final}, text={text}"
-        )
+        if final:
+            self.ten_env.log_info(
+                f"[MainControlExtension] Sent transcript: {role}, final={final}, text={text}"
+            )
 
     async def _send_to_tts(self, text: str, is_final: bool):
         """
@@ -250,52 +253,42 @@ class MainControlExtension(AsyncExtension):
     # === Memory related methods ===
 
     async def _retrieve_memory(self, user_id: str = None) -> str:
-        """Retrieve conversation memory from configured store"""
-        if not self.memu_client:
+        """Retrieve conversation memory from MemOS"""
+        if not self.memos_client:
             return ""
 
         try:
-            user_id = self.config.user_id
-            agent_id = self.config.agent_id
-            resp = await self.memu_client.retrieve_default_categories(
-                user_id=user_id, agent_id=agent_id
-            )
-            normalized = self.memu_client.parse_default_categories(resp)
-            return self._extract_summary_text(normalized)
+            user_id = user_id or self.config.user_id
+            # Search with empty query to get general memories
+            memories = await self.memos_client.search_memory("", user_id, self.conversation_id)
+            # Format as simple text
+            return "\n".join(memories) if memories else ""
         except Exception as e:
             self.ten_env.log_error(
                 f"[MainControlExtension] Failed to retrieve memory: {e}"
             )
             return ""
 
-    async def _retrieve_related_memory(
-        self, query: str, user_id: str = None
-    ) -> str:
-        """Retrieve related memory based on user query using semantic search"""
-        if not self.memu_client:
+    async def _retrieve_related_memory(self, query: str, user_id: str = None) -> str:
+        """Retrieve related memory based on user query using MemOS search"""
+        if not self.memos_client:
             return ""
 
         try:
-            user_id = self.config.user_id
-            agent_id = self.config.agent_id
+            user_id = user_id or self.config.user_id
 
             self.ten_env.log_info(
-                f"[MainControlExtension] Searching related memory with query: '{query}'"
+                f"[MainControlExtension] Searching related memory with query: '{query}' (conversation_id={self.conversation_id})"
             )
 
-            # Call semantic search API
-            resp = await self.memu_client.retrieve_related_clustered_categories(
-                user_id=user_id, agent_id=agent_id, category_query=query
-            )
+            # Call MemOS search_memory API directly
+            memories = await self.memos_client.search_memory(query, user_id, self.conversation_id)
 
-            # Parse response
-            parsed = self.memu_client.parse_related_clustered_categories(resp)
-
-            # Extract memory text
-            memory_text = self._extract_related_memory_text(parsed)
+            # Format as simple text
+            memory_text = "\n".join(memories) if memories else ""
 
             self.ten_env.log_info(
-                f"[MainControlExtension] Retrieved related memory (length: {len(memory_text)})"
+                f"[MainControlExtension] Retrieved {len(memories)} related memories (length: {len(memory_text)})"
             )
 
             return memory_text
@@ -305,104 +298,96 @@ class MainControlExtension(AsyncExtension):
             )
             return ""
 
-    def _parse_memory_summary(self, data) -> dict:
-        """Parse memory data and create summary"""
-        summary = {
-            "basic_stats": {
-                "total_categories": len(data.categories),
-                "total_memories": sum(
-                    cat.memory_count or 0 for cat in data.categories
-                ),
-                "user_id": (
-                    data.categories[0].user_id if data.categories else None
-                ),
-                "agent_id": (
-                    data.categories[0].agent_id if data.categories else None
-                ),
-            },
-            "categories": [],
-        }
+    async def _get_prompt_with_memory(self, query: str) -> str:
+        """
+        Retrieve original prompt from LLM extension, search for related memory,
+        combine them, and send update_prompt command.
 
-        for category in data.categories:
-            cat_summary = {
-                "name": category.name,
-                "type": category.type,
-                "memory_count": category.memory_count,
-                "is_active": category.is_active,
-                "recent_memories": [],
-                "summary": category.summary,
-            }
+        Returns the combined prompt string.
+        """
+        # Generate request_id for retrieve_prompt and update_prompt commands
+        request_id = str(uuid.uuid4())
 
-            if category.memories:
-                recent = sorted(
-                    category.memories, key=lambda x: x.happened_at, reverse=True
-                )
-                for memory in recent:
-                    cat_summary["recent_memories"].append(
-                        {
-                            "date": memory.happened_at.strftime(
-                                "%Y-%m-%d %H:%M"
-                            ),
-                            "content": memory.content,
-                        }
-                    )
-
-            summary["categories"].append(cat_summary)
-
-        return summary
-
-    def _extract_summary_text(self, summary: dict) -> str:
-        """Extract summary text from parsed memory data"""
-        summary_text = ""
-        for category in summary["categories"]:
-            if category.get("summary"):
-                summary_text += category["summary"] + "\n"
-            elif category.get("recent_memories"):
-                # If no summary, extract content from recent memories
-                for memory in category["recent_memories"]:
-                    if memory.get("content"):
-                        summary_text += f"- {memory['content']}\n"
-        result = summary_text.strip()
-        self.ten_env.log_info(
-            f"[MainControlExtension] _extract_summary_text result: '{result}'"
+        # Step 1: Retrieve original prompt from LLM extension
+        cmd_result, error = await _send_cmd(
+            self.ten_env,
+            "retrieve_prompt",
+            "llm",
+            {"request_id": request_id}
         )
-        return result
+
+        if error:
+            raise RuntimeError(f"Failed to send retrieve_prompt command: {error}")
+
+        if not cmd_result:
+            raise RuntimeError("retrieve_prompt command returned no result")
+
+        if cmd_result.get_status_code() != StatusCode.OK:
+            raise RuntimeError(
+                f"retrieve_prompt command failed with status: {cmd_result.get_status_code()}"
+            )
+
+        result_json, parse_error = cmd_result.get_property_to_json(None)
+        if parse_error:
+            raise RuntimeError(f"Failed to parse retrieve_prompt result: {parse_error}")
+
+        if not result_json:
+            raise RuntimeError("retrieve_prompt result is empty")
+
+        response = LLMResponseRetrievePrompt.model_validate_json(result_json)
+        original_prompt = response.prompt or ""
+
+        self.ten_env.log_info(
+            f"[MainControlExtension] Retrieved original prompt (length: {len(original_prompt)})"
+        )
+
+        # Step 2: Search memory before LLM query (matching MemOS documentation pattern)
+        related_memory = await self._retrieve_related_memory(query)
+
+        # Step 3: Build combined prompt (original + memory context)
+        if not related_memory:
+            prompt = original_prompt
+        else:
+            prompt = f"{original_prompt}\n\n## Memory Context:\n{related_memory}\n\nUse this memory context to provide more personalized and relevant responses."
+
+        # Step 4: Send update_prompt command with combined prompt
+        await _send_cmd(
+            self.ten_env,
+            "update_prompt",
+            "llm",
+            {
+                "request_id": request_id,
+                "prompt": prompt
+            }
+        )
+
+        return prompt
 
     async def _memorize_conversation(
-        self, user_id: str = None, user_name: str = None
+        self, user_query: str, assistant_response: str, user_id: str = None
     ):
-        """Memorize the current conversation via configured store"""
-        if not self.memu_client:
+        """Memorize the current conversation turn via MemOS (matching documentation pattern)"""
+        if not self.memos_client:
+            return
+
+        if not user_query or not assistant_response:
             return
 
         try:
-            user_id = self.config.user_id
-            user_name = self.config.user_name
+            user_id = user_id or self.config.user_id
 
-            # Read context directly from llm_exec
-            llm_context = (
-                self.agent.llm_exec.get_context()
-                if self.agent and self.agent.llm_exec
-                else []
-            )
-            conversation_for_memory = []
-            for m in llm_context:
-                role = getattr(m, "role", None)
-                content = getattr(m, "content", None)
-                if role in ["user", "assistant"] and isinstance(content, str):
-                    conversation_for_memory.append(
-                        {"role": role, "content": content}
-                    )
+            # Store just the current turn (user query + assistant response) as per MemOS pattern
+            conversation_for_memory = [
+                {"role": "user", "content": user_query},
+                {"role": "assistant", "content": assistant_response}
+            ]
 
-            if not conversation_for_memory:
-                return
+            # Use add_message with simplified parameters
             asyncio.create_task(
-                self.memu_client.memorize(
+                self.memos_client.add_message(
                     conversation=conversation_for_memory,
                     user_id=user_id,
-                    user_name=user_name,
-                    agent_id=self.config.agent_id,
-                    agent_name=self.config.agent_name,
+                    conversation_id=self.conversation_id,
                 )
             )
 
@@ -410,79 +395,3 @@ class MainControlExtension(AsyncExtension):
             self.ten_env.log_error(
                 f"[MainControlExtension] Failed to memorize conversation: {e}"
             )
-
-    # Removed: _build_conversation_context (no longer keeping a separate context)
-
-    async def _load_memory_to_context(self):
-        """Load memory summary into LLM context at startup (as a system message)."""
-        if not self.memu_client:
-            return
-
-        try:
-            memory_summary = await self._retrieve_memory(self.config.user_id)
-            self.ten_env.log_info(
-                f"[MainControlExtension] Memory summary: {memory_summary}"
-            )
-            if memory_summary and self.agent and self.agent.llm_exec:
-                # Reset and write memory summary into context as a normal message (no system role handling)
-                self.agent.llm_exec.clear_context()
-                await self.agent.llm_exec.write_context(
-                    self.ten_env,
-                    "assistant",
-                    "Memory summary of previous conversations:\n\n"
-                    + memory_summary,
-                )
-                self.ten_env.log_info(
-                    "[MainControlExtension] Memory summary written into LLM context"
-                )
-        except Exception as e:
-            self.ten_env.log_error(
-                f"[MainControlExtension] Failed to load memory to context: {e}"
-            )
-
-    # Removed: _update_llm_context and _sync_context_from_llM (no separate context to sync)
-
-    def _extract_related_memory_text(self, parsed_data: dict) -> str:
-        """Extract and format text from related clustered categories search results"""
-        if not parsed_data or "categories" not in parsed_data:
-            return ""
-
-        parts = []
-        query = parsed_data.get("query", "")
-        total = parsed_data.get("total_categories", 0)
-
-        if total == 0:
-            return ""
-
-        # Add search result header information
-        parts.append(
-            f"Found {total} related memory categories based on query '{query}':\n"
-        )
-
-        # Iterate through each related category
-        for cat in parsed_data["categories"]:
-            cat_name = cat.get("name", "Unknown Category")
-            similarity = cat.get("similarity_score", 0)
-            memory_count = cat.get("memory_count", 0)
-
-            # Add category information
-            parts.append(
-                f"\n【{cat_name}】(Similarity: {similarity:.2f}, Memory Count: {memory_count})"
-            )
-
-            # Add category summary
-            if cat.get("summary"):
-                parts.append(f"  Summary: {cat['summary']}")
-
-            # Add recent memory content
-            if cat.get("recent_memories"):
-                parts.append("  Recent Memories:")
-                for mem in cat["recent_memories"][:3]:  # Only take the first 3
-                    date = mem.get("date", "")
-                    content = mem.get("content", "")
-                    if date and content:
-                        parts.append(f"    - [{date}] {content}")
-                    elif content:
-                        parts.append(f"    - {content}")
-
-        return "\n".join(parts)

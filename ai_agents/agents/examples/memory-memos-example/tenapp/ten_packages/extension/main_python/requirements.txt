@@ -1,6 +1,5 @@
 # Memory integration
-memu-py
-aiohttp
+MemoryOS
 
 # Optional: for better error handling
 pydantic

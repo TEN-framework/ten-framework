@@ -1,28 +1,29 @@
-# Voice Assistant (with MemU)
+# Voice Assistant (with MemOS)
 
-A voice assistant enhanced with MemU memory management capabilities for persistent conversation context.
+A voice assistant enhanced with MemOS memory management capabilities for persistent conversation context.
 
 
-## MemU Configuration
+## MemOS Configuration
 
-### Getting Started with MemU
+### Getting Started with MemOS
 
-- **Official Website:** https://memu.pro/
-- **Quick Trial:** You can quickly experience MemU using the Cloud Version
+- **Official Website:** https://memos-docs.openmem.net/
+- **Quick Trial:** You can quickly experience MemOS using the Cloud Version
 - **API Key Setup:**
   1. Complete the registration process to obtain your API key
   2. Set the API key as an environment variable:
      ```bash
-     export MEMU_API_KEY="your_memu_api_key_here"
+     export MEMOS_API_KEY="your_memos_api_key_here"
      ```
 
-### Memory Retrieval Methods
+### Memory Features
 
-For detailed documentation, visit: https://memu.pro/docs#retrieve-memory
+MemOS provides simple and powerful memory management:
 
-The following two retrieval methods are currently implemented:
-1. **Default Categories Retrieval**
-2. **Related Categories Retrieval**
+- **addMessage**: Automatically stores conversation messages with user and conversation context
+- **searchMemory**: Retrieves relevant memories based on user queries using semantic search
+
+For detailed documentation, visit: https://memos-docs.openmem.net/cn/usecase/home_assistant
 
 ## Quick Start
 
@@ -31,7 +32,7 @@ The following two retrieval methods are currently implemented:
    task install
    ```
 
-2. **Run the voice assistant with MemU:**
+2. **Run the voice assistant with MemOS:**
    ```bash
    task run
    ```
