@@ -204,6 +204,9 @@ impl Graph {
 
         graph.validate_and_complete(current_base_dir)?;
 
+        // Populate message information for SelectorNodes
+        graph.populate_selector_message_info()?;
+
         // Return the parsed data.
         Ok(graph)
     }
@@ -211,6 +214,10 @@ impl Graph {
     pub fn from_str_and_validate(s: &str) -> Result<Self> {
         let mut graph: Graph = serde_json::from_str(s)?;
         graph.validate_and_complete(None)?;
+
+        // Populate message information for SelectorNodes
+        graph.populate_selector_message_info()?;
+
         Ok(graph)
     }
 
