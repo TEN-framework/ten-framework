@@ -259,7 +259,9 @@ class OceanBasePowerRAGExtension(AsyncLLM2BaseExtension):
         self, async_ten_env: AsyncTenEnv, request: LLMRequestRetrievePrompt
     ) -> LLMResponseRetrievePrompt:
         """Retrieve the current prompt. OceanBase PowerRAG doesn't use system prompts, so return empty."""
-        async_ten_env.log_info(f"Retrieved prompt for request_id: {request.request_id}")
+        async_ten_env.log_info(
+            f"Retrieved prompt for request_id: {request.request_id}"
+        )
         return LLMResponseRetrievePrompt(prompt="")
 
     def on_call_chat_completion(

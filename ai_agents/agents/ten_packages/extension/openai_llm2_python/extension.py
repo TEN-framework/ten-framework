@@ -9,7 +9,12 @@ import asyncio
 from typing import AsyncGenerator
 
 from ten_ai_base.llm2 import AsyncLLM2BaseExtension
-from ten_ai_base.struct import LLMRequest, LLMRequestRetrievePrompt, LLMResponse, LLMResponseRetrievePrompt
+from ten_ai_base.struct import (
+    LLMRequest,
+    LLMRequestRetrievePrompt,
+    LLMResponse,
+    LLMResponseRetrievePrompt,
+)
 from ten_runtime.async_ten_env import AsyncTenEnv
 
 from .openai import OpenAIChatGPT, OpenAILLM2Config
@@ -64,7 +69,9 @@ class OpenAILLM2Extension(AsyncLLM2BaseExtension):
     ) -> LLMResponseRetrievePrompt:
         """Retrieve the current prompt from config."""
         prompt = self.config.prompt if self.config else ""
-        async_ten_env.log_info(f"Retrieved prompt for request_id: {request.request_id}")
+        async_ten_env.log_info(
+            f"Retrieved prompt for request_id: {request.request_id}"
+        )
         return LLMResponseRetrievePrompt(prompt=prompt)
 
     def on_call_chat_completion(
