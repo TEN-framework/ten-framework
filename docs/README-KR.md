@@ -3,7 +3,7 @@
 ![Image](https://github.com/user-attachments/assets/2a560a74-68f3-4f4a-9ec8-89464c42a9c7)
 
 [![TEN Releases]( https://img.shields.io/github/v/release/ten-framework/ten-framework?color=369eff&labelColor=gray&logo=github&style=flat-square )](https://github.com/TEN-framework/ten-framework/releases)
-[![Coverage Status](https://coveralls.io/repos/github/TEN-framework/ten-framework/badge.svg)](https://coveralls.io/github/TEN-framework/ten-framework)
+[![Coverage Status](https://coveralls.io/repos/github/TEN-framework/ten-framework/badge.svg?branch=HEAD)](https://coveralls.io/github/TEN-framework/ten-framework?branch=HEAD)
 [![](https://img.shields.io/github/release-date/ten-framework/ten-framework?labelColor=gray&style=flat-square)](https://github.com/TEN-framework/ten-framework/releases)
 [![Discussion posts](https://img.shields.io/github/discussions/TEN-framework/ten_framework?labelColor=gray&color=%20%23f79009)](https://github.com/TEN-framework/ten-framework/discussions/)
 [![Commits](https://img.shields.io/github/commit-activity/m/TEN-framework/ten_framework?labelColor=gray&color=pink)](https://github.com/TEN-framework/ten-framework/graphs/commit-activity)
@@ -59,6 +59,7 @@
 </details>
 
 <a name="welcome-to-ten"></a>
+
 ## TEN 소개
 
 TEN은 음성 대화형 AI 에이전트를 위한 오픈소스 프레임워크입니다.
@@ -78,6 +79,7 @@ TEN은 음성 대화형 AI 에이전트를 위한 오픈소스 프레임워크�
 <br>
 
 <a name="agent-examples"></a>
+
 ## 에이전트 예시
 
 <br>
@@ -156,9 +158,11 @@ TEN은 음성 대화형 AI 에이전트를 위한 오픈소스 프레임워크�
 </div>
 
 <a name="quick-start-with-agent-examples"></a>
+
 ## 에이전트 예시 빠른 시작
 
 <a name="localhost"></a>
+
 ### 로컬 환경
 
 #### 단계 ⓵ - 준비 사항
@@ -277,6 +281,7 @@ task run
 <br>
 
 <a name="codespaces"></a>
+
 ### Codespaces
 
 GitHub는 저장소마다 무료 Codespaces를 제공합니다. Docker 없이도 에이전트 예시를 실행할 수 있으며, 일반적으로 로컬 Docker 환경보다 빠르게 시작됩니다.
@@ -295,9 +300,11 @@ GitHub는 저장소마다 무료 Codespaces를 제공합니다. Docker 없이도
 <br>
 
 <a name="agent-examples-self-hosting"></a>
+
 ## 에이전트 예시 셀프 호스팅
 
 <a name="deploying-with-docker"></a>
+
 ### Docker 배포
 
 TMAN Designer 또는 `property.json` 수정으로 에이전트를 커스터마이징했다면, 서비스용 Docker 릴리스 이미지를 만들어 배포할 수 있습니다.
@@ -324,6 +331,7 @@ docker run --rm -it --env-file .env -p 3000:3000 example-app
 ![divider](https://github.com/user-attachments/assets/aec54c94-ced9-4683-ae58-0a5a7ed803bd)
 
 <a name="deploying-with-other-cloud-services"></a>
+
 ### 기타 클라우드 제공업체 배포
 
 [TEN을 Vercel](https://vercel.com)이나 [Netlify](https://www.netlify.com) 같은 플랫폼에 호스팅할 때는 백엔드와 프런트엔드를 분리할 수 있습니다.
@@ -344,6 +352,7 @@ docker run --rm -it --env-file .env -p 3000:3000 example-app
 <br>
 
 <a name="stay-tuned"></a>
+
 ## 소식 받기
 
 새 릴리스와 업데이트를 즉시 받아보세요. 여러분의 응원이 TEN을 성장시킵니다!
@@ -362,6 +371,7 @@ docker run --rm -it --env-file .env -p 3000:3000 example-app
 <br>
 
 <a name="ten-ecosystem"></a>
+
 ## TEN 에코시스템
 
 <br>
@@ -384,6 +394,7 @@ docker run --rm -it --env-file .env -p 3000:3000 example-app
 <br>
 
 <a name="questions"></a>
+
 ## 질문
 
 TEN Framework는 AI 기반 Q&A 플랫폼에서도 만나볼 수 있습니다. 멀티랭귀지를 지원하며 기본 설정부터 고급 구현까지 빠르게 답을 찾을 수 있습니다.
@@ -401,6 +412,7 @@ TEN Framework는 AI 기반 Q&A 플랫폼에서도 만나볼 수 있습니다. �
 </div>
 
 <a name="contributing"></a>
+
 ## 기여하기
 
 버그 수정, 기능 추가, 문서 개선, 아이디어 공유 등 모든 형태의 오픈소스 협업을 환영합니다. GitHub Issues와 Projects에서 참여할 작업을 찾아 능력을 보여주세요. 함께 멋진 TEN을 만들어봅시다!
@@ -420,11 +432,13 @@ TEN Framework는 AI 기반 Q&A 플랫폼에서도 만나볼 수 있습니다. �
 ![divider](https://github.com/user-attachments/assets/aec54c94-ced9-4683-ae58-0a5a7ed803bd)
 
 <a name="code-contributors"></a>
+
 ### 코드 기여자
 
 [![TEN](https://contrib.rocks/image?repo=TEN-framework/ten-agent)](https://github.com/TEN-framework/ten-agent/graphs/contributors)
 
 <a name="contribution-guidelines"></a>
+
 ### 기여 가이드
 
 기여를 환영합니다! 먼저 [기여 가이드](./code-of-conduct/contributing.md)를 읽어 주세요.
@@ -434,6 +448,7 @@ TEN Framework는 AI 기반 Q&A 플랫폼에서도 만나볼 수 있습니다. �
 ![divider](https://github.com/user-attachments/assets/aec54c94-ced9-4683-ae58-0a5a7ed803bd)
 
 <a name="license"></a>
+
 ### 라이선스
 
 1. 아래에 명시된 디렉터리를 제외한 TEN Framework 전체는 추가 제한이 포함된 Apache License 2.0으로 배포됩니다. 루트 디렉터리의 [LICENSE](./../LICENSE)를 참고하세요.
