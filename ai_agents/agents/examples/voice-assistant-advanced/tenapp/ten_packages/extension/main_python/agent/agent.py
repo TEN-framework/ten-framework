@@ -166,7 +166,9 @@ class Agent:
             elif data.get_name() in ["tts_audio_start", "tts_audio_end"]:
                 # TTS events are logged but not forwarded - they should be routed directly via graph
                 # The agent doesn't need to handle these, just log for debugging
-                self.ten_env.log_debug(f"[Agent] Received {data.get_name()} event (ignored by agent)")
+                self.ten_env.log_debug(
+                    f"[Agent] Received {data.get_name()} event (ignored by agent)"
+                )
             else:
                 self.ten_env.log_warn(f"Unhandled data: {data.get_name()}")
         except Exception as e:

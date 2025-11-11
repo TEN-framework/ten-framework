@@ -289,7 +289,11 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
         try:
             alternative = result.channel.alternatives[0]
             sentence = alternative.transcript
-            confidence = alternative.confidence if hasattr(alternative, 'confidence') else None
+            confidence = (
+                alternative.confidence
+                if hasattr(alternative, "confidence")
+                else None
+            )
 
             if not sentence:
                 return
@@ -308,7 +312,11 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
             language = self.config.language
 
             # Log with confidence for debugging phantom words (low confidence = false positive)
-            confidence_str = f", confidence={confidence:.3f}" if confidence is not None else ""
+            confidence_str = (
+                f", confidence={confidence:.3f}"
+                if confidence is not None
+                else ""
+            )
             self.ten_env.log_info(
                 f"[STT_{'FINAL' if is_final else 'INTERIM'}] text=\"{sentence}\"{confidence_str}, is_final={is_final}"
             )
