@@ -154,7 +154,7 @@ class ApolloAPI:
     async def poll_results(
         self,
         model_run_id: str,
-        max_attempts: int = 60,
+        max_attempts: int = 30,
         poll_interval: float = 2.0,
     ) -> ApolloResult:
         """

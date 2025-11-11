@@ -94,6 +94,48 @@ shared_library("ten_utils_shared") {
       ldflags = []
     }
   }
+
+  if (enable_coverage) {
+    assert(is_linux && target_cpu == "x64",
+           "Coverage instrumentation should only be enabled in Linux + x64")
+
+    if (!defined(ldflags)) {
+      ldflags = []
+    }
+
+    if (is_clang) {
+      ldflags += [ "-fprofile-instr-generate" ]
+
+      # When Rust static library is linked into this shared library,
+      # we need to ensure all Rust coverage runtime symbols are included.
+      # Without --whole-archive, the linker will drop Rust's __llvm_profile_*
+      # constructor functions, causing Rust code coverage data to be missing.
+      #
+      # Note that the ten_gn build system will automatically add --whole-archive
+      # for libraries, however, it does not cover libten_rust.a (as well as
+      # libc++.a). This is probably because libten_rust.a is moved from the
+      # original generated location before we clean intermediate files of rust
+      # build to save disk space (i.e., the cargo clean command).
+      #
+      # When coverage is not enabled, we don't add --whole-archive for
+      # libten_rust.a to avoid an overhead of linking unused symbols in the Rust
+      # static library.
+      if (ten_enable_ten_rust) {
+        # Get the path to libten_rust.a
+        _ten_rust_lib_path =
+            rebase_path("${root_gen_dir}/core/src/ten_rust/libten_rust.a",
+                        root_build_dir)
+
+        ldflags += [
+          "-Wl,--whole-archive",
+          _ten_rust_lib_path,
+          "-Wl,--no-whole-archive",
+        ]
+      }
+    } else {
+      ldflags += [ "--coverage" ]
+    }
+  }
 }
 
 ten_utils_group("ten_utils") {

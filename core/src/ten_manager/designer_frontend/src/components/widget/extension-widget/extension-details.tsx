@@ -427,12 +427,12 @@ export const ExtensionDetails = (props: {
         {
           field: "name",
           operator: "regex",
-          value: `${name}`,
+          value: `^${name}$`,
         },
         {
           field: "type",
           operator: "regex",
-          value: `${type}`,
+          value: `^${type}$`,
         },
       ],
     },

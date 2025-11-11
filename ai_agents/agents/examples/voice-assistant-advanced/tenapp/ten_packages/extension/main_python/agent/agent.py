@@ -149,6 +149,24 @@ class Agent:
                         metadata=asr.get("metadata", {}),
                     )
                 )
+            elif data.get_name() == "text_data":
+                # Handle hints from extensions (e.g., Thymia analysis ready)
+                text, _ = data.get_property_string("text")
+                is_final, _ = data.get_property_bool("end_of_segment")
+
+                if text and is_final:
+                    self.ten_env.log_info(
+                        f"[Agent] Received text_data hint: '{text}'"
+                    )
+                    # Queue as user input to trigger LLM tool calls
+                    await self.queue_llm_input(text)
+                    self.ten_env.log_info(
+                        f"[Agent] Queued hint to LLM input queue - LLM should process as user message"
+                    )
+            elif data.get_name() in ["tts_audio_start", "tts_audio_end"]:
+                # TTS events are logged but not forwarded - they should be routed directly via graph
+                # The agent doesn't need to handle these, just log for debugging
+                self.ten_env.log_debug(f"[Agent] Received {data.get_name()} event (ignored by agent)")
             else:
                 self.ten_env.log_warn(f"Unhandled data: {data.get_name()}")
         except Exception as e:

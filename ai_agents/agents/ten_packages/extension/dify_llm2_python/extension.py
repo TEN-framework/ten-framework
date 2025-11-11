@@ -6,7 +6,12 @@
 from typing import AsyncGenerator, Optional
 
 from ten_ai_base.llm2 import AsyncLLM2BaseExtension
-from ten_ai_base.struct import LLMRequest, LLMResponse
+from ten_ai_base.struct import (
+    LLMRequest,
+    LLMRequestRetrievePrompt,
+    LLMResponse,
+    LLMResponseRetrievePrompt,
+)
 from .dify import DifyChatClient, DifyLLM2Config
 from ten_runtime import (
     AsyncTenEnv,
@@ -60,6 +65,15 @@ class DifyLLM2Extension(AsyncLLM2BaseExtension):
     async def on_deinit(self, async_ten_env: AsyncTenEnv) -> None:
         async_ten_env.log_info("on_deinit")
         await super().on_deinit(async_ten_env)
+
+    async def on_retrieve_prompt(
+        self, async_ten_env: AsyncTenEnv, request: LLMRequestRetrievePrompt
+    ) -> LLMResponseRetrievePrompt:
+        """Retrieve the current prompt. Dify doesn't use system prompts, so return empty."""
+        async_ten_env.log_info(
+            f"Retrieved prompt for request_id: {request.request_id}"
+        )
+        return LLMResponseRetrievePrompt(prompt="")
 
     def on_call_chat_completion(
         self, async_ten_env: AsyncTenEnv, request_input: LLMRequest

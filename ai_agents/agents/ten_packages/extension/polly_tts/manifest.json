@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "polly_tts",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "dependencies": [
     {
       "type": "system",
@@ -25,5 +25,53 @@
       "requirements.txt"
     ]
   },
-  "api": {}
+  "api": {
+    "interface": [
+      {
+        "import_uri": "../../system/ten_ai_base/api/tts-interface.json"
+      }
+    ],
+    "property": {
+      "properties": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "aws_access_key_id": {
+              "type": "string"
+            },
+            "aws_secret_access_key": {
+              "type": "string"
+            },
+            "aws_session_token": {
+              "type": "string"
+            },
+            "region_name": {
+              "type": "string"
+            },
+            "profile_name": {
+              "type": "string"
+            },
+            "aws_account_id": {
+              "type": "string"
+            },
+            "engine": {
+              "type": "string"
+            },
+            "voice": {
+              "type": "string"
+            },
+            "sample_rate": {
+              "type": "string"
+            },
+            "lang_code": {
+              "type": "string"
+            },
+            "audio_format": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  }
 }

@@ -2,6 +2,7 @@
 
 import json
 import asyncio
+import time
 import traceback
 from typing import Optional
 from urllib.parse import urlencode
@@ -42,6 +43,14 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
         self.audio_frame_count: int = 0
         self.receive_task: Optional[asyncio.Task] = None
         self._connection_lock: asyncio.Lock = asyncio.Lock()
+        self.turn_max_confidence: float = 0.0  # Track max confidence per turn
+        self.last_interim_text: str = ""  # Track last interim text
+        self.last_interim_confidence: float = (
+            0.0  # Track last interim confidence
+        )
+        self.session_start_time: float = (
+            0.0  # Track when ASR session started for echo cancel settling
+        )
 
     @override
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
@@ -166,6 +175,9 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
                 )
 
                 self.connected = True
+                self.session_start_time = (
+                    time.time()
+                )  # Track session start for echo cancel settling
                 self.ten_env.log_info(
                     "[DEEPGRAM-WS] WebSocket connected successfully"
                 )
@@ -294,14 +306,74 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
             words = data.get("words", [])
             confidence = words[0].get("confidence", 0.0) if words else 0.0
 
-            # Filter out low-confidence interim results to avoid false positives from noise
-            if not is_final and confidence < self.config.min_interim_confidence:
-                return
+            # Reset tracking on StartOfTurn
+            if event_type == "StartOfTurn":
+                self.turn_max_confidence = confidence
+                self.last_interim_text = transcript_text
+                self.last_interim_confidence = confidence
 
-            # Log transcript
+            # Track interim results
+            if not is_final:
+                self.turn_max_confidence = max(
+                    self.turn_max_confidence, confidence
+                )
+                # Update last interim if it passed the confidence filter
+                if confidence >= self.config.min_interim_confidence:
+                    self.last_interim_text = transcript_text
+                    self.last_interim_confidence = confidence
+
+            # Calculate word count for filtering
+            word_count = len(transcript_text.split())
+
+            # Filter single-word transcripts (interims AND finals) during first 5 seconds (echo cancel settling)
+            if self.session_start_time > 0:
+                elapsed_time = time.time() - self.session_start_time
+
+                if word_count == 1 and elapsed_time < 5.0:
+                    self.ten_env.log_warn(
+                        f"[DEEPGRAM-FLUX-FILTER] Dropping single-word {'final' if is_final else 'interim'} during echo cancel settling: "
+                        f"text='{transcript_text}', confidence={confidence:.3f}, "
+                        f"elapsed={elapsed_time:.1f}s, word_count={word_count}"
+                    )
+                    if is_final:
+                        self.turn_max_confidence = 0.0
+                        self.last_interim_text = ""
+                        self.last_interim_confidence = 0.0
+                    return
+
+            # Apply confidence filtering ONLY to single-word results (multi-word sentences always pass)
+            # Single words are more likely to be false positives from echo/noise
+            if word_count == 1:
+                # Filter out low-confidence interim results to avoid false positives from noise
+                if (
+                    not is_final
+                    and confidence < self.config.min_interim_confidence
+                ):
+                    self.ten_env.log_warn(
+                        f"[DEEPGRAM-FLUX-FILTER] Dropping low-confidence single-word interim: "
+                        f"text='{transcript_text}', confidence={confidence:.3f}, "
+                        f"threshold={self.config.min_interim_confidence:.3f}"
+                    )
+                    return
+
+                # Filter out finals with low confidence (catches "Hey," -> "I" with 0.165 confidence)
+                if is_final and confidence < self.config.min_interim_confidence:
+                    self.ten_env.log_warn(
+                        f"[DEEPGRAM-FLUX-FILTER] Dropping low-confidence single-word final: "
+                        f"text='{transcript_text}', final_confidence={confidence:.3f}, "
+                        f"last_interim='{self.last_interim_text}' (conf={self.last_interim_confidence:.3f}), "
+                        f"threshold={self.config.min_interim_confidence:.3f}"
+                    )
+                    self.turn_max_confidence = 0.0
+                    self.last_interim_text = ""
+                    self.last_interim_confidence = 0.0
+                    return
+
+            # Log transcript with confidence for debugging false positives
             self.ten_env.log_info(
                 f"[DEEPGRAM-FLUX-TRANSCRIPT] Text: '{transcript_text}' | "
-                f"Event: {event_type} | Start: {start_ms}ms | Duration: {duration_ms}ms",
+                f"Event: {event_type} | Start: {start_ms}ms | Duration: {duration_ms}ms | "
+                f"Confidence: {confidence:.3f}",
                 category=LOG_CATEGORY_VENDOR,
             )
 
@@ -316,6 +388,12 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
             )
 
             await self.send_asr_result(asr_result)
+
+            # Reset tracking after sending final
+            if is_final:
+                self.turn_max_confidence = 0.0
+                self.last_interim_text = ""
+                self.last_interim_confidence = 0.0
 
         except Exception as e:
             self.ten_env.log_error(

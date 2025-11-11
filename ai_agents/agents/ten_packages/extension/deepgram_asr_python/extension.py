@@ -9,7 +9,7 @@ from .const import (
 )
 from ten_ai_base.asr import (
     ASRBufferConfig,
-    ASRBufferConfigModeKeep,
+    ASRBufferConfigModeDiscard,
     ASRResult,
     AsyncASRBaseExtension,
 )
@@ -287,7 +287,9 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
             )
 
         try:
-            sentence = result.channel.alternatives[0].transcript
+            alternative = result.channel.alternatives[0]
+            sentence = alternative.transcript
+            confidence = alternative.confidence if hasattr(alternative, 'confidence') else None
 
             if not sentence:
                 return
@@ -305,8 +307,10 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
             is_final = result.is_final
             language = self.config.language
 
-            self.ten_env.log_debug(
-                f"deepgram event callback on_transcript: {sentence}, language: {language}, is_final: {is_final}"
+            # Log with confidence for debugging phantom words (low confidence = false positive)
+            confidence_str = f", confidence={confidence:.3f}" if confidence is not None else ""
+            self.ten_env.log_info(
+                f"[STT_{'FINAL' if is_final else 'INTERIM'}] text=\"{sentence}\"{confidence_str}, is_final={is_final}"
             )
 
             await self._handle_asr_result(
@@ -426,7 +430,7 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
 
     @override
     def buffer_strategy(self) -> ASRBufferConfig:
-        return ASRBufferConfigModeKeep(byte_limit=1024 * 1024 * 10)
+        return ASRBufferConfigModeDiscard()
 
     @override
     def input_audio_sample_rate(self) -> int:

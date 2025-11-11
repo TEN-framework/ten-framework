@@ -15,7 +15,7 @@ if project_root not in sys.path:
 #
 from pathlib import Path
 import json
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, AsyncMock
 import asyncio
 
 from ten_runtime import (
@@ -23,11 +23,7 @@ from ten_runtime import (
     TenEnvTester,
     Data,
 )
-from ten_ai_base.struct import TTSTextInput
-from openai_tts2_python.openai_tts import (
-    EVENT_TTS_RESPONSE,
-    EVENT_TTS_END,
-)
+from ten_ai_base.struct import TTSTextInput, TTS2HttpResponseEventType
 
 
 # ================ test metrics ================
@@ -84,8 +80,8 @@ class ExtensionTesterMetrics(ExtensionTester):
             ten_env.log_info("First audio frame received.")
 
 
-@patch("openai_tts2_python.extension.OpenaiTTSClient")
-def test_ttfb_metric_is_sent(MockOpenaiTTSClient):
+@patch("openai_tts2_python.extension.OpenAITTSClient")
+def test_ttfb_metric_is_sent(MockOpenAITTSClient):
     """
     Tests that a TTFB (Time To First Byte) metric is correctly sent after
     receiving the first audio chunk from the TTS service.
@@ -93,17 +89,17 @@ def test_ttfb_metric_is_sent(MockOpenaiTTSClient):
     print("Starting test_ttfb_metric_is_sent with mock...")
 
     # --- Mock Configuration ---
-    mock_instance = MockOpenaiTTSClient.return_value
-    mock_instance.clean = MagicMock()
+    mock_instance = MockOpenAITTSClient.return_value
+    mock_instance.clean = AsyncMock()
 
     # This async generator simulates the TTS client's get() method with a delay
     # to produce a measurable TTFB.
-    async def mock_get_audio_with_delay(text: str):
+    async def mock_get_audio_with_delay(text: str, request_id: str):
         # Simulate network latency or processing time before the first byte
         await asyncio.sleep(0.2)
-        yield (b"\x11\x22\x33", EVENT_TTS_RESPONSE)
+        yield (b"\x11\x22\x33", TTS2HttpResponseEventType.RESPONSE)
         # Simulate the end of the stream
-        yield (None, EVENT_TTS_END)
+        yield (None, TTS2HttpResponseEventType.END)
 
     mock_instance.get.side_effect = mock_get_audio_with_delay
 

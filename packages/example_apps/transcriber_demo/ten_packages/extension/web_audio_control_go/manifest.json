@@ -1,0 +1,72 @@
+{
+  "type": "extension",
+  "name": "web_audio_control_go",
+  "version": "0.1.0",
+  "display_name": {
+    "locales": {
+      "en-US": {
+        "content": "Web Audio Control Go Extension"
+      },
+      "zh-CN": {
+        "content": "Web 音频控制 Go 扩展"
+      }
+    }
+  },
+  "description": {
+    "locales": {
+      "en-US": {
+        "content": "Web-based audio control extension with real-time transcription display"
+      },
+      "zh-CN": {
+        "content": "基于 Web 的音频控制扩展，支持实时转写文本显示"
+      }
+    }
+  },
+  "readme": {
+    "locales": {
+      "en-US": {
+        "import_uri": "docs/README.en-US.md"
+      },
+      "zh-CN": {
+        "import_uri": "docs/README.zh-CN.md"
+      }
+    }
+  },
+  "tags": [
+    "go",
+    "web",
+    "audio",
+    "websocket"
+  ],
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_go",
+      "version": "0.11"
+    }
+  ],
+  "api": {
+    "property": {
+      "properties": {
+        "http_port": {
+          "type": "int64"
+        }
+      }
+    },
+    "cmd_out": [
+      {
+        "name": "start_play"
+      }
+    ],
+    "audio_frame_out": [
+      {
+        "name": "pcm_frame"
+      }
+    ],
+    "data_in": [
+      {
+        "name": "asr_result"
+      }
+    ]
+  }
+}

@@ -90,10 +90,12 @@ export const searchTenCloudStorePackages = async (
   return template.responseSchema.parse(res).data;
 };
 
-export const useSearchTenCloudStorePackages = (payload?: {
-  filter: z.infer<typeof TenPackageQueryFilterSchema>;
-  options?: z.infer<typeof TenPackageQueryOptionsSchema>;
-}) => {
+export const useSearchTenCloudStorePackages = (
+  payload?: {
+    filter: z.infer<typeof TenPackageQueryFilterSchema>;
+    options?: z.infer<typeof TenPackageQueryOptionsSchema>;
+  } | null
+) => {
   const queryClient = getTanstackQueryClient();
   const filter = payload?.filter || {
     field: "name",
@@ -113,7 +115,7 @@ export const useSearchTenCloudStorePackages = (payload?: {
     queryKey,
     queryFn: ({ signal }) =>
       searchTenCloudStorePackages(filter, options, signal),
-    enabled: !!filter,
+    enabled: payload !== null,
   });
   const mutation = useMutation({
     mutationFn: () => searchTenCloudStorePackages(filter, options),

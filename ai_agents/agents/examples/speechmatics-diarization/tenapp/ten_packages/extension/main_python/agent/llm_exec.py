@@ -191,7 +191,6 @@ class LLMExec:
         llm_input = LLMRequest(
             request_id=request_id,
             messages=messages,
-            model="qwen-max",
             streaming=True,
             parameters={"temperature": 0.7},
             tools=self.available_tools,

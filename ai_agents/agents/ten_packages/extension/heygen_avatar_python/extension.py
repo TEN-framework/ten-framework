@@ -236,6 +236,32 @@ class HeygenAvatarExtension(AsyncExtension):
         data_name = data.get_name()
         ten_env.log_debug("on_data name {}".format(data_name))
 
+        if data_name == "tts_audio_end":
+            # Parse tts_audio_end payload
+            import json
+
+            json_str, _ = data.get_property_to_json(None)
+            if json_str:
+                payload = json.loads(json_str)
+                reason = payload.get("reason")
+                request_id = payload.get("request_id", "unknown")
+
+                ten_env.log_info(
+                    f"[AVATAR_TTS_END] Received tts_audio_end: request_id={request_id}, reason={reason}"
+                )
+
+                # reason=1 means TTS generation complete (all audio sent to avatar)
+                if reason == 1:
+                    ten_env.log_info(
+                        "[AVATAR_TTS_END] TTS generation complete (reason=1) - sending agent.speak_end to HeyGen"
+                    )
+                    if self.recorder:
+                        await self.recorder.send_speak_end()
+                    else:
+                        ten_env.log_warn(
+                            "[AVATAR_TTS_END] Recorder not initialized, cannot send speak_end"
+                        )
+
     async def on_audio_frame(
         self, _ten_env: AsyncTenEnv, audio_frame: AudioFrame
     ) -> None:
