@@ -1,0 +1,89 @@
+{
+  "type": "app",
+  "name": "transcriber_demo",
+  "version": "0.11.27",
+  "display_name": {
+    "locales": {
+      "en-US": {
+        "content": "Demo Transcriber Application"
+      },
+      "zh-CN": {
+        "content": "演示转写应用"
+      }
+    }
+  },
+  "description": {
+    "locales": {
+      "en-US": {
+        "content": "Demo Transcriber application based on TEN Framework"
+      },
+      "zh-CN": {
+        "content": "基于 TEN Framework 的演示转写应用"
+      }
+    }
+  },
+  "readme": {
+    "locales": {
+      "en-US": {
+        "import_uri": "docs/README.en-US.md"
+      },
+      "zh-CN": {
+        "import_uri": "docs/README.zh-CN.md"
+      }
+    }
+  },
+  "tags": [
+    "transcriber",
+    "demo"
+  ],
+  "dependencies": [
+    {
+      "type": "extension",
+      "name": "web_audio_control_go",
+      "version": "0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "audio_file_player_python",
+      "version": "0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "azure_asr_python",
+      "version": "0.2"
+    },
+    {
+      "type": "extension",
+      "name": "vtt_nodejs",
+      "version": "0.1.0"
+    },
+    {
+      "type": "addon_loader",
+      "name": "nodejs_addon_loader",
+      "version": "0.11.27"
+    }
+  ],
+  "scripts": {
+    "start": "bin/start",
+    "build": "python3 scripts/build.py",
+    "install_deps": "python3 scripts/install_deps.py"
+  },
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "*.go",
+      "go.mod",
+      "go.sum",
+      ".env",
+      "ten_packages/extension/audio_file_player_python/**",
+      "ten_packages/extension/web_audio_control_go/**",
+      "ten_packages/extension/vtt_nodejs/**",
+      "recordings/**",
+      "scripts/**",
+      "docs/**",
+      "bin/start",
+      ".vscode/**"
+    ]
+  }
+}

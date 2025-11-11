@@ -1,0 +1,32 @@
+{
+  "name": "ten-test",
+  "version": "1.0.0",
+  "main": "./bin/start.js",
+  "type": "module",
+  "devDependencies": {
+    "@types/chai": "^5.2.2",
+    "@types/mocha": "^10.0.10",
+    "chai": "^5.2.0",
+    "mocha": "^11.7.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "ten-runtime-nodejs": "file:../.ten/app/ten_packages/system/ten_runtime_nodejs"
+  },
+  "mocha": {
+    "spec": [
+      "**/*.spec.*"
+    ],
+    "loader": "ts-node/esm",
+    "extensions": [
+      "ts",
+      "tsx",
+      "js"
+    ]
+  },
+  "scripts": {
+    "build": "tsc --listEmittedFiles",
+    "test": "mocha --expose-gc --no-timeouts"
+  }
+}

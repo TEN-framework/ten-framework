@@ -3,7 +3,7 @@
 ![Image](https://github.com/user-attachments/assets/2a560a74-68f3-4f4a-9ec8-89464c42a9c7)
 
 [![TEN Releases]( https://img.shields.io/github/v/release/ten-framework/ten-framework?color=369eff&labelColor=gray&logo=github&style=flat-square )](https://github.com/TEN-framework/ten-framework/releases)
-[![Coverage Status](https://coveralls.io/repos/github/TEN-framework/ten-framework/badge.svg)](https://coveralls.io/github/TEN-framework/ten-framework)
+[![Coverage Status](https://coveralls.io/repos/github/TEN-framework/ten-framework/badge.svg?branch=HEAD)](https://coveralls.io/github/TEN-framework/ten-framework?branch=HEAD)
 [![](https://img.shields.io/github/release-date/ten-framework/ten-framework?labelColor=gray&style=flat-square)](https://github.com/TEN-framework/ten-framework/releases)
 [![Discussion posts](https://img.shields.io/github/discussions/TEN-framework/ten_framework?labelColor=gray&color=%20%23f79009)](https://github.com/TEN-framework/ten-framework/discussions/)
 [![Commits](https://img.shields.io/github/commit-activity/m/TEN-framework/ten_framework?labelColor=gray&color=pink)](https://github.com/TEN-framework/ten-framework/graphs/commit-activity)
@@ -59,6 +59,7 @@
 </details>
 
 <a name="welcome-to-ten"></a>
+
 ## Bienvenido a TEN
 
 TEN es un marco de código abierto para agentes conversacionales de voz impulsados por IA.
@@ -78,6 +79,7 @@ El [ecosistema TEN](#ten-ecosystem) incluye [TEN Framework](https://github.com/t
 <br>
 
 <a name="agent-examples"></a>
+
 ## Ejemplos de agente
 
 <br>
@@ -156,9 +158,11 @@ Consulta la <a href="https://github.com/TEN-framework/ten-framework/tree/main/ai
 </div>
 
 <a name="quick-start-with-agent-examples"></a>
+
 ## Inicio rápido con los ejemplos de agente
 
 <a name="localhost"></a>
+
 ### Entorno local
 
 #### Paso ⓵ - Requisitos previos
@@ -277,6 +281,7 @@ Cuando el ejemplo esté en marcha podrás usar estas interfaces:
 <br>
 
 <a name="codespaces"></a>
+
 ### Codespaces
 
 GitHub ofrece Codespaces gratuitos para cada repositorio. Puedes ejecutar los ejemplos de agente allí sin usar Docker, y normalmente inicia más rápido que un entorno local con contenedores.
@@ -295,9 +300,11 @@ Consulta [esta guía](https://theten.ai/docs/ten_agent/setup_development_env/set
 <br>
 
 <a name="agent-examples-self-hosting"></a>
+
 ## Auto-hospedaje de los ejemplos de agente
 
 <a name="deploying-with-docker"></a>
+
 ### Implementar con Docker
 
 Cuando personalices tu agente (ya sea con TMAN Designer o editando `property.json`), crea una imagen de Docker lista para producción y despliega tu servicio.
@@ -324,6 +331,7 @@ docker run --rm -it --env-file .env -p 3000:3000 example-app
 ![divider](https://github.com/user-attachments/assets/aec54c94-ced9-4683-ae58-0a5a7ed803bd)
 
 <a name="deploying-with-other-cloud-services"></a>
+
 ### Implementar en otros servicios en la nube
 
 Puedes dividir el despliegue en dos partes si deseas alojar TEN en proveedores como [Vercel](https://vercel.com) o [Netlify](https://www.netlify.com).
@@ -344,6 +352,7 @@ Con esta arquitectura, el backend gestiona los procesos de larga duración y el 
 <br>
 
 <a name="stay-tuned"></a>
+
 ## Mantente al día
 
 Recibe notificaciones instantáneas sobre nuevas versiones y actualizaciones. Tu apoyo nos ayuda a seguir mejorando TEN.
@@ -362,6 +371,7 @@ Recibe notificaciones instantáneas sobre nuevas versiones y actualizaciones. Tu
 <br>
 
 <a name="ten-ecosystem"></a>
+
 ## Ecosistema TEN
 
 <br>
@@ -384,6 +394,7 @@ Recibe notificaciones instantáneas sobre nuevas versiones y actualizaciones. Tu
 <br>
 
 <a name="questions"></a>
+
 ## Preguntas
 
 TEN Framework también está disponible en plataformas de preguntas y respuestas impulsadas por IA. Ofrecen soporte multilingüe para todo, desde la configuración básica hasta la implementación avanzada.
@@ -401,6 +412,7 @@ TEN Framework también está disponible en plataformas de preguntas y respuestas
 </div>
 
 <a name="contributing"></a>
+
 ## Cómo contribuir
 
 ¡Toda forma de colaboración de código abierto es bienvenida! Ya sea que corrijas bugs, agregues funciones, mejores la documentación o compartas ideas, tus aportes ayudan a impulsar herramientas de IA personalizadas. Revisa los Issues y Projects de GitHub para encontrar oportunidades y mostrar tus habilidades. ¡Construyamos juntas y juntos algo increíble!
@@ -420,11 +432,13 @@ TEN Framework también está disponible en plataformas de preguntas y respuestas
 ![divider](https://github.com/user-attachments/assets/aec54c94-ced9-4683-ae58-0a5a7ed803bd)
 
 <a name="code-contributors"></a>
+
 ### Personas contribuidoras
 
 [![TEN](https://contrib.rocks/image?repo=TEN-framework/ten-agent)](https://github.com/TEN-framework/ten-agent/graphs/contributors)
 
 <a name="contribution-guidelines"></a>
+
 ### Guía de contribución
 
 ¡Contribuye cuando quieras! Lee primero la [guía de contribución](./code-of-conduct/contributing.md).
@@ -434,6 +448,7 @@ TEN Framework también está disponible en plataformas de preguntas y respuestas
 ![divider](https://github.com/user-attachments/assets/aec54c94-ced9-4683-ae58-0a5a7ed803bd)
 
 <a name="license"></a>
+
 ### Licencia
 
 1. Todo TEN Framework, salvo los directorios listados más abajo, se publica bajo la licencia Apache 2.0 con restricciones adicionales. Consulta el archivo [LICENSE](./../LICENSE) en la raíz del proyecto.

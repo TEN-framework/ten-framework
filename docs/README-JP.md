@@ -3,7 +3,7 @@
 ![Image](https://github.com/user-attachments/assets/2a560a74-68f3-4f4a-9ec8-89464c42a9c7)
 
 [![TEN Releases]( https://img.shields.io/github/v/release/ten-framework/ten-framework?color=369eff&labelColor=gray&logo=github&style=flat-square )](https://github.com/TEN-framework/ten-framework/releases)
-[![Coverage Status](https://coveralls.io/repos/github/TEN-framework/ten-framework/badge.svg)](https://coveralls.io/github/TEN-framework/ten-framework)
+[![Coverage Status](https://coveralls.io/repos/github/TEN-framework/ten-framework/badge.svg?branch=HEAD)](https://coveralls.io/github/TEN-framework/ten-framework?branch=HEAD)
 [![](https://img.shields.io/github/release-date/ten-framework/ten-framework?labelColor=gray&style=flat-square)](https://github.com/TEN-framework/ten-framework/releases)
 [![Discussion posts](https://img.shields.io/github/discussions/TEN-framework/ten_framework?labelColor=gray&color=%20%23f79009)](https://github.com/TEN-framework/ten-framework/discussions/)
 [![Commits](https://img.shields.io/github/commit-activity/m/TEN-framework/ten_framework?labelColor=gray&color=pink)](https://github.com/TEN-framework/ten-framework/graphs/commit-activity)
@@ -59,6 +59,7 @@
 </details>
 
 <a name="welcome-to-ten"></a>
+
 ## TEN へようこそ
 
 TEN は音声会話型 AI エージェント向けのオープンソースフレームワークです。
@@ -78,6 +79,7 @@ TEN は音声会話型 AI エージェント向けのオープンソースフレ
 <br>
 
 <a name="agent-examples"></a>
+
 ## エージェント事例
 
 <br>
@@ -156,9 +158,11 @@ TEN は音声会話型 AI エージェント向けのオープンソースフレ
 </div>
 
 <a name="quick-start-with-agent-examples"></a>
+
 ## エージェント事例のクイックスタート
 
 <a name="localhost"></a>
+
 ### ローカル環境
 
 #### ステップ ⓵ - 事前準備
@@ -277,6 +281,7 @@ task run
 <br>
 
 <a name="codespaces"></a>
+
 ### Codespaces
 
 GitHub はリポジトリごとに無料の Codespaces を提供しています。Docker を使わずにエージェント事例を実行でき、通常ローカル環境よりも起動が速くなります。
@@ -295,9 +300,11 @@ GitHub はリポジトリごとに無料の Codespaces を提供しています�
 <br>
 
 <a name="agent-examples-self-hosting"></a>
+
 ## エージェント事例のセルフホスティング
 
 <a name="deploying-with-docker"></a>
+
 ### Docker でデプロイ
 
 TMAN Designer でカスタマイズするか `property.json` を編集したら、本番用の Docker イメージを作成してサービスをデプロイしましょう。
@@ -324,6 +331,7 @@ docker run --rm -it --env-file .env -p 3000:3000 example-app
 ![divider](https://github.com/user-attachments/assets/aec54c94-ced9-4683-ae58-0a5a7ed803bd)
 
 <a name="deploying-with-other-cloud-services"></a>
+
 ### その他のクラウドサービスへデプロイ
 
 [TEN を Vercel](https://vercel.com) や [Netlify](https://www.netlify.com) などでホストする場合、バックエンドとフロントエンドを分けて配置できます。
@@ -344,6 +352,7 @@ docker run --rm -it --env-file .env -p 3000:3000 example-app
 <br>
 
 <a name="stay-tuned"></a>
+
 ## 最新情報
 
 新しいリリースやアップデートを即座に受け取れます。あなたのサポートが TEN を成長させます！
@@ -362,6 +371,7 @@ docker run --rm -it --env-file .env -p 3000:3000 example-app
 <br>
 
 <a name="ten-ecosystem"></a>
+
 ## TEN エコシステム
 
 <br>
@@ -384,6 +394,7 @@ docker run --rm -it --env-file .env -p 3000:3000 example-app
 <br>
 
 <a name="questions"></a>
+
 ## 質問
 
 TEN Framework は AI 駆動の Q&A プラットフォームにも掲載されています。マルチリンガルでの検索が可能で、初期設定から高度な実装までサポートします。
@@ -401,6 +412,7 @@ TEN Framework は AI 駆動の Q&A プラットフォームにも掲載されて
 </div>
 
 <a name="contributing"></a>
+
 ## コントリビュート
 
 バグ修正、機能追加、ドキュメント改善、アイデア共有など、あらゆる OSS での協力を歓迎します。GitHub の Issues や Projects をチェックして活躍の場を見つけ、スキルを発揮してください。一緒に TEN をより良いものにしましょう！
@@ -420,11 +432,13 @@ TEN Framework は AI 駆動の Q&A プラットフォームにも掲載されて
 ![divider](https://github.com/user-attachments/assets/aec54c94-ced9-4683-ae58-0a5a7ed803bd)
 
 <a name="code-contributors"></a>
+
 ### コードコントリビューター
 
 [![TEN](https://contrib.rocks/image?repo=TEN-framework/ten-agent)](https://github.com/TEN-framework/ten-agent/graphs/contributors)
 
 <a name="contribution-guidelines"></a>
+
 ### 貢献ガイドライン
 
 いつでも歓迎です！まずは[貢献ガイドライン](./code-of-conduct/contributing.md)をご確認ください。
@@ -434,6 +448,7 @@ TEN Framework は AI 駆動の Q&A プラットフォームにも掲載されて
 ![divider](https://github.com/user-attachments/assets/aec54c94-ced9-4683-ae58-0a5a7ed803bd)
 
 <a name="license"></a>
+
 ### ライセンス
 
 1. 下記のディレクトリを除き、TEN Framework 全体は追加条件付きの Apache License 2.0 で配布されています。プロジェクトルートの [LICENSE](./../LICENSE) を参照してください。
