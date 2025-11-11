@@ -96,12 +96,22 @@ docker exec ten_agent_dev bash -c \
 
 ### Start the Server
 
+**IMPORTANT:** `task run` starts **BOTH** the API server AND the playground together. Do NOT start them separately!
+
 ```bash
-# Start server (use task run, NOT ./bin/main!)
+# Start both API server + playground (use task run, NOT ./bin/main!)
 docker exec -d ten_agent_dev bash -c \
   "cd /app/agents/examples/voice-assistant-advanced && \
    task run > /tmp/task_run.log 2>&1"
+
+# Wait for full startup (API + playground + TMAN Designer)
+sleep 15
 ```
+
+**What gets started:**
+- API Server on port 8080
+- Playground on port 3000 (or 3001 if 3000 is busy)
+- TMAN Designer on port 49483
 
 ### Verify Server is Running
 
@@ -149,10 +159,13 @@ docker exec -d ten_agent_dev bash -c \
   "cd /app/agents/examples/voice-assistant-advanced && \
    task run > /tmp/task_run.log 2>&1"
 
-# Verify both services
-sleep 5
+# Verify both services (wait 15s for full startup)
+sleep 15
 curl -s http://localhost:8080/health  # API server
-curl -s http://localhost:3000         # Playground
+curl -s http://localhost:3000         # Playground (may use port 3001 if 3000 busy)
+
+# Check actual port in logs if needed
+docker exec ten_agent_dev bash -c "grep 'Local:' /tmp/task_run.log | tail -1"
 ```
 
 ### Manual Startup (If Needed)
@@ -432,6 +445,41 @@ When a user is in channel "test123":
 ---
 
 ## 8. Common Operations
+
+### Full Persistent Startup (Survives Session Closure)
+
+Use this when you want services to keep running after you close your terminal/session:
+
+```bash
+# 1. Clean up any existing processes
+sudo docker exec ten_agent_dev bash -c "pkill -9 -f 'bin/api'; pkill -9 node; pkill -9 bun"
+ps -elf | grep 'bin/main' | grep -v grep | awk '{print $4}' | xargs -r sudo kill -9 2>/dev/null || true
+
+# 2. Remove lock files
+sudo docker exec ten_agent_dev bash -c "rm -f /app/playground/.next/dev/lock"
+
+# 3. Install Python dependencies
+sudo docker exec ten_agent_dev bash -c \
+  "cd /app/agents/examples/voice-assistant-advanced/tenapp && \
+   bash scripts/install_python_deps.sh"
+
+# 4. Start everything in detached mode (-d flag keeps it running)
+sudo docker exec -d ten_agent_dev bash -c \
+  "cd /app/agents/examples/voice-assistant-advanced && \
+   task run > /tmp/task_run.log 2>&1"
+
+# 5. Wait and verify
+sleep 15
+curl -s http://localhost:8080/health && echo " ✓ API ready"
+curl -s http://localhost:8080/graphs | jq -r '.data | length' | xargs echo "Graphs:"
+curl -s http://localhost:3000 -o /dev/null -w '%{http_code}' | xargs echo "Playground:"
+```
+
+**Key points:**
+- The `-d` flag with `docker exec` keeps processes running after you disconnect
+- `task run` starts API server + playground + TMAN Designer together
+- Services persist inside the Docker container until manually stopped
+- Logs are in `/tmp/task_run.log` inside container
 
 ### After Container Restart
 
