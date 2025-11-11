@@ -82,7 +82,7 @@ TEN is an open-source framework for conversational voice AI agents.
 
 ![Image](https://github.com/user-attachments/assets/6f35737d-6697-4860-8915-762553605cc9)
 
-<strong>Multi-Purpose Voice Assistant</strong> — Low-latency, high-quality, real-time assistant that you can extend with  <a href="ai_agents/agents/examples/voice-assistant-with-memU">memory</a>, <a href="ai_agents/agents/examples/voice-assistant-with-ten-vad">VAD</a>, <a href="ai_agents/agents/examples/voice-assistant-with-turn-detection">TEN Turn Detection</a> and other extensions.
+<strong>Multi-Purpose Voice Assistant</strong> — Low-latency, high-quality, real-time assistant that you can extend with  <a href="ai_agents/agents/examples/voice-assistant-with-memU">memory</a>, <a href="ai_agents/agents/examples/voice-assistant-with-ten-vad">VAD</a>, <a href="ai_agents/agents/examples/voice-assistant-with-turn-detection">Turn Detection</a> and other extensions.
 
 See the <a href="https://github.com/TEN-framework/ten-framework/tree/main/ai_agents/agents/examples/voice-assistant">Example code</a> for more details.
 
