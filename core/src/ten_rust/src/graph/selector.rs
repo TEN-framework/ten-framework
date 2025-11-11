@@ -9,11 +9,14 @@ use std::collections::HashMap;
 use anyhow::Result;
 use regex::Regex;
 
-use crate::graph::{
-    connection::{GraphDestination, GraphLoc, GraphMessageFlow, GraphSource},
-    msg_conversion::MsgAndResultConversion,
-    node::{AtomicFilter, Filter, FilterOperator, GraphNode, GraphNodeType, SelectorNode},
-    Graph,
+use crate::{
+    graph::{
+        connection::{GraphDestination, GraphLoc, GraphMessageFlow, GraphSource},
+        msg_conversion::MsgAndResultConversion,
+        node::{AtomicFilter, Filter, FilterOperator, GraphNode, GraphNodeType, SelectorNode},
+        Graph,
+    },
+    pkg_info::message::MsgType,
 };
 
 #[derive(Debug)]
@@ -350,5 +353,116 @@ impl Graph {
         })?;
 
         self.get_nodes_by_selector_node(selector_node)
+    }
+
+    /// Populates messages (type, name, direction) for all SelectorNodes based
+    /// on their filters
+    pub fn populate_selector_message_info(&mut self) -> Result<()> {
+        use std::collections::HashMap;
+
+        use crate::{graph::node::SelectorMessageInfo, pkg_info::message::MsgDirection};
+
+        // Collect all message information from connections
+        // Key: node_name, Value: Vec of (msg_type, msg_name, direction)
+        let mut node_messages: HashMap<String, Vec<(MsgType, String, MsgDirection)>> =
+            HashMap::new();
+
+        if let Some(connections) = &self.connections {
+            for connection in connections {
+                let node_name = connection.loc.get_node_name().unwrap_or(&String::new()).clone();
+
+                // Helper to process message flows
+                let process_flows = |flows: &Vec<GraphMessageFlow>,
+                                     msg_type: MsgType,
+                                     node_messages: &mut HashMap<
+                    String,
+                    Vec<(MsgType, String, MsgDirection)>,
+                >| {
+                    for flow in flows {
+                        if let Some(msg_name) = &flow.name {
+                            // Check destinations (Out direction from this node)
+                            if !flow.dest.is_empty() {
+                                node_messages.entry(node_name.clone()).or_default().push((
+                                    msg_type.clone(),
+                                    msg_name.clone(),
+                                    MsgDirection::Out,
+                                ));
+                            }
+
+                            // Check sources (In direction to this node)
+                            if !flow.source.is_empty() {
+                                node_messages.entry(node_name.clone()).or_default().push((
+                                    msg_type.clone(),
+                                    msg_name.clone(),
+                                    MsgDirection::In,
+                                ));
+                            }
+                        }
+                    }
+                };
+
+                // Process cmd messages
+                if let Some(cmd_flows) = &connection.cmd {
+                    process_flows(cmd_flows, MsgType::Cmd, &mut node_messages);
+                }
+
+                // Process data messages
+                if let Some(data_flows) = &connection.data {
+                    process_flows(data_flows, MsgType::Data, &mut node_messages);
+                }
+
+                // Process audio_frame messages
+                if let Some(audio_flows) = &connection.audio_frame {
+                    process_flows(audio_flows, MsgType::AudioFrame, &mut node_messages);
+                }
+
+                // Process video_frame messages
+                if let Some(video_flows) = &connection.video_frame {
+                    process_flows(video_flows, MsgType::VideoFrame, &mut node_messages);
+                }
+            }
+        }
+
+        // First, collect all SelectorNode information
+        let mut selector_updates: Vec<(usize, Vec<SelectorMessageInfo>)> = Vec::new();
+
+        for (idx, node) in self.nodes.iter().enumerate() {
+            if let GraphNode::Selector {
+                content,
+            } = node
+            {
+                // Get matching nodes using the existing function
+                if let Some(matching_nodes) = self.get_nodes_by_selector_node(content) {
+                    let mut all_messages = Vec::new();
+
+                    for matching_node in matching_nodes {
+                        if let Some(messages) = node_messages.get(matching_node.get_name()) {
+                            // Collect all messages from this node
+                            for (msg_type, msg_name, direction) in messages {
+                                all_messages.push(SelectorMessageInfo {
+                                    msg_type: msg_type.clone(),
+                                    msg_name: msg_name.clone(),
+                                    direction: direction.clone(),
+                                });
+                            }
+                        }
+                    }
+
+                    selector_updates.push((idx, all_messages));
+                }
+            }
+        }
+
+        // Then update the SelectorNodes
+        for (idx, messages) in selector_updates {
+            if let GraphNode::Selector {
+                content,
+            } = &mut self.nodes[idx]
+            {
+                content.messages = messages;
+            }
+        }
+
+        Ok(())
     }
 }
