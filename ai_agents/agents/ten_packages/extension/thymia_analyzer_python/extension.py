@@ -52,8 +52,12 @@ class AudioBuffer:
         self.channels = channels
         self.silence_threshold = silence_threshold
         self.speech_buffer = []
-        self.speech_duration = 0.0  # Total duration including pre-speech padding
-        self.actual_speech_duration = 0.0  # Only frames where volume > threshold
+        self.speech_duration = (
+            0.0  # Total duration including pre-speech padding
+        )
+        self.actual_speech_duration = (
+            0.0  # Only frames where volume > threshold
+        )
         self.max_speech_duration = 300.0  # 5 minutes safety limit
 
         # Circular buffer for 0.5 second of recent audio (pre-speech capture)
@@ -126,7 +130,9 @@ class AudioBuffer:
                     # Add current frame (THIS IS ACTUAL SPEECH)
                     self.speech_buffer.append(pcm_data)
                     self.speech_duration += frame_duration
-                    self.actual_speech_duration += frame_duration  # Count actual speech!
+                    self.actual_speech_duration += (
+                        frame_duration  # Count actual speech!
+                    )
                 else:
                     # Buffer full - clear silence frames but don't add more audio
                     self.silence_frames.clear()
@@ -573,7 +579,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
             30.0  # Duration of mood audio for Apollo
         )
         self.apollo_read_duration: float = (
-            30.0  # Duration of reading audio for Apollo
+            22.0  # Duration of reading audio for Apollo
         )
 
         # State
@@ -613,7 +619,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
         # Input phase tracking (independent of API state)
         self.mood_phase_complete: bool = False  # 30s mood speech collected
         self.reading_phase_complete: bool = (
-            False  # 30s reading speech collected
+            False  # 22s reading speech collected
         )
 
         # Trigger tracking (whether we've sent async message to LLM)
@@ -628,8 +634,13 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
         self.last_user_speech_time: float = 0.0
         self.user_currently_speaking: bool = False
         self.agent_currently_speaking: bool = False  # Track TTS playback state
-        self.agent_speaking_until: float = 0.0  # Timestamp when agent will finish speaking
+        self.agent_speaking_until: float = (
+            0.0  # Timestamp when agent will finish speaking
+        )
         self.last_agent_speech_end_time: float = 0.0
+        self.response_start_time: float = (
+            0.0  # When current TTS response started (with 500ms buffer)
+        )
 
         # User information for Thymia API
         self.user_name: Optional[str] = None
@@ -917,9 +928,16 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                 # Agent started speaking - don't send announcements during this time
                 self.agent_currently_speaking = True
 
+                # Record when response started (with 500ms buffer for audio to start playing)
+                self.response_start_time = time.time() + 0.5
+
                 # Get full payload for analysis
                 json_str, _ = data.get_property_to_json(None)
-                ten_env.log_info(f"[THYMIA_TTS_START] tts_audio_start received. Payload: {json_str}")
+                ten_env.log_info(
+                    f"[THYMIA_TTS_START] tts_audio_start received. "
+                    f"Response will start playing at timestamp: {self.response_start_time:.2f}. "
+                    f"Payload: {json_str}"
+                )
 
             elif data_name == "tts_audio_end":
                 # Get full payload for analysis
@@ -940,25 +958,42 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
 
                 if reason == 1:
                     # TTS generation complete - calculate when audio will finish playing
-                    # Add buffer time for network/processing delays
-                    buffer_seconds = 1.0
-                    self.agent_speaking_until = time.time() + (duration_ms / 1000.0) + buffer_seconds
-                    ten_env.log_info(
-                        f"[THYMIA_TTS_END] TTS generation complete (reason=1). "
-                        f"Audio will play for ~{duration_ms}ms more. "
-                        f"Agent speaking until timestamp: {self.agent_speaking_until:.2f}"
-                    )
+                    # Use response_start_time (tts_audio_start + 500ms) + total duration
+                    if self.response_start_time > 0:
+                        self.agent_speaking_until = self.response_start_time + (
+                            duration_ms / 1000.0
+                        )
+                        ten_env.log_info(
+                            f"[THYMIA_TTS_END] TTS generation complete (reason=1). "
+                            f"Total audio duration: {duration_ms}ms. "
+                            f"Started at: {self.response_start_time:.2f}, "
+                            f"will finish at: {self.agent_speaking_until:.2f}"
+                        )
+                    else:
+                        # Fallback if response_start_time wasn't set
+                        ten_env.log_warn(
+                            f"[THYMIA_TTS_END] response_start_time not set, using fallback calculation"
+                        )
+                        self.agent_speaking_until = (
+                            time.time() + (duration_ms / 1000.0) + 1.0
+                        )
+
+                    # Clear the boolean flag - we now rely on timestamp-based checking
+                    self.agent_currently_speaking = False
                 elif reason == 2:
                     # Playback interrupted or complete - stop immediately
                     self.agent_speaking_until = 0.0
                     self.agent_currently_speaking = False
+                    self.response_start_time = 0.0
                     self.last_agent_speech_end_time = time.time()
                     ten_env.log_info(
                         f"[THYMIA_TTS_END] Playback ended (reason=2). Agent stopped speaking."
                     )
 
         except Exception as e:
-            ten_env.log_error(f"[THYMIA_TTS] Error handling data '{data.get_name()}': {e}")
+            ten_env.log_error(
+                f"[THYMIA_TTS] Error handling data '{data.get_name()}': {e}"
+            )
 
     # Counter for logging
     _audio_frame_count = 0
@@ -1044,7 +1079,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
             elif self.analysis_mode == "demo_dual":
                 # ============ DEMO_DUAL MODE (PARALLEL PHASES) ============
                 # Hellos: Triggered at 30s mood speech
-                # Apollo: Triggered at 60s total speech (30s mood + 30s reading)
+                # Apollo: Triggered at 52s total speech (30s mood + 22s reading)
                 # These run independently - Apollo doesn't wait for Hellos to complete
 
                 # Log buffer status every 5 seconds (stop when both analyses complete)
@@ -1169,7 +1204,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                                 )
                         elif not hellos_delay_needed:
                             ten_env.log_info(
-                                f"[THYMIA_ANALYSIS_START] Starting Apollo analysis (60s total: 30s mood + 30s reading) "
+                                f"[THYMIA_ANALYSIS_START] Starting Apollo analysis (52s total: 30s mood + 22s reading) "
                                 f"({actual_speech_duration:.1f}s actual speech collected, {speech_duration:.1f}s total with padding)"
                             )
                             self.apollo_analysis_running = True
@@ -1532,7 +1567,9 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
             )
 
             if not upload_success:
-                ten_env.log_error("[THYMIA_HELLOS] Failed to upload audio to Thymia")
+                ten_env.log_error(
+                    "[THYMIA_HELLOS] Failed to upload audio to Thymia"
+                )
                 return
 
             ten_env.log_info(
@@ -1848,7 +1885,9 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
             text_data.set_property_bool("end_of_segment", True)
             await ten_env.send_data(text_data)
 
-            ten_env.log_info("[THYMIA_TRIGGER_OK] Hellos announcement sent to LLM via text_data")
+            ten_env.log_info(
+                "[THYMIA_TRIGGER_OK] Hellos announcement sent to LLM via text_data"
+            )
             return True  # Announcement sent
         except Exception as e:
             ten_env.log_error(f"[THYMIA_TRIGGER_FAIL] Hellos: {e}")
@@ -1869,7 +1908,9 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
             text_data.set_property_bool("end_of_segment", True)
             await ten_env.send_data(text_data)
 
-            ten_env.log_info("[THYMIA_TRIGGER_OK] Apollo announcement sent to LLM via text_data")
+            ten_env.log_info(
+                "[THYMIA_TRIGGER_OK] Apollo announcement sent to LLM via text_data"
+            )
         except Exception as e:
             ten_env.log_error(f"[THYMIA_TRIGGER_FAIL] Apollo: {e}")
 
@@ -1903,7 +1944,9 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                         self.hellos_complete = True  # Mark as complete
                         self.hellos_analysis_running = False
                         # Trigger announcement even on timeout
-                        await self._check_and_trigger_ready_announcements(ten_env)
+                        await self._check_and_trigger_ready_announcements(
+                            ten_env
+                        )
                         continue
 
                     # Poll API
@@ -2012,13 +2055,18 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                     )
 
                     # Timeout fallback - force complete after 90s
-                    if time_since_first_announcement >= self.announcement_timeout:
+                    if (
+                        time_since_first_announcement
+                        >= self.announcement_timeout
+                    ):
                         ten_env.log_warn(
                             f"[THYMIA_UNIFIED_POLLER] Hellos announcement timeout ({self.announcement_timeout}s) - marking as shared"
                         )
                         self.hellos_shared_with_user = True
                     # Max retries exceeded
-                    elif self.hellos_retry_count >= self.max_announcement_retries:
+                    elif (
+                        self.hellos_retry_count >= self.max_announcement_retries
+                    ):
                         ten_env.log_warn(
                             f"[THYMIA_UNIFIED_POLLER] Hellos max retries ({self.max_announcement_retries}) exceeded - giving up"
                         )
@@ -2034,7 +2082,9 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                             self.agent_speaking_until > 0
                             and current_time < self.agent_speaking_until
                         ):
-                            remaining_seconds = self.agent_speaking_until - current_time
+                            remaining_seconds = (
+                                self.agent_speaking_until - current_time
+                            )
                             ten_env.log_info(
                                 f"[THYMIA_UNIFIED_POLLER] Skipping Hellos retry - agent still speaking "
                                 f"(will finish in {remaining_seconds:.1f}s)"
@@ -2057,13 +2107,18 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                     )
 
                     # Timeout fallback - force complete after 90s
-                    if time_since_first_announcement >= self.announcement_timeout:
+                    if (
+                        time_since_first_announcement
+                        >= self.announcement_timeout
+                    ):
                         ten_env.log_warn(
                             f"[THYMIA_UNIFIED_POLLER] Apollo announcement timeout ({self.announcement_timeout}s) - marking as shared"
                         )
                         self.apollo_shared_with_user = True
                     # Max retries exceeded
-                    elif self.apollo_retry_count >= self.max_announcement_retries:
+                    elif (
+                        self.apollo_retry_count >= self.max_announcement_retries
+                    ):
                         ten_env.log_warn(
                             f"[THYMIA_UNIFIED_POLLER] Apollo max retries ({self.max_announcement_retries}) exceeded - giving up"
                         )
@@ -2079,7 +2134,9 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                             self.agent_speaking_until > 0
                             and current_time < self.agent_speaking_until
                         ):
-                            remaining_seconds = self.agent_speaking_until - current_time
+                            remaining_seconds = (
+                                self.agent_speaking_until - current_time
+                            )
                             ten_env.log_info(
                                 f"[THYMIA_UNIFIED_POLLER] Skipping Apollo retry - agent still speaking "
                                 f"(will finish in {remaining_seconds:.1f}s)"
@@ -2096,11 +2153,14 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                 # Check if user has been silent for a while and phases aren't complete
                 # If so, send a hint to LLM to prompt user to continue speaking/reading
                 if self.user_name is not None:  # Only if user info has been set
-                    time_since_last_speech = current_time - self.last_user_speech_time
+                    time_since_last_speech = (
+                        current_time - self.last_user_speech_time
+                    )
 
                     # Check if agent is still speaking (timestamp-based)
                     agent_still_speaking = (
-                        self.agent_speaking_until > 0 and current_time < self.agent_speaking_until
+                        self.agent_speaking_until > 0
+                        and current_time < self.agent_speaking_until
                     ) or self.agent_currently_speaking
 
                     # Check if user has been silent for 15+ seconds AND agent is not speaking
@@ -2110,11 +2170,16 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                         and not agent_still_speaking
                     ):
                         # Check if mood phase is incomplete (need 30s, haven't started analysis yet)
-                        if not self.mood_phase_complete and self.speech_duration < 30.0:
+                        if (
+                            not self.mood_phase_complete
+                            and self.speech_duration < 30.0
+                        ):
                             speech_remaining = 30.0 - self.speech_duration
                             hint_text = f"[PROGRESS CHECK] User has provided {self.speech_duration:.0f}s of speech. Need {speech_remaining:.0f}s more for mood analysis. User has been silent for {time_since_last_speech:.0f}s. Ask them to continue sharing about their day, feelings, or interests."
 
-                            ten_env.log_info(f"[THYMIA_PROGRESS_CHECK] Sending mood phase progress reminder: {self.speech_duration:.0f}s/{30.0:.0f}s collected")
+                            ten_env.log_info(
+                                f"[THYMIA_PROGRESS_CHECK] Sending mood phase progress reminder: {self.speech_duration:.0f}s/{30.0:.0f}s collected"
+                            )
 
                             text_data = Data.create("text_data")
                             text_data.set_property_string("text", hint_text)
@@ -2122,11 +2187,17 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                             await ten_env.send_data(text_data)
 
                         # Check if reading phase is incomplete (need 60s total, mood phase done)
-                        elif self.mood_phase_complete and not self.reading_phase_complete and self.speech_duration < 60.0:
+                        elif (
+                            self.mood_phase_complete
+                            and not self.reading_phase_complete
+                            and self.speech_duration < 60.0
+                        ):
                             speech_remaining = 60.0 - self.speech_duration
                             hint_text = f"[PROGRESS CHECK] User has provided {self.speech_duration:.0f}s of speech. Need {speech_remaining:.0f}s more for reading analysis. User has been silent for {time_since_last_speech:.0f}s. Ask them to continue reading aloud from text on their screen."
 
-                            ten_env.log_info(f"[THYMIA_PROGRESS_CHECK] Sending reading phase progress reminder: {self.speech_duration:.0f}s/{60.0:.0f}s collected")
+                            ten_env.log_info(
+                                f"[THYMIA_PROGRESS_CHECK] Sending reading phase progress reminder: {self.speech_duration:.0f}s/{60.0:.0f}s collected"
+                            )
 
                             text_data = Data.create("text_data")
                             text_data.set_property_string("text", hint_text)
@@ -2134,10 +2205,14 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                             await ten_env.send_data(text_data)
 
             except asyncio.CancelledError:
-                ten_env.log_info("[THYMIA_UNIFIED_POLLER] Task cancelled, stopping")
+                ten_env.log_info(
+                    "[THYMIA_UNIFIED_POLLER] Task cancelled, stopping"
+                )
                 break
             except Exception as e:
-                ten_env.log_error(f"[THYMIA_UNIFIED_POLLER] Unexpected error: {e}")
+                ten_env.log_error(
+                    f"[THYMIA_UNIFIED_POLLER] Unexpected error: {e}"
+                )
                 import traceback
 
                 ten_env.log_error(traceback.format_exc())
@@ -2177,7 +2252,10 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
 
         # Check if agent is still speaking (using timestamp-based check)
         current_time = time.time()
-        if self.agent_speaking_until > 0 and current_time < self.agent_speaking_until:
+        if (
+            self.agent_speaking_until > 0
+            and current_time < self.agent_speaking_until
+        ):
             remaining_seconds = self.agent_speaking_until - current_time
             ten_env.log_info(
                 f"[THYMIA_TRIGGER_CHECK] Skipping trigger - agent still speaking "
@@ -2193,7 +2271,11 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
 
         # Trigger Hellos if ready and READING PHASE COMPLETE (wait for all audio collection)
         # This ensures we don't announce Hellos until user has provided enough audio for Apollo too
-        if self.hellos_complete and self.reading_phase_complete and not self.hellos_trigger_sent:
+        if (
+            self.hellos_complete
+            and self.reading_phase_complete
+            and not self.hellos_trigger_sent
+        ):
             # Check if Apollo is also complete - if so, LLM will get all 7 metrics in one call
             apollo_also_ready = self.apollo_complete
 
@@ -2203,14 +2285,18 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
             announcement_sent = await self._trigger_hellos_announcement(ten_env)
             self.hellos_trigger_sent = True  # Mark as processed even if skipped
             if announcement_sent:
-                self.hellos_last_announcement_time = time.time()  # Only set time if actually sent
+                self.hellos_last_announcement_time = (
+                    time.time()
+                )  # Only set time if actually sent
 
                 # If Apollo was already complete, mark it as triggered too (no need for second announcement)
                 if apollo_also_ready:
                     ten_env.log_info(
                         "[THYMIA_PHASE_TRIGGER] Apollo also complete - LLM will receive all 7 metrics from first get_wellness_metrics call. Skipping separate Apollo announcement."
                     )
-                    self.apollo_trigger_sent = True  # Skip Apollo announcement to avoid interrupting
+                    self.apollo_trigger_sent = (
+                        True  # Skip Apollo announcement to avoid interrupting
+                    )
         elif self.hellos_complete and self.hellos_trigger_sent:
             ten_env.log_debug(
                 "[THYMIA_TRIGGER_CHECK] Hellos trigger already sent previously"
@@ -2678,7 +2764,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                 test_data = Data.create("text_data")
                 test_data.set_property_string(
                     "text",
-                    "TEST ANNOUNCEMENT: If you receive this message, please acknowledge with code TEST-12345."
+                    "TEST ANNOUNCEMENT: If you receive this message, please acknowledge with code TEST-12345.",
                 )
                 test_data.set_property_bool("end_of_segment", True)
                 await ten_env.send_data(test_data)
@@ -2687,10 +2773,12 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
 
                 return LLMToolResultLLMResult(
                     type="llmresult",
-                    content=json.dumps({
-                        "status": "sent",
-                        "message": "Test announcement sent via text_data. Wait for LLM acknowledgment."
-                    }),
+                    content=json.dumps(
+                        {
+                            "status": "sent",
+                            "message": "Test announcement sent via text_data. Wait for LLM acknowledgment.",
+                        }
+                    ),
                 )
 
         except Exception as e:

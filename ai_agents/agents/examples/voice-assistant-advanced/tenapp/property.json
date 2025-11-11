@@ -57,7 +57,8 @@
                   "language": "en-US",
                   "interim_results": true,
                   "eot_threshold": 0.9,
-                  "eot_timeout_ms": 2000
+                  "eot_timeout_ms": 2000,
+                  "min_interim_confidence": 0.75
                 }
               }
             },
@@ -1166,7 +1167,8 @@
                   "language": "en-US",
                   "interim_results": true,
                   "eot_threshold": 0.9,
-                  "eot_timeout_ms": 2000
+                  "eot_timeout_ms": 2000,
+                  "min_interim_confidence": 0.75
                 }
               }
             },
@@ -1407,7 +1409,8 @@
                   "language": "en-US",
                   "interim_results": true,
                   "eot_threshold": 0.9,
-                  "eot_timeout_ms": 2000
+                  "eot_timeout_ms": 2000,
+                  "min_interim_confidence": 0.75
                 }
               }
             },
@@ -1653,7 +1656,8 @@
                   "language": "en-US",
                   "interim_results": true,
                   "eot_threshold": 0.9,
-                  "eot_timeout_ms": 2000
+                  "eot_timeout_ms": 2000,
+                  "min_interim_confidence": 0.75
                 }
               }
             },
@@ -1864,7 +1868,8 @@
                   "language": "en-US",
                   "interim_results": true,
                   "eot_threshold": 0.9,
-                  "eot_timeout_ms": 2000
+                  "eot_timeout_ms": 2000,
+                  "min_interim_confidence": 0.75
                 }
               }
             },
@@ -2083,7 +2088,8 @@
                   "language": "en-US",
                   "interim_results": true,
                   "eot_threshold": 0.9,
-                  "eot_timeout_ms": 2000
+                  "eot_timeout_ms": 2000,
+                  "min_interim_confidence": 0.75
                 }
               }
             },
@@ -2351,7 +2357,8 @@
                   "language": "en-US",
                   "interim_results": true,
                   "eot_threshold": 0.9,
-                  "eot_timeout_ms": 2000
+                  "eot_timeout_ms": 2000,
+                  "min_interim_confidence": 0.75
                 }
               }
             },
@@ -2774,7 +2781,8 @@
                   "language": "en-US",
                   "interim_results": true,
                   "eot_threshold": 0.9,
-                  "eot_timeout_ms": 2000
+                  "eot_timeout_ms": 2000,
+                  "min_interim_confidence": 0.75
                 }
               }
             },
@@ -3034,7 +3042,8 @@
                   "language": "en-US",
                   "interim_results": true,
                   "eot_threshold": 0.9,
-                  "eot_timeout_ms": 2000
+                  "eot_timeout_ms": 2000,
+                  "min_interim_confidence": 0.75
                 }
               }
             },
@@ -3240,10 +3249,24 @@
               ],
               "data": [
                 {
+                  "name": "tts_audio_start",
+                  "dest": [
+                    {
+                      "extension": "avatar"
+                    },
+                    {
+                      "extension": "thymia_analyzer"
+                    }
+                  ]
+                },
+                {
                   "name": "tts_audio_end",
                   "dest": [
                     {
                       "extension": "avatar"
+                    },
+                    {
+                      "extension": "thymia_analyzer"
                     }
                   ]
                 }
