@@ -56,8 +56,8 @@
                   "model": "flux-general-en",
                   "language": "en-US",
                   "interim_results": true,
-                  "eot_threshold": 0.8,
-                  "eot_timeout_ms": 5000
+                  "eot_threshold": 0.9,
+                  "eot_timeout_ms": 2000
                 }
               }
             },
@@ -1165,8 +1165,8 @@
                   "model": "flux-general-en",
                   "language": "en-US",
                   "interim_results": true,
-                  "eot_threshold": 0.8,
-                  "eot_timeout_ms": 5000
+                  "eot_threshold": 0.9,
+                  "eot_timeout_ms": 2000
                 }
               }
             },
@@ -1406,8 +1406,8 @@
                   "model": "flux-general-en",
                   "language": "en-US",
                   "interim_results": true,
-                  "eot_threshold": 0.8,
-                  "eot_timeout_ms": 5000
+                  "eot_threshold": 0.9,
+                  "eot_timeout_ms": 2000
                 }
               }
             },
@@ -1652,8 +1652,8 @@
                   "model": "flux-general-en",
                   "language": "en-US",
                   "interim_results": true,
-                  "eot_threshold": 0.8,
-                  "eot_timeout_ms": 5000
+                  "eot_threshold": 0.9,
+                  "eot_timeout_ms": 2000
                 }
               }
             },
@@ -1863,8 +1863,8 @@
                   "model": "flux-general-en",
                   "language": "en-US",
                   "interim_results": true,
-                  "eot_threshold": 0.8,
-                  "eot_timeout_ms": 5000
+                  "eot_threshold": 0.9,
+                  "eot_timeout_ms": 2000
                 }
               }
             },
@@ -2082,8 +2082,8 @@
                   "model": "flux-general-en",
                   "language": "en-US",
                   "interim_results": true,
-                  "eot_threshold": 0.8,
-                  "eot_timeout_ms": 5000
+                  "eot_threshold": 0.9,
+                  "eot_timeout_ms": 2000
                 }
               }
             },
@@ -2350,8 +2350,218 @@
                   "model": "flux-general-en",
                   "language": "en-US",
                   "interim_results": true,
-                  "eot_threshold": 0.8,
-                  "eot_timeout_ms": 5000
+                  "eot_threshold": 0.9,
+                  "eot_timeout_ms": 2000
+                }
+              }
+            },
+            {
+              "type": "extension",
+              "name": "llm",
+              "addon": "openai_llm2_python",
+              "extension_group": "chatgpt",
+              "property": {
+                "base_url": "https://api.openai.com/v1",
+                "api_key": "${env:OPENAI_API_KEY}",
+                "frequency_penalty": 0.9,
+                "model": "${env:OPENAI_MODEL}",
+                "max_tokens": 512,
+                "prompt": "You are a mental wellness research assistant conducting a demonstration. Guide the conversation efficiently:\n\n1. First, collect name, sex, and year of birth\n2. IMMEDIATELY call set_user_info(name, year_of_birth, birth_sex) - this is REQUIRED before analysis can start\n3. Ask: 'Please tell me a little about your day so far and how you are feeling.' (wait for response)\n4. Ask: 'Tell me about your interests and hobbies.' (wait for response - aim for 30+ seconds total)\n5. CRITICAL: Before moving to reading phase or saying you're processing, you MUST call check_phase_progress to verify enough speech has been collected. If phase_complete=false, ask another question to gather more speech. Only proceed when phase_complete=true.\n6. Once check_phase_progress confirms phase_complete=true, say: 'Thank you. Now please read aloud anything you can see around you - a book, article, or text on your screen - for about 30 seconds.'\n7. CRITICAL: After user finishes reading, you MUST call check_phase_progress again before saying you're processing. If reading_phase_complete=false, ask them to continue reading. Only when reading_phase_complete=true, say: 'Perfect. I'm processing your responses now, this will take about a minute.'\n8. IMPORTANT: You will receive TWO separate [SYSTEM ALERT] messages - one for wellness metrics, then another for clinical indicators. WAIT for each alert before announcing.\n9. When you receive '[SYSTEM ALERT] Wellness metrics ready', call get_wellness_metrics and announce the 5 wellness metrics (stress, distress, burnout, fatigue, low_self_esteem). Values are PERCENTAGES 0-100. DO NOT use markdown formatting (no **, *, _, etc.) - use plain numbered lists only. After announcing, IMMEDIATELY call confirm_announcement with phase='hellos'. Then WAIT - do NOT proactively call get_wellness_metrics again.\n10. Later, you will receive '[SYSTEM ALERT] Clinical indicators ready'. Only then should you call get_wellness_metrics again and announce the 2 clinical indicators (depression, anxiety). After announcing, IMMEDIATELY call confirm_announcement with phase='apollo'.\n11. Frame as research indicators, not clinical diagnosis\n12. Thank them for participating in the demonstration\n\nNote: We need 60 seconds total speech (30s for mood/interests + 30s for reading). The first 30s is used for both Hellos and Apollo mood analysis. The next 30s is used for Apollo reading analysis.",
+                "proxy_url": "${env:OPENAI_PROXY_URL|}",
+                "greeting": "Hi there! I would like to talk to you for a couple of minutes and use your voice to predict your mood and energy levels including any depression, anxiety, stress, and fatigue. Nothing will be recorded and this is purely a demonstration of what is possible now that we have trained our models with many hours of professionally labelled data. Please begin by telling me your name, sex and year of birth.",
+                "max_memory_length": 10
+              }
+            },
+            {
+              "type": "extension",
+              "name": "tts",
+              "addon": "cartesia_tts2",
+              "extension_group": "tts",
+              "property": {
+                "dump": false,
+                "dump_path": "./",
+                "params": {
+                  "api_key": "${env:CARTESIA_TTS_KEY}",
+                  "model_id": "sonic-3",
+                  "voice": {
+                    "mode": "id",
+                    "id": "71a7ad14-091c-4e8e-a314-022ece01c121"
+                  },
+                  "generation_config": {
+                    "speed": 1.0
+                  },
+                  "output_format": {
+                    "container": "raw",
+                    "sample_rate": 44100
+                  },
+                  "language": "en"
+                }
+              }
+            },
+            {
+              "type": "extension",
+              "name": "thymia_analyzer",
+              "addon": "thymia_analyzer_python",
+              "extension_group": "default",
+              "property": {
+                "api_key": "${env:THYMIA_API_KEY}",
+                "min_speech_duration": 30.0,
+                "analysis_mode": "demo_dual",
+                "apollo_mood_duration": 30.0,
+                "apollo_read_duration": 30.0
+              }
+            },
+            {
+              "type": "extension",
+              "name": "main_control",
+              "addon": "main_python",
+              "extension_group": "control",
+              "property": {
+                "greeting": "Hi there! I would like to talk to you for a couple of minutes and use your voice to predict your mood and energy levels including any depression, anxiety, stress, and fatigue. Nothing will be recorded and this is purely a demonstration of what is possible now that we have trained our models with many hours of professionally labelled data. Please begin by telling me your name, sex and year of birth."
+              }
+            },
+            {
+              "type": "extension",
+              "name": "message_collector",
+              "addon": "message_collector2",
+              "extension_group": "transcriber",
+              "property": {}
+            },
+            {
+              "type": "extension",
+              "name": "streamid_adapter",
+              "addon": "streamid_adapter",
+              "property": {}
+            }
+          ],
+          "connections": [
+            {
+              "extension": "main_control",
+              "cmd": [
+                {
+                  "names": [
+                    "on_user_joined",
+                    "on_user_left"
+                  ],
+                  "source": [
+                    {
+                      "extension": "agora_rtc"
+                    }
+                  ]
+                },
+                {
+                  "names": [
+                    "tool_register"
+                  ],
+                  "source": [
+                    {
+                      "extension": "thymia_analyzer"
+                    }
+                  ]
+                }
+              ],
+              "data": [
+                {
+                  "name": "asr_result",
+                  "source": [
+                    {
+                      "extension": "stt"
+                    }
+                  ]
+                },
+                {
+                  "name": "text_data",
+                  "source": [
+                    {
+                      "extension": "thymia_analyzer"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "agora_rtc",
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "source": [
+                    {
+                      "extension": "tts"
+                    }
+                  ]
+                },
+                {
+                  "name": "pcm_frame",
+                  "dest": [
+                    {
+                      "extension": "streamid_adapter"
+                    },
+                    {
+                      "extension": "thymia_analyzer"
+                    }
+                  ]
+                }
+              ],
+              "data": [
+                {
+                  "name": "data",
+                  "source": [
+                    {
+                      "extension": "message_collector"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "streamid_adapter",
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "dest": [
+                    {
+                      "extension": "stt"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "name": "nova3_apollo_cartesia",
+        "auto_start": false,
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "agora_rtc",
+              "addon": "agora_rtc",
+              "extension_group": "default",
+              "property": {
+                "app_id": "${env:AGORA_APP_ID}",
+                "app_certificate": "${env:AGORA_APP_CERTIFICATE|}",
+                "channel": "agora_g3qhjr",
+                "stream_id": 0,
+                "remote_stream_id": 182837,
+                "subscribe_audio": true,
+                "publish_audio": true,
+                "publish_data": true,
+                "enable_agora_asr": false
+              }
+            },
+            {
+              "type": "extension",
+              "name": "stt",
+              "addon": "deepgram_ws_asr_python",
+              "extension_group": "stt",
+              "property": {
+                "params": {
+                  "api_key": "${env:DEEPGRAM_API_KEY}",
+                  "url": "wss://api.deepgram.com/v1/listen",
+                  "model": "nova-3",
+                  "language": "en-US"
                 }
               }
             },
@@ -2563,8 +2773,8 @@
                   "model": "flux-general-en",
                   "language": "en-US",
                   "interim_results": true,
-                  "eot_threshold": 0.8,
-                  "eot_timeout_ms": 5000
+                  "eot_threshold": 0.9,
+                  "eot_timeout_ms": 2000
                 }
               }
             },
@@ -2823,8 +3033,8 @@
                   "model": "flux-general-en",
                   "language": "en-US",
                   "interim_results": true,
-                  "eot_threshold": 0.8,
-                  "eot_timeout_ms": 5000
+                  "eot_threshold": 0.9,
+                  "eot_timeout_ms": 2000
                 }
               }
             },
