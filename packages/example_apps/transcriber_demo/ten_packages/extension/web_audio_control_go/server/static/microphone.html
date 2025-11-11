@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Microphone Transcription</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 800px;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 0.95em;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        button {
+            flex: 1;
+            padding: 15px 30px;
+            font-size: 1em;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .btn-primary:hover,
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:active,
+        .btn-danger:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary:disabled,
+        .btn-danger:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: 500;
+            display: none;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .transcription-section {
+            margin-top: 30px;
+        }
+
+        .transcription-section h2 {
+            font-size: 1.3em;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .transcription-box {
+            background: #f8f9fa;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            min-height: 200px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95em;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        .transcription-box:empty::before {
+            content: 'Start recording to see transcription...';
+            color: #999;
+            font-style: italic;
+        }
+
+        .text-item {
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            background: white;
+            border-radius: 6px;
+            border-left: 4px solid #667eea;
+            animation: slideIn 0.3s ease-out;
+            line-height: 1.8;
+        }
+
+        .text-item.interim {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            font-style: italic;
+            opacity: 0.9;
+        }
+
+        .text-item.final {
+            background: white;
+            border-left: 4px solid #28a745;
+        }
+
+        .text-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75em;
+            font-weight: 600;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+
+        .text-badge.interim {
+            background: #ffc107;
+            color: #856404;
+        }
+
+        .text-badge.final {
+            background: #28a745;
+            color: white;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .connection-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .connection-status.connected {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .connection-status.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .connection-status::before {
+            content: '';
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .connection-status.connected::before {
+            background: #28a745;
+            animation: pulse 2s infinite;
+        }
+
+        .connection-status.disconnected::before {
+            background: #dc3545;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .recording-indicator {
+            display: none;
+            align-items: center;
+            gap: 10px;
+            padding: 15px;
+            background: #ffe5e5;
+            border: 2px solid #ff0000;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .recording-indicator.active {
+            display: flex;
+        }
+
+        .recording-dot {
+            width: 12px;
+            height: 12px;
+            background: #ff0000;
+            border-radius: 50%;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.3;
+            }
+        }
+
+        .info-box {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+
+        .info-box p {
+            margin: 5px 0;
+            color: #0d47a1;
+            font-size: 0.9em;
+        }
+
+        .nav-links {
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .nav-links a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .nav-links a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎤 Microphone Transcription</h1>
+            <p>Real-time speech recognition from your microphone</p>
+        </div>
+
+        <div class="content">
+            <div class="connection-status disconnected" id="connectionStatus">
+                <span id="statusText">Disconnected</span>
+            </div>
+
+            <div class="recording-indicator" id="recordingIndicator">
+                <div class="recording-dot"></div>
+                <span><strong>Recording...</strong> Audio is being captured and transcribed</span>
+            </div>
+
+            <div class="status" id="statusMessage"></div>
+
+            <div class="info-box">
+                <p><strong>ℹ️ Info:</strong> This page captures audio from your microphone at 16kHz sample rate.</p>
+                <p>Click "Start Recording" to begin real-time transcription.</p>
+            </div>
+
+            <div class="button-group">
+                <button class="btn-primary" id="startBtn">
+                    🎙️ Start Recording
+                </button>
+                <button class="btn-danger" id="stopBtn" disabled>
+                    ⏹️ Stop Recording
+                </button>
+            </div>
+
+            <div class="transcription-section">
+                <h2>📝 Transcription Results</h2>
+                <div class="transcription-box" id="transcriptionBox"></div>
+            </div>
+
+            <div class="nav-links">
+                <a href="/">← Back to File Upload</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let ws = null;
+        let reconnectInterval = null;
+        let interimElement = null;
+        let audioContext = null;
+        let mediaStream = null;
+        let audioWorkletNode = null;
+        let isRecording = false;
+
+        // Initialize WebSocket connection
+        function connectWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}/ws`;
+
+            console.log('Connecting to WebSocket:', wsUrl);
+
+            ws = new WebSocket(wsUrl);
+            ws.binaryType = 'arraybuffer';
+
+            ws.onopen = () => {
+                console.log('WebSocket connected');
+                updateConnectionStatus(true);
+                if (reconnectInterval) {
+                    clearInterval(reconnectInterval);
+                    reconnectInterval = null;
+                }
+            };
+
+            ws.onmessage = (event) => {
+                if (typeof event.data === 'string') {
+                    console.log('WebSocket message received:', event.data);
+                    try {
+                        const message = JSON.parse(event.data);
+                        if (message.type === 'asr_result') {
+                            addAsrResult(message.text, message.final);
+                        }
+                    } catch (e) {
+                        console.error('Failed to parse WebSocket message:', e);
+                    }
+                }
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
+
+            ws.onclose = () => {
+                console.log('WebSocket disconnected');
+                updateConnectionStatus(false);
+                // Attempt to reconnect
+                if (!reconnectInterval) {
+                    reconnectInterval = setInterval(connectWebSocket, 3000);
+                }
+            };
+        }
+
+        function updateConnectionStatus(connected) {
+            const statusEl = document.getElementById('connectionStatus');
+            const statusText = document.getElementById('statusText');
+
+            if (connected) {
+                statusEl.className = 'connection-status connected';
+                statusText.textContent = 'Connected';
+            } else {
+                statusEl.className = 'connection-status disconnected';
+                statusText.textContent = 'Disconnected';
+            }
+        }
+
+        function addAsrResult(text, isFinal) {
+            const box = document.getElementById('transcriptionBox');
+
+            if (!isFinal) {
+                // For non-final results, update or create interim element
+                if (!interimElement) {
+                    interimElement = document.createElement('div');
+                    interimElement.className = 'text-item interim';
+                    box.appendChild(interimElement);
+                }
+
+                // Update interim text with badge (prevent XSS attack)
+                interimElement.textContent = text;
+                const interimBadge = document.createElement('span');
+                interimBadge.className = 'text-badge interim';
+                interimBadge.textContent = 'Recognizing...';
+                interimElement.appendChild(interimBadge);
+            } else {
+                // For final results, convert interim to final or create new final element
+                if (interimElement) {
+                    // Convert interim to final (prevent XSS attack)
+                    interimElement.className = 'text-item final';
+                    interimElement.textContent = text;
+                    const finalBadge = document.createElement('span');
+                    finalBadge.className = 'text-badge final';
+                    finalBadge.textContent = 'Done';
+                    interimElement.appendChild(finalBadge);
+                    interimElement = null; // Clear interim reference
+                } else {
+                    // Create new final element (prevent XSS attack)
+                    const textItem = document.createElement('div');
+                    textItem.className = 'text-item final';
+                    textItem.textContent = text;
+                    const finalBadge = document.createElement('span');
+                    finalBadge.className = 'text-badge final';
+                    finalBadge.textContent = 'Done';
+                    textItem.appendChild(finalBadge);
+                    box.appendChild(textItem);
+                }
+            }
+
+            // Auto-scroll to bottom
+            box.scrollTop = box.scrollHeight;
+        }
+
+        function showStatus(message, type) {
+            const statusEl = document.getElementById('statusMessage');
+            statusEl.textContent = message;
+            statusEl.className = `status ${type}`;
+            statusEl.style.display = 'block';
+
+            setTimeout(() => {
+                statusEl.style.display = 'none';
+            }, 5000);
+        }
+
+        // Audio processing using ScriptProcessorNode (more compatible than AudioWorklet)
+        async function startRecording() {
+            try {
+                // Check browser support
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    showStatus('Your browser does not support microphone access. Please use Chrome, Firefox, or Edge with HTTPS/localhost.', 'error');
+                    return;
+                }
+
+                // Request microphone access
+                mediaStream = await navigator.mediaDevices.getUserMedia({
+                    audio: {
+                        channelCount: 1,
+                        sampleRate: 16000,
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    }
+                });
+
+                // Create audio context with 16kHz sample rate
+                audioContext = new (window.AudioContext || window.webkitAudioContext)({
+                    sampleRate: 16000
+                });
+
+                const source = audioContext.createMediaStreamSource(mediaStream);
+
+                // Use ScriptProcessorNode for audio processing (4096 buffer size)
+                const processor = audioContext.createScriptProcessor(4096, 1, 1);
+
+                processor.onaudioprocess = (e) => {
+                    if (!isRecording || ws.readyState !== WebSocket.OPEN) {
+                        return;
+                    }
+
+                    const inputData = e.inputBuffer.getChannelData(0);
+
+                    // Convert Float32Array to Int16Array (PCM 16-bit)
+                    const pcmData = new Int16Array(inputData.length);
+                    for (let i = 0; i < inputData.length; i++) {
+                        // Clamp to [-1, 1] and convert to 16-bit PCM
+                        const s = Math.max(-1, Math.min(1, inputData[i]));
+                        pcmData[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+                    }
+
+                    // Send binary audio data via WebSocket
+                    if (ws.readyState === WebSocket.OPEN) {
+                        const message = JSON.stringify({
+                            type: 'audio_data',
+                            sample_rate: 16000,
+                            channels: 1,
+                            samples_per_channel: pcmData.length
+                        });
+
+                        // Send metadata as text first
+                        ws.send(message);
+                        // Then send audio data as binary
+                        ws.send(pcmData.buffer);
+                    }
+                };
+
+                source.connect(processor);
+                processor.connect(audioContext.destination);
+
+                audioWorkletNode = processor;
+                isRecording = true;
+
+                // Update UI
+                document.getElementById('startBtn').disabled = true;
+                document.getElementById('stopBtn').disabled = false;
+                document.getElementById('recordingIndicator').classList.add('active');
+                showStatus('✅ Recording started', 'success');
+
+            } catch (error) {
+                console.error('Error starting recording:', error);
+                showStatus('❌ Failed to start recording: ' + error.message, 'error');
+            }
+        }
+
+        function stopRecording() {
+            isRecording = false;
+
+            if (audioWorkletNode) {
+                audioWorkletNode.disconnect();
+                audioWorkletNode = null;
+            }
+
+            if (audioContext) {
+                audioContext.close();
+                audioContext = null;
+            }
+
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(track => track.stop());
+                mediaStream = null;
+            }
+
+            // Update UI
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+            document.getElementById('recordingIndicator').classList.remove('active');
+            showStatus('⏹️ Recording stopped', 'info');
+        }
+
+        // Button event listeners
+        document.getElementById('startBtn').addEventListener('click', startRecording);
+        document.getElementById('stopBtn').addEventListener('click', stopRecording);
+
+        // Initialize WebSocket connection on page load
+        connectWebSocket();
+    </script>
+</body>
+
+</html>
