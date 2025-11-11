@@ -1,22 +1,22 @@
-name: Check Environment
+name: From Scratch
 
 on:
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
       - "tools/tman/install_tman.sh"
-      - ".github/workflows/check_env.yml"
+      - ".github/workflows/from_scratch.yml"
 
 permissions:
   contents: read
 
 concurrency:
-  group: check-env-${{ github.head_ref }}
+  group: from-scratch-${{ github.head_ref }}
   cancel-in-progress: true
 
 jobs:
-  check-environment:
-    name: Check Environment - ${{ matrix.platform_name }}
+  from_scratch:
+    name: From Scratch - ${{ matrix.platform_name }}
     runs-on: ${{ matrix.runs-on }}
     strategy:
       matrix:
