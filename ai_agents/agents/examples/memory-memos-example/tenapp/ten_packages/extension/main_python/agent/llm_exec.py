@@ -60,8 +60,8 @@ class LLMExec:
         self.current_request_id: Optional[str] = None
         self.current_text = None
 
-    async def queue_input(self, item: str) -> None:
-        await self.input_queue.put(item)
+    async def queue_input(self, item: str, prompt: str = None) -> None:
+        await self.input_queue.put((item, prompt))
 
     async def flush(self) -> None:
         """
@@ -88,6 +88,20 @@ class LLMExec:
         if self.current_task:
             self.current_task.cancel()
 
+    def clear_context(self) -> None:
+        """
+        Clear the current conversation context.
+        """
+        self.contexts.clear()
+
+    def get_context(self) -> list[LLMMessage]:
+        """
+        Get the current conversation context.
+        """
+        return self.contexts.copy()
+
+    # set_context removed per new API; use write_context incrementally instead
+
     async def register_tool(self, tool: LLMToolMetadata, source: str) -> None:
         """
         Register tools with the LLM.
@@ -104,10 +118,10 @@ class LLMExec:
         """
         while not self.stopped:
             try:
-                text = await self.input_queue.get()
+                text, prompt = await self.input_queue.get()
                 new_message = LLMMessageContent(role="user", content=text)
                 self.current_task = self.loop.create_task(
-                    self._send_to_llm(self.ten_env, new_message)
+                    self._send_to_llm(self.ten_env, new_message, prompt)
                 )
                 await self.current_task
             except asyncio.CancelledError:
@@ -133,7 +147,7 @@ class LLMExec:
         ten_env.log_info(f"_queue_context: {new_message}")
         self.contexts.append(new_message)
 
-    async def _write_context(
+    async def write_context(
         self,
         ten_env: AsyncTenEnv,
         role: Literal["user", "assistant"],
@@ -149,7 +163,7 @@ class LLMExec:
             await self._queue_context(ten_env, new_message)
 
     async def _send_to_llm(
-        self, ten_env: AsyncTenEnv, new_message: LLMMessage
+        self, ten_env: AsyncTenEnv, new_message: LLMMessage, prompt: str = None
     ) -> None:
         messages = self.contexts.copy()
         messages.append(new_message)
@@ -161,6 +175,7 @@ class LLMExec:
             streaming=True,
             parameters={"temperature": 0.7},
             tools=self.available_tools,
+            prompt=prompt,
         )
         input_json = llm_input.model_dump()
         response = _send_cmd_ex(ten_env, "chat_completion", "llm", input_json)
@@ -172,9 +187,9 @@ class LLMExec:
             if cmd_result and cmd_result.is_final() is False:
                 if cmd_result.get_status_code() == StatusCode.OK:
                     response_json, _ = cmd_result.get_property_to_json(None)
-                    ten_env.log_info(
-                        f"_send_to_llm: response_json {response_json}"
-                    )
+                    # ten_env.log_info(
+                    #     f"_send_to_llm: response_json {response_json}"
+                    # )
                     completion = parse_llm_response(response_json)
                     await self._handle_llm_response(completion)
 
@@ -189,7 +204,7 @@ class LLMExec:
                 if delta and self.on_response:
                     await self.on_response(self.ten_env, delta, text, False)
                 if text:
-                    await self._write_context(self.ten_env, "assistant", text)
+                    await self.write_context(self.ten_env, "assistant", text)
             case LLMResponseMessageDone():
                 text = llm_output.content
                 self.current_text = None
