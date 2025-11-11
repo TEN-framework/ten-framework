@@ -149,6 +149,9 @@
     },
     {
       "path": "../../../ten_packages/extension/heygen_avatar_python"
+    },
+    {
+      "path": "../../../ten_packages/extension/cartesia_tts"
     }
   ],
   "scripts": {

@@ -163,7 +163,7 @@ class OpenAIChatGPT:
         messages = request_input.messages
         tools = None
         parsed_messages = []
-        system_prompt = request_input.prompt or self.config.prompt
+        system_prompt = self.config.prompt
 
         self.ten_env.log_info(
             f"get_chat_completions: {len(messages)} messages, streaming: {request_input.streaming}"
@@ -258,7 +258,9 @@ class OpenAIChatGPT:
         # REMOVED: Verbose logging - dumps entire prompt (~10KB+) on every LLM call
         # Adds I/O latency and pollutes logs. Enable only for deep debugging.
         # self.ten_env.log_info(f"Requesting chat completions with: {req}")
-        self.ten_env.log_debug(f"Requesting chat completions: model={req.get('model')}, stream={req.get('stream')}, messages={len(req.get('messages', []))} msgs")
+        self.ten_env.log_debug(
+            f"Requesting chat completions: model={req.get('model')}, stream={req.get('stream')}, messages={len(req.get('messages', []))} msgs"
+        )
 
         try:
             response: AsyncStream[ChatCompletionChunk] = (
