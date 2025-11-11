@@ -2201,6 +2201,80 @@ curl -s http://localhost:8080/health
 
 ---
 
+### Issue: Playground Shows "missing required error components, refreshing..."
+
+**Symptoms**:
+- Playground loads but shows "missing required error components, refreshing..." message
+- Page continuously refreshes/reloads
+- Console shows: `Error: ENOENT: no such file or directory, open '/app/playground/.next/dev/server/pages/_app/build-manifest.json'`
+
+**Cause**: One or more of the following:
+1. **Stale Next.js server processes** from previous sessions (can persist for days!)
+2. Multiple `next-server` processes running simultaneously and conflicting
+3. Corrupted `.next` build directory (often caused by deleting `.next` while server was running)
+4. Next.js cache out of sync with code changes
+
+**Why It's Serious**: This completely breaks the playground. Users can't access the interface or test graphs.
+
+**Diagnosis**:
+```bash
+# Check for multiple/stale next-server processes
+sudo docker exec ten_agent_dev bash -c "ps aux | grep next-server"
+
+# Look for processes from old dates (e.g., Nov10 when today is Nov11)
+# or multiple next-server processes running
+```
+
+**Solution - Kill All Next Processes and Rebuild:**
+```bash
+# 1. Find all next-server PIDs
+sudo docker exec ten_agent_dev bash -c "ps aux | grep -E 'next-server|next dev' | grep -v grep"
+
+# 2. Kill them by PID (replace with actual PIDs from step 1)
+sudo docker exec ten_agent_dev bash -c "kill -9 PID1 PID2 PID3 2>/dev/null; exit 0"
+
+# 3. Optionally reinstall dependencies if corruption suspected
+sudo docker exec ten_agent_dev bash -c "cd /app/playground && npm install"
+
+# 4. Clean restart
+sleep 3
+sudo docker exec -d ten_agent_dev bash -c \
+  "cd /app/agents/examples/voice-assistant-advanced && \
+   task run > /tmp/task_run.log 2>&1"
+
+# 5. Wait for full startup
+sleep 20
+curl -s http://localhost:8080/health
+```
+
+**Alternative - Nuclear Restart (if above doesn't work):**
+```bash
+# Kill everything
+sudo docker exec ten_agent_dev bash -c "killall -9 node bun 2>/dev/null; exit 0"
+sudo docker exec ten_agent_dev bash -c "rm -rf /app/playground/.next"
+sudo docker exec ten_agent_dev bash -c "rm -f /app/playground/.next/dev/lock"
+sleep 3
+
+# Fresh start
+sudo docker exec -d ten_agent_dev bash -c \
+  "cd /app/agents/examples/voice-assistant-advanced && \
+   task run > /tmp/task_run.log 2>&1"
+
+# Wait longer for .next rebuild
+sleep 25
+curl -s http://localhost:8080/health
+```
+
+**Prevention**:
+- **Always use clean shutdowns**: Use nuclear restart procedure instead of killing individual processes
+- **Don't delete `.next` while server is running**: This corrupts the build state
+- **Check for stale processes**: Run `ps aux | grep next-server` before starting services
+- **Use proper restart procedures**: Follow documented restart workflows
+
+**Root Cause**: Next.js development mode creates long-lived server processes that can survive container restarts and persist across sessions. When multiple instances run, they conflict over the `.next/dev` directory, causing build manifest errors. The "missing required error components" message is Next.js's generic error when it can't load its internal build files.
+
+---
+
 ### Issue 1: ValueError: signal only works in main thread
 
 **Symptoms**:
