@@ -325,11 +325,11 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
             # Calculate word count for filtering
             word_count = len(transcript_text.split())
 
-            # Filter single-word transcripts (interims AND finals) during first 10 seconds (echo cancel settling)
+            # Filter single-word transcripts (interims AND finals) during first 5 seconds (echo cancel settling)
             if self.session_start_time > 0:
                 elapsed_time = time.time() - self.session_start_time
 
-                if word_count == 1 and elapsed_time < 10.0:
+                if word_count == 1 and elapsed_time < 5.0:
                     self.ten_env.log_warn(
                         f"[DEEPGRAM-FLUX-FILTER] Dropping single-word {'final' if is_final else 'interim'} during echo cancel settling: "
                         f"text='{transcript_text}', confidence={confidence:.3f}, "
