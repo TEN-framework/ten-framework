@@ -34,14 +34,7 @@ from ten_runtime import (
     Data,
     TenError,
 )
-from ten_ai_base.struct import TTSTextInput, TTSFlush
-from humeai_tts_python.humeTTS import (
-    EVENT_TTS_RESPONSE,
-    EVENT_TTS_END,
-    EVENT_TTS_ERROR,
-    EVENT_TTS_INVALID_KEY_ERROR,
-    EVENT_TTS_FLUSH,
-)
+from ten_ai_base.struct import TTSTextInput, TTS2HttpResponseEventType
 
 
 # ================ test params passthrough ================
@@ -102,24 +95,23 @@ def test_params_passthrough(MockHumeAiTTS):
     mock_instance.cancel = (
         AsyncMock()
     )  # Required for clean shutdown in on_flush
+    mock_instance.clean = AsyncMock()
 
     async def mock_get_audio_stream(text: str, request_id: str):
-        yield (b"\x11\x22\x33", EVENT_TTS_RESPONSE)
-        yield (None, EVENT_TTS_END)
+        yield (b"\x11\x22\x33", TTS2HttpResponseEventType.RESPONSE)
+        yield (None, TTS2HttpResponseEventType.END)
 
     mock_instance.get.side_effect = mock_get_audio_stream
 
     # --- Test Setup ---
     # Define a configuration with custom parameters inside 'params'.
-    # These are the parameters we expect to be "passed through".
-    passthrough_params = {
-        "key": "test_api_key",
-        "voice_name": "Female English Actor",
-        "speed": 1.5,
-        "trailing_silence": 0.8,
-    }
     passthrough_config = {
-        "params": passthrough_params,
+        "params": {
+            "key": "test_api_key",
+            "voice_name": "Female English Actor",
+            "speed": 1.5,
+            "trailing_silence": 0.8,
+        },
     }
 
     tester = ExtensionTesterForPassthrough()
@@ -141,20 +133,21 @@ def test_params_passthrough(MockHumeAiTTS):
     call_args, call_kwargs = MockHumeAiTTS.call_args
     called_config = call_kwargs["config"]
 
-    # Verify that the configuration object contains our expected parameters
-    # Note: HumeAi uses update_params() to merge params into the config
-    assert hasattr(called_config, "speed"), "Config should have speed parameter"
+    # Verify that the params dictionary contains our expected parameters
     assert (
-        called_config.speed == 1.5
-    ), f"Expected speed to be 1.5, but got {called_config.speed}"
-    assert hasattr(
-        called_config, "trailing_silence"
-    ), "Config should have trailing_silence parameter"
+        "speed" in called_config.params
+    ), "Config params should have speed parameter"
     assert (
-        called_config.trailing_silence == 0.8
-    ), f"Expected trailing_silence to be 0.8, but got {called_config.trailing_silence}"
+        called_config.params["speed"] == 1.5
+    ), f"Expected speed to be 1.5, but got {called_config.params['speed']}"
+    assert (
+        "trailing_silence" in called_config.params
+    ), "Config params should have trailing_silence parameter"
+    assert (
+        called_config.params["trailing_silence"] == 0.8
+    ), f"Expected trailing_silence to be 0.8, but got {called_config.params['trailing_silence']}"
 
     print("✅ Params passthrough test passed successfully.")
     print(
-        f"✅ Verified config speed: {called_config.speed}, trailing_silence: {called_config.trailing_silence}"
+        f"✅ Verified params speed: {called_config.params['speed']}, trailing_silence: {called_config.params['trailing_silence']}"
     )

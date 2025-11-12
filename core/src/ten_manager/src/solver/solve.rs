@@ -474,6 +474,7 @@ async fn create_input_str_for_pkg_info_dependencies(
                 candidates_vec.sort_by(|a, b| b.manifest.version.cmp(&a.manifest.version));
 
                 let mut found_matched_count = 0;
+                let mut found_any_valid_dep = false;
 
                 for candidate in candidates_vec.into_iter() {
                     // Get version requirement from dependency.
@@ -493,25 +494,37 @@ async fn create_input_str_for_pkg_info_dependencies(
                     if version_matches {
                         found_matched_count += 1;
 
-                        input_str.push_str(&format!(
-                            "depends_on_declared(\"{}\", \"{}\", \"{}\", \"{}\", \"{}\", \
-                             \"{}\").\n",
-                            pkg_info.manifest.type_and_name.pkg_type,
-                            pkg_info.manifest.type_and_name.name,
-                            pkg_info.manifest.version,
-                            candidate.manifest.type_and_name.pkg_type,
-                            candidate.manifest.type_and_name.name,
-                            candidate.manifest.version,
-                        ));
-
-                        Box::pin(create_input_str_for_pkg_info_dependencies(
+                        // Before adding this package into the computation of the result,
+                        // first check whether all of this package's dependencies are valid.
+                        // For example, some packages that this one depends on might not exist
+                        // in the cloud marketplace or the local file system.
+                        // Including such a package — one that cannot actually be used in the
+                        // computation — would cause problems and make no
+                        // sense.
+                        let dep_result = Box::pin(create_input_str_for_pkg_info_dependencies(
                             input_str,
                             candidate,
                             dumped_pkgs_info,
                             all_candidates,
                             max_latest_versions,
                         ))
-                        .await?;
+                        .await;
+
+                        // Only add the dependency declaration if the candidate's dependencies are
+                        // valid
+                        if dep_result.is_ok() {
+                            input_str.push_str(&format!(
+                                "depends_on_declared(\"{}\", \"{}\", \"{}\", \"{}\", \"{}\", \
+                                 \"{}\").\n",
+                                pkg_info.manifest.type_and_name.pkg_type,
+                                pkg_info.manifest.type_and_name.name,
+                                pkg_info.manifest.version,
+                                candidate.manifest.type_and_name.pkg_type,
+                                candidate.manifest.type_and_name.name,
+                                candidate.manifest.version,
+                            ));
+                            found_any_valid_dep = true;
+                        }
 
                         if found_matched_count >= max_latest_versions {
                             break;
@@ -520,38 +533,34 @@ async fn create_input_str_for_pkg_info_dependencies(
                 }
 
                 if found_matched_count == 0 {
+                    // No versions match the requirement - return error
                     return Err(anyhow!(
-                        "Failed to find candidates for {}",
-                        match dependency {
-                            ManifestDependency::RegistryDependency {
-                                pkg_type,
-                                name,
-                                version_req,
-                            } => format!("[{pkg_type}]{name} ({:?})", version_req.as_processed()),
-                            ManifestDependency::LocalDependency {
-                                path, ..
-                            } => format!("local:{path}"),
-                        }
+                        "No matching versions found for dependency {}:{}",
+                        pkg_type_and_name.pkg_type,
+                        pkg_type_and_name.name
+                    ));
+                }
+
+                if !found_any_valid_dep {
+                    // We found matching versions, but none of them have valid dependencies
+                    return Err(anyhow!(
+                        "No valid dependencies found for {}:{}",
+                        pkg_type_and_name.pkg_type,
+                        pkg_type_and_name.name
                     ));
                 }
             } else {
+                // No candidates found for this dependency - return error
                 return Err(anyhow!(
-                    "Failed to find candidates for {}",
-                    match dependency {
-                        ManifestDependency::RegistryDependency {
-                            pkg_type,
-                            name,
-                            version_req,
-                        } => format!("{pkg_type}:{name} @ {:?}", version_req.as_processed()),
-                        ManifestDependency::LocalDependency {
-                            path, ..
-                        } => format!("local:{path}"),
-                    }
+                    "No candidates found for dependency {}:{}",
+                    pkg_type_and_name.pkg_type,
+                    pkg_type_and_name.name
                 ));
             }
         }
     }
 
+    // All dependencies are valid
     Ok(())
 }
 
@@ -571,11 +580,12 @@ fn create_input_str_for_pkg_info_without_dependencies(
     Ok(())
 }
 
-fn create_input_str_for_all_possible_pkgs_info(
+fn create_input_str_for_all_possible_pkgs_info_with_filter(
     input_str: &mut String,
     all_candidates: &HashMap<PkgTypeAndName, HashMap<PkgBasicInfo, PkgInfo>>,
     locked_pkgs: Option<&HashMap<PkgTypeAndName, PkgInfo>>,
     max_latest_versions: i32,
+    valid_packages: Option<&HashSet<PkgBasicInfo>>,
 ) -> Result<()> {
     for candidates in all_candidates {
         let mut candidates_vec: Vec<&PkgInfo> = candidates.1.values().collect();
@@ -613,6 +623,14 @@ fn create_input_str_for_all_possible_pkgs_info(
                 break;
             }
 
+            // If we're using a filter, only add version_declared for valid packages
+            if let Some(valid_pkgs) = valid_packages {
+                let pkg_basic_info: PkgBasicInfo = candidate.into();
+                if !valid_pkgs.contains(&pkg_basic_info) {
+                    continue;
+                }
+            }
+
             create_input_str_for_pkg_info_without_dependencies(input_str, candidate, &idx)?;
         }
     }
@@ -635,13 +653,6 @@ async fn create_input_str(
 
     input_str.push_str(&format!("root_declared(\"{pkg_type}\", \"{pkg_name}\").\n",));
 
-    create_input_str_for_all_possible_pkgs_info(
-        &mut input_str,
-        all_candidates,
-        locked_pkgs,
-        max_latest_versions,
-    )?;
-
     create_input_str_for_dependency_relationship(
         &mut input_str,
         extra_dep_relationship,
@@ -649,22 +660,56 @@ async fn create_input_str(
     )
     .await?;
 
+    // First pass: determine which package versions have valid dependencies
     let mut dumped_pkgs_info = HashSet::new();
+    let mut skipped_packages = Vec::new();
+    let mut valid_packages: HashSet<PkgBasicInfo> = HashSet::new();
 
     for candidates in all_candidates {
         for candidate in candidates.1 {
-            create_input_str_for_pkg_info_dependencies(
+            let result = create_input_str_for_pkg_info_dependencies(
                 &mut input_str,
                 candidate.1,
                 &mut dumped_pkgs_info,
                 all_candidates,
                 max_latest_versions,
             )
-            .await?;
+            .await;
+
+            if result.is_err() {
+                // Skip this candidate package if its dependencies cannot be satisfied
+                skipped_packages.push(format!(
+                    "{}:{}@{}",
+                    candidate.1.manifest.type_and_name.pkg_type,
+                    candidate.1.manifest.type_and_name.name,
+                    candidate.1.manifest.version
+                ));
+            } else {
+                // Mark this version as valid
+                valid_packages.insert(candidate.1.into());
+            }
         }
     }
 
+    // Second pass: only add version_declared for valid package versions
+    create_input_str_for_all_possible_pkgs_info_with_filter(
+        &mut input_str,
+        all_candidates,
+        locked_pkgs,
+        max_latest_versions,
+        Some(&valid_packages),
+    )?;
+
     if is_verbose(tman_config.clone()).await {
+        if !skipped_packages.is_empty() {
+            out.normal_line(&format!(
+                "Skipped {} candidate package(s) due to unsatisfiable dependencies:",
+                skipped_packages.len()
+            ));
+            for pkg in &skipped_packages {
+                out.normal_line(&format!("  - {}", pkg));
+            }
+        }
         out.normal_line(&format!("Input: \n{input_str}"));
     }
 

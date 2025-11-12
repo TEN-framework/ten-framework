@@ -162,7 +162,9 @@ export class EventPubSub {
 
     const subscribers = this.subscribers.get(eventName);
     if (subscribers) {
-      subscribers.forEach((sub) => sub.callback(data));
+      subscribers.forEach((sub) => {
+        sub.callback(data);
+      });
     }
   }
 

@@ -24,6 +24,7 @@ use ten_rust::{
             ManifestApiCmdResult, ManifestApiMsg, ManifestApiProperty,
             ManifestApiPropertyAttributes,
         },
+        message::{MsgDirection, MsgType},
         value_type::ValueType,
     },
 };
@@ -209,10 +210,27 @@ pub struct DesignerGraphContent {
     pub graph: Option<DesignerGraph>,
 }
 
+/// Represents message information for a selector node
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct DesignerSelectorMessageInfo {
+    /// The type of the message (cmd, data, audio_frame, video_frame)
+    pub msg_type: MsgType,
+
+    /// The name of the message
+    pub msg_name: String,
+
+    /// The direction of the message flow (in or out)
+    pub direction: MsgDirection,
+}
+
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct DesignerSelectorNode {
     pub name: String,
     pub filter: DesignerFilter,
+
+    /// List of messages with their types, names, and directions
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub messages: Vec<DesignerSelectorMessageInfo>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -351,6 +369,15 @@ impl TryFrom<GraphNode> for DesignerGraphNode {
                 content: Box::new(DesignerSelectorNode {
                     name: content.name,
                     filter: DesignerFilter::from(content.filter),
+                    messages: content
+                        .messages
+                        .into_iter()
+                        .map(|msg| DesignerSelectorMessageInfo {
+                            msg_type: msg.msg_type,
+                            msg_name: msg.msg_name,
+                            direction: msg.direction,
+                        })
+                        .collect(),
                 }),
             }),
         }

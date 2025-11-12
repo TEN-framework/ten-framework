@@ -9,13 +9,13 @@ from ten_runtime import (
     TenEnv,
 )
 
-from .extension import OpenaiTTSExtension
+from .extension import OpenAITTSExtension
 
 
 @register_addon_as_extension("openai_tts2_python")
-class OpenaiTTSExtensionAddon(Addon):
+class OpenAITTSExtensionAddon(Addon):
 
     def on_create_instance(self, ten_env: TenEnv, name: str, context) -> None:
 
-        ten_env.log_info("OpenaiTTS2ExtensionAddon on_create_instance")
-        ten_env.on_create_instance_done(OpenaiTTSExtension(name), context)
+        ten_env.log_info("OpenAITTS2ExtensionAddon on_create_instance")
+        ten_env.on_create_instance_done(OpenAITTSExtension(name), context)

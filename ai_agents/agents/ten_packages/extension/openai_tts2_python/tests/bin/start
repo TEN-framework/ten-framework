@@ -18,4 +18,4 @@ export PYTHONPATH=.ten/app:.ten/app/ten_packages/system/ten_runtime_python/lib:.
 #
 # Refer to https://github.com/pytorch/pytorch/issues/102360?from_wecom=1#issuecomment-1708989096
 
-pytest tests/ "$@"
+pytest -s tests/ "$@"

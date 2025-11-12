@@ -1,0 +1,13 @@
+#!/bin/bash
+
+set -e
+
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+
+# Set up Python library path for libpython3.10.dylib on macos
+export DYLD_LIBRARY_PATH=/usr/local/opt/python@3.10/Frameworks/Python.framework/Versions/3.10/lib:$DYLD_LIBRARY_PATH
+
+export PYTHONPATH=$(pwd):$(pwd)/ten_packages/system/ten_ai_base/interface
+export NODE_PATH=$(pwd)/ten_packages/system/ten_runtime_nodejs/lib:$NODE_PATH
+
+exec bin/main

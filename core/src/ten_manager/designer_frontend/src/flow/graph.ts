@@ -168,6 +168,7 @@ export const generateRawNodes = (
 
       // subgraph node
       // todo
+      return undefined;
     });
 
   const customNodes: TCustomNode[] = parsedBackendNodes.filter(

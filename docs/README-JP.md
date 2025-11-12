@@ -1,34 +1,31 @@
 <div align="center"> <a name="readme-top"></a>
 
-![TEN banner][ten-framework-banner]
+![Image](https://github.com/user-attachments/assets/2a560a74-68f3-4f4a-9ec8-89464c42a9c7)
 
 [![TEN Releases]( https://img.shields.io/github/v/release/ten-framework/ten-framework?color=369eff&labelColor=gray&logo=github&style=flat-square )](https://github.com/TEN-framework/ten-framework/releases)
+[![Coverage Status](https://coveralls.io/repos/github/TEN-framework/ten-framework/badge.svg?branch=HEAD)](https://coveralls.io/github/TEN-framework/ten-framework?branch=HEAD)
 [![](https://img.shields.io/github/release-date/ten-framework/ten-framework?labelColor=gray&style=flat-square)](https://github.com/TEN-framework/ten-framework/releases)
 [![Discussion posts](https://img.shields.io/github/discussions/TEN-framework/ten_framework?labelColor=gray&color=%20%23f79009)](https://github.com/TEN-framework/ten-framework/discussions/)
 [![Commits](https://img.shields.io/github/commit-activity/m/TEN-framework/ten_framework?labelColor=gray&color=pink)](https://github.com/TEN-framework/ten-framework/graphs/commit-activity)
 [![Issues closed](https://img.shields.io/github/issues-search?query=repo%3ATEN-framework%2Ften-framework%20is%3Aclosed&label=issues%20closed&labelColor=gray&color=green)](https://github.com/TEN-framework/ten-framework/issues)
 [![](https://img.shields.io/github/contributors/ten-framework/ten-framework?color=c4f042&labelColor=gray&style=flat-square)](https://github.com/TEN-framework/ten-framework/graphs/contributors)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome!-brightgreen.svg?style=flat-square)](https://github.com/TEN-framework/ten-framework/pulls)
 [![GitHub license](https://img.shields.io/badge/License-Apache_2.0_with_certain_conditions-blue.svg?labelColor=%20%23155EEF&color=%20%23528bff)](https://github.com/TEN-framework/ten_framework/blob/main/LICENSE)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/TEN-framework/TEN-framework)
+[![ReadmeX](https://raw.githubusercontent.com/CodePhiliaX/resource-trusteeship/main/readmex.svg)](https://readmex.com/TEN-framework/ten-framework)
 
-[![GitHub watchers](https://img.shields.io/github/watchers/TEN-framework/ten_framework?style=social&label=Watch)](https://GitHub.com/TEN-framework/ten_framework/watchers/?WT.mc_id=academic-105485-koreyst)
-[![GitHub forks](https://img.shields.io/github/forks/TEN-framework/ten_framework?style=social&label=Fork)](https://GitHub.com/TEN-framework/ten_framework/network/?WT.mc_id=academic-105485-koreyst)
-[![GitHub stars](https://img.shields.io/github/stars/TEN-framework/ten_framework?style=social&label=Star)](https://GitHub.com/TEN-framework/ten_framework/stargazers/?WT.mc_id=academic-105485-koreyst)
-
-<a href="https://github.com/TEN-framework/ten-framework/blob/main/README.md"><img alt="README in English" src="https://img.shields.io/badge/English-lightgrey"></a>
-<a href="https://github.com/TEN-framework/ten-framework/blob/main/docs/README-CN.md"><img alt="简体中文操作指南" src="https://img.shields.io/badge/简体中文-lightgrey"></a>
-<a href="https://github.com/TEN-framework/ten-framework/blob/main/docs/README-JP.md"><img alt="日本語のREADME" src="https://img.shields.io/badge/日本語-lightgrey"></a>
-<a href="https://github.com/TEN-framework/ten-framework/blob/main/docs/README-KR.md"><img alt="README in 한국어" src="https://img.shields.io/badge/한국어-lightgrey"></a>
-<a href="https://github.com/TEN-framework/ten-framework/blob/main/docs/README-ES.md"><img alt="README en Español" src="https://img.shields.io/badge/Español-lightgrey"></a>
-<a href="https://github.com/TEN-framework/ten-framework/blob/main/docs/README-FR.md"><img alt="README en Français" src="https://img.shields.io/badge/Français-lightgrey"></a>
-<a href="https://github.com/TEN-framework/ten-framework/blob/main/docs/README-IT.md"><img alt="README in Italiano" src="https://img.shields.io/badge/Italiano-lightgrey"></a>
-
-[Official Site](https://theten.ai)
+[公式サイト](https://theten.ai)
 •
-[Documentation](https://theten.ai/docs/ten_agent/overview)
+[ドキュメント](https://theten.ai/docs/ten_agent/overview)
 •
-[Blog](https://theten.ai/blog)
+[ブログ](https://theten.ai/blog)
+
+<a href="https://github.com/TEN-framework/ten-framework/blob/main/README.md"><img alt="README（英語）" src="https://img.shields.io/badge/English-lightgrey"></a>
+<a href="https://github.com/TEN-framework/ten-framework/blob/main/docs/README-CN.md"><img alt="README（簡体字中国語）" src="https://img.shields.io/badge/简体中文-lightgrey"></a>
+<a href="https://github.com/TEN-framework/ten-framework/blob/main/docs/README-JP.md"><img alt="README（日本語）" src="https://img.shields.io/badge/日本語-lightgrey"></a>
+<a href="https://github.com/TEN-framework/ten-framework/blob/main/docs/README-KR.md"><img alt="README（韓国語）" src="https://img.shields.io/badge/한국어-lightgrey"></a>
+<a href="https://github.com/TEN-framework/ten-framework/blob/main/docs/README-ES.md"><img alt="README（スペイン語）" src="https://img.shields.io/badge/Español-lightgrey"></a>
+<a href="https://github.com/TEN-framework/ten-framework/blob/main/docs/README-FR.md"><img alt="README（フランス語）" src="https://img.shields.io/badge/Français-lightgrey"></a>
+<a href="https://github.com/TEN-framework/ten-framework/blob/main/docs/README-IT.md"><img alt="README（イタリア語）" src="https://img.shields.io/badge/Italiano-lightgrey"></a>
 
 <a href="https://trendshift.io/repositories/11978" target="_blank"><img src="https://trendshift.io/api/badge/repositories/11978" alt="TEN-framework%2Ften_framework | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
 
@@ -36,31 +33,24 @@
 
 <br>
 
-<details>
+<details open>
   <summary><kbd>目次</kbd></summary>
 
-#### 目次
+  <br>
 
-- [👋 TENへようこそ](#-welcome-to-ten)
-- [🎨 TMAN Designer](#-tman-designer)
-- [🤖 TEN Agent](#-ten-agent)
-  - [1️⃣ リアルタイムアバター](#1️⃣-real-time-avatar)
-  - [2️⃣ MCPサーバーによるリアルタイム音声](#2️⃣-real-time-voice-with-mcp-servers)
-  - [3️⃣ ハードウェアとのリアルタイム通信](#3️⃣-real-time-communication-with-hardware)
-  - [4️⃣ リアルタイムビジョンと画面共有検出](#4️⃣-real-time-vision-and-real-time-screenshare-detection)
-  - [5️⃣ 他のLLMプラットフォームとの連携](#5️⃣-ten-with-other-llm-platforms)
-  - [6️⃣ StoryTeller - TEN画像生成](#6️⃣-storyteller---ten-image-generation)
-- [🛝 TEN Agent Playground](#-ten-agent-playground)
-  - [️🅰️ localhostでPlaygroundを実行](#🅰️-run-playground-in-localhost)
-  - [️🅱️ CodespaceでPlaygroundを実行（Docker不要）](#🅱️-run-playground-in-codespaceno-docker)
-- [🛳️ TEN Agentのセルフホスティング](#️-ten-agent-self-hosting)
-  - [🅰️ 🐳 Dockerでのデプロイ](#️--deploying-with-docker)
-  - [🅱️ その他のクラウドサービスでのデプロイ](#️-deploying-with-other-cloud-services)
-- [🏗️ TEN Agentアーキテクチャ](#️-ten-agent-architecture)
-- [🌏 TEN Frameworkエコシステム](#-ten-framework-ecosystem)
-- [❓ 質問する](#-ask-questions)
-- [🥰 貢献](#-contributing)
-  - [コード貢献者](#code-contributors)
+- [TEN へようこそ](#welcome-to-ten)
+- [エージェント事例](#agent-examples)
+- [エージェント事例のクイックスタート](#quick-start-with-agent-examples)
+  - [ローカル環境](#localhost)
+  - [Codespaces](#codespaces)
+- [エージェント事例のセルフホスティング](#agent-examples-self-hosting)
+  - [Docker でデプロイ](#deploying-with-docker)
+  - [その他のクラウドサービスへデプロイ](#deploying-with-other-cloud-services)
+- [最新情報](#stay-tuned)
+- [TEN エコシステム](#ten-ecosystem)
+- [質問](#questions)
+- [コントリビュート](#contributing)
+  - [コードコントリビューター](#code-contributors)
   - [貢献ガイドライン](#contribution-guidelines)
   - [ライセンス](#license)
 
@@ -68,216 +58,158 @@
 
 </details>
 
-## 👋 TENへようこそ
+<a name="welcome-to-ten"></a>
 
-TENは、リアルタイムのマルチモーダル会話型音声エージェントを構築するためのオープンソースプロジェクトのコレクションです。[TEN Framework](https://github.com/ten-framework/ten-framework)、[TEN Turn Detection](https://github.com/ten-framework/ten-turn-detection)、TEN Agent、TMAN Designer、[TEN Portal](https://github.com/ten-framework/portal)を含み、これらはすべて完全にオープンソースです。[TEN VAD](https://github.com/ten-framework/ten-vad)はまだ完全にオープンソースではありませんが、一般利用が可能です。
+## TEN へようこそ
+
+TEN は音声会話型 AI エージェント向けのオープンソースフレームワークです。
+
+[TEN エコシステム](#ten-ecosystem) には [TEN Framework](https://github.com/ten-framework/ten-framework)、[エージェント事例](https://github.com/TEN-framework/ten-framework/tree/main/ai_agents/agents/examples)、[VAD](https://github.com/ten-framework/ten-vad)、[Turn Detection](https://github.com/ten-framework/ten-turn-detection)、[Portal](https://github.com/ten-framework/portal) が含まれます。
 
 <br>
 
-| コミュニティチャンネル | 目的 |
+| コミュニティ | 目的 |
 | ---------------- | ------- |
-| [![Follow on X](https://img.shields.io/twitter/follow/TenFramework?logo=X&color=%20%23f5f5f5)](https://twitter.com/intent/follow?screen_name=TenFramework) | XでTEN Frameworkをフォローして最新情報とアナウンスをチェック |
-| [![Follow on LinkedIn](https://custom-icon-badges.demolab.com/badge/LinkedIn-TEN_Framework-0A66C2?logo=linkedin-white&logoColor=fff)](https://www.linkedin.com/company/ten-framework) | LinkedInでTEN Frameworkをフォローして最新情報とアナウンスをチェック |
-| [![Discord TEN Community](https://img.shields.io/badge/Discord-Join%20TEN%20Community-5865F2?style=flat&logo=discord&logoColor=white)](https://discord.gg/VnPftUzAMJ) | Discordコミュニティに参加して開発者とつながる |
-| [![Hugging Face Space](https://img.shields.io/badge/Hugging%20Face-TEN%20Framework-yellow?style=flat&logo=huggingface)](https://huggingface.co/TEN-framework) | Hugging Faceコミュニティに参加してスペースとモデルを探索する |
-| [![WeChat](https://img.shields.io/badge/TEN_Framework-WeChat_Group-%2307C160?logo=wechat&labelColor=darkgreen&color=gray)](https://github.com/TEN-framework/ten-agent/discussions/170) | 中国語コミュニティのディスカッションのためにWeChatグループに参加する |
+| [![Follow on X](https://img.shields.io/twitter/follow/TenFramework?logo=X&color=%20%23f5f5f5)](https://twitter.com/intent/follow?screen_name=TenFramework) | X で TEN Framework をフォローして最新情報をチェック |
+| [![Discord TEN Community](https://img.shields.io/badge/Discord-Join%20TEN%20Community-5865F2?style=flat&logo=discord&logoColor=white)](https://discord.gg/VnPftUzAMJ) | Discord コミュニティに参加し、開発者同士で交流 |
+| [![Follow on LinkedIn](https://custom-icon-badges.demolab.com/badge/LinkedIn-TEN_Framework-0A66C2?logo=linkedin-white&logoColor=fff)](https://www.linkedin.com/company/ten-framework) | LinkedIn で TEN Framework をフォローし、ニュースを受け取る |
+| [![Hugging Face Space](https://img.shields.io/badge/Hugging%20Face-TEN%20Framework-yellow?style=flat&logo=huggingface)](https://huggingface.co/TEN-framework) | Hugging Face コミュニティでスペースやモデルを探索 |
+| [![WeChat](https://img.shields.io/badge/TEN_Framework-WeChat_Group-%2307C160?logo=wechat&labelColor=darkgreen&color=gray)](https://github.com/TEN-framework/ten-agent/discussions/170) | 中国語コミュニティ向けの WeChat グループに参加 |
 
 <br>
 
-> \[!IMPORTANT]
->
-> **TENリポジトリにスターを付ける** ⭐️
->
-> 新リリースとアップデートの即時通知を受け取れます。あなたのサポートがTENの成長と改善を助けます！
+<a name="agent-examples"></a>
+
+## エージェント事例
 
 <br>
 
-![TEN star us gif](https://github.com/user-attachments/assets/eeebe996-8c14-4bf7-82ae-f1a1f7e30705)
+![Image](https://github.com/user-attachments/assets/dce3db80-fb48-4e2a-8ac7-33f50bcffa32)
+
+<strong>多目的ボイスアシスタント</strong> — 低レイテンシ・高品質のリアルタイムアシスタント。<a href="ai_agents/agents/examples/voice-assistant-with-memU">メモリ</a>、<a href="ai_agents/agents/examples/voice-assistant-with-ten-vad">VAD</a>、<a href="ai_agents/agents/examples/voice-assistant-with-turn-detection">ターン検出</a> などの拡張機能を追加できます。
+
+詳細は <a href="https://github.com/TEN-framework/ten-framework/tree/main/ai_agents/agents/examples/voice-assistant">サンプルコード</a> を参照してください。
 
 <br>
 
-<details>
-  <summary><kbd>Star History</kbd></summary>
-  <picture>
-    <img width="100%" src="https://api.star-history.com/svg?repos=ten-framework/ten-framework&type=Date">
-  </picture>
-</details>
+![divider](https://github.com/user-attachments/assets/aec54c94-ced9-4683-ae58-0a5a7ed803bd)
 
+<br>
+
+![Image](https://github.com/user-attachments/assets/aa3f2c9c-c82e-412f-8400-06378ba75794)
+
+<strong>リップシンク対応アバター</strong> — 複数のアバタープロバイダーに対応。デモでは Live2D のリップシンクを備えたアニメキャラクター Kei を紹介し、今後 Trulience、HeyGen、Tavus のリアルアバターにも対応予定です。
+
+<a href="https://github.com/TEN-framework/ten-framework/tree/main/ai_agents/agents/examples/voice-assistant-live2d">Live2D 用サンプルコード</a>
+
+<br>
+
+![divider](https://github.com/user-attachments/assets/aec54c94-ced9-4683-ae58-0a5a7ed803bd)
+
+<br>
+
+![Image](https://github.com/user-attachments/assets/f94b21b8-9dda-4efc-9274-b028cc01296a)
+
+<strong>話者分離（Diarization）</strong> — 話者をリアルタイムで検出・ラベル付けします。ゲーム「Who Likes What」でインタラクティブな活用例を紹介しています。
+
+<a href="https://github.com/TEN-framework/ten-framework/tree/main/ai_agents/agents/examples/speechmatics-diarization">サンプルコード</a>
+
+<br>
+
+![divider](https://github.com/user-attachments/assets/aec54c94-ced9-4683-ae58-0a5a7ed803bd)
+
+<br>
+
+![Image](https://github.com/user-attachments/assets/6ed5b04d-945a-4a30-a1cc-f8014b602b38)
+
+<strong>SIP 通話</strong> — TEN で電話を実現する SIP 拡張機能です。
+
+<a href="https://github.com/TEN-framework/ten-framework/tree/main/ai_agents/agents/examples/voice-assistant-sip-twilio">サンプルコード</a>
+
+<br>
+
+![divider](https://github.com/user-attachments/assets/aec54c94-ced9-4683-ae58-0a5a7ed803bd)
+
+<br>
+
+![Image](https://github.com/user-attachments/assets/d793bc6c-c8de-4996-bd85-9ce88c69dd8d)
+
+<strong>文字起こし</strong> — 音声をテキストへ変換するトランスクリプションツール。
+
+<a href="https://github.com/TEN-framework/ten-framework/tree/main/ai_agents/agents/examples/transcription">サンプルコード</a>
+
+<br>
+
+![divider](https://github.com/user-attachments/assets/aec54c94-ced9-4683-ae58-0a5a7ed803bd)
+
+<br>
+
+![Image](https://github.com/user-attachments/assets/3d60f1ff-0f82-4fe7-b5c2-ac03d284f60c)
+
+<strong>ESP32-S3 Korvo V3</strong> — Espressif ESP32-S3 Korvo V3 開発ボード上で TEN Agent のサンプルを動作させ、LLM ベースのコミュニケーションをハードウェアに組み込みます。
+
+<a href="https://github.com/TEN-framework/ten-framework/tree/main/ai_agents/esp32-client">統合ガイド</a> を参照してください。
+
+<br>
 <div align="right">
 
 [![][back-to-top]](#readme-top)
 
 </div>
 
-<br>
+<a name="quick-start-with-agent-examples"></a>
 
-## 🎨 TMAN Designer
+## エージェント事例のクイックスタート
 
-![TMAN Designer](https://github.com/user-attachments/assets/04fd75df-4de9-41b6-8aab-19014ecb46a4)
+<a name="localhost"></a>
 
-### TMAN Designer
+### ローカル環境
 
-TMAN Designer is a low/no-code option to create voice agents with an easy-to-use workflow UI. It can load apps and graphs, and includes an online editor, log viewer, and much more.
+#### ステップ ⓵ - 事前準備
 
-Check out [this blog](https://theten.ai/blog/tman-designer-of-ten-framework) for more details.
-
-<div align="right">
-
-[![][back-to-top]](#readme-top)
-
-</div>
-
-<!-- ## 🧩 Extensions
-
-![Ready-to-use Extensions](https://ten-framework-assets.s3.us-east-1.amazonaws.com/extensions.jpg)
-
-<div align="right">
-
-[![][back-to-top]](#readme-top)
-
-</div> -->
-
-<br>
-
-## ✨ 機能
-
-![TEN Agent with Trulience](https://github.com/user-attachments/assets/2f1dfd55-14a3-47ea-ae25-40ad40ceadea)
-
-### 1️⃣ リアルタイムアバター
-
-[TEN Agent](https://github.com/TEN-framework/ten-framework/tree/main/ai_agents)を使用して、[Trulience](https://trulience.com)の多様な無料アバターオプションから魅力的なAIアバターを構築できます。動作させるには、たった2つのステップだけが必要です：
-
-1. READMEに従ってPlaygroundのセットアップと実行を完了する
-2. [Trulience](https://trulience.com)から取得したアバターIDと[トークン](https://trulience.com/docs#/authentication/jwt-tokens/jwt-tokens?id=use-your-custom-userid)を入力する
-
-<div align="right">
-
-[![][back-to-top]](#readme-top)
-
-</div>
-
-<br>
-
-![TEN Agent with MCP servers](https://github.com/user-attachments/assets/934ba928-a4a3-4662-8624-cebefc88ce05)
-
-### 2️⃣ MCPサーバーによるリアルタイム音声
-
-TEN AgentはMCPサーバーとシームレスに統合され、LLM機能を拡張します。始めるには：
-
-1. PlaygroundでModule Pickerを開く
-2. LLM統合用のMCPサーバーツールを追加する
-3. 拡張機能にMCPサーバーからのURLを貼り付ける
-4. TEN Agentとのリアルタイム会話を開始する
-
-この統合により、TEN Agentの強力な会話能力を維持しながら、MCPの多様なサーバーオファリングを活用できます。
-
-<div align="right">
-
-[![][back-to-top]](#readme-top)
-
-</div>
-
-<br>
-
-<https://github.com/user-attachments/assets/78647eef-2d66-44e6-99a8-1918a940fb9f>
-
-### 3️⃣ ハードウェアとのリアルタイム通信
-
-TEN Agentは現在、Espressif ESP32-S3 Korvo V3開発ボード上で動作しており、ハードウェア上でLLMとのリアルタイム通信を統合する優れた方法を提供します。
-
-詳細については[統合ガイド](https://github.com/TEN-framework/ten-framework/tree/main/ai_agents/esp32-client)を参照してください。
-
-<div align="right">
-
-[![][back-to-top]](#readme-top)
-
-</div>
-
-<br>
-
-![Real-time vision](https://github.com/user-attachments/assets/7be06e38-994e-4f82-8ec6-183d08fe90f1)
-
-### 4️⃣ リアルタイムビジョンと画面共有検出
-
-Google Gemini Multimodal Live APIを試して、リアルタイムビジョンと画面共有検出機能を体験してください。これはすぐに使える拡張機能で、Weather CheckやWeb Searchなどの強力なツールがTEN Agentに完璧に統合されています。
-
-<div align="right">
-
-[![][back-to-top]](#readme-top)
-
-</div>
-
-<br>
-
-![TEN with other LLM platforms](https://github.com/user-attachments/assets/a3766d50-6a25-4299-b28c-e15772e4201c)
-
-### 5️⃣ 他のLLMプラットフォームとの連携
-
-[TEN Agent + Dify](https://doc.theten.ai/docs/ten_agent/playground/use-cases/voice-assistant/run_dify)
-
-TENは他のLLMプラットフォームでもリアルタイムインタラクティブ体験をさらに向上させる優れたサポートを提供します。詳細についてはドキュメントを参照してください。
-
-<div align="right">
-
-[![][back-to-top]](#readme-top)
-
-</div>
-
-<br>
-
-![Image](https://github.com/user-attachments/assets/ea1025d4-b22b-4416-ab35-36cd910bc28c)
-
-### 6️⃣ StoryTeller - TEN画像生成
-
-StoryTellerを使用したリアルタイム画像生成を体験してください。これはすぐに使える拡張機能で、Weather CheckやWeb Searchなどの強力なツールがTENに完璧に統合されています。
-
-<div align="right">
-
-[![][back-to-top]](#readme-top)
-
-</div>
-
-<br>
-
-## 🛝 TEN Agent Playgroundでクイックスタート
-
-#### 🅰️ localhostでPlaygroundを実行
-
-#### ステップ ⓵ - 前提条件
-
-| カテゴリー | 要件 |
+| カテゴリ | 必要なもの |
 | --- | --- |
-| **キー** | • Agora [App ID](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project)と[App Certificate](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project)（毎月無料分あり）<br>• [OpenAI](https://openai.com/index/openai-api/) APIキー（OpenAIと互換性のある任意のLLM）<br>• [Deepgram](https://deepgram.com/) ASR（サインアップで無料クレジット利用可能）<br>• [Elevenlabs](https://elevenlabs.io/) TTS（サインアップで無料クレジット利用可能） |
-| **インストール** | • [Docker](https://www.docker.com/) / [Docker Compose](https://docs.docker.com/compose/)<br>• [Node.js(LTS) v18](https://nodejs.org/en) |
-| **最小システム要件** | • CPU >= 2コア<br>• RAM >= 4 GB |
+| **キー類** | • Agora [App ID](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project) と [App Certificate](https://docs.agora.io/en/video-calling/get-started/manage-agora-account?platform=web#create-an-agora-project)（毎月無料分あり）<br>• [OpenAI](https://openai.com/index/openai-api/) API キー（OpenAI 互換の任意の LLM）<br>• [Deepgram](https://deepgram.com/) ASR（登録で無料クレジット）<br>• [ElevenLabs](https://elevenlabs.io/) TTS（登録で無料クレジット） |
+| **インストール** | • [Docker](https://www.docker.com/) / [Docker Compose](https://docs.docker.com/compose/)<br>• [Node.js (LTS) v18](https://nodejs.org/en) |
+| **最小システム要件** | • CPU 2 コア以上<br>• RAM 4 GB 以上 |
 
 <br>
 
-> \[!NOTE]
+![divider](https://github.com/user-attachments/assets/aec54c94-ced9-4683-ae58-0a5a7ed803bd)
+
+<!-- > [!NOTE]
+> **macOS：Apple Silicon での Docker 設定**
 >
-> **macOS: Apple SiliconでのDocker設定**
->
-> Docker設定で「Use Rosetta for x86/amd64 emulation」のチェックを外してください。ARMでのビルド時間は遅くなる可能性がありますが、x64サーバーにデプロイした際のパフォーマンスは通常通りです。
+> Docker 設定で「Use Rosetta for x86/amd64 emulation」のチェックを外してください。ARM 端末ではビルドが遅くなる場合がありますが、x64 サーバーにデプロイしたあとは通常どおり動作します。 -->
 
-<br>
+#### ステップ ⓶ - VM 内でサンプルをビルド
 
-#### ステップ ⓶ - VMでエージェントをビルド
-
-##### 1. リポジトリをクローンし、`ai-agents`に`cd`して`.env.example`から`.env`ファイルを作成
+##### 1. リポジトリをクローンし、`ai_agents` に移動して `.env.example` から `.env` を作成
 
 ```bash
-cd ai_agent
+cd ai_agents
 cp ./.env.example ./.env
 ```
 
-##### 2. `.env`にAgora App IDとApp Certificateを設定
+##### 2. `.env` に Agora App ID と App Certificate を設定
 
 ```bash
 AGORA_APP_ID=
 AGORA_APP_CERTIFICATE=
+
+# デフォルトのボイスアシスタント例を実行
+# Deepgram（音声認識に必須）
+DEEPGRAM_API_KEY=your_deepgram_api_key_here
+
+# OpenAI（言語モデルに必須）
+OPENAI_API_KEY=your_openai_api_key_here
+OPENAI_MODEL=gpt-4o
+
+# ElevenLabs（音声合成に必須）
+ELEVENLABS_TTS_KEY=your_elevenlabs_api_key_here
 ```
 
-##### 3. エージェント開発コンテナを起動
+##### 3. 開発用コンテナを起動
 
 ```bash
 docker compose up -d
@@ -289,51 +221,75 @@ docker compose up -d
 docker exec -it ten_agent_dev bash
 ```
 
-##### 5. デフォルトの`graph`でエージェントをビルド（約5分〜8分）
+##### 5. デフォルトサンプルでエージェントをビルド（約 5〜8 分）
 
-他の例については`/examples`フォルダを確認してください
+`agents/examples` ディレクトリには他のサンプルもあります。
+以下のいずれかで開始できます：
 
 ```bash
-# デフォルトのエージェントを使用
-task use
+# チェーン型ボイスアシスタント
+cd agents/examples/voice-assistant
 
-# またはデモエージェントを使用
-task use AGENT=agents/examples/demo
+# リアルタイムの音声対音声アシスタント
+cd agents/examples/voice-assistant-realtime
 ```
 
-##### 6. Webサーバーを起動
+##### 6. Web サーバーを起動
+
+ローカルコードを変更した場合は `task build` を実行してください。TypeScript や Go などのコンパイル言語では必須、Python では不要です。
 
 ```bash
+task install
 task run
 ```
 
+##### 7. エージェントにアクセス
+
+サンプルが起動すると次の UI を利用できます。
+
+<table>
+  <tr>
+    <td align="center">
+      <b>localhost:49483</b>
+      <img src="https://github.com/user-attachments/assets/191a7c0a-d8e6-48f9-866f-6a70c58f0118" alt="スクリーンショット 1" /><br/>
+    </td>
+    <td align="center">
+      <b>localhost:3000</b>
+      <img src="https://github.com/user-attachments/assets/13e482b6-d907-4449-a779-9454bb24c0b1" alt="スクリーンショット 2" /><br/>
+    </td>
+  </tr>
+</table>
+
+- TMAN Designer: <http://localhost:49483>
+- エージェント事例 UI: <http://localhost:3000>
+
 <br>
 
-#### ステップ ⓷ - TMAN Designerでエージェントをカスタマイズ
+![divider](https://github.com/user-attachments/assets/aec54c94-ced9-4683-ae58-0a5a7ed803bd)
 
-![Customize your agent with TMAN Designer](https://github.com/user-attachments/assets/33f8357b-6762-45eb-8231-c2d83bb77591)
+#### ステップ ⓷ - サンプルをカスタマイズ
 
- 1. [localhost:49483](http://localhost:49483)を開く
- 2. メニューから対応するグラフを読み込む（例：Voice Assistant）
- 3. 各拡張機能のAPIキーを入力し、設定を行う
- 4. Voice Assistantを選択した後、[localhost:3000](http://localhost:3000)を開いて変更を確認
-
-<div align="right">
-
-[![][back-to-top]](#readme-top)
-
-</div>
+1. [localhost:49483](http://localhost:49483) を開く。
+2. STT・LLM・TTS 拡張を右クリック。
+3. プロパティで対応する API キーを入力。
+4. 変更を保存すると [localhost:3000](http://localhost:3000) で更新内容を確認できます。
 
 <br>
 
-### 🅱️ CodespaceでPlaygroundを実行（Docker不要）
+![divider](https://github.com/user-attachments/assets/aec54c94-ced9-4683-ae58-0a5a7ed803bd)
 
-GitHubは各リポジトリに無料のCodespaceを提供しており、Dockerを使用せずにPlaygroundを実行できます。また、Codespaceの速度はlocalhostよりもはるかに高速です。
+<br>
+
+<a name="codespaces"></a>
+
+### Codespaces
+
+GitHub はリポジトリごとに無料の Codespaces を提供しています。Docker を使わずにエージェント事例を実行でき、通常ローカル環境よりも起動が速くなります。
 
 [codespaces-shield]: <https://github.com/codespaces/badge.svg>
 [![][codespaces-shield]](https://codespaces.new/ten-framework/ten-agent)
 
-詳細については[このガイド](https://theten.ai/docs/ten_agent/setup_development_env/setting_up_development_inside_codespace)を参照してください。
+詳細は[こちらのガイド](https://theten.ai/docs/ten_agent/setup_development_env/setting_up_development_inside_codespace)をご覧ください。
 
 <div align="right">
 
@@ -343,56 +299,49 @@ GitHubは各リポジトリに無料のCodespaceを提供しており、Docker�
 
 <br>
 
-<!-- ## 👀 TEN Agent Demo
+<a name="agent-examples-self-hosting"></a>
 
-Playground and Demo server different purposes, in a nut shell, think it as Playground is for you to customize you agent, and Demo is for you to deploy your agent.
+## エージェント事例のセルフホスティング
 
-Check out [this guide](https://theten.ai/docs/ten_agent/demo) for more details.
-<div align="right">
+<a name="deploying-with-docker"></a>
 
-[![][back-to-top]](#readme-top)
+### Docker でデプロイ
 
-</div>
+TMAN Designer でカスタマイズするか `property.json` を編集したら、本番用の Docker イメージを作成してサービスをデプロイしましょう。
 
-<br> -->
+##### Docker イメージとして公開
 
-## 🛳️ TEN Agentのセルフホスティング
+**注意**: 以下のコマンドは Docker コンテナの外で実行してください。
 
-#### ��️ 🐳 Dockerでのデプロイ
+###### イメージをビルド
 
-エージェントをカスタマイズした後（TMAN Manager、Playground、または`property.json`を直接編集）、リリース用Dockerイメージを作成してサービスをデプロイできます。
+```bash
+cd ai_agents
+docker build -f agents/examples/<example-name>/Dockerfile -t example-app .
+```
 
-デプロイの詳細については[デプロイガイド](https://theten.ai/docs/ten_agent/deploy_ten_agent/deploy_agent_service)を参照してください。
+###### 実行
 
-<br>
-
-#### 🅱️ その他のクラウドサービスでのデプロイ
-
-*準備中*
-
-<div align="right">
-
-[![][back-to-top]](#readme-top)
-
-</div>
+```bash
+docker run --rm -it --env-file .env -p 3000:3000 example-app
+```
 
 <br>
 
-<!--
-## 🏗️ TEN Agentアーキテクチャ
+![divider](https://github.com/user-attachments/assets/aec54c94-ced9-4683-ae58-0a5a7ed803bd)
 
-1️⃣ **TEN Agent App**: Core application that manages extensions and data flow based on graph configuration
+<a name="deploying-with-other-cloud-services"></a>
 
-2️⃣ **Dev Server**: `port:49480`- local server for development purposes.
+### その他のクラウドサービスへデプロイ
 
-3️⃣ **Web Server**: `port:8080`- Golang server handling HTTP requests and agent process management
+[TEN を Vercel](https://vercel.com) や [Netlify](https://www.netlify.com) などでホストする場合、バックエンドとフロントエンドを分けて配置できます。
 
-4️⃣ **Front-end UI**:
+1. Docker 対応の任意のプラットフォーム（Docker が動く VM、Fly.io、Render、ECS、Cloud Run など）で TEN バックエンドを実行。用意されたサンプルイメージをそのまま使い、ポート `8080` を公開します。
+2. フロントエンドのみ Vercel / Netlify にデプロイします。プロジェクトルートを `ai_agents/agents/examples/<example>/frontend` に設定し、`pnpm install`（または `bun install`）→ `pnpm build`（または `bun run build`）を実行し、デフォルトの `.next` 出力を保持します。
+3. ホスティング側の環境変数で `AGENT_SERVER_URL` をバックエンド URL に設定し、必要な `NEXT_PUBLIC_*` キー（ブラウザで使う Agora 資格情報など）を追加します。
+4. CORS を開放する、または内蔵のプロキシミドルウェアを使うなどして、フロントエンドのオリジンからバックエンドへのリクエストを許可します。
 
-- `port:3000` Playground - To customize and test your agent configurations.
-- `port:3002` Demo - To deploy your agent without module picker.
-
-![Components Diagram](https://ten-framework-assets.s3.us-east-1.amazonaws.com/diagram.jpg)
+この構成では、バックエンドがワーカー処理を担い、ホストしたフロントエンドは API リクエストを転送するだけで済みます。
 
 <div align="right">
 
@@ -400,18 +349,40 @@ Check out [this guide](https://theten.ai/docs/ten_agent/demo) for more details.
 
 </div>
 
-<br> -->
+<br>
 
-## 🌏 TEN Frameworkエコシステム
+<a name="stay-tuned"></a>
+
+## 最新情報
+
+新しいリリースやアップデートを即座に受け取れます。あなたのサポートが TEN を成長させます！
+
+<br>
+
+![Image](https://github.com/user-attachments/assets/72c6cc46-a2a2-484d-82a9-f3079269c815)
+
+<br>
+<div align="right">
+
+[![][back-to-top]](#readme-top)
+
+</div>
+
+<br>
+
+<a name="ten-ecosystem"></a>
+
+## TEN エコシステム
+
+<br>
 
 | プロジェクト | プレビュー |
 | ------- | ------- |
-| [**🏚️ TEN Framework**][ten-framework-link]<br>TENはリアルタイムのマルチモーダル会話型AIのためのオープンソースフレームワークです。<br><br>![][ten-framework-shield] | ![][ten-framework-banner] |
-| [**️🔂 TEN Turn Detection**][ten-turn-detection-link]<br>TENは全二重対話通信のためのものです。<br><br>![][ten-turn-detection-shield] | ![][ten-turn-detection-banner] |
-| [**🔉 TEN VAD**][ten-vad-link]<br>TEN VADは低遅延、軽量、高性能なストリーミング音声活動検出器（VAD）です。<br><br>![][ten-vad-shield] | ![][ten-vad-banner] |
-| [**🎙️ TEN Agent**][ten-agent-link]<br>TEN AgentはTEN Frameworkのデモンストレーションです。<br><br> | ![][ten-agent-banner] |
-| **🎨 TMAN Designer** <br>TMAN Designerは使いやすいワークフローUIで音声エージェントを作成するためのlow/no-codeオプションです。<br><br> | ![][tman-designer-banner] |
-| [**📒 TEN Portal**][ten-portal-link]<br>TEN frameworkの公式サイトで、ドキュメントとブログがあります。<br><br>![][ten-portal-shield] | ![][ten-portal-banner] |
+| [**️TEN Framework**][ten-framework-link]<br>会話型 AI エージェント向けオープンソースフレームワーク。<br><br>![][ten-framework-shield] | ![][ten-framework-banner] |
+| [**TEN VAD**][ten-vad-link]<br>低遅延・軽量・高性能なストリーミング音声活動検出。<br><br>![][ten-vad-shield] | ![][ten-vad-banner] |
+| [**️TEN Turn Detection**][ten-turn-detection-link]<br>全二重会話を可能にするターン検出。<br><br>![][ten-turn-detection-shield] | ![][ten-turn-detection-banner] |
+| [**TEN Agent Examples**][ten-agent-link]<br>TEN を使ったユースケース集。<br><br> | ![][ten-agent-banner] |
+| [**TEN Portal**][ten-portal-link]<br>公式サイト。ドキュメントとブログを掲載。<br><br>![][ten-portal-shield] | ![][ten-portal-banner] |
 
 <br>
 <div align="right">
@@ -422,49 +393,67 @@ Check out [this guide](https://theten.ai/docs/ten_agent/demo) for more details.
 
 <br>
 
-## ❓ 質問する
+<a name="questions"></a>
 
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/TEN-framework/TEN-framework)
+## 質問
 
-ほとんどの質問はDeepWikiを使用して回答できます。高速で直感的に使用でき、複数の言語をサポートしています。
+TEN Framework は AI 駆動の Q&A プラットフォームにも掲載されています。マルチリンガルでの検索が可能で、初期設定から高度な実装までサポートします。
 
+| サービス | リンク |
+| ------- | ---- |
+| DeepWiki | [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/TEN-framework/TEN-framework) |
+| ReadmeX | [![ReadmeX](https://raw.githubusercontent.com/CodePhiliaX/resource-trusteeship/main/readmex.svg)](https://readmex.com/TEN-framework/ten-framework) |
+
+<br>
 <div align="right">
 
 [![][back-to-top]](#readme-top)
 
 </div>
 
-## 🥰 貢献
+<a name="contributing"></a>
 
-オープンソースの協力のすべての形態を歓迎します！バグの修正、機能の追加、ドキュメントの改善、アイデアの共有など、あなたの貢献がパーソナライズされたAIツールの進歩を助けます。GitHubのIssuesとProjectsをチェックして、貢献方法を見つけ、スキルを発揮してください。一緒に素晴らしいものを作りましょう！
+## コントリビュート
 
-<br>
-
-> \[!TIP]
->
-> **すべての種類の貢献を歓迎します** 🙏
->
-> TENをより良くするために参加してください！コードからドキュメントまで、すべての貢献が重要です。TEN Agentプロジェクトをソーシャルメディアで共有して、他の人々にインスピレーションを与えましょう！
->
-> プロジェクトの更新、ディスカッション、コラボレーションの機会について、TENのメンテナー[@elliotchen100](https://x.com/elliotchen100)（𝕏）または[@cyfyifanchen](https://github.com/cyfyifanchen)（GitHub）に連絡してください。
+バグ修正、機能追加、ドキュメント改善、アイデア共有など、あらゆる OSS での協力を歓迎します。GitHub の Issues や Projects をチェックして活躍の場を見つけ、スキルを発揮してください。一緒に TEN をより良いものにしましょう！
 
 <br>
 
-### コード貢献者
+> [!TIP]
+>
+> **すべてのコントリビューションに感謝します** 🙏
+>
+> コードでもドキュメントでも、どんな貢献も力になります。TEN Agent プロジェクトを SNS で紹介し、コミュニティを盛り上げましょう。
+>
+> メンテナー [@elliotchen200](https://x.com/elliotchen200)（𝕏）や [@cyfyifanchen](https://github.com/cyfyifanchen)（GitHub）に連絡すると、最新情報や議論、コラボの機会を得られます。
+
+<br>
+
+![divider](https://github.com/user-attachments/assets/aec54c94-ced9-4683-ae58-0a5a7ed803bd)
+
+<a name="code-contributors"></a>
+
+### コードコントリビューター
 
 [![TEN](https://contrib.rocks/image?repo=TEN-framework/ten-agent)](https://github.com/TEN-framework/ten-agent/graphs/contributors)
 
+<a name="contribution-guidelines"></a>
+
 ### 貢献ガイドライン
 
-貢献を歓迎します！まず[貢献ガイドライン](./docs/code-of-conduct/contributing.md)をお読みください。
+いつでも歓迎です！まずは[貢献ガイドライン](./code-of-conduct/contributing.md)をご確認ください。
+
+<br>
+
+![divider](https://github.com/user-attachments/assets/aec54c94-ced9-4683-ae58-0a5a7ed803bd)
+
+<a name="license"></a>
 
 ### ライセンス
 
-1. TEN framework全体（以下に明示的にリストされているフォルダを除く）は、Apache License, Version 2.0の下でリリースされており、追加の制限があります。詳細については、TEN frameworkのルートディレクトリにある[LICENSE](./LICENSE)ファイルを参照してください。
-
-2. `packages`ディレクトリ内のコンポーネントは、Apache License, Version 2.0の下でリリースされています。詳細については、各パッケージのルートディレクトリにある`LICENSE`ファイルを参照してください。
-
-3. TEN frameworkで使用されるサードパーティライブラリは詳細にリストされ、説明されています。詳細については、[third_party](./third_party/)フォルダを参照してください。
+1. 下記のディレクトリを除き、TEN Framework 全体は追加条件付きの Apache License 2.0 で配布されています。プロジェクトルートの [LICENSE](./../LICENSE) を参照してください。
+2. `packages` 配下のコンポーネントも Apache License 2.0 で提供されます。各パッケージの `LICENSE` ファイルをご確認ください。
+3. TEN Framework が利用するサードパーティライブラリは [third_party](./../third_party/) ディレクトリで一覧化されています。
 
 <div align="right">
 
@@ -475,21 +464,20 @@ Check out [this guide](https://theten.ai/docs/ten_agent/demo) for more details.
 [back-to-top]: https://img.shields.io/badge/-Back_to_top-gray?style=flat-square
 
 [ten-framework-shield]: https://img.shields.io/github/stars/ten-framework/ten_framework?color=ffcb47&labelColor=gray&style=flat-square&logo=github
-[ten-framework-banner]: https://github.com/user-attachments/assets/7c8f72d7-3993-4d01-8504-b71578a22944
+[ten-framework-banner]: https://github.com/user-attachments/assets/2a560a74-68f3-4f4a-9ec8-89464c42a9c7
 [ten-framework-link]: https://github.com/ten-framework/ten_framework
 
 [ten-vad-link]: https://github.com/ten-framework/ten-vad
 [ten-vad-shield]: https://img.shields.io/github/stars/ten-framework/ten-vad?color=ffcb47&labelColor=gray&style=flat-square&logo=github
-[ten-vad-banner]: https://github.com/user-attachments/assets/d45870e4-9453-4047-8163-08737f82863f
+[ten-vad-banner]: https://github.com/user-attachments/assets/e504135e-67fd-4fa1-b0e4-d495358d8aa5
 
 [ten-turn-detection-link]: https://github.com/ten-framework/ten-turn-detection
 [ten-turn-detection-shield]: https://img.shields.io/github/stars/ten-framework/ten-turn-detection?color=ffcb47&labelColor=gray&style=flat-square&logo=github
-[ten-turn-detection-banner]: https://github.com/user-attachments/assets/8d0ec716-5d0e-43e4-ad9a-d97b17305658
+[ten-turn-detection-banner]: https://github.com/user-attachments/assets/c72d82cc-3667-496c-8bd6-3d194a91c452
 
 [ten-agent-link]: https://github.com/TEN-framework/ten-framework/tree/main/ai_agents
-[ten-agent-banner]: https://github.com/user-attachments/assets/38de2207-939b-4702-a0aa-04491f5b5275
-[tman-designer-banner]: https://github.com/user-attachments/assets/804c3543-0a47-42b7-b40b-ef32b742fb8f
+[ten-agent-banner]: https://github.com/user-attachments/assets/7f735633-c7f6-4432-b6b4-d2a2977ca588
 
 [ten-portal-link]: https://github.com/ten-framework/portal
 [ten-portal-shield]: https://img.shields.io/github/stars/ten-framework/portal?color=ffcb47&labelColor=gray&style=flat-square&logo=github
-[ten-portal-banner]: https://github.com/user-attachments/assets/e17d8aaa-5928-45dd-ac71-814928e26a89
+[ten-portal-banner]: https://github.com/user-attachments/assets/f56c75b9-722c-4156-902d-ae98ce2b3b5e

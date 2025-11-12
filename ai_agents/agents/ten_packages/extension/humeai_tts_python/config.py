@@ -1,60 +1,45 @@
 from typing import Any, Dict
-from pydantic import BaseModel, Field
+from pathlib import Path
+from pydantic import Field
 from ten_ai_base import utils
+from ten_ai_base.tts2_http import AsyncTTS2HttpConfig
 
 
-class HumeAiTTSConfig(BaseModel):
-    # Hume AI TTS credentials
-    key: str = ""
-
-    # Hume AI TTS specific configs
-    voice_id: str = ""
-    voice_name: str = ""
-    provider: str = "HUME_AI"
-    speed: float = 1.0
-    trailing_silence: float = 0.35
-    generation_id: str | None = None
+class HumeAiTTSConfig(AsyncTTS2HttpConfig):
+    """Hume AI TTS Config"""
 
     # Hume AI TTS pass through parameters
-    params: Dict[str, Any] = Field(default_factory=dict)
+    params: Dict[str, Any] = Field(
+        default_factory=dict, description="Hume AI TTS params"
+    )
 
     # Debug and dump settings
-    dump: bool = False
-    dump_path: str = "/tmp"
+    dump: bool = Field(default=False, description="Hume AI TTS dump")
+    dump_path: str = Field(
+        default_factory=lambda: str(
+            Path(__file__).parent / "humeai_tts_in.pcm"
+        ),
+        description="Hume AI TTS dump path",
+    )
 
     def update_params(self) -> None:
-        ##### get value from params #####
-        if "key" in self.params:
-            self.key = self.params["key"]
-            del self.params["key"]
-        if "voice_id" in self.params:
-            self.voice_id = self.params["voice_id"]
-        if "voice_name" in self.params:
-            self.voice_name = self.params["voice_name"]
-        if "provider" in self.params:
-            self.provider = self.params["provider"]
-        if "speed" in self.params:
-            self.speed = self.params["speed"]
-        if "trailing_silence" in self.params:
-            self.trailing_silence = self.params["trailing_silence"]
-        if "generation_id" in self.params:
-            self.generation_id = self.params["generation_id"]
+        """Update configuration from params dictionary"""
+        # No special processing needed - all params are passed through
 
-    def validate_params(self) -> None:
+    def validate(self) -> None:
         """Validate required configuration parameters."""
-        required_fields = ["key"]
-
-        for field_name in required_fields:
-            value = getattr(self, field_name)
-            if not value or (isinstance(value, str) and value.strip() == ""):
-                raise ValueError(
-                    f"required fields are missing or empty: params.{field_name}"
-                )
+        if "key" not in self.params or not self.params["key"]:
+            raise ValueError("API key is required for Hume AI TTS")
 
     def to_str(self, sensitive_handling: bool = False) -> str:
+        """Convert config to string with optional sensitive data handling."""
         if not sensitive_handling:
             return f"{self}"
+
         config = self.copy(deep=True)
-        if config.key:
-            config.key = utils.encrypt(config.key)
+
+        # Encrypt sensitive fields in params
+        if config.params and "key" in config.params:
+            config.params["key"] = utils.encrypt(config.params["key"])
+
         return f"{config}"

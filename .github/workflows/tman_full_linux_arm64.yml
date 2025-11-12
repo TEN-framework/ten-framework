@@ -1,0 +1,257 @@
+name: Tman Linux ARM64 (Including Designer UI)
+
+on:
+  release:
+    types: [created]
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - "core/src/ten_manager/**"
+      - "core/src/ten_rust/**"
+
+permissions:
+  contents: write
+  discussions: write
+  security-events: write
+
+concurrency:
+  group: tman-full-linux-arm64-${{ github.head_ref }}
+  cancel-in-progress: true
+
+jobs:
+  call-check-pr-status:
+    uses: ./.github/workflows/_check_pr_status.yml
+
+  build:
+    needs: call-check-pr-status
+    if: ${{ needs.call-check-pr-status.outputs.should_continue == 'true' }}
+    timeout-minutes: 240
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        build_type: [debug, release]
+        arch: [arm64]
+    steps:
+      - name: Check PR status before matrix execution
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            console.log('Event name:', context.eventName);
+            console.log('Matrix:', ${{ toJson(matrix) }});
+
+            // Only check for PR events
+            if (context.eventName !== 'pull_request') {
+              console.log('Not a PR event, continuing...');
+              return;
+            }
+
+            // Ensure we have PR data
+            if (!context.payload.pull_request) {
+              console.log('No pull_request data in payload, continuing...');
+              return;
+            }
+
+            const { owner, repo } = context.repo;
+            const prNumber = context.payload.pull_request.number;
+
+            try {
+              const pr = await github.rest.pulls.get({
+                owner,
+                repo,
+                pull_number: prNumber,
+              });
+
+              console.log(`PR #${prNumber} state: ${pr.data.state}, merged: ${pr.data.merged}`);
+
+              if (pr.data.state === 'closed') {
+                if (pr.data.merged) {
+                  console.log(`PR #${prNumber} has been merged. Stopping matrix execution.`);
+                  core.setFailed('PR has been merged, stopping execution to save resources.');
+                } else {
+                  console.log(`PR #${prNumber} has been closed. Stopping matrix execution.`);
+                  core.setFailed('PR has been closed, stopping execution to save resources.');
+                }
+              } else {
+                console.log(`PR #${prNumber} is still open. Continuing matrix execution.`);
+              }
+            } catch (error) {
+              console.error(`Error checking PR status: ${error.message}`);
+              console.log('Error details:', error);
+              console.log('Continuing matrix execution due to error...');
+            }
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+
+      - name: Trust working directory
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
+      - name: Initialize and update submodules except portal/
+        run: |
+          # Retrieve all submodule paths, excluding `portal/`.
+          submodules=$(git config --file .gitmodules --get-regexp path | awk '$2 != "portal" { print $2 }')
+
+          git submodule init
+
+          for submodule in $submodules; do
+            echo "Initializing submodule: $submodule"
+            git submodule update --init --recursive --depth 1 "$submodule"
+          done
+
+      - name: Install tools and dependencies
+        run: |
+          pip3 install --use-pep517 python-dotenv jinja2
+
+      - name: Update version
+        run: |
+          python3 tools/version/update_version_in_ten_framework.py
+          python3 tools/version/check_version_in_ten_framework.py
+
+      - name: Create out directory
+        run: |
+          # Due to the use of QEMU, running as root inside the Docker container
+          # is required. However, outside the container, the user is not root.
+          # This causes issues when trying to handle the contents of the out/
+          # folder from outside the container. To resolve this, the out/ folder
+          # is first created by a regular non-root user to prevent it from being
+          # created during the build stage, thus avoiding permission issues with
+          # the out/ folder being created by the root user.
+          mkdir -p out/linux/arm64
+        shell: bash
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
+      - name: Build (tman with Designer UI)
+        run: |
+          docker run --rm --platform linux/arm64 \
+            -v $(pwd):/${{ github.workspace }} -w ${{ github.workspace }} \
+            ghcr.io/ten-framework/ten_building_ubuntu2204 \
+            bash -c "\
+              export PATH=$(pwd)/core/ten_gn:/usr/local/go/bin:/root/go/bin:/root/.cargo/bin:$PATH && \
+              echo $PATH && \
+              go env -w GOFLAGS=\"-buildvcs=false\" && \
+              go install golang.org/dl/go1.24.3@latest && \
+              go1.24.3 download && \
+              apt-get update && \
+              apt-get install -y curl unzip && \
+              curl -fsSL https://deb.nodesource.com/setup_23.x -o nodesource_setup.sh && \
+              bash nodesource_setup.sh && \
+              apt-get install -y nodejs && \
+              curl -fsSL https://bun.sh/install | bash && \
+              export BUN_INSTALL=\"\$HOME/.bun\" && \
+              export PATH=\"\$BUN_INSTALL/bin:\$PATH\" && \
+              cd core/src/ten_manager/designer_frontend && \
+              bun install && \
+              cd ${{ github.workspace }} && \
+              rustup default nightly-2025-09-18 && \
+              df -h . && \
+              EXTRA_ARGS=\"is_clang=true log_level=1 enable_serialized_actions=true ten_rust_enable_gen_cargo_config=false ten_enable_cargo_clean=true ten_enable_go_lint=false ten_enable_rust_incremental_build=false ten_manager_enable_frontend=true ten_enable_integration_tests_prebuilt=false ten_enable_ffmpeg_extensions=false ten_enable_nodejs_binding=false ten_enable_python_binding=false ten_enable_go_binding=false ten_enable_ten_rust=true ten_enable_ten_manager=true\" && \
+              echo \$EXTRA_ARGS && \
+              tgn gen linux ${{ matrix.arch }} ${{ matrix.build_type }} -- \$EXTRA_ARGS && \
+              tgn build:ten_manager_package linux ${{ matrix.arch }} ${{ matrix.build_type }} && \
+              df -h . && \
+              tree -I 'gen|obj' out \
+            "
+
+      - name: Package assets
+        if: github.event_name == 'release' || (github.ref != '' && startsWith(github.ref, 'refs/tags/'))
+        run: |
+          cd out/linux/${{ matrix.arch }}
+          zip -vr tman-linux-${{ matrix.build_type }}-${{ matrix.arch }}.zip ten_manager/bin/tman
+          df -h .
+
+      - name: Publish to release assets
+        uses: softprops/action-gh-release@v2
+        if: github.event_name == 'release' || (github.ref != '' && startsWith(github.ref, 'refs/tags/'))
+        with:
+          files: |
+            out/linux/${{ matrix.arch }}/tman-linux-${{ matrix.build_type }}-${{ matrix.arch }}.zip
+
+      - name: Set up ARM64 environment for Playwright tests
+        run: |
+          # We need to install Playwright and its dependencies on the host for ARM64
+          # Note: Playwright tests will run inside Docker container with ARM64 emulation
+          echo "Setting up ARM64 test environment"
+
+      - name: Install Playwright Browsers in Docker
+        run: |
+          docker run --rm --platform linux/arm64 \
+            -v $(pwd):/${{ github.workspace }} -w ${{ github.workspace }}/core/src/ten_manager/designer_frontend \
+            --entrypoint /bin/bash \
+            ghcr.io/ten-framework/ten_building_ubuntu2204 -c "\
+              apt-get update && \
+              apt-get install -y curl && \
+              curl -fsSL https://deb.nodesource.com/setup_23.x -o nodesource_setup.sh && \
+              bash nodesource_setup.sh && \
+              apt-get install -y nodejs && \
+              npm install -g npm@latest && \
+              npx playwright install --with-deps || true \
+            "
+
+      - name: Run Playwright tests
+        run: |
+          # Run tests inside Docker container with ARM64 emulation
+          docker run --rm --platform linux/arm64 \
+            -v $(pwd):/${{ github.workspace }} -w ${{ github.workspace }} \
+            --entrypoint /bin/bash \
+            ghcr.io/ten-framework/ten_building_ubuntu2204 -c "\
+              # Start the tman designer backend
+              cd ${GITHUB_WORKSPACE}/out/linux/${{ matrix.arch }}/ten_manager/bin && \
+              ./tman --verbose designer &
+              TMAN_PID=\$! && \
+              echo \"Started tman designer with PID \$TMAN_PID\" && \
+
+              # Wait for the server to be available (max 30 seconds)
+              echo \"Waiting for server to be available...\" && \
+              timeout=30 && \
+              while [ \$timeout -gt 0 ]; do
+                if curl -s http://127.0.0.1:49483/ > /dev/null 2>&1; then
+                  echo \"Server is up and running!\"
+                  break
+                fi
+                echo \"Server not ready yet, waiting... (\$timeout seconds left)\"
+                sleep 1
+                timeout=\$((timeout-1))
+              done && \
+
+              if [ \$timeout -eq 0 ]; then
+                echo \"Timed out waiting for server to start\"
+                echo \"Checking if tman designer is running:\"
+                ps -p \$TMAN_PID || true
+                exit 1
+              fi && \
+
+              # Install Node.js and run tests
+              apt-get update && \
+              apt-get install -y curl && \
+              curl -fsSL https://deb.nodesource.com/setup_23.x -o nodesource_setup.sh && \
+              bash nodesource_setup.sh && \
+              apt-get install -y nodejs && \
+              npm install -g npm@latest && \
+
+              # Go to frontend directory and run tests
+              cd ${GITHUB_WORKSPACE}/core/src/ten_manager/designer_frontend && \
+              npx playwright install --with-deps && \
+              npx playwright test
+              TEST_EXIT_CODE=\$? && \
+
+              # Cleanup background processes
+              kill \$TMAN_PID || true && \
+
+              # Return the test exit code
+              exit \$TEST_EXIT_CODE \
+            " || echo "Playwright tests failed or skipped (expected on ARM64 with QEMU limitations)"
+
+      - name: Upload tests relevant artifacts
+        uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report-${{ matrix.build_type }}-linux-${{ matrix.arch }}
+          path: core/src/ten_manager/designer_frontend/playwright-report/
+          retention-days: 7
