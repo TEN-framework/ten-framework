@@ -105,6 +105,20 @@
             ]
         },
         {
+            "root": "agents/examples/memory-memos-example",
+            "extraPaths": [
+                "agents/examples/memory-memos-example/tenapp/ten_packages/system/ten_runtime_python/interface",
+                "agents/examples/memory-memos-example/tenapp/ten_packages/system/ten_ai_base/interface"
+            ]
+        },
+        {
+            "root": "agents/examples/websocket-example",
+            "extraPaths": [
+                "agents/examples/websocket-example/tenapp/ten_packages/system/ten_runtime_python/interface",
+                "agents/examples/websocket-example/tenapp/ten_packages/system/ten_ai_base/interface"
+            ]
+        },
+        {
             "root": "agents/ten_packages",
             "extraPaths": [
                 "agents/ten_packages/system/ten_runtime_python/interface",
