@@ -27,12 +27,7 @@ from ten_runtime import (
     TenEnvTester,
     Data,
 )
-from ten_ai_base.struct import TTSTextInput, TTSFlush
-from openai_tts2_python.openai_tts import (
-    EVENT_TTS_RESPONSE,
-    EVENT_TTS_END,
-    EVENT_TTS_FLUSH,
-)
+from ten_ai_base.struct import TTSTextInput, TTSFlush, TTS2HttpResponseEventType
 
 
 # ================ test dump file functionality ================
@@ -103,8 +98,8 @@ class ExtensionTesterDump(ExtensionTester):
         return None
 
 
-@patch("openai_tts2_python.extension.OpenaiTTSClient")
-def test_dump_functionality(MockOpenaiTTSClient):
+@patch("openai_tts2_python.extension.OpenAITTSClient")
+def test_dump_functionality(MockOpenAITTSClient):
     """Tests that the dump file from the TTS extension matches the audio received by the test extension."""
     print("Starting test_dump_functionality with mock...")
 
@@ -118,20 +113,20 @@ def test_dump_functionality(MockOpenaiTTSClient):
     os.makedirs(DUMP_PATH)
 
     # --- Mock Configuration ---
-    mock_instance = MockOpenaiTTSClient.return_value
-    mock_instance.clean = MagicMock()
+    mock_instance = MockOpenAITTSClient.return_value
+    mock_instance.clean = AsyncMock()
 
     # Create some fake audio data to be streamed
     fake_audio_chunk_1 = b"\x11\x22\x33\x44" * 20
     fake_audio_chunk_2 = b"\xaa\xbb\xcc\xdd" * 20
 
     # This async generator simulates the TTS client's get() method
-    async def mock_get_audio_stream(text: str):
-        yield (fake_audio_chunk_1, EVENT_TTS_RESPONSE)
+    async def mock_get_audio_stream(text: str, request_id: str):
+        yield (fake_audio_chunk_1, TTS2HttpResponseEventType.RESPONSE)
         await asyncio.sleep(0.01)
-        yield (fake_audio_chunk_2, EVENT_TTS_RESPONSE)
+        yield (fake_audio_chunk_2, TTS2HttpResponseEventType.RESPONSE)
         await asyncio.sleep(0.01)
-        yield (None, EVENT_TTS_END)
+        yield (None, TTS2HttpResponseEventType.END)
 
     mock_instance.get.side_effect = mock_get_audio_stream
 
@@ -283,31 +278,33 @@ class ExtensionTesterFlush(ExtensionTester):
         return int(duration_sec * 1000)
 
 
-@patch("openai_tts2_python.extension.OpenaiTTSClient")
-def test_flush_logic(MockOpenaiTTSClient):
+@patch("openai_tts2_python.extension.OpenAITTSClient")
+def test_flush_logic(MockOpenAITTSClient):
     """
     Tests that sending a flush command during TTS streaming correctly stops
     the audio and sends the appropriate events.
     """
     print("Starting test_flush_logic with mock...")
 
-    mock_instance = MockOpenaiTTSClient.return_value
-    mock_instance.clean = MagicMock()
-    mock_instance.cancel = MagicMock()
+    mock_instance = MockOpenAITTSClient.return_value
+    mock_instance.clean = AsyncMock()
+    mock_instance.cancel = AsyncMock()
 
-    async def mock_get_long_audio_stream(text: str):
+    async def mock_get_long_audio_stream(text: str, request_id: str):
         for _ in range(20):
             # In a real scenario, the cancel() call would set a flag.
             # We simulate this by checking the mock's 'called' status.
             if mock_instance.cancel.called:
-                print("Mock detected cancel call, sending EVENT_TTS_FLUSH.")
-                yield (None, EVENT_TTS_FLUSH)
+                print(
+                    "Mock detected cancel call, sending TTS2HttpResponseEventType.FLUSH."
+                )
+                yield (None, TTS2HttpResponseEventType.FLUSH)
                 return  # Stop the generator immediately after flush
-            yield (b"\x11\x22\x33" * 100, EVENT_TTS_RESPONSE)
+            yield (b"\x11\x22\x33" * 100, TTS2HttpResponseEventType.RESPONSE)
             await asyncio.sleep(0.1)
 
         # This part is only reached if not cancelled - normal completion
-        yield (None, EVENT_TTS_END)
+        yield (None, TTS2HttpResponseEventType.END)
 
     mock_instance.get.side_effect = mock_get_long_audio_stream
 

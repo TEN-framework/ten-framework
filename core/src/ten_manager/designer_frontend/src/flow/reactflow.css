@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0, with certain conditions.
  * Refer to the "LICENSE" file in the root directory for more information.
  */
-@reference 'tailwindcss';
+@reference "tailwindcss";
 
 .react-flow__panel.react-flow__attribution {
   background-color: transparent;

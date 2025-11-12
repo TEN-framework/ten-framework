@@ -19,10 +19,36 @@ config("node_header") {
 ten_prebuilt_library("prebuilt_node_shared") {
   name = "node_shared"
 
-  if (is_clang) {
-    url = "https://github.com/TEN-framework/node_shared/releases/download/v1.0.6/node-shared-${target_os}-${target_cpu}-clang.zip"
+  # Version can be easily updated here
+  _node_shared_version = "v1.0.8"
+  _base_url = "https://github.com/TEN-framework/node_shared/releases/download/${_node_shared_version}"
+
+  if (is_linux) {
+    if (target_cpu == "x64") {
+      if (is_clang) {
+        url = "${_base_url}/node-shared-linux-x64-clang.zip"
+      } else {
+        url = "${_base_url}/node-shared-linux-x64-gcc.zip"
+      }
+    } else if (target_cpu == "arm64") {
+      if (is_clang) {
+        url = "${_base_url}/node-shared-linux-arm64-clang.zip"
+      } else {
+        url = "${_base_url}/node-shared-linux-arm64-gcc.zip"
+      }
+    } else {
+      assert(false, "Unsupported Linux CPU architecture: ${target_cpu}")
+    }
+  } else if (is_mac) {
+    if (target_cpu == "x64") {
+      url = "${_base_url}/node-shared-mac-x64-clang.zip"
+    } else if (target_cpu == "arm64") {
+      url = "${_base_url}/node-shared-mac-arm64-clang.zip"
+    } else {
+      assert(false, "Unsupported Mac CPU architecture: ${target_cpu}")
+    }
   } else {
-    url = "https://github.com/TEN-framework/node_shared/releases/download/v1.0.6/node-shared-${target_os}-${target_cpu}-gcc.zip"
+    assert(false, "Unsupported platform")
   }
 
   is_shared_library = true

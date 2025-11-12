@@ -90,8 +90,10 @@ template("ten_target") {
       cflags_objcc = common_cflags_objcc
     }
 
-    # Enable coverage flags for all TEN runtime C/C++ targets when requested
-    if (ten_runtime_enable_coverage && is_debug && is_linux) {
+    if (enable_coverage) {
+      assert(is_linux && target_cpu == "x64",
+             "Coverage instrumentation should only be enabled in Linux + x64")
+
       if (is_clang) {
         cflags += [
           "-fprofile-instr-generate",
@@ -106,6 +108,7 @@ template("ten_target") {
           "-fcoverage-mapping",
         ]
       } else {
+        # GCC
         cflags += [ "--coverage" ]
         cflags_c += [ "--coverage" ]
         cflags_cc += [ "--coverage" ]
@@ -144,7 +147,10 @@ template("ten_target") {
         ldflags = common_ldflags
       }
 
-      if (ten_runtime_enable_coverage && is_debug && is_linux) {
+      if (enable_coverage) {
+        assert(is_linux && target_cpu == "x64",
+               "Coverage instrumentation should only be enabled in Linux + x64")
+
         if (is_clang) {
           ldflags += [ "-fprofile-instr-generate" ]
         } else {

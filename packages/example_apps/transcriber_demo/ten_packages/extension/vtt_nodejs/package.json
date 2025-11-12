@@ -1,0 +1,20 @@
+{
+  "name": "vtt_nodejs",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "./build/index.js",
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "@types/node": "^20.0.0",
+    "@types/uuid": "^9.0.0"
+  },
+  "dependencies": {
+    "ten-runtime-nodejs": "file:../../../ten_packages/system/ten_runtime_nodejs",
+    "node-wav": "^0.0.2",
+    "uuid": "^9.0.0"
+  },
+  "scripts": {
+    "build": "tsc --listEmittedFiles",
+    "standalone-install": "npm install .ten/app/ten_packages/system/ten_runtime_nodejs"
+  }
+}

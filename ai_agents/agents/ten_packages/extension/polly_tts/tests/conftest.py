@@ -27,7 +27,6 @@ class FakeApp(App):
     # timing, the earliest point is within the `on_init()` function of the upper
     # TEN app. Therefore, we release the testing fixture lock within the user
     # layer's `on_init()` of the TEN app.
-    @override
     def on_init(self, ten_env: TenEnv) -> None:
         assert self.event
         self.event.set()

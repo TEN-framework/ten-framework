@@ -67,11 +67,7 @@ def test_empty_params_fatal_error():
     print("Starting test_empty_params_fatal_error...")
 
     # Empty params configuration
-    empty_params_config = {
-        "params": {
-            "api_key": "",
-        }
-    }
+    empty_params_config = {"params": {"api_key": ""}}
 
     tester = ExtensionTesterEmptyParams()
     tester.set_test_mode_single(
@@ -143,6 +139,9 @@ class ExtensionTesterInvalidApiKey(ExtensionTester):
             ten_env.stop_test()
 
 
+from unittest.mock import AsyncMock
+
+
 @patch("rime_http_tts.rime_tts.AsyncClient")
 def test_invalid_api_key_error(MockAsyncClient):
     """Test that an invalid API key is handled correctly with a mock."""
@@ -153,6 +152,8 @@ def test_invalid_api_key_error(MockAsyncClient):
     mock_client.stream.side_effect = Exception(
         "Client error '401 Unauthorized' for url 'https://users.rime.ai/v1/rime-tts'"
     )
+    # Make aclose an AsyncMock so it can be awaited in clean()
+    mock_client.aclose = AsyncMock()
 
     # Config with invalid API key
     invalid_key_config = {
