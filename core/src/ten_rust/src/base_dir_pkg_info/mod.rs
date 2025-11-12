@@ -16,7 +16,7 @@ pub struct PkgsInfoInApp {
 }
 
 impl PkgsInfoInApp {
-    // Get a reference to the extension packages or an empty slice if none.
+    // Get a reference to the extension packages or an empty slice if none
     pub fn get_extensions(&self) -> &[PkgInfo] {
         if let Some(extensions) = &self.extension_pkgs_info {
             extensions.as_slice()
