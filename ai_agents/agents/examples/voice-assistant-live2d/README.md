@@ -89,7 +89,7 @@ task run-gd-server
 
 ## Live2D Models
 
-The example ships with the **Kei Vowels Pro** Live2D model (see `frontend/public/models/kei_vowels_pro`). The other bundled characters (Mao, Kevin the Marmot, and Chubbie the Capybara) are loaded remotely from the URL defined in `NEXT_PUBLIC_LIVE2D_REMOTE_MODELS_BASE_URL` (defaults to `https://ten-framework-assets.s3.amazonaws.com/live2d-models`).
+All bundled Live2D characters (Kei, Mao, Kevin the Marmot, and Chubbie the Capybara) are now loaded from the URL defined in `NEXT_PUBLIC_LIVE2D_REMOTE_MODELS_BASE_URL` (defaults to `https://ten-framework-assets.s3.amazonaws.com/live2d-models`). Kei's assets live at `https://ten-framework-assets.s3.amazonaws.com/live2d-models/kei_vowels_pro`.
 
 To add or replace models:
 

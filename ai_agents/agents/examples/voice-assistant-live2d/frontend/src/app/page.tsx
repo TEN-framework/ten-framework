@@ -495,8 +495,8 @@ const characterOptions: CharacterProfile[] = [
   {
     id: "kei",
     name: "Kei",
-    path: "/models/kei_vowels_pro/kei_vowels_pro.model3.json",
-    preview: "/models/kei_vowels_pro/preview.svg",
+    path: buildRemoteModelAssetPath("kei_vowels_pro", "kei_vowels_pro.model3.json"),
+    preview: buildRemoteModelAssetPath("kei_vowels_pro", "preview.svg"),
     headline: "Your Charming Clever Companion",
     description:
       "Kei is a friendly guide who lights up every conversation. Connect with her for thoughtful answers, gentle encouragement, and a dash of anime sparkle whenever you need it.",
