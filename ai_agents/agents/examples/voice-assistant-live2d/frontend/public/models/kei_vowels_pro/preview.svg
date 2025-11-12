@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="320" viewBox="0 0 320 320">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fff5fb" />
+      <stop offset="55%" stop-color="#f0f4ff" />
+      <stop offset="100%" stop-color="#ffeef6" />
+    </linearGradient>
+  </defs>
+  <rect width="320" height="320" rx="36" fill="url(#bg)" />
+  <g transform="translate(12, 6) scale(0.14)">
+    <image href="kei_vowels_pro.2048/texture_00.png" width="2048" height="2048" opacity="0.6" />
+  </g>
+  <rect width="320" height="320" rx="36" fill="none" stroke="#f7c2ff" stroke-width="6" />
+  <text x="160" y="260" text-anchor="middle" font-family="'Baloo 2', 'Quicksand', sans-serif" font-size="96" font-weight="700" fill="#b35495">Kei</text>
+</svg>

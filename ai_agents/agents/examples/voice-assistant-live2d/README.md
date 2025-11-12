@@ -50,6 +50,7 @@ A voice assistant with **Live2D character integration** and real-time conversati
 |----------|-------------|---------|
 | `NEXT_PUBLIC_AGORA_APP_ID` | Agora App ID exposed to the browser client. | _none_ |
 | `NEXT_PUBLIC_API_BASE_URL` | Base URL for the local API server. | `http://localhost:8080` |
+| `NEXT_PUBLIC_LIVE2D_REMOTE_MODELS_BASE_URL` | Base URL that hosts the Live2D model assets (textures, motions, previews). | `https://ten-framework-assets.s3.amazonaws.com/live2d-models` |
 
 ## Setup
 
@@ -88,7 +89,15 @@ task run-gd-server
 
 ## Live2D Models
 
-The example ships with the **Kei Vowels Pro** Live2D model (see `frontend/public/models/kei_vowels_pro`). Replace or add additional models by copying their assets into `frontend/public/models/` and updating the frontend configuration.
+The example ships with the **Kei Vowels Pro** Live2D model (see `frontend/public/models/kei_vowels_pro`). The other bundled characters (Mao, Kevin the Marmot, and Chubbie the Capybara) are loaded remotely from the URL defined in `NEXT_PUBLIC_LIVE2D_REMOTE_MODELS_BASE_URL` (defaults to `https://ten-framework-assets.s3.amazonaws.com/live2d-models`).
+
+To add or replace models:
+
+1. Upload the entire Live2D export folder (textures, motions, physics, etc.) to the bucket/CDN of your choice.
+2. Point `NEXT_PUBLIC_LIVE2D_REMOTE_MODELS_BASE_URL` at the parent folder that contains the individual model directories.
+3. Update the character configuration in `frontend/src/app/page.tsx` to reference the new folder/file names.
+
+For fully offline development you can still drop model files under `frontend/public/models/` and set `NEXT_PUBLIC_LIVE2D_REMOTE_MODELS_BASE_URL=http://localhost:3000/models`, which mirrors the default Next.js static asset path.
 
 ## Configuration
 
@@ -146,7 +155,7 @@ The TEN runtime graph is defined in `tenapp/property.json`:
                 "max_tokens": 512,
                 "prompt": "",
                 "proxy_url": "${env:OPENAI_PROXY_URL|}",
-                "greeting": "My name is Kei, nice to meet you I am your anime assistant, and what's your name?",
+                "greeting": "Hello there, nice to meet you! I’m your anime assistant—what’s your name?",
                 "max_memory_length": 10
               }
             },
@@ -171,7 +180,7 @@ The TEN runtime graph is defined in `tenapp/property.json`:
               "addon": "main_python",
               "extension_group": "control",
               "property": {
-                "greeting": "My name is Kei, nice to meet you I am your anime assistant, and what's your name?"
+                "greeting": "Hello there, nice to meet you! I’m your anime assistant—what’s your name?"
               }
             },
             {
