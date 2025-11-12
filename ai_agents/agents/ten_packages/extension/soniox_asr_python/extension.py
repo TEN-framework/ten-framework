@@ -291,7 +291,10 @@ class SonioxASRExtension(AsyncASRBaseExtension):
                 self.holding_final_tokens = []
                 self.holding_translation_tokens = []
 
-        if self.last_finalize_timestamp != 0:
+        if self.config.finalize_mode == FinalizeMode.IGNORE:
+            # No need to check if there is corresponding asr_finalize in this mode.
+            await self.send_asr_finalize_end()
+        elif self.last_finalize_timestamp != 0:
             timestamp = int(time.time() * 1000)
             latency = timestamp - self.last_finalize_timestamp
             self.ten_env.log_info(
