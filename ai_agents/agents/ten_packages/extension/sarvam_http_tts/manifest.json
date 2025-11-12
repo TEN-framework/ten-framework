@@ -1,0 +1,73 @@
+{
+  "type": "extension",
+  "name": "sarvam_http_tts",
+  "version": "0.4.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.11"
+    },
+    {
+      "type": "system",
+      "name": "ten_ai_base",
+      "version": "0.7"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "**.tent",
+      "**.py",
+      "README.md",
+      "requirements.txt"
+    ]
+  },
+  "api": {
+    "interface": [
+      {
+        "import_uri": "../../system/ten_ai_base/api/tts-interface.json"
+      }
+    ],
+    "property": {
+      "properties": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "api_subscription_key": {
+              "type": "string"
+            },
+            "target_language_code": {
+              "type": "string"
+            },
+            "speaker": {
+              "type": "string"
+            },
+            "pitch": {
+              "type": "float64"
+            },
+            "pace": {
+              "type": "float64"
+            },
+            "loudness": {
+              "type": "float64"
+            },
+            "speech_sample_rate": {
+              "type": "int32"
+            },
+            "enable_preprocessing": {
+              "type": "bool"
+            },
+            "model": {
+              "type": "string"
+            },
+            "output_audio_codec": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  }
+}

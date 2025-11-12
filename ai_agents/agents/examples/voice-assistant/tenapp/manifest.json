@@ -130,6 +130,9 @@
       "path": "../../../ten_packages/extension/rime_tts"
     },
     {
+      "path": "../../../ten_packages/extension/sarvam_http_tts"
+    },
+    {
       "path": "../../../ten_packages/extension/stepfun_tts_python"
     },
     {
