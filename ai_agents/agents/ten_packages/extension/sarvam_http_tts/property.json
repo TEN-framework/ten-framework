@@ -3,7 +3,7 @@
     "dump_path": "./",
     "params": {
         "api_subscription_key": "${env:SARVAM_TTS_KEY|}",
-        "target_language_code": "hi-IN",
+        "target_language_code": "en-IN",
         "speaker": "anushka",
         "pitch": 0.0,
         "pace": 1.0,
