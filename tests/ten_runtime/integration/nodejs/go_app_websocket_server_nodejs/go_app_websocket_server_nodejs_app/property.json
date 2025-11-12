@@ -1,0 +1,53 @@
+{
+  "ten": {
+    "log": {
+      "handlers": [
+        {
+          "matchers": [
+            {
+              "level": "debug"
+            }
+          ],
+          "formatter": {
+            "type": "plain",
+            "colored": true
+          },
+          "emitter": {
+            "type": "console",
+            "config": {
+              "stream": "stdout"
+            }
+          }
+        }
+      ]
+    },
+    "predefined_graphs": [
+      {
+        "name": "default",
+        "auto_start": true,
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "http_server_extension_nodejs",
+              "addon": "http_server_extension_nodejs",
+              "extension_group": "default_extension_group",
+              "property": {
+                "server_port": 8002
+              }
+            },
+            {
+              "type": "extension",
+              "name": "websocket_server_nodejs",
+              "addon": "websocket_server_nodejs",
+              "extension_group": "default_extension_group",
+              "property": {
+                "server_port": 8007
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

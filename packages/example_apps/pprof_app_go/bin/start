@@ -1,0 +1,18 @@
+#!/bin/bash
+
+set -e
+
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+
+export LD_PRELOAD=/usr/lib/libtcmalloc.so
+
+time=$(date "+%Y%m%d-%H%M%S")
+
+export TEN_HEAP_DUMP_DIR=/data/prof/${time}
+# export TEN_HEAP_DUMP_DIR=${PWD}/prof
+
+mkdir -p "${TEN_HEAP_DUMP_DIR}"/c
+export HEAP_PROFILE_TIME_INTERVAL=30
+export HEAPPROFILE=${TEN_HEAP_DUMP_DIR}/c/heap.hprof
+
+exec bin/main

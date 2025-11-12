@@ -1,0 +1,161 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+import("//build/options.gni")
+import("//build/ten_utils/options.gni")
+
+config("utils_public_config") {
+  cflags = []
+  cflags_c = []
+  cflags_cc = []
+  cflags_objc = []
+  cflags_objcc = []
+  libs = []
+  include_dirs = [
+    # This is _the_only_dir_ that can be put in public config
+    "//core/include",
+  ]
+}
+
+config("utils_private_config") {
+  include_dirs = [
+    "//core",
+    "//core/src",
+    "//core/include",
+  ]
+
+  defines = []
+  if (is_win) {
+    defines += [
+      "OS_WINDOWS",
+      "TEN_UTILS_EXPORT",
+    ]
+  } else if (is_linux) {
+    defines += [ "OS_LINUX" ]
+  } else if (is_mac) {
+    defines += [ "OS_MACOS" ]
+  }
+
+  if (target_cpu_bigendian) {
+    defines += [ "TARGET_CPU_BIG_ENDIAN" ]
+  }
+
+  if (ten_enable_memory_check) {
+    defines += [ "TEN_ENABLE_MEMORY_CHECK" ]
+  }
+
+  if (ten_enable_ten_rust) {
+    defines += [ "TEN_ENABLE_TEN_RUST_APIS" ]
+  }
+
+  cflags = []
+  cflags_c = []
+  cflags_cc = []
+  ldflags = []
+
+  if (is_linux) {
+    if (current_cpu == "x86") {
+      cflags += [ "-m32" ]
+      ldflags += [ "-m32" ]
+    }
+  }
+
+  if (is_win && is_clang) {
+    # using clang in windows
+    cflags += [
+      "-Wno-deprecated-declarations",
+      "-Wno-incompatible-pointer-types",
+      "-Wno-int-to-void-pointer-cast",
+    ]
+  }
+
+  if (is_win) {
+    if (is_debug) {
+      cflags += [ "/MTd" ]
+    } else {
+      cflags += [ "/MT" ]
+    }
+  }
+
+  cflags_cc = []
+  if (!is_win) {
+    cflags_cc += [
+      "-std=c++${cxx_standard}",
+      "-fno-rtti",
+    ]
+  } else {
+    cflags_cc += [
+      "/std:c++${cxx_standard}",
+      "/GR-",
+    ]
+  }
+
+  cflags_objc = []
+
+  cflags_objcc = [ "-fno-rtti" ]
+
+  libs = []
+  if (is_mac) {
+    libs += [
+      "pthread",
+      "c++",
+    ]
+  } else if (is_linux) {
+    libs += [
+      "pthread",
+      "rt",
+      "dl",
+    ]
+  }
+
+  if (is_linux) {
+    ldflags += [
+      "-Wl,--version-script=" +
+          rebase_path("//build/ten_utils/ld_script/linux"),
+      "-Wl,--warn-once",
+    ]
+  } else if (is_mac) {
+    ldflags += [
+      "-Xlinker",
+      "-exported_symbols_list",
+      "-Xlinker",
+      rebase_path("//build/ten_utils/ld_script/mac"),
+      "-Wl,-w",
+    ]
+  } else if (is_win) {
+    ldflags += [ "/ignore:4099" ]
+  }
+
+  if (enable_coverage) {
+    assert(is_linux && target_cpu == "x64",
+           "Coverage instrumentation should only be enabled in Linux + x64")
+
+    if (is_clang) {
+      cflags += [
+        "-fprofile-instr-generate",
+        "-fcoverage-mapping",
+      ]
+      cflags_c += [
+        "-fprofile-instr-generate",
+        "-fcoverage-mapping",
+      ]
+      cflags_cc += [
+        "-fprofile-instr-generate",
+        "-fcoverage-mapping",
+      ]
+
+      # Needs to add ldflags, because ten_utils_test will generate executable
+      # file use -Wl prefix to ensure passing to linker, and force link profile
+      # runtime
+      ldflags += [ "-fprofile-instr-generate" ]
+    } else {
+      cflags += [ "--coverage" ]
+      cflags_c += [ "--coverage" ]
+      cflags_cc += [ "--coverage" ]
+      ldflags += [ "--coverage" ]
+    }
+  }
+}

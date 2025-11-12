@@ -1,0 +1,56 @@
+<testcase>
+<info>
+<keywords>
+HTTPS
+HTTP GET
+HTTP CONNECT
+HTTP proxy
+FAILURE
+</keywords>
+</info>
+#
+# Server-side
+<reply>
+<connect nocheck="yes">
+HTTP/1.1 407 Needs proxy authentication
+Server: test-server/fake swsclose yesyes
+Proxy-Authenticate: Basic "oh please"
+Connection: close
+
+bing
+</connect>
+</reply>
+
+#
+# Client-side
+<client>
+<server>
+http
+</server>
+<features>
+SSL
+proxy
+</features>
+ <name>
+HTTPS GET with failed proxy auth (CONNECT 1.0)
+ </name>
+ <command>
+https://test.anything.really.com:%TESTNUMBER --proxy1.0 %HOSTIP:%HTTPPORT
+</command>
+</client>
+
+#
+# Verify data after the test has been "shot"
+<verify>
+<errorcode>
+56
+</errorcode>
+<protocol>
+CONNECT test.anything.really.com:%TESTNUMBER HTTP/1.0
+Host: test.anything.really.com:%TESTNUMBER
+User-Agent: curl/%VERSION
+Proxy-Connection: Keep-Alive
+
+</protocol>
+</verify>
+</testcase>

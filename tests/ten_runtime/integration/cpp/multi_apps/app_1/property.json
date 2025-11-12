@@ -1,0 +1,47 @@
+{
+  "ten": {
+    "long_running_mode": true,
+    "uri": "msgpack://127.0.0.1:8001/",
+    "predefined_graphs": [
+      {
+        "name": "default",
+        "auto_start": true,
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "ext_a",
+              "addon": "ext_a",
+              "app": "msgpack://127.0.0.1:8001/",
+              "extension_group": "test_extension_group"
+            },
+            {
+              "type": "extension",
+              "name": "ext_b",
+              "addon": "ext_b",
+              "app": "msgpack://127.0.0.1:8001/",
+              "extension_group": "test_extension_group"
+            }
+          ],
+          "connections": [
+            {
+              "app": "msgpack://127.0.0.1:8001/",
+              "extension": "ext_a",
+              "cmd": [
+                {
+                  "name": "hello_world",
+                  "dest": [
+                    {
+                      "app": "msgpack://127.0.0.1:8001/",
+                      "extension": "ext_b"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

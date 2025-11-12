@@ -1,0 +1,188 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+import("//build/options.gni")
+import("//build/ten_runtime/feature/combine_static_library.gni")
+import("//build/ten_utils/options.gni")
+import("//build/ten_utils/utils.gni")
+import("//third_party/libuv/output_libs.gni")
+import("//third_party/yyjson/output_libs.gni")
+
+ten_utils_glob("ten_utils_files") {
+  deps = [
+    "container",
+    "sanitizer",
+    "schema",
+  ]
+
+  if (ten_utils_enable_io) {
+    deps += [ "io" ]
+  }
+
+  if (ten_utils_enable_backtrace) {
+    deps += [ "backtrace" ]
+  }
+
+  if (ten_utils_enable_lib) {
+    deps += [ "lib" ]
+  }
+
+  if (ten_utils_enable_log) {
+    deps += [ "log" ]
+  }
+
+  if (ten_utils_enable_value) {
+    deps += [ "value" ]
+  }
+}
+
+static_library("ten_utils_static") {
+  deps = [ ":ten_utils_files" ]
+  complete_static_lib = true
+  public_configs = [ "//build/ten_utils:utils_public_config" ]
+  configs += [ "//build/ten_utils:utils_private_config" ]
+}
+
+shared_library("ten_utils_shared") {
+  output_name = "ten_utils"
+
+  deps = [ ":ten_utils_files" ]
+
+  if (ten_enable_ten_rust) {
+    # Link the Rust static library into the shared lib when TEN Rust APIs are enabled,
+    # so macOS can resolve symbols like `ten_rust_backtrace_dump` at link time.
+    deps += [
+      "//core/src/ten_runtime/app/service_hub/api:api",
+      "//core/src/ten_rust:ten_rust_binding",
+    ]
+  }
+
+  configs += [ "//build/ten_utils:utils_private_config" ]
+
+  public_deps = [ "//third_party/yyjson" ]
+  public_configs = [ "//build/ten_utils:utils_public_config" ]
+
+  if (is_mac) {
+    ldflags = [
+      # Enable the executable to look in the current directory for shared
+      # library.
+      "-Wl,-rpath,@loader_path",
+
+      # Enable the executable to look in 'lib/' for shared library.
+      "-Wl,-rpath,@loader_path/../lib/",
+
+      "-Xlinker",
+      "-install_name",
+      "-Xlinker",
+      "@rpath/libten_utils.dylib",
+    ]
+  } else if (is_linux) {
+    ldflags = [
+      # Enable the executable to look in the current directory for shared
+      # library.
+      "-Wl,-rpath=\$ORIGIN",
+
+      # Enable the executable to look in '<parent-folder>/lib/' for shared
+      # library.
+      "-Wl,-rpath=\$ORIGIN/../lib/",
+    ]
+  } else {
+    if (!defined(ldflags)) {
+      ldflags = []
+    }
+  }
+
+  if (enable_coverage) {
+    assert(is_linux && target_cpu == "x64",
+           "Coverage instrumentation should only be enabled in Linux + x64")
+
+    if (!defined(ldflags)) {
+      ldflags = []
+    }
+
+    if (is_clang) {
+      ldflags += [ "-fprofile-instr-generate" ]
+
+      # When Rust static library is linked into this shared library,
+      # we need to ensure all Rust coverage runtime symbols are included.
+      # Without --whole-archive, the linker will drop Rust's __llvm_profile_*
+      # constructor functions, causing Rust code coverage data to be missing.
+      #
+      # Note that the ten_gn build system will automatically add --whole-archive
+      # for libraries, however, it does not cover libten_rust.a (as well as
+      # libc++.a). This is probably because libten_rust.a is moved from the
+      # original generated location before we clean intermediate files of rust
+      # build to save disk space (i.e., the cargo clean command).
+      #
+      # When coverage is not enabled, we don't add --whole-archive for
+      # libten_rust.a to avoid an overhead of linking unused symbols in the Rust
+      # static library.
+      if (ten_enable_ten_rust) {
+        # Get the path to libten_rust.a
+        _ten_rust_lib_path =
+            rebase_path("${root_gen_dir}/core/src/ten_rust/libten_rust.a",
+                        root_build_dir)
+
+        ldflags += [
+          "-Wl,--whole-archive",
+          _ten_rust_lib_path,
+          "-Wl,--no-whole-archive",
+        ]
+      }
+    } else {
+      ldflags += [ "--coverage" ]
+    }
+  }
+}
+
+ten_utils_group("ten_utils") {
+  public_deps = [ ":ten_utils_shared" ]
+}
+
+# Although ten_utils_static uses 'complete_static_lib = true', this
+# functionality requires that all other dependencies bound to ten_utils_static
+# be managed by GN as source_set or static_library targets. However, yyjson and
+# libuv are managed by CMake, and GN only calls CMake through an action to
+# complete the compilation process. Therefore, it doesn't know which source
+# files are involved or which object files are generated. As a result,
+# 'complete_static_lib = true' has no effect, and the results of the CMake
+# projects need to be manually bound to the ten_utils_static library.
+combine_static_library("ten_utils_combined_static") {
+  yyjson_static = filter_include(yyjson_output_libs,
+                                 [
+                                   "*.a",
+                                   "*.lib",
+                                 ])
+  assert(yyjson_static != [], "No yyjson static library found.")
+
+  libuv_static = filter_include(libuv_output_libs,
+                                [
+                                  "*.a",
+                                  "*.lib",
+                                ])
+  assert(libuv_static != [], "No libuv static library found.")
+
+  utils_static = ""
+  if (is_win) {
+    utils_static = "${root_out_dir}/obj/core/src/ten_utils/ten_utils_static.lib"
+  } else {
+    utils_static =
+        "${root_out_dir}/obj/core/src/ten_utils/libten_utils_static.a"
+  }
+
+  # The utils_static should be the first item in the list.
+  libraries = [
+    utils_static,
+    yyjson_static[0],
+    libuv_static[0],
+  ]
+
+  deps = [ ":ten_utils_static" ]
+
+  if (ten_enable_ten_rust) {
+    deps += [ "//core/src/ten_rust:asan_config" ]
+  }
+}

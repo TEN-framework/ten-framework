@@ -1,0 +1,44 @@
+<testcase>
+<info>
+<keywords>
+HTTP
+HTTP GET
+unix sockets
+</keywords>
+</info>
+
+<reply>
+<data>
+HTTP/1.1 200 OK
+Date: Sun, 16 Nov 2014 23:47:38 GMT
+Content-Length: 17
+
+Based on test300
+</data>
+</reply>
+
+<client>
+<features>
+unix-sockets
+</features>
+<server>
+http-unix
+</server>
+ <name>
+simple HTTP GET over Unix socket
+ </name>
+ <command>
+--unix-socket %HTTPUNIXPATH http://server-interpreted.example.com/%TESTNUMBER
+</command>
+</client>
+
+<verify>
+<protocol>
+GET /%TESTNUMBER HTTP/1.1
+Host: server-interpreted.example.com
+User-Agent: curl/%VERSION
+Accept: */*
+
+</protocol>
+</verify>
+</testcase>

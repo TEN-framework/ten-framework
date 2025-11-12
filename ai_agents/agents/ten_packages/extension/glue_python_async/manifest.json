@@ -1,0 +1,115 @@
+{
+  "type": "extension",
+  "name": "glue_python_async",
+  "version": "0.2.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.11"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "BUILD.gn",
+      "**.tent",
+      "**.py",
+      "README.md",
+      "tests/**"
+    ]
+  },
+  "api": {
+    "property": {
+      "properties": {
+        "token": {
+          "type": "string"
+        },
+        "api_url": {
+          "type": "string"
+        },
+        "user_id": {
+          "type": "string"
+        },
+        "prompt": {
+          "type": "string"
+        },
+        "greeting": {
+          "type": "string"
+        },
+        "failure_info": {
+          "type": "string"
+        },
+        "modalities": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "rtm_enabled": {
+          "type": "bool"
+        },
+        "ssml_enabled": {
+          "type": "bool"
+        },
+        "context_enabled": {
+          "type": "bool"
+        },
+        "extra_context": {
+          "type": "object",
+          "properties": {}
+        }
+      }
+    },
+    "cmd_in": [
+      {
+        "name": "flush"
+      }
+    ],
+    "cmd_out": [
+      {
+        "name": "flush"
+      }
+    ],
+    "data_in": [
+      {
+        "name": "text_data",
+        "property": {
+          "properties": {
+            "text": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    ],
+    "data_out": [
+      {
+        "name": "text_data",
+        "property": {
+          "properties": {
+            "text": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      {
+        "name": "llm_stat",
+        "property": {
+          "properties": {
+            "usage": {
+              "type": "object",
+              "properties": {}
+            },
+            "latency": {
+              "type": "object",
+              "properties": {}
+            }
+          }
+        }
+      }
+    ]
+  }
+}

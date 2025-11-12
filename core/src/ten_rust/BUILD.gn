@@ -1,0 +1,184 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+import("//build/feature/ten_package.gni")
+import("//build/ten_common/rust/rust.gni")
+import("//build/ten_rust/options.gni")
+
+if (ten_enable_ten_rust) {
+  copy("ten_rust_test_data") {
+    sources = [ "//core/src/ten_rust/tests/test_data" ]
+    outputs = [ "${root_out_dir}/tests/standalone/ten_rust/tests/test_data" ]
+  }
+
+  if (ten_rust_enable_tests) {
+    rust_test("ten_rust_test_cargo_build") {
+      project_path = "//core/src/ten_rust"
+      integration_test_output_name = "integration_test"
+
+      utils_static_lib_path = rebase_path("${root_gen_dir}/core/src/ten_utils")
+      env = [ "TEN_UTILS_LIBRARY_PATH=${utils_static_lib_path}" ]
+
+      # If the output directory of `cargo build` (tman) and
+      # `cargo build --tests` (tman_test) is the same, and if `cargo build` is
+      # executed first followed by `cargo build --tests`, the resulting
+      # executable will be the normal executable, not the test case executable.
+      # Therefore, it's necessary to separate the `target-dir` for these two
+      # `cargo build` commands to avoid interfering with each other.
+      target_path = "${root_gen_dir}/core/src/ten_rust_test"
+
+      # Copy the test executable to the test output directory.
+      test_output_dir = "${root_out_dir}/tests/standalone/ten_rust"
+
+      deps = [
+        ":ten_rust_build_deps",
+        ":ten_rust_test_data",
+      ]
+    }
+
+    if (ten_enable_cargo_clean) {
+      rust_clean("ten_rust_test_cargo_clean") {
+        project_path = "//core/src/ten_rust"
+        target_path = "${root_gen_dir}/core/src/ten_rust_test"
+
+        # Build ten_rust_test first, then `cargo clean` it.
+        deps = [ ":ten_rust_test_cargo_build" ]
+      }
+    }
+
+    group("ten_rust_test") {
+      if (ten_enable_cargo_clean) {
+        deps = [ ":ten_rust_test_cargo_clean" ]
+      } else {
+        deps = [ ":ten_rust_test_cargo_build" ]
+      }
+    }
+  }
+
+  rust_target("ten_rust_static_lib_cargo_build") {
+    project_path = "//core/src/ten_rust"
+    target_path = "${target_gen_dir}/ten_rust_static_lib"
+    manifest_path = "//core/src/ten_rust/Cargo.toml"
+
+    extra_inputs = [
+      "//core/src/ten_rust/src/json_schema/data/manifest.schema.json",
+      "//core/src/ten_rust/src/json_schema/data/manifest-lock.schema.json",
+      "//core/src/ten_rust/src/json_schema/data/property.schema.json",
+    ]
+
+    utils_static_lib_path = rebase_path("${root_gen_dir}/core/src/ten_utils")
+    env = [ "TEN_UTILS_LIBRARY_PATH=${utils_static_lib_path}" ]
+
+    if (is_win) {
+      output_name = "ten_rust.lib"
+    } else {
+      output_name = "libten_rust.a"
+    }
+
+    deps = [ ":ten_rust_build_deps" ]
+  }
+
+  # Export the built static library to a stable location so that cargo clean
+  # will not remove it with the intermediate files.
+  ten_package("ten_rust_static_lib_package") {
+    package_kind = "custom"
+    package_output_root_dir_name = "gen/core/src/ten_rust"
+
+    ten_rust_static_outputs =
+        get_target_outputs(":ten_rust_static_lib_cargo_build")
+
+    resources = []
+    if (is_win) {
+      resources += [ "${ten_rust_static_outputs[0]}=>ten_rust.lib" ]
+    } else {
+      resources += [ "${ten_rust_static_outputs[0]}=>libten_rust.a" ]
+    }
+
+    deps = [ ":ten_rust_static_lib_cargo_build" ]
+  }
+
+  if (ten_enable_cargo_clean) {
+    rust_clean("ten_rust_static_lib_cargo_clean") {
+      project_path = "//core/src/ten_rust"
+      ten_rust_static_lib_dir =
+          get_label_info(":ten_rust_static_lib_package", "target_gen_dir")
+      target_path = "${ten_rust_static_lib_dir}/ten_rust_static_lib"
+
+      deps = [ ":ten_rust_static_lib_package" ]
+    }
+  }
+
+  group("ten_rust_static_lib") {
+    if (ten_enable_cargo_clean) {
+      deps = [ ":ten_rust_static_lib_cargo_clean" ]
+    } else {
+      deps = [ ":ten_rust_static_lib_cargo_build" ]
+    }
+  }
+
+  if (teb_rust_enable_cbindgen) {
+    config("ten_rust_config_for_enable_cbindgen") {
+      include_dirs = [ "${target_gen_dir}" ]
+    }
+
+    rust_cbindgen("ten_rust_binding") {
+      project_path = "//core/src/ten_rust"
+      config_file = "cbindgen.toml"
+      output_file = "include_internal/ten_rust/ten_rust.h"
+      binding_files = [
+        "src/bindings.rs",
+        "src/service_hub/mod.rs",
+      ]
+
+      deps = [ ":ten_rust_static_lib" ]
+      public_configs = [
+        ":ten_rust_config",
+        ":ten_rust_config_for_enable_cbindgen",
+      ]
+    }
+  } else {
+    group("ten_rust_binding") {
+      deps = [ ":ten_rust_static_lib" ]
+      public_configs = [ ":ten_rust_config" ]
+    }
+  }
+
+  config("ten_rust_config") {
+    if (ten_enable_cargo_clean) {
+      _target_path = "${target_gen_dir}"
+      if (is_win) {
+        _output_name = "ten_rust.lib"
+      } else {
+        _output_name = "libten_rust.a"
+      }
+
+      libs = [ "${_target_path}/${_output_name}" ]
+    } else {
+      libs = get_target_outputs(":ten_rust_static_lib_cargo_build")
+    }
+  }
+
+  group("ten_rust_build_deps") {
+    deps = [ "//core/src/ten_utils:ten_utils_combined_static" ]
+  }
+
+  rust_gen_cargo_config("asan_config") {
+    project_root = "//"
+  }
+
+  group("ten_rust") {
+    deps = []
+    public_deps = []
+
+    if (ten_enable_ten_rust) {
+      public_deps += [ ":ten_rust_binding" ]
+
+      if (ten_rust_enable_tests) {
+        deps += [ ":ten_rust_test" ]
+      }
+    }
+  }
+}

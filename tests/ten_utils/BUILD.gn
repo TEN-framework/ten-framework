@@ -1,0 +1,53 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+import("//build/options.gni")
+import("//build/ten_utils/options.gni")
+import("//build/ten_utils/utils.gni")
+
+ten_utils_test("ten_utils_unit_test") {
+  output_dir = "${root_out_dir}/tests/standalone"
+
+  deps = []
+  if (enable_sanitizer) {
+    if (!is_clang) {
+      deps += [ "//build/ten_common/asan:package_asan_lib_for_ten_framework_standalone_test" ]
+    }
+  }
+
+  public_deps = [
+    "unit",
+    "//core/src/ten_runtime/app/service_hub/api",
+    "//core/src/ten_utils/backtrace",
+    "//core/src/ten_utils/container",
+    "//core/src/ten_utils/io",
+    "//core/src/ten_utils/io/general/loops",
+    "//core/src/ten_utils/lib",
+    "//core/src/ten_utils/log",
+    "//core/src/ten_utils/sanitizer",
+    "//core/src/ten_utils/schema",
+    "//core/src/ten_utils/value",
+    "//tests:copy_yyjson_library_for_test",
+  ]
+
+  if (ten_enable_ten_rust) {
+    public_deps += [ "//core/src/ten_rust:ten_rust_binding" ]
+  }
+
+  # !Important notice!
+  #
+  # Do not set the value of `configs` here, because setting `configs` within a
+  # template will prevent the `executable` target from using the default
+  # `common_configs`.
+
+  public_deps += [ "//third_party/googletest:gtest_main" ]
+}
+
+ten_utils_group("ten_utils") {
+  if (ten_utils_enable_tests) {
+    public_deps = [ ":ten_utils_unit_test" ]
+  }
+}

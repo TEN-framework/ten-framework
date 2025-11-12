@@ -1,0 +1,112 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+import("//build/ten_runtime/ten.gni")
+
+config("ten_runtime_python_config") {
+  include_dirs = ten_runtime_common_includes
+
+  python_version = "3"  # "3" by default
+
+  cflags = exec_script("//build/ten_common/python/python_config.py",
+                       [
+                         "--python-version",
+                         python_version,
+                         "--target-os",
+                         target_os,
+                         "--config-type",
+                         "cflags",
+                         "--log-level",
+                         "0",
+                       ],
+                       "list lines")
+  if (!is_win) {
+    cflags += [ "-fPIC" ]
+  }
+
+  ldflags = exec_script("//build/ten_common/python/python_config.py",
+                        [
+                          "--python-version",
+                          python_version,
+                          "--target-os",
+                          target_os,
+                          "--config-type",
+                          "ldflags",
+                          "--log-level",
+                          "0",
+                        ],
+                        "list lines")
+
+  if (is_mac) {
+    # Must be renamed to python module name.
+    ldflags += [
+      "-install_name",
+      "ten_runtime_python.so",
+    ]
+  }
+
+  # Add rpath to find ten_runtime library.
+  if (is_mac) {
+    ldflags += [ "-Wl,-rpath,@loader_path/../../ten_runtime/lib" ]
+  } else if (is_linux) {
+    ldflags += [ "-Wl,-rpath=\$ORIGIN/../../ten_runtime/lib" ]
+  }
+
+  # Only export "ten" relevant symbols.
+  if (is_mac) {
+    ldflags += [
+      "-Xlinker",
+      "-exported_symbols_list",
+      "-Xlinker",
+      rebase_path("//build/ten_runtime/ld_script/mac_for_python_binding"),
+    ]
+  } else if (is_linux) {
+    ldflags += [ "-Wl,--version-script=" + rebase_path(
+                     "//build/ten_runtime/ld_script/linux_for_python_binding") ]
+  }
+
+  libs = exec_script("//build/ten_common/python/python_config.py",
+                     [
+                       "--python-version",
+                       python_version,
+                       "--target-os",
+                       target_os,
+                       "--config-type",
+                       "libs",
+                       "--log-level",
+                       "0",
+                     ],
+                     "list lines")
+}
+
+ten_shared_library("ten_runtime_python") {
+  configs = [ ":ten_runtime_python_config" ]
+
+  if (is_mac || is_linux) {
+    add_configs = [ "//.gnfiles/build/toolchain/common:allow_undefined" ]
+    remove_configs = [ "//.gnfiles/build/toolchain/common:disallow_undefined" ]
+  }
+
+  sources = [ "init.c" ]
+
+  deps = [
+    "addon",
+    "app",
+    "common",
+    "extension",
+    "msg",
+    "ten_env",
+    "test",
+    "//core/src/ten_runtime:ten_runtime_library",
+  ]
+
+  if (is_mac) {
+    # According to the explanation in https://bugs.python.org/issue43898, even
+    # on macOS, when Python imports a Python C extension, the file extension
+    # must be `.so` and cannot be `.dylib`.
+    output_extension = "so"
+  }
+}

@@ -1,0 +1,34 @@
+{
+	"type": "start_graph",
+	"nodes": [
+		{
+			"type": "extension",
+			"name": "ext_a",
+			"addon": "addon_a",
+			"extension_group": "some_group",
+			"app": "localhost"
+		},
+		{
+			"type": "extension",
+			"name": "ext_b",
+			"addon": "addon_b",
+			"extension_group": "some_group",
+			"app": "localhost"
+		}
+	],
+	"connections": [
+		{
+			"extension": "ext_a",
+			"cmd": [
+				{
+					"name": "cmd_1",
+					"dest": [
+						{
+							"extension": "ext_b"
+						}
+					]
+				}
+			]
+		}
+	]
+}

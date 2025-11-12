@@ -1,0 +1,67 @@
+{
+  "type": "extension",
+  "name": "fashionai",
+  "version": "0.2.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.11"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "BUILD.gn",
+      "**.tent",
+      "**.py",
+      "src/**.tent",
+      "src/**.py",
+      "README.md"
+    ]
+  },
+  "api": {
+    "property": {
+      "properties": {
+        "app_id": {
+          "type": "string"
+        },
+        "token": {
+          "type": "string"
+        },
+        "channel": {
+          "type": "string"
+        },
+        "stream_id": {
+          "type": "uint32"
+        },
+        "service_id": {
+          "type": "string"
+        }
+      }
+    },
+    "cmd_in": [
+      {
+        "name": "flush"
+      }
+    ],
+    "cmd_out": [
+      {
+        "name": "flush"
+      }
+    ],
+    "data_in": [
+      {
+        "name": "text_data",
+        "property": {
+          "properties": {
+            "text": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    ]
+  }
+}

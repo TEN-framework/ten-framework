@@ -1,0 +1,58 @@
+{
+  "ten": {
+    "predefined_graphs": [
+      {
+        "name": "default",
+        "auto_start": false,
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "ext_c",
+              "addon": "extension_c",
+              "extension_group": "some_group"
+            },
+            {
+              "type": "extension",
+              "name": "ext_d",
+              "addon": "extension_d",
+              "extension_group": "another_group"
+            }
+          ],
+          "connections": [
+            {
+              "extension": "ext_c",
+              "cmd": [
+                {
+                  "name": "B",
+                  "dest": [
+                    {
+                      "extension": "ext_d"
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "exposed_messages": [
+            {
+              "type": "cmd_in",
+              "name": "B",
+              "extension": "ext_d"
+            },
+            {
+              "type": "cmd_out",
+              "name": "C",
+              "extension": "ext_c"
+            },
+            {
+              "type": "data_in",
+              "name": "DataX",
+              "extension": "ext_d"
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

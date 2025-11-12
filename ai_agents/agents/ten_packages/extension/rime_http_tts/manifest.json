@@ -1,0 +1,70 @@
+{
+  "type": "extension",
+  "name": "rime_http_tts",
+  "version": "0.4.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.11"
+    },
+    {
+      "type": "system",
+      "name": "ten_ai_base",
+      "version": "0.7"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "**.tent",
+      "**.py",
+      "README.md",
+      "requirements.txt"
+    ]
+  },
+  "api": {
+    "interface": [
+      {
+        "import_uri": "../../system/ten_ai_base/api/tts-interface.json"
+      }
+    ],
+    "property": {
+      "properties": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "api_key": {
+              "type": "string"
+            },
+            "speaker": {
+              "type": "string"
+            },
+            "modelId": {
+              "type": "string"
+            },
+            "repetition_penalty": {
+              "type": "float64"
+            },
+            "temperature": {
+              "type": "float64"
+            },
+            "top_p": {
+              "type": "int32"
+            },
+            "max_tokens": {
+              "type": "int32"
+            },
+            "lang": {
+              "type": "string"
+            },
+            "samplingRate": {
+              "type": "int32"
+            }
+          }
+        }
+      }
+    }
+  }
+}

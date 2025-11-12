@@ -1,0 +1,21 @@
+<testcase>
+<info>
+<keywords>
+curl_strequal
+</keywords>
+</info>
+
+#
+# Client-side
+<client>
+<server>
+none
+</server>
+<tool>
+lib%TESTNUMBER
+</tool>
+ <name>
+curl_strequal tests
+ </name>
+</client>
+</testcase>

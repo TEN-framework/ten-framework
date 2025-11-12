@@ -1,0 +1,195 @@
+/* BEGIN_HEADER */
+#include <stdint.h>
+#include <string.h>
+
+#include <psa/crypto.h>
+
+#include "mbedtls/entropy.h"
+#include "entropy_poll.h"
+
+/* Calculating the minimum allowed entropy size in bytes */
+#define MBEDTLS_PSA_INJECT_ENTROPY_MIN_SIZE MAX(MBEDTLS_ENTROPY_MIN_PLATFORM, MBEDTLS_ENTROPY_BLOCK_SIZE)
+
+#if defined(MBEDTLS_PSA_INJECT_ENTROPY)
+
+#if defined(MBEDTLS_PSA_ITS_FILE_C)
+#include <stdio.h>
+#else
+#include <psa/internal_trusted_storage.h>
+#endif
+
+/* Remove the entropy seed file. Since the library does not expose a way
+ * to do this (it would be a security risk if such a function was ever
+ * accessible in production), implement this functionality in a white-box
+ * manner. */
+psa_status_t remove_seed_file( void )
+{
+#if defined(MBEDTLS_PSA_ITS_FILE_C)
+    if( remove( "00000000ffffff52.psa_its" ) == 0 )
+        return( PSA_SUCCESS );
+    else
+        return( PSA_ERROR_DOES_NOT_EXIST );
+#else
+    return( psa_its_remove( PSA_CRYPTO_ITS_RANDOM_SEED_UID ) );
+#endif
+}
+
+#endif /* MBEDTLS_PSA_INJECT_ENTROPY */
+
+/* END_HEADER */
+
+/* BEGIN_CASE depends_on:MBEDTLS_PSA_CRYPTO_EXTERNAL_RNG */
+void external_rng_failure_generate( )
+{
+    psa_key_attributes_t attributes = PSA_KEY_ATTRIBUTES_INIT;
+    psa_set_key_type( &attributes, PSA_KEY_TYPE_DERIVE );
+    psa_set_key_bits( &attributes, 128 );
+    mbedtls_svc_key_id_t key = MBEDTLS_SVC_KEY_ID_INIT;
+    uint8_t output[1];
+
+    PSA_ASSERT( psa_crypto_init( ) );
+
+    PSA_ASSERT( psa_generate_random( output, sizeof( output ) ) );
+    PSA_ASSERT( psa_generate_key( &attributes, &key ) );
+    PSA_ASSERT( psa_destroy_key( key ) );
+
+    mbedtls_test_disable_insecure_external_rng( );
+    TEST_EQUAL( PSA_ERROR_INSUFFICIENT_ENTROPY,
+                psa_generate_random( output, sizeof( output ) ) );
+    TEST_EQUAL( PSA_ERROR_INSUFFICIENT_ENTROPY,
+                psa_generate_key( &attributes, &key ) );
+
+exit:
+    psa_destroy_key( key );
+    PSA_DONE( );
+}
+/* END_CASE */
+
+/* BEGIN_CASE depends_on:MBEDTLS_PSA_CRYPTO_EXTERNAL_RNG */
+void external_rng_failure_sign( int key_type, data_t *key_data, int alg,
+                                int input_size_arg )
+{
+    /* This test case is only expected to pass if the signature mechanism
+     * requires randomness, either because it is a randomized signature
+     * or because the implementation uses blinding. */
+
+    psa_key_attributes_t attributes = PSA_KEY_ATTRIBUTES_INIT;
+    psa_set_key_type( &attributes, key_type );
+    psa_set_key_usage_flags( &attributes, PSA_KEY_USAGE_SIGN_HASH );
+    psa_set_key_algorithm( &attributes, alg );
+    mbedtls_svc_key_id_t key = MBEDTLS_SVC_KEY_ID_INIT;
+    size_t input_size = input_size_arg;
+    uint8_t *input = NULL;
+    uint8_t *signature = NULL;
+    size_t signature_size = PSA_SIGNATURE_MAX_SIZE;
+    size_t signature_length;
+
+    ASSERT_ALLOC( input, input_size );
+    ASSERT_ALLOC( signature, signature_size );
+
+    PSA_ASSERT( psa_crypto_init( ) );
+    PSA_ASSERT( psa_import_key( &attributes, key_data->x, key_data->len,
+                                &key ) );
+    PSA_ASSERT( psa_sign_hash( key, alg,
+                               input, input_size,
+                               signature, signature_size,
+                               &signature_length ) );
+    PSA_ASSERT( psa_destroy_key( key ) );
+
+    mbedtls_test_disable_insecure_external_rng( );
+    /* Import the key again, because for RSA Mbed TLS caches blinding values
+     * in the key object and this could perturb the test. */
+    PSA_ASSERT( psa_import_key( &attributes, key_data->x, key_data->len,
+                                &key ) );
+    TEST_EQUAL( PSA_ERROR_INSUFFICIENT_ENTROPY,
+                psa_sign_hash( key, alg,
+                               input, input_size,
+                               signature, signature_size,
+                               &signature_length ) );
+    PSA_ASSERT( psa_destroy_key( key ) );
+
+exit:
+    psa_destroy_key( key );
+    PSA_DONE( );
+    mbedtls_free( input );
+    mbedtls_free( signature );
+}
+/* END_CASE */
+
+/* BEGIN_CASE depends_on:MBEDTLS_PSA_INJECT_ENTROPY */
+void validate_entropy_seed_injection( int seed_length_a,
+                                      int expected_status_a,
+                                      int seed_length_b,
+                                      int expected_status_b )
+{
+    psa_status_t status;
+    uint8_t output[32] = { 0 };
+    uint8_t zeros[32] = { 0 };
+    uint8_t *seed = NULL;
+    int i;
+    int seed_size;
+    if( seed_length_a > seed_length_b )
+    {
+        seed_size = seed_length_a;
+    }
+    else
+    {
+        seed_size = seed_length_b;
+    }
+    ASSERT_ALLOC( seed, seed_size );
+    /* fill seed with some data */
+    for( i = 0; i < seed_size; ++i )
+    {
+        seed[i] = i;
+    }
+    status =  remove_seed_file( );
+    TEST_ASSERT( ( status == PSA_SUCCESS ) ||
+                 ( status == PSA_ERROR_DOES_NOT_EXIST ) );
+    status = mbedtls_psa_inject_entropy( seed, seed_length_a );
+    TEST_EQUAL( status, expected_status_a );
+    status = mbedtls_psa_inject_entropy( seed, seed_length_b );
+    TEST_EQUAL( status, expected_status_b );
+    PSA_ASSERT( psa_crypto_init( ) );
+    PSA_ASSERT( psa_generate_random( output,
+                                     sizeof( output ) ) );
+    TEST_ASSERT( memcmp( output, zeros, sizeof( output ) ) != 0 );
+exit:
+    mbedtls_free( seed );
+    remove_seed_file( );
+    PSA_DONE( );
+}
+/* END_CASE */
+
+/* BEGIN_CASE depends_on:MBEDTLS_PSA_INJECT_ENTROPY */
+void run_entropy_inject_with_crypto_init( )
+{
+    psa_status_t status;
+    size_t i;
+    uint8_t seed[MBEDTLS_PSA_INJECT_ENTROPY_MIN_SIZE] = { 0 };
+    /* fill seed with some data */
+    for( i = 0; i < sizeof( seed ); ++i )
+    {
+        seed[i] = i;
+    }
+    status =  remove_seed_file( );
+    TEST_ASSERT( ( status == PSA_SUCCESS ) ||
+                 ( status == PSA_ERROR_DOES_NOT_EXIST ) );
+    status = mbedtls_psa_inject_entropy( seed, sizeof( seed ) );
+    PSA_ASSERT( status );
+    status =  remove_seed_file( );
+    TEST_EQUAL( status, PSA_SUCCESS );
+    status = psa_crypto_init( );
+    TEST_EQUAL( status, PSA_ERROR_INSUFFICIENT_ENTROPY );
+    status = mbedtls_psa_inject_entropy( seed, sizeof( seed ) );
+    PSA_ASSERT( status );
+    status = psa_crypto_init( );
+    PSA_ASSERT( status );
+    PSA_DONE( );
+    /* The seed is written by nv_seed callback functions therefore the injection will fail */
+    status = mbedtls_psa_inject_entropy( seed, sizeof( seed ) );
+    TEST_EQUAL( status, PSA_ERROR_NOT_PERMITTED );
+exit:
+    remove_seed_file( );
+    PSA_DONE( );
+}
+/* END_CASE */

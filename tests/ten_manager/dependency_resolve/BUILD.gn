@@ -1,0 +1,101 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+import("//build/ten_runtime/feature/test.gni")
+
+ten_package_test_prepare_auxiliary_resources("dependency_resolve") {
+  resources = [
+    "//.gnfiles/build/scripts/cmd_exec.py=>utils/cmd_exec.py",
+    "__init__.py",
+    "test_case.py",
+
+    #
+    "test_cases/b_c_both_depends_a_resolved/expected.json",
+    "test_cases/b_c_both_depends_a_resolved/manifest.json",
+
+    #
+    "test_cases/b_c_both_depends_a_resolved_1/expected.json",
+    "test_cases/b_c_both_depends_a_resolved_1/manifest.json",
+
+    #
+    "test_cases/b_depends_a_not_resolved/expected.json",
+    "test_cases/b_depends_a_not_resolved/manifest.json",
+
+    #
+    "test_cases/b_depends_a_resolved/expected.json",
+    "test_cases/b_depends_a_resolved/manifest.json",
+
+    #
+    "test_cases/c_depends_d_not_resolved/expected.json",
+    "test_cases/c_depends_d_not_resolved/manifest.json",
+
+    #
+    "test_cases/c_depends_h_conflict/expected.json",
+    "test_cases/c_depends_h_conflict/manifest.json",
+
+    #
+    "test_cases/c_depends_d_resolved/expected.json",
+    "test_cases/c_depends_d_resolved/manifest.json",
+
+    #
+    "test_cases/circular_deps_not_resolved/expected.json",
+    "test_cases/circular_deps_not_resolved/manifest.json",
+
+    #
+    "test_cases/circular_deps_resolved/expected.json",
+    "test_cases/circular_deps_resolved/manifest.json",
+
+    #
+    "test_cases/exact_version_not_resolved/expected.json",
+    "test_cases/exact_version_not_resolved/manifest.json",
+
+    #
+    "test_cases/exact_version_resolved/expected.json",
+    "test_cases/exact_version_resolved/manifest.json",
+
+    #
+    "test_cases/highest_root_resolved/expected.json",
+    "test_cases/highest_root_resolved/manifest.json",
+
+    #
+    "test_cases/os_linux_support_of_a_resolved/expected.json",
+    "test_cases/os_linux_support_of_a_resolved/manifest.json",
+    "test_cases/os_linux_support_of_a_resolved/supports.json",
+
+    #
+    "test_cases/os_mac_support_of_a_resolved/expected.json",
+    "test_cases/os_mac_support_of_a_resolved/manifest.json",
+    "test_cases/os_mac_support_of_a_resolved/supports.json",
+
+    #
+    "test_cases/range_version_not_resolved/expected.json",
+    "test_cases/range_version_not_resolved/manifest.json",
+
+    #
+    "test_cases/range_version_resolved/expected.json",
+    "test_cases/range_version_resolved/manifest.json",
+
+    #
+    "test_cases/linux_x86_64_support_of_a_resolved/expected.json",
+    "test_cases/linux_x86_64_support_of_a_resolved/manifest.json",
+    "test_cases/linux_x86_64_support_of_a_resolved/supports.json",
+
+    #
+    "test_cases/linux_x86_support_of_a_resolved/expected.json",
+    "test_cases/linux_x86_support_of_a_resolved/manifest.json",
+    "test_cases/linux_x86_support_of_a_resolved/supports.json",
+
+    #
+    "test_cases/same_version_multi_support_of_a_resolved/expected.json",
+    "test_cases/same_version_multi_support_of_a_resolved/manifest.json",
+    "test_cases/same_version_multi_support_of_a_resolved/supports.json",
+  ]
+
+  deps = [
+    "//core/src/ten_manager",
+    "//tests/local_registry",
+  ]
+}

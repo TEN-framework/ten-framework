@@ -1,0 +1,24 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+group("install_all") {
+  deps = [
+    "extension_api_interface_not_found",
+    "extension_not_listed_in_app",
+    "install_a_before_install_all",
+    "install_all_fail_with_local_unsupported_pkg",
+    "install_all_in_local_file_system",
+    "install_breaking_lock",
+    "install_dependencies_of_local_pkgs",
+    "install_locked_pkg_same_version",
+    "install_under_the_guidance_of_lock",
+    "local_dependency_link",
+    "local_dependency_link_in_extension",
+    "local_dependency_link_in_not_in_use_extension",
+    "not_install_again_for_installed_extension",
+    "update_pkgs_that_local_pkgs_depend_on",
+  ]
+}

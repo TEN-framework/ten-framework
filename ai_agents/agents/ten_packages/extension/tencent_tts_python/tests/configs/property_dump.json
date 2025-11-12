@@ -1,0 +1,11 @@
+{
+  "dump": true,
+  "dump_path": "./tests/dump_output/",
+  "params": {
+    "app_id": "${env:TENCENT_TTS_APP_ID}",
+    "secret_id": "${env:TENCENT_TTS_SECRET_ID}",
+    "secret_key": "${env:TENCENT_TTS_SECRET_KEY}",
+    "sample_rate": 16000,
+    "voice_type": 0
+  }
+}

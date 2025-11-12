@@ -1,0 +1,368 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "shared-definitions.schema.json",
+  "title": "Shared TEN Framework Schema Definitions",
+  "description": "Common schema definitions used across multiple TEN schemas",
+  "$defs": {
+    "valueType": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "bool",
+            "int8",
+            "int16",
+            "int32",
+            "int64",
+            "uint8",
+            "uint16",
+            "uint32",
+            "uint64",
+            "float32",
+            "float64",
+            "string",
+            "buf",
+            "ptr",
+            "array",
+            "object"
+          ]
+        },
+        "items": {
+          "$ref": "#/$defs/valueType"
+        },
+        "properties": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          },
+          "patternProperties": {
+            "^[A-Za-z_][A-Za-z0-9_]*$": {
+              "$ref": "#/$defs/valueType"
+            }
+          },
+          "additionalProperties": false
+        },
+        "required": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "array"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "required": [
+              "items"
+            ],
+            "not": {
+              "required": [
+                "properties"
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "object"
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "required": [
+              "properties"
+            ],
+            "not": {
+              "required": [
+                "items"
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "not": {
+              "properties": {
+                "type": {
+                  "const": "array"
+                }
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "not": {
+              "required": [
+                "items"
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "not": {
+              "properties": {
+                "type": {
+                  "const": "object"
+                }
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "not": {
+              "required": [
+                "properties"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "alphanumericCharacters": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+    },
+    "interfaceLikeApi": {
+      "type": "object",
+      "required": [
+        "import_uri"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "import_uri": {
+          "type": "string",
+          "minLength": 1,
+          "anyOf": [
+            {
+              "format": "uri-reference"
+            },
+            {
+              "pattern": "^\\$\\{app_base_dir\\}.*$"
+            }
+          ]
+        }
+      }
+    },
+    "cmdLikeApi": {
+      "type": "object",
+      "required": [
+        "name"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/alphanumericCharacters"
+        },
+        "property": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "properties": {
+              "type": "object",
+              "propertyNames": {
+                "$ref": "#/$defs/alphanumericCharacters"
+              },
+              "patternProperties": {
+                "^[A-Za-z_][A-Za-z0-9_]*$": {
+                  "$ref": "#/$defs/valueType"
+                }
+              },
+              "additionalProperties": false
+            },
+            "required": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 1
+            }
+          }
+        },
+        "result": {
+          "type": "object",
+          "required": [
+            "property"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "property": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "properties": {
+                  "type": "object",
+                  "minProperties": 1,
+                  "propertyNames": {
+                    "$ref": "#/$defs/alphanumericCharacters"
+                  },
+                  "patternProperties": {
+                    "^[A-Za-z_][A-Za-z0-9_]*$": {
+                      "$ref": "#/$defs/valueType"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "required": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "minItems": 1
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "dataLikeApi": {
+      "type": "object",
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/alphanumericCharacters"
+        },
+        "property": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "properties": {
+              "type": "object",
+              "propertyNames": {
+                "$ref": "#/$defs/alphanumericCharacters"
+              },
+              "patternProperties": {
+                "^[A-Za-z_][A-Za-z0-9_]*$": {
+                  "$ref": "#/$defs/valueType"
+                }
+              },
+              "additionalProperties": false
+            },
+            "required": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 1
+            }
+          }
+        }
+      }
+    },
+    "interfaceSchema": {
+      "type": "object",
+      "properties": {
+        "interface": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/interfaceLikeApi"
+          }
+        },
+        "property": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "properties": {
+              "type": "object",
+              "propertyNames": {
+                "$ref": "#/$defs/alphanumericCharacters"
+              },
+              "patternProperties": {
+                "^[A-Za-z_][A-Za-z0-9_]*$": {
+                  "$ref": "#/$defs/valueType"
+                }
+              },
+              "additionalProperties": false
+            },
+            "required": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 1
+            }
+          }
+        },
+        "cmd_in": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/cmdLikeApi"
+          }
+        },
+        "cmd_out": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/cmdLikeApi"
+          }
+        },
+        "data_in": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/dataLikeApi"
+          }
+        },
+        "data_out": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/dataLikeApi"
+          }
+        },
+        "audio_frame_in": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/dataLikeApi"
+          }
+        },
+        "audio_frame_out": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/dataLikeApi"
+          }
+        },
+        "video_frame_in": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/dataLikeApi"
+          }
+        },
+        "video_frame_out": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/dataLikeApi"
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

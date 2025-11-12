@@ -1,0 +1,17 @@
+{
+  "type": "app",
+  "name": "check_graph_extension_not_installed",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "type": "extension",
+      "name": "default_extension_go",
+      "version": "0.1.0"
+    }
+  ],
+  "package": {
+    "include": [
+      "**"
+    ]
+  }
+}

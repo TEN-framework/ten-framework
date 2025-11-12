@@ -1,0 +1,71 @@
+#
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0.
+# See the LICENSE file for more information.
+#
+import("//build/feature/ten_package.gni")
+import("//build/ten_runtime/feature/publish.gni")
+import("//build/ten_runtime/glob.gni")
+import("//build/ten_runtime/options.gni")
+
+ten_package("default_tts_extension_python") {
+  package_kind = "extension"
+
+  resources = [
+    ".vscode/launch.json",
+    ".vscode/settings.json",
+    "__init__.py",
+    "__init__.py.tent",
+    "addon.py",
+    "addon.py.tent",
+    "extension.py",
+    "extension.py.tent",
+    "manifest.json",
+    "manifest.json.tent",
+    "property.json",
+    "requirements.txt",
+  ]
+
+  docs_files = exec_script("//.gnfiles/build/scripts/glob_file.py",
+                           [
+                             "--dir",
+                             rebase_path("docs/**/*"),
+                             "--dir-base",
+                             rebase_path("docs"),
+                             "--recursive",
+                             "--only-output-file",
+                           ],
+                           "json")
+
+  foreach(docs_file, docs_files) {
+    docs_file_rel_path = docs_file.relative_path
+    resources += [ "docs/${docs_file_rel_path}=>docs/${docs_file_rel_path}" ]
+  }
+
+  tests_files = exec_script("//.gnfiles/build/scripts/glob_file.py",
+                            [
+                              "--dir",
+                              rebase_path("tests/**/*"),
+                              "--dir-base",
+                              rebase_path("tests"),
+                              "--recursive",
+                              "--only-output-file",
+                            ],
+                            "json")
+
+  foreach(tests_file, tests_files) {
+    tests_file_rel_path = tests_file.relative_path
+    resources +=
+        [ "tests/${tests_file_rel_path}=>tests/${tests_file_rel_path}" ]
+  }
+
+  deps = [ "//core/src/ten_runtime" ]
+}
+
+if (ten_enable_ten_manager) {
+  ten_package_publish("upload_default_tts_extension_python_to_server") {
+    base_dir = rebase_path(
+            "${root_out_dir}/ten_packages/extension/default_tts_extension_python")
+    deps = [ ":default_tts_extension_python" ]
+  }
+}

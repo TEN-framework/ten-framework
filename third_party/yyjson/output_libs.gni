@@ -1,0 +1,18 @@
+#
+# Copyright © 2024 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+yyjson_output_libs = []
+
+if (is_win) {
+  yyjson_output_libs +=
+      [ "${root_gen_dir}/cmake/yyjson/install/lib/yyjson.lib" ]
+} else if (is_mac) {
+  yyjson_output_libs +=
+      [ "${root_gen_dir}/cmake/yyjson/install/lib/libyyjson.a" ]
+} else if (is_linux) {
+  yyjson_output_libs +=
+      [ "${root_gen_dir}/cmake/yyjson/install/lib/libyyjson.a" ]
+}

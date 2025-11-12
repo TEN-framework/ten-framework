@@ -1,0 +1,13 @@
+diff --git a/libclingo/CMakeLists.txt b/libclingo/CMakeLists.txt
+index 1d70ba56..61bda5f1 100644
+--- a/libclingo/CMakeLists.txt
++++ b/libclingo/CMakeLists.txt
+@@ -67,7 +67,7 @@ if ((CLINGO_BUILD_SHARED OR CLINGO_INSTALL_LIB) AND NOT CLINGO_BUILD_WITH_PYTHON
+     if (CLINGO_BUILD_SHARED)
+         set_target_properties(libclingo PROPERTIES SOVERSION 4 VERSION 4.0)
+     else()
+-        list(APPEND clingo_targets libgringo libreify)
++        list(APPEND clingo_targets libgringo libreify ordered_map hopscotch_map sparse_map optional variant)
+     endif()
+ 
+     install(TARGETS ${clingo_targets}

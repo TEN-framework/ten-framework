@@ -1,0 +1,9 @@
+#!/bin/bash
+
+set -e
+
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+
+export NODE_PATH=ten_packages/system/ten_runtime_nodejs/lib:$NODE_PATH
+
+./bin/cpp_app_nodejs_app

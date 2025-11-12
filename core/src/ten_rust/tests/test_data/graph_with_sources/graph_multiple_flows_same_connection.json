@@ -1,0 +1,47 @@
+{
+  "nodes": [
+    {
+      "type": "extension",
+      "name": "multi_flow_dest",
+      "addon": "default_extension_go",
+      "extension_group": "some_group"
+    },
+    {
+      "type": "extension",
+      "name": "flow_source",
+      "addon": "default_extension_go",
+      "extension_group": "some_group"
+    }
+  ],
+  "connections": [
+    {
+      "extension": "multi_flow_dest",
+      "cmd": [
+        {
+          "name": "flow_alpha",
+          "source": [
+            {
+              "extension": "flow_source"
+            }
+          ]
+        },
+        {
+          "name": "flow_beta",
+          "source": [
+            {
+              "extension": "flow_source"
+            }
+          ]
+        },
+        {
+          "name": "flow_gamma",
+          "dest": [
+            {
+              "extension": "flow_source"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

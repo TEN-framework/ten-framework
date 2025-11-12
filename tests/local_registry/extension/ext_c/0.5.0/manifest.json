@@ -1,0 +1,12 @@
+{
+  "type": "extension",
+  "name": "ext_c",
+  "version": "0.5.0",
+  "dependencies": [
+    {
+      "type": "extension",
+      "name": "ext_a",
+      "version": "^1.0.0"
+    }
+  ]
+}

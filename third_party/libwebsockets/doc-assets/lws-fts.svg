@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="187.45mm" height="114.8mm" version="1.1" viewBox="0 0 187.4528 114.80323" xmlns="http://www.w3.org/2000/svg">
+	<defs>
+		<marker id="b" overflow="visible" orient="auto">
+			<path transform="matrix(-.2 0 0 -.2 -1.2 0)" d="m0 0 5-5-17.5 5 17.5 5z" fill-rule="evenodd" stroke="#000" stroke-width="1pt"/>
+		</marker>
+		<marker id="c" overflow="visible" orient="auto">
+			<path transform="matrix(-.2 0 0 -.2 -1.2 0)" d="m0 0 5-5-17.5 5 17.5 5z" fill-rule="evenodd" stroke="#000" stroke-width="1pt"/>
+		</marker>
+		<marker id="a" overflow="visible" orient="auto">
+			<path transform="matrix(-.2 0 0 -.2 -1.2 0)" d="m0 0 5-5-17.5 5 17.5 5z" fill-rule="evenodd" stroke="#000" stroke-width="1pt"/>
+		</marker>
+		<marker id="d" overflow="visible" orient="auto">
+			<path transform="matrix(-.2 0 0 -.2 -1.2 0)" d="m0 0 5-5-17.5 5 17.5 5z" fill-rule="evenodd" stroke="#000" stroke-width="1pt"/>
+		</marker>
+		<marker id="f" overflow="visible" orient="auto">
+			<path transform="matrix(-.2 0 0 -.2 -1.2 0)" d="m0 0 5-5-17.5 5 17.5 5z" fill-rule="evenodd" stroke="#000" stroke-width="1pt"/>
+		</marker>
+		<marker id="e" overflow="visible" orient="auto">
+			<path transform="matrix(-.2 0 0 -.2 -1.2 0)" d="m0 0 5-5-17.5 5 17.5 5z" fill-rule="evenodd" stroke="#000" stroke-width="1pt"/>
+		</marker>
+		<marker id="g" overflow="visible" orient="auto">
+			<path transform="matrix(-.2 0 0 -.2 -1.2 0)" d="m0 0 5-5-17.5 5 17.5 5z" fill-rule="evenodd" stroke="#000" stroke-width="1pt"/>
+		</marker>
+		<filter id="h" x="-.018221" y="-.030454" width="1.0364" height="1.0609" color-interpolation-filters="sRGB">
+			<feGaussianBlur stdDeviation="1.0113078"/>
+		</filter>
+	</defs>
+	<g transform="translate(223.75 183.73)">
+		<g>
+			<rect transform="matrix(1.3577 0 0 1.3577 157.53 159.82)" x="-278.39" y="-250.61" width="133.21" height="79.7" filter="url(#h)"/>
+			<rect x="-221.47" y="-181.71" width="180.86" height="108.21" fill="#fff"/>
+			<rect x="-136.12" y="-131.41" width="66.299" height="13.971" fill="#c8c4b7"/>
+			<circle transform="rotate(-90)" cx="99.407" cy="-188.19" r="13.209" fill="#5f8dd3" opacity=".742"/>
+			<text x="-188.80128" y="-102.71894" dominant-baseline="auto" fill="#000000" font-family="'Open Sans'" font-size="5.1903px" letter-spacing="0px" stroke-width=".27805" text-align="center" text-anchor="middle" word-spacing="0px" style="font-feature-settings:normal;font-variant-alternates:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;font-variant-position:normal;line-height:1.25;shape-padding:0;text-decoration-color:#000000;text-decoration-line:none;text-decoration-style:solid;text-indent:0;text-orientation:mixed;text-transform:none;white-space:normal" xml:space="preserve"><tspan x="-188.80128" y="-102.71894">Original</tspan><tspan x="-188.80128" y="-96.231033">Text</tspan><tspan x="-188.80128" y="-89.743126">file</tspan></text>
+			<circle transform="rotate(-90)" cx="128.11" cy="-199.63" r="13.209" fill="#5f8dd3" opacity=".742"/>
+			<text x="-199.72415" y="-131.67715" dominant-baseline="auto" fill="#000000" font-family="'Open Sans'" font-size="5.1903px" letter-spacing="0px" stroke-width=".27805" text-align="center" text-anchor="middle" word-spacing="0px" style="font-feature-settings:normal;font-variant-alternates:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;font-variant-position:normal;line-height:1.25;shape-padding:0;text-decoration-color:#000000;text-decoration-line:none;text-decoration-style:solid;text-indent:0;text-orientation:mixed;text-transform:none;white-space:normal" xml:space="preserve"><tspan x="-199.72415" y="-131.67715">Original</tspan><tspan x="-199.72415" y="-125.18925">Text</tspan><tspan x="-199.72415" y="-118.70134">file</tspan></text>
+			<circle transform="rotate(-90)" cx="156.82" cy="-184.64" r="13.209" fill="#5f8dd3" opacity=".742"/>
+			<text x="-184.48293" y="-161.14342" dominant-baseline="auto" fill="#000000" font-family="'Open Sans'" font-size="5.1903px" letter-spacing="0px" stroke-width=".27805" text-align="center" text-anchor="middle" word-spacing="0px" style="font-feature-settings:normal;font-variant-alternates:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;font-variant-position:normal;line-height:1.25;shape-padding:0;text-decoration-color:#000000;text-decoration-line:none;text-decoration-style:solid;text-indent:0;text-orientation:mixed;text-transform:none;white-space:normal" xml:space="preserve"><tspan x="-184.48293" y="-161.14342">Original</tspan><tspan x="-184.48293" y="-154.65552">Text</tspan><tspan x="-184.48293" y="-148.1676">file</tspan></text>
+			<circle transform="rotate(-90)" cx="126.08" cy="-154.16" r="23.116" fill="#217867"/>
+			<text x="-154.524" y="-127.70548" dominant-baseline="auto" fill="#d7f4ee" font-family="'Open Sans'" font-size="13.246px" letter-spacing="0px" stroke-width=".70963" text-align="center" text-anchor="middle" word-spacing="0px" style="font-feature-settings:normal;font-variant-alternates:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;font-variant-position:normal;line-height:1.25;shape-padding:0;text-decoration-color:#000000;text-decoration-line:none;text-decoration-style:solid;text-indent:0;text-orientation:mixed;text-transform:none;white-space:normal" xml:space="preserve"><tspan x="-154.524" y="-127.70548">Index</tspan><tspan x="-154.524" y="-111.14747">File</tspan></text>
+		</g>
+		<g fill="none" stroke="#000" stroke-width="1.1745">
+			<path d="m-177.53-107.03c6.6045-7.3666 6.6045-7.3666 6.6045-7.3666" marker-end="url(#g)"/>
+			<path d="m-175.59-147.47 6.8585 7.3666" marker-end="url(#e)"/>
+			<path d="m-186.9-127.65 11.939 0.63506" marker-end="url(#f)"/>
+		</g>
+		<g>
+			<rect x="-113.26" y="-146.65" width="27.434" height="41.151" fill="#fca"/>
+			<text x="-99.287437" y="-128.11143" dominant-baseline="auto" fill="#000000" font-family="'Open Sans'" font-size="6.7058px" letter-spacing="0px" stroke-width=".35924" text-align="center" text-anchor="middle" word-spacing="0px" style="font-feature-settings:normal;font-variant-alternates:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;font-variant-position:normal;line-height:1.25;shape-padding:0;text-decoration-color:#000000;text-decoration-line:none;text-decoration-style:solid;text-indent:0;text-orientation:mixed;text-transform:none;white-space:normal" xml:space="preserve"><tspan x="-99.287437" y="-128.11143">Search</tspan><tspan x="-99.287437" y="-119.72922">Action</tspan></text>
+			<text x="-83.03019" y="-161.13399" dominant-baseline="auto" fill="#000000" font-family="'Open Sans'" font-size="6.7058px" letter-spacing="0px" stroke-width=".35924" text-align="center" text-anchor="middle" word-spacing="0px" style="font-feature-settings:normal;font-variant-alternates:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;font-variant-position:normal;line-height:1.25;shape-padding:0;text-decoration-color:#000000;text-decoration-line:none;text-decoration-style:solid;text-indent:0;text-orientation:mixed;text-transform:none;white-space:normal" xml:space="preserve"><tspan x="-83.03019" y="-161.13399" stroke-width=".35924">Keyword</tspan></text>
+			<rect x="-79.982" y="-146.91" width="27.434" height="41.151" fill="#fca"/>
+			<text x="-65.248817" y="-131.4137" dominant-baseline="auto" fill="#000000" font-family="'Open Sans'" font-size="6.7058px" letter-spacing="0px" stroke-width=".35924" text-align="center" text-anchor="middle" word-spacing="0px" style="font-feature-settings:normal;font-variant-alternates:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;font-variant-position:normal;line-height:1.25;shape-padding:0;text-decoration-color:#000000;text-decoration-line:none;text-decoration-style:solid;text-indent:0;text-orientation:mixed;text-transform:none;white-space:normal" xml:space="preserve"><tspan x="-65.248817" y="-131.4137">Auto-</tspan><tspan x="-65.248817" y="-123.03148">comp-</tspan><tspan x="-65.248817" y="-114.64926">lete</tspan></text>
+			<text x="-82.307457" y="-85.980392" dominant-baseline="auto" fill="#000000" font-family="'Open Sans'" font-size="6.7058px" letter-spacing="0px" stroke-width=".35924" text-align="center" text-anchor="middle" word-spacing="0px" style="font-feature-settings:normal;font-variant-alternates:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;font-variant-position:normal;line-height:1.25;shape-padding:0;text-decoration-color:#000000;text-decoration-line:none;text-decoration-style:solid;text-indent:0;text-orientation:mixed;text-transform:none;white-space:normal" xml:space="preserve"><tspan x="-82.307457" y="-85.980392" stroke-width=".35924">Result lwsac</tspan></text>
+		</g>
+		<g fill="none" stroke="#000" stroke-width="1.1745">
+			<path d="m-73.75-156.75 6.8585 7.3666" marker-end="url(#d)"/>
+			<path d="m-89.77-156.75-6.8585 7.3666" marker-end="url(#a)"/>
+			<path d="m-98.136-103.91 6.8585 7.3666" marker-end="url(#c)"/>
+			<path d="m-65.384-104.42-6.8585 7.3666" marker-end="url(#b)"/>
+		</g>
+	</g>
+</svg>

@@ -1,0 +1,78 @@
+<testcase>
+<info>
+<keywords>
+HTTP
+HTTP PUT
+</keywords>
+</info>
+
+<reply>
+<data nocheck="yes">
+HTTP/1.1 200 A OK
+Server: curl test
+Content-Type: text/html; charset=iso-8859-1
+Content-Length: 3
+
+ok
+</data>
+<data2 nocheck="yes">
+HTTP/1.1 200 A OK
+Server: curl test
+Content-Type: text/html; charset=iso-8859-1
+Content-Length: 9
+
+still ok
+</data2>
+</reply>
+
+# Client-side
+<client>
+#
+<server>
+http
+</server>
+ <name>
+HTTP PUT twice
+ </name>
+ <command>
+-H "Expect:" -T %LOGDIR/%TESTNUMBER http://%HOSTIP:%HTTPPORT/%TESTNUMBER.upload1 -T %LOGDIR/%TESTNUMBER http://%HOSTIP:%HTTPPORT/%TESTNUMBER0002.upload2
+</command>
+<file name="%LOGDIR/%TESTNUMBER">
+test
+</file>
+</client>
+
+# Verify data after the test has been "shot"
+<verify>
+<protocol>
+PUT /%TESTNUMBER.upload1 HTTP/1.1
+Host: %HOSTIP:%HTTPPORT
+User-Agent: curl/%VERSION
+Accept: */*
+Content-Length: 5
+
+test
+PUT /%TESTNUMBER0002.upload2 HTTP/1.1
+Host: %HOSTIP:%HTTPPORT
+User-Agent: curl/%VERSION
+Accept: */*
+Content-Length: 5
+
+test
+</protocol>
+<stdout>
+HTTP/1.1 200 A OK
+Server: curl test
+Content-Type: text/html; charset=iso-8859-1
+Content-Length: 3
+
+ok
+HTTP/1.1 200 A OK
+Server: curl test
+Content-Type: text/html; charset=iso-8859-1
+Content-Length: 9
+
+still ok
+</stdout>
+</verify>
+</testcase>

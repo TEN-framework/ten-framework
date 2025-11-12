@@ -1,0 +1,62 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+import("//build/ten_runtime/feature/test.gni")
+import("//build/ten_runtime/ten.gni")
+
+ten_package_test_prepare_app("ffmpeg_basic_app") {
+  src_app = "default_app_cpp"
+  src_app_language = "cpp"
+  generated_app_src_root_dir_name = "ffmpeg_basic_app"
+
+  replace_paths_after_install_app = [
+    "ffmpeg_basic_app/manifest.json",
+    "ffmpeg_basic_app/property.json",
+  ]
+
+  if (ten_enable_ten_manager) {
+    deps = [
+      "//core/src/ten_manager",
+      "//packages/core_apps/default_app_cpp:upload_default_app_cpp_to_server",
+      "//packages/core_protocols/msgpack:upload_protocol_msgpack_to_server",
+      "//packages/example_extensions/ffmpeg_client:upload_ffmpeg_client_to_server",
+      "//packages/example_extensions/ffmpeg_demuxer:upload_ffmpeg_demuxer_to_server",
+      "//packages/example_extensions/ffmpeg_muxer:upload_ffmpeg_muxer_to_server",
+    ]
+  }
+}
+
+ten_package_test_prepare_auxiliary_resources("ffmpeg_basic_app_test_files") {
+  resources = [
+    "__init__.py",
+    "test_case.py",
+    "video_cmp.py",
+  ]
+
+  utils_files = exec_script("//.gnfiles/build/scripts/glob_file.py",
+                            [
+                              "--dir",
+                              rebase_path("//tests/utils/**/*"),
+                              "--dir-base",
+                              rebase_path("//tests/utils"),
+                              "--recursive",
+                              "--only-output-file",
+                            ],
+                            "json")
+
+  foreach(utils_file, utils_files) {
+    utils_file_rel_path = utils_file.relative_path
+    resources +=
+        [ "//tests/utils/${utils_file_rel_path}=>utils/${utils_file_rel_path}" ]
+  }
+}
+
+group("ffmpeg_basic") {
+  deps = [
+    ":ffmpeg_basic_app",
+    ":ffmpeg_basic_app_test_files",
+  ]
+}

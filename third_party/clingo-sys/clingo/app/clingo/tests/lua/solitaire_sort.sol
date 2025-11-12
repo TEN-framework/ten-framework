@@ -1,0 +1,20 @@
+Step: 1
+Step: 2
+Step: 3
+Step: 4
+Step: 5
+Step: 6
+Step: 7
+Step: 8
+Step: 9
+Step: 10
+Step: 11
+Step: 12
+Step: 13
+move(f(j,1,3,1,5),4) move(f(j,2,3,4,3),4) move(f(j,2,5,4,5),10) move(f(j,3,2,5,2),3) move(f(j,3,3,1,3),3) move(f(j,3,3,1,3),5) move(f(j,3,3,5,3),10) move(f(j,3,4,3,2),2) move(f(j,3,4,3,2),9) move(f(j,3,5,3,3),11) move(f(j,3,5,3,7),7) move(f(j,3,5,3,7),9) move(f(j,3,6,3,4),8) move(f(j,3,7,5,7),8) move(f(j,4,3,4,5),5) move(f(j,4,4,2,4),1) move(f(j,4,4,4,6),13) move(f(j,4,5,2,5),12) move(f(j,4,5,2,5),6) move(f(j,4,5,6,5),9) move(f(j,5,1,3,1),6) move(f(j,5,2,5,4),4) move(f(j,5,2,5,4),6) move(f(j,5,3,5,1),5) move(f(j,5,3,5,1),7) move(f(j,5,3,7,3),9) move(f(j,5,4,5,6),5) move(f(j,5,4,7,4),7) move(f(j,5,5,5,3),8) move(f(j,5,5,7,5),6) move(f(j,6,5,4,5),7)
+move(f(j,1,3,1,5),4) move(f(j,2,3,4,3),4) move(f(j,3,2,5,2),3) move(f(j,3,3,1,3),3) move(f(j,3,3,1,3),5) move(f(j,3,4,3,2),2) move(f(j,3,4,3,2),8) move(f(j,3,5,3,7),10) move(f(j,3,5,3,7),8) move(f(j,3,6,3,4),7) move(f(j,3,6,3,4),9) move(f(j,3,7,5,7),9) move(f(j,4,3,6,3),8) move(f(j,4,4,2,4),1) move(f(j,4,4,4,6),13) move(f(j,4,4,6,4),10) move(f(j,4,5,2,5),12) move(f(j,4,5,4,3),9) move(f(j,4,6,4,4),11) move(f(j,5,1,3,1),6) move(f(j,5,2,5,4),4) move(f(j,5,2,5,4),6) move(f(j,5,3,5,1),5) move(f(j,5,3,5,1),7) move(f(j,5,4,5,6),5) move(f(j,5,4,5,6),9) move(f(j,5,5,7,5),6) move(f(j,5,5,7,5),8) move(f(j,5,6,3,6),6) move(f(j,6,5,4,5),7) move(f(j,7,5,7,3),7)
+move(f(j,1,3,1,5),6) move(f(j,2,3,4,3),6) move(f(j,3,2,5,2),3) move(f(j,3,3,1,3),5) move(f(j,3,3,1,3),7) move(f(j,3,3,3,5),3) move(f(j,3,4,3,2),2) move(f(j,3,4,3,2),4) move(f(j,3,5,3,7),4) move(f(j,3,5,3,7),6) move(f(j,3,6,3,4),5) move(f(j,3,7,5,7),5) move(f(j,4,3,6,3),11) move(f(j,4,3,6,3),8) move(f(j,4,4,2,4),1) move(f(j,4,4,4,6),13) move(f(j,4,5,2,5),8) move(f(j,4,5,4,3),12) move(f(j,5,1,3,1),6) move(f(j,5,2,5,4),4) move(f(j,5,2,5,4),6) move(f(j,5,3,3,3),9) move(f(j,5,3,5,1),5) move(f(j,5,3,5,1),7) move(f(j,5,4,5,6),5) move(f(j,5,5,7,5),6) move(f(j,5,5,7,5),8) move(f(j,6,3,6,5),10) move(f(j,6,5,4,5),7) move(f(j,6,5,4,5),9) move(f(j,7,5,7,3),7)
+move(f(j,1,3,1,5),7) move(f(j,2,3,4,3),10) move(f(j,2,3,4,3),7) move(f(j,2,4,4,4),4) move(f(j,2,5,2,3),11) move(f(j,3,3,1,3),6) move(f(j,3,3,1,3),8) move(f(j,3,4,3,2),5) move(f(j,3,4,5,4),2) move(f(j,3,5,3,7),7) move(f(j,3,5,3,7),9) move(f(j,3,6,3,4),8) move(f(j,3,7,5,7),8) move(f(j,4,3,6,3),4) move(f(j,4,3,6,3),9) move(f(j,4,4,2,4),1) move(f(j,4,4,4,2),3) move(f(j,4,4,4,6),13) move(f(j,4,5,2,5),12) move(f(j,4,5,2,5),6) move(f(j,5,1,3,1),6) move(f(j,5,2,5,4),6) move(f(j,5,3,5,1),5) move(f(j,5,3,5,1),7) move(f(j,5,4,5,6),3) move(f(j,5,5,7,5),4) move(f(j,5,5,7,5),6) move(f(j,6,3,6,5),8) move(f(j,6,5,4,5),5) move(f(j,6,5,4,5),7) move(f(j,7,5,7,3),5)
+move(f(j,2,4,4,4),3) move(f(j,2,5,4,5),10) move(f(j,3,2,5,2),3) move(f(j,3,3,1,3),3) move(f(j,3,3,5,3),10) move(f(j,3,4,1,4),7) move(f(j,3,4,3,2),2) move(f(j,3,4,3,2),9) move(f(j,3,4,3,6),4) move(f(j,3,5,1,5),5) move(f(j,3,5,3,3),11) move(f(j,3,5,3,7),7) move(f(j,3,5,3,7),9) move(f(j,3,6,3,4),6) move(f(j,3,6,3,4),8) move(f(j,3,7,5,7),8) move(f(j,4,4,2,4),1) move(f(j,4,4,4,6),13) move(f(j,4,5,2,5),12) move(f(j,4,5,6,5),9) move(f(j,5,1,3,1),6) move(f(j,5,2,5,4),4) move(f(j,5,2,5,4),6) move(f(j,5,3,5,1),5) move(f(j,5,3,5,1),7) move(f(j,5,3,7,3),9) move(f(j,5,4,5,6),5) move(f(j,5,4,7,4),7) move(f(j,5,5,5,3),8) move(f(j,5,5,7,5),6) move(f(j,6,5,4,5),7)
+move(f(j,2,4,4,4),3) move(f(j,2,5,4,5),10) move(f(j,3,2,5,2),3) move(f(j,3,3,1,3),3) move(f(j,3,3,5,3),10) move(f(j,3,4,1,4),9) move(f(j,3,4,3,2),2) move(f(j,3,4,3,2),7) move(f(j,3,4,3,6),4) move(f(j,3,5,1,5),5) move(f(j,3,5,3,3),11) move(f(j,3,5,3,7),7) move(f(j,3,5,3,7),9) move(f(j,3,6,3,4),6) move(f(j,3,6,3,4),8) move(f(j,3,7,5,7),8) move(f(j,4,4,2,4),1) move(f(j,4,4,4,6),13) move(f(j,4,5,2,5),12) move(f(j,4,5,6,5),9) move(f(j,5,1,3,1),6) move(f(j,5,2,5,4),4) move(f(j,5,2,5,4),6) move(f(j,5,3,5,1),5) move(f(j,5,3,5,1),7) move(f(j,5,3,7,3),9) move(f(j,5,4,5,6),5) move(f(j,5,4,7,4),7) move(f(j,5,5,5,3),8) move(f(j,5,5,7,5),6) move(f(j,6,5,4,5),7)
+SAT

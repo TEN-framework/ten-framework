@@ -1,0 +1,64 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+import("//build/feature/ten_package.gni")
+import("//build/ten_runtime/feature/publish.gni")
+import("//build/ten_runtime/glob.gni")
+import("//build/ten_runtime/options.gni")
+
+ten_package("python_addon_loader") {
+  package_kind = "addon_loader"
+  enable_build = true
+
+  resources = [
+    "LICENSE",
+    "manifest.json",
+    "property.json",
+  ]
+
+  docs_files = exec_script("//.gnfiles/build/scripts/glob_file.py",
+                           [
+                             "--dir",
+                             rebase_path("docs/**/*"),
+                             "--dir-base",
+                             rebase_path("docs"),
+                             "--recursive",
+                             "--only-output-file",
+                           ],
+                           "json")
+
+  foreach(docs_file, docs_files) {
+    docs_file_rel_path = docs_file.relative_path
+    resources += [ "docs/${docs_file_rel_path}=>docs/${docs_file_rel_path}" ]
+  }
+
+  sources = [ "src/main.cc" ]
+  include_dirs = [ "//core" ]
+
+  ldflags = []
+  if (is_mac) {
+    ldflags +=
+        [ "-Wl,-rpath,@loader_path/../../../system/ten_runtime_python/lib" ]
+  } else if (is_linux) {
+    ldflags += [
+      "-Wl,-rpath=\$ORIGIN/../../../system/ten_runtime_python/lib",
+      "-Wl,-rpath-link=\$ORIGIN/../../../system/ten_runtime_python/lib",
+    ]
+  }
+
+  deps = [
+    "//core/src/ten_runtime",
+    "//core/src/ten_runtime/binding/python",
+  ]
+}
+
+if (ten_enable_ten_manager) {
+  ten_package_publish("upload_python_addon_loader_to_server") {
+    base_dir = rebase_path(
+            "${root_out_dir}/ten_packages/addon_loader/python_addon_loader")
+    deps = [ ":python_addon_loader" ]
+  }
+}

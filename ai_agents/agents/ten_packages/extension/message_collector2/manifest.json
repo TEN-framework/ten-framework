@@ -1,0 +1,39 @@
+{
+  "type": "extension",
+  "name": "message_collector2",
+  "version": "0.2.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.11"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "**.tent",
+      "**.py",
+      "README.md"
+    ]
+  },
+  "api": {
+    "property": {
+      "properties": {}
+    },
+    "data_in": [
+      {
+        "name": "message"
+      },
+      {
+        "name": "flush"
+      }
+    ],
+    "data_out": [
+      {
+        "name": "data"
+      }
+    ]
+  }
+}

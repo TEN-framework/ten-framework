@@ -1,0 +1,48 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+import("//build/ten_runtime/ten.gni")
+
+config("ten_runtime_nodejs_config") {
+  include_dirs = ten_runtime_common_includes
+  include_dirs += [ "//third_party/node-api-headers/include" ]
+
+  if (!is_win) {
+    cflags = [ "-fPIC" ]
+  }
+}
+
+ten_shared_library("ten_runtime_nodejs") {
+  configs = [ ":ten_runtime_nodejs_config" ]
+
+  output_extension = "node"
+
+  if (is_mac || is_linux) {
+    add_configs = [ "//.gnfiles/build/toolchain/common:allow_undefined" ]
+    remove_configs = [ "//.gnfiles/build/toolchain/common:disallow_undefined" ]
+  }
+
+  # Add rpath to find ten_runtime library.
+  if (is_mac) {
+    ldflags = [ "-Wl,-rpath,@loader_path/../../ten_runtime/lib" ]
+  } else if (is_linux) {
+    ldflags = [ "-Wl,-rpath=\$ORIGIN/../../ten_runtime/lib" ]
+  }
+
+  sources = [ "init.c" ]
+
+  deps = [
+    "addon",
+    "app",
+    "common",
+    "error",
+    "extension",
+    "msg",
+    "ten_env",
+    "test",
+    "//core/src/ten_runtime:ten_runtime_library",
+  ]
+}

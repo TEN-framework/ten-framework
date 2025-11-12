@@ -1,0 +1,930 @@
+name: Mac (Arm64)
+
+on:
+  release:
+    types: [created]
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths-ignore:
+      - "tools/**"
+      - ".vscode/**"
+      - ".devcontainer/**"
+      - ".github/**"
+      - "!.github/workflows/mac_arm64.yml"
+      - "core/src/ten_manager/designer_frontend/**"
+      - "**.md"
+      - "ai_agents/**"
+
+permissions:
+  contents: write
+  discussions: write
+  security-events: write
+
+concurrency:
+  group: mac-arm64-${{ github.head_ref }}
+  cancel-in-progress: true
+
+jobs:
+  call-check-pr-status:
+    uses: ./.github/workflows/_check_pr_status.yml
+
+  build:
+    needs: call-check-pr-status
+    if: ${{ needs.call-check-pr-status.outputs.should_continue == 'true' }}
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        build_type: [debug, release]
+    steps:
+      - name: Check PR status before matrix execution
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            console.log('Event name:', context.eventName);
+            console.log('Matrix:', ${{ toJson(matrix) }});
+
+            // Only check for PR events
+            if (context.eventName !== 'pull_request') {
+              console.log('Not a PR event, continuing...');
+              return;
+            }
+
+            // Ensure we have PR data
+            if (!context.payload.pull_request) {
+              console.log('No pull_request data in payload, continuing...');
+              return;
+            }
+
+            const { owner, repo } = context.repo;
+            const prNumber = context.payload.pull_request.number;
+
+            try {
+              const pr = await github.rest.pulls.get({
+                owner,
+                repo,
+                pull_number: prNumber,
+              });
+
+              console.log(`PR #${prNumber} state: ${pr.data.state}, merged: ${pr.data.merged}`);
+
+              if (pr.data.state === 'closed') {
+                if (pr.data.merged) {
+                  console.log(`PR #${prNumber} has been merged. Stopping matrix execution.`);
+                  core.setFailed('PR has been merged, stopping execution to save resources.');
+                } else {
+                  console.log(`PR #${prNumber} has been closed. Stopping matrix execution.`);
+                  core.setFailed('PR has been closed, stopping execution to save resources.');
+                }
+              } else {
+                console.log(`PR #${prNumber} is still open. Continuing matrix execution.`);
+              }
+            } catch (error) {
+              console.error(`Error checking PR status: ${error.message}`);
+              console.log('Error details:', error);
+              console.log('Continuing matrix execution due to error...');
+            }
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+
+      - name: Trust working directory
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
+      - name: Initialize and update submodules except portal/
+        run: |
+          # Retrieve all submodule paths, excluding `portal/`.
+          submodules=$(git config --file .gitmodules --get-regexp path | awk '$2 != "portal" { print $2 }')
+
+          git submodule init
+
+          for submodule in $submodules; do
+            echo "Initializing submodule: $submodule"
+            git submodule update --init --recursive --depth 1 "$submodule"
+          done
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "stable"
+          cache: false
+
+      - name: Install tools and dependencies
+        run: |
+          # Due to https://github.com/llvm/llvm-project/issues/155531, we need
+          # to use llvm@20 currently, and will switch to llvm when it is solved.
+          brew install llvm@20
+          rustup default nightly-2025-09-18
+
+          brew install tree
+          pip3 install --use-pep517 python-dotenv jinja2 requests
+          go install golang.org/dl/go1.24.3@latest && go1.24.3 download
+          go env -w GOFLAGS="-buildvcs=false"
+          cargo install --force cbindgen
+
+      - name: Update version
+        run: |
+          python3 tools/version/update_version_in_ten_framework.py
+          python3 tools/version/check_version_in_ten_framework.py
+
+      - name: Build
+        run: |
+          if [ ${{ matrix.build_type }} == "debug" ]; then
+            export PATH="$(brew --prefix llvm@20)/bin:$PATH"
+          fi
+
+          export PATH=$(pwd)/core/ten_gn:$PATH
+          echo $PATH
+
+          df -h .
+
+          if [ "${{ matrix.build_type }}" = "debug" ]; then
+            EXTRA_ARGS="ten_enable_python_binding=false"
+          else
+            EXTRA_ARGS="ten_enable_python_binding=true ten_enable_advanced_python_integration_tests=false"
+          fi
+
+          tgn gen mac arm64 ${{ matrix.build_type }} -- log_level=1 enable_serialized_actions=true  ten_rust_enable_gen_cargo_config=false ten_enable_cargo_clean=true ten_enable_rust_incremental_build=false ten_manager_enable_frontend=false ten_enable_integration_tests_prebuilt=false $EXTRA_ARGS
+
+          tgn build mac arm64 ${{ matrix.build_type }}
+
+          df -h .
+          tree -I 'gen|obj' out
+
+        # Package the tests artifacts into a tar file while preserving file
+        # permissions.
+      - name: Package tests relevant artifacts preserving permissions
+        run: |
+          files=""
+          for item in tests ten_manager tgn_args.txt; do
+            if [ -e "out/mac/arm64/$item" ]; then
+              files="$files out/mac/arm64/$item"
+            fi
+          done
+
+          if [ -n "$files" ]; then
+            tar -czvf tests-artifacts.tar.gz $files
+          fi
+
+      - name: Upload tests relevant artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: tests-artifacts-mac-arm64-${{ matrix.build_type }}
+          path: tests-artifacts.tar.gz
+          if-no-files-found: ignore
+
+      - name: Update supports before upload or publish
+        if: github.event_name == 'release' || (github.ref != '' && startsWith(github.ref, 'refs/tags/'))
+        continue-on-error: true
+        run: |
+          UPDATE_SUPPORTS_SCRIPT=$(pwd)/tools/supports/update_supports_in_manifest_json.py
+
+          cd out/mac/arm64/ten_packages
+          ARRAY=(
+            "system/ten_runtime"
+            "system/ten_runtime_go"
+            "system/ten_runtime_python"
+            "system/ten_runtime_nodejs"
+            "addon_loader/python_addon_loader"
+            "addon_loader/nodejs_addon_loader"
+          )
+
+          for item in "${ARRAY[@]}"; do
+            echo "Processing item: $item"
+            if python3 ${UPDATE_SUPPORTS_SCRIPT} --os-arch-pairs mac:arm64 --input-file ${item}/manifest.json --output-file ${item}/manifest.json --log-level 1; then
+              echo "✓ Successfully updated supports for $item"
+              cat ${item}/manifest.json
+            else
+              echo "✗ Failed to update supports for $item, continuing with next item..."
+            fi
+          done
+
+          df -h .
+        shell: bash
+
+      - name: Package assets
+        if: github.event_name == 'release' || (github.ref != '' && startsWith(github.ref, 'refs/tags/'))
+        continue-on-error: true
+        run: |
+          cd out/mac/arm64
+
+          # Define array of files/directories to package
+          FILES_TO_PACKAGE=(
+            "ten_packages/system/ten_runtime"
+            "ten_packages/system/ten_runtime_go"
+            "ten_packages/system/ten_runtime_python"
+            "ten_packages/system/ten_runtime_nodejs"
+            "ten_packages/addon_loader/python_addon_loader"
+            "ten_packages/addon_loader/nodejs_addon_loader"
+          )
+
+          # Create zip archive with existing files only
+          EXISTING_FILES=()
+          for file in "${FILES_TO_PACKAGE[@]}"; do
+            if [ -e "$file" ]; then
+              EXISTING_FILES+=("$file")
+              echo "✓ Found: $file"
+            else
+              echo "✗ Missing: $file (will be skipped)"
+            fi
+          done
+
+          if [ ${#EXISTING_FILES[@]} -gt 0 ]; then
+            echo "Creating zip archive with ${#EXISTING_FILES[@]} items..."
+            zip -vr ten_packages-mac-${{ matrix.build_type }}-arm64.zip "${EXISTING_FILES[@]}" || {
+              echo "Warning: zip command failed, but continuing..."
+            }
+          else
+            echo "Warning: No files found to package"
+          fi
+
+          df -h .
+        shell: bash
+
+      - name: Publish to release assets
+        uses: softprops/action-gh-release@v2
+        if: github.event_name == 'release' || (github.ref != '' && startsWith(github.ref, 'refs/tags/'))
+        with:
+          files: |
+            out/mac/arm64/ten_packages-mac-${{ matrix.build_type }}-arm64.zip
+
+      - name: Clean up
+        if: github.event_name == 'release' || (github.ref != '' && startsWith(github.ref, 'refs/tags/'))
+        continue-on-error: true
+        run: |
+          rm -rf out/mac/arm64/ten_packages-mac-${{ matrix.build_type }}-arm64.zip
+
+          df -h .
+
+      - name: Publish release to TEN cloud store
+        if: ${{ (github.event_name == 'release' || (github.ref != '' && startsWith(github.ref, 'refs/tags/'))) && matrix.build_type == 'release' }}
+        continue-on-error: true
+        run: |
+          TMAN_BIN=$(pwd)/out/mac/arm64/ten_manager/bin/tman
+
+          cd out/mac/arm64
+          ARRAY=(
+            "ten_packages/system/ten_runtime"
+            "ten_packages/system/ten_runtime_go"
+            "ten_packages/system/ten_runtime_python"
+            "ten_packages/system/ten_runtime_nodejs"
+            "ten_packages/addon_loader/python_addon_loader"
+            "ten_packages/addon_loader/nodejs_addon_loader"
+          )
+
+          SUCCESSFUL_PUBLISHES=0
+          FAILED_PUBLISHES=0
+
+          for item in "${ARRAY[@]}"; do
+            echo "Processing: $item"
+
+            if [ ! -d "$item" ]; then
+              echo "✗ Directory not found: $item, skipping..."
+              FAILED_PUBLISHES=$((FAILED_PUBLISHES + 1))
+              continue
+            fi
+
+            cd "$item" || {
+              echo "✗ Failed to enter directory: $item, skipping..."
+              FAILED_PUBLISHES=$((FAILED_PUBLISHES + 1))
+              continue
+            }
+
+            # Try to get identity
+            if identity=$(${TMAN_BIN} package --get-identity 2>/dev/null); then
+              echo "Identity: $identity"
+
+              # Try to delete existing package (this can fail, it's okay)
+              echo "Attempting to delete existing package..."
+              # Parse identity string into separate arguments: type name version hash
+              read -r pkg_type pkg_name pkg_version pkg_hash <<< "$identity"
+              ${TMAN_BIN} --verbose --admin-token ${{ secrets.TEN_CLOUD_STORE_ADMIN_TOKEN }} delete "$pkg_type" "$pkg_name" "$pkg_version" "$pkg_hash" || {
+                echo "Warning: Failed to delete existing package (this is normal if package doesn't exist)"
+              }
+
+              # Try to publish
+              echo "Attempting to publish package..."
+              if ${TMAN_BIN} --verbose --user-token ${{ secrets.TEN_CLOUD_STORE }} publish; then
+                echo "✓ Successfully published: $item"
+                SUCCESSFUL_PUBLISHES=$((SUCCESSFUL_PUBLISHES + 1))
+              else
+                echo "✗ Failed to publish: $item"
+                FAILED_PUBLISHES=$((FAILED_PUBLISHES + 1))
+              fi
+            else
+              echo "✗ Failed to get identity for: $item"
+              FAILED_PUBLISHES=$((FAILED_PUBLISHES + 1))
+            fi
+
+            cd - >/dev/null
+          done
+
+          echo "Publication summary: $SUCCESSFUL_PUBLISHES successful, $FAILED_PUBLISHES failed"
+          df -h .
+        shell: bash
+
+      - name: Clean up
+        if: ${{ (github.event_name == 'release' || (github.ref != '' && startsWith(github.ref, 'refs/tags/'))) && matrix.build_type == 'release' }}
+        continue-on-error: true
+        run: |
+          cd out/mac/arm64
+          ARRAY=(
+            "ten_packages/system/ten_runtime"
+            "ten_packages/system/ten_runtime_go"
+            "ten_packages/system/ten_runtime_python"
+            "ten_packages/system/ten_runtime_nodejs"
+            "ten_packages/addon_loader/python_addon_loader"
+            "ten_packages/addon_loader/nodejs_addon_loader"
+          )
+
+          SUCCESSFUL_CLEANUPS=0
+          FAILED_CLEANUPS=0
+
+          for item in "${ARRAY[@]}"; do
+            echo "Cleaning up: $item"
+            if [ -e "$item" ]; then
+              if rm -rf "$item"; then
+                echo "✓ Successfully removed: $item"
+                SUCCESSFUL_CLEANUPS=$((SUCCESSFUL_CLEANUPS + 1))
+              else
+                echo "✗ Failed to remove: $item"
+                FAILED_CLEANUPS=$((FAILED_CLEANUPS + 1))
+              fi
+            else
+              echo "• Already absent: $item"
+              SUCCESSFUL_CLEANUPS=$((SUCCESSFUL_CLEANUPS + 1))
+            fi
+          done
+
+          echo "Cleanup summary: $SUCCESSFUL_CLEANUPS successful, $FAILED_CLEANUPS failed"
+          df -h .
+        shell: bash
+
+  test-standalone:
+    needs: build
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        build_type: [debug, release]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+
+      - name: Trust working directory
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
+      - name: Initialize and update submodules except portal/
+        run: |
+          # Retrieve all submodule paths, excluding `portal/`.
+          submodules=$(git config --file .gitmodules --get-regexp path | awk '$2 != "portal" { print $2 }')
+
+          git submodule init
+
+          for submodule in $submodules; do
+            echo "Initializing submodule: $submodule"
+            git submodule update --init --recursive --depth 1 "$submodule"
+          done
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "stable"
+          cache: false
+
+      - name: Set ulimit and sysctl
+        run: |
+          # Because there are concurrent test cases which involves many
+          # concurrent socket connections, we need to enlarge the maximum number
+          # of the opened file descriptor.
+          ulimit -n 102400
+
+          # Because there are concurrent test cases which will create many
+          # concurrent connections simutaneously, we increase the TCP listening
+          # backlog value to 8192.
+          sudo sysctl -w kern.ipc.somaxconn=8192
+        shell: bash
+
+      - name: Install tools and dependencies
+        run: |
+          # Due to https://github.com/llvm/llvm-project/issues/155531, we need
+          # to use llvm@20 currently, and will switch to llvm when it is solved.
+          brew install llvm@20
+          rustup default nightly-2025-09-18
+
+          brew install tree
+          pip3 install --use-pep517 python-dotenv jinja2 requests
+          go install golang.org/dl/go1.24.3@latest && go1.24.3 download
+          go env -w GOFLAGS="-buildvcs=false"
+          cargo install --force cbindgen
+
+      - name: Download build artifacts (tar archive)
+        uses: actions/download-artifact@v4
+        with:
+          name: tests-artifacts-mac-arm64-${{ matrix.build_type }}
+          path: out/mac/arm64
+
+      - name: Extract tests artifacts preserving permissions
+        run: |
+          tar -xzf out/mac/arm64/tests-artifacts.tar.gz
+
+      - name: View folder structure content
+        run: |
+          df -h .
+          tree -I ".*|*.h|*.hpp|*.py" out/mac/arm64
+
+      #   continue-on-error: true
+      # - name: Setup tmate session
+      #   uses: mxschmitt/action-tmate@v3
+
+      - name: Run Tests (ten_utils_unit_test)
+        env:
+          ASAN_OPTIONS: detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
+          MALLOC_CHECK_: 3
+          TEN_ENABLE_MEMORY_TRACKING: "true"
+          TEN_ENABLE_BACKTRACE_DUMP: "true"
+        run: |
+          chmod +x out/mac/arm64/tests/standalone/ten_utils_unit_test
+          out/mac/arm64/tests/standalone/ten_utils_unit_test
+
+          df -h .
+
+      - name: Run Tests (ten_runtime_unit_test)
+        env:
+          ASAN_OPTIONS: detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
+          MALLOC_CHECK_: 3
+          TEN_ENABLE_MEMORY_TRACKING: "true"
+          TEN_ENABLE_BACKTRACE_DUMP: "true"
+        run: |
+          chmod +x out/mac/arm64/tests/standalone/ten_runtime_unit_test
+          out/mac/arm64/tests/standalone/ten_runtime_unit_test
+
+          df -h .
+
+      - name: Run Tests (ten_runtime_smoke_test)
+        env:
+          ASAN_OPTIONS: detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
+          MALLOC_CHECK_: 3
+          TEN_ENABLE_MEMORY_TRACKING: "true"
+          TEN_ENABLE_BACKTRACE_DUMP: "true"
+        run: |
+          chmod +x out/mac/arm64/tests/standalone/ten_runtime_smoke_test
+          out/mac/arm64/tests/standalone/ten_runtime_smoke_test
+
+          df -h .
+      #   continue-on-error: true
+      # - name: Setup tmate session
+      #   uses: mxschmitt/action-tmate@v3
+
+      - name: Run Tests (ten_rust standalone tests)
+        env:
+          ASAN_OPTIONS: detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
+          MALLOC_CHECK_: 3
+          TEN_ENABLE_MEMORY_TRACKING: "true"
+          TEN_ENABLE_BACKTRACE_DUMP: "true"
+          RUST_BACKTRACE: "full"
+        run: |
+          cd out/mac/arm64/tests/standalone/ten_rust
+
+          chmod +x unit_test
+          chmod +x integration_test
+
+          ./unit_test --nocapture --test-threads=1 || { echo "ten_rust unit test failed"; exit 1; }
+          ./integration_test --nocapture --test-threads=1 || { echo "ten_rust integration test failed"; exit 1; }
+
+          df -h .
+
+      - name: Run Tests (ten_manager standalone tests)
+        env:
+          ASAN_OPTIONS: detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
+          MALLOC_CHECK_: 3
+          TEN_ENABLE_MEMORY_TRACKING: "true"
+          TEN_ENABLE_BACKTRACE_DUMP: "true"
+          RUST_BACKTRACE: "full"
+        run: |
+          cd out/mac/arm64/tests/standalone/ten_manager
+
+          chmod +x unit_test
+          chmod +x integration_test
+
+          ./unit_test --nocapture --test-threads=1 || { echo "ten_manager unit test failed"; exit 1; }
+          ./integration_test --nocapture --test-threads=1 || { echo "ten_manager integration test failed"; exit 1; }
+
+          df -h .
+
+  test-integration-ten-manager:
+    needs: build
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        build_type: [debug, release]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+
+      - name: Trust working directory
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
+      - name: Initialize and update submodules except portal/
+        run: |
+          # Retrieve all submodule paths, excluding `portal/`.
+          submodules=$(git config --file .gitmodules --get-regexp path | awk '$2 != "portal" { print $2 }')
+          git submodule init
+          for submodule in $submodules; do
+            echo "Initializing submodule: $submodule"
+            git submodule update --init --recursive --depth 1 "$submodule"
+          done
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "stable"
+          cache: false
+
+      - name: Set ulimit and sysctl
+        run: |
+          # Because there are concurrent test cases which involves many
+          # concurrent socket connections, we need to enlarge the maximum number
+          # of the opened file descriptor.
+          ulimit -n 102400
+          # Because there are concurrent test cases which will create many
+          # concurrent connections simutaneously, we increase the TCP listening
+          # backlog value to 8192.
+          sudo sysctl -w kern.ipc.somaxconn=8192
+        shell: bash
+
+      - name: Install tools and dependencies
+        run: |
+          # Due to https://github.com/llvm/llvm-project/issues/155531, we need
+          # to use llvm@20 currently, and will switch to llvm when it is solved.
+          brew install llvm@20
+          rustup default nightly-2025-09-18
+
+          brew install tree
+          pip3 install --use-pep517 python-dotenv jinja2 requests
+          go install golang.org/dl/go1.24.3@latest && go1.24.3 download
+          go env -w GOFLAGS="-buildvcs=false"
+          cargo install --force cbindgen
+
+      - name: Download build artifacts (tar archive)
+        uses: actions/download-artifact@v4
+        with:
+          name: tests-artifacts-mac-arm64-${{ matrix.build_type }}
+          path: out/mac/arm64
+
+      - name: Extract tests artifacts preserving permissions
+        run: |
+          tar -xzf out/mac/arm64/tests-artifacts.tar.gz
+
+      - name: View folder structure content
+        run: |
+          df -h .
+          tree -I ".*|*.h|*.hpp|*.py" out/mac/arm64
+
+      - name: Install Python dependencies via script
+        run: |
+          python .github/tools/setup_pytest_dependencies.py
+          df -h .
+
+      - name: Run Tests (ten_manager pytest tests)
+        env:
+          ASAN_OPTIONS: detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
+          MALLOC_CHECK_: 3
+          TEN_ENABLE_MEMORY_TRACKING: "true"
+          TEN_ENABLE_BACKTRACE_DUMP: "true"
+        run: |
+          cd out/mac/arm64/
+          pytest -s tests/ten_manager/
+          df -h .
+
+  test-integration-cpp:
+    needs: build
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        build_type: [debug, release]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+
+      - name: Trust working directory
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
+      - name: Initialize and update submodules except portal/
+        run: |
+          # Retrieve all submodule paths, excluding `portal/`.
+          submodules=$(git config --file .gitmodules --get-regexp path | awk '$2 != "portal" { print $2 }')
+          git submodule init
+          for submodule in $submodules; do
+            echo "Initializing submodule: $submodule"
+            git submodule update --init --recursive --depth 1 "$submodule"
+          done
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "stable"
+          cache: false
+
+      - name: Set ulimit and sysctl
+        run: |
+          # Because there are concurrent test cases which involves many
+          # concurrent socket connections, we need to enlarge the maximum number
+          # of the opened file descriptor.
+          ulimit -n 102400
+          # Because there are concurrent test cases which will create many
+          # concurrent connections simutaneously, we increase the TCP listening
+          # backlog value to 8192.
+          sudo sysctl -w kern.ipc.somaxconn=8192
+        shell: bash
+
+      - name: Install tools and dependencies
+        run: |
+          # Due to https://github.com/llvm/llvm-project/issues/155531, we need
+          # to use llvm@20 currently, and will switch to llvm when it is solved.
+          brew install llvm@20
+          rustup default nightly-2025-09-18
+
+          brew install tree
+          pip3 install --use-pep517 python-dotenv jinja2 requests
+          go install golang.org/dl/go1.24.3@latest && go1.24.3 download
+          go env -w GOFLAGS="-buildvcs=false"
+          cargo install --force cbindgen
+
+      - name: Download build artifacts (tar archive)
+        uses: actions/download-artifact@v4
+        with:
+          name: tests-artifacts-mac-arm64-${{ matrix.build_type }}
+          path: out/mac/arm64
+
+      - name: Extract tests artifacts preserving permissions
+        run: |
+          tar -xzf out/mac/arm64/tests-artifacts.tar.gz
+
+      - name: View folder structure content
+        run: |
+          df -h .
+          tree -I ".*|*.h|*.hpp|*.py" out/mac/arm64
+
+      - name: Install Python dependencies via script
+        run: |
+          python .github/tools/setup_pytest_dependencies.py
+          df -h .
+
+      - name: Run tests (ten_runtime C++ integration tests)
+        env:
+          ASAN_OPTIONS: detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
+          MALLOC_CHECK_: 3
+          TEN_ENABLE_MEMORY_TRACKING: "true"
+          TEN_ENABLE_BACKTRACE_DUMP: "true"
+          GOTRACEBACK: crash
+        run: |
+          if [ ${{ matrix.build_type }} == "debug" ]; then
+            export PATH="$(brew --prefix llvm@20)/bin:$PATH"
+          fi
+          export PATH=$(pwd)/core/ten_gn:$PATH
+          cd out/mac/arm64/
+          pytest -s tests/ten_runtime/integration/cpp/
+          df -h .
+      #   continue-on-error: true
+      # - name: Setup tmate session
+      #   uses: mxschmitt/action-tmate@v3
+
+  test-integration-go:
+    needs: build
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        build_type: [debug, release]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+
+      - name: Trust working directory
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
+      - name: Initialize and update submodules except portal/
+        run: |
+          # Retrieve all submodule paths, excluding `portal/`.
+          submodules=$(git config --file .gitmodules --get-regexp path | awk '$2 != "portal" { print $2 }')
+          git submodule init
+          for submodule in $submodules; do
+            echo "Initializing submodule: $submodule"
+            git submodule update --init --recursive --depth 1 "$submodule"
+          done
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "stable"
+          cache: false
+
+      - name: Set ulimit and sysctl
+        run: |
+          # Because there are concurrent test cases which involves many
+          # concurrent socket connections, we need to enlarge the maximum number
+          # of the opened file descriptor.
+          ulimit -n 102400
+          # Because there are concurrent test cases which will create many
+          # concurrent connections simutaneously, we increase the TCP listening
+          # backlog value to 8192.
+          sudo sysctl -w kern.ipc.somaxconn=8192
+        shell: bash
+
+      - name: Install tools and dependencies
+        run: |
+          # Due to https://github.com/llvm/llvm-project/issues/155531, we need
+          # to use llvm@20 currently, and will switch to llvm when it is solved.
+          brew install llvm@20
+          rustup default nightly-2025-09-18
+
+          brew install tree
+          pip3 install --use-pep517 python-dotenv jinja2 requests
+          go install golang.org/dl/go1.24.3@latest && go1.24.3 download
+          go env -w GOFLAGS="-buildvcs=false"
+          cargo install --force cbindgen
+
+      - name: Download build artifacts (tar archive)
+        uses: actions/download-artifact@v4
+        with:
+          name: tests-artifacts-mac-arm64-${{ matrix.build_type }}
+          path: out/mac/arm64
+
+      - name: Extract tests artifacts preserving permissions
+        run: |
+          tar -xzf out/mac/arm64/tests-artifacts.tar.gz
+
+      - name: View folder structure content
+        run: |
+          df -h .
+          tree -I ".*|*.h|*.hpp|*.py" out/mac/arm64
+
+      - name: Install Python dependencies via script
+        run: |
+          python .github/tools/setup_pytest_dependencies.py
+          df -h .
+
+      - name: Run tests (ten_runtime Go integration tests)
+        env:
+          ASAN_OPTIONS: detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
+          MALLOC_CHECK_: 3
+          TEN_ENABLE_MEMORY_TRACKING: "true"
+          TEN_ENABLE_BACKTRACE_DUMP: "true"
+          GOTRACEBACK: crash
+        run: |
+          if [ ${{ matrix.build_type }} == "debug" ]; then
+            export PATH="$(brew --prefix llvm@20)/bin:$PATH"
+          fi
+          export PATH=$(pwd)/core/ten_gn:$PATH
+          cd out/mac/arm64/
+          pytest -s tests/ten_runtime/integration/go/
+          df -h .
+      #   continue-on-error: true
+      # - name: Setup tmate session
+      #   uses: mxschmitt/action-tmate@v3
+
+  test-integration-python:
+    needs: build
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        build_type: [release]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+
+      - name: Trust working directory
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
+      - name: Initialize and update submodules except portal/
+        run: |
+          # Retrieve all submodule paths, excluding `portal/`.
+          submodules=$(git config --file .gitmodules --get-regexp path | awk '$2 != "portal" { print $2 }')
+          git submodule init
+          for submodule in $submodules; do
+            echo "Initializing submodule: $submodule"
+            git submodule update --init --recursive --depth 1 "$submodule"
+          done
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "stable"
+          cache: false
+
+      - name: Set ulimit and sysctl
+        run: |
+          # Because there are concurrent test cases which involves many
+          # concurrent socket connections, we need to enlarge the maximum number
+          # of the opened file descriptor.
+          ulimit -n 102400
+          # Because there are concurrent test cases which will create many
+          # concurrent connections simutaneously, we increase the TCP listening
+          # backlog value to 8192.
+          sudo sysctl -w kern.ipc.somaxconn=8192
+        shell: bash
+
+      - name: Install tools and dependencies
+        run: |
+          # Due to https://github.com/llvm/llvm-project/issues/155531, we need
+          # to use llvm@20 currently, and will switch to llvm when it is solved.
+          brew install llvm@20
+          rustup default nightly-2025-09-18
+
+          brew install tree
+          pip3 install --use-pep517 python-dotenv jinja2 requests
+          go install golang.org/dl/go1.24.3@latest && go1.24.3 download
+          go env -w GOFLAGS="-buildvcs=false"
+          cargo install --force cbindgen
+
+      - name: Download build artifacts (tar archive)
+        uses: actions/download-artifact@v4
+        with:
+          name: tests-artifacts-mac-arm64-${{ matrix.build_type }}
+          path: out/mac/arm64
+
+      - name: Extract tests artifacts preserving permissions
+        run: |
+          tar -xzf out/mac/arm64/tests-artifacts.tar.gz
+
+      - name: View folder structure content
+        run: |
+          df -h .
+          tree -I ".*|*.h|*.hpp|*.py" out/mac/arm64
+
+      - name: Install Python dependencies via script
+        run: |
+          python .github/tools/setup_pytest_dependencies.py
+          df -h .
+
+      - name: Run tests (ten_runtime Python integration tests)
+        env:
+          ASAN_OPTIONS: detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
+          MALLOC_CHECK_: 3
+          TEN_ENABLE_MEMORY_TRACKING: "true"
+          TEN_ENABLE_BACKTRACE_DUMP: "true"
+          GOTRACEBACK: crash
+        run: |
+          if [ ${{ matrix.build_type }} == "debug" ]; then
+            export PATH="$(brew --prefix llvm@20)/bin:$PATH"
+          fi
+          export PATH=$(pwd)/core/ten_gn:$PATH
+          cd out/mac/arm64/
+          pytest -s tests/ten_runtime/integration/python/
+          df -h .
+      #   continue-on-error: true
+      # - name: Setup tmate session
+      #   uses: mxschmitt/action-tmate@v3

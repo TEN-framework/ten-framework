@@ -1,0 +1,29 @@
+<html>
+ <head>
+  <meta charset=utf-8 http-equiv="Content-Language" content="en"/>
+ </head>
+	<body>
+		<img src="libwebsockets.org-logo.svg">
+		<img src="strict-csp.svg"><br>
+
+		Hello from the <b>minimal http form POST file example</b>.
+		<p>
+		This is a static page served from ./mount-origin/index.html.
+		<p>
+		When you POST the form below, you will see the values of the<br>
+		form parameters reported on the console log, and the file will
+		be uploaded and saved in the current working directory.
+		<p>
+		<form name=multipart action="/form1" method="post" enctype="multipart/form-data">
+			Type some text:<br>
+			<input type="text" name="text1"><br>
+			<br>
+			Select a file to upload: 
+			<input type="file" name="file" id="file" size="20">&nbsp;
+				<span id=file_info style="font-size:12pt;"></span><br>
+			<br>
+			<input type="submit" name="send" value="Submit">
+		</form>
+	</body>
+</html>
+

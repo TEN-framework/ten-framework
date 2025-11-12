@@ -1,0 +1,6 @@
+# Memory integration
+memu-py
+aiohttp
+
+# Optional: for better error handling
+pydantic

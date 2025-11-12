@@ -1,0 +1,43 @@
+<testcase>
+<info>
+<keywords>
+SFTP
+SFTP put
+FAILURE
+</keywords>
+</info>
+
+#
+# Server-side
+<reply>
+</reply>
+
+#
+# Client-side
+<client>
+<server>
+sftp
+</server>
+ <name>
+SFTP put failure
+ </name>
+ <command>
+--key %LOGDIR/server/curl_client_key --pubkey %LOGDIR/server/curl_client_key.pub -u %USER: -T %LOGDIR/file%TESTNUMBER.txt sftp://%HOSTIP:%SSHPORT%SSH_PWD/%LOGDIR/nonexistent-directory/nonexistent-file --insecure
+</command>
+<file name="%LOGDIR/file%TESTNUMBER.txt">
+Test data
+for ssh upload test
+</file>
+</client>
+
+#
+# Verify data after the test has been "shot"
+<verify>
+<errorcode>
+78
+</errorcode>
+<valgrind>
+disable
+</valgrind>
+</verify>
+</testcase>

@@ -1,0 +1,52 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+import("//.gnfiles/build/options.gni")
+import("//build/ten_rust/options.gni")
+
+declare_args() {
+  # The TEN runtime has its own memory check/track mechanism, which can be used
+  # in conjunction with ASAN (AddressSanitizer).
+  ten_enable_memory_check = true
+
+  # The 'ten_rust' crate depends on the 'ten_utils' (C codes) static library.
+  # The C compiler supports AddressSanitizer on Linux x86, however the rustc
+  # does not. Therefore, the 'ten_rust' crate is disabled on x86.
+  #
+  # TODO(Liu): Add a gn target to compile the 'ten_utils' static without asan on
+  # x86.
+  ten_enable_ten_rust = !(enable_sanitizer && target_cpu == "x86")
+
+  # After building a Rust/Cargo project, clean the project using `cargo clean`.
+  # This is mainly to reduce disk usage in environments with limited disk space,
+  # such as CI.
+  ten_enable_cargo_clean = false
+
+  # Since building the integration tests also increases disk space usage, in
+  # disk space-limited environments (such as CI), the variable below is used to
+  # defer the integration test build until the testing phase. This prevents it
+  # from being built together with the core TEN framework components (e.g.,
+  # `ten_runtime`, `ten_manager`).
+  ten_enable_integration_tests_prebuilt = false
+
+  ten_enable_tests_cleanup = true
+
+  # Rust's incremental build requires additional disk space, so this option
+  # allows it to be disabled in CI environments.
+  ten_enable_rust_incremental_build = true
+
+  # Force ten_rust to use release mode regardless of the global is_debug setting.
+  # When set to true, ten_rust will always be compiled in release mode.
+  # This configuration is mainly used to reduce the disk space consumption when
+  # building rust codes in CI environments.
+  ten_rust_force_release = false
+}
+
+declare_args() {
+  # TEN manager is written in Rust, so enabling the TEN manager requires
+  # enabling Rust first.
+  ten_enable_ten_manager = ten_enable_ten_rust
+}

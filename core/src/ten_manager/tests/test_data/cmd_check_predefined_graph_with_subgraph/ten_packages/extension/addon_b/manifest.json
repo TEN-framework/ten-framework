@@ -1,0 +1,37 @@
+{
+  "type": "extension",
+  "name": "addon_b",
+  "version": "0.1.0",
+  "dependencies": [],
+  "package": {
+    "include": [
+      "**"
+    ]
+  },
+  "api": {
+    "cmd_in": [
+      {
+        "name": "C",
+        "property": {
+          "properties": {
+            "prop_str": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    ],
+    "cmd_out": [
+      {
+        "name": "C",
+        "property": {
+          "properties": {
+            "prop_str": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,115 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+all_native_files = [
+  "*.c",
+  "*.cc",
+  "*.cpp",
+  "*.h",
+  "*.hpp",
+  "*.hh",
+  "*.s",
+  "*.S",
+  "*.asm",
+  "*.m",
+  "*.mm",
+]
+
+template("glob") {
+  assert(defined(invoker.file_list) && invoker.file_list != [],
+         "file_list is not defined")
+
+  source_set(target_name) {
+    forward_variables_from(invoker,
+                           "*",
+                           [
+                             "deps",
+                             "sources",
+                             "file_list",
+                           ])
+
+    l = []
+    foreach(f, invoker.file_list) {
+      l += [
+        "--dir",
+        rebase_path(f),
+      ]
+    }
+
+    sources_info =
+        exec_script("//.gnfiles/build/scripts/glob_file.py", l, "json")
+
+    sources = []
+    foreach(source_info, sources_info) {
+      sources += [ source_info.path ]
+    }
+
+    if (defined(invoker.sources) && invoker.sources != []) {
+      sources += invoker.sources
+    }
+
+    deps = []
+    if (defined(invoker.deps) && invoker.deps != []) {
+      deps += invoker.deps
+    }
+  }
+}
+
+template("copy_glob") {
+  # The collection of all the deps related to the specified resources.
+  res_deps = []
+
+  if (defined(invoker.resources) && invoker.resources != []) {
+    resource_index = 0
+
+    foreach(resource, invoker.resources) {
+      resource_info = {
+      }
+
+      resource_info =
+          exec_script("//.gnfiles/build/scripts/get_src_and_dest_file.py",
+                      [
+                        "--input-string",
+                        resource,
+                        "--src-dest-delimiter",
+                        "=>",
+                      ],
+                      "json")
+
+      resource_src_path = resource_info.source
+      dest_root_dir = invoker.dest_root_dir
+      resource_dest_path = "${dest_root_dir}/${resource_info.destination}"
+
+      action("${target_name}_resource_${resource_index}") {
+        script = "//.gnfiles/build/scripts/copy_fs_entry.py"
+        args = [
+          "--source",
+          rebase_path(resource_src_path),
+          "--destination",
+          rebase_path(resource_dest_path),
+          "--files-only",
+        ]
+
+        inputs = [ resource_src_path ]
+        outputs = [ resource_dest_path ]
+
+        forward_variables_from(invoker,
+                               [
+                                 "deps",
+                                 "public_deps",
+                               ])
+      }
+
+      res_deps += [ ":${target_name}_resource_${resource_index}" ]
+
+      resource_index += 1
+    }
+  }
+
+  group("${target_name}") {
+    deps = res_deps
+  }
+}

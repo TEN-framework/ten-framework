@@ -1,0 +1,37 @@
+<testcase>
+<info>
+<keywords>
+FILE
+</keywords>
+</info>
+
+# Server-side
+<reply>
+<data>
+</data>
+</reply>
+
+# Client-side
+<client>
+<server>
+file
+</server>
+ <name>
+two file:// URLs to stdout
+ </name>
+<command option="no-include">
+file://localhost%FILE_PWD/%LOGDIR/test%TESTNUMBER.txt FILE://localhost%FILE_PWD/%LOGDIR/test%TESTNUMBER.txt
+</command>
+<file name="%LOGDIR/test%TESTNUMBER.txt">
+contents in a single file
+</file>
+</client>
+
+# Verify data after the test has been "shot"
+<verify>
+<stdout>
+contents in a single file
+contents in a single file
+</stdout>
+</verify>
+</testcase>

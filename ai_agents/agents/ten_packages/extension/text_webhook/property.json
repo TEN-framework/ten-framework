@@ -1,0 +1,13 @@
+{
+    "url": "",
+    "headers": "",
+    "method": "POST",
+    "timeout": 10,
+    "send_final_only": true,
+    "data_type": "transcribe",
+    "send_on_close": true,
+    "send_on_start": true,
+    "direct_forward": false,
+    "send_on_user_events": true,
+    "send_video": false
+}

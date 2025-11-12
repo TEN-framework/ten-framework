@@ -1,0 +1,5 @@
+This simple example show the use of the include statement.
+
+Example call:
+    clingo encoding-py.lp
+    clingo encoding-lua.lp

@@ -1,0 +1,111 @@
+<testcase>
+<info>
+<keywords>
+HTTP
+HTTP GET
+HTTP proxy
+HTTP Basic auth
+followlocation
+netrc
+</keywords>
+</info>
+
+# Server-side
+<reply>
+<data>
+HTTP/1.1 301 This is a weirdo text message swsclose
+Date: Tue, 09 Nov 2010 14:49:00 GMT
+Server: test-server/fake
+Location: http://anotherone.com/%TESTNUMBER0002
+Connection: close
+
+This server reply is for testing a simple Location: following
+
+</data>
+<data2>
+HTTP/1.1 302 Followed here fine swsclose
+Date: Tue, 09 Nov 2010 14:49:00 GMT
+Server: test-server/fake
+Location: http://athird.com/%TESTNUMBER0003
+
+If this is received, the location following worked
+
+</data2>
+<data3>
+HTTP/1.1 200 Followed here fine swsclose
+Date: Tue, 09 Nov 2010 14:49:00 GMT
+Server: test-server/fake
+Content-Length: 52
+
+If this is received, the location following worked
+
+</data3>
+<datacheck>
+HTTP/1.1 301 This is a weirdo text message swsclose
+Date: Tue, 09 Nov 2010 14:49:00 GMT
+Server: test-server/fake
+Location: http://anotherone.com/%TESTNUMBER0002
+Connection: close
+
+HTTP/1.1 302 Followed here fine swsclose
+Date: Tue, 09 Nov 2010 14:49:00 GMT
+Server: test-server/fake
+Location: http://athird.com/%TESTNUMBER0003
+
+HTTP/1.1 200 Followed here fine swsclose
+Date: Tue, 09 Nov 2010 14:49:00 GMT
+Server: test-server/fake
+Content-Length: 52
+
+If this is received, the location following worked
+
+</datacheck>
+</reply>
+
+# Client-side
+<client>
+<server>
+http
+</server>
+ <name>
+HTTP Location: following with --netrc-optional
+ </name>
+ <command>
+http://supersite.com/want/%TESTNUMBER -L -x http://%HOSTIP:%HTTPPORT --netrc-optional --netrc-file %LOGDIR/netrc%TESTNUMBER
+</command>
+<features>
+proxy
+</features>
+# netrc auth for two out of three sites:
+<file name="%LOGDIR/netrc%TESTNUMBER">
+machine supersite.com login user1 password passwd1
+machine anotherone.com login user2 password passwd2
+</file>
+</client>
+
+# Verify data after the test has been "shot"
+<verify>
+<protocol>
+GET http://supersite.com/want/%TESTNUMBER HTTP/1.1
+Host: supersite.com
+Authorization: Basic dXNlcjE6cGFzc3dkMQ==
+User-Agent: curl/%VERSION
+Accept: */*
+Proxy-Connection: Keep-Alive
+
+GET http://anotherone.com/%TESTNUMBER0002 HTTP/1.1
+Host: anotherone.com
+Authorization: Basic dXNlcjI6cGFzc3dkMg==
+User-Agent: curl/%VERSION
+Accept: */*
+Proxy-Connection: Keep-Alive
+
+GET http://athird.com/%TESTNUMBER0003 HTTP/1.1
+Host: athird.com
+User-Agent: curl/%VERSION
+Accept: */*
+Proxy-Connection: Keep-Alive
+
+</protocol>
+</verify>
+</testcase>

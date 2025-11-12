@@ -1,0 +1,66 @@
+{
+    "type": "extension",
+    "name": "aliyun_asr_bigmodel_python",
+    "version": "0.2.3",
+    "dependencies": [
+        {
+            "type": "system",
+            "name": "ten_runtime_python",
+            "version": "0.11"
+        },
+        {
+            "type": "system",
+            "name": "ten_ai_base",
+            "version": "0.7"
+        }
+    ],
+    "api": {
+        "interface": [
+            {
+                "import_uri": "../../system/ten_ai_base/api/asr-interface.json"
+            }
+        ],
+        "property": {
+            "properties": {
+                "params": {
+                    "type": "object",
+                    "properties": {
+                        "api_key": {
+                            "type": "string"
+                        },
+                        "language_hints": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        },
+                        "model": {
+                            "type": "string"
+                        },
+                        "finalize_mode": {
+                            "type": "string"
+                        },
+                        "mute_pkg_duration_ms": {
+                            "type": "int64"
+                        },
+                        "max_sentence_silence": {
+                            "type": "int64"
+                        },
+                        "sample_rate": {
+                            "type": "int64"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "package": {
+        "include": [
+            "manifest.json",
+            "property.json",
+            "**.py",
+            "requirements.txt",
+            "docs/**"
+        ]
+    }
+}

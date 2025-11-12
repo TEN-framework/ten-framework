@@ -1,0 +1,19 @@
+#.rst:
+# msgpack
+# -------
+#
+# The following import targets are created
+#
+# ::
+#
+#   msgpack-c
+#   msgpack-c-static (optional)
+#
+
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+
+if(NOT TARGET msgpack-c AND NOT TARGET msgpack-c-static)
+  include("${CMAKE_CURRENT_LIST_DIR}/msgpack-c-targets.cmake")
+endif()

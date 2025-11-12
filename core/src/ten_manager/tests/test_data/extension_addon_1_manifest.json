@@ -1,0 +1,303 @@
+{
+  "type": "extension",
+  "name": "extension_addon_1",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime",
+      "version": "0.2.0"
+    }
+  ],
+  "api": {
+    "property": {
+      "properties": {
+        "test_property": {
+          "type": "int8"
+        },
+        "key": {
+          "type": "string"
+        }
+      }
+    },
+    "cmd_out": [
+      {
+        "name": "test_cmd",
+        "property": {
+          "properties": {
+            "test_property": {
+              "type": "int8"
+            }
+          }
+        }
+      },
+      {
+        "name": "test_cmd_2",
+        "property": {
+          "properties": {
+            "test_property": {
+              "type": "int8"
+            }
+          }
+        }
+      },
+      {
+        "name": "has_required",
+        "property": {
+          "properties": {
+            "foo": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "foo"
+          ]
+        }
+      },
+      {
+        "name": "has_not_required",
+        "property": {
+          "properties": {
+            "foo": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      {
+        "name": "has_required_mismatch",
+        "property": {
+          "properties": {
+            "foo": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "foo"
+          ]
+        }
+      },
+      {
+        "name": "cmd1",
+        "property": {
+          "properties": {
+            "param1": {
+              "type": "int8"
+            },
+            "param2": {
+              "type": "string"
+            }
+          }
+        },
+        "result": {
+          "property": {
+            "properties": {
+              "mapped_detail": {
+                "type": "bool"
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "cmd2",
+        "property": {
+          "properties": {
+            "param1": {
+              "type": "int8"
+            },
+            "param2": {
+              "type": "string"
+            }
+          }
+        },
+        "result": {
+          "property": {
+            "properties": {
+              "detail": {
+                "type": "bool"
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "cmd3",
+        "property": {
+          "properties": {
+            "a": {
+              "type": "string"
+            },
+            "b": {
+              "type": "int8"
+            }
+          }
+        }
+      },
+      {
+        "name": "cmd4",
+        "result": {
+          "property": {
+            "properties": {
+              "a": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "cmd5",
+        "property": {
+          "properties": {
+            "foo": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      {
+        "name": "cmd6",
+        "property": {
+          "properties": {
+            "foo": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "foo"
+          ]
+        }
+      },
+      {
+        "name": "cmd7",
+        "property": {
+          "properties": {
+            "a": {
+              "type": "string"
+            },
+            "b": {
+              "type": "int8"
+            }
+          }
+        }
+      },
+      {
+        "name": "cmd8",
+        "property": {
+          "properties": {
+            "param1": {
+              "type": "int8"
+            },
+            "param2": {
+              "type": "string"
+            }
+          }
+        },
+        "result": {
+          "property": {
+            "properties": {
+              "detail": {
+                "type": "bool"
+              }
+            }
+          }
+        }
+      },
+      {
+        "name": "cmd_incompatible",
+        "property": {
+          "properties": {
+            "param1": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    ],
+    "data_out": [
+      {
+        "name": "data1",
+        "property": {
+          "properties": {
+            "text_data": {
+              "type": "buf"
+            }
+          }
+        }
+      },
+      {
+        "name": "data_incompatible",
+        "property": {
+          "properties": {
+            "value": {
+              "type": "float32"
+            }
+          }
+        }
+      },
+      {
+        "name": "data2",
+        "property": {
+          "properties": {
+            "a": {
+              "type": "string"
+            },
+            "b": {
+              "type": "object",
+              "properties": {
+                "d": {
+                  "type": "bool"
+                },
+                "c": {
+                  "type": "int8"
+                }
+              },
+              "required": [
+                "c",
+                "d"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "name": "data3",
+        "property": {
+          "properties": {
+            "a": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    ],
+    "video_frame_out": [
+      {
+        "name": "video1",
+        "property": {
+          "properties": {
+            "width": {
+              "type": "uint64"
+            }
+          }
+        }
+      },
+      {
+        "name": "pcm_frame1"
+      }
+    ],
+    "audio_frame_out": [
+      {
+        "name": "audio1",
+        "property": {
+          "properties": {
+            "format": {
+              "type": "uint8"
+            }
+          }
+        }
+      }
+    ]
+  }
+}

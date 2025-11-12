@@ -1,0 +1,1306 @@
+name: Coverage Report on Coveralls
+
+on:
+  release:
+    types: [created]
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths-ignore:
+      - "tools/**"
+      - ".vscode/**"
+      - ".devcontainer/**"
+      - ".github/**"
+      - "!.github/workflows/coverage.yml"
+      - "core/src/ten_manager/designer_frontend/**"
+      - "**.md"
+      - "ai_agents/**"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: coverage-${{ github.head_ref }}
+  cancel-in-progress: true
+
+jobs:
+  call-check-pr-status:
+    uses: ./.github/workflows/_check_pr_status.yml
+
+  build:
+    needs: call-check-pr-status
+    if: ${{ needs.call-check-pr-status.outputs.should_continue == 'true' }}
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/ten-framework/ten_building_ubuntu2204
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Debug context
+        run: |
+          echo "event_name=${{ github.event_name }}"
+          echo "event_action=${{ github.event.action }}"
+          echo "ref=${{ github.ref }}"
+          echo "ref_name=${{ github.ref_name }}"
+          echo "ref_type=${{ github.ref_type }}"
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+
+      - name: Trust working directory
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
+      - name: Initialize and update submodules except portal/
+        run: |
+          # Retrieve all submodule paths, excluding `portal/`.
+          submodules=$(git config --file .gitmodules --get-regexp path | awk '$2 != "portal" { print $2 }')
+
+          git submodule init
+
+          for submodule in $submodules; do
+            echo "Initializing submodule: $submodule"
+            git submodule update --init --recursive --depth 1 "$submodule"
+          done
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Update version
+        run: |
+          python3 tools/version/update_version_in_ten_framework.py
+          python3 tools/version/check_version_in_ten_framework.py
+
+      - name: Install LLVM 21 tools
+        run: |
+          # Add LLVM official repository for LLVM 21
+          apt-get update
+          apt-get install -y wget software-properties-common gnupg
+
+          # Add LLVM repository
+          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
+          add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main"
+
+          apt-get update
+          apt-get install -y llvm-21 clang-21
+
+          # CRITICAL: GN build system hardcodes "clang"/"clang++" (without version suffix)
+          # We must override these to point to clang-21 to ensure profraw format version 10
+          # Put /usr/local/bin at the front of PATH so our symlinks take precedence
+          ln -sf /usr/bin/clang-21 /usr/local/bin/clang
+          ln -sf /usr/bin/clang++-21 /usr/local/bin/clang++
+          ln -sf /usr/bin/llvm-ar-21 /usr/local/bin/llvm-ar
+          ln -sf /usr/bin/llvm-nm-21 /usr/local/bin/llvm-nm
+          ln -sf /usr/bin/llvm-ranlib-21 /usr/local/bin/llvm-ranlib
+
+          # Create symlinks for coverage tools
+          ln -sf /usr/bin/llvm-cov-21 /usr/local/bin/llvm-cov
+          ln -sf /usr/bin/llvm-profdata-21 /usr/local/bin/llvm-profdata
+          ln -sf /usr/bin/llvm-objdump-21 /usr/local/bin/llvm-objdump
+
+          # Verify installation - should all show LLVM 21
+          echo "=== Verifying LLVM 21 tools are correctly linked ==="
+          which clang
+          clang --version | head -3
+          which clang++
+          clang++ --version | head -3
+          llvm-cov --version | head -3
+          llvm-profdata merge --version 2>&1 | head -3 || echo "llvm-profdata installed"
+
+      - name: Build (clang + debug + x64) with coverage instrumentation enabled
+        run: |
+          # Ensure /usr/local/bin is at the front of PATH so our clang-21 symlinks are used
+          export PATH=/usr/local/bin:$(pwd)/core/ten_gn:/usr/local/go/bin:/root/go/bin:/root/.cargo/bin:$PATH
+          echo "PATH: $PATH"
+
+          # Verify we're using the correct clang version
+          echo "=== Compiler verification before build ==="
+          which clang
+          clang --version | head -3
+          which clang++
+          clang++ --version | head -3
+
+          go env -w GOFLAGS="-buildvcs=false"
+          go install golang.org/dl/go1.24.3@latest
+          export PATH=$PATH:$(go env GOPATH)/bin
+          go1.24.3 download
+          go1.24.3 version
+          rustup default nightly-2025-09-18
+
+          # print rustc and llvm-cov's llvm version, make sure they are compatible
+          # or else the profdata file cannot be interpreted by llvm-cov, because:
+          # C/C++ code uses LLVM 21.x.x to generate coverage data (__llvm_prf_* section)
+          # Rust code uses LLVM 20.x.x to generate coverage data (__llvm_prf_* section)
+          # these two formats are mixed in the same binary file (e.g. ten_utils_unit_test)
+
+          rustc -vV | grep LLVM
+          llvm-cov --version | head -3
+          echo "llvm-profdata path: $(which llvm-profdata)"
+          llvm-profdata merge --version 2>&1 | head -3 || echo "(llvm-profdata --version not supported)"
+
+          df -h .
+
+          # enable_coverage=true: generate instrumented test executables and dynamic libraries
+          # which will be used to generate coverage report
+
+          # enable_sanitizer=false: disable AddressSanitizer because it conflicts with coverage
+          # instrumentation
+
+          EXTRA_ARGS=" \
+          is_clang=true \
+          enable_sanitizer=false \
+          enable_coverage=true \
+          log_level=1 \
+          enable_serialized_actions=true \
+          ten_rust_enable_gen_cargo_config=false \
+          ten_enable_cargo_clean=true \
+          ten_enable_go_lint=true \
+          ten_enable_rust_incremental_build=false \
+          ten_manager_enable_frontend=false \
+          ten_enable_integration_tests_prebuilt=false \
+          ten_enable_ffmpeg_extensions=true"
+
+          echo $EXTRA_ARGS
+
+          tgn gen linux x64 release -- $EXTRA_ARGS
+          tgn build linux x64 release
+
+          df -h .
+          tree -I 'gen|obj' out
+
+        # Package CORE_BINARIES_AND_LIBS for coverage analysis
+      - name: Package binaries and libraries for coverage analysis
+        run: |
+          mkdir -p binaries_and_libs
+
+          # List of files needed for llvm-cov
+          CORE_BINARIES_AND_LIBS=(
+            "out/linux/x64/tests/standalone/ten_utils_unit_test"
+            "out/linux/x64/tests/standalone/ten_rust/integration_test"
+            "out/linux/x64/tests/standalone/ten_runtime_smoke_test"
+            "out/linux/x64/tests/standalone/ten_runtime_unit_test"
+            "out/linux/x64/libten_runtime.so"
+            "out/linux/x64/libten_runtime_go.so"
+            "out/linux/x64/libten_runtime_python.so"
+            "out/linux/x64/libten_runtime_nodejs.node"
+            "out/linux/x64/libten_utils.so"
+            "out/linux/x64/gen/core/src/ten_rust/libten_rust.a"
+          )
+
+          for file in "${CORE_BINARIES_AND_LIBS[@]}"; do
+            if [ -e "$file" ]; then
+              # Copy file directly to binaries_and_libs (no subdirectories)
+              cp "$file" binaries_and_libs/
+              echo "✓ Copied: $file -> $(basename $file)"
+            else
+              echo "✗ Missing: $file"
+            fi
+          done
+
+          echo "Files packaged for coverage analysis:"
+          ls -lh binaries_and_libs/
+
+          # Create tar archive
+          tar -czf coverage-binaries-and-libs.tar.gz binaries_and_libs
+
+      - name: Upload binaries and libraries for coverage analysis
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-binaries-and-libs
+          path: coverage-binaries-and-libs.tar.gz
+
+        # Package the tests artifacts into a tar file while preserving file
+        # permissions.
+      - name: Package tests relevant artifacts preserving permissions
+        run: |
+          files=""
+          for item in tests ten_manager tgn_args.txt; do
+            if [ -e "out/linux/x64/$item" ]; then
+              files="$files out/linux/x64/$item"
+            fi
+          done
+
+          if [ -n "$files" ]; then
+            tar -czvf tests-artifacts.tar.gz $files
+          fi
+
+      - name: Upload tests relevant artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: tests-artifacts-for-coverage
+          path: tests-artifacts.tar.gz
+          if-no-files-found: ignore
+
+  test-standalone:
+    needs: build
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/ten-framework/ten_building_ubuntu2204
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install LLVM 21 tools
+        run: |
+          # Add LLVM official repository for LLVM 21
+          apt-get update
+          apt-get install -y wget software-properties-common gnupg
+
+          # Add LLVM repository
+          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
+          add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main"
+
+          apt-get update
+          apt-get install -y llvm-21 clang-21
+
+          # Create symlinks to make llvm-cov and llvm-profdata available without version suffix
+          ln -sf /usr/bin/llvm-cov-21 /usr/local/bin/llvm-cov
+          ln -sf /usr/bin/llvm-profdata-21 /usr/local/bin/llvm-profdata
+          ln -sf /usr/bin/llvm-objdump-21 /usr/local/bin/llvm-objdump
+
+          # Verify installation
+          llvm-cov --version
+          llvm-profdata merge --version 2>&1 | head -3 || echo "llvm-profdata installed"
+
+      - name: Clean profraw files before tests
+        run: |
+          find . -name "*.profraw" -type f -delete
+          echo "Cleaned all .profraw files"
+
+      - name: Download build artifacts (tar archive)
+        uses: actions/download-artifact@v4
+        with:
+          name: tests-artifacts-for-coverage
+          path: out/linux/x64
+
+      - name: Extract tests artifacts preserving permissions
+        run: |
+          tar -xzf out/linux/x64/tests-artifacts.tar.gz
+
+      - name: View folder structure content
+        run: |
+          df -h .
+          tree -I ".*|*.h|*.hpp|*.py" out/linux/x64
+
+      - name: Set ulimit and sysctl
+        run: |
+          # Because there are concurrent test cases which involves many
+          # concurrent socket connections, we need to enlarge the maximum number
+          # of the opened file descriptor.
+          ulimit -n 102400
+
+          # Because there are concurrent test cases (in 'smoke' and
+          # 'integration') which will create many concurrent connections
+          # simutaneously, we increase the TCP listening backlog value to 8192.
+          sysctl -w net.core.somaxconn=8192
+        shell: bash
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Update tman config.json
+        run: |
+          CONFIG_FILE="out/linux/x64/tests/local_registry/config.json"
+          echo "Before update:"
+          cat $CONFIG_FILE
+          sed -i "s|\(file://\)[^\"]*\(out\/linux\/x64\/tests\/local_registry\)|\1${GITHUB_WORKSPACE}/\2|" $CONFIG_FILE
+          echo "After update:"
+          cat $CONFIG_FILE
+
+      - name: Run Tests (ten_utils_unit_test)
+        env:
+          ASAN_OPTIONS: detect_leaks=1:detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
+          MALLOC_CHECK_: 3
+          TEN_ENABLE_MEMORY_TRACKING: "true"
+          TEN_ENABLE_BACKTRACE_DUMP: "true"
+        run: |
+          chmod +x out/linux/x64/tests/standalone/ten_utils_unit_test
+          out/linux/x64/tests/standalone/ten_utils_unit_test || { echo "test failed"; exit 1; }
+
+          df -h .
+
+      - name: Merge profraw for ten_utils_unit_test
+        run: |
+          mkdir -p out/linux/x64/coverage
+
+          # Find profraw files for this test
+          PROFRAW_FILES=$(find . -name "*.profraw" -type f)
+
+          if [ -n "$PROFRAW_FILES" ]; then
+            llvm-profdata merge -sparse $PROFRAW_FILES -o out/linux/x64/coverage/ten_utils_unit_test.profdata
+            echo "Created profdata: ten_utils_unit_test.profdata"
+
+            # Clean up profraw files for this test
+            find . -name "*.profraw" -type f -delete
+          fi
+
+      - name: Clean up
+        continue-on-error: true
+        run: |
+          rm -rf out/linux/x64/tests/standalone/ten_utils_unit_test
+
+          df -h .
+
+      - name: Run Tests (ten_runtime_unit_test)
+        env:
+          ASAN_OPTIONS: detect_leaks=1:detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
+          MALLOC_CHECK_: 3
+          TEN_ENABLE_MEMORY_TRACKING: "true"
+          TEN_ENABLE_BACKTRACE_DUMP: "true"
+        run: |
+          chmod +x out/linux/x64/tests/standalone/ten_runtime_unit_test
+          out/linux/x64/tests/standalone/ten_runtime_unit_test || { echo "test failed"; exit 1; }
+
+          df -h
+
+      - name: Merge profraw for ten_runtime_unit_test
+        run: |
+          mkdir -p out/linux/x64/coverage
+
+          # Find profraw files for this test
+          PROFRAW_FILES=$(find . -name "*.profraw" -type f)
+
+          if [ -n "$PROFRAW_FILES" ]; then
+            llvm-profdata merge -sparse $PROFRAW_FILES -o out/linux/x64/coverage/ten_runtime_unit_test.profdata
+            echo "Created profdata: ten_runtime_unit_test.profdata"
+
+            # Clean up profraw files for this test
+            find . -name "*.profraw" -type f -delete
+          fi
+
+      - name: Clean up
+        continue-on-error: true
+        run: |
+          rm -rf out/linux/x64/tests/standalone/ten_runtime_unit_test
+
+          df -h .
+
+      - name: Run Tests (ten_rust standalone tests)
+        env:
+          ASAN_OPTIONS: detect_leaks=1:detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
+          MALLOC_CHECK_: 3
+          TEN_ENABLE_MEMORY_TRACKING: "true"
+          TEN_ENABLE_BACKTRACE_DUMP: "true"
+          RUST_BACKTRACE: "full"
+        run: |
+          cd out/linux/x64/tests/standalone/ten_rust
+
+          chmod +x unit_test
+          chmod +x integration_test
+
+          ./unit_test --nocapture --test-threads=1 || { echo "ten_rust unit test failed"; exit 1; }
+          ./integration_test --nocapture --test-threads=1 || { echo "ten_rust integration test failed"; exit 1; }
+
+          df -h .
+
+      - name: Merge profraw for ten_rust tests
+        run: |
+          mkdir -p out/linux/x64/coverage
+
+          # Find profraw files for this test
+          PROFRAW_FILES=$(find . -name "*.profraw" -type f)
+
+          if [ -n "$PROFRAW_FILES" ]; then
+            llvm-profdata merge -sparse $PROFRAW_FILES -o out/linux/x64/coverage/ten_rust.profdata
+            echo "Created profdata: ten_rust.profdata"
+
+            # Clean up profraw files for this test
+            find . -name "*.profraw" -type f -delete
+          fi
+
+      - name: Clean up
+        continue-on-error: true
+        run: |
+          rm -rf out/linux/x64/tests/standalone/ten_rust
+
+          df -h .
+
+      - name: Run Tests (ten_runtime_smoke_test)
+        env:
+          ASAN_OPTIONS: detect_leaks=1:detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
+          MALLOC_CHECK_: 3
+          TEN_ENABLE_MEMORY_TRACKING: "true"
+          TEN_ENABLE_BACKTRACE_DUMP: "true"
+        run: |
+          chmod +x out/linux/x64/tests/standalone/ten_runtime_smoke_test
+          out/linux/x64/tests/standalone/ten_runtime_smoke_test || { echo "test failed"; exit 1; }
+
+          df -h .
+
+      - name: Merge profraw for ten_runtime_smoke_test
+        run: |
+          mkdir -p out/linux/x64/coverage
+
+          # Find profraw files for this test
+          PROFRAW_FILES=$(find . -name "*.profraw" -type f)
+
+          if [ -n "$PROFRAW_FILES" ]; then
+            llvm-profdata merge -sparse $PROFRAW_FILES -o out/linux/x64/coverage/ten_runtime_smoke_test.profdata
+            echo "Created profdata: ten_runtime_smoke_test.profdata"
+
+            # Clean up profraw files for this test
+            find . -name "*.profraw" -type f -delete
+          fi
+
+      - name: Upload test-standalone profdata
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-standalone-coverage
+          path: |
+            out/linux/x64/coverage/ten_utils_unit_test.profdata
+            out/linux/x64/coverage/ten_runtime_unit_test.profdata
+            out/linux/x64/coverage/ten_rust.profdata
+            out/linux/x64/coverage/ten_runtime_smoke_test.profdata
+
+      - name: Clean up
+        continue-on-error: true
+        run: |
+          # Clean up test directories
+          rm -rf out/linux/x64/tests/standalone/ten_runtime_smoke_test
+
+          # No need to test because we disabled coverage for tman to reduce memory cost
+          rm -rf out/linux/x64/tests/ten_manager
+
+          # Clean up any remaining profraw files (should be none)
+          find . -name "*.profraw" -type f -delete
+
+          df -h .
+
+  test-integration-cpp:
+    needs: build
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/ten-framework/ten_building_ubuntu2204
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+
+      - name: Trust working directory
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
+      - name: Initialize and update submodules except portal/
+        run: |
+          # Retrieve all submodule paths, excluding `portal/`.
+          submodules=$(git config --file .gitmodules --get-regexp path | awk '$2 != "portal" { print $2 }')
+
+          git submodule init
+
+          for submodule in $submodules; do
+            echo "Initializing submodule: $submodule"
+            git submodule update --init --recursive --depth 1 "$submodule"
+          done
+
+      - name: Install LLVM 21 tools
+        run: |
+          # Add LLVM official repository for LLVM 21
+          apt-get update
+          apt-get install -y wget software-properties-common gnupg
+
+          # Add LLVM repository
+          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
+          add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main"
+
+          apt-get update
+          apt-get install -y llvm-21 clang-21
+
+          # Create symlinks to make llvm-cov and llvm-profdata available without version suffix
+          ln -sf /usr/bin/llvm-cov-21 /usr/local/bin/llvm-cov
+          ln -sf /usr/bin/llvm-profdata-21 /usr/local/bin/llvm-profdata
+          ln -sf /usr/bin/llvm-objdump-21 /usr/local/bin/llvm-objdump
+
+          # Verify installation
+          llvm-cov --version
+          llvm-profdata merge --version 2>&1 | head -3 || echo "llvm-profdata installed"
+
+      - name: Clean profraw files before tests
+        run: |
+          find . -name "*.profraw" -type f -delete
+          echo "Cleaned all .profraw files"
+
+      - name: Download build artifacts (tar archive)
+        uses: actions/download-artifact@v4
+        with:
+          name: tests-artifacts-for-coverage
+          path: out/linux/x64
+
+      - name: Extract tests artifacts preserving permissions
+        run: |
+          tar -xzf out/linux/x64/tests-artifacts.tar.gz
+
+      - name: View folder structure content
+        run: |
+          df -h .
+          tree -I ".*|*.h|*.hpp|*.py" out/linux/x64
+
+      - name: Set ulimit and sysctl
+        run: |
+          # Because there are concurrent test cases which involves many
+          # concurrent socket connections, we need to enlarge the maximum number
+          # of the opened file descriptor.
+          ulimit -n 102400
+
+          # Because there are concurrent test cases (in 'smoke' and
+          # 'integration') which will create many concurrent connections
+          # simutaneously, we increase the TCP listening backlog value to 8192.
+          sysctl -w net.core.somaxconn=8192
+        shell: bash
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Update tman config.json
+        run: |
+          CONFIG_FILE="out/linux/x64/tests/local_registry/config.json"
+          echo "Before update:"
+          cat $CONFIG_FILE
+          sed -i "s|\(file://\)[^\"]*\(out\/linux\/x64\/tests\/local_registry\)|\1${GITHUB_WORKSPACE}/\2|" $CONFIG_FILE
+          echo "After update:"
+          cat $CONFIG_FILE
+
+      - name: Install Python dependencies via script
+        run: |
+          python .github/tools/setup_pytest_dependencies.py
+
+          df -h .
+
+      - name: Run tests (ten_runtime C++ integration tests)
+        env:
+          ASAN_OPTIONS: detect_leaks=1:detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
+          MALLOC_CHECK_: 3
+          TEN_ENABLE_MEMORY_TRACKING: "true"
+          TEN_ENABLE_BACKTRACE_DUMP: "true"
+          GOTRACEBACK: crash
+        run: |
+          df -h .
+
+          export PATH=$(pwd)/core/ten_gn:$PATH
+          cd out/linux/x64/
+          pytest -s tests/ten_runtime/integration/cpp/
+
+          df -h .
+
+      - name: Merge profraw files for test-integration-cpp
+        run: |
+          mkdir -p out/linux/x64/coverage
+
+          # Find all profraw files recursively
+          PROFRAW_FILES=$(find . -name "*.profraw" -type f)
+
+          if [ -z "$PROFRAW_FILES" ]; then
+            echo "No profraw files found"
+            exit 1
+          fi
+
+          echo "Found profraw files:"
+          echo "$PROFRAW_FILES"
+
+          # Merge profraw files into profdata
+          llvm-profdata merge -sparse $PROFRAW_FILES -o out/linux/x64/coverage/test-integration-cpp.profdata
+
+          echo "Merged profdata file created: test-integration-cpp.profdata"
+          llvm-profdata show out/linux/x64/coverage/test-integration-cpp.profdata | head -20
+
+      - name: Upload test-integration-cpp profdata
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-integration-cpp-coverage
+          path: |
+            out/linux/x64/coverage/test-integration-cpp.profdata
+
+      - name: Clean up
+        continue-on-error: true
+        run: |
+          find . -name "*.profraw" -type f -delete
+          df -h .
+
+  test-integration-go:
+    needs: build
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/ten-framework/ten_building_ubuntu2204
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+
+      - name: Trust working directory
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
+      - name: Initialize and update submodules except portal/
+        run: |
+          # Retrieve all submodule paths, excluding `portal/`.
+          submodules=$(git config --file .gitmodules --get-regexp path | awk '$2 != "portal" { print $2 }')
+
+          git submodule init
+
+          for submodule in $submodules; do
+            echo "Initializing submodule: $submodule"
+            git submodule update --init --recursive --depth 1 "$submodule"
+          done
+
+      - name: Install LLVM 21 tools
+        run: |
+          # Add LLVM official repository for LLVM 21
+          apt-get update
+          apt-get install -y wget software-properties-common gnupg
+
+          # Add LLVM repository
+          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
+          add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main"
+
+          apt-get update
+          apt-get install -y llvm-21 clang-21
+
+          # Create symlinks to make llvm-cov and llvm-profdata available without version suffix
+          ln -sf /usr/bin/llvm-cov-21 /usr/local/bin/llvm-cov
+          ln -sf /usr/bin/llvm-profdata-21 /usr/local/bin/llvm-profdata
+          ln -sf /usr/bin/llvm-objdump-21 /usr/local/bin/llvm-objdump
+
+          # Verify installation
+          llvm-cov --version
+          llvm-profdata merge --version 2>&1 | head -3 || echo "llvm-profdata installed"
+
+      - name: Clean profraw files before tests
+        run: |
+          find . -name "*.profraw" -type f -delete
+          echo "Cleaned all .profraw files"
+
+      - name: Download build artifacts (tar archive)
+        uses: actions/download-artifact@v4
+        with:
+          name: tests-artifacts-for-coverage
+          path: out/linux/x64
+
+      - name: Extract tests artifacts preserving permissions
+        run: |
+          tar -xzf out/linux/x64/tests-artifacts.tar.gz
+
+      - name: View folder structure content
+        run: |
+          df -h .
+          tree -I ".*|*.h|*.hpp|*.py" out/linux/x64
+
+      - name: Set ulimit and sysctl
+        run: |
+          # Because there are concurrent test cases which involves many
+          # concurrent socket connections, we need to enlarge the maximum number
+          # of the opened file descriptor.
+          ulimit -n 102400
+
+          # Because there are concurrent test cases (in 'smoke' and
+          # 'integration') which will create many concurrent connections
+          # simutaneously, we increase the TCP listening backlog value to 8192.
+          sysctl -w net.core.somaxconn=8192
+        shell: bash
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Update tman config.json
+        run: |
+          CONFIG_FILE="out/linux/x64/tests/local_registry/config.json"
+          echo "Before update:"
+          cat $CONFIG_FILE
+          sed -i "s|\(file://\)[^\"]*\(out\/linux\/x64\/tests\/local_registry\)|\1${GITHUB_WORKSPACE}/\2|" $CONFIG_FILE
+          echo "After update:"
+          cat $CONFIG_FILE
+
+      - name: Install Python dependencies via script
+        run: |
+          python .github/tools/setup_pytest_dependencies.py
+
+          df -h .
+
+      - name: Run tests (ten_runtime Go integration tests)
+        env:
+          ASAN_OPTIONS: detect_leaks=1:detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
+          MALLOC_CHECK_: 3
+          TEN_ENABLE_MEMORY_TRACKING: "true"
+          TEN_ENABLE_BACKTRACE_DUMP: "true"
+          GOTRACEBACK: crash
+        run: |
+          df -h .
+
+          export PATH=$(pwd)/core/ten_gn:$PATH
+          cd out/linux/x64/
+          pytest -s tests/ten_runtime/integration/go/
+
+          df -h .
+
+      - name: Merge profraw files for test-integration-go
+        run: |
+          mkdir -p out/linux/x64/coverage
+
+          # Find all profraw files recursively
+          PROFRAW_FILES=$(find . -name "*.profraw" -type f)
+
+          if [ -z "$PROFRAW_FILES" ]; then
+            echo "No profraw files found"
+            exit 1
+          fi
+
+          echo "Found profraw files:"
+          echo "$PROFRAW_FILES"
+
+          # Merge profraw files into profdata
+          llvm-profdata merge -sparse $PROFRAW_FILES -o out/linux/x64/coverage/test-integration-go.profdata
+
+          echo "Merged profdata file created: test-integration-go.profdata"
+          llvm-profdata show out/linux/x64/coverage/test-integration-go.profdata | head -20
+
+      - name: Upload test-integration-go profdata
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-integration-go-coverage
+          path: |
+            out/linux/x64/coverage/test-integration-go.profdata
+
+      - name: Clean up
+        continue-on-error: true
+        run: |
+          find . -name "*.profraw" -type f -delete
+          df -h .
+
+  test-integration-python:
+    needs: build
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/ten-framework/ten_building_ubuntu2204
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+
+      - name: Trust working directory
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
+      - name: Initialize and update submodules except portal/
+        run: |
+          # Retrieve all submodule paths, excluding `portal/`.
+          submodules=$(git config --file .gitmodules --get-regexp path | awk '$2 != "portal" { print $2 }')
+
+          git submodule init
+
+          for submodule in $submodules; do
+            echo "Initializing submodule: $submodule"
+            git submodule update --init --recursive --depth 1 "$submodule"
+          done
+
+      - name: Install LLVM 21 tools
+        run: |
+          # Add LLVM official repository for LLVM 21
+          apt-get update
+          apt-get install -y wget software-properties-common gnupg
+
+          # Add LLVM repository
+          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
+          add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main"
+
+          apt-get update
+          apt-get install -y llvm-21 clang-21
+
+          # Create symlinks to make llvm-cov and llvm-profdata available without version suffix
+          ln -sf /usr/bin/llvm-cov-21 /usr/local/bin/llvm-cov
+          ln -sf /usr/bin/llvm-profdata-21 /usr/local/bin/llvm-profdata
+          ln -sf /usr/bin/llvm-objdump-21 /usr/local/bin/llvm-objdump
+
+          # Verify installation
+          llvm-cov --version
+          llvm-profdata merge --version 2>&1 | head -3 || echo "llvm-profdata installed"
+
+      - name: Clean profraw files before tests
+        run: |
+          find . -name "*.profraw" -type f -delete
+          echo "Cleaned all .profraw files"
+
+      - name: Download build artifacts (tar archive)
+        uses: actions/download-artifact@v4
+        with:
+          name: tests-artifacts-for-coverage
+          path: out/linux/x64
+
+      - name: Extract tests artifacts preserving permissions
+        run: |
+          tar -xzf out/linux/x64/tests-artifacts.tar.gz
+
+      - name: View folder structure content
+        run: |
+          df -h .
+          tree -I ".*|*.h|*.hpp|*.py" out/linux/x64
+
+      - name: Set ulimit and sysctl
+        run: |
+          # Because there are concurrent test cases which involves many
+          # concurrent socket connections, we need to enlarge the maximum number
+          # of the opened file descriptor.
+          ulimit -n 102400
+
+          # Because there are concurrent test cases (in 'smoke' and
+          # 'integration') which will create many concurrent connections
+          # simutaneously, we increase the TCP listening backlog value to 8192.
+          sysctl -w net.core.somaxconn=8192
+        shell: bash
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Update tman config.json
+        run: |
+          CONFIG_FILE="out/linux/x64/tests/local_registry/config.json"
+          echo "Before update:"
+          cat $CONFIG_FILE
+          sed -i "s|\(file://\)[^\"]*\(out\/linux\/x64\/tests\/local_registry\)|\1${GITHUB_WORKSPACE}/\2|" $CONFIG_FILE
+          echo "After update:"
+          cat $CONFIG_FILE
+
+      - name: Install Python dependencies via script
+        run: |
+          python .github/tools/setup_pytest_dependencies.py
+
+          df -h .
+
+      - name: Run tests (ten_runtime Python integration tests)
+        env:
+          ASAN_OPTIONS: detect_leaks=1:detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
+          MALLOC_CHECK_: 3
+          TEN_ENABLE_MEMORY_TRACKING: "true"
+          TEN_ENABLE_BACKTRACE_DUMP: "true"
+          GOTRACEBACK: crash
+        run: |
+          curl -fsSL https://ollama.com/install.sh | sh
+
+          # Start Ollama service.
+          ollama serve &
+
+          # Wait for Ollama to be fully operational.
+          for i in {1..30}; do
+            if curl -s http://localhost:11434 >/dev/null; then
+              echo "✓ Ollama is running"
+              break
+            fi
+            echo "Waiting for Ollama to start..."
+            sleep 2
+          done
+
+          ollama pull smollm:135m
+
+          # Verify model is pulled correctly.
+          ollama list
+
+          df -h .
+
+          export PATH=$(pwd)/core/ten_gn:$PATH
+          cd out/linux/x64/
+          pytest -s tests/ten_runtime/integration/python/
+
+          df -h .
+
+      - name: Merge profraw files for test-integration-python
+        run: |
+          mkdir -p out/linux/x64/coverage
+
+          # Find all profraw files recursively
+          PROFRAW_FILES=$(find . -name "*.profraw" -type f)
+
+          if [ -z "$PROFRAW_FILES" ]; then
+            echo "No profraw files found"
+            exit 1
+          fi
+
+          echo "Found profraw files:"
+          echo "$PROFRAW_FILES"
+
+          # Merge profraw files into profdata
+          llvm-profdata merge -sparse $PROFRAW_FILES -o out/linux/x64/coverage/test-integration-python.profdata
+
+          echo "Merged profdata file created: test-integration-python.profdata"
+          llvm-profdata show out/linux/x64/coverage/test-integration-python.profdata | head -20
+
+      - name: Upload test-integration-python profdata
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-integration-python-coverage
+          path: |
+            out/linux/x64/coverage/test-integration-python.profdata
+
+      - name: Clean up
+        continue-on-error: true
+        run: |
+          find . -name "*.profraw" -type f -delete
+          df -h .
+
+  test-integration-nodejs:
+    needs: build
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/ten-framework/ten_building_ubuntu2204
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+
+      - name: Trust working directory
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
+      - name: Initialize and update submodules except portal/
+        run: |
+          # Retrieve all submodule paths, excluding `portal/`.
+          submodules=$(git config --file .gitmodules --get-regexp path | awk '$2 != "portal" { print $2 }')
+
+          git submodule init
+
+          for submodule in $submodules; do
+            echo "Initializing submodule: $submodule"
+            git submodule update --init --recursive --depth 1 "$submodule"
+          done
+
+      - name: Install LLVM 21 tools
+        run: |
+          # Add LLVM official repository for LLVM 21
+          apt-get update
+          apt-get install -y wget software-properties-common gnupg
+
+          # Add LLVM repository
+          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
+          add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main"
+
+          apt-get update
+          apt-get install -y llvm-21 clang-21
+
+          # Create symlinks to make llvm-cov and llvm-profdata available without version suffix
+          ln -sf /usr/bin/llvm-cov-21 /usr/local/bin/llvm-cov
+          ln -sf /usr/bin/llvm-profdata-21 /usr/local/bin/llvm-profdata
+          ln -sf /usr/bin/llvm-objdump-21 /usr/local/bin/llvm-objdump
+
+          # Verify installation
+          llvm-cov --version
+          llvm-profdata merge --version 2>&1 | head -3 || echo "llvm-profdata installed"
+
+      - name: Clean profraw files before tests
+        run: |
+          find . -name "*.profraw" -type f -delete
+          echo "Cleaned all .profraw files"
+
+      - name: Download build artifacts (tar archive)
+        uses: actions/download-artifact@v4
+        with:
+          name: tests-artifacts-for-coverage
+          path: out/linux/x64
+
+      - name: Extract tests artifacts preserving permissions
+        run: |
+          tar -xzf out/linux/x64/tests-artifacts.tar.gz
+
+      - name: View folder structure content
+        run: |
+          df -h .
+          tree -I ".*|*.h|*.hpp|*.py" out/linux/x64
+
+      - name: Set ulimit and sysctl
+        run: |
+          # Because there are concurrent test cases which involves many
+          # concurrent socket connections, we need to enlarge the maximum number
+          # of the opened file descriptor.
+          ulimit -n 102400
+
+          # Because there are concurrent test cases (in 'smoke' and
+          # 'integration') which will create many concurrent connections
+          # simutaneously, we increase the TCP listening backlog value to 8192.
+          sysctl -w net.core.somaxconn=8192
+        shell: bash
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Update tman config.json
+        run: |
+          CONFIG_FILE="out/linux/x64/tests/local_registry/config.json"
+          echo "Before update:"
+          cat $CONFIG_FILE
+          sed -i "s|\(file://\)[^\"]*\(out\/linux\/x64\/tests\/local_registry\)|\1${GITHUB_WORKSPACE}/\2|" $CONFIG_FILE
+          echo "After update:"
+          cat $CONFIG_FILE
+
+      - name: Install Python dependencies via script
+        run: |
+          python .github/tools/setup_pytest_dependencies.py
+
+          df -h .
+
+      - name: Run tests (ten_runtime Nodejs integration tests)
+        env:
+          ASAN_OPTIONS: detect_leaks=1:detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
+          MALLOC_CHECK_: 3
+          TEN_ENABLE_MEMORY_TRACKING: "true"
+          TEN_ENABLE_BACKTRACE_DUMP: "true"
+          GOTRACEBACK: crash
+        run: |
+          df -h .
+
+          export PATH=$(pwd)/core/ten_gn:$PATH
+          cd out/linux/x64/
+          pytest -s tests/ten_runtime/integration/nodejs/
+
+          df -h .
+
+      - name: Merge profraw files for test-integration-nodejs
+        run: |
+          mkdir -p out/linux/x64/coverage
+
+          # Find all profraw files recursively
+          PROFRAW_FILES=$(find . -name "*.profraw" -type f)
+
+          if [ -z "$PROFRAW_FILES" ]; then
+            echo "No profraw files found"
+            exit 1
+          fi
+
+          echo "Found profraw files:"
+          echo "$PROFRAW_FILES"
+
+          # Merge profraw files into profdata
+          llvm-profdata merge -sparse $PROFRAW_FILES -o out/linux/x64/coverage/test-integration-nodejs.profdata
+
+          echo "Merged profdata file created: test-integration-nodejs.profdata"
+          llvm-profdata show out/linux/x64/coverage/test-integration-nodejs.profdata | head -20
+
+      - name: Upload test-integration-nodejs profdata
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-integration-nodejs-coverage
+          path: |
+            out/linux/x64/coverage/test-integration-nodejs.profdata
+
+      - name: Clean up
+        continue-on-error: true
+        run: |
+          find . -name "*.profraw" -type f -delete
+          df -h .
+
+  gather-coverage-information:
+    needs:
+      [
+        test-standalone,
+        test-integration-cpp,
+        test-integration-go,
+        test-integration-python,
+        test-integration-nodejs,
+      ]
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/ten-framework/ten_building_ubuntu2204
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          submodules: false
+
+      - name: Install LLVM 21 tools
+        run: |
+          # Add LLVM official repository for LLVM 21
+          apt-get update
+          apt-get install -y wget software-properties-common gnupg
+
+          # Add LLVM repository
+          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
+          add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main"
+
+          apt-get update
+          apt-get install -y llvm-21 clang-21 lcov
+
+          # Create symlinks to make llvm-cov and llvm-profdata available without version suffix
+          ln -sf /usr/bin/llvm-cov-21 /usr/local/bin/llvm-cov
+          ln -sf /usr/bin/llvm-profdata-21 /usr/local/bin/llvm-profdata
+          ln -sf /usr/bin/llvm-objdump-21 /usr/local/bin/llvm-objdump
+
+          # Verify installation
+          llvm-cov --version
+          llvm-profdata merge --version 2>&1 | head -3 || echo "llvm-profdata installed"
+          lcov --version
+
+      - name: Download binaries and libraries for coverage analysis
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-binaries-and-libs
+          path: .
+
+      - name: Extract binaries and libraries
+        run: |
+          tar -xzf coverage-binaries-and-libs.tar.gz
+
+          # Move to target location
+          mkdir -p out/linux/x64/coverage
+          mv binaries_and_libs out/linux/x64/coverage/binaries_and_libs
+
+          echo "Extracted binaries and libraries:"
+          find out/linux/x64/coverage/binaries_and_libs -type f
+
+      - name: Download all profdata files
+        uses: actions/download-artifact@v4
+        with:
+          pattern: "*-coverage"
+          path: profdata_artifacts
+          merge-multiple: false
+
+      - name: List downloaded profdata files
+        run: |
+          echo "Downloaded profdata artifacts:"
+          find profdata_artifacts -name "*.profdata" -type f
+
+          # Create coverage directory
+          mkdir -p out/linux/x64/coverage
+
+      - name: Gather coverage information
+        run: |
+          CORE_BINARIES_AND_LIBS=(
+            "out/linux/x64/coverage/binaries_and_libs/ten_utils_unit_test"
+            "out/linux/x64/coverage/binaries_and_libs/integration_test"
+            "out/linux/x64/coverage/binaries_and_libs/ten_runtime_smoke_test"
+            "out/linux/x64/coverage/binaries_and_libs/ten_runtime_unit_test"
+            "out/linux/x64/coverage/binaries_and_libs/libten_runtime.so"
+            "out/linux/x64/coverage/binaries_and_libs/libten_runtime_go.so"
+            "out/linux/x64/coverage/binaries_and_libs/libten_runtime_python.so"
+            "out/linux/x64/coverage/binaries_and_libs/libten_runtime_nodejs.node"
+            "out/linux/x64/coverage/binaries_and_libs/libten_utils.so"
+            "out/linux/x64/coverage/binaries_and_libs/libten_rust.a"
+          )
+
+          # Find and merge all profdata files
+          PROFDATA_FILES=$(find profdata_artifacts -name "*.profdata" -type f)
+
+          echo "Found profdata files:"
+          echo "$PROFDATA_FILES"
+
+          llvm-profdata merge -sparse $PROFDATA_FILES -o out/linux/x64/coverage/merged.profdata
+
+          echo "😎Intermediate .profdata file:"
+          llvm-profdata show out/linux/x64/coverage/merged.profdata
+
+          # Use --object flag to ensure all binaries and libraries are processed correctly
+          # This prevents llvm-cov from ignoring shared libraries when executables are present
+          OBJECT_ARGS=()
+          for bin in "${CORE_BINARIES_AND_LIBS[@]}"; do
+            if [ -f "$bin" ]; then
+              OBJECT_ARGS+=(--object "$bin")
+            fi
+          done
+
+          llvm-cov export \
+          --ignore-filename-regex='(^|/)\.cargo/|(^|/).rustup/|(^|/)out/|(^|/)tests/|(^|/)third_party/|(^|/)python3.10/|(^|/)packages/' \
+          --format=lcov \
+          --instr-profile="out/linux/x64/coverage/merged.profdata" \
+          "${OBJECT_ARGS[@]}" \
+          > "out/linux/x64/coverage/coverage.lcov"
+
+      - name: Upload coverage report to Coveralls
+        env:
+          COVERALLS_REPO_TOKEN: ${{ secrets.TEN_COVERALLS_REPO_TOKEN }}
+        run: |
+          pip install --user cpp-coveralls
+          echo "cpp-coveralls installed successfully"
+
+          # Add user bin directory to PATH
+          export PATH="$HOME/.local/bin:$PATH"
+          echo "Updated PATH: $PATH"
+
+          # Verify coveralls command is available
+          which coveralls || echo "coveralls command not found in PATH"
+
+          if [ -f "out/linux/x64/coverage/coverage.lcov" ]; then
+            echo "Filtering coverage.lcov to include only core directory..."
+
+            # Use lcov to extract only core directory coverage
+            lcov --extract out/linux/x64/coverage/coverage.lcov \
+              "*/core/*" \
+              --output-file out/linux/x64/coverage/coverage_filtered.lcov \
+              --ignore-errors source
+
+            echo "Filtered coverage file created"
+            ls -lh out/linux/x64/coverage/coverage_filtered.lcov
+
+            echo "Uploading filtered coverage to Coveralls..."
+
+            # Capture coveralls output to extract the job URL
+            COVERALLS_OUTPUT=$(coveralls --lcov-file out/linux/x64/coverage/coverage_filtered.lcov --verbose 2>&1)
+            COVERALLS_EXIT_CODE=$?
+
+            echo "$COVERALLS_OUTPUT"
+
+            if [ $COVERALLS_EXIT_CODE -eq 0 ]; then
+              echo "Coverage uploaded to Coveralls successfully"
+
+              # Extract the URL from coveralls output
+              # The output format is: {'message': 'Job ##125.1', 'url': 'https://coveralls.io/jobs/173760015'}
+              # Use sed as fallback if grep -P is not available
+              if echo "$COVERALLS_OUTPUT" | grep -P "'url'" > /dev/null 2>&1; then
+                COVERALLS_JOB_URL=$(echo "$COVERALLS_OUTPUT" | grep -oP "(?<='url': ')[^']*" | tail -1)
+              else
+                # Fallback to sed for systems without grep -P
+                COVERALLS_JOB_URL=$(echo "$COVERALLS_OUTPUT" | sed -n "s/.*'url': '\([^']*\)'.*/\1/p" | tail -1)
+              fi
+
+              if [ -n "$COVERALLS_JOB_URL" ]; then
+                echo "Coveralls job URL: $COVERALLS_JOB_URL"
+                echo "COVERALLS_JOB_URL=$COVERALLS_JOB_URL" >> "$GITHUB_ENV"
+              else
+                echo "Could not extract Coveralls job URL from output"
+                # Fallback to repository URL
+                COVERALLS_JOB_URL="https://coveralls.io/github/${{ github.repository }}?branch=${{ github.ref_name }}"
+                echo "COVERALLS_JOB_URL=$COVERALLS_JOB_URL" >> "$GITHUB_ENV"
+              fi
+            else
+              echo "Error: Coverage upload to Coveralls failed with exit code $COVERALLS_EXIT_CODE"
+              # Set fallback URL even on failure
+              COVERALLS_JOB_URL="https://coveralls.io/github/${{ github.repository }}?branch=${{ github.ref_name }}"
+              echo "COVERALLS_JOB_URL=$COVERALLS_JOB_URL" >> "$GITHUB_ENV"
+              exit 1
+            fi
+          else
+            echo "Warning: coverage.lcov file not found, skipping Coveralls upload"
+            ls -la out/linux/x64/coverage/ || true
+            exit 1
+          fi
+
+      - name: Upload filtered coverage report to artifacts
+        if: success() || failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report-filtered
+          path: out/linux/x64/coverage/coverage_filtered.lcov
+          if-no-files-found: warn
+
+      - name: Add coverage link to job summary
+        if: always()
+        run: |
+          echo "## 📊 Coverage Report" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Repository**: ${{ github.repository }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Branch/Tag**: ${{ github.ref_name }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          # Use the URL from coveralls output if available
+          if [ -n "${COVERALLS_JOB_URL:-}" ]; then
+            echo "**Coverage Report**: [${COVERALLS_JOB_URL}](${COVERALLS_JOB_URL})" >> "$GITHUB_STEP_SUMMARY"
+          else
+            # Fallback URL
+            COVERALLS_URL="https://coveralls.io/github/${{ github.repository }}?branch=${{ github.ref_name }}"
+            echo "**Coverage Report**: [${COVERALLS_URL}](${COVERALLS_URL})" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          echo "**Please refresh the website after several minutes to see the correct coverage data, especially for the tree structure view**" >> "$GITHUB_STEP_SUMMARY"
+
+          echo "**Sometimes when the tree structure view is displayed, but actually the coverage data is not fully loaded, please refresh again for correct coverage data.**" >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,350 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+import("//build/ten_runtime/glob.gni")
+import("//build/ten_runtime/options.gni")
+
+template("ten_target") {
+  assert(defined(invoker.type), "Must provide target type")
+
+  _files = []
+  _target_name = target_name
+  _deps = []
+  if (defined(invoker.sources)) {
+    _files = invoker.sources
+  }
+
+  _defines = ten_runtime_common_defines
+  if (defined(invoker.defines)) {
+    _defines += invoker.defines
+  }
+
+  _include_dirs = []
+  if (defined(invoker.include_dirs)) {
+    _include_dirs = invoker.include_dirs
+  }
+  assert(_include_dirs == [] || _include_dirs != [])
+
+  # Mark all local variable "used"
+  assert(_files == [] || _files != [])
+  assert(_defines == [] || _defines != [])
+  assert(_deps == [] || _deps != [])
+
+  target(invoker.type, _target_name) {
+    forward_variables_from(invoker, "*")
+
+    if (defined(invoker.deps)) {
+      deps += common_deps
+    } else {
+      deps = common_deps
+    }
+
+    if (defined(invoker.public_deps)) {
+      public_deps += common_public_deps
+    } else {
+      public_deps = common_public_deps
+    }
+
+    if (defined(invoker.defines)) {
+      defines += ten_runtime_common_defines
+    } else {
+      defines = ten_runtime_common_defines
+    }
+
+    if (defined(invoker.include_dirs)) {
+      include_dirs += ten_runtime_common_includes
+    } else {
+      include_dirs = ten_runtime_common_includes
+    }
+
+    if (defined(invoker.cflags)) {
+      cflags += common_cflags
+    } else {
+      cflags = common_cflags
+    }
+
+    if (defined(invoker.cflags_c)) {
+      cflags_c += common_cflags_c
+    } else {
+      cflags_c = common_cflags_c
+    }
+
+    if (defined(invoker.cflags_cc)) {
+      cflags_cc += common_cflags_cc
+    } else {
+      cflags_cc = common_cflags_cc
+    }
+
+    if (defined(invoker.cflags_objc)) {
+      cflags_objc += common_cflags_objc
+    } else {
+      cflags_objc = common_cflags_objc
+    }
+
+    if (defined(invoker.cflags_objcc)) {
+      cflags_objcc += common_cflags_objcc
+    } else {
+      cflags_objcc = common_cflags_objcc
+    }
+
+    if (enable_coverage) {
+      assert(is_linux && target_cpu == "x64",
+             "Coverage instrumentation should only be enabled in Linux + x64")
+
+      if (is_clang) {
+        cflags += [
+          "-fprofile-instr-generate",
+          "-fcoverage-mapping",
+        ]
+        cflags_c += [
+          "-fprofile-instr-generate",
+          "-fcoverage-mapping",
+        ]
+        cflags_cc += [
+          "-fprofile-instr-generate",
+          "-fcoverage-mapping",
+        ]
+      } else {
+        # GCC
+        cflags += [ "--coverage" ]
+        cflags_c += [ "--coverage" ]
+        cflags_cc += [ "--coverage" ]
+      }
+    }
+
+    if (defined(invoker.lib_dirs)) {
+      lib_dirs += common_lib_dirs
+    } else {
+      lib_dirs = common_lib_dirs
+    }
+
+    if (defined(invoker.libs)) {
+      libs += common_libs
+    } else {
+      libs = common_libs
+    }
+
+    if (defined(invoker.configs)) {
+      tmpConfigs = configs
+      configs = []
+      configs += common_configs
+      configs += tmpConfigs
+    }
+    if (defined(invoker.add_configs)) {
+      configs += add_configs
+    }
+    if (defined(invoker.remove_configs)) {
+      configs -= remove_configs
+    }
+
+    if (invoker.type == "executable" || invoker.type == "shared_library") {
+      if (defined(invoker.ldflags)) {
+        ldflags += common_ldflags
+      } else {
+        ldflags = common_ldflags
+      }
+
+      if (enable_coverage) {
+        assert(is_linux && target_cpu == "x64",
+               "Coverage instrumentation should only be enabled in Linux + x64")
+
+        if (is_clang) {
+          ldflags += [ "-fprofile-instr-generate" ]
+        } else {
+          ldflags += [ "--coverage" ]
+        }
+      }
+
+      if (is_mac) {
+        ldflags += [
+          # Enable the executable to look in the current directory for shared
+          # library.
+          "-Wl,-rpath,@loader_path",
+
+          # Enable the executable to look in '<parent_folder>/lib/' for shared
+          # library.
+          "-Wl,-rpath,@loader_path/../lib/",
+
+          "-Xlinker",
+          "-install_name",
+
+          "-Xlinker",
+        ]
+
+        rpath_name = target_name
+        if (defined(invoker.output_name) && invoker.output_name != "") {
+          rpath_name = invoker.output_name
+        }
+
+        if (invoker.type == "executable") {
+          ldflags += [ "@rpath/${rpath_name}" ]
+        } else if (defined(invoker.output_extension) &&
+                   invoker.output_extension != "") {
+          ldflags += [ "@rpath/lib${rpath_name}.${invoker.output_extension}" ]
+        } else {
+          ldflags += [ "@rpath/lib${rpath_name}.dylib" ]
+        }
+      } else if (is_linux) {
+        ldflags += [
+          # Enable the executable to look in the current directory for shared
+          # library.
+          "-Wl,-rpath=\$ORIGIN",
+
+          # Enable the executable to look in 'lib/' for shared library.
+          "-Wl,-rpath=\$ORIGIN/../lib/",
+        ]
+      }
+    }
+  }
+}
+
+template("ten_shared_library") {
+  ten_target(target_name) {
+    type = "shared_library"
+    forward_variables_from(invoker, "*")
+  }
+}
+
+template("ten_static_library") {
+  ten_target(target_name) {
+    type = "static_library"
+    forward_variables_from(invoker, "*")
+  }
+}
+
+template("ten_executable") {
+  ten_target(target_name) {
+    type = "executable"
+    forward_variables_from(invoker, "*")
+    exe_ld_flags = []
+    if (is_mac) {
+      exe_ld_flags = [ "-Wl,-rpath,@loader_path" ]
+    } else if (is_linux) {
+      exe_ld_flags = [ "-Wl,-rpath=\$ORIGIN" ]
+    }
+    if (defined(invoker.ldflags)) {
+      ldflags += exe_ld_flags
+    } else {
+      ldflags = exe_ld_flags
+    }
+  }
+}
+
+template("ten_action") {
+  ten_target(target_name) {
+    type = "action"
+    forward_variables_from(invoker, "*")
+  }
+}
+
+template("ten_action_foreach") {
+  ten_target(target_name) {
+    type = "action_foreach"
+    forward_variables_from(invoker, "*")
+  }
+}
+
+template("ten_source_set") {
+  ten_target(target_name) {
+    type = "source_set"
+    forward_variables_from(invoker, "*")
+    if (defined(file_list) && file_list != []) {
+      rebase_files = []
+      foreach(f, file_list) {
+        rebase_files += [
+          "--dir",
+          rebase_path(f),
+        ]
+      }
+
+      sources_info = exec_script("//.gnfiles/build/scripts/glob_file.py",
+                                 rebase_files,
+                                 "json")
+
+      foreach(source_info, sources_info) {
+        sources += [ source_info.path ]
+      }
+
+      if (defined(invoker.sources)) {
+        sources += invoker.sources
+      }
+    }
+  }
+}
+
+template("ten_extension") {
+  _target_name = target_name
+
+  if (defined(invoker.sources)) {
+    _sources = invoker.sources
+  } else {
+    _sources = []
+  }
+
+  if (_sources != []) {
+    ten_runtime_glob("${_target_name}_files") {
+      file_list = _sources
+
+      if (defined(invoker.deps)) {
+        deps += invoker.deps
+      }
+
+      if (defined(invoker.public_deps)) {
+        public_deps = invoker.public_deps
+      }
+    }
+  }
+
+  ten_target(_target_name) {
+    type = "shared_library"
+    if (defined(invoker.deps)) {
+      deps += invoker.deps
+    }
+
+    if (defined(invoker.include_dirs)) {
+      include_dirs = invoker.include_dirs
+    }
+
+    if (defined(invoker.libs)) {
+      libs = invoker.libs
+    }
+
+    if (_sources != []) {
+      deps += [ ":${_target_name}_files" ]
+    }
+  }
+}
+
+template("ten_plugin") {
+  _target_name = target_name
+
+  if (defined(invoker.file_list)) {
+    _file_list = invoker.file_list
+  } else {
+    _file_list = []
+  }
+
+  if (_file_list != []) {
+    ten_runtime_glob("${_target_name}_files") {
+      file_list = _file_list
+
+      if (defined(invoker.deps)) {
+        deps += invoker.deps
+      }
+    }
+  }
+
+  ten_target(_target_name) {
+    type = "shared_library"
+    if (defined(invoker.deps)) {
+      deps += invoker.deps
+    }
+
+    if (_file_list != []) {
+      deps += [ ":${_target_name}_files" ]
+    }
+  }
+}

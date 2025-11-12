@@ -1,0 +1,41 @@
+<testcase>
+<info>
+<keywords>
+FILE
+</keywords>
+</info>
+
+<reply>
+<data>
+foo
+   bar
+bar
+   foo
+moo
+</data>
+</reply>
+
+# Client-side
+<client>
+<server>
+file
+</server>
+ <name>
+basic file:// file
+ </name>
+<command option="no-include">
+file://localhost%FILE_PWD/%LOGDIR/test%TESTNUMBER.txt
+</command>
+<file name="%LOGDIR/test%TESTNUMBER.txt">
+foo
+   bar
+bar
+   foo
+moo
+</file>
+</client>
+
+# Verify data after the test has been "shot"
+<verify>
+</verify>
+</testcase>

@@ -1,0 +1,16 @@
+{
+  "name": "{{package_name}}",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "./build/index.js",
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  },
+  "dependencies": {
+    "ten-runtime-nodejs": "file:../../../ten_packages/system/ten_runtime_nodejs"
+  },
+  "scripts": {
+    "build": "tsc --listEmittedFiles",
+    "standalone-install": "npm install .ten/app/ten_packages/system/ten_runtime_nodejs"
+  }
+}

@@ -1,0 +1,121 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+import("//build/ten_runtime/glob.gni")
+import("//build/ten_runtime/ten.gni")
+
+ten_runtime_glob("ten_runtime_smoke_tests") {
+  file_list = all_native_files
+
+  public_deps = [
+    "//core/src/ten_utils",
+    "//third_party/googlemock",
+    "//third_party/googletest",
+  ]
+
+  include_dirs = [ "//core/include" ]
+}
+
+ten_executable("ten_runtime_smoke_test") {
+  output_dir = "${root_out_dir}/tests/standalone"
+
+  deps = [
+    ":ten_runtime_smoke_tests",
+    "//core/src/ten_runtime",
+    "//core/src/ten_utils:ten_utils_shared",
+    "//packages/core_protocols/msgpack:msgpack_files_for_builtin_protocol",
+    "//tests/ten_runtime:copy_libraries_for_test",
+    "//third_party/nlohmann_json",
+  ]
+
+  deps += [
+    "audio_frame_test",
+    "basic",
+    "close_app",
+    "cmd_result_test",
+    "command",
+    "concurrent",
+    "data_test",
+    "deprecated_log_test",
+    "dest",
+    "engine",
+    "error",
+    "extension",
+    "extension_group",
+    "failed_to_transfer_msg",
+    "graph",
+    "graph_error",
+    "graph_name",
+    "graph_test",
+    "lock",
+    "manual_trigger_life_cycle",
+    "msg_conversion",
+    "msg_property",
+    "msg_test",
+    "multi_dest",
+    "no_connection",
+    "notify_test",
+    "outer_thread",
+    "path",
+    "predefined_graph",
+    "prepare_to_stop",
+    "property",
+    "resp_handler",
+    "result_conversion",
+    "return",
+    "same_thread_ext_on_xxx",
+    "send",
+    "standalone_test",
+    "start_graph",
+    "suspend_resume",
+    "telemetry",
+    "ten_env_call_timing",
+    "ten_proxy",
+    "timer",
+    "value",
+    "video_frame_test",
+  ]
+
+  if (ten_enable_ten_rust) {
+    deps += [
+      "graph_check",
+      "graph_communication",
+      "graph_syntax_sugar",
+      "log_test",
+      "schema_test",
+    ]
+  }
+
+  if (ten_enable_curl) {
+    deps += [ "//third_party/curl" ]
+  }
+
+  if (ten_enable_libwebsockets) {
+    deps += [
+      "//third_party/libwebsockets",
+      "//third_party/mbedtls",
+    ]
+  }
+
+  if (enable_sanitizer) {
+    if (!is_clang) {
+      deps += [ "//build/ten_common/asan:package_asan_lib_for_ten_framework_standalone_test" ]
+    }
+  }
+
+  public_deps = [
+    "//third_party/googlemock",
+    "//third_party/googletest",
+  ]
+
+  if (ten_enable_libwebsockets && ten_enable_curl) {
+    deps += [ "http_server_extension" ]
+  }
+}
+
+group("smoke") {
+  public_deps = [ ":ten_runtime_smoke_test" ]
+}

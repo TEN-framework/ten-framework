@@ -1,0 +1,96 @@
+{
+  "type": "extension",
+  "name": "openai_mllm_python",
+  "version": "0.2.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.11"
+    },
+    {
+      "type": "system",
+      "name": "ten_ai_base",
+      "version": "0.7"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "**.tent",
+      "**.py",
+      "README.md",
+      "realtime/**.tent",
+      "realtime/**.py"
+    ]
+  },
+  "api": {
+    "interface": [
+      {
+        "import_uri": "../../system/ten_ai_base/api/mllm-interface.json"
+      }
+    ],
+    "property": {
+      "properties": {
+        "base_url": {
+          "type": "string"
+        },
+        "api_key": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string"
+        },
+        "language": {
+          "type": "string"
+        },
+        "prompt": {
+          "type": "string"
+        },
+        "temperature": {
+          "type": "float32"
+        },
+        "max_tokens": {
+          "type": "int32"
+        },
+        "voice": {
+          "type": "string"
+        },
+        "server_vad": {
+          "type": "bool"
+        },
+        "audio_out": {
+          "type": "bool"
+        },
+        "input_transcript": {
+          "type": "bool"
+        },
+        "sample_rate": {
+          "type": "int32"
+        },
+        "vendor": {
+          "type": "string"
+        },
+        "vad_type": {
+          "type": "string"
+        },
+        "vad_eagerness": {
+          "type": "string"
+        },
+        "vad_threshold": {
+          "type": "float32"
+        },
+        "vad_prefix_padding_ms": {
+          "type": "int32"
+        },
+        "vad_silence_duration_ms": {
+          "type": "int32"
+        }
+      }
+    }
+  }
+}

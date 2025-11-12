@@ -1,0 +1,62 @@
+{
+  "ten": {
+    "services": {
+      "api": {
+        "enabled": true
+      },
+      "telemetry": {
+        "enabled": true
+      }
+    },
+    "predefined_graphs": [
+      {
+        "name": "default",
+        "auto_start": true,
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "extension_1",
+              "addon": "extension_1",
+              "extension_group": "default_extension_group_1"
+            },
+            {
+              "type": "extension",
+              "name": "extension_2",
+              "addon": "extension_2",
+              "extension_group": "default_extension_group_2"
+            }
+          ],
+          "connections": [
+            {
+              "extension": "extension_1",
+              "cmd": [
+                {
+                  "name": "test_cmd_from_1",
+                  "dest": [
+                    {
+                      "extension": "extension_2"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "extension_2",
+              "cmd": [
+                {
+                  "name": "test_cmd_from_2",
+                  "dest": [
+                    {
+                      "extension": "extension_1"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

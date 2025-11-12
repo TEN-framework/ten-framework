@@ -1,0 +1,584 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+import("//.gnfiles/build/feature/base_options.gni")
+import("//build/options.gni")
+import("//core/src/ten_runtime/output_libs.gni")
+
+template("ten_package_test_prepare_app") {
+  # The following fields are necessary.
+  assert(defined(invoker.src_app) && invoker.src_app != "")
+  assert(defined(invoker.src_app_language) && invoker.src_app_language != "")
+  assert(defined(invoker.generated_app_src_root_dir_name) &&
+         invoker.generated_app_src_root_dir_name != "")
+
+  _target_name = target_name
+
+  test_case_out_dir_rel_path_str =
+      get_path_info(get_path_info(target_name, "abspath"), "dir")
+  test_case_out_dir_rel_path =
+      "${root_out_dir}/${test_case_out_dir_rel_path_str}"
+
+  test_case_unique_target_name =
+      string_replace(test_case_out_dir_rel_path_str, "/", "_")
+
+  all_deps = []
+
+  if (ten_enable_integration_tests_prebuilt) {
+    app_src_root_dir = "${test_case_out_dir_rel_path}/${invoker.generated_app_src_root_dir_name}"
+    app_run_root_dir = "${test_case_out_dir_rel_path}/${_target_name}"
+    install_app_dummy_output_file =
+        "${target_gen_dir}/${_target_name}/install_app_dummy_output_file"
+    install_app_depfile = "${target_gen_dir}/install_app_depfile"
+
+    action("${test_case_unique_target_name}_${_target_name}_install_app") {
+      script = "//build/ten_runtime/feature/install_pkg.py"
+
+      args = [ "--tman-path" ]
+      if (is_win) {
+        args += [ rebase_path("${root_out_dir}/ten_manager/bin/tman.exe") ]
+      } else {
+        args += [ rebase_path("${root_out_dir}/ten_manager/bin/tman") ]
+      }
+
+      args += [
+        "--pkg-type",
+        "app",
+        "--pkg-src-root-dir",
+        rebase_path(app_src_root_dir),
+        "--src-pkg",
+        invoker.src_app,
+        "--tg-timestamp-proxy-file",
+        rebase_path(install_app_dummy_output_file),
+      ]
+
+      args += [
+        "--config-file",
+        rebase_path("${root_out_dir}/tests/local_registry/config.json"),
+      ]
+
+      args += [
+        "--log-level",
+        "${log_level}",
+      ]
+
+      args += [
+        "--local-registry-path",
+        rebase_path("${root_out_dir}/tests/local_registry"),
+      ]
+
+      if (invoker.deps != []) {
+        foreach(dep, invoker.deps) {
+          args += [
+            "--possible-published-results",
+            rebase_path(get_label_info(dep, "target_gen_dir")),
+          ]
+        }
+        args += [
+          "--depfile",
+          rebase_path(install_app_depfile),
+          "--depfile-target",
+          rebase_path(install_app_dummy_output_file, root_build_dir),
+        ]
+      }
+
+      sources = []
+      outputs = [ install_app_dummy_output_file ]
+      depfile = install_app_depfile
+
+      forward_variables_from(invoker,
+                             [
+                               "deps",
+                               "public_deps",
+                             ])
+
+      if (!defined(deps)) {
+        deps = []
+      }
+      deps += [
+        "//build/ten_runtime/feature:create_tman_config",
+        "//core/src/ten_manager",
+      ]
+    }
+
+    all_deps +=
+        [ ":${test_case_unique_target_name}_${_target_name}_install_app" ]
+
+    # replace_paths_after_install_app
+    replace_files_after_install_app_deps = []
+    replace_files_after_install_app_dests = []
+
+    if (defined(invoker.replace_paths_after_install_app) &&
+        invoker.replace_paths_after_install_app != []) {
+      replace_path_index = 0
+
+      foreach(replace_path, invoker.replace_paths_after_install_app) {
+        replace_info = []
+        replace_info =
+            exec_script("//.gnfiles/build/scripts/get_src_and_dest_file.py",
+                        [
+                          "--input-string",
+                          replace_path,
+                          "--src-dest-delimiter",
+                          "=>",
+                        ],
+                        "json")
+
+        replace_src_path = replace_info.source
+        replace_dest_path =
+            "${test_case_out_dir_rel_path}/${replace_info.destination}"
+
+        action(
+            "${test_case_unique_target_name}_${_target_name}_after_install_app_replace_file_${replace_path_index}") {
+          script = "//.gnfiles/build/scripts/copy_fs_entry.py"
+
+          args = [
+            "--source",
+            rebase_path(replace_src_path),
+            "--destination",
+            rebase_path(replace_dest_path),
+            "--files-only",
+          ]
+
+          sources = [ replace_src_path ]
+          outputs = [ replace_dest_path ]
+
+          # Need to wait the completion of the app construction phase.
+          deps =
+              [ ":${test_case_unique_target_name}_${_target_name}_install_app" ]
+        }
+
+        replace_files_after_install_app_deps += [ ":${test_case_unique_target_name}_${_target_name}_after_install_app_replace_file_${replace_path_index}" ]
+        replace_files_after_install_app_dests += [ replace_dest_path ]
+
+        replace_path_index += 1
+      }
+    }
+
+    install_all_dummy_output_file =
+        "${target_gen_dir}/${_target_name}/install_all_dummy_output_file"
+
+    action("${test_case_unique_target_name}_${_target_name}_install_all") {
+      script = "//build/ten_runtime/feature/install_all.py"
+
+      args = [ "--tman-path" ]
+      if (is_win) {
+        args += [ rebase_path("${root_out_dir}/ten_manager/bin/tman.exe") ]
+      } else {
+        args += [ rebase_path("${root_out_dir}/ten_manager/bin/tman") ]
+      }
+
+      args += [
+        "--pkg-src-root-dir",
+        rebase_path(app_src_root_dir),
+      ]
+
+      args += [
+        "--tg-timestamp-proxy-file",
+        rebase_path(install_all_dummy_output_file),
+      ]
+
+      args += [
+        "--assume-yes",
+        "True",
+      ]
+
+      args += [
+        "--config-file",
+        rebase_path("${root_out_dir}/tests/local_registry/config.json"),
+      ]
+
+      args += [
+        "--log-level",
+        "${log_level}",
+      ]
+
+      sources = replace_files_after_install_app_dests
+      outputs = [ install_all_dummy_output_file ]
+
+      forward_variables_from(invoker,
+                             [
+                               "deps",
+                               "public_deps",
+                             ])
+
+      if (!defined(deps)) {
+        deps = []
+      }
+      deps += [
+                ":${test_case_unique_target_name}_${_target_name}_install_app",
+                "//build/ten_runtime/feature:create_tman_config",
+                "//core/src/ten_manager",
+              ] + replace_files_after_install_app_deps
+    }
+
+    all_deps +=
+        [ ":${test_case_unique_target_name}_${_target_name}_install_all" ]
+
+    # ===============================
+    # replace_paths_after_install_all
+    deps_for_replace_paths_after_install_all = []
+    dests_for_replace_paths_after_install_all = []
+
+    if (defined(invoker.replace_paths_after_install_all) &&
+        invoker.replace_paths_after_install_all != []) {
+      replace_path_index = 0
+
+      foreach(replace_path, invoker.replace_paths_after_install_all) {
+        replace_info = []
+        replace_info =
+            exec_script("//.gnfiles/build/scripts/get_src_and_dest_file.py",
+                        [
+                          "--input-string",
+                          replace_path,
+                          "--src-dest-delimiter",
+                          "=>",
+                        ],
+                        "json")
+
+        replace_src_path = replace_info.source
+        replace_dest_path =
+            "${test_case_out_dir_rel_path}/${replace_info.destination}"
+
+        action(
+            "${test_case_unique_target_name}_${_target_name}_after_install_all_replace_file_${replace_path_index}") {
+          script = "//.gnfiles/build/scripts/copy_fs_entry.py"
+
+          args = [
+            "--source",
+            rebase_path(replace_src_path),
+            "--destination",
+            rebase_path(replace_dest_path),
+            "--files-only",
+          ]
+
+          sources = [ replace_src_path ]
+          outputs = [ replace_dest_path ]
+
+          deps = [
+            ":${test_case_unique_target_name}_${_target_name}_install_all",
+            ":${test_case_unique_target_name}_${_target_name}_install_app",
+          ]
+        }
+
+        deps_for_replace_paths_after_install_all += [ ":${test_case_unique_target_name}_${_target_name}_after_install_all_replace_file_${replace_path_index}" ]
+        dests_for_replace_paths_after_install_all += [ replace_dest_path ]
+
+        replace_path_index += 1
+      }
+    }
+
+    # App building phase.
+    build_app_dummy_output_file =
+        "${target_gen_dir}/${_target_name}/build_app_dummy_output_file"
+
+    action("${test_case_unique_target_name}_${_target_name}_build") {
+      script = "//build/ten_runtime/feature/build_pkg.py"
+
+      print("Building app: ${invoker.generated_app_src_root_dir_name}")
+
+      args = [
+        "--pkg-src-root-dir",
+        rebase_path(app_src_root_dir),
+        "--pkg-run-root-dir",
+        rebase_path(app_run_root_dir),
+        "--tg-timestamp-proxy-file",
+        rebase_path(build_app_dummy_output_file),
+        "--log-level",
+        "${log_level}",
+        "--pkg-name",
+        invoker.generated_app_src_root_dir_name,
+        "--pkg-language",
+        invoker.src_app_language,
+        "--os",
+        target_os,
+        "--cpu",
+        target_cpu,
+        "--build",
+      ]
+
+      if (is_debug) {
+        args += [ "debug" ]
+      } else {
+        args += [ "release" ]
+      }
+
+      if (is_win) {
+        args += [
+          "--vs-version",
+          "$vs_version",
+        ]
+      }
+
+      if (is_clang) {
+        args += [ "--is-clang" ]
+      } else {
+        args += [ "--no-is-clang" ]
+      }
+
+      if (enable_sanitizer) {
+        args += [ "--enable-sanitizer" ]
+      } else {
+        args += [ "--no-enable-sanitizer" ]
+      }
+
+      sources = replace_files_after_install_app_dests +
+                dests_for_replace_paths_after_install_all
+      outputs = [ build_app_dummy_output_file ]
+
+      forward_variables_from(invoker,
+                             [
+                               "deps",
+                               "public_deps",
+                             ])
+
+      if (!defined(deps)) {
+        deps = []
+      }
+      deps += [
+                ":${test_case_unique_target_name}_${_target_name}_install_all",
+                ":${test_case_unique_target_name}_${_target_name}_install_app",
+              ] + replace_files_after_install_app_deps +
+              deps_for_replace_paths_after_install_all
+    }
+
+    all_deps += [ ":${test_case_unique_target_name}_${_target_name}_build" ]
+  } else {
+    action(
+        "${test_case_unique_target_name}_${_target_name}_prepare_integration_test_resources") {
+      script =
+          "//build/ten_runtime/feature/prepare_integration_test_resources.py"
+
+      test_case_out_dir_abs_path =
+          rebase_path("${root_out_dir}/${test_case_out_dir_rel_path_str}")
+
+      args = [
+        "--test-case-src-dir",
+        rebase_path("."),
+        "--test-case-out-dir",
+        test_case_out_dir_abs_path,
+        "--src-app",
+        invoker.src_app,
+        "--src-app-language",
+        invoker.src_app_language,
+        "--generated-app-src-root-dir-name",
+        invoker.generated_app_src_root_dir_name,
+      ]
+
+      sources = []
+      outputs = []
+
+      if (defined(invoker.replace_paths_after_install_app) &&
+          invoker.replace_paths_after_install_app != []) {
+        foreach(replace_path, invoker.replace_paths_after_install_app) {
+          replace_info = []
+          replace_info =
+              exec_script("//.gnfiles/build/scripts/get_src_and_dest_file.py",
+                          [
+                            "--input-string",
+                            replace_path,
+                            "--src-dest-delimiter",
+                            "=>",
+                          ],
+                          "json")
+
+          replace_src_path = replace_info.source
+          replace_dest_path = replace_info.destination
+
+          args += [
+            "--replace-paths-after-install-app",
+            replace_src_path,
+            replace_dest_path,
+          ]
+
+          sources += [ replace_src_path ]
+          outputs += [ "${test_case_out_dir_rel_path}/.assemble_info/${invoker.generated_app_src_root_dir_name}/files_to_be_replaced_after_install_app/${replace_dest_path}" ]
+        }
+      }
+
+      if (defined(invoker.replace_paths_after_install_all) &&
+          invoker.replace_paths_after_install_all != []) {
+        foreach(replace_path, invoker.replace_paths_after_install_all) {
+          replace_info = []
+          replace_info =
+              exec_script("//.gnfiles/build/scripts/get_src_and_dest_file.py",
+                          [
+                            "--input-string",
+                            replace_path,
+                            "--src-dest-delimiter",
+                            "=>",
+                          ],
+                          "json")
+
+          replace_src_path = replace_info.source
+          replace_dest_path = replace_info.destination
+
+          args += [
+            "--replace-paths-after-install-all",
+            replace_src_path,
+            replace_dest_path,
+          ]
+
+          sources += [ replace_src_path ]
+          outputs += [ "${test_case_out_dir_rel_path}/.assemble_info/${invoker.generated_app_src_root_dir_name}/files_to_be_replaced_after_install_all/${replace_dest_path}" ]
+        }
+      }
+
+      deps = invoker.deps
+    }
+
+    all_deps += [ ":${test_case_unique_target_name}_${_target_name}_prepare_integration_test_resources" ]
+  }
+
+  group("${_target_name}") {
+    deps = all_deps
+  }
+}
+
+template("ten_package_test_prepare_client") {
+  _target_name = target_name
+
+  test_case_out_dir_rel_path_str =
+      get_path_info(get_path_info(target_name, "abspath"), "dir")
+  test_case_unique_target_name =
+      string_replace(test_case_out_dir_rel_path_str, "/", "_")
+  test_case_out_dir_rel_path =
+      "${root_out_dir}/${test_case_out_dir_rel_path_str}"
+
+  executable("${test_case_unique_target_name}_client_${target_name}") {
+    output_dir = "${test_case_out_dir_rel_path}"
+    output_name = _target_name
+
+    forward_variables_from(invoker,
+                           [
+                             "sources",
+                             "include_dirs",
+                             "deps",
+                           ])
+
+    if (defined(invoker.configs) && invoker.configs != []) {
+      configs += invoker.configs
+    }
+    defines = common_defines
+    if (defined(invoker.defines) && invoker.defines != []) {
+      defines += invoker.defines
+    }
+    include_dirs = common_includes
+    if (defined(invoker.include_dirs) && invoker.include_dirs != []) {
+      include_dirs += invoker.include_dirs
+    }
+    cflags = common_cflags
+    if (defined(invoker.cflags) && invoker.cflags != []) {
+      cflags += invoker.cflags
+    }
+    cflags_c = common_cflags_c
+    if (defined(invoker.cflags_c) && invoker.cflags_c != []) {
+      cflags_c += invoker.cflags_c
+    }
+    cflags_cc = common_cflags_cc
+    if (defined(invoker.cflags_cc) && invoker.cflags_cc != []) {
+      cflags_cc += invoker.cflags_cc
+    }
+    cflags_objc = common_cflags_objc
+    if (defined(invoker.cflags_objc) && invoker.cflags_objc != []) {
+      cflags_objc += invoker.cflags_objc
+    }
+    cflags_objcc = common_cflags_objcc
+    if (defined(invoker.cflags_objcc) && invoker.cflags_objcc != []) {
+      cflags_objcc += invoker.cflags_objcc
+    }
+    libs = common_libs
+    if (defined(invoker.libs) && invoker.libs != []) {
+      libs += invoker.libs
+    }
+    lib_dirs = common_lib_dirs
+    if (defined(invoker.lib_dirs) && invoker.lib_dirs != []) {
+      lib_dirs += invoker.lib_dirs
+    }
+    ldflags = common_ldflags
+    if (defined(invoker.ldflags) && invoker.ldflags != []) {
+      ldflags += invoker.ldflags
+    }
+  }
+
+  group("${target_name}") {
+    forward_variables_from(invoker,
+                           [
+                             "deps",
+                             "public_deps",
+                           ])
+
+    if (!defined(deps)) {
+      deps = []
+    }
+    deps += [ ":${test_case_unique_target_name}_client_${target_name}" ]
+  }
+}
+
+template("ten_package_test_prepare_auxiliary_resources") {
+  test_case_out_dir_rel_path_str =
+      get_path_info(get_path_info(target_name, "abspath"), "dir")
+  test_case_out_dir_rel_path =
+      "${root_out_dir}/${test_case_out_dir_rel_path_str}"
+  test_case_unique_target_name =
+      string_replace(test_case_out_dir_rel_path_str, "/", "_")
+
+  # The collection of all the deps related to the specified resources.
+  res_deps = []
+
+  # Prepare resources.
+  if (defined(invoker.resources) && invoker.resources != []) {
+    resource_index = 0
+
+    foreach(resource, invoker.resources) {
+      resource_info = {
+      }
+
+      resource_info =
+          exec_script("//.gnfiles/build/scripts/get_src_and_dest_file.py",
+                      [
+                        "--input-string",
+                        resource,
+                        "--src-dest-delimiter",
+                        "=>",
+                      ],
+                      "json")
+
+      resource_src_path = resource_info.source
+      resource_dest_path =
+          "${test_case_out_dir_rel_path}/${resource_info.destination}"
+
+      action(
+          "${test_case_unique_target_name}_${target_name}_resource_${resource_index}") {
+        script = "//.gnfiles/build/scripts/copy_fs_entry.py"
+        args = [
+          "--source",
+          rebase_path(resource_src_path),
+          "--destination",
+          rebase_path(resource_dest_path),
+          "--files-only",
+        ]
+
+        inputs = [ resource_src_path ]
+        outputs = [ resource_dest_path ]
+
+        forward_variables_from(invoker,
+                               [
+                                 "deps",
+                                 "public_deps",
+                               ])
+      }
+
+      res_deps += [ ":${test_case_unique_target_name}_${target_name}_resource_${resource_index}" ]
+
+      resource_index += 1
+    }
+  }
+
+  group("${target_name}") {
+    deps = res_deps
+  }
+}

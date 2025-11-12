@@ -1,0 +1,12 @@
+{
+  "type": "extension",
+  "name": "heiheihei_1",
+  "version": "1.0.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "sys_1",
+      "version": "2.0.0"
+    }
+  ]
+}

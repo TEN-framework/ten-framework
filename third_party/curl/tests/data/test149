@@ -1,0 +1,53 @@
+<testcase>
+<info>
+<keywords>
+FTP
+</keywords>
+</info>
+
+# Server-side
+<reply>
+</reply>
+
+# Client-side
+<client>
+<server>
+ftp
+</server>
+ <name>
+FTP with multiple uploads
+ </name>
+ <command>
+-T %LOGDIR/upload%TESTNUMBER ftp://%HOSTIP:%FTPPORT/dir1/%TESTNUMBER -T %LOGDIR/upload%TESTNUMBER ftp://%HOSTIP:%FTPPORT/dir2/%TESTNUMBER
+</command>
+<file name="%LOGDIR/upload%TESTNUMBER">
+send away this contents
+</file>
+</client>
+
+# Verify data after the test has been "shot"
+<verify>
+# Strip all valid kinds of PORT and EPRT that curl can send
+<strip>
+^PORT \d{1,3},\d{1,3},\d{1,3},\d{1,3},\d{1,3},\d{1,3}
+^EPRT \|1\|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\|\d{1,5}\|
+</strip>
+<protocol>
+USER anonymous
+PASS ftp@example.com
+PWD
+CWD dir1
+EPSV
+TYPE I
+STOR %TESTNUMBER
+CWD /
+CWD dir2
+EPSV
+STOR %TESTNUMBER
+QUIT
+</protocol>
+<file name="%LOGDIR/upload%TESTNUMBER">
+send away this contents
+</file>
+</verify>
+</testcase>

@@ -1,0 +1,148 @@
+name: "CodeQL Analysis"
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+    paths-ignore:
+      - "ai_agents/**"
+  schedule:
+    - cron: "35 3 * * 1"
+
+concurrency:
+  group: codeql-analysis-${{ github.head_ref }}
+  cancel-in-progress: true
+
+permissions:
+  security-events: write
+  packages: read
+  actions: read
+  contents: read
+
+jobs:
+  call-check-pr-status:
+    uses: ./.github/workflows/_check_pr_status.yml
+
+  codeql:
+    needs: call-check-pr-status
+    if: ${{ needs.call-check-pr-status.outputs.should_continue == 'true' }}
+    name: Analyze (${{ matrix.language }})
+    runs-on: ${{ (matrix.language == 'swift' && 'macos-latest') || 'ubuntu-latest' }}
+    container:
+      image: ghcr.io/ten-framework/ten_building_ubuntu2204
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: actions
+            build-mode: none
+          - language: c-cpp
+            build-mode: manual
+          - language: go
+            build-mode: autobuild
+          - language: javascript-typescript
+            build-mode: none
+          - language: python
+            build-mode: none
+    steps:
+      - name: Check PR status before matrix execution
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            console.log('Event name:', context.eventName);
+            console.log('Matrix:', ${{ toJson(matrix) }});
+
+            // Only check for PR events
+            if (context.eventName !== 'pull_request') {
+              console.log('Not a PR event, continuing...');
+              return;
+            }
+
+            // Ensure we have PR data
+            if (!context.payload.pull_request) {
+              console.log('No pull_request data in payload, continuing...');
+              return;
+            }
+
+            const { owner, repo } = context.repo;
+            const prNumber = context.payload.pull_request.number;
+
+            try {
+              const pr = await github.rest.pulls.get({
+                owner,
+                repo,
+                pull_number: prNumber,
+              });
+
+              console.log(`PR #${prNumber} state: ${pr.data.state}, merged: ${pr.data.merged}`);
+
+              if (pr.data.state === 'closed') {
+                if (pr.data.merged) {
+                  console.log(`PR #${prNumber} has been merged. Stopping matrix execution.`);
+                  core.setFailed('PR has been merged, stopping execution to save resources.');
+                } else {
+                  console.log(`PR #${prNumber} has been closed. Stopping matrix execution.`);
+                  core.setFailed('PR has been closed, stopping execution to save resources.');
+                }
+              } else {
+                console.log(`PR #${prNumber} is still open. Continuing matrix execution.`);
+              }
+            } catch (error) {
+              console.error(`Error checking PR status: ${error.message}`);
+              console.log('Error details:', error);
+              console.log('Continuing matrix execution due to error...');
+            }
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+
+      - name: Trust working directory
+        run: |
+          git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
+      - name: Init & update submodules except portal/
+        run: |
+          submodules=$(git config --file .gitmodules --get-regexp path \
+                       | awk '$2 != "portal" { print $2 }')
+          git submodule init
+          for sub in $submodules; do
+            git submodule update --init --recursive --depth 1 "$sub"
+          done
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+
+      - name: Build C/C++ project
+        if: matrix.language == 'c-cpp' && matrix.build-mode == 'manual'
+        shell: bash
+        run: |
+          export PATH=$(pwd)/core/ten_gn:$PATH
+          go env -w GOFLAGS="-buildvcs=false"
+          go1.20.12 download
+          rustup default nightly-2025-09-18
+
+          tgn gen linux x64 debug -- enable_serialized_actions=true ten_rust_enable_gen_cargo_config=false ten_enable_ten_rust=false ten_enable_rust_incremental_build=false ten_manager_enable_frontend=false ten_enable_integration_tests_prebuilt=false ten_enable_nodejs_binding=false ten_enable_python_binding=false ten_enable_go_binding=false
+
+          tgn build:ten_runtime_smoke_test linux x64 debug
+
+      - name: Free up disk space
+        run: |
+          apt-get clean
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{matrix.language}}"

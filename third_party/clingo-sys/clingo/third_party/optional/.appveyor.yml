@@ -1,0 +1,8 @@
+os:
+- Visual Studio 2015
+- Visual Studio 2017
+
+build_script:
+  - cmake -Bbuild -S.
+  - cmake --build build
+  - cmake --build build --target RUN_TESTS

@@ -1,0 +1,56 @@
+{
+  "ten": {
+    "uri": "http://example.com:8000",
+    "predefined_graphs": [
+      {
+        "name": "default_with_app_uri",
+        "auto_start": true,
+        "graph": {
+          "nodes": [
+            {
+              "app": "http://example.com:8000",
+              "extension_group": "extension_group_1",
+              "type": "extension",
+              "addon": "extension_addon_1",
+              "name": "extension_1"
+            },
+            {
+              "app": "http://example.com:8000",
+              "extension_group": "extension_group_1",
+              "type": "extension",
+              "addon": "extension_addon_2",
+              "name": "extension_2",
+              "property": {
+                "a": 1
+              }
+            },
+            {
+              "app": "http://example.com:8000",
+              "extension_group": "extension_group_1",
+              "type": "extension",
+              "addon": "extension_addon_3",
+              "name": "extension_3"
+            }
+          ],
+          "connections": [
+            {
+              "app": "http://example.com:8000",
+              "extension": "extension_1",
+              "cmd": [
+                {
+                  "name": "test_cmd_for_update",
+                  "dest": [
+                    {
+                      "app": "http://example.com:8000",
+                      "extension": "extension_2"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

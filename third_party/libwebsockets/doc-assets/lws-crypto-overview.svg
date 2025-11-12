@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200.21mm" height="105.23mm" version="1.1" viewBox="0 0 200.21263 105.22723" xmlns="http://www.w3.org/2000/svg">
+	<defs>
+		<filter id="a" x="-.036673" y="-.074724" width="1.0733" height="1.1494" color-interpolation-filters="sRGB">
+			<feGaussianBlur stdDeviation="2.8502899"/>
+		</filter>
+	</defs>
+	<g transform="translate(651.2 344.5)">
+		<g fill-opacity=".99606">
+			<rect x="-644.35" y="-337.66" width="186.53" height="91.546" filter="url(#a)"/>
+			<rect x="-645.81" y="-339.25" width="186.53" height="91.546" fill="#fff"/>
+			<rect x="-633.9" y="-327.61" width="105.3" height="41.275" fill="#f6ffd5" stroke="#e9ddaf" stroke-dasharray="2.33000003, 2.33000003" stroke-linejoin="round" stroke-width="1.165"/>
+		</g>
+		<g fill-opacity=".99606">
+			<rect x="-583.53" y="-312" width="5.4256" height="9.5415"/>
+			<rect x="-554.9" y="-292.8" width="5.4256" height="13.996"/>
+			<rect x="-610.37" y="-292.94" width="5.4256" height="13.996"/>
+		</g>
+		<g fill-opacity=".99606">
+			<rect x="-632.82" y="-279.84" width="48.643" height="24.322" fill="#8a0"/>
+			<rect x="-576.51" y="-280.03" width="48.643" height="24.322" fill="#a80"/>
+			<rect x="-628.51" y="-303.48" width="94.328" height="12.348" fill="#008000"/>
+			<rect x="-628.26" y="-323.5" width="94.063" height="12.348" fill="#00aad4"/>
+		</g>
+		<g fill="#000000" font-family="'Open Sans'" letter-spacing="0px" text-anchor="middle" word-spacing="0px">
+			<text x="-608.50153" y="-268.05179" dominant-baseline="auto" font-size="7.7611px" stroke-width=".26458" text-align="center" style="font-feature-settings:normal;font-variant-alternates:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;font-variant-position:normal;line-height:1.25;shape-padding:0;text-decoration-color:#000000;text-decoration-line:none;text-decoration-style:solid;text-indent:0;text-orientation:mixed;text-transform:none;white-space:normal" xml:space="preserve"><tspan x="-608.50153" y="-268.05179" stroke-width=".26458">OpenSSL</tspan></text>
+			<text x="-552.70789" y="-264.67337" dominant-baseline="auto" font-size="7.7611px" stroke-width=".26458" text-align="center" style="font-feature-settings:normal;font-variant-alternates:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;font-variant-position:normal;line-height:1.25;shape-padding:0;text-decoration-color:#000000;text-decoration-line:none;text-decoration-style:solid;text-indent:0;text-orientation:mixed;text-transform:none;white-space:normal" xml:space="preserve"><tspan x="-552.70789" y="-264.67337" stroke-width=".26458">mbedTLS</tspan></text>
+			<text x="-608.09796" y="-261.13004" dominant-baseline="auto" font-size="4.8053px" stroke-width=".16382" text-align="center" style="font-feature-settings:normal;font-variant-alternates:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;font-variant-position:normal;line-height:1.25;shape-padding:0;text-decoration-color:#000000;text-decoration-line:none;text-decoration-style:solid;text-indent:0;text-orientation:mixed;text-transform:none;white-space:normal" xml:space="preserve"><tspan x="-608.09796" y="-261.13004" stroke-width=".16382">and derivitives</tspan></text>
+		</g>
+		<text x="-580.06641" y="-296.07693" dominant-baseline="auto" fill="#ffffff" font-family="'Open Sans'" font-size="5.936px" letter-spacing="0px" stroke-width=".20236" text-align="center" text-anchor="middle" word-spacing="0px" style="font-feature-settings:normal;font-variant-alternates:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;font-variant-position:normal;line-height:1.25;shape-padding:0;text-decoration-color:#000000;text-decoration-line:none;text-decoration-style:solid;text-indent:0;text-orientation:mixed;text-transform:none;white-space:normal" xml:space="preserve"><tspan x="-580.06641" y="-296.07693" fill="#ffffff" stroke-width=".20236">genhash, genrsa, genaes, genec</tspan></text>
+		<text x="-581.93494" y="-314.70865" dominant-baseline="auto" fill="#ffffff" font-family="'Open Sans'" font-size="7.7611px" letter-spacing="0px" stroke-width=".26458" text-align="center" text-anchor="middle" word-spacing="0px" style="font-feature-settings:normal;font-variant-alternates:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;font-variant-position:normal;line-height:1.25;shape-padding:0;text-decoration-color:#000000;text-decoration-line:none;text-decoration-style:solid;text-indent:0;text-orientation:mixed;text-transform:none;white-space:normal" xml:space="preserve"><tspan x="-581.93494" y="-314.70865" fill="#ffffff" stroke-width=".26458">JOSE, JWS, JWK, JWE</tspan></text>
+		<g fill="#000000" font-family="'Open Sans'" font-size="4.3141px" letter-spacing="0px" stroke-width=".14707" text-anchor="middle" word-spacing="0px">
+			<text x="-493.83551" y="-274.2438" dominant-baseline="auto" text-align="center" style="font-feature-settings:normal;font-variant-alternates:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;font-variant-position:normal;line-height:1.25;shape-padding:0;text-decoration-color:#000000;text-decoration-line:none;text-decoration-style:solid;text-indent:0;text-orientation:mixed;text-transform:none;white-space:normal" xml:space="preserve"><tspan x="-493.83551" y="-274.2438">TLS-library-specific</tspan><tspan x="-493.83551" y="-268.8512">and cipher-specific</tspan><tspan x="-493.83551" y="-263.45856">keys using EVP</tspan><tspan x="-493.83551" y="-258.06595">or bignum</tspan></text>
+			<text x="-493.41776" y="-301.00821" dominant-baseline="auto" text-align="center" style="font-feature-settings:normal;font-variant-alternates:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;font-variant-position:normal;line-height:1.25;shape-padding:0;text-decoration-color:#000000;text-decoration-line:none;text-decoration-style:solid;text-indent:0;text-orientation:mixed;text-transform:none;white-space:normal" xml:space="preserve"><tspan x="-493.41776" y="-301.00821">TLS library-independent</tspan><tspan x="-493.41776" y="-295.6156">metadata +</tspan><tspan x="-493.41776" y="-290.22296">binary key elements</tspan></text>
+			<text x="-493.22754" y="-319.46451" dominant-baseline="auto" text-align="center" style="font-feature-settings:normal;font-variant-alternates:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;font-variant-position:normal;line-height:1.25;shape-padding:0;text-decoration-color:#000000;text-decoration-line:none;text-decoration-style:solid;text-indent:0;text-orientation:mixed;text-transform:none;white-space:normal" xml:space="preserve"><tspan x="-493.22754" y="-319.46451">JWK JSON key</tspan><tspan x="-493.22754" y="-314.0719">creation and parsing</tspan></text>
+		</g>
+		<g>
+			<path d="m-492.48-306.99-1.2324 1.0579-1.247-0.9926 0.57189-0.052 0.0645-4.34h-0.66758l1.374-1.2497 1.2493 1.3264-0.66727 0.053 0.0298 4.1963z" fill="#0b2822"/>
+			<path d="m-492.34-280.9-1.2324 1.0579-1.247-0.9926 0.57189-0.052 0.0645-4.34h-0.66758l1.374-1.2497 1.2493 1.3264-0.66727 0.053 0.0298 4.1963z" fill="#0b2822"/>
+			<text x="-618.2807" y="-330.22464" dominant-baseline="auto" fill="#000000" font-family="'Open Sans'" font-size="5.0105px" letter-spacing="0px" stroke-width=".17081" text-align="center" text-anchor="middle" word-spacing="0px" style="font-feature-settings:normal;font-variant-alternates:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;font-variant-position:normal;line-height:1.25;shape-padding:0;text-decoration-color:#000000;text-decoration-line:none;text-decoration-style:solid;text-indent:0;text-orientation:mixed;text-transform:none;white-space:normal" xml:space="preserve"><tspan x="-618.2807" y="-330.22464" stroke-width=".17081">libwebsockets</tspan></text>
+		</g>
+	</g>
+</svg>

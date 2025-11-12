@@ -1,0 +1,103 @@
+#
+# Copyright © 2024 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+import("//build/feature/ten_package.gni")
+import("//build/ten_runtime/feature/autotool.gni")
+import("//build/ten_runtime/feature/publish.gni")
+import("//third_party/ffmpeg/output_libs.gni")
+
+config("ffmpeg_common_config") {
+  include_dirs = [ "${root_gen_dir}/autotool/ffmpeg/install/include" ]
+  lib_dirs = [ "$root_out_dir/gen/autotool/ffmpeg/install/lib" ]
+  libs = [
+    "avcodec",
+    "avfilter",
+    "avutil",
+    "avformat",
+    "swresample",
+    "swscale",
+    "postproc",
+  ]
+}
+
+config("ffmpeg_config_for_ten_packages") {
+  configs = [ ":ffmpeg_common_config" ]
+
+  if (is_linux) {
+    ldflags = [ "-Wl,-rpath=\$ORIGIN/../../../system/ffmpeg/lib" ]
+  } else if (is_mac) {
+    ldflags = [ "-Wl,-rpath,@loader_path/../../../system/ffmpeg/lib" ]
+  }
+}
+
+autotool_project("build_ffmpeg") {
+  project_path = "."
+  project_name = "ffmpeg"
+  build_path = "${root_gen_dir}/autotool/ffmpeg/"
+  install_path = "${build_path}/install"
+
+  configure_cmd_line_options = [
+    "--enable-pic",
+    "--enable-shared",
+    "--disable-x86asm",
+    "--enable-gpl",
+    "--enable-libx264",
+    "--disable-doc",
+    "--disable-htmlpages",
+    "--disable-manpages",
+    "--disable-podpages",
+    "--disable-txtpages",
+    "--disable-programs",
+    "--disable-large-tests",
+  ]
+
+  # Refer to https://stackoverflow.com/a/71429999.
+  configure_env_vars = [ "LDSOFLAGS=-Wl,-rpath,\''\$\$\$\$ORIGIN'\'" ]
+
+  system_dep_pkgs = [ "x264" ]
+
+  # The outputs of this target, which must contain the `copied_libs` in the
+  # following `ffmpeg_system_package` target.
+  outputs_seen_by_ag = [
+                         "${install_path}/lib",
+                         "${install_path}/include",
+                       ] + ffmpeg_output_libs
+}
+
+ten_package("ffmpeg_system_package") {
+  package_kind = "system"
+  package_output_root_dir_name = "ffmpeg"
+
+  public_deps = [ ":build_ffmpeg" ]
+
+  resources = [
+    "BUILD_release.gn=>BUILD.gn",
+    "manifest.json",
+  ]
+
+  foreach(lib, ffmpeg_output_libs) {
+    libname = get_path_info(rebase_path(lib), "file")
+    resources += [ "${lib}=>lib/${libname}" ]
+  }
+}
+
+if (ten_enable_ten_manager) {
+  ten_package_publish("upload_ffmpeg_system_package_to_server") {
+    base_dir = rebase_path("${root_out_dir}/ten_packages/system/ffmpeg")
+    deps = [ ":ffmpeg_system_package" ]
+  }
+}
+
+group("ffmpeg_for_ten_packages") {
+  deps = [ ":ffmpeg" ]
+  public_configs = [ ":ffmpeg_config_for_ten_packages" ]
+}
+
+group("ffmpeg") {
+  if (ten_enable_ten_manager) {
+    deps = [ ":upload_ffmpeg_system_package_to_server" ]
+  }
+}

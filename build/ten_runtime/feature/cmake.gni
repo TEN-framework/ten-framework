@@ -1,0 +1,225 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+
+# cmake project template use cmake command line to do build action
+#
+# This template you can use for gn deps, and it will apply public config to
+# deps.
+template("cmake_project") {
+  assert(defined(invoker.project_path), "project_path is not defined")
+  assert(defined(invoker.project_name), "project_name is not defined")
+
+  assert(invoker.project_path == "" || invoker.project_path != "")
+  assert(invoker.project_name == "" || invoker.project_name != "")
+
+  _target_name = target_name
+  tg_timestamp_proxy_file = "${target_gen_dir}/cmake_action_dummy_output_file"
+
+  # This action include cmake 'gen' and 'build' and 'install' (optional).
+  action("${_target_name}_cmake_action") {
+    if (enable_serialized_actions) {
+      pool = "//:serialized_action_pool"
+    }
+
+    script = "//build/ten_runtime/feature/cmake.py"
+
+    args = [
+      "--project-path",
+      rebase_path(invoker.project_path),
+      "--build-path",
+      rebase_path(invoker.build_path),
+      "--project-name",
+      invoker.project_name,
+      "--target-os",
+      target_os,
+      "--target-cpu",
+      target_cpu,
+      "--log-level",
+      "${log_level}",
+      "--root-out-dir",
+      rebase_path(root_out_dir),
+    ]
+
+    if (is_debug) {
+      args += [
+        "--build-type",
+        "Debug",
+      ]
+    }
+
+    if (!is_clang) {
+      args += [
+        "--use-clang",
+        "False",
+      ]
+    }
+
+    if (defined(invoker.run_build)) {
+      args += [
+        "--run-build",
+        "${invoker.run_build}",
+      ]
+    }
+
+    if (defined(invoker.cflags)) {
+      foreach(cflag, invoker.cflags) {
+        args += [
+          "--cflags",
+          cflag,
+        ]
+      }
+    }
+
+    if (defined(invoker.cxxflags)) {
+      foreach(cxxflag, invoker.cxxflags) {
+        args += [
+          "--cxxflags",
+          cxxflag,
+        ]
+      }
+    }
+
+    if (defined(invoker.sharedlinkerflags)) {
+      foreach(sharedlinkerflag, invoker.sharedlinkerflags) {
+        args += [
+          "--sharedlinkerflags",
+          sharedlinkerflag,
+        ]
+      }
+    }
+
+    if (defined(invoker.exelinkerflags)) {
+      foreach(exelinkerflag, invoker.exelinkerflags) {
+        args += [
+          "--exelinkerflags",
+          exelinkerflag,
+        ]
+      }
+    }
+
+    if (defined(invoker.options)) {
+      foreach(option, invoker.options) {
+        args += [
+          "--options",
+          option,
+        ]
+      }
+    }
+
+    if (defined(invoker.install_path)) {
+      args += [
+        "--install-path",
+        rebase_path(invoker.install_path),
+      ]
+    }
+
+    if (!is_win) {
+      if (defined(invoker.cxx_standard)) {
+        args += [
+          "--cxx-standard",
+          "${invoker.cxx_standard}",
+        ]
+      } else {
+        args += [
+          "--cxx-standard",
+          "${cxx_standard}",
+        ]
+      }
+
+      if (defined(invoker.c_standard)) {
+        args += [
+          "--c-standard",
+          "${invoker.c_standard}",
+        ]
+      } else {
+        args += [
+          "--c-standard",
+          "${c_standard}",
+        ]
+      }
+    }
+
+    if (is_linux) {
+      args += [
+        "--enable-c-extensions",
+        "${enable_c_extensions}",
+      ]
+    }
+
+    if (defined(invoker.hide_symbol)) {
+      args += [
+        "--hide-symbol",
+        "${invoker.hide_symbol}",
+      ]
+    }
+
+    args += [
+      "--tg-timestamp-proxy-file",
+      rebase_path(tg_timestamp_proxy_file),
+    ]
+
+    # Find source files in current cmake project.
+    inputs = exec_script("//build/ten_common/scripts/find_all_c_cpp_files.py",
+                         [ rebase_path(invoker.project_path) ],
+                         "list lines")
+
+    outputs = [ tg_timestamp_proxy_file ]
+    if (defined(invoker.outputs_seen_by_ag)) {
+      foreach(output_seen_by_ag, invoker.outputs_seen_by_ag) {
+        outputs += [ "${output_seen_by_ag}" ]
+      }
+    }
+
+    if (defined(invoker.deps)) {
+      deps = invoker.deps
+    }
+  }
+
+  config("${_target_name}_config") {
+    lib_dirs = []
+    if (defined(invoker.library_path)) {
+      lib_dirs += invoker.library_path
+    }
+
+    if (!defined(invoker.run_build) || invoker.run_build == true) {
+      libs = []
+
+      _libs = rebase_path(get_target_outputs(":${_target_name}_cmake_action"))
+      foreach(lib, _libs) {
+        current_libs = []
+        current_libs = exec_script(
+                "//build/ten_common/scripts/get_lib_name_from_cmake_output.py",
+                [
+                  "--libs",
+                  "${lib}",
+                  "--target-os",
+                  "${target_os}",
+                ],
+                "list lines")
+
+        libs += current_libs
+      }
+
+      if (defined(invoker.libs)) {
+        libs += invoker.libs
+      }
+    }
+  }
+
+  group(_target_name) {
+    public_deps = [ ":${_target_name}_cmake_action" ]
+    public_configs = [ ":${_target_name}_config" ]
+
+    if (defined(invoker.public_configs)) {
+      public_configs += invoker.public_configs
+    }
+
+    if (defined(invoker.public_deps)) {
+      public_deps += invoker.public_deps
+    }
+  }
+}

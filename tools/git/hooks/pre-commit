@@ -1,0 +1,17 @@
+#!/bin/sh
+
+# Check for changes in designer_frontend directory.
+if git diff --cached --name-only | grep -q "core/src/ten_manager/designer_frontend/"; then
+    echo "Changes detected in designer_frontend. Running npm checks..."
+    # Store the current directory.
+    CURRENT_DIR=$(pwd)
+    # Change to the designer_frontend directory.
+    cd core/src/ten_manager/designer_frontend/ || exit 1
+    # Run the npm check.
+    npm run check || {
+        cd "$CURRENT_DIR" || exit 1
+        exit 1
+    }
+    # Return to the original directory.
+    cd "$CURRENT_DIR" || exit 1
+fi

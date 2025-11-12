@@ -1,0 +1,80 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+template("combine_static_library") {
+  assert(defined(invoker.libraries), "libraries is not defined")
+  assert(invoker.libraries != [], "libraries is empty")
+
+  _target_name = target_name
+
+  target_path = target_gen_dir
+  if (defined(invoker.target_path) && invoker.target_path != "") {
+    target_path = invoker.target_path
+  }
+
+  libraries = invoker.libraries
+
+  if (defined(invoker.output_name) && invoker.output_name != "") {
+    output_name = invoker.output_name
+  } else {
+    output_name = get_path_info(libraries[0], "file")
+  }
+
+  action("${_target_name}") {
+    script = "//build/ten_runtime/feature/combine_static_library.py"
+
+    args = [
+      "--target-path",
+      rebase_path(target_path),
+    ]
+
+    foreach(lib, invoker.libraries) {
+      args += [
+        "--library",
+        rebase_path(lib),
+      ]
+    }
+
+    args += [
+      "--target",
+      target_cpu,
+    ]
+
+    if (defined(invoker.output_name) && invoker.output_name != "") {
+      args += [
+        "--output",
+        invoker.output_name,
+      ]
+    }
+
+    if (is_win) {
+      # On Windows, MSVC provides a set of environment.<arch> files to
+      # facilitate the use of the MSVC toolchain in the CLI. The lib.exe tool
+      # should be resolved based on the toolchain environment file. Refer to
+      # core/ten_gn/.gnfiles/build/platform/win/BUILD.gn.
+      environment_file =
+          rebase_path("${root_out_dir}/environment.${target_cpu}")
+      args += [
+        "--env-file",
+        environment_file,
+      ]
+    }
+
+    args += [
+      "--log-level",
+      "${log_level}",
+    ]
+
+    forward_variables_from(invoker,
+                           [
+                             "deps",
+                             "public_deps",
+                             "public_configs",
+                           ])
+
+    outputs = [ "${target_path}/${output_name}" ]
+  }
+}

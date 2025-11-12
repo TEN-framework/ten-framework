@@ -1,0 +1,67 @@
+<testcase>
+<info>
+# This test is a copy of test 1231, modified to use an HTTP proxy.
+<keywords>
+HTTP
+HTTP GET
+HTTP proxy
+dotdot removal
+</keywords>
+</info>
+
+#
+# Server-side
+<reply>
+<data>
+HTTP/1.1 200 OK
+Content-Length: 6
+Connection: close
+
+-foo-
+</data>
+
+<data1>
+HTTP/1.1 200 OK
+Content-Length: 7
+Connection: close
+
+-cool-
+</data1>
+</reply>
+
+#
+# Client-side
+<client>
+<server>
+http
+</server>
+ <name>
+HTTP URL with dotdot removal from path using an HTTP proxy
+ </name>
+ <command>
+--proxy http://%HOSTIP:%HTTPPORT http://test.remote.haxx.se.%TESTNUMBER:8990/../../hej/but/who/../%TESTNUMBER?stupid=me/../%TESTNUMBER#soo/../%TESTNUMBER http://test.remote.haxx.se.%TESTNUMBER:8990/../../hej/but/who/../%TESTNUMBER0001#/../%TESTNUMBER0001
+</command>
+<features>
+proxy
+</features>
+</client>
+
+#
+# Verify data after the test has been "shot"
+<verify>
+<protocol>
+GET http://test.remote.haxx.se.%TESTNUMBER:8990/hej/but/%TESTNUMBER?stupid=me/../%TESTNUMBER HTTP/1.1
+Host: test.remote.haxx.se.%TESTNUMBER:8990
+User-Agent: curl/%VERSION
+Accept: */*
+Proxy-Connection: Keep-Alive
+
+GET http://test.remote.haxx.se.%TESTNUMBER:8990/hej/but/%TESTNUMBER0001 HTTP/1.1
+Host: test.remote.haxx.se.%TESTNUMBER:8990
+User-Agent: curl/%VERSION
+Accept: */*
+Proxy-Connection: Keep-Alive
+
+</protocol>
+</verify>
+</testcase>

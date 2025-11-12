@@ -1,0 +1,149 @@
+{
+  "type": "extension",
+  "name": "websocket_server",
+  "version": "0.0.1",
+  "display_name": {
+    "locales": {
+      "en-US": {
+        "content": "WebSocket Server"
+      },
+      "zh-CN": {
+        "content": "WebSocket 服务器"
+      },
+      "zh-TW": {
+        "content": "WebSocket 伺服器"
+      },
+      "ja-JP": {
+        "content": "WebSocketサーバー"
+      },
+      "ko-KR": {
+        "content": "WebSocket 서버"
+      }
+    }
+  },
+  "description": {
+    "locales": {
+      "en-US": {
+        "content": "WebSocket server extension that receives base64-encoded PCM audio and forwards it as TEN AudioFrames"
+      },
+      "zh-CN": {
+        "content": "WebSocket 服务器扩展，接收 base64 编码的 PCM 音频并将其作为 TEN AudioFrames 转发"
+      },
+      "zh-TW": {
+        "content": "WebSocket 伺服器擴充，接收 base64 編碼的 PCM 音訊並將其作為 TEN AudioFrames 轉發"
+      },
+      "ja-JP": {
+        "content": "base64エンコードされたPCMオーディオを受信し、TEN AudioFramesとして転送するWebSocketサーバー拡張"
+      },
+      "ko-KR": {
+        "content": "base64로 인코딩된 PCM 오디오를 수신하고 TEN AudioFrames로 전달하는 WebSocket 서버 확장"
+      }
+    }
+  },
+  "readme": {
+    "locales": {
+      "en-US": {
+        "import_uri": "docs/README.en-US.md"
+      },
+      "zh-CN": {
+        "import_uri": "docs/README.zh-CN.md"
+      },
+      "zh-TW": {
+        "import_uri": "docs/README.zh-TW.md"
+      },
+      "ja-JP": {
+        "import_uri": "docs/README.ja-JP.md"
+      },
+      "ko-KR": {
+        "import_uri": "docs/README.ko-KR.md"
+      }
+    }
+  },
+  "tags": [
+    "python",
+    "websocket",
+    "audio",
+    "server",
+    "input"
+  ],
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.11"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "tests/**.py",
+      "tests/bin/*",
+      "requirements.txt",
+      "docs/**",
+      ".vscode/**"
+    ]
+  },
+  "api": {
+    "property": {
+      "properties": {
+        "port": {
+          "type": "int32"
+        },
+        "host": {
+          "type": "string"
+        },
+        "sample_rate": {
+          "type": "int32"
+        },
+        "channels": {
+          "type": "int32"
+        },
+        "bytes_per_sample": {
+          "type": "int32"
+        },
+        "dump": {
+          "type": "bool"
+        },
+        "dump_path": {
+          "type": "string"
+        },
+        "params": {
+          "type": "object",
+          "properties": {}
+        }
+      }
+    },
+    "data_in": [],
+    "data_out": [
+      {
+        "name": "pcm_frame",
+        "property": {
+          "properties": {
+            "metadata": {
+              "type": "object",
+              "properties": {}
+            }
+          }
+        }
+      }
+    ],
+    "cmd_in": [],
+    "cmd_out": [],
+    "audio_frame_in": [
+      {
+        "name": "pcm_frame"
+      }
+    ],
+    "audio_frame_out": [
+      {
+        "name": "pcm_frame"
+      }
+    ],
+    "video_frame_in": [],
+    "video_frame_out": []
+  },
+  "scripts": {
+    "test": "tests/bin/start"
+  }
+}

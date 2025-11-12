@@ -1,0 +1,37 @@
+#
+# Copyright © 2024 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+template("copy_nlohmann_headers") {
+  _target_name = target_name
+
+  action_name = "copy_nlohmann_headers_for_${_target_name}"
+  action(action_name) {
+    script = "//build/ten_common/scripts/copy_files_with_pattern.py"
+    args = [
+      "--sources",
+      rebase_path("${root_gen_dir}/cmake/nlohmann_json/install/include"),
+      "--dest-dir",
+      rebase_path(invoker.dest_dir),
+      "--tg-timestamp-proxy-file",
+      rebase_path("${target_gen_dir}/copy_headers_dummy_output_file"),
+    ]
+
+    outputs = [ "${target_gen_dir}/copy_headers_dummy_output_file" ]
+
+    forward_variables_from(invoker,
+                           [
+                             "deps",
+                             "public_deps",
+                             "data_deps",
+                           ])
+
+    deps = [ "//third_party/nlohmann_json" ]
+  }
+
+  group(target_name) {
+    public_deps = [ ":${action_name}" ]
+  }
+}

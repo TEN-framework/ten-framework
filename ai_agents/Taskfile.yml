@@ -1,0 +1,148 @@
+version: "3"
+
+dotenv: [".env"]
+
+tasks:
+  lint:
+    desc: lint-agent
+    env:
+      PYTHONPATH: "./agents/ten_packages/system/ten_runtime_python/lib:./agents/ten_packages/system/ten_runtime_python/interface:./agents/ten_packages/system/ten_ai_base/interface"
+    cmds:
+      - ./agents/scripts/pylint.sh
+
+  lint-extension:
+    desc: lint a single python extension under agents/ten_packages/extension
+    vars:
+      EXTENSION: '{{.EXTENSION| default "azure_asr_python"}}'
+    env:
+      PYTHONPATH: "./agents/ten_packages/system/ten_runtime_python/lib:./agents/ten_packages/system/ten_runtime_python/interface:./agents/ten_packages/system/ten_ai_base/interface"
+    cmds:
+      - ./agents/scripts/pylint.sh {{.EXTENSION}}
+
+  use:
+    desc: use agent, default 'agents/examples/voice-assistant'
+    vars:
+      AGENT_EXAMPLE: '{{.AGENT | default "voice-assistant"}}'
+      AGENT: '{{if contains "/" (.AGENT | default "voice-assistant")}}{{.AGENT | default "voice-assistant"}}{{else}}agents/examples/{{.AGENT | default "voice-assistant"}}{{end}}'
+    cmds:
+      - echo "deprecated - please cd to the example directory and run 'task install' instead"
+      - cd {{.USER_WORKING_DIR}}/{{.AGENT}} && task install
+
+  run:
+    desc: run servers
+    cmds:
+      - echo "deprecated - please cd to the example directory and run 'task run' instead"
+
+  build-agent-deps:
+    desc: build agent
+    dir: ./agents
+    cmds:
+      - ./scripts/install_deps_and_build.sh linux x64
+
+  tts-guarder-test:
+    desc: run tests for tts guarder
+    vars:
+      EXTENSION: '{{.EXTENSION| default "bytedance_tts_duplex"}}'
+      CONFIG_DIR: '{{.CONFIG_DIR| default "tests/configs"}}'
+    env:
+      EXT_NAME: '{{.EXTENSION}}'
+      TEN_ENABLE_BACKTRACE_DUMP: "true"
+    dotenv: [".env"]
+    cmds:
+      - cd agents/integration_tests/tts_guarder && sed "s/{{`{{extension_name}}`}}/$EXT_NAME/g" manifest-tmpl.json > manifest.json
+      - cd agents/integration_tests/tts_guarder && ./scripts/install_deps_and_build.sh linux x64 && ./tests/bin/start --extension_name {{.EXTENSION}} --config_dir {{.USER_WORKING_DIR}}/agents/ten_packages/extension/{{.EXTENSION}}/{{.CONFIG_DIR}} {{ .CLI_ARGS }}
+
+  test:
+    desc: run tests
+    cmds:
+      - task: test-agent-extensions
+      - task: test-server
+
+  test-server:
+    desc: test server
+    dir: ./server
+    internal: true
+    cmds:
+      - go test -v ./...
+
+  test-agent-extensions:
+    desc: run standalone testing of extensions
+    internal: true
+    env:
+      PYTHONPATH: "{{.USER_WORKING_DIR}}:{{.USER_WORKING_DIR}}/agents/ten_packages/system/ten_runtime_python/lib:{{.USER_WORKING_DIR}}/agents/ten_packages/system/ten_runtime_python/interface:{{.USER_WORKING_DIR}}/agents/ten_packages/system/ten_ai_base/interface"
+    vars:
+      EXTENSIONS:
+        sh: 'find agents/ten_packages/extension -type d -exec test -d "{}/tests" \; -print'
+    cmds:
+      - for: { var: EXTENSIONS }
+        task: test-extension
+        vars:
+          EXTENSION: "{{ .ITEM }}"
+
+  test-extension:
+    desc: run standalone testing of one single extension
+    vars:
+      EXTENSION: '{{.EXTENSION| default "agents/ten_packages/extension/elevenlabs_tts_python"}}'
+    env:
+      PYTHONPATH: "{{.USER_WORKING_DIR}}:{{.USER_WORKING_DIR}}/agents/ten_packages/system/ten_runtime_python/lib:{{.USER_WORKING_DIR}}/agents/ten_packages/system/ten_runtime_python/interface:{{.USER_WORKING_DIR}}/agents/ten_packages/system/ten_ai_base/interface"
+    dotenv: [".env"]
+    cmds:
+      - cd {{.EXTENSION}} && tman -y install --standalone && ./tests/bin/start {{ .CLI_ARGS }}
+
+  test-extension-no-install:
+    desc: run standalone testing of one single extension
+    vars:
+      EXTENSION: '{{.EXTENSION| default "agents/ten_packages/extension/elevenlabs_tts_python"}}'
+    env:
+      PYTHONPATH: "{{.USER_WORKING_DIR}}:{{.USER_WORKING_DIR}}/agents/ten_packages/system/ten_runtime_python/lib:{{.USER_WORKING_DIR}}/agents/ten_packages/system/ten_runtime_python/interface:{{.USER_WORKING_DIR}}/agents/ten_packages/system/ten_ai_base/interface"
+    dotenv: [".env"]
+    cmds:
+      - cd {{.EXTENSION}} && ./tests/bin/start {{ .CLI_ARGS }}
+
+  asr-guarder-test:
+    desc: run tests for asr guarder
+    vars:
+      EXTENSION: '{{.EXTENSION| default "azure_asr_python"}}'
+      CONFIG_DIR: '{{.CONFIG_DIR| default "tests/configs"}}'
+    env:
+      EXT_NAME: '{{.EXTENSION}}'
+      TEN_ENABLE_BACKTRACE_DUMP: "true"
+    dotenv: [".env"]
+    cmds:
+      - cd agents/integration_tests/asr_guarder && sed "s/{{`{{extension_name}}`}}/$EXT_NAME/g" manifest-tmpl.json > manifest.json
+      - cd agents/integration_tests/asr_guarder && ./scripts/install_deps_and_build.sh linux x64 && ./tests/bin/start --extension_name {{.EXTENSION}} --config_dir {{.USER_WORKING_DIR}}/agents/ten_packages/extension/{{.EXTENSION}}/{{.CONFIG_DIR}} {{ .CLI_ARGS }}
+
+  format:
+    desc: format code
+    cmds:
+      - task: black-format
+      - task: black-format2
+
+  black-format:
+    desc: format python code with black
+    internal: true
+    cmds:
+      - black --exclude "third_party/|agents/ten_packages/extension/http_server_python/|agents/ten_packages/system/ten_ai_base/interface/ten_ai_base/|.ten/|node_modules|__pycache__" --line-length 80 agents/ten_packages/extension {{ .CLI_ARGS }}
+
+
+  black-format2:
+    desc: format python code with black
+    internal: true
+    cmds:
+      - black --exclude "third_party/|agents/ten_packages/extension/http_server_python/|ten_packages/system|.ten/|node_modules|__pycache__|frontend/|.next/|.release/|addon_loader/|system/|ten_ai_base/" --line-length 80 agents/examples {{ .CLI_ARGS }}
+
+  check:
+    desc: check code
+    cmds:
+      - task: format-check
+
+  format-check:
+    desc: check code formatting
+    cmds:
+      - task: black-format-check
+
+  black-format-check:
+    desc: check code formatting with black
+    internal: true
+    cmds:
+      - black --check --exclude "third_party/|agents/ten_packages/extension/http_server_python/|ten_packages/system" --line-length 80 agents/ten_packages/extension {{ .CLI_ARGS }}

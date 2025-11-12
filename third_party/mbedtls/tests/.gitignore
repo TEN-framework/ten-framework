@@ -1,0 +1,22 @@
+*.sln
+*.vcxproj
+
+# Generated source files
+/suites/*.generated.data
+/suites/test_suite_psa_crypto_storage_format.v[0-9]*.data
+/suites/test_suite_psa_crypto_storage_format.current.data
+
+*.log
+/test_suite*
+data_files/mpi_write
+data_files/hmac_drbg_seed
+data_files/ctr_drbg_seed
+data_files/entropy_seed
+
+include/test/instrument_record_status.h
+
+src/*.o
+src/drivers/*.o
+src/libmbed*
+
+libtestdriver1/*

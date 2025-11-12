@@ -1,0 +1,188 @@
+{
+  "type": "extension",
+  "name": "bedrock_llm_python",
+  "version": "0.2.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.11"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "BUILD.gn",
+      "**.tent",
+      "**.py",
+      "README.md"
+    ]
+  },
+  "api": {
+    "property": {
+      "properties": {
+        "base_url": {
+          "type": "string"
+        },
+        "api_key": {
+          "type": "string"
+        },
+        "api_version": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string"
+        },
+        "language": {
+          "type": "string"
+        },
+        "prompt": {
+          "type": "string"
+        },
+        "temperature": {
+          "type": "float32"
+        },
+        "max_tokens": {
+          "type": "int32"
+        },
+        "server_vad": {
+          "type": "bool"
+        },
+        "input_transcript": {
+          "type": "bool"
+        },
+        "sample_rate": {
+          "type": "int32"
+        },
+        "stream_id": {
+          "type": "int32"
+        },
+        "dump": {
+          "type": "bool"
+        },
+        "greeting": {
+          "type": "string"
+        },
+        "max_memory_length": {
+          "type": "int64"
+        },
+        "is_memory_enabled": {
+          "type": "bool"
+        },
+        "topP": {
+          "type": "float32"
+        },
+        "topK": {
+          "type": "int32"
+        },
+        "is_enable_video": {
+          "type": "bool"
+        }
+      }
+    },
+    "cmd_in": [
+      {
+        "name": "flush"
+      },
+      {
+        "name": "tool_register",
+        "property": {
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "parameters": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name",
+            "description",
+            "parameters"
+          ]
+        },
+        "result": {
+          "property": {
+            "properties": {
+              "response": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    ],
+    "cmd_out": [
+      {
+        "name": "flush"
+      },
+      {
+        "name": "tool_call",
+        "property": {
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "args": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name"
+          ]
+        }
+      }
+    ],
+    "data_in": [
+      {
+        "name": "text_data",
+        "property": {
+          "properties": {
+            "text": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    ],
+    "data_out": [
+      {
+        "name": "text_data",
+        "property": {
+          "properties": {
+            "text": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      {
+        "name": "append",
+        "property": {
+          "properties": {
+            "text": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    ],
+    "audio_frame_out": [
+      {
+        "name": "pcm_frame"
+      }
+    ],
+    "video_frame_in": [
+      {
+        "name": "video_frame",
+        "property": {
+          "properties": {}
+        }
+      }
+    ]
+  }
+}

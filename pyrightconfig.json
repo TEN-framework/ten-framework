@@ -1,0 +1,19 @@
+{
+  "exclude": [
+    "./ai_agents/**/*"
+  ],
+  "include": [
+    "."
+  ],
+  "executionEnvironments": [
+    {
+      "root": ".",
+      "extraPaths": [
+        "./core/src/ten_runtime/binding/python/interface",
+        "./core/ten_gn/.gnfiles"
+      ]
+    }
+  ],
+  "reportUnusedCallResult": false,
+  "typeCheckingMode": "recommended"
+}

@@ -1,0 +1,323 @@
+{
+	"schema": "sai-1",
+
+	# We're doing separate install into destdir so that the test server
+	# has somewhere to go to find its /usr/share content like certs
+
+	"platforms": {
+		"linux-debian-11/x86_64-amd/gcc": {
+			"build": "mkdir build destdir;cd build;export CCACHE_DISABLE=1;export LD_LIBRARY_PATH=../destdir/usr/local/share/libwebsockets-test-server/plugins:../destdir/usr/local/lib;export SAI_CPACK=\"-G DEB\";cmake .. ${cmake} && make -j4 && rm -rf ../destdir && make -j DESTDIR=../destdir install && ctest -j2 --output-on-failure ${cpack}"
+		},
+		"linux-debian-buster/x86-amd/gcc": {
+			"build": "mkdir build destdir;cd build;export CCACHE_DISABLE=1;export LD_LIBRARY_PATH=../destdir/usr/local/share/libwebsockets-test-server/plugins:../destdir/usr/local/lib;export SAI_CPACK=\"-G DEB\";cmake .. ${cmake} && make -j4 && rm -rf ../destdir && make -j DESTDIR=../destdir install && ctest -j2 --output-on-failure ${cpack}"
+		},
+		"linux-debian-sid/x86_64-amd/gcc": {
+			"build": "mkdir build destdir;cd build;export CCACHE_DISABLE=1;export LD_LIBRARY_PATH=../destdir/usr/local/share/libwebsockets-test-server/plugins:../destdir/usr/local/lib;export SAI_CPACK=\"-G DEB\";cmake .. ${cmake} && make -j4 && rm -rf ../destdir && make -j DESTDIR=../destdir install && ctest -j2 --output-on-failure ${cpack}"
+		},
+		"linux-ubuntu-xenial/x86_64-amd/gcc": {
+			"build": "mkdir build destdir;cd build;export CCACHE_DISABLE=1;export LD_LIBRARY_PATH=../destdir/usr/local/share/libwebsockets-test-server/plugins:../destdir/usr/local/lib;export SAI_CPACK=\"-G DEB\";cmake .. ${cmake} && make -j4 && rm -rf ../destdir && make -j DESTDIR=../destdir install && ctest -j2 --output-on-failure ${cpack}"
+		},
+		"linux-debian-sid/x86-amd/gcc": {
+			"build": "mkdir build destdir;cd build;export CCACHE_DISABLE=1;export LD_LIBRARY_PATH=../destdir/usr/local/share/libwebsockets-test-server/plugins:../destdir/usr/local/lib;export SAI_CPACK=\"-G DEB\";cmake .. ${cmake} && make -j4 && rm -rf ../destdir && make -j DESTDIR=../destdir install && ctest -j2 --output-on-failure ${cpack}"
+		},
+		"linux-debian-sid/x86_64-amd/gcc": {
+			"build": "mkdir build destdir;cd build;export CCACHE_DISABLE=1;export LD_LIBRARY_PATH=../destdir/usr/local/share/libwebsockets-test-server/plugins:../destdir/usr/local/lib;export SAI_CPACK=\"-G DEB\";cmake .. ${cmake} && make -j4 && rm -rf ../destdir && make -j DESTDIR=../destdir install && ctest -j2 --output-on-failure ${cpack}"
+		},
+
+		"linux-ubuntu-1804/x86_64-amd/gcc": {
+			"build": "mkdir build destdir;cd build;export CCACHE_DISABLE=1;export LD_LIBRARY_PATH=../destdir/usr/local/share/libwebsockets-test-server/plugins:../destdir/usr/local/lib;export SAI_CPACK=\"-G DEB\";cmake .. ${cmake} && make -j4 && rm -rf ../destdir && make -j DESTDIR=../destdir install && ctest -j2 --output-on-failure ${cpack}"
+		},
+		"linux-ubuntu-2004/x86_64-amd/gcc": {
+			"build": "mkdir build destdir;cd build;export CCACHE_DISABLE=1;export LD_LIBRARY_PATH=../destdir/usr/local/share/libwebsockets-test-server/plugins:../destdir/usr/local/lib;export SAI_CPACK=\"-G DEB\";cmake .. ${cmake} && make -j4 && rm -rf ../destdir && make -j DESTDIR=../destdir install && ctest -j2 --output-on-failure ${cpack}"
+		},
+		"linux-fedora-32/x86_64-amd/gcc": {
+			"build": "rm -rf build destdir ; mkdir build destdir;cd build;export CCACHE_DISABLE=1;export LD_LIBRARY_PATH=../destdir/usr/local/share/libwebsockets-test-server/plugins:../destdir/usr/local/lib;export SAI_CPACK=\"-G RPM\";cmake .. ${cmake} && make -j4 && rm -rf ../destdir && make -j DESTDIR=../destdir install && ctest -j2 --output-on-failure ${cpack}"
+		},
+		"linux-gentoo/x86_64-amd/gcc": {
+			"build": "mkdir build destdir;cd build;export CCACHE_DISABLE=1;export LD_LIBRARY_PATH=../destdir/usr/local/share/libwebsockets-test-server/plugins:../destdir/usr/local/lib;export SAI_CPACK=\"-G ZIP\";cmake .. ${cmake} && make -j4 && rm -rf ../destdir && make -j DESTDIR=../destdir install && ctest -j2 --output-on-failure ${cpack}"
+		},
+		"linux-centos-7/x86_64-amd/gcc": {
+			"build": "mkdir build destdir;cd build;export CCACHE_DISABLE=1;export LD_LIBRARY_PATH=../destdir/usr/local/share/libwebsockets-test-server/plugins:../destdir/usr/local/lib;export SAI_CPACK=\"-G RPM\";cmake .. ${cmake} && make -j4 && rm -rf ../destdir && make -j DESTDIR=../destdir install && ctest -j2 --output-on-failure ${cpack}"
+		},
+		"linux-centos-8/x86_64-amd/gcc": {
+			"build": "mkdir build destdir;cd build;export CCACHE_DISABLE=1;export LD_LIBRARY_PATH=../destdir/usr/local/share/libwebsockets-test-server/plugins:../destdir/usr/local/lib;export SAI_CPACK=\"-G RPM\";cmake .. ${cmake} && make -j4 && rm -rf ../destdir && make -j DESTDIR=../destdir install && ctest -j2 --output-on-failure ${cpack}"
+		},
+		"linux-centos-8/aarch64-a72-bcm2711-rpi4/gcc": {
+			"build": "mkdir build destdir;cd build;export CCACHE_DISABLE=1;export LD_LIBRARY_PATH=../destdir/usr/local/share/libwebsockets-test-server/plugins:../destdir/usr/local/lib;export SAI_CPACK=\"-G RPM\";cmake .. ${cmake} && make -j4 && rm -rf ../destdir && make -j DESTDIR=../destdir install && ctest -j2 --output-on-failure ${cpack}"
+		},
+		"linux-ubuntu-2004/aarch64-a72-bcm2711-rpi4/gcc": {
+			"build": "mkdir build;cd build;export CCACHE_DISABLE=1;export LD_LIBRARY_PATH=../destdir/usr/local/share/libwebsockets-test-server/plugins:../destdir/usr/local/lib;export SAI_CPACK=\"-G DEB\";cmake .. ${cmake} && make -j3 && rm -rf ../destdir && make -j DESTDIR=../destdir install && ctest -j3 --output-on-failure ${cpack}",
+			"default": false
+		},
+		"linux-android/aarch64/llvm": {
+			"build": "mkdir build;cd build;cmake .. -DCMAKE_TOOLCHAIN_FILE=../libwebsockets/contrib/cross-aarch64-android.cmake ${cmake} && make -j",
+			"default": false
+		},
+		"netbsd-iOS/aarch64/llvm": {
+			"build": "mkdir build destdir; cd build; export SAI_CPACK=\"-G ZIP\";cmake .. -DCMAKE_MAKE_PROGRAM=/usr/bin/make -DCMAKE_IOS_DEVELOPER_ROOT=/opt/Xcode-beta.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer -DCMAKE_TOOLCHAIN_FILE=contrib/iOS.cmake -DIOS_PLATFORM=OS ${cmake} && make -j",
+			"default": false
+		},
+		"netbsd-OSX-bigsur/x86_64-intel-i3/llvm": {
+			"build": "mkdir build destdir; cd build; export LD_LIBRARY_PATH=../destdir/usr/local/share/libwebsockets-test-server/plugins:../destdir/usr/local/lib;export SAI_CPACK=\"-G ZIP\";export MACOSX_DEPLOYMENT_TARGET=10.15 ; cmake .. -DCMAKE_MAKE_PROGRAM=/usr/bin/make -DLWS_OPENSSL_INCLUDE_DIRS=/usr/local/opt/openssl@1.1/include -DLWS_OPENSSL_LIBRARIES=\"/usr/local/opt/openssl/lib/libssl.dylib;/usr/local/opt/openssl/lib/libcrypto.dylib\" ${cmake} && make -j4 && make -j DESTDIR=../destdir install && ctest -j2 --output-on-failure ${cpack}"
+		},
+		"netbsd-OSX-bigsur/aarch64-apple-m1/llvm": {
+			"build": "mkdir build destdir; cd build; export LD_LIBRARY_PATH=../destdir/usr/local/share/libwebsockets-test-server/plugins:../destdir/usr/local/lib;export SAI_CPACK=\"-G ZIP\";export MACOSX_DEPLOYMENT_TARGET=10.15 ; cmake .. -DLWS_WITH_SUL_DEBUGGING=1 -DCMAKE_SYSTEM_PREFIX_PATH=/opt/homebrew -DLWS_OPENSSL_INCLUDE_DIRS=/opt/homebrew/Cellar/openssl@1.1/1.1.1h/include '-DLWS_OPENSSL_LIBRARIES=/opt/homebrew/Cellar/openssl@1.1/1.1.1h/lib/libssl.dylib;/opt/homebrew/Cellar/openssl@1.1/1.1.1h/lib/libcrypto.dylib' ${cmake} && make -j6 && rm -rf ../destdir && make -j DESTDIR=../destdir install && ctest -j3 --output-on-failure ${cpack}"
+		},
+		"solaris/x86_64-amd/gcc": {
+			"build": "mkdir build destdir; cd build; export SAI_CPACK=\"-G ZIP\";cmake .. ${cmake} && make -j 4 && make install DESTDIR=../destdir && ctest -j2 --output-on-failure ${cpack}",
+			"default": false
+		},
+		"freertos-linkit/arm32-m4-mt7697-usi/gcc": {
+			"build": "mkdir build;cd build;export CCACHE_DISABLE=1;cmake .. -DCMAKE_INSTALL_PREFIX:PATH=/tmp -DCMAKE_TOOLCHAIN_FILE=../contrib/cross-linkit.cmake -DLWS_PLAT_FREERTOS=1 -DLWS_WITH_ZLIB=0 -DLWS_WITHOUT_EXTENSIONS=1 -DLWS_WITH_ZIP_FOPS=0 -DLWS_WITH_HTTP_STREAM_COMPRESSION=0 -DLWS_WITH_MBEDTLS=1 -DLWS_WITH_FILE_OPS=0 -DLWS_IPV6=0 ${cmake};make -j",
+			"default": false
+		},
+		"w10/x86_64-amd/msvc": {
+			"build": "mkdir build && cd build && set SAI_CPACK=\"-G ZIP\" && cmake .. -DLWS_OPENSSL_LIBRARIES=\"C:\\Program Files\\OpenSSL\\lib\\libssl.lib;C:\\Program Files\\OpenSSL\\lib\\libcrypto.lib\" -DLWS_OPENSSL_INCLUDE_DIRS=\"C:\\Program Files\\OpenSSL\\include\" -DLWS_EXT_PTHREAD_INCLUDE_DIR=\"C:\\Program Files (x86)\\pthreads\\include\" -DLWS_EXT_PTHREAD_LIBRARIES=\"C:\\Program Files (x86)\\pthreads\\lib\\x64\\libpthreadGC2.a\" ${cmake} && cmake --build . --config DEBUG && set CTEST_OUTPUT_ON_FAILURE=1 && ctest . -C DEBUG -j1 --output-on-failure",
+			"default": false
+		},
+
+		"w10/x86_64-amd/wmbedtlsmsvc": {
+                        "build": "mkdir build && cd build && set SAI_CPACK=\"-G ZIP\" && cmake ..  -DLWS_WITH_MBEDTLS=1 -DLWS_MBEDTLS_INCLUDE_DIRS=\"C:/Program Files (x86)/mbed TLS/include\" -DMBEDTLS_LIBRARY=\"C:/Program Files (x86)/mbed TLS/lib/mbedtls.lib\" -DMBEDX509_LIBRARY=\"C:/Program Files (x86)/mbed TLS/lib/mbedx509.lib\" -DMBEDCRYPTO_LIBRARY=\"C:/Program Files (x86)/mbed TLS/lib/mbedcrypto.lib\"  -DLWS_EXT_PTHREAD_INCLUDE_DIR=\"C:\\Program Files (x86)\\pthreads\\include\" -DLWS_EXT_PTHREAD_LIBRARIES=\"C:\\Program Files (x86)\\pthreads\\lib\\x64\\libpthreadGC2.a\" ${cmake} && cmake --build . --config DEBUG && set CTEST_OUTPUT_ON_FAILURE=1 && ctest . -C DEBUG -j1 --output-on-failure",
+                        "default": false
+                },
+		"w10/x86_64-amd/noptmsvc": {
+			"build": "mkdir build && cd build && set SAI_CPACK=\"-G ZIP\" && cmake .. -DLWS_OPENSSL_LIBRARIES=\"C:\\Program Files\\OpenSSL\\lib\\libssl.lib;C:\\Program Files\\OpenSSL\\lib\\libcrypto.lib\" -DLWS_OPENSSL_INCLUDE_DIRS=\"C:\\Program Files\\OpenSSL\\include\" ${cmake} && cmake --build . --config DEBUG && set CTEST_OUTPUT_ON_FAILURE=1 && ctest . -C DEBUG -j1 --output-on-failure",
+			"default": false
+		},
+		"w10/x86_64-amd/mingw32": {
+			"build": "mkdir build && cd build && cmake .. -DCMAKE_TOOLCHAIN_FILE=../contrib/cross-w32.cmake ${cmake} && cmake --build . --config DEBUG",
+			"default": false
+		},
+		"w10/x86_64-amd/mingw64": {
+			"build": "mkdir build && cd build && cmake .. -DCMAKE_TOOLCHAIN_FILE=../contrib/cross-w64.cmake ${cmake} && cmake --build . --config DEBUG",
+			"default": false
+		},
+		"freertos-espidf/xl6-esp32/gcc": {
+			# official way to get sdkconfig.h is idf.py menuconfig, but
+			# no obvious way to do that in CI
+			"build":	"rm -rf ebuild ; mkdir ebuild; cd ebuild; cp -rp ../minimal-examples/embedded/esp32/${cpack} . ;  cd ${cpack} ; . /opt/esp/esp-idf/export.sh ; ln -sf ../.. libwebsockets ; idf.py set-target esp32 && cp libwebsockets/minimal-examples/embedded/esp32/${cpack}/sdkconfig . && cp sdkconfig.h build && idf.py ${cmake} build size size-components size-files && cd build && /usr/local/bin/sai-device ${cpack} ESPPORT=0 ctest --output-on-failure",
+			"default":	false
+		},
+		"freertos-espidf/riscv-esp32c3/gcc": {
+			"build":	"rm -rf ebuild ; mkdir ebuild; cd ebuild; cp -rp ../minimal-examples/embedded/esp32/${cpack} . ;  cd ${cpack} ; . /opt/esp/esp-idf/export.sh ; ln -sf ../.. libwebsockets ; idf.py set-target esp32c3 && cp libwebsockets/minimal-examples/embedded/esp32/${cpack}/sdkconfig . && cp sdkconfig.h build && idf.py ${cmake} build size size-components size-files && cd build && /usr/local/bin/sai-device ${cpack} ESPPORT=0 ctest --output-on-failure",
+			"default":	false
+		},
+
+		"linux-fedora-32/riscv64-virt/gcc": {
+			"build":	"mkdir build destdir;cd build;export LD_LIBRARY_PATH=../destdir/usr/local/share/libwebsockets-test-server/plugins:../destdir/usr/local/lib;export CCACHE_DISABLE=1;export SAI_CPACK=\"-G RPM\";cmake .. ${cmake} && make -j4 && rm -rf ../destdir && make -j12 DESTDIR=../destdir install && ctest -j3 --output-on-failure ${cpack}",
+			"default":	false
+		},
+		"freebsd-12/x86_64-amd/llvm": {
+			"build":	"mkdir build destdir;cd build;export LD_LIBRARY_PATH=../destdir/usr/local/share/libwebsockets-test-server/plugins:../destdir/usr/local/lib;export CCACHE_DISABLE=1;cmake .. ${cmake} && make -j3 && rm -rf ../destdir && make -j3 DESTDIR=../destdir install"
+		},
+		"openbsd/x86_64-amd/llvm": {
+                        "build": "mkdir build destdir;cd build;export CCACHE_DISABLE=1;cmake .. ${cmake};make -j4 && rm -rf ../destdir && make -j3 DESTDIR=../destdir install && ctest -j3 --output-on-failure",
+			"default": false
+		},
+                "netbsd/aarch64BE-bcm2837-a53/gcc": {
+                        "build": "mkdir build destdir;cd build;export LD_LIBRARY_PATH=../destdir/usr/local/share/libwebsockets-test-server/plugins:../destdir/usr/local/lib;export CCACHE_DISABLE=1;cmake .. ${cmake};make -j6 && rm -rf ../destdir && make -j6 DESTDIR=../destdir install && /usr/pkg/bin/ctest -j3 --output-on-failure",
+                        "default": false
+                },
+                "netbsd/x86_64-amd/gcc": {
+                        "build": "mkdir build destdir;cd build;export LD_LIBRARY_PATH=../destdir/usr/local/share/libwebsockets-test-server/plugins:../destdir/usr/local/lib;export CCACHE_DISABLE=1;cmake .. ${cmake};make -j6 && rm -rf ../destdir && make -j6 DESTDIR=../destdir install && /usr/pkg/bin/ctest -j3 --output-on-failure",
+                        "default": false
+                }
+
+	},
+
+	"configurations": {
+		"default": {
+			"cmake":	"",
+			"platforms":	"w10/x86_64-amd/msvc, w10/x86_64-amd/noptmsvc, freertos-linkit/arm32-m4-mt7697-usi/gcc, linux-ubuntu-2004/aarch64-a72-bcm2711-rpi4/gcc, w10/x86_64-amd/mingw32, w10/x86_64-amd/mingw64, netbsd/aarch64BE-bcm2837-a53/gcc, netbsd/x86_64-amd/gcc, w10/x86_64-amd/wmbedtlsmsvc, openbsd/x86_64-amd/llvm, solaris/x86_64-amd/gcc"
+		},
+		"default-noudp": {
+			"cmake":	"-DLWS_WITH_UDP=0",
+			"platforms":	"w10/x86_64-amd/msvc, w10/x86_64-amd/noptmsvc, freertos-linkit/arm32-m4-mt7697-usi/gcc, linux-ubuntu-2004/aarch64-a72-bcm2711-rpi4/gcc, w10/x86_64-amd/mingw32, w10/x86_64-amd/mingw64, netbsd/aarch64BE-bcm2837-a53/gcc, netbsd/x86_64-amd/gcc, w10/x86_64-amd/wmbedtlsmsvc"
+		},
+		"fault-injection": {
+			"cmake":	"-DLWS_WITH_SYS_FAULT_INJECTION=1 -DLWS_WITH_MINIMAL_EXAMPLES=1 -DLWS_WITH_CBOR=1",
+			"platforms":	"w10/x86_64-amd/msvc"
+		},
+		"esp32-c3": {
+			"cmake":	"-DLWS_IPV6=0",
+			"cpack":	"esp-c3dev",
+			"platforms":	"none, freertos-espidf/riscv-esp32c3/gcc"
+		},
+		"esp32-heltec": {
+			"cmake":	"-DLWS_IPV6=0",
+			"cpack":	"esp-heltec-wb32",
+			"platforms":	"none, freertos-espidf/xl6-esp32/gcc"
+		},
+		"esp32-wrover": {
+			"cmake":	"-DLWS_IPV6=0 -DLWS_WITH_CBOR=1",
+			"cpack":	"esp-wrover-kit",
+			"platforms":	"none, freertos-espidf/xl6-esp32/gcc"
+		},
+		"esp32-wrover-static": {
+			"cmake":	"-DLWS_WITH_SECURE_STREAMS_STATIC_POLICY_ONLY=1 -DLWS_IPV6=0",
+			"cpack":	"esp-wrover-kit",
+			"platforms":	"none, freertos-espidf/xl6-esp32/gcc"
+		},
+		"default-examples-openssl-v3-nogencrypto": {
+			"cmake":	"-DLWS_OPENSSL_LIBRARIES=\"/usr/local/src/openssl/v3/usr/local/lib64/libssl.a;/usr/local/src/openssl/v3/usr/local/lib64/libcrypto.a\" -DLWS_OPENSSL_INCLUDE_DIRS=\"/usr/local/src/openssl/v3/usr/local/include/\" -DLWS_WITH_MINIMAL_EXAMPLES=1 -DLWS_WITH_GENCRYPTO=0",
+			"platforms":	"none,linux-fedora-32/x86_64-amd/gcc"
+		},
+		"default-examples-openssl-v3-gencrypto": {
+			"cmake":	"-DLWS_SUPPRESS_DEPRECATED_API_WARNINGS=1 -DLWS_OPENSSL_LIBRARIES=\"/usr/local/src/openssl/v3/usr/local/lib64/libssl.a;/usr/local/src/openssl/v3/usr/local/lib64/libcrypto.a\" -DLWS_OPENSSL_INCLUDE_DIRS=\"/usr/local/src/openssl/v3/usr/local/include/\" -DLWS_WITH_MINIMAL_EXAMPLES=1 -DLWS_WITH_GENCRYPTO=1",
+			"platforms":	"none,linux-fedora-32/x86_64-amd/gcc"
+		},
+		"default-examples-boringssl": {
+			"cmake":	"cmake .. -DLWS_WITH_BORINGSSL=1 -DLWS_OPENSSL_INCLUDE_DIRS=\"/usr/local/src/boringssl/include\" -DLWS_OPENSSL_LIBRARIES=\"/usr/local/src/boringssl/build/ssl/libssl.so;/usr/local/src/boringssl/build/crypto/libcrypto.so\" -DLWS_WITH_MINIMAL_EXAMPLES=1",
+			"platforms":	"none,linux-fedora-32/x86_64-amd/gcc"
+		},
+		"default-examples-libressl": {
+			"cmake":	"cmake .. -DLWS_OPENSSL_LIBRARIES='/opt/libressl-3.3.1/build/tls/libtls.a;/opt/libressl-3.3.1/build/ssl/libssl.a;/opt/libressl-3.3.1/build/crypto/libcrypto.a' -DLWS_OPENSSL_INCLUDE_DIRS=/opt/libressl-3.3.1/include -DLWS_WITH_MINIMAL_EXAMPLES=1",
+			"platforms":	"none,linux-fedora-32/x86_64-amd/gcc"
+		},
+		"default-wolfssl": {
+			"cmake":	"-DLWS_WITH_WOLFSSL=1 -DLWS_WOLFSSL_INCLUDE_DIRS=/usr/local/include -DLWS_WOLFSSL_LIBRARIES=/usr/local/lib/libwolfssl.so",
+			"platforms":	"none,linux-fedora-32/x86_64-amd/gcc"
+		},
+		"default-examples": {
+			"cmake":	"-DLWS_WITH_MINIMAL_EXAMPLES=1",
+			"platforms":	"w10/x86_64-amd/msvc, w10/x86_64-amd/noptmsvc, linux-ubuntu-2004/aarch64-a72-bcm2711-rpi4/gcc, netbsd/aarch64BE-bcm2837-a53/gcc, netbsd/x86_64-amd/gcc, openbsd/x86_64-amd/llvm, solaris/x86_64-amd/gcc"
+		},
+		"default-examples-tls-sess": {
+			"cmake":	"-DLWS_WITH_MINIMAL_EXAMPLES=1 -DLWS_WITH_TLS_SESSIONS=1",
+			"platforms":	"w10/x86_64-amd/msvc, w10/x86_64-amd/noptmsvc, linux-ubuntu-2004/aarch64-a72-bcm2711-rpi4/gcc, netbsd/aarch64BE-bcm2837-a53/gcc, netbsd/x86_64-amd/gcc, openbsd/x86_64-amd/llvm, solaris/x86_64-amd/gcc"
+		},
+		"h1only-examples": {
+			"cmake":	"cmake .. -DLWS_WITH_HTTP2=0 -DLWS_WITH_MINIMAL_EXAMPLES=1",
+			"platforms":	"none,linux-fedora-32/x86_64-amd/gcc"
+		},
+		"unix-domain": {
+			"cmake":	"-DUNIX_SOCK=1",
+			"platforms":	"w10/x86_64-amd/msvc, w10/x86_64-amd/noptmsvc"
+		},
+		"plugins": {
+			"cmake":	"-DLWS_WITH_PLUGINS=1",
+			"platforms":	"none,linux-fedora-32/x86_64-amd/gcc,linux-debian-sid/x86-amd/gcc,linux-debian-sid/x86_64-amd/gcc"
+		},
+		# WARN_DEPRECATED disabled for openssl v3 case on windows
+		"lws_system": {
+			"cmake":	"-DLWS_SUPPRESS_DEPRECATED_API_WARNINGS=1 -DLWS_WITH_ACME=1 -DLWS_WITH_MINIMAL_EXAMPLES=1 -DCMAKE_BUILD_TYPE=RELEASE -DLWS_WITH_GENCRYPTO=1 -DLWS_WITH_JOSE=1 -DLWS_WITH_SYS_ASYNC_DNS=1 -DLWS_WITH_SYS_NTPCLIENT=1",
+			"platforms":	"w10/x86_64-amd/msvc, w10/x86_64-amd/noptmsvc, openbsd/x86_64-amd/llvm"
+		},
+		"secure-streams": {
+			"cmake":	"-DLWS_WITH_SECURE_STREAMS=1 -DLWS_WITH_MINIMAL_EXAMPLES=1",
+			"platforms":	"w10/x86_64-amd/msvc, w10/x86_64-amd/noptmsvc, openbsd/x86_64-amd/llvm, solaris/x86_64-amd/gcc"
+		},
+		"secure-streams-proxy": {
+			"cmake":	"-DLWS_WITH_SECURE_STREAMS=1 -DLWS_WITH_SECURE_STREAMS_PROXY_API=1 -DLWS_WITH_MINIMAL_EXAMPLES=1 -DLWS_WITH_SECURE_STREAMS_AUTH_SIGV4=1",
+			"platforms":	"not w10/x86_64-amd/msvc, netbsd/aarch64BE-bcm2837-a53/gcc, netbsd/x86_64-amd/gcc, openbsd/x86_64-amd/llvm, solaris/x86_64-amd/gcc"
+		},
+		"secure-streams-proxy-metrics": {
+			"cmake":	"-DLWS_WITH_SECURE_STREAMS=1 -DLWS_WITH_SECURE_STREAMS_PROXY_API=1 -DLWS_WITH_MINIMAL_EXAMPLES=1 -DLWS_WITH_SECURE_STREAMS_AUTH_SIGV4=1 -DLWS_WITH_SYS_METRICS=1",
+			"platforms":	"not w10/x86_64-amd/msvc, netbsd/aarch64BE-bcm2837-a53/gcc, netbsd/x86_64-amd/gcc"
+		},
+		"distro_recommended": { # minimal examples also needed for ctest
+			"cmake":	"-DLWS_WITH_DISTRO_RECOMMENDED=1 -DLWS_WITH_MINIMAL_EXAMPLES=1",
+			"platforms":	"not freebsd-12/x86_64-amd/llvm, not linkit-cross, not w10/x86_64-amd/msvc, linux-ubuntu-2004/aarch64-a72-bcm2711-rpi4/gcc, linux-fedora-32/riscv64-virt/gcc",
+			"cpack":	"&& cpack $SAI_CPACK",
+			"artifacts":	"build/*.rpm, build/*.deb, build/*.zip"
+		},
+		"lwsws": {
+			"cmake":	"-DLWS_WITH_LWSWS=ON -DLWS_WITHOUT_EXTENSIONS=0 -DLWS_WITH_HTTP2=1 -DLWS_WITH_ACME=1 -DLWS_WITH_MINIMAL_EXAMPLES=1 -DCMAKE_BUILD_TYPE=DEBUG -DLWS_WITH_GENCRYPTO=1 -DLWS_WITH_JOSE=1 -DLWS_WITH_SYS_ASYNC_DNS=1 -DLWS_WITH_SYS_NTPCLIENT=1",
+			# no distro -devel package for libuv
+			"platforms":	"not linux-centos-8/x86_64-amd/gcc"
+		},
+		"lwsws-nometrics": {
+			"cmake":	"-DLWS_WITH_LWSWS=ON -DLWS_WITHOUT_EXTENSIONS=0 -DLWS_WITH_HTTP2=1 -DLWS_WITH_ACME=1 -DLWS_WITH_MINIMAL_EXAMPLES=1 -DCMAKE_BUILD_TYPE=DEBUG -DLWS_WITH_GENCRYPTO=1 -DLWS_WITH_JOSE=1 -DLWS_WITH_SYS_ASYNC_DNS=1 -DLWS_WITH_SYS_NTPCLIENT=1 -DLWS_WITH_SYS_METRICS=0",
+			# no distro -devel package for libuv
+			"platforms":	"not linux-centos-8/x86_64-amd/gcc"
+		},
+		"lwsws2": {
+			"cmake":	"-DLWS_WITH_LWSWS=ON -DLWS_WITHOUT_EXTENSIONS=0 -DLWS_WITH_HTTP2=1 -DLWS_WITH_ACME=1 -DLWS_WITH_MINIMAL_EXAMPLES=1 -DCMAKE_BUILD_TYPE=DEBUG -DLWS_WITH_LWS_DSH=1 -DLWS_WITH_CACHE_NSCOOKIEJAR=0",
+			# no distro -devel package for libuv
+			"platforms":	"not linux-centos-8/x86_64-amd/gcc"
+		},
+		"justmbedtls": {
+			"cmake": "-DLWS_WITH_MBEDTLS=1 -DLWS_WITHOUT_TESTAPPS=1",
+			"platforms": "none, linux-android/aarch64/llvm"
+		},
+		"mbedtls": {
+			"cmake":	"-DLWS_WITH_MBEDTLS=1 -DLWS_WITH_HTTP2=1 -DLWS_WITH_LWSWS=1 -DLWS_WITH_MINIMAL_EXAMPLES=1 -DLWS_WITH_JOSE=1 -DCMAKE_BUILD_TYPE=DEBUG",
+			# no distro -devel package for mbedtls
+			"platforms":	"not linux-centos-7/x86_64-amd/gcc, not linux-centos-8/x86_64-amd/gcc, not linux-ubuntu-xenial/x86_64-amd/gcc"
+		},
+		"mbedtls-metrics": {
+			"cmake":	"-DLWS_WITH_MBEDTLS=1 -DLWS_WITH_HTTP2=1 -DLWS_WITH_LWSWS=1 -DLWS_WITH_MINIMAL_EXAMPLES=1 -DLWS_WITH_JOSE=1 -DCMAKE_BUILD_TYPE=DEBUG -DLWS_WITH_SYS_METRICS=1",
+			"platforms":	"not linux-centos-7/x86_64-amd/gcc, not linux-centos-8/x86_64-amd/gcc, not linux-ubuntu-xenial/x86_64-amd/gcc"
+		},
+		"noserver": {
+			"cmake":	"-DLWS_WITHOUT_SERVER=ON -DLWS_WITH_MINIMAL_EXAMPLES=1 -DLWS_WITH_SECURE_STREAMS=1",
+			"platforms":    "w10/x86_64-amd/msvc, w10/x86_64-amd/noptmsvc"
+		},
+		"noclient": {
+			"cmake":	"-DLWS_WITHOUT_CLIENT=ON -DLWS_WITH_MINIMAL_EXAMPLES=1"
+		},
+		"ext": {
+			"cmake":	"-DLWS_WITHOUT_EXTENSIONS=0 -DLWS_WITH_MINIMAL_EXAMPLES=1"
+		},
+		"nonetwork": {
+			"cmake":	"-DLWS_WITH_NETWORK=0"
+		},
+		"libev": {
+			"cmake":	"-DLWS_WITH_LIBEV=ON",
+			"platforms":	"openbsd/x86_64-amd/llvm"
+		},
+		"libevent": {
+			"cmake":	"-DLWS_WITH_LIBEVENT=ON"
+		},
+		"libglib": {
+			"cmake":	"-DLWS_WITH_GLIB=ON"
+		},
+		"sdevent": {
+			"cmake":	"-DLWS_WITH_SDEVENT=ON",
+			"platforms":	"none, linux-fedora-32/x86_64-amd/gcc"
+		},
+		"uncommon_headers": {
+			"cmake":	"-DLWS_WITH_HTTP_BASIC_AUTH=0 -DLWS_WITH_HTTP_UNCOMMON_HEADERS=0 -DLWS_HTTP_HEADERS_ALL=0",
+			"platforms":	"none, linux-fedora-32/x86_64-amd/gcc"
+		},
+		"ipv6":	{
+			"cmake":	"-DLWS_IPV6=ON",
+			"platforms":	"w10/x86_64-amd/mingw64, w10/x86_64-amd/msvc"
+		},
+		"nonetlink":	{
+			"cmake":	"-DLWS_WITH_NETLINK=0",
+			"platforms":	"none, linux-ubuntu-2004/x86_64-amd/gcc"
+		},
+		"nossl": {
+			"cmake":	"-DLWS_WITH_SSL=OFF",
+			"platforms":	"netbsd-iOS/aarch64/llvm"
+		},
+		"daemon": {
+			"cmake":	"-DLWS_WITHOUT_DAEMONIZE=OFF"
+		},
+		"cgi": {
+			"cmake":	"-DLWS_WITH_CGI=ON"
+		},
+		"nologs": {
+			"cmake":	"-DLWS_WITH_NO_LOGS=ON"
+		},
+		"cookiejar": {
+			"cmake":	"-DLWS_WITH_CACHE_NSCOOKIEJAR=ON"
+		},
+		"jittrust": {
+			"cmake":	"-DLWS_WITH_TLS_JIT_TRUST=1",
+			"platforms":	"none, linux-fedora-32/x86_64-amd/gcc"
+		},
+		"smp": {
+			"cmake":	"-DLWS_MAX_SMP=32 -DLWS_WITH_MINIMAL_EXAMPLES=1"
+		},
+		"nows": {
+			"cmake":	"-DLWS_ROLE_WS=0"
+		},
+		"threadpool": {
+			"cmake":	"-DLWS_WITH_THREADPOOL=1 -DLWS_WITH_MINIMAL_EXAMPLES=1",
+			"platforms":	"w10/x86_64-amd/msvc"
+		}
+	}
+}
+

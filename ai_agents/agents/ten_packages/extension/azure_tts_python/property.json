@@ -1,0 +1,12 @@
+{
+    "params": {
+        "subscription": "${env:AZURE_TTS_API_KEY}",
+        "region": "${env:AZURE_TTS_REGION}",
+        "speech_recognition_language": "en-US",
+        "output_format": "Raw16Khz16BitMonoPcm",
+        "propertys": [
+            ["Speech_LogFilename", "azure_tts_log.txt"],
+            ["SpeechServiceConnection_SynthVoice", "en-US-AndrewMultilingualNeural"]
+        ]
+    }
+}

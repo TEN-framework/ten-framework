@@ -1,0 +1,231 @@
+name: Tman Linux x64 (Including Designer UI)
+
+on:
+  release:
+    types: [created]
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - "core/src/ten_manager/**"
+      - "core/src/ten_rust/**"
+
+permissions:
+  contents: write
+  discussions: write
+  security-events: write
+
+concurrency:
+  group: tman-full-linux-x64-${{ github.head_ref }}
+  cancel-in-progress: true
+
+jobs:
+  call-check-pr-status:
+    uses: ./.github/workflows/_check_pr_status.yml
+
+  build:
+    needs: call-check-pr-status
+    if: ${{ needs.call-check-pr-status.outputs.should_continue == 'true' }}
+    timeout-minutes: 60
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        build_type: [debug, release]
+        arch: [x64]
+    steps:
+      - name: Check PR status before matrix execution
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            console.log('Event name:', context.eventName);
+            console.log('Matrix:', ${{ toJson(matrix) }});
+
+            // Only check for PR events
+            if (context.eventName !== 'pull_request') {
+              console.log('Not a PR event, continuing...');
+              return;
+            }
+
+            // Ensure we have PR data
+            if (!context.payload.pull_request) {
+              console.log('No pull_request data in payload, continuing...');
+              return;
+            }
+
+            const { owner, repo } = context.repo;
+            const prNumber = context.payload.pull_request.number;
+
+            try {
+              const pr = await github.rest.pulls.get({
+                owner,
+                repo,
+                pull_number: prNumber,
+              });
+
+              console.log(`PR #${prNumber} state: ${pr.data.state}, merged: ${pr.data.merged}`);
+
+              if (pr.data.state === 'closed') {
+                if (pr.data.merged) {
+                  console.log(`PR #${prNumber} has been merged. Stopping matrix execution.`);
+                  core.setFailed('PR has been merged, stopping execution to save resources.');
+                } else {
+                  console.log(`PR #${prNumber} has been closed. Stopping matrix execution.`);
+                  core.setFailed('PR has been closed, stopping execution to save resources.');
+                }
+              } else {
+                console.log(`PR #${prNumber} is still open. Continuing matrix execution.`);
+              }
+            } catch (error) {
+              console.error(`Error checking PR status: ${error.message}`);
+              console.log('Error details:', error);
+              console.log('Continuing matrix execution due to error...');
+            }
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+
+      - name: Trust working directory
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
+      - name: Initialize and update submodules except portal/
+        run: |
+          # Retrieve all submodule paths, excluding `portal/`.
+          submodules=$(git config --file .gitmodules --get-regexp path | awk '$2 != "portal" { print $2 }')
+
+          git submodule init
+
+          for submodule in $submodules; do
+            echo "Initializing submodule: $submodule"
+            git submodule update --init --recursive --depth 1 "$submodule"
+          done
+
+      - name: Install Clang and libc++
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang libc++-dev libc++abi-dev
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install tools and dependencies
+        run: |
+          pip3 install --use-pep517 python-dotenv jinja2
+
+      - name: Update version
+        run: |
+          python3 tools/version/update_version_in_ten_framework.py
+          python3 tools/version/check_version_in_ten_framework.py
+
+      - name: Install dependencies
+        run: |
+          cd core/src/ten_manager/designer_frontend
+          bun install
+
+      - name: Build (tman)
+        run: |
+          export PATH=$(pwd)/core/ten_gn:$PATH
+          echo $PATH
+
+          rustup default nightly-2025-09-18
+
+          df -h .
+
+          EXTRA_ARGS="is_clang=true log_level=1 enable_serialized_actions=true  ten_rust_enable_gen_cargo_config=false ten_enable_cargo_clean=true ten_enable_go_lint=false ten_enable_rust_incremental_build=false ten_manager_enable_frontend=true ten_enable_integration_tests_prebuilt=false ten_enable_ffmpeg_extensions=false ten_enable_nodejs_binding=false ten_enable_python_binding=false ten_enable_go_binding=false ten_enable_ten_rust=true ten_enable_ten_manager=true"
+
+          echo $EXTRA_ARGS
+
+          tgn gen linux ${{ matrix.arch }} ${{ matrix.build_type }} -- $EXTRA_ARGS
+          tgn build:ten_manager_package linux ${{ matrix.arch }} ${{ matrix.build_type }}
+
+          df -h .
+          tree -I 'gen|obj' out
+
+      # - name: Build (designer_frontend)
+      #   run: |
+      #     cd core/src/ten_manager/designer_frontend
+      #     bun run build
+
+      - name: Package assets
+        if: matrix.arch == 'x64' && (github.event_name == 'release' || (github.ref != '' && startsWith(github.ref, 'refs/tags/')))
+        run: |
+          cd out/linux/${{ matrix.arch }}
+          zip -vr tman-linux-${{ matrix.build_type }}-${{ matrix.arch }}.zip ten_manager/bin/tman
+          df -h .
+
+      - name: Publish to release assets
+        uses: softprops/action-gh-release@v2
+        if: matrix.arch == 'x64' && (github.event_name == 'release' || (github.ref != '' && startsWith(github.ref, 'refs/tags/')))
+        with:
+          files: |
+            out/linux/${{ matrix.arch }}/tman-linux-${{ matrix.build_type }}-${{ matrix.arch }}.zip
+
+      - name: Install Playwright Browsers
+        run: |
+          cd core/src/ten_manager/designer_frontend
+          npx playwright install --with-deps
+
+      - name: Run Playwright tests
+        run: |
+          # Start the tman designer backend
+          cd ${GITHUB_WORKSPACE}/out/linux/${{ matrix.arch }}/ten_manager/bin
+          ./tman --verbose designer &
+          TMAN_PID=$!
+          echo "Started tman designer with PID $TMAN_PID"
+
+          # Start the frontend preview server
+          cd ${GITHUB_WORKSPACE}/core/src/ten_manager/designer_frontend
+          # bun run preview &
+          # PREVIEW_PID=$!
+          # echo "Started frontend preview server with PID $PREVIEW_PID"
+
+          # Wait for the server to be available (max 30 seconds)
+          echo "Waiting for server to be available..."
+          timeout=30
+          while [ $timeout -gt 0 ]; do
+            if curl -s http://127.0.0.1:49483/ > /dev/null; then
+              echo "Server is up and running!"
+              break
+            fi
+            echo "Server not ready yet, waiting... ($timeout seconds left)"
+            sleep 1
+            timeout=$((timeout-1))
+          done
+
+          if [ $timeout -eq 0 ]; then
+            echo "Timed out waiting for server to start"
+            echo "Checking if tman designer is running:"
+            ps -p $TMAN_PID || true
+            # echo "Checking if preview server is running:"
+            # ps -p $PREVIEW_PID || true
+            exit 1
+          fi
+
+          # Run the tests
+          npx playwright test
+          TEST_EXIT_CODE=$?
+
+          # Cleanup background processes
+          kill $TMAN_PID || true
+          # kill $PREVIEW_PID || true
+
+          # Return the test exit code
+          exit $TEST_EXIT_CODE
+
+      - name: Upload tests relevant artifacts
+        uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report-${{ matrix.build_type }}-linux-${{ matrix.arch }}
+          path: core/src/ten_manager/designer_frontend/playwright-report/
+          retention-days: 7

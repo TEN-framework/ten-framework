@@ -1,0 +1,1527 @@
+/* BEGIN_HEADER */
+#include "psa/crypto_se_driver.h"
+
+#include "psa_crypto_se.h"
+#include "psa_crypto_slot_management.h"
+#include "psa_crypto_storage.h"
+
+/* Invasive peeking: check the persistent data */
+#if defined(MBEDTLS_PSA_ITS_FILE_C)
+#include "psa_crypto_its.h"
+#else /* Native ITS implementation */
+#include "psa/error.h"
+#include "psa/internal_trusted_storage.h"
+#endif
+
+
+/****************************************************************/
+/* Test driver helpers */
+/****************************************************************/
+
+/** The minimum valid location value for a secure element driver. */
+#define MIN_DRIVER_LOCATION 1
+
+/** The location and lifetime used for tests that use a single driver. */
+#define TEST_DRIVER_LOCATION 1
+#define TEST_SE_PERSISTENT_LIFETIME                             \
+    ( PSA_KEY_LIFETIME_FROM_PERSISTENCE_AND_LOCATION(           \
+        PSA_KEY_PERSISTENCE_DEFAULT, TEST_DRIVER_LOCATION ) )
+
+#define TEST_SE_VOLATILE_LIFETIME                               \
+    ( PSA_KEY_LIFETIME_FROM_PERSISTENCE_AND_LOCATION(           \
+        PSA_KEY_PERSISTENCE_VOLATILE, TEST_DRIVER_LOCATION ) )
+
+/** The driver detected a condition that shouldn't happen.
+ * This is probably a bug in the library. */
+#define PSA_ERROR_DETECTED_BY_DRIVER ((psa_status_t)( -500 ))
+
+/** Like #TEST_ASSERT for use in a driver method, with no cleanup.
+ *
+ * If an error happens, this macro returns from the calling function.
+ *
+ * Use this macro to assert on guarantees provided by the core.
+ */
+#define DRIVER_ASSERT_RETURN( TEST )                        \
+    do {                                                    \
+       if( ! (TEST) )                                       \
+       {                                                    \
+          mbedtls_test_fail( #TEST, __LINE__, __FILE__ );   \
+          return( PSA_ERROR_DETECTED_BY_DRIVER );           \
+       }                                                    \
+    } while( 0 )
+
+/** Like #TEST_ASSERT for use in a driver method, with cleanup.
+ *
+ * In case of error, this macro sets `status` and jumps to the
+ * label `exit`.
+ *
+ * Use this macro to assert on guarantees provided by the core.
+ */
+#define DRIVER_ASSERT( TEST )                               \
+    do {                                                    \
+       if( ! (TEST) )                                       \
+       {                                                    \
+          mbedtls_test_fail( #TEST, __LINE__, __FILE__ );   \
+          status = PSA_ERROR_DETECTED_BY_DRIVER;            \
+          goto exit;                                        \
+       }                                                    \
+    } while( 0 )
+
+/** Like #PSA_ASSERT for a PSA API call that calls a driver underneath.
+ *
+ * Run the code \p expr. If this returns \p expected_status,
+ * do nothing. If this returns #PSA_ERROR_DETECTED_BY_DRIVER,
+ * jump directly to the `exit` label. If this returns any other
+ * status, call mbedtls_test_fail() then jump to `exit`.
+ *
+ * The special case for #PSA_ERROR_DETECTED_BY_DRIVER is because in this
+ * case, the test driver code is expected to have called mbedtls_test_fail()
+ * already, so we make sure not to overwrite the failure information.
+ */
+#define PSA_ASSERT_VIA_DRIVER( expr, expected_status )                  \
+    do {                                                                \
+        psa_status_t PSA_ASSERT_VIA_DRIVER_status = ( expr );           \
+        if( PSA_ASSERT_VIA_DRIVER_status == PSA_ERROR_DETECTED_BY_DRIVER ) \
+            goto exit;                                                  \
+        if( PSA_ASSERT_VIA_DRIVER_status != ( expected_status ) )       \
+        {                                                               \
+            mbedtls_test_fail( #expr, __LINE__, __FILE__ );                     \
+            goto exit;                                                  \
+        }                                                               \
+    } while( 0 )
+
+
+
+/****************************************************************/
+/* Domain support functions */
+/****************************************************************/
+
+/* Return the exact bit size given a curve family and a byte length. */
+static size_t ecc_curve_bits( psa_ecc_family_t curve, size_t data_length )
+{
+    switch( curve )
+    {
+        case PSA_ECC_FAMILY_SECP_R1:
+            if( data_length == PSA_BYTES_TO_BITS( 521 ) )
+                return( 521 );
+            break;
+        case PSA_ECC_FAMILY_MONTGOMERY:
+            if( data_length == PSA_BYTES_TO_BITS( 255 ) )
+                return( 255 );
+    }
+    /* If not listed above, assume a multiple of 8 bits. */
+    return( PSA_BYTES_TO_BITS( data_length ) );
+}
+
+
+/****************************************************************/
+/* Miscellaneous driver methods */
+/****************************************************************/
+
+typedef struct
+{
+    psa_key_slot_number_t slot_number;
+    psa_key_creation_method_t method;
+    psa_status_t status;
+} validate_slot_number_directions_t;
+static validate_slot_number_directions_t validate_slot_number_directions;
+
+/* Validate a choice of slot number as directed. */
+static psa_status_t validate_slot_number_as_directed(
+    psa_drv_se_context_t *context,
+    void *persistent_data,
+    const psa_key_attributes_t *attributes,
+    psa_key_creation_method_t method,
+    psa_key_slot_number_t slot_number )
+{
+    (void) context;
+    (void) persistent_data;
+    (void) attributes;
+    DRIVER_ASSERT_RETURN( slot_number ==
+                          validate_slot_number_directions.slot_number );
+    DRIVER_ASSERT_RETURN( method ==
+                          validate_slot_number_directions.method );
+    return( validate_slot_number_directions.status );
+}
+
+/* Allocate slot numbers with a monotonic counter. */
+static psa_key_slot_number_t shadow_counter;
+static void counter_reset( void )
+{
+    shadow_counter = 0;
+}
+static psa_status_t counter_allocate( psa_drv_se_context_t *context,
+                                      void *persistent_data,
+                                      const psa_key_attributes_t *attributes,
+                                      psa_key_creation_method_t method,
+                                      psa_key_slot_number_t *slot_number )
+{
+    psa_key_slot_number_t *p_counter = persistent_data;
+    (void) attributes;
+    (void) method;
+    if( context->persistent_data_size != sizeof( psa_key_slot_number_t ) )
+        return( PSA_ERROR_DETECTED_BY_DRIVER );
+    ++*p_counter;
+    if( *p_counter == 0 )
+        return( PSA_ERROR_INSUFFICIENT_STORAGE );
+    shadow_counter = *p_counter;
+    *slot_number = *p_counter;
+    return( PSA_SUCCESS );
+}
+
+/* Null import: do nothing, but pretend it worked. */
+#if defined(AT_LEAST_ONE_BUILTIN_KDF)
+static psa_status_t null_import( psa_drv_se_context_t *context,
+                                 psa_key_slot_number_t slot_number,
+                                 const psa_key_attributes_t *attributes,
+                                 const uint8_t *data,
+                                 size_t data_length,
+                                 size_t *bits )
+{
+    (void) context;
+    (void) slot_number;
+    (void) attributes;
+    (void) data;
+    /* We're supposed to return a key size. Return one that's correct for
+     * plain data keys. */
+    *bits = PSA_BYTES_TO_BITS( data_length );
+    return( PSA_SUCCESS );
+}
+#endif /* AT_LEAST_ONE_BUILTIN_KDF */
+
+/* Null generate: do nothing, but pretend it worked. */
+#if defined(AT_LEAST_ONE_BUILTIN_KDF)
+static psa_status_t null_generate( psa_drv_se_context_t *context,
+                                   psa_key_slot_number_t slot_number,
+                                   const psa_key_attributes_t *attributes,
+                                   uint8_t *pubkey,
+                                   size_t pubkey_size,
+                                   size_t *pubkey_length )
+{
+    (void) context;
+    (void) slot_number;
+    (void) attributes;
+
+    DRIVER_ASSERT_RETURN( *pubkey_length == 0 );
+    if( ! PSA_KEY_TYPE_IS_KEY_PAIR( psa_get_key_type( attributes ) ) )
+    {
+        DRIVER_ASSERT_RETURN( pubkey == NULL );
+        DRIVER_ASSERT_RETURN( pubkey_size == 0 );
+    }
+
+    return( PSA_SUCCESS );
+}
+#endif /* AT_LEAST_ONE_BUILTIN_KDF */
+
+/* Null destroy: do nothing, but pretend it worked. */
+static psa_status_t null_destroy( psa_drv_se_context_t *context,
+                                  void *persistent_data,
+                                  psa_key_slot_number_t slot_number )
+{
+    (void) context;
+    (void) persistent_data;
+    (void) slot_number;
+    return( PSA_SUCCESS );
+}
+
+
+
+/****************************************************************/
+/* RAM-based test driver */
+/****************************************************************/
+
+#define RAM_MAX_KEY_SIZE 64
+typedef struct
+{
+    psa_key_lifetime_t lifetime;
+    psa_key_type_t type;
+    size_t bits;
+    uint8_t content[RAM_MAX_KEY_SIZE];
+} ram_slot_t;
+static ram_slot_t ram_slots[16];
+
+/* A type with at least ARRAY_LENGTH(ram_slots) bits, containing a
+ * bit vector indicating which slots are in use. */
+typedef uint16_t ram_slot_usage_t;
+
+static ram_slot_usage_t ram_shadow_slot_usage;
+
+static uint8_t ram_min_slot = 0;
+
+static void ram_slots_reset( void )
+{
+    memset( ram_slots, 0, sizeof( ram_slots ) );
+    ram_min_slot = 0;
+    ram_shadow_slot_usage = 0;
+}
+
+/* Common parts of key creation.
+ *
+ * In case of error, zero out ram_slots[slot_number]. But don't
+ * do that if the error is PSA_ERROR_DETECTED_BY_DRIVER: in this case
+ * you don't need to clean up (ram_slot_reset() will take care of it
+ * in the test case function's cleanup code) and it might be wrong
+ * (if slot_number is invalid).
+ */
+static psa_status_t ram_create_common( psa_drv_se_context_t *context,
+                                       psa_key_slot_number_t slot_number,
+                                       const psa_key_attributes_t *attributes,
+                                       size_t required_storage )
+{
+    (void) context;
+    DRIVER_ASSERT_RETURN( slot_number < ARRAY_LENGTH( ram_slots ) );
+
+    ram_slots[slot_number].lifetime = psa_get_key_lifetime( attributes );
+    ram_slots[slot_number].type = psa_get_key_type( attributes );
+    ram_slots[slot_number].bits = psa_get_key_bits( attributes );
+
+    if( required_storage > sizeof( ram_slots[slot_number].content ) )
+    {
+        memset( &ram_slots[slot_number], 0, sizeof( ram_slots[slot_number] ) );
+        return( PSA_ERROR_INSUFFICIENT_STORAGE );
+    }
+
+    return( PSA_SUCCESS );
+}
+
+/* This function does everything except actually generating key material.
+ * After calling it, you must copy the desired key material to
+ * ram_slots[slot_number].content. */
+static psa_status_t ram_fake_generate( psa_drv_se_context_t *context,
+                                       psa_key_slot_number_t slot_number,
+                                       const psa_key_attributes_t *attributes,
+                                       uint8_t *pubkey,
+                                       size_t pubkey_size,
+                                       size_t *pubkey_length )
+{
+    psa_status_t status;
+    size_t required_storage =
+        PSA_EXPORT_KEY_OUTPUT_SIZE( psa_get_key_type( attributes ),
+                                    psa_get_key_bits( attributes ) );
+
+    DRIVER_ASSERT_RETURN( *pubkey_length == 0 );
+    if( ! PSA_KEY_TYPE_IS_KEY_PAIR( psa_get_key_type( attributes ) ) )
+    {
+        DRIVER_ASSERT_RETURN( pubkey == NULL );
+        DRIVER_ASSERT_RETURN( pubkey_size == 0 );
+    }
+
+    status = ram_create_common( context, slot_number, attributes,
+                                required_storage );
+    return( status );
+}
+
+static psa_status_t ram_import( psa_drv_se_context_t *context,
+                                psa_key_slot_number_t slot_number,
+                                const psa_key_attributes_t *attributes,
+                                const uint8_t *data,
+                                size_t data_length,
+                                size_t *bits )
+{
+    psa_key_type_t type = psa_get_key_type( attributes );
+    psa_status_t status = ram_create_common( context, slot_number, attributes,
+                                             data_length );
+    if( status != PSA_SUCCESS )
+        return( status );
+
+    /* The RAM driver only works for certain key types: raw keys,
+     * and ECC key pairs. This is true in particular of the bit-size
+     * calculation here. */
+    if( PSA_KEY_TYPE_IS_UNSTRUCTURED( type ) )
+        *bits = PSA_BYTES_TO_BITS( data_length );
+    else if ( PSA_KEY_TYPE_IS_ECC_KEY_PAIR( type ) )
+    {
+        *bits = ecc_curve_bits( PSA_KEY_TYPE_ECC_GET_FAMILY( type ), data_length );
+        if( *bits == 0 )
+            return( PSA_ERROR_DETECTED_BY_DRIVER );
+    }
+    else
+    {
+        memset( &ram_slots[slot_number], 0, sizeof( ram_slots[slot_number] ) );
+        return( PSA_ERROR_NOT_SUPPORTED );
+    }
+
+    ram_slots[slot_number].bits = *bits;
+    memcpy( ram_slots[slot_number].content, data, data_length );
+
+    return( PSA_SUCCESS );
+}
+
+static psa_status_t ram_export( psa_drv_se_context_t *context,
+                                psa_key_slot_number_t slot_number,
+                                uint8_t *data,
+                                size_t data_size,
+                                size_t *data_length )
+{
+    size_t actual_size;
+    (void) context;
+    DRIVER_ASSERT_RETURN( slot_number < ARRAY_LENGTH( ram_slots ) );
+    actual_size = PSA_BITS_TO_BYTES( ram_slots[slot_number].bits );
+    if( actual_size > data_size )
+        return( PSA_ERROR_BUFFER_TOO_SMALL );
+    *data_length = actual_size;
+    memcpy( data, ram_slots[slot_number].content, actual_size );
+    return( PSA_SUCCESS );
+}
+
+static psa_status_t ram_export_public( psa_drv_se_context_t *context,
+                                       psa_key_slot_number_t slot_number,
+                                       uint8_t *data,
+                                       size_t data_size,
+                                       size_t *data_length )
+{
+    psa_status_t status;
+    mbedtls_svc_key_id_t key = MBEDTLS_SVC_KEY_ID_INIT;
+    psa_key_attributes_t attributes = PSA_KEY_ATTRIBUTES_INIT;
+
+    (void) context;
+    DRIVER_ASSERT_RETURN( slot_number < ARRAY_LENGTH( ram_slots ) );
+    DRIVER_ASSERT_RETURN(
+        PSA_KEY_TYPE_IS_KEY_PAIR( ram_slots[slot_number].type ) );
+
+    psa_set_key_type( &attributes, ram_slots[slot_number].type );
+    status = psa_import_key( &attributes,
+                             ram_slots[slot_number].content,
+                             PSA_BITS_TO_BYTES( ram_slots[slot_number].bits ),
+                             &key );
+    if( status != PSA_SUCCESS )
+        return( status );
+    status = psa_export_public_key( key, data, data_size, data_length );
+    psa_destroy_key( key );
+    return( PSA_SUCCESS );
+}
+
+static psa_status_t ram_destroy( psa_drv_se_context_t *context,
+                                 void *persistent_data,
+                                 psa_key_slot_number_t slot_number )
+{
+    ram_slot_usage_t *slot_usage = persistent_data;
+    DRIVER_ASSERT_RETURN( context->persistent_data_size == sizeof( ram_slot_usage_t ) );
+    DRIVER_ASSERT_RETURN( slot_number < ARRAY_LENGTH( ram_slots ) );
+    memset( &ram_slots[slot_number], 0, sizeof( ram_slots[slot_number] ) );
+    *slot_usage &= ~(ram_slot_usage_t)( 1 << slot_number );
+    ram_shadow_slot_usage = *slot_usage;
+    return( PSA_SUCCESS );
+}
+
+static psa_status_t ram_allocate( psa_drv_se_context_t *context,
+                                  void *persistent_data,
+                                  const psa_key_attributes_t *attributes,
+                                  psa_key_creation_method_t method,
+                                  psa_key_slot_number_t *slot_number )
+{
+    ram_slot_usage_t *slot_usage = persistent_data;
+    (void) attributes;
+    (void) method;
+    DRIVER_ASSERT_RETURN( context->persistent_data_size == sizeof( ram_slot_usage_t ) );
+    for( *slot_number = ram_min_slot;
+         *slot_number < ARRAY_LENGTH( ram_slots );
+         ++( *slot_number ) )
+    {
+        if( ! ( *slot_usage & 1 << *slot_number ) )
+        {
+            ram_shadow_slot_usage = *slot_usage;
+            return( PSA_SUCCESS );
+        }
+    }
+    return( PSA_ERROR_INSUFFICIENT_STORAGE );
+}
+
+static psa_status_t ram_validate_slot_number(
+    psa_drv_se_context_t *context,
+    void *persistent_data,
+    const psa_key_attributes_t *attributes,
+    psa_key_creation_method_t method,
+    psa_key_slot_number_t slot_number )
+{
+    (void) context;
+    (void) persistent_data;
+    (void) attributes;
+    (void) method;
+    if( slot_number >= ARRAY_LENGTH( ram_slots ) )
+        return( PSA_ERROR_INVALID_ARGUMENT );
+    return( PSA_SUCCESS );
+}
+
+static psa_status_t ram_sign( psa_drv_se_context_t *context,
+                              psa_key_slot_number_t slot_number,
+                              psa_algorithm_t alg,
+                              const uint8_t *hash,
+                              size_t hash_length,
+                              uint8_t *signature,
+                              size_t signature_size,
+                              size_t *signature_length )
+{
+    ram_slot_t *slot;
+    psa_key_attributes_t attributes = PSA_KEY_ATTRIBUTES_INIT;
+    mbedtls_svc_key_id_t key = MBEDTLS_SVC_KEY_ID_INIT;
+    psa_status_t status = PSA_ERROR_GENERIC_ERROR;
+
+    (void) context;
+    DRIVER_ASSERT_RETURN( slot_number < ARRAY_LENGTH( ram_slots ) );
+    slot = &ram_slots[slot_number];
+
+    psa_set_key_usage_flags( &attributes, PSA_KEY_USAGE_SIGN_HASH );
+    psa_set_key_algorithm( &attributes, alg );
+    psa_set_key_type( &attributes, slot->type );
+    DRIVER_ASSERT( psa_import_key( &attributes,
+                                   slot->content,
+                                   PSA_BITS_TO_BYTES( slot->bits ),
+                                   &key ) == PSA_SUCCESS );
+    status = psa_sign_hash( key, alg,
+                            hash, hash_length,
+                            signature, signature_size, signature_length );
+
+exit:
+    psa_destroy_key( key );
+    return( status );
+}
+
+static psa_status_t ram_verify( psa_drv_se_context_t *context,
+                                psa_key_slot_number_t slot_number,
+                                psa_algorithm_t alg,
+                                const uint8_t *hash,
+                                size_t hash_length,
+                                const uint8_t *signature,
+                                size_t signature_length )
+{
+    ram_slot_t *slot;
+    psa_key_attributes_t attributes = PSA_KEY_ATTRIBUTES_INIT;
+    mbedtls_svc_key_id_t key = MBEDTLS_SVC_KEY_ID_INIT;
+    psa_status_t status = PSA_ERROR_GENERIC_ERROR;
+
+    (void) context;
+    DRIVER_ASSERT_RETURN( slot_number < ARRAY_LENGTH( ram_slots ) );
+    slot = &ram_slots[slot_number];
+
+    psa_set_key_usage_flags( &attributes, PSA_KEY_USAGE_VERIFY_HASH );
+    psa_set_key_algorithm( &attributes, alg );
+    psa_set_key_type( &attributes, slot->type );
+    DRIVER_ASSERT( psa_import_key( &attributes,
+                                   slot->content,
+                                   PSA_BITS_TO_BYTES( slot->bits ),
+                                   &key ) ==
+                   PSA_SUCCESS );
+    status = psa_verify_hash( key, alg,
+                              hash, hash_length,
+                              signature, signature_length );
+
+exit:
+    psa_destroy_key( key );
+    return( status );
+}
+
+
+/****************************************************************/
+/* Other test helper functions */
+/****************************************************************/
+
+typedef enum
+{
+    SIGN_IN_SOFTWARE_AND_PARALLEL_CREATION,
+    SIGN_IN_DRIVER_AND_PARALLEL_CREATION,
+    SIGN_IN_DRIVER_THEN_EXPORT_PUBLIC,
+} sign_verify_method_t;
+
+/* Check that the attributes of a key reported by psa_get_key_attributes()
+ * are consistent with the attributes used when creating the key. */
+static int check_key_attributes(
+    mbedtls_svc_key_id_t key,
+    const psa_key_attributes_t *reference_attributes )
+{
+    int ok = 0;
+    psa_key_attributes_t actual_attributes = PSA_KEY_ATTRIBUTES_INIT;
+
+    PSA_ASSERT( psa_get_key_attributes( key, &actual_attributes ) );
+
+    TEST_ASSERT( mbedtls_svc_key_id_equal(
+                     psa_get_key_id( &actual_attributes ),
+                     psa_get_key_id( reference_attributes ) ) );
+    TEST_EQUAL( psa_get_key_lifetime( &actual_attributes ),
+                psa_get_key_lifetime( reference_attributes ) );
+    TEST_EQUAL( psa_get_key_type( &actual_attributes ),
+                psa_get_key_type( reference_attributes ) );
+    TEST_EQUAL( psa_get_key_usage_flags( &actual_attributes ),
+                psa_get_key_usage_flags( reference_attributes ) );
+    TEST_EQUAL( psa_get_key_algorithm( &actual_attributes ),
+                psa_get_key_algorithm( reference_attributes ) );
+    TEST_EQUAL( psa_get_key_enrollment_algorithm( &actual_attributes ),
+                psa_get_key_enrollment_algorithm( reference_attributes ) );
+    if( psa_get_key_bits( reference_attributes ) != 0 )
+    {
+        TEST_EQUAL( psa_get_key_bits( &actual_attributes ),
+                    psa_get_key_bits( reference_attributes ) );
+    }
+
+    {
+        psa_key_slot_number_t actual_slot_number = 0xdeadbeef;
+        psa_key_slot_number_t desired_slot_number = 0xb90cc011;
+        psa_key_lifetime_t lifetime =
+            psa_get_key_lifetime( &actual_attributes );
+        psa_status_t status = psa_get_key_slot_number( &actual_attributes,
+                                                       &actual_slot_number );
+        if( PSA_KEY_LIFETIME_GET_LOCATION( lifetime ) < MIN_DRIVER_LOCATION )
+        {
+            /* The key is not in a secure element. */
+            TEST_EQUAL( status, PSA_ERROR_INVALID_ARGUMENT );
+        }
+        else
+        {
+            /* The key is in a secure element. If it had been created
+             * in a specific slot, check that it is reported there. */
+            PSA_ASSERT( status );
+            status = psa_get_key_slot_number( reference_attributes,
+                                              &desired_slot_number );
+            if( status == PSA_SUCCESS )
+            {
+                TEST_EQUAL( desired_slot_number, actual_slot_number );
+            }
+        }
+    }
+    ok = 1;
+
+exit:
+    /*
+     * Actual key attributes may have been returned by psa_get_key_attributes()
+     * thus reset them as required.
+     */
+    psa_reset_key_attributes( &actual_attributes );
+
+    return( ok );
+}
+
+/* Get the file UID corresponding to the specified location.
+ * If this changes, the storage format version must change.
+ * See psa_get_se_driver_its_file_uid() in psa_crypto_se.c.
+ */
+psa_storage_uid_t file_uid_for_location( psa_key_location_t location )
+{
+    if( location > PSA_MAX_SE_LOCATION )
+        return( 0 );
+    return( 0xfffffe00 + location );
+}
+
+/* Check that the persistent data of a driver has its expected content. */
+static int check_persistent_data( psa_key_location_t location,
+                                  const void *expected_data,
+                                  size_t size )
+{
+    psa_storage_uid_t uid = file_uid_for_location( location );
+    struct psa_storage_info_t info;
+    uint8_t *loaded = NULL;
+    int ok = 0;
+
+    PSA_ASSERT( psa_its_get_info( uid, &info ) );
+    ASSERT_ALLOC( loaded, info.size );
+    PSA_ASSERT( psa_its_get( uid, 0, info.size, loaded, NULL ) );
+    ASSERT_COMPARE( expected_data, size, loaded, info.size );
+    ok = 1;
+
+exit:
+    mbedtls_free( loaded );
+    return( ok );
+}
+
+/* Check that no persistent data exists for the given location. */
+static int check_no_persistent_data( psa_key_location_t location )
+{
+    psa_storage_uid_t uid = file_uid_for_location( location );
+    struct psa_storage_info_t info;
+    int ok = 0;
+
+    TEST_EQUAL( psa_its_get_info( uid, &info ), PSA_ERROR_DOES_NOT_EXIST );
+    ok = 1;
+
+exit:
+    return( ok );
+}
+
+/* Check that a function's return status is "smoke-free", i.e. that
+ * it's an acceptable error code when calling an API function that operates
+ * on a key with potentially bogus parameters. */
+#if defined(AT_LEAST_ONE_BUILTIN_KDF)
+static int is_status_smoke_free( psa_status_t status )
+{
+    switch( status )
+    {
+        case PSA_SUCCESS:
+        case PSA_ERROR_NOT_SUPPORTED:
+        case PSA_ERROR_NOT_PERMITTED:
+        case PSA_ERROR_BUFFER_TOO_SMALL:
+        case PSA_ERROR_INVALID_ARGUMENT:
+        case PSA_ERROR_INVALID_SIGNATURE:
+        case PSA_ERROR_INVALID_PADDING:
+            return( 1 );
+        default:
+            return( 0 );
+    }
+}
+#endif /* AT_LEAST_ONE_BUILTIN_KDF */
+
+#define SMOKE_ASSERT( expr )                    \
+    TEST_ASSERT( is_status_smoke_free( expr ) )
+
+/* Smoke test a key. There are mostly no wrong answers here since we pass
+ * mostly bogus parameters: the goal is to ensure that there is no memory
+ * corruption or crash. This test function is most useful when run under
+ * an environment with sanity checks such as ASan or MSan. */
+#if defined(AT_LEAST_ONE_BUILTIN_KDF)
+static int smoke_test_key( mbedtls_svc_key_id_t key )
+{
+    int ok = 0;
+    psa_key_attributes_t attributes = PSA_KEY_ATTRIBUTES_INIT;
+    psa_mac_operation_t mac_operation = PSA_MAC_OPERATION_INIT;
+    psa_cipher_operation_t cipher_operation = PSA_CIPHER_OPERATION_INIT;
+    psa_key_derivation_operation_t derivation_operation =
+        PSA_KEY_DERIVATION_OPERATION_INIT;
+    uint8_t buffer[80]; /* large enough for a public key for ECDH */
+    size_t length;
+    mbedtls_svc_key_id_t key2 = MBEDTLS_SVC_KEY_ID_INIT;
+
+    SMOKE_ASSERT( psa_get_key_attributes( key, &attributes ) );
+
+    SMOKE_ASSERT( psa_export_key( key,
+                                  buffer, sizeof( buffer ), &length ) );
+    SMOKE_ASSERT( psa_export_public_key( key,
+                                         buffer, sizeof( buffer ), &length ) );
+
+    SMOKE_ASSERT( psa_copy_key( key, &attributes, &key2 ) );
+    if( ! mbedtls_svc_key_id_is_null( key2 ) )
+        PSA_ASSERT( psa_destroy_key( key2 ) );
+
+    SMOKE_ASSERT( psa_mac_sign_setup( &mac_operation, key, PSA_ALG_CMAC ) );
+    PSA_ASSERT( psa_mac_abort( &mac_operation ) );
+    SMOKE_ASSERT( psa_mac_verify_setup( &mac_operation, key,
+                                        PSA_ALG_HMAC( PSA_ALG_SHA_256 ) ) );
+    PSA_ASSERT( psa_mac_abort( &mac_operation ) );
+
+    SMOKE_ASSERT( psa_cipher_encrypt_setup( &cipher_operation, key,
+                                            PSA_ALG_CTR ) );
+    PSA_ASSERT( psa_cipher_abort( &cipher_operation ) );
+    SMOKE_ASSERT( psa_cipher_decrypt_setup( &cipher_operation, key,
+                                            PSA_ALG_CTR ) );
+    PSA_ASSERT( psa_cipher_abort( &cipher_operation ) );
+
+    SMOKE_ASSERT( psa_aead_encrypt( key, PSA_ALG_CCM,
+                                    buffer, sizeof( buffer ),
+                                    NULL, 0,
+                                    buffer, sizeof( buffer),
+                                    buffer, sizeof( buffer), &length ) );
+    SMOKE_ASSERT( psa_aead_decrypt( key, PSA_ALG_CCM,
+                                    buffer, sizeof( buffer ),
+                                    NULL, 0,
+                                    buffer, sizeof( buffer),
+                                    buffer, sizeof( buffer), &length ) );
+
+    SMOKE_ASSERT( psa_sign_hash( key, PSA_ALG_ECDSA_ANY,
+                                 buffer, 32,
+                                 buffer, sizeof( buffer ), &length ) );
+    SMOKE_ASSERT( psa_verify_hash( key, PSA_ALG_ECDSA_ANY,
+                                   buffer, 32,
+                                   buffer, sizeof( buffer ) ) );
+
+    SMOKE_ASSERT( psa_asymmetric_encrypt( key, PSA_ALG_RSA_PKCS1V15_CRYPT,
+                                          buffer, 10, NULL, 0,
+                                          buffer, sizeof( buffer ), &length ) );
+    SMOKE_ASSERT( psa_asymmetric_decrypt( key, PSA_ALG_RSA_PKCS1V15_CRYPT,
+                                          buffer, sizeof( buffer ), NULL, 0,
+                                          buffer, sizeof( buffer ), &length ) );
+
+#if defined(MBEDTLS_SHA256_C)
+    /* Try the key in a plain key derivation. */
+    PSA_ASSERT( psa_key_derivation_setup( &derivation_operation,
+                                          PSA_ALG_HKDF( PSA_ALG_SHA_256 ) ) );
+    PSA_ASSERT( psa_key_derivation_input_bytes( &derivation_operation,
+                                                PSA_KEY_DERIVATION_INPUT_SALT,
+                                                NULL, 0 ) );
+    SMOKE_ASSERT( psa_key_derivation_input_key( &derivation_operation,
+                                                PSA_KEY_DERIVATION_INPUT_SECRET,
+                                                key ) );
+    PSA_ASSERT( psa_key_derivation_abort( &derivation_operation ) );
+
+    /* If the key is asymmetric, try it in a key agreement, both as
+     * part of a derivation operation and standalone. */
+    if( psa_export_public_key( key, buffer, sizeof( buffer ), &length ) ==
+        PSA_SUCCESS )
+    {
+        psa_algorithm_t alg =
+            PSA_ALG_KEY_AGREEMENT( PSA_ALG_ECDH,
+                                   PSA_ALG_HKDF( PSA_ALG_SHA_256 ) );
+        PSA_ASSERT( psa_key_derivation_setup( &derivation_operation, alg ) );
+        PSA_ASSERT( psa_key_derivation_input_bytes(
+                        &derivation_operation, PSA_KEY_DERIVATION_INPUT_SALT,
+                        NULL, 0 ) );
+        SMOKE_ASSERT( psa_key_derivation_key_agreement(
+                          &derivation_operation,
+                          PSA_KEY_DERIVATION_INPUT_SECRET,
+                          key, buffer, length ) );
+        PSA_ASSERT( psa_key_derivation_abort( &derivation_operation ) );
+
+        SMOKE_ASSERT( psa_raw_key_agreement(
+                          alg, key, buffer, length,
+                          buffer, sizeof( buffer ), &length ) );
+    }
+#endif /* MBEDTLS_SHA256_C */
+
+    ok = 1;
+
+exit:
+    /*
+     * Key attributes may have been returned by psa_get_key_attributes()
+     * thus reset them as required.
+     */
+    psa_reset_key_attributes( &attributes );
+
+    return( ok );
+}
+#endif /* AT_LEAST_ONE_BUILTIN_KDF */
+
+static void psa_purge_storage( void )
+{
+    /* The generic code in mbedtls_test_psa_purge_key_storage()
+     * (which is called by PSA_DONE()) doesn't take care of things that are
+     * specific to dynamic secure elements. */
+    psa_key_location_t location;
+    /* Purge the transaction file. */
+    psa_crypto_stop_transaction( );
+    /* Purge driver persistent data. */
+    for( location = 0; location < PSA_MAX_SE_LOCATION; location++ )
+        psa_destroy_se_persistent_data( location );
+}
+
+/* END_HEADER */
+
+/* BEGIN_DEPENDENCIES
+ * depends_on:MBEDTLS_PSA_CRYPTO_SE_C
+ * END_DEPENDENCIES
+ */
+
+/* BEGIN_CASE */
+void register_one( int location, int version, int expected_status_arg )
+{
+    psa_status_t expected_status = expected_status_arg;
+    psa_drv_se_t driver;
+
+    memset( &driver, 0, sizeof( driver ) );
+    driver.hal_version = version;
+
+    TEST_EQUAL( psa_register_se_driver( location, &driver ),
+                expected_status );
+
+    PSA_ASSERT( psa_crypto_init( ) );
+
+exit:
+    PSA_DONE( );
+}
+/* END_CASE */
+
+/* BEGIN_CASE */
+void register_twice( int count )
+{
+    psa_drv_se_t driver;
+    psa_key_location_t location;
+    psa_key_location_t max = MIN_DRIVER_LOCATION + count;
+
+    memset( &driver, 0, sizeof( driver ) );
+    driver.hal_version = PSA_DRV_SE_HAL_VERSION;
+
+    for( location = MIN_DRIVER_LOCATION; location < max; location++ )
+        PSA_ASSERT( psa_register_se_driver( location, &driver ) );
+    for( location = MIN_DRIVER_LOCATION; location < max; location++ )
+        TEST_EQUAL( psa_register_se_driver( location, &driver ),
+                    PSA_ERROR_ALREADY_EXISTS );
+
+    PSA_ASSERT( psa_crypto_init( ) );
+
+exit:
+    PSA_DONE( );
+}
+/* END_CASE */
+
+/* BEGIN_CASE */
+void register_max( )
+{
+    psa_drv_se_t driver;
+    psa_key_location_t location;
+    psa_key_location_t max = MIN_DRIVER_LOCATION + PSA_MAX_SE_DRIVERS;
+
+    memset( &driver, 0, sizeof( driver ) );
+    driver.hal_version = PSA_DRV_SE_HAL_VERSION;
+
+    for( location = MIN_DRIVER_LOCATION; location < max; location++ )
+        PSA_ASSERT( psa_register_se_driver( location, &driver ) );
+
+    TEST_EQUAL( psa_register_se_driver( location, &driver ),
+                PSA_ERROR_INSUFFICIENT_MEMORY );
+
+    PSA_ASSERT( psa_crypto_init( ) );
+
+exit:
+    PSA_DONE( );
+}
+/* END_CASE */
+
+/* BEGIN_CASE */
+void key_creation_import_export( int lifetime_arg, int min_slot, int restart )
+{
+    psa_drv_se_t driver;
+    psa_drv_se_key_management_t key_management;
+    psa_key_lifetime_t lifetime = (psa_key_lifetime_t) lifetime_arg;
+    psa_key_location_t location = PSA_KEY_LIFETIME_GET_LOCATION( lifetime );
+    mbedtls_svc_key_id_t id = mbedtls_svc_key_id_make( 1, 1 );
+    mbedtls_svc_key_id_t returned_id = MBEDTLS_SVC_KEY_ID_INIT;
+    psa_key_handle_t handle;
+    psa_key_attributes_t attributes = PSA_KEY_ATTRIBUTES_INIT;
+    const uint8_t key_material[3] = {0xfa, 0xca, 0xde};
+    uint8_t exported[sizeof( key_material )];
+    size_t exported_length;
+
+    TEST_USES_KEY_ID( id );
+
+    memset( &driver, 0, sizeof( driver ) );
+    memset( &key_management, 0, sizeof( key_management ) );
+    driver.hal_version = PSA_DRV_SE_HAL_VERSION;
+    driver.key_management = &key_management;
+    driver.persistent_data_size = sizeof( ram_slot_usage_t );
+    key_management.p_allocate = ram_allocate;
+    key_management.p_import = ram_import;
+    key_management.p_destroy = ram_destroy;
+    key_management.p_export = ram_export;
+    ram_min_slot = min_slot;
+
+    PSA_ASSERT( psa_register_se_driver( location, &driver ) );
+    PSA_ASSERT( psa_crypto_init( ) );
+
+    /* Create a key. */
+    psa_set_key_id( &attributes, id );
+    psa_set_key_lifetime( &attributes, lifetime );
+    psa_set_key_usage_flags( &attributes, PSA_KEY_USAGE_EXPORT );
+    psa_set_key_type( &attributes, PSA_KEY_TYPE_RAW_DATA );
+    PSA_ASSERT( psa_import_key( &attributes,
+                                key_material, sizeof( key_material ),
+                                &returned_id ) );
+
+    if( PSA_KEY_LIFETIME_IS_VOLATILE( lifetime ) )
+    {
+        /* For volatile keys, check no persistent data was created */
+        if( ! check_no_persistent_data( location ) )
+            goto exit;
+    }
+    else
+    {
+        /* For persistent keys, check persistent data */
+        if( ! check_persistent_data( location,
+                             &ram_shadow_slot_usage,
+                             sizeof( ram_shadow_slot_usage ) ) )
+            goto exit;
+    }
+
+    /* Test that the key was created in the expected slot. */
+    TEST_EQUAL( ram_slots[min_slot].type, PSA_KEY_TYPE_RAW_DATA );
+
+    /* Maybe restart, to check that the information is saved correctly. */
+    if( restart )
+    {
+        mbedtls_psa_crypto_free( );
+        PSA_ASSERT( psa_register_se_driver( location, &driver ) );
+        PSA_ASSERT( psa_crypto_init( ) );
+
+        if( PSA_KEY_LIFETIME_IS_VOLATILE( lifetime ) )
+        {
+            /* Check that the PSA core has no knowledge of the volatile key */
+            TEST_ASSERT( psa_open_key( returned_id, &handle ) ==
+                         PSA_ERROR_DOES_NOT_EXIST );
+
+            /* Drop data from our mockup driver */
+            ram_slots_reset();
+            ram_min_slot = min_slot;
+
+            /* Re-import key */
+            PSA_ASSERT( psa_import_key( &attributes,
+                                        key_material, sizeof( key_material ),
+                                        &returned_id ) );
+        }
+        else
+        {
+            /* Check the persistent key file */
+            if( ! check_persistent_data( location,
+                                         &ram_shadow_slot_usage,
+                                         sizeof( ram_shadow_slot_usage ) ) )
+                goto exit;
+        }
+    }
+
+    /* Test that the key was created in the expected slot. */
+    TEST_EQUAL( ram_slots[min_slot].type, PSA_KEY_TYPE_RAW_DATA );
+
+    /* Test the key attributes, including the reported slot number. */
+    psa_set_key_bits( &attributes,
+                      PSA_BYTES_TO_BITS( sizeof( key_material ) ) );
+    psa_set_key_slot_number( &attributes, min_slot );
+
+    if( PSA_KEY_LIFETIME_IS_VOLATILE( lifetime ) )
+        attributes.core.id = returned_id;
+    else
+        psa_set_key_id( &attributes, returned_id );
+
+    if( ! check_key_attributes( returned_id, &attributes ) )
+        goto exit;
+
+    /* Test the key data. */
+    PSA_ASSERT( psa_export_key( returned_id,
+                                exported, sizeof( exported ),
+                                &exported_length ) );
+    ASSERT_COMPARE( key_material, sizeof( key_material ),
+                    exported, exported_length );
+
+    PSA_ASSERT( psa_destroy_key( returned_id ) );
+    if( ! check_persistent_data( location,
+                                 &ram_shadow_slot_usage,
+                                 sizeof( ram_shadow_slot_usage ) ) )
+        goto exit;
+    TEST_EQUAL( psa_open_key( returned_id, &handle ),
+                PSA_ERROR_DOES_NOT_EXIST );
+
+    /* Test that the key has been erased from the designated slot. */
+    TEST_EQUAL( ram_slots[min_slot].type, 0 );
+
+exit:
+    PSA_DONE( );
+    ram_slots_reset( );
+    psa_purge_storage( );
+}
+/* END_CASE */
+
+/* BEGIN_CASE */
+void key_creation_in_chosen_slot( int slot_arg,
+                                  int restart,
+                                  int expected_status_arg )
+{
+    psa_key_slot_number_t wanted_slot = slot_arg;
+    psa_status_t expected_status = expected_status_arg;
+    psa_status_t status;
+    psa_drv_se_t driver;
+    psa_drv_se_key_management_t key_management;
+    psa_key_lifetime_t lifetime = TEST_SE_PERSISTENT_LIFETIME;
+    psa_key_location_t location = PSA_KEY_LIFETIME_GET_LOCATION( lifetime );
+    mbedtls_svc_key_id_t id = mbedtls_svc_key_id_make( 1, 1 );
+    mbedtls_svc_key_id_t returned_id;
+    psa_key_handle_t handle;
+    psa_key_attributes_t attributes = PSA_KEY_ATTRIBUTES_INIT;
+    const uint8_t key_material[3] = {0xfa, 0xca, 0xde};
+
+    TEST_USES_KEY_ID( id );
+
+    memset( &driver, 0, sizeof( driver ) );
+    memset( &key_management, 0, sizeof( key_management ) );
+    driver.hal_version = PSA_DRV_SE_HAL_VERSION;
+    driver.key_management = &key_management;
+    driver.persistent_data_size = sizeof( ram_slot_usage_t );
+    key_management.p_validate_slot_number = ram_validate_slot_number;
+    key_management.p_import = ram_import;
+    key_management.p_destroy = ram_destroy;
+    key_management.p_export = ram_export;
+
+    PSA_ASSERT( psa_register_se_driver( location, &driver ) );
+    PSA_ASSERT( psa_crypto_init( ) );
+
+    /* Create a key. */
+    psa_set_key_id( &attributes, id );
+    psa_set_key_lifetime( &attributes, lifetime );
+    psa_set_key_usage_flags( &attributes, PSA_KEY_USAGE_EXPORT );
+    psa_set_key_type( &attributes, PSA_KEY_TYPE_RAW_DATA );
+    psa_set_key_slot_number( &attributes, wanted_slot );
+    status = psa_import_key( &attributes,
+                             key_material, sizeof( key_material ),
+                             &returned_id );
+    TEST_EQUAL( status, expected_status );
+
+    if( status != PSA_SUCCESS )
+        goto exit;
+    if( ! check_persistent_data( location,
+                                 &ram_shadow_slot_usage,
+                                 sizeof( ram_shadow_slot_usage ) ) )
+        goto exit;
+
+    /* Maybe restart, to check that the information is saved correctly. */
+    if( restart )
+    {
+        mbedtls_psa_crypto_free( );
+        PSA_ASSERT( psa_register_se_driver( location, &driver ) );
+        PSA_ASSERT( psa_crypto_init( ) );
+        if( ! check_persistent_data( location,
+                                     &ram_shadow_slot_usage,
+                                     sizeof( ram_shadow_slot_usage ) ) )
+            goto exit;
+    }
+
+    /* Test that the key was created in the expected slot. */
+    TEST_EQUAL( ram_slots[wanted_slot].type, PSA_KEY_TYPE_RAW_DATA );
+
+    /* Test that the key is reported with the correct attributes,
+     * including the expected slot. */
+    PSA_ASSERT( psa_get_key_attributes( id, &attributes ) );
+
+    PSA_ASSERT( psa_destroy_key( id ) );
+    if( ! check_persistent_data( location,
+                                 &ram_shadow_slot_usage,
+                                 sizeof( ram_shadow_slot_usage ) ) )
+        goto exit;
+    TEST_EQUAL( psa_open_key( id, &handle ), PSA_ERROR_DOES_NOT_EXIST );
+
+exit:
+    /*
+     * Key attributes may have been returned by psa_get_key_attributes()
+     * thus reset them as required.
+     */
+    psa_reset_key_attributes( &attributes );
+
+    PSA_DONE( );
+    ram_slots_reset( );
+    psa_purge_storage( );
+}
+/* END_CASE */
+
+/* BEGIN_CASE depends_on:AT_LEAST_ONE_BUILTIN_KDF */
+void import_key_smoke( int type_arg, int alg_arg,
+                       data_t *key_material )
+{
+    psa_key_type_t type = type_arg;
+    psa_algorithm_t alg = alg_arg;
+    psa_drv_se_t driver;
+    psa_drv_se_key_management_t key_management;
+    psa_key_lifetime_t lifetime = TEST_SE_PERSISTENT_LIFETIME;
+    psa_key_location_t location = PSA_KEY_LIFETIME_GET_LOCATION( lifetime );
+    mbedtls_svc_key_id_t id = mbedtls_svc_key_id_make( 1, 1 );
+    mbedtls_svc_key_id_t returned_id;
+    psa_key_handle_t handle;
+    psa_key_attributes_t attributes = PSA_KEY_ATTRIBUTES_INIT;
+
+    TEST_USES_KEY_ID( id );
+
+    memset( &driver, 0, sizeof( driver ) );
+    memset( &key_management, 0, sizeof( key_management ) );
+    driver.hal_version = PSA_DRV_SE_HAL_VERSION;
+    driver.key_management = &key_management;
+    driver.persistent_data_size = sizeof( psa_key_slot_number_t );
+    key_management.p_allocate = counter_allocate;
+    key_management.p_import = null_import;
+    key_management.p_destroy = null_destroy;
+
+    PSA_ASSERT( psa_register_se_driver( location, &driver ) );
+    PSA_ASSERT( psa_crypto_init( ) );
+
+    /* Create a key. */
+    psa_set_key_id( &attributes, id );
+    psa_set_key_lifetime( &attributes, lifetime );
+    psa_set_key_usage_flags( &attributes,
+                             PSA_KEY_USAGE_SIGN_HASH | PSA_KEY_USAGE_VERIFY_HASH |
+                             PSA_KEY_USAGE_ENCRYPT | PSA_KEY_USAGE_DECRYPT |
+                             PSA_KEY_USAGE_EXPORT );
+    psa_set_key_algorithm( &attributes, alg );
+    psa_set_key_type( &attributes, type );
+    PSA_ASSERT( psa_import_key( &attributes,
+                                key_material->x, key_material->len,
+                                &returned_id ) );
+    if( ! check_persistent_data( location,
+                                 &shadow_counter, sizeof( shadow_counter ) ) )
+        goto exit;
+
+    /* Do stuff with the key. */
+    if( ! smoke_test_key( id ) )
+        goto exit;
+
+    /* Restart and try again. */
+    mbedtls_psa_crypto_free( );
+    PSA_ASSERT( psa_register_se_driver( location, &driver ) );
+    PSA_ASSERT( psa_crypto_init( ) );
+    if( ! check_persistent_data( location,
+                                 &shadow_counter, sizeof( shadow_counter ) ) )
+        goto exit;
+    if( ! smoke_test_key( id ) )
+        goto exit;
+
+    /* We're done. */
+    PSA_ASSERT( psa_destroy_key( id ) );
+    if( ! check_persistent_data( location,
+                                 &shadow_counter, sizeof( shadow_counter ) ) )
+        goto exit;
+    TEST_EQUAL( psa_open_key( id, &handle ), PSA_ERROR_DOES_NOT_EXIST );
+
+exit:
+    PSA_DONE( );
+    counter_reset( );
+    psa_purge_storage( );
+}
+/* END_CASE */
+
+/* BEGIN_CASE */
+void generate_key_not_supported( int type_arg, int bits_arg )
+{
+    psa_key_type_t type = type_arg;
+    size_t bits = bits_arg;
+    psa_drv_se_t driver;
+    psa_drv_se_key_management_t key_management;
+    psa_key_lifetime_t lifetime = TEST_SE_PERSISTENT_LIFETIME;
+    psa_key_location_t location = PSA_KEY_LIFETIME_GET_LOCATION( lifetime );
+    mbedtls_svc_key_id_t id = mbedtls_svc_key_id_make( 1, 1 );
+    mbedtls_svc_key_id_t returned_id;
+    psa_key_attributes_t attributes = PSA_KEY_ATTRIBUTES_INIT;
+
+    TEST_USES_KEY_ID( id );
+
+    memset( &driver, 0, sizeof( driver ) );
+    memset( &key_management, 0, sizeof( key_management ) );
+    driver.hal_version = PSA_DRV_SE_HAL_VERSION;
+    driver.key_management = &key_management;
+    driver.persistent_data_size = sizeof( psa_key_slot_number_t );
+    key_management.p_allocate = counter_allocate;
+    /* No p_generate method */
+
+    PSA_ASSERT( psa_register_se_driver( location, &driver ) );
+    PSA_ASSERT( psa_crypto_init( ) );
+
+    psa_set_key_id( &attributes, id );
+    psa_set_key_lifetime( &attributes, lifetime );
+    psa_set_key_type( &attributes, type );
+    psa_set_key_bits( &attributes, bits );
+    TEST_EQUAL( psa_generate_key( &attributes, &returned_id ),
+                PSA_ERROR_NOT_SUPPORTED );
+
+exit:
+    PSA_DONE( );
+    counter_reset( );
+    psa_purge_storage( );
+}
+/* END_CASE */
+
+/* BEGIN_CASE depends_on:AT_LEAST_ONE_BUILTIN_KDF */
+void generate_key_smoke( int type_arg, int bits_arg, int alg_arg )
+{
+    psa_key_type_t type = type_arg;
+    psa_key_bits_t bits = bits_arg;
+    psa_algorithm_t alg = alg_arg;
+    psa_drv_se_t driver;
+    psa_drv_se_key_management_t key_management;
+    psa_key_lifetime_t lifetime = TEST_SE_PERSISTENT_LIFETIME;
+    psa_key_location_t location = PSA_KEY_LIFETIME_GET_LOCATION( lifetime );
+    mbedtls_svc_key_id_t id = mbedtls_svc_key_id_make( 1, 1 );
+    mbedtls_svc_key_id_t returned_id;
+    psa_key_handle_t handle;
+    psa_key_attributes_t attributes = PSA_KEY_ATTRIBUTES_INIT;
+
+    TEST_USES_KEY_ID( id );
+
+    memset( &driver, 0, sizeof( driver ) );
+    memset( &key_management, 0, sizeof( key_management ) );
+    driver.hal_version = PSA_DRV_SE_HAL_VERSION;
+    driver.key_management = &key_management;
+    driver.persistent_data_size = sizeof( psa_key_slot_number_t );
+    key_management.p_allocate = counter_allocate;
+    key_management.p_generate = null_generate;
+    key_management.p_destroy = null_destroy;
+
+    PSA_ASSERT( psa_register_se_driver( location, &driver ) );
+    PSA_ASSERT( psa_crypto_init( ) );
+
+    /* Create a key. */
+    psa_set_key_id( &attributes, id );
+    psa_set_key_lifetime( &attributes, lifetime );
+    psa_set_key_usage_flags( &attributes,
+                             PSA_KEY_USAGE_SIGN_HASH | PSA_KEY_USAGE_VERIFY_HASH |
+                             PSA_KEY_USAGE_ENCRYPT | PSA_KEY_USAGE_DECRYPT |
+                             PSA_KEY_USAGE_EXPORT );
+    psa_set_key_algorithm( &attributes, alg );
+    psa_set_key_type( &attributes, type );
+    psa_set_key_bits( &attributes, bits );
+    PSA_ASSERT( psa_generate_key( &attributes, &returned_id ) );
+    if( ! check_persistent_data( location,
+                                 &shadow_counter, sizeof( shadow_counter ) ) )
+        goto exit;
+
+    /* Do stuff with the key. */
+    if( ! smoke_test_key( id ) )
+        goto exit;
+
+    /* Restart and try again. */
+    mbedtls_psa_crypto_free( );
+    PSA_ASSERT( psa_register_se_driver( location, &driver ) );
+    PSA_ASSERT( psa_crypto_init( ) );
+    if( ! check_persistent_data( location,
+                                 &shadow_counter, sizeof( shadow_counter ) ) )
+        goto exit;
+    if( ! smoke_test_key( id ) )
+        goto exit;
+
+    /* We're done. */
+    PSA_ASSERT( psa_destroy_key( id ) );
+    if( ! check_persistent_data( location,
+                                 &shadow_counter, sizeof( shadow_counter ) ) )
+        goto exit;
+    TEST_EQUAL( psa_open_key( id, &handle ), PSA_ERROR_DOES_NOT_EXIST );
+
+exit:
+    PSA_DONE( );
+    counter_reset( );
+    psa_purge_storage( );
+}
+/* END_CASE */
+
+/* BEGIN_CASE */
+void sign_verify( int flow,
+                  int type_arg, int alg_arg,
+                  int bits_arg, data_t *key_material,
+                  data_t *input )
+{
+    psa_key_type_t type = type_arg;
+    psa_algorithm_t alg = alg_arg;
+    size_t bits = bits_arg;
+    /* Pass bits=0 to import, bits>0 to fake-generate */
+    int generating = ( bits != 0 );
+
+    psa_drv_se_t driver;
+    psa_drv_se_key_management_t key_management;
+    psa_drv_se_asymmetric_t asymmetric;
+
+    psa_key_lifetime_t lifetime = TEST_SE_PERSISTENT_LIFETIME;
+    psa_key_location_t location = PSA_KEY_LIFETIME_GET_LOCATION( lifetime );
+    mbedtls_svc_key_id_t id = mbedtls_svc_key_id_make( 1, 1 );
+    mbedtls_svc_key_id_t returned_id;
+    mbedtls_svc_key_id_t sw_key = MBEDTLS_SVC_KEY_ID_INIT;
+    psa_key_attributes_t sw_attributes = PSA_KEY_ATTRIBUTES_INIT;
+    psa_key_attributes_t drv_attributes;
+    uint8_t signature[PSA_SIGNATURE_MAX_SIZE];
+    size_t signature_length;
+
+    TEST_USES_KEY_ID( id );
+
+    memset( &driver, 0, sizeof( driver ) );
+    memset( &key_management, 0, sizeof( key_management ) );
+    memset( &asymmetric, 0, sizeof( asymmetric ) );
+    driver.hal_version = PSA_DRV_SE_HAL_VERSION;
+    driver.key_management = &key_management;
+    driver.asymmetric = &asymmetric;
+    driver.persistent_data_size = sizeof( ram_slot_usage_t );
+    key_management.p_allocate = ram_allocate;
+    key_management.p_destroy = ram_destroy;
+    if( generating )
+        key_management.p_generate = ram_fake_generate;
+    else
+        key_management.p_import = ram_import;
+    switch( flow )
+    {
+        case SIGN_IN_SOFTWARE_AND_PARALLEL_CREATION:
+            break;
+        case SIGN_IN_DRIVER_AND_PARALLEL_CREATION:
+            asymmetric.p_sign = ram_sign;
+            break;
+        case SIGN_IN_DRIVER_THEN_EXPORT_PUBLIC:
+            asymmetric.p_sign = ram_sign;
+            key_management.p_export_public = ram_export_public;
+            break;
+        default:
+            TEST_ASSERT( ! "unsupported flow (should be SIGN_IN_xxx)" );
+            break;
+    }
+    asymmetric.p_verify = ram_verify;
+
+    PSA_ASSERT( psa_register_se_driver( location, &driver ) );
+    PSA_ASSERT( psa_crypto_init( ) );
+
+    /* Prepare to create two keys with the same key material: a transparent
+     * key, and one that goes through the driver. */
+    psa_set_key_usage_flags( &sw_attributes,
+                             PSA_KEY_USAGE_SIGN_HASH | PSA_KEY_USAGE_VERIFY_HASH );
+    psa_set_key_algorithm( &sw_attributes, alg );
+    psa_set_key_type( &sw_attributes, type );
+    drv_attributes = sw_attributes;
+    psa_set_key_id( &drv_attributes, id );
+    psa_set_key_lifetime( &drv_attributes, lifetime );
+
+    /* Create the key in the driver. */
+    if( generating )
+    {
+        psa_set_key_bits( &drv_attributes, bits );
+        PSA_ASSERT( psa_generate_key( &drv_attributes, &returned_id ) );
+        /* Since we called a generate method that does not actually
+         * generate material, store the desired result of generation in
+         * the mock secure element storage. */
+        PSA_ASSERT( psa_get_key_attributes( id, &drv_attributes ) );
+        TEST_EQUAL( key_material->len, PSA_BITS_TO_BYTES( bits ) );
+        memcpy( ram_slots[ram_min_slot].content, key_material->x,
+                key_material->len );
+    }
+    else
+    {
+        PSA_ASSERT( psa_import_key( &drv_attributes,
+                                    key_material->x, key_material->len,
+                                    &returned_id ) );
+    }
+
+    /* Either import the same key in software, or export the driver's
+     * public key and import that. */
+    switch( flow )
+    {
+        case SIGN_IN_SOFTWARE_AND_PARALLEL_CREATION:
+        case SIGN_IN_DRIVER_AND_PARALLEL_CREATION:
+            PSA_ASSERT( psa_import_key( &sw_attributes,
+                                        key_material->x, key_material->len,
+                                        &sw_key ) );
+            break;
+        case SIGN_IN_DRIVER_THEN_EXPORT_PUBLIC:
+        {
+            uint8_t public_key[PSA_KEY_EXPORT_ECC_PUBLIC_KEY_MAX_SIZE( PSA_VENDOR_ECC_MAX_CURVE_BITS )];
+            size_t public_key_length;
+            PSA_ASSERT( psa_export_public_key( id,
+                                               public_key, sizeof( public_key ),
+                                               &public_key_length ) );
+            psa_set_key_type( &sw_attributes,
+                              PSA_KEY_TYPE_PUBLIC_KEY_OF_KEY_PAIR( type ) );
+            PSA_ASSERT( psa_import_key( &sw_attributes,
+                                        public_key, public_key_length,
+                                        &sw_key ) );
+            break;
+        }
+    }
+
+    /* Sign with the chosen key. */
+    switch( flow )
+    {
+        case SIGN_IN_DRIVER_AND_PARALLEL_CREATION:
+        case SIGN_IN_DRIVER_THEN_EXPORT_PUBLIC:
+            PSA_ASSERT_VIA_DRIVER(
+                psa_sign_hash( id, alg,
+                               input->x, input->len,
+                               signature, sizeof( signature ),
+                               &signature_length ),
+                PSA_SUCCESS );
+            break;
+        case SIGN_IN_SOFTWARE_AND_PARALLEL_CREATION:
+            PSA_ASSERT( psa_sign_hash( sw_key, alg,
+                                       input->x, input->len,
+                                       signature, sizeof( signature ),
+                                       &signature_length ) );
+            break;
+    }
+
+    /* Verify with both keys. */
+    PSA_ASSERT( psa_verify_hash( sw_key, alg,
+                                 input->x, input->len,
+                                 signature, signature_length ) );
+    PSA_ASSERT_VIA_DRIVER(
+        psa_verify_hash( id, alg,
+                         input->x, input->len,
+                         signature, signature_length ),
+        PSA_SUCCESS );
+
+    /* Change the signature and verify again. */
+    signature[0] ^= 1;
+    TEST_EQUAL( psa_verify_hash( sw_key, alg,
+                                 input->x, input->len,
+                                 signature, signature_length ),
+                PSA_ERROR_INVALID_SIGNATURE );
+    PSA_ASSERT_VIA_DRIVER(
+        psa_verify_hash( id, alg,
+                         input->x, input->len,
+                         signature, signature_length ),
+        PSA_ERROR_INVALID_SIGNATURE );
+
+exit:
+    /*
+     * Driver key attributes may have been returned by psa_get_key_attributes()
+     * thus reset them as required.
+     */
+    psa_reset_key_attributes( &drv_attributes );
+
+    psa_destroy_key( id );
+    psa_destroy_key( sw_key );
+    PSA_DONE( );
+    ram_slots_reset( );
+    psa_purge_storage( );
+}
+/* END_CASE */
+
+/* BEGIN_CASE */
+void register_key_smoke_test( int lifetime_arg,
+                              int owner_id_arg,
+                              int id_arg,
+                              int validate,
+                              int expected_status_arg )
+{
+    psa_key_lifetime_t lifetime = lifetime_arg;
+    psa_key_location_t location = PSA_KEY_LIFETIME_GET_LOCATION( lifetime );
+    psa_status_t expected_status = expected_status_arg;
+    psa_drv_se_t driver;
+    psa_drv_se_key_management_t key_management;
+    psa_key_attributes_t attributes = PSA_KEY_ATTRIBUTES_INIT;
+    mbedtls_svc_key_id_t id = mbedtls_svc_key_id_make( owner_id_arg, id_arg );
+    psa_key_handle_t handle;
+    size_t bit_size = 48;
+    psa_key_slot_number_t wanted_slot = 0x123456789;
+    psa_status_t status;
+
+    TEST_USES_KEY_ID( id );
+
+    memset( &driver, 0, sizeof( driver ) );
+    driver.hal_version = PSA_DRV_SE_HAL_VERSION;
+    memset( &key_management, 0, sizeof( key_management ) );
+    driver.key_management = &key_management;
+    key_management.p_destroy = null_destroy;
+    if( validate >= 0 )
+    {
+        key_management.p_validate_slot_number = validate_slot_number_as_directed;
+        validate_slot_number_directions.slot_number = wanted_slot;
+        validate_slot_number_directions.method = PSA_KEY_CREATION_REGISTER;
+        validate_slot_number_directions.status =
+            ( validate > 0 ? PSA_SUCCESS : PSA_ERROR_NOT_PERMITTED );
+    }
+
+    mbedtls_test_set_step( 1 );
+    PSA_ASSERT( psa_register_se_driver( MIN_DRIVER_LOCATION, &driver ) );
+    PSA_ASSERT( psa_crypto_init( ) );
+
+    psa_set_key_id( &attributes, id );
+    psa_set_key_lifetime( &attributes, lifetime );
+    psa_set_key_usage_flags( &attributes, PSA_KEY_USAGE_EXPORT );
+    psa_set_key_type( &attributes, PSA_KEY_TYPE_RAW_DATA );
+    psa_set_key_bits( &attributes, bit_size );
+    psa_set_key_slot_number( &attributes, wanted_slot );
+
+    status = mbedtls_psa_register_se_key( &attributes );
+    TEST_EQUAL( status, expected_status );
+
+    if( status != PSA_SUCCESS )
+        goto exit;
+
+    /* Test that the key exists and has the expected attributes. */
+    if( ! check_key_attributes( id, &attributes ) )
+        goto exit;
+
+#if defined(MBEDTLS_PSA_CRYPTO_KEY_ID_ENCODES_OWNER)
+    mbedtls_svc_key_id_t invalid_id =
+        mbedtls_svc_key_id_make( owner_id_arg + 1, id_arg );
+    TEST_EQUAL( psa_open_key( invalid_id, &handle ), PSA_ERROR_DOES_NOT_EXIST );
+#endif
+
+    PSA_ASSERT( psa_purge_key( id ) );
+
+    /* Restart and try again. */
+    mbedtls_test_set_step( 2 );
+    PSA_SESSION_DONE( );
+    PSA_ASSERT( psa_register_se_driver( location, &driver ) );
+    PSA_ASSERT( psa_crypto_init( ) );
+    if( ! check_key_attributes( id, &attributes ) )
+        goto exit;
+    /* This time, destroy the key. */
+    PSA_ASSERT( psa_destroy_key( id ) );
+    TEST_EQUAL( psa_open_key( id, &handle ), PSA_ERROR_DOES_NOT_EXIST );
+
+exit:
+    psa_reset_key_attributes( &attributes );
+    psa_destroy_key( id );
+    PSA_DONE( );
+    psa_purge_storage( );
+    memset( &validate_slot_number_directions, 0,
+            sizeof( validate_slot_number_directions ) );
+}
+/* END_CASE */

@@ -1,0 +1,8 @@
+{
+    "params": {
+        "app_id": "invalid",
+        "access_key_id": "invalid",
+        "access_key_secret": "invalid",
+        "language": "en-US"
+      }
+}

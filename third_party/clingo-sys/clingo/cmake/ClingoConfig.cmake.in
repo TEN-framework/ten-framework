@@ -1,0 +1,9 @@
+@PACKAGE_INIT@
+
+if (NOT @CLINGO_BUILD_SHARED@)
+    find_package(Clasp REQUIRED)
+endif()
+
+include("${CMAKE_CURRENT_LIST_DIR}/ClingoTargets.cmake")
+
+check_required_components(Clingo)

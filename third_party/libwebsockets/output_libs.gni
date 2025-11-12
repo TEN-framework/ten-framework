@@ -1,0 +1,156 @@
+#
+# Copyright © 2024 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+libwebsockets_output_libs = []
+
+if (is_win) {
+  libwebsockets_output_libs += [
+    "${root_gen_dir}/cmake/websockets/install/bin/websockets.dll",
+    "${root_gen_dir}/cmake/websockets/install/lib/websockets.lib",
+    "${root_gen_dir}/cmake/websockets/install/lib/websockets_static.lib",
+  ]
+} else if (is_linux) {
+  libwebsockets_output_libs += [
+    "${root_gen_dir}/cmake/websockets/install/lib/libwebsockets.a",
+    "${root_gen_dir}/cmake/websockets/install/lib/libwebsockets.so",
+    "${root_gen_dir}/cmake/websockets/install/lib/libwebsockets.so.19",
+  ]
+} else if (is_mac) {
+  libwebsockets_output_libs += [
+    "${root_gen_dir}/cmake/websockets/install/lib/libwebsockets.dylib",
+    "${root_gen_dir}/cmake/websockets/install/lib/libwebsockets.19.dylib",
+  ]
+}
+
+template("ten_websockets_copy_deps") {
+  basedir = invoker.basedir
+
+  copy_files_for_development = false
+  if (defined(invoker.copy_files_for_development)) {
+    copy_files_for_development = invoker.copy_files_for_development
+  }
+
+  action("ten_websockets_copy_runtime_libs") {
+    runtime_libs_dest_dir_in_win_is_bin = false
+    if (defined(invoker.runtime_libs_dest_dir_in_win_is_bin)) {
+      runtime_libs_dest_dir_in_win_is_bin =
+          invoker.runtime_libs_dest_dir_in_win_is_bin
+    }
+    assert(runtime_libs_dest_dir_in_win_is_bin != "")
+
+    if (is_win) {
+      # The location of the runtime libraries in Windows is 'bin/'.
+      runtime_libs_src_dir = "${root_gen_dir}/cmake/websockets/install/bin"
+    } else {
+      runtime_libs_src_dir = "${root_gen_dir}/cmake/websockets/install/lib"
+    }
+
+    runtime_libs_dest_dir = basedir + "/lib"
+    if (is_win) {
+      if (runtime_libs_dest_dir_in_win_is_bin) {
+        runtime_libs_dest_dir = basedir + "/bin"
+      }
+    }
+
+    script = "//build/ten_common/scripts/copy_files_with_pattern.py"
+    args = [
+      "--sources",
+      rebase_path(runtime_libs_src_dir),
+      "--patterns",
+      "^.*\\.(so|dll|dylib|lib)(\\.\\d+){0,3}\$",
+      "--dest-dir",
+      rebase_path(runtime_libs_dest_dir),
+      "--tg-timestamp-proxy-file",
+      rebase_path("${target_gen_dir}/copy_runtime_libs_dummy_output_file"),
+    ]
+
+    outputs = [ "${target_gen_dir}/copy_runtime_libs_dummy_output_file" ]
+
+    forward_variables_from(invoker,
+                           [
+                             "deps",
+                             "public_deps",
+                             "data_deps",
+                           ])
+
+    # This action should wait for the completion of the building of
+    # libweboskcets.
+    deps = [ "//third_party/libwebsockets" ]
+  }
+
+  all_deps = [ ":ten_websockets_copy_runtime_libs" ]
+
+  if (copy_files_for_development) {
+    action("ten_websockets_copy_headers") {
+      headers_dest_dir = basedir + "/include"
+      if (defined(invoker.subdir) && invoker.subdir != "") {
+        headers_dest_dir += "/" + invoker.subdir
+      }
+
+      script = "//build/ten_common/scripts/copy_files_with_pattern.py"
+      args = [
+        "--sources",
+        rebase_path("${root_gen_dir}/cmake/websockets/install/include"),
+        "--dest-dir",
+        rebase_path(headers_dest_dir),
+        "--tg-timestamp-proxy-file",
+        rebase_path("${target_gen_dir}/copy_headers_dummy_output_file"),
+      ]
+
+      outputs = [ "${target_gen_dir}/copy_headers_dummy_output_file" ]
+
+      forward_variables_from(invoker,
+                             [
+                               "deps",
+                               "public_deps",
+                               "data_deps",
+                             ])
+
+      # This action should wait for the completion of the building of
+      # libweboskcets.
+      deps = [ "//third_party/libwebsockets" ]
+    }
+
+    all_deps += [ ":ten_websockets_copy_headers" ]
+
+    if (is_win) {
+      action("ten_websockets_copy_win_exported_libs") {
+        script = "//build/ten_common/scripts/copy_files_with_pattern.py"
+        args = [
+          "--sources",
+          rebase_path("${root_gen_dir}/cmake/websockets/install/lib"),
+          "--patterns",
+          "^.*\\.lib\$",
+          "--dest-dir",
+          rebase_path(basedir + "/lib"),
+          "--tg-timestamp-proxy-file",
+          rebase_path(
+              "${target_gen_dir}/copy_win_exported_libs_dummy_output_file"),
+        ]
+
+        forward_variables_from(invoker,
+                               [
+                                 "deps",
+                                 "public_deps",
+                                 "data_deps",
+                               ])
+
+        outputs =
+            [ "${target_gen_dir}/copy_win_exported_libs_dummy_output_file" ]
+
+        # This action should wait for the completion of the building of
+        # libweboskcets.
+        deps = [ "//third_party/libwebsockets" ]
+      }
+
+      all_deps += [ ":ten_websockets_copy_win_exported_libs" ]
+    }
+  }
+
+  group("${target_name}") {
+    deps = all_deps
+  }
+}

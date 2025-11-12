@@ -1,0 +1,25 @@
+{
+  "name": "test-app",
+  "version": "1.0.0",
+  "description": "Test App",
+  "ten": {
+    "predefined_graphs": [
+      {
+        "name": "test_graph",
+        "auto_start": true,
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "first_node",
+              "addon": "first_addon"
+            }
+          ],
+          "connections": []
+        }
+      }
+    ]
+  },
+  "license": "Apache-2.0",
+  "author": "Test Author"
+}

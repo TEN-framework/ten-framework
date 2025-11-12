@@ -1,0 +1,44 @@
+{
+  "ten": {
+    "uri": "msgpack://127.0.0.1:8007/",
+    "log": {
+      "handlers": [
+        {
+          "matchers": [
+            {
+              "level": "debug"
+            }
+          ],
+          "formatter": {
+            "type": "plain",
+            "colored": true
+          },
+          "emitter": {
+            "type": "console",
+            "config": {
+              "stream": "stdout"
+            }
+          }
+        }
+      ]
+    },
+    "predefined_graphs": [
+      {
+        "name": "default",
+        "auto_start": true,
+        "singleton": true,
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "default_extension_go",
+              "addon": "default_extension_go",
+              "extension_group": "default_extension_group"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "key": "value"
+}

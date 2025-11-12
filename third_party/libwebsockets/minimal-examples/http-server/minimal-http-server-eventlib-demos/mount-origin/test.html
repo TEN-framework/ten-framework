@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+ <meta charset=utf-8 http-equiv="Content-Language" content="en"/>
+ <link rel="stylesheet" type="text/css" href="test.css"/>
+ <script type='text/javascript' src="/lws-common.js"></script>
+ <script type='text/javascript' src='test.js'></script>
+ <title>Minimal Websocket test app</title>
+</head>
+
+<body>
+<header></header>
+<article>
+
+<table><tr><td>
+
+<table width=800px>
+ <tr>
+  <td valign=middle align=center>
+   <a href="https://libwebsockets.org">
+	   <img src="libwebsockets.org-logo.svg"></a>
+  </td>
+  <td><img src="strict-csp.svg"></td>
+  <td>
+	<section class="browser">
+	<div id=brow>...</div></section>
+  </td>
+  <td width="64" height="64" id="wstransport"></td>
+  <td width="64" height="64" id="transport"></td>
+ </tr>
+
+</table>
+</td></tr>
+<tr><td colspan=2 align=center>
+Click <a href="leaf.jpg" target="_blank">Here</a> to
+have the test server send a big picture by http.
+</td></tr>
+<tr><td colspan=2>
+<div class="tabs">
+
+   <div class="tab">
+       <input type="radio" id="tab-1" name="tab-group-1" checked>
+       <label for="tab-1">Dumb Increment Demo</label>
+       
+       <div class="content">
+        <div id="dumb" class="group2">
+         <table>
+          <tr>
+	   <td id=wsdi_statustd align=center class="wsstatus">
+	     <span id=wsdi_status>Websocket connection not initialized
+	     	</span></td>
+           <td><span class="title">dumb increment-protocol</span></td>
+	   </tr>
+	   <tr>
+	   <td class="explain" colspan=2>
+The incrementing number is coming from the server at 20Hz and is individual for
+each connection to the server... try opening a second browser window.
+<br/><br/>
+The button sends a message over the websocket link to ask the server
+to zero just this connection's number.
+	   </td>
+	  </tr>
+	   <tr>
+	    <td align=center><div id=number class="bigger"> </div></td>
+	    <td align=center>
+	     <input type=button id=offset value="Reset counter">
+	     <input type=button id=junk value="Send junk">
+	    </td>
+	    </tr>
+	 </table>
+	</div>
+       </div> 
+   </div>
+
+   <div class="tab">
+    <input type="radio" id="tab-2" name="tab-group-1">
+    <label for="tab-2">Mirror Demo</label>
+       
+    <div class="content">
+     <div id="mirror" class="group2">
+      <table>
+       <tr>
+	 <td colspan=1 id=wslm_statustd align=center class="wsstatus">
+	 <span id=wslm_status>Websocket connection not initialized</span>
+	</td>
+        <td>
+         <span class="title">lws-mirror-protocol</span>
+        </td>
+       </tr>
+       <tr>
+       <td colspan=2>
+         <div class="explain">
+Use the mouse to draw on the canvas below -- all other browser windows open
+on this page see your drawing in realtime and you can see any of theirs as
+well.
+<br/><br/>
+The lws-mirror protocol doesn't interpret what is being sent to it, it just
+re-sends it to every other websocket it has a connection with using that
+protocol, including the guy who sent the packet.
+<br/><br/>
+<b>libwebsockets-test-client</b> joins in by spamming circles on to this
+shared canvas when run.
+         </div>
+        </td>
+       </tr>
+       <tr>
+	<td colspan=2>Drawing color:
+	  <select id="color">
+		<option value=#000000>Black</option>
+		<option value=#0000ff>Blue</option>
+		<option value=#20ff20>Green</option>
+		<option value=#802020>Dark Red</option>
+	  </select>
+       </tr>
+       <tr>
+	 <td colspan=2 width=500 height=320>
+		<div id="wslm_drawing" class="bgw"></div>
+	</td>
+       </tr>
+      </table>
+     </div>
+    </div> 
+   </div>
+    
+    <div class="tab">
+       <input type="radio" id="tab-3" name="tab-group-1">
+       <label for="tab-3">Close Testing</label>
+     
+       <div class="content">
+<div id="ot" class="group2">
+      <table>
+       <tr>
+        <td>
+
+		</td></tr>
+		<tr><td id=ot_statustd align=center class="wsstatus">
+		 <span id=ot_status>Websocket connection not initialized</span>
+		</td>
+		<td colspan=2><span class="title">Open and close testing
+				</span></td>
+		</tr>
+		<tr>	
+<td class="explain" colspan=3 >
+To help with open and close testing, you can open and close a connection by
+hand using the buttons.<br>
+ "<b>Close</b>" closes the connection from the browser with code 3000
+  and reason 'Bye!".<br>
+ "<b>Request Server Close</b>" sends a message asking the server to
+initiate the close, which it does with code 1001 and reason "Seeya".
+</td></tr>
+	<tr>
+	<td align=center>
+	  <input type="button" id="ot_open_btn" value="Open"></td>
+	<td align=center>
+	  <input type="button" id="ot_close_btn" disabled value="Close" ></td>
+	<td align=center>
+	  <input type="button" id="ot_req_close_btn" disabled
+	  	 value="Request Server Close" ></td>
+	</tr>
+
+</table>
+
+</div>
+       </div> 
+   </div>
+   
+    <div class="tab">
+       <input type="radio" id="tab-4" name="tab-group-1">
+       <label for="tab-4">Server info</label>
+
+       <div class="content">
+<div id="ot" class="group2">
+      <table>
+       <tr>
+	<td id=s_statustd align=center class="wsstatus">
+	 <div id=s_status>Websocket connection not initialized</div>
+	</td>
+	        <td colspan=1>
+	<span class="title">Server Info</span>
+		<input type=button id=pmd value="Test pmd">
+
+	</td>
+	</tr><tr>
+<td class="explain" colspan=2>
+This information is sent by the server over a ws[s] link and updated live
+whenever the information changes server-side.
+</td></tr>
+	<tr>
+	<td align=center colspan=2><div id=servinfo></div></td>
+	</tr>
+	<tr>
+	<td align=center colspan=2><div id=conninfo class="conninfo"></div></td>
+	</tr>
+</table>
+</div>
+       </div> 
+   </div>
+
+    <div class="tab">
+       <input type="radio" id="tab-5" name="tab-group-1">
+       <label for="tab-5">POST</label>
+
+       <div class="content">
+<div id="ot" class="group2">
+      <table width=100%>
+       <tr>
+	        <td colspan=1>
+<span class="title">POST Form testing</span>
+	</td>
+	</tr><tr>
+<td class="explain" colspan=2>
+This tests POST handling in lws.
+</td></tr>
+	<tr>
+	<td align=center colspan=2 class=tdform><div id=postinfo>
+	FORM 1: send with urlencoded POST body args<br>
+	<form action="formtest" method="post">
+ <span class="f12">Some text: </span>
+  <input type="text" name="text" value="Give me some text"><br>
+  <input type="submit" name="send" value="Send the form">
+	</form>
+	</div></td>
+	</tr>
+
+
+	<tr>
+	<td align=center colspan=2 class=tdform><div id=postinfo >
+	FORM 2: send with multipart/form-data<br>
+	(can handle file upload, test limited to 100KB)<br>
+	<form name=multipart action="formtest" method="post"
+	      enctype="multipart/form-data">
+  <span class="f12">Some text: </span>
+  <input type="text" name="text" value="Give me some text">
+<br>
+  <input type="file" name="file" id="file" size="20">&nbsp;
+   <span id=file_info class="f12"></span><br>
+    <input type="submit" id="upload" name="upload" disabled=1 value="Upload">
+	</form>
+	</div></td>
+	</tr>
+	
+</table>
+</div>
+       </div> 
+   </div>
+
+</div>
+</td></tr></table>
+
+Looking for support?
+<a href="https://libwebsockets.org">https://libwebsockets.org</a>,
+<a href="https://github.com/warmcat/libwebsockets">
+	https://github.com/warmcat/libwebsockets</a></a><br/>
+Join the mailing list:
+<a href="https://libwebsockets.org/mailman/listinfo/libwebsockets">
+	https://libwebsockets.org/mailman/listinfo/libwebsockets</a>
+
+</article>
+
+</body>
+</html>

@@ -1,0 +1,96 @@
+version: "3"
+
+dotenv: ["../../../.env"]
+
+tasks:  # install scripts
+  install-frontend:
+    desc: install frontend dependencies
+    internal: true
+    dir: ../../../playground
+    cmds:
+      - bun install --verbose
+
+  install-tenapp:
+    desc: install tenapp dependencies
+    internal: true
+    dir: ./tenapp
+    cmds:
+      - tman install
+
+  install-tenapp-deps:
+    desc: install tenapp dependencies (Node.js + Python)
+    deps: [install-tenapp]
+    internal: true
+    dir: ./tenapp
+    cmds:
+      - ./scripts/install_deps.sh
+
+  build-tenapp:
+    desc: build tenapp Node.js projects
+    internal: true
+    dir: ./tenapp
+    cmds:
+      - ./scripts/build.sh
+
+  build-api-server:
+    desc: build api server
+    dir: ../../../server
+    cmds:
+      - go mod tidy && go mod download && go build -o bin/api main.go
+
+  install:
+    desc: install dependencies
+    dir: ./tenapp
+    cmds:
+      - task: install-tenapp
+      - task: install-tenapp-deps
+      - task: install-frontend
+      - task: build-api-server
+
+  build:
+    desc: build all projects
+    dir: ./tenapp
+    cmds:
+      - task: build-tenapp
+
+
+  # run scripts
+  run-tenapp:
+    desc: run tenapp
+    deps: [build-tenapp]
+    dir: ./tenapp
+    cmds:
+      - tman run start
+
+  run-gd-server:
+    desc: run tman dev http server for TMAN Designer
+    dir: ./tenapp
+    cmds:
+      - tman designer
+
+  run-frontend:
+    desc: run frontend
+    dir: ../../../playground
+    cmds:
+      - bun run dev
+
+  run-api-server:
+    desc: run api server
+    deps: [build-tenapp]
+    dir: ../../../server
+    cmds:
+      - ./bin/api -tenapp_dir={{.PWD}}/tenapp
+
+  run:
+    desc: run everything
+    deps:
+      - task: run-gd-server
+      - task: run-frontend
+      - task: run-api-server
+
+
+  # release scripts
+  release:
+    desc: release
+    cmds:
+      - ../../scripts/release.sh {{.PWD}}/tenapp

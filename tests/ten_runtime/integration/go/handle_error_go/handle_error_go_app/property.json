@@ -1,0 +1,64 @@
+{
+  "ten": {
+    "uri": "msgpack://127.0.0.1:8007/",
+    "log": {
+      "handlers": [
+        {
+          "matchers": [
+            {
+              "level": "debug"
+            }
+          ],
+          "formatter": {
+            "type": "plain",
+            "colored": true
+          },
+          "emitter": {
+            "type": "console",
+            "config": {
+              "stream": "stdout"
+            }
+          }
+        }
+      ]
+    },
+    "predefined_graphs": [
+      {
+        "name": "default",
+        "auto_start": true,
+        "singleton": true,
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "extension_a",
+              "addon": "extension_a",
+              "extension_group": "default_extension_group"
+            },
+            {
+              "type": "extension",
+              "name": "extension_b",
+              "addon": "extension_b",
+              "extension_group": "default_extension_group"
+            }
+          ],
+          "connections": [
+            {
+              "extension": "extension_a",
+              "cmd": [
+                {
+                  "name": "B",
+                  "dest": [
+                    {
+                      "extension": "extension_b"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

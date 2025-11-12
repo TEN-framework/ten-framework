@@ -1,0 +1,49 @@
+<testcase>
+<info>
+<keywords>
+SMTP
+</keywords>
+</info>
+
+#
+# Server-side
+<reply>
+<servercmd>
+REPLY MAIL 501 not fine enough
+</servercmd>
+</reply>
+
+#
+# Client-side
+<client>
+<server>
+smtp
+</server>
+ <name>
+SMTP invalid --mail-from
+ </name>
+<file name="%LOGDIR/test%TESTNUMBER.eml">
+From: different
+To: another
+
+body
+</file>
+ <command>
+smtp://%HOSTIP:%SMTPPORT/%TESTNUMBER --mail-rcpt recipient@example.com --mail-from invalid -T %LOGDIR/test%TESTNUMBER.eml
+</command>
+</client>
+
+#
+# Verify data after the test has been "shot"
+<verify>
+# 55 - CURLE_SEND_ERROR
+<errorcode>
+55
+</errorcode>
+<protocol>
+EHLO %TESTNUMBER
+MAIL FROM:<invalid>
+QUIT
+</protocol>
+</verify>
+</testcase>

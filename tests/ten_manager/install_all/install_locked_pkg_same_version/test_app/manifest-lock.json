@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "packages": [
+    {
+      "type": "extension",
+      "name": "ext_d",
+      "version": "1.0.0",
+      "hash": "bd749aaa789e828e7c386c1c011e252730c80d533b443be61274352a1bb7866e",
+      "supports": [
+        {
+          "os": "linux"
+        }
+      ]
+    }
+  ]
+}

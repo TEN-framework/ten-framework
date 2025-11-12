@@ -1,0 +1,12 @@
+{
+  "type": "extension",
+  "name": "ext_a",
+  "version": "3.0.1",
+  "dependencies": [],
+  "supports": [
+    {
+      "os": "linux",
+      "arch": "x86"
+    }
+  ]
+}

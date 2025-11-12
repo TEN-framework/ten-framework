@@ -1,0 +1,58 @@
+<testcase>
+<info>
+<keywords>
+HTTP
+HTTP FORMPOST
+</keywords>
+</info>
+# Server-side
+<reply>
+<data>
+HTTP/1.1 200 OK swsclose
+Date: Tue, 09 Nov 2010 14:49:00 GMT
+Server: test-server/fake
+Content-Length: 11
+
+blablabla
+
+</data>
+</reply>
+
+# Client-side
+<client>
+<features>
+Mime
+</features>
+<server>
+http
+</server>
+ <name>
+HTTP RFC1867-type formposting with custom Content-Type
+ </name>
+ <command>
+http://%HOSTIP:%HTTPPORT/want/%TESTNUMBER -F name=daniel -H "Content-Type: text/info"
+</command>
+</client>
+
+# Verify data after the test has been "shot"
+<verify>
+<strippart>
+s/^--------------------------[a-z0-9]*/--------------------------/
+s/boundary=------------------------[a-z0-9]*/boundary=------------------------/
+</strippart>
+<protocol>
+POST /want/%TESTNUMBER HTTP/1.1
+Host: %HOSTIP:%HTTPPORT
+User-Agent: curl/%VERSION
+Accept: */*
+Content-Length: 146
+Content-Type: text/info; boundary=------------------------
+
+--------------------------
+Content-Disposition: attachment; name="name"
+
+daniel
+----------------------------
+</protocol>
+</verify>
+</testcase>

@@ -1,0 +1,125 @@
+{
+  "type": "extension",
+  "name": "aws_asr_python",
+  "version": "0.2.2",
+  "display_name": {
+    "locales": {
+      "en-US": {
+        "content": "AWS ASR Python Extension"
+      },
+      "zh-CN": {
+        "content": "AWS ASR Python 扩展"
+      },
+      "zh-TW": {
+        "content": "AWS ASR Python 擴充"
+      },
+      "ja-JP": {
+        "content": "AWS ASR Python 拡張"
+      },
+      "ko-KR": {
+        "content": "AWS ASR Python 확장"
+      }
+    }
+  },
+  "description": {
+    "locales": {
+      "en-US": {
+        "content": "AWS ASR Python Extension"
+      },
+      "zh-CN": {
+        "content": "使用 Python 语言编写的 AWS ASR 扩展"
+      },
+      "zh-TW": {
+        "content": "使用 Python 語言編寫的 AWS ASR 擴充"
+      },
+      "ja-JP": {
+        "content": "Pythonで書かれた AWS ASR 拡張"
+      },
+      "ko-KR": {
+        "content": "Python으로 작성된 AWS ASR 확장"
+      }
+    }
+  },
+  "readme": {
+    "locales": {
+      "en-US": {
+        "import_uri": "docs/README.en-US.md"
+      },
+      "zh-CN": {
+        "import_uri": "docs/README.zh-CN.md"
+      },
+      "zh-TW": {
+        "import_uri": "docs/README.zh-TW.md"
+      },
+      "ja-JP": {
+        "import_uri": "docs/README.ja-JP.md"
+      },
+      "ko-KR": {
+        "import_uri": "docs/README.ko-KR.md"
+      }
+    }
+  },
+  "tags": [
+    "python",
+    "aws",
+    "asr"
+  ],
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.11"
+    },
+    {
+      "type": "system",
+      "name": "ten_ai_base",
+      "version": "0.7"
+    }
+  ],
+  "api": {
+    "interface": [
+      {
+        "import_uri": "../../system/ten_ai_base/api/asr-interface.json"
+      }
+    ],
+    "property": {
+      "properties": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "region": {
+              "type": "string"
+            },
+            "access_key_id": {
+              "type": "string"
+            },
+            "secret_access_key": {
+              "type": "string"
+            },
+            "language_code": {
+              "type": "string"
+            },
+            "media_sample_rate_hz": {
+              "type": "uint32"
+            },
+            "media_encoding": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  },
+  "scripts": {
+    "test": "tests/bin/start"
+  },
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "**.py",
+      "requirements.txt",
+      "docs/**"
+    ]
+  }
+}

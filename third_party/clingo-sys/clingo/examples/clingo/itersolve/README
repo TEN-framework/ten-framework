@@ -1,0 +1,5 @@
+This example shows how iterate over all models.
+
+Example calls:
+  clingo itersolve-py.lp program.lp 0 -q
+  clingo itersolve-lua.lp program.lp 0 -q

@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+<svg width="139.96mm" height="203.94mm" version="1.1" viewBox="0 0 139.95773 203.94206" xmlns="http://www.w3.org/2000/svg" xmlns:cc="http://creativecommons.org/ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+	<defs>
+		<marker id="a" overflow="visible" orient="auto">
+			<path transform="matrix(-.4 0 0 -.4 -4 0)" d="m0 0 5-5-17.5 5 17.5 5z" fill-rule="evenodd" stroke="#000" stroke-width="1pt"/>
+		</marker>
+		<marker id="m" overflow="visible" orient="auto">
+			<path transform="matrix(-.4 0 0 -.4 -4 0)" d="m0 0 5-5-17.5 5 17.5 5z" fill="#2a7fff" fill-rule="evenodd" stroke="#2a7fff" stroke-width="1pt"/>
+		</marker>
+		<marker id="o" overflow="visible" orient="auto">
+			<path transform="matrix(-.4 0 0 -.4 -4 0)" d="m0 0 5-5-17.5 5 17.5 5z" fill="#2a7fff" fill-rule="evenodd" stroke="#2a7fff" stroke-width="1pt"/>
+		</marker>
+		<marker id="n" overflow="visible" orient="auto">
+			<path transform="matrix(-.4 0 0 -.4 -4 0)" d="m0 0 5-5-17.5 5 17.5 5z" fill="#2a7fff" fill-rule="evenodd" stroke="#2a7fff" stroke-width="1pt"/>
+		</marker>
+		<marker id="p" overflow="visible" orient="auto">
+			<path transform="matrix(-.4 0 0 -.4 -4 0)" d="m0 0 5-5-17.5 5 17.5 5z" fill="#2a7fff" fill-rule="evenodd" stroke="#2a7fff" stroke-width="1pt"/>
+		</marker>
+		<marker id="Arrow1Mend" overflow="visible" orient="auto">
+			<path transform="matrix(-.4 0 0 -.4 -4 0)" d="m0 0 5-5-17.5 5 17.5 5z" fill-rule="evenodd" stroke="#000" stroke-width="1pt"/>
+		</marker>
+		<marker id="e" overflow="visible" orient="auto">
+			<path transform="matrix(-.2 0 0 -.2 -1.2 0)" d="m0 0 5-5-17.5 5 17.5 5z" fill-rule="evenodd" stroke="#000" stroke-width="1pt"/>
+		</marker>
+		<marker id="f" overflow="visible" orient="auto">
+			<path transform="matrix(-.2 0 0 -.2 -1.2 0)" d="m0 0 5-5-17.5 5 17.5 5z" fill-rule="evenodd" stroke="#000" stroke-width="1pt"/>
+		</marker>
+		<marker id="g" overflow="visible" orient="auto">
+			<path transform="matrix(-.2 0 0 -.2 -1.2 0)" d="m0 0 5-5-17.5 5 17.5 5z" fill-rule="evenodd" stroke="#000" stroke-width="1pt"/>
+		</marker>
+		<marker id="h" overflow="visible" orient="auto">
+			<path transform="matrix(-.2 0 0 -.2 -1.2 0)" d="m0 0 5-5-17.5 5 17.5 5z" fill-rule="evenodd" stroke="#000" stroke-width="1pt"/>
+		</marker>
+		<marker id="b" overflow="visible" orient="auto">
+			<path transform="matrix(-.2 0 0 -.2 -1.2 0)" d="m0 0 5-5-17.5 5 17.5 5z" fill-rule="evenodd" stroke="#000" stroke-width="1pt"/>
+		</marker>
+		<marker id="i" overflow="visible" orient="auto">
+			<path transform="matrix(-.2 0 0 -.2 -1.2 0)" d="m0 0 5-5-17.5 5 17.5 5z" fill-rule="evenodd" stroke="#000" stroke-width="1pt"/>
+		</marker>
+		<marker id="c" overflow="visible" orient="auto">
+			<path transform="matrix(-.2 0 0 -.2 -1.2 0)" d="m0 0 5-5-17.5 5 17.5 5z" fill-rule="evenodd" stroke="#000" stroke-width="1pt"/>
+		</marker>
+		<marker id="j" overflow="visible" orient="auto">
+			<path transform="matrix(-.2 0 0 -.2 -1.2 0)" d="m0 0 5-5-17.5 5 17.5 5z" fill-rule="evenodd" stroke="#000" stroke-width="1pt"/>
+		</marker>
+		<marker id="d" overflow="visible" orient="auto">
+			<path transform="matrix(-.2 0 0 -.2 -1.2 0)" d="m0 0 5-5-17.5 5 17.5 5z" fill-rule="evenodd" stroke="#000" stroke-width="1pt"/>
+		</marker>
+		<marker id="k" overflow="visible" orient="auto">
+			<path transform="matrix(-.2 0 0 -.2 -1.2 0)" d="m0 0 5-5-17.5 5 17.5 5z" fill-rule="evenodd" stroke="#000" stroke-width="1pt"/>
+		</marker>
+		<filter id="l" x="-.028307" y="-.019087" width="1.0566" height="1.0382" color-interpolation-filters="sRGB">
+			<feGaussianBlur stdDeviation="1.5622839"/>
+		</filter>
+	</defs>
+	<metadata>
+		<rdf:RDF>
+			<cc:Work rdf:about="">
+				<dc:format>image/svg+xml</dc:format>
+				<dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+				<dc:title/>
+			</cc:Work>
+		</rdf:RDF>
+	</metadata>
+	<g transform="translate(-63.825 34.781)">
+		<g>
+			<rect x="67.574" y="-31.031" width="132.46" height="196.44" filter="url(#l)"/>
+			<rect x="67.013" y="-31.592" width="132.46" height="196.44" fill="#fff"/>
+			<rect x="71.316" y="4.5158" width="60.617" height="156.03" fill="#e3e2db" opacity=".497"/>
+			<circle cx="101.26" cy="21.51" r="9.1221" fill="#fca" stroke="#4d4d4d" stroke-linejoin="round" stroke-opacity=".99608" stroke-width=".4711"/>
+			<text x="101.37344" y="22.928638" fill="#000000" font-family="'Open Sans'" font-size="4.2475px" letter-spacing="0px" stroke-width=".53093" text-align="center" text-anchor="middle" word-spacing="0px" style="font-feature-settings:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;line-height:1.25" xml:space="preserve"><tspan x="101.37344" y="22.928638" font-family="'Open Sans'" stroke-width=".53093">queued</tspan></text>
+			<circle cx="101.06" cy="43.549" r="9.1221" fill="#ff0" stroke="#4d4d4d" stroke-linejoin="round" stroke-opacity=".99608" stroke-width=".4711"/>
+			<text x="101.1737" y="44.968067" fill="#000000" font-family="'Open Sans'" font-size="4.2475px" letter-spacing="0px" stroke-width=".53093" text-align="center" text-anchor="middle" word-spacing="0px" style="font-feature-settings:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;line-height:1.25" xml:space="preserve"><tspan x="101.1737" y="44.968067" font-family="'Open Sans'" stroke-width=".53093">running</tspan></text>
+			<circle cx="88.275" cy="111.47" r="9.1221" stroke="#4d4d4d" stroke-linejoin="round" stroke-opacity=".99608" stroke-width=".4711"/>
+			<text x="88.389488" y="112.88415" fill="#ffffff" font-family="'Open Sans'" font-size="4.2475px" letter-spacing="0px" stroke-width=".53093" text-align="center" text-anchor="middle" word-spacing="0px" style="font-feature-settings:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;line-height:1.25" xml:space="preserve"><tspan x="88.389488" y="112.88415" fill="#ffffff" font-family="'Open Sans'" stroke-width=".53093">finished</tspan></text>
+			<circle cx="115.44" cy="111.6" r="9.1221" stroke="#4d4d4d" stroke-linejoin="round" stroke-opacity=".99608" stroke-width=".4711"/>
+			<text x="115.55593" y="113.01734" fill="#ffffff" font-family="'Open Sans'" font-size="4.2475px" letter-spacing="0px" stroke-width=".53093" text-align="center" text-anchor="middle" word-spacing="0px" style="font-feature-settings:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;line-height:1.25" xml:space="preserve"><tspan x="115.55593" y="113.01734" fill="#ffffff" font-family="'Open Sans'" stroke-width=".53093">stopped</tspan></text>
+			<circle cx="101.19" cy="89.093" r="9.1221" fill="#00f" stroke="#4d4d4d" stroke-linejoin="round" stroke-opacity=".99608" stroke-width=".4711"/>
+			<text x="101.30688" y="90.511833" fill="#ffffff" font-family="'Open Sans'" font-size="4.2475px" letter-spacing="0px" stroke-width=".53093" text-align="center" text-anchor="middle" word-spacing="0px" style="font-feature-settings:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;line-height:1.25" xml:space="preserve"><tspan x="101.30688" y="90.511833" fill="#ffffff" font-family="'Open Sans'" stroke-width=".53093">stopping</tspan></text>
+		</g>
+		<g fill="none" stroke="#000" stroke-width=".98901">
+			<path d="m92.669 25.172c-5.6792 3.7073-5.9327 8.623-3.0086 12.864 0.59949 0.92797 1.3564 1.75 2.2096 2.45" marker-end="url(#k)"/>
+			<path d="m92.794 46.725c-6.9332 3.511-5.3268 11.205-0.79902 15.314" marker-end="url(#d)"/>
+			<path d="m107.31 95.998c1.5624 2.1075 1.7621 1.7662 4.5277 6.3921" marker-end="url(#j)"/>
+			<path d="m96.922 73.892c-19.598 6.9719-17.845 24.544-15.314 29.697" marker-end="url(#c)"/>
+			<path d="m105.58 74.072c3.4663 2.6148 2.6371 4.0982 2.0086 6.4967" marker-end="url(#i)"/>
+		</g>
+		<text x="83.188652" y="26.350147" fill="#000000" font-family="'Open Sans'" font-size="1.9194px" letter-spacing="0px" stroke-width=".23992" text-align="center" text-anchor="middle" word-spacing="0px" style="font-feature-settings:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;line-height:1.25" xml:space="preserve"><tspan x="83.188652" y="26.350147">threadpool</tspan><tspan x="83.188652" y="28.74935">worker</tspan><tspan x="83.188652" y="31.148552">thread</tspan><tspan x="83.188652" y="33.547756">takes</tspan><tspan x="83.188652" y="35.946957">task</tspan></text>
+		<text x="81.767693" y="52.351551" fill="#000000" font-family="'Open Sans'" font-size="1.9194px" letter-spacing="0px" stroke-width=".23992" text-align="center" text-anchor="middle" word-spacing="0px" style="font-feature-settings:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;line-height:1.25" xml:space="preserve"><tspan x="81.767693" y="52.351551">worker</tspan><tspan x="81.767693" y="54.750755">produces</tspan><tspan x="81.767693" y="57.149956">a buffer</tspan><tspan x="81.767693" y="59.54916">of output</tspan></text>
+		<path d="m109.63 63.431c6.9332-3.511 5.3268-11.205 0.79901-15.314" fill="none" marker-end="url(#b)" stroke="#000" stroke-width=".98901"/>
+		<g fill="#000000" font-family="'Open Sans'" letter-spacing="0px" text-anchor="middle" word-spacing="0px">
+			<text x="85.033684" y="93.276115" font-size="1.9194px" stroke-width=".23992" text-align="center" style="font-feature-settings:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;line-height:1.25" xml:space="preserve"><tspan x="85.033684" y="93.276115">nothing</tspan><tspan x="85.033684" y="95.675316">more</tspan><tspan x="85.033684" y="98.074524">to do</tspan></text>
+			<text x="120.33315" y="51.474964" font-size="2.1167px" stroke-width=".26458" text-align="center" style="font-feature-settings:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;line-height:1.25" xml:space="preserve"><tspan x="120.33315" y="51.474964">buffer</tspan><tspan x="120.33315" y="54.120796">sent on</tspan><tspan x="120.33315" y="56.766632">and more</tspan><tspan x="120.33315" y="59.412464">to do</tspan></text>
+			<text x="113.87862" y="74.393372" font-size="2.1167px" stroke-width=".26458" text-align="center" style="font-feature-settings:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;line-height:1.25" xml:space="preserve"><tspan x="113.87862" y="74.393372">problems</tspan><tspan x="113.87862" y="77.039207">sending</tspan></text>
+		</g>
+		<circle cx="101.19" cy="66.055" r="9.1221" fill="#f00" stroke="#4d4d4d" stroke-linejoin="round" stroke-opacity=".99608" stroke-width=".4711"/>
+		<text x="101.30688" y="67.473564" fill="#000000" font-family="'Open Sans'" font-size="4.2475px" letter-spacing="0px" stroke-width=".53093" text-align="center" text-anchor="middle" word-spacing="0px" style="font-feature-settings:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;line-height:1.25" xml:space="preserve"><tspan x="101.30688" y="67.473564" font-family="'Open Sans'" stroke-width=".53093">sync</tspan></text>
+		<path d="m115.52 120.58c-1.0042 3.6297-3.8472 3.6305-6.9278 6.0658" fill="none" marker-end="url(#h)" stroke="#000" stroke-width=".98901"/>
+		<path d="m89.258 120.63c1.0042 3.6297 3.8472 3.6305 6.9278 6.0658" fill="none" marker-end="url(#g)" stroke="#000" stroke-width=".98901"/>
+		<text x="102.9891" y="153.14995" fill="#000000" font-family="'Open Sans'" font-size="4.2475px" letter-spacing="0px" stroke-width=".53093" text-align="center" text-anchor="middle" word-spacing="0px" style="font-feature-settings:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;line-height:1.25" xml:space="preserve"><tspan x="102.9891" y="153.14995" font-family="'Open Sans'" stroke-width=".53093">free task</tspan></text>
+		<path d="m103.43 141.5c-0.56428 2.168-0.208 2.0595-0.42484 6.8954" fill="none" marker-end="url(#f)" stroke="#000" stroke-width=".98901"/>
+		<circle cx="102.84" cy="133.7" r="9.1221" fill="#f00" stroke="#4d4d4d" stroke-linejoin="round" stroke-opacity=".99608" stroke-width=".4711"/>
+		<g fill="#000000" font-family="'Open Sans'" letter-spacing="0px" text-anchor="middle" word-spacing="0px">
+			<text x="102.95511" y="135.11937" font-size="4.2475px" stroke-width=".53093" text-align="center" style="font-feature-settings:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;line-height:1.25" xml:space="preserve"><tspan x="102.95511" y="135.11937" font-family="'Open Sans'" stroke-width=".53093">sync</tspan></text>
+			<text x="91.148003" y="3.3398941" font-size="3.8932px" stroke-width=".48665" text-align="center" style="font-feature-settings:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;line-height:1.25" xml:space="preserve"><tspan x="91.148003" y="3.3398941" font-family="'Open Sans'" stroke-width=".48665">worker thread context</tspan></text>
+			<text x="158.78787" y="-23.464428" font-size="3.8932px" stroke-width=".48665" text-align="center" style="font-feature-settings:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;line-height:1.25" xml:space="preserve"><tspan x="158.78787" y="-23.464428" font-family="'Open Sans'" stroke-width=".48665">lws service thread context</tspan></text>
+		</g>
+		<rect x="135.67" y="-21.491" width="60.617" height="182.23" fill="#9dac93" opacity=".497"/>
+		<text x="87.216949" y="130.01646" fill="#000000" font-family="'Open Sans'" font-size="1.9194px" letter-spacing="0px" stroke-width=".23992" text-align="center" text-anchor="middle" word-spacing="0px" style="font-feature-settings:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;line-height:1.25" xml:space="preserve"><tspan x="87.216949" y="130.01646">wait until</tspan><tspan x="87.216949" y="132.41566">the lws</tspan><tspan x="87.216949" y="134.81487">service</tspan><tspan x="87.216949" y="137.21407">thread</tspan><tspan x="87.216949" y="139.61328">knows the</tspan><tspan x="87.216949" y="142.01248">task is done</tspan></text>
+		<path d="m167.23 0.99672c-0.56428 2.168-0.208 2.0595-0.42484 6.8954" fill="none" marker-end="url(#e)" stroke="#000" stroke-width=".98901"/>
+		<g>
+			<circle cx="166.68" cy="-6.6945" r="9.1221" fill="#cfa" stroke="#4d4d4d" stroke-linejoin="round" stroke-opacity=".99608" stroke-width=".4711"/>
+			<text x="166.52914" y="-9.9058332" fill="#000000" font-family="'Open Sans'" font-size="4.2475px" letter-spacing="0px" stroke-width=".53093" text-align="center" text-anchor="middle" word-spacing="0px" style="font-feature-settings:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;line-height:1" xml:space="preserve"><tspan x="166.52914" y="-9.9058332" style="line-height:1">new</tspan><tspan x="166.52914" y="-5.6583772" style="line-height:1">wsi on</tspan><tspan x="166.52914" y="-1.4109211" style="line-height:1">mount</tspan></text>
+			<rect x="153.45" y="8.1222" width="27.384" height="16.007" fill="#37c8ab" opacity=".497"/>
+			<text x="167.22537" y="13.081109" fill="#000000" font-family="'Open Sans'" font-size="4.2475px" letter-spacing="0px" stroke-width=".53093" text-align="center" text-anchor="middle" word-spacing="0px" style="font-feature-settings:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;line-height:1" xml:space="preserve"><tspan x="167.22537" y="13.081109" style="line-height:1">protocol</tspan><tspan x="167.22537" y="17.328566" style="line-height:1">_HTTP</tspan><tspan x="167.22537" y="21.576021" style="line-height:1">callback</tspan></text>
+		</g>
+		<path d="m153.38 15.565-42.877 5.5222" fill="none" marker-end="url(#Arrow1Mend)" stroke="#2a7fff" stroke-dasharray="0.26499999, 0.26499999" stroke-width=".265"/>
+		<text transform="rotate(-6.3716)" x="129.80591" y="31.348564" fill="#0044aa" font-family="'Open Sans'" font-size="2.9008px" letter-spacing="0px" stroke-width=".3626" text-align="center" text-anchor="middle" word-spacing="0px" style="font-feature-settings:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;line-height:1.25" xml:space="preserve"><tspan x="129.80591" y="31.348564" fill="#0044aa" font-family="'Open Sans'" stroke-width=".3626">enqueue threadpool task</tspan></text>
+		<path d="m110.03 66.524 43.37-14.496" fill="none" marker-end="url(#p)" stroke="#2a7fff" stroke-dasharray="0.26499999, 0.26499999" stroke-width=".265"/>
+		<g>
+			<rect x="153.23" y="43.846" width="27.384" height="16.007" fill="#37c8ab" opacity=".497"/>
+			<text x="167.00159" y="51.049557" fill="#000000" font-family="'Open Sans'" font-size="4.2475px" letter-spacing="0px" stroke-width=".53093" text-align="center" text-anchor="middle" word-spacing="0px" style="font-feature-settings:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;line-height:1" xml:space="preserve"><tspan x="167.00159" y="51.049557" style="line-height:1">protocol</tspan><tspan x="167.00159" y="55.297012" style="line-height:1">WRITEABLE</tspan></text>
+			<text transform="rotate(-17.805)" x="111.54491" y="95.327446" fill="#0044aa" font-family="'Open Sans'" font-size="2.9008px" letter-spacing="0px" stroke-width=".3626" text-align="center" text-anchor="middle" word-spacing="0px" style="font-feature-settings:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;line-height:1.25" xml:space="preserve"><tspan x="111.54491" y="95.327446" fill="#0044aa" font-family="'Open Sans'" stroke-width=".3626">cancel service</tspan></text>
+		</g>
+		<path d="m152.72 54.497-43.37 14.496" fill="none" marker-end="url(#n)" stroke="#2a7fff" stroke-dasharray="0.26499999, 0.26499999" stroke-width=".265"/>
+		<g>
+			<rect x="153.67" y="114.19" width="27.384" height="16.007" fill="#37c8ab" opacity=".497"/>
+			<text x="167.45035" y="121.39483" fill="#000000" font-family="'Open Sans'" font-size="4.2475px" letter-spacing="0px" stroke-width=".53093" text-align="center" text-anchor="middle" word-spacing="0px" style="font-feature-settings:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;line-height:1" xml:space="preserve"><tspan x="167.45035" y="121.39483" style="line-height:1">protocol</tspan><tspan x="167.45035" y="125.64229" style="line-height:1">WRITEABLE</tspan></text>
+			<text transform="rotate(-17.805)" x="89.692116" y="162.38983" fill="#0044aa" font-family="'Open Sans'" font-size="2.9008px" letter-spacing="0px" stroke-width=".3626" text-align="center" text-anchor="middle" word-spacing="0px" style="font-feature-settings:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;line-height:1.25" xml:space="preserve"><tspan x="89.692116" y="162.38983" fill="#0044aa" font-family="'Open Sans'" stroke-width=".3626">cancel service</tspan></text>
+		</g>
+		<path d="m111.52 136.63 43.37-14.496" fill="none" marker-end="url(#o)" stroke="#2a7fff" stroke-dasharray="0.26499999, 0.26499999" stroke-width=".265"/>
+		<path d="m154.21 124.6-43.37 14.496" fill="none" marker-end="url(#m)" stroke="#2a7fff" stroke-dasharray="0.26499999, 0.26499999" stroke-width=".265"/>
+		<g font-family="'Open Sans'" letter-spacing="0px" text-anchor="middle" word-spacing="0px">
+			<text transform="rotate(-17.805)" x="107.68779" y="101.80786" fill="#0044aa" font-size="2.9008px" stroke-width=".3626" text-align="center" style="font-feature-settings:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;line-height:1.25" xml:space="preserve"><tspan x="107.68779" y="101.80786" fill="#0044aa" font-family="'Open Sans'" stroke-width=".3626">lws_threadpool_task_sync</tspan></text>
+			<text transform="rotate(-17.805)" x="85.189613" y="168.89598" fill="#0044aa" font-size="2.9008px" stroke-width=".3626" text-align="center" style="font-feature-settings:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;line-height:1.25" xml:space="preserve"><tspan x="85.189613" y="168.89598" fill="#0044aa" font-family="'Open Sans'" stroke-width=".3626">lws_threadpool_task_status_wsi</tspan></text>
+			<text x="132.67136" y="108.40496" fill="#000000" font-size="2.1167px" stroke-width=".26458" text-align="center" style="font-feature-settings:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;line-height:1.25" xml:space="preserve"><tspan x="132.67136" y="108.40496">move to</tspan><tspan x="132.67136" y="111.0508">"done queue"</tspan><tspan x="132.67136" y="113.69662">idling</tspan><tspan x="132.67136" y="116.34246">worker thread</tspan></text>
+		</g>
+		<path d="m91.919 68.712c-21.074 4.8881-23.555 52.34-13.084 71.959 2.8493 5.3384 9.0772 11.691 14.142 11.914" fill="none" marker-end="url(#a)" stroke="#000" stroke-dasharray="0.265, 0.265" stroke-width=".265"/>
+		<g fill="#000000" font-family="'Open Sans'" letter-spacing="0px" text-anchor="middle" word-spacing="0px">
+			<text x="79.087029" y="66.727417" font-size="2.1167px" stroke-width=".26458" text-align="center" style="font-feature-settings:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;line-height:1.25" xml:space="preserve"><tspan x="79.087029" y="66.727417">wsi has</tspan><tspan x="79.087029" y="69.373253">unexpect-</tspan><tspan x="79.087029" y="72.019081">edly gone</tspan></text>
+			<text x="167.50217" y="64.309265" font-size="3.5963px" stroke-width=".44954" text-align="center" style="font-feature-settings:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;line-height:1.25" xml:space="preserve"><tspan x="167.50217" y="64.309265">write the</tspan><tspan x="167.50217" y="68.804657">buffer on</tspan><tspan x="167.50217" y="73.300049">the wsi</tspan></text>
+			<text x="167.53455" y="136.16283" font-size="3.5963px" stroke-width=".44954" text-align="center" style="font-feature-settings:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;line-height:1.25" xml:space="preserve"><tspan x="167.53455" y="136.16283">acknowledge</tspan><tspan x="167.53455" y="140.65822">the task has</tspan><tspan x="167.53455" y="145.15361">ended</tspan></text>
+			<text x="100.54455" y="-20.110546" font-size="7.4216px" stroke-width=".9277" text-align="center" style="font-feature-settings:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;line-height:1.25" xml:space="preserve"><tspan x="100.54455" y="-20.110546" font-family="'Open Sans'" stroke-width=".9277">Threadpool</tspan></text>
+		</g>
+		<g transform="matrix(1.3705 0 0 1.3705 152.73 -89.601)">
+			<path d="m-53.889 51.059c-0.2293-0.20876-0.45859-0.41752-0.68788-0.62628h-2.0842c-0.41073-0.4478-0.80598-0.91066-1.2269-1.3486-0.15635-0.18661-0.4411-0.26749-0.65538-0.13157-0.2532 0.13273-0.37597 0.41669-0.39448 0.69074-0.04758 0.31909 0.05354 0.68674 0.35175 0.85254 0.18832 0.10808 0.49386 0.04671 0.5437-0.19062 0.06699-0.21357-0.06488-0.51518-0.31343-0.50948-0.16072 3e-3 -0.26391 0.28316-0.07717 0.33226 0.08893 0.01617 0.10978-0.27326 0.17002-0.07939 0.0638 0.17507-0.16528 0.31938-0.28293 0.16402-0.213-0.21052-0.14192-0.60391 0.10406-0.75718 0.23529-0.07437 0.39199 0.16171 0.52824 0.31112 0.3873 0.42849 0.77336 0.85822 1.1601 1.2873 0.95481 0.0017 1.9097 0.0034 2.8645 0.0051z"/>
+			<path d="m-56.225 50.077c0.07138-0.08712 0.14278-0.17424 0.21416-0.26135 0.10648 0.11858 0.21295 0.23715 0.31943 0.35573 0.19118 0.0012 0.38235 0.0025 0.57352 0.0036-0.2069-0.22868-0.41381-0.45737-0.62072-0.68605 0.10043-0.11374 0.20086-0.22747 0.30128-0.34121 0.19601 0.22868 0.39203 0.45737 0.58804 0.68605-0.0012-0.219-0.0025-0.43801-0.0036-0.65701-0.10043-0.11252-0.20085-0.22505-0.30128-0.33758 0.07198-0.10615 0.24907-0.21551 0.08668-0.31451-0.36406-0.40214-0.72811-0.80428-1.0922-1.2064-0.76543-0.0026-1.5317 0.01021-2.2966-0.0021-0.1821-0.01604-0.40898-0.07372-0.45071-0.28286-0.088-0.27195 0.21101-0.59285 0.48564-0.46528 0.18982 0.03674 0.11004 0.42003-0.05779 0.29297 0.17429-0.25602-0.31955-0.22697-0.17976 0.02451 0.09575 0.22004 0.44485 0.25635 0.58255 0.05617 0.14323-0.2308-0.05154-0.4937-0.2705-0.58497-0.21915-0.10466-0.49117-0.07771-0.67434 0.08567-0.27378 0.20864-0.40621 0.61643-0.22752 0.92795 0.104 0.233 0.33446 0.38219 0.58455 0.41121 0.33507 0.04187 0.67431 0.01608 1.0114 0.02326h1.3407c0.25409 0.28192 0.50818 0.56384 0.76228 0.84577-0.22868 0.25288-0.45736 0.50576-0.68605 0.75865-0.16572-0.21381-0.41577-0.37628-0.51666-0.63121-0.08161-0.29871 0.35413-0.53156 0.5618-0.30555 0.19943 0.11035-0.01178 0.46291-0.15577 0.26978 0.1166-0.03951 0.16904-0.22582-0.01437-0.21638-0.21499 0.08183-0.12303 0.40655 0.0643 0.46926 0.17871 0.08651 0.40261-0.07556 0.3799-0.27118 0.01826-0.28278-0.18842-0.5907-0.48713-0.60388-0.31967-0.06227-0.68039 0.12472-0.75854 0.45263-0.10766 0.28228 0.06955 0.56541 0.26324 0.75966 0.22723 0.24585 0.44911 0.49691 0.67408 0.74475z" fill="#f00"/>
+			<path d="m-54.464 50.361c0.0017-0.54757 0.0034-1.0951 0.0051-1.6427-0.33832-0.38748-0.69457-0.75998-1.021-1.1574-0.10913-0.13496-0.19252-0.29467-0.18614-0.47289-0.0086-0.33136 0.19731-0.65612 0.50556-0.78212 0.23741-0.10513 0.52154-0.11525 0.754 0.0094 0.3243 0.16516 0.47791 0.61109 0.30157 0.93353-0.13519 0.19951-0.48216 0.19542-0.59404-0.0265-0.1079-0.14135-0.10151-0.43084 0.10373-0.47103 0.16696-0.0034 0.20764 0.24106 0.02397 0.25083-0.04085 0.15882 0.28306 0.12232 0.27255-0.04546 0.04138-0.23154-0.21514-0.42013-0.4314-0.37653-0.24357 0.02414-0.45758 0.28096-0.37332 0.52553 0.08871 0.24037 0.30285 0.40102 0.46218 0.59282 0.25613 0.27896 0.51148 0.55865 0.76757 0.83766-0.0017 0.61002-0.0034 1.22-0.0051 1.8301-0.19509-0.0017-0.3902-0.0035-0.58527-0.0051z"/>
+		</g>
+		<text x="70.290306" y="-13.629649" fill="#000000" font-family="'Open Sans'" font-size="2.8389px" letter-spacing="0px" stroke-width=".35487" text-align="center" word-spacing="0px" style="font-feature-settings:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;line-height:1.25" xml:space="preserve"><tspan x="70.290306" y="-13.629649" text-align="start">synchronization with the lws service thread</tspan><tspan x="70.290306" y="-10.08099" text-align="start">(syncs to the correct service thread for the wsi)</tspan></text>
+	</g>
+</svg>

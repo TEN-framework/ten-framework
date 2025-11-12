@@ -1,0 +1,8 @@
+{
+    "params": {
+        "uri": "wss://eu2.rt.speechmatics.com/v2",
+        "key": "${env:SPEECHMATICS_API_KEY}",
+        "language": "cmn",
+        "sample_rate": 16000
+    }
+}

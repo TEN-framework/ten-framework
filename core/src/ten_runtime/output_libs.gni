@@ -1,0 +1,47 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+import("//core/src/ten_utils/output_libs.gni")
+import("//third_party/yyjson/output_libs.gni")
+
+ten_runtime_output_libs = []
+
+if (is_win) {
+  ten_runtime_output_libs += [
+    "${root_out_dir}/ten_runtime.dll",
+    "${root_out_dir}/ten_runtime.dll.lib",
+  ]
+} else if (is_mac) {
+  ten_runtime_output_libs += [ "${root_out_dir}/libten_runtime.dylib" ]
+} else if (is_linux) {
+  ten_runtime_output_libs += [ "${root_out_dir}/libten_runtime.so" ]
+}
+
+if (is_linux) {
+  ten_runtime_go_output_libs = [ "${root_out_dir}/libten_runtime_go.so" ]
+  ten_runtime_python_output_libs =
+      [ "${root_out_dir}/libten_runtime_python.so" ]
+} else if (is_mac) {
+  ten_runtime_go_output_libs = [ "${root_out_dir}/libten_runtime_go.dylib" ]
+
+  # According to the explanation in https://bugs.python.org/issue43898, even on
+  # macOS, when Python imports a Python C extension, the file extension must be
+  # `.so` and cannot be `.dylib`.
+  ten_runtime_python_output_libs =
+      [ "${root_out_dir}/libten_runtime_python.so" ]
+} else if (is_win) {
+  ten_runtime_go_output_libs = [
+    "${root_out_dir}/ten_runtime_go.dll",
+    "${root_out_dir}/ten_runtime_go.dll.lib",
+  ]
+  ten_runtime_python_output_libs = [
+    "${root_out_dir}/ten_runtime_python.dll",
+    "${root_out_dir}/ten_runtime_python.dll.lib",
+  ]
+}
+
+ten_runtime_nodejs_output_libs =
+    [ "${root_out_dir}/libten_runtime_nodejs.node" ]

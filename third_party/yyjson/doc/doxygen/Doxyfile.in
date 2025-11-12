@@ -1,0 +1,34 @@
+# Doxyfile 1.9.4
+
+PROJECT_NAME           = yyjson
+PROJECT_NUMBER         = @PROJECT_VERSION@
+PROJECT_BRIEF          = "A high performance C JSON library."
+OUTPUT_DIRECTORY       = @CMAKE_CURRENT_BINARY_DIR@/doxygen
+FULL_PATH_NAMES        = NO
+OPTIMIZE_OUTPUT_FOR_C  = YES
+INLINE_SIMPLE_STRUCTS  = YES
+TYPEDEF_HIDES_STRUCT   = YES
+EXTRACT_STATIC         = YES
+HIDE_UNDOC_MEMBERS     = YES
+LAYOUT_FILE            = @CMAKE_CURRENT_SOURCE_DIR@/doc/doxygen/DoxyLayout.xml
+INPUT                  = @CMAKE_CURRENT_SOURCE_DIR@/src/yyjson.h \
+                         @CMAKE_CURRENT_SOURCE_DIR@/README.md \
+                         @CMAKE_CURRENT_SOURCE_DIR@/doc/BuildAndTest.md \
+                         @CMAKE_CURRENT_SOURCE_DIR@/doc/API.md \
+                         @CMAKE_CURRENT_SOURCE_DIR@/doc/DataStructure.md \
+                         @CMAKE_CURRENT_SOURCE_DIR@/CHANGELOG.md
+IMAGE_PATH             = @CMAKE_CURRENT_SOURCE_DIR@/doc/images
+USE_MDFILE_AS_MAINPAGE = README.md
+VERBATIM_HEADERS       = NO
+HTML_HEADER            = @CMAKE_CURRENT_SOURCE_DIR@/doc/doxygen/theme/yyjson-header.html
+HTML_FOOTER            = @CMAKE_CURRENT_SOURCE_DIR@/doc/doxygen/theme/yyjson-footer.html
+HTML_EXTRA_STYLESHEET  = @CMAKE_CURRENT_SOURCE_DIR@/doc/doxygen/theme/doxygen-awesome.css \
+                         @CMAKE_CURRENT_SOURCE_DIR@/doc/doxygen/theme/doxygen-awesome-sidebar-only.css \
+                         @CMAKE_CURRENT_SOURCE_DIR@/doc/doxygen/theme/doxygen-awesome-sidebar-only-darkmode-toggle.css \
+                         @CMAKE_CURRENT_SOURCE_DIR@/doc/doxygen/theme/yyjson-style.css
+HTML_EXTRA_FILES       = @CMAKE_CURRENT_SOURCE_DIR@/doc/doxygen/theme/doxygen-awesome-darkmode-toggle.js
+HTML_DYNAMIC_SECTIONS  = YES
+GENERATE_TREEVIEW      = YES
+FULL_SIDEBAR           = YES
+GENERATE_LATEX         = NO
+QUIET                  = YES

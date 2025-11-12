@@ -1,0 +1,84 @@
+{
+  "ten": {
+    "log": {
+      "handlers": [
+        {
+          "matchers": [
+            {
+              "level": "info"
+            }
+          ],
+          "formatter": {
+            "type": "plain",
+            "colored": true
+          },
+          "emitter": {
+            "type": "console",
+            "config": {
+              "stream": "stdout"
+            }
+          }
+        }
+      ]
+    },
+    "predefined_graphs": [
+      {
+        "name": "default",
+        "auto_start": true,
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "simple_http_server_cpp",
+              "addon": "simple_http_server_cpp",
+              "extension_group": "default_extension_group",
+              "property": {
+                "server_port": 8002
+              }
+            },
+            {
+              "type": "extension",
+              "name": "default_extension_python_1",
+              "addon": "default_extension_python",
+              "extension_group": "test1"
+            },
+            {
+              "type": "extension",
+              "name": "default_extension_python_2",
+              "addon": "default_extension_python",
+              "extension_group": "test2"
+            }
+          ],
+          "connections": [
+            {
+              "extension": "simple_http_server_cpp",
+              "cmd": [
+                {
+                  "name": "test",
+                  "dest": [
+                    {
+                      "extension": "default_extension_python_1"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "default_extension_python_1",
+              "cmd": [
+                {
+                  "name": "hello",
+                  "dest": [
+                    {
+                      "extension": "default_extension_python_2"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

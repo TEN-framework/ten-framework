@@ -1,0 +1,60 @@
+<testcase>
+<info>
+<keywords>
+HTTP
+HTTP GET
+dotdot removal
+</keywords>
+</info>
+
+#
+# Server-side
+<reply>
+<data>
+HTTP/1.1 200 OK
+Content-Length: 6
+Connection: close
+
+-foo-
+</data>
+
+<data1>
+HTTP/1.1 200 OK
+Content-Length: 7
+Connection: close
+
+-cool-
+</data1>
+</reply>
+
+#
+# Client-side
+<client>
+<server>
+http
+</server>
+ <name>
+HTTP URL with dotdot removal from path
+ </name>
+ <command>
+http://%HOSTIP:%HTTPPORT/../../hej/but/who/../%TESTNUMBER?stupid=me/../%TESTNUMBER#soo/../%TESTNUMBER http://%HOSTIP:%HTTPPORT/../../hej/but/who/../%TESTNUMBER0001#/../%TESTNUMBER0001
+</command>
+</client>
+
+#
+# Verify data after the test has been "shot"
+<verify>
+<protocol>
+GET /hej/but/%TESTNUMBER?stupid=me/../%TESTNUMBER HTTP/1.1
+Host: %HOSTIP:%HTTPPORT
+User-Agent: curl/%VERSION
+Accept: */*
+
+GET /hej/but/%TESTNUMBER0001 HTTP/1.1
+Host: %HOSTIP:%HTTPPORT
+User-Agent: curl/%VERSION
+Accept: */*
+
+</protocol>
+</verify>
+</testcase>

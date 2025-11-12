@@ -1,0 +1,245 @@
+name: Tman Mac x64 (Including Designer UI)
+
+on:
+  release:
+    types: [created]
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - "core/src/ten_manager/**"
+      - "core/src/ten_rust/**"
+
+permissions:
+  contents: write
+  discussions: write
+  security-events: write
+
+concurrency:
+  group: tman-full-mac-x64-${{ github.head_ref }}
+  cancel-in-progress: true
+
+jobs:
+  call-check-pr-status:
+    uses: ./.github/workflows/_check_pr_status.yml
+
+  build:
+    needs: call-check-pr-status
+    if: ${{ needs.call-check-pr-status.outputs.should_continue == 'true' }}
+    runs-on: macos-13
+    strategy:
+      matrix:
+        build_type: [release]
+    steps:
+      - name: Check PR status before matrix execution
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            console.log('Event name:', context.eventName);
+            console.log('Matrix:', ${{ toJson(matrix) }});
+
+            // Only check for PR events
+            if (context.eventName !== 'pull_request') {
+              console.log('Not a PR event, continuing...');
+              return;
+            }
+
+            // Ensure we have PR data
+            if (!context.payload.pull_request) {
+              console.log('No pull_request data in payload, continuing...');
+              return;
+            }
+
+            const { owner, repo } = context.repo;
+            const prNumber = context.payload.pull_request.number;
+
+            try {
+              const pr = await github.rest.pulls.get({
+                owner,
+                repo,
+                pull_number: prNumber,
+              });
+
+              console.log(`PR #${prNumber} state: ${pr.data.state}, merged: ${pr.data.merged}`);
+
+              if (pr.data.state === 'closed') {
+                if (pr.data.merged) {
+                  console.log(`PR #${prNumber} has been merged. Stopping matrix execution.`);
+                  core.setFailed('PR has been merged, stopping execution to save resources.');
+                } else {
+                  console.log(`PR #${prNumber} has been closed. Stopping matrix execution.`);
+                  core.setFailed('PR has been closed, stopping execution to save resources.');
+                }
+              } else {
+                console.log(`PR #${prNumber} is still open. Continuing matrix execution.`);
+              }
+            } catch (error) {
+              console.error(`Error checking PR status: ${error.message}`);
+              console.log('Error details:', error);
+              console.log('Continuing matrix execution due to error...');
+            }
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+
+      - name: Trust working directory
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
+      - name: Initialize and update submodules except portal/
+        run: |
+          # Retrieve all submodule paths, excluding `portal/`.
+          submodules=$(git config --file .gitmodules --get-regexp path | awk '$2 != "portal" { print $2 }')
+
+          git submodule init
+
+          for submodule in $submodules; do
+            echo "Initializing submodule: $submodule"
+            git submodule update --init --recursive --depth 1 "$submodule"
+          done
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "stable"
+          cache: false
+
+      - name: Install tools and dependencies
+        run: |
+
+          if [ ${{ matrix.build_type }} == "debug" ]; then
+            # Since the TEN runtime and TEN manager are a combination of C and
+            # Rust, to enable ASan, the ASan versions used by both the C and
+            # Rust compilation environments must be consistent. Therefore, it is
+            # necessary to lock the LLVM and Rust versions to enable ASan.
+            brew install llvm@18
+            rustup default nightly-2024-07-19
+          else
+            rustup default nightly-2025-09-18
+          fi
+
+          brew install tree
+          brew install gettext
+
+          pip3 install --use-pep517 python-dotenv jinja2
+
+          go install golang.org/dl/go1.24.3@latest && go1.24.3 download
+          go env -w GOFLAGS="-buildvcs=false"
+
+          cargo install --force cbindgen
+
+      - name: Update version
+        run: |
+          python3 tools/version/update_version_in_ten_framework.py
+          python3 tools/version/check_version_in_ten_framework.py
+
+      - name: Build
+        run: |
+          if [ ${{ matrix.build_type }} == "debug" ]; then
+            export PATH="/usr/local/opt/llvm@18/bin:$PATH"
+          fi
+          export PATH=$(pwd)/core/ten_gn:$PATH
+          echo $PATH
+
+          df -h .
+
+          tgn gen mac x64 ${{ matrix.build_type }} -- log_level=1 enable_serialized_actions=true  ten_rust_enable_gen_cargo_config=false ten_enable_cargo_clean=true ten_enable_python_binding=true ten_enable_advanced_python_integration_tests=false ten_enable_rust_incremental_build=false ten_manager_enable_frontend=true ten_enable_integration_tests_prebuilt=false ten_enable_nodejs_binding=false ten_enable_ten_rust=true ten_enable_ten_manager=true
+
+          tgn build:ten_manager_package mac x64 ${{ matrix.build_type }}
+
+          df -h .
+          tree -I 'gen|obj' out
+      #   continue-on-error: true
+      # - name: Setup tmate session
+      #   uses: mxschmitt/action-tmate@v3
+
+      - name: Package assets
+        if: github.event_name == 'release' || (github.ref != '' && startsWith(github.ref, 'refs/tags/'))
+        run: |
+          cd out/mac/x64
+          zip -vr tman-mac-${{ matrix.build_type }}-x64.zip ten_manager/bin/tman
+
+          df -h .
+
+      - name: Publish to release assets
+        uses: softprops/action-gh-release@v2
+        if: github.event_name == 'release' || (github.ref != '' && startsWith(github.ref, 'refs/tags/'))
+        with:
+          files: |
+            out/mac/x64/tman-mac-${{ matrix.build_type }}-x64.zip
+
+      - name: Install Playwright Browsers
+        env:
+          PLAYWRIGHT_RUNTIME: "macos"
+        run: |
+          cd core/src/ten_manager/designer_frontend
+          npx playwright install --with-deps
+
+      - name: Run Playwright tests
+        env:
+          PLAYWRIGHT_RUNTIME: "macos"
+        run: |
+          # Start the tman designer backend
+          cd ${GITHUB_WORKSPACE}/out/mac/x64/ten_manager/bin
+          ./tman --verbose designer &
+          TMAN_PID=$!
+          echo "Started tman designer with PID $TMAN_PID"
+
+          # Start the frontend preview server
+          cd ${GITHUB_WORKSPACE}/core/src/ten_manager/designer_frontend
+          # bun run preview &
+          # PREVIEW_PID=$!
+          # echo "Started frontend preview server with PID $PREVIEW_PID"
+
+          # Wait for the server to be available (max 30 seconds)
+          echo "Waiting for server to be available..."
+          timeout=30
+          while [ $timeout -gt 0 ]; do
+            if curl -s http://127.0.0.1:49483/ > /dev/null; then
+              echo "Server is up and running!"
+              break
+            fi
+            echo "Server not ready yet, waiting... ($timeout seconds left)"
+            sleep 1
+            timeout=$((timeout-1))
+          done
+
+          if [ $timeout -eq 0 ]; then
+            echo "Timed out waiting for server to start"
+            echo "Checking if tman designer is running:"
+            ps -p $TMAN_PID || true
+            # echo "Checking if preview server is running:"
+            # ps -p $PREVIEW_PID || true
+            exit 1
+          fi
+
+          # Run the tests
+          npx playwright test
+          TEST_EXIT_CODE=$?
+
+          # Cleanup background processes
+          kill $TMAN_PID || true
+          # kill $PREVIEW_PID || true
+
+          # Return the test exit code
+          exit $TEST_EXIT_CODE
+
+      - name: Upload tests relevant artifacts
+        uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report-${{ matrix.build_type }}-mac-x64
+          path: core/src/ten_manager/designer_frontend/playwright-report/
+          retention-days: 7

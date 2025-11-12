@@ -1,0 +1,30 @@
+#
+# Copyright © 2024 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+import("//build/ten_runtime/options.gni")
+
+zlib_output_libs = []
+
+if (is_linux) {
+  zlib_output_libs += [
+    "${root_gen_dir}/cmake/zlib/install/lib/libz.so",
+    "${root_gen_dir}/cmake/zlib/install/lib/libz.so.1",
+    "${root_gen_dir}/cmake/zlib/install/lib/libz.so.1.3.1",
+    "${root_gen_dir}/cmake/zlib/install/lib/libz.a",
+  ]
+} else if (is_mac) {
+  zlib_output_libs += [
+    "${root_gen_dir}/cmake/zlib/install/lib/libz.dylib",
+    "${root_gen_dir}/cmake/zlib/install/lib/libz.1.dylib",
+    "${root_gen_dir}/cmake/zlib/install/lib/libz.1.3.1.dylib",
+  ]
+} else if (is_win) {
+  if (is_debug) {
+    zlib_output_libs += [ "${root_gen_dir}/cmake/zlib/install/bin/zlibd.dll" ]
+  } else {
+    zlib_output_libs += [ "${root_gen_dir}/cmake/zlib/install/bin/zlib.dll" ]
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "type": "extension",
+  "name": "extension_1",
+  "version": "0.10.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime",
+      "version": "0.11.26"
+    }
+  ]
+}

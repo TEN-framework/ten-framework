@@ -1,0 +1,42 @@
+{
+  "ten": {
+    "predefined_graphs": [
+      {
+        "name": "http_service",
+        "auto_start": true,
+        "graph": {
+          "nodes": [
+            {
+              "type": "subgraph",
+              "name": "subgraph_1",
+              "graph": {
+                "import_uri": "graphs/test_graph.json"
+              }
+            }
+          ]
+        }
+      }
+    ],
+    "log": {
+      "handlers": [
+        {
+          "matchers": [
+            {
+              "level": "debug"
+            }
+          ],
+          "formatter": {
+            "type": "plain",
+            "colored": true
+          },
+          "emitter": {
+            "type": "console",
+            "config": {
+              "stream": "stdout"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

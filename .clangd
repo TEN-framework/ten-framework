@@ -1,0 +1,11 @@
+Diagnostics:
+  UnusedIncludes: Strict
+  # Refer to https://github.com/llvm/llvm-project/issues/109037#issuecomment-2359938252
+  ClangTidy:
+    Remove: boost-use-ranges
+  Includes:
+    IgnoreHeader: ten_config\.h
+InlayHints:
+  Enabled: No
+CompileFlags:
+  Add: [-Igen/autotool/ffmpeg/install/include]

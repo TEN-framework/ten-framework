@@ -1,0 +1,27 @@
+[package]
+name = "clingo-sys"
+version = "0.7.2"
+authors = ["sthiele <sthiele78@gmail.com>"]
+edition = "2018"
+description = "Raw FFI bindings to the C API of the clingo library"
+categories = ["external-ffi-bindings"]
+build = "build.rs"
+links = "clingo"
+license = "MIT"
+repository = "https://github.com/potassco/clingo-sys"
+documentation = "https://docs.rs/clingo-sys"
+readme = "README.md"
+
+[features]
+static-linking = []
+
+[lib]
+name = "clingo_sys"
+path = "lib.rs"
+
+[dependencies]
+libc = "0.2"
+
+[build-dependencies]
+cmake = "0.1"
+# bindgen = "0.68"

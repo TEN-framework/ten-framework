@@ -1,0 +1,47 @@
+<testcase>
+<info>
+<keywords>
+FTP
+connect to non-listen
+</keywords>
+</info>
+
+# Server-side
+<reply>
+<servercmd>
+# Assuming there's nothing listening on port 1
+REPLY EPSV 229 Entering Passiv Mode (|||1|)
+</servercmd>
+<data>
+here are some bytes
+</data>
+</reply>
+
+# Client-side
+<client>
+<server>
+ftp
+</server>
+ <name>
+FTP failing to connect to EPSV port, switching to PASV
+ </name>
+ <command>
+ftp://%HOSTIP:%FTPPORT/%TESTNUMBER
+</command>
+</client>
+
+# Verify data after the test has been "shot"
+<verify>
+<protocol>
+USER anonymous
+PASS ftp@example.com
+PWD
+EPSV
+PASV
+TYPE I
+SIZE %TESTNUMBER
+RETR %TESTNUMBER
+QUIT
+</protocol>
+</verify>
+</testcase>

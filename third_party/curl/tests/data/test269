@@ -1,0 +1,54 @@
+<testcase>
+<info>
+<keywords>
+HTTP
+HTTP GET
+</keywords>
+</info>
+
+#
+# Server-side
+<reply>
+<data>
+HTTP/1.1 200 OK swsclose
+Date: Tue, 09 Nov 2010 14:49:00 GMT
+Server: test-server/fake
+Accept-Ranges: bytes
+Content-Length: 677654
+Connection: close
+Content-Type: text/html
+Funny-head: yesyes
+
+muahahaha
+</data>
+</reply>
+
+#
+# Client-side
+<client>
+<features>
+!hyper
+</features>
+<server>
+http
+</server>
+ <name>
+HTTP --ignore-content-length
+ </name>
+ <command>
+http://%HOSTIP:%HTTPPORT/%TESTNUMBER --ignore-content-length
+</command>
+</client>
+
+#
+# Verify data after the test has been "shot"
+<verify>
+<protocol>
+GET /%TESTNUMBER HTTP/1.1
+Host: %HOSTIP:%HTTPPORT
+User-Agent: curl/%VERSION
+Accept: */*
+
+</protocol>
+</verify>
+</testcase>

@@ -1,0 +1,26 @@
+<testcase>
+<info>
+<keywords>
+unittest
+</keywords>
+</info>
+
+#
+# Client-side
+<client>
+<server>
+none
+</server>
+<features>
+unittest
+</features>
+ <name>
+unit test for parse_cert_parameter()
+ </name>
+</client>
+
+<verify>
+<stdout mode="text">
+</stdout>
+</verify>
+</testcase>

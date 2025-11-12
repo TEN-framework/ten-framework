@@ -1,0 +1,58 @@
+<testcase>
+<info>
+<keywords>
+HTTP
+HTTP POST
+</keywords>
+</info>
+
+# Server-side
+<reply>
+<data>
+HTTP/1.1 100 Continue swsclose
+Silly-header: yeeeees
+
+</data>
+</reply>
+
+# Client-side
+<client>
+<features>
+Mime
+</features>
+<server>
+http
+</server>
+ <name>
+HTTP multipart formpost with only a 100 reply
+ </name>
+ <command>
+http://%HOSTIP:%HTTPPORT/%TESTNUMBER -F name=daniel
+</command>
+</client>
+
+# Verify data after the test has been "shot"
+<verify>
+<strip>
+^Content-Type: multipart/form-data.*
+^-----------------------.*
+</strip>
+<protocol>
+POST /%TESTNUMBER HTTP/1.1
+Host: %HOSTIP:%HTTPPORT
+User-Agent: curl/%VERSION
+Accept: */*
+Content-Length: 145
+Content-Type: multipart/form-data; boundary=----------------------------4f12fcdaa3bc
+
+------------------------------4f12fcdaa3bc
+Content-Disposition: form-data; name="name"
+
+daniel
+------------------------------4f12fcdaa3bc--
+</protocol>
+<errorcode>
+52
+</errorcode>
+</verify>
+</testcase>

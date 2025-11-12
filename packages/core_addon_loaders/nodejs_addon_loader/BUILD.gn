@@ -1,0 +1,120 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+import("//build/feature/ten_package.gni")
+import("//build/ten_runtime/feature/publish.gni")
+import("//build/ten_runtime/glob.gni")
+import("//build/ten_runtime/options.gni")
+
+action("copy_node_shared_lib") {
+  script = "//.gnfiles/build/scripts/copy_fs_entry.py"
+
+  # Determine shared library naming based on platform
+  # Linux: libnode.so.127
+  # Mac:   libnode.127.dylib
+  if (is_mac) {
+    _source_lib = "${root_out_dir}/prebuilt/node_shared/lib/libnode.127.dylib"
+    _dest_lib = "${root_out_dir}/ten_packages/addon_loader/nodejs_addon_loader/lib/libnode.127.dylib"
+  } else {
+    _source_lib = "${root_out_dir}/prebuilt/node_shared/lib/libnode.so.127"
+    _dest_lib = "${root_out_dir}/ten_packages/addon_loader/nodejs_addon_loader/lib/libnode.so.127"
+  }
+
+  args = [
+    "--source",
+    rebase_path(_source_lib),
+    "--destination",
+    rebase_path(_dest_lib),
+  ]
+
+  sources = [ _source_lib ]
+  outputs = [ _dest_lib ]
+
+  deps = [ "//third_party/node" ]
+}
+
+action("create_symlink") {
+  script = "//build/ten_common/scripts/create_symlink.py"
+
+  # Determine shared library naming based on platform
+  # Linux: libnode.so -> libnode.so.127
+  # Mac:   libnode.dylib -> libnode.127.dylib
+  if (is_mac) {
+    _versioned_lib = "${root_out_dir}/ten_packages/addon_loader/nodejs_addon_loader/lib/libnode.127.dylib"
+    _symlink_lib = "${root_out_dir}/ten_packages/addon_loader/nodejs_addon_loader/lib/libnode.dylib"
+  } else {
+    _versioned_lib = "${root_out_dir}/ten_packages/addon_loader/nodejs_addon_loader/lib/libnode.so.127"
+    _symlink_lib = "${root_out_dir}/ten_packages/addon_loader/nodejs_addon_loader/lib/libnode.so"
+  }
+
+  args = [
+    rebase_path(_versioned_lib),
+    rebase_path(_symlink_lib),
+  ]
+
+  sources = [ _versioned_lib ]
+  outputs = [ _symlink_lib ]
+
+  deps = [ ":copy_node_shared_lib" ]
+}
+
+config("nodejs_addon_loader_config") {
+  cflags_cc = [ "-std=c++17" ]
+
+  if (is_clang && !is_mac) {
+    cflags_cc += [ "-stdlib=libstdc++" ]
+    libs = [ "stdc++" ]
+  }
+}
+
+ten_package("nodejs_addon_loader") {
+  package_kind = "addon_loader"
+  enable_build = true
+
+  resources = [
+    "LICENSE",
+    "manifest.json",
+    "property.json",
+  ]
+
+  docs_files = exec_script("//.gnfiles/build/scripts/glob_file.py",
+                           [
+                             "--dir",
+                             rebase_path("docs/**/*"),
+                             "--dir-base",
+                             rebase_path("docs"),
+                             "--recursive",
+                             "--only-output-file",
+                           ],
+                           "json")
+
+  foreach(docs_file, docs_files) {
+    docs_file_rel_path = docs_file.relative_path
+    resources += [ "docs/${docs_file_rel_path}=>docs/${docs_file_rel_path}" ]
+  }
+
+  configs = [ ":nodejs_addon_loader_config" ]
+
+  sources = [ "src/main.cc" ]
+  include_dirs = [ "//core" ]
+
+  deps = [
+    ":create_symlink",
+    "//core/src/ten_runtime",
+    "//third_party/node",
+  ]
+
+  lib_dirs =
+      [ "${root_out_dir}/ten_packages/addon_loader/nodejs_addon_loader/lib" ]
+}
+
+if (ten_enable_ten_manager) {
+  ten_package_publish("upload_nodejs_addon_loader_to_server") {
+    base_dir = rebase_path(
+            "${root_out_dir}/ten_packages/addon_loader/nodejs_addon_loader")
+    deps = [ ":nodejs_addon_loader" ]
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "nodes": [
+    {
+      "type": "extension",
+      "name": "ext1",
+      "addon": "default_extension_go",
+      "extension_group": "some_group"
+    },
+    {
+      "type": "extension",
+      "name": "ext2",
+      "addon": "default_extension_go",
+      "extension_group": "some_group"
+    },
+    {
+      "type": "extension",
+      "name": "ext3",
+      "addon": "default_extension_go",
+      "extension_group": "some_group"
+    }
+  ],
+  "connections": [
+    {
+      "extension": "ext1",
+      "cmd": [
+        {
+          "name": "shared_flow",
+          "source": [
+            {
+              "extension": "ext2"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "extension": "ext3",
+      "cmd": [
+        {
+          "name": "shared_flow",
+          "source": [
+            {
+              "extension": "ext2"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

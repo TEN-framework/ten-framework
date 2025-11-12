@@ -1,0 +1,9 @@
+{
+  "params": {
+    "app_id": "invalid",
+    "secret_id": "invalid",
+    "secret_key": "invalid",
+    "sample_rate": 16000,
+    "voice_type": 0
+  }
+}

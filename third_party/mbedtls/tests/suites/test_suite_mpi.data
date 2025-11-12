@@ -1,0 +1,1898 @@
+Arguments with no value
+mpi_null:
+
+Base test mpi_read_write_string #1
+mpi_read_write_string:10:"128":10:"128":100:0:0
+
+Base test mpi_read_write_string #1 (Leading 0)
+mpi_read_write_string:10:"0128":10:"128":100:0:0
+
+Base test mpi_read_write_string #2
+mpi_read_write_string:10:"128":16:"80":100:0:0
+
+Base test mpi_read_write_string #3 (Read zero decimal)
+mpi_read_write_string:10:"0":10:"0":100:0:0
+
+Base test mpi_read_write_string #3 (Read zero hex)
+mpi_read_write_string:16:"0":16:"00":100:0:0
+
+Base test mpi_read_write_string #3 (Read minus zero decimal)
+mpi_read_write_string:10:"-0":10:"0":100:0:0
+
+Base test mpi_read_write_string #3 (Read minus zero hex)
+mpi_read_write_string:16:"-0":16:"00":100:0:0
+
+Base test mpi_read_write_string #3 (Negative decimal)
+mpi_read_write_string:10:"-23":10:"-23":100:0:0
+
+Base test mpi_read_write_string #3 (Negative decimal, leading 0)
+mpi_read_write_string:10:"-023":10:"-23":100:0:0
+
+Base test mpi_read_write_string #3 (Negative hex -> decimal)
+mpi_read_write_string:16:"-20":10:"-32":100:0:0
+
+Base test mpi_read_write_string #3 (Negative hex)
+mpi_read_write_string:16:"-23":16:"-23":100:0:0
+
+Base test mpi_read_write_string #3 (Negative hex, leading 0)
+mpi_read_write_string:16:"-023":16:"-23":100:0:0
+
+Base test mpi_read_write_string #4 (Buffer just fits)
+mpi_read_write_string:16:"-4":4:"-10":4:0:0
+
+Test mpi_read_write_string #1 (Invalid character)
+mpi_read_write_string:10:"a28":0:"":100:MBEDTLS_ERR_MPI_INVALID_CHARACTER:0
+
+Test mpi_read_write_string #2 (Illegal input radix)
+mpi_read_write_string:19:"a28":0:"":100:MBEDTLS_ERR_MPI_BAD_INPUT_DATA:0
+
+Test mpi_read_write_string #3 (Buffer just fits)
+mpi_read_write_string:16:"-23":16:"-23":4:0:0
+
+Test mpi_read_write_string #4 (Buffer too small)
+mpi_read_write_string:16:"-23":16:"-23":3:0:MBEDTLS_ERR_MPI_BUFFER_TOO_SMALL
+
+Test mpi_read_write_string #5 (Illegal output radix)
+mpi_read_write_string:16:"-23":17:"-23":4:0:MBEDTLS_ERR_MPI_BAD_INPUT_DATA
+
+Test mpi_read_write_string #6 (Output radix of 15)
+mpi_read_write_string:10:"29":15:"1e":100:0:0
+
+Test mpi_read_write_string #7
+mpi_read_write_string:10:"56125680981752282334141896320372489490613963693556392520816017892111350604111697682705498319512049040516698827829292076808006940873974979584527073481012636016353913462376755556720019831187364993587901952757307830896531678727717924":16:"0941379d00fed1491fe15df284dfde4a142f68aa8d412023195cee66883e6290ffe703f4ea5963bf212713cee46b107c09182b5edcd955adac418bf4918e2889af48e1099d513830cec85c26ac1e158b52620e33ba8692f893efbb2f958b4424":200:0:0
+
+Test mpi_read_write_string #8 (Empty MPI hex -> hex)
+mpi_read_write_string:16:"":16:"":4:0:0
+
+Test mpi_read_write_string #9 (Empty MPI hex -> dec)
+mpi_read_write_string:16:"":10:"0":4:0:0
+
+Test mpi_read_write_string #9 (Empty MPI hex -> base 2)
+mpi_read_write_string:16:"":2:"0":4:0:0
+
+Test mpi_read_write_string #8 (Empty MPI dec -> hex)
+mpi_read_write_string:10:"":16:"":4:0:0
+
+Test mpi_read_write_string #9 (Empty MPI dec -> dec)
+mpi_read_write_string:10:"":10:"0":4:0:0
+
+Test mpi_read_write_string #9 (Empty MPI dec -> base 2)
+mpi_read_write_string:16:"":2:"0":4:0:0
+
+Test mpi_write_string #10 (Negative hex with odd number of digits)
+mpi_read_write_string:16:"-1":16:"":3:0:MBEDTLS_ERR_MPI_BUFFER_TOO_SMALL
+
+Base test mbedtls_mpi_read_binary #1
+mbedtls_mpi_read_binary:"0941379d00fed1491fe15df284dfde4a142f68aa8d412023195cee66883e6290ffe703f4ea5963bf212713cee46b107c09182b5edcd955adac418bf4918e2889af48e1099d513830cec85c26ac1e158b52620e33ba8692f893efbb2f958b4424":10:"56125680981752282334141896320372489490613963693556392520816017892111350604111697682705498319512049040516698827829292076808006940873974979584527073481012636016353913462376755556720019831187364993587901952757307830896531678727717924"
+
+Base test mbedtls_mpi_read_binary_le #1
+mbedtls_mpi_read_binary_le:"0941379d00fed1491fe15df284dfde4a142f68aa8d412023195cee66883e6290ffe703f4ea5963bf212713cee46b107c09182b5edcd955adac418bf4918e2889af48e1099d513830cec85c26ac1e158b52620e33ba8692f893efbb2f958b4424":10:"219946662473865722255717126709915431768051735954189829340600976826409773245337023925691629251672268961177825243440202069039100741562168093042339401187848509859789949044607421190014088260008793380554914226244485299326152319899746569"
+
+Base test mbedtls_mpi_write_binary #1
+mbedtls_mpi_write_binary:10:"56125680981752282334141896320372489490613963693556392520816017892111350604111697682705498319512049040516698827829292076808006940873974979584527073481012636016353913462376755556720019831187364993587901952757307830896531678727717924":"0941379d00fed1491fe15df284dfde4a142f68aa8d412023195cee66883e6290ffe703f4ea5963bf212713cee46b107c09182b5edcd955adac418bf4918e2889af48e1099d513830cec85c26ac1e158b52620e33ba8692f893efbb2f958b4424":200:0
+
+Test mbedtls_mpi_write_binary #1 (Buffer just fits)
+mbedtls_mpi_write_binary:16:"123123123123123123123123123":"0123123123123123123123123123":14:0
+
+Test mbedtls_mpi_write_binary #2 (Buffer too small)
+mbedtls_mpi_write_binary:16:"123123123123123123123123123":"23123123123123123123123123":13:MBEDTLS_ERR_MPI_BUFFER_TOO_SMALL
+
+Base test mbedtls_mpi_write_binary_le #1
+mbedtls_mpi_write_binary_le:10:"56125680981752282334141896320372489490613963693556392520816017892111350604111697682705498319512049040516698827829292076808006940873974979584527073481012636016353913462376755556720019831187364993587901952757307830896531678727717924":"24448b952fbbef93f89286ba330e62528b151eac265cc8ce3038519d09e148af89288e91f48b41acad55d9dc5e2b18097c106be4ce132721bf6359eaf403e7ff90623e8866ee5c192320418daa682f144adedf84f25de11f49d1fe009d374109":200:0
+
+Test mbedtls_mpi_write_binary_le #1 (Buffer just fits)
+mbedtls_mpi_write_binary_le:16:"123123123123123123123123123":"2331122331122331122331122301":14:0
+
+Test mbedtls_mpi_write_binary_le #2 (Buffer too small)
+mbedtls_mpi_write_binary_le:16:"123123123123123123123123123":"23311223311223311223311223":13:MBEDTLS_ERR_MPI_BUFFER_TOO_SMALL
+
+Base test mbedtls_mpi_read_file #1
+mbedtls_mpi_read_file:10:"data_files/mpi_10":"01f55332c3a48b910f9942f6c914e58bef37a47ee45cb164a5b6b8d1006bf59a059c21449939ebebfdf517d2e1dbac88010d7b1f141e997bd6801ddaec9d05910f4f2de2b2c4d714e2c14a72fc7f17aa428d59c531627f09":0
+
+Test mbedtls_mpi_read_file #1 (Empty file)
+mbedtls_mpi_read_file:10:"data_files/hash_file_4":"":MBEDTLS_ERR_MPI_FILE_IO_ERROR
+
+Test mbedtls_mpi_read_file #2 (Illegal input)
+mbedtls_mpi_read_file:10:"data_files/hash_file_3":"":0
+
+Test mbedtls_mpi_read_file #3 (Input too big)
+mbedtls_mpi_read_file:10:"data_files/mpi_too_big":"":MBEDTLS_ERR_MPI_BUFFER_TOO_SMALL
+
+Base test mbedtls_mpi_write_file #1
+mbedtls_mpi_write_file:10:"56125680981752282334141896320372489490613963693556392520816017892111350604111697682705498319512049040516698827829292076808006940873974979584527073481012636016353913462376755556720019831187364993587901952757307830896531678727717924":16:"data_files/mpi_write"
+
+Test mbedtls_mpi_lsb: 0 (null)
+mbedtls_mpi_lsb:16:"":0
+
+Test mbedtls_mpi_lsb: 0 (1 limb)
+mbedtls_mpi_lsb:16:"0":0
+
+Base test mbedtls_mpi_lsb #1
+mbedtls_mpi_lsb:10:"56125680981752282334141896320372489490613963693556392520816017892111350604111697682705498319512049040516698827829292076808006940873974979584527073481012636016353913462376755556720019831187364993587901952757307830896531678727717924":2
+
+Base test mbedtls_mpi_lsb #2
+mbedtls_mpi_lsb:10:"24":3
+
+Base test mbedtls_mpi_lsb #3
+mbedtls_mpi_lsb:16:"24":2
+
+Base test mbedtls_mpi_lsb #4
+mbedtls_mpi_lsb:16:"2000":13
+
+Base test mbedtls_mpi_bitlen #1
+mbedtls_mpi_bitlen:10:"56125680981752282334141896320372489490613963693556392520816017892111350604111697682705498319512049040516698827829292076808006940873974979584527073481012636016353913462376755556720019831187364993587901952757307830896531678727717924":764
+
+Base test mbedtls_mpi_bitlen #2
+mbedtls_mpi_bitlen:10:"24":5
+
+Base test mbedtls_mpi_bitlen #3
+mbedtls_mpi_bitlen:10:"1":1
+
+Base test mbedtls_mpi_bitlen #4
+mbedtls_mpi_bitlen:10:"15":4
+
+Base test mbedtls_mpi_bitlen #5
+mbedtls_mpi_bitlen:10:"16":5
+
+Base test mbedtls_mpi_bitlen #6
+mbedtls_mpi_bitlen:10:"10":4
+
+Base test mbedtls_mpi_bitlen: 0 (null)
+mbedtls_mpi_bitlen:10:"":0
+
+Base test mbedtls_mpi_bitlen: 0 (1 limb)
+mbedtls_mpi_bitlen:10:"0":0
+
+Base test mbedtls_mpi_cmp_int #1
+mbedtls_mpi_cmp_int:693:693:0
+
+Base test mbedtls_mpi_cmp_int #2
+mbedtls_mpi_cmp_int:693:692:1
+
+Base test mbedtls_mpi_cmp_int #3
+mbedtls_mpi_cmp_int:693:694:-1
+
+Base test mbedtls_mpi_cmp_int (Negative values) #1
+mbedtls_mpi_cmp_int:-2:-2:0
+
+Base test mbedtls_mpi_cmp_int (Negative values) #2
+mbedtls_mpi_cmp_int:-2:-3:1
+
+Base test mbedtls_mpi_cmp_int (Negative values) #3
+mbedtls_mpi_cmp_int:-2:-1:-1
+
+Base test mbedtls_mpi_cmp_mpi #1
+mbedtls_mpi_cmp_mpi:10:"693":10:"693":0
+
+Base test mbedtls_mpi_cmp_mpi #2
+mbedtls_mpi_cmp_mpi:10:"693":10:"692":1
+
+Base test mbedtls_mpi_cmp_mpi #3
+mbedtls_mpi_cmp_mpi:10:"693":10:"694":-1
+
+Base test mbedtls_mpi_cmp_mpi (Negative values) #1
+mbedtls_mpi_cmp_mpi:10:"-2":10:"-2":0
+
+Base test mbedtls_mpi_cmp_mpi (Negative values) #2
+mbedtls_mpi_cmp_mpi:10:"-2":10:"-3":1
+
+Base test mbedtls_mpi_cmp_mpi (Negative values) #3
+mbedtls_mpi_cmp_mpi:10:"-2":10:"-1":-1
+
+Base test mbedtls_mpi_cmp_mpi (Mixed values) #4
+mbedtls_mpi_cmp_mpi:10:"-3":10:"2":-1
+
+Base test mbedtls_mpi_cmp_mpi (Mixed values) #5
+mbedtls_mpi_cmp_mpi:10:"2":10:"-3":1
+
+Base test mbedtls_mpi_cmp_mpi (Mixed values) #6
+mbedtls_mpi_cmp_mpi:10:"-2":10:"31231231289798":-1
+
+Test mbedtls_mpi_cmp_mpi: 0 (null) = 0 (null)
+mbedtls_mpi_cmp_mpi:10:"":10:"":0
+
+Test mbedtls_mpi_cmp_mpi: 0 (null) = 0 (1 limb)
+mbedtls_mpi_cmp_mpi:10:"":10:"0":0
+
+Test mbedtls_mpi_cmp_mpi: 0 (1 limb) = 0 (null)
+mbedtls_mpi_cmp_mpi:10:"0":10:"":0
+
+Test mbedtls_mpi_cmp_mpi: 0 (1 limb) = 0 (1 limb)
+mbedtls_mpi_cmp_mpi:10:"0":10:"0":0
+
+Test mbedtls_mpi_cmp_mpi: 0 (null) < positive
+mbedtls_mpi_cmp_mpi:10:"":10:"123":-1
+
+Test mbedtls_mpi_cmp_mpi: 0 (1 limb) < positive
+mbedtls_mpi_cmp_mpi:10:"0":10:"123":-1
+
+Test mbedtls_mpi_cmp_mpi: 0 (null) > negative
+mbedtls_mpi_cmp_mpi:10:"":10:"-123":1
+
+Test mbedtls_mpi_cmp_mpi: 0 (1 limb) > negative
+mbedtls_mpi_cmp_mpi:10:"0":10:"-123":1
+
+Test mbedtls_mpi_cmp_mpi: positive > 0 (null)
+mbedtls_mpi_cmp_mpi:10:"123":10:"":1
+
+Test mbedtls_mpi_cmp_mpi: positive > 0 (1 limb)
+mbedtls_mpi_cmp_mpi:10:"123":10:"0":1
+
+Test mbedtls_mpi_cmp_mpi: negative < 0 (null)
+mbedtls_mpi_cmp_mpi:10:"-123":10:"":-1
+
+Test mbedtls_mpi_cmp_mpi: negative < 0 (1 limb)
+mbedtls_mpi_cmp_mpi:10:"-123":10:"0":-1
+
+Test mbedtls_mpi_cmp_mpi: 0 (null) < positive with leading zero limb
+mbedtls_mpi_cmp_mpi:16:"":16:"0000000000000000123":-1
+
+Test mbedtls_mpi_cmp_mpi: 0 (1 limb) < positive with leading zero limb
+mbedtls_mpi_cmp_mpi:16:"0":16:"0000000000000000123":-1
+
+Test mbedtls_mpi_cmp_mpi: 0 (null) > negative with leading zero limb
+mbedtls_mpi_cmp_mpi:16:"":16:"-0000000000000000123":1
+
+Test mbedtls_mpi_cmp_mpi: 0 (1 limb) > negative with leading zero limb
+mbedtls_mpi_cmp_mpi:16:"0":16:"-0000000000000000123":1
+
+Test mbedtls_mpi_cmp_mpi: positive with leading zero limb > 0 (null)
+mbedtls_mpi_cmp_mpi:16:"0000000000000000123":16:"":1
+
+Test mbedtls_mpi_cmp_mpi: positive with leading zero limb > 0 (1 limb)
+mbedtls_mpi_cmp_mpi:16:"0000000000000000123":16:"0":1
+
+Test mbedtls_mpi_cmp_mpi: negative with leading zero limb < 0 (null)
+mbedtls_mpi_cmp_mpi:16:"-0000000000000000123":16:"":-1
+
+Test mbedtls_mpi_cmp_mpi: negative with leading zero limb < 0 (1 limb)
+mbedtls_mpi_cmp_mpi:16:"-0000000000000000123":16:"0":-1
+
+Test mbedtls_mpi_cmp_mpi: 0 (null) < large positive
+mbedtls_mpi_cmp_mpi:16:"":16:"1230000000000000000":-1
+
+Test mbedtls_mpi_cmp_mpi: 0 (1 limb) < large positive
+mbedtls_mpi_cmp_mpi:16:"0":16:"1230000000000000000":-1
+
+Test mbedtls_mpi_cmp_mpi: 0 (null) > large negative
+mbedtls_mpi_cmp_mpi:16:"":16:"-1230000000000000000":1
+
+Test mbedtls_mpi_cmp_mpi: 0 (1 limb) > large negative
+mbedtls_mpi_cmp_mpi:16:"0":16:"-1230000000000000000":1
+
+Test mbedtls_mpi_cmp_mpi: large positive > 0 (null)
+mbedtls_mpi_cmp_mpi:16:"1230000000000000000":16:"":1
+
+Test mbedtls_mpi_cmp_mpi: large positive > 0 (1 limb)
+mbedtls_mpi_cmp_mpi:16:"1230000000000000000":16:"0":1
+
+Test mbedtls_mpi_cmp_mpi: large negative < 0 (null)
+mbedtls_mpi_cmp_mpi:16:"-1230000000000000000":16:"":-1
+
+Test mbedtls_mpi_cmp_mpi: large negative < 0 (1 limb)
+mbedtls_mpi_cmp_mpi:16:"-1230000000000000000":16:"0":-1
+
+Base test mbedtls_mpi_lt_mpi_ct #1
+mbedtls_mpi_lt_mpi_ct:1:"2B5":1:"2B5":0:0
+
+Base test mbedtls_mpi_lt_mpi_ct #2
+mbedtls_mpi_lt_mpi_ct:1:"2B5":1:"2B4":0:0
+
+Base test mbedtls_mpi_lt_mpi_ct #3
+mbedtls_mpi_lt_mpi_ct:1:"2B5":1:"2B6":1:0
+
+Base test mbedtls_mpi_lt_mpi_ct (Negative values) #1
+mbedtls_mpi_lt_mpi_ct:1:"-2":1:"-2":0:0
+
+Base test mbedtls_mpi_lt_mpi_ct (Negative values) #2
+mbedtls_mpi_lt_mpi_ct:1:"-2":1:"-3":0:0
+
+Base test mbedtls_mpi_lt_mpi_ct (Negative values) #3
+mbedtls_mpi_lt_mpi_ct:1:"-2":1:"-1":1:0
+
+Base test mbedtls_mpi_lt_mpi_ct (Mixed values) #1
+mbedtls_mpi_lt_mpi_ct:1:"-3":1:"2":1:0
+
+Base test mbedtls_mpi_lt_mpi_ct (Mixed values) #2
+mbedtls_mpi_lt_mpi_ct:1:"2":1:"-3":0:0
+
+Base test mbedtls_mpi_lt_mpi_ct (Mixed values) #3
+mbedtls_mpi_lt_mpi_ct:2:"-2":2:"1C67967269C6":1:0
+
+Base test mbedtls_mpi_lt_mpi_ct (X is longer in storage)
+mbedtls_mpi_lt_mpi_ct:3:"2B5":2:"2B5":0:MBEDTLS_ERR_MPI_BAD_INPUT_DATA
+
+Base test mbedtls_mpi_lt_mpi_ct (Y is longer in storage)
+mbedtls_mpi_lt_mpi_ct:3:"2B5":4:"2B5":0:MBEDTLS_ERR_MPI_BAD_INPUT_DATA
+
+Base test mbedtls_mpi_lt_mpi_ct (length=0)
+mbedtls_mpi_lt_mpi_ct:0:"":0:"":0:0
+
+Base test mbedtls_mpi_lt_mpi_ct (corner case - 64 bit) #1
+mbedtls_mpi_lt_mpi_ct:2:"7FFFFFFFFFFFFFFF":2:"FF":0:0
+
+Base test mbedtls_mpi_lt_mpi_ct (corner case - 64 bit) #2
+mbedtls_mpi_lt_mpi_ct:2:"8000000000000000":2:"7FFFFFFFFFFFFFFF":0:0
+
+Base test mbedtls_mpi_lt_mpi_ct (corner case - 64 bit) #3
+mbedtls_mpi_lt_mpi_ct:2:"8000000000000000":2:"1":0:0
+
+Base test mbedtls_mpi_lt_mpi_ct (corner case - 64 bit) #4
+mbedtls_mpi_lt_mpi_ct:2:"8000000000000000":2:"0":0:0
+
+Base test mbedtls_mpi_lt_mpi_ct (corner case - 64 bit) #5
+mbedtls_mpi_lt_mpi_ct:2:"FFFFFFFFFFFFFFFF":2:"FF":0:0
+
+Base test mbedtls_mpi_lt_mpi_ct (corner case - 32 bit) #1
+mbedtls_mpi_lt_mpi_ct:1:"7FFFFFFF":1:"FF":0:0
+
+Base test mbedtls_mpi_lt_mpi_ct (corner case - 32 bit) #2
+mbedtls_mpi_lt_mpi_ct:1:"80000000":1:"7FFFFFFF":0:0
+
+Base test mbedtls_mpi_lt_mpi_ct (corner case - 32 bit) #3
+mbedtls_mpi_lt_mpi_ct:1:"80000000":1:"1":0:0
+
+Base test mbedtls_mpi_lt_mpi_ct (corner case - 32 bit) #4
+mbedtls_mpi_lt_mpi_ct:1:"80000000":1:"0":0:0
+
+Base test mbedtls_mpi_lt_mpi_ct (corner case - 32 bit) #5
+mbedtls_mpi_lt_mpi_ct:1:"FFFFFFFF":1:"FF":0:0
+
+Multi-limb mbedtls_mpi_lt_mpi_ct (X<Y, zero vs non-zero MS limb)
+mbedtls_mpi_lt_mpi_ct:2:"0FFFFFFFFFFFFFFFF":2:"1FFFFFFFFFFFFFFFF":1:0
+
+Multi-limb mbedtls_mpi_lt_mpi_ct (X>Y, equal MS limbs)
+mbedtls_mpi_lt_mpi_ct:2:"-EEFFFFFFFFFFFFFFF1":2:"-EEFFFFFFFFFFFFFFFF":0:0
+
+Multi-limb mbedtls_mpi_lt_mpi_ct (X=Y)
+mbedtls_mpi_lt_mpi_ct:2:"EEFFFFFFFFFFFFFFFF":2:"EEFFFFFFFFFFFFFFFF":0:0
+
+Multi-limb mbedtls_mpi_lt_mpi_ct (X=-Y)
+mbedtls_mpi_lt_mpi_ct:2:"-EEFFFFFFFFFFFFFFFF":2:"EEFFFFFFFFFFFFFFFF":1:0
+
+Multi-limb mbedtls_mpi_lt_mpi_ct (Alternating limbs) #1
+mbedtls_mpi_lt_mpi_ct:2:"11FFFFFFFFFFFFFFFF":2:"FF1111111111111111":1:0
+
+Multi-limb mbedtls_mpi_lt_mpi_ct (Alternating limbs) #2
+mbedtls_mpi_lt_mpi_ct:2:"FF1111111111111111":2:"11FFFFFFFFFFFFFFFF":0:0
+
+Multi-limb mbedtls_mpi_lt_mpi_ct (Alternating limbs) #3
+mbedtls_mpi_lt_mpi_ct:2:"-11FFFFFFFFFFFFFFFF":2:"-FF1111111111111111":0:0
+
+Multi-limb mbedtls_mpi_lt_mpi_ct (Alternating limbs) #4
+mbedtls_mpi_lt_mpi_ct:2:"-FF1111111111111111":2:"-11FFFFFFFFFFFFFFFF":1:0
+
+Base test mbedtls_mpi_cmp_abs #1
+mbedtls_mpi_cmp_abs:10:"693":10:"693":0
+
+Base test mbedtls_mpi_cmp_abs #2
+mbedtls_mpi_cmp_abs:10:"693":10:"692":1
+
+Base test mbedtls_mpi_cmp_abs #3
+mbedtls_mpi_cmp_abs:10:"693":10:"694":-1
+
+Base test mbedtls_mpi_cmp_abs (Negative values) #1
+mbedtls_mpi_cmp_abs:10:"-2":10:"-2":0
+
+Base test mbedtls_mpi_cmp_abs (Negative values) #2
+mbedtls_mpi_cmp_abs:10:"-2":10:"-3":-1
+
+Base test mbedtls_mpi_cmp_abs (Negative values) #3
+mbedtls_mpi_cmp_abs:10:"-2":10:"-1":1
+
+Test mbedtls_mpi_cmp_abs: 0 (null) = 0 (null)
+mbedtls_mpi_cmp_abs:10:"":10:"":0
+
+Test mbedtls_mpi_cmp_abs: 0 (null) = 0 (1 limb)
+mbedtls_mpi_cmp_abs:10:"":10:"0":0
+
+Test mbedtls_mpi_cmp_abs: 0 (1 limb) = 0 (null)
+mbedtls_mpi_cmp_abs:10:"0":10:"":0
+
+Test mbedtls_mpi_cmp_abs: 0 (1 limb) = 0 (1 limb)
+mbedtls_mpi_cmp_abs:10:"0":10:"0":0
+
+Base test mbedtls_mpi_cmp_abs (Mix values) #1
+mbedtls_mpi_cmp_abs:10:"-2":10:"2":0
+
+Base test mbedtls_mpi_cmp_abs (Mix values) #2
+mbedtls_mpi_cmp_abs:10:"2":10:"-3":-1
+
+Base test mbedtls_mpi_cmp_abs (Mix values) #3
+mbedtls_mpi_cmp_abs:10:"-2":10:"1":1
+
+Copy large negative to large negative
+mbedtls_mpi_copy:"-ca5cadedb01dfaceacc01ade":"-face1e55ca11ab1ecab005e5"
+
+Copy large negative to large positive
+mbedtls_mpi_copy:"-ca5cadedb01dfaceacc01ade":"face1e55ca11ab1ecab005e5"
+
+Copy large negative to small negative
+mbedtls_mpi_copy:"-ca5cadedb01dfaceacc01ade":"-beef"
+
+Copy large negative to small positive
+mbedtls_mpi_copy:"-ca5cadedb01dfaceacc01ade":"beef"
+
+Copy large negative to zero (1 limb)
+mbedtls_mpi_copy:"-ca5cadedb01dfaceacc01ade":"0"
+
+Copy large negative to zero (null)
+mbedtls_mpi_copy:"-ca5cadedb01dfaceacc01ade":""
+
+Copy large positive to large negative
+mbedtls_mpi_copy:"ca5cadedb01dfaceacc01ade":"-face1e55ca11ab1ecab005e5"
+
+Copy large positive to large positive
+mbedtls_mpi_copy:"ca5cadedb01dfaceacc01ade":"face1e55ca11ab1ecab005e5"
+
+Copy large positive to small negative
+mbedtls_mpi_copy:"ca5cadedb01dfaceacc01ade":"-beef"
+
+Copy large positive to small positive
+mbedtls_mpi_copy:"ca5cadedb01dfaceacc01ade":"beef"
+
+Copy large positive to zero (1 limb)
+mbedtls_mpi_copy:"ca5cadedb01dfaceacc01ade":"0"
+
+Copy large positive to zero (null)
+mbedtls_mpi_copy:"ca5cadedb01dfaceacc01ade":""
+
+Copy small negative to large negative
+mbedtls_mpi_copy:"-bead":"-face1e55ca11ab1ecab005e5"
+
+Copy small negative to large positive
+mbedtls_mpi_copy:"-bead":"face1e55ca11ab1ecab005e5"
+
+Copy small negative to small negative
+mbedtls_mpi_copy:"-bead":"-beef"
+
+Copy small negative to small positive
+mbedtls_mpi_copy:"-bead":"beef"
+
+Copy small negative to zero (1 limb)
+mbedtls_mpi_copy:"-bead":"0"
+
+Copy small negative to zero (null)
+mbedtls_mpi_copy:"-bead":""
+
+Copy small positive to large negative
+mbedtls_mpi_copy:"bead":"-face1e55ca11ab1ecab005e5"
+
+Copy small positive to large positive
+mbedtls_mpi_copy:"bead":"face1e55ca11ab1ecab005e5"
+
+Copy small positive to small negative
+mbedtls_mpi_copy:"bead":"-beef"
+
+Copy small positive to small positive
+mbedtls_mpi_copy:"bead":"beef"
+
+Copy small positive to zero (1 limb)
+mbedtls_mpi_copy:"bead":"0"
+
+Copy small positive to zero (null)
+mbedtls_mpi_copy:"bead":""
+
+Copy zero (1 limb) to large negative
+mbedtls_mpi_copy:"0":"-face1e55ca11ab1ecab005e5"
+
+Copy zero (1 limb) to large positive
+mbedtls_mpi_copy:"0":"face1e55ca11ab1ecab005e5"
+
+Copy zero (1 limb) to small negative
+mbedtls_mpi_copy:"0":"-beef"
+
+Copy zero (1 limb) to small positive
+mbedtls_mpi_copy:"0":"beef"
+
+Copy zero (1 limb) to zero (1 limb)
+mbedtls_mpi_copy:"0":"0"
+
+Copy zero (1 limb) to zero (null)
+mbedtls_mpi_copy:"0":""
+
+Copy zero (null) to large negative
+mbedtls_mpi_copy:"":"-face1e55ca11ab1ecab005e5"
+
+Copy zero (null) to large positive
+mbedtls_mpi_copy:"":"face1e55ca11ab1ecab005e5"
+
+Copy zero (null) to small negative
+mbedtls_mpi_copy:"":"-beef"
+
+Copy zero (null) to small positive
+mbedtls_mpi_copy:"":"beef"
+
+Copy zero (null) to zero (1 limb)
+mbedtls_mpi_copy:"":"0"
+
+Copy zero (null) to zero (null)
+mbedtls_mpi_copy:"":""
+
+Copy self: large negative
+mpi_copy_self:"-ca5cadedb01dfaceacc01ade"
+
+Copy self: large positive
+mpi_copy_self:"ca5cadedb01dfaceacc01ade"
+
+Copy self: small negative
+mpi_copy_self:"-bead"
+
+Copy self: small positive
+mpi_copy_self:"bead"
+
+Copy self: zero (1 limb)
+mpi_copy_self:"0"
+
+Copy self: zero (null)
+mpi_copy_self:""
+
+Swap large negative with large negative
+mbedtls_mpi_swap:"-ca5cadedb01dfaceacc01ade":"-face1e55ca11ab1ecab005e5"
+
+Swap large negative with large positive
+mbedtls_mpi_swap:"-ca5cadedb01dfaceacc01ade":"face1e55ca11ab1ecab005e5"
+
+Swap large negative with small negative
+mbedtls_mpi_swap:"-ca5cadedb01dfaceacc01ade":"-beef"
+
+Swap large negative with small positive
+mbedtls_mpi_swap:"-ca5cadedb01dfaceacc01ade":"beef"
+
+Swap large negative with zero (1 limb)
+mbedtls_mpi_swap:"-ca5cadedb01dfaceacc01ade":"0"
+
+Swap large negative with zero (null)
+mbedtls_mpi_swap:"-ca5cadedb01dfaceacc01ade":""
+
+Swap large positive with large negative
+mbedtls_mpi_swap:"ca5cadedb01dfaceacc01ade":"-face1e55ca11ab1ecab005e5"
+
+Swap large positive with large positive
+mbedtls_mpi_swap:"ca5cadedb01dfaceacc01ade":"face1e55ca11ab1ecab005e5"
+
+Swap large positive with small negative
+mbedtls_mpi_swap:"ca5cadedb01dfaceacc01ade":"-beef"
+
+Swap large positive with small positive
+mbedtls_mpi_swap:"ca5cadedb01dfaceacc01ade":"beef"
+
+Swap large positive with zero (1 limb)
+mbedtls_mpi_swap:"ca5cadedb01dfaceacc01ade":"0"
+
+Swap large positive with zero (null)
+mbedtls_mpi_swap:"ca5cadedb01dfaceacc01ade":""
+
+Swap small negative with large negative
+mbedtls_mpi_swap:"-bead":"-face1e55ca11ab1ecab005e5"
+
+Swap small negative with large positive
+mbedtls_mpi_swap:"-bead":"face1e55ca11ab1ecab005e5"
+
+Swap small negative with small negative
+mbedtls_mpi_swap:"-bead":"-beef"
+
+Swap small negative with small positive
+mbedtls_mpi_swap:"-bead":"beef"
+
+Swap small negative with zero (1 limb)
+mbedtls_mpi_swap:"-bead":"0"
+
+Swap small negative with zero (null)
+mbedtls_mpi_swap:"-bead":""
+
+Swap small positive with large negative
+mbedtls_mpi_swap:"bead":"-face1e55ca11ab1ecab005e5"
+
+Swap small positive with large positive
+mbedtls_mpi_swap:"bead":"face1e55ca11ab1ecab005e5"
+
+Swap small positive with small negative
+mbedtls_mpi_swap:"bead":"-beef"
+
+Swap small positive with small positive
+mbedtls_mpi_swap:"bead":"beef"
+
+Swap small positive with zero (1 limb)
+mbedtls_mpi_swap:"bead":"0"
+
+Swap small positive with zero (null)
+mbedtls_mpi_swap:"bead":""
+
+Swap zero (1 limb) with large negative
+mbedtls_mpi_swap:"0":"-face1e55ca11ab1ecab005e5"
+
+Swap zero (1 limb) with large positive
+mbedtls_mpi_swap:"0":"face1e55ca11ab1ecab005e5"
+
+Swap zero (1 limb) with small negative
+mbedtls_mpi_swap:"0":"-beef"
+
+Swap zero (1 limb) with small positive
+mbedtls_mpi_swap:"0":"beef"
+
+Swap zero (1 limb) with zero (1 limb)
+mbedtls_mpi_swap:"0":"0"
+
+Swap zero (1 limb) with zero (null)
+mbedtls_mpi_swap:"0":""
+
+Swap zero (null) with large negative
+mbedtls_mpi_swap:"":"-face1e55ca11ab1ecab005e5"
+
+Swap zero (null) with large positive
+mbedtls_mpi_swap:"":"face1e55ca11ab1ecab005e5"
+
+Swap zero (null) with small negative
+mbedtls_mpi_swap:"":"-beef"
+
+Swap zero (null) with small positive
+mbedtls_mpi_swap:"":"beef"
+
+Swap zero (null) with zero (1 limb)
+mbedtls_mpi_swap:"":"0"
+
+Swap zero (null) with zero (null)
+mbedtls_mpi_swap:"":""
+
+Swap self: large negative
+mpi_swap_self:"-ca5cadedb01dfaceacc01ade"
+
+Swap self: large positive
+mpi_swap_self:"ca5cadedb01dfaceacc01ade"
+
+Swap self: small negative
+mpi_swap_self:"-bead"
+
+Swap self: small positive
+mpi_swap_self:"bead"
+
+Swap self: zero (1 limb)
+mpi_swap_self:"0"
+
+Swap self: zero (null)
+mpi_swap_self:""
+
+Shrink 0 limbs in a buffer of size 0 to 0
+mbedtls_mpi_shrink:0:0:0:0
+
+Shrink 2 limbs in a buffer of size 2 to 4
+mbedtls_mpi_shrink:2:2:4:4
+
+Shrink 2 limbs in a buffer of size 4 to 4
+mbedtls_mpi_shrink:4:2:4:4
+
+Shrink 2 limbs in a buffer of size 8 to 4
+mbedtls_mpi_shrink:8:2:4:4
+
+Shrink 4 limbs in a buffer of size 8 to 4
+mbedtls_mpi_shrink:8:4:4:4
+
+Shrink 6 limbs in a buffer of size 8 to 4 yielding 6
+mbedtls_mpi_shrink:8:6:4:6
+
+Shrink 2 limbs in a buffer of size 4 to 0 yielding 2
+mbedtls_mpi_shrink:4:2:0:2
+
+Shrink 1 limbs in a buffer of size 4 to 0 yielding 1
+mbedtls_mpi_shrink:4:1:0:1
+
+Shrink 0 limbs in a buffer of size 4 to 0 yielding 1
+mbedtls_mpi_shrink:4:0:0:1
+
+Base test mbedtls_mpi_add_abs #1
+mbedtls_mpi_add_abs:10:"12345678":10:"642531":10:"12988209"
+
+Base test mbedtls_mpi_add_abs #2
+mbedtls_mpi_add_abs:10:"-12345678":10:"642531":10:"12988209"
+
+Base test mbedtls_mpi_add_abs #3
+mbedtls_mpi_add_abs:10:"12345678":10:"-642531":10:"12988209"
+
+Base test mbedtls_mpi_add_abs #4
+mbedtls_mpi_add_abs:10:"-12345678":10:"-642531":10:"12988209"
+
+Test mbedtls_mpi_add_abs: 0 (null) + 0 (null)
+mbedtls_mpi_add_abs:16:"":16:"":16:"0"
+
+Test mbedtls_mpi_add_abs: 0 (null) + 1
+mbedtls_mpi_add_abs:16:"":16:"01":16:"01"
+
+Test mbedtls_mpi_add_abs: 1 + 0 (null)
+mbedtls_mpi_add_abs:16:"01":16:"":16:"01"
+
+Test mbedtls_mpi_add_abs #1
+mbedtls_mpi_add_abs:10:"-643808006803554439230129854961492699151386107534013432918073439524138264842370630061369715394739134090922937332590384720397133335969549256322620979036686633213903952966175107096769180017646161851573147596390153":10:"56125680981752282333498088313568935051383833838594899821664631784577337171193624243181360054669678410455329112434552942717084003541384594864129940145043086760031292483340068923506115878221189886491132772739661669044958531131327771":10:"56125680981752282334141896320372489490613963693556392520816017892111350604111697682705498319512049040516698827829292076808006940873974979584527073481012636016353913462376755556720019831187364993587901952757307830896531678727717924"
+
+Regression mbedtls_mpi_add_abs (add small to very large MPI with carry rollover) [#1]
+mbedtls_mpi_add_abs:16:"FFFFFFFFFFFFFFFFFFFFFFFFFFFFF8":16:"08":16:"1000000000000000000000000000000"
+
+Regression mbedtls_mpi_add_abs (add small to very large MPI with carry rollover) [#2]
+mbedtls_mpi_add_abs:16:"08":16:"FFFFFFFFFFFFFFFFFFFFFFFFFFFFF8":16:"1000000000000000000000000000000"
+
+Base test mbedtls_mpi_add_mpi #1
+mbedtls_mpi_add_mpi:10:"12345678":10:"642531":10:"12988209"
+
+Base test mbedtls_mpi_add_mpi #2
+mbedtls_mpi_add_mpi:10:"-12345678":10:"642531":10:"-11703147"
+
+Base test mbedtls_mpi_add_mpi #3
+mbedtls_mpi_add_mpi:10:"12345678":10:"-642531":10:"11703147"
+
+Base test mbedtls_mpi_add_mpi #4
+mbedtls_mpi_add_mpi:10:"-12345678":10:"-642531":10:"-12988209"
+
+Test mbedtls_mpi_add_mpi: 0 (null) + 0 (null)
+mbedtls_mpi_add_mpi:16:"":16:"":16:"0"
+
+Test mbedtls_mpi_add_mpi: 0 (null) + 1
+mbedtls_mpi_add_mpi:16:"":16:"01":16:"01"
+
+Test mbedtls_mpi_add_mpi: 1 + 0 (null)
+mbedtls_mpi_add_mpi:16:"01":16:"":16:"01"
+
+Test mbedtls_mpi_add_mpi: 0 (null) + -1
+mbedtls_mpi_add_mpi:16:"":16:"-01":16:"-01"
+
+Test mbedtls_mpi_add_mpi: -1 + 0 (null)
+mbedtls_mpi_add_mpi:16:"-01":16:"":16:"-01"
+
+Test mbedtls_mpi_add_mpi #1
+mbedtls_mpi_add_mpi:10:"203956878356401977405765866929034577280193993314348263094772646453283062722701277632936616063144088173312372882677123879538709400158306567338328279154499698366071906766440037074217117805690872792848149112022286332144876183376326512083574821647933992961249917319836219304274280243803104015000563790123":10:"531872289054204184185084734375133399408303613982130856645299464930952178606045848877129147820387996428175564228204785846141207532462936339834139412401975338705794646595487324365194792822189473092273993580587964571659678084484152603881094176995594813302284232006001752128168901293560051833646881436219":10:"735829167410606161590850601304167976688497607296479119740072111384235241328747126510065763883532084601487937110881909725679916932621242907172467691556475037071866553361927361439411910627880345885122142692610250903804554267860479115964668998643528806263534149325837971432443181537363155848647445226342"
+
+Test mbedtls_mpi_add_mpi #2
+mbedtls_mpi_add_mpi:10:"643808006803554439230129854961492699151386107534013432918073439524138264842370630061369715394739134090922937332590384720397133335969549256322620979036686633213903952966175107096769180017646161851573147596390153":10:"56125680981752282333498088313568935051383833838594899821664631784577337171193624243181360054669678410455329112434552942717084003541384594864129940145043086760031292483340068923506115878221189886491132772739661669044958531131327771":10:"56125680981752282334141896320372489490613963693556392520816017892111350604111697682705498319512049040516698827829292076808006940873974979584527073481012636016353913462376755556720019831187364993587901952757307830896531678727717924"
+
+Base test mbedtls_mpi_add_mpi inplace #1
+mbedtls_mpi_add_mpi_inplace:10:"12345678":10:"24691356"
+
+Test mbedtls_mpi_add_mpi inplace #2
+mbedtls_mpi_add_mpi_inplace:10:"643808006803554439230129854961492699151386107534013432918073439524138264842370630061369715394739134090922937332590384720397133335969549256322620979036686633213903952966175107096769180017646161851573147596390153":10:"1287616013607108878460259709922985398302772215068026865836146879048276529684741260122739430789478268181845874665180769440794266671939098512645241958073373266427807905932350214193538360035292323703146295192780306"
+
+Test mbedtls_mpi_add_mpi inplace #3
+mbedtls_mpi_add_mpi_inplace:16:"ffffffffffffffffffffffffffffffff":16:"01fffffffffffffffffffffffffffffffe"
+
+Test mbedtls_mpi_add_int #1
+mbedtls_mpi_add_int:10:"2039568783564019774057658669290345772801939933143482630947726464532830627227012776329":9871232:10:"2039568783564019774057658669290345772801939933143482630947726464532830627227022647561"
+
+Test mbedtls_mpi_add_int #2
+mbedtls_mpi_add_int:10:"2039568783564019774057658669290345772801939933143482630947726464532830627227012776329":-9871232:10:"2039568783564019774057658669290345772801939933143482630947726464532830627227002905097"
+
+Test mbedtls_mpi_add_int: 0 (null) + 0
+mbedtls_mpi_add_int:16:"":0:16:"0"
+
+Test mbedtls_mpi_add_int: 0 (null) + 1
+mbedtls_mpi_add_int:16:"":1:16:"1"
+
+Base test mbedtls_mpi_sub_abs #1 (|B| > |A|)
+mbedtls_mpi_sub_abs:10:"5":10:"7":10:"0":MBEDTLS_ERR_MPI_NEGATIVE_VALUE
+
+Base test mbedtls_mpi_sub_abs #2 (|B| > |A|)
+mbedtls_mpi_sub_abs:10:"-5":10:"-7":10:"0":MBEDTLS_ERR_MPI_NEGATIVE_VALUE
+
+Base test mbedtls_mpi_sub_abs #3 (|B| > |A|)
+mbedtls_mpi_sub_abs:10:"-5":10:"7":10:"0":MBEDTLS_ERR_MPI_NEGATIVE_VALUE
+
+Base test mbedtls_mpi_sub_abs #4 (|B| > |A|)
+mbedtls_mpi_sub_abs:10:"5":10:"-7":10:"0":MBEDTLS_ERR_MPI_NEGATIVE_VALUE
+
+Base test mbedtls_mpi_sub_abs #1 (|B| >> |A| with more limbs)
+mbedtls_mpi_sub_abs:10:"5":16:"123456789abcdef01":10:"0":MBEDTLS_ERR_MPI_NEGATIVE_VALUE
+
+Base test mbedtls_mpi_sub_abs #2 (|B| >> |A| with more limbs)
+mbedtls_mpi_sub_abs:10:"-5":16:"-123456789abcdef01":10:"0":MBEDTLS_ERR_MPI_NEGATIVE_VALUE
+
+Base test mbedtls_mpi_sub_abs #3 (|B| >> |A| with more limbs)
+mbedtls_mpi_sub_abs:10:"-5":16:"123456789abcdef01":10:"0":MBEDTLS_ERR_MPI_NEGATIVE_VALUE
+
+Base test mbedtls_mpi_sub_abs #4 (|B| >> |A| with more limbs)
+mbedtls_mpi_sub_abs:10:"5":16:"-123456789abcdef01":10:"0":MBEDTLS_ERR_MPI_NEGATIVE_VALUE
+
+Base test mbedtls_mpi_sub_abs #1
+mbedtls_mpi_sub_abs:10:"7":10:"5":10:"2":0
+
+Base test mbedtls_mpi_sub_abs #2
+mbedtls_mpi_sub_abs:10:"-7":10:"-5":10:"2":0
+
+Base test mbedtls_mpi_sub_abs #3
+mbedtls_mpi_sub_abs:10:"-7":10:"5":10:"2":0
+
+Base test mbedtls_mpi_sub_abs #4
+mbedtls_mpi_sub_abs:10:"7":10:"-5":10:"2":0
+
+Test mbedtls_mpi_sub_abs: 0 (null) - 0 (null)
+mbedtls_mpi_sub_abs:16:"":16:"":16:"":0
+
+Test mbedtls_mpi_sub_abs: 0 (null) - 0 (1 limb)
+mbedtls_mpi_sub_abs:16:"":16:"00":16:"":0
+
+Test mbedtls_mpi_sub_abs: 0 (1 limb) - 0 (null)
+mbedtls_mpi_sub_abs:16:"00":16:"":16:"":0
+
+Test mbedtls_mpi_sub_abs: 0 (1 limb) - 0 (1 limb)
+mbedtls_mpi_sub_abs:16:"00":16:"00":16:"":0
+
+Test mbedtls_mpi_sub_abs: 1 - 0 (null)
+mbedtls_mpi_sub_abs:16:"01":16:"":16:"01":0
+
+Test mbedtls_mpi_sub_abs: 0 (null) - 1
+mbedtls_mpi_sub_abs:16:"":16:"01":16:"":MBEDTLS_ERR_MPI_NEGATIVE_VALUE
+
+Test mbedtls_mpi_sub_abs #1
+mbedtls_mpi_sub_abs:16:"FFFFFFFFFF":16:"01":16:"FFFFFFFFFE":0
+
+Test mbedtls_mpi_sub_abs #2
+mbedtls_mpi_sub_abs:16:"FFFFFFFFF0":16:"01":16:"FFFFFFFFEF":0
+
+Test mbedtls_mpi_sub_abs #3
+mbedtls_mpi_sub_abs:16:"FF00000000":16:"0F00000000":16:"F000000000":0
+
+Test mbedtls_mpi_sub_abs #4
+mbedtls_mpi_sub_abs:16:"FF00000000":16:"0F00000001":16:"EFFFFFFFFF":0
+
+Base test mbedtls_mpi_sub_mpi #1 (Test with negative result)
+mbedtls_mpi_sub_mpi:10:"5":10:"7":10:"-2"
+
+Base test mbedtls_mpi_sub_mpi #2 (Test with negative inputs)
+mbedtls_mpi_sub_mpi:10:"-5":10:"-7":10:"2"
+
+Base test mbedtls_mpi_sub_mpi #3 (Test with negative base)
+mbedtls_mpi_sub_mpi:10:"-5":10:"7":10:"-12"
+
+Base test mbedtls_mpi_sub_mpi #4 (Test with negative subtraction)
+mbedtls_mpi_sub_mpi:10:"5":10:"-7":10:"12"
+
+Test mbedtls_mpi_sub_mpi: 0 (null) - 0 (null)
+mbedtls_mpi_sub_mpi:16:"":16:"":16:"0"
+
+Test mbedtls_mpi_sub_mpi: 0 (null) - 0 (1 limb)
+mbedtls_mpi_sub_mpi:16:"":16:"00":16:"0"
+
+Test mbedtls_mpi_sub_mpi: 0 (null) - 1
+mbedtls_mpi_sub_mpi:16:"":16:"1":16:"-1"
+
+Test mbedtls_mpi_sub_mpi: 0 (null) - -1
+mbedtls_mpi_sub_mpi:16:"":16:"-1":16:"1"
+
+Test mbedtls_mpi_sub_mpi: 0 (1 limb) - 0 (null)
+mbedtls_mpi_sub_mpi:16:"00":16:"":16:"0"
+
+Test mbedtls_mpi_sub_mpi: 1 - 0 (null)
+mbedtls_mpi_sub_mpi:16:"1":16:"":16:"1"
+
+Test mbedtls_mpi_sub_mpi: -1 - 0 (null)
+mbedtls_mpi_sub_mpi:16:"-1":16:"":16:"-1"
+
+Test mbedtls_mpi_sub_mpi #1
+mbedtls_mpi_sub_mpi:10:"531872289054204184185084734375133399408303613982130856645299464930952178606045848877129147820387996428175564228204785846141207532462936339834139412401975338705794646595487324365194792822189473092273993580587964571659678084484152603881094176995594813302284232006001752128168901293560051833646881436219":10:"203956878356401977405765866929034577280193993314348263094772646453283062722701277632936616063144088173312372882677123879538709400158306567338328279154499698366071906766440037074217117805690872792848149112022286332144876183376326512083574821647933992961249917319836219304274280243803104015000563790123":10:"327915410697802206779318867446098822128109620667782593550526818477669115883344571244192531757243908254863191345527661966602498132304629772495811133247475640339722739829047287290977675016498600299425844468565678239514801901107826091797519355347660820341034314686165532823894621049756947818646317646096"
+
+Test mbedtls_mpi_sub_mpi #2 (Test for negative result)
+mbedtls_mpi_sub_mpi:10:"643808006803554439230129854961492699151386107534013432918073439524138264842370630061369715394739134090922937332590384720397133335969549256322620979036686633213903952966175107096769180017646161851573147596390153":10:"56125680981752282333498088313568935051383833838594899821664631784577337171193624243181360054669678410455329112434552942717084003541384594864129940145043086760031292483340068923506115878221189886491132772739661669044958531131327771":10:"-56125680981752282332854280306765380612153703983633407122513245677043323738275550803657221789827307780393959397039813808626161066208794210143732806809073537503708671504303382290292211925255014779394363592722015507193385383534937618"
+
+Test mbedtls_mpi_sub_int #1
+mbedtls_mpi_sub_int:10:"2039568783564019774057658669290345772801939933143482630947726464532830627227012776329":-9871232:10:"2039568783564019774057658669290345772801939933143482630947726464532830627227022647561"
+
+Test mbedtls_mpi_sub_int #2
+mbedtls_mpi_sub_int:10:"2039568783564019774057658669290345772801939933143482630947726464532830627227012776329":9871232:10:"2039568783564019774057658669290345772801939933143482630947726464532830627227002905097"
+
+Test mbedtls_mpi_sub_int: 0 (null) - 0
+mbedtls_mpi_sub_int:16:"":0:16:"0"
+
+Test mbedtls_mpi_sub_int: 0 (null) - 1
+mbedtls_mpi_sub_int:16:"":1:16:"-1"
+
+Test mbedtls_mpi_sub_int: 0 (null) - -1
+mbedtls_mpi_sub_int:16:"":-1:16:"1"
+
+Test mbedtls_mpi_shift_l #1
+mbedtls_mpi_shift_l:10:"64":1:10:"128"
+
+Test mbedtls_mpi_shift_l #2
+mbedtls_mpi_shift_l:10:"658385546911733550164516088405238961461880256029834598831972039469421755117818013653494814438931957316403111689187691446941406788869098983929874080332195117465344344350008880118042764943201875870917468833709791733282363323948005998269792207":37:10:"90487820548639020691922304619723076305400961610119884872723190678642804168382367856686134531865643066983017249846286450251272364365605022750900439437595355052945035915579216557330505438734955340526145476988250171181404966718289259743378883640981192704"
+
+Test mbedtls_mpi_shift_l: 0 (null) <<= 0
+mbedtls_mpi_shift_l:16:"":0:16:"0"
+
+Test mbedtls_mpi_shift_l: 0 (null) <<= 1
+mbedtls_mpi_shift_l:16:"":1:16:"0"
+
+Test mbedtls_mpi_shift_l: 0 (null) <<= 64
+mbedtls_mpi_shift_l:16:"":64:16:"0"
+
+Test mbedtls_mpi_shift_r #1
+mbedtls_mpi_shift_r:10:"128":1:10:"64"
+
+Test mbedtls_mpi_shift_r #2
+mbedtls_mpi_shift_r:10:"120815570979701484704906977000760567182871429114712069861589084706550626575967516787438008593490722779337547394120718248995900363209947025063336882559539208430319216688889117222633155838468458047056355241515415159736436403445579777425189969":45:10:"3433785053053426415343295076376096153094051405637175942660777670498379921354157795219578264137985649407981651226029903483433269093721578004287291678324982297860947730012217028349628999378309630601971640587504883789518896817457"
+
+Test mbedtls_mpi_shift_r #4 [#1]
+mbedtls_mpi_shift_r:16:"FFFFFFFFFFFFFFFF":63:16:"01"
+
+Test mbedtls_mpi_shift_r #4 [#2]
+mbedtls_mpi_shift_r:16:"FFFFFFFFFFFFFFFF":64:16:"00"
+
+Test mbedtls_mpi_shift_r #6
+mbedtls_mpi_shift_r:16:"FFFFFFFFFFFFFFFF":65:16:"00"
+
+Test mbedtls_mpi_shift_r #7
+mbedtls_mpi_shift_r:16:"FFFFFFFFFFFFFFFF":128:16:"00"
+
+Test mbedtls_mpi_shift_r: 0 (null) >>= 0
+mbedtls_mpi_shift_r:16:"":0:16:"0"
+
+Test mbedtls_mpi_shift_r: 0 (null) >>= 1
+mbedtls_mpi_shift_r:16:"":1:16:"0"
+
+Test mbedtls_mpi_shift_r: 0 (null) >>= 64
+mbedtls_mpi_shift_r:16:"":64:16:"0"
+
+Base test mbedtls_mpi_mul_mpi #1
+mbedtls_mpi_mul_mpi:10:"5":10:"7":10:"35"
+
+Base test mbedtls_mpi_mul_mpi #2
+mbedtls_mpi_mul_mpi:10:"-5":10:"7":10:"-35"
+
+Base test mbedtls_mpi_mul_mpi #3
+mbedtls_mpi_mul_mpi:10:"5":10:"-7":10:"-35"
+
+Base test mbedtls_mpi_mul_mpi #4
+mbedtls_mpi_mul_mpi:10:"-5":10:"-7":10:"35"
+
+Test mbedtls_mpi_mul_mpi: 0 (null) * 0 (null)
+mbedtls_mpi_mul_mpi:16:"":16:"":16:"0"
+
+Test mbedtls_mpi_mul_mpi: 0 (null) * 0 (1 limb)
+mbedtls_mpi_mul_mpi:16:"":16:"00":16:"0"
+
+Test mbedtls_mpi_mul_mpi: 0 (null) * 1
+mbedtls_mpi_mul_mpi:16:"":16:"01":16:"0"
+
+Test mbedtls_mpi_mul_mpi: 0 (null) * -1
+mbedtls_mpi_mul_mpi:16:"":16:"-01":16:"0"
+
+Test mbedtls_mpi_mul_mpi: 0 (1 limb) * -1
+mbedtls_mpi_mul_mpi:16:"00":16:"-01":16:"0"
+
+Test mbedtls_mpi_mul_mpi: 0 (1 limb) * 0 (null)
+mbedtls_mpi_mul_mpi:16:"00":16:"":16:"0"
+
+Test mbedtls_mpi_mul_mpi: 1 * 0 (null)
+mbedtls_mpi_mul_mpi:16:"01":16:"":16:"0"
+
+Test mbedtls_mpi_mul_mpi: -1 * 0 (null)
+mbedtls_mpi_mul_mpi:16:"-01":16:"":16:"0"
+
+Test mbedtls_mpi_mul_mpi: -1 * 0 (1 limb)
+mbedtls_mpi_mul_mpi:16:"-01":16:"00":16:"0"
+
+Test mbedtls_mpi_mul_mpi #1
+mbedtls_mpi_mul_mpi:16:"02f77b94b179d4a51360f04fa56e2c0784ce3b8a742280b016904896a5605fbe9e0f0683f82c439d979ab14e11b34e05ae96232b18fb2e0d1319f4942732d7eadf92ae90cb8c68ec8ece154d334f553564b6f6db185b33b8d3635598c3d128acde8bbb7b13697e48d1a542e5f9168d2d83a8dd05ae1eaf2451":16:"01b0b14c432710cde936e3fc100515e95dca61e10b8a68d9632bfa0546a9731a1ce6bebc6cb5fe6f5fd7e57b25f737f6a0ce5402e216b8b81c06f0c5ccce447d7f5631d14bff9dfa16f7cc72c56c84b636d00a5f35199d17ee9bf3f8746f44374ffd4ae22cf84089f04a9f7f356d6dc9f8cf8ef208a9b88c89":16:"0503ae899d35ae5b7706b067aed7cb2952da37a5d4ad58f05f69abe14e8aaae88eab2baed858177cb4595c0edc92e5ac13c2bba2bfa23276dd023e9e52f547d4c9edb138d86aad329d7afb01e15eab7281e181cb249fc91bf09d621d86561301edda156f80e3bbff853a312852fe9e3d0541cb86801390aff1dc3c05bcb592c266f625b70e419b4c7e7e85399bb06c0e50b099b4292f9eaff4d869681faa1f745b5fcb3349ed93c572739a31dcf76b43370cf9f86cc54e982dfac9467bde915c697e60554e0d698be6bb2dd1f8bc64659f6baee7641b51f4b5ed7010c04600fcd382db84a93fe3d4d86e86a459c6cebb59"
+
+Test mbedtls_mpi_mul_mpi #1, leading 0 limb in B
+mbedtls_mpi_mul_mpi:16:"02f77b94b179d4a51360f04fa56e2c0784ce3b8a742280b016904896a5605fbe9e0f0683f82c439d979ab14e11b34e05ae96232b18fb2e0d1319f4942732d7eadf92ae90cb8c68ec8ece154d334f553564b6f6db185b33b8d3635598c3d128acde8bbb7b13697e48d1a542e5f9168d2d83a8dd05ae1eaf2451":16:"000000000000000001b0b14c432710cde936e3fc100515e95dca61e10b8a68d9632bfa0546a9731a1ce6bebc6cb5fe6f5fd7e57b25f737f6a0ce5402e216b8b81c06f0c5ccce447d7f5631d14bff9dfa16f7cc72c56c84b636d00a5f35199d17ee9bf3f8746f44374ffd4ae22cf84089f04a9f7f356d6dc9f8cf8ef208a9b88c89":16:"0503ae899d35ae5b7706b067aed7cb2952da37a5d4ad58f05f69abe14e8aaae88eab2baed858177cb4595c0edc92e5ac13c2bba2bfa23276dd023e9e52f547d4c9edb138d86aad329d7afb01e15eab7281e181cb249fc91bf09d621d86561301edda156f80e3bbff853a312852fe9e3d0541cb86801390aff1dc3c05bcb592c266f625b70e419b4c7e7e85399bb06c0e50b099b4292f9eaff4d869681faa1f745b5fcb3349ed93c572739a31dcf76b43370cf9f86cc54e982dfac9467bde915c697e60554e0d698be6bb2dd1f8bc64659f6baee7641b51f4b5ed7010c04600fcd382db84a93fe3d4d86e86a459c6cebb59"
+
+Test mbedtls_mpi_mul_mpi #1, leading 0 limb in B, A < 0
+mbedtls_mpi_mul_mpi:16:"-02f77b94b179d4a51360f04fa56e2c0784ce3b8a742280b016904896a5605fbe9e0f0683f82c439d979ab14e11b34e05ae96232b18fb2e0d1319f4942732d7eadf92ae90cb8c68ec8ece154d334f553564b6f6db185b33b8d3635598c3d128acde8bbb7b13697e48d1a542e5f9168d2d83a8dd05ae1eaf2451":16:"000000000000000001b0b14c432710cde936e3fc100515e95dca61e10b8a68d9632bfa0546a9731a1ce6bebc6cb5fe6f5fd7e57b25f737f6a0ce5402e216b8b81c06f0c5ccce447d7f5631d14bff9dfa16f7cc72c56c84b636d00a5f35199d17ee9bf3f8746f44374ffd4ae22cf84089f04a9f7f356d6dc9f8cf8ef208a9b88c89":16:"-0503ae899d35ae5b7706b067aed7cb2952da37a5d4ad58f05f69abe14e8aaae88eab2baed858177cb4595c0edc92e5ac13c2bba2bfa23276dd023e9e52f547d4c9edb138d86aad329d7afb01e15eab7281e181cb249fc91bf09d621d86561301edda156f80e3bbff853a312852fe9e3d0541cb86801390aff1dc3c05bcb592c266f625b70e419b4c7e7e85399bb06c0e50b099b4292f9eaff4d869681faa1f745b5fcb3349ed93c572739a31dcf76b43370cf9f86cc54e982dfac9467bde915c697e60554e0d698be6bb2dd1f8bc64659f6baee7641b51f4b5ed7010c04600fcd382db84a93fe3d4d86e86a459c6cebb59"
+
+Test mbedtls_mpi_mul_mpi #1, leading 0 limb in B, B < 0
+mbedtls_mpi_mul_mpi:16:"02f77b94b179d4a51360f04fa56e2c0784ce3b8a742280b016904896a5605fbe9e0f0683f82c439d979ab14e11b34e05ae96232b18fb2e0d1319f4942732d7eadf92ae90cb8c68ec8ece154d334f553564b6f6db185b33b8d3635598c3d128acde8bbb7b13697e48d1a542e5f9168d2d83a8dd05ae1eaf2451":16:"-000000000000000001b0b14c432710cde936e3fc100515e95dca61e10b8a68d9632bfa0546a9731a1ce6bebc6cb5fe6f5fd7e57b25f737f6a0ce5402e216b8b81c06f0c5ccce447d7f5631d14bff9dfa16f7cc72c56c84b636d00a5f35199d17ee9bf3f8746f44374ffd4ae22cf84089f04a9f7f356d6dc9f8cf8ef208a9b88c89":16:"-0503ae899d35ae5b7706b067aed7cb2952da37a5d4ad58f05f69abe14e8aaae88eab2baed858177cb4595c0edc92e5ac13c2bba2bfa23276dd023e9e52f547d4c9edb138d86aad329d7afb01e15eab7281e181cb249fc91bf09d621d86561301edda156f80e3bbff853a312852fe9e3d0541cb86801390aff1dc3c05bcb592c266f625b70e419b4c7e7e85399bb06c0e50b099b4292f9eaff4d869681faa1f745b5fcb3349ed93c572739a31dcf76b43370cf9f86cc54e982dfac9467bde915c697e60554e0d698be6bb2dd1f8bc64659f6baee7641b51f4b5ed7010c04600fcd382db84a93fe3d4d86e86a459c6cebb59"
+
+Test mbedtls_mpi_mul_mpi #1, leading 0 limb in B, A < 0, B < 0
+mbedtls_mpi_mul_mpi:16:"-02f77b94b179d4a51360f04fa56e2c0784ce3b8a742280b016904896a5605fbe9e0f0683f82c439d979ab14e11b34e05ae96232b18fb2e0d1319f4942732d7eadf92ae90cb8c68ec8ece154d334f553564b6f6db185b33b8d3635598c3d128acde8bbb7b13697e48d1a542e5f9168d2d83a8dd05ae1eaf2451":16:"-000000000000000001b0b14c432710cde936e3fc100515e95dca61e10b8a68d9632bfa0546a9731a1ce6bebc6cb5fe6f5fd7e57b25f737f6a0ce5402e216b8b81c06f0c5ccce447d7f5631d14bff9dfa16f7cc72c56c84b636d00a5f35199d17ee9bf3f8746f44374ffd4ae22cf84089f04a9f7f356d6dc9f8cf8ef208a9b88c89":16:"0503ae899d35ae5b7706b067aed7cb2952da37a5d4ad58f05f69abe14e8aaae88eab2baed858177cb4595c0edc92e5ac13c2bba2bfa23276dd023e9e52f547d4c9edb138d86aad329d7afb01e15eab7281e181cb249fc91bf09d621d86561301edda156f80e3bbff853a312852fe9e3d0541cb86801390aff1dc3c05bcb592c266f625b70e419b4c7e7e85399bb06c0e50b099b4292f9eaff4d869681faa1f745b5fcb3349ed93c572739a31dcf76b43370cf9f86cc54e982dfac9467bde915c697e60554e0d698be6bb2dd1f8bc64659f6baee7641b51f4b5ed7010c04600fcd382db84a93fe3d4d86e86a459c6cebb59"
+
+Test mbedtls_mpi_mul_mpi #1, leading 0 limb in A
+mbedtls_mpi_mul_mpi:16:"000000000000000002f77b94b179d4a51360f04fa56e2c0784ce3b8a742280b016904896a5605fbe9e0f0683f82c439d979ab14e11b34e05ae96232b18fb2e0d1319f4942732d7eadf92ae90cb8c68ec8ece154d334f553564b6f6db185b33b8d3635598c3d128acde8bbb7b13697e48d1a542e5f9168d2d83a8dd05ae1eaf2451":16:"01b0b14c432710cde936e3fc100515e95dca61e10b8a68d9632bfa0546a9731a1ce6bebc6cb5fe6f5fd7e57b25f737f6a0ce5402e216b8b81c06f0c5ccce447d7f5631d14bff9dfa16f7cc72c56c84b636d00a5f35199d17ee9bf3f8746f44374ffd4ae22cf84089f04a9f7f356d6dc9f8cf8ef208a9b88c89":16:"0503ae899d35ae5b7706b067aed7cb2952da37a5d4ad58f05f69abe14e8aaae88eab2baed858177cb4595c0edc92e5ac13c2bba2bfa23276dd023e9e52f547d4c9edb138d86aad329d7afb01e15eab7281e181cb249fc91bf09d621d86561301edda156f80e3bbff853a312852fe9e3d0541cb86801390aff1dc3c05bcb592c266f625b70e419b4c7e7e85399bb06c0e50b099b4292f9eaff4d869681faa1f745b5fcb3349ed93c572739a31dcf76b43370cf9f86cc54e982dfac9467bde915c697e60554e0d698be6bb2dd1f8bc64659f6baee7641b51f4b5ed7010c04600fcd382db84a93fe3d4d86e86a459c6cebb59"
+
+Test mbedtls_mpi_mul_mpi #1, leading 0 limb in A, A < 0
+mbedtls_mpi_mul_mpi:16:"-000000000000000002f77b94b179d4a51360f04fa56e2c0784ce3b8a742280b016904896a5605fbe9e0f0683f82c439d979ab14e11b34e05ae96232b18fb2e0d1319f4942732d7eadf92ae90cb8c68ec8ece154d334f553564b6f6db185b33b8d3635598c3d128acde8bbb7b13697e48d1a542e5f9168d2d83a8dd05ae1eaf2451":16:"01b0b14c432710cde936e3fc100515e95dca61e10b8a68d9632bfa0546a9731a1ce6bebc6cb5fe6f5fd7e57b25f737f6a0ce5402e216b8b81c06f0c5ccce447d7f5631d14bff9dfa16f7cc72c56c84b636d00a5f35199d17ee9bf3f8746f44374ffd4ae22cf84089f04a9f7f356d6dc9f8cf8ef208a9b88c89":16:"-0503ae899d35ae5b7706b067aed7cb2952da37a5d4ad58f05f69abe14e8aaae88eab2baed858177cb4595c0edc92e5ac13c2bba2bfa23276dd023e9e52f547d4c9edb138d86aad329d7afb01e15eab7281e181cb249fc91bf09d621d86561301edda156f80e3bbff853a312852fe9e3d0541cb86801390aff1dc3c05bcb592c266f625b70e419b4c7e7e85399bb06c0e50b099b4292f9eaff4d869681faa1f745b5fcb3349ed93c572739a31dcf76b43370cf9f86cc54e982dfac9467bde915c697e60554e0d698be6bb2dd1f8bc64659f6baee7641b51f4b5ed7010c04600fcd382db84a93fe3d4d86e86a459c6cebb59"
+
+Test mbedtls_mpi_mul_mpi #1, leading 0 limb in A, B < 0
+mbedtls_mpi_mul_mpi:16:"000000000000000002f77b94b179d4a51360f04fa56e2c0784ce3b8a742280b016904896a5605fbe9e0f0683f82c439d979ab14e11b34e05ae96232b18fb2e0d1319f4942732d7eadf92ae90cb8c68ec8ece154d334f553564b6f6db185b33b8d3635598c3d128acde8bbb7b13697e48d1a542e5f9168d2d83a8dd05ae1eaf2451":16:"-01b0b14c432710cde936e3fc100515e95dca61e10b8a68d9632bfa0546a9731a1ce6bebc6cb5fe6f5fd7e57b25f737f6a0ce5402e216b8b81c06f0c5ccce447d7f5631d14bff9dfa16f7cc72c56c84b636d00a5f35199d17ee9bf3f8746f44374ffd4ae22cf84089f04a9f7f356d6dc9f8cf8ef208a9b88c89":16:"-0503ae899d35ae5b7706b067aed7cb2952da37a5d4ad58f05f69abe14e8aaae88eab2baed858177cb4595c0edc92e5ac13c2bba2bfa23276dd023e9e52f547d4c9edb138d86aad329d7afb01e15eab7281e181cb249fc91bf09d621d86561301edda156f80e3bbff853a312852fe9e3d0541cb86801390aff1dc3c05bcb592c266f625b70e419b4c7e7e85399bb06c0e50b099b4292f9eaff4d869681faa1f745b5fcb3349ed93c572739a31dcf76b43370cf9f86cc54e982dfac9467bde915c697e60554e0d698be6bb2dd1f8bc64659f6baee7641b51f4b5ed7010c04600fcd382db84a93fe3d4d86e86a459c6cebb59"
+
+Test mbedtls_mpi_mul_mpi #1, leading 0 limb in A, A < 0, B < 0
+mbedtls_mpi_mul_mpi:16:"-000000000000000002f77b94b179d4a51360f04fa56e2c0784ce3b8a742280b016904896a5605fbe9e0f0683f82c439d979ab14e11b34e05ae96232b18fb2e0d1319f4942732d7eadf92ae90cb8c68ec8ece154d334f553564b6f6db185b33b8d3635598c3d128acde8bbb7b13697e48d1a542e5f9168d2d83a8dd05ae1eaf2451":16:"-01b0b14c432710cde936e3fc100515e95dca61e10b8a68d9632bfa0546a9731a1ce6bebc6cb5fe6f5fd7e57b25f737f6a0ce5402e216b8b81c06f0c5ccce447d7f5631d14bff9dfa16f7cc72c56c84b636d00a5f35199d17ee9bf3f8746f44374ffd4ae22cf84089f04a9f7f356d6dc9f8cf8ef208a9b88c89":16:"0503ae899d35ae5b7706b067aed7cb2952da37a5d4ad58f05f69abe14e8aaae88eab2baed858177cb4595c0edc92e5ac13c2bba2bfa23276dd023e9e52f547d4c9edb138d86aad329d7afb01e15eab7281e181cb249fc91bf09d621d86561301edda156f80e3bbff853a312852fe9e3d0541cb86801390aff1dc3c05bcb592c266f625b70e419b4c7e7e85399bb06c0e50b099b4292f9eaff4d869681faa1f745b5fcb3349ed93c572739a31dcf76b43370cf9f86cc54e982dfac9467bde915c697e60554e0d698be6bb2dd1f8bc64659f6baee7641b51f4b5ed7010c04600fcd382db84a93fe3d4d86e86a459c6cebb59"
+
+Test mbedtls_mpi_mul_mpi #1, leading 0 limb in A and B
+mbedtls_mpi_mul_mpi:16:"000000000000000002f77b94b179d4a51360f04fa56e2c0784ce3b8a742280b016904896a5605fbe9e0f0683f82c439d979ab14e11b34e05ae96232b18fb2e0d1319f4942732d7eadf92ae90cb8c68ec8ece154d334f553564b6f6db185b33b8d3635598c3d128acde8bbb7b13697e48d1a542e5f9168d2d83a8dd05ae1eaf2451":16:"000000000000000001b0b14c432710cde936e3fc100515e95dca61e10b8a68d9632bfa0546a9731a1ce6bebc6cb5fe6f5fd7e57b25f737f6a0ce5402e216b8b81c06f0c5ccce447d7f5631d14bff9dfa16f7cc72c56c84b636d00a5f35199d17ee9bf3f8746f44374ffd4ae22cf84089f04a9f7f356d6dc9f8cf8ef208a9b88c89":16:"0503ae899d35ae5b7706b067aed7cb2952da37a5d4ad58f05f69abe14e8aaae88eab2baed858177cb4595c0edc92e5ac13c2bba2bfa23276dd023e9e52f547d4c9edb138d86aad329d7afb01e15eab7281e181cb249fc91bf09d621d86561301edda156f80e3bbff853a312852fe9e3d0541cb86801390aff1dc3c05bcb592c266f625b70e419b4c7e7e85399bb06c0e50b099b4292f9eaff4d869681faa1f745b5fcb3349ed93c572739a31dcf76b43370cf9f86cc54e982dfac9467bde915c697e60554e0d698be6bb2dd1f8bc64659f6baee7641b51f4b5ed7010c04600fcd382db84a93fe3d4d86e86a459c6cebb59"
+
+Test mbedtls_mpi_mul_mpi #1, leading 0 limb in A and B, A < 0
+mbedtls_mpi_mul_mpi:16:"-000000000000000002f77b94b179d4a51360f04fa56e2c0784ce3b8a742280b016904896a5605fbe9e0f0683f82c439d979ab14e11b34e05ae96232b18fb2e0d1319f4942732d7eadf92ae90cb8c68ec8ece154d334f553564b6f6db185b33b8d3635598c3d128acde8bbb7b13697e48d1a542e5f9168d2d83a8dd05ae1eaf2451":16:"000000000000000001b0b14c432710cde936e3fc100515e95dca61e10b8a68d9632bfa0546a9731a1ce6bebc6cb5fe6f5fd7e57b25f737f6a0ce5402e216b8b81c06f0c5ccce447d7f5631d14bff9dfa16f7cc72c56c84b636d00a5f35199d17ee9bf3f8746f44374ffd4ae22cf84089f04a9f7f356d6dc9f8cf8ef208a9b88c89":16:"-0503ae899d35ae5b7706b067aed7cb2952da37a5d4ad58f05f69abe14e8aaae88eab2baed858177cb4595c0edc92e5ac13c2bba2bfa23276dd023e9e52f547d4c9edb138d86aad329d7afb01e15eab7281e181cb249fc91bf09d621d86561301edda156f80e3bbff853a312852fe9e3d0541cb86801390aff1dc3c05bcb592c266f625b70e419b4c7e7e85399bb06c0e50b099b4292f9eaff4d869681faa1f745b5fcb3349ed93c572739a31dcf76b43370cf9f86cc54e982dfac9467bde915c697e60554e0d698be6bb2dd1f8bc64659f6baee7641b51f4b5ed7010c04600fcd382db84a93fe3d4d86e86a459c6cebb59"
+
+Test mbedtls_mpi_mul_mpi #1, leading 0 limb in A and B, B < 0
+mbedtls_mpi_mul_mpi:16:"000000000000000002f77b94b179d4a51360f04fa56e2c0784ce3b8a742280b016904896a5605fbe9e0f0683f82c439d979ab14e11b34e05ae96232b18fb2e0d1319f4942732d7eadf92ae90cb8c68ec8ece154d334f553564b6f6db185b33b8d3635598c3d128acde8bbb7b13697e48d1a542e5f9168d2d83a8dd05ae1eaf2451":16:"-000000000000000001b0b14c432710cde936e3fc100515e95dca61e10b8a68d9632bfa0546a9731a1ce6bebc6cb5fe6f5fd7e57b25f737f6a0ce5402e216b8b81c06f0c5ccce447d7f5631d14bff9dfa16f7cc72c56c84b636d00a5f35199d17ee9bf3f8746f44374ffd4ae22cf84089f04a9f7f356d6dc9f8cf8ef208a9b88c89":16:"-0503ae899d35ae5b7706b067aed7cb2952da37a5d4ad58f05f69abe14e8aaae88eab2baed858177cb4595c0edc92e5ac13c2bba2bfa23276dd023e9e52f547d4c9edb138d86aad329d7afb01e15eab7281e181cb249fc91bf09d621d86561301edda156f80e3bbff853a312852fe9e3d0541cb86801390aff1dc3c05bcb592c266f625b70e419b4c7e7e85399bb06c0e50b099b4292f9eaff4d869681faa1f745b5fcb3349ed93c572739a31dcf76b43370cf9f86cc54e982dfac9467bde915c697e60554e0d698be6bb2dd1f8bc64659f6baee7641b51f4b5ed7010c04600fcd382db84a93fe3d4d86e86a459c6cebb59"
+
+Test mbedtls_mpi_mul_mpi #1, leading 0 limb in A and B, A < 0, B < 0
+mbedtls_mpi_mul_mpi:16:"-000000000000000002f77b94b179d4a51360f04fa56e2c0784ce3b8a742280b016904896a5605fbe9e0f0683f82c439d979ab14e11b34e05ae96232b18fb2e0d1319f4942732d7eadf92ae90cb8c68ec8ece154d334f553564b6f6db185b33b8d3635598c3d128acde8bbb7b13697e48d1a542e5f9168d2d83a8dd05ae1eaf2451":16:"-000000000000000001b0b14c432710cde936e3fc100515e95dca61e10b8a68d9632bfa0546a9731a1ce6bebc6cb5fe6f5fd7e57b25f737f6a0ce5402e216b8b81c06f0c5ccce447d7f5631d14bff9dfa16f7cc72c56c84b636d00a5f35199d17ee9bf3f8746f44374ffd4ae22cf84089f04a9f7f356d6dc9f8cf8ef208a9b88c89":16:"0503ae899d35ae5b7706b067aed7cb2952da37a5d4ad58f05f69abe14e8aaae88eab2baed858177cb4595c0edc92e5ac13c2bba2bfa23276dd023e9e52f547d4c9edb138d86aad329d7afb01e15eab7281e181cb249fc91bf09d621d86561301edda156f80e3bbff853a312852fe9e3d0541cb86801390aff1dc3c05bcb592c266f625b70e419b4c7e7e85399bb06c0e50b099b4292f9eaff4d869681faa1f745b5fcb3349ed93c572739a31dcf76b43370cf9f86cc54e982dfac9467bde915c697e60554e0d698be6bb2dd1f8bc64659f6baee7641b51f4b5ed7010c04600fcd382db84a93fe3d4d86e86a459c6cebb59"
+
+Test mbedtls_mpi_mul_mpi #2, trailing 0 limb in A
+mbedtls_mpi_mul_mpi:16:"02f77b94b179d4a51360f04fa56e2c0784ce3b8a742280b016904896a5605fbe9e0f0683f82c439d979ab14e11b34e05ae96232b18fb2e0d1319f4942732d7eadf92ae90cb8c68ec8ece154d334f553564b6f6db185b33b8d3635598c3d128acde8bbb7b13697e48d1a542e5f9168d2d83a8dd05ae1eaf24510000000000000000":16:"01b0b14c432710cde936e3fc100515e95dca61e10b8a68d9632bfa0546a9731a1ce6bebc6cb5fe6f5fd7e57b25f737f6a0ce5402e216b8b81c06f0c5ccce447d7f5631d14bff9dfa16f7cc72c56c84b636d00a5f35199d17ee9bf3f8746f44374ffd4ae22cf84089f04a9f7f356d6dc9f8cf8ef208a9b88c89":16:"0503ae899d35ae5b7706b067aed7cb2952da37a5d4ad58f05f69abe14e8aaae88eab2baed858177cb4595c0edc92e5ac13c2bba2bfa23276dd023e9e52f547d4c9edb138d86aad329d7afb01e15eab7281e181cb249fc91bf09d621d86561301edda156f80e3bbff853a312852fe9e3d0541cb86801390aff1dc3c05bcb592c266f625b70e419b4c7e7e85399bb06c0e50b099b4292f9eaff4d869681faa1f745b5fcb3349ed93c572739a31dcf76b43370cf9f86cc54e982dfac9467bde915c697e60554e0d698be6bb2dd1f8bc64659f6baee7641b51f4b5ed7010c04600fcd382db84a93fe3d4d86e86a459c6cebb590000000000000000"
+
+Test mbedtls_mpi_mul_mpi #2, trailing 0 limb in A, A < 0
+mbedtls_mpi_mul_mpi:16:"-02f77b94b179d4a51360f04fa56e2c0784ce3b8a742280b016904896a5605fbe9e0f0683f82c439d979ab14e11b34e05ae96232b18fb2e0d1319f4942732d7eadf92ae90cb8c68ec8ece154d334f553564b6f6db185b33b8d3635598c3d128acde8bbb7b13697e48d1a542e5f9168d2d83a8dd05ae1eaf24510000000000000000":16:"01b0b14c432710cde936e3fc100515e95dca61e10b8a68d9632bfa0546a9731a1ce6bebc6cb5fe6f5fd7e57b25f737f6a0ce5402e216b8b81c06f0c5ccce447d7f5631d14bff9dfa16f7cc72c56c84b636d00a5f35199d17ee9bf3f8746f44374ffd4ae22cf84089f04a9f7f356d6dc9f8cf8ef208a9b88c89":16:"-0503ae899d35ae5b7706b067aed7cb2952da37a5d4ad58f05f69abe14e8aaae88eab2baed858177cb4595c0edc92e5ac13c2bba2bfa23276dd023e9e52f547d4c9edb138d86aad329d7afb01e15eab7281e181cb249fc91bf09d621d86561301edda156f80e3bbff853a312852fe9e3d0541cb86801390aff1dc3c05bcb592c266f625b70e419b4c7e7e85399bb06c0e50b099b4292f9eaff4d869681faa1f745b5fcb3349ed93c572739a31dcf76b43370cf9f86cc54e982dfac9467bde915c697e60554e0d698be6bb2dd1f8bc64659f6baee7641b51f4b5ed7010c04600fcd382db84a93fe3d4d86e86a459c6cebb590000000000000000"
+
+Test mbedtls_mpi_mul_mpi #2, trailing 0 limb in A, B < 0
+mbedtls_mpi_mul_mpi:16:"02f77b94b179d4a51360f04fa56e2c0784ce3b8a742280b016904896a5605fbe9e0f0683f82c439d979ab14e11b34e05ae96232b18fb2e0d1319f4942732d7eadf92ae90cb8c68ec8ece154d334f553564b6f6db185b33b8d3635598c3d128acde8bbb7b13697e48d1a542e5f9168d2d83a8dd05ae1eaf24510000000000000000":16:"-01b0b14c432710cde936e3fc100515e95dca61e10b8a68d9632bfa0546a9731a1ce6bebc6cb5fe6f5fd7e57b25f737f6a0ce5402e216b8b81c06f0c5ccce447d7f5631d14bff9dfa16f7cc72c56c84b636d00a5f35199d17ee9bf3f8746f44374ffd4ae22cf84089f04a9f7f356d6dc9f8cf8ef208a9b88c89":16:"-0503ae899d35ae5b7706b067aed7cb2952da37a5d4ad58f05f69abe14e8aaae88eab2baed858177cb4595c0edc92e5ac13c2bba2bfa23276dd023e9e52f547d4c9edb138d86aad329d7afb01e15eab7281e181cb249fc91bf09d621d86561301edda156f80e3bbff853a312852fe9e3d0541cb86801390aff1dc3c05bcb592c266f625b70e419b4c7e7e85399bb06c0e50b099b4292f9eaff4d869681faa1f745b5fcb3349ed93c572739a31dcf76b43370cf9f86cc54e982dfac9467bde915c697e60554e0d698be6bb2dd1f8bc64659f6baee7641b51f4b5ed7010c04600fcd382db84a93fe3d4d86e86a459c6cebb590000000000000000"
+
+Test mbedtls_mpi_mul_mpi #2, trailing 0 limb in A, A < 0, B < 0
+mbedtls_mpi_mul_mpi:16:"-02f77b94b179d4a51360f04fa56e2c0784ce3b8a742280b016904896a5605fbe9e0f0683f82c439d979ab14e11b34e05ae96232b18fb2e0d1319f4942732d7eadf92ae90cb8c68ec8ece154d334f553564b6f6db185b33b8d3635598c3d128acde8bbb7b13697e48d1a542e5f9168d2d83a8dd05ae1eaf24510000000000000000":16:"-01b0b14c432710cde936e3fc100515e95dca61e10b8a68d9632bfa0546a9731a1ce6bebc6cb5fe6f5fd7e57b25f737f6a0ce5402e216b8b81c06f0c5ccce447d7f5631d14bff9dfa16f7cc72c56c84b636d00a5f35199d17ee9bf3f8746f44374ffd4ae22cf84089f04a9f7f356d6dc9f8cf8ef208a9b88c89":16:"0503ae899d35ae5b7706b067aed7cb2952da37a5d4ad58f05f69abe14e8aaae88eab2baed858177cb4595c0edc92e5ac13c2bba2bfa23276dd023e9e52f547d4c9edb138d86aad329d7afb01e15eab7281e181cb249fc91bf09d621d86561301edda156f80e3bbff853a312852fe9e3d0541cb86801390aff1dc3c05bcb592c266f625b70e419b4c7e7e85399bb06c0e50b099b4292f9eaff4d869681faa1f745b5fcb3349ed93c572739a31dcf76b43370cf9f86cc54e982dfac9467bde915c697e60554e0d698be6bb2dd1f8bc64659f6baee7641b51f4b5ed7010c04600fcd382db84a93fe3d4d86e86a459c6cebb590000000000000000"
+
+Test mbedtls_mpi_mul_mpi #2, trailing 0 limb in B
+mbedtls_mpi_mul_mpi:16:"02f77b94b179d4a51360f04fa56e2c0784ce3b8a742280b016904896a5605fbe9e0f0683f82c439d979ab14e11b34e05ae96232b18fb2e0d1319f4942732d7eadf92ae90cb8c68ec8ece154d334f553564b6f6db185b33b8d3635598c3d128acde8bbb7b13697e48d1a542e5f9168d2d83a8dd05ae1eaf2451":16:"01b0b14c432710cde936e3fc100515e95dca61e10b8a68d9632bfa0546a9731a1ce6bebc6cb5fe6f5fd7e57b25f737f6a0ce5402e216b8b81c06f0c5ccce447d7f5631d14bff9dfa16f7cc72c56c84b636d00a5f35199d17ee9bf3f8746f44374ffd4ae22cf84089f04a9f7f356d6dc9f8cf8ef208a9b88c890000000000000000":16:"0503ae899d35ae5b7706b067aed7cb2952da37a5d4ad58f05f69abe14e8aaae88eab2baed858177cb4595c0edc92e5ac13c2bba2bfa23276dd023e9e52f547d4c9edb138d86aad329d7afb01e15eab7281e181cb249fc91bf09d621d86561301edda156f80e3bbff853a312852fe9e3d0541cb86801390aff1dc3c05bcb592c266f625b70e419b4c7e7e85399bb06c0e50b099b4292f9eaff4d869681faa1f745b5fcb3349ed93c572739a31dcf76b43370cf9f86cc54e982dfac9467bde915c697e60554e0d698be6bb2dd1f8bc64659f6baee7641b51f4b5ed7010c04600fcd382db84a93fe3d4d86e86a459c6cebb590000000000000000"
+
+Test mbedtls_mpi_mul_mpi #2, trailing 0 limb in B, A < 0
+mbedtls_mpi_mul_mpi:16:"-02f77b94b179d4a51360f04fa56e2c0784ce3b8a742280b016904896a5605fbe9e0f0683f82c439d979ab14e11b34e05ae96232b18fb2e0d1319f4942732d7eadf92ae90cb8c68ec8ece154d334f553564b6f6db185b33b8d3635598c3d128acde8bbb7b13697e48d1a542e5f9168d2d83a8dd05ae1eaf2451":16:"01b0b14c432710cde936e3fc100515e95dca61e10b8a68d9632bfa0546a9731a1ce6bebc6cb5fe6f5fd7e57b25f737f6a0ce5402e216b8b81c06f0c5ccce447d7f5631d14bff9dfa16f7cc72c56c84b636d00a5f35199d17ee9bf3f8746f44374ffd4ae22cf84089f04a9f7f356d6dc9f8cf8ef208a9b88c890000000000000000":16:"-0503ae899d35ae5b7706b067aed7cb2952da37a5d4ad58f05f69abe14e8aaae88eab2baed858177cb4595c0edc92e5ac13c2bba2bfa23276dd023e9e52f547d4c9edb138d86aad329d7afb01e15eab7281e181cb249fc91bf09d621d86561301edda156f80e3bbff853a312852fe9e3d0541cb86801390aff1dc3c05bcb592c266f625b70e419b4c7e7e85399bb06c0e50b099b4292f9eaff4d869681faa1f745b5fcb3349ed93c572739a31dcf76b43370cf9f86cc54e982dfac9467bde915c697e60554e0d698be6bb2dd1f8bc64659f6baee7641b51f4b5ed7010c04600fcd382db84a93fe3d4d86e86a459c6cebb590000000000000000"
+
+Test mbedtls_mpi_mul_mpi #2, trailing 0 limb in B, B < 0
+mbedtls_mpi_mul_mpi:16:"02f77b94b179d4a51360f04fa56e2c0784ce3b8a742280b016904896a5605fbe9e0f0683f82c439d979ab14e11b34e05ae96232b18fb2e0d1319f4942732d7eadf92ae90cb8c68ec8ece154d334f553564b6f6db185b33b8d3635598c3d128acde8bbb7b13697e48d1a542e5f9168d2d83a8dd05ae1eaf2451":16:"-01b0b14c432710cde936e3fc100515e95dca61e10b8a68d9632bfa0546a9731a1ce6bebc6cb5fe6f5fd7e57b25f737f6a0ce5402e216b8b81c06f0c5ccce447d7f5631d14bff9dfa16f7cc72c56c84b636d00a5f35199d17ee9bf3f8746f44374ffd4ae22cf84089f04a9f7f356d6dc9f8cf8ef208a9b88c890000000000000000":16:"-0503ae899d35ae5b7706b067aed7cb2952da37a5d4ad58f05f69abe14e8aaae88eab2baed858177cb4595c0edc92e5ac13c2bba2bfa23276dd023e9e52f547d4c9edb138d86aad329d7afb01e15eab7281e181cb249fc91bf09d621d86561301edda156f80e3bbff853a312852fe9e3d0541cb86801390aff1dc3c05bcb592c266f625b70e419b4c7e7e85399bb06c0e50b099b4292f9eaff4d869681faa1f745b5fcb3349ed93c572739a31dcf76b43370cf9f86cc54e982dfac9467bde915c697e60554e0d698be6bb2dd1f8bc64659f6baee7641b51f4b5ed7010c04600fcd382db84a93fe3d4d86e86a459c6cebb590000000000000000"
+
+Test mbedtls_mpi_mul_mpi #2, trailing 0 limb in B, A < 0, B < 0
+mbedtls_mpi_mul_mpi:16:"-02f77b94b179d4a51360f04fa56e2c0784ce3b8a742280b016904896a5605fbe9e0f0683f82c439d979ab14e11b34e05ae96232b18fb2e0d1319f4942732d7eadf92ae90cb8c68ec8ece154d334f553564b6f6db185b33b8d3635598c3d128acde8bbb7b13697e48d1a542e5f9168d2d83a8dd05ae1eaf2451":16:"-01b0b14c432710cde936e3fc100515e95dca61e10b8a68d9632bfa0546a9731a1ce6bebc6cb5fe6f5fd7e57b25f737f6a0ce5402e216b8b81c06f0c5ccce447d7f5631d14bff9dfa16f7cc72c56c84b636d00a5f35199d17ee9bf3f8746f44374ffd4ae22cf84089f04a9f7f356d6dc9f8cf8ef208a9b88c890000000000000000":16:"0503ae899d35ae5b7706b067aed7cb2952da37a5d4ad58f05f69abe14e8aaae88eab2baed858177cb4595c0edc92e5ac13c2bba2bfa23276dd023e9e52f547d4c9edb138d86aad329d7afb01e15eab7281e181cb249fc91bf09d621d86561301edda156f80e3bbff853a312852fe9e3d0541cb86801390aff1dc3c05bcb592c266f625b70e419b4c7e7e85399bb06c0e50b099b4292f9eaff4d869681faa1f745b5fcb3349ed93c572739a31dcf76b43370cf9f86cc54e982dfac9467bde915c697e60554e0d698be6bb2dd1f8bc64659f6baee7641b51f4b5ed7010c04600fcd382db84a93fe3d4d86e86a459c6cebb590000000000000000"
+
+Test mbedtls_mpi_mul_mpi #2, trailing 0 limb in A and B
+mbedtls_mpi_mul_mpi:16:"02f77b94b179d4a51360f04fa56e2c0784ce3b8a742280b016904896a5605fbe9e0f0683f82c439d979ab14e11b34e05ae96232b18fb2e0d1319f4942732d7eadf92ae90cb8c68ec8ece154d334f553564b6f6db185b33b8d3635598c3d128acde8bbb7b13697e48d1a542e5f9168d2d83a8dd05ae1eaf24510000000000000000":16:"01b0b14c432710cde936e3fc100515e95dca61e10b8a68d9632bfa0546a9731a1ce6bebc6cb5fe6f5fd7e57b25f737f6a0ce5402e216b8b81c06f0c5ccce447d7f5631d14bff9dfa16f7cc72c56c84b636d00a5f35199d17ee9bf3f8746f44374ffd4ae22cf84089f04a9f7f356d6dc9f8cf8ef208a9b88c890000000000000000":16:"0503ae899d35ae5b7706b067aed7cb2952da37a5d4ad58f05f69abe14e8aaae88eab2baed858177cb4595c0edc92e5ac13c2bba2bfa23276dd023e9e52f547d4c9edb138d86aad329d7afb01e15eab7281e181cb249fc91bf09d621d86561301edda156f80e3bbff853a312852fe9e3d0541cb86801390aff1dc3c05bcb592c266f625b70e419b4c7e7e85399bb06c0e50b099b4292f9eaff4d869681faa1f745b5fcb3349ed93c572739a31dcf76b43370cf9f86cc54e982dfac9467bde915c697e60554e0d698be6bb2dd1f8bc64659f6baee7641b51f4b5ed7010c04600fcd382db84a93fe3d4d86e86a459c6cebb5900000000000000000000000000000000"
+
+Test mbedtls_mpi_mul_mpi #2, trailing 0 limb in A and B, A < 0
+mbedtls_mpi_mul_mpi:16:"-02f77b94b179d4a51360f04fa56e2c0784ce3b8a742280b016904896a5605fbe9e0f0683f82c439d979ab14e11b34e05ae96232b18fb2e0d1319f4942732d7eadf92ae90cb8c68ec8ece154d334f553564b6f6db185b33b8d3635598c3d128acde8bbb7b13697e48d1a542e5f9168d2d83a8dd05ae1eaf24510000000000000000":16:"01b0b14c432710cde936e3fc100515e95dca61e10b8a68d9632bfa0546a9731a1ce6bebc6cb5fe6f5fd7e57b25f737f6a0ce5402e216b8b81c06f0c5ccce447d7f5631d14bff9dfa16f7cc72c56c84b636d00a5f35199d17ee9bf3f8746f44374ffd4ae22cf84089f04a9f7f356d6dc9f8cf8ef208a9b88c890000000000000000":16:"-0503ae899d35ae5b7706b067aed7cb2952da37a5d4ad58f05f69abe14e8aaae88eab2baed858177cb4595c0edc92e5ac13c2bba2bfa23276dd023e9e52f547d4c9edb138d86aad329d7afb01e15eab7281e181cb249fc91bf09d621d86561301edda156f80e3bbff853a312852fe9e3d0541cb86801390aff1dc3c05bcb592c266f625b70e419b4c7e7e85399bb06c0e50b099b4292f9eaff4d869681faa1f745b5fcb3349ed93c572739a31dcf76b43370cf9f86cc54e982dfac9467bde915c697e60554e0d698be6bb2dd1f8bc64659f6baee7641b51f4b5ed7010c04600fcd382db84a93fe3d4d86e86a459c6cebb5900000000000000000000000000000000"
+
+Test mbedtls_mpi_mul_mpi #2, trailing 0 limb in A and B, B < 0
+mbedtls_mpi_mul_mpi:16:"02f77b94b179d4a51360f04fa56e2c0784ce3b8a742280b016904896a5605fbe9e0f0683f82c439d979ab14e11b34e05ae96232b18fb2e0d1319f4942732d7eadf92ae90cb8c68ec8ece154d334f553564b6f6db185b33b8d3635598c3d128acde8bbb7b13697e48d1a542e5f9168d2d83a8dd05ae1eaf24510000000000000000":16:"-01b0b14c432710cde936e3fc100515e95dca61e10b8a68d9632bfa0546a9731a1ce6bebc6cb5fe6f5fd7e57b25f737f6a0ce5402e216b8b81c06f0c5ccce447d7f5631d14bff9dfa16f7cc72c56c84b636d00a5f35199d17ee9bf3f8746f44374ffd4ae22cf84089f04a9f7f356d6dc9f8cf8ef208a9b88c890000000000000000":16:"-0503ae899d35ae5b7706b067aed7cb2952da37a5d4ad58f05f69abe14e8aaae88eab2baed858177cb4595c0edc92e5ac13c2bba2bfa23276dd023e9e52f547d4c9edb138d86aad329d7afb01e15eab7281e181cb249fc91bf09d621d86561301edda156f80e3bbff853a312852fe9e3d0541cb86801390aff1dc3c05bcb592c266f625b70e419b4c7e7e85399bb06c0e50b099b4292f9eaff4d869681faa1f745b5fcb3349ed93c572739a31dcf76b43370cf9f86cc54e982dfac9467bde915c697e60554e0d698be6bb2dd1f8bc64659f6baee7641b51f4b5ed7010c04600fcd382db84a93fe3d4d86e86a459c6cebb5900000000000000000000000000000000"
+
+Test mbedtls_mpi_mul_mpi #2, trailing 0 limb in A and B, A < 0, B < 0
+mbedtls_mpi_mul_mpi:16:"-02f77b94b179d4a51360f04fa56e2c0784ce3b8a742280b016904896a5605fbe9e0f0683f82c439d979ab14e11b34e05ae96232b18fb2e0d1319f4942732d7eadf92ae90cb8c68ec8ece154d334f553564b6f6db185b33b8d3635598c3d128acde8bbb7b13697e48d1a542e5f9168d2d83a8dd05ae1eaf24510000000000000000":16:"-01b0b14c432710cde936e3fc100515e95dca61e10b8a68d9632bfa0546a9731a1ce6bebc6cb5fe6f5fd7e57b25f737f6a0ce5402e216b8b81c06f0c5ccce447d7f5631d14bff9dfa16f7cc72c56c84b636d00a5f35199d17ee9bf3f8746f44374ffd4ae22cf84089f04a9f7f356d6dc9f8cf8ef208a9b88c890000000000000000":16:"0503ae899d35ae5b7706b067aed7cb2952da37a5d4ad58f05f69abe14e8aaae88eab2baed858177cb4595c0edc92e5ac13c2bba2bfa23276dd023e9e52f547d4c9edb138d86aad329d7afb01e15eab7281e181cb249fc91bf09d621d86561301edda156f80e3bbff853a312852fe9e3d0541cb86801390aff1dc3c05bcb592c266f625b70e419b4c7e7e85399bb06c0e50b099b4292f9eaff4d869681faa1f745b5fcb3349ed93c572739a31dcf76b43370cf9f86cc54e982dfac9467bde915c697e60554e0d698be6bb2dd1f8bc64659f6baee7641b51f4b5ed7010c04600fcd382db84a93fe3d4d86e86a459c6cebb5900000000000000000000000000000000"
+
+Test mbedtls_mpi_mul_mpi #3, trailing 0 limbs in A
+mbedtls_mpi_mul_mpi:16:"02f77b94b179d4a51360f04fa56e2c0784ce3b8a742280b016904896a5605fbe9e0f0683f82c439d979ab14e11b34e05ae96232b18fb2e0d1319f4942732d7eadf92ae90cb8c68ec8ece154d334f553564b6f6db185b33b8d3635598c3d128acde8bbb7b13697e48d1a542e5f9168d2d83a8dd05ae1eaf245100000000000000000000000000000000":16:"01b0b14c432710cde936e3fc100515e95dca61e10b8a68d9632bfa0546a9731a1ce6bebc6cb5fe6f5fd7e57b25f737f6a0ce5402e216b8b81c06f0c5ccce447d7f5631d14bff9dfa16f7cc72c56c84b636d00a5f35199d17ee9bf3f8746f44374ffd4ae22cf84089f04a9f7f356d6dc9f8cf8ef208a9b88c89":16:"0503ae899d35ae5b7706b067aed7cb2952da37a5d4ad58f05f69abe14e8aaae88eab2baed858177cb4595c0edc92e5ac13c2bba2bfa23276dd023e9e52f547d4c9edb138d86aad329d7afb01e15eab7281e181cb249fc91bf09d621d86561301edda156f80e3bbff853a312852fe9e3d0541cb86801390aff1dc3c05bcb592c266f625b70e419b4c7e7e85399bb06c0e50b099b4292f9eaff4d869681faa1f745b5fcb3349ed93c572739a31dcf76b43370cf9f86cc54e982dfac9467bde915c697e60554e0d698be6bb2dd1f8bc64659f6baee7641b51f4b5ed7010c04600fcd382db84a93fe3d4d86e86a459c6cebb5900000000000000000000000000000000"
+
+Test mbedtls_mpi_mul_mpi #3, trailing 0 limbs in A, A < 0
+mbedtls_mpi_mul_mpi:16:"-02f77b94b179d4a51360f04fa56e2c0784ce3b8a742280b016904896a5605fbe9e0f0683f82c439d979ab14e11b34e05ae96232b18fb2e0d1319f4942732d7eadf92ae90cb8c68ec8ece154d334f553564b6f6db185b33b8d3635598c3d128acde8bbb7b13697e48d1a542e5f9168d2d83a8dd05ae1eaf245100000000000000000000000000000000":16:"01b0b14c432710cde936e3fc100515e95dca61e10b8a68d9632bfa0546a9731a1ce6bebc6cb5fe6f5fd7e57b25f737f6a0ce5402e216b8b81c06f0c5ccce447d7f5631d14bff9dfa16f7cc72c56c84b636d00a5f35199d17ee9bf3f8746f44374ffd4ae22cf84089f04a9f7f356d6dc9f8cf8ef208a9b88c89":16:"-0503ae899d35ae5b7706b067aed7cb2952da37a5d4ad58f05f69abe14e8aaae88eab2baed858177cb4595c0edc92e5ac13c2bba2bfa23276dd023e9e52f547d4c9edb138d86aad329d7afb01e15eab7281e181cb249fc91bf09d621d86561301edda156f80e3bbff853a312852fe9e3d0541cb86801390aff1dc3c05bcb592c266f625b70e419b4c7e7e85399bb06c0e50b099b4292f9eaff4d869681faa1f745b5fcb3349ed93c572739a31dcf76b43370cf9f86cc54e982dfac9467bde915c697e60554e0d698be6bb2dd1f8bc64659f6baee7641b51f4b5ed7010c04600fcd382db84a93fe3d4d86e86a459c6cebb5900000000000000000000000000000000"
+
+Test mbedtls_mpi_mul_mpi #3, trailing 0 limbs in A, B < 0
+mbedtls_mpi_mul_mpi:16:"02f77b94b179d4a51360f04fa56e2c0784ce3b8a742280b016904896a5605fbe9e0f0683f82c439d979ab14e11b34e05ae96232b18fb2e0d1319f4942732d7eadf92ae90cb8c68ec8ece154d334f553564b6f6db185b33b8d3635598c3d128acde8bbb7b13697e48d1a542e5f9168d2d83a8dd05ae1eaf245100000000000000000000000000000000":16:"-01b0b14c432710cde936e3fc100515e95dca61e10b8a68d9632bfa0546a9731a1ce6bebc6cb5fe6f5fd7e57b25f737f6a0ce5402e216b8b81c06f0c5ccce447d7f5631d14bff9dfa16f7cc72c56c84b636d00a5f35199d17ee9bf3f8746f44374ffd4ae22cf84089f04a9f7f356d6dc9f8cf8ef208a9b88c89":16:"-0503ae899d35ae5b7706b067aed7cb2952da37a5d4ad58f05f69abe14e8aaae88eab2baed858177cb4595c0edc92e5ac13c2bba2bfa23276dd023e9e52f547d4c9edb138d86aad329d7afb01e15eab7281e181cb249fc91bf09d621d86561301edda156f80e3bbff853a312852fe9e3d0541cb86801390aff1dc3c05bcb592c266f625b70e419b4c7e7e85399bb06c0e50b099b4292f9eaff4d869681faa1f745b5fcb3349ed93c572739a31dcf76b43370cf9f86cc54e982dfac9467bde915c697e60554e0d698be6bb2dd1f8bc64659f6baee7641b51f4b5ed7010c04600fcd382db84a93fe3d4d86e86a459c6cebb5900000000000000000000000000000000"
+
+Test mbedtls_mpi_mul_mpi #3, trailing 0 limbs in A, A < 0, B < 0
+mbedtls_mpi_mul_mpi:16:"-02f77b94b179d4a51360f04fa56e2c0784ce3b8a742280b016904896a5605fbe9e0f0683f82c439d979ab14e11b34e05ae96232b18fb2e0d1319f4942732d7eadf92ae90cb8c68ec8ece154d334f553564b6f6db185b33b8d3635598c3d128acde8bbb7b13697e48d1a542e5f9168d2d83a8dd05ae1eaf245100000000000000000000000000000000":16:"-01b0b14c432710cde936e3fc100515e95dca61e10b8a68d9632bfa0546a9731a1ce6bebc6cb5fe6f5fd7e57b25f737f6a0ce5402e216b8b81c06f0c5ccce447d7f5631d14bff9dfa16f7cc72c56c84b636d00a5f35199d17ee9bf3f8746f44374ffd4ae22cf84089f04a9f7f356d6dc9f8cf8ef208a9b88c89":16:"0503ae899d35ae5b7706b067aed7cb2952da37a5d4ad58f05f69abe14e8aaae88eab2baed858177cb4595c0edc92e5ac13c2bba2bfa23276dd023e9e52f547d4c9edb138d86aad329d7afb01e15eab7281e181cb249fc91bf09d621d86561301edda156f80e3bbff853a312852fe9e3d0541cb86801390aff1dc3c05bcb592c266f625b70e419b4c7e7e85399bb06c0e50b099b4292f9eaff4d869681faa1f745b5fcb3349ed93c572739a31dcf76b43370cf9f86cc54e982dfac9467bde915c697e60554e0d698be6bb2dd1f8bc64659f6baee7641b51f4b5ed7010c04600fcd382db84a93fe3d4d86e86a459c6cebb5900000000000000000000000000000000"
+
+Test mbedtls_mpi_mul_mpi #3, trailing 0 limbs in B
+mbedtls_mpi_mul_mpi:16:"02f77b94b179d4a51360f04fa56e2c0784ce3b8a742280b016904896a5605fbe9e0f0683f82c439d979ab14e11b34e05ae96232b18fb2e0d1319f4942732d7eadf92ae90cb8c68ec8ece154d334f553564b6f6db185b33b8d3635598c3d128acde8bbb7b13697e48d1a542e5f9168d2d83a8dd05ae1eaf2451":16:"01b0b14c432710cde936e3fc100515e95dca61e10b8a68d9632bfa0546a9731a1ce6bebc6cb5fe6f5fd7e57b25f737f6a0ce5402e216b8b81c06f0c5ccce447d7f5631d14bff9dfa16f7cc72c56c84b636d00a5f35199d17ee9bf3f8746f44374ffd4ae22cf84089f04a9f7f356d6dc9f8cf8ef208a9b88c8900000000000000000000000000000000":16:"0503ae899d35ae5b7706b067aed7cb2952da37a5d4ad58f05f69abe14e8aaae88eab2baed858177cb4595c0edc92e5ac13c2bba2bfa23276dd023e9e52f547d4c9edb138d86aad329d7afb01e15eab7281e181cb249fc91bf09d621d86561301edda156f80e3bbff853a312852fe9e3d0541cb86801390aff1dc3c05bcb592c266f625b70e419b4c7e7e85399bb06c0e50b099b4292f9eaff4d869681faa1f745b5fcb3349ed93c572739a31dcf76b43370cf9f86cc54e982dfac9467bde915c697e60554e0d698be6bb2dd1f8bc64659f6baee7641b51f4b5ed7010c04600fcd382db84a93fe3d4d86e86a459c6cebb5900000000000000000000000000000000"
+
+Test mbedtls_mpi_mul_mpi #3, trailing 0 limbs in B, A < 0
+mbedtls_mpi_mul_mpi:16:"-02f77b94b179d4a51360f04fa56e2c0784ce3b8a742280b016904896a5605fbe9e0f0683f82c439d979ab14e11b34e05ae96232b18fb2e0d1319f4942732d7eadf92ae90cb8c68ec8ece154d334f553564b6f6db185b33b8d3635598c3d128acde8bbb7b13697e48d1a542e5f9168d2d83a8dd05ae1eaf2451":16:"01b0b14c432710cde936e3fc100515e95dca61e10b8a68d9632bfa0546a9731a1ce6bebc6cb5fe6f5fd7e57b25f737f6a0ce5402e216b8b81c06f0c5ccce447d7f5631d14bff9dfa16f7cc72c56c84b636d00a5f35199d17ee9bf3f8746f44374ffd4ae22cf84089f04a9f7f356d6dc9f8cf8ef208a9b88c8900000000000000000000000000000000":16:"-0503ae899d35ae5b7706b067aed7cb2952da37a5d4ad58f05f69abe14e8aaae88eab2baed858177cb4595c0edc92e5ac13c2bba2bfa23276dd023e9e52f547d4c9edb138d86aad329d7afb01e15eab7281e181cb249fc91bf09d621d86561301edda156f80e3bbff853a312852fe9e3d0541cb86801390aff1dc3c05bcb592c266f625b70e419b4c7e7e85399bb06c0e50b099b4292f9eaff4d869681faa1f745b5fcb3349ed93c572739a31dcf76b43370cf9f86cc54e982dfac9467bde915c697e60554e0d698be6bb2dd1f8bc64659f6baee7641b51f4b5ed7010c04600fcd382db84a93fe3d4d86e86a459c6cebb5900000000000000000000000000000000"
+
+Test mbedtls_mpi_mul_mpi #3, trailing 0 limbs in B, B < 0
+mbedtls_mpi_mul_mpi:16:"02f77b94b179d4a51360f04fa56e2c0784ce3b8a742280b016904896a5605fbe9e0f0683f82c439d979ab14e11b34e05ae96232b18fb2e0d1319f4942732d7eadf92ae90cb8c68ec8ece154d334f553564b6f6db185b33b8d3635598c3d128acde8bbb7b13697e48d1a542e5f9168d2d83a8dd05ae1eaf2451":16:"-01b0b14c432710cde936e3fc100515e95dca61e10b8a68d9632bfa0546a9731a1ce6bebc6cb5fe6f5fd7e57b25f737f6a0ce5402e216b8b81c06f0c5ccce447d7f5631d14bff9dfa16f7cc72c56c84b636d00a5f35199d17ee9bf3f8746f44374ffd4ae22cf84089f04a9f7f356d6dc9f8cf8ef208a9b88c8900000000000000000000000000000000":16:"-0503ae899d35ae5b7706b067aed7cb2952da37a5d4ad58f05f69abe14e8aaae88eab2baed858177cb4595c0edc92e5ac13c2bba2bfa23276dd023e9e52f547d4c9edb138d86aad329d7afb01e15eab7281e181cb249fc91bf09d621d86561301edda156f80e3bbff853a312852fe9e3d0541cb86801390aff1dc3c05bcb592c266f625b70e419b4c7e7e85399bb06c0e50b099b4292f9eaff4d869681faa1f745b5fcb3349ed93c572739a31dcf76b43370cf9f86cc54e982dfac9467bde915c697e60554e0d698be6bb2dd1f8bc64659f6baee7641b51f4b5ed7010c04600fcd382db84a93fe3d4d86e86a459c6cebb5900000000000000000000000000000000"
+
+Test mbedtls_mpi_mul_mpi #3, trailing 0 limbs in B, A < 0, B < 0
+mbedtls_mpi_mul_mpi:16:"-02f77b94b179d4a51360f04fa56e2c0784ce3b8a742280b016904896a5605fbe9e0f0683f82c439d979ab14e11b34e05ae96232b18fb2e0d1319f4942732d7eadf92ae90cb8c68ec8ece154d334f553564b6f6db185b33b8d3635598c3d128acde8bbb7b13697e48d1a542e5f9168d2d83a8dd05ae1eaf2451":16:"-01b0b14c432710cde936e3fc100515e95dca61e10b8a68d9632bfa0546a9731a1ce6bebc6cb5fe6f5fd7e57b25f737f6a0ce5402e216b8b81c06f0c5ccce447d7f5631d14bff9dfa16f7cc72c56c84b636d00a5f35199d17ee9bf3f8746f44374ffd4ae22cf84089f04a9f7f356d6dc9f8cf8ef208a9b88c8900000000000000000000000000000000":16:"0503ae899d35ae5b7706b067aed7cb2952da37a5d4ad58f05f69abe14e8aaae88eab2baed858177cb4595c0edc92e5ac13c2bba2bfa23276dd023e9e52f547d4c9edb138d86aad329d7afb01e15eab7281e181cb249fc91bf09d621d86561301edda156f80e3bbff853a312852fe9e3d0541cb86801390aff1dc3c05bcb592c266f625b70e419b4c7e7e85399bb06c0e50b099b4292f9eaff4d869681faa1f745b5fcb3349ed93c572739a31dcf76b43370cf9f86cc54e982dfac9467bde915c697e60554e0d698be6bb2dd1f8bc64659f6baee7641b51f4b5ed7010c04600fcd382db84a93fe3d4d86e86a459c6cebb5900000000000000000000000000000000"
+
+Test mbedtls_mpi_mul_int #1
+mbedtls_mpi_mul_int:10:"2039568783564019774057658669290345772801939933143482630947726464532830627227012776329":9871232:10:"20133056642518226042310730101376278483547239130123806338055387803943342738063359782107667328":"=="
+
+Test mbedtls_mpi_mul_int #2 (Unsigned, thus failure)
+mbedtls_mpi_mul_int:10:"2039568783564019774057658669290345772801939933143482630947726464532830627227012776329":-9871232:10:"-20133056642518226042310730101376278483547239130123806338055387803943342738063359782107667328":"!="
+
+Test mbedtls_mpi_mul_int #3
+mbedtls_mpi_mul_int:10:"-2039568783564019774057658669290345772801939933143482630947726464532830627227012776329":9871232:10:"-20133056642518226042310730101376278483547239130123806338055387803943342738063359782107667328":"=="
+
+Test mbedtls_mpi_mul_int #4 (Unsigned, thus failure)
+mbedtls_mpi_mul_int:10:"-2039568783564019774057658669290345772801939933143482630947726464532830627227012776329":-9871232:10:"20133056642518226042310730101376278483547239130123806338055387803943342738063359782107667328":"!="
+
+Test mbedtls_mpi_mul_int: 0 (null) * 0
+mbedtls_mpi_mul_int:16:"":0:16:"":"=="
+
+Test mbedtls_mpi_mul_int: 0 (null) * 1
+mbedtls_mpi_mul_int:16:"":1:16:"":"=="
+
+Test mbedtls_mpi_mul_int: 0 (null) * 0x1234
+mbedtls_mpi_mul_int:16:"":0x1234:16:"":"=="
+
+Base test mbedtls_mpi_div_mpi #1
+mbedtls_mpi_div_mpi:10:"1000":10:"13":10:"76":10:"12":0
+
+Base test mbedtls_mpi_div_mpi #2 (Divide by zero (1 limb))
+mbedtls_mpi_div_mpi:10:"1000":10:"0":10:"1":10:"1":MBEDTLS_ERR_MPI_DIVISION_BY_ZERO
+
+Base test mbedtls_mpi_div_mpi #2 (Divide by zero (null))
+mbedtls_mpi_div_mpi:10:"1000":10:"":10:"1":10:"1":MBEDTLS_ERR_MPI_DIVISION_BY_ZERO
+
+Base test mbedtls_mpi_div_mpi #3
+mbedtls_mpi_div_mpi:10:"1000":10:"-13":10:"-76":10:"12":0
+
+Test mbedtls_mpi_div_mpi: 0 (null) / 0 (null)
+mbedtls_mpi_div_mpi:16:"":16:"":16:"":16:"":MBEDTLS_ERR_MPI_DIVISION_BY_ZERO
+
+Test mbedtls_mpi_div_mpi: 0 (null) / 0 (1 limb)
+mbedtls_mpi_div_mpi:16:"":16:"0":16:"":16:"":MBEDTLS_ERR_MPI_DIVISION_BY_ZERO
+
+Test mbedtls_mpi_div_mpi: 0 (1 limb) / 0 (null)
+mbedtls_mpi_div_mpi:16:"0":16:"":16:"":16:"":MBEDTLS_ERR_MPI_DIVISION_BY_ZERO
+
+Test mbedtls_mpi_div_mpi: 0 (1 limb) / 0 (1 limb)
+mbedtls_mpi_div_mpi:16:"0":16:"0":16:"":16:"":MBEDTLS_ERR_MPI_DIVISION_BY_ZERO
+
+Test mbedtls_mpi_div_mpi: 0 (null) / 1
+mbedtls_mpi_div_mpi:16:"":16:"1":16:"":16:"":0
+
+Test mbedtls_mpi_div_mpi: 0 (null) / -1
+mbedtls_mpi_div_mpi:16:"":16:"-1":16:"":16:"":0
+
+Test mbedtls_mpi_div_mpi #1
+mbedtls_mpi_div_mpi:10:"20133056642518226042310730101376278483547239130123806338055387803943342738063359782107667328":10:"34":10:"592148724779947824773845002981655249516095268533053127589864347174804198178334111238460803":10:"26":0
+
+Test mbedtls_mpi_div_mpi #2
+mbedtls_mpi_div_mpi:10:"476221599179424887669515829231223263939342135681791605842540429321038144633323941248706405375723482912535192363845116154236465184147599697841273424891410002781967962186252583311115708128167171262206919514587899883547279647025952837516324649656913580411611297312678955801899536937577476819667861053063432906071315727948826276092545739432005962781562403795455162483159362585281248265005441715080197800335757871588045959754547836825977169125866324128449699877076762316768127816074587766799018626179199776188490087103869164122906791440101822594139648973454716256383294690817576188762":10:"28911710017320205966167820725313234361535259163045867986277478145081076845846493521348693253530011243988160148063424837895971948244167867236923919506962312185829914482993478947657472351461336729641485069323635424692930278888923450060546465883490944265147851036817433970984747733020522259537":10:"16471581891701794764704009719057349996270239948993452268812975037240586099924712715366967486587417803753916334331355573776945238871512026832810626226164346328807407669366029926221415383560814338828449642265377822759768011406757061063524768140567867350208554439342320410551341675119078050953":10:"1":0
+
+Test mbedtls_mpi_div_mpi #3
+mbedtls_mpi_div_mpi:10:"1000":10:"7":10:"142":10:"6":0
+
+Test mbedtls_mpi_div_mpi #4
+mbedtls_mpi_div_mpi:10:"777":10:"7":10:"111":10:"0":0
+
+Base test mbedtls_mpi_div_int #1
+mbedtls_mpi_div_int:10:"1000":13:10:"76":10:"12":0
+
+Base test mbedtls_mpi_div_int #2 (Divide by zero)
+mbedtls_mpi_div_int:10:"1000":0:10:"1":10:"1":MBEDTLS_ERR_MPI_DIVISION_BY_ZERO
+
+Base test mbedtls_mpi_div_int #3
+mbedtls_mpi_div_int:10:"1000":-13:10:"-76":10:"12":0
+
+Test mbedtls_mpi_div_int #1
+mbedtls_mpi_div_int:10:"20133056642518226042310730101376278483547239130123806338055387803943342738063359782107667328":34:10:"592148724779947824773845002981655249516095268533053127589864347174804198178334111238460803":10:"26":0
+
+Test mbedtls_mpi_div_int #2
+mbedtls_mpi_div_int:10:"20133056642518226042310730101376278483547239130123806338055387803943342738063359782107667328":-34:10:"-592148724779947824773845002981655249516095268533053127589864347174804198178334111238460803":10:"26":0
+
+Test mbedtls_mpi_div_int: 0 (null) / 0
+mbedtls_mpi_div_int:16:"":0:16:"":16:"":MBEDTLS_ERR_MPI_DIVISION_BY_ZERO
+
+Test mbedtls_mpi_div_int: 0 (1 limb) / 0
+mbedtls_mpi_div_int:16:"00":0:16:"":16:"":MBEDTLS_ERR_MPI_DIVISION_BY_ZERO
+
+Test mbedtls_mpi_div_int: 0 (null) / 1
+mbedtls_mpi_div_int:16:"":1:16:"":16:"":0
+
+Base test mbedtls_mpi_mod_mpi #1
+mbedtls_mpi_mod_mpi:10:"1000":10:"13":10:"12":0
+
+Base test mbedtls_mpi_mod_mpi #2 (Divide by zero (null))
+mbedtls_mpi_mod_mpi:10:"1000":10:"":10:"0":MBEDTLS_ERR_MPI_DIVISION_BY_ZERO
+
+Base test mbedtls_mpi_mod_mpi #2 (Divide by zero (1 limb))
+mbedtls_mpi_mod_mpi:10:"1000":10:"0":10:"0":MBEDTLS_ERR_MPI_DIVISION_BY_ZERO
+
+Base test mbedtls_mpi_mod_mpi #3
+mbedtls_mpi_mod_mpi:10:"-1000":10:"13":10:"1":0
+
+Base test mbedtls_mpi_mod_mpi #4 (Negative modulo)
+mbedtls_mpi_mod_mpi:10:"1000":10:"-13":10:"-1":MBEDTLS_ERR_MPI_NEGATIVE_VALUE
+
+Base test mbedtls_mpi_mod_mpi #5 (Negative modulo)
+mbedtls_mpi_mod_mpi:10:"-1000":10:"-13":10:"-12":MBEDTLS_ERR_MPI_NEGATIVE_VALUE
+
+Test mbedtls_mpi_mod_mpi: 0 (null) % 1
+mbedtls_mpi_mod_mpi:16:"":16:"1":16:"":0
+
+Test mbedtls_mpi_mod_mpi: 0 (null) % -1
+mbedtls_mpi_mod_mpi:16:"":16:"-1":16:"":MBEDTLS_ERR_MPI_NEGATIVE_VALUE
+
+Base test mbedtls_mpi_mod_int #1
+mbedtls_mpi_mod_int:10:"1000":13:12:0
+
+Base test mbedtls_mpi_mod_int #2 (Divide by zero)
+mbedtls_mpi_mod_int:10:"1000":0:0:MBEDTLS_ERR_MPI_DIVISION_BY_ZERO
+
+Base test mbedtls_mpi_mod_int #3
+mbedtls_mpi_mod_int:10:"-1000":13:1:0
+
+Base test mbedtls_mpi_mod_int #4 (Negative modulo)
+mbedtls_mpi_mod_int:10:"1000":-13:0:MBEDTLS_ERR_MPI_NEGATIVE_VALUE
+
+Base test mbedtls_mpi_mod_int #5 (Negative modulo)
+mbedtls_mpi_mod_int:10:"-1000":-13:0:MBEDTLS_ERR_MPI_NEGATIVE_VALUE
+
+Base test mbedtls_mpi_mod_int #6 (By 1)
+mbedtls_mpi_mod_int:10:"1000":1:0:0
+
+Base test mbedtls_mpi_mod_int #7 (By 2)
+mbedtls_mpi_mod_int:10:"1001":2:1:0
+
+Base test mbedtls_mpi_mod_int #8 (By 2)
+mbedtls_mpi_mod_int:10:"1000":2:0:0
+
+Test mbedtls_mpi_mod_int: 0 (null) % 1
+mbedtls_mpi_mod_int:16:"":1:0:0
+
+Test mbedtls_mpi_mod_int: 0 (null) % 2
+mbedtls_mpi_mod_int:16:"":2:0:0
+
+Test mbedtls_mpi_mod_int: 0 (null) % -1
+mbedtls_mpi_mod_int:16:"":-1:0:MBEDTLS_ERR_MPI_NEGATIVE_VALUE
+
+Test mbedtls_mpi_mod_int: 0 (null) % -2
+mbedtls_mpi_mod_int:16:"":-2:0:MBEDTLS_ERR_MPI_NEGATIVE_VALUE
+
+Base test mbedtls_mpi_exp_mod #1
+mbedtls_mpi_exp_mod:10:"23":10:"13":10:"29":10:"24":0
+
+Base test mbedtls_mpi_exp_mod #2 (Even N)
+mbedtls_mpi_exp_mod:10:"23":10:"13":10:"30":10:"0":MBEDTLS_ERR_MPI_BAD_INPUT_DATA
+
+Base test mbedtls_mpi_exp_mod #2 (N = 0 (null))
+mbedtls_mpi_exp_mod:10:"23":10:"13":10:"":10:"0":MBEDTLS_ERR_MPI_BAD_INPUT_DATA
+
+Base test mbedtls_mpi_exp_mod #3 (Negative N)
+mbedtls_mpi_exp_mod:10:"23":10:"13":10:"-29":10:"0":MBEDTLS_ERR_MPI_BAD_INPUT_DATA
+
+Base test mbedtls_mpi_exp_mod #4 (Negative base)
+mbedtls_mpi_exp_mod:10:"-23":10:"13":10:"29":10:"5":0
+
+Base test mbedtls_mpi_exp_mod #5 (Negative exponent)
+mbedtls_mpi_exp_mod:10:"23":10:"-13":10:"29":10:"0":MBEDTLS_ERR_MPI_BAD_INPUT_DATA
+
+Base test mbedtls_mpi_exp_mod #6 (Negative base + exponent)
+mbedtls_mpi_exp_mod:10:"-23":10:"-13":10:"29":10:"0":MBEDTLS_ERR_MPI_BAD_INPUT_DATA
+
+Test mbedtls_mpi_exp_mod: 0 (null) ^ 0 (null) mod 9
+mbedtls_mpi_exp_mod:16:"":16:"":16:"09":16:"1":0
+
+Test mbedtls_mpi_exp_mod: 0 (null) ^ 0 (1 limb) mod 9
+mbedtls_mpi_exp_mod:16:"":16:"00":16:"09":16:"1":0
+
+Test mbedtls_mpi_exp_mod: 0 (null) ^ 1 mod 9
+mbedtls_mpi_exp_mod:16:"":16:"01":16:"09":16:"":0
+
+Test mbedtls_mpi_exp_mod: 0 (null) ^ 2 mod 9
+mbedtls_mpi_exp_mod:16:"":16:"02":16:"09":16:"":0
+
+Test mbedtls_mpi_exp_mod: 0 (1 limb) ^ 0 (null) mod 9
+mbedtls_mpi_exp_mod:16:"00":16:"":16:"09":16:"1":0
+
+Test mbedtls_mpi_exp_mod: 0 (1 limb) ^ 0 (1 limb) mod 9
+mbedtls_mpi_exp_mod:16:"00":16:"00":16:"09":16:"1":0
+
+Test mbedtls_mpi_exp_mod: 0 (1 limb) ^ 1 mod 9
+mbedtls_mpi_exp_mod:16:"00":16:"01":16:"09":16:"":0
+
+Test mbedtls_mpi_exp_mod: 0 (1 limb) ^ 2 mod 9
+mbedtls_mpi_exp_mod:16:"00":16:"02":16:"09":16:"":0
+
+Test mbedtls_mpi_exp_mod: 1 ^ 0 (null) mod 9
+mbedtls_mpi_exp_mod:16:"01":16:"":16:"09":16:"1":0
+
+Test mbedtls_mpi_exp_mod: 4 ^ 0 (null) mod 9
+mbedtls_mpi_exp_mod:16:"04":16:"":16:"09":16:"1":0
+
+Test mbedtls_mpi_exp_mod: 10 ^ 0 (null) mod 9
+mbedtls_mpi_exp_mod:16:"0a":16:"":16:"09":16:"1":0
+
+Test mbedtls_mpi_exp_mod: 1 ^ 0 (1 limb) mod 9
+mbedtls_mpi_exp_mod:16:"01":16:"00":16:"09":16:"1":0
+
+Test mbedtls_mpi_exp_mod: 4 ^ 0 (1 limb) mod 9
+mbedtls_mpi_exp_mod:16:"04":16:"00":16:"09":16:"1":0
+
+Test mbedtls_mpi_exp_mod: 10 ^ 0 (1 limb) mod 9
+mbedtls_mpi_exp_mod:16:"0a":16:"00":16:"09":16:"1":0
+
+Test mbedtls_mpi_exp_mod: MAX_SIZE exponent
+mbedtls_mpi_exp_mod_size:2:MBEDTLS_MPI_MAX_SIZE:10:10:"":0
+
+Test mbedtls_mpi_exp_mod: MAX_SIZE + 1 exponent
+mbedtls_mpi_exp_mod_size:2:MBEDTLS_MPI_MAX_SIZE + 1:10:10:"":MBEDTLS_ERR_MPI_BAD_INPUT_DATA
+
+Test mbedtls_mpi_exp_mod: MAX_SIZE modulus
+mbedtls_mpi_exp_mod_size:2:2:MBEDTLS_MPI_MAX_SIZE:10:"":0
+
+Test mbedtls_mpi_exp_mod: MAX_SIZE + 1 modulus
+mbedtls_mpi_exp_mod_size:2:2:MBEDTLS_MPI_MAX_SIZE + 1:10:"":MBEDTLS_ERR_MPI_BAD_INPUT_DATA
+
+Test mbedtls_mpi_exp_mod: MAX_SIZE exponent and modulus
+mbedtls_mpi_exp_mod_size:2:MBEDTLS_MPI_MAX_SIZE:MBEDTLS_MPI_MAX_SIZE:10:"":0
+
+Test mbedtls_mpi_exp_mod: MAX_SIZE + 1 exponent and modulus
+mbedtls_mpi_exp_mod_size:2:MBEDTLS_MPI_MAX_SIZE + 1:MBEDTLS_MPI_MAX_SIZE + 1:10:"":MBEDTLS_ERR_MPI_BAD_INPUT_DATA
+
+Test mbedtls_mpi_exp_mod #1
+depends_on:MPI_MAX_BITS_LARGER_THAN_792
+mbedtls_mpi_exp_mod:10:"433019240910377478217373572959560109819648647016096560523769010881172869083338285573756574557395862965095016483867813043663981946477698466501451832407592327356331263124555137732393938242285782144928753919588632679050799198937132922145084847":10:"5781538327977828897150909166778407659250458379645823062042492461576758526757490910073628008613977550546382774775570888130029763571528699574717583228939535960234464230882573615930384979100379102915657483866755371559811718767760594919456971354184113721":10:"583137007797276923956891216216022144052044091311388601652961409557516421612874571554415606746479105795833145583959622117418531166391184939066520869800857530421873250114773204354963864729386957427276448683092491947566992077136553066273207777134303397724679138833126700957":10:"114597449276684355144920670007147953232659436380163461553186940113929777196018164149703566472936578890991049344459204199888254907113495794730452699842273939581048142004834330369483813876618772578869083248061616444392091693787039636316845512292127097865026290173004860736":0
+
+Test mbedtls_mpi_exp_mod (Negative base) [#1]
+mbedtls_mpi_exp_mod:10:"-10000000000":10:"10000000000":10:"99999":10:"1":0
+
+Test mbedtls_mpi_exp_mod (Negative base) [#2]
+depends_on:MPI_MAX_BITS_LARGER_THAN_792
+mbedtls_mpi_exp_mod:16:"-9f13012cd92aa72fb86ac8879d2fde4f7fd661aaae43a00971f081cc60ca277059d5c37e89652e2af2585d281d66ef6a9d38a117e9608e9e7574cd142dc55278838a2161dd56db9470d4c1da2d5df15a908ee2eb886aaa890f23be16de59386663a12f1afbb325431a3e835e3fd89b98b96a6f77382f458ef9a37e1f84a03045c8676ab55291a94c2228ea15448ee96b626b998":16:"40a54d1b9e86789f06d9607fb158672d64867665c73ee9abb545fc7a785634b354c7bae5b962ce8040cf45f2c1f3d3659b2ee5ede17534c8fc2ec85c815e8df1fe7048d12c90ee31b88a68a081f17f0d8ce5f4030521e9400083bcea73a429031d4ca7949c2000d597088e0c39a6014d8bf962b73bb2e8083bd0390a4e00b9b3":16:"eeaf0ab9adb38dd69c33f80afa8fc5e86072618775ff3c0b9ea2314c9c256576d674df7496ea81d3383b4813d692c6e0e0d5d8e250b98be48e495c1d6089dad15dc7d7b46154d6b6ce8ef4ad69b15d4982559b297bcf1885c529f566660e57ec68edbc3c05726cc02fd4cbf4976eaa9afd5138fe8376435b9fc61d2fc0eb06e3":16:"21acc7199e1b90f9b4844ffe12c19f00ec548c5d32b21c647d48b6015d8eb9ec9db05b4f3d44db4227a2b5659c1a7cceb9d5fa8fa60376047953ce7397d90aaeb7465e14e820734f84aa52ad0fc66701bcbb991d57715806a11531268e1e83dd48288c72b424a6287e9ce4e5cc4db0dd67614aecc23b0124a5776d36e5c89483":0
+
+Base test GCD #1
+mbedtls_mpi_gcd:10:"693":10:"609":10:"21"
+
+Base test GCD #2
+mbedtls_mpi_gcd:10:"1764":10:"868":10:"28"
+
+Base test GCD #3
+mbedtls_mpi_gcd:10:"768454923":10:"542167814":10:"1"
+
+Test GCD: 0 (null), 0 (null)
+mbedtls_mpi_gcd:16:"":16:"":16:"0"
+
+Test GCD: 0 (null), 0 (1 limb)
+mbedtls_mpi_gcd:16:"":16:"00":16:"0"
+
+Test GCD: 0 (null), 3
+mbedtls_mpi_gcd:16:"":16:"03":16:"3"
+
+Test GCD: 0 (null), 6
+mbedtls_mpi_gcd:16:"":16:"06":16:"6"
+
+Test GCD: 0 (1 limb), 0 (null)
+mbedtls_mpi_gcd:16:"00":16:"":16:"0"
+
+Test GCD: 0 (1 limb), 3
+mbedtls_mpi_gcd:16:"00":16:"03":16:"3"
+
+Test GCD: 0 (1 limb), 6
+mbedtls_mpi_gcd:16:"00":16:"06":16:"6"
+
+Test GCD: 3, 0 (null)
+mbedtls_mpi_gcd:16:"03":16:"":16:"3"
+
+Test GCD: 3, 0 (1 limb)
+mbedtls_mpi_gcd:16:"03":16:"00":16:"3"
+
+Test GCD: 6, 0 (null)
+mbedtls_mpi_gcd:16:"06":16:"":16:"6"
+
+Test GCD: 6, 0 (1 limb)
+mbedtls_mpi_gcd:16:"06":16:"00":16:"6"
+
+Test GCD: gcd=1, 0 < A < B
+mbedtls_mpi_gcd:10:"433019240910377478217373572959560109819648647016096560523769010881172869083338285573756574557395862965095016483867813043663981946477698466501451832407592327356331263124555137732393938242285782144928753919588632679050799198937132922145084847":10:"5781538327977828897150909166778407659250458379645823062042492461576758526757490910073628008613977550546382774775570888130029763571528699574717583228939535960234464230882573615930384979100379102915657483866755371559811718767760594919456971354184113721":10:"1"
+
+Test GCD: gcd=1, 0 < B < A
+mbedtls_mpi_gcd:10:"5781538327977828897150909166778407659250458379645823062042492461576758526757490910073628008613977550546382774775570888130029763571528699574717583228939535960234464230882573615930384979100379102915657483866755371559811718767760594919456971354184113721":10:"433019240910377478217373572959560109819648647016096560523769010881172869083338285573756574557395862965095016483867813043663981946477698466501451832407592327356331263124555137732393938242285782144928753919588632679050799198937132922145084847":10:"1"
+
+Test GCD: gcd=1, A > 0, B < 0
+mbedtls_mpi_gcd:10:"433019240910377478217373572959560109819648647016096560523769010881172869083338285573756574557395862965095016483867813043663981946477698466501451832407592327356331263124555137732393938242285782144928753919588632679050799198937132922145084847":10:"-5781538327977828897150909166778407659250458379645823062042492461576758526757490910073628008613977550546382774775570888130029763571528699574717583228939535960234464230882573615930384979100379102915657483866755371559811718767760594919456971354184113721":10:"1"
+
+Test GCD: gcd=1, A < 0 < B, |A| < |B|
+mbedtls_mpi_gcd:10:"-433019240910377478217373572959560109819648647016096560523769010881172869083338285573756574557395862965095016483867813043663981946477698466501451832407592327356331263124555137732393938242285782144928753919588632679050799198937132922145084847":10:"5781538327977828897150909166778407659250458379645823062042492461576758526757490910073628008613977550546382774775570888130029763571528699574717583228939535960234464230882573615930384979100379102915657483866755371559811718767760594919456971354184113721":10:"1"
+
+Test GCD: gcd=1, B < A < 0
+mbedtls_mpi_gcd:10:"-433019240910377478217373572959560109819648647016096560523769010881172869083338285573756574557395862965095016483867813043663981946477698466501451832407592327356331263124555137732393938242285782144928753919588632679050799198937132922145084847":10:"-5781538327977828897150909166778407659250458379645823062042492461576758526757490910073628008613977550546382774775570888130029763571528699574717583228939535960234464230882573615930384979100379102915657483866755371559811718767760594919456971354184113721":10:"1"
+
+Test GCD: gcd=2, 0 < A < B
+mbedtls_mpi_gcd:10:"866038481820754956434747145919120219639297294032193121047538021762345738166676571147513149114791725930190032967735626087327963892955396933002903664815184654712662526249110275464787876484571564289857507839177265358101598397874265844290169694":10:"11563076655955657794301818333556815318500916759291646124084984923153517053514981820147256017227955101092765549551141776260059527143057399149435166457879071920468928461765147231860769958200758205831314967733510743119623437535521189838913942708368227442":10:"2"
+
+Test GCD: gcd=2, 0 < B < A
+mbedtls_mpi_gcd:10:"11563076655955657794301818333556815318500916759291646124084984923153517053514981820147256017227955101092765549551141776260059527143057399149435166457879071920468928461765147231860769958200758205831314967733510743119623437535521189838913942708368227442":10:"866038481820754956434747145919120219639297294032193121047538021762345738166676571147513149114791725930190032967735626087327963892955396933002903664815184654712662526249110275464787876484571564289857507839177265358101598397874265844290169694":10:"2"
+
+Test GCD: gcd=3, 0 < A < B
+mbedtls_mpi_gcd:10:"1299057722731132434652120718878680329458945941048289681571307032643518607250014856721269723672187588895285049451603439130991945839433095399504355497222776982068993789373665413197181814726857346434786261758765898037152397596811398766435254541":10:"17344614983933486691452727500335222977751375138937469186127477384730275580272472730220884025841932651639148324326712664390089290714586098724152749686818607880703392692647720847791154937301137308746972451600266114679435156303281784758370914062552341163":10:"3"
+
+Test GCD: gcd=3, 0 < B < A
+mbedtls_mpi_gcd:10:"17344614983933486691452727500335222977751375138937469186127477384730275580272472730220884025841932651639148324326712664390089290714586098724152749686818607880703392692647720847791154937301137308746972451600266114679435156303281784758370914062552341163":10:"1299057722731132434652120718878680329458945941048289681571307032643518607250014856721269723672187588895285049451603439130991945839433095399504355497222776982068993789373665413197181814726857346434786261758765898037152397596811398766435254541":10:"3"
+
+Test GCD: gcd=4, 0 < A < B
+mbedtls_mpi_gcd:10:"1732076963641509912869494291838240439278594588064386242095076043524691476333353142295026298229583451860380065935471252174655927785910793866005807329630369309425325052498220550929575752969143128579715015678354530716203196795748531688580339388":10:"23126153311911315588603636667113630637001833518583292248169969846307034107029963640294512034455910202185531099102283552520119054286114798298870332915758143840937856923530294463721539916401516411662629935467021486239246875071042379677827885416736454884":10:"4"
+
+Test GCD: gcd=4, 0 < B < A
+mbedtls_mpi_gcd:10:"23126153311911315588603636667113630637001833518583292248169969846307034107029963640294512034455910202185531099102283552520119054286114798298870332915758143840937856923530294463721539916401516411662629935467021486239246875071042379677827885416736454884":10:"1732076963641509912869494291838240439278594588064386242095076043524691476333353142295026298229583451860380065935471252174655927785910793866005807329630369309425325052498220550929575752969143128579715015678354530716203196795748531688580339388":10:"4"
+
+Test GCD: gcd=6, 0 < A < B
+mbedtls_mpi_gcd:10:"2598115445462264869304241437757360658917891882096579363142614065287037214500029713442539447344375177790570098903206878261983891678866190799008710994445553964137987578747330826394363629453714692869572523517531796074304795193622797532870509082":10:"34689229967866973382905455000670445955502750277874938372254954769460551160544945460441768051683865303278296648653425328780178581429172197448305499373637215761406785385295441695582309874602274617493944903200532229358870312606563569516741828125104682326":10:"6"
+
+Test GCD: gcd=6, 0 < B < A
+mbedtls_mpi_gcd:10:"34689229967866973382905455000670445955502750277874938372254954769460551160544945460441768051683865303278296648653425328780178581429172197448305499373637215761406785385295441695582309874602274617493944903200532229358870312606563569516741828125104682326":10:"2598115445462264869304241437757360658917891882096579363142614065287037214500029713442539447344375177790570098903206878261983891678866190799008710994445553964137987578747330826394363629453714692869572523517531796074304795193622797532870509082":10:"6"
+
+Test GCD: 0 < A = B
+mbedtls_mpi_gcd:10:"433019240910377478217373572959560109819648647016096560523769010881172869083338285573756574557395862965095016483867813043663981946477698466501451832407592327356331263124555137732393938242285782144928753919588632679050799198937132922145084847":10:"433019240910377478217373572959560109819648647016096560523769010881172869083338285573756574557395862965095016483867813043663981946477698466501451832407592327356331263124555137732393938242285782144928753919588632679050799198937132922145084847":10:"433019240910377478217373572959560109819648647016096560523769010881172869083338285573756574557395862965095016483867813043663981946477698466501451832407592327356331263124555137732393938242285782144928753919588632679050799198937132922145084847"
+
+Base test mbedtls_mpi_inv_mod #1
+mbedtls_mpi_inv_mod:10:"3":10:"11":10:"4":0
+
+Test mbedtls_mpi_inv_mod: mod 0 (null)
+mbedtls_mpi_inv_mod:10:"3":10:"":10:"0":MBEDTLS_ERR_MPI_BAD_INPUT_DATA
+
+Test mbedtls_mpi_inv_mod: mod 0 (1 limb)
+mbedtls_mpi_inv_mod:10:"3":10:"0":10:"0":MBEDTLS_ERR_MPI_BAD_INPUT_DATA
+
+Test mbedtls_mpi_inv_mod: mod negative
+mbedtls_mpi_inv_mod:10:"3":10:"-11":10:"4":MBEDTLS_ERR_MPI_BAD_INPUT_DATA
+
+Test mbedtls_mpi_inv_mod: 2^-1 mod 4
+mbedtls_mpi_inv_mod:10:"2":10:"4":10:"0":MBEDTLS_ERR_MPI_NOT_ACCEPTABLE
+
+Test mbedtls_mpi_inv_mod: mod 1
+mbedtls_mpi_inv_mod:10:"3":10:"1":10:"0":MBEDTLS_ERR_MPI_BAD_INPUT_DATA
+
+Test mbedtls_mpi_inv_mod: 0 (null) ^-1
+mbedtls_mpi_inv_mod:16:"":16:"11":16:"":MBEDTLS_ERR_MPI_NOT_ACCEPTABLE
+
+Test mbedtls_mpi_inv_mod: 0 (1 limb) ^-1
+mbedtls_mpi_inv_mod:16:"00":16:"11":16:"":MBEDTLS_ERR_MPI_NOT_ACCEPTABLE
+
+Test mbedtls_mpi_inv_mod #1
+mbedtls_mpi_inv_mod:16:"aa4df5cb14b4c31237f98bd1faf527c283c2d0f3eec89718664ba33f9762907c":16:"fffbbd660b94412ae61ead9c2906a344116e316a256fd387874c6c675b1d587d":16:"8d6a5c1d7adeae3e94b9bcd2c47e0d46e778bc8804a2cc25c02d775dc3d05b0c":0
+
+Base test mbedtls_mpi_is_prime #1
+depends_on:MBEDTLS_GENPRIME
+mbedtls_mpi_is_prime:10:"0":MBEDTLS_ERR_MPI_NOT_ACCEPTABLE
+
+Base test mbedtls_mpi_is_prime #2
+depends_on:MBEDTLS_GENPRIME
+mbedtls_mpi_is_prime:10:"1":MBEDTLS_ERR_MPI_NOT_ACCEPTABLE
+
+Base test mbedtls_mpi_is_prime #3
+depends_on:MBEDTLS_GENPRIME
+mbedtls_mpi_is_prime:10:"2":0
+
+Base test mbedtls_mpi_is_prime #4
+depends_on:MBEDTLS_GENPRIME
+mbedtls_mpi_is_prime:10:"3":0
+
+Base test mbedtls_mpi_is_prime #5
+depends_on:MBEDTLS_GENPRIME
+mbedtls_mpi_is_prime:10:"4":MBEDTLS_ERR_MPI_NOT_ACCEPTABLE
+
+Base test mbedtls_mpi_is_prime #6
+depends_on:MBEDTLS_GENPRIME
+mbedtls_mpi_is_prime:10:"5":0
+
+Base test mbedtls_mpi_is_prime #7
+depends_on:MBEDTLS_GENPRIME
+mbedtls_mpi_is_prime:10:"27":MBEDTLS_ERR_MPI_NOT_ACCEPTABLE
+
+Base test mbedtls_mpi_is_prime #8
+depends_on:MBEDTLS_GENPRIME
+mbedtls_mpi_is_prime:10:"47":0
+
+Test mbedtls_mpi_is_prime #1a
+depends_on:MBEDTLS_GENPRIME
+mbedtls_mpi_is_prime:10:"83726728883146151979668243326097049289208482987685965276439157162337476477581":MBEDTLS_ERR_MPI_NOT_ACCEPTABLE
+
+Test mbedtls_mpi_is_prime #1b
+depends_on:MBEDTLS_GENPRIME
+mbedtls_mpi_is_prime:10:"81248637410584921454869308488899267096530643632730258201256092582281263244641":MBEDTLS_ERR_MPI_NOT_ACCEPTABLE
+
+Test mbedtls_mpi_is_prime #2a
+depends_on:MBEDTLS_GENPRIME
+mbedtls_mpi_is_prime:10:"827131507221654563937832686696200995595835694437983658840870036586124168186967796809117749047430768825822857042432722828096779098498192459819306321073968735177531164565305635281198148032612029767584644305912099":0
+
+Test mbedtls_mpi_is_prime #2b
+depends_on:MBEDTLS_GENPRIME
+mbedtls_mpi_is_prime:10:"827131507221654563937832686696200995595835694437983658840870036586124168186967796809117749047430768825822857042432722828096779098498192459819306321073968735177531164565305635281198148032612029767584644305912001":MBEDTLS_ERR_MPI_NOT_ACCEPTABLE
+
+Test mbedtls_mpi_is_prime #3
+depends_on:MBEDTLS_GENPRIME
+mbedtls_mpi_is_prime:10:"2833419889721787128217599":0
+
+Test mbedtls_mpi_is_prime #4
+depends_on:MBEDTLS_GENPRIME
+mbedtls_mpi_is_prime:10:"195845982777569926302400511":0
+
+Test mbedtls_mpi_is_prime #5 [#1]
+depends_on:MBEDTLS_GENPRIME
+mbedtls_mpi_is_prime:10:"4776913109852041418248056622882488319":0
+
+Test mbedtls_mpi_is_prime #5 [#2]
+depends_on:MBEDTLS_GENPRIME
+mbedtls_mpi_is_prime:10:"768614336404564651":0
+
+Test mbedtls_mpi_is_prime #6
+depends_on:MBEDTLS_GENPRIME
+mbedtls_mpi_is_prime:10:"201487636602438195784363":0
+
+Test mbedtls_mpi_is_prime #7
+depends_on:MBEDTLS_GENPRIME
+mbedtls_mpi_is_prime:10:"845100400152152934331135470251":0
+
+Test mbedtls_mpi_is_prime #8
+depends_on:MBEDTLS_GENPRIME
+mbedtls_mpi_is_prime:10:"56713727820156410577229101238628035243":0
+
+Test mbedtls_mpi_is_prime #9
+depends_on:MBEDTLS_GENPRIME
+mbedtls_mpi_is_prime:10:"203956878356401977405765866929034577280193993314348263094772646453283062722701277632936616063144088173312372882677123879538709400158306567338328279154499698366071906766440037074217117805690872792848149112022286332144876183376326512083574821647933992961249917319836219304274280243803104015000563790123":0
+
+Test mbedtls_mpi_is_prime #10
+depends_on:MBEDTLS_GENPRIME
+mbedtls_mpi_is_prime:10:"531872289054204184185084734375133399408303613982130856645299464930952178606045848877129147820387996428175564228204785846141207532462936339834139412401975338705794646595487324365194792822189473092273993580587964571659678084484152603881094176995594813302284232006001752128168901293560051833646881436219":0
+
+Test mbedtls_mpi_is_prime #11
+depends_on:MBEDTLS_GENPRIME
+mbedtls_mpi_is_prime:10:"319705304701141539155720137200974664666792526059405792539680974929469783512821793995613718943171723765238853752439032835985158829038528214925658918372196742089464683960239919950882355844766055365179937610326127675178857306260955550407044463370239890187189750909036833976197804646589380690779463976173":0
+
+Test mbedtls_mpi_is_prime #12
+depends_on:MBEDTLS_GENPRIME
+mbedtls_mpi_is_prime:10:"200603822195324642393516294012917598972967449320074999667103434371470616000652036570009912021332527788252300901905236578801044680456930305350440933538867383130165841118050781326291059830545891570648243241795871":0
+
+Test mbedtls_mpi_is_prime #13
+depends_on:MBEDTLS_GENPRIME
+mbedtls_mpi_is_prime:10:"827131507221654563937832686696200995595835694437983658840870036586124168186967796809117749047430768825822857042432722828096779098498192459819306321073968735177531164565305635281198148032612029767584644305912099":0
+
+Test mbedtls_mpi_is_prime #14
+depends_on:MBEDTLS_GENPRIME
+mbedtls_mpi_is_prime:10:"964274047248418797145090983157197980855078966882276492572788532954904112655338439361306213898569516593744267391754033306465125919199692703323878557833023573312685002670662846477592597659826113460619815244721311":0
+
+Test mbedtls_mpi_is_prime #15
+depends_on:MBEDTLS_GENPRIME
+mbedtls_mpi_is_prime:10:"170141183460469231731687303715884105727":0
+
+Test mbedtls_mpi_is_prime #16
+depends_on:MBEDTLS_GENPRIME
+mbedtls_mpi_is_prime:10:"2147483647":0
+
+Test mbedtls_mpi_is_prime #17
+depends_on:MBEDTLS_GENPRIME
+mbedtls_mpi_is_prime:10:"961748941":0
+
+Test mbedtls_mpi_is_prime #18
+depends_on:MBEDTLS_GENPRIME
+mbedtls_mpi_is_prime:10:"179424691":0
+
+Test mbedtls_mpi_is_prime #19
+depends_on:MBEDTLS_GENPRIME
+mbedtls_mpi_is_prime:10:"32452867":0
+
+Test mbedtls_mpi_is_prime #20
+depends_on:MBEDTLS_GENPRIME
+mbedtls_mpi_is_prime:10:"49979687":0
+
+Test mbedtls_mpi_is_prime_det (4 non-witnesses)
+depends_on:MBEDTLS_GENPRIME
+mbedtls_mpi_is_prime_det:"043BD64BA10B11DA83FBD296B04BCA9E0552FAF6E09CAC74E2D7E735ED0DB09FC47ED76145644203EE0C826013BC602F560BCDAAED557D04683859A65D659FF828A245A2C5B1AC41E01E4669A525A45E23AF":"040EA852F7935ACCECC0E87B845281F047D10DC9AAFEF990AF9D3D66770DA30B0C5B5E03EEA8C0CB79B936FE0BB8EE5389EC1D34EB16C58AA3F2E11AF084160CDF6400BE1CC179867AB074866952D9F34EE7042D27F960E715A97FCB93F3182247D0A6AE51BD21CC2F6B0651F9E572C5FB86F3137053FA85FD7A51816D69B3A53A5A438C17754836D04E98CA240B901F828332F2D72D88C497DA45F533F99A6E53EDEA6B0424EC8951B048FA9A80134B37D0A67014597934E3CFC52C5A4DD4751ADF8D66FC79E84E2A3148C4B15C17E12CB659390FD275F39A331FFC80EC699BC3F6FAB868E30E9B14575FCDAB6FAED01E00112DD28704177E09C335AD43A696FEA761E8DF3B0663277A5C3637F9060CB5E5654F72E9A6B0F369E660AD4CF7ABF4195493545B367BD55271CD4BB7D9C15D3F508FE8F7409C2126FC8E73B43A67CD4EFB21E9F15DBF040A2A8D5F5ED75CEAC12B595C0051F3EC9D5A58ACE82A9506E64F780E9836728260FFE1BFD73E8A9869E3D46A35A856D3028F7FEAB9F4F1A04449AEDC80017EE1014080D87F0B50C8EF255324CD89F7D039":82:5
+
+Test mbedtls_mpi_is_prime_det (39 non-witnesses)
+depends_on:MBEDTLS_GENPRIME
+mbedtls_mpi_is_prime_det:"155102B67930FBE8858DF6C0642D77D419A7B7968E622CC7500F3E3F2C5168368C50E0083187":"119B3E2C721834D83416239B04447AA18AE0163E61DCAE97054563D79E094A6FA4485BD6A0501445BF57FE9C058926CDB862E04CC1A95D79D61D9AB3466857A53E04F8D7470C9C86649B226A13DDC534E18DFD5C22FAEA317CA4D4960F18457FD6D2FFB5F3273F74C89980DC774590D8D30D1159CA81999ED94A042D67DA68C82616AD46C2C88288A8EBD0B37AC7C152D9522CA4544642AD1210F6B642FEBF43563FA872B0DEFAFC69D0B6570E8FEA9570D0AADCFA9B06CC8BFD62CEDC221541210EEEF9762448C6D49F26AA767A4D66CB168589E0201923015314E6CD4A480E5936E7CF145F73A564C5B782635B3AFC3028E2632C5D3458224A7C9E8BA1876E8F690463C878292D3DC011E9640331E7F7621F2B5E0F6713DD8C9D6767521C4BA880DA8D11C67753C8493D2C4C4F1443147550D0B25B7FAD04EAFA9F8AA60974C1365C8A794CFEECEB4279B1150909A97E5A7A10B5D91186CA5B25A612036631FE73529C8CFAE51E76FB704A772DE5320EFC1212E7A399B1FEBF57D014AF9129DFF5D2C5DFBBEEAC55F360CF6D22FA90B8E2E9AD0C71AB6495A9452A58D653B8CC26128C66B43EFBA6E39AEC5717A1A3C2AE1449FCABAFE1180B159DA55190CD81A3D9E8D798647E11B827F0A057D6DA5AAD78AB5112EE65E10E8B8B369BA24E1B8AD2CD8548C497016C07A143DE1232F8059BE303572456FA92E76A0F23D1340629228B7D27C02D3833A72745B91A3DBEB5E081117A9F19597F00E4277B414FAEA8C8CEB895C37F956A5A22F8D7A10ADA50B22BAB312504904511AA0EFDD4D3BF20ECB17E8A684564FFB5BBD5E22C429F9A75A4FB4AE468FE7612ED53C7A11212E7EF3435CC9CA6E7DB167B8CCE2BECF35F89013F8F876223C77FA81570970858663C6E32B91080AA47F9C90177F51E6FD7747B910C9489C7B6ACB070996198AD9A40A69711274159210A9A12DBAAA4FB4632446066AB70D735DC95F7C2BCE517E88C064D728DE82B1B043DF4AEE0EFF5131120A4E5B9B4180EB6F6B8A0D1491ABDA069058A9966B1A517D8E7B4997DC52A1E698FD79E271153DF1913FE6787A5D99DE69F39C3F22D26DC731CFBB33FF5C267D85D7A3DAE8E1C87E1DB2F1236212EF1942EA756967FB3D07D629E59EA4034D9A9B5E270DD4A31C8A3DFDA99C1094B5537132C196DA2AEAF5253A019B9AF25B5DCB0D4DD75C7C9C353DA9DAABFB23959A5455312E7E1C21268C1BC14E83DCFDF50C27FD3E8B4EDC04C5F3CB5FCFFF2B57151E1B1EE1A6456DC006BC43E1158674AA4CF7D146DE4A57103BE43ED130C8007294ED2418C7A2B769A7D20EBB5A8367A77B313F81BB119B9954305FF160FF83EED7F808EE6D340A5CCC000CF81AA497D315D350CCE4E86A31456B8AA85B677491FC662933DFA55EB5BFF64B8D85430D676A85D1CAFAFF383E68C4E6C22A51063739EC03FC58C36C07C44E54828BE2152B2E9AFB0F179B157D09B64C147B524BB5424BB1914419424D9100D06EDCFC718F4DF3D562E9E16C446663F35273CA7BC5426B868A80C8D415C9A12A1619CDB7CDB5BEBC70313150BDF8C3AB26B809FE62D28E798EF1EF98C410A2DA0A9071F82154AC569078B0E647E2C085D1D907E634453442803D0492D3D0C78CACB762020C0E589C8B0981321EA2771305FD0413F3B2963FCE9A232F6641DB7E12ADC009A032063C41756E5E19E5711DE12711F07AFE7545B4D83F3EFD7BFD0435297C89DF3D4AF96EBE2CE8D64B93E36EA5D7E5A0492151D0CAEE7449A7D35E1A3C83E22C3B35162C073CC3B1CF76FBDEE84270721FC042EAAEB7325110181415E2031CFB7462F15111291CDAC0560FF9F4C7341F2FA261B97CEF348D074AA2EB4DB153FE6B1410519DA4213B611999868F3B867A2B6D758D333C4989DE80782683CA26ECDE373C71524F01B76349CE8A07A5EBECBB42259CF970DDA756EC996B189FEA045FEE45F23D476960913106ECA2510B8517AA75D56FA4152B2BDDC212014E5D07FD964D6EE532F0616DF74E104659955132331FABF2D2AD265E71C93C648A956FA0A3DB21FF103D516527F2DA0E870340B61EE8A8ED913B60605EB5A67B834D0FC90564386012585609870FEF6530B3E3C037B55506F0B5694F6B0FC":38:40
+
+Test mbedtls_mpi_gen_prime (Too small)
+depends_on:MBEDTLS_GENPRIME
+mbedtls_mpi_gen_prime:2:0:MBEDTLS_ERR_MPI_BAD_INPUT_DATA
+
+Test mbedtls_mpi_gen_prime (OK, minimum size)
+depends_on:MBEDTLS_GENPRIME
+mbedtls_mpi_gen_prime:3:0:0
+
+Test mbedtls_mpi_gen_prime (corner case limb size -1 bits)
+depends_on:MBEDTLS_GENPRIME
+mbedtls_mpi_gen_prime:63:0:0
+
+Test mbedtls_mpi_gen_prime (corner case limb size)
+depends_on:MBEDTLS_GENPRIME
+mbedtls_mpi_gen_prime:64:0:0
+
+Test mbedtls_mpi_gen_prime (corner case limb size +1 bits)
+depends_on:MBEDTLS_GENPRIME
+mbedtls_mpi_gen_prime:65:0:0
+
+Test mbedtls_mpi_gen_prime (Larger)
+depends_on:MBEDTLS_GENPRIME
+mbedtls_mpi_gen_prime:128:0:0
+
+Test mbedtls_mpi_gen_prime (Safe)
+depends_on:MBEDTLS_GENPRIME
+mbedtls_mpi_gen_prime:128:MBEDTLS_MPI_GEN_PRIME_FLAG_DH:0
+
+Test mbedtls_mpi_gen_prime (Safe with lower error rate)
+depends_on:MBEDTLS_GENPRIME
+mbedtls_mpi_gen_prime:128:MBEDTLS_MPI_GEN_PRIME_FLAG_DH | MBEDTLS_MPI_GEN_PRIME_FLAG_LOW_ERR:0
+
+Test mbedtls_mpi_gen_prime standard RSA #1 (lower error rate)
+depends_on:MBEDTLS_GENPRIME
+mbedtls_mpi_gen_prime:1024:MBEDTLS_MPI_GEN_PRIME_FLAG_LOW_ERR:0
+
+Test mbedtls_mpi_gen_prime standard RSA #2 (lower error rate)
+depends_on:MBEDTLS_GENPRIME
+mbedtls_mpi_gen_prime:1536:MBEDTLS_MPI_GEN_PRIME_FLAG_LOW_ERR:0
+
+Test bit getting (Value bit 25)
+mbedtls_mpi_get_bit:10:"49979687":25:1
+
+Test bit getting (Larger but same limb)
+mbedtls_mpi_get_bit:10:"49979687":26:0
+
+Test bit getting (Larger and non-existing limb)
+mbedtls_mpi_get_bit:10:"49979687":500:0
+
+Test bit getting in 0 (null)
+mbedtls_mpi_get_bit:10:"":500:0
+
+Test bit getting (Value bit 24)
+mbedtls_mpi_get_bit:10:"49979687":24:0
+
+Test bit getting (Value bit 23)
+mbedtls_mpi_get_bit:10:"49979687":23:1
+
+Test bit set (Change existing value with a 1)
+mbedtls_mpi_set_bit:10:"49979687":24:1:10:"66756903":0
+
+Test bit set (Change existing value with a 0)
+mbedtls_mpi_set_bit:10:"49979687":25:0:10:"16425255":0
+
+Test bit set (Add above existing limbs with a 0)
+mbedtls_mpi_set_bit:10:"49979687":80:0:10:"49979687":0
+
+Test bit set (Add above existing limbs with a 1)
+mbedtls_mpi_set_bit:10:"49979687":80:1:10:"1208925819614629224685863":0
+
+Test bit set (Add to 0 (null) with a 0)
+mbedtls_mpi_set_bit:16:"":65:0:16:"":0
+
+Test bit set (Add to 0 (null) with a 1)
+mbedtls_mpi_set_bit:16:"":65:1:16:"020000000000000000":0
+
+Test bit set (Bit index larger than 31 with a 0)
+mbedtls_mpi_set_bit:16:"FFFFFFFFFFFFFFFF":32:0:16:"FFFFFFFEFFFFFFFF":0
+
+Test bit set (Bit index larger than 31 with a 1)
+mbedtls_mpi_set_bit:16:"00":32:1:16:"0100000000":0
+
+Test bit set (Invalid bit value)
+mbedtls_mpi_set_bit:16:"00":5:2:16:"00":MBEDTLS_ERR_MPI_BAD_INPUT_DATA
+
+Fill random: 0 bytes
+mpi_fill_random:0:0:0:0
+
+Fill random: 1 byte, good
+mpi_fill_random:1:1:0:0
+
+Fill random: 2 bytes, good, no leading zero
+mpi_fill_random:2:2:0:0
+
+Fill random: 2 bytes, good, 1 leading zero
+mpi_fill_random:2:256:0:0
+
+Fill random: MAX_SIZE - 7, good
+mpi_fill_random:MBEDTLS_MPI_MAX_SIZE - 7:MBEDTLS_MPI_MAX_SIZE - 7:0:0
+
+Fill random: MAX_SIZE, good
+mpi_fill_random:MBEDTLS_MPI_MAX_SIZE:MBEDTLS_MPI_MAX_SIZE:0:0
+
+Fill random: 0 bytes, previously small >0
+mpi_fill_random:0:0:1:0
+
+Fill random: 0 bytes, previously small <0
+mpi_fill_random:0:0:-1:0
+
+Fill random: 0 bytes, previously large >0
+mpi_fill_random:0:0:65:0
+
+Fill random: 0 bytes, previously large <0
+mpi_fill_random:0:0:-65:0
+
+Fill random: 1 byte, previously small >0
+mpi_fill_random:1:1:1:0
+
+Fill random: 1 byte, previously small <0
+mpi_fill_random:1:1:-1:0
+
+Fill random: 1 byte, previously large >0
+mpi_fill_random:1:1:65:0
+
+Fill random: 1 byte, previously large <0
+mpi_fill_random:1:1:-65:0
+
+Fill random: 9 bytes, previously small >0
+mpi_fill_random:1:1:1:0
+
+Fill random: 9 bytes, previously small <0
+mpi_fill_random:1:1:-1:0
+
+Fill random: 1 byte, RNG failure
+mpi_fill_random:1:0:0:MBEDTLS_ERR_ENTROPY_SOURCE_FAILED
+
+Fill random: 2 bytes, RNG failure after 1 byte
+mpi_fill_random:2:1:0:MBEDTLS_ERR_ENTROPY_SOURCE_FAILED
+
+Fill random: 4 bytes, RNG failure after 3 bytes
+mpi_fill_random:4:3:0:MBEDTLS_ERR_ENTROPY_SOURCE_FAILED
+
+Fill random: 8 bytes, RNG failure after 7 bytes
+mpi_fill_random:8:7:0:MBEDTLS_ERR_ENTROPY_SOURCE_FAILED
+
+Fill random: 16 bytes, RNG failure after 1 bytes
+mpi_fill_random:16:1:0:MBEDTLS_ERR_ENTROPY_SOURCE_FAILED
+
+Fill random: 16 bytes, RNG failure after 8 bytes
+mpi_fill_random:16:8:0:MBEDTLS_ERR_ENTROPY_SOURCE_FAILED
+
+Fill random: 16 bytes, RNG failure after 15 bytes
+mpi_fill_random:16:15:0:MBEDTLS_ERR_ENTROPY_SOURCE_FAILED
+
+Fill random: MAX_SIZE bytes, RNG failure after MAX_SIZE-1 bytes
+mpi_fill_random:MBEDTLS_MPI_MAX_SIZE:MBEDTLS_MPI_MAX_SIZE-1:0:MBEDTLS_ERR_ENTROPY_SOURCE_FAILED
+
+MPI random in range: 1..2
+mpi_random_many:1:"02":1000
+
+MPI random in range: 1..3
+mpi_random_many:1:"03":1000
+
+MPI random in range: 1..4
+mpi_random_many:1:"04":1000
+
+MPI random in range: 1..5
+mpi_random_many:1:"05":1000
+
+MPI random in range: 1..6
+mpi_random_many:1:"06":1000
+
+MPI random in range: 1..7
+mpi_random_many:1:"07":1000
+
+MPI random in range: 1..8
+mpi_random_many:1:"08":1000
+
+MPI random in range: 1..9
+mpi_random_many:1:"09":1000
+
+MPI random in range: 1..10
+mpi_random_many:1:"0a":1000
+
+MPI random in range: 1..11
+mpi_random_many:1:"0b":1000
+
+MPI random in range: 1..12
+mpi_random_many:1:"0c":1000
+
+MPI random in range: 1..255
+mpi_random_many:1:"ff":100
+
+MPI random in range: 1..256
+mpi_random_many:1:"0100":100
+
+MPI random in range: 1..257
+mpi_random_many:1:"0101":100
+
+MPI random in range: 1..272
+mpi_random_many:1:"0110":100
+
+MPI random in range: 1..2^64-1
+mpi_random_many:1:"ffffffffffffffff":100
+
+MPI random in range: 1..2^64
+mpi_random_many:1:"010000000000000000":100
+
+MPI random in range: 1..2^64+1
+mpi_random_many:1:"010000000000000001":100
+
+MPI random in range: 1..2^64+2^63
+mpi_random_many:1:"018000000000000000":100
+
+MPI random in range: 1..2^65-1
+mpi_random_many:1:"01ffffffffffffffff":100
+
+MPI random in range: 1..2^65
+mpi_random_many:1:"020000000000000000":100
+
+MPI random in range: 1..2^65+1
+mpi_random_many:1:"020000000000000001":100
+
+MPI random in range: 1..2^65+2^64
+mpi_random_many:1:"030000000000000000":100
+
+MPI random in range: 1..2^66+2^65
+mpi_random_many:1:"060000000000000000":100
+
+MPI random in range: 1..2^71-1
+mpi_random_many:1:"7fffffffffffffffff":100
+
+MPI random in range: 1..2^71
+mpi_random_many:1:"800000000000000000":100
+
+MPI random in range: 1..2^71+1
+mpi_random_many:1:"800000000000000001":100
+
+MPI random in range: 1..2^71+2^70
+mpi_random_many:1:"c00000000000000000":100
+
+MPI random in range: 1..2^72-1
+mpi_random_many:1:"ffffffffffffffffff":100
+
+MPI random in range: 1..2^72
+mpi_random_many:1:"01000000000000000000":100
+
+MPI random in range: 1..2^72+1
+mpi_random_many:1:"01000000000000000001":100
+
+MPI random in range: 1..2^72+2^71
+mpi_random_many:1:"01800000000000000000":100
+
+MPI random in range: 0..1
+mpi_random_many:0:"04":10000
+
+MPI random in range: 0..4
+mpi_random_many:0:"04":10000
+
+MPI random in range: 2..4
+mpi_random_many:2:"04":10000
+
+MPI random in range: 3..4
+mpi_random_many:3:"04":10000
+
+MPI random in range: smaller result
+mpi_random_sizes:1:"aaaaaaaaaaaaaaaabbbbbbbbbbbbbbbb":1:0
+
+MPI random in range: same size result (32-bit limbs)
+mpi_random_sizes:1:"aaaaaaaaaaaaaaaa":2:0
+
+MPI random in range: same size result (64-bit limbs)
+mpi_random_sizes:1:"aaaaaaaaaaaaaaaa":1:0
+
+MPI random in range: larger result
+mpi_random_sizes:1:"aaaaaaaaaaaaaaaa":3:0
+
+## The "0 limb in upper bound" tests rely on the fact that
+## mbedtls_mpi_read_binary() bases the size of the MPI on the size of
+## the input, without first checking for leading zeros. If this was
+## not the case, the tests would still pass, but would not exercise
+## the advertised behavior.
+MPI random in range: leading 0 limb in upper bound #0
+mpi_random_sizes:1:"00aaaaaaaaaaaaaaaa":0:0
+
+MPI random in range: leading 0 limb in upper bound #1
+mpi_random_sizes:1:"00aaaaaaaaaaaaaaaa":1:0
+
+MPI random in range: leading 0 limb in upper bound #2
+mpi_random_sizes:1:"00aaaaaaaaaaaaaaaa":2:0
+
+MPI random in range: leading 0 limb in upper bound #3
+mpi_random_sizes:1:"00aaaaaaaaaaaaaaaa":3:0
+
+MPI random in range: leading 0 limb in upper bound #4
+mpi_random_sizes:1:"00aaaaaaaaaaaaaaaa":4:0
+
+MPI random in range: previously small >0
+mpi_random_sizes:1:"1234567890":4:1
+
+MPI random in range: previously small <0
+mpi_random_sizes:1:"1234567890":4:-1
+
+MPI random in range: previously large >0
+mpi_random_sizes:1:"1234":4:65
+
+MPI random in range: previously large <0
+mpi_random_sizes:1:"1234":4:-65
+
+MPI random bad arguments: min < 0
+mpi_random_fail:-1:"04":MBEDTLS_ERR_MPI_BAD_INPUT_DATA
+
+MPI random bad arguments: min = N = 0
+mpi_random_fail:0:"00":MBEDTLS_ERR_MPI_BAD_INPUT_DATA
+
+MPI random bad arguments: min = N = 1
+mpi_random_fail:1:"01":MBEDTLS_ERR_MPI_BAD_INPUT_DATA
+
+MPI random bad arguments: min > N = 0
+mpi_random_fail:1:"00":MBEDTLS_ERR_MPI_BAD_INPUT_DATA
+
+MPI random bad arguments: min > N = 1
+mpi_random_fail:2:"01":MBEDTLS_ERR_MPI_BAD_INPUT_DATA
+
+MPI random bad arguments: min > N = 1, 0 limb in upper bound
+mpi_random_fail:2:"000000000000000001":MBEDTLS_ERR_MPI_BAD_INPUT_DATA
+
+MPI Selftest
+depends_on:MBEDTLS_SELF_TEST
+mpi_selftest:

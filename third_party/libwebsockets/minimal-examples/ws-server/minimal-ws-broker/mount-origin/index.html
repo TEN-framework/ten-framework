@@ -1,0 +1,24 @@
+<html>
+ <head>
+  <meta charset=utf-8 http-equiv="Content-Language" content="en"/>
+  <script src="/example.js"></script>
+ </head>
+	<body>
+		<img src="libwebsockets.org-logo.svg">
+		<img src="strict-csp.svg"><br>
+
+		LWS chat <b>minimal ws broker example</b>.<br>
+		This page opens two separate ws connections...<br>
+		A subscriber ws connection fills this textarea<br>
+		with data it receives from the broker...
+		<br>
+		<br>
+		<textarea id=r readonly cols=40 rows=10></textarea><br>
+		<br>
+		... and a publisher ws connection sends the string<br>
+		in the box below to the broker when you press Send.<br>
+		<input type="text" id=m cols=40 rows=1>
+		<button id=b>Send</button>
+	</body>
+</html>
+

@@ -1,0 +1,121 @@
+{
+  "ten": {
+    "log": {
+      "handlers": [
+        {
+          "matchers": [
+            {
+              "level": "info"
+            }
+          ],
+          "formatter": {
+            "type": "plain",
+            "colored": true
+          },
+          "emitter": {
+            "type": "console",
+            "config": {
+              "stream": "stdout"
+            }
+          }
+        }
+      ]
+    },
+    "predefined_graphs": [
+      {
+        "name": "default",
+        "auto_start": true,
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "simple_http_server_cpp",
+              "addon": "simple_http_server_cpp",
+              "extension_group": "default_extension_group",
+              "property": {
+                "server_port": 8002
+              }
+            },
+            {
+              "type": "extension",
+              "name": "default_extension_python",
+              "addon": "default_extension_python",
+              "extension_group": "default_extension_group"
+            },
+            {
+              "type": "extension",
+              "name": "default_extension_python2",
+              "addon": "default_extension_python",
+              "extension_group": "default_extension_group"
+            },
+            {
+              "type": "extension",
+              "name": "simple_echo_cpp",
+              "addon": "simple_echo_cpp",
+              "extension_group": "default_extension_group"
+            }
+          ],
+          "connections": [
+            {
+              "extension": "simple_http_server_cpp",
+              "cmd": [
+                {
+                  "name": "test",
+                  "dest": [
+                    {
+                      "extension": "default_extension_python"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "default_extension_python",
+              "cmd": [
+                {
+                  "name": "hello",
+                  "dest": [
+                    {
+                      "extension": "simple_echo_cpp"
+                    }
+                  ]
+                }
+              ],
+              "data": [
+                {
+                  "name": "data",
+                  "dest": [
+                    {
+                      "extension": "simple_echo_cpp"
+                    }
+                  ]
+                },
+                {
+                  "name": "data2",
+                  "dest": [
+                    {
+                      "extension": "default_extension_python2"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "simple_echo_cpp",
+              "data": [
+                {
+                  "name": "data",
+                  "dest": [
+                    {
+                      "extension": "default_extension_python"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

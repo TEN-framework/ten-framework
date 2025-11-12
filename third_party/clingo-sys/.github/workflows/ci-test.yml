@@ -1,0 +1,135 @@
+name: CI Test
+
+on: [push]
+
+jobs:
+  build-linux:
+    runs-on: "ubuntu-latest"
+    steps:
+      - uses: actions/checkout@v2
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          auto-update-conda: true
+          python-version: ${{ matrix.python-version }}
+      - name: Conda install clingo
+        shell: bash -l {0}
+        run: |
+          conda install -c potassco/label/dev clingo
+      - name: Build
+        run: |
+          export CLINGO_LIBRARY_PATH=/usr/share/miniconda/envs/test/lib
+          cargo build --verbose
+      - name: Run tests
+        run: |
+          export LD_LIBRARY_PATH=/usr/share/miniconda/envs/test/lib
+          cargo test --verbose
+  build-macos:
+    runs-on: "macos-latest"
+    steps:
+      - uses: actions/checkout@v2
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          auto-update-conda: true
+          python-version: ${{ matrix.python-version }}
+      - name: Conda install clingo
+        shell: bash -l {0}
+        run: |
+          conda install -c potassco/label/dev clingo
+      - name: Build
+        run: |
+          export CLINGO_LIBRARY_PATH=/usr/local/miniconda/envs/test/lib
+          cargo build --verbose
+      - name: Run tests
+        run: |
+          export DYLD_LIBRARY_PATH=/usr/local/miniconda/envs/test/lib
+          cargo test --verbose
+  build-windows:
+    runs-on: "windows-latest"
+    steps:
+      - uses: actions/checkout@v2
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          auto-update-conda: true
+          python-version: ${{ matrix.python-version }}
+      - name: Conda install clingo
+        run: |
+          conda install -c potassco/label/dev clingo
+      - name: Build
+        env:
+          CLINGO_LIBRARY_PATH: C:\Miniconda\envs\test\Library\lib
+        run: |
+          cargo build --verbose
+      - name: Run tests
+        env:
+          CLINGO_LIBRARY_PATH: C:\Miniconda\envs\test\Library\lib
+          LD_LIBRARY_PATH: C:\Miniconda\envs\test\Library\lib
+        run: |
+          cargo test --verbose
+  build-linux-static:
+    runs-on: "ubuntu-latest"
+    steps:
+      - uses: actions/checkout@v2
+      - name: update submodules
+        run: git submodule update --init --recursive
+      - name: checkout correct clingo version
+        run: |
+             cd clingo 
+             git checkout v5.6.2 
+             cd ..
+      - name: Apply patch
+        run: patch -u clingo/libclingo/CMakeLists.txt -i bugfix.patch
+      - name: Install bison
+        run: sudo apt-get install bison
+      - name: Install re2c
+        run: sudo apt-get install re2c
+      - name: Build
+        run: cargo build --features static-linking --verbose
+      - name: Run tests
+        run: cargo test --features static-linking --verbose
+  build-macos-static:
+    runs-on: "macos-latest"
+    steps:
+      - uses: actions/checkout@v2
+      - name: update submodules
+        run: git submodule update --init --recursive
+      - name: checkout correct clingo version
+        run: |
+             cd clingo 
+             git checkout v5.6.2 
+             cd ..
+      - name: Apply patch
+        run: patch -u clingo/libclingo/CMakeLists.txt -i bugfix.patch
+      - name: Install build dependencies
+        run: |
+          brew update
+          brew install bison@2.7
+          brew install re2c
+      - name: Build
+        run: |
+          export PATH="/usr/local/opt/bison@2.7/bin:$PATH"
+          cargo build --features static-linking --verbose
+      - name: Run tests
+        run: |
+          export PATH="/usr/local/opt/bison@2.7/bin:$PATH"
+          cargo test --features static-linking --verbose
+  build-windows-static:
+    runs-on: "windows-latest"
+    steps:
+      - uses: actions/checkout@v2
+      - name: update submodules
+        run: git submodule update --init --recursive
+      - name: checkout correct clingo version
+        run: |
+             cd clingo 
+             git checkout v5.6.2 
+             cd ..
+      - name: Apply patch
+        run: patch -u clingo/libclingo/CMakeLists.txt -i bugfix.patch
+      - name: Install bison
+        run: choco install winflexbison
+      - name: Install re2c
+        run: choco install re2c
+      - name: Build
+        run: cargo build --features static-linking -vv
+      - name: Run tests
+        run: cargo test --features static-linking --verbose

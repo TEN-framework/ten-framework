@@ -1,0 +1,10 @@
+{
+    "params": {
+        "appid": "${env:BYTEDANCE_ASR_APP_ID}",
+        "token": "${env:BYTEDANCE_ASR_TOKEN}",
+        "api_key": "${env:BYTEDANCE_ASR_API_KEY}",
+        "cluster": "${env:BYTEDANCE_ASR_CLUSTER}",
+        "auth_method": "token",
+        "language": "zh-CN"
+    }
+}

@@ -1,0 +1,14 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+import("//build/ten_runtime/glob.gni")
+
+ten_runtime_glob("common") {
+  configs = [
+    "//core/src/ten_runtime/binding/nodejs/native:ten_runtime_nodejs_config",
+  ]
+  file_list = all_native_files
+}

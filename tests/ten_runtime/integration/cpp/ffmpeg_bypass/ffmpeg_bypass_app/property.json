@@ -1,0 +1,171 @@
+{
+  "ten": {
+    "uri": "msgpack://127.0.0.1:8001/",
+    "log": {
+      "handlers": [
+        {
+          "matchers": [
+            {
+              "level": "debug"
+            }
+          ],
+          "formatter": {
+            "type": "plain",
+            "colored": true
+          },
+          "emitter": {
+            "type": "console",
+            "config": {
+              "stream": "stdout"
+            }
+          }
+        }
+      ]
+    },
+    "predefined_graphs": [
+      {
+        "name": "default",
+        "auto_start": true,
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "ffmpeg_client",
+              "addon": "ffmpeg_client",
+              "extension_group": "default_extension_group"
+            },
+            {
+              "type": "extension",
+              "name": "ffmpeg_demuxer",
+              "addon": "ffmpeg_demuxer",
+              "extension_group": "demuxer_group"
+            },
+            {
+              "type": "extension",
+              "name": "ffmpeg_muxer",
+              "addon": "ffmpeg_muxer",
+              "extension_group": "muxer_group"
+            }
+          ],
+          "connections": [
+            {
+              "extension": "ffmpeg_client",
+              "cmd": [
+                {
+                  "name": "prepare_demuxer",
+                  "dest": [
+                    {
+                      "extension": "ffmpeg_demuxer"
+                    }
+                  ]
+                },
+                {
+                  "name": "start_muxer",
+                  "dest": [
+                    {
+                      "extension": "ffmpeg_muxer"
+                    }
+                  ]
+                },
+                {
+                  "name": "start_demuxer",
+                  "dest": [
+                    {
+                      "extension": "ffmpeg_demuxer"
+                    }
+                  ]
+                }
+              ],
+              "video_frame": [
+                {
+                  "name": "video_frame",
+                  "dest": [
+                    {
+                      "extension": "ffmpeg_muxer"
+                    }
+                  ]
+                }
+              ],
+              "audio_frame": [
+                {
+                  "name": "audio_frame",
+                  "dest": [
+                    {
+                      "extension": "ffmpeg_muxer"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "ffmpeg_muxer",
+              "cmd": [
+                {
+                  "name": "complete",
+                  "dest": [
+                    {
+                      "extension": "ffmpeg_client",
+                      "msg_conversion": {
+                        "type": "per_property",
+                        "rules": [
+                          {
+                            "path": "ten.name",
+                            "conversion_mode": "fixed_value",
+                            "value": "muxer_complete"
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "ffmpeg_demuxer",
+              "cmd": [
+                {
+                  "name": "complete",
+                  "dest": [
+                    {
+                      "extension": "ffmpeg_client",
+                      "msg_conversion": {
+                        "type": "per_property",
+                        "rules": [
+                          {
+                            "path": "ten.name",
+                            "conversion_mode": "fixed_value",
+                            "value": "demuxer_complete"
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              ],
+              "video_frame": [
+                {
+                  "name": "video_frame",
+                  "dest": [
+                    {
+                      "extension": "ffmpeg_client"
+                    }
+                  ]
+                }
+              ],
+              "audio_frame": [
+                {
+                  "name": "audio_frame",
+                  "dest": [
+                    {
+                      "extension": "ffmpeg_client"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

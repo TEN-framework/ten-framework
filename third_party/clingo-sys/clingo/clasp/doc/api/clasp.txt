@@ -1,0 +1,35 @@
+/*!
+\mainpage The clasp System
+\author Benjamin Kaufmann (kaufmann@cs.uni-potsdam.de)
+\version 3.2
+
+clasp - the <b>c</b>onflict-driven <b>l</b>earning <b>a</b>nswer <b>s</b>et <b>p</b>rogramming system -
+is an answer set solver for (extended) normal and disjunctive logic programs. It combines the high-level modeling capacities
+of answer set programming (ASP) with state-of-the-art techniques from the area of Boolean constraint solving.
+The primary clasp algorithm relies on conflict-driven nogood learning,
+a technique that proved very successful for satisfiability checking (SAT).
+
+clasp can be applied as an ASP, (Max-)SAT, or PB solver, or as a C++ library in another program.
+It provides different reasoning modes and advanced features from Boolean
+constraint solving including:
+  - Enumeration of (Projected) Solutions
+  - Optimization of Solutions
+  - Cautious and Brave Reasoning
+  - Parallel (multithreaded) solving
+  - ASP/SAT/PB modulo acyclicity
+  .
+
+For more information please visit the clasp homepage: http://www.cs.uni-potsdam.de/clasp
+
+  @defgroup facade Facade
+  @defgroup cli Cli
+  @defgroup clingo Clingo
+  @defgroup problem Input
+  @defgroup constraint Constraints
+  @defgroup shared SharedContext
+  @defgroup solver Solver
+  @defgroup heuristic Decision Heuristics
+  @defgroup enumerator Solving
+*/
+
+

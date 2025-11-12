@@ -1,0 +1,9 @@
+{
+    "dump": false,
+    "dump_path": "./tests/keep_dump_output/",
+    "params": {
+        "aws_access_key_id": "",
+        "aws_secret_access_key": "${env:AWS_TTS_SECRET_ACCESS_KEY}",
+        "region_name": "${env:AWS_TTS_REGION}"
+    }
+}

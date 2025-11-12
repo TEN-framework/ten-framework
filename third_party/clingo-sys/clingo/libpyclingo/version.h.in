@@ -1,0 +1,1 @@
+#define PYCLINGO_PYTHON_VERSION "@Python_VERSION@"

@@ -1,0 +1,47 @@
+{
+    "type": "extension",
+    "name": "google_asr_python",
+    "version": "0.2.3",
+    "dependencies": [
+        {
+            "type": "system",
+            "name": "ten_runtime_python",
+            "version": "0.11"
+        },
+        {
+            "type": "system",
+            "name": "ten_ai_base",
+            "version": "0.7"
+        }
+    ],
+    "api": {
+        "property": {
+            "properties": {
+                "project_id": {
+                    "type": "string"
+                },
+                "adc_credentials_path": {
+                    "type": "string"
+                },
+                "location": {
+                    "type": "string"
+                },
+                "model": {
+                    "type": "string"
+                },
+                "language": {
+                    "type": "string"
+                }
+            }
+        }
+    },
+    "package": {
+        "include": [
+            "manifest.json",
+            "property.json",
+            "**.py",
+            "requirements.txt",
+            "docs/**"
+        ]
+    }
+}

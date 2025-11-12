@@ -1,0 +1,24 @@
+#
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0.
+# See the LICENSE file for more information.
+#
+import("//build/feature/ten_package.gni")
+import("//build/feature/ten_package_test.gni")
+import("//build/options.gni")
+
+ten_package("ffmpeg_client") {
+  package_kind = "extension"
+  enable_build = true
+
+  resources = [
+    "manifest.json",
+    "property.json",
+  ]
+
+  sources = [ "src/main.cc" ]
+  include_dirs = [
+    "include",
+    "include/nlohmann_json",
+  ]
+}

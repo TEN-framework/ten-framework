@@ -1,0 +1,59 @@
+{
+ "vhosts": [ {
+     "name": "localhost",
+     "port": "7681",
+# by default, bind to all interfaces, but you can restrict it
+#     "interface": "lo",
+#     "host-ssl-key":  "/etc/pki/tls/private/libwebsockets.org.key",
+#     "host-ssl-cert": "/etc/pki/tls/certs/libwebsockets.org.crt",
+#     "host-ssl-ca":   "/etc/pki/tls/certs/libwebsockets.org.cer",
+     "access-log": "/var/log/lwsws/test-access-log",
+#     "sts": "on",
+     "mounts": [{
+       "mountpoint": "/",
+       "origin": "file://_lws_ddir_/libwebsockets-test-server",
+       "default": "test.html",
+       "cache-max-age": "60",
+       "cache-reuse": "1",
+       "cache-revalidate": "1",
+       "cache-intermediaries": "0"
+       }, {
+        "mountpoint": "/server-status",
+        "origin": "file://_lws_ddir_/libwebsockets-test-server/server-status",
+        "default": "server-status.html"
+	}, {
+	"mountpoint": "/testcgi",
+	"origin": "cgi://_lws_ddir_/libwebsockets-test-server/lws-cgi-test.sh"
+
+       }, {
+        "mountpoint": "/formtest",
+        "origin": "callback://protocol-post-demo" 
+       }],
+     # which protocols are enabled for this vhost, and optional
+     # vhost-specific config options for the protocol
+     #
+     "ws-protocols": [{
+       "lws-meta": {
+         "status": "ok"
+       },
+       "dumb-increment-protocol": {
+         "status": "ok"
+       },
+       "lws-mirror-protocol": {
+         "status": "ok"
+       },
+       "lws-status": {
+         "status": "ok"
+       },
+       "protocol-post-demo": {
+         "status": "ok"
+       },
+       "lws-server-status": {
+         "status": "ok",
+	 "update-ms": "5000"
+       }
+     }]
+    }
+  ]
+}
+

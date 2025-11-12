@@ -1,0 +1,46 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+import("//build/ten_runtime/feature/test.gni")
+import("//build/ten_runtime/options.gni")
+
+group("nodejs") {
+  deps = [
+    "call_api_after_closing_nodejs",
+    "cpp_app_nodejs",
+    "get_set_property_nodejs",
+    "http_server_nodejs",
+    "mix_python_ext_nodejs",
+    "send_audio_frame_nodejs",
+    "send_cmd_ex_nodejs",
+    "send_cmd_nodejs",
+    "send_data_nodejs",
+    "send_video_frame_nodejs",
+    "set_dest_nodejs",
+    "standalone_test_nodejs",
+    "standalone_test_nodejs_2",
+    "standalone_test_nodejs_3",
+    "start_graph_and_communicate_nodejs",
+    "start_graph_and_set_dests_from_new_graph_nodejs",
+    "trigger_life_cycle_nodejs",
+    "websocket_server_nodejs",
+  ]
+
+  if (ten_enable_go_binding) {
+    deps += [
+      "go_app_nodejs",
+      "go_app_websocket_server_nodejs",
+    ]
+  }
+
+  if (ten_enable_go_binding && ten_enable_python_binding) {
+    deps += [ "go_app_preload_all_addons_nodejs" ]
+  }
+
+  if (is_debug) {
+    deps += [ "leak_check_nodejs" ]
+  }
+}

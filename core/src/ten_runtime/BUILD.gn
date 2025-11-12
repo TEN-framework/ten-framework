@@ -1,0 +1,170 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+import("//build/feature/ten_package.gni")
+import("//build/ten_common/asan/package_asan_lib.gni")
+import("//build/ten_runtime/feature/publish.gni")
+import("//build/ten_runtime/options.gni")
+import("//build/ten_runtime/ten.gni")
+import("//core/src/ten_runtime/output_libs.gni")
+
+config("ten_runtime_config") {
+  include_dirs = [ "//core/include" ]
+}
+
+if (enable_sanitizer) {
+  package_asan_lib("package_asan_lib_for_ten_runtime_system_package") {
+    dest_asan_lib_dir = "${root_out_dir}/ten_packages/system/ten_runtime/lib"
+  }
+}
+
+ten_target("ten_runtime_library") {
+  output_name = "ten_runtime"
+
+  if (ten_build_shared) {
+    type = "shared_library"
+  } else {
+    type = "static_library"
+  }
+
+  public_configs = [ ":ten_runtime_config" ]
+
+  public_deps = [
+    "addon",
+    "addon_loader",
+    "app",
+    "common",
+    "connection",
+    "engine",
+    "extension",
+    "extension_context",
+    "extension_group",
+    "extension_store",
+    "extension_thread",
+    "global",
+    "graph_proxy",
+    "metadata",
+    "msg",
+    "msg_conversion",
+    "path",
+    "protocol",
+    "remote",
+    "schema_store",
+    "ten_env",
+    "ten_env_proxy",
+    "test",
+    "timer",
+    "//core/src/ten_utils:ten_utils_shared",
+  ]
+
+  if (!defined(ldflags)) {
+    ldflags = []
+  }
+
+  if (is_mac) {
+    ldflags += [
+      "-Xlinker",
+      "-exported_symbols_list",
+      "-Xlinker",
+      rebase_path("//build/ten_runtime/ld_script/mac"),
+
+      "-framework",
+      "Security",
+    ]
+  }
+
+  if (is_linux) {
+    ldflags += [ "-Wl,--version-script=" +
+                 rebase_path("//build/ten_runtime/ld_script/linux") ]
+  }
+
+  deps = []
+  if (enable_sanitizer) {
+    deps += [ ":package_asan_lib_for_ten_runtime_system_package" ]
+  }
+}
+
+ten_package("ten_runtime_system_package") {
+  package_kind = "system"
+  package_output_root_dir_name = "ten_runtime"
+
+  resources = [
+    "BUILD_release.gn=>BUILD.gn",
+    "manifest.json",
+  ]
+
+  runtime_headers =
+      exec_script("//.gnfiles/build/scripts/glob_file.py",
+                  [
+                    "--dir",
+                    rebase_path("//core/include/ten_runtime/**/*"),
+                    "--dir-base",
+                    rebase_path("//core/include/ten_runtime/"),
+                    "--recursive",
+                    "--only-output-file",
+                  ],
+                  "json")
+
+  foreach(runtime_header, runtime_headers) {
+    runtime_header_rel_path = runtime_header.relative_path
+    resources += [ "//core/include/ten_runtime/${runtime_header_rel_path}=>include/ten_runtime/${runtime_header_rel_path}" ]
+  }
+
+  utils_headers = exec_script("//.gnfiles/build/scripts/glob_file.py",
+                              [
+                                "--dir",
+                                rebase_path("//core/include/ten_utils/**/*"),
+                                "--dir-base",
+                                rebase_path("//core/include/ten_utils/"),
+                                "--recursive",
+                                "--only-output-file",
+                              ],
+                              "json")
+
+  foreach(utils_header, utils_headers) {
+    utils_header_rel_path = utils_header.relative_path
+    resources += [ "//core/include/ten_utils/${utils_header_rel_path}=>include/ten_utils/${utils_header_rel_path}" ]
+  }
+
+  foreach(lib, ten_runtime_output_libs) {
+    libname = get_path_info(rebase_path(lib), "file")
+    resources += [ "${lib}=>lib/${libname}" ]
+  }
+  foreach(lib, ten_utils_output_libs) {
+    libname = get_path_info(rebase_path(lib), "file")
+    resources += [ "${lib}=>lib/${libname}" ]
+  }
+
+  deps = [
+    ":ten_runtime_library",
+    "//core/src/ten_utils",
+  ]
+}
+
+if (ten_enable_ten_manager) {
+  ten_package_publish("upload_ten_runtime_system_package_to_server") {
+    base_dir = rebase_path("${root_out_dir}/ten_packages/system/ten_runtime")
+
+    deps = [
+      ":ten_runtime_library",
+      ":ten_runtime_system_package",
+
+      # 'local_registry' must be completed before this uploading operation,
+      # otherwise, the 'tests/local_registry/' directory will be deleted
+      # by the operation of 'local_registry', which will lead to the disappearance
+      # of the current uploading package.
+      "//tests/local_registry",
+    ]
+  }
+}
+
+group("ten_runtime") {
+  public_deps = [ ":ten_runtime_library" ]
+
+  if (ten_enable_ten_manager) {
+    deps = [ ":upload_ten_runtime_system_package_to_server" ]
+  }
+}

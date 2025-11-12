@@ -1,0 +1,13 @@
+{
+  "type": "extension",
+  "name": "test_extension_4",
+  "version": "0.11.18",
+  "api": {},
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_nodejs",
+      "version": "0.11.26"
+    }
+  ]
+}

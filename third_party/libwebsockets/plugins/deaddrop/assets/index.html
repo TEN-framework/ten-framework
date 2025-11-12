@@ -1,0 +1,34 @@
+<html>
+ <head>
+  <meta charset=utf-8 http-equiv="Content-Language" content="en"/>
+  <link rel="stylesheet" type="text/css" href="deaddrop.css"/>
+  <script src="deaddrop.js"></script>
+ </head>
+ <body>
+	<h1>LWS Deaddrop</h1>
+	<div class="uplbox">
+	 <table id="ddrop" class="noconn">
+	  <tr><td class="vm">
+	 	<div id="da" class="da"><img class="disa" src="drop.svg"></div>
+	  </td><td>
+	   <h3>...or select files to upload:</h3>
+	   <span id="size"></span><br>
+	  <form name=multipart action="upload" method="post"
+		 enctype="multipart/form-data">
+	    <input multiple type="file" name="file" id="file" size="20">
+	        <span id="file_info" class="dd-fileinfo"></span>
+	    <br>
+	    <input id="upl" type="submit" name="Upload" value="Upload"
+	    	    class="ubtn" disabled>
+	  </form>
+	   <table id="ongoing" class="nb"></table>
+	 </td></tr>
+	 <tr><td colspan="2">
+	 	<div id="dd-list" class="dd-list">
+		<!-- deaddrop-list -->
+		</div>
+	 </td></tr>
+	 </table>
+	</div>
+ </body>
+</html>

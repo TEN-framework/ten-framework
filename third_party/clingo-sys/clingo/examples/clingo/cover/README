@@ -1,0 +1,5 @@
+Encoding to calculate a vertex cover for a graph. A simple preprocessing
+procedure is applied to reduce the graph size before calculating the cover.
+
+$ clingo control-py.lp
+$ clingo control-lua.lp

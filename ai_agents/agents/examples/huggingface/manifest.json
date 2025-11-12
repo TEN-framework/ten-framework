@@ -1,0 +1,42 @@
+{
+  "type": "app",
+  "name": "agent_huggingface",
+  "version": "0.10.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_go",
+      "version": "0.11"
+    },
+    {
+      "type": "extension",
+      "name": "agora_rtc",
+      "version": "=0.23.9-t1"
+    },
+    {
+      "type": "system",
+      "name": "ten_ai_base",
+      "version": "0.7"
+    },
+    {
+      "type": "extension",
+      "name": "openai_chatgpt_python",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "weatherapi_tool_python",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "interrupt_detector_python",
+      "version": "=0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "message_collector",
+      "version": "=0.1.0"
+    }
+  ]
+}

@@ -1,0 +1,143 @@
+name: 🔧 Manual - ASR Guarder Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      extension:
+        description: "Extension name (required)"
+        required: true
+        type: string
+        default: "azure_asr_python"
+      config_dir:
+        description: "Config directory (optional)"
+        required: false
+        type: string
+        default: "tests/configs"
+      branch:
+        description: "Branch to test (optional, defaults to current branch)"
+        required: false
+        type: string
+        default: ""
+      env_vars:
+        description: "Environment variable keys (use semicolon to separate multiple keys, format: KEY1;KEY2;KEY3). Values will be read from GitHub Secrets."
+        required: false
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  asr-guarder-test:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/ten-framework/ten_agent_build:0.7.9
+
+    env:
+      # Import all secrets as environment variables for dynamic access
+      # Users need to create GitHub Secrets with the same names as their env_vars keys
+      _ALL_SECRETS: ${{ toJSON(secrets) }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: "0"
+          submodules: "true"
+          ref: ${{ github.event.inputs.branch || github.ref }}
+
+      - name: Configure git
+        run: |
+          git config --global --add safe.directory $(pwd)
+
+      - name: Setup environment
+        run: |
+          echo "EXTENSION=${{ github.event.inputs.extension }}" >> $GITHUB_ENV
+          echo "CONFIG_DIR=${{ github.event.inputs.config_dir }}" >> $GITHUB_ENV
+          echo "BRANCH=${{ github.event.inputs.branch || github.ref_name }}" >> $GITHUB_ENV
+
+      - name: Parse and set custom environment variables
+        shell: bash
+        run: |
+          echo "Setting up custom environment variables from GitHub Secrets..."
+
+          # Get the input and process semicolon-separated variable keys
+          ENV_INPUT="${{ github.event.inputs.env_vars }}"
+
+          echo "Custom environment variables:"
+          if [ -n "$ENV_INPUT" ]; then
+            # Split by semicolon and process each variable key
+            IFS=';' read -ra ENV_ARRAY <<< "$ENV_INPUT"
+            for env_key in "${ENV_ARRAY[@]}"; do
+              # Remove leading/trailing whitespace
+              env_key=$(echo "$env_key" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+
+              # Skip empty entries
+              if [ -z "$env_key" ]; then
+                continue
+              fi
+
+              # Check if it is a valid variable name (only letters, numbers, underscore, starting with letter or underscore)
+              if echo "$env_key" | grep -q '^[A-Za-z_][A-Za-z0-9_]*$'; then
+                # Extract the secret value from the JSON using jq
+                secret_value=$(echo "$_ALL_SECRETS" | jq -r --arg key "$env_key" '.[$key] // empty')
+
+                if [ -n "$secret_value" ] && [ "$secret_value" != "null" ]; then
+                  # Set environment variable
+                  echo "${env_key}=${secret_value}" >> $GITHUB_ENV
+                  echo "  ✅ ${env_key}=*** (value loaded from GitHub Secrets)"
+                else
+                  echo "  ❌ ${env_key}: GitHub Secret not found or empty"
+                  echo "  ℹ️  Please create a GitHub Secret named '${env_key}' in the repository settings"
+                fi
+              else
+                echo "  ⚠️  Skipping invalid variable name: $env_key"
+              fi
+            done
+          else
+            echo "  ℹ️  No environment variable keys provided"
+          fi
+
+      - name: Display test parameters
+        run: |
+          echo "==================== Test Parameters ===================="
+          echo "Branch: ${{ github.event.inputs.branch || github.ref_name }}"
+          echo "Extension: ${{ github.event.inputs.extension }}"
+          echo "Config Directory: ${{ github.event.inputs.config_dir }}"
+          echo ""
+          echo "Custom Environment Variables Input:"
+          if [ -n "${{ github.event.inputs.env_vars }}" ]; then
+            echo "✅ Environment variable keys provided (semicolon-separated): ${{ github.event.inputs.env_vars }}"
+            echo "📝 Values loaded from GitHub Secrets (see environment parsing step above for details)"
+          else
+            echo "ℹ️  No custom environment variable keys provided"
+          fi
+          echo "========================================================"
+
+      - name: Run ASR Guarder Test
+        run: |
+          cd ai_agents
+          echo "Starting ASR Guarder Test..."
+          echo "Branch: ${{ github.event.inputs.branch || github.ref_name }}"
+          echo "Extension: ${{ github.event.inputs.extension }}"
+          echo "Config Directory: ${{ github.event.inputs.config_dir }}"
+          echo ""
+
+          # Display current environment variables (only non-sensitive or for debugging)
+          echo "Environment check:"
+          env | grep -E "^(EXTENSION|CONFIG_DIR|BRANCH)=" | sort || echo "  Basic variables set"
+          echo ""
+
+          # Run the test with specified parameters
+          echo "Executing test command..."
+          task asr-guarder-test EXTENSION="${{ github.event.inputs.extension }}" CONFIG_DIR="${{ github.event.inputs.config_dir }}" -- -v
+
+      - name: Show test completion
+        if: always()
+        run: |
+          echo "==================== Test Completed ===================="
+          echo "Branch tested: ${{ github.event.inputs.branch || github.ref_name }}"
+          echo "Extension tested: ${{ github.event.inputs.extension }}"
+          echo "Config directory used: ${{ github.event.inputs.config_dir }}"
+          echo "Check the logs above for detailed test results."
+          echo "========================================================"

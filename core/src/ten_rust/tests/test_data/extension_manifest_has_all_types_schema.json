@@ -1,0 +1,104 @@
+{
+  "type": "extension",
+  "name": "default_extension_go",
+  "version": "0.1.0",
+  "api": {
+    "property": {
+      "properties": {
+        "app_id": {
+          "type": "string"
+        },
+        "app_version": {
+          "type": "uint8"
+        }
+      }
+    },
+    "cmd_in": [
+      {
+        "name": "cmd1",
+        "property": {
+          "properties": {
+            "param1": {
+              "type": "int8"
+            }
+          }
+        },
+        "result": {
+          "property": {
+            "properties": {
+              "detail": {
+                "type": "bool"
+              }
+            },
+            "required": [
+              "detail"
+            ]
+          }
+        }
+      }
+    ],
+    "cmd_out": [
+      {
+        "name": "cmd1",
+        "property": {
+          "properties": {
+            "param2": {
+              "type": "int16"
+            }
+          }
+        }
+      }
+    ],
+    "data_in": [
+      {
+        "name": "data1"
+      }
+    ],
+    "data_out": [
+      {
+        "name": "data2",
+        "property": {
+          "properties": {
+            "text_data": {
+              "type": "buf"
+            }
+          }
+        }
+      }
+    ],
+    "audio_frame_in": [
+      {
+        "name": "pcm_frame",
+        "property": {
+          "properties": {
+            "format": {
+              "type": "uint8"
+            }
+          }
+        }
+      }
+    ],
+    "audio_frame_out": [
+      {
+        "name": "pcm_frame"
+      }
+    ],
+    "video_frame_in": [
+      {
+        "name": "image_frame",
+        "property": {
+          "properties": {
+            "width": {
+              "type": "uint64"
+            }
+          }
+        }
+      }
+    ],
+    "video_frame_out": [
+      {
+        "name": "image_frame"
+      }
+    ]
+  }
+}

@@ -1,0 +1,54 @@
+#
+# Copyright © 2024 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+import("//build/ten_runtime/feature/cmake.gni")
+import("//third_party/mbedtls/output_libs.gni")
+
+config("mbedtls_header") {
+  include_dirs = [ "${root_gen_dir}/cmake/mbedtls/install/include" ]
+}
+
+cmake_project("mbedtls") {
+  public_configs = [ ":mbedtls_header" ]
+
+  project_path = "."
+  project_name = "mbedtls"
+  build_path = "${root_gen_dir}/cmake/mbedtls/"
+  install_path = "${build_path}/install/"
+  library_path = [ "$install_path/lib/" ]
+
+  options = [
+    "ENABLE_PROGRAMS=OFF",
+    "ENABLE_TESTING=OFF",
+    "MBEDTLS_FATAL_WARNINGS=OFF",
+  ]
+
+  options += [
+    # Because mbedtls library needs mbedx509 and mbedcrypto libraries at
+    # runtime, and those two libraries would be put into the same directory of
+    # mbedtls library at runtime, so we need to add `-Wl,-rpath,$ORIGIN` to
+    # the linker flag, and the cmake way to do this is the following variable.
+    "CMAKE_BUILD_RPATH_USE_ORIGIN=TRUE",
+  ]
+
+  if (mbedtls_use_shared_lib) {
+    options += [
+      "USE_SHARED_MBEDTLS_LIBRARY=ON",
+      "USE_STATIC_MBEDTLS_LIBRARY=OFF",
+    ]
+  } else {
+    options += [
+      "USE_SHARED_MBEDTLS_LIBRARY=OFF",
+      "USE_STATIC_MBEDTLS_LIBRARY=ON",
+    ]
+  }
+
+  if (is_win) {
+    options += [ "CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON" ]
+  }
+
+  outputs_seen_by_ag = mbedtls_output_libs
+}

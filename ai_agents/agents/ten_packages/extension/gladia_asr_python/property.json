@@ -1,0 +1,5 @@
+{
+    "api_key": "${env:GLADIA_API_KEY}",
+    "language": "en-US",
+    "sample_rate": 16000
+}

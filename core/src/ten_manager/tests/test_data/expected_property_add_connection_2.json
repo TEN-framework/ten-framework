@@ -1,0 +1,363 @@
+{
+  "ten": {
+    "log": {
+      "handlers": [
+        {
+          "matchers": [
+            {
+              "level": "info"
+            }
+          ],
+          "formatter": {
+            "type": "json",
+            "colored": false
+          },
+          "emitter": {
+            "type": "console",
+            "config": {
+              "stream": "stdout"
+            }
+          }
+        }
+      ]
+    },
+    "predefined_graphs": [
+      {
+        "name": "default",
+        "auto_start": true,
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "aio_http_server_python",
+              "addon": "aio_http_server_python",
+              "extension_group": "test",
+              "property": {
+                "server_port": 8002
+              }
+            },
+            {
+              "type": "extension",
+              "name": "simple_echo_cpp",
+              "addon": "simple_echo_cpp",
+              "extension_group": "default_extension_group"
+            },
+            {
+              "type": "extension",
+              "name": "mock_extension_1",
+              "addon": "mock_extension_1",
+              "extension_group": "test"
+            },
+            {
+              "type": "extension",
+              "name": "mock_extension_2",
+              "addon": "mock_extension_2",
+              "extension_group": "test",
+              "property": {}
+            }
+          ],
+          "connections": [
+            {
+              "extension": "aio_http_server_python",
+              "cmd": [
+                {
+                  "name": "test_cmd1",
+                  "dest": [
+                    {
+                      "extension": "mock_extension_1"
+                    }
+                  ]
+                },
+                {
+                  "name": "test_cmd2",
+                  "dest": [
+                    {
+                      "extension": "mock_extension_1"
+                    }
+                  ]
+                },
+                {
+                  "name": "test_cmd1",
+                  "dest": [
+                    {
+                      "extension": "mock_extension_2"
+                    }
+                  ]
+                },
+                {
+                  "name": "test_cmd2",
+                  "dest": [
+                    {
+                      "extension": "mock_extension_2"
+                    }
+                  ]
+                },
+                {
+                  "name": "c1",
+                  "dest": [
+                    {
+                      "extension": "simple_echo_cpp"
+                    }
+                  ]
+                }
+              ],
+              "data": [
+                {
+                  "name": "test_data1",
+                  "dest": [
+                    {
+                      "extension": "mock_extension_1"
+                    }
+                  ]
+                },
+                {
+                  "name": "test_data1",
+                  "dest": [
+                    {
+                      "extension": "mock_extension_2"
+                    }
+                  ]
+                }
+              ],
+              "audio_frame": [
+                {
+                  "name": "test_audio1",
+                  "dest": [
+                    {
+                      "extension": "mock_extension_1"
+                    }
+                  ]
+                },
+                {
+                  "name": "test_audio2",
+                  "dest": [
+                    {
+                      "extension": "mock_extension_1"
+                    }
+                  ]
+                },
+                {
+                  "name": "test_audio3",
+                  "dest": [
+                    {
+                      "extension": "mock_extension_1"
+                    }
+                  ]
+                },
+                {
+                  "name": "test_audio1",
+                  "dest": [
+                    {
+                      "extension": "mock_extension_2"
+                    }
+                  ]
+                },
+                {
+                  "name": "test_audio2",
+                  "dest": [
+                    {
+                      "extension": "mock_extension_2"
+                    }
+                  ]
+                },
+                {
+                  "name": "test_audio3",
+                  "dest": [
+                    {
+                      "extension": "mock_extension_2"
+                    }
+                  ]
+                }
+              ],
+              "video_frame": [
+                {
+                  "name": "test_video1",
+                  "dest": [
+                    {
+                      "extension": "mock_extension_1"
+                    }
+                  ]
+                },
+                {
+                  "name": "test_video2",
+                  "dest": [
+                    {
+                      "extension": "mock_extension_1"
+                    }
+                  ]
+                },
+                {
+                  "name": "test_video1",
+                  "dest": [
+                    {
+                      "extension": "mock_extension_2"
+                    }
+                  ]
+                },
+                {
+                  "name": "test_video2",
+                  "dest": [
+                    {
+                      "extension": "mock_extension_2"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "mock_extension_1",
+              "cmd": [
+                {
+                  "name": "test_cmd1",
+                  "dest": [
+                    {
+                      "extension": "simple_echo_cpp"
+                    }
+                  ]
+                }
+              ],
+              "data": [
+                {
+                  "name": "test_data1",
+                  "dest": [
+                    {
+                      "extension": "simple_echo_cpp"
+                    }
+                  ]
+                },
+                {
+                  "name": "test_data2",
+                  "dest": [
+                    {
+                      "extension": "simple_echo_cpp"
+                    }
+                  ]
+                }
+              ],
+              "audio_frame": [
+                {
+                  "name": "test_audio1",
+                  "dest": [
+                    {
+                      "extension": "simple_echo_cpp"
+                    }
+                  ]
+                },
+                {
+                  "name": "test_audio2",
+                  "dest": [
+                    {
+                      "extension": "simple_echo_cpp"
+                    }
+                  ]
+                },
+                {
+                  "name": "test_audio3",
+                  "dest": [
+                    {
+                      "extension": "simple_echo_cpp"
+                    }
+                  ]
+                }
+              ],
+              "video_frame": [
+                {
+                  "name": "test_video1",
+                  "dest": [
+                    {
+                      "extension": "simple_echo_cpp"
+                    }
+                  ]
+                },
+                {
+                  "name": "test_video2",
+                  "dest": [
+                    {
+                      "extension": "simple_echo_cpp"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "mock_extension_2",
+              "cmd": [
+                {
+                  "name": "test_cmd1",
+                  "dest": [
+                    {
+                      "extension": "simple_echo_cpp"
+                    }
+                  ]
+                },
+                {
+                  "name": "test_cmd2",
+                  "dest": [
+                    {
+                      "extension": "simple_echo_cpp"
+                    }
+                  ]
+                }
+              ],
+              "data": [
+                {
+                  "name": "test_data1",
+                  "dest": [
+                    {
+                      "extension": "simple_echo_cpp"
+                    }
+                  ]
+                }
+              ],
+              "audio_frame": [
+                {
+                  "name": "test_audio1",
+                  "dest": [
+                    {
+                      "extension": "simple_echo_cpp"
+                    }
+                  ]
+                },
+                {
+                  "name": "test_audio2",
+                  "dest": [
+                    {
+                      "extension": "simple_echo_cpp"
+                    }
+                  ]
+                },
+                {
+                  "name": "test_audio3",
+                  "dest": [
+                    {
+                      "extension": "simple_echo_cpp"
+                    }
+                  ]
+                }
+              ],
+              "video_frame": [
+                {
+                  "name": "test_video1",
+                  "dest": [
+                    {
+                      "extension": "simple_echo_cpp"
+                    }
+                  ]
+                },
+                {
+                  "name": "test_video2",
+                  "dest": [
+                    {
+                      "extension": "simple_echo_cpp"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "app_property": "sample value"
+}

@@ -1,0 +1,77 @@
+#
+# Copyright © 2024 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+ffmpeg_output_libs = []
+
+if (is_linux) {
+  ffmpeg_output_libs += [
+    "${root_gen_dir}/autotool/ffmpeg/install/lib/libavcodec.so",
+    "${root_gen_dir}/autotool/ffmpeg/install/lib/libavcodec.so.61",
+    "${root_gen_dir}/autotool/ffmpeg/install/lib/libavcodec.so.61.19.101",
+
+    "${root_gen_dir}/autotool/ffmpeg/install/lib/libavdevice.so",
+    "${root_gen_dir}/autotool/ffmpeg/install/lib/libavdevice.so.61",
+    "${root_gen_dir}/autotool/ffmpeg/install/lib/libavdevice.so.61.3.100",
+
+    "${root_gen_dir}/autotool/ffmpeg/install/lib/libavfilter.so",
+    "${root_gen_dir}/autotool/ffmpeg/install/lib/libavfilter.so.10",
+    "${root_gen_dir}/autotool/ffmpeg/install/lib/libavfilter.so.10.4.100",
+
+    "${root_gen_dir}/autotool/ffmpeg/install/lib/libavformat.so",
+    "${root_gen_dir}/autotool/ffmpeg/install/lib/libavformat.so.61",
+    "${root_gen_dir}/autotool/ffmpeg/install/lib/libavformat.so.61.7.100",
+
+    "${root_gen_dir}/autotool/ffmpeg/install/lib/libavutil.so",
+    "${root_gen_dir}/autotool/ffmpeg/install/lib/libavutil.so.59",
+    "${root_gen_dir}/autotool/ffmpeg/install/lib/libavutil.so.59.39.100",
+
+    "${root_gen_dir}/autotool/ffmpeg/install/lib/libswresample.so",
+    "${root_gen_dir}/autotool/ffmpeg/install/lib/libswresample.so.5",
+    "${root_gen_dir}/autotool/ffmpeg/install/lib/libswresample.so.5.3.100",
+
+    "${root_gen_dir}/autotool/ffmpeg/install/lib/libswscale.so",
+    "${root_gen_dir}/autotool/ffmpeg/install/lib/libswscale.so.8",
+    "${root_gen_dir}/autotool/ffmpeg/install/lib/libswscale.so.8.3.100",
+
+    "${root_gen_dir}/autotool/ffmpeg/install/lib/libpostproc.so",
+    "${root_gen_dir}/autotool/ffmpeg/install/lib/libpostproc.so.58",
+    "${root_gen_dir}/autotool/ffmpeg/install/lib/libpostproc.so.58.3.100",
+  ]
+} else if (is_mac) {
+  ffmpeg_output_libs += [
+    "${root_gen_dir}/autotool/ffmpeg/install/lib/libavcodec.dylib",
+    "${root_gen_dir}/autotool/ffmpeg/install/lib/libavcodec.61.dylib",
+    "${root_gen_dir}/autotool/ffmpeg/install/lib/libavcodec.61.19.101.dylib",
+
+    "${root_gen_dir}/autotool/ffmpeg/install/lib/libavdevice.dylib",
+    "${root_gen_dir}/autotool/ffmpeg/install/lib/libavdevice.61.dylib",
+    "${root_gen_dir}/autotool/ffmpeg/install/lib/libavdevice.61.3.100.dylib",
+
+    "${root_gen_dir}/autotool/ffmpeg/install/lib/libavfilter.dylib",
+    "${root_gen_dir}/autotool/ffmpeg/install/lib/libavfilter.10.dylib",
+    "${root_gen_dir}/autotool/ffmpeg/install/lib/libavfilter.10.4.100.dylib",
+
+    "${root_gen_dir}/autotool/ffmpeg/install/lib/libavformat.dylib",
+    "${root_gen_dir}/autotool/ffmpeg/install/lib/libavformat.61.dylib",
+    "${root_gen_dir}/autotool/ffmpeg/install/lib/libavformat.61.7.100.dylib",
+
+    "${root_gen_dir}/autotool/ffmpeg/install/lib/libavutil.dylib",
+    "${root_gen_dir}/autotool/ffmpeg/install/lib/libavutil.59.dylib",
+    "${root_gen_dir}/autotool/ffmpeg/install/lib/libavutil.59.39.100.dylib",
+
+    "${root_gen_dir}/autotool/ffmpeg/install/lib/libswresample.dylib",
+    "${root_gen_dir}/autotool/ffmpeg/install/lib/libswresample.5.dylib",
+    "${root_gen_dir}/autotool/ffmpeg/install/lib/libswresample.5.3.100.dylib",
+
+    "${root_gen_dir}/autotool/ffmpeg/install/lib/libswscale.dylib",
+    "${root_gen_dir}/autotool/ffmpeg/install/lib/libswscale.8.dylib",
+    "${root_gen_dir}/autotool/ffmpeg/install/lib/libswscale.8.3.100.dylib",
+
+    "${root_gen_dir}/autotool/ffmpeg/install/lib/libpostproc.dylib",
+    "${root_gen_dir}/autotool/ffmpeg/install/lib/libpostproc.58.dylib",
+    "${root_gen_dir}/autotool/ffmpeg/install/lib/libpostproc.58.3.100.dylib",
+  ]
+}

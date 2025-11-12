@@ -1,0 +1,50 @@
+<testcase>
+<info>
+<keywords>
+HTTP
+HTTP GET
+HTTP set cookie
+cookies
+</keywords>
+</info>
+# Server-side
+<reply>
+<data>
+HTTP/1.1 200 OK
+Date: Tue, 09 Nov 2010 14:49:00 GMT
+Server: test-server/fake
+Content-Type: text/html
+Funny-head: yesyes
+swsclose: booo
+
+</data>
+</reply>
+
+# Client-side
+<client>
+<server>
+http
+</server>
+ <name>
+HTTP with simple cookie send
+ </name>
+ <command>
+http://%HOSTIP:%HTTPPORT/we/want/that/page/%TESTNUMBER -b "name=contents;name2=content2" -b name3=content3
+</command>
+<features>
+cookies
+</features>
+</client>
+
+# Verify data after the test has been "shot"
+<verify>
+<protocol>
+GET /we/want/that/page/%TESTNUMBER HTTP/1.1
+Host: %HOSTIP:%HTTPPORT
+User-Agent: curl/%VERSION
+Accept: */*
+Cookie: name=contents;name2=content2;name3=content3
+
+</protocol>
+</verify>
+</testcase>

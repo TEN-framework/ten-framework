@@ -1,0 +1,44 @@
+{
+  "name": "test-package",
+  "version": "1.0.0",
+  "description": "Test Package",
+  "ten": {
+    "predefined_graphs": [
+      {
+        "name": "test_graph",
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "node1",
+              "addon": "addon1",
+              "property": {
+                "setting1": "original-value1",
+                "setting2": 42
+              }
+            },
+            {
+              "type": "extension",
+              "name": "node2",
+              "addon": "addon2",
+              "extension_group": "group1",
+              "property": {
+                "config": "original-config"
+              }
+            },
+            {
+              "type": "extension",
+              "name": "node3",
+              "addon": "addon3",
+              "property": {
+                "enabled": true
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "license": "MIT",
+  "author": "Test Author"
+}

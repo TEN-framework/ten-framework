@@ -1,0 +1,44 @@
+{
+  "nodes": [
+    {
+      "type": "extension",
+      "name": "addon_b",
+      "addon": "addon_b",
+      "extension_group": "b"
+    },
+    {
+      "type": "extension",
+      "name": "addon_c",
+      "addon": "addon_c",
+      "extension_group": "c"
+    }
+  ],
+  "connections": [
+    {
+      "extension": "addon_b",
+      "cmd": [
+        {
+          "name": "C",
+          "dest": [
+            {
+              "extension": "addon_c"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "exposed_messages": [
+    {
+      "type": "cmd_in",
+      "name": "C",
+      "extension": "addon_b"
+    }
+  ],
+  "exposed_properties": [
+    {
+      "name": "key",
+      "extension": "addon_c"
+    }
+  ]
+}

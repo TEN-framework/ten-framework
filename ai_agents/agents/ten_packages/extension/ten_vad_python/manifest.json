@@ -1,0 +1,43 @@
+{
+  "type": "extension",
+  "name": "ten_vad_python",
+  "version": "0.2.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.11"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "**.py",
+      "README.md"
+    ]
+  },
+  "api": {
+    "audio_frame_in": [
+      {
+        "name": "pcm_frame"
+      }
+    ],
+    "audio_frame_out": [
+      {
+        "name": "pcm_frame"
+      }
+    ],
+    "cmd_out": [
+      {
+        "name": "start_of_sentence"
+      },
+      {
+        "name": "end_of_sentence"
+      }
+    ]
+  },
+  "scripts": {
+    "test": "tests/bin/start"
+  }
+}

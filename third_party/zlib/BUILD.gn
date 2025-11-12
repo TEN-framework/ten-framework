@@ -1,0 +1,32 @@
+#
+# Copyright © 2024 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+import("//build/ten_runtime/feature/cmake.gni")
+import("//third_party/zlib/output_libs.gni")
+
+config("zlib_header") {
+  include_dirs = [ "${root_gen_dir}/cmake/zlib/install/include" ]
+}
+
+cmake_project("zlib") {
+  public_configs = [ ":zlib_header" ]
+
+  project_path = "."
+  if (is_win) {
+    project_name = "ALL_BUILD"
+  } else {
+    project_name = "all"
+  }
+
+  build_path = "${root_gen_dir}/cmake/zlib/"
+  install_path = "${build_path}/install/"
+  library_path = [ "$install_path/lib/" ]
+
+  cflags = [ "\"-fPIC\"" ]
+
+  outputs_seen_by_ag = []
+  outputs_seen_by_ag = zlib_output_libs
+}

@@ -1,0 +1,30 @@
+{
+  "type": "extension",
+  "name": "default_extension_nodejs",
+  "version": "0.11.26",
+  "tags": [
+    "nodejs"
+  ],
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_nodejs",
+      "version": "0.11.26"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "BUILD.gn",
+      "src/**",
+      "tsconfig.json",
+      "package.json",
+      "tests/**"
+    ]
+  },
+  "api": {},
+  "scripts": {
+    "test": "tests/bin/start"
+  }
+}

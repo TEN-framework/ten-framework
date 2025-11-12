@@ -1,0 +1,32 @@
+{
+  "nodes": [
+    {
+      "type": "extension",
+      "name": "empty_dest_ext",
+      "addon": "default_extension_go",
+      "extension_group": "some_group"
+    },
+    {
+      "type": "extension",
+      "name": "source_ext",
+      "addon": "default_extension_go",
+      "extension_group": "some_group"
+    }
+  ],
+  "connections": [
+    {
+      "extension": "empty_dest_ext",
+      "cmd": [
+        {
+          "name": "source_only_flow",
+          "dest": [],
+          "source": [
+            {
+              "extension": "source_ext"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

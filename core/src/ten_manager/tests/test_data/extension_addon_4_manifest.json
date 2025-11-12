@@ -1,0 +1,85 @@
+{
+  "type": "extension",
+  "name": "extension_addon_4",
+  "version": "1.0.0",
+  "api": {
+    "cmd_in": [
+      {
+        "name": "cmd_incompatible",
+        "property": {
+          "properties": {
+            "param1": {
+              "type": "int32"
+            }
+          }
+        }
+      },
+      {
+        "name": "cmd1",
+        "property": {
+          "properties": {
+            "param1": {
+              "type": "int8"
+            }
+          }
+        },
+        "result": {
+          "property": {
+            "properties": {
+              "detail": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "detail"
+            ]
+          }
+        }
+      },
+      {
+        "name": "cmd2",
+        "property": {
+          "properties": {
+            "param1": {
+              "type": "int8"
+            }
+          }
+        },
+        "result": {
+          "property": {
+            "properties": {
+              "detail": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "detail"
+            ]
+          }
+        }
+      }
+    ],
+    "data_in": [
+      {
+        "name": "data_incompatible",
+        "property": {
+          "properties": {
+            "value": {
+              "type": "int64"
+            }
+          }
+        }
+      },
+      {
+        "name": "data1",
+        "property": {
+          "properties": {
+            "text_data": {
+              "type": "buf"
+            }
+          }
+        }
+      }
+    ]
+  }
+}

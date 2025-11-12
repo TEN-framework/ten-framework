@@ -1,0 +1,8 @@
+This example shows how to obtain clasp statistics from the scripting language.
+These require external python or lua libraries. The python version also prints
+the statistics in a human-readable format (such functionality is not available
+in the lua json library used).
+
+Example calls:
+    clingo example.lp stats-lua.lp
+    clingo example.lp stats-py.lp

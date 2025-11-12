@@ -1,0 +1,15 @@
+{
+  "name": "ten-runtime-nodejs",
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "build": "tsc --listEmittedFiles"
+  },
+  "devDependencies": {
+    "@types/node": "^18.19.112",
+    "source-map-support": "^0.5.21",
+    "typescript": "^5.8.3"
+  },
+  "main": "build/index.js",
+  "types": "build/index.d.ts"
+}

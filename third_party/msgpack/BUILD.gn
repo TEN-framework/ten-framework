@@ -1,0 +1,51 @@
+#
+# Copyright © 2024 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+import("//build/ten_runtime/feature/cmake.gni")
+
+config("msgpackc_header") {
+  include_dirs = [ "${root_gen_dir}/cmake/msgpackc/install/include" ]
+}
+
+cmake_project("msgpackc") {
+  public_configs = [ ":msgpackc_header" ]
+
+  project_path = "."
+  if (is_win) {
+    project_name = "ALL_BUILD"
+  } else {
+    project_name = "all"
+  }
+  build_path = "${root_gen_dir}/cmake/msgpackc/"
+  install_path = "${build_path}/install/"
+
+  library_path = [ "$install_path/lib/" ]
+
+  options = [
+    "MSGPACK_BUILD_EXAMPLES=OFF",
+    "MSGPACK_BUILD_TESTS=OFF",
+    "MSGPACK_GEN_COVERAGE=OFF",
+    "BUILD_SHARED_LIBS=OFF",
+  ]
+
+  if (!is_win) {
+    # msgpack-c is part of another shared library, so we have to enable -fPIC even
+    # if msgpack-c is a static library.
+    #
+    # Otherwise, we will encounter the following error:
+    #
+    # relocation R_X86_64_PC32 against symbol `xxx' can not be used when making
+    # a shared object; recompile with -fPIC
+    cflags = [ "\"-fPIC\"" ]
+  }
+
+  outputs_seen_by_ag = []
+  if (is_win) {
+    outputs_seen_by_ag += [ "$install_path/lib/msgpack-c.lib" ]
+  } else {
+    outputs_seen_by_ag += [ "$install_path/lib/libmsgpack-c.a" ]
+  }
+}

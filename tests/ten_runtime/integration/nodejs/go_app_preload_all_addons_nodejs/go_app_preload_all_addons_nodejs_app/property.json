@@ -1,0 +1,101 @@
+{
+  "ten": {
+    "log": {
+      "handlers": [
+        {
+          "matchers": [
+            {
+              "level": "debug"
+            }
+          ],
+          "formatter": {
+            "type": "plain",
+            "colored": true
+          },
+          "emitter": {
+            "type": "console",
+            "config": {
+              "stream": "stdout"
+            }
+          }
+        }
+      ]
+    },
+    "addon": {
+      "preload_all": true
+    },
+    "predefined_graphs": [
+      {
+        "name": "preload_graph",
+        "auto_start": true,
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "simple_http_server_cpp",
+              "addon": "simple_http_server_cpp",
+              "extension_group": "simple_http_server_cpp",
+              "property": {
+                "server_port": 8002
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "default",
+        "auto_start": false,
+        "singleton": true,
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "default_extension_nodejs",
+              "addon": "default_extension_nodejs",
+              "extension_group": "default_extension_nodejs"
+            },
+            {
+              "type": "extension",
+              "name": "simple_echo_cpp",
+              "addon": "simple_echo_cpp",
+              "extension_group": "simple_echo_cpp"
+            },
+            {
+              "type": "extension",
+              "name": "default_extension_go",
+              "addon": "default_extension_go",
+              "extension_group": "default_extension_go"
+            },
+            {
+              "type": "extension",
+              "name": "default_extension_python",
+              "addon": "default_extension_python",
+              "extension_group": "default_extension_python"
+            }
+          ],
+          "connections": [
+            {
+              "extension": "default_extension_nodejs",
+              "cmd": [
+                {
+                  "name": "test",
+                  "dest": [
+                    {
+                      "extension": "simple_echo_cpp"
+                    },
+                    {
+                      "extension": "default_extension_go"
+                    },
+                    {
+                      "extension": "default_extension_python"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

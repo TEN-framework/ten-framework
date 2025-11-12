@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="243.61mm" height="119.5mm" version="1.1" viewBox="0 0 243.60584 119.50127" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+	<defs>
+		<marker id="c" overflow="visible" orient="auto">
+			<path transform="matrix(-.2 0 0 -.2 -1.2 0)" d="m0 0 5-5-17.5 5 17.5 5z" fill-rule="evenodd" stroke="#000" stroke-width="1pt"/>
+		</marker>
+		<linearGradient id="a" x1="1000.2" x2="993.99" y1="928.57" y2="992.97" gradientTransform="matrix(-2.4177 .34689 .34689 2.4177 -1517.1 -4018.7)" gradientUnits="userSpaceOnUse" xlink:href="#b"/>
+		<linearGradient id="b">
+			<stop stop-color="#e9ddaf" offset="0"/>
+			<stop stop-color="#504416" offset="1"/>
+		</linearGradient>
+		<marker id="h" overflow="visible" orient="auto">
+			<path transform="matrix(-.3 0 0 -.3 .69 0)" d="m8.7186 4.0337-10.926-4.0177 10.926-4.0177c-1.7455 2.3721-1.7354 5.6175-6e-7 8.0354z" fill="#37abc8" fill-rule="evenodd" stroke="#37abc8" stroke-linejoin="round" stroke-width=".625"/>
+		</marker>
+		<marker id="e" overflow="visible" orient="auto">
+			<path transform="matrix(-.3 0 0 -.3 .69 0)" d="m8.7186 4.0337-10.926-4.0177 10.926-4.0177c-1.7455 2.3721-1.7354 5.6175-6e-7 8.0354z" fill="#37abc8" fill-rule="evenodd" stroke="#37abc8" stroke-linejoin="round" stroke-width=".625"/>
+		</marker>
+		<marker id="g" overflow="visible" orient="auto">
+			<path transform="matrix(-.3 0 0 -.3 .69 0)" d="m8.7186 4.0337-10.926-4.0177 10.926-4.0177c-1.7455 2.3721-1.7354 5.6175-6e-7 8.0354z" fill="#37abc8" fill-rule="evenodd" stroke="#37abc8" stroke-linejoin="round" stroke-width=".625"/>
+		</marker>
+		<marker id="d" overflow="visible" orient="auto">
+			<path transform="matrix(-.3 0 0 -.3 .69 0)" d="m8.7186 4.0337-10.926-4.0177 10.926-4.0177c-1.7455 2.3721-1.7354 5.6175-6e-7 8.0354z" fill="#5fbcd3" fill-rule="evenodd" stroke="#5fbcd3" stroke-linejoin="round" stroke-width=".625"/>
+		</marker>
+		<marker id="i" overflow="visible" orient="auto">
+			<path transform="matrix(-.3 0 0 -.3 .69 0)" d="m8.7186 4.0337-10.926-4.0177 10.926-4.0177c-1.7455 2.3721-1.7354 5.6175-6e-7 8.0354z" fill="#37abc8" fill-rule="evenodd" stroke="#37abc8" stroke-linejoin="round" stroke-width=".625"/>
+		</marker>
+		<marker id="f" overflow="visible" orient="auto">
+			<path transform="matrix(-.3 0 0 -.3 .69 0)" d="m8.7186 4.0337-10.926-4.0177 10.926-4.0177c-1.7455 2.3721-1.7354 5.6175-6e-7 8.0354z" fill="#37abc8" fill-rule="evenodd" stroke="#37abc8" stroke-linejoin="round" stroke-width=".625"/>
+		</marker>
+		<marker id="j" overflow="visible" orient="auto">
+			<path transform="matrix(-.3 0 0 -.3 .69 0)" d="m8.7186 4.0337-10.926-4.0177 10.926-4.0177c-1.7455 2.3721-1.7354 5.6175-6e-7 8.0354z" fill="#37abc8" fill-rule="evenodd" stroke="#37abc8" stroke-linejoin="round" stroke-width=".625"/>
+		</marker>
+		<linearGradient id="k" x1="1000.2" x2="993.99" y1="928.57" y2="992.97" gradientTransform="matrix(-.19888 .028535 .028535 .19888 76.322 -70.376)" gradientUnits="userSpaceOnUse" xlink:href="#b"/>
+		<filter id="m" x="-.060394" y="-.055053" width="1.1208" height="1.1101" color-interpolation-filters="sRGB">
+			<feGaussianBlur stdDeviation="0.44336333"/>
+		</filter>
+		<filter id="l" x="-.040014" y="-.088963" width="1.08" height="1.1779" color-interpolation-filters="sRGB">
+			<feGaussianBlur stdDeviation="45.715489"/>
+		</filter>
+	</defs>
+	<g transform="translate(170.18 -89.083)">
+		<rect transform="matrix(.08226 0 0 .08226 224.59 64.781)" x="-4689.4" y="405.15" width="2742" height="1233.3" filter="url(#l)"/>
+		<rect x="-162.64" y="96.631" width="225.56" height="101.45" fill="#fff"/>
+		<g fill="#000080">
+			<path d="m-2.7427 136.03 26.893-21.631 3.0902 3.6748-26.225 21.631z" stroke="#000" stroke-width=".014764px"/>
+			<g fill-opacity=".91732">
+				<circle cx="25.541" cy="116.31" r="2.4824"/>
+				<circle cx="30.232" cy="112.88" r="2.4824" opacity=".764"/>
+				<circle cx="34.831" cy="109.36" r="2.4824" opacity=".508"/>
+			</g>
+			<path d="m-60.266 133.89 26.893-21.631 3.0902 3.6748-26.225 21.631z" stroke="#000" stroke-width=".014764px"/>
+		</g>
+		<path d="m-30.959 157.14 39.644-31.888 4.5555 5.4172-38.66 31.888z" fill="#00f" stroke="#000" stroke-width=".021765px"/>
+		<rect x="-130.22" y="156.7" width="158.14" height="5.7258" fill-opacity=".91732"/>
+		<path d="m-91.596 157.82 39.644-31.888 4.5555 5.4173-38.66 31.888z" fill="#00f" stroke="#000" stroke-width=".021765px"/>
+		<g transform="matrix(.08226 0 0 .08226 175.2 223.88)" fill-opacity=".91732">
+			<circle cx="-3207.7" cy="-780.43" r="82.55"/>
+			<circle cx="-3208.3" cy="-781.05" r="52.917" fill="#fff"/>
+		</g>
+		<circle cx="-93.373" cy="151.18" r="5.6635" fill="#fff" fill-opacity=".9375"/>
+		<path transform="matrix(-.75166 .10785 .10785 .75166 -2114.2 651.9)" d="m-2725.9-287.4c-0.4737 0.0104-0.7327 0.29435-0.9193 0.61443-2.45 4.2318-6.125 10.579-7.35 12.695-0.6344 1.3127 0.5828 2.8675 1.0263 3.5972 0.5853 0.7769 0.802 1.1542 1.8469 1.882 1.1717 0.46167 2.3507 0.56335 2.8066 0.53435s2.7265 0.26464 4.5434-1.3364c1.1317-2.0971 4.6213-8.6717 6.8848-12.866 0.2058-0.37197 0.6954-0.86583-0.1364-1.3663-2.8286-1.2472-5.6572-2.4941-8.4858-3.7414-0.077-0.0104-0.1488-0.0149-0.2165-0.0134zm-4.2607 15.885a1.1359 1.0667 0 0 1 1.1358 1.0666 1.1359 1.0667 0 0 1 -1.1358 1.0666 1.1359 1.0667 0 0 1 -1.1359 -1.0666 1.1359 1.0667 0 0 1 1.1359 -1.0666z" filter="url(#m)" stroke="#000" stroke-width=".26458px"/>
+		<path d="m-96.232 141.62c0.3572-0.0433 0.5825 0.14222 0.7573 0.36273 2.298 2.9166 5.7448 7.2912 6.8938 8.7496 0.6184 0.91824-0.1288 2.2186-0.3834 2.8149-0.3561 0.64707-0.4784 0.95368-1.1854 1.6135-0.8309 0.47339-1.7057 0.67693-2.0515 0.70428-0.3458 0.0273-2.0213 0.49301-3.5596-0.51443-1.0769-1.4542-4.409-6.0198-6.5627-8.9283-0.1948-0.25742-0.6161-0.57542-0.045-1.0413 1.9917-1.2426 3.9833-2.4853 5.975-3.7279 0.057-0.0161 0.1103-0.0268 0.1613-0.0332zm4.9157 11.48a0.81001 0.86256 81.835 0 0 -0.7387 0.92419 0.81001 0.86256 81.835 0 0 0.9688 0.67923 0.81001 0.86256 81.835 0 0 0.7388 -0.92419 0.81001 0.86256 81.835 0 0 -0.9689 -0.67923z" fill="url(#k)" stroke="#000" stroke-width=".20091px"/>
+		<g fill="none" stroke="#540" stroke-opacity=".18182" stroke-width=".20123">
+			<path d="m-96.875 143.08 6.3983 8.4694"/>
+			<path d="m-100.69 145.42 6.4416 8.7713"/>
+			<path d="m-98.803 144.3 6.4288 8.5556"/>
+		</g>
+		<text x="-112.85628" y="161.41298" dominant-baseline="auto" fill="#ffffff" font-family="'Open Sans'" font-size="6.5983px" letter-spacing="0px" stroke-width=".034366" text-align="center" text-anchor="middle" word-spacing="0px" style="font-feature-settings:normal;font-variant-alternates:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;font-variant-position:normal;line-height:1.25;shape-padding:0;text-decoration-color:#000000;text-decoration-line:none;text-decoration-style:solid;text-indent:0;text-orientation:mixed;text-transform:none;white-space:normal" xml:space="preserve"><tspan x="-112.85628" y="161.41298" fill="#ffffff" stroke-width=".034366">master</tspan></text>
+		<g transform="matrix(.050194 0 0 .050194 110.83 167.89)" fill-opacity=".91732">
+			<circle cx="-3207.7" cy="-780.43" r="82.55"/>
+			<circle cx="-3208.3" cy="-781.05" r="52.917" fill="#fff"/>
+		</g>
+		<g fill="#000080" fill-opacity=".91732">
+			<circle cx="-31.982" cy="114.17" r="2.4824"/>
+			<circle cx="-27.291" cy="110.73" r="2.4824" opacity=".764"/>
+			<circle cx="-22.692" cy="107.21" r="2.4824" opacity=".508"/>
+		</g>
+		<g fill-opacity=".91732">
+			<circle cx="34.315" cy="159.51" r="2.8446"/>
+			<circle cx="40.882" cy="159.54" r="2.8446" opacity=".742"/>
+			<circle cx="47.343" cy="159.68" r="2.8446" opacity=".497"/>
+			<circle cx="-149.76" cy="159.2" r="2.8446" opacity=".522"/>
+			<circle cx="-143.19" cy="159.24" r="2.8446" opacity=".73"/>
+			<circle cx="-136.73" cy="159.38" r="2.8446"/>
+			<circle cx="-130.16" cy="159.51" r="2.8446"/>
+			<circle cx="27.748" cy="159.52" r="2.8446"/>
+		</g>
+		<g fill="none" stroke-width=".8226">
+			<g stroke="#37abc8">
+				<path d="m-77.701 160.21c4.6564-3.733 6.8252-5.6007 0.3483-9.2282" marker-end="url(#j)"/>
+				<path d="m-66.2 159.88c6.0493-5.3436 1.0792-10.607-3.5694-14.321" marker-end="url(#f)"/>
+				<path d="m-55.579 159.97c8.1387-4.7778 0.644-14.481-7.2258-19.849" marker-end="url(#i)"/>
+			</g>
+			<path d="m-16.933 159.57c13.314-11.163-7.6595-24.173-10.414-24.407-12.367-3.0226-15.261 13.773-28.19-1.2216" marker-end="url(#d)" stroke="#5fbcd3"/>
+		</g>
+		<text transform="rotate(.45095)" x="-28.319969" y="133.38049" dominant-baseline="auto" fill="#000000" font-family="'Open Sans'" font-size="2.9593px" letter-spacing="0px" stroke-width=".015413" text-align="center" text-anchor="middle" word-spacing="0px" style="font-feature-settings:normal;font-variant-alternates:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;font-variant-position:normal;line-height:1.25;shape-padding:0;text-decoration-color:#000000;text-decoration-line:none;text-decoration-style:solid;text-indent:0;text-orientation:mixed;text-transform:none;white-space:normal" xml:space="preserve"><tspan x="-28.319969" y="133.38049" stroke-width=".015413">backport</tspan></text>
+		<g transform="matrix(.08226 0 0 .08226 235.71 223.42)" fill-opacity=".91732">
+			<circle cx="-3207.7" cy="-780.43" r="82.55"/>
+			<circle cx="-3208.3" cy="-781.05" r="52.917" fill="#fff"/>
+		</g>
+		<circle cx="-32.864" cy="150.71" r="5.6635" fill="#fff" fill-opacity=".9375"/>
+		<g transform="matrix(.050194 0 0 .050194 171.34 167.42)" fill-opacity=".91732">
+			<circle cx="-3207.7" cy="-780.43" r="82.55"/>
+			<circle cx="-3208.3" cy="-781.05" r="52.917" fill="#fff"/>
+		</g>
+		<g fill="none" stroke="#37abc8" stroke-width=".8226">
+			<path d="m-17.192 159.74c6.2096-1.0078 14.537-8.1352 8.9217-14.408l-0.7984-0.73691-0.8975-0.61239" marker-end="url(#g)"/>
+			<path d="m-5.6906 159.41c10.402-2.2095 11.178-15.047 3.3082-20.415" marker-end="url(#e)"/>
+			<path d="m4.6694 160.02c8.1387-4.7777 7.6957-20.575-0.1741-25.943" marker-end="url(#h)"/>
+		</g>
+		<g letter-spacing="0px" text-anchor="middle" word-spacing="0px">
+			<text transform="rotate(.45095)" x="20.183514" y="148.49408" dominant-baseline="auto" fill="#000000" font-family="'Open Sans'" font-size="2.9593px" stroke-width=".015413" text-align="center" style="font-feature-settings:normal;font-variant-alternates:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;font-variant-position:normal;line-height:1.25;shape-padding:0;text-decoration-color:#000000;text-decoration-line:none;text-decoration-style:solid;text-indent:0;text-orientation:mixed;text-transform:none;white-space:normal" xml:space="preserve"><tspan x="20.183514" y="148.49408" stroke-width=".015413">backport</tspan></text>
+			<text transform="rotate(30.874)" x="-5.6618776" y="178.33397" dominant-baseline="auto" fill="#ffff00" font-family="'Open Sans Condensed'" font-size="5.3499px" stroke-width=".027864" text-align="center" style="font-feature-settings:normal;font-variant-alternates:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;font-variant-position:normal;line-height:1.25;shape-padding:0;text-decoration-color:#000000;text-decoration-line:none;text-decoration-style:solid;text-indent:0;text-orientation:mixed;text-transform:none;white-space:normal" xml:space="preserve"><tspan x="-5.6618776" y="178.33397" fill="#ffff00" font-family="'Open Sans Condensed'" stroke-width=".027864">v3.0.0</tspan></text>
+			<text transform="rotate(.45095)" x="-43.566673" y="155.62878" dominant-baseline="auto" fill="#000000" font-family="'Open Sans'" font-size="2.9593px" stroke-width=".015413" text-align="center" style="font-feature-settings:normal;font-variant-alternates:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;font-variant-position:normal;line-height:1.25;shape-padding:0;text-decoration-color:#000000;text-decoration-line:none;text-decoration-style:solid;text-indent:0;text-orientation:mixed;text-transform:none;white-space:normal" xml:space="preserve"><tspan x="-43.566673" y="155.62878" stroke-width=".015413">backport</tspan></text>
+		</g>
+		<g transform="matrix(.08226 0 0 .08226 261.22 259.75)">
+			<circle cx="-3580" cy="-1325.4" r="68.849" fill="#fff" fill-opacity=".9375"/>
+			<path d="m-3614.7-1441.7c4.3421-0.526 7.081 1.7291 9.2058 4.4092 27.935 35.456 69.837 88.636 83.805 106.36 7.518 11.163-1.5651 26.971-4.661 34.22-4.3288 7.8664-5.8149 11.594-14.409 19.614-10.101 5.7546-20.736 8.2287-24.94 8.5614-4.2039 0.3328-24.572 5.9937-43.273-6.2536-13.092-17.678-53.598-73.18-79.78-108.54-2.3674-3.1292-7.4889-6.9953-0.5444-12.659 24.212-15.106 48.423-30.212 72.634-45.318 0.6899-0.196 1.3417-0.3268 1.9623-0.4019zm59.758 139.56a9.847 10.486 81.835 0 0 -8.9811 11.236 9.847 10.486 81.835 0 0 11.778 8.2569 9.847 10.486 81.835 0 0 8.9802 -11.235 9.847 10.486 81.835 0 0 -11.777 -8.2571z" fill="url(#a)" stroke="#000" stroke-width="2.4424px"/>
+			<g fill="none" stroke="#540" stroke-opacity=".18182" stroke-width="2.4463">
+				<path d="m-3622.5-1423.9 77.78 102.96"/>
+				<path d="m-3668.9-1395.4 78.307 106.63"/>
+				<path d="m-3646-1409 78.152 104.01"/>
+			</g>
+		</g>
+		<text transform="rotate(30.874)" x="45.627552" y="147.34514" dominant-baseline="auto" fill="#ffff00" font-family="'Open Sans Condensed'" font-size="5.3499px" letter-spacing="0px" stroke-width=".027864" text-align="center" text-anchor="middle" word-spacing="0px" style="font-feature-settings:normal;font-variant-alternates:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;font-variant-position:normal;line-height:1.25;shape-padding:0;text-decoration-color:#000000;text-decoration-line:none;text-decoration-style:solid;text-indent:0;text-orientation:mixed;text-transform:none;white-space:normal" xml:space="preserve"><tspan x="45.627552" y="147.34514" fill="#ffff00" font-family="'Open Sans Condensed'" stroke-width=".027864">v3.1.0</tspan></text>
+		<circle cx="-54.652" cy="122.51" r="5.6635" fill="#fff" fill-opacity=".9375"/>
+		<g transform="matrix(.08226 0 0 .08226 239.63 231.54)">
+			<circle cx="-3580" cy="-1325.4" r="68.849" fill="#fff" fill-opacity=".9375"/>
+			<path d="m-3614.7-1441.7c4.3421-0.526 7.081 1.7291 9.2058 4.4092 27.935 35.456 69.837 88.636 83.805 106.36 7.518 11.163-1.5651 26.971-4.661 34.22-4.3288 7.8664-5.8149 11.594-14.409 19.614-10.101 5.7546-20.736 8.2287-24.94 8.5614-4.2039 0.3328-24.572 5.9937-43.273-6.2536-13.092-17.678-53.598-73.18-79.78-108.54-2.3674-3.1292-7.4889-6.9953-0.5444-12.659 24.212-15.106 48.423-30.212 72.634-45.318 0.6899-0.196 1.3417-0.3268 1.9623-0.4019zm59.758 139.56a9.847 10.486 81.835 0 0 -8.9811 11.236 9.847 10.486 81.835 0 0 11.778 8.2569 9.847 10.486 81.835 0 0 8.9802 -11.235 9.847 10.486 81.835 0 0 -11.777 -8.2571z" fill="url(#a)" stroke="#000" stroke-width="2.4424px"/>
+			<g fill="none" stroke="#540" stroke-opacity=".18182" stroke-width="2.4463">
+				<path d="m-3622.5-1423.9 77.78 102.96"/>
+				<path d="m-3668.9-1395.4 78.307 106.63"/>
+				<path d="m-3646-1409 78.152 104.01"/>
+			</g>
+		</g>
+		<text transform="rotate(30.874)" x="12.861007" y="133.85826" dominant-baseline="auto" fill="#ffff00" font-family="'Open Sans Condensed'" font-size="5.3499px" letter-spacing="0px" stroke-width=".027864" text-align="center" text-anchor="middle" word-spacing="0px" style="font-feature-settings:normal;font-variant-alternates:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;font-variant-position:normal;line-height:1.25;shape-padding:0;text-decoration-color:#000000;text-decoration-line:none;text-decoration-style:solid;text-indent:0;text-orientation:mixed;text-transform:none;white-space:normal" xml:space="preserve"><tspan x="12.861007" y="133.85826" fill="#ffff00" font-family="'Open Sans Condensed'" stroke-width=".027864">v3.0.1</tspan></text>
+		<circle cx="5.1836" cy="122.51" r="5.6635" fill="#fff" fill-opacity=".9375"/>
+		<g transform="matrix(.08226 0 0 .08226 300.22 231.72)">
+			<circle cx="-3580" cy="-1325.4" r="68.849" fill="#fff" fill-opacity=".9375"/>
+			<path d="m-3614.7-1441.7c4.3421-0.526 7.081 1.7291 9.2058 4.4092 27.935 35.456 69.837 88.636 83.805 106.36 7.518 11.163-1.5651 26.971-4.661 34.22-4.3288 7.8664-5.8149 11.594-14.409 19.614-10.101 5.7546-20.736 8.2287-24.94 8.5614-4.2039 0.3328-24.572 5.9937-43.273-6.2536-13.092-17.678-53.598-73.18-79.78-108.54-2.3674-3.1292-7.4889-6.9953-0.5444-12.659 24.212-15.106 48.423-30.212 72.634-45.318 0.6899-0.196 1.3417-0.3268 1.9623-0.4019zm59.758 139.56a9.847 10.486 81.835 0 0 -8.9811 11.236 9.847 10.486 81.835 0 0 11.778 8.2569 9.847 10.486 81.835 0 0 8.9802 -11.235 9.847 10.486 81.835 0 0 -11.777 -8.2571z" fill="url(#a)" stroke="#000" stroke-width="2.4424px"/>
+			<g fill="none" stroke="#540" stroke-opacity=".18182" stroke-width="2.4463">
+				<path d="m-3622.5-1423.9 77.78 102.96"/>
+				<path d="m-3668.9-1395.4 78.307 106.63"/>
+				<path d="m-3646-1409 78.152 104.01"/>
+			</g>
+		</g>
+		<text transform="rotate(30.874)" x="64.21843" y="103.15361" dominant-baseline="auto" fill="#ffff00" font-family="'Open Sans Condensed'" font-size="5.3499px" letter-spacing="0px" stroke-width=".027864" text-align="center" text-anchor="middle" word-spacing="0px" style="font-feature-settings:normal;font-variant-alternates:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;font-variant-position:normal;line-height:1.25;shape-padding:0;text-decoration-color:#000000;text-decoration-line:none;text-decoration-style:solid;text-indent:0;text-orientation:mixed;text-transform:none;white-space:normal" xml:space="preserve"><tspan x="64.21843" y="103.15361" fill="#ffff00" font-family="'Open Sans Condensed'" stroke-width=".027864">v3.1.1</tspan></text>
+		<g fill="#000000" font-family="'Open Sans'" letter-spacing="0px" text-anchor="middle" word-spacing="0px">
+			<text transform="rotate(-39.355)" x="-147.32625" y="62.8997" dominant-baseline="auto" font-size="5.5255px" stroke-width=".028779" text-align="center" style="font-feature-settings:normal;font-variant-alternates:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;font-variant-position:normal;line-height:1.25;shape-padding:0;text-decoration-color:#000000;text-decoration-line:none;text-decoration-style:solid;text-indent:0;text-orientation:mixed;text-transform:none;white-space:normal" xml:space="preserve"><tspan x="-147.32625" y="62.8997" fill="#000000" stroke-width=".028779">v3.0-stable</tspan></text>
+			<text transform="rotate(-38.777)" x="-98.208199" y="101.82109" dominant-baseline="auto" font-size="5.865px" stroke-width=".030547" text-align="center" style="font-feature-settings:normal;font-variant-alternates:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;font-variant-position:normal;line-height:1.25;shape-padding:0;text-decoration-color:#000000;text-decoration-line:none;text-decoration-style:solid;text-indent:0;text-orientation:mixed;text-transform:none;white-space:normal" xml:space="preserve"><tspan x="-98.208199" y="101.82109" fill="#000000" stroke-width=".030547">v3.1-stable</tspan></text>
+			<text transform="rotate(.45095)" x="-28.459866" y="130.57814" dominant-baseline="auto" font-size="2.9593px" stroke-width=".015413" text-align="center" style="font-feature-settings:normal;font-variant-alternates:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;font-variant-position:normal;line-height:1.25;shape-padding:0;text-decoration-color:#000000;text-decoration-line:none;text-decoration-style:solid;text-indent:0;text-orientation:mixed;text-transform:none;white-space:normal" xml:space="preserve"><tspan x="-28.459866" y="130.57814" stroke-width=".015413">critical</tspan></text>
+		</g>
+		<path d="m-133.22 172.47h161.77" fill="none" marker-end="url(#c)" stroke="#000" stroke-width=".8444"/>
+		<text x="-57.245564" y="180.3519" dominant-baseline="auto" fill="#000000" font-family="'Open Sans'" font-size="4.1788px" letter-spacing="0px" stroke-width=".021765" text-align="center" text-anchor="middle" word-spacing="0px" style="font-feature-settings:normal;font-variant-alternates:normal;font-variant-caps:normal;font-variant-ligatures:normal;font-variant-numeric:normal;font-variant-position:normal;line-height:1.25;shape-padding:0;text-decoration-color:#000000;text-decoration-line:none;text-decoration-style:solid;text-indent:0;text-orientation:mixed;text-transform:none;white-space:normal" xml:space="preserve"><tspan x="-57.245564" y="180.3519">Occasionally fixes are added on master that  fix old, maybe</tspan><tspan x="-57.245564" y="185.57542">critical bugs that affect more than one release.  These</tspan><tspan x="-57.245564" y="190.79895">may be backported to serveral -stable trees.</tspan></text>
+	</g>
+</svg>

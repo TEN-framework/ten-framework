@@ -1,0 +1,15 @@
+{
+  "name": "ten-default-app",
+  "version": "1.0.0",
+  "main": "./bin/start.js",
+  "type": "module",
+  "devDependencies": {
+    "typescript": "^5.7.2"
+  },
+  "dependencies": {
+    "ten-runtime-nodejs": "file:./ten_packages/system/ten_runtime_nodejs"
+  },
+  "scripts": {
+    "build": "tsc --listEmittedFiles"
+  }
+}

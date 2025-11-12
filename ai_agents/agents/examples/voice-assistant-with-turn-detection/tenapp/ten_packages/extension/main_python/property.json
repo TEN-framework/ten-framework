@@ -1,0 +1,4 @@
+{
+    "base_url": "${env:TTD_BASE_URL|}",
+    "api_key": "${env:TTD_API_KEY|}"
+}

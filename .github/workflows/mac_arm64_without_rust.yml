@@ -1,0 +1,236 @@
+name: Mac (Arm64 without rust)
+
+on:
+  release:
+    types: [created]
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths-ignore:
+      - "tools/**"
+      - ".vscode/**"
+      - ".devcontainer/**"
+      - ".github/**"
+      - "!.github/workflows/mac_arm64_without_rust.yml"
+      - "core/src/ten_manager/designer_frontend/**"
+      - "**.md"
+      - "ai_agents/**"
+
+permissions:
+  contents: write
+  discussions: write
+  security-events: write
+
+concurrency:
+  group: mac-arm64-without-rust-${{ github.head_ref }}
+  cancel-in-progress: true
+
+jobs:
+  call-check-pr-status:
+    uses: ./.github/workflows/_check_pr_status.yml
+
+  # Building ten_runtime without the ten_rust library (i.e., ten_enable_ten_rust=false).
+  build:
+    needs: call-check-pr-status
+    if: ${{ needs.call-check-pr-status.outputs.should_continue == 'true' }}
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        build_type: [debug]
+    steps:
+      - name: Check PR status before matrix execution
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            console.log('Event name:', context.eventName);
+            console.log('Matrix:', ${{ toJson(matrix) }});
+
+            // Only check for PR events
+            if (context.eventName !== 'pull_request') {
+              console.log('Not a PR event, continuing...');
+              return;
+            }
+
+            // Ensure we have PR data
+            if (!context.payload.pull_request) {
+              console.log('No pull_request data in payload, continuing...');
+              return;
+            }
+
+            const { owner, repo } = context.repo;
+            const prNumber = context.payload.pull_request.number;
+
+            try {
+              const pr = await github.rest.pulls.get({
+                owner,
+                repo,
+                pull_number: prNumber,
+              });
+
+              console.log(`PR #${prNumber} state: ${pr.data.state}, merged: ${pr.data.merged}`);
+
+              if (pr.data.state === 'closed') {
+                if (pr.data.merged) {
+                  console.log(`PR #${prNumber} has been merged. Stopping matrix execution.`);
+                  core.setFailed('PR has been merged, stopping execution to save resources.');
+                } else {
+                  console.log(`PR #${prNumber} has been closed. Stopping matrix execution.`);
+                  core.setFailed('PR has been closed, stopping execution to save resources.');
+                }
+              } else {
+                console.log(`PR #${prNumber} is still open. Continuing matrix execution.`);
+              }
+            } catch (error) {
+              console.error(`Error checking PR status: ${error.message}`);
+              console.log('Error details:', error);
+              console.log('Continuing matrix execution due to error...');
+            }
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+
+      - name: Trust working directory
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
+      - name: Initialize and update submodules except portal/
+        run: |
+          # Retrieve all submodule paths, excluding `portal/`.
+          submodules=$(git config --file .gitmodules --get-regexp path | awk '$2 != "portal" { print $2 }')
+
+          git submodule init
+
+          for submodule in $submodules; do
+            echo "Initializing submodule: $submodule"
+            git submodule update --init --recursive --depth 1 "$submodule"
+          done
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install tools and dependencies
+        run: |
+          brew install tree
+          pip3 install --use-pep517 python-dotenv jinja2
+
+      - name: Update version
+        run: |
+          python3 tools/version/update_version_in_ten_framework.py
+          python3 tools/version/check_version_in_ten_framework.py
+
+      - name: Build
+        run: |
+          export PATH=$(pwd)/core/ten_gn:$PATH
+          echo $PATH
+
+          df -h .
+
+          tgn gen mac arm64 ${{ matrix.build_type }} -- log_level=1 enable_serialized_actions=true ten_rust_enable_gen_cargo_config=false ten_enable_ten_rust=false ten_enable_rust_incremental_build=false ten_manager_enable_frontend=false ten_enable_integration_tests_prebuilt=false ten_enable_nodejs_binding=false ten_enable_python_binding=false
+
+          tgn build mac arm64 ${{ matrix.build_type }}
+
+          df -h .
+          tree -I 'gen|obj' out
+
+        # Package the tests artifacts into a tar file while preserving file
+        # permissions.
+      - name: Package tests relevant artifacts preserving permissions
+        run: |
+          files=""
+          for item in tests ten_manager tgn_args.txt; do
+            if [ -e "out/mac/arm64/$item" ]; then
+              files="$files out/mac/arm64/$item"
+            fi
+          done
+
+          if [ -n "$files" ]; then
+            tar -czvf tests-artifacts.tar.gz $files
+          fi
+
+      - name: Upload tests relevant artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: tests-artifacts-mac-arm64-without-rust-${{ matrix.build_type }}
+          path: tests-artifacts.tar.gz
+          if-no-files-found: ignore
+
+  test-standalone:
+    needs: build
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        build_type: [debug]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+
+      - name: Trust working directory
+        run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+
+      - name: Initialize and update submodules except portal/
+        run: |
+          # Retrieve all submodule paths, excluding `portal/`.
+          submodules=$(git config --file .gitmodules --get-regexp path | awk '$2 != "portal" { print $2 }')
+
+          git submodule init
+
+          for submodule in $submodules; do
+            echo "Initializing submodule: $submodule"
+            git submodule update --init --recursive --depth 1 "$submodule"
+          done
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install tools and dependencies
+        run: |
+          brew install tree
+          pip3 install --use-pep517 python-dotenv jinja2
+
+      - name: Download build artifacts (tar archive)
+        uses: actions/download-artifact@v4
+        with:
+          name: tests-artifacts-mac-arm64-without-rust-${{ matrix.build_type }}
+          path: out/mac/arm64
+
+      - name: Extract tests artifacts preserving permissions
+        run: |
+          tar -xzf out/mac/arm64/tests-artifacts.tar.gz
+
+      - name: View folder structure content
+        run: |
+          df -h .
+          tree -I ".*|*.h|*.hpp|*.py" out/mac/arm64
+
+      - name: Set ulimit and sysctl
+        run: |
+          # Because there are concurrent test cases which involves many
+          # concurrent socket connections, we need to enlarge the maximum number
+          # of the opened file descriptor.
+          ulimit -n 102400
+
+          # Because there are concurrent test cases which will create many
+          # concurrent connections simutaneously, we increase the TCP listening
+          # backlog value to 8192.
+          sudo sysctl -w kern.ipc.somaxconn=8192
+        shell: bash
+
+      - name: Run Tests (ten_runtime_smoke_test)
+        env:
+          ASAN_OPTIONS: detect_stack_use_after_return=1:color=always:unmap_shadow_on_exit=1:abort_on_error=1
+          MALLOC_CHECK_: 3
+          TEN_ENABLE_MEMORY_TRACKING: "true"
+          TEN_ENABLE_BACKTRACE_DUMP: "true"
+        run: |
+          chmod +x out/mac/arm64/tests/standalone/ten_runtime_smoke_test
+          out/mac/arm64/tests/standalone/ten_runtime_smoke_test
+
+          df -h .
+      #   continue-on-error: true
+      # - name: Setup tmate session
+      #   uses: mxschmitt/action-tmate@v3

@@ -1,0 +1,51 @@
+{
+  "type": "extension",
+  "name": "azure_asr_python",
+  "version": "0.2.2",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.11"
+    },
+    {
+      "type": "system",
+      "name": "ten_ai_base",
+      "version": "0.7"
+    }
+  ],
+  "api": {
+    "interface": [
+      {
+        "import_uri": "../../system/ten_ai_base/api/asr-interface.json"
+      }
+    ],
+    "property": {
+      "properties": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "key": {
+              "type": "string"
+            },
+            "region": {
+              "type": "string"
+            },
+            "language": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  },
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "**.py",
+      "requirements.txt",
+      "docs/**"
+    ]
+  }
+}

@@ -1,0 +1,37 @@
+html {
+    --side-nav-arrow-opacity: 0.9;
+    --content-maxwidth: 800px;
+}
+div.header {
+    max-width: 826px;
+}
+div.header .summary {
+    padding: 0;
+    margin-left: 26px;
+    margin-right: 0;
+    text-align: left;
+}
+div.contents, div.header .title  {
+    margin-left: 10px;
+    margin-right: 10px;
+}
+@media screen and (max-width: 767px) {
+    #projectalign {
+        padding-left: 0;
+    }
+    .sm-dox {
+        margin-top: 4px;
+        margin-left: 6px;
+        margin-right: 6px;
+    }
+    div.header .summary {
+        margin-left: 16px;
+    }
+    div.contents, div.header .title  {
+        margin-left: 0;
+        margin-right: 0;
+    }
+}
+#MSearchResultsWindow {
+    max-width: 310px;
+}

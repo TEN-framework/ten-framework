@@ -1,0 +1,68 @@
+{
+  "type": "extension",
+  "name": "ten_turn_detection",
+  "version": "0.2.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.11"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "**.py",
+      "README.md"
+    ]
+  },
+  "api": {
+    "property": {
+      "properties": {
+        "base_url": {
+          "type": "string"
+        },
+        "api_key": {
+          "type": "string"
+        }
+      }
+    },
+    "data_in": [
+      {
+        "name": "text_data",
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string"
+          },
+          "is_final": {
+            "type": "boolean"
+          }
+        }
+      }
+    ],
+    "data_out": [
+      {
+        "name": "text_data",
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string"
+          },
+          "is_final": {
+            "type": "boolean"
+          }
+        }
+      }
+    ],
+    "cmd_out": [
+      {
+        "name": "flush"
+      }
+    ]
+  },
+  "scripts": {
+    "test": "tests/bin/start"
+  }
+}

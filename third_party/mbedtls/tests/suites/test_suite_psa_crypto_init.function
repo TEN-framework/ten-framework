@@ -1,0 +1,288 @@
+/* BEGIN_HEADER */
+#include <stdint.h>
+
+/* Some tests in this module configure entropy sources. */
+#include "psa_crypto_invasive.h"
+
+#include "mbedtls/entropy.h"
+#include "entropy_poll.h"
+
+#define ENTROPY_MIN_NV_SEED_SIZE                                        \
+    MAX(MBEDTLS_ENTROPY_MIN_PLATFORM, MBEDTLS_ENTROPY_BLOCK_SIZE)
+
+#include "psa_crypto_random_impl.h"
+#if defined(MBEDTLS_PSA_HMAC_DRBG_MD_TYPE)
+/* PSA crypto uses the HMAC_DRBG module. It reads from the entropy source twice:
+ * once for the initial entropy and once for a nonce. The nonce length is
+ * half the entropy length. For SHA-256, SHA-384 or SHA-512, the
+ * entropy length is 256 per the documentation of mbedtls_hmac_drbg_seed(),
+ * and PSA crypto doesn't support other hashes for HMAC_DRBG. */
+#define ENTROPY_NONCE_LEN ( 256 / 2 )
+#else
+/* PSA crypto uses the CTR_DRBG module. In some configurations, it needs
+ * to read from the entropy source twice: once for the initial entropy
+ * and once for a nonce. */
+#include "mbedtls/ctr_drbg.h"
+#define ENTROPY_NONCE_LEN MBEDTLS_CTR_DRBG_ENTROPY_NONCE_LEN
+#endif
+
+#if !defined(MBEDTLS_PSA_CRYPTO_EXTERNAL_RNG)
+
+typedef struct
+{
+    size_t threshold; /* Minimum bytes to make mbedtls_entropy_func happy */
+    size_t max_steps;
+    size_t *length_sequence;
+    size_t step;
+} fake_entropy_state_t;
+static int fake_entropy_source( void *state_arg,
+                                unsigned char *output, size_t len,
+                                size_t *olen )
+{
+    fake_entropy_state_t *state = state_arg;
+    size_t i;
+
+    if( state->step >= state->max_steps )
+        return( MBEDTLS_ERR_ENTROPY_SOURCE_FAILED );
+
+    *olen = MIN( len, state->length_sequence[state->step] );
+    for( i = 0; i < *olen; i++ )
+        output[i] = i;
+    ++state->step;
+    return( 0 );
+}
+
+#define ENTROPY_SOURCE_PLATFORM                 0x00000001
+#define ENTROPY_SOURCE_TIMING                   0x00000002
+#define ENTROPY_SOURCE_HARDWARE                 0x00000004
+#define ENTROPY_SOURCE_NV_SEED                  0x00000008
+#define ENTROPY_SOURCE_FAKE                     0x40000000
+
+static uint32_t custom_entropy_sources_mask;
+static fake_entropy_state_t fake_entropy_state;
+
+/* This is a modified version of mbedtls_entropy_init() from entropy.c
+ * which chooses entropy sources dynamically. */
+static void custom_entropy_init( mbedtls_entropy_context *ctx )
+{
+    ctx->source_count = 0;
+    memset( ctx->source, 0, sizeof( ctx->source ) );
+
+#if defined(MBEDTLS_THREADING_C)
+    mbedtls_mutex_init( &ctx->mutex );
+#endif
+
+    ctx->accumulator_started = 0;
+#if defined(MBEDTLS_ENTROPY_SHA512_ACCUMULATOR)
+    mbedtls_sha512_init( &ctx->accumulator );
+#else
+    mbedtls_sha256_init( &ctx->accumulator );
+#endif
+
+#if !defined(MBEDTLS_NO_PLATFORM_ENTROPY)
+    if( custom_entropy_sources_mask & ENTROPY_SOURCE_PLATFORM )
+        mbedtls_entropy_add_source( ctx, mbedtls_platform_entropy_poll, NULL,
+                                    MBEDTLS_ENTROPY_MIN_PLATFORM,
+                                    MBEDTLS_ENTROPY_SOURCE_STRONG );
+#endif
+#if defined(MBEDTLS_ENTROPY_HARDWARE_ALT)
+    if( custom_entropy_sources_mask & ENTROPY_SOURCE_HARDWARE )
+        mbedtls_entropy_add_source( ctx, mbedtls_hardware_poll, NULL,
+                                    MBEDTLS_ENTROPY_MIN_HARDWARE,
+                                    MBEDTLS_ENTROPY_SOURCE_STRONG );
+#endif
+#if defined(MBEDTLS_ENTROPY_NV_SEED)
+    if( custom_entropy_sources_mask & ENTROPY_SOURCE_NV_SEED )
+    {
+        mbedtls_entropy_add_source( ctx, mbedtls_nv_seed_poll, NULL,
+                                    MBEDTLS_ENTROPY_BLOCK_SIZE,
+                                    MBEDTLS_ENTROPY_SOURCE_STRONG );
+        ctx->initial_entropy_run = 0;
+    }
+    else
+    {
+        /* Skip the NV seed even though it's compiled in. */
+        ctx->initial_entropy_run = 1;
+    }
+#endif
+
+    if( custom_entropy_sources_mask & ENTROPY_SOURCE_FAKE )
+        mbedtls_entropy_add_source( ctx,
+                                    fake_entropy_source, &fake_entropy_state,
+                                    fake_entropy_state.threshold,
+                                    MBEDTLS_ENTROPY_SOURCE_STRONG );
+}
+
+#endif /* !defined(MBEDTLS_PSA_CRYPTO_EXTERNAL_RNG) */
+
+/* END_HEADER */
+
+/* BEGIN_DEPENDENCIES
+ * depends_on:MBEDTLS_PSA_CRYPTO_C
+ * END_DEPENDENCIES
+ */
+
+/* BEGIN_CASE depends_on:MBEDTLS_ENTROPY_NV_SEED:!MBEDTLS_PSA_CRYPTO_EXTERNAL_RNG */
+void create_nv_seed( )
+{
+    static unsigned char seed[ENTROPY_MIN_NV_SEED_SIZE];
+    TEST_ASSERT( mbedtls_nv_seed_write( seed, sizeof( seed ) ) >= 0 );
+}
+/* END_CASE */
+
+/* BEGIN_CASE */
+void init_deinit( int count )
+{
+    psa_status_t status;
+    int i;
+    for( i = 0; i < count; i++ )
+    {
+        status = psa_crypto_init( );
+        PSA_ASSERT( status );
+        status = psa_crypto_init( );
+        PSA_ASSERT( status );
+        PSA_DONE( );
+    }
+}
+/* END_CASE */
+
+/* BEGIN_CASE */
+void deinit_without_init( int count )
+{
+    int i;
+    for( i = 0; i < count; i++ )
+    {
+        PSA_ASSERT( psa_crypto_init( ) );
+        PSA_DONE( );
+    }
+    PSA_DONE( );
+}
+/* END_CASE */
+
+/* BEGIN_CASE */
+void validate_module_init_generate_random( int count )
+{
+    psa_status_t status;
+    uint8_t random[10] = { 0 };
+    int i;
+    for( i = 0; i < count; i++ )
+    {
+        status = psa_crypto_init( );
+        PSA_ASSERT( status );
+        PSA_DONE( );
+    }
+    status = psa_generate_random( random, sizeof( random ) );
+    TEST_EQUAL( status, PSA_ERROR_BAD_STATE );
+}
+/* END_CASE */
+
+/* BEGIN_CASE */
+void validate_module_init_key_based( int count )
+{
+    psa_status_t status;
+    uint8_t data[10] = { 0 };
+    psa_key_attributes_t attributes = PSA_KEY_ATTRIBUTES_INIT;
+    mbedtls_svc_key_id_t key = mbedtls_svc_key_id_make( 0xdead, 0xdead );
+    int i;
+
+    for( i = 0; i < count; i++ )
+    {
+        status = psa_crypto_init( );
+        PSA_ASSERT( status );
+        PSA_DONE( );
+    }
+    psa_set_key_type( &attributes, PSA_KEY_TYPE_RAW_DATA );
+    status = psa_import_key( &attributes, data, sizeof( data ), &key );
+    TEST_EQUAL( status, PSA_ERROR_BAD_STATE );
+    TEST_ASSERT( mbedtls_svc_key_id_is_null( key ) );
+}
+/* END_CASE */
+
+/* BEGIN_CASE depends_on:!MBEDTLS_PSA_CRYPTO_EXTERNAL_RNG */
+void custom_entropy_sources( int sources_arg, int expected_init_status_arg )
+{
+    psa_status_t expected_init_status = expected_init_status_arg;
+    uint8_t random[10] = { 0 };
+
+    custom_entropy_sources_mask = sources_arg;
+    PSA_ASSERT( mbedtls_psa_crypto_configure_entropy_sources(
+                    custom_entropy_init, mbedtls_entropy_free ) );
+
+    TEST_EQUAL( psa_crypto_init( ), expected_init_status );
+    if( expected_init_status != PSA_SUCCESS )
+        goto exit;
+
+    PSA_ASSERT( psa_generate_random( random, sizeof( random ) ) );
+
+exit:
+    PSA_DONE( );
+}
+/* END_CASE */
+
+/* BEGIN_CASE depends_on:!MBEDTLS_PSA_CRYPTO_EXTERNAL_RNG */
+void fake_entropy_source( int threshold,
+                          int amount1,
+                          int amount2,
+                          int amount3,
+                          int amount4,
+                          int expected_init_status_arg )
+{
+    psa_status_t expected_init_status = expected_init_status_arg;
+    uint8_t random[10] = { 0 };
+    size_t lengths[4];
+
+    fake_entropy_state.threshold = threshold;
+    fake_entropy_state.step = 0;
+    fake_entropy_state.max_steps = 0;
+    if( amount1 >= 0 )
+        lengths[fake_entropy_state.max_steps++] = amount1;
+    if( amount2 >= 0 )
+        lengths[fake_entropy_state.max_steps++] = amount2;
+    if( amount3 >= 0 )
+        lengths[fake_entropy_state.max_steps++] = amount3;
+    if( amount4 >= 0 )
+        lengths[fake_entropy_state.max_steps++] = amount4;
+    fake_entropy_state.length_sequence = lengths;
+
+    custom_entropy_sources_mask = ENTROPY_SOURCE_FAKE;
+    PSA_ASSERT( mbedtls_psa_crypto_configure_entropy_sources(
+                    custom_entropy_init, mbedtls_entropy_free ) );
+
+    TEST_EQUAL( psa_crypto_init( ), expected_init_status );
+    if( expected_init_status != PSA_SUCCESS )
+        goto exit;
+
+    PSA_ASSERT( psa_generate_random( random, sizeof( random ) ) );
+
+exit:
+    PSA_DONE( );
+}
+/* END_CASE */
+
+/* BEGIN_CASE depends_on:MBEDTLS_ENTROPY_NV_SEED:!MBEDTLS_PSA_CRYPTO_EXTERNAL_RNG */
+void entropy_from_nv_seed( int seed_size_arg,
+                           int expected_init_status_arg )
+{
+    psa_status_t expected_init_status = expected_init_status_arg;
+    uint8_t random[10] = { 0 };
+    uint8_t *seed = NULL;
+    size_t seed_size = seed_size_arg;
+
+    ASSERT_ALLOC( seed, seed_size );
+    TEST_ASSERT( mbedtls_nv_seed_write( seed, seed_size ) >= 0 );
+
+    custom_entropy_sources_mask = ENTROPY_SOURCE_NV_SEED;
+    PSA_ASSERT( mbedtls_psa_crypto_configure_entropy_sources(
+                    custom_entropy_init, mbedtls_entropy_free ) );
+
+    TEST_EQUAL( psa_crypto_init( ), expected_init_status );
+    if( expected_init_status != PSA_SUCCESS )
+        goto exit;
+
+    PSA_ASSERT( psa_generate_random( random, sizeof( random ) ) );
+
+exit:
+    mbedtls_free( seed );
+    PSA_DONE( );
+}
+/* END_CASE */

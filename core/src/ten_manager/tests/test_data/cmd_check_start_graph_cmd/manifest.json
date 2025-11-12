@@ -1,0 +1,22 @@
+{
+  "type": "app",
+  "name": "cmd_check_start_graph_cmd",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "type": "extension",
+      "name": "addon_a",
+      "version": "0.1.0"
+    },
+    {
+      "type": "extension",
+      "name": "addon_b",
+      "version": "0.1.0"
+    }
+  ],
+  "package": {
+    "include": [
+      "**"
+    ]
+  }
+}

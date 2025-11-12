@@ -1,0 +1,378 @@
+name: cmake
+
+env:
+  FORCE_COLOR: 1
+  CLICOLOR_FORCE: 1
+
+on:
+  push:
+    paths-ignore:
+      - '**.md'
+  pull_request:
+    paths-ignore:
+      - '**.md'
+
+jobs:
+
+  # Check different cmake options (ubuntu:gcc)
+  linux_checks:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type: [Debug, Release, MinSizeRel]
+        build_flag: [Default, ReduceBinary]
+        checker: [Valgrind, Sanitizer]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Prepare
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y valgrind
+
+    - name: CMake
+      shell: bash
+      run: |
+        BUILD_OPTIONS="-DYYJSON_BUILD_TESTS=ON"
+        if [ "${{matrix.build_flag}}" == "ReduceBinary" ]; then
+          BUILD_OPTIONS="${BUILD_OPTIONS} -DYYJSON_DISABLE_FAST_FP_CONV=ON"
+          BUILD_OPTIONS="${BUILD_OPTIONS} -DYYJSON_DISABLE_NON_STANDARD=ON"
+        fi
+        if [ "${{matrix.checker}}" == "Valgrind" ]; then
+          BUILD_OPTIONS="${BUILD_OPTIONS} -DYYJSON_ENABLE_VALGRIND=ON"
+        fi
+        if [ "${{matrix.checker}}" == "Sanitizer" ]; then
+          BUILD_OPTIONS="${BUILD_OPTIONS} -DYYJSON_ENABLE_SANITIZE=ON"
+        fi
+        cmake -E make_directory ${{runner.workspace}}/build
+        cd ${{runner.workspace}}/build
+        cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=${{matrix.build_type}} $BUILD_OPTIONS
+
+    - name: Build
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      run: cmake --build . --config ${{matrix.build_type}}
+    
+    - name: Test
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      run: ctest -C ${{matrix.build_type}} --output-on-failure
+
+
+  # Check different architectures (qemu, ubuntu:gcc)
+  linux_archs:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [i386, arm32v7, arm64v8, ppc64le, s390x, riscv64]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: CMake and CTest
+      run: |
+          docker run -v "$PWD:/yyjson" ${{ matrix.arch }}/ubuntu bash -e -c '
+            FORCE_COLOR=1
+            CLICOLOR_FORCE=1
+            apt-get update
+            apt-get install -y gcc g++ cmake
+            mkdir build
+            cd build
+            cmake ../yyjson -DYYJSON_BUILD_TESTS=ON
+            cmake --build . --config Release
+            ctest -C Release --output-on-failure
+          '
+
+
+  # Check different compile-time flags (ubuntu:gcc/clang)
+  linux_opts:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler:
+          - gcc
+          - clang
+        opt: 
+          - no_fp
+          - no_reader
+          - no_writer
+          - no_utf8
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: CMake
+      shell: bash
+      run: |
+        BUILD_OPTIONS="-DCMAKE_BUILD_TYPE=Release -DYYJSON_BUILD_TESTS=ON"
+        if [ "${{matrix.compiler}}" == "gcc" ]; then
+          BUILD_OPTIONS="${BUILD_OPTIONS} -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++"
+        fi
+        if [ "${{matrix.compiler}}" == "clang" ]; then
+          BUILD_OPTIONS="${BUILD_OPTIONS} -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++"
+        fi
+        if [ "${{matrix.opt}}" == "no_fp" ]; then
+          BUILD_OPTIONS="${BUILD_OPTIONS} -DYYJSON_DISABLE_FAST_FP_CONV=ON"
+        fi
+        if [ "${{matrix.opt}}" == "no_reader" ]; then
+          BUILD_OPTIONS="${BUILD_OPTIONS} -DYYJSON_DISABLE_READER=ON"
+        fi
+        if [ "${{matrix.opt}}" == "no_writer" ]; then
+          BUILD_OPTIONS="${BUILD_OPTIONS} -DYYJSON_DISABLE_WRITER=ON"
+        fi
+        if [ "${{matrix.opt}}" == "no_utf8" ]; then
+          BUILD_OPTIONS="${BUILD_OPTIONS} -DYYJSON_DISABLE_UTF8_VALIDATION=ON"
+        fi
+        cmake -E make_directory ${{runner.workspace}}/build
+        cd ${{runner.workspace}}/build
+        cmake $GITHUB_WORKSPACE $BUILD_OPTIONS
+
+    - name: Build
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      run: cmake --build . --config Release
+    
+    - name: Test
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      run: ctest -C Release --output-on-failure
+
+
+  # Check latest clang
+  linux_clang_latest:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y valgrind
+        sudo apt-get install -y lsb-release software-properties-common gnupg
+        wget https://apt.llvm.org/llvm.sh
+        chmod +x ./llvm.sh
+        sudo ./llvm.sh
+        CLANG_PATH=$(ls /usr/bin/clang* | grep "clang-[0-9]" | sort --version-sort | tail -1)
+        CLANGPP_PATH=$(ls /usr/bin/clang* | grep "clang++-[0-9]" | sort --version-sort | tail -1)
+        echo "Latest Clang: $CLANG_PATH"
+        echo "Latest Clang++: $CLANGPP_PATH"
+        echo "CC=$CLANG_PATH" >> $GITHUB_ENV
+        echo "CXX=$CLANGPP_PATH" >> $GITHUB_ENV
+
+    - name: CMake
+      shell: bash
+      run: |
+        cmake -E make_directory ${{runner.workspace}}/build
+        cd ${{runner.workspace}}/build
+        cmake $GITHUB_WORKSPACE -DYYJSON_BUILD_TESTS=ON -DYYJSON_ENABLE_VALGRIND=ON
+    
+    - name: Build
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      run: cmake --build . --config Release
+    
+    - name: Test
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      run: ctest -C Release --output-on-failure
+
+
+  # Check latest gcc
+  linux_gcc_latest:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install
+      run: |
+        sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
+        sudo apt-get update
+        GCC_VERSION=$(apt search ^gcc-[0-9]*$ 2>/dev/null | grep -Po 'gcc-(\d+)(?=/)' | sort --version-sort | tail -1)
+        GPP_VERSION=$(apt search ^g\+\+-[0-9]*$ 2>/dev/null | grep -Po 'g\+\+-(\d+)(?=/)' | sort --version-sort | tail -1)
+        echo "Latest GCC: $GCC_VERSION"
+        echo "Latest G++: $GPP_VERSION"
+        sudo apt-get install -y $GCC_VERSION $GPP_VERSION
+        sudo apt-get install -y valgrind
+        echo "CC=$GCC_VERSION" >> $GITHUB_ENV
+        echo "CXX=$GPP_VERSION" >> $GITHUB_ENV
+
+    - name: CMake
+      shell: bash
+      run: |
+        cmake -E make_directory ${{runner.workspace}}/build
+        cd ${{runner.workspace}}/build
+        cmake $GITHUB_WORKSPACE -DYYJSON_BUILD_TESTS=ON -DYYJSON_ENABLE_VALGRIND=ON
+    
+    - name: Build
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      run: cmake --build . --config Release
+    
+    - name: Test
+      shell: bash
+      working-directory: ${{runner.workspace}}/build
+      run: ctest -C Release --output-on-failure
+
+
+  # Check old gcc 32-bit
+  linux_gcc5_i386:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: CMake and CTest
+      run: |
+          docker run -v "$PWD:/yyjson" i386/ubuntu:16.04 bash -e -c '
+            FORCE_COLOR=1
+            CLICOLOR_FORCE=1
+            apt-get update
+            apt-get install -y gcc g++ cmake
+            mkdir build
+            cd build
+            cmake ../yyjson -DYYJSON_BUILD_TESTS=ON
+            cmake --build . --config Release
+            ctest -C Release --output-on-failure
+          '
+
+
+  # Check old gcc 64-bit
+  linux_gcc4:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Prepare
+      shell: bash
+      run: |
+        sudo apt-get update
+        wget http://mirrors.kernel.org/ubuntu/pool/universe/g/gcc-4.8/g++-4.8_4.8.5-4ubuntu8_amd64.deb
+        wget http://mirrors.kernel.org/ubuntu/pool/universe/g/gcc-4.8/libstdc++-4.8-dev_4.8.5-4ubuntu8_amd64.deb
+        wget http://mirrors.kernel.org/ubuntu/pool/universe/g/gcc-4.8/gcc-4.8-base_4.8.5-4ubuntu8_amd64.deb
+        wget http://mirrors.kernel.org/ubuntu/pool/universe/g/gcc-4.8/gcc-4.8_4.8.5-4ubuntu8_amd64.deb
+        wget http://mirrors.kernel.org/ubuntu/pool/universe/g/gcc-4.8/libgcc-4.8-dev_4.8.5-4ubuntu8_amd64.deb
+        wget http://mirrors.kernel.org/ubuntu/pool/universe/g/gcc-4.8/cpp-4.8_4.8.5-4ubuntu8_amd64.deb
+        wget http://mirrors.kernel.org/ubuntu/pool/universe/g/gcc-4.8/libasan0_4.8.5-4ubuntu8_amd64.deb
+        sudo apt install ./gcc-4.8_4.8.5-4ubuntu8_amd64.deb \
+                         ./gcc-4.8-base_4.8.5-4ubuntu8_amd64.deb \
+                         ./libstdc++-4.8-dev_4.8.5-4ubuntu8_amd64.deb \
+                         ./cpp-4.8_4.8.5-4ubuntu8_amd64.deb \
+                         ./libgcc-4.8-dev_4.8.5-4ubuntu8_amd64.deb \
+                         ./libasan0_4.8.5-4ubuntu8_amd64.deb \
+                         ./g++-4.8_4.8.5-4ubuntu8_amd64.deb
+
+    - name: Build and Test
+      run: |
+        mkdir build
+        cd build
+        cmake .. -DCMAKE_C_COMPILER=gcc-4.8 -DCMAKE_CXX_COMPILER=g++-4.8 -DYYJSON_BUILD_TESTS=ON
+        cmake --build . --config Release
+        ctest -C Release --output-on-failure
+
+
+  # Check tinycc
+  linux_tinycc:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Prepare
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y tcc
+
+    - name: Build and Test
+      run: |
+        mkdir build
+        cd build
+        cmake .. -DCMAKE_C_COMPILER=tcc -DYYJSON_BUILD_TESTS=ON
+        cmake --build . --config Release
+        ctest -C Release --output-on-failure
+
+
+  # Check macOS clang
+  macos_clang:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build and Test
+      run: |
+        mkdir build
+        cd build
+        cmake .. -DCMAKE_BUILD_TYPE=Release -DYYJSON_BUILD_TESTS=ON
+        cmake --build . --config Release
+        ctest -C Release --output-on-failure
+
+
+  # Check Windows MSVC
+  windows_msvc:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build and Test
+      run: |
+        mkdir build
+        cd build
+        cmake .. -DCMAKE_BUILD_TYPE=Release -DYYJSON_BUILD_TESTS=ON
+        cmake --build . --config Release
+        ctest -C Release --output-on-failure
+
+
+  # Fuzzing with LLVM libFuzzer for a short time
+  fuzzing:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Fuzzing
+      run: |
+        mkdir build
+        cd build
+        cmake .. -DYYJSON_BUILD_FUZZER=ON -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
+        cmake --build . --config Release
+        ctest -C Release --output-on-failure
+
+
+  # Upload coverage data to Codecov
+  codecov:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Prepare
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y llvm
+
+    - name: CodeCov
+      shell: bash
+      run: |
+        mkdir build
+        cd build
+        export LLVM_PROFILE_FILE=cov/profile-%p.profraw
+        cmake .. -DCMAKE_BUILD_TYPE=Debug -DYYJSON_BUILD_TESTS=ON -DYYJSON_ENABLE_COVERAGE=ON \
+                 -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
+        cmake --build . --config Debug
+        ctest
+        ctest_files=$(grep -o "test_\w\+ " CTestTestfile.cmake | uniq | tr '\n' ' ')
+        ctest_files=$(echo $ctest_files | sed 's/  $//' | sed "s/ / -object /g")
+        llvm-profdata merge -sparse cov/profile-*.profraw -o coverage.profdata
+        llvm-cov show $ctest_files -instr-profile=coverage.profdata > coverage.txt
+        bash <(curl -s https://codecov.io/bash) || echo "Codecov did not collect coverage reports"

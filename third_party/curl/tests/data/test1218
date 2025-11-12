@@ -1,0 +1,65 @@
+<testcase>
+<info>
+<keywords>
+HTTP
+HTTP GET
+HTTP proxy
+cookies
+</keywords>
+</info>
+
+# This test is very similar to 1216, only that it sets the cookies from the
+# first site instead of reading from a file
+<reply>
+<data>
+HTTP/1.1 200 OK
+Date: Tue, 25 Sep 2001 19:37:44 GMT
+Set-Cookie: bug=fixed; domain=.example.fake;
+Content-Length: 21
+
+This server says moo
+</data>
+</reply>
+
+# Client-side
+<client>
+<server>
+http
+</server>
+ <name>
+HTTP cookies and domains with same prefix
+ </name>
+ <command>
+http://example.fake/c/%TESTNUMBER http://example.fake/c/%TESTNUMBER http://bexample.fake/c/%TESTNUMBER -b nonexisting -x %HOSTIP:%HTTPPORT
+</command>
+<features>
+cookies
+proxy
+</features>
+</client>
+
+# Verify data after the test has been "shot"
+<verify>
+<protocol>
+GET http://example.fake/c/%TESTNUMBER HTTP/1.1
+Host: example.fake
+User-Agent: curl/%VERSION
+Accept: */*
+Proxy-Connection: Keep-Alive
+
+GET http://example.fake/c/%TESTNUMBER HTTP/1.1
+Host: example.fake
+User-Agent: curl/%VERSION
+Accept: */*
+Proxy-Connection: Keep-Alive
+Cookie: bug=fixed
+
+GET http://bexample.fake/c/%TESTNUMBER HTTP/1.1
+Host: bexample.fake
+User-Agent: curl/%VERSION
+Accept: */*
+Proxy-Connection: Keep-Alive
+
+</protocol>
+</verify>
+</testcase>

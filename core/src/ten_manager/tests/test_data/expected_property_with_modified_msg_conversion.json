@@ -1,0 +1,53 @@
+{
+  "ten": {
+    "predefined_graphs": [
+      {
+        "name": "test_graph",
+        "graph": {
+          "connections": [
+            {
+              "app": "http://example.com:8000",
+              "extension": "extension_1",
+              "cmd": [
+                {
+                  "name": "existing_cmd",
+                  "dest": [
+                    {
+                      "app": "http://example.com:8000",
+                      "extension": "extension_2",
+                      "msg_conversion": {
+                        "type": "per_property",
+                        "rules": [
+                          {
+                            "path": "new_param",
+                            "conversion_mode": "from_original",
+                            "original_path": "new_source_param"
+                          },
+                          {
+                            "path": "fixed_param",
+                            "conversion_mode": "fixed_value",
+                            "value": 100
+                          }
+                        ],
+                        "result": {
+                          "type": "per_property",
+                          "rules": [
+                            {
+                              "path": "result_param",
+                              "conversion_mode": "from_original",
+                              "original_path": "original_result"
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

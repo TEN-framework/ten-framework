@@ -1,0 +1,13 @@
+{
+  "type": "app",
+  "name": "mock_app_with_dev_deps",
+  "version": "0.1.0",
+  "dependencies": [],
+  "dev_dependencies": [
+    {
+      "type": "system",
+      "name": "sys_1",
+      "version": "1.0.0"
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "nodes": [
+    {
+      "type": "extension",
+      "name": "dest_ext",
+      "addon": "default_extension_go",
+      "extension_group": "some_group"
+    },
+    {
+      "type": "extension",
+      "name": "src_ext",
+      "addon": "default_extension_go",
+      "extension_group": "some_group"
+    }
+  ],
+  "connections": [
+    {
+      "extension": "dest_ext",
+      "cmd": [
+        {
+          "name": "cmd_flow",
+          "source": [
+            {
+              "extension": "src_ext"
+            }
+          ]
+        }
+      ],
+      "data": [
+        {
+          "name": "data_flow",
+          "source": [
+            {
+              "extension": "src_ext"
+            }
+          ]
+        }
+      ],
+      "audio_frame": [
+        {
+          "name": "audio_flow",
+          "source": [
+            {
+              "extension": "src_ext"
+            }
+          ]
+        }
+      ],
+      "video_frame": [
+        {
+          "name": "video_flow",
+          "source": [
+            {
+              "extension": "src_ext"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,132 @@
+#
+# Copyright © 2025 Agora
+# This file is part of TEN Framework, an open source project.
+# Licensed under the Apache License, Version 2.0, with certain conditions.
+# Refer to the "LICENSE" file in the root directory for more information.
+#
+
+template("autotool_project") {
+  assert(defined(invoker.project_path), "project_path is not defined")
+  assert(defined(invoker.project_name), "project_name is not defined")
+  assert(invoker.project_path == "" || invoker.project_path != "")
+  assert(invoker.project_name == "" || invoker.project_name != "")
+
+  _target_name = target_name
+
+  # This action include cmake 'configure' and 'build'
+  action("${_target_name}_autotool_action") {
+    if (enable_serialized_actions) {
+      pool = "//:serialized_action_pool"
+    }
+
+    script = "//build/ten_runtime/feature/autotool.py"
+
+    args = [
+      "--project-path",
+      rebase_path(invoker.project_path),
+      "--log-level",
+      "${log_level}",
+    ]
+
+    if (defined(invoker.build_path)) {
+      args += [
+        "--build-path",
+        rebase_path(invoker.build_path),
+      ]
+    }
+
+    if (defined(invoker.install_path)) {
+      args += [
+        "--install-path",
+        rebase_path(invoker.install_path),
+      ]
+    }
+
+    if (!is_clang) {
+      args += [
+        "--use-clang",
+        "False",
+      ]
+    }
+
+    args += [
+      "--c-standard",
+      "${c_standard}",
+      "--cxx-standard",
+      "${cxx_standard}",
+    ]
+
+    if (defined(invoker.preactions)) {
+      foreach(preaction, invoker.preactions) {
+        args += [
+          "--preactions",
+          preaction,
+        ]
+      }
+    }
+
+    if (defined(invoker.configure_cmd_line_options)) {
+      foreach(configure_cmd_line_option, invoker.configure_cmd_line_options) {
+        args += [
+          "--configure-cmd-line-options",
+          "\"${configure_cmd_line_option}\"",
+        ]
+      }
+    }
+
+    if (defined(invoker.configure_env_vars)) {
+      foreach(configure_env_var, invoker.configure_env_vars) {
+        args += [
+          "--configure-env-vars",
+          "\"${configure_env_var}\"",
+        ]
+      }
+    }
+
+    if (defined(invoker.system_dep_pkgs)) {
+      foreach(system_dep_pkg, invoker.system_dep_pkgs) {
+        args += [
+          "--system-dep-pkgs",
+          "${system_dep_pkg}",
+        ]
+      }
+    }
+
+    # Find source files in current autotool project.
+    inputs = exec_script("//build/ten_common/scripts/find_all_c_cpp_files.py",
+                         [ rebase_path(invoker.project_path) ],
+                         "list lines")
+
+    outputs = []
+    if (defined(invoker.outputs_seen_by_ag)) {
+      foreach(output_seen_by_ag, invoker.outputs_seen_by_ag) {
+        outputs += [ "${output_seen_by_ag}" ]
+      }
+    }
+
+    deps = []
+    if (defined(invoker.deps)) {
+      deps += invoker.deps
+    }
+  }
+
+  config("${_target_name}_config") {
+    libs = []
+    if (defined(invoker.libs)) {
+      libs += invoker.libs
+    }
+  }
+
+  group(_target_name) {
+    public_deps = [ ":${_target_name}_autotool_action" ]
+    public_configs = [ ":${_target_name}_config" ]
+
+    if (defined(invoker.public_configs)) {
+      public_configs += invoker.public_configs
+    }
+
+    if (defined(invoker.public_deps)) {
+      public_deps += invoker.public_deps
+    }
+  }
+}
