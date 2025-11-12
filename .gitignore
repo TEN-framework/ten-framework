@@ -141,3 +141,6 @@ ai_agents/xdump_config
 ai_agents/.idea
 ai_agents/*.log
 ai_agents/*.pcm
+*PERSISTENT_KEYS*
+**/*KEY*CONFIG*.md
+CLAUDE.md
