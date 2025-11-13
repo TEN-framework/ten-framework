@@ -1106,7 +1106,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          fetch-depth: 0
           submodules: false
 
       - name: Install LLVM 21 tools
@@ -1209,6 +1209,8 @@ jobs:
       - name: Upload coverage report to Coveralls
         env:
           COVERALLS_REPO_TOKEN: ${{ secrets.TEN_COVERALLS_REPO_TOKEN }}
+          COVERALLS_GIT_BRANCH: ${{ github.head_ref || github.ref_name }}
+          COVERALLS_SERVICE_NAME: github-actions
         run: |
           pip install --user cpp-coveralls
           echo "cpp-coveralls installed successfully"
