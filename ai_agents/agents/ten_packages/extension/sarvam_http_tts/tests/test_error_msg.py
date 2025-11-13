@@ -166,7 +166,9 @@ def test_invalid_api_key_error(MockAsyncClient):
     }
 
     tester = ExtensionTesterInvalidApiKey()
-    tester.set_test_mode_single("sarvam_http_tts", json.dumps(invalid_key_config))
+    tester.set_test_mode_single(
+        "sarvam_http_tts", json.dumps(invalid_key_config)
+    )
 
     print("Running test with mock...")
     tester.run()

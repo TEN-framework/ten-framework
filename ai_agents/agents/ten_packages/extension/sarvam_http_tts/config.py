@@ -13,7 +13,9 @@ class SarvamTTSConfig(AsyncTTS2HttpConfig):
     # Debug and logging
     dump: bool = Field(default=False, description="Sarvam TTS dump")
     dump_path: str = Field(
-        default_factory=lambda: str(Path(__file__).parent / "sarvam_tts_in.pcm"),
+        default_factory=lambda: str(
+            Path(__file__).parent / "sarvam_tts_in.pcm"
+        ),
         description="Sarvam TTS dump path",
     )
     params: dict[str, Any] = Field(
@@ -27,7 +29,9 @@ class SarvamTTSConfig(AsyncTTS2HttpConfig):
 
         # Normalize sample rate key - convert speech_sample_rate if needed
         if "speech_sample_rate" in self.params:
-            self.params["speech_sample_rate"] = int(self.params["speech_sample_rate"])
+            self.params["speech_sample_rate"] = int(
+                self.params["speech_sample_rate"]
+            )
 
         # Remove blacklisted keys from params
         for key in blacklist_keys:

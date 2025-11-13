@@ -42,7 +42,9 @@ class SarvamTTSClient(AsyncTTS2HttpClient):
     ):
         super().__init__()
         self.config = config
-        self.api_subscription_key = config.params.get("api_subscription_key", "")
+        self.api_subscription_key = config.params.get(
+            "api_subscription_key", ""
+        )
         self.ten_env: AsyncTenEnv = ten_env
         self._is_cancelled = False
         self.endpoint = "https://api.sarvam.ai/text-to-speech"
@@ -200,6 +202,7 @@ class SarvamTTSClient(AsyncTTS2HttpClient):
         return {
             "speaker": self.config.params.get("speaker", ""),
             "model": self.config.params.get("model", ""),
-            "target_language_code": self.config.params.get("target_language_code", ""),
+            "target_language_code": self.config.params.get(
+                "target_language_code", ""
+            ),
         }
-
