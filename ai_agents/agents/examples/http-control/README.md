@@ -15,7 +15,7 @@ A comprehensive voice assistant with HTTP-based control capabilities, featuring 
 - **Dynamic Port Allocation**: Automatic random port assignment (8000-9000) with localStorage persistence
 - **Text-based Messaging**: Send commands to the agent via HTTP POST requests
 - **Always-visible Input Bar**: Convenient UI for sending messages directly to the agent
-- **Middleware Proxy**: Transparent routing of requests to the dynamically allocated port
+- **Proxy Middleware**: Transparent routing of requests to the dynamically allocated port
 
 ## How It Works
 
@@ -24,12 +24,12 @@ A comprehensive voice assistant with HTTP-based control capabilities, featuring 
 1. **Port Initialization**: On first load, the frontend automatically generates a random port number between 8000-9000
 2. **Persistence**: The port is stored in localStorage and Redux state for session continuity
 3. **Agent Configuration**: When starting the agent, the port is passed as a property override to `http_server_python` extension
-4. **Middleware Routing**: Next.js middleware proxies requests from `/proxy/{port}/cmd` to `http://localhost:{port}/cmd`
+4. **Proxy Routing**: Next.js proxy handles requests from `/proxy/{port}/cmd` to `http://localhost:{port}/cmd`
 
 ### Message Flow
 
 ```
-User Input → Frontend (POST /proxy/{port}/cmd) → Middleware → HTTP Server Extension → Agent
+User Input → Frontend (POST /proxy/{port}/cmd) → Proxy → HTTP Server Extension → Agent
 ```
 
 ## Prerequisites
@@ -261,9 +261,9 @@ When the agent starts, the frontend sends:
 
 This overrides the default `listen_port` configured in `tenapp/property.json`.
 
-### Middleware Configuration
+### Proxy Configuration
 
-The Next.js middleware (`middleware.ts`) handles proxy routing:
+The Next.js proxy (`proxy.ts`) handles routing:
 
 ```typescript
 // Matches /proxy/{port}/path and rewrites to http://localhost:{port}/path
@@ -318,7 +318,7 @@ curl -X POST http://localhost:8234/cmd \
   - Start/stop agent with property overrides
   - Passes `http_port_number` to agent
 
-- **middleware.ts**: Request routing
+- **proxy.ts**: Request routing
   - Proxies `/proxy/{port}/*` to `http://localhost:{port}/*`
   - Handles only POST requests for security
 
@@ -413,10 +413,10 @@ If the randomly assigned port is already in use:
 - Ensure `http_port_number` is set in localStorage
 - Check that the HTTP server extension is running
 
-### Middleware Not Working
+### Proxy Not Working
 
-- Verify `middleware.ts` exists in the project root (not in `src/`)
-- Check Next.js logs for middleware execution
+- Verify `proxy.ts` exists in the project root (not in `src/`)
+- Check Next.js logs for proxy execution
 - Ensure the path starts with `/proxy/`
 
 ## Learn More
@@ -430,4 +430,4 @@ If the randomly assigned port is already in use:
 ### TEN Framework
 - [TEN Framework Documentation](https://doc.theten.ai)
 - [TMAN Designer Guide](https://theten.ai/docs/ten_agent/customize_agent/tman-designer)
-- [Next.js Middleware Documentation](https://nextjs.org/docs/app/building-your-application/routing/middleware)
+- [Next.js Proxy Documentation](https://nextjs.org/docs/app/building-your-application/routing/proxy)

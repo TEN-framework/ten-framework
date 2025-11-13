@@ -1,4 +1,4 @@
-// middleware.ts
+// proxy.ts
 import { type NextRequest, NextResponse } from "next/server";
 
 const { AGENT_SERVER_URL, TEN_DEV_SERVER_URL } = process.env;
@@ -22,7 +22,7 @@ function validatePort(port: string): boolean {
   return !isNaN(portNum) && portNum >= 8000 && portNum <= 9000;
 }
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const url = req.nextUrl.clone();
 
@@ -98,7 +98,7 @@ export async function middleware(req: NextRequest) {
   }
 }
 
-// Configure which routes should be processed by the middleware
+// Configure which routes should be processed by the proxy
 export const config = {
   matcher: [
     "/api/:path*",

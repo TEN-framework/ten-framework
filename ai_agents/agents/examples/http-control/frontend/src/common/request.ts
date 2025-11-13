@@ -5,7 +5,6 @@ import {
   type AddonDef,
   type Connection,
   type Graph,
-  GraphEditor,
   type Node,
   type ProtocolLabel,
 } from "./graph";
@@ -26,7 +25,7 @@ interface GenAgoraDataConfig {
 }
 
 export const apiGenAgoraData = async (config: GenAgoraDataConfig) => {
-  // the request will be rewrite at middleware.tsx to send to $AGENT_SERVER_URL
+  // the request will be rewrite at proxy.ts to send to $AGENT_SERVER_URL
   const url = `/api/token/generate`;
   const { userId, channel } = config;
   const data = {
@@ -60,7 +59,7 @@ export const apiStartService = async (
 };
 
 export const apiStopService = async (channel: string) => {
-  // the request will be rewrite at middleware.tsx to send to $AGENT_SERVER_URL
+  // the request will be rewrite at proxy.ts to send to $AGENT_SERVER_URL
   const url = `/api/agents/stop`;
   const data = {
     request_id: genUUID(),
@@ -72,7 +71,7 @@ export const apiStopService = async (channel: string) => {
 };
 
 export const apiGetDocumentList = async () => {
-  // the request will be rewrite at middleware.tsx to send to $AGENT_SERVER_URL
+  // the request will be rewrite at proxy.ts to send to $AGENT_SERVER_URL
   const url = `/api/vector/document/preset/list`;
   let resp: any = await axios.get(url);
   resp = resp.data || {};
@@ -87,7 +86,7 @@ export const apiUpdateDocument = async (options: {
   collection: string;
   fileName: string;
 }) => {
-  // the request will be rewrite at middleware.tsx to send to $AGENT_SERVER_URL
+  // the request will be rewrite at proxy.ts to send to $AGENT_SERVER_URL
   const url = `/api/vector/document/update`;
   const { channel, collection, fileName } = options;
   const data = {
@@ -103,7 +102,7 @@ export const apiUpdateDocument = async (options: {
 
 // ping/pong
 export const apiPing = async (channel: string) => {
-  // the request will be rewrite at middleware.tsx to send to $AGENT_SERVER_URL
+  // the request will be rewrite at proxy.ts to send to $AGENT_SERVER_URL
   const url = `/api/agents/ping`;
   const data = {
     request_id: genUUID(),
@@ -200,15 +199,15 @@ export const apiFetchGraphConnections = async (
         extension: dest.extension,
         msgConversion: dest.msgConversion
           ? {
-              type: dest.msgConversion.type,
-              rules: dest.msgConversion.rules.map((rule: any) => ({
-                path: rule.path,
-                conversionMode: rule.conversionMode,
-                value: rule.value,
-                originalPath: rule.originalPath,
-              })),
-              keepOriginal: dest.msgConversion.keepOriginal,
-            }
+            type: dest.msgConversion.type,
+            rules: dest.msgConversion.rules.map((rule: any) => ({
+              path: rule.path,
+              conversionMode: rule.conversionMode,
+              value: rule.value,
+              originalPath: rule.originalPath,
+            })),
+            keepOriginal: dest.msgConversion.keepOriginal,
+          }
           : undefined,
       })),
     })),
@@ -220,15 +219,15 @@ export const apiFetchGraphConnections = async (
         extension: dest.extension,
         msgConversion: dest.msgConversion
           ? {
-              type: dest.msgConversion.type,
-              rules: dest.msgConversion.rules.map((rule: any) => ({
-                path: rule.path,
-                conversionMode: rule.conversionMode,
-                value: rule.value,
-                originalPath: rule.originalPath,
-              })),
-              keepOriginal: dest.msgConversion.keepOriginal,
-            }
+            type: dest.msgConversion.type,
+            rules: dest.msgConversion.rules.map((rule: any) => ({
+              path: rule.path,
+              conversionMode: rule.conversionMode,
+              value: rule.value,
+              originalPath: rule.originalPath,
+            })),
+            keepOriginal: dest.msgConversion.keepOriginal,
+          }
           : undefined,
       })),
     })),
@@ -240,15 +239,15 @@ export const apiFetchGraphConnections = async (
         extension: dest.extension,
         msgConversion: dest.msgConversion
           ? {
-              type: dest.msgConversion.type,
-              rules: dest.msgConversion.rules.map((rule: any) => ({
-                path: rule.path,
-                conversionMode: rule.conversionMode,
-                value: rule.value,
-                originalPath: rule.originalPath,
-              })),
-              keepOriginal: dest.msgConversion.keepOriginal,
-            }
+            type: dest.msgConversion.type,
+            rules: dest.msgConversion.rules.map((rule: any) => ({
+              path: rule.path,
+              conversionMode: rule.conversionMode,
+              value: rule.value,
+              originalPath: rule.originalPath,
+            })),
+            keepOriginal: dest.msgConversion.keepOriginal,
+          }
           : undefined,
       })),
     })),
@@ -260,15 +259,15 @@ export const apiFetchGraphConnections = async (
         extension: dest.extension,
         msgConversion: dest.msgConversion
           ? {
-              type: dest.msgConversion.type,
-              rules: dest.msgConversion.rules.map((rule: any) => ({
-                path: rule.path,
-                conversionMode: rule.conversionMode,
-                value: rule.value,
-                originalPath: rule.originalPath,
-              })),
-              keepOriginal: dest.msgConversion.keepOriginal,
-            }
+            type: dest.msgConversion.type,
+            rules: dest.msgConversion.rules.map((rule: any) => ({
+              path: rule.path,
+              conversionMode: rule.conversionMode,
+              value: rule.value,
+              originalPath: rule.originalPath,
+            })),
+            keepOriginal: dest.msgConversion.keepOriginal,
+          }
           : undefined,
       })),
     })),
@@ -393,15 +392,15 @@ export const apiUpdateGraph = async (
           extension: dest.extension,
           msgConversion: dest.msgConversion
             ? {
-                type: dest.msgConversion.type,
-                rules: dest.msgConversion.rules.map((rule) => ({
-                  path: rule.path,
-                  conversionMode: rule.conversionMode,
-                  value: rule.value,
-                  originalPath: rule.originalPath,
-                })),
-                keepOriginal: dest.msgConversion.keepOriginal,
-              }
+              type: dest.msgConversion.type,
+              rules: dest.msgConversion.rules.map((rule) => ({
+                path: rule.path,
+                conversionMode: rule.conversionMode,
+                value: rule.value,
+                originalPath: rule.originalPath,
+              })),
+              keepOriginal: dest.msgConversion.keepOriginal,
+            }
             : undefined,
         })),
       })),
@@ -412,15 +411,15 @@ export const apiUpdateGraph = async (
           extension: dest.extension,
           msgConversion: dest.msgConversion
             ? {
-                type: dest.msgConversion.type,
-                rules: dest.msgConversion.rules.map((rule) => ({
-                  path: rule.path,
-                  conversionMode: rule.conversionMode,
-                  value: rule.value,
-                  originalPath: rule.originalPath,
-                })),
-                keepOriginal: dest.msgConversion.keepOriginal,
-              }
+              type: dest.msgConversion.type,
+              rules: dest.msgConversion.rules.map((rule) => ({
+                path: rule.path,
+                conversionMode: rule.conversionMode,
+                value: rule.value,
+                originalPath: rule.originalPath,
+              })),
+              keepOriginal: dest.msgConversion.keepOriginal,
+            }
             : undefined,
         })),
       })),
@@ -431,15 +430,15 @@ export const apiUpdateGraph = async (
           extension: dest.extension,
           msgConversion: dest.msgConversion
             ? {
-                type: dest.msgConversion.type,
-                rules: dest.msgConversion.rules.map((rule) => ({
-                  path: rule.path,
-                  conversionMode: rule.conversionMode,
-                  value: rule.value,
-                  originalPath: rule.originalPath,
-                })),
-                keepOriginal: dest.msgConversion.keepOriginal,
-              }
+              type: dest.msgConversion.type,
+              rules: dest.msgConversion.rules.map((rule) => ({
+                path: rule.path,
+                conversionMode: rule.conversionMode,
+                value: rule.value,
+                originalPath: rule.originalPath,
+              })),
+              keepOriginal: dest.msgConversion.keepOriginal,
+            }
             : undefined,
         })),
       })),
@@ -450,15 +449,15 @@ export const apiUpdateGraph = async (
           extension: dest.extension,
           msgConversion: dest.msgConversion
             ? {
-                type: dest.msgConversion.type,
-                rules: dest.msgConversion.rules.map((rule) => ({
-                  path: rule.path,
-                  conversionMode: rule.conversionMode,
-                  value: rule.value,
-                  originalPath: rule.originalPath,
-                })),
-                keepOriginal: dest.msgConversion.keepOriginal,
-              }
+              type: dest.msgConversion.type,
+              rules: dest.msgConversion.rules.map((rule) => ({
+                path: rule.path,
+                conversionMode: rule.conversionMode,
+                value: rule.value,
+                originalPath: rule.originalPath,
+              })),
+              keepOriginal: dest.msgConversion.keepOriginal,
+            }
             : undefined,
         })),
       })),
