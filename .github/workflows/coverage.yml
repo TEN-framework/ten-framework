@@ -1213,7 +1213,6 @@ jobs:
       - name: Upload coverage report to Coveralls
         env:
           COVERALLS_REPO_TOKEN: ${{ secrets.TEN_COVERALLS_REPO_TOKEN }}
-          COVERALLS_GIT_BRANCH: ${{ github.head_ref || github.ref_name }}
           COVERALLS_SERVICE_NAME: github-actions
         run: |
           pip install --user cpp-coveralls
@@ -1222,6 +1221,26 @@ jobs:
           # Add user bin directory to PATH
           export PATH="$HOME/.local/bin:$PATH"
           echo "Updated PATH: $PATH"
+
+          # Determine branch name based on event type
+          # For pull_request events, use github.head_ref; for push events, use github.ref_name
+          # Fallback to git branch name if needed
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            COVERALLS_GIT_BRANCH="${{ github.head_ref }}"
+          else
+            COVERALLS_GIT_BRANCH="${{ github.ref_name }}"
+          fi
+
+          # If branch name is still empty, get it from git
+          if [ -z "$COVERALLS_GIT_BRANCH" ]; then
+            COVERALLS_GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+          fi
+
+          export COVERALLS_GIT_BRANCH
+          echo "Coveralls branch: $COVERALLS_GIT_BRANCH"
+          echo "Event name: ${{ github.event_name }}"
+          echo "github.head_ref: ${{ github.head_ref }}"
+          echo "github.ref_name: ${{ github.ref_name }}"
 
           # Verify coveralls command is available
           which coveralls || echo "coveralls command not found in PATH"
