@@ -102,7 +102,29 @@ Wait until you see:
 
 ## Step 6: Get the Conversation URL
 
-### Option A: Check the Logs
+### Option A: Listen via WebSocket
+
+Open a terminal and connect to the built-in WebSocket server (default port `8765`):
+
+```bash
+npx wscat -c ws://localhost:8765
+```
+
+Or drop this snippet in your browser console:
+
+```javascript
+const ws = new WebSocket("ws://localhost:8765");
+ws.onmessage = (event) => {
+  const message = JSON.parse(event.data);
+  if (message?.data?.data_type === "tavus_event" &&
+      message.data.event === "conversation_created") {
+    console.log("🎥 Tavus URL:", message.data.payload.conversation_url);
+    window.open(message.data.payload.conversation_url, "_blank");
+  }
+};
+```
+
+### Option B: Check the Logs
 
 Open another terminal and watch the logs:
 
@@ -119,7 +141,7 @@ When you join, you'll see:
 [INFO] Conversation URL: https://tavus.io/c/xxxxxxxxxxxxx
 ```
 
-### Option B: Check Browser Console
+### Option C: Check Browser Console
 
 1. Open browser DevTools (Press F12)
 2. Go to Console tab
@@ -235,30 +257,28 @@ tail -f tenapp/logs/app.log
 
 Want the conversation to open automatically? Modify the playground frontend:
 
-1. Open `/Users/chenyifan/Code/ten-framework/ai_agents/playground/src/app/page.tsx`
-
-2. Add this code where Agora data messages are handled:
+1. Open `ai_agents/playground/src/app/page.tsx`
+2. Create a WebSocket connection when the page loads:
 
 ```typescript
-// Listen for Tavus conversation URL
-rtcEngine.on('streamMessage', (uid, data) => {
-  try {
-    const message = JSON.parse(new TextDecoder().decode(data));
+useEffect(() => {
+  const ws = new WebSocket("ws://localhost:8765");
 
-    if (message.type === 'tavus_conversation_created') {
-      const url = message.conversation_url;
-      console.log('🎥 Tavus Conversation:', url);
-
-      // Auto-open in new tab
-      window.open(url, '_blank');
-
-      // Or show a button
+  ws.onmessage = (event) => {
+    const message = JSON.parse(event.data);
+    if (
+      message?.data?.data_type === "tavus_event" &&
+      message.data.event === "conversation_created"
+    ) {
+      const url = message.data.payload.conversation_url;
+      console.log("🎥 Tavus Conversation:", url);
+      window.open(url, "_blank");
       setTavusUrl(url);
     }
-  } catch (e) {
-    console.error('Error parsing message:', e);
-  }
-});
+  };
+
+  return () => ws.close();
+}, []);
 ```
 
 ## Next Steps

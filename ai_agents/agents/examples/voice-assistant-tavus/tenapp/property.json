@@ -8,6 +8,19 @@
           "nodes": [
             {
               "type": "extension",
+              "name": "websocket_server",
+              "addon": "websocket_server",
+              "extension_group": "ws",
+              "property": {
+                "port": 8765,
+                "host": "0.0.0.0",
+                "sample_rate": 16000,
+                "channels": 1,
+                "bytes_per_sample": 2
+              }
+            },
+            {
+              "type": "extension",
               "name": "agora_rtc",
               "addon": "agora_rtc",
               "extension_group": "default",
@@ -84,6 +97,19 @@
                   "source": [
                     {
                       "extension": "agora_rtc"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "websocket_server",
+              "data": [
+                {
+                  "name": "text_data",
+                  "source": [
+                    {
+                      "extension": "tavus_control"
                     }
                   ]
                 }

@@ -292,6 +292,29 @@ env | grep TAVUS
 
 ### Receiving Conversation URL
 
+**Option 1 – WebSocket (recommended)**
+
+Connect to the built-in WebSocket server (`ws://localhost:8765`) and listen for `text_data`
+messages with `data_type: "tavus_event"`:
+
+```javascript
+const ws = new WebSocket("ws://localhost:8765");
+ws.onmessage = (event) => {
+  const message = JSON.parse(event.data);
+
+  if (
+    message?.data?.data_type === "tavus_event" &&
+    message.data.event === "conversation_created"
+  ) {
+    const url = message.data.payload.conversation_url;
+    console.log("Tavus conversation URL:", url);
+    window.open(url, "_blank");
+  }
+};
+```
+
+**Option 2 – Agora data channel**
+
 Listen for the `tavus_conversation_created` data message:
 
 ```javascript

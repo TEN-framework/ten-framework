@@ -9,6 +9,7 @@ A real-time voice assistant with Tavus Conversational Video Interface, featuring
 - **Auto Persona Creation**: Automatically creates Tavus personas with your custom configuration
 - **Smart Turn Detection**: Natural conversation flow with automatic speech detection
 - **Real-time Streaming**: Low-latency audio/video streaming via Agora RTC
+- **WebSocket Event Stream**: Broadcasts persona and conversation URLs to browser clients
 
 ## Prerequisites
 
@@ -88,6 +89,7 @@ The voice assistant starts with Tavus video integration enabled.
 - **Frontend**: http://localhost:3000
 - **API Server**: http://localhost:8080
 - **TMAN Designer**: http://localhost:49483
+- **WebSocket Events**: ws://localhost:8765
 
 ## How It Works
 
@@ -203,9 +205,40 @@ Supported: `en`, `es`, `fr`, `de`, `pt`, `zh`, `ja`, `ko`, `multilingual`
 
 ## Frontend Integration
 
-### Receiving Conversation URL
+### WebSocket Notifications (Recommended)
 
-The Tavus extension sends a `tavus_conversation_created` data message with the conversation URL.
+This example now exposes the Tavus lifecycle events over the shared `websocket_server` extension
+(`ws://localhost:8765` by default). Any client can subscribe and react when personas or conversations
+are ready—no Agora data channel required.
+
+```javascript
+const ws = new WebSocket("ws://localhost:8765");
+
+ws.onmessage = (event) => {
+  const message = JSON.parse(event.data);
+
+  if (message?.data?.data_type === "tavus_event") {
+    const payload = message.data.payload;
+
+    if (message.data.event === "conversation_created") {
+      console.log("Tavus conversation URL:", payload.conversation_url);
+      window.open(payload.conversation_url, "_blank");
+    }
+  }
+};
+```
+
+Event payloads follow this shape:
+
+| Event | Description | Payload |
+| --- | --- | --- |
+| `persona_created` | Auto-created persona is ready | `persona_id`, `replica_id`, `auto_created` |
+| `conversation_created` | Conversation started | `conversation_id`, `conversation_url`, `persona_id`, `replica_id` |
+| `conversation_ended` | Conversation stopped | `conversation_id`, `conversation_url`, `persona_id`, `replica_id` |
+
+### Receiving Conversation URL via Agora (Legacy Flow)
+
+The Tavus extension still sends a `tavus_conversation_created` data message with the conversation URL.
 
 Example frontend code to handle it:
 

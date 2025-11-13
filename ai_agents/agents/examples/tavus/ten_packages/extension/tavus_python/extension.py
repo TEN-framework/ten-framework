@@ -1,6 +1,7 @@
 import asyncio
 import aiohttp
 import json
+import time
 from typing import Optional
 from ten_runtime import (
     AsyncExtension,
@@ -333,6 +334,15 @@ class TavusExtension(AsyncExtension):
                     data = Data.create("tavus_persona_created")
                     data.set_property_string("persona_id", self.persona_id)
                     await ten_env.send_data(data)
+                    await self._broadcast_text_event(
+                        ten_env,
+                        "persona_created",
+                        {
+                            "persona_id": self.persona_id,
+                            "replica_id": self.replica_id,
+                            "auto_created": True
+                        }
+                    )
                 else:
                     error_text = await response.text()
                     ten_env.log_error(f"Failed to create Tavus persona: {response.status} - {error_text}")
@@ -388,6 +398,16 @@ class TavusExtension(AsyncExtension):
                     data.set_property_string("conversation_id", self.conversation_id)
                     data.set_property_string("conversation_url", self.conversation_url)
                     await ten_env.send_data(data)
+                    await self._broadcast_text_event(
+                        ten_env,
+                        "conversation_created",
+                        {
+                            "conversation_id": self.conversation_id,
+                            "conversation_url": self.conversation_url,
+                            "persona_id": self.persona_id,
+                            "replica_id": self.replica_id
+                        }
+                    )
                 else:
                     error_text = await response.text()
                     ten_env.log_error(f"Failed to create Tavus conversation: {response.status} - {error_text}")
@@ -401,6 +421,8 @@ class TavusExtension(AsyncExtension):
             return
 
         try:
+            ended_conversation_id = self.conversation_id
+            ended_conversation_url = self.conversation_url
             if self.conversation_id and self.session:
                 # Tavus conversations auto-terminate based on timeout settings
                 # Optionally, you could call a DELETE endpoint if available
@@ -410,6 +432,33 @@ class TavusExtension(AsyncExtension):
             self.conversation_id = None
             self.conversation_url = None
 
+            if self.ten_env and ended_conversation_id:
+                await self._broadcast_text_event(
+                    self.ten_env,
+                    "conversation_ended",
+                    {
+                        "conversation_id": ended_conversation_id,
+                        "conversation_url": ended_conversation_url,
+                        "persona_id": self.persona_id,
+                        "replica_id": self.replica_id
+                    }
+                )
+
         except Exception as e:
             if self.ten_env:
                 self.ten_env.log_error(f"Error ending Tavus conversation: {e}")
+
+    async def _broadcast_text_event(self, ten_env: AsyncTenEnv, event: str, payload: dict):
+        """Broadcast Tavus lifecycle events over text_data so websocket clients can react."""
+        try:
+            message = {
+                "data_type": "tavus_event",
+                "event": event,
+                "timestamp_ms": int(time.time() * 1000),
+                "payload": payload,
+            }
+            data = Data.create("text_data")
+            data.set_property_from_json(None, json.dumps(message))
+            await ten_env.send_data(data)
+        except Exception as e:
+            ten_env.log_error(f"Failed to broadcast Tavus event {event}: {e}")

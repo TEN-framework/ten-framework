@@ -102,6 +102,7 @@ The agent depends on these TEN framework components:
 - **agora_rtc** (=0.23.9-t1) - Agora RTC extension
 - **ten_ai_base** (v0.7) - AI base system
 - **tavus_python** - Tavus extension (local path: ../../tavus/ten_packages/extension/tavus_python)
+- **websocket_server** - Broadcast Tavus lifecycle events to browsers
 
 ### Shared Resources
 
@@ -113,19 +114,24 @@ The agent shares these with other TEN agents:
 
 ## Graph Architecture
 
-The agent implements a simple graph:
+The agent implements a simple graph with an additional WebSocket broadcast node:
 
 ```
 ┌─────────────┐         ┌──────────────┐
 │  Agora RTC  │◄────────┤ Tavus Control│
 │             │         │              │
 │             │────────►│              │
-└─────────────┘         └──────────────┘
+└─────┬───────┘         └──────┬───────┘
       │                        │
       │                        │
    User Audio/Video      Persona Creation
    User Join/Leave       Conversation Creation
-                         Conversation URL
+                                │
+                                ▼
+                        ┌──────────────┐
+                        │WebSocket Srv │
+                        │(events)      │
+                        └──────────────┘
 ```
 
 ### Connections
@@ -139,6 +145,10 @@ The agent implements a simple graph:
    - Data messages: `tavus_persona_created`, `tavus_conversation_created`
    - Audio frames: `pcm_frame` (future bridging)
    - Video frames: `video_frame` (future bridging)
+
+3. **Tavus Control → WebSocket Server**
+   - Data: `text_data` messages with `data_type: "tavus_event"`
+   - Used to broadcast persona/conversation lifecycle events to browsers
 
 ## Environment Variables
 
@@ -163,6 +173,9 @@ TAVUS_LLM_BASE_URL       # Custom endpoint (optional)
 TAVUS_TTS_PROVIDER       # TTS provider
 TAVUS_TTS_VOICE_ID       # Voice ID
 ```
+
+The embedded WebSocket server listens on `ws://localhost:8765` by default; adjust the value in
+`property.json` if the port is already in use.
 
 ## Build Process
 

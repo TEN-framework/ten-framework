@@ -19,6 +19,9 @@
       "version": "0.7"
     },
     {
+      "path": "../../../ten_packages/extension/websocket_server"
+    },
+    {
       "path": "../../tavus/ten_packages/extension/tavus_python"
     }
   ],
