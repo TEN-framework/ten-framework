@@ -8,7 +8,7 @@ COPY .env.example .env
 COPY server/ server/
 COPY agents/scripts/ agents/scripts/
 COPY agents/ten_packages/ agents/ten_packages/
-COPY playground/ playground/
+COPY ${USE_AGENT}/frontend/ ${USE_AGENT}/frontend/
 
 # Copy tenapp files explicitly to avoid symlink issues
 COPY ${USE_AGENT}/tenapp/go.* ${USE_AGENT}/tenapp/
@@ -28,7 +28,7 @@ RUN cd /app/${USE_AGENT} && \
   task install && task release
 
 # Build frontend in builder stage (bun already done by task install)
-WORKDIR /app/playground
+WORKDIR /app/${USE_AGENT}/frontend
 RUN NEXT_PUBLIC_EDIT_GRAPH_MODE=false bun run build
 WORKDIR /app
 
@@ -73,7 +73,7 @@ COPY --from=builder /usr/lib/python3 /usr/lib/python3
 COPY --from=builder /usr/local/bin/tman /usr/local/bin/tman
 
 # Copy built frontend from builder stage
-COPY --from=builder /app/playground/ /app/playground/
+COPY --from=builder /app/${USE_AGENT}/frontend/ /app/frontend/
 
 # Copy Docker Taskfile
 COPY --from=builder /app/${USE_AGENT}/Taskfile.docker.yml /app/Taskfile.docker.yml
