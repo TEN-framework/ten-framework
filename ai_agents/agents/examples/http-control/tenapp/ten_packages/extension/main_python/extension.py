@@ -14,6 +14,7 @@ from ten_runtime import (
 from .agent.agent import Agent
 from .agent.events import (
     ASRResultEvent,
+    HTTPRequestEvent,
     LLMResponseEvent,
     ToolRegisterEvent,
     UserJoinedEvent,
@@ -63,6 +64,10 @@ class MainControlExtension(AsyncExtension):
                 self.agent.on(event_type, fn)
 
     # === Register handlers with decorators ===
+    @agent_event_handler(HTTPRequestEvent)
+    async def _on_http_request(self, event: HTTPRequestEvent):
+        self.ten_env.log_info(f"[MainControlExtension] HTTP request: {event.body}")
+
     @agent_event_handler(UserJoinedEvent)
     async def _on_user_joined(self, event: UserJoinedEvent):
         self._rtc_user_count += 1

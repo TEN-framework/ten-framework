@@ -124,6 +124,14 @@ class Agent:
                         tool=tool, source=cmd.get_source().extension_name
                     )
                 )
+            elif name == "http_cmd":
+                body_json, err = cmd.get_property_to_json()
+                if err:
+                    raise RuntimeError(f"Invalid body: {err}")
+                body = json.loads(body_json)
+                await self._emit_direct(
+                    HTTPRequestEvent(type="cmd", body=body)
+                )
             else:
                 self.ten_env.log_warn(f"Unhandled cmd: {name}")
 
@@ -147,6 +155,12 @@ class Agent:
                         final=asr.get("final", False),
                         metadata=asr.get("metadata", {}),
                     )
+                )
+            elif data.get_name() == "http_data":
+                body_json, _ = data.get_property_to_json()
+                body = json.loads(body_json)
+                await self._emit_direct(
+                    HTTPRequestEvent(type="data", body=body)
                 )
             else:
                 self.ten_env.log_warn(f"Unhandled data: {data.get_name()}")
