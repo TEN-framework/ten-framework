@@ -157,6 +157,7 @@ class LLMExec:
         self.current_request_id = request_id
         llm_input = LLMRequest(
             request_id=request_id,
+            messages=messages,
             streaming=True,
             parameters={"temperature": 0.7},
             tools=self.available_tools,
