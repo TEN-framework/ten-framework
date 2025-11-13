@@ -1212,6 +1212,7 @@ jobs:
 
       - name: Upload coverage report to Coveralls
         env:
+          CI_BRANCH: ${{ github.event.pull_request.base.ref || github.ref_name }}
           COVERALLS_REPO_TOKEN: ${{ secrets.TEN_COVERALLS_REPO_TOKEN }}
         run: |
           pip install --user cpp-coveralls
