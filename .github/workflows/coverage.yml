@@ -989,7 +989,7 @@ jobs:
       - name: Clean profraw files before tests
         run: |
           find . -name "*.profraw" -type f -delete
-          echo "Cleaned all .profraw files"
+          echo "Cleaned all .profraw files."
 
       - name: Download build artifacts (tar archive)
         uses: actions/download-artifact@v4
