@@ -12,6 +12,16 @@ if (!TEN_DEV_SERVER_URL) {
   throw "Environment variables TEN_DEV_SERVER_URL are not available";
 }
 
+/**
+ * Validate port number is in allowed range (8000-9000)
+ * @param port - Port number as string
+ * @returns true if valid, false otherwise
+ */
+function validatePort(port: string): boolean {
+  const portNum = parseInt(port, 10);
+  return !isNaN(portNum) && portNum >= 8000 && portNum <= 9000;
+}
+
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const url = req.nextUrl.clone();
@@ -22,8 +32,19 @@ export async function middleware(req: NextRequest) {
     const portNumber = proxyMatch[1];
     const path = proxyMatch[2] || "/";
 
+    // Validate port range (8000-9000)
+    if (!validatePort(portNumber)) {
+      console.warn(
+        `Rejected proxy request: Invalid port ${portNumber} (must be 8000-9000)`
+      );
+      return NextResponse.json(
+        { error: "Invalid port number. Port must be between 8000 and 9000." },
+        { status: 400 }
+      );
+    }
+
     // Extract hostname from AGENT_SERVER_URL
-    const agentUrl = new URL(AGENT_SERVER_URL);
+    const agentUrl = new URL(AGENT_SERVER_URL!);
     const hostname = agentUrl.hostname;
 
     // Rewrite to http://{hostname}:{port_number}{path}
