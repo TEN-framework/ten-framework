@@ -67,6 +67,18 @@ class MainControlExtension(AsyncExtension):
     @agent_event_handler(HTTPRequestEvent)
     async def _on_http_request(self, event: HTTPRequestEvent):
         self.ten_env.log_info(f"[MainControlExtension] HTTP request: {event.body}")
+        if event.type == "cmd":
+            name = event.body.get("name", "")
+            payload = event.body.get("payload", {})
+            if name == "message":
+                text = payload.get("text", "")
+                # mock asr result
+                asr_result = ASRResultEvent(
+                    text=text,
+                    final=True,
+                    metadata=self._current_metadata(),
+                )
+                await self._on_asr_result(asr_result)
 
     @agent_event_handler(UserJoinedEvent)
     async def _on_user_joined(self, event: UserJoinedEvent):

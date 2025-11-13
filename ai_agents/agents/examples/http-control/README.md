@@ -1,10 +1,36 @@
-# Voice Assistant
+# HTTP Control Example
 
-A comprehensive voice assistant with real-time conversation capabilities using Agora RTC, Deepgram STT, OpenAI LLM, and ElevenLabs TTS.
+A comprehensive voice assistant with HTTP-based control capabilities, featuring real-time conversation via Agora RTC, Deepgram STT, OpenAI LLM, and ElevenLabs TTS, plus dynamic HTTP API integration for programmatic control.
 
 ## Features
 
+### Voice Assistant Capabilities
 - **Chained Model Real-time Voice Interaction**: Complete voice conversation pipeline with STT → LLM → TTS processing
+- **Real-time Communication**: Low-latency audio streaming via Agora RTC
+- **Natural Language Processing**: Powered by OpenAI GPT models
+- **High-quality Speech Synthesis**: ElevenLabs text-to-speech with natural voices
+
+### HTTP Control Features
+- **HTTP Server Integration**: Built-in HTTP server extension for programmatic agent control
+- **Dynamic Port Allocation**: Automatic random port assignment (8000-9000) with localStorage persistence
+- **Text-based Messaging**: Send commands to the agent via HTTP POST requests
+- **Always-visible Input Bar**: Convenient UI for sending messages directly to the agent
+- **Middleware Proxy**: Transparent routing of requests to the dynamically allocated port
+
+## How It Works
+
+### Dynamic Port System
+
+1. **Port Initialization**: On first load, the frontend automatically generates a random port number between 8000-9000
+2. **Persistence**: The port is stored in localStorage and Redux state for session continuity
+3. **Agent Configuration**: When starting the agent, the port is passed as a property override to `http_server_python` extension
+4. **Middleware Routing**: Next.js middleware proxies requests from `/proxy/{port}/cmd` to `http://localhost:{port}/cmd`
+
+### Message Flow
+
+```
+User Input → Frontend (POST /proxy/{port}/cmd) → Middleware → HTTP Server Extension → Agent
+```
 
 ## Prerequisites
 
@@ -58,30 +84,72 @@ WEATHERAPI_API_KEY=your_weather_api_key_here
 ### 2. Install Dependencies
 
 ```bash
-cd agents/examples/voice-assistant
+cd agents/examples/http-control
 task install
 ```
 
 This installs Python dependencies and frontend components.
 
-### 3. Run the Voice Assistant
+### 3. Run the Application
 
 ```bash
-cd agents/examples/voice-assistant
+cd agents/examples/http-control
 task run
 ```
 
-The voice assistant starts with all capabilities enabled.
+The application starts with the HTTP server enabled.
 
 ### 4. Access the Application
 
 - **Frontend**: http://localhost:3000
 - **API Server**: http://localhost:8080
 - **TMAN Designer**: http://localhost:49483
+- **HTTP Server Extension**: http://localhost:{random_port} (e.g., 8234)
+
+## Sending Messages
+
+### Via Input Bar
+
+1. Open the frontend at http://localhost:3000
+2. Click "Connect" to start the agent
+3. Type your message in the input bar at the bottom
+4. Click Send or press Enter
+
+### Via HTTP API
+
+You can send messages programmatically using the dynamically allocated port:
+
+```bash
+# Replace {port} with your assigned port (check browser localStorage or console)
+curl -X POST http://localhost:{port}/cmd \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "message",
+    "payload": {
+      "text": "Hello, agent!"
+    }
+  }'
+```
+
+### Via Frontend Proxy
+
+The frontend provides a proxy endpoint that automatically routes to the correct port:
+
+```javascript
+// In your frontend code
+await axios.post(`/proxy/${httpPortNumber}/cmd`, {
+  name: "message",
+  payload: {
+    text: "Hello, agent!"
+  }
+});
+```
 
 ## Configuration
 
-The voice assistant is configured in `tenapp/property.json`:
+### Voice Assistant Graph
+
+The voice assistant is configured in `tenapp/property.json` with the following extensions:
 
 ```json
 {
@@ -98,7 +166,6 @@ The voice assistant is configured in `tenapp/property.json`:
               "property": {
                 "app_id": "${env:AGORA_APP_ID}",
                 "app_certificate": "${env:AGORA_APP_CERTIFICATE|}",
-                "channel": "ten_agent_test",
                 "subscribe_audio": true,
                 "publish_audio": true,
                 "publish_data": true
@@ -110,7 +177,8 @@ The voice assistant is configured in `tenapp/property.json`:
               "property": {
                 "params": {
                   "api_key": "${env:DEEPGRAM_API_KEY}",
-                  "language": "en-US"
+                  "language": "en-US",
+                  "model": "nova-3"
                 }
               }
             },
@@ -135,6 +203,13 @@ The voice assistant is configured in `tenapp/property.json`:
                   "output_format": "pcm_16000"
                 }
               }
+            },
+            {
+              "name": "http_server_python",
+              "addon": "http_server_python",
+              "property": {
+                "listen_port": 8070
+              }
             }
           ]
         }
@@ -146,49 +221,213 @@ The voice assistant is configured in `tenapp/property.json`:
 
 ### Configuration Parameters
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `AGORA_APP_ID` | string | - | Your Agora App ID (required) |
-| `AGORA_APP_CERTIFICATE` | string | - | Your Agora App Certificate (optional) |
-| `DEEPGRAM_API_KEY` | string | - | Deepgram API key (required) |
-| `OPENAI_API_KEY` | string | - | OpenAI API key (required) |
-| `OPENAI_MODEL` | string | - | OpenAI model name (optional) |
-| `OPENAI_PROXY_URL` | string | - | Proxy URL for OpenAI API (optional) |
-| `ELEVENLABS_TTS_KEY` | string | - | ElevenLabs API key (required) |
-| `WEATHERAPI_API_KEY` | string | - | Weather API key (optional) |
+| Parameter | Extension | Type | Default | Description |
+|-----------|-----------|------|---------|-------------|
+| `AGORA_APP_ID` | agora_rtc | string | - | Your Agora App ID (required) |
+| `AGORA_APP_CERTIFICATE` | agora_rtc | string | - | Your Agora App Certificate (optional) |
+| `DEEPGRAM_API_KEY` | deepgram_asr_python | string | - | Deepgram API key (required) |
+| `OPENAI_API_KEY` | openai_llm2_python | string | - | OpenAI API key (required) |
+| `OPENAI_MODEL` | openai_llm2_python | string | - | OpenAI model name (optional) |
+| `OPENAI_PROXY_URL` | openai_llm2_python | string | - | Proxy URL for OpenAI API (optional) |
+| `ELEVENLABS_TTS_KEY` | elevenlabs_tts2_python | string | - | ElevenLabs API key (required) |
+| `WEATHERAPI_API_KEY` | weatherapi_tool_python | string | - | Weather API key (optional) |
+
+### HTTP Port Number
+
+The `http_port_number` is managed automatically:
+
+- **First Load**: Random port between 8000-9000 is generated
+- **Storage**: Saved in `localStorage` under the `__options__` key
+- **Redux State**: Available at `state.global.options.http_port_number`
+- **Agent Property**: Passed as override when starting the agent
+
+### Agent Properties Override
+
+When the agent starts, the frontend sends:
+
+```json
+{
+  "request_id": "...",
+  "channel_name": "...",
+  "user_uid": 123456,
+  "graph_name": "...",
+  "properties": {
+    "http_server_python": {
+      "listen_port": 8234
+    }
+  }
+}
+```
+
+This overrides the default `listen_port` configured in `tenapp/property.json`.
+
+### Middleware Configuration
+
+The Next.js middleware (`middleware.ts`) handles proxy routing:
+
+```typescript
+// Matches /proxy/{port}/path and rewrites to http://localhost:{port}/path
+const proxyMatch = pathname.match(/^\/proxy\/(\d+)(\/.*)?$/);
+if (proxyMatch && req.method === "POST") {
+  const portNumber = proxyMatch[1];
+  const path = proxyMatch[2] || "/";
+  url.href = `http://localhost:${portNumber}${path}`;
+  return NextResponse.rewrite(url);
+}
+```
+
+## HTTP API Reference
+
+### POST /cmd
+
+Send a command to the agent.
+
+**Endpoint**: `/proxy/{http_port_number}/cmd` (via frontend) or `http://localhost:{http_port_number}/cmd` (direct)
+
+**Method**: `POST`
+
+**Request Body**:
+```json
+{
+  "name": "message",
+  "payload": {
+    "text": "Your message here"
+  }
+}
+```
+
+**Response**: Depends on agent implementation
+
+**Example**:
+```bash
+curl -X POST http://localhost:8234/cmd \
+  -H "Content-Type: application/json" \
+  -d '{"name": "message", "payload": {"text": "Hello"}}'
+```
+
+## Frontend Architecture
+
+### Key Components
+
+- **ChatCard.tsx**: Input bar and message display
+  - Sends POST requests to `/proxy/{port}/cmd`
+  - Displays chat history
+  - Error handling with toast notifications
+
+- **Action.tsx**: Agent lifecycle control
+  - Start/stop agent with property overrides
+  - Passes `http_port_number` to agent
+
+- **middleware.ts**: Request routing
+  - Proxies `/proxy/{port}/*` to `http://localhost:{port}/*`
+  - Handles only POST requests for security
+
+### State Management
+
+Redux store (`state.global.options`) includes:
+```typescript
+{
+  channel: string;
+  userName: string;
+  userId: number;
+  appId: string;
+  token: string;
+  http_port_number?: number; // Auto-generated on first load
+}
+```
 
 ## Customization
 
-The voice assistant uses a modular design that allows you to easily replace STT, LLM, or TTS modules with other providers using TMAN Designer.
+### Changing Port Range
 
-Access the visual designer at http://localhost:49483 to customize your voice agent. For detailed usage instructions, see the [TMAN Designer documentation](https://theten.ai/docs/ten_agent/customize_agent/tman-designer).
+Edit `src/common/storage.ts`:
 
-## Release as Docker image
+```typescript
+if (!options.http_port_number) {
+  // Change range from 8000-9000 to your desired range
+  options.http_port_number = Math.floor(Math.random() * 1000) + 8000;
+  localStorage.setItem(OPTIONS_KEY, JSON.stringify(options));
+}
+```
+
+### Adding Custom Commands
+
+Modify the request in `ChatCard.tsx`:
+
+```typescript
+await axios.post(`/proxy/${httpPortNumber}/cmd`, {
+  name: "custom_command",  // Change command name
+  payload: {
+    text: inputValue,
+    // Add additional properties
+    priority: "high",
+    metadata: {...}
+  }
+});
+```
+
+### Visual Designer
+
+Access the TMAN Designer at http://localhost:49483 to visually customize your agent graph and extension properties.
+
+## Release as Docker Image
 
 **Note**: The following commands need to be executed outside of any Docker container.
 
-### Build image
+### Build Image
 
 ```bash
 cd ai_agents
-docker build -f agents/examples/voice-assistant/Dockerfile -t voice-assistant-app .
+docker build -f agents/examples/http-control/Dockerfile -t http-control-app .
 ```
 
 ### Run
 
 ```bash
-docker run --rm -it --env-file .env -p 8080:8080 -p 3000:3000 voice-assistant-app
+docker run --rm -it --env-file .env -p 8080:8080 -p 3000:3000 -p 8000-9000:8000-9000 http-control-app
 ```
+
+**Note**: The `-p 8000-9000:8000-9000` flag exposes the port range for the HTTP server extension.
 
 ### Access
 
 - Frontend: http://localhost:3000
 - API Server: http://localhost:8080
 
+## Troubleshooting
+
+### Port Already in Use
+
+If the randomly assigned port is already in use:
+1. Clear localStorage in your browser
+2. Refresh the page to get a new random port
+3. Or manually set a different port in browser DevTools:
+   ```javascript
+   localStorage.setItem('__options__', JSON.stringify({...options, http_port_number: 8500}))
+   ```
+
+### Message Not Sending
+
+- Check browser console for errors
+- Verify agent is connected (green status)
+- Ensure `http_port_number` is set in localStorage
+- Check that the HTTP server extension is running
+
+### Middleware Not Working
+
+- Verify `middleware.ts` exists in the project root (not in `src/`)
+- Check Next.js logs for middleware execution
+- Ensure the path starts with `/proxy/`
+
 ## Learn More
 
+### Voice Assistant Services
 - [Agora RTC Documentation](https://docs.agora.io/en/rtc/overview/product-overview)
 - [Deepgram API Documentation](https://developers.deepgram.com/)
 - [OpenAI API Documentation](https://platform.openai.com/docs)
 - [ElevenLabs API Documentation](https://docs.elevenlabs.io/)
+
+### TEN Framework
 - [TEN Framework Documentation](https://doc.theten.ai)
+- [TMAN Designer Guide](https://theten.ai/docs/ten_agent/customize_agent/tman-designer)
+- [Next.js Middleware Documentation](https://nextjs.org/docs/app/building-your-application/routing/middleware)
