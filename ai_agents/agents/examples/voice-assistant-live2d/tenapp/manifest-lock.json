@@ -256,8 +256,8 @@
     {
       "type": "extension",
       "name": "soniox_asr_python",
-      "version": "0.3.3",
-      "hash": "932bcf076453f1cbd661d50a06b36caab157c91ec63e646d19dfdbe88ad6a5d4",
+      "version": "0.3.4",
+      "hash": "10e9f20c2c860d20df37d2f9de9308256cc4111ebf327b9fb3f7a794ad0bb932",
       "dependencies": [
         {
           "type": "system",
