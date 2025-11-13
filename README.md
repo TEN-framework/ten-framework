@@ -92,11 +92,11 @@ See the [Example code](ai_agents/agents/examples/voice-assistant) for more detai
 
 <br>
 
-![Image](https://github.com/user-attachments/assets/aa3f2c9c-c82e-412f-8400-06378ba75794)
+![Image](https://github.com/user-attachments/assets/51ab1504-b67c-49d4-8a7a-5582d9b254da)
 
-<strong>Lip Sync Avatars</strong> — Works with multiple avatar vendors, the demo features Kei, an anime character with Live2D-powered lip sync, and also supports realistic avatars from Trulience, HeyGen, and Tavus (coming soon).
+<strong>Lip Sync Avatars</strong> — Works with multiple avatar vendors, the main character features Kei, an anime character with Live2D-powered lip sync, and also supports realistic avatars from Trulience, HeyGen, and Tavus (coming soon).
 
-See the [Example code](ai_agents/agents/examples/voice-assistant-live2d) for Live2D avatars.
+See the [Example code](ai_agents/agents/examples/voice-assistant-live2d) for different Live2D characters.
 
 <br>
 
