@@ -13,6 +13,7 @@
 #include "include_internal/ten_runtime/connection/connection.h"
 #include "include_internal/ten_runtime/engine/engine.h"
 #include "include_internal/ten_runtime/engine/msg_interface/common.h"
+#include "include_internal/ten_runtime/msg/cmd_base/cmd_base.h"
 #include "include_internal/ten_runtime/msg/msg.h"
 #include "include_internal/ten_runtime/protocol/protocol.h"
 #include "ten_runtime/app/app.h"
@@ -218,6 +219,12 @@ void ten_app_check_termination_when_engine_closed(ten_app_t *self,
     const char *src_graph_id = ten_msg_get_src_graph_id(engine->cmd_stop_graph);
     if (!ten_string_is_equal_c_str(&engine->graph_id, src_graph_id)) {
       // This engine is _not_ suicidal.
+
+      TEN_LOGD(
+          "[%s:%s] Creating cmd_result for stop_graph (cmd_id: %s) and "
+          "dispatching back",
+          ten_app_get_uri(self), ten_engine_get_id(engine, false),
+          ten_cmd_base_get_cmd_id(engine->cmd_stop_graph));
 
       ten_app_create_cmd_result_and_dispatch(self, engine->cmd_stop_graph,
                                              TEN_STATUS_CODE_OK,
