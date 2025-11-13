@@ -8,22 +8,19 @@ A real-time voice assistant with Tavus Conversational Video Interface, featuring
 - **Full Pipeline Integration**: Customizable STT, LLM, TTS, and Perception layers
 - **Auto Persona Creation**: Automatically creates Tavus personas with your custom configuration
 - **Smart Turn Detection**: Natural conversation flow with automatic speech detection
-- **Real-time Streaming**: Low-latency audio/video streaming via Agora RTC
+- **Real-time Streaming**: Embedded Tavus Conversational Video Interface with camera/mic permissions
 - **WebSocket Event Stream**: Broadcasts persona and conversation URLs to browser clients
+- **Dedicated UI**: A Vite/React “Tavus Studio” micro frontend for a polished experience
 
 ## Prerequisites
 
 ### Required Environment Variables
 
-1. **Agora Account**: Get credentials from [Agora Console](https://console.agora.io/)
-   - `AGORA_APP_ID` - Your Agora App ID (required)
-   - `AGORA_APP_CERTIFICATE` - Your Agora App Certificate (optional)
-
-2. **Tavus Account**: Get credentials from [Tavus Platform](https://platform.tavus.io/)
+1. **Tavus Account**: Get credentials from [Tavus Platform](https://platform.tavus.io/)
    - `TAVUS_API_KEY` - Your Tavus API key (required)
    - `TAVUS_REPLICA_ID` - Your Tavus replica/avatar ID (required)
 
-3. **LLM Provider**: Get API key from your LLM provider
+2. **LLM Provider**: Get API key from your LLM provider
    - `TAVUS_LLM_PROVIDER` - LLM provider name (e.g., "openai", "anthropic")
    - `TAVUS_LLM_MODEL` - Model name (e.g., "gpt-4", "claude-3-opus-20240229")
    - `TAVUS_LLM_API_KEY` - Your LLM API key
@@ -41,10 +38,6 @@ A real-time voice assistant with Tavus Conversational Video Interface, featuring
 Add to your `.env` file in the root of `ai_agents`:
 
 ```bash
-# Agora (required for audio/video streaming)
-AGORA_APP_ID=your_agora_app_id_here
-AGORA_APP_CERTIFICATE=your_agora_certificate_here
-
 # Tavus (required for video avatars)
 TAVUS_API_KEY=tvs-xxx-your-tavus-api-key
 TAVUS_REPLICA_ID=r7xxx-your-replica-id
@@ -86,44 +79,48 @@ The voice assistant starts with Tavus video integration enabled.
 
 ### 4. Access the Application
 
-- **Frontend**: http://localhost:3000
+- **Tavus Studio UI**: http://localhost:3000
 - **API Server**: http://localhost:8080
 - **TMAN Designer**: http://localhost:49483
 - **WebSocket Events**: ws://localhost:8765
+
+### 5. Start a Session
+
+1. Open the UI at `http://localhost:3000`.
+2. Keep the default channel name (or pick your own) and click **Start Session**.
+3. Once the websocket reports `conversation_created`, the embedded Tavus CVI iframe appears automatically—grant camera/mic access and start speaking.
+4. Click **Stop** when you are done to terminate the TEN worker and the Tavus room.
 
 ## How It Works
 
 ### Architecture
 
 ```
-User Browser → Agora RTC ↔ TEN Agent ↔ Tavus Extension
-                                           ↓
-                                  1. Create Persona (startup)
-                                  2. Create Conversation (user join)
-                                  3. Return conversation URL
-                                           ↓
-                              User joins Tavus video conversation
+User Browser (Tavus Studio UI)
+        ↓         ↑
+   TEN API & WebSocket ──→ Tavus Extension
+                                   ↓
+                         Tavus Conversational Video Interface
+                         (hosted by Tavus on Daily.co)
 ```
 
 ### Flow
 
 1. **Agent Startup**:
-   - Tavus extension automatically creates a persona with your configured LLM, TTS, and settings
-   - Persona ID is logged and saved for conversation creation
+   - `task run` launches the TEN worker, API server, and WebSocket broadcaster
+   - The Tavus extension auto-creates a persona using your LLM + TTS settings
 
-2. **User Joins**:
-   - When a user joins the Agora channel, Tavus extension creates a conversation
-   - Conversation URL is sent to the frontend via data message
-   - Frontend displays the conversation URL or embeds it
+2. **Session Launch**:
+   - You click **Start Session** in the Tavus Studio UI, which calls `/start` on the API server
+   - The Tavus extension auto-starts a conversation and emits events over the websocket
 
 3. **Video Conversation**:
-   - User clicks the URL to join the Tavus video conversation
-   - Speaks to the AI avatar through their microphone
-   - Avatar responds with natural voice and lip-sync
+   - The UI embeds the hosted Tavus CVI iframe once `conversation_created` arrives
+   - Speak naturally—the Tavus experience handles camera, microphone, and rendering
 
-4. **User Leaves**:
-   - Conversation is automatically terminated
-   - Resources are cleaned up
+4. **Session End**:
+   - Clicking **Stop** tears down the TEN worker and Tavus conversation
+   - The iframe disappears and the UI resets back to idle
 
 ## Configuration
 
@@ -141,6 +138,7 @@ The voice assistant is configured in `tenapp/property.json`:
     "replica_id": "${env:TAVUS_REPLICA_ID}",
     "conversation_name": "TEN Voice Assistant with Tavus",
     "auto_create_persona": true,
+    "auto_start_on_boot": true,
     "persona_name": "TEN Voice Assistant",
     "system_prompt": "You are a helpful AI voice assistant...",
     "enable_smart_turn_detection": true,
@@ -204,6 +202,13 @@ Recordings will be available in your Tavus dashboard.
 Supported: `en`, `es`, `fr`, `de`, `pt`, `zh`, `ja`, `ko`, `multilingual`
 
 ## Frontend Integration
+
+The repository now ships with `frontend/`, a dedicated micro frontend (the Tavus Studio UI) that consumes the TEN API and websocket channel. If you want to build your own experience instead, the following sections describe the low-level hooks that the UI relies on.
+
+The UI honors two optional environment variables for local development:
+
+- `VITE_API_BASE_URL` (defaults to `http://localhost:8080`)
+- `VITE_WS_URL` (defaults to `ws://localhost:8765`)
 
 ### WebSocket Notifications (Recommended)
 
@@ -342,9 +347,9 @@ If you already have a Tavus persona, you can use it instead of auto-creating:
 
 ### Conversation URL not appearing
 - Check agent logs for errors
-- Verify Agora RTC connection is working
-- Ensure data channel is enabled in Agora configuration
-- Check frontend is listening for data messages
+- Ensure the TEN websocket (`ws://localhost:8765`) is reachable from the UI
+- Confirm the Tavus Studio UI is running (or your custom client is listening for `tavus_event` messages)
+- Double-check that the TEN worker is still running via `curl http://localhost:8080/health`
 
 ### Agent fails to start
 - Run `task install` to ensure all dependencies are installed
@@ -386,7 +391,6 @@ Access the visual designer at http://localhost:49483 to:
 - [Tavus Documentation](https://docs.tavus.io)
 - [Tavus API Reference](https://docs.tavus.io/api-reference)
 - [TEN Framework Documentation](https://github.com/TEN-framework/ten-framework)
-- [Agora RTC Documentation](https://docs.agora.io)
 
 ## Support
 

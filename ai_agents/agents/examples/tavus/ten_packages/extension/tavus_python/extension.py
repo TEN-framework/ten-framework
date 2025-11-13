@@ -40,6 +40,7 @@ class TavusExtension(AsyncExtension):
         self.enable_perception: bool = False
         self.perception_model: str = "raven-0"
         self.enable_smart_turn_detection: bool = True
+        self.auto_start_on_boot: bool = False
         self.llm_provider: str = ""
         self.llm_model: str = ""
         self.llm_base_url: str = ""
@@ -129,6 +130,11 @@ class TavusExtension(AsyncExtension):
                 self.enable_smart_turn_detection = True
 
             try:
+                self.auto_start_on_boot = await ten_env.get_property_bool("auto_start_on_boot")
+            except:
+                self.auto_start_on_boot = False
+
+            try:
                 self.llm_provider = await ten_env.get_property_string("llm_provider")
             except:
                 self.llm_provider = ""
@@ -171,6 +177,11 @@ class TavusExtension(AsyncExtension):
             # Create persona if auto_create_persona is enabled
             if self.auto_create_persona and not self.persona_id:
                 await self._create_persona(ten_env)
+
+            # Optionally auto start the conversation once initialization completes
+            if self.auto_start_on_boot:
+                ten_env.log_info("Auto-start on boot is enabled; scheduling conversation start.")
+                asyncio.create_task(self._auto_start_conversation(ten_env))
 
         except Exception as e:
             ten_env.log_error(f"Failed to load Tavus configuration: {e}")
@@ -462,3 +473,9 @@ class TavusExtension(AsyncExtension):
             await ten_env.send_data(data)
         except Exception as e:
             ten_env.log_error(f"Failed to broadcast Tavus event {event}: {e}")
+
+    async def _auto_start_conversation(self, ten_env: AsyncTenEnv):
+        """Ensure auto-start waits for persona configuration when enabled."""
+        # Small delay to allow runtime to finish other startup tasks
+        await asyncio.sleep(0.1)
+        await self._start_conversation(ten_env)

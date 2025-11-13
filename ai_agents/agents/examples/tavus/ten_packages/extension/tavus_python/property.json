@@ -13,6 +13,7 @@
   "enable_perception": false,
   "perception_model": "raven-0",
   "enable_smart_turn_detection": true,
+  "auto_start_on_boot": false,
   "llm_provider": "",
   "llm_model": "",
   "llm_base_url": "",

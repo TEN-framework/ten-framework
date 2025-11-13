@@ -21,24 +21,6 @@
             },
             {
               "type": "extension",
-              "name": "agora_rtc",
-              "addon": "agora_rtc",
-              "extension_group": "default",
-              "property": {
-                "app_id": "${env:AGORA_APP_ID}",
-                "app_certificate": "${env:AGORA_APP_CERTIFICATE|}",
-                "channel": "tavus_voice_assistant",
-                "stream_id": 1234,
-                "remote_stream_id": 123,
-                "subscribe_audio": true,
-                "subscribe_video": true,
-                "publish_audio": true,
-                "publish_video": true,
-                "publish_data": true
-              }
-            },
-            {
-              "type": "extension",
               "name": "tavus_control",
               "addon": "tavus_python",
               "extension_group": "tavus",
@@ -50,6 +32,7 @@
                 "enable_recording": false,
                 "language": "en",
                 "auto_create_persona": true,
+                "auto_start_on_boot": true,
                 "persona_name": "TEN Voice Assistant",
                 "system_prompt": "You are a helpful AI voice assistant powered by the TEN framework and Tavus. You help users with various tasks through natural conversation. Be friendly, concise, and helpful. Respond in a conversational tone suitable for voice interaction.",
                 "context": "You are in a real-time video conversation with a user. The user can see your avatar and hear your voice. Provide clear, concise responses suitable for voice interaction.",
@@ -67,79 +50,10 @@
           ],
           "connections": [
             {
-              "extension": "tavus_control",
-              "cmd": [
-                {
-                  "names": [
-                    "on_user_joined",
-                    "on_user_left"
-                  ],
-                  "source": [
-                    {
-                      "extension": "agora_rtc"
-                    }
-                  ]
-                }
-              ],
-              "video_frame": [
-                {
-                  "name": "video_frame",
-                  "source": [
-                    {
-                      "extension": "agora_rtc"
-                    }
-                  ]
-                }
-              ],
-              "audio_frame": [
-                {
-                  "name": "pcm_frame",
-                  "source": [
-                    {
-                      "extension": "agora_rtc"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
               "extension": "websocket_server",
               "data": [
                 {
                   "name": "text_data",
-                  "source": [
-                    {
-                      "extension": "tavus_control"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "extension": "agora_rtc",
-              "video_frame": [
-                {
-                  "name": "video_frame",
-                  "source": [
-                    {
-                      "extension": "tavus_control"
-                    }
-                  ]
-                }
-              ],
-              "audio_frame": [
-                {
-                  "name": "pcm_frame",
-                  "source": [
-                    {
-                      "extension": "tavus_control"
-                    }
-                  ]
-                }
-              ],
-              "data": [
-                {
-                  "name": "data",
                   "source": [
                     {
                       "extension": "tavus_control"

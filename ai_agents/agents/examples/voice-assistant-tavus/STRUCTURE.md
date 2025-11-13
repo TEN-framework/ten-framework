@@ -10,6 +10,7 @@ voice-assistant-tavus/
 ├── Dockerfile                     # Container build configuration
 ├── Taskfile.yml                   # Build and run automation
 ├── Taskfile.docker.yml           # Docker-specific tasks
+├── frontend/                      # Tavus Studio UI (React + Vite)
 └── tenapp/                        # TEN application directory
     ├── main.go                    # Go application entry point
     ├── go.mod                     # Go module definition
@@ -27,18 +28,18 @@ voice-assistant-tavus/
 ### Configuration Files
 
 1. **tenapp/property.json**
-   - Defines the TEN graph with Tavus extension
-   - Configures Agora RTC for audio/video streaming
-   - Sets up Tavus persona auto-creation
+   - Defines the TEN graph with `tavus_control` + `websocket_server`
+   - Auto-creates personas and conversations without relying on Agora RTC
+   - Wires websocket events to the dedicated frontend
    - Environment variable mapping
 
 2. **tenapp/manifest.json**
    - App metadata (name, version, type)
    - Dependencies:
      - ten_runtime_go (Go runtime)
-     - agora_rtc (RTC extension)
      - ten_ai_base (AI base system)
      - tavus_python (Tavus extension - relative path)
+     - websocket_server (local extension for the event stream)
 
 3. **go.mod**
    - Go module configuration
@@ -82,6 +83,13 @@ voice-assistant-tavus/
      - Runtime stage: Minimal Ubuntu with runtime deps
    - Copies Tavus extension from ../tavus/ten_packages/
    - Exposes ports 8080 (API) and 3000 (Frontend)
+
+### Frontend
+
+10. **frontend/**
+    - Vite + React micro frontend (Tavus Studio UI)
+    - Consumes the TEN REST API (`/start`, `/stop`) and websocket (`ws://localhost:8765`)
+    - Embeds the Tavus CVI iframe once a conversation is created
 
 ### Documentation
 
@@ -155,10 +163,6 @@ The agent implements a simple graph with an additional WebSocket broadcast node:
 Required for operation:
 
 ```bash
-# Agora
-AGORA_APP_ID              # RTC app ID
-AGORA_APP_CERTIFICATE     # RTC certificate (optional)
-
 # Tavus
 TAVUS_API_KEY            # Tavus API key
 TAVUS_REPLICA_ID         # Avatar replica ID

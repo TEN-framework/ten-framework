@@ -11,9 +11,9 @@ tasks:
 
   run-frontend-prod:
     desc: run frontend in production
-    dir: ./playground
+    dir: ./agents/examples/voice-assistant-tavus/frontend
     cmds:
-      - bun start
+      - bun run preview
     background: true
 
   run-prod:

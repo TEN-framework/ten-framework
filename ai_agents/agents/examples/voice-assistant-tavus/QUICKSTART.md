@@ -5,16 +5,10 @@ Get your Tavus AI avatar talking in 5 minutes!
 ## Prerequisites
 
 You need API keys from:
-1. **Agora** - [console.agora.io](https://console.agora.io) (for audio/video)
-2. **Tavus** - [platform.tavus.io](https://platform.tavus.io) (for AI avatar)
-3. **OpenAI** - [platform.openai.com](https://platform.openai.com) (for conversation AI)
+1. **Tavus** - [platform.tavus.io](https://platform.tavus.io) (for the avatar)
+2. **OpenAI (or another LLM)** - [platform.openai.com](https://platform.openai.com)
 
 ## Step 1: Get Your API Keys
-
-### Agora
-1. Sign up at https://console.agora.io
-2. Create a project
-3. Copy your **App ID**
 
 ### Tavus
 1. Sign up at https://platform.tavus.io
@@ -29,18 +23,15 @@ You need API keys from:
 
 ## Step 2: Set Environment Variables
 
-Navigate to the ai_agents directory and create/edit `.env`:
+Navigate to the `ai_agents` directory and create/edit `.env`:
 
 ```bash
-cd /Users/chenyifan/Code/ten-framework/ai_agents
+cd ai_agents
 ```
 
 Add these lines to `.env`:
 
 ```bash
-# Agora
-AGORA_APP_ID=your_agora_app_id_here
-
 # Tavus
 TAVUS_API_KEY=tvs-xxx-your-tavus-key
 TAVUS_REPLICA_ID=r7xxx-your-replica-id
@@ -56,7 +47,7 @@ TAVUS_LLM_API_KEY=sk-xxx-your-openai-key
 ## Step 3: Install Dependencies
 
 ```bash
-cd /Users/chenyifan/Code/ten-framework/ai_agents/agents/examples/voice-assistant-tavus
+cd ai_agents/agents/examples/voice-assistant-tavus
 
 # Install everything (takes 2-3 minutes)
 task install
@@ -90,78 +81,27 @@ Wait until you see:
 [INFO] Tavus persona created successfully: per_xxxxx
 ```
 
-## Step 5: Open the Frontend
+## Step 5: Use the Tavus Studio UI
 
-1. Open your browser to: **http://localhost:3000**
+1. Open your browser to **http://localhost:3000** — this is the new micro frontend dedicated to Tavus.
+2. Pick a channel name (or keep the default), then click **Start Session**.
+3. The status pill will show `Running` once the TEN worker is alive and the websocket is receiving `tavus_event` updates.
+4. When the conversation is ready, an embedded Tavus Conversational Video Interface appears. Grant camera & microphone access and start chatting.
+5. Click **Stop** to tear everything down (the iframe disappears and the worker shuts down).
 
-2. You should see the TEN Agent playground interface
+## Step 6: (Optional) Inspect the WebSocket Feed
 
-3. Enter a channel name (or use default: `tavus_voice_assistant`)
-
-4. Click **"Join"** or **"Connect"**
-
-## Step 6: Get the Conversation URL
-
-### Option A: Listen via WebSocket
-
-Open a terminal and connect to the built-in WebSocket server (default port `8765`):
+The UI already listens to `ws://localhost:8765`, but you can watch the raw events for debugging:
 
 ```bash
 npx wscat -c ws://localhost:8765
 ```
 
-Or drop this snippet in your browser console:
+You should see events such as `persona_created`, `conversation_created`, and `conversation_ended`. Each payload contains IDs and URLs you can use elsewhere.
 
-```javascript
-const ws = new WebSocket("ws://localhost:8765");
-ws.onmessage = (event) => {
-  const message = JSON.parse(event.data);
-  if (message?.data?.data_type === "tavus_event" &&
-      message.data.event === "conversation_created") {
-    console.log("🎥 Tavus URL:", message.data.payload.conversation_url);
-    window.open(message.data.payload.conversation_url, "_blank");
-  }
-};
-```
+## Step 7: Join the Tavus Conversation (Automatically)
 
-### Option B: Check the Logs
-
-Open another terminal and watch the logs:
-
-```bash
-cd /Users/chenyifan/Code/ten-framework/ai_agents/agents/examples/voice-assistant-tavus
-tail -f tenapp/logs/app.log | grep -i tavus
-```
-
-When you join, you'll see:
-```
-[INFO] User joined, starting Tavus conversation
-[INFO] Creating Tavus conversation with payload: {...}
-[INFO] Tavus conversation created: conv_xxxxxxxxxxxxx
-[INFO] Conversation URL: https://tavus.io/c/xxxxxxxxxxxxx
-```
-
-### Option C: Check Browser Console
-
-1. Open browser DevTools (Press F12)
-2. Go to Console tab
-3. Look for messages from Agora data channel
-4. Find the `tavus_conversation_created` message with the URL
-
-## Step 7: Join the Tavus Conversation
-
-1. **Copy the conversation URL** from logs or console
-   - It looks like: `https://tavus.io/c/xxxxxxxxxxxxx`
-
-2. **Open the URL** in a new browser tab
-
-3. **Allow camera and microphone** when prompted
-
-4. **Start talking!** Your AI avatar will:
-   - Listen to you
-   - Process with GPT-4
-   - Respond with natural voice
-   - Show lip-synced video
+As soon as `conversation_created` fires, the UI injects the iframe and you are inside the Tavus Daily-powered experience. You can still pop it out into its own tab via the “Open in new tab” link if you prefer.
 
 ## Example Conversation
 
@@ -175,15 +115,11 @@ The avatar should respond naturally!
 ## What's Happening Behind the Scenes?
 
 ```
-1. Agent starts → Creates Tavus persona with GPT-4
-                    ↓
-2. You join channel → Agent creates Tavus conversation
-                    ↓
-3. Conversation URL → Sent to your browser
-                    ↓
-4. You open URL → Talk to AI avatar
-                    ↓
-5. You leave → Conversation ends automatically
+1. task run          → boots TEN + API + websocket broadcaster
+2. Start Session     → /start spins a worker + Tavus persona/conversation
+3. Websocket event   → UI embeds the Tavus CVI iframe instantly
+4. Talk inside iframe→ Tavus handles media via Daily
+5. Stop Session      → TEN worker shuts down & Tavus room closes
 ```
 
 ## Customizing Your Avatar
@@ -253,33 +189,9 @@ tail -f tenapp/logs/app.log
 
 3. Verify you're joining the correct channel name
 
-## Advanced: Auto-Open Tavus URL
+## Advanced: Customize the Tavus Studio UI
 
-Want the conversation to open automatically? Modify the playground frontend:
-
-1. Open `ai_agents/playground/src/app/page.tsx`
-2. Create a WebSocket connection when the page loads:
-
-```typescript
-useEffect(() => {
-  const ws = new WebSocket("ws://localhost:8765");
-
-  ws.onmessage = (event) => {
-    const message = JSON.parse(event.data);
-    if (
-      message?.data?.data_type === "tavus_event" &&
-      message.data.event === "conversation_created"
-    ) {
-      const url = message.data.payload.conversation_url;
-      console.log("🎥 Tavus Conversation:", url);
-      window.open(url, "_blank");
-      setTavusUrl(url);
-    }
-  };
-
-  return () => ws.close();
-}, []);
-```
+All of the UI code lives in `ai_agents/agents/examples/voice-assistant-tavus/frontend`. Feel free to tweak `src/App.tsx` to match your brand (colors, typography, copy). The websocket handler already lives inside the `useEffect` hook—if you want to perform additional actions (e.g., fire analytics, preload assets) simply extend the `handleMessage` function to react to more `tavus_event` payloads.
 
 ## Next Steps
 
