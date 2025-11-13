@@ -5,16 +5,20 @@ on:
     types: [created]
   pull_request:
     types: [opened, synchronize, reopened]
-    paths-ignore:
-      - "tools/**"
-      - ".vscode/**"
-      - ".devcontainer/**"
-      - ".github/**"
-      - "!.github/workflows/coverage.yml"
-      - "core/src/ten_manager/designer_frontend/**"
-      - "**.md"
-      - "ai_agents/**"
-
+    paths:
+      - "core/**"
+      - "!core/src/ten_manager/designer_frontend/**"
+      - "tests/**"
+      - "build/**"
+      - ".github/workflows/coverage.yml"
+  push:
+    branches: ["main"]
+    paths:
+      - "core/**"
+      - "!core/src/ten_manager/designer_frontend/**"
+      - "tests/**"
+      - "build/**"
+      - ".github/workflows/coverage.yml"
 permissions:
   contents: write
 
