@@ -40,14 +40,24 @@ export default function TranscriptPanel({ className }: TranscriptPanelProps) {
         if (!agoraService) return;
 
         // Set up transcript message listener
-        agoraService.setOnTranscriptMessage((message: TranscriptMessage) => {
-            if (isEnabled) {
-                setMessages(prev => [...prev, message]);
+        const unsubscribe = agoraService.addTranscriptListener((message: TranscriptMessage) => {
+            if (!isEnabled) {
+                return;
             }
+            setMessages(prev => {
+                const existingIndex = prev.findIndex((entry) => entry.id === message.id);
+                const next = [...prev];
+                if (existingIndex !== -1) {
+                    next[existingIndex] = message;
+                    return next;
+                }
+                next.push(message);
+                return next;
+            });
         });
 
         return () => {
-            // Cleanup if needed
+            unsubscribe?.();
         };
     }, [agoraService, isEnabled]);
 

@@ -31,7 +31,7 @@ jobs:
   build:
     needs: call-check-pr-status
     if: ${{ needs.call-check-pr-status.outputs.should_continue == 'true' }}
-    runs-on: macos-13
+    runs-on: macos-15-intel
     strategy:
       matrix:
         build_type: [release]
@@ -386,7 +386,7 @@ jobs:
 
   test-standalone:
     needs: build
-    runs-on: macos-13
+    runs-on: macos-15-intel
     strategy:
       matrix:
         build_type: [release]
@@ -531,7 +531,7 @@ jobs:
 
   test-integration-ten-manager:
     needs: build
-    runs-on: macos-13
+    runs-on: macos-15-intel
     strategy:
       matrix:
         build_type: [release]
@@ -626,7 +626,7 @@ jobs:
 
   test-integration-cpp:
     needs: build
-    runs-on: macos-13
+    runs-on: macos-15-intel
     strategy:
       matrix:
         build_type: [release]
@@ -729,7 +729,7 @@ jobs:
 
   test-integration-go:
     needs: build
-    runs-on: macos-13
+    runs-on: macos-15-intel
     strategy:
       matrix:
         build_type: [release]
@@ -832,7 +832,7 @@ jobs:
 
   test-integration-python:
     needs: build
-    runs-on: macos-13
+    runs-on: macos-15-intel
     strategy:
       matrix:
         build_type: [release]

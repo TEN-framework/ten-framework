@@ -3,7 +3,7 @@ title: TEN Framework 快速入门指南
 _portal_target: getting-started/quick-start.cn.md
 ---
 
-# TEN Framework 快速入门指南
+## TEN Framework 快速入门指南
 
 > 🎯 **目标**：5分钟内搭建开发环境并运行第一个 TEN 应用
 

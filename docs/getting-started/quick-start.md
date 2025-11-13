@@ -3,7 +3,7 @@ title: TEN Framework Quick Start Guide
 _portal_target: getting-started/quick-start.md
 ---
 
-# TEN Framework Quick Start Guide
+## TEN Framework Quick Start Guide
 
 > 🎯 **Goal**: Set up your development environment and run your first TEN app in 5 minutes
 
