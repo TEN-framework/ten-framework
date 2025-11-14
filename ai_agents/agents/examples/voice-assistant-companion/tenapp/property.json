@@ -71,6 +71,14 @@
                 "vad_prefix_padding_ms": 300,
                 "vad_silence_duration_ms": 500
               }
+            },
+            {
+              "type": "extension",
+              "name": "http_server_python",
+              "addon": "http_server_python",
+              "property": {
+                "listen_port": 8070
+              }
             }
           ],
           "connections": [
@@ -144,6 +152,16 @@
                       "extension": "weatherapi_tool_python"
                     }
                   ]
+                },
+                {
+                  "names": [
+                    "http_cmd"
+                  ],
+                  "source": [
+                    {
+                      "extension": "http_server_python"
+                    }
+                  ]
                 }
               ]
             },
@@ -155,6 +173,31 @@
                   "dest": [
                     {
                       "extension": "v2v"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "http_server_python",
+              "cmd": [
+                {
+                  "names": [
+                    "http_cmd"
+                  ],
+                  "dest": [
+                    {
+                      "extension": "main_control"
+                    }
+                  ]
+                }
+              ],
+              "data": [
+                {
+                  "name": "http_data",
+                  "dest": [
+                    {
+                      "extension": "main_control"
                     }
                   ]
                 }

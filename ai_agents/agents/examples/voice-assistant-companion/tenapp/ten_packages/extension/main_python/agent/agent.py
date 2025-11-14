@@ -50,6 +50,12 @@ class Agent:
                 event = ToolRegisterEvent(
                     tool=tool, source=cmd.get_source().extension_name
                 )
+            elif cmd_name == "http_cmd":
+                body_json, err = cmd.get_property_to_json()
+                if err:
+                    raise RuntimeError(f"Invalid body: {err}")
+                body = json.loads(body_json)
+                event = HTTPRequestEvent(type="cmd", body=body)
             else:
                 self.ten_env.log_warn(f"Unhandled cmd: {cmd_name}")
                 return
@@ -117,6 +123,11 @@ class Agent:
                     function_name=function_call.name,
                     arguments=function_call.arguments,
                 )
+                await self.event_queue.put(event)
+            elif data_name == "http_data":
+                body_json, _ = data.get_property_to_json()
+                body = json.loads(body_json)
+                event = HTTPRequestEvent(type="data", body=body)
                 await self.event_queue.put(event)
             else:
                 self.ten_env.log_warn(f"Unhandled data: {data_name}")

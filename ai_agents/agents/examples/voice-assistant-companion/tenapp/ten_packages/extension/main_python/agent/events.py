@@ -101,6 +101,14 @@ class FunctionCallEvent(AgentEventBase):
     arguments: str
 
 
+class HTTPRequestEvent(AgentEventBase):
+    """Event triggered when an HTTP request is received."""
+
+    type: Literal["data", "cmd"] = "cmd"
+    name: Literal["http_request"] = "http_request"
+    body: dict[str, Any]
+
+
 # ==== Unified Event Union ====
 
 AgentEvent = Union[
@@ -113,4 +121,5 @@ AgentEvent = Union[
     SessionReadyEvent,
     ServerInterruptEvent,
     FunctionCallEvent,
+    HTTPRequestEvent,
 ]

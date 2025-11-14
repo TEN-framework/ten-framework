@@ -42,10 +42,22 @@
       ]
     },
     {
+      "type": "extension",
+      "name": "http_server_python",
+      "version": "0.12.0",
+      "hash": "d60b0a9932343334d3d60d84004ca92277f2547b8fc35582d56b66d973b586ca",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime_python"
+        }
+      ]
+    },
+    {
       "type": "system",
       "name": "ten_ai_base",
-      "version": "0.7.19",
-      "hash": "2545cc7a90263529ae752951ccb1695b791f9509777b0ef5372fe2cd0ef8feb5",
+      "version": "0.7.22",
+      "hash": "27e5467c5dc841757f5a6f52e70b0d2c09903be84ade73b404b45c6cac9888f8",
       "dependencies": [
         {
           "type": "system",

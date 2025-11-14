@@ -25,6 +25,7 @@ from ten_runtime import (
 from .agent.agent import Agent
 from .agent.events import (
     FunctionCallEvent,
+    HTTPRequestEvent,
     InputTranscriptEvent,
     OutputTranscriptEvent,
     SaveMemoryEvent,
@@ -144,6 +145,27 @@ class MainControlExtension(AsyncExtension):
                                 self.ten_env.log_info("[MainControlExtension] No conversation history to save")
                             if not self.memu_api_key:
                                 self.ten_env.log_warn("[MainControlExtension] Memu API key not set")
+
+                    case HTTPRequestEvent():
+                        self.ten_env.log_info(f"[MainControlExtension] Received HTTP request: {event.body}")
+                        # Handle different HTTP commands based on body content
+                        if "name" in event.body:
+                            cmd_name = event.body.get("name")
+                            if cmd_name == "save_memory":
+                                self.ten_env.log_info("[MainControlExtension] HTTP request to save memory")
+                                if self.conversation_history and self.memu_api_key:
+                                    await self._save_memory_to_memu()
+                                else:
+                                    if not self.conversation_history:
+                                        self.ten_env.log_info("[MainControlExtension] No conversation history to save")
+                                    if not self.memu_api_key:
+                                        self.ten_env.log_warn("[MainControlExtension] Memu API key not set")
+                            elif cmd_name == "message" and "payload" in event.body:
+                                # Handle text message from HTTP
+                                text = event.body.get("payload", {}).get("text", "")
+                                if text:
+                                    self.ten_env.log_info(f"[MainControlExtension] HTTP message: {text}")
+                                    # You can process the text message here if needed
 
                     case ToolRegisterEvent():
                         await self.agent.register_tool(event.tool, event.source)

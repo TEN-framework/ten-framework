@@ -14,6 +14,11 @@
       "version": "=0.23.9-t1"
     },
     {
+      "type": "extension",
+      "name": "http_server_python",
+      "version": "=0.12.0"
+    },
+    {
       "type": "system",
       "name": "ten_ai_base",
       "version": "0.7"
