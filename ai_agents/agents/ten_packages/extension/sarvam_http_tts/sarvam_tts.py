@@ -2,7 +2,6 @@ from typing import Any, AsyncIterator, Tuple
 import base64
 import io
 import wave
-import json
 from httpx import AsyncClient, Timeout, Limits
 
 from .config import SarvamTTSConfig
