@@ -64,11 +64,6 @@ type StopReq struct {
 	ChannelName string `json:"channel_name,omitempty"`
 }
 
-type SaveMemoryReq struct {
-	RequestId   string `json:"request_id,omitempty"`
-	ChannelName string `json:"channel_name,omitempty"`
-}
-
 type GenerateTokenReq struct {
 	RequestId   string `json:"request_id,omitempty"`
 	ChannelName string `json:"channel_name,omitempty"`
@@ -355,51 +350,6 @@ func (s *HttpServer) handlerStop(c *gin.Context) {
 	}
 
 	slog.Info("handlerStop end", "requestId", req.RequestId, logTag)
-	s.output(c, codeSuccess, nil)
-}
-
-func (s *HttpServer) handlerSaveMemory(c *gin.Context) {
-	var req SaveMemoryReq
-
-	if err := c.ShouldBindBodyWith(&req, binding.JSON); err != nil {
-		slog.Error("handlerSaveMemory params invalid", "err", err, logTag)
-		s.output(c, codeErrParamsInvalid, http.StatusBadRequest)
-		return
-	}
-
-	slog.Info("handlerSaveMemory start", "req", req, logTag)
-
-	if strings.TrimSpace(req.ChannelName) == "" {
-		slog.Error("handlerSaveMemory channel empty", "channelName", req.ChannelName, "requestId", req.RequestId, logTag)
-		s.output(c, codeErrChannelEmpty, http.StatusBadRequest)
-		return
-	}
-
-	if !workers.Contains(req.ChannelName) {
-		slog.Error("handlerSaveMemory channel not existed", "channelName", req.ChannelName, "requestId", req.RequestId, logTag)
-		s.output(c, codeErrChannelNotExisted, http.StatusBadRequest)
-		return
-	}
-
-	worker := workers.Get(req.ChannelName).(*Worker)
-
-	// Send save_memory command to worker
-	updateReq := &WorkerUpdateReq{
-		RequestId:   req.RequestId,
-		ChannelName: req.ChannelName,
-		Ten: &WorkerUpdateReqTen{
-			Name: "save_memory",
-			Type: "cmd",
-		},
-	}
-
-	if err := worker.update(updateReq); err != nil {
-		slog.Error("handlerSaveMemory send command failed", "err", err, "worker", worker, "requestId", req.RequestId, logTag)
-		s.output(c, codeErrUpdateWorkerFailed, http.StatusInternalServerError)
-		return
-	}
-
-	slog.Info("handlerSaveMemory end", "requestId", req.RequestId, logTag)
 	s.output(c, codeSuccess, nil)
 }
 
@@ -878,7 +828,6 @@ func (s *HttpServer) Start() {
 	r.POST("/start", s.handlerStart)
 	r.POST("/stop", s.handlerStop)
 	r.POST("/ping", s.handlerPing)
-	r.POST("/save_memory", s.handlerSaveMemory)
 	r.GET("/graphs", s.handleGraphs)
 	r.GET("/dev-tmp/addons/default-properties", s.handleAddonDefaultProperties)
 	r.POST("/token/generate", s.handlerGenerateToken)
