@@ -2,7 +2,6 @@
     "params": {
         "appid": "${env:TENCENT_ASR_APP_ID|}",
         "secretkey": "${env:TENCENT_ASR_SECRET_KEY|}",
-        "secretid": "${env:TENCENT_ASR_SECRET_ID|}",
-        "engine_model_type": "16k_zh"
+        "secretid": "${env:TENCENT_ASR_SECRET_ID|}"
     }
 }
