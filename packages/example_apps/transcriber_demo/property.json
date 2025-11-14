@@ -1,0 +1,162 @@
+{
+  "ten": {
+    "predefined_graphs": [
+      {
+        "name": "default",
+        "auto_start": true,
+        "singleton": true,
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "azure_asr_python",
+              "addon": "azure_asr_python",
+              "extension_group": "asr",
+              "property": {
+                "key": "${env:AZURE_STT_KEY|}",
+                "region": "${env:AZURE_STT_REGION|}",
+                "language": "${env:AZURE_STT_LANGUAGE|en-US}"
+              }
+            },
+            {
+              "type": "extension",
+              "name": "web_audio_control_go",
+              "addon": "web_audio_control_go",
+              "extension_group": "web_server"
+            },
+            {
+              "type": "extension",
+              "name": "audio_file_player_python",
+              "addon": "audio_file_player_python",
+              "extension_group": "audio_player"
+            },
+            {
+              "type": "extension",
+              "name": "vtt_nodejs",
+              "addon": "vtt_nodejs",
+              "extension_group": "vtt"
+            }
+          ],
+          "connections": [
+            {
+              "extension": "web_audio_control_go",
+              "cmd": [
+                {
+                  "name": "start_play",
+                  "dest": [
+                    {
+                      "extension": "audio_file_player_python"
+                    }
+                  ]
+                },
+                {
+                  "name": "start_recording",
+                  "dest": [
+                    {
+                      "extension": "vtt_nodejs"
+                    }
+                  ]
+                },
+                {
+                  "name": "stop_recording",
+                  "dest": [
+                    {
+                      "extension": "vtt_nodejs"
+                    }
+                  ]
+                }
+              ],
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "dest": [
+                    {
+                      "extension": "azure_asr_python"
+                    },
+                    {
+                      "extension": "vtt_nodejs"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "audio_file_player_python",
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "dest": [
+                    {
+                      "extension": "azure_asr_python"
+                    },
+                    {
+                      "extension": "vtt_nodejs"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "azure_asr_python",
+              "data": [
+                {
+                  "name": "asr_result",
+                  "dest": [
+                    {
+                      "extension": "web_audio_control_go"
+                    },
+                    {
+                      "extension": "vtt_nodejs"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ],
+    "log": {
+      "handlers": [
+        {
+          "matchers": [
+            {
+              "level": "debug"
+            }
+          ],
+          "formatter": {
+            "type": "plain",
+            "colored": true
+          },
+          "emitter": {
+            "type": "file",
+            "config": {
+              "path": "logs/debug.log"
+            }
+          }
+        },
+        {
+          "matchers": [
+            {
+              "category": "key_point",
+              "level": "debug"
+            },
+            {
+              "level": "warn"
+            }
+          ],
+          "formatter": {
+            "type": "plain",
+            "colored": true
+          },
+          "emitter": {
+            "type": "console",
+            "config": {
+              "stream": "stderr"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

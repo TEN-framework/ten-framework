@@ -24,7 +24,7 @@ from ten_ai_base.asr import (
     ASRResult,
     AsyncASRBaseExtension,
     ASRBufferConfig,
-    ASRBufferConfigModeKeep,
+    ASRBufferConfigModeDiscard,
 )
 
 from ten_ai_base.const import (
@@ -345,4 +345,4 @@ class OpenAIASRExtension(AsyncASRBaseExtension, AsyncOpenAIAsrListener):
 
     @override
     def buffer_strategy(self) -> ASRBufferConfig:
-        return ASRBufferConfigModeKeep(byte_limit=1024 * 1024 * 10)
+        return ASRBufferConfigModeDiscard()

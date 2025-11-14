@@ -79,14 +79,57 @@ template("ten_runtime_glob") {
       cflags += invoker.cflags
     }
 
+    if (enable_coverage) {
+      assert(is_linux && target_cpu == "x64",
+             "Coverage instrumentation should only be enabled in Linux + x64")
+
+      if (is_clang) {
+        cflags += [
+          "-fprofile-instr-generate",
+          "-fcoverage-mapping",
+        ]
+      } else {
+        # GCC
+        cflags += [ "--coverage" ]
+      }
+    }
+
     cflags_c = common_cflags_c
     if (defined(invoker.cflags_c)) {
       cflags_c += invoker.cflags_c
     }
 
+    if (enable_coverage) {
+      assert(is_linux && target_cpu == "x64",
+             "Coverage instrumentation should only be enabled in Linux + x64")
+
+      if (is_clang) {
+        cflags_c += [
+          "-fprofile-instr-generate",
+          "-fcoverage-mapping",
+        ]
+      } else {
+        cflags_c += [ "--coverage" ]
+      }
+    }
+
     cflags_cc = common_cflags_cc
     if (defined(invoker.cflags_cc)) {
       cflags_cc += invoker.cflags_cc
+    }
+
+    if (enable_coverage) {
+      assert(is_linux && target_cpu == "x64",
+             "Coverage instrumentation should only be enabled in Linux + x64")
+
+      if (is_clang) {
+        cflags_cc += [
+          "-fprofile-instr-generate",
+          "-fcoverage-mapping",
+        ]
+      } else {
+        cflags_cc += [ "--coverage" ]
+      }
     }
 
     cflags_objc = common_cflags_objc
@@ -97,28 +140,6 @@ template("ten_runtime_glob") {
     cflags_objcc = common_cflags_objcc
     if (defined(invoker.cflags_objc)) {
       cflags_objcc += invoker.cflags_objcc
-    }
-
-    # Inject coverage flags for source sets when requested (Debug + Linux)
-    if (ten_runtime_enable_coverage && is_debug && is_linux) {
-      if (is_clang) {
-        cflags += [
-          "-fprofile-instr-generate",
-          "-fcoverage-mapping",
-        ]
-        cflags_c += [
-          "-fprofile-instr-generate",
-          "-fcoverage-mapping",
-        ]
-        cflags_cc += [
-          "-fprofile-instr-generate",
-          "-fcoverage-mapping",
-        ]
-      } else {
-        cflags += [ "--coverage" ]
-        cflags_c += [ "--coverage" ]
-        cflags_cc += [ "--coverage" ]
-      }
     }
   }
 }

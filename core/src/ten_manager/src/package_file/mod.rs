@@ -93,7 +93,7 @@ pub async fn create_package_tar_gz_file(
         // Include all folders and files by default.
         globset_builder.add(GlobBuilder::new("*").literal_separator(false).build()?);
     } else {
-        for pattern in &include_patterns.unwrap() {
+        for pattern in include_patterns.as_ref().unwrap() {
             // Check if pattern starts with '.' or contains '/.' to identify
             // hidden files/folders
             if pattern.starts_with('.') || pattern.contains("/.") {
@@ -127,8 +127,24 @@ pub async fn create_package_tar_gz_file(
     // Add exclude pattern for DOT_TEN_DIR.
     overrides.add(&format!("!/{DOT_TEN_DIR}/"))?;
 
-    // Add exclude pattern for TEN_PACKAGES_DIR.
-    overrides.add(&format!("!/{TEN_PACKAGES_DIR}/"))?;
+    // Add exclude pattern for TEN_PACKAGES_DIR, but only if the user didn't
+    // explicitly include files from it in the manifest.json.
+    let mut should_exclude_ten_packages = true;
+    if let Some(ref patterns) = include_patterns {
+        for pattern in patterns {
+            // Check if the pattern explicitly includes files from ten_packages directory.
+            if pattern.starts_with(TEN_PACKAGES_DIR)
+                || pattern.starts_with(&format!("{}/", TEN_PACKAGES_DIR))
+            {
+                should_exclude_ten_packages = false;
+                break;
+            }
+        }
+    }
+
+    if should_exclude_ten_packages {
+        overrides.add(&format!("!/{TEN_PACKAGES_DIR}/"))?;
+    }
 
     let overrides = overrides.build()?;
     ignore_builder.overrides(overrides);

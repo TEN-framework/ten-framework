@@ -1,2 +1,2 @@
 hume==0.9.1
-pydantic
+pydantic>=2.0.0

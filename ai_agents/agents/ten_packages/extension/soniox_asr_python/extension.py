@@ -203,7 +203,7 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         assert self.config is not None
         assert self.websocket is not None
 
-        buf = frame.lock_buf()
+        buf = frame.get_buf()
         if self.audio_dumper:
             await self.audio_dumper.push_bytes(bytes(buf))
         self.audio_timeline.add_user_audio(
@@ -211,7 +211,6 @@ class SonioxASRExtension(AsyncASRBaseExtension):
         )
 
         await self.websocket.send_audio(bytes(buf))
-        frame.unlock_buf(buf)
 
         return True
 
@@ -292,7 +291,10 @@ class SonioxASRExtension(AsyncASRBaseExtension):
                 self.holding_final_tokens = []
                 self.holding_translation_tokens = []
 
-        if self.last_finalize_timestamp != 0:
+        if self.config.finalize_mode == FinalizeMode.IGNORE:
+            # No need to check if there is corresponding asr_finalize in this mode.
+            await self.send_asr_finalize_end()
+        elif self.last_finalize_timestamp != 0:
             timestamp = int(time.time() * 1000)
             latency = timestamp - self.last_finalize_timestamp
             self.ten_env.log_info(
@@ -333,10 +335,17 @@ class SonioxASRExtension(AsyncASRBaseExtension):
             category=LOG_CATEGORY_VENDOR,
         )
         error_msg = f"soniox error {error_code}: {error_message}"
+        module_error_code = ModuleErrorCode.NON_FATAL_ERROR.value
+        if error_code in [  # Unrecoverable errors defined by Soniox
+            400,  # Bad request
+            401,  # Unauthorized
+            402,  # Payment required
+        ]:
+            module_error_code = ModuleErrorCode.FATAL_ERROR.value
         await self.send_asr_error(
             ModuleError(
                 module=MODULE_NAME_ASR,
-                code=ModuleErrorCode.NON_FATAL_ERROR.value,
+                code=module_error_code,
                 message=error_msg,
             ),
             ModuleErrorVendorInfo(

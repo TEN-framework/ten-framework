@@ -15,7 +15,7 @@ if project_root not in sys.path:
 #
 from pathlib import Path
 import json
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, AsyncMock
 
 from ten_runtime import (
     ExtensionTester,
@@ -66,7 +66,7 @@ def test_empty_params_fatal_error():
 
     print("Starting test_empty_params_fatal_error...")
 
-    # Empty params configuration
+    # Empty api_key configuration (in params)
     empty_params_config = {
         "params": {
             "api_key": "",
@@ -150,16 +150,16 @@ def test_invalid_api_key_error(MockOpenaiTTSClient):
 
     # Mock API key error by raising exception in create() method
     mock_client = MockOpenaiTTSClient.return_value
-    mock_client.clean = MagicMock()
+    mock_client.clean = AsyncMock()
     mock_client.audio.speech.with_streaming_response.create.side_effect = Exception(
         "Error code: 401 - {'error': {'message': 'Incorrect API key provided: 'invalid_api_key_test', 'type': 'invalid_request_error', 'param': None, 'code': 'invalid_api_key'}}"
     )
 
-    # Config with invalid API key
+    # Config with invalid API key (in params)
     invalid_key_config = {
         "params": {
             "api_key": "invalid_api_key_test",
-        },
+        }
     }
 
     tester = ExtensionTesterInvalidApiKey()

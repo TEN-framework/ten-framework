@@ -6,6 +6,14 @@
         "access_key": "${env:BYTEDANCE_ASR_LLM_ACCESS_KEY|}",
         "language": "zh-CN",
         "resource_id": "${env:BYTEDANCE_ASR_LLM_RESOURCE_ID|}",
-        "model_version": "${env:BYTEDANCE_ASR_LLM_MODEL_VERSION|}"
+        "model_version": "${env:BYTEDANCE_ASR_LLM_MODEL_VERSION|}",
+        "audio": {
+            "format": "pcm"
+        },
+        "request": {
+            "model_name": "bigmodel",
+            "model_version": "${env:BYTEDANCE_ASR_LLM_MODEL_VERSION|}",
+            "enable_nonstream": true
+        }
     }
 }

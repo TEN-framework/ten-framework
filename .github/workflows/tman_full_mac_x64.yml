@@ -25,7 +25,7 @@ jobs:
   build:
     needs: call-check-pr-status
     if: ${{ needs.call-check-pr-status.outputs.should_continue == 'true' }}
-    runs-on: macos-13
+    runs-on: macos-15-intel
     strategy:
       matrix:
         build_type: [release]

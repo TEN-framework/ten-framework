@@ -9,7 +9,7 @@ from .const import (
 )
 from ten_ai_base.asr import (
     ASRBufferConfig,
-    ASRBufferConfigModeKeep,
+    ASRBufferConfigModeDiscard,
     ASRResult,
     AsyncASRBaseExtension,
 )
@@ -486,7 +486,7 @@ class AliyunASRBigmodelExtension(AsyncASRBaseExtension):
     @override
     def buffer_strategy(self) -> ASRBufferConfig:
         """Buffer strategy configuration"""
-        return ASRBufferConfigModeKeep(byte_limit=1024 * 1024 * 10)
+        return ASRBufferConfigModeDiscard()
 
     @override
     def input_audio_sample_rate(self) -> int:

@@ -1,0 +1,278 @@
+name: From Scratch
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - "tools/tman/install_tman.sh"
+      - ".github/workflows/from_scratch.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: from-scratch-${{ github.head_ref }}
+  cancel-in-progress: true
+
+jobs:
+  from_scratch:
+    name: From Scratch - ${{ matrix.platform_name }}
+    runs-on: ${{ matrix.runs-on }}
+    strategy:
+      matrix:
+        include:
+          - runs-on: macos-15-intel
+            platform_name: "macOS x64"
+            arch: "x64"
+          - runs-on: macos-latest
+            platform_name: "macOS ARM64"
+            arch: "arm64"
+          - runs-on: ubuntu-22.04
+            platform_name: "Linux x64"
+            arch: "x64"
+          # TODO: Enable Linux ARM64 when tman binaries are available for this platform
+          # - runs-on: ubuntu-22.04-arm
+          #   platform_name: "Linux ARM64"
+          #   arch: "arm64"
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "stable"
+          cache: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install tman using the install script
+        run: |
+          echo "================================================"
+          echo "Testing tman installation script on ${{ matrix.platform_name }}"
+          echo "Script: tools/tman/install_tman.sh"
+          echo "================================================"
+
+          # Since the script prompts for confirmation if tman is already installed,
+          # we need to pipe 'y' to automatically confirm the reinstallation.
+          # For CI environment, we'll use 'yes' command to auto-answer.
+          yes y | bash tools/tman/install_tman.sh || true
+
+      - name: Verify tman installation
+        run: |
+          echo "================================================"
+          echo "Verifying tman installation"
+          echo "================================================"
+
+          # Check if tman is installed
+          if ! command -v tman &> /dev/null; then
+            echo "❌ ERROR: tman is not installed"
+            exit 1
+          fi
+
+          # Display tman version and location
+          echo "✓ tman is installed successfully"
+          echo "  Version: $(tman --version 2>&1 || tman -v 2>&1)"
+          echo "  Location: $(which tman)"
+
+          # Verify tman can run basic commands
+          echo ""
+          echo "Testing basic tman commands:"
+          tman --help
+
+      - name: Create transcriber_demo app using tman
+        run: |
+          echo "================================================"
+          echo "Creating transcriber_demo app"
+          echo "================================================"
+
+          # Create a temporary directory for the app
+          cd /tmp
+
+          # Create the app using tman
+          tman create app transcriber_demo --template transcriber_demo
+
+          # Verify the app was created
+          if [ ! -d "transcriber_demo" ]; then
+            echo "❌ ERROR: transcriber_demo app was not created"
+            exit 1
+          fi
+
+          echo "✓ transcriber_demo app created successfully"
+
+      - name: Verify app installation
+        run: |
+          echo "================================================"
+          echo "Verifying transcriber_demo app structure"
+          echo "================================================"
+
+          cd /tmp/transcriber_demo
+
+          # List the app structure
+          echo "App directory structure:"
+          ls -la
+
+          # Check for common files/directories that should exist
+          if [ -f "manifest.json" ]; then
+            echo "✓ manifest.json exists"
+          else
+            echo "❌ WARNING: manifest.json not found"
+          fi
+
+          if [ -f "property.json" ]; then
+            echo "✓ property.json exists"
+          else
+            echo "⚠ WARNING: property.json not found (may be optional)"
+          fi
+
+          echo ""
+          echo "✓ App structure verification completed"
+
+      - name: Install app dependencies with tman
+        run: |
+          echo "================================================"
+          echo "Installing transcriber_demo ten packages"
+          echo "================================================"
+
+          cd /tmp/transcriber_demo
+
+          # Install TEN package dependencies using tman
+          tman install
+
+          if [ $? -eq 0 ]; then
+            echo "✓ tman install completed successfully"
+          else
+            echo "❌ ERROR: tman install failed"
+            exit 1
+          fi
+
+      - name: Install pip and npm dependencies
+        run: |
+          echo "================================================"
+          echo "Installing pip and npm dependencies"
+          echo "================================================"
+
+          cd /tmp/transcriber_demo
+
+          # Install Python and npm dependencies using tman
+          tman run install_deps
+
+          if [ $? -eq 0 ]; then
+            echo "✓ Dependencies installed successfully"
+          else
+            echo "❌ ERROR: Failed to install dependencies"
+            exit 1
+          fi
+
+      - name: Build app with tman
+        run: |
+          echo "================================================"
+          echo "Building transcriber_demo app"
+          echo "================================================"
+
+          cd /tmp/transcriber_demo
+
+          # Build the app using tman (includes go build and tsc compilation)
+          tman run build
+
+          if [ $? -ne 0 ]; then
+            echo "❌ ERROR: tman run build failed"
+            exit 1
+          fi
+
+          # Verify that bin/main was generated
+          if [ -f "bin/main" ]; then
+            echo "✓ bin/main generated successfully"
+            ls -lh bin/main
+          else
+            echo "❌ ERROR: bin/main not found"
+            echo "Contents of bin directory:"
+            ls -la bin/ || echo "bin directory does not exist"
+            exit 1
+          fi
+
+          echo ""
+          echo "✓ Build verification completed"
+
+      - name: Run app with tman
+        run: |
+          echo "================================================"
+          echo "Running transcriber_demo app on ${{ matrix.platform_name }}"
+          echo "================================================"
+
+          cd /tmp/transcriber_demo
+
+          # Start the app in the background
+          echo "Starting app with 'tman run start'..."
+          tman run start &
+          APP_PID=$!
+          echo "App started with PID: $APP_PID"
+
+          # Wait for the app to initialize (give it some time to start)
+          echo "Waiting for app to initialize..."
+          sleep 10
+
+          # Check if the process is still running (not crashed)
+          if ps -p $APP_PID > /dev/null; then
+            echo "✓ App is running successfully (PID: $APP_PID)"
+          else
+            echo "❌ ERROR: App crashed or exited unexpectedly"
+            exit 1
+          fi
+
+          # Let the app run for a bit to ensure stability
+          echo "App is running, waiting for 5 more seconds..."
+          sleep 5
+
+          # Check again to ensure it's still running
+          if ps -p $APP_PID > /dev/null; then
+            echo "✓ App is still running stable"
+          else
+            echo "❌ ERROR: App crashed during runtime"
+            exit 1
+          fi
+
+          # Gracefully stop the app by sending SIGTERM
+          echo ""
+          echo "Stopping app gracefully (sending SIGTERM to PID: $APP_PID)..."
+
+          # Kill the process group to ensure all child processes are terminated
+          kill -TERM -$APP_PID 2>/dev/null || kill -TERM $APP_PID || true
+
+          # Wait for the app to shut down gracefully
+          echo "Waiting for app to shut down..."
+          sleep 3
+
+          # Check if the app has stopped
+          if ps -p $APP_PID > /dev/null 2>&1; then
+            echo "⚠ App did not stop gracefully, sending SIGKILL..."
+            kill -KILL -$APP_PID 2>/dev/null || kill -KILL $APP_PID || true
+            sleep 1
+          fi
+
+          # Final check
+          if ps -p $APP_PID > /dev/null 2>&1; then
+            echo "❌ WARNING: App process still running"
+          else
+            echo "✓ App stopped successfully"
+          fi
+
+          # Extra cleanup: kill any remaining transcriber_demo processes
+          echo "Cleaning up any remaining processes..."
+          pkill -f "transcriber_demo" || true
+          pkill -f "bin/main" || true
+
+          echo ""
+          echo "================================================"
+          echo "✅ All verifications completed successfully on ${{ matrix.platform_name }}"
+          echo "================================================"

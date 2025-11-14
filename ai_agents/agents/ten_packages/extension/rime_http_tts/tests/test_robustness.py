@@ -15,18 +15,14 @@ if project_root not in sys.path:
 #
 import json
 from typing import Any
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from ten_runtime import (
     ExtensionTester,
     TenEnvTester,
     Data,
 )
-from ten_ai_base.struct import TTSTextInput
-from ..rime_tts import (
-    EVENT_TTS_END,
-    EVENT_TTS_RESPONSE,
-)
+from ten_ai_base.struct import TTSTextInput, TTS2HttpResponseEventType
 
 
 # ================ test reconnect after connection drop(robustness) ================
@@ -126,10 +122,10 @@ def test_reconnect_after_connection_drop(MockRimeTTSClient):
 
     # --- Mock Configuration ---
     mock_instance = MockRimeTTSClient.return_value
-    mock_instance.clean = MagicMock()
+    mock_instance.clean = AsyncMock()
 
     # This async generator simulates different behaviors on subsequent calls
-    async def mock_get_stateful(text: str):
+    async def mock_get_stateful(text: str, request_id: str | None = None):
         nonlocal get_call_count
         get_call_count += 1
 
@@ -138,14 +134,16 @@ def test_reconnect_after_connection_drop(MockRimeTTSClient):
             raise ConnectionRefusedError("Simulated connection drop from test")
         else:
             # On the second call, simulate a successful audio stream
-            yield (b"\x44\x55\x66", EVENT_TTS_RESPONSE)
-            yield (None, EVENT_TTS_END)
+            yield (b"\x44\x55\x66", TTS2HttpResponseEventType.RESPONSE)
+            yield (None, TTS2HttpResponseEventType.END)
 
     mock_instance.get.side_effect = mock_get_stateful
 
     # --- Test Setup ---
     config = {
-        "params": {"api_key": "a_valid_key"},
+        "params": {
+            "api_key": "a_valid_key",
+        },
     }
     tester = ExtensionTesterRobustness()
     tester.set_test_mode_single("rime_http_tts", json.dumps(config))
