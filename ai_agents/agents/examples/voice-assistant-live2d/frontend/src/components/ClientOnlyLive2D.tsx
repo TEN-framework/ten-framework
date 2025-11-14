@@ -1,17 +1,26 @@
 'use client';
 
+import React, { forwardRef } from 'react';
 import dynamic from 'next/dynamic';
-// IRemoteAudioTrack will be imported dynamically
+import type {
+    ExpressionConfig,
+    Live2DHandle,
+    MouthConfig,
+    MotionConfig
+} from './Live2DCharacter';
 
 interface ClientOnlyLive2DProps {
     modelPath: string;
     audioTrack?: any;
     className?: string;
+    mouthConfig?: MouthConfig;
+    expressions?: ExpressionConfig[];
+    motions?: MotionConfig[];
     onModelLoaded?: () => void;
     onModelError?: (error: Error) => void;
 }
 
-// Dynamically import the actual Live2D component with no SSR
+// Dynamically import the actual Live2D component to avoid SSR issues
 const Live2DCharacter = dynamic(() => import('./Live2DCharacter'), {
     ssr: false,
     loading: () => (
@@ -22,8 +31,15 @@ const Live2DCharacter = dynamic(() => import('./Live2DCharacter'), {
             </div>
         </div>
     )
+}) as React.ForwardRefExoticComponent<
+    React.PropsWithoutRef<ClientOnlyLive2DProps> & React.RefAttributes<Live2DHandle>
+>;
+
+const ClientOnlyLive2D = forwardRef<Live2DHandle, ClientOnlyLive2DProps>((props, ref) => {
+    return <Live2DCharacter {...props} ref={ref} />;
 });
 
-export default function ClientOnlyLive2D(props: ClientOnlyLive2DProps) {
-    return <Live2DCharacter {...props} />;
-}
+ClientOnlyLive2D.displayName = 'ClientOnlyLive2D';
+
+export default ClientOnlyLive2D;
+export type { Live2DHandle, ExpressionConfig, MotionConfig, MouthConfig };

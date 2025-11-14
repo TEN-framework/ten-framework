@@ -65,6 +65,9 @@ jobs:
           - name: "voice-assistant-live2d"
             dockerfile: "./agents/examples/voice-assistant-live2d/Dockerfile"
             image_name: "ten_agent_example_voice_assistant_live2d"
+          - name: "http-control"
+            dockerfile: "./agents/examples/http-control/Dockerfile"
+            image_name: "ten_agent_example_http_control"
     steps:
       - name: Checkout
         uses: actions/checkout@v4

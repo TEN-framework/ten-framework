@@ -335,10 +335,17 @@ class SonioxASRExtension(AsyncASRBaseExtension):
             category=LOG_CATEGORY_VENDOR,
         )
         error_msg = f"soniox error {error_code}: {error_message}"
+        module_error_code = ModuleErrorCode.NON_FATAL_ERROR.value
+        if error_code in [  # Unrecoverable errors defined by Soniox
+            400,  # Bad request
+            401,  # Unauthorized
+            402,  # Payment required
+        ]:
+            module_error_code = ModuleErrorCode.FATAL_ERROR.value
         await self.send_asr_error(
             ModuleError(
                 module=MODULE_NAME_ASR,
-                code=ModuleErrorCode.NON_FATAL_ERROR.value,
+                code=module_error_code,
                 message=error_msg,
             ),
             ModuleErrorVendorInfo(
