@@ -503,28 +503,28 @@ jobs:
           df -h .
           tree -I ".*|*.h|*.hpp|*.py" out/linux/${{ matrix.arch }}
 
-          - name: Set ulimit and sysctl
-          run: |
-            # Increase max number of open file descriptors as much as allowed.
-            TARGET=102400
-            HARD=$(ulimit -Hn)
+      - name: Set ulimit and sysctl
+        run: |
+          # Increase max number of open file descriptors as much as allowed.
+          TARGET=102400
+          HARD=$(ulimit -Hn)
 
-            echo "Current hard limit for open files: $HARD"
-            if [ "$HARD" != "unlimited" ] && [ "$HARD" -lt "$TARGET" ]; then
-              echo "Target ($TARGET) is greater than hard limit ($HARD), using hard limit instead."
-              TARGET="$HARD"
-            fi
+          echo "Current hard limit for open files: $HARD"
+          if [ "$HARD" != "unlimited" ] && [ "$HARD" -lt "$TARGET" ]; then
+            echo "Target ($TARGET) is greater than hard limit ($HARD), using hard limit instead."
+            TARGET="$HARD"
+          fi
 
-            # Try to set the soft limit; if it fails, just warn and continue.
-            if ! ulimit -n "$TARGET"; then
-              echo "WARNING: failed to increase ulimit -n to $TARGET, continuing with existing limit."
-            fi
+          # Try to set the soft limit; if it fails, just warn and continue.
+          if ! ulimit -n "$TARGET"; then
+            echo "WARNING: failed to increase ulimit -n to $TARGET, continuing with existing limit."
+          fi
 
-            # Adjust somaxconn; ignore failure if not permitted.
-            if ! sysctl -w net.core.somaxconn=8192; then
-              echo "WARNING: failed to set net.core.somaxconn, continuing."
-            fi
-          shell: bash
+          # Adjust somaxconn; ignore failure if not permitted.
+          if ! sysctl -w net.core.somaxconn=8192; then
+            echo "WARNING: failed to set net.core.somaxconn, continuing."
+          fi
+        shell: bash
 
       - uses: actions/setup-node@v4
         with:
