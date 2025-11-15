@@ -13,7 +13,10 @@ class MemosClient:
     """Simple client for MemOS memory management using HTTP requests."""
 
     def __init__(
-        self, env: AsyncTenEnv, api_key: str | None = None, base_url: str | None = None
+        self,
+        env: AsyncTenEnv,
+        api_key: str | None = None,
+        base_url: str | None = None,
     ):
         self.env = env
 
@@ -66,7 +69,9 @@ class MemosClient:
 
             # Run synchronous HTTP request in thread pool to avoid blocking
             def _make_request():
-                response = requests.post(url=url, headers=headers, data=json.dumps(data))
+                response = requests.post(
+                    url=url, headers=headers, data=json.dumps(data)
+                )
                 response.raise_for_status()
                 return response.json()
 
@@ -75,9 +80,7 @@ class MemosClient:
                 f"[MemosClient] Successfully added messages to MemOS: {result}"
             )
         except Exception as e:
-            self.env.log_error(
-                f"[MemosClient] Failed to add messages: {e}"
-            )
+            self.env.log_error(f"[MemosClient] Failed to add messages: {e}")
             raise
 
     async def search_memory(
@@ -112,7 +115,9 @@ class MemosClient:
 
             # Run synchronous HTTP request in thread pool to avoid blocking
             def _make_request():
-                response = requests.post(url=url, headers=headers, data=json.dumps(data))
+                response = requests.post(
+                    url=url, headers=headers, data=json.dumps(data)
+                )
                 response.raise_for_status()
                 return response.json()
 
@@ -132,16 +137,14 @@ class MemosClient:
                         # Extract memory_value from each memory item (matching SDK behavior)
                         for memory_item in memory_list:
                             if isinstance(memory_item, dict):
-                                memory_value = memory_item.get("memory_value", "")
+                                memory_value = memory_item.get(
+                                    "memory_value", ""
+                                )
                                 if memory_value:
                                     memories.append(str(memory_value))
 
-            self.env.log_info(
-                f"[MemosClient] Found {len(memories)} memories"
-            )
+            self.env.log_info(f"[MemosClient] Found {len(memories)} memories")
             return memories
         except Exception as e:
-            self.env.log_error(
-                f"[MemosClient] Failed to search memories: {e}"
-            )
+            self.env.log_error(f"[MemosClient] Failed to search memories: {e}")
             return []

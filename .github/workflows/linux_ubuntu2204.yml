@@ -505,15 +505,25 @@ jobs:
 
       - name: Set ulimit and sysctl
         run: |
-          # Because there are concurrent test cases which involves many
-          # concurrent socket connections, we need to enlarge the maximum number
-          # of the opened file descriptor.
-          ulimit -n 102400
+          # Increase max number of open file descriptors as much as allowed.
+          TARGET=102400
+          HARD=$(ulimit -Hn)
 
-          # Because there are concurrent test cases (in 'smoke' and
-          # 'integration') which will create many concurrent connections
-          # simutaneously, we increase the TCP listening backlog value to 8192.
-          sysctl -w net.core.somaxconn=8192
+          echo "Current hard limit for open files: $HARD"
+          if [ "$HARD" != "unlimited" ] && [ "$HARD" -lt "$TARGET" ]; then
+            echo "Target ($TARGET) is greater than hard limit ($HARD), using hard limit instead."
+            TARGET="$HARD"
+          fi
+
+          # Try to set the soft limit; if it fails, just warn and continue.
+          if ! ulimit -n "$TARGET"; then
+            echo "WARNING: failed to increase ulimit -n to $TARGET, continuing with existing limit."
+          fi
+
+          # Adjust somaxconn; ignore failure if not permitted.
+          if ! sysctl -w net.core.somaxconn=8192; then
+            echo "WARNING: failed to set net.core.somaxconn, continuing."
+          fi
         shell: bash
 
       - uses: actions/setup-node@v4
@@ -747,15 +757,25 @@ jobs:
 
       - name: Set ulimit and sysctl
         run: |
-          # Because there are concurrent test cases which involves many
-          # concurrent socket connections, we need to enlarge the maximum number
-          # of the opened file descriptor.
-          ulimit -n 102400
+          # Increase max number of open file descriptors as much as allowed.
+          TARGET=102400
+          HARD=$(ulimit -Hn)
 
-          # Because there are concurrent test cases (in 'smoke' and
-          # 'integration') which will create many concurrent connections
-          # simutaneously, we increase the TCP listening backlog value to 8192.
-          sysctl -w net.core.somaxconn=8192
+          echo "Current hard limit for open files: $HARD"
+          if [ "$HARD" != "unlimited" ] && [ "$HARD" -lt "$TARGET" ]; then
+            echo "Target ($TARGET) is greater than hard limit ($HARD), using hard limit instead."
+            TARGET="$HARD"
+          fi
+
+          # Try to set the soft limit; if it fails, just warn and continue.
+          if ! ulimit -n "$TARGET"; then
+            echo "WARNING: failed to increase ulimit -n to $TARGET, continuing with existing limit."
+          fi
+
+          # Adjust somaxconn; ignore failure if not permitted.
+          if ! sysctl -w net.core.somaxconn=8192; then
+            echo "WARNING: failed to set net.core.somaxconn, continuing."
+          fi
         shell: bash
 
       - uses: actions/setup-node@v4
@@ -905,15 +925,25 @@ jobs:
 
       - name: Set ulimit and sysctl
         run: |
-          # Because there are concurrent test cases which involves many
-          # concurrent socket connections, we need to enlarge the maximum number
-          # of the opened file descriptor.
-          ulimit -n 102400
+          # Increase max number of open file descriptors as much as allowed.
+          TARGET=102400
+          HARD=$(ulimit -Hn)
 
-          # Because there are concurrent test cases (in 'smoke' and
-          # 'integration') which will create many concurrent connections
-          # simutaneously, we increase the TCP listening backlog value to 8192.
-          sysctl -w net.core.somaxconn=8192
+          echo "Current hard limit for open files: $HARD"
+          if [ "$HARD" != "unlimited" ] && [ "$HARD" -lt "$TARGET" ]; then
+            echo "Target ($TARGET) is greater than hard limit ($HARD), using hard limit instead."
+            TARGET="$HARD"
+          fi
+
+          # Try to set the soft limit; if it fails, just warn and continue.
+          if ! ulimit -n "$TARGET"; then
+            echo "WARNING: failed to increase ulimit -n to $TARGET, continuing with existing limit."
+          fi
+
+          # Adjust somaxconn; ignore failure if not permitted.
+          if ! sysctl -w net.core.somaxconn=8192; then
+            echo "WARNING: failed to set net.core.somaxconn, continuing."
+          fi
         shell: bash
 
       - uses: actions/setup-node@v4
@@ -1052,15 +1082,25 @@ jobs:
 
       - name: Set ulimit and sysctl
         run: |
-          # Because there are concurrent test cases which involves many
-          # concurrent socket connections, we need to enlarge the maximum number
-          # of the opened file descriptor.
-          ulimit -n 102400
+          # Increase max number of open file descriptors as much as allowed.
+          TARGET=102400
+          HARD=$(ulimit -Hn)
 
-          # Because there are concurrent test cases (in 'smoke' and
-          # 'integration') which will create many concurrent connections
-          # simutaneously, we increase the TCP listening backlog value to 8192.
-          sysctl -w net.core.somaxconn=8192
+          echo "Current hard limit for open files: $HARD"
+          if [ "$HARD" != "unlimited" ] && [ "$HARD" -lt "$TARGET" ]; then
+            echo "Target ($TARGET) is greater than hard limit ($HARD), using hard limit instead."
+            TARGET="$HARD"
+          fi
+
+          # Try to set the soft limit; if it fails, just warn and continue.
+          if ! ulimit -n "$TARGET"; then
+            echo "WARNING: failed to increase ulimit -n to $TARGET, continuing with existing limit."
+          fi
+
+          # Adjust somaxconn; ignore failure if not permitted.
+          if ! sysctl -w net.core.somaxconn=8192; then
+            echo "WARNING: failed to set net.core.somaxconn, continuing."
+          fi
         shell: bash
 
       - uses: actions/setup-node@v4
@@ -1199,15 +1239,25 @@ jobs:
 
       - name: Set ulimit and sysctl
         run: |
-          # Because there are concurrent test cases which involves many
-          # concurrent socket connections, we need to enlarge the maximum number
-          # of the opened file descriptor.
-          ulimit -n 102400
+          # Increase max number of open file descriptors as much as allowed.
+          TARGET=102400
+          HARD=$(ulimit -Hn)
 
-          # Because there are concurrent test cases (in 'smoke' and
-          # 'integration') which will create many concurrent connections
-          # simutaneously, we increase the TCP listening backlog value to 8192.
-          sysctl -w net.core.somaxconn=8192
+          echo "Current hard limit for open files: $HARD"
+          if [ "$HARD" != "unlimited" ] && [ "$HARD" -lt "$TARGET" ]; then
+            echo "Target ($TARGET) is greater than hard limit ($HARD), using hard limit instead."
+            TARGET="$HARD"
+          fi
+
+          # Try to set the soft limit; if it fails, just warn and continue.
+          if ! ulimit -n "$TARGET"; then
+            echo "WARNING: failed to increase ulimit -n to $TARGET, continuing with existing limit."
+          fi
+
+          # Adjust somaxconn; ignore failure if not permitted.
+          if ! sysctl -w net.core.somaxconn=8192; then
+            echo "WARNING: failed to set net.core.somaxconn, continuing."
+          fi
         shell: bash
 
       - uses: actions/setup-node@v4
@@ -1366,15 +1416,25 @@ jobs:
 
       - name: Set ulimit and sysctl
         run: |
-          # Because there are concurrent test cases which involves many
-          # concurrent socket connections, we need to enlarge the maximum number
-          # of the opened file descriptor.
-          ulimit -n 102400
+          # Increase max number of open file descriptors as much as allowed.
+          TARGET=102400
+          HARD=$(ulimit -Hn)
 
-          # Because there are concurrent test cases (in 'smoke' and
-          # 'integration') which will create many concurrent connections
-          # simutaneously, we increase the TCP listening backlog value to 8192.
-          sysctl -w net.core.somaxconn=8192
+          echo "Current hard limit for open files: $HARD"
+          if [ "$HARD" != "unlimited" ] && [ "$HARD" -lt "$TARGET" ]; then
+            echo "Target ($TARGET) is greater than hard limit ($HARD), using hard limit instead."
+            TARGET="$HARD"
+          fi
+
+          # Try to set the soft limit; if it fails, just warn and continue.
+          if ! ulimit -n "$TARGET"; then
+            echo "WARNING: failed to increase ulimit -n to $TARGET, continuing with existing limit."
+          fi
+
+          # Adjust somaxconn; ignore failure if not permitted.
+          if ! sysctl -w net.core.somaxconn=8192; then
+            echo "WARNING: failed to set net.core.somaxconn, continuing."
+          fi
         shell: bash
 
       - uses: actions/setup-node@v4
