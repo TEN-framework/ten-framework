@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head><title>Test</title></head>
+<body>
+<h1>Test Connection</h1>
+<button onclick="testConnection()">Test</button>
+<pre id="output"></pre>
+<script>
+async function testConnection() {
+  const output = document.getElementById("output");
+  output.textContent = "Testing...\n";
+  
+  try {
+    const hostname = window.location.hostname;
+    const protocol = window.location.protocol;
+    const backendURL = (hostname === "localhost" || hostname === "127.0.0.1") 
+      ? "http://localhost:8080" 
+      : protocol + "//" + hostname + ":8080";
+    
+    output.textContent += "Backend URL: " + backendURL + "\n\n";
+    
+    const response = await fetch(backendURL + "/token/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        request_id: "test",
+        uid: 12345,
+        channel_name: "companion_channel"
+      })
+    });
+    
+    output.textContent += "Status: " + response.status + "\n";
+    const data = await response.json();
+    output.textContent += JSON.stringify(data, null, 2);
+  } catch (error) {
+    output.textContent += "\nERROR: " + error.message;
+  }
+}
+</script>
+</body>
+</html>
