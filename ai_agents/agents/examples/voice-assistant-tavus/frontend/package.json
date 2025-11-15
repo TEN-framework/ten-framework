@@ -1,0 +1,24 @@
+{
+  "name": "voice-assistant-tavus-ui",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "bunx vite --host 0.0.0.0 --port 3000",
+    "build": "bunx vite build",
+    "preview": "bunx vite preview --host 0.0.0.0 --port 3000"
+  },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.5",
+    "@types/react-dom": "^18.3.2",
+    "@vitejs/plugin-react": "^4.3.2",
+    "serve": "^14.2.3",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.8"
+  }
+}
