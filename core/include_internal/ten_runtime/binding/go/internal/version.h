@@ -6,4 +6,4 @@
 //
 #pragma once
 
-#define TEN_RUNTIME_GO_BINDING_VERSION "0.11.28"
+#define TEN_RUNTIME_GO_BINDING_VERSION "0.11.29"
