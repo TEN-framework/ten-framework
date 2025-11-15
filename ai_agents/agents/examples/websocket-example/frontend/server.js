@@ -32,7 +32,7 @@ app.prepare().then(() => {
   server.use('/ws', (req, res, next) => {
     // Extract port from path if provided (e.g., /ws/8765)
     const portMatch = req.url.match(/^\/(\d+)/);
-    const wsPort = portMatch ? portMatch[1] : (process.env.WS_TARGET?.replace('ws://localhost:', '') || '8765');
+    const wsPort = portMatch ? portMatch[1] : '8765';
 
     // Validate port range (8000-9000)
     const portNum = parseInt(wsPort, 10);
@@ -81,7 +81,7 @@ app.prepare().then(() => {
     if (req.url.startsWith('/ws')) {
       // Extract port from URL
       const portMatch = req.url.match(/^\/ws\/(\d+)/);
-      const wsPort = portMatch ? portMatch[1] : (process.env.WS_TARGET?.replace('ws://localhost:', '') || '8765');
+      const wsPort = portMatch ? portMatch[1] : '8765';
       const portNum = parseInt(wsPort, 10);
 
       if (portNum < 8000 || portNum > 9000) {
