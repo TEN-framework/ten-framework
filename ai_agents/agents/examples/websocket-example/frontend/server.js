@@ -11,6 +11,31 @@ const port = parseInt(process.env.PORT || '3000', 10);
 const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
 
+// Cache proxy instances per port to prevent memory leaks
+const proxyCache = new Map();
+
+/**
+ * Get or create a WebSocket proxy for a specific port
+ * Reuses existing proxy instances to prevent memory leaks
+ */
+function getOrCreateProxy(wsPort, devMode) {
+  if (!proxyCache.has(wsPort)) {
+    proxyCache.set(wsPort, createProxyMiddleware({
+      target: `ws://localhost:${wsPort}`,
+      changeOrigin: true,
+      ws: true,
+      logLevel: devMode ? 'debug' : 'warn',
+      onError: (err, req, res) => {
+        console.error(`WebSocket proxy error (port ${wsPort}):`, err.message);
+      },
+      onProxyReqWs: (proxyReq, req, socket, options, head) => {
+        console.log(`WebSocket proxy request: ${req.url} -> ws://localhost:${wsPort}`);
+      },
+    }));
+  }
+  return proxyCache.get(wsPort);
+}
+
 app.prepare().then(() => {
   const server = express();
   const httpServer = http.createServer(server);
@@ -30,6 +55,11 @@ app.prepare().then(() => {
   // WebSocket proxy with dynamic port support
   // Matches /ws or /ws/{port}
   server.use('/ws', (req, res, next) => {
+    // Prevent ReDoS - validate URL length
+    if (req.url.length > 50) {
+      return res.status(400).json({ error: 'Invalid request' });
+    }
+
     // Extract port from path if provided (e.g., /ws/8765)
     const portMatch = req.url.match(/^\/(\d+)/);
     const wsPort = portMatch ? portMatch[1] : '8765';
@@ -41,22 +71,8 @@ app.prepare().then(() => {
       return res.status(400).json({ error: 'Invalid port number' });
     }
 
-    const wsTarget = `ws://localhost:${wsPort}`;
-
-    const wsProxy = createProxyMiddleware({
-      target: wsTarget,
-      changeOrigin: true,
-      ws: true,
-      logLevel: dev ? 'debug' : 'warn',
-      onError: (err, req, res) => {
-        console.error('WebSocket proxy error:', err.message);
-      },
-      onProxyReqWs: (proxyReq, req, socket, options, head) => {
-        console.log(`WebSocket proxy request: ${req.url} -> ${wsTarget}`);
-      },
-    });
-
-    return wsProxy(req, res, next);
+    // Reuse cached proxy instance
+    return getOrCreateProxy(wsPort, dev)(req, res, next);
   });
 
   // Proxy /api/agents/* to the agent server
@@ -79,6 +95,13 @@ app.prepare().then(() => {
 
     // Handle custom WebSocket proxy to backend
     if (req.url.startsWith('/ws')) {
+      // Prevent ReDoS - validate URL length
+      if (req.url.length > 50) {
+        console.error('Invalid WebSocket upgrade request: URL too long');
+        socket.destroy();
+        return;
+      }
+
       // Extract port from URL
       const portMatch = req.url.match(/^\/ws\/(\d+)/);
       const wsPort = portMatch ? portMatch[1] : '8765';
@@ -90,15 +113,10 @@ app.prepare().then(() => {
         return;
       }
 
-      const wsTarget = `ws://localhost:${wsPort}`;
-      console.log(`WebSocket upgrade: ${req.url} -> ${wsTarget}`);
+      console.log(`WebSocket upgrade: ${req.url} -> ws://localhost:${wsPort}`);
 
-      const wsProxy = createProxyMiddleware({
-        target: wsTarget,
-        changeOrigin: true,
-        ws: true,
-      });
-
+      // Reuse cached proxy instance
+      const wsProxy = getOrCreateProxy(wsPort, dev);
       wsProxy.upgrade(req, socket, head);
     } else {
       // Unknown WebSocket path - destroy connection
