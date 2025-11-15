@@ -1,0 +1,25 @@
+{
+  "ten": {
+    "predefined_graphs": [
+      {
+        "name": "test_graph",
+        "auto_start": true,
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "dingtalk_bot_tool_python",
+              "addon": "dingtalk_bot_tool_python",
+              "property": {
+                "params": {
+                  "access_token": "YOUR_TEST_ACCESS_TOKEN",
+                  "secret": "YOUR_TEST_SECRET"
+                }
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}
