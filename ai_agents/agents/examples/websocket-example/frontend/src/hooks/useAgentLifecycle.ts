@@ -2,7 +2,8 @@
  * Agent Lifecycle Hook - Manages agent start/stop via API server
  */
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
+import { ping } from "@/lib/api";
 
 interface StartAgentParams {
   port: number;
@@ -33,6 +34,47 @@ export function useAgentLifecycle() {
     channelName: null,
     requestId: null,
   });
+
+  // Ping interval ref to keep agent alive
+  const pingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  /**
+   * Start pinging the agent to keep it alive
+   * Uses recursive setTimeout to prevent ping stacking
+   */
+  const startPing = useCallback((channelName: string) => {
+    // Clear any existing timeout
+    if (pingIntervalRef.current) {
+      clearTimeout(pingIntervalRef.current);
+    }
+
+    // Recursive setTimeout pattern - waits for completion before next ping
+    const schedulePing = async () => {
+      await ping(channelName);
+      // Schedule next ping only after current one completes
+      pingIntervalRef.current = setTimeout(schedulePing, 3000);
+    };
+
+    // Start the first ping
+    schedulePing();
+  }, []);
+
+  /**
+   * Stop pinging the agent
+   */
+  const stopPing = useCallback(() => {
+    if (pingIntervalRef.current) {
+      clearTimeout(pingIntervalRef.current);
+      pingIntervalRef.current = null;
+    }
+  }, []);
+
+  // Clean up ping interval on unmount
+  useEffect(() => {
+    return () => {
+      stopPing();
+    };
+  }, [stopPing]);
 
   /**
    * Generate a unique channel name
@@ -93,6 +135,9 @@ export function useAgentLifecycle() {
           requestId,
         });
 
+        // Start pinging to keep agent alive
+        startPing(channelName);
+
         return { channelName, requestId, port };
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "Unknown error";
@@ -105,7 +150,7 @@ export function useAgentLifecycle() {
         throw error;
       }
     },
-    [generateChannelName, generateRequestId]
+    [generateChannelName, generateRequestId, startPing]
   );
 
   /**
@@ -118,6 +163,9 @@ export function useAgentLifecycle() {
     }
 
     try {
+      // Stop pinging
+      stopPing();
+
       const response = await fetch("/api/agents/stop", {
         method: "POST",
         headers: {
@@ -142,19 +190,20 @@ export function useAgentLifecycle() {
       console.error("Error stopping agent:", error);
       // Don't update state to error - stopping is best effort
     }
-  }, [state.channelName]);
+  }, [state.channelName, stopPing]);
 
   /**
    * Reset the state
    */
   const reset = useCallback(() => {
+    stopPing();
     setState({
       status: "idle",
       error: null,
       channelName: null,
       requestId: null,
     });
-  }, []);
+  }, [stopPing]);
 
   return {
     state,

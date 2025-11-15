@@ -234,8 +234,8 @@
     {
       "type": "extension",
       "name": "soniox_asr_python",
-      "version": "0.3.3",
-      "hash": "932bcf076453f1cbd661d50a06b36caab157c91ec63e646d19dfdbe88ad6a5d4",
+      "version": "0.3.5",
+      "hash": "565ba86275bab78ed785ca554701dbf30d4a8711b07865c835d930c6ad13f681",
       "dependencies": [
         {
           "type": "system",
@@ -268,8 +268,8 @@
     {
       "type": "extension",
       "name": "tencent_asr_python",
-      "version": "0.2.8",
-      "hash": "be9d19d52c899e82e010733b21d515eb739c5703ac01576c4943ea567087f4fd",
+      "version": "0.2.9",
+      "hash": "9303c31168a08c5732dfb14c396c25b012da6aefffa6596c444c9251f8d16cc5",
       "dependencies": [
         {
           "type": "system",

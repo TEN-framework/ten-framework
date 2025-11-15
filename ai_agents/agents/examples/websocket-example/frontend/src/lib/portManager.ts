@@ -60,7 +60,15 @@ export function clearPort(): void {
 
 /**
  * Get the WebSocket URL for a given port
+ * Uses the proxy path to route through the Next.js server
  */
 export function getWebSocketUrl(port: number): string {
-  return `ws://localhost:${port}`;
+  if (typeof window === "undefined") {
+    // SSR context - return placeholder
+    return `ws://localhost:${port}`;
+  }
+
+  // Use proxy path through Next.js server with port in path
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  return `${protocol}//${window.location.host}/ws/${port}`;
 }
