@@ -40,17 +40,23 @@ export function useAgentLifecycle() {
 
   /**
    * Start pinging the agent to keep it alive
+   * Uses recursive setTimeout to prevent ping stacking
    */
   const startPing = useCallback((channelName: string) => {
-    // Clear any existing interval
+    // Clear any existing timeout
     if (pingIntervalRef.current) {
-      clearInterval(pingIntervalRef.current);
+      clearTimeout(pingIntervalRef.current);
     }
 
-    // Start pinging every 3 seconds (same as playground)
-    pingIntervalRef.current = setInterval(async () => {
+    // Recursive setTimeout pattern - waits for completion before next ping
+    const schedulePing = async () => {
       await ping(channelName);
-    }, 3000);
+      // Schedule next ping only after current one completes
+      pingIntervalRef.current = setTimeout(schedulePing, 3000);
+    };
+
+    // Start the first ping
+    schedulePing();
   }, []);
 
   /**
@@ -58,7 +64,7 @@ export function useAgentLifecycle() {
    */
   const stopPing = useCallback(() => {
     if (pingIntervalRef.current) {
-      clearInterval(pingIntervalRef.current);
+      clearTimeout(pingIntervalRef.current);
       pingIntervalRef.current = null;
     }
   }, []);

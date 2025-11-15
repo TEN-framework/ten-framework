@@ -60,7 +60,8 @@ app.prepare().then(() => {
       return res.status(400).json({ error: 'Invalid request' });
     }
 
-    // Extract port from path if provided (e.g., /ws/8765)
+    // Extract port from path if provided (e.g., /8765)
+    // Note: Express middleware strips '/ws' prefix, so req.url is '/8765' not '/ws/8765'
     const portMatch = req.url.match(/^\/(\d+)/);
     const wsPort = portMatch ? portMatch[1] : '8765';
 
@@ -102,7 +103,8 @@ app.prepare().then(() => {
         return;
       }
 
-      // Extract port from URL
+      // Extract port from URL (e.g., /ws/8765)
+      // Note: Upgrade handler receives full URL including '/ws' prefix
       const portMatch = req.url.match(/^\/ws\/(\d+)/);
       const wsPort = portMatch ? portMatch[1] : '8765';
       const portNum = parseInt(wsPort, 10);
