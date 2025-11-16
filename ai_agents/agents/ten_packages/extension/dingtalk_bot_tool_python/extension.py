@@ -10,7 +10,6 @@ import base64
 import urllib.parse
 import requests
 from dataclasses import dataclass
-from typing import Any
 
 from ten_runtime import AsyncTenEnv, Cmd
 from ten_ai_base.config import BaseConfig
@@ -66,7 +65,7 @@ class DingTalkBotExtension(AsyncLLMToolBaseExtension):
 
         # Load configuration
         self.config = await DingTalkBotConfig.create_async(ten_env=ten_env)
-        ten_env.log_info(f"[DingTalkBotExtension] Config loaded successfully")
+        ten_env.log_info("[DingTalkBotExtension] Config loaded successfully")
         ten_env.log_info(
             f"[DingTalkBotExtension]   - access_token: {'SET (length=' + str(len(self.config.access_token)) + ')' if self.config.access_token else 'NOT SET'}"
         )
@@ -90,7 +89,7 @@ class DingTalkBotExtension(AsyncLLMToolBaseExtension):
         }
 
         ten_env.log_info(
-            f"[DingTalkBotExtension] Registering tool with parameter array format..."
+            "[DingTalkBotExtension] Registering tool with parameter array format..."
         )
         ten_env.log_info(
             f"[DingTalkBotExtension] Tool: {json.dumps(tool_metadata_for_registration, indent=2)}"
@@ -123,7 +122,7 @@ class DingTalkBotExtension(AsyncLLMToolBaseExtension):
         """Handle incoming commands"""
         cmd_name = cmd.get_name()
         ten_env.log_info(
-            f"[DingTalkBotExtension] ========== on_cmd RECEIVED =========="
+            "[DingTalkBotExtension] ========== on_cmd RECEIVED =========="
         )
         ten_env.log_info(f"[DingTalkBotExtension] Command name: {cmd_name}")
 
@@ -164,7 +163,7 @@ class DingTalkBotExtension(AsyncLLMToolBaseExtension):
                             )
                         await ten_env.return_result(cmd_result, cmd)
                         ten_env.log_info(
-                            f"[DingTalkBotExtension] ========== on_cmd END =========="
+                            "[DingTalkBotExtension] ========== on_cmd END =========="
                         )
                         return
 
@@ -179,10 +178,10 @@ class DingTalkBotExtension(AsyncLLMToolBaseExtension):
                 )
 
         # 对于其他命令，调用基类处理
-        ten_env.log_info(f"[DingTalkBotExtension] Calling parent on_cmd...")
+        ten_env.log_info("[DingTalkBotExtension] Calling parent on_cmd...")
         await super().on_cmd(ten_env, cmd)
         ten_env.log_info(
-            f"[DingTalkBotExtension] ========== on_cmd END =========="
+            "[DingTalkBotExtension] ========== on_cmd END =========="
         )
 
     def get_tool_metadata(self, ten_env: AsyncTenEnv) -> list[LLMToolMetadata]:
@@ -207,7 +206,7 @@ class DingTalkBotExtension(AsyncLLMToolBaseExtension):
     ) -> LLMToolResult | None:
         """Execute the tool"""
         ten_env.log_info(
-            f"[DingTalkBotExtension] ========== run_tool CALLED =========="
+            "[DingTalkBotExtension] ========== run_tool CALLED =========="
         )
         ten_env.log_info(f"[DingTalkBotExtension] Tool name: {name}")
         ten_env.log_info(
@@ -218,7 +217,7 @@ class DingTalkBotExtension(AsyncLLMToolBaseExtension):
             content = args.get("content")
             if not content:
                 ten_env.log_error(
-                    f"[DingTalkBotExtension] Missing 'content' argument"
+                    "[DingTalkBotExtension] Missing 'content' argument"
                 )
                 return LLMToolResultLLMResult(
                     type="llmresult",
@@ -226,7 +225,7 @@ class DingTalkBotExtension(AsyncLLMToolBaseExtension):
                 )
 
             ten_env.log_info(
-                f"[DingTalkBotExtension] Preparing to send message to DingTalk..."
+                "[DingTalkBotExtension] Preparing to send message to DingTalk..."
             )
             ten_env.log_info(
                 f"[DingTalkBotExtension] Message content: {content}"
@@ -266,7 +265,7 @@ class DingTalkBotExtension(AsyncLLMToolBaseExtension):
             )
 
         ten_env.log_info(
-            f"[DingTalkBotExtension] ========== run_tool END =========="
+            "[DingTalkBotExtension] ========== run_tool END =========="
         )
         return None
 
@@ -276,7 +275,7 @@ class DingTalkBotExtension(AsyncLLMToolBaseExtension):
         """
         Sends a message to a DingTalk bot.
         """
-        print(f"[DingTalkBotExtension._send_dingtalk_message] Starting...")
+        print("[DingTalkBotExtension._send_dingtalk_message] Starting...")
         print(
             f"[DingTalkBotExtension._send_dingtalk_message] access_token length: {len(access_token)}"
         )
@@ -317,7 +316,7 @@ class DingTalkBotExtension(AsyncLLMToolBaseExtension):
 
         try:
             print(
-                f"[DingTalkBotExtension._send_dingtalk_message] Sending POST request..."
+                "[DingTalkBotExtension._send_dingtalk_message] Sending POST request..."
             )
             response = requests.post(
                 webhook_url, headers=headers, data=json.dumps(data), timeout=10
