@@ -151,6 +151,11 @@ jobs:
               tree -I 'gen|obj' out \
             "
 
+      - name: Fix permissions for build outputs
+        run: |
+          sudo chown -R "$(id -u)":"$(id -g)" out/linux/arm64
+        shell: bash
+
       - name: Update supports before upload or publish
         continue-on-error: true
         run: |

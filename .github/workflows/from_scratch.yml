@@ -30,7 +30,6 @@ jobs:
           - runs-on: ubuntu-22.04
             platform_name: "Linux x64"
             arch: "x64"
-          # TODO: Enable Linux ARM64 when tman binaries are available for this platform
           # - runs-on: ubuntu-22.04-arm
           #   platform_name: "Linux ARM64"
           #   arch: "arm64"
@@ -39,6 +38,12 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
+
+      # This step is not necessary for the build, but it is useful for debugging.
+      - name: Install tools and dependencies
+        if: runner.os == 'macOS'
+        run: |
+          brew install tree
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -148,6 +153,8 @@ jobs:
 
           # Install TEN package dependencies using tman
           tman install
+
+          tree -I .
 
           if [ $? -eq 0 ]; then
             echo "✓ tman install completed successfully"
