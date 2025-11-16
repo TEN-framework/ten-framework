@@ -39,6 +39,11 @@ jobs:
         with:
           fetch-depth: 1
 
+      # This step is not necessary for the build, but it is useful for debugging.
+      - name: Install tools and dependencies
+        run: |
+          brew install tree
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
