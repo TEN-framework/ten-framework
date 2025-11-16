@@ -6,6 +6,7 @@
 import asyncio
 import base64
 import traceback
+import numpy as np
 
 from ten_runtime import (
     AudioFrame,
@@ -141,26 +142,56 @@ class AnamAvatarExtension(AsyncExtension):
 
     async def _loop_input_audio_sender(self, _: AsyncTenEnv):
         while self._audio_processing_enabled:
-            audio_frame = await self.input_audio_queue.get()
+            # Unpack buffer and actual sample rate from queue
+            audio_frame, actual_sample_rate = await self.input_audio_queue.get()
 
             # Wait for recorder to be ready
             await self._wait_for_recorder_ready()
 
             if self.recorder is not None and self.recorder.ws_connected():
                 try:
-                    original_rate = self.config.input_audio_sample_rate
+                    # Resample to 24000 Hz (same as HeyGen)
+                    target_rate = 24000
 
-                    if len(audio_frame) == 0:
+                    audio_data = np.frombuffer(audio_frame, dtype=np.int16)
+                    if len(audio_data) == 0:
+                        self.ten_env.log_warn("Empty audio data")
                         continue
 
-                    # Send audio at original sample rate - let server handle any resampling
-                    base64_audio_data = base64.b64encode(audio_frame).decode(
-                        "utf-8"
-                    )
+                    # Skip resampling if rates are the same
+                    if actual_sample_rate == target_rate:
+                        resampled_frame = audio_frame
+                    else:
+                        # Calculate resampling ratio
+                        resample_ratio = target_rate / actual_sample_rate
 
-                    # Update the recorder to send with actual sample rate
+                        if resample_ratio > 1:
+                            # Upsampling: create more samples
+                            new_length = int(len(audio_data) * resample_ratio)
+                            old_indices = np.linspace(
+                                0, len(audio_data) - 1, new_length
+                            )
+                            resampled_audio = audio_data[
+                                np.round(old_indices).astype(int)
+                            ]
+                        else:
+                            # Downsampling: select fewer samples
+                            step = 1 / resample_ratio
+                            indices = np.round(
+                                np.arange(0, len(audio_data), step)
+                            ).astype(int)
+                            indices = indices[indices < len(audio_data)]
+                            resampled_audio = audio_data[indices]
+
+                        resampled_frame = resampled_audio.tobytes()
+
+                    # Encode and send with target sample rate
+                    base64_audio_data = base64.b64encode(
+                        resampled_frame
+                    ).decode("utf-8")
+
                     await self.recorder.send(
-                        base64_audio_data, sample_rate=original_rate
+                        base64_audio_data, sample_rate=target_rate
                     )
 
                 except Exception as e:
@@ -286,7 +317,8 @@ class AnamAvatarExtension(AsyncExtension):
             self.ten_env.log_warn("on_audio_frame: empty pcm_frame detected.")
             return
 
-        self.input_audio_queue.put_nowait(frame_buf)
+        # Pass both buffer and actual sample rate to sender loop
+        self.input_audio_queue.put_nowait((frame_buf, audio_frame_sample_rate))
 
     async def on_video_frame(
         self, ten_env: AsyncTenEnv, video_frame: VideoFrame

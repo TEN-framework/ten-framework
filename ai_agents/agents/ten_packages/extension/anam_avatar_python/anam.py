@@ -154,9 +154,7 @@ class AgoraAnamRecorder:
 
         # Build payload according to Anam API spec
         payload = {
-            "personaConfig": {
-                "avatarId": self.avatar_id
-            },
+            "personaConfig": {"avatarId": self.avatar_id},
             "environment": {
                 "agoraSettings": {
                     "appId": self.app_id,
@@ -166,9 +164,9 @@ class AgoraAnamRecorder:
                     "quality": self.quality,
                     "videoEncoding": self.video_encoding,
                     "enableStringUids": self.enable_string_uid,
-                    "activityIdleTimeout": self.activity_idle_timeout
+                    "activityIdleTimeout": self.activity_idle_timeout,
                 }
-            }
+            },
         }
 
         # Add cluster/pod if specified (for preview/testing environments)
@@ -180,7 +178,9 @@ class AgoraAnamRecorder:
         self.ten_env.log_info(f"Creating session token: {endpoint}")
         self.ten_env.log_info(f"Payload: {json.dumps(payload, indent=2)}")
 
-        response = requests.post(endpoint, json=payload, headers=headers, timeout=30)
+        response = requests.post(
+            endpoint, json=payload, headers=headers, timeout=30
+        )
         await self._raise_for_status_verbose(response)
         data = response.json()
 
@@ -291,24 +291,28 @@ class AgoraAnamRecorder:
         self.ten_env.log_info("Creating new session with session token")
         self.ten_env.log_info(f"URL: {endpoint}")
 
-        response = requests.post(
-            endpoint, json={}, headers=headers, timeout=30
-        )
+        response = requests.post(endpoint, json={}, headers=headers, timeout=30)
         await self._raise_for_status_verbose(response)
         data = response.json()
 
         # Log the response for debugging
-        self.ten_env.log_info(f"Session creation response: {json.dumps(data, indent=2)}")
+        self.ten_env.log_info(
+            f"Session creation response: {json.dumps(data, indent=2)}"
+        )
 
         # Validate required fields
         if "sessionId" not in data:
             raise ValueError("Missing 'sessionId' field in response")
         if "websocket_address" not in data and "websocketAddress" not in data:
-            raise ValueError("Missing 'websocket_address' or 'websocketAddress' field in response")
+            raise ValueError(
+                "Missing 'websocket_address' or 'websocketAddress' field in response"
+            )
 
         self.session_id = data["sessionId"]
         # Handle both snake_case and camelCase field names
-        self.realtime_endpoint = data.get("websocket_address") or data.get("websocketAddress")
+        self.realtime_endpoint = data.get("websocket_address") or data.get(
+            "websocketAddress"
+        )
         self.ten_env.log_info(f"Session created: {self.session_id}")
 
     async def _raise_for_status_verbose(self, response):

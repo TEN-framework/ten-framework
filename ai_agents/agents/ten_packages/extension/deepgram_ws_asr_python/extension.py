@@ -147,6 +147,8 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
                     "true" if self.config.interim_results else "false"
                 ),
                 "punctuate": "true" if self.config.punctuate else "false",
+                "endpointing": str(self.config.endpointing),
+                "utterance_end_ms": str(self.config.utterance_end_ms),
             }
 
         query_string = urlencode(params)

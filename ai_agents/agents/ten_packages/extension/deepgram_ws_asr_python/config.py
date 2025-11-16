@@ -14,7 +14,12 @@ class DeepgramWSASRConfig(BaseModel):
     encoding: str = "linear16"
     interim_results: bool = True
     punctuate: bool = True
-    # Flux-specific parameters
+    # v1 API parameters (Nova models)
+    endpointing: int = (
+        300  # Silence duration in ms before finalizing transcript
+    )
+    utterance_end_ms: int = 1000  # Max silence before ending utterance
+    # Flux-specific parameters (v2 API)
     eot_threshold: float = 0.7  # End-of-turn probability threshold (0.0-1.0)
     eot_timeout_ms: int = 3000  # Max time to wait for EOT confirmation (ms)
     eager_eot_threshold: float = 0.0  # Eager EOT threshold (0 = disabled)
