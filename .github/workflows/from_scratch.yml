@@ -41,6 +41,7 @@ jobs:
 
       # This step is not necessary for the build, but it is useful for debugging.
       - name: Install tools and dependencies
+        if: runner.os == 'macOS'
         run: |
           brew install tree
 
