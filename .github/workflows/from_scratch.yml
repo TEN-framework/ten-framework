@@ -30,9 +30,9 @@ jobs:
           - runs-on: ubuntu-22.04
             platform_name: "Linux x64"
             arch: "x64"
-          # - runs-on: ubuntu-22.04-arm
-          #   platform_name: "Linux ARM64"
-          #   arch: "arm64"
+          - runs-on: ubuntu-22.04-arm
+            platform_name: "Linux ARM64"
+            arch: "arm64"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
