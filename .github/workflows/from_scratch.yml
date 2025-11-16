@@ -148,6 +148,8 @@ jobs:
           # Install TEN package dependencies using tman
           tman install
 
+          tree -I .
+
           if [ $? -eq 0 ]; then
             echo "✓ tman install completed successfully"
           else
