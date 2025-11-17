@@ -4,8 +4,8 @@
     {
       "type": "system",
       "name": "ten_runtime_go",
-      "version": "0.11.27",
-      "hash": "3cb246f95ec5e22b2c1a44ed6c09d75af07755030172fa6abc97f35822405c77",
+      "version": "0.11.30",
+      "hash": "8b4ee8244b45b996751d0abf14ed5e329bcb30914b18c5b6807cca0764a0ddb9",
       "dependencies": [
         {
           "type": "system",
@@ -256,8 +256,8 @@
     {
       "type": "extension",
       "name": "soniox_asr_python",
-      "version": "0.3.4",
-      "hash": "10e9f20c2c860d20df37d2f9de9308256cc4111ebf327b9fb3f7a794ad0bb932",
+      "version": "0.3.5",
+      "hash": "565ba86275bab78ed785ca554701dbf30d4a8711b07865c835d930c6ad13f681",
       "dependencies": [
         {
           "type": "system",
@@ -290,8 +290,8 @@
     {
       "type": "extension",
       "name": "tencent_asr_python",
-      "version": "0.2.8",
-      "hash": "be9d19d52c899e82e010733b21d515eb739c5703ac01576c4943ea567087f4fd",
+      "version": "0.2.9",
+      "hash": "9303c31168a08c5732dfb14c396c25b012da6aefffa6596c444c9251f8d16cc5",
       "dependencies": [
         {
           "type": "system",
@@ -733,8 +733,8 @@
     {
       "type": "system",
       "name": "ten_runtime_python",
-      "version": "0.11.27",
-      "hash": "409c90d00363ff575f7e7d3c6285047c609748490ffb5da52910efc983941c91",
+      "version": "0.11.30",
+      "hash": "bb88c47ac2ae3df4d8e5ff2a5497c91a5160b30732f72db84e74f07c182bbd93",
       "dependencies": [
         {
           "type": "system",
@@ -755,8 +755,8 @@
     {
       "type": "system",
       "name": "ten_runtime",
-      "version": "0.11.27",
-      "hash": "96129244e41310723b93f2eeef06c41d51eb8086d60a703d3665495af3880050",
+      "version": "0.11.30",
+      "hash": "6b19913b630ca05b2d2d83389353f0d4d9683d964e499dc8b8e9c46b88cc8bef",
       "supports": [
         {
           "os": "linux",
@@ -779,8 +779,8 @@
     {
       "type": "addon_loader",
       "name": "python_addon_loader",
-      "version": "0.11.27",
-      "hash": "a15c56876f5303b0c47d4019a51e9586f449d38a1cf52b5848746174c1bc5838",
+      "version": "0.11.30",
+      "hash": "bcac072cad078a302fac73cdbcb7ac80ec759f10f10f20cf9eb2f63038503bd9",
       "dependencies": [
         {
           "type": "system",
