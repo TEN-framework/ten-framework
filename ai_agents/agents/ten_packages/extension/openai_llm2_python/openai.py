@@ -276,11 +276,21 @@ class OpenAIChatGPT:
             # GPT-5-nano requires defaults: temperature=1.0, top_p=1.0
 
         # Add additional parameters if they are not in the black list
+        # For GPT-5+ models, also exclude unsupported parameters
+        gpt5_unsupported_params = {"temperature", "top_p", "presence_penalty", "frequency_penalty", "seed", "max_tokens"}
+
         for key, value in (request_input.parameters or {}).items():
             # Check if it's a valid option and not in black list
-            if not self.config.is_black_list_params(key):
-                self.ten_env.log_debug(f"set openai param: {key} = {value}")
-                req[key] = value
+            if self.config.is_black_list_params(key):
+                continue
+
+            # For GPT-5+ models, skip unsupported parameters
+            if not is_legacy_model and key in gpt5_unsupported_params:
+                self.ten_env.log_debug(f"Skipping GPT-5+ unsupported param: {key} = {value}")
+                continue
+
+            self.ten_env.log_debug(f"set openai param: {key} = {value}")
+            req[key] = value
 
         # REMOVED: Verbose logging - dumps entire prompt (~10KB+) on every LLM call
         # Adds I/O latency and pollutes logs. Enable only for deep debugging.
