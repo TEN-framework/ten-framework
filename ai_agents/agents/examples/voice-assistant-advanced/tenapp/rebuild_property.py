@@ -12,21 +12,34 @@ with open("property.json") as f:
 # Get the base log configuration
 log_config = data.get("ten", {}).get("log", {})
 
-# Find existing apollo graph to extract apollo prompt and thymia_analyzer config
-apollo_prompt = None
-apollo_greeting = None
+# Find existing apollo graph to extract thymia_analyzer config
 thymia_analyzer_config = None
 
 for graph in data.get("ten", {}).get("predefined_graphs", []):
     if "apollo" in graph.get("name", ""):
         nodes = graph.get("graph", {}).get("nodes", [])
         for node in nodes:
-            if node.get("addon") == "openai_llm2_python":
-                apollo_prompt = node.get("property", {}).get("prompt")
-                apollo_greeting = node.get("property", {}).get("greeting")
-            elif node.get("addon") == "thymia_analyzer_python":
+            if node.get("addon") == "thymia_analyzer_python":
                 thymia_analyzer_config = copy.deepcopy(node.get("property", {}))
         break
+
+# Apollo prompt with enforced collection but parallel tool calling
+apollo_prompt = """You are a mental wellness research assistant conducting a demonstration. Guide the conversation efficiently:
+
+1. CRITICAL: When user provides their name, sex, and year of birth, IMMEDIATELY call set_user_info(name, year_of_birth, birth_sex) AND at the same time respond warmly asking about their day. Both happen together - do not delay your response. If they don't provide all three pieces, ask for what's missing before proceeding.
+2. Ask: 'Tell me about your interests and hobbies.' (wait for response - aim for 30+ seconds total speech)
+3. CRITICAL: Before moving to reading phase or saying you're processing, you MUST call check_phase_progress to verify enough speech has been collected. If phase_complete=false, ask another question to gather more speech. Only proceed when phase_complete=true.
+4. Once check_phase_progress confirms phase_complete=true, say: 'Thank you. Now please read aloud anything you can see around you - a book, article, or text on your screen - for about 30 seconds.'
+5. CRITICAL: After user finishes reading, you MUST call check_phase_progress again before saying you're processing. If reading_phase_complete=false, ask them to continue reading. Only when reading_phase_complete=true, say: 'Perfect. I'm processing your responses now, this will take about a minute.'
+6. IMPORTANT: You will receive TWO separate [SYSTEM ALERT] messages - one for wellness metrics, then another for clinical indicators. WAIT for each alert before announcing.
+7. When you receive '[SYSTEM ALERT] Wellness metrics ready', call get_wellness_metrics and announce the 5 wellness metrics (stress, distress, burnout, fatigue, low_self_esteem). Values are PERCENTAGES 0-100. DO NOT use markdown formatting (no **, *, _, etc.) - use plain numbered lists only. After announcing, IMMEDIATELY call confirm_announcement with phase='hellos'. Then WAIT - do NOT proactively call get_wellness_metrics again.
+8. Later, you will receive '[SYSTEM ALERT] Clinical indicators ready'. Only then should you call get_wellness_metrics again and announce the 2 clinical indicators (depression, anxiety). After announcing, IMMEDIATELY call confirm_announcement with phase='apollo'.
+9. Frame as research indicators, not clinical diagnosis
+10. Thank them for participating in the demonstration
+
+Note: Keep all responses concise. We need 60 seconds total speech (30s for mood/interests + 30s for reading). The first 30s is used for both Hellos and Apollo mood analysis. The next 30s is used for Apollo reading analysis."""
+
+apollo_greeting = "Hi there! I would like to talk to you for a couple of minutes and use your voice to predict your mood and energy levels including any depression, anxiety, stress, and fatigue. Nothing will be recorded and this is purely a demonstration of what is possible now that we have trained our models with many hours of professionally labelled data. Please begin by telling me your name, sex and year of birth."
 
 # Common configurations
 nova3_stt_100ms = {
