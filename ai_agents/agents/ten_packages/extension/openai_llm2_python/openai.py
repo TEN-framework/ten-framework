@@ -49,6 +49,7 @@ class OpenAILLM2Config(BaseModel):
     max_tokens: int = 4096
     seed: int = random.randint(0, 1000000)
     prompt: str = "You are a helpful assistant."
+    minimal_parameters: bool = False
     black_list_params: List[str] = field(
         default_factory=lambda: ["messages", "tools", "stream", "n", "model"]
     )
@@ -238,16 +239,6 @@ class OpenAIChatGPT:
                 tools = []
             tools.append(self._convert_tools_to_dict(tool))
 
-        # Determine model generation for parameter compatibility
-        # Legacy models (gpt-4, gpt-3, Groq) support more parameters
-        # Newer models (gpt-5+) have restricted parameter sets
-        model_lower = self.config.model.lower()
-        is_legacy_model = (
-            model_lower.startswith("gpt-4") or
-            model_lower.startswith("gpt-3") or
-            "groq" in self.config.base_url.lower()  # Groq uses old format
-        )
-
         # Build base request with minimal universally supported parameters
         req = {
             "model": self.config.model,
@@ -260,33 +251,32 @@ class OpenAIChatGPT:
             "n": 1,  # Assuming single response for now
         }
 
-        # Add parameters based on model generation
-        if is_legacy_model:
-            # Legacy models support all parameters
+        # Add parameters based on minimal_parameters flag
+        if self.config.minimal_parameters:
+            # Minimal mode: only max_completion_tokens (for GPT-5+ models)
+            # Uses default temperature=1.0, top_p=1.0
+            req["max_completion_tokens"] = self.config.max_tokens
+        else:
+            # Standard mode: all parameters (for GPT-4, GPT-3, Groq, etc.)
             req["max_tokens"] = self.config.max_tokens
             req["temperature"] = self.config.temperature
             req["top_p"] = self.config.top_p
             req["presence_penalty"] = self.config.presence_penalty
             req["frequency_penalty"] = self.config.frequency_penalty
             req["seed"] = self.config.seed
-        else:
-            # Newer models (gpt-5+) only support max_completion_tokens with default temperature/top_p
-            req["max_completion_tokens"] = self.config.max_tokens
-            # Excluded for GPT-5+: temperature, top_p, presence_penalty, frequency_penalty, seed
-            # GPT-5-nano requires defaults: temperature=1.0, top_p=1.0
 
         # Add additional parameters if they are not in the black list
-        # For GPT-5+ models, also exclude unsupported parameters
-        gpt5_unsupported_params = {"temperature", "top_p", "presence_penalty", "frequency_penalty", "seed", "max_tokens"}
+        # In minimal mode, also exclude unsupported parameters
+        minimal_unsupported_params = {"temperature", "top_p", "presence_penalty", "frequency_penalty", "seed", "max_tokens"}
 
         for key, value in (request_input.parameters or {}).items():
             # Check if it's a valid option and not in black list
             if self.config.is_black_list_params(key):
                 continue
 
-            # For GPT-5+ models, skip unsupported parameters
-            if not is_legacy_model and key in gpt5_unsupported_params:
-                self.ten_env.log_debug(f"Skipping GPT-5+ unsupported param: {key} = {value}")
+            # In minimal mode, skip unsupported parameters
+            if self.config.minimal_parameters and key in minimal_unsupported_params:
+                self.ten_env.log_debug(f"Skipping minimal mode unsupported param: {key} = {value}")
                 continue
 
             self.ten_env.log_debug(f"set openai param: {key} = {value}")
@@ -295,11 +285,11 @@ class OpenAIChatGPT:
         # REMOVED: Verbose logging - dumps entire prompt (~10KB+) on every LLM call
         # Adds I/O latency and pollutes logs. Enable only for deep debugging.
         # self.ten_env.log_info(f"Requesting chat completions with: {req}")
-        max_tokens_param = "max_tokens" if is_legacy_model else "max_completion_tokens"
+        max_tokens_param = "max_completion_tokens" if self.config.minimal_parameters else "max_tokens"
         max_tokens_value = req.get("max_tokens") or req.get("max_completion_tokens")
-        model_gen = "legacy" if is_legacy_model else "gpt-5+"
+        param_mode = "minimal" if self.config.minimal_parameters else "standard"
         self.ten_env.log_debug(
-            f"Requesting chat completions: model={req.get('model')} ({model_gen}), stream={req.get('stream')}, "
+            f"Requesting chat completions: model={req.get('model')} ({param_mode}), stream={req.get('stream')}, "
             f"messages={len(req.get('messages', []))} msgs, {max_tokens_param}={max_tokens_value}"
         )
         # Log tools for debugging tool call issues
