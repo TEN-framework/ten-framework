@@ -474,4 +474,14 @@ class OpenAIChatGPT:
             if req.get('tools'):
                 self.ten_env.log_error(f"[TOOL_DEBUG] Tools sent: {json.dumps(req.get('tools'), indent=2)}")
             self.ten_env.log_error(f"[TOOL_DEBUG] Last 2 messages: {json.dumps(req.get('messages', [])[-2:], indent=2)}")
+
+            # Dump full request to temp file for debugging
+            try:
+                import tempfile
+                with tempfile.NamedTemporaryFile(mode='w', prefix='llm_request_', suffix='.json', delete=False) as f:
+                    json.dump(req, f, indent=2)
+                    self.ten_env.log_error(f"[TOOL_DEBUG] Full request saved to: {f.name}")
+            except Exception as dump_err:
+                self.ten_env.log_error(f"[TOOL_DEBUG] Failed to dump request: {dump_err}")
+
             raise RuntimeError(f"CreateChatCompletion failed, err: {e}") from e
