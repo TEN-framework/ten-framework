@@ -10,7 +10,6 @@ import base64
 import urllib.parse
 import requests
 from dataclasses import dataclass
-from typing import Any
 
 from ten_runtime import AsyncTenEnv, Cmd
 from ten_ai_base.config import BaseConfig
