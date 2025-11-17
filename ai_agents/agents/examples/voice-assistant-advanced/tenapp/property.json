@@ -806,7 +806,6 @@
                   "model": "nova-3",
                   "language": "en-US",
                   "interim_results": true,
-                  "min_interim_confidence": 0.1,
                   "endpointing": 500,
                   "utterance_end_ms": 1000
                 }
@@ -1084,7 +1083,6 @@
                   "model": "nova-3",
                   "language": "en-US",
                   "interim_results": true,
-                  "min_interim_confidence": 0.1,
                   "endpointing": 500,
                   "utterance_end_ms": 1000
                 }
@@ -1369,7 +1367,6 @@
                   "model": "nova-3",
                   "language": "en-US",
                   "interim_results": true,
-                  "min_interim_confidence": 0.1,
                   "endpointing": 500,
                   "utterance_end_ms": 1000
                 }
@@ -1647,7 +1644,6 @@
                   "model": "nova-3",
                   "language": "en-US",
                   "interim_results": true,
-                  "min_interim_confidence": 0.1,
                   "endpointing": 500,
                   "utterance_end_ms": 1000
                 }

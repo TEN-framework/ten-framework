@@ -72,7 +72,6 @@ nova3_stt_300ms = {
             "model": "nova-3",
             "language": "en-US",
             "interim_results": True,
-            "min_interim_confidence": 0.1,
             "endpointing": 500,
             "utterance_end_ms": 1000,
         }
