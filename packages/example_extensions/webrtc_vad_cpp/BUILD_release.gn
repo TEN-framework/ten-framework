@@ -20,15 +20,8 @@ ten_package("webrtc_vad_cpp") {
 
   # Link math library for sqrt() in webrtc_vad.c
   # Only needed on Linux, not on macOS or Windows
-  libs = []
   if (is_linux) {
-    libs += [ "m" ]
-  }
-
-  # On macOS, explicitly add C++ standard library to ensure dynamic linking
-  # This prevents the linker from looking for static libc++.a
-  if (is_mac) {
-    libs += [ "c++" ]
+    libs = [ "m" ]
   }
 }
 

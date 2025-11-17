@@ -76,71 +76,107 @@ def test_standalone_webrtc_vad_cpp():
     if return_code != 0:
         assert False, "Failed to install package."
 
-    # Step 3:
-    #
-    # Build the extension.
-    print("Building the extension.")
-
-    tman_run_build_cmd = [
-        tman_bin,
-        "--config-file",
-        os.path.join(root_dir, "tests/local_registry/config.json"),
-        "--yes",
-        "run",
-        "build",
-    ]
-
-    tman_run_build_process = subprocess.Popen(
-        tman_run_build_cmd,
-        stdout=stdout,
-        stderr=subprocess.STDOUT,
-        env=my_env,
-        cwd=extension_root_path,
-    )
-    tman_run_build_process.wait()
-    return_code = tman_run_build_process.returncode
-    if return_code != 0:
-        assert False, "Failed to build package."
-
     build_config_args = build_config.parse_build_config(
         os.path.join(root_dir, "tgn_args.txt"),
     )
 
+    # Step 3:
+    #
+    # Execute tgn gen to generate the build files.
+    #
+    # Regardless of whether it is a standalone or non-standalone build, the C++
+    # compilation in the TEN world is unified and always starts from the app
+    # folder. Therefore, we need to switch to the `.ten/app/` directory before
+    # proceeding with the C++ `tgn` compilation.
+    ten_app_path = os.path.join(extension_root_path, ".ten", "app")
+    if not os.path.isdir(ten_app_path):
+        assert False, f"The directory does not exist.: {ten_app_path}"
+
+    tgn_gen_cmd = [
+        "tgn",
+        "gen",
+        build_config_args.target_os,
+        build_config_args.target_cpu,
+        build_config_args.target_build,
+        "--",
+        "ten_enable_standalone_test=true",
+    ]
+
+    if sys.platform == "win32":
+        if build_config_args.vs_version:
+            tgn_gen_cmd.append(f"vs_version={build_config_args.vs_version}")
+        tgn_gen_cmd = ["cmd", "/c"] + tgn_gen_cmd
+
+    tgn_gen_process = subprocess.Popen(
+        tgn_gen_cmd,
+        stdout=stdout,
+        stderr=subprocess.STDOUT,
+        env=my_env,
+        cwd=ten_app_path,
+    )
+    tgn_gen_rc = tgn_gen_process.wait()
+    assert tgn_gen_rc == 0
+
     # Step 4:
     #
-    # Standalone testing the extension.
-    print("Testing the extension.")
+    # Execute tgn build to build the extension and its test cases.
+    tgn_build_cmd = [
+        "tgn",
+        "build",
+        build_config_args.target_os,
+        build_config_args.target_cpu,
+        build_config_args.target_build,
+    ]
 
-    # Determine test executable path based on platform
     if sys.platform == "win32":
-        # On Windows, add the required DLL paths to PATH
+        tgn_build_cmd = ["cmd", "/c"] + tgn_build_cmd
+
+    tgn_build_process = subprocess.Popen(
+        tgn_build_cmd,
+        stdout=stdout,
+        stderr=subprocess.STDOUT,
+        env=my_env,
+        cwd=ten_app_path,
+    )
+    tgn_build_rc = tgn_build_process.wait()
+    assert tgn_build_rc == 0
+
+    # Step 5:
+    #
+    # Run standalone test cases.
+    tester_cmd = [
+        os.path.join(
+            extension_root_path,
+            (
+                "bin/webrtc_vad_cpp_test"
+                + (".exe" if build_config_args.target_os == "win" else "")
+            ),
+        ),
+    ]
+
+    my_env["TEN_ENABLE_MEMORY_TRACKING"] = "true" + ";" + my_env["PATH"]
+
+    if build_config_args.target_os == "win":
         my_env["PATH"] = (
             os.path.join(
                 extension_root_path,
-                ".ten/app/ten_packages/system/ten_runtime/lib",
+                (".ten/app/ten_packages/system/ten_runtime/lib"),
             )
             + ";"
             + my_env["PATH"]
         )
-        standalone_test_cmd = [
-            os.path.join(extension_root_path, "bin/webrtc_vad_cpp_test.exe"),
-        ]
-    else:
-        standalone_test_cmd = [
-            os.path.join(extension_root_path, "bin/webrtc_vad_cpp_test"),
-        ]
 
-    standalone_test_process = subprocess.Popen(
-        standalone_test_cmd,
+    tester_process = subprocess.Popen(
+        tester_cmd,
         stdout=stdout,
         stderr=subprocess.STDOUT,
         env=my_env,
+        # Only C++ compilation needs to be performed within the app folder; for
+        # running tests, it switches back to the extension folder.
         cwd=extension_root_path,
     )
-    standalone_test_process.wait()
-    return_code = standalone_test_process.returncode
-    if return_code != 0:
-        assert False, "Failed to test package."
+    tester_rc = tester_process.wait()
+    assert tester_rc == 0
 
     if build_config_args.ten_enable_tests_cleanup is True:
         # Testing complete. If builds are only created during the testing phase,

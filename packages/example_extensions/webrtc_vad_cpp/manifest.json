@@ -66,8 +66,7 @@
     "webrtc"
   ],
   "scripts": {
-    "test": "bin/webrtc_vad_cpp_test",
-    "build": "sh -c cd .ten/app && tgn gen linux x64 debug -- ten_enable_standalone_test=true && tgn build linux x64 debug"
+    "test": "bin/webrtc_vad_cpp_test"
   },
   "dependencies": [
     {
