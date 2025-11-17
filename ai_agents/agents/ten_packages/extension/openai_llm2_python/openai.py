@@ -248,7 +248,7 @@ class OpenAIChatGPT:
             "groq" in self.config.base_url.lower()  # Groq uses old format
         )
 
-        # Build base request with universally supported parameters
+        # Build base request with minimal universally supported parameters
         req = {
             "model": self.config.model,
             "messages": [
@@ -256,7 +256,6 @@ class OpenAIChatGPT:
                 *parsed_messages,
             ],
             "tools": tools,
-            "temperature": self.config.temperature,
             "stream": request_input.streaming,
             "n": 1,  # Assuming single response for now
         }
@@ -265,15 +264,16 @@ class OpenAIChatGPT:
         if is_legacy_model:
             # Legacy models support all parameters
             req["max_tokens"] = self.config.max_tokens
+            req["temperature"] = self.config.temperature
             req["top_p"] = self.config.top_p
             req["presence_penalty"] = self.config.presence_penalty
             req["frequency_penalty"] = self.config.frequency_penalty
             req["seed"] = self.config.seed
         else:
-            # Newer models (gpt-5+) use max_completion_tokens and exclude penalty/seed params
+            # Newer models (gpt-5+) only support max_completion_tokens with default temperature/top_p
             req["max_completion_tokens"] = self.config.max_tokens
-            req["top_p"] = self.config.top_p
-            # Excluded for GPT-5+: presence_penalty, frequency_penalty, seed
+            # Excluded for GPT-5+: temperature, top_p, presence_penalty, frequency_penalty, seed
+            # GPT-5-nano requires defaults: temperature=1.0, top_p=1.0
 
         # Add additional parameters if they are not in the black list
         for key, value in (request_input.parameters or {}).items():
