@@ -51,9 +51,6 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
         self.session_start_time: float = (
             0.0  # Track when ASR session started for echo cancel settling
         )
-        # Accumulate is_final=True segments until speech_final=True
-        self.accumulated_segments: list[str] = []
-        self.current_utterance_start_ms: int = 0
 
     @override
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
@@ -150,24 +147,11 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
                     "true" if self.config.interim_results else "false"
                 ),
                 "punctuate": "true" if self.config.punctuate else "false",
-                "endpointing": self.config.endpointing,  # Pass as integer, not string
-                "utterance_end_ms": self.config.utterance_end_ms,  # Pass as integer
+                "endpointing": str(self.config.endpointing),
+                "utterance_end_ms": str(self.config.utterance_end_ms),
             }
 
-        # Log raw config values and params dict BEFORE URL encoding
-        self.ten_env.log_info(
-            f"[DEEPGRAM-PARAMS-RAW] config.endpointing={self.config.endpointing} "
-            f"(type={type(self.config.endpointing).__name__}) "
-            f"config.utterance_end_ms={self.config.utterance_end_ms}"
-        )
-        self.ten_env.log_info(
-            f"[DEEPGRAM-PARAMS-DICT] params={params}"
-        )
-
         query_string = urlencode(params)
-        self.ten_env.log_info(
-            f"[DEEPGRAM-PARAMS-ENCODED] query_string={query_string}"
-        )
         return f"{self.config.url}?{query_string}"
 
     @override
@@ -258,40 +242,12 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
                 self.ten_env.log_info(
                     "[DEEPGRAM-WS] UtteranceEnd", category=LOG_CATEGORY_VENDOR
                 )
-                # Flush any accumulated segments as final before clearing
-                if self.accumulated_segments:
-                    combined_text = " ".join(self.accumulated_segments)
-                    self.ten_env.log_info(
-                        f"[DEEPGRAM-UTTERANCE-END-FLUSH] Flushing {len(self.accumulated_segments)} accumulated segments: '{combined_text}'",
-                        category=LOG_CATEGORY_VENDOR,
-                    )
-
-                    asr_result = ASRResult(
-                        text=combined_text,
-                        final=True,
-                        start_ms=self.current_utterance_start_ms,
-                        duration_ms=0,  # Unknown duration for flushed segments
-                        language=self.config.language,
-                        words=[],
-                    )
-
-                    self.ten_env.log_info(
-                        f"[DEEPGRAM-SENDING-ASR] text={asr_result.text!r} final={asr_result.final}"
-                    )
-                    await self.send_asr_result(asr_result)
-
-                # Clear accumulated segments on utterance end
-                self.accumulated_segments = []
-                self.current_utterance_start_ms = 0
                 await self.send_asr_finalize_end()
 
             elif msg_type == "SpeechStarted":
                 self.ten_env.log_info(
                     "[DEEPGRAM-WS] SpeechStarted", category=LOG_CATEGORY_VENDOR
                 )
-                # Clear accumulated segments on new speech
-                self.accumulated_segments = []
-                self.current_utterance_start_ms = 0
 
             elif msg_type == "Connected":
                 self.ten_env.log_info(
@@ -321,16 +277,9 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
                     category=LOG_CATEGORY_VENDOR,
                 )
 
-            elif msg_type in ["Error", "Warning", "error", "warning"]:
-                # Log errors/warnings at INFO level with full payload
-                self.ten_env.log_info(
-                    f"[DEEPGRAM-{msg_type.upper()}] {data}"
-                )
-
             else:
-                # Log unknown messages with full payload to catch any issues
-                self.ten_env.log_info(
-                    f"[DEEPGRAM-WS] Unknown message type '{msg_type}': {data}"
+                self.ten_env.log_debug(
+                    f"[DEEPGRAM-WS] Unknown message type: {msg_type}"
                 )
 
         except Exception as e:
@@ -464,19 +413,6 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
             # Get the best alternative
             alternative = alternatives[0]
             transcript_text = alternative.get("transcript", "")
-            # Log ALL transcripts including empties
-            _is_final = data.get("is_final", False)
-            _speech_final = data.get("speech_final", None)  # Check for speech_final field
-            _confidence = alternative.get("confidence", 0.0)
-
-            # Log raw Deepgram response fields for debugging
-            self.ten_env.log_info(
-                f"[DEEPGRAM-RAW-RESPONSE] is_final={_is_final} speech_final={_speech_final} "
-                f"text={transcript_text!r} conf={_confidence:.3f}"
-            )
-            self.ten_env.log_info(
-                f"[DEEPGRAM-TRANSCRIPT-ALL] text={transcript_text!r} final={_is_final} conf={_confidence:.3f}"
-            )
 
             # Skip empty transcripts
             if not transcript_text:
@@ -484,7 +420,6 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
 
             # Get timing information
             is_final = data.get("is_final", False)
-            speech_final = data.get("speech_final", False)
             start_time = data.get("start", 0.0)
             duration = data.get("duration", 0.0)
 
@@ -495,102 +430,28 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
             # Get confidence for filtering
             confidence = alternative.get("confidence", 0.0)
 
-            # CRITICAL FIX: Accumulate segments until speech_final=True
-            # According to Deepgram docs on endpointing + interim_results:
-            # - Interim results (is_final=False): Send immediately for streaming UX
-            # - is_final=True, speech_final=False: Transcript finalized but speech continues
-            # - is_final=True, speech_final=True: Speech ended after endpointing delay (500ms)
-            # We accumulate all is_final segments and only send to LLM when speech_final=True
+            # Filter out low-confidence interim results to avoid false positives from noise
+            if not is_final and confidence < self.config.min_interim_confidence:
+                return
 
-            # Track utterance start for combined segment
-            if not self.accumulated_segments and not is_final:
-                self.current_utterance_start_ms = start_ms
+            # Log transcript
+            self.ten_env.log_info(
+                f"[DEEPGRAM-TRANSCRIPT] Text: '{transcript_text}' | "
+                f"Final: {is_final} | Start: {start_ms}ms | Duration: {duration_ms}ms",
+                category=LOG_CATEGORY_VENDOR,
+            )
 
-            # Handle different states
-            if not is_final:
-                # Interim result - send immediately for streaming UX
-                if confidence < self.config.min_interim_confidence:
-                    return  # Filter low-confidence interim
+            # Send ASR result
+            asr_result = ASRResult(
+                text=transcript_text,
+                final=is_final,
+                start_ms=start_ms,
+                duration_ms=duration_ms,
+                language=self.config.language,
+                words=[],
+            )
 
-                # PREPEND accumulated segments for smooth UX
-                # User sees: "One, two, three, four" instead of just "four" when new segment starts
-                if self.accumulated_segments:
-                    display_text = " ".join(self.accumulated_segments + [transcript_text])
-                    self.ten_env.log_info(
-                        f"[DEEPGRAM-INTERIM-COMBINED] Accumulated: {len(self.accumulated_segments)} segments | "
-                        f"Current: '{transcript_text}' | Display: '{display_text}'",
-                        category=LOG_CATEGORY_VENDOR,
-                    )
-                else:
-                    display_text = transcript_text
-                    self.ten_env.log_info(
-                        f"[DEEPGRAM-INTERIM] Text: '{transcript_text}' | "
-                        f"conf: {confidence:.3f} | Start: {start_ms}ms | Duration: {duration_ms}ms",
-                        category=LOG_CATEGORY_VENDOR,
-                    )
-
-                asr_result = ASRResult(
-                    text=display_text,
-                    final=False,
-                    start_ms=self.current_utterance_start_ms if self.accumulated_segments else start_ms,
-                    duration_ms=duration_ms,
-                    language=self.config.language,
-                    words=[],
-                )
-                await self.send_asr_result(asr_result)
-
-            elif is_final and not speech_final:
-                # Segment finalized but speech continues - accumulate it
-                if not self.accumulated_segments:
-                    self.current_utterance_start_ms = start_ms
-
-                self.accumulated_segments.append(transcript_text)
-                self.ten_env.log_info(
-                    f"[DEEPGRAM-ACCUMULATE] Segment {len(self.accumulated_segments)}: '{transcript_text}' | "
-                    f"Total accumulated: {len(self.accumulated_segments)} segments",
-                    category=LOG_CATEGORY_VENDOR,
-                )
-
-            elif speech_final:
-                # Speech ended - combine all accumulated + current and send as final
-                if self.accumulated_segments:
-                    # Combine accumulated segments + current
-                    combined_text = " ".join(self.accumulated_segments + [transcript_text])
-                    self.ten_env.log_info(
-                        f"[DEEPGRAM-COMBINE] Combined {len(self.accumulated_segments)+1} segments: '{combined_text}'",
-                        category=LOG_CATEGORY_VENDOR,
-                    )
-                else:
-                    # No accumulated segments, just current
-                    combined_text = transcript_text
-                    self.current_utterance_start_ms = start_ms
-
-                # Calculate total duration from utterance start to now
-                total_duration_ms = (start_ms + duration_ms) - self.current_utterance_start_ms
-
-                self.ten_env.log_info(
-                    f"[DEEPGRAM-FINAL] Text: '{combined_text}' | "
-                    f"speech_final: True | Start: {self.current_utterance_start_ms}ms | Duration: {total_duration_ms}ms",
-                    category=LOG_CATEGORY_VENDOR,
-                )
-
-                asr_result = ASRResult(
-                    text=combined_text,
-                    final=True,
-                    start_ms=self.current_utterance_start_ms,
-                    duration_ms=total_duration_ms,
-                    language=self.config.language,
-                    words=[],
-                )
-
-                self.ten_env.log_info(
-                    f"[DEEPGRAM-SENDING-ASR] text={asr_result.text!r} final={asr_result.final}"
-                )
-                await self.send_asr_result(asr_result)
-
-                # Clear accumulated segments for next utterance
-                self.accumulated_segments = []
-                self.current_utterance_start_ms = 0
+            await self.send_asr_result(asr_result)
 
         except Exception as e:
             self.ten_env.log_error(
@@ -615,21 +476,18 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
                 try:
                     await asyncio.wait_for(self.session.close(), timeout=5.0)
                 except asyncio.TimeoutError:
-                    if self.ten_env:
-                        self.ten_env.log_warn(
-                            "[DEEPGRAM-WS] Session close timed out"
-                        )
+                    self.ten_env.log_warn(
+                        "[DEEPGRAM-WS] Session close timed out"
+                    )
                 self.session = None
 
             self.connected = False
-            if self.ten_env:
-                self.ten_env.log_info("[DEEPGRAM-WS] Connection stopped")
+            self.ten_env.log_info("[DEEPGRAM-WS] Connection stopped")
 
         except Exception as e:
-            if self.ten_env:
-                self.ten_env.log_error(
-                    f"[DEEPGRAM-WS] Error stopping connection: {e}\n{traceback.format_exc()}"
-                )
+            self.ten_env.log_error(
+                f"[DEEPGRAM-WS] Error stopping connection: {e}\n{traceback.format_exc()}"
+            )
 
     @override
     def is_connected(self) -> bool:

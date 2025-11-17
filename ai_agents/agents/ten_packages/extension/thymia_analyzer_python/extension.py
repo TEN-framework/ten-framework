@@ -2613,6 +2613,10 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                         f"[THYMIA_ANNOUNCEMENT_CONFIRM_FAIL] Unknown phase: {phase}"
                     )
 
+                # Silent flag: This is a fire-and-forget tool
+                # The LLM should call this WHILE announcing results (parallel execution)
+                # We don't want another LLM response after this completes - just track the confirmation
+                # NOTE: Silent flag approach may not work with Groq API - see llm_exec.py comments
                 return LLMToolResultLLMResult(
                     type="llmresult",
                     content=json.dumps(
@@ -2622,6 +2626,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                             "message": f"Announcement confirmation recorded for {phase}",
                         }
                     ),
+                    silent=True,  # Don't send result back to LLM
                 )
 
             # Handle check_phase_progress tool
