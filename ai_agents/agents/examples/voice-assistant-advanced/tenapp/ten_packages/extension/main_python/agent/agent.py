@@ -142,6 +142,10 @@ class Agent:
             if data.get_name() == "asr_result":
                 asr_json, _ = data.get_property_to_json(None)
                 asr = json.loads(asr_json)
+                # Log incoming ASR result
+                self.ten_env.log_info(
+                    f"[AGENT-ASR-RECEIVED] text={asr.get('text', '')!r} final={asr.get('final', False)}"
+                )
                 await self._emit_asr(
                     ASRResultEvent(
                         text=asr.get("text", ""),
@@ -156,12 +160,12 @@ class Agent:
 
                 if text and is_final:
                     self.ten_env.log_info(
-                        f"[Agent] Received text_data hint: '{text}'"
+                        f"[AGENT-TEXT-DATA-TRIGGER] Received text_data (thymia announcement): {text[:80]}..."
                     )
                     # Queue as user input to trigger LLM tool calls
                     await self.queue_llm_input(text)
                     self.ten_env.log_info(
-                        f"[Agent] Queued hint to LLM input queue - LLM should process as user message"
+                        f"[AGENT-QUEUED-TO-LLM] Queued text_data to LLM input queue"
                     )
             elif data.get_name() in ["tts_audio_start", "tts_audio_end"]:
                 # TTS events are logged but not forwarded - they should be routed directly via graph

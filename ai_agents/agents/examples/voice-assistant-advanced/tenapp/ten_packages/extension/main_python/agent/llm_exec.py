@@ -104,7 +104,6 @@ class LLMExec:
             self.tool_registry[tool.name] = source
 
     async def _process_input_queue(self):
-        self.ten_env.log_info(f"[MAIN-QUEUE] Processing queue, size={len(self.input_queue)}")
         """
         Process the input queue for commands and data.
         This method runs in a loop, processing items from the queue.
