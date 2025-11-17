@@ -16,14 +16,19 @@ ten_package("webrtc_vad_cpp") {
     "third_party/webrtc_vad/webrtc_vad.c",
   ]
 
-  include_dirs = [
-    "third_party/webrtc_vad",
-  ]
+  include_dirs = [ "third_party/webrtc_vad" ]
 
   # Link math library for sqrt() in webrtc_vad.c
   # Only needed on Linux, not on macOS or Windows
+  libs = []
   if (is_linux) {
-    libs = [ "m" ]
+    libs += [ "m" ]
+  }
+
+  # On macOS, explicitly add C++ standard library to ensure dynamic linking
+  # This prevents the linker from looking for static libc++.a
+  if (is_mac) {
+    libs += [ "c++" ]
   }
 }
 

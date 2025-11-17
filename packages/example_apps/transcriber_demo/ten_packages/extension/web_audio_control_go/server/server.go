@@ -46,9 +46,10 @@ type StartPlayRequest struct {
 }
 
 type WebSocketMessage struct {
-	Type              string `json:"type"` // "asr_result", "audio_data" or "error"
+	Type              string `json:"type"` // "asr_result", "audio_data", "vad_status" or "error"
 	Text              string `json:"text"`
 	Final             bool   `json:"final"`
+	IsSpeech          bool   `json:"is_speech"`
 	SampleRate        int    `json:"sample_rate"`
 	Channels          int    `json:"channels"`
 	SamplesPerChannel int    `json:"samples_per_channel"`
@@ -336,6 +337,25 @@ func (s *WebServer) BroadcastAsrResult(text string, final bool) {
 		err := client.WriteJSON(message)
 		if err != nil {
 			s.tenEnv.LogError(fmt.Sprintf("Failed to send message to client: %v", err))
+			client.Close()
+			delete(s.clients, client)
+		}
+	}
+}
+
+func (s *WebServer) BroadcastVadStatus(isSpeech bool) {
+	s.clientsMu.RLock()
+	defer s.clientsMu.RUnlock()
+
+	message := WebSocketMessage{
+		Type:     "vad_status",
+		IsSpeech: isSpeech,
+	}
+
+	for client := range s.clients {
+		err := client.WriteJSON(message)
+		if err != nil {
+			s.tenEnv.LogError(fmt.Sprintf("Failed to send VAD status to client: %v", err))
 			client.Close()
 			delete(s.clients, client)
 		}

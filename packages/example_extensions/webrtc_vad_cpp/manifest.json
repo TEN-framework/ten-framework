@@ -93,12 +93,12 @@
     },
     "audio_frame_in": [
       {
-        "name": "audio_frame"
+        "name": "pcm_frame"
       }
     ],
     "audio_frame_out": [
       {
-        "name": "audio_frame",
+        "name": "pcm_frame",
         "property": {
           "properties": {
             "is_speech": {

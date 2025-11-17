@@ -4,6 +4,7 @@ Test standalone_webrtc_vad_cpp.
 
 import subprocess
 import os
+import sys
 from sys import stdout
 from .utils import build_config, fs_utils
 
@@ -17,11 +18,20 @@ def test_standalone_webrtc_vad_cpp():
 
     my_env = os.environ.copy()
 
+    # Determine tman path based on platform
+    if sys.platform == "win32":
+        my_env["PATH"] = (
+            os.path.join(root_dir, "ten_manager/lib") + ";" + my_env["PATH"]
+        )
+        tman_bin = os.path.join(root_dir, "ten_manager/bin/tman.exe")
+    else:
+        tman_bin = os.path.join(root_dir, "ten_manager/bin/tman")
+
     # Step 1:
     #
     # Create webrtc_vad_cpp package directly.
     tman_fetch_cmd = [
-        os.path.join(root_dir, "ten_manager/bin/tman"),
+        tman_bin,
         "--config-file",
         os.path.join(root_dir, "tests/local_registry/config.json"),
         "--yes",
@@ -46,7 +56,7 @@ def test_standalone_webrtc_vad_cpp():
     #
     # Install all the dependencies of the webrtc_vad_cpp package.
     tman_install_cmd = [
-        os.path.join(root_dir, "ten_manager/bin/tman"),
+        tman_bin,
         "--config-file",
         os.path.join(root_dir, "tests/local_registry/config.json"),
         "--yes",
@@ -72,7 +82,7 @@ def test_standalone_webrtc_vad_cpp():
     print("Building the extension.")
 
     tman_run_build_cmd = [
-        os.path.join(root_dir, "ten_manager/bin/tman"),
+        tman_bin,
         "--config-file",
         os.path.join(root_dir, "tests/local_registry/config.json"),
         "--yes",
@@ -101,9 +111,24 @@ def test_standalone_webrtc_vad_cpp():
     # Standalone testing the extension.
     print("Testing the extension.")
 
-    standalone_test_cmd = [
-        os.path.join(extension_root_path, "bin/webrtc_vad_cpp_test"),
-    ]
+    # Determine test executable path based on platform
+    if sys.platform == "win32":
+        # On Windows, add the required DLL paths to PATH
+        my_env["PATH"] = (
+            os.path.join(
+                extension_root_path,
+                ".ten/app/ten_packages/system/ten_runtime/lib",
+            )
+            + ";"
+            + my_env["PATH"]
+        )
+        standalone_test_cmd = [
+            os.path.join(extension_root_path, "bin/webrtc_vad_cpp_test.exe"),
+        ]
+    else:
+        standalone_test_cmd = [
+            os.path.join(extension_root_path, "bin/webrtc_vad_cpp_test"),
+        ]
 
     standalone_test_process = subprocess.Popen(
         standalone_test_cmd,
