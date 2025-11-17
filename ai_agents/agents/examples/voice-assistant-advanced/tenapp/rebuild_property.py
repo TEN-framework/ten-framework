@@ -54,7 +54,7 @@ nova3_stt_100ms = {
             "model": "nova-3",
             "language": "en-US",
             "endpointing": 100,
-            "utterance_end_ms": 50,
+            "utterance_end_ms": 1000,
         }
     },
 }
@@ -71,7 +71,7 @@ nova3_stt_300ms = {
             "model": "nova-3",
             "language": "en-US",
             "endpointing": 500,
-            "utterance_end_ms": 50,
+            "utterance_end_ms": 1000,
         }
     },
 }
@@ -88,7 +88,7 @@ flux_stt_300ms = {
             "model": "flux-general-en",
             "language": "en-US",
             "endpointing": 500,
-            "utterance_end_ms": 50,
+            "utterance_end_ms": 1000,
         }
     },
 }

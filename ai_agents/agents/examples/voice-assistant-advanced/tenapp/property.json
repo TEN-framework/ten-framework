@@ -56,7 +56,7 @@
                   "model": "nova-3",
                   "language": "en-US",
                   "endpointing": 100,
-                  "utterance_end_ms": 50
+                  "utterance_end_ms": 1000
                 }
               }
             },
@@ -294,7 +294,7 @@
                   "model": "nova-3",
                   "language": "en-US",
                   "endpointing": 100,
-                  "utterance_end_ms": 50
+                  "utterance_end_ms": 1000
                 }
               }
             },
@@ -545,7 +545,7 @@
                   "model": "nova-3",
                   "language": "en-US",
                   "endpointing": 100,
-                  "utterance_end_ms": 50
+                  "utterance_end_ms": 1000
                 }
               }
             },
@@ -803,7 +803,7 @@
                   "model": "nova-3",
                   "language": "en-US",
                   "endpointing": 500,
-                  "utterance_end_ms": 50
+                  "utterance_end_ms": 1000
                 }
               }
             },
@@ -1079,7 +1079,7 @@
                   "model": "nova-3",
                   "language": "en-US",
                   "endpointing": 500,
-                  "utterance_end_ms": 50
+                  "utterance_end_ms": 1000
                 }
               }
             },
@@ -1362,7 +1362,7 @@
                   "model": "nova-3",
                   "language": "en-US",
                   "endpointing": 500,
-                  "utterance_end_ms": 50
+                  "utterance_end_ms": 1000
                 }
               }
             },
@@ -1638,7 +1638,7 @@
                   "model": "nova-3",
                   "language": "en-US",
                   "endpointing": 500,
-                  "utterance_end_ms": 50
+                  "utterance_end_ms": 1000
                 }
               }
             },
@@ -1921,7 +1921,7 @@
                   "model": "flux-general-en",
                   "language": "en-US",
                   "endpointing": 500,
-                  "utterance_end_ms": 50
+                  "utterance_end_ms": 1000
                 }
               }
             },
@@ -2197,7 +2197,7 @@
                   "model": "flux-general-en",
                   "language": "en-US",
                   "endpointing": 500,
-                  "utterance_end_ms": 50
+                  "utterance_end_ms": 1000
                 }
               }
             },
