@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "default_asr_python",
-  "version": "0.11.30",
+  "version": "0.11.31",
   "display_name": {
     "locales": {
       "en-US": {
@@ -68,7 +68,7 @@
     {
       "type": "system",
       "name": "ten_runtime_python",
-      "version": "0.11.30"
+      "version": "0.11.31"
     },
     {
       "type": "system",
