@@ -1,6 +1,5 @@
 "use client";
 
-import axios from "axios";
 import { Send } from "lucide-react";
 import * as React from "react";
 import { toast } from "sonner";
@@ -13,7 +12,6 @@ import { addChatItem } from "@/store/reducers/global";
 import {
   EMessageDataType,
   EMessageType,
-  ERTMTextType,
   type IRTMTextItem,
 } from "@/types";
 
@@ -27,19 +25,18 @@ export default function ChatCard(props: { className?: string }) {
   const graphName = useAppSelector((state) => state.global.selectedGraphId);
   const agentConnected = useAppSelector((state) => state.global.agentConnected);
   const options = useAppSelector((state) => state.global.options);
-  const httpPortNumber = useAppSelector((state) => state.global.options.http_port_number);
 
   const disableInputMemo = React.useMemo(() => {
     return (
       !options.channel ||
       !options.userId ||
-      !httpPortNumber ||
+      !rtmConnected ||
       !agentConnected
     );
   }, [
     options.channel,
     options.userId,
-    httpPortNumber,
+    rtmConnected,
     agentConnected,
   ]);
 
@@ -48,22 +45,36 @@ export default function ChatCard(props: { className?: string }) {
 
   useAutoScroll(chatRef);
 
+  // Register RTM event listener on mount
+  React.useEffect(() => {
+    if (rtmConnected) {
+      console.log("[chat] Registering RTM event listener");
+      rtmManager.on("rtmMessage", onTextChanged);
+    }
+
+    return () => {
+      if (rtmConnected) {
+        console.log("[chat] Unregistering RTM event listener");
+        rtmManager.off("rtmMessage", onTextChanged);
+      }
+    };
+  }, [rtmConnected]);
+
   const onTextChanged = (text: IRTMTextItem) => {
     console.log("[rtm] onTextChanged", text);
-    if (text.type == ERTMTextType.TRANSCRIBE) {
-      // const isAgent = Number(text.uid) != Number(options.userId)
+    if (text.data_type == "transcribe") {
       dispatch(
         addChatItem({
           userId: options.userId,
           text: text.text,
-          type: text.stream_id === "0" ? EMessageType.AGENT : EMessageType.USER,
+          type: text.role === "assistant" ? EMessageType.AGENT : EMessageType.USER,
           data_type: EMessageDataType.TEXT,
           isFinal: text.is_final,
-          time: text.ts,
+          time: text.text_ts,
         })
       );
     }
-    if (text.type == ERTMTextType.INPUT_TEXT) {
+    if (text.data_type == "input_text") {
       dispatch(
         addChatItem({
           userId: options.userId,
@@ -71,7 +82,7 @@ export default function ChatCard(props: { className?: string }) {
           type: EMessageType.USER,
           data_type: EMessageDataType.TEXT,
           isFinal: true,
-          time: text.ts,
+          time: text.text_ts,
         })
       );
     }
@@ -83,18 +94,14 @@ export default function ChatCard(props: { className?: string }) {
 
   const handleInputSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!inputValue || disableInputMemo || !httpPortNumber) {
+    if (!inputValue || disableInputMemo) {
       return;
     }
 
     try {
-      // Send POST request to /proxy/{http_port_number}/cmd
-      await axios.post(`/proxy/${httpPortNumber}/cmd`, {
-        name: "message",
-        payload: {
-          text: inputValue,
-        },
-      });
+      // Send text via RTM
+      await rtmManager.sendText(inputValue);
+      console.log("[chat] Message sent via RTM:", inputValue);
 
       // Clear input on success
       setInputValue("");

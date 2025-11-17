@@ -14,6 +14,11 @@
       "version": "=0.23.9-t1"
     },
     {
+      "type": "extension",
+      "name": "agora_rtm",
+      "version": "0.11.1"
+    },
+    {
       "type": "system",
       "name": "ten_ai_base",
       "version": "0.7"

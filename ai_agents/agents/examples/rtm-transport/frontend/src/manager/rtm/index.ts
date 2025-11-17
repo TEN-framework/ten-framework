@@ -2,11 +2,11 @@
 
 import AgoraRTM, { type RTMClient, type RTMStreamChannel } from "agora-rtm";
 import { apiGenAgoraData } from "@/common";
-import { ERTMTextType, type IRTMTextItem } from "@/types";
+import { type IRTMTextItem } from "@/types";
 import { AGEventEmitter } from "../events";
 
 export interface IRtmEvents {
-  rtmMessage: (text: any) => void; // TODO: update type
+  rtmMessage: (text: IRTMTextItem) => void;
 }
 
 export type TRTMMessageEvent = {
@@ -46,19 +46,21 @@ export class RtmManager extends AGEventEmitter<IRtmEvents> {
     token: string;
   }) {
     if (this._joined) {
+      console.log("[RTM] Already initialized");
       return;
     }
-    this.channel = channel;
-    this.userId = userId;
-    this.appId = appId;
-    this.token = token;
-    const rtm = new AgoraRTM.RTM(appId, String(userId), {
-      logLevel: "debug", // TODO: use INFO
-      // update config: https://doc.shengwang.cn/api-ref/rtm2/javascript/toc-configuration/configuration#rtmConfig
-    });
-    await rtm.login({ token });
+
     try {
-      // subscribe message channel(will be created automatically)
+      this.channel = channel;
+      this.userId = userId;
+      this.appId = appId;
+      this.token = token;
+
+      const rtm = new AgoraRTM.RTM(appId, String(userId));
+
+      await rtm.login({ token });
+      console.log("[RTM] Login successful");
+
       const subscribeResult = await rtm.subscribe(channel, {
         withMessage: true,
         withPresence: true,
@@ -66,18 +68,17 @@ export class RtmManager extends AGEventEmitter<IRtmEvents> {
         withMetadata: true,
         withLock: true,
       });
-      console.log(
-        "[RTM] Subscribe Message Channel success!: ",
-        subscribeResult
-      );
+      console.log("[RTM] Subscribe successful:", subscribeResult);
 
       this._joined = true;
       this._client = rtm;
 
-      // listen events
       this._listenRtmEvents();
-    } catch (status) {
-      console.error("Failed to Create/Join Message Channel", status);
+    } catch (error) {
+      console.error("[RTM] Initialization failed:", error);
+      this._joined = false;
+      this._client = null;
+      throw error;
     }
   }
 
@@ -116,10 +117,11 @@ export class RtmManager extends AGEventEmitter<IRtmEvents> {
   async sendText(text: string) {
     const msg: IRTMTextItem = {
       is_final: true,
-      ts: Date.now(),
+      text_ts: Date.now(),
       text,
-      type: ERTMTextType.INPUT_TEXT,
-      stream_id: String(this.userId),
+      data_type: "input_text",
+      role: "user",
+      stream_id: this.userId,
     };
     await this._client?.publish(this.channel, JSON.stringify(msg), {
       customType: "PainTxt",
@@ -128,22 +130,38 @@ export class RtmManager extends AGEventEmitter<IRtmEvents> {
   }
 
   async destroy() {
-    // remove listener
-    this._client?.removeEventListener(
-      "message",
-      this.handleRtmMessage.bind(this)
-    );
-    this._client?.removeEventListener(
-      "presence",
-      this.handleRtmPresence.bind(this)
-    );
-    // unsubscribe
-    await this._client?.unsubscribe(this.channel);
-    // logout
-    await this._client?.logout();
+    if (!this._client || !this._joined) {
+      console.log("[RTM] Already destroyed or not initialized");
+      return;
+    }
 
-    this._client = null;
-    this._joined = false;
+    try {
+      // Remove event listeners
+      this._client.removeEventListener(
+        "message",
+        this.handleRtmMessage.bind(this)
+      );
+      this._client.removeEventListener(
+        "presence",
+        this.handleRtmPresence.bind(this)
+      );
+
+      // Unsubscribe from channel
+      await this._client.unsubscribe(this.channel);
+      console.log("[RTM] Unsubscribed from channel");
+
+      // Logout
+      await this._client.logout();
+      console.log("[RTM] Logout successful");
+
+      this._client = null;
+      this._joined = false;
+    } catch (error) {
+      console.error("[RTM] Destroy failed:", error);
+      // Reset state anyway
+      this._client = null;
+      this._joined = false;
+    }
   }
 }
 

@@ -12,23 +12,21 @@ import {
   useAppSelector,
   useIsCompactLayout,
   VideoSourceType,
-  VOICE_OPTIONS,
 } from "@/common";
 import Avatar from "@/components/Agent/AvatarTrulience";
 import VideoBlock from "@/components/Agent/Camera";
 import MicrophoneBlock from "@/components/Agent/Microphone";
 import AgentView from "@/components/Agent/View";
-import AgentVoicePresetSelect from "@/components/Agent/VoicePresetSelect";
 import ChatCard from "@/components/Chat/ChatCard";
 import { cn } from "@/lib/utils";
 import { type IRtcUser, type IUserTracks, rtcManager } from "@/manager";
+import { rtmManager } from "@/manager/rtm";
 import {
-  addChatItem,
   setOptions,
   setRoomConnected,
+  setRtmConnected,
   setVoiceType,
 } from "@/store/reducers/global";
-import { EMessageType, type IChatItem, ITextItem } from "@/types";
 
 let hasInit: boolean = false;
 
@@ -77,7 +75,6 @@ export default function RTCCard(props: { className?: string }) {
   const init = async () => {
     console.log("[rtc] init");
     rtcManager.on("localTracksChanged", onLocalTracksChanged);
-    rtcManager.on("textChanged", onTextChanged);
     rtcManager.on("remoteUserChanged", onRemoteUserChanged);
     await rtcManager.createCameraTracks();
     await rtcManager.createMicrophoneAudioTrack();
@@ -94,16 +91,42 @@ export default function RTCCard(props: { className?: string }) {
     );
     await rtcManager.publish();
     dispatch(setRoomConnected(true));
+
+    // Initialize RTM
+    try {
+      console.log("[rtm] init");
+      await rtmManager.init({
+        channel,
+        userId,
+        appId: rtcManager.appId ?? "",
+        token: rtcManager.token ?? "",
+      });
+      dispatch(setRtmConnected(true));
+      console.log("[rtm] init complete");
+    } catch (error) {
+      console.error("[rtm] init failed:", error);
+      dispatch(setRtmConnected(false));
+    }
+
     hasInit = true;
   };
 
   const destory = async () => {
     console.log("[rtc] destory");
-    rtcManager.off("textChanged", onTextChanged);
     rtcManager.off("localTracksChanged", onLocalTracksChanged);
     rtcManager.off("remoteUserChanged", onRemoteUserChanged);
     await rtcManager.destroy();
     dispatch(setRoomConnected(false));
+
+    // Destroy RTM
+    try {
+      console.log("[rtm] destory");
+      await rtmManager.destroy();
+      dispatch(setRtmConnected(false));
+    } catch (error) {
+      console.error("[rtm] destory failed:", error);
+    }
+
     hasInit = false;
   };
 
@@ -126,11 +149,6 @@ export default function RTCCard(props: { className?: string }) {
     if (audioTrack) {
       setAudioTrack(audioTrack);
     }
-  };
-
-  const onTextChanged = (text: IChatItem) => {
-    console.log("[rtc] onTextChanged", text);
-    dispatch(addChatItem(text));
   };
 
   const onVoiceChange = (value: any) => {

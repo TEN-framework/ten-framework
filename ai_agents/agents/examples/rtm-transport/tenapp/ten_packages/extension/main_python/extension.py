@@ -3,6 +3,8 @@ import json
 import time
 from typing import Literal
 
+from ten_runtime.msg import Loc
+
 from .agent.decorators import agent_event_handler
 from ten_runtime import (
     AsyncExtension,
@@ -141,11 +143,12 @@ class MainControlExtension(AsyncExtension):
         """
         Sends the transcript (ASR or LLM output) to the message collector.
         """
+
+        cmd = Cmd.create("publish")
+        cmd.set_dests([Loc("", "", "agora_rtm")])
+
         if data_type == "text":
-            await _send_data(
-                self.ten_env,
-                "message",
-                "message_collector",
+            text = json.dumps(
                 {
                     "data_type": "transcribe",
                     "role": role,
@@ -153,13 +156,11 @@ class MainControlExtension(AsyncExtension):
                     "text_ts": int(time.time() * 1000),
                     "is_final": final,
                     "stream_id": stream_id,
-                },
+                }
             )
+            cmd.set_property_buf("message", text.encode())
         elif data_type == "reasoning":
-            await _send_data(
-                self.ten_env,
-                "message",
-                "message_collector",
+            text = json.dumps(
                 {
                     "data_type": "raw",
                     "role": role,
@@ -174,8 +175,10 @@ class MainControlExtension(AsyncExtension):
                     "text_ts": int(time.time() * 1000),
                     "is_final": final,
                     "stream_id": stream_id,
-                },
+                }
             )
+            cmd.set_property_buf("message", text.encode())
+        await self.ten_env.send_cmd(cmd)
         self.ten_env.log_info(
             f"[MainControlExtension] Sent transcript: {role}, final={final}, text={text}"
         )
