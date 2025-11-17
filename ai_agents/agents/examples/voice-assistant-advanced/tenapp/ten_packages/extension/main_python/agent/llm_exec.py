@@ -163,6 +163,11 @@ class LLMExec:
     async def _send_to_llm(
         self, ten_env: AsyncTenEnv, new_message: LLMMessage
     ) -> None:
+        # Log EVERY call to _send_to_llm to track loop
+        import traceback
+        stack_trace = ''.join(traceback.format_stack()[-4:-1])  # Get last 3 frames
+        ten_env.log_info(f"[LLM-SEND-CALLED] message_type={type(new_message).__name__} stack:\n{stack_trace}")
+
         messages = self.contexts.copy()
         messages.append(new_message)
         request_id = str(uuid.uuid4())
@@ -260,7 +265,7 @@ class LLMExec:
                     r, _ = result.get_property_to_json(CMD_PROPERTY_RESULT)
                     tool_result: LLMToolResult = json.loads(r)
 
-                    self.ten_env.log_info(f"tool_result: {tool_result}")
+                    self.ten_env.log_info(f"[TOOL-RESULT-RECEIVED] tool={llm_output.name} result={tool_result}")
 
                     context_function_call = LLMMessageFunctionCall(
                         name=llm_output.name,
@@ -272,6 +277,7 @@ class LLMExec:
                     if tool_result["type"] == "llmresult":
                         result_content = tool_result["content"]
                         if isinstance(result_content, str):
+                            self.ten_env.log_info(f"[TOOL-RESULT-SENDING-TO-LLM] tool={llm_output.name} will call _send_to_llm")
                             await self._queue_context(
                                 self.ten_env, context_function_call
                             )
