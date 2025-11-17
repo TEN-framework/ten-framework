@@ -463,29 +463,6 @@ def create_apollo_graph(
                 ]
                 break
 
-        # Add TTS connection (routes to avatar, not agora)
-        tts_conn = {
-            "extension": "tts",
-            "cmd": [
-                {"names": ["flush"], "source": [{"extension": "main_control"}]}
-            ],
-            "data": [
-                {"name": "text_data", "source": [{"extension": "llm"}]},
-                {
-                    "name": "tts_audio_start",
-                    "dest": [{"extension": "avatar"}],
-                },
-                {
-                    "name": "tts_audio_end",
-                    "dest": [{"extension": "avatar"}],
-                },
-            ],
-            "audio_frame": [
-                {"name": "pcm_frame", "dest": [{"extension": "avatar"}]}
-            ],
-        }
-        connections.append(tts_conn)
-
         # Add avatar connections
         avatar_conn = {
             "extension": "avatar",
@@ -499,12 +476,10 @@ def create_apollo_graph(
                 },
                 {
                     "name": "tts_audio_start",
-                    "source": [{"extension": "tts"}],
                     "dest": [{"extension": "thymia_analyzer"}],
                 },
                 {
                     "name": "tts_audio_end",
-                    "source": [{"extension": "tts"}],
                     "dest": [{"extension": "thymia_analyzer"}],
                 },
             ],
