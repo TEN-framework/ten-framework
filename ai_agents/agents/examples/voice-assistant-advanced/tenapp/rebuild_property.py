@@ -50,8 +50,8 @@ nova3_stt_100ms = {
     "property": {
         "params": {
             "api_key": "${env:DEEPGRAM_API_KEY}",
-            "url": "wss://api.deepgram.com/v1/listen",
-            "model": "nova-3",
+            "url": "wss://api.deepgram.com/v2/listen",
+            "model": "nova-3-2",
             "language": "en-US",
             "interim_results": True,
             "endpointing": 100,
@@ -68,8 +68,8 @@ nova3_stt_300ms = {
     "property": {
         "params": {
             "api_key": "${env:DEEPGRAM_API_KEY}",
-            "url": "wss://api.deepgram.com/v1/listen",
-            "model": "nova-3",
+            "url": "wss://api.deepgram.com/v2/listen",
+            "model": "flux-general-en",
             "language": "en-US",
             "interim_results": True,
             "endpointing": 500,

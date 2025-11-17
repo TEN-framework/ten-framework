@@ -52,8 +52,8 @@
               "property": {
                 "params": {
                   "api_key": "${env:DEEPGRAM_API_KEY}",
-                  "url": "wss://api.deepgram.com/v1/listen",
-                  "model": "nova-3",
+                  "url": "wss://api.deepgram.com/v2/listen",
+                  "model": "nova-3-2",
                   "language": "en-US",
                   "interim_results": true,
                   "endpointing": 100,
@@ -291,8 +291,8 @@
               "property": {
                 "params": {
                   "api_key": "${env:DEEPGRAM_API_KEY}",
-                  "url": "wss://api.deepgram.com/v1/listen",
-                  "model": "nova-3",
+                  "url": "wss://api.deepgram.com/v2/listen",
+                  "model": "nova-3-2",
                   "language": "en-US",
                   "interim_results": true,
                   "endpointing": 100,
@@ -543,8 +543,8 @@
               "property": {
                 "params": {
                   "api_key": "${env:DEEPGRAM_API_KEY}",
-                  "url": "wss://api.deepgram.com/v1/listen",
-                  "model": "nova-3",
+                  "url": "wss://api.deepgram.com/v2/listen",
+                  "model": "nova-3-2",
                   "language": "en-US",
                   "interim_results": true,
                   "endpointing": 100,
@@ -802,8 +802,8 @@
               "property": {
                 "params": {
                   "api_key": "${env:DEEPGRAM_API_KEY}",
-                  "url": "wss://api.deepgram.com/v1/listen",
-                  "model": "nova-3",
+                  "url": "wss://api.deepgram.com/v2/listen",
+                  "model": "flux-general-en",
                   "language": "en-US",
                   "interim_results": true,
                   "endpointing": 500,
@@ -1079,8 +1079,8 @@
               "property": {
                 "params": {
                   "api_key": "${env:DEEPGRAM_API_KEY}",
-                  "url": "wss://api.deepgram.com/v1/listen",
-                  "model": "nova-3",
+                  "url": "wss://api.deepgram.com/v2/listen",
+                  "model": "flux-general-en",
                   "language": "en-US",
                   "interim_results": true,
                   "endpointing": 500,
@@ -1363,8 +1363,8 @@
               "property": {
                 "params": {
                   "api_key": "${env:DEEPGRAM_API_KEY}",
-                  "url": "wss://api.deepgram.com/v1/listen",
-                  "model": "nova-3",
+                  "url": "wss://api.deepgram.com/v2/listen",
+                  "model": "flux-general-en",
                   "language": "en-US",
                   "interim_results": true,
                   "endpointing": 500,
@@ -1640,8 +1640,8 @@
               "property": {
                 "params": {
                   "api_key": "${env:DEEPGRAM_API_KEY}",
-                  "url": "wss://api.deepgram.com/v1/listen",
-                  "model": "nova-3",
+                  "url": "wss://api.deepgram.com/v2/listen",
+                  "model": "flux-general-en",
                   "language": "en-US",
                   "interim_results": true,
                   "endpointing": 500,
