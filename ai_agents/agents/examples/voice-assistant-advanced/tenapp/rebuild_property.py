@@ -70,7 +70,7 @@ nova3_stt_300ms = {
             "url": "wss://api.deepgram.com/v1/listen",
             "model": "nova-3",
             "language": "en-US",
-            "endpointing": 300,
+            "endpointing": 500,
             "utterance_end_ms": 1000,
         }
     },
@@ -87,7 +87,7 @@ flux_stt_300ms = {
             "url": "wss://api.deepgram.com/v2/listen",
             "model": "flux-general-en",
             "language": "en-US",
-            "endpointing": 300,
+            "endpointing": 500,
             "utterance_end_ms": 1000,
         }
     },
