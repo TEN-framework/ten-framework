@@ -135,11 +135,18 @@ class OpenAIChatGPT:
                     "type": "object",
                     "properties": {},
                     "required": [],
-                    "additionalProperties": False,
                 },
             },
-            "strict": True,
         }
+
+        # NOTE: OpenAI-specific "Structured Outputs" fields (strict, additionalProperties) are
+        # commented out for better cross-provider compatibility. These optional fields work with
+        # OpenAI but break Groq and other providers. Tools work reliably without them across all
+        # providers tested (OpenAI GPT-4, Groq llama-3.3-70b, Groq gpt-oss-20b).
+        # Uncomment only if you specifically need strict schema enforcement and only use OpenAI.
+        #
+        # json_dict["function"]["parameters"]["additionalProperties"] = False
+        # json_dict["strict"] = True
 
         for param in tool.parameters:
             json_dict["function"]["parameters"]["properties"][param.name] = {
@@ -263,7 +270,7 @@ class OpenAIChatGPT:
         )
         # Log tools for debugging tool call issues
         if req.get('tools'):
-            self.ten_env.log_info(f"[TOOL_DEBUG] Sending {len(req.get('tools'))} tools to LLM: {[t.get('function', {}).get('name') for t in req.get('tools')]}")
+            self.ten_env.log_debug(f"Sending {len(req.get('tools'))} tools to LLM: {[t.get('function', {}).get('name') for t in req.get('tools')]}")
 
         try:
             response: AsyncStream[ChatCompletionChunk] = (
@@ -427,8 +434,17 @@ class OpenAIChatGPT:
             )
         except Exception as e:
             # Log request details on error for debugging
-            import json
             self.ten_env.log_error(f"[TOOL_DEBUG] LLM API call failed with error: {e}")
+            self.ten_env.log_error(f"[TOOL_DEBUG] Error type: {type(e).__name__}")
+
+            # Try to extract additional error details from Groq/OpenAI response
+            if hasattr(e, 'response'):
+                self.ten_env.log_error(f"[TOOL_DEBUG] Error response: {e.response}")
+            if hasattr(e, 'body'):
+                self.ten_env.log_error(f"[TOOL_DEBUG] Error body: {e.body}")
+            if hasattr(e, '__dict__'):
+                self.ten_env.log_error(f"[TOOL_DEBUG] Error attributes: {e.__dict__}")
+
             self.ten_env.log_error(f"[TOOL_DEBUG] Model: {req.get('model')}")
             self.ten_env.log_error(f"[TOOL_DEBUG] Messages count: {len(req.get('messages', []))}")
             if req.get('tools'):
