@@ -261,6 +261,9 @@ class OpenAIChatGPT:
         self.ten_env.log_debug(
             f"Requesting chat completions: model={req.get('model')}, stream={req.get('stream')}, messages={len(req.get('messages', []))} msgs"
         )
+        # Log tools for debugging tool call issues
+        if req.get('tools'):
+            self.ten_env.log_info(f"[TOOL_DEBUG] Sending {len(req.get('tools'))} tools to LLM: {[t.get('function', {}).get('name') for t in req.get('tools')]}")
 
         try:
             response: AsyncStream[ChatCompletionChunk] = (
@@ -423,4 +426,12 @@ class OpenAIChatGPT:
                 created=last_chat_completion.created,
             )
         except Exception as e:
+            # Log request details on error for debugging
+            import json
+            self.ten_env.log_error(f"[TOOL_DEBUG] LLM API call failed with error: {e}")
+            self.ten_env.log_error(f"[TOOL_DEBUG] Model: {req.get('model')}")
+            self.ten_env.log_error(f"[TOOL_DEBUG] Messages count: {len(req.get('messages', []))}")
+            if req.get('tools'):
+                self.ten_env.log_error(f"[TOOL_DEBUG] Tools sent: {json.dumps(req.get('tools'), indent=2)}")
+            self.ten_env.log_error(f"[TOOL_DEBUG] Last 2 messages: {json.dumps(req.get('messages', [])[-2:], indent=2)}")
             raise RuntimeError(f"CreateChatCompletion failed, err: {e}") from e
