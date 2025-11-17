@@ -53,6 +53,7 @@ nova3_stt_100ms = {
             "url": "wss://api.deepgram.com/v1/listen",
             "model": "nova-3",
             "language": "en-US",
+            "interim_results": True,
             "endpointing": 100,
             "utterance_end_ms": 1000,
         }
@@ -70,6 +71,8 @@ nova3_stt_300ms = {
             "url": "wss://api.deepgram.com/v1/listen",
             "model": "nova-3",
             "language": "en-US",
+            "interim_results": True,
+            "min_interim_confidence": 0.1,
             "endpointing": 500,
             "utterance_end_ms": 1000,
         }
@@ -87,6 +90,7 @@ flux_stt_300ms = {
             "url": "wss://api.deepgram.com/v2/listen",
             "model": "flux-general-en",
             "language": "en-US",
+            "interim_results": True,
             "endpointing": 500,
             "utterance_end_ms": 1000,
         }

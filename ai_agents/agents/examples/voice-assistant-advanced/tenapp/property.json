@@ -55,6 +55,7 @@
                   "url": "wss://api.deepgram.com/v1/listen",
                   "model": "nova-3",
                   "language": "en-US",
+                  "interim_results": true,
                   "endpointing": 100,
                   "utterance_end_ms": 1000
                 }
@@ -293,6 +294,7 @@
                   "url": "wss://api.deepgram.com/v1/listen",
                   "model": "nova-3",
                   "language": "en-US",
+                  "interim_results": true,
                   "endpointing": 100,
                   "utterance_end_ms": 1000
                 }
@@ -544,6 +546,7 @@
                   "url": "wss://api.deepgram.com/v1/listen",
                   "model": "nova-3",
                   "language": "en-US",
+                  "interim_results": true,
                   "endpointing": 100,
                   "utterance_end_ms": 1000
                 }
@@ -802,6 +805,8 @@
                   "url": "wss://api.deepgram.com/v1/listen",
                   "model": "nova-3",
                   "language": "en-US",
+                  "interim_results": true,
+                  "min_interim_confidence": 0.1,
                   "endpointing": 500,
                   "utterance_end_ms": 1000
                 }
@@ -1078,6 +1083,8 @@
                   "url": "wss://api.deepgram.com/v1/listen",
                   "model": "nova-3",
                   "language": "en-US",
+                  "interim_results": true,
+                  "min_interim_confidence": 0.1,
                   "endpointing": 500,
                   "utterance_end_ms": 1000
                 }
@@ -1361,6 +1368,8 @@
                   "url": "wss://api.deepgram.com/v1/listen",
                   "model": "nova-3",
                   "language": "en-US",
+                  "interim_results": true,
+                  "min_interim_confidence": 0.1,
                   "endpointing": 500,
                   "utterance_end_ms": 1000
                 }
@@ -1637,6 +1646,8 @@
                   "url": "wss://api.deepgram.com/v1/listen",
                   "model": "nova-3",
                   "language": "en-US",
+                  "interim_results": true,
+                  "min_interim_confidence": 0.1,
                   "endpointing": 500,
                   "utterance_end_ms": 1000
                 }
@@ -1920,6 +1931,7 @@
                   "url": "wss://api.deepgram.com/v2/listen",
                   "model": "flux-general-en",
                   "language": "en-US",
+                  "interim_results": true,
                   "endpointing": 500,
                   "utterance_end_ms": 1000
                 }
@@ -2196,6 +2208,7 @@
                   "url": "wss://api.deepgram.com/v2/listen",
                   "model": "flux-general-en",
                   "language": "en-US",
+                  "interim_results": true,
                   "endpointing": 500,
                   "utterance_end_ms": 1000
                 }
