@@ -290,6 +290,7 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
             transcript_text = data.get("transcript", "")
 
             # Skip empty transcripts
+            self.ten_env.log_info(f"[DEEPGRAM-TRANSCRIPT-ALL] text={transcript_text!r} final={is_final} conf={confidence:.3f}")
             if not transcript_text:
                 return
 
@@ -389,6 +390,7 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
                 words=[],
             )
 
+            self.ten_env.log_info(f"[DEEPGRAM-SENDING-ASR] text={asr_result.text!r} final={asr_result.final}")
             await self.send_asr_result(asr_result)
 
             # Reset tracking after sending final
@@ -415,6 +417,7 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
             transcript_text = alternative.get("transcript", "")
 
             # Skip empty transcripts
+            self.ten_env.log_info(f"[DEEPGRAM-TRANSCRIPT-ALL] text={transcript_text!r} final={is_final} conf={confidence:.3f}")
             if not transcript_text:
                 return
 
@@ -451,6 +454,7 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
                 words=[],
             )
 
+            self.ten_env.log_info(f"[DEEPGRAM-SENDING-ASR] text={asr_result.text!r} final={asr_result.final}")
             await self.send_asr_result(asr_result)
 
         except Exception as e:

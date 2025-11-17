@@ -1883,6 +1883,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
             text_data = Data.create("text_data")
             text_data.set_property_string("text", hint_text)
             text_data.set_property_bool("end_of_segment", True)
+            ten_env.log_info(f"[THYMIA-ANNOUNCEMENT] Sending: {hint_text[:100]}...")
             await ten_env.send_data(text_data)
 
             ten_env.log_info(
@@ -1906,6 +1907,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
             text_data = Data.create("text_data")
             text_data.set_property_string("text", hint_text)
             text_data.set_property_bool("end_of_segment", True)
+            ten_env.log_info(f"[THYMIA-ANNOUNCEMENT] Sending: {hint_text[:100]}...")
             await ten_env.send_data(text_data)
 
             ten_env.log_info(
@@ -2184,6 +2186,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                             text_data = Data.create("text_data")
                             text_data.set_property_string("text", hint_text)
                             text_data.set_property_bool("end_of_segment", True)
+                            ten_env.log_info(f"[THYMIA-ANNOUNCEMENT] Sending: {hint_text[:100]}...")
                             await ten_env.send_data(text_data)
 
                         # Check if reading phase is incomplete (need 60s total, mood phase done)
@@ -2202,6 +2205,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                             text_data = Data.create("text_data")
                             text_data.set_property_string("text", hint_text)
                             text_data.set_property_bool("end_of_segment", True)
+                            ten_env.log_info(f"[THYMIA-ANNOUNCEMENT] Sending: {hint_text[:100]}...")
                             await ten_env.send_data(text_data)
 
             except asyncio.CancelledError:
