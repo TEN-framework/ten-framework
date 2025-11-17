@@ -28,6 +28,7 @@ group("cpp") {
     deps += [
       "standalone_test_cpp",
       "standalone_test_tmpl_cpp",
+      "standalone_webrtc_vad_cpp",
     ]
 
     if (target_os == "linux" && target_cpu == "x64") {
