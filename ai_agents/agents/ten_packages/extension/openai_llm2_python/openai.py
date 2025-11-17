@@ -238,6 +238,16 @@ class OpenAIChatGPT:
                 tools = []
             tools.append(self._convert_tools_to_dict(tool))
 
+        # Determine which max tokens parameter to use
+        # Older models (gpt-4o, gpt-4o-mini, gpt-3.5, etc.) use max_tokens
+        # Newer models (gpt-5-nano and later) use max_completion_tokens
+        model_lower = self.config.model.lower()
+        uses_legacy_max_tokens = (
+            model_lower.startswith("gpt-4") or
+            model_lower.startswith("gpt-3") or
+            "groq" in self.config.base_url.lower()  # Groq uses old format
+        )
+
         req = {
             "model": self.config.model,
             "messages": [
@@ -249,11 +259,16 @@ class OpenAIChatGPT:
             "top_p": self.config.top_p,
             "presence_penalty": self.config.presence_penalty,
             "frequency_penalty": self.config.frequency_penalty,
-            "max_tokens": self.config.max_tokens,
             "seed": self.config.seed,
             "stream": request_input.streaming,
             "n": 1,  # Assuming single response for now
         }
+
+        # Add appropriate max tokens parameter based on model
+        if uses_legacy_max_tokens:
+            req["max_tokens"] = self.config.max_tokens
+        else:
+            req["max_completion_tokens"] = self.config.max_tokens
 
         # Add additional parameters if they are not in the black list
         for key, value in (request_input.parameters or {}).items():
@@ -265,8 +280,11 @@ class OpenAIChatGPT:
         # REMOVED: Verbose logging - dumps entire prompt (~10KB+) on every LLM call
         # Adds I/O latency and pollutes logs. Enable only for deep debugging.
         # self.ten_env.log_info(f"Requesting chat completions with: {req}")
+        max_tokens_param = "max_tokens" if uses_legacy_max_tokens else "max_completion_tokens"
+        max_tokens_value = req.get("max_tokens") or req.get("max_completion_tokens")
         self.ten_env.log_debug(
-            f"Requesting chat completions: model={req.get('model')}, stream={req.get('stream')}, messages={len(req.get('messages', []))} msgs"
+            f"Requesting chat completions: model={req.get('model')}, stream={req.get('stream')}, "
+            f"messages={len(req.get('messages', []))} msgs, {max_tokens_param}={max_tokens_value}"
         )
         # Log tools for debugging tool call issues
         if req.get('tools'):
