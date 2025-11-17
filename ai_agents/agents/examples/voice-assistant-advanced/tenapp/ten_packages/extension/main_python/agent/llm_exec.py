@@ -276,36 +276,18 @@ class LLMExec:
                     )
                     if tool_result["type"] == "llmresult":
                         result_content = tool_result["content"]
-                        # Silent flag mechanism: Fire-and-forget tools
-                        # - silent=True: Tool completes, result stored in context, but NOT sent back to LLM
-                        #   Use for: confirm_announcement, set_user_info (when no LLM response needed)
-                        # - silent=False/absent: Tool result sent to LLM, which generates response based on it
-                        #   Use for: get_wellness_metrics, check_phase_progress (LLM needs result to decide action)
-                        # NOTE: This was an attempt to prevent double LLM responses from tool call chaining,
-                        # but Groq API returns empty content when receiving function call outputs.
-                        # See commit message for details. May need to revert to prompt-only approach.
-                        is_silent = tool_result.get("silent", False)
-
                         if isinstance(result_content, str):
-                            # Always queue the function call to context
                             await self._queue_context(
                                 self.ten_env, context_function_call
                             )
-
-                            if is_silent:
-                                # Silent tool - just log, don't send to LLM
-                                self.ten_env.log_info(f"[TOOL-RESULT-SILENT] tool={llm_output.name} silent=True, not querying LLM")
-                            else:
-                                # Normal tool - send result to LLM for response
-                                self.ten_env.log_info(f"[TOOL-RESULT-SENDING-TO-LLM] tool={llm_output.name} will call _send_to_llm")
-                                await self._send_to_llm(
-                                    self.ten_env,
-                                    LLMMessageFunctionCallOutput(
-                                        output=result_content,
-                                        call_id=llm_output.tool_call_id,
-                                        type="function_call_output",
-                                    ),
-                                )
+                            await self._send_to_llm(
+                                self.ten_env,
+                                LLMMessageFunctionCallOutput(
+                                    output=result_content,
+                                    call_id=llm_output.tool_call_id,
+                                    type="function_call_output",
+                                ),
+                            )
                         else:
                             self.ten_env.log_error(
                                 f"Unknown tool result content: {result_content}"
