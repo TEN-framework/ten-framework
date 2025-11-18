@@ -98,22 +98,18 @@ jobs:
       - name: Setup tgn (TEN build system)
         run: |
           echo "================================================"
-          echo "Setting up tgn build system for C++ extensions"
+          echo "Installing tgn build system for C++ extensions"
           echo "================================================"
 
-          # Add tgn to PATH
-          echo "${{ github.workspace }}/core/ten_gn" >> $GITHUB_PATH
+          # Install tgn using the install script
+          # The script automatically handles CI environment and skips interactive prompts
+          bash tools/tgn/install_tgn.sh
 
-          # Verify tgn is accessible
-          export PATH="${{ github.workspace }}/core/ten_gn:$PATH"
+          # Add tgn to PATH for subsequent steps
+          echo "/usr/local/ten_gn" >> $GITHUB_PATH
 
-          if command -v tgn &> /dev/null; then
-            echo "✓ tgn is available"
-            echo "  Location: $(which tgn)"
-          else
-            echo "❌ ERROR: tgn is not accessible"
-            exit 1
-          fi
+          echo ""
+          echo "✓ tgn setup completed"
 
       - name: Create transcriber_demo app using tman
         run: |
