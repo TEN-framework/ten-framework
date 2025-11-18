@@ -576,6 +576,24 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
             )
             # Send usage metrics
             await self.send_usage_metrics(self.current_request_id)
+            
+            # Flush PCMWriter for current request before finishing
+            if (
+                self.config
+                and self.config.dump
+                and self.current_request_id
+                and self.current_request_id in self.recorder_map
+            ):
+                try:
+                    await self.recorder_map[self.current_request_id].flush()
+                    self.ten_env.log_info(
+                        f"KEYPOINT Flushed PCMWriter for request_id: {self.current_request_id}"
+                    )
+                except Exception as e:
+                    self.ten_env.log_error(
+                        f"Error flushing PCMWriter for request_id {self.current_request_id}: {e}"
+                    )
+            
             # Finish request to complete state transition
             await self.finish_request(
                 request_id=self.current_request_id,
