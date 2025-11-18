@@ -291,15 +291,15 @@ jobs:
                   FAILED_PUBLISHES=\$((FAILED_PUBLISHES + 1)) && \
                   continue
                 } && \
-                if identity=\$(\\$TMAN_BIN package --get-identity 2>/dev/null); then
+                if identity=\$(\"\$TMAN_BIN\" package --get-identity 2>/dev/null); then
                   echo \"Identity: \$identity\" && \
                   echo \"Attempting to delete existing package...\" && \
                   read -r pkg_type pkg_name pkg_version pkg_hash <<< \"\$identity\" && \
-                  \\$TMAN_BIN --verbose --admin-token ${{ secrets.TEN_CLOUD_STORE_ADMIN_TOKEN }} delete \"\$pkg_type\" \"\$pkg_name\" \"\$pkg_version\" \"\$pkg_hash\" || {
+                  \"\$TMAN_BIN\" --verbose --admin-token '${{ secrets.TEN_CLOUD_STORE_ADMIN_TOKEN }}' delete \"\$pkg_type\" \"\$pkg_name\" \"\$pkg_version\" \"\$pkg_hash\" || {
                     echo \"Warning: Failed to delete existing package (this is normal if package doesn't exist)\"
                   } && \
                   echo \"Attempting to publish package...\" && \
-                  if \\$TMAN_BIN --verbose --user-token ${{ secrets.TEN_CLOUD_STORE }} publish; then
+                  if \"\$TMAN_BIN\" --verbose --user-token '${{ secrets.TEN_CLOUD_STORE }}' publish; then
                     echo \"✓ Successfully published: \$item\" && \
                     SUCCESSFUL_PUBLISHES=\$((SUCCESSFUL_PUBLISHES + 1))
                   else
