@@ -168,9 +168,11 @@ class Agent:
                         f"[AGENT-QUEUED-TO-LLM] Queued text_data to LLM input queue"
                     )
             elif data.get_name() in ["tts_audio_start", "tts_audio_end"]:
-                # TTS events are logged but not forwarded - they should be routed directly via graph
-                # The agent doesn't need to handle these, just log for debugging
-                self.ten_env.log_info(f"[AGENT-TTS-EVENT] Received {data.get_name()} event (ignored by agent)")
+                # TTS events route directly to thymia_analyzer via graph (not through agent)
+                # This code path should never execute with correct routing configuration
+                # Debug logging - commented out to reduce log noise
+                # self.ten_env.log_info(f"[AGENT-TTS-EVENT] Received {data.get_name()} event (ignored by agent)")
+                pass
             else:
                 self.ten_env.log_warn(f"Unhandled data: {data.get_name()}")
         except Exception as e:

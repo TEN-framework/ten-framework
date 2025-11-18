@@ -923,7 +923,8 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
         """Handle incoming data messages (e.g., TTS state events)"""
         try:
             data_name = data.get_name()
-            ten_env.log_debug(f"[THYMIA_ON_DATA] Received data message: {data_name}")
+            # Debug logging - useful for troubleshooting TTS message routing
+            # ten_env.log_debug(f"[THYMIA_ON_DATA] Received data message: {data_name}")
 
             if data_name == "tts_audio_start":
                 # Agent started speaking - don't send announcements during this time
@@ -1884,7 +1885,9 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
             text_data = Data.create("text_data")
             text_data.set_property_string("text", hint_text)
             text_data.set_property_bool("end_of_segment", True)
-            ten_env.log_info(f"[THYMIA-ANNOUNCEMENT] Sending: {hint_text[:100]}...")
+            ten_env.log_info(
+                f"[THYMIA-ANNOUNCEMENT] Sending: {hint_text[:100]}..."
+            )
             await ten_env.send_data(text_data)
 
             ten_env.log_info(
@@ -1908,7 +1911,9 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
             text_data = Data.create("text_data")
             text_data.set_property_string("text", hint_text)
             text_data.set_property_bool("end_of_segment", True)
-            ten_env.log_info(f"[THYMIA-ANNOUNCEMENT] Sending: {hint_text[:100]}...")
+            ten_env.log_info(
+                f"[THYMIA-ANNOUNCEMENT] Sending: {hint_text[:100]}..."
+            )
             await ten_env.send_data(text_data)
 
             ten_env.log_info(
@@ -2187,7 +2192,9 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                             text_data = Data.create("text_data")
                             text_data.set_property_string("text", hint_text)
                             text_data.set_property_bool("end_of_segment", True)
-                            ten_env.log_info(f"[THYMIA-ANNOUNCEMENT] Sending: {hint_text[:100]}...")
+                            ten_env.log_info(
+                                f"[THYMIA-ANNOUNCEMENT] Sending: {hint_text[:100]}..."
+                            )
                             await ten_env.send_data(text_data)
 
                         # Check if reading phase is incomplete (need 60s total, mood phase done)
@@ -2206,7 +2213,9 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                             text_data = Data.create("text_data")
                             text_data.set_property_string("text", hint_text)
                             text_data.set_property_bool("end_of_segment", True)
-                            ten_env.log_info(f"[THYMIA-ANNOUNCEMENT] Sending: {hint_text[:100]}...")
+                            ten_env.log_info(
+                                f"[THYMIA-ANNOUNCEMENT] Sending: {hint_text[:100]}..."
+                            )
                             await ten_env.send_data(text_data)
 
             except asyncio.CancelledError:
