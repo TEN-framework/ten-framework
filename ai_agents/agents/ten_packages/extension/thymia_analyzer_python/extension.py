@@ -923,6 +923,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
         """Handle incoming data messages (e.g., TTS state events)"""
         try:
             data_name = data.get_name()
+            ten_env.log_debug(f"[THYMIA_ON_DATA] Received data message: {data_name}")
 
             if data_name == "tts_audio_start":
                 # Agent started speaking - don't send announcements during this time
