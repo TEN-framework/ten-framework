@@ -65,7 +65,7 @@ class DingTalkBotExtension(AsyncLLMToolBaseExtension):
 
         # Load configuration
         self.config = await DingTalkBotConfig.create_async(ten_env=ten_env)
-        ten_env.log_info(f"[DingTalkBotExtension] Config loaded successfully")
+        ten_env.log_info("[DingTalkBotExtension] Config loaded successfully")
         ten_env.log_info(
             f"[DingTalkBotExtension]   - access_token: {'SET (length=' + str(len(self.config.access_token)) + ')' if self.config.access_token else 'NOT SET'}"
         )
@@ -89,7 +89,7 @@ class DingTalkBotExtension(AsyncLLMToolBaseExtension):
         }
 
         ten_env.log_info(
-            f"[DingTalkBotExtension] Registering tool with parameter array format..."
+            "[DingTalkBotExtension] Registering tool with parameter array format..."
         )
         ten_env.log_info(
             f"[DingTalkBotExtension] Tool: {json.dumps(tool_metadata_for_registration, indent=2)}"
@@ -225,7 +225,7 @@ class DingTalkBotExtension(AsyncLLMToolBaseExtension):
                 )
 
             ten_env.log_info(
-                f"[DingTalkBotExtension] Preparing to send message to DingTalk..."
+                "[DingTalkBotExtension] Preparing to send message to DingTalk..."
             )
             ten_env.log_info(
                 f"[DingTalkBotExtension] Message content: {content}"
@@ -275,7 +275,7 @@ class DingTalkBotExtension(AsyncLLMToolBaseExtension):
         """
         Sends a message to a DingTalk bot.
         """
-        print(f"[DingTalkBotExtension._send_dingtalk_message] Starting...")
+        print("[DingTalkBotExtension._send_dingtalk_message] Starting...")
         print(
             f"[DingTalkBotExtension._send_dingtalk_message] access_token length: {len(access_token)}"
         )
@@ -316,7 +316,7 @@ class DingTalkBotExtension(AsyncLLMToolBaseExtension):
 
         try:
             print(
-                f"[DingTalkBotExtension._send_dingtalk_message] Sending POST request..."
+                "[DingTalkBotExtension._send_dingtalk_message] Sending POST request..."
             )
             response = requests.post(
                 webhook_url, headers=headers, data=json.dumps(data), timeout=10
