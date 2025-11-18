@@ -95,6 +95,26 @@ jobs:
           echo "Testing basic tman commands:"
           tman --help
 
+      - name: Setup tgn (TEN build system)
+        run: |
+          echo "================================================"
+          echo "Setting up tgn build system for C++ extensions"
+          echo "================================================"
+
+          # Add tgn to PATH
+          echo "${{ github.workspace }}/core/ten_gn" >> $GITHUB_PATH
+
+          # Verify tgn is accessible
+          export PATH="${{ github.workspace }}/core/ten_gn:$PATH"
+
+          if command -v tgn &> /dev/null; then
+            echo "✓ tgn is available"
+            echo "  Location: $(which tgn)"
+          else
+            echo "❌ ERROR: tgn is not accessible"
+            exit 1
+          fi
+
       - name: Create transcriber_demo app using tman
         run: |
           echo "================================================"
@@ -283,26 +303,6 @@ jobs:
           echo "================================================"
           echo "✅ All verifications completed successfully on ${{ matrix.platform_name }}"
           echo "================================================"
-
-      - name: Setup tgn (TEN build system)
-        run: |
-          echo "================================================"
-          echo "Setting up tgn build system for C++ extensions"
-          echo "================================================"
-
-          # Add tgn to PATH
-          echo "${{ github.workspace }}/core/ten_gn" >> $GITHUB_PATH
-
-          # Verify tgn is accessible
-          export PATH="${{ github.workspace }}/core/ten_gn:$PATH"
-
-          if command -v tgn &> /dev/null; then
-            echo "✓ tgn is available"
-            echo "  Location: $(which tgn)"
-          else
-            echo "❌ ERROR: tgn is not accessible"
-            exit 1
-          fi
 
       - name: Install C++ extension webrtc_vad_cpp
         run: |
