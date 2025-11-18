@@ -1022,7 +1022,7 @@
                   "name": "tts_audio_start",
                   "dest": [
                     {
-                      "extension": "avatar"
+                      "extension": "thymia_analyzer"
                     }
                   ]
                 },
@@ -1030,7 +1030,7 @@
                   "name": "tts_audio_end",
                   "dest": [
                     {
-                      "extension": "avatar"
+                      "extension": "thymia_analyzer"
                     }
                   ]
                 }
@@ -1064,32 +1064,6 @@
                   "source": [
                     {
                       "extension": "main_control"
-                    }
-                  ]
-                },
-                {
-                  "name": "tts_audio_start",
-                  "source": [
-                    {
-                      "extension": "tts"
-                    }
-                  ],
-                  "dest": [
-                    {
-                      "extension": "thymia_analyzer"
-                    }
-                  ]
-                },
-                {
-                  "name": "tts_audio_end",
-                  "source": [
-                    {
-                      "extension": "tts"
-                    }
-                  ],
-                  "dest": [
-                    {
-                      "extension": "thymia_analyzer"
                     }
                   ]
                 }
@@ -1355,7 +1329,7 @@
                   "name": "tts_audio_start",
                   "dest": [
                     {
-                      "extension": "avatar"
+                      "extension": "thymia_analyzer"
                     }
                   ]
                 },
@@ -1363,7 +1337,7 @@
                   "name": "tts_audio_end",
                   "dest": [
                     {
-                      "extension": "avatar"
+                      "extension": "thymia_analyzer"
                     }
                   ]
                 }
@@ -1397,32 +1371,6 @@
                   "source": [
                     {
                       "extension": "main_control"
-                    }
-                  ]
-                },
-                {
-                  "name": "tts_audio_start",
-                  "source": [
-                    {
-                      "extension": "tts"
-                    }
-                  ],
-                  "dest": [
-                    {
-                      "extension": "thymia_analyzer"
-                    }
-                  ]
-                },
-                {
-                  "name": "tts_audio_end",
-                  "source": [
-                    {
-                      "extension": "tts"
-                    }
-                  ],
-                  "dest": [
-                    {
-                      "extension": "thymia_analyzer"
                     }
                   ]
                 }
@@ -1681,7 +1629,7 @@
                   "name": "tts_audio_start",
                   "dest": [
                     {
-                      "extension": "avatar"
+                      "extension": "thymia_analyzer"
                     }
                   ]
                 },
@@ -1689,7 +1637,7 @@
                   "name": "tts_audio_end",
                   "dest": [
                     {
-                      "extension": "avatar"
+                      "extension": "thymia_analyzer"
                     }
                   ]
                 }
@@ -1723,32 +1671,6 @@
                   "source": [
                     {
                       "extension": "main_control"
-                    }
-                  ]
-                },
-                {
-                  "name": "tts_audio_start",
-                  "source": [
-                    {
-                      "extension": "tts"
-                    }
-                  ],
-                  "dest": [
-                    {
-                      "extension": "thymia_analyzer"
-                    }
-                  ]
-                },
-                {
-                  "name": "tts_audio_end",
-                  "source": [
-                    {
-                      "extension": "tts"
-                    }
-                  ],
-                  "dest": [
-                    {
-                      "extension": "thymia_analyzer"
                     }
                   ]
                 }
@@ -2014,7 +1936,7 @@
                   "name": "tts_audio_start",
                   "dest": [
                     {
-                      "extension": "avatar"
+                      "extension": "thymia_analyzer"
                     }
                   ]
                 },
@@ -2022,7 +1944,7 @@
                   "name": "tts_audio_end",
                   "dest": [
                     {
-                      "extension": "avatar"
+                      "extension": "thymia_analyzer"
                     }
                   ]
                 }
@@ -2056,32 +1978,6 @@
                   "source": [
                     {
                       "extension": "main_control"
-                    }
-                  ]
-                },
-                {
-                  "name": "tts_audio_start",
-                  "source": [
-                    {
-                      "extension": "tts"
-                    }
-                  ],
-                  "dest": [
-                    {
-                      "extension": "thymia_analyzer"
-                    }
-                  ]
-                },
-                {
-                  "name": "tts_audio_end",
-                  "source": [
-                    {
-                      "extension": "tts"
-                    }
-                  ],
-                  "dest": [
-                    {
-                      "extension": "thymia_analyzer"
                     }
                   ]
                 }
@@ -2340,7 +2236,7 @@
                   "name": "tts_audio_start",
                   "dest": [
                     {
-                      "extension": "avatar"
+                      "extension": "thymia_analyzer"
                     }
                   ]
                 },
@@ -2348,7 +2244,7 @@
                   "name": "tts_audio_end",
                   "dest": [
                     {
-                      "extension": "avatar"
+                      "extension": "thymia_analyzer"
                     }
                   ]
                 }
@@ -2382,32 +2278,6 @@
                   "source": [
                     {
                       "extension": "main_control"
-                    }
-                  ]
-                },
-                {
-                  "name": "tts_audio_start",
-                  "source": [
-                    {
-                      "extension": "tts"
-                    }
-                  ],
-                  "dest": [
-                    {
-                      "extension": "thymia_analyzer"
-                    }
-                  ]
-                },
-                {
-                  "name": "tts_audio_end",
-                  "source": [
-                    {
-                      "extension": "tts"
-                    }
-                  ],
-                  "dest": [
-                    {
-                      "extension": "thymia_analyzer"
                     }
                   ]
                 }
@@ -2673,7 +2543,7 @@
                   "name": "tts_audio_start",
                   "dest": [
                     {
-                      "extension": "avatar"
+                      "extension": "thymia_analyzer"
                     }
                   ]
                 },
@@ -2681,7 +2551,7 @@
                   "name": "tts_audio_end",
                   "dest": [
                     {
-                      "extension": "avatar"
+                      "extension": "thymia_analyzer"
                     }
                   ]
                 }
@@ -2715,32 +2585,6 @@
                   "source": [
                     {
                       "extension": "main_control"
-                    }
-                  ]
-                },
-                {
-                  "name": "tts_audio_start",
-                  "source": [
-                    {
-                      "extension": "tts"
-                    }
-                  ],
-                  "dest": [
-                    {
-                      "extension": "thymia_analyzer"
-                    }
-                  ]
-                },
-                {
-                  "name": "tts_audio_end",
-                  "source": [
-                    {
-                      "extension": "tts"
-                    }
-                  ],
-                  "dest": [
-                    {
-                      "extension": "thymia_analyzer"
                     }
                   ]
                 }

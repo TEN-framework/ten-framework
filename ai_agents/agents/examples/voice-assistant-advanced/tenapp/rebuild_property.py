@@ -462,21 +462,20 @@ def create_apollo_graph(
         },
     ]
 
-    # Add TTS connection (for graphs with avatar, messages route through avatar to thymia)
-    # For graphs without avatar, TTS could route directly to thymia if needed
+    # Add TTS connection - route tts_audio messages directly to thymia_analyzer
+    # Avatar doesn't need to see these messages, only thymia needs them for timing tracking
     if has_avatar:
-        # TTS sends tts_audio events to avatar, which forwards to thymia
         tts_conn = {
             "extension": "tts",
             "data": [
                 {"name": "text_data", "source": [{"extension": "llm"}]},
                 {
                     "name": "tts_audio_start",
-                    "dest": [{"extension": "avatar"}],
+                    "dest": [{"extension": "thymia_analyzer"}],  # Direct to thymia
                 },
                 {
                     "name": "tts_audio_end",
-                    "dest": [{"extension": "avatar"}],
+                    "dest": [{"extension": "thymia_analyzer"}],  # Direct to thymia
                 },
             ],
             "audio_frame": [
@@ -509,6 +508,8 @@ def create_apollo_graph(
                 break
 
         # Add avatar connections
+        # Note: tts_audio messages route directly from TTS to thymia (not through avatar)
+        # Avatar only receives tts_text_input and audio frames
         avatar_conn = {
             "extension": "avatar",
             "audio_frame": [
@@ -518,16 +519,6 @@ def create_apollo_graph(
                 {
                     "name": "tts_text_input",
                     "source": [{"extension": "main_control"}],
-                },
-                {
-                    "name": "tts_audio_start",
-                    "source": [{"extension": "tts"}],  # Receive from TTS
-                    "dest": [{"extension": "thymia_analyzer"}],  # Forward to thymia
-                },
-                {
-                    "name": "tts_audio_end",
-                    "source": [{"extension": "tts"}],  # Receive from TTS
-                    "dest": [{"extension": "thymia_analyzer"}],  # Forward to thymia
                 },
             ],
         }
