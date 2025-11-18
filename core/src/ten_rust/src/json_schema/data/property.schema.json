@@ -293,6 +293,39 @@
         "filter": {
           "$ref": "#/$defs/filter"
         },
+        "messages": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "msg_type": {
+                "type": "string",
+                "enum": [
+                  "cmd",
+                  "data",
+                  "audio_frame",
+                  "video_frame"
+                ]
+              },
+              "msg_name": {
+                "type": "string"
+              },
+              "direction": {
+                "type": "string",
+                "enum": [
+                  "in",
+                  "out"
+                ]
+              }
+            },
+            "required": [
+              "msg_type",
+              "msg_name",
+              "direction"
+            ],
+            "additionalProperties": false
+          }
+        },
         "property": {
           "type": "object",
           "propertyNames": { // The property name should be alphanumericCharacters.
@@ -375,7 +408,40 @@
                   "const": "selector"
                 },
                 "name": {},
-                "filter": {}
+                "filter": {},
+                "messages": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "msg_type": {
+                        "type": "string",
+                        "enum": [
+                          "cmd",
+                          "data",
+                          "audio_frame",
+                          "video_frame"
+                        ]
+                      },
+                      "msg_name": {
+                        "type": "string"
+                      },
+                      "direction": {
+                        "type": "string",
+                        "enum": [
+                          "in",
+                          "out"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "msg_type",
+                      "msg_name",
+                      "direction"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
               },
               "required": [
                 "type",
