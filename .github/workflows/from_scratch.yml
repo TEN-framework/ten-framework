@@ -19,6 +19,7 @@ jobs:
     name: From Scratch - ${{ matrix.platform_name }}
     runs-on: ${{ matrix.runs-on }}
     strategy:
+      fail-fast: false
       matrix:
         include:
           - runs-on: macos-15-intel

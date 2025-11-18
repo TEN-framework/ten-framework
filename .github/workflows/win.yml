@@ -35,6 +35,7 @@ jobs:
     env:
       PYTHONIOENCODING: utf-8
     strategy:
+      fail-fast: false
       matrix:
         build_type: [debug, release]
     steps:
