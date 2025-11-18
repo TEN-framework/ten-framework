@@ -122,7 +122,7 @@ class DingTalkBotExtension(AsyncLLMToolBaseExtension):
         """Handle incoming commands"""
         cmd_name = cmd.get_name()
         ten_env.log_info(
-            f"[DingTalkBotExtension] ========== on_cmd RECEIVED =========="
+            "[DingTalkBotExtension] ========== on_cmd RECEIVED =========="
         )
         ten_env.log_info(f"[DingTalkBotExtension] Command name: {cmd_name}")
 
@@ -163,7 +163,7 @@ class DingTalkBotExtension(AsyncLLMToolBaseExtension):
                             )
                         await ten_env.return_result(cmd_result, cmd)
                         ten_env.log_info(
-                            f"[DingTalkBotExtension] ========== on_cmd END =========="
+                            "[DingTalkBotExtension] ========== on_cmd END =========="
                         )
                         return
 
@@ -181,7 +181,7 @@ class DingTalkBotExtension(AsyncLLMToolBaseExtension):
         ten_env.log_info(f"[DingTalkBotExtension] Calling parent on_cmd...")
         await super().on_cmd(ten_env, cmd)
         ten_env.log_info(
-            f"[DingTalkBotExtension] ========== on_cmd END =========="
+            "[DingTalkBotExtension] ========== on_cmd END =========="
         )
 
     def get_tool_metadata(self, ten_env: AsyncTenEnv) -> list[LLMToolMetadata]:
@@ -206,7 +206,7 @@ class DingTalkBotExtension(AsyncLLMToolBaseExtension):
     ) -> LLMToolResult | None:
         """Execute the tool"""
         ten_env.log_info(
-            f"[DingTalkBotExtension] ========== run_tool CALLED =========="
+            "[DingTalkBotExtension] ========== run_tool CALLED =========="
         )
         ten_env.log_info(f"[DingTalkBotExtension] Tool name: {name}")
         ten_env.log_info(
@@ -217,7 +217,7 @@ class DingTalkBotExtension(AsyncLLMToolBaseExtension):
             content = args.get("content")
             if not content:
                 ten_env.log_error(
-                    f"[DingTalkBotExtension] Missing 'content' argument"
+                    "[DingTalkBotExtension] Missing 'content' argument"
                 )
                 return LLMToolResultLLMResult(
                     type="llmresult",
@@ -265,7 +265,7 @@ class DingTalkBotExtension(AsyncLLMToolBaseExtension):
             )
 
         ten_env.log_info(
-            f"[DingTalkBotExtension] ========== run_tool END =========="
+            "[DingTalkBotExtension] ========== run_tool END =========="
         )
         return None
 
