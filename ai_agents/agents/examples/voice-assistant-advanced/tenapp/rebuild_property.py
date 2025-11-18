@@ -462,6 +462,29 @@ def create_apollo_graph(
         },
     ]
 
+    # Add TTS connection (for graphs with avatar, messages route through avatar to thymia)
+    # For graphs without avatar, TTS could route directly to thymia if needed
+    if has_avatar:
+        # TTS sends tts_audio events to avatar, which forwards to thymia
+        tts_conn = {
+            "extension": "tts",
+            "data": [
+                {"name": "text_data", "source": [{"extension": "llm"}]},
+                {
+                    "name": "tts_audio_start",
+                    "dest": [{"extension": "avatar"}],
+                },
+                {
+                    "name": "tts_audio_end",
+                    "dest": [{"extension": "avatar"}],
+                },
+            ],
+            "audio_frame": [
+                {"name": "pcm_frame", "dest": [{"extension": "avatar"}]}
+            ],
+        }
+        connections.append(tts_conn)
+
     if has_avatar:
         nodes.append(
             copy.deepcopy(heygen_avatar)
@@ -498,11 +521,13 @@ def create_apollo_graph(
                 },
                 {
                     "name": "tts_audio_start",
-                    "dest": [{"extension": "thymia_analyzer"}],
+                    "source": [{"extension": "tts"}],  # Receive from TTS
+                    "dest": [{"extension": "thymia_analyzer"}],  # Forward to thymia
                 },
                 {
                     "name": "tts_audio_end",
-                    "dest": [{"extension": "thymia_analyzer"}],
+                    "source": [{"extension": "tts"}],  # Receive from TTS
+                    "dest": [{"extension": "thymia_analyzer"}],  # Forward to thymia
                 },
             ],
         }

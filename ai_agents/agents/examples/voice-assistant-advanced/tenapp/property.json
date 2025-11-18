@@ -1008,6 +1008,45 @@
               ]
             },
             {
+              "extension": "tts",
+              "data": [
+                {
+                  "name": "text_data",
+                  "source": [
+                    {
+                      "extension": "llm"
+                    }
+                  ]
+                },
+                {
+                  "name": "tts_audio_start",
+                  "dest": [
+                    {
+                      "extension": "avatar"
+                    }
+                  ]
+                },
+                {
+                  "name": "tts_audio_end",
+                  "dest": [
+                    {
+                      "extension": "avatar"
+                    }
+                  ]
+                }
+              ],
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "dest": [
+                    {
+                      "extension": "avatar"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
               "extension": "avatar",
               "audio_frame": [
                 {
@@ -1030,6 +1069,11 @@
                 },
                 {
                   "name": "tts_audio_start",
+                  "source": [
+                    {
+                      "extension": "tts"
+                    }
+                  ],
                   "dest": [
                     {
                       "extension": "thymia_analyzer"
@@ -1038,6 +1082,11 @@
                 },
                 {
                   "name": "tts_audio_end",
+                  "source": [
+                    {
+                      "extension": "tts"
+                    }
+                  ],
                   "dest": [
                     {
                       "extension": "thymia_analyzer"
@@ -1292,6 +1341,45 @@
               ]
             },
             {
+              "extension": "tts",
+              "data": [
+                {
+                  "name": "text_data",
+                  "source": [
+                    {
+                      "extension": "llm"
+                    }
+                  ]
+                },
+                {
+                  "name": "tts_audio_start",
+                  "dest": [
+                    {
+                      "extension": "avatar"
+                    }
+                  ]
+                },
+                {
+                  "name": "tts_audio_end",
+                  "dest": [
+                    {
+                      "extension": "avatar"
+                    }
+                  ]
+                }
+              ],
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "dest": [
+                    {
+                      "extension": "avatar"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
               "extension": "avatar",
               "audio_frame": [
                 {
@@ -1314,6 +1402,11 @@
                 },
                 {
                   "name": "tts_audio_start",
+                  "source": [
+                    {
+                      "extension": "tts"
+                    }
+                  ],
                   "dest": [
                     {
                       "extension": "thymia_analyzer"
@@ -1322,6 +1415,11 @@
                 },
                 {
                   "name": "tts_audio_end",
+                  "source": [
+                    {
+                      "extension": "tts"
+                    }
+                  ],
                   "dest": [
                     {
                       "extension": "thymia_analyzer"
@@ -1569,6 +1667,45 @@
               ]
             },
             {
+              "extension": "tts",
+              "data": [
+                {
+                  "name": "text_data",
+                  "source": [
+                    {
+                      "extension": "llm"
+                    }
+                  ]
+                },
+                {
+                  "name": "tts_audio_start",
+                  "dest": [
+                    {
+                      "extension": "avatar"
+                    }
+                  ]
+                },
+                {
+                  "name": "tts_audio_end",
+                  "dest": [
+                    {
+                      "extension": "avatar"
+                    }
+                  ]
+                }
+              ],
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "dest": [
+                    {
+                      "extension": "avatar"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
               "extension": "avatar",
               "audio_frame": [
                 {
@@ -1591,6 +1728,11 @@
                 },
                 {
                   "name": "tts_audio_start",
+                  "source": [
+                    {
+                      "extension": "tts"
+                    }
+                  ],
                   "dest": [
                     {
                       "extension": "thymia_analyzer"
@@ -1599,6 +1741,11 @@
                 },
                 {
                   "name": "tts_audio_end",
+                  "source": [
+                    {
+                      "extension": "tts"
+                    }
+                  ],
                   "dest": [
                     {
                       "extension": "thymia_analyzer"
@@ -1853,6 +2000,45 @@
               ]
             },
             {
+              "extension": "tts",
+              "data": [
+                {
+                  "name": "text_data",
+                  "source": [
+                    {
+                      "extension": "llm"
+                    }
+                  ]
+                },
+                {
+                  "name": "tts_audio_start",
+                  "dest": [
+                    {
+                      "extension": "avatar"
+                    }
+                  ]
+                },
+                {
+                  "name": "tts_audio_end",
+                  "dest": [
+                    {
+                      "extension": "avatar"
+                    }
+                  ]
+                }
+              ],
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "dest": [
+                    {
+                      "extension": "avatar"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
               "extension": "avatar",
               "audio_frame": [
                 {
@@ -1875,6 +2061,11 @@
                 },
                 {
                   "name": "tts_audio_start",
+                  "source": [
+                    {
+                      "extension": "tts"
+                    }
+                  ],
                   "dest": [
                     {
                       "extension": "thymia_analyzer"
@@ -1883,6 +2074,11 @@
                 },
                 {
                   "name": "tts_audio_end",
+                  "source": [
+                    {
+                      "extension": "tts"
+                    }
+                  ],
                   "dest": [
                     {
                       "extension": "thymia_analyzer"
@@ -2130,6 +2326,45 @@
               ]
             },
             {
+              "extension": "tts",
+              "data": [
+                {
+                  "name": "text_data",
+                  "source": [
+                    {
+                      "extension": "llm"
+                    }
+                  ]
+                },
+                {
+                  "name": "tts_audio_start",
+                  "dest": [
+                    {
+                      "extension": "avatar"
+                    }
+                  ]
+                },
+                {
+                  "name": "tts_audio_end",
+                  "dest": [
+                    {
+                      "extension": "avatar"
+                    }
+                  ]
+                }
+              ],
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "dest": [
+                    {
+                      "extension": "avatar"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
               "extension": "avatar",
               "audio_frame": [
                 {
@@ -2152,6 +2387,11 @@
                 },
                 {
                   "name": "tts_audio_start",
+                  "source": [
+                    {
+                      "extension": "tts"
+                    }
+                  ],
                   "dest": [
                     {
                       "extension": "thymia_analyzer"
@@ -2160,6 +2400,11 @@
                 },
                 {
                   "name": "tts_audio_end",
+                  "source": [
+                    {
+                      "extension": "tts"
+                    }
+                  ],
                   "dest": [
                     {
                       "extension": "thymia_analyzer"
@@ -2414,6 +2659,45 @@
               ]
             },
             {
+              "extension": "tts",
+              "data": [
+                {
+                  "name": "text_data",
+                  "source": [
+                    {
+                      "extension": "llm"
+                    }
+                  ]
+                },
+                {
+                  "name": "tts_audio_start",
+                  "dest": [
+                    {
+                      "extension": "avatar"
+                    }
+                  ]
+                },
+                {
+                  "name": "tts_audio_end",
+                  "dest": [
+                    {
+                      "extension": "avatar"
+                    }
+                  ]
+                }
+              ],
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "dest": [
+                    {
+                      "extension": "avatar"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
               "extension": "avatar",
               "audio_frame": [
                 {
@@ -2436,6 +2720,11 @@
                 },
                 {
                   "name": "tts_audio_start",
+                  "source": [
+                    {
+                      "extension": "tts"
+                    }
+                  ],
                   "dest": [
                     {
                       "extension": "thymia_analyzer"
@@ -2444,6 +2733,11 @@
                 },
                 {
                   "name": "tts_audio_end",
+                  "source": [
+                    {
+                      "extension": "tts"
+                    }
+                  ],
                   "dest": [
                     {
                       "extension": "thymia_analyzer"
