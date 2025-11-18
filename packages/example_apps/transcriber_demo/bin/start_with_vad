@@ -11,5 +11,4 @@ export PYTHONPATH=$(pwd):$(pwd)/ten_packages/system/ten_ai_base/interface
 export NODE_PATH=$(pwd)/ten_packages/system/ten_runtime_nodejs/lib:$NODE_PATH
 
 
-exec bin/main --property-file property-vad.json
-
+exec bin/main --property property-vad.json
