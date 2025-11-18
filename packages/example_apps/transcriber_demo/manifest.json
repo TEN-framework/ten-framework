@@ -73,6 +73,7 @@
     "include": [
       "manifest.json",
       "property.json",
+      "property-vad.json",
       "*.go",
       "go.mod",
       "go.sum",
@@ -84,6 +85,7 @@
       "scripts/**",
       "docs/**",
       "bin/start",
+      "bin/start_with_vad",
       ".vscode/**"
     ]
   }

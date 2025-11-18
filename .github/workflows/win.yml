@@ -435,12 +435,6 @@ jobs:
           fetch-depth: 0
           submodules: false
 
-      - name: Enable long paths on Windows
-        run: |
-          New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
-          git config --system core.longpaths true
-        shell: pwsh
-
       - name: Trust working directory
         run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
 

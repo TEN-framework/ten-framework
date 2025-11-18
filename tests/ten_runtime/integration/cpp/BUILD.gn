@@ -28,11 +28,18 @@ group("cpp") {
     deps += [
       "standalone_test_cpp",
       "standalone_test_tmpl_cpp",
-      "standalone_webrtc_vad_cpp",
     ]
 
     if (target_os == "linux" && target_cpu == "x64") {
       deps += [ "standalone_vosk_asr_cpp" ]
+    }
+
+    # Note: These standalone tests are disabled on Windows due to Windows
+    # MAX_PATH (260 characters) limitation. The deeply nested directory
+    # structure (e.g., extension/.ten/app/ten_packages/system/googletest/...)
+    # exceeds the path length limit.
+    if (target_os != "win") {
+      deps += [ "standalone_webrtc_vad_cpp" ]
     }
   }
 
