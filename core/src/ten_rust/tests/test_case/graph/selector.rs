@@ -171,40 +171,45 @@ mod tests {
                 );
             }
 
-            // Check specific messages exist
+            // Check specific messages exist with their node_name
             assert!(
                 content.messages.iter().any(|m| m.msg_type == MsgType::Cmd
                     && m.msg_name == "command_a"
-                    && m.direction == MsgDirection::Out),
-                "Missing command_a"
+                    && m.direction == MsgDirection::Out
+                    && m.node_name == "ext_1"),
+                "Missing command_a from ext_1"
             );
 
             assert!(
                 content.messages.iter().any(|m| m.msg_type == MsgType::Cmd
                     && m.msg_name == "command_b"
-                    && m.direction == MsgDirection::Out),
-                "Missing command_b"
+                    && m.direction == MsgDirection::Out
+                    && m.node_name == "ext_1"),
+                "Missing command_b from ext_1"
             );
 
             assert!(
                 content.messages.iter().any(|m| m.msg_type == MsgType::Data
                     && m.msg_name == "data_x"
-                    && m.direction == MsgDirection::Out),
-                "Missing data_x"
+                    && m.direction == MsgDirection::Out
+                    && m.node_name == "ext_1"),
+                "Missing data_x from ext_1"
             );
 
             assert!(
                 content.messages.iter().any(|m| m.msg_type == MsgType::Data
                     && m.msg_name == "data_y"
-                    && m.direction == MsgDirection::Out),
-                "Missing data_y"
+                    && m.direction == MsgDirection::Out
+                    && m.node_name == "ext_2"),
+                "Missing data_y from ext_2"
             );
 
             assert!(
                 content.messages.iter().any(|m| m.msg_type == MsgType::AudioFrame
                     && m.msg_name == "audio_stream_1"
-                    && m.direction == MsgDirection::Out),
-                "Missing audio_stream_1"
+                    && m.direction == MsgDirection::Out
+                    && m.node_name == "ext_2"),
+                "Missing audio_stream_1 from ext_2"
             );
         } else {
             panic!("Expected selector node");
@@ -263,26 +268,47 @@ mod tests {
                 content.messages.iter().filter(|m| m.msg_type == MsgType::VideoFrame).collect();
             assert_eq!(video_messages.len(), 2, "Expected 2 video messages");
 
-            // Verify specific message names
-            let message_names: Vec<String> =
-                content.messages.iter().map(|m| m.msg_name.clone()).collect();
-
-            assert!(message_names.contains(&"command_a".to_string()), "Missing command_a");
-            assert!(message_names.contains(&"command_b".to_string()), "Missing command_b");
-            assert!(message_names.contains(&"data_x".to_string()), "Missing data_x");
-            assert!(message_names.contains(&"data_y".to_string()), "Missing data_y");
-            assert!(message_names.contains(&"data_z".to_string()), "Missing data_z");
+            // Verify specific message names with node_name
             assert!(
-                message_names.contains(&"audio_stream_1".to_string()),
-                "Missing audio_stream_1"
+                content.messages.iter().any(|m| m.msg_name == "command_a" && m.node_name == "ext_1"),
+                "Missing command_a from ext_1"
             );
             assert!(
-                message_names.contains(&"video_stream_1".to_string()),
-                "Missing video_stream_1"
+                content.messages.iter().any(|m| m.msg_name == "command_b" && m.node_name == "ext_1"),
+                "Missing command_b from ext_1"
             );
             assert!(
-                message_names.contains(&"video_stream_2".to_string()),
-                "Missing video_stream_2"
+                content.messages.iter().any(|m| m.msg_name == "data_x" && m.node_name == "ext_1"),
+                "Missing data_x from ext_1"
+            );
+            assert!(
+                content.messages.iter().any(|m| m.msg_name == "data_y" && m.node_name == "ext_2"),
+                "Missing data_y from ext_2"
+            );
+            assert!(
+                content.messages.iter().any(|m| m.msg_name == "data_z" && m.node_name == "ext_3"),
+                "Missing data_z from ext_3"
+            );
+            assert!(
+                content
+                    .messages
+                    .iter()
+                    .any(|m| m.msg_name == "audio_stream_1" && m.node_name == "ext_2"),
+                "Missing audio_stream_1 from ext_2"
+            );
+            assert!(
+                content
+                    .messages
+                    .iter()
+                    .any(|m| m.msg_name == "video_stream_1" && m.node_name == "ext_3"),
+                "Missing video_stream_1 from ext_3"
+            );
+            assert!(
+                content
+                    .messages
+                    .iter()
+                    .any(|m| m.msg_name == "video_stream_2" && m.node_name == "ext_3"),
+                "Missing video_stream_2 from ext_3"
             );
         } else {
             panic!("Expected selector node");

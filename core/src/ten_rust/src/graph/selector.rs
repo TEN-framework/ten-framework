@@ -436,13 +436,15 @@ impl Graph {
                     let mut all_messages = Vec::new();
 
                     for matching_node in matching_nodes {
-                        if let Some(messages) = node_messages.get(matching_node.get_name()) {
+                        let node_name = matching_node.get_name().to_string();
+                        if let Some(messages) = node_messages.get(&node_name) {
                             // Collect all messages from this node
                             for (msg_type, msg_name, direction) in messages {
                                 all_messages.push(SelectorMessageInfo {
                                     msg_type: msg_type.clone(),
                                     msg_name: msg_name.clone(),
                                     direction: direction.clone(),
+                                    node_name: node_name.clone(),
                                 });
                             }
                         }

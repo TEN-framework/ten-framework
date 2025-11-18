@@ -123,6 +123,9 @@ pub struct SelectorMessageInfo {
 
     /// The direction of the message flow (in or out)
     pub direction: MsgDirection,
+
+    /// The name of the node that this message comes from
+    pub node_name: String,
 }
 
 /// Represents a selector node in the graph
