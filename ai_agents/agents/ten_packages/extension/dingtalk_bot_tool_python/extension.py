@@ -178,7 +178,7 @@ class DingTalkBotExtension(AsyncLLMToolBaseExtension):
                 )
 
         # 对于其他命令，调用基类处理
-        ten_env.log_info(f"[DingTalkBotExtension] Calling parent on_cmd...")
+        ten_env.log_info("[DingTalkBotExtension] Calling parent on_cmd...")
         await super().on_cmd(ten_env, cmd)
         ten_env.log_info(
             "[DingTalkBotExtension] ========== on_cmd END =========="
