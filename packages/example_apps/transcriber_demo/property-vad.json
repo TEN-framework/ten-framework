@@ -167,7 +167,7 @@
                             "level": "debug"
                         },
                         {
-                            "level": "warn"
+                            "level": "info"
                         }
                     ],
                     "formatter": {
