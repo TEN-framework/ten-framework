@@ -41,6 +41,31 @@
             },
             "group_id": {
               "type": "string"
+            },
+            "model": {
+              "type": "string"
+            },
+            "url": {
+              "type": "string"
+            },
+            "audio_setting": {
+              "type": "object",
+              "properties": {
+                "sample_rate": {
+                  "type": "int32"
+                },
+                "channels": {
+                  "type": "int32"
+                }
+              }
+            },
+            "voice_setting": {
+              "type": "object",
+              "properties": {
+                "voice_id": {
+                  "type": "string"
+                }
+              }
             }
           }
         }
