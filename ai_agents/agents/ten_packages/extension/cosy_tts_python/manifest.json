@@ -15,11 +15,7 @@
     {
       "type": "system",
       "name": "ten_ai_base",
-<<<<<<< HEAD
-      "version": "=0.7.22"
-=======
       "version": "0.7.23-rc1"
->>>>>>> 38510b39d (feat: update base ver)
     }
   ],
   "package": {
