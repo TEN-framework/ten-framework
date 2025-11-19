@@ -1,0 +1,111 @@
+{
+  "ten": {
+    "log": {
+      "handlers": [
+        {
+          "matchers": [
+            {
+              "level": "debug"
+            }
+          ],
+          "formatter": {
+            "type": "plain",
+            "colored": true
+          },
+          "emitter": {
+            "type": "console",
+            "config": {
+              "stream": "stdout"
+            }
+          }
+        }
+      ]
+    },
+    "predefined_graphs": [
+      {
+        "name": "default",
+        "auto_start": true,
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "simple_http_server_cpp",
+              "addon": "simple_http_server_cpp",
+              "extension_group": "default_extension_group",
+              "property": {
+                "server_port": 8002
+              }
+            },
+            {
+              "type": "extension",
+              "name": "server1",
+              "addon": "default_extension_go",
+              "extension_group": "server1",
+              "property": {
+                "return_ok": true
+              }
+            },
+            {
+              "type": "extension",
+              "name": "server2",
+              "addon": "default_extension_go",
+              "extension_group": "server2",
+              "property": {
+                "return_ok": false
+              }
+            },
+            {
+              "type": "extension",
+              "name": "server3",
+              "addon": "default_extension_go",
+              "extension_group": "server3",
+              "property": {
+                "return_ok": true
+              }
+            },
+            {
+              "type": "extension",
+              "name": "client",
+              "addon": "default_extension_go",
+              "extension_group": "client"
+            }
+          ],
+          "connections": [
+            {
+              "extension": "simple_http_server_cpp",
+              "cmd": [
+                {
+                  "name": "test",
+                  "dest": [
+                    {
+                      "extension": "client"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "client",
+              "cmd": [
+                {
+                  "name": "test",
+                  "dest": [
+                    {
+                      "extension": "server1"
+                    },
+                    {
+                      "extension": "server2"
+                    },
+                    {
+                      "extension": "server3"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

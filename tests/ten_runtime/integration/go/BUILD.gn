@@ -39,6 +39,7 @@ group("go") {
       "start_graph_and_set_dests_from_new_graph_go",
       "start_graph_go",
       "start_predefined_graph_go",
+      "stress_test_go",
       "three_extension_cmd_go",
       "transfer_pointer_go",
       "trigger_life_cycle_go",
