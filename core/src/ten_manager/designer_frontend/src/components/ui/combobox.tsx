@@ -228,9 +228,13 @@ export function MultiSelectorWithCheckbox(
 
     const next = new Set(selectedSet);
     if (allFilteredSelected) {
-      filteredSelectableOptions.forEach((option) => next.delete(option.value));
+      filteredSelectableOptions.forEach((option) => {
+        next.delete(option.value);
+      });
     } else {
-      filteredSelectableOptions.forEach((option) => next.add(option.value));
+      filteredSelectableOptions.forEach((option) => {
+        next.add(option.value);
+      });
     }
     updateSelection(next);
   }

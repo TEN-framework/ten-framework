@@ -32,7 +32,7 @@ import { SpinnerLoading } from "@/components/status/loading";
 import { AutoFormDynamicFields } from "@/components/ui/autoform/auto-form-dynamic-fields";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Combobox, MultiSelectorWithCheckbox } from "@/components/ui/combobox";
+import { Combobox } from "@/components/ui/combobox";
 import {
   Form,
   FormControl,
@@ -537,7 +537,47 @@ export const GraphUpdateNodePropertyWidget = (props: {
   );
 };
 
+// Main Connection Creation Widget - Routes to appropriate sub-widget
 export const GraphConnectionCreationWidget = (props: {
+  base_dir?: string | null;
+  app_uri?: string | null;
+  graph_id: string;
+  src_node?: TCustomNode | null;
+  dest_node?: TCustomNode | null;
+  postAddConnectionActions?: () => void | Promise<void>;
+}) => {
+  const { src_node, dest_node } = props;
+
+  // Determine connection type based on node types
+  const srcType = src_node?.type;
+  const destType = dest_node?.type;
+
+  // Extension to Extension connection
+  if (
+    (!srcType || srcType === ECustomNodeType.EXTENSION) &&
+    (!destType || destType === ECustomNodeType.EXTENSION)
+  ) {
+    return <ExtToExtConnectionWidget {...props} />;
+  }
+
+  // Selector to Extension connection
+  if (
+    srcType === ECustomNodeType.SELECTOR &&
+    (!destType || destType === ECustomNodeType.EXTENSION)
+  ) {
+    return <SelectorToExtConnectionWidget {...props} />;
+  }
+
+  // Unsupported connection type
+  return (
+    <div className="p-4 text-center text-muted-foreground">
+      Unsupported connection type
+    </div>
+  );
+};
+
+// Extension to Extension Connection Widget
+const ExtToExtConnectionWidget = (props: {
   base_dir?: string | null;
   app_uri?: string | null;
   graph_id: string;
@@ -561,28 +601,22 @@ export const GraphConnectionCreationWidget = (props: {
       disabled?: boolean;
     }[]
   >([]);
+  // Mode: 'src' means src-first mode, 'dest' means dest-first mode,
+  // null means not determined yet
+  const [mode, setMode] = React.useState<"src" | "dest" | null>(() => {
+    if (src_node) return "src";
+    if (dest_node) return "dest";
+    return null;
+  });
 
   const { t } = useTranslation();
-  const { nodes, displayedEdges } = useFlowStore();
+  const { nodes } = useFlowStore();
   const {
     data: graphs,
     isLoading: isGraphsLoading,
     error: graphError,
     mutate: mutateGraphs,
   } = useGraphs();
-  const {
-    data: extSchema,
-    isLoading: isExtSchemaLoading,
-    error: extSchemaError,
-  } = useFetchExtSchema(
-    (src_node && src_node?.type === ECustomNodeType.EXTENSION) ||
-      (dest_node && dest_node?.type === ECustomNodeType.EXTENSION)
-      ? {
-          appBaseDir: base_dir ?? "",
-          addonName: (src_node?.data.addon || dest_node?.data.addon) as string,
-        }
-      : null
-  );
 
   const form = useForm<z.infer<typeof AddConnectionPayloadSchema>>({
     resolver: zodResolver(AddConnectionPayloadSchema),
@@ -590,14 +624,16 @@ export const GraphConnectionCreationWidget = (props: {
       graph_id: graph_id ?? "",
       src: {
         app: app_uri,
-        [src_node?.type as keyof typeof src_node]:
+        extension:
+          src_node?.type === ECustomNodeType.EXTENSION &&
           typeof src_node?.data.name === "string"
             ? src_node.data.name
             : undefined,
       },
       dest: {
         app: app_uri,
-        [dest_node?.type as keyof typeof dest_node]:
+        extension:
+          dest_node?.type === ECustomNodeType.EXTENSION &&
           typeof dest_node?.data.name === "string"
             ? dest_node.data.name
             : undefined,
@@ -606,6 +642,34 @@ export const GraphConnectionCreationWidget = (props: {
       msg_type: EConnectionType.CMD,
     },
   });
+
+  const currentSrcExtension = form.watch("src.extension");
+  const currentDestExtension = form.watch("dest.extension");
+  const activeExtension =
+    mode === "src"
+      ? currentSrcExtension || src_node?.data.name
+      : mode === "dest"
+        ? currentDestExtension || dest_node?.data.name
+        : currentSrcExtension ||
+          currentDestExtension ||
+          src_node?.data.name ||
+          dest_node?.data.name;
+
+  const {
+    data: extSchema,
+    isLoading: isExtSchemaLoading,
+    error: extSchemaError,
+  } = useFetchExtSchema(
+    activeExtension
+      ? {
+          appBaseDir: base_dir ?? "",
+          addonName: (src_node?.data.addon ||
+            dest_node?.data.addon ||
+            nodes.find((n) => n.data.name === activeExtension)?.data
+              .addon) as string,
+        }
+      : null
+  );
 
   const watchedMsgNames = form.watch("msg_names");
   const primaryMsgName = Array.isArray(watchedMsgNames)
@@ -618,12 +682,8 @@ export const GraphConnectionCreationWidget = (props: {
     try {
       const payload = AddConnectionPayloadSchema.parse(data);
       if (
-        (payload.src?.extension &&
-          payload.src?.extension === payload.dest?.extension) ||
-        (payload.src?.selector &&
-          payload.src?.selector === payload.dest?.selector) ||
-        (payload.src?.subgraph &&
-          payload.src?.subgraph === payload.dest?.subgraph)
+        payload.src?.extension &&
+        payload.src?.extension === payload.dest?.extension
       ) {
         throw new Error(t("popup.graph.sameNodeError"));
       }
@@ -638,32 +698,42 @@ export const GraphConnectionCreationWidget = (props: {
     }
   };
 
-  const {
-    data: compatibleMessages,
-    isLoading: isCompatibleMsgLoading,
-    error: compatibleMsgError,
-  } = useCompatibleMessages(
-    (src_node || dest_node) &&
-      form.watch("msg_type") &&
-      primaryMsgName &&
-      graph_id &&
-      !(src_node && dest_node)
-      ? {
-          graph_id: graph_id ?? "",
-          app: app_uri ?? undefined,
-          extension_group: (src_node?.data.extension_group ||
-            dest_node?.data.extension_group) as string | undefined,
-          extension: (src_node?.data.name ||
-            dest_node?.data.name ||
-            "") as string,
-          msg_type: form.watch("msg_type"),
-          msg_direction: src_node?.data.name
-            ? EMsgDirection.OUT
-            : EMsgDirection.IN,
-          msg_name: primaryMsgName,
-        }
-      : null
-  );
+  const activeExtensionForCompatible =
+    mode === "src"
+      ? currentSrcExtension || src_node?.data.name
+      : mode === "dest"
+        ? currentDestExtension || dest_node?.data.name
+        : currentSrcExtension || currentDestExtension;
+
+  const activeExtensionGroup =
+    mode === "src"
+      ? src_node?.data.extension_group
+      : mode === "dest"
+        ? dest_node?.data.extension_group
+        : src_node?.data.extension_group || dest_node?.data.extension_group;
+
+  const msgType = form.watch("msg_type");
+  const { data: compatibleMessages, error: compatibleMsgError } =
+    useCompatibleMessages(
+      activeExtensionForCompatible &&
+        msgType &&
+        primaryMsgName &&
+        graph_id &&
+        !(src_node && dest_node)
+        ? {
+            graph_id: graph_id ?? "",
+            app: app_uri ?? undefined,
+            extension_group: activeExtensionGroup as string | undefined,
+            extension: activeExtensionForCompatible as string,
+            msg_type: msgType,
+            msg_direction:
+              mode === "src" || (mode === null && currentSrcExtension)
+                ? EMsgDirection.OUT
+                : EMsgDirection.IN,
+            msg_name: primaryMsgName,
+          }
+        : null
+    );
 
   const compatibleMessagesExtList = React.useMemo(() => {
     if (!compatibleMessages) return [];
@@ -671,65 +741,52 @@ export const GraphConnectionCreationWidget = (props: {
   }, [compatibleMessages]);
 
   const [srcNodes, destNodes] = React.useMemo(() => {
-    return nodes
-      .filter((n) => n.data.graph.graph_id === graph_id)
-      .reduce(
-        (prev, cur) => {
-          if (cur.data.name === src_node?.data.name) {
-            prev[0].push(cur);
-            return prev;
-          }
-          if (cur.data.name === dest_node?.data.name) {
-            prev[1].push(cur);
-            return prev;
-          }
-          const targetArray = src_node ? prev[1] : prev[0];
-          targetArray.push(cur);
-          return prev;
-        },
-        [[], []] as [TCustomNode[], TCustomNode[]]
-      );
-  }, [nodes, graph_id, src_node, dest_node?.data.name]);
+    const allExtensionNodes = nodes.filter(
+      (n) =>
+        n.data.graph.graph_id === graph_id &&
+        n.type === ECustomNodeType.EXTENSION
+    );
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: <ignore>
+    return allExtensionNodes.reduce(
+      (prev, cur) => {
+        // If src_node is fixed, only add matching nodes to srcNodes
+        if (src_node && cur.data.name === src_node.data.name) {
+          prev[0].push(cur);
+          return prev;
+        }
+        // If dest_node is fixed, only add matching nodes to destNodes
+        if (dest_node && cur.data.name === dest_node.data.name) {
+          prev[1].push(cur);
+          return prev;
+        }
+        // If both are fixed, don't add to either
+        if (src_node && dest_node) {
+          return prev;
+        }
+        // Otherwise, add to both lists (user can choose)
+        prev[0].push(cur);
+        prev[1].push(cur);
+        return prev;
+      },
+      [[], []] as [TCustomNode[], TCustomNode[]]
+    );
+  }, [nodes, graph_id, src_node, dest_node]);
+
   React.useEffect(() => {
-    const direction = src_node?.data.name ? "out" : "in";
-    if (extSchema) {
+    const direction =
+      mode === "src" || (mode === null && currentSrcExtension) ? "out" : "in";
+    if (extSchema && activeExtension) {
       const srcMsgNameList =
-        extSchema?.[`${form.watch("msg_type")}_${direction}`]?.map(
-          (i) => i.name
-        ) ?? [];
+        extSchema?.[`${msgType}_${direction}`]?.map((i) => i.name) ?? [];
       const newMsgNameList = [
         ...srcMsgNameList.map((i) => ({
           value: i,
           label: `${i}`,
         })),
       ];
-      if (direction === "out" && src_node?.type === ECustomNodeType.SELECTOR) {
-        const existedSelectorOutputEdges = displayedEdges.filter((edge) => {
-          return (
-            edge.data?.source?.name === src_node?.data.name &&
-            edge.data?.graph?.graph_id === graph_id &&
-            edge.data?.source?.type === ECustomNodeType.SELECTOR &&
-            edge.data?.target?.type !== ECustomNodeType.SELECTOR
-          );
-        });
-        const updatedMsgNameList = newMsgNameList.map((i) => {
-          const existedSelectorOutputEdge = existedSelectorOutputEdges.find(
-            (edge) => edge.data?.target?.name === i.value
-          );
-          return {
-            ...i,
-            disabled: !!existedSelectorOutputEdge,
-          };
-        });
-        setMsgNameList(updatedMsgNameList);
-        return;
-      }
       setMsgNameList(newMsgNameList);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [extSchema, form.watch("msg_type"), src_node?.data.name, displayedEdges]);
+  }, [extSchema, msgType, mode, currentSrcExtension, activeExtension]);
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: <ignore>
   React.useEffect(() => {
@@ -757,7 +814,7 @@ export const GraphConnectionCreationWidget = (props: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [graphError, extSchemaError, compatibleMsgError]);
 
-  const Inner = () => {
+  const MessageTypeAndNameFields = () => {
     return (
       <>
         <FormField
@@ -794,52 +851,52 @@ export const GraphConnectionCreationWidget = (props: {
             </FormItem>
           )}
         />
-        {form.watch("msg_type") &&
-          src_node?.type === ECustomNodeType.EXTENSION && (
-            <FormField
-              control={form.control}
-              name="msg_names"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t("popup.graph.messageName")}</FormLabel>
-                  <FormControl>
-                    <Combobox
-                      // eslint-disable-next-line max-len
-                      key={`Combobox-src-${form.watch("msg_type")}-${form.watch("src").extension}`} // todo: support selector and subgraph
-                      disabled={isExtSchemaLoading}
-                      isLoading={isExtSchemaLoading}
-                      mode="multiple"
-                      maxSelectedItems={2}
-                      options={msgNameList}
-                      placeholder={t("popup.graph.messageName")}
-                      selected={field.value ?? []}
-                      onChange={(items) => {
-                        field.onChange(items.map((item) => item.value));
-                      }}
-                      onCreate={(i) => {
-                        setMsgNameList((prev) => {
-                          if (prev.some((item) => item.value === i)) {
-                            return prev;
-                          }
+        {form.watch("msg_type") && (
+          <FormField
+            control={form.control}
+            name="msg_names"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t("popup.graph.messageName")}</FormLabel>
+                <FormControl>
+                  <Combobox
+                    key={`Combobox-${form.watch("msg_type")}-${
+                      form.watch("src").extension
+                    }`}
+                    disabled={isExtSchemaLoading}
+                    isLoading={isExtSchemaLoading}
+                    mode="multiple"
+                    maxSelectedItems={2}
+                    options={msgNameList}
+                    placeholder={t("popup.graph.messageName")}
+                    selected={field.value ?? []}
+                    onChange={(items) => {
+                      field.onChange(items.map((item) => item.value));
+                    }}
+                    onCreate={(i) => {
+                      setMsgNameList((prev) => {
+                        if (prev.some((item) => item.value === i)) {
+                          return prev;
+                        }
 
-                          return [
-                            ...prev,
-                            {
-                              value: i,
-                              label: i,
-                            },
-                          ];
-                        });
-                        const currentValues = field.value ?? [];
-                        field.onChange([...currentValues, i]);
-                      }}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
+                        return [
+                          ...prev,
+                          {
+                            value: i,
+                            label: i,
+                          },
+                        ];
+                      });
+                      const currentValues = field.value ?? [];
+                      field.onChange([...currentValues, i]);
+                    }}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
       </>
     );
   };
@@ -902,29 +959,40 @@ export const GraphConnectionCreationWidget = (props: {
                     <Select
                       onValueChange={(val) => {
                         if (!val) return;
-                        const srcNode = srcNodes.find(
-                          (n) => n.data.name === val
-                        );
+                        const previousMode = mode;
+                        const previousSrcExtension = field.value.extension;
+                        // Set mode to 'src' if not determined yet
+                        if (mode === null && !src_node && !dest_node) {
+                          setMode("src");
+                        }
                         field.onChange({
                           app: app_uri ?? undefined,
-                          [srcNode?.type as keyof typeof field.value]: val,
+                          extension: val,
                         });
-                        if (src_node) {
+                        // Only clear msg_names if:
+                        // 1. Switching to src mode (from null or dest), OR
+                        // 2. In src mode and changing src extension
+                        // (different extension means different messages)
+                        const isSwitchingToSrcMode =
+                          previousMode !== "src" && mode === "src";
+                        if (
+                          isSwitchingToSrcMode ||
+                          (previousMode === "src" &&
+                            previousSrcExtension !== val)
+                        ) {
                           form.setValue("msg_names", []);
                           form.trigger("msg_names");
                         }
                       }}
-                      value={
-                        field.value[
-                          (src_node?.type as keyof typeof field.value) ||
-                            (dest_node?.type as keyof typeof field.value)
-                        ] || undefined
-                      }
+                      value={field.value.extension || undefined}
                       disabled={
-                        (src_node
+                        src_node
                           ? true
-                          : !(form.watch("msg_type") && primaryMsgName)) ||
-                        isCompatibleMsgLoading
+                          : mode === null
+                            ? false
+                            : !!(
+                                mode === "dest" && !(msgType && primaryMsgName)
+                              )
                       }
                     >
                       <SelectTrigger
@@ -934,16 +1002,8 @@ export const GraphConnectionCreationWidget = (props: {
                         )}
                       >
                         <SelectValue placeholder={t("popup.graph.srcLocation")}>
-                          {field.value.extension ||
-                            field.value.selector ||
-                            field.value.subgraph}
-                          (
-                          {src_node?.type ||
-                            (field.value?.extension && "extension") ||
-                            (field.value?.selector && "selector") ||
-                            (field.value?.subgraph && "subgraph") ||
-                            ""}
-                          )
+                          {field.value.extension}
+                          {field.value.extension && " (extension)"}
                         </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
@@ -952,125 +1012,10 @@ export const GraphConnectionCreationWidget = (props: {
                             {t("popup.graph.srcLocation")}
                           </SelectLabel>
                           {srcNodes
-                            .sort((a, b) => {
-                              const aCompatible =
-                                compatibleMessagesExtList.includes(
-                                  a.data.addon as string
-                                );
-                              const bCompatible =
-                                compatibleMessagesExtList.includes(
-                                  b.data.addon as string
-                                );
-                              return aCompatible === bCompatible
-                                ? 0
-                                : aCompatible
-                                  ? -1
-                                  : 1;
-                            })
-                            .map((node) => (
-                              <SelectItem
-                                key={node.id}
-                                value={node.data.name as string}
-                              >
-                                {node.data.name as string}{" "}
-                                {compatibleMessagesExtList.includes(
-                                  node.data.addon as string
-                                ) && (
-                                  <Badge
-                                    className={cn(
-                                      "badge",
-                                      "bg-ten-green-6 hover:bg-ten-green-6"
-                                    )}
-                                  >
-                                    {t("extensionStore.compatible")}
-                                  </Badge>
-                                )}
-                              </SelectItem>
-                            ))}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            {!!src_node && <Inner />}
-          </div>
-          <ArrowBigRightIcon className="mx-auto size-4" />
-          <div className="flex-1 space-y-4 rounded-md bg-muted/50 p-4">
-            <FormField
-              control={form.control}
-              name="dest"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t("popup.graph.destLocation")}</FormLabel>
-                  <FormControl>
-                    <Select
-                      onValueChange={(val) => {
-                        if (!val) return;
-                        const destNode = destNodes.find(
-                          (n) => n.data.name === val
-                        );
-                        field.onChange({
-                          app: app_uri ?? undefined,
-                          [destNode?.type as keyof typeof field.value]: val,
-                        });
-                        if (dest_node) {
-                          form.setValue("msg_names", []);
-                          form.trigger("msg_names");
-                        }
-                      }}
-                      value={
-                        field.value[
-                          (dest_node?.type as keyof typeof field.value) ||
-                            (src_node?.type as keyof typeof field.value)
-                        ] || undefined
-                      }
-                      disabled={
-                        src_node?.type === ECustomNodeType.SELECTOR
-                          ? false
-                          : (dest_node
-                              ? true
-                              : !(form.watch("msg_type") && primaryMsgName)) ||
-                            isCompatibleMsgLoading
-                      }
-                    >
-                      <SelectTrigger
-                        className={cn(
-                          "w-full overflow-hidden",
-                          "[&_.badge]:hidden"
-                        )}
-                      >
-                        <SelectValue
-                          placeholder={t("popup.graph.destLocation")}
-                        >
-                          {field.value.extension ||
-                            field.value.selector ||
-                            field.value.subgraph}
-                          (
-                          {dest_node?.type ||
-                            (field.value?.extension && "extension") ||
-                            (field.value?.selector && "selector") ||
-                            (field.value?.subgraph && "subgraph") ||
-                            ""}
-                          )
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectGroup>
-                          <SelectLabel>
-                            {t("popup.graph.destLocation")}
-                          </SelectLabel>
-                          {destNodes
-                            ?.filter(
+                            .filter(
                               (n) =>
-                                // can't connect to selector
-                                n.id !== src_node?.id &&
-                                ![
-                                  ECustomNodeType.SELECTOR,
-                                  ECustomNodeType.GRAPH,
-                                ].includes(n.type)
+                                n.id !== dest_node?.id &&
+                                n.data.name !== currentDestExtension
                             )
                             .sort((a, b) => {
                               const aCompatible =
@@ -1115,40 +1060,126 @@ export const GraphConnectionCreationWidget = (props: {
                 </FormItem>
               )}
             />
-            {!!dest_node && src_node?.type !== ECustomNodeType.SELECTOR && (
-              <Inner />
+            {(!!src_node || (mode === "src" && currentSrcExtension)) && (
+              <MessageTypeAndNameFields />
             )}
-            {src_node?.type === ECustomNodeType.SELECTOR && (
-              <MultiSelectorWithCheckbox
-                // todo: update msgNameList with selectable field
-                options={msgNameList}
-                disabled={!!dest_node}
-                placeholder={t("popup.graph.messageName")}
-                selected={form.watch("msg_names") ?? []}
-                onChange={(items) => {
-                  form.setValue(
-                    "msg_names",
-                    items.map((item) => item.value)
-                  );
-                }}
-                onCreate={(i) => {
-                  setMsgNameList((prev) => {
-                    if (prev.some((item) => item.value === i)) {
-                      return prev;
-                    }
-
-                    return [
-                      ...prev,
-                      {
-                        value: i,
-                        label: i,
-                      },
-                    ];
-                  });
-                  const currentValues = form.watch("msg_names") ?? [];
-                  form.setValue("msg_names", [...currentValues, i]);
-                }}
-              />
+          </div>
+          <ArrowBigRightIcon className="mx-auto size-4" />
+          <div className="flex-1 space-y-4 rounded-md bg-muted/50 p-4">
+            <FormField
+              control={form.control}
+              name="dest"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t("popup.graph.destLocation")}</FormLabel>
+                  <FormControl>
+                    <Select
+                      onValueChange={(val) => {
+                        if (!val) return;
+                        const previousMode = mode;
+                        const previousDestExtension = field.value.extension;
+                        // Set mode to 'dest' if not determined yet
+                        if (mode === null && !src_node && !dest_node) {
+                          setMode("dest");
+                        }
+                        field.onChange({
+                          app: app_uri ?? undefined,
+                          extension: val,
+                        });
+                        // Only clear msg_names if:
+                        // 1. Switching to dest mode (from null), OR
+                        // 2. In dest mode and changing dest extension
+                        // Note: In src mode, selecting/changing dest should NOT
+                        // clear msg_names because they are based on src
+                        const isSwitchingToDestMode =
+                          previousMode === null && mode === "dest";
+                        if (
+                          isSwitchingToDestMode ||
+                          (previousMode === "dest" &&
+                            previousDestExtension !== val)
+                        ) {
+                          form.setValue("msg_names", []);
+                          form.trigger("msg_names");
+                        }
+                      }}
+                      value={field.value.extension || undefined}
+                      disabled={
+                        dest_node
+                          ? true
+                          : mode === null
+                            ? false
+                            : !!(mode === "src" && !(msgType && primaryMsgName))
+                      }
+                    >
+                      <SelectTrigger
+                        className={cn(
+                          "w-full overflow-hidden",
+                          "[&_.badge]:hidden"
+                        )}
+                      >
+                        <SelectValue
+                          placeholder={t("popup.graph.destLocation")}
+                        >
+                          {field.value.extension}
+                          {field.value.extension && " (extension)"}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectLabel>
+                            {t("popup.graph.destLocation")}
+                          </SelectLabel>
+                          {destNodes
+                            .filter(
+                              (n) =>
+                                n.id !== src_node?.id &&
+                                n.data.name !== currentSrcExtension
+                            )
+                            .sort((a, b) => {
+                              const aCompatible =
+                                compatibleMessagesExtList.includes(
+                                  a.data.addon as string
+                                );
+                              const bCompatible =
+                                compatibleMessagesExtList.includes(
+                                  b.data.addon as string
+                                );
+                              return aCompatible === bCompatible
+                                ? 0
+                                : aCompatible
+                                  ? -1
+                                  : 1;
+                            })
+                            .map((node) => (
+                              <SelectItem
+                                key={node.id}
+                                value={node.data.name as string}
+                              >
+                                {node.data.name as string}{" "}
+                                {compatibleMessagesExtList.includes(
+                                  node.data.addon as string
+                                ) && (
+                                  <Badge
+                                    className={cn(
+                                      "badge",
+                                      "bg-ten-green-6 hover:bg-ten-green-6"
+                                    )}
+                                  >
+                                    {t("extensionStore.compatible")}
+                                  </Badge>
+                                )}
+                              </SelectItem>
+                            ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            {(!!dest_node || (mode === "dest" && currentDestExtension)) && (
+              <MessageTypeAndNameFields />
             )}
           </div>
         </div>
@@ -1161,4 +1192,18 @@ export const GraphConnectionCreationWidget = (props: {
       </form>
     </Form>
   );
+};
+
+// Selector to Extension Connection Widget
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const SelectorToExtConnectionWidget = (_props: {
+  base_dir?: string | null;
+  app_uri?: string | null;
+  graph_id: string;
+  src_node?: TCustomNode | null;
+  dest_node?: TCustomNode | null;
+  postAddConnectionActions?: () => void | Promise<void>;
+}) => {
+  // TODO: Implement selector to extension connection
+  return null;
 };

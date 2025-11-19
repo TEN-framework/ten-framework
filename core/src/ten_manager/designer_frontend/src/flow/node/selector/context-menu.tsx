@@ -38,7 +38,7 @@ export const ContextMenuItems = (props: { node: TSelectorNode }) => {
       icon: <ViewIcon />,
       disabled: !node.data.filter,
       onSelect: () => {
-        alert(JSON.stringify(node.data.filter, null, 2));
+        alert(JSON.stringify(node.data.filter, null, 2)); // todo
       },
     },
     {

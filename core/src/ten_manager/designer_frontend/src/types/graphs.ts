@@ -46,10 +46,21 @@ export const BackendNodeExtension = z.object({
 });
 export type BackendNodeExtension = z.infer<typeof BackendNodeExtension>;
 
+export const DesignerSelectorMessageInfo = z.object({
+  msg_type: z.enum(["cmd", "data", "audio_frame", "video_frame"]),
+  msg_name: z.string(),
+  direction: z.enum(["in", "out"]),
+  node_name: z.string(),
+});
+export type DesignerSelectorMessageInfo = z.infer<
+  typeof DesignerSelectorMessageInfo
+>;
+
 export const BackendNodeSelector = z.object({
   name: z.string(),
   type: z.literal("selector"),
   filter: DesignerFilter,
+  messages: z.array(DesignerSelectorMessageInfo).nullish(),
 });
 export type BackendNodeSelector = z.infer<typeof BackendNodeSelector>;
 
