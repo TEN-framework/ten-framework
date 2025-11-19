@@ -270,11 +270,17 @@ mod tests {
 
             // Verify specific message names with node_name
             assert!(
-                content.messages.iter().any(|m| m.msg_name == "command_a" && m.node_name == "ext_1"),
+                content
+                    .messages
+                    .iter()
+                    .any(|m| m.msg_name == "command_a" && m.node_name == "ext_1"),
                 "Missing command_a from ext_1"
             );
             assert!(
-                content.messages.iter().any(|m| m.msg_name == "command_b" && m.node_name == "ext_1"),
+                content
+                    .messages
+                    .iter()
+                    .any(|m| m.msg_name == "command_b" && m.node_name == "ext_1"),
                 "Missing command_b from ext_1"
             );
             assert!(
