@@ -74,18 +74,6 @@ export default function ChatCard(props: { className?: string }) {
         })
       );
     }
-    if (text.data_type == "input_text") {
-      dispatch(
-        addChatItem({
-          userId: options.userId,
-          text: text.text,
-          type: EMessageType.USER,
-          data_type: EMessageDataType.TEXT,
-          isFinal: true,
-          time: text.text_ts,
-        })
-      );
-    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {

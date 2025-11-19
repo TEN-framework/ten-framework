@@ -20,7 +20,7 @@
         "@reduxjs/toolkit": "^2.9.2",
         "@trulience/react-sdk": "^1.0.98",
         "agora-rtc-sdk-ng": "^4.23.0",
-        "agora-rtm": "^2.2.3",
+        "agora-rtm": "^2.2.3-1",
         "axios": "^1.13.1",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
@@ -578,7 +578,7 @@
 
     "agora-rte-extension": ["agora-rte-extension@1.2.4", "", {}, "sha512-0ovZz1lbe30QraG1cU+ji7EnQ8aUu+Hf3F+a8xPml3wPOyUQEK6CTdxV9kMecr9t+fIDrGeW7wgJTsM1DQE7Nw=="],
 
-    "agora-rtm": ["agora-rtm@2.2.3", "", { "peerDependencies": { "agora-rtc-sdk-ng": "4.23.0" } }, "sha512-5O6uINrtnNDXijZEAmTwLzC1J6GizQoRb4moRx+DsVeYjcEbMjZAFcSnZVYHsjq3LrWetdknMhGt2o0zZJEBtQ=="],
+    "agora-rtm": ["agora-rtm@2.2.3-1", "", { "peerDependencies": { "agora-rtc-sdk-ng": "4.23.0" } }, "sha512-xZu9FezBWG/aFtFseeiNViT677v6STdQyIUlDosfZVJMOonG+8++GveGPOXn57IJZ7oOCVNoBnr4euskMSqf/Q=="],
 
     "ansi-styles": ["ansi-styles@4.3.0", "", { "dependencies": { "color-convert": "^2.0.1" } }, "sha512-zbB9rCJAT1rbjiVDb2hqKFHNYLxgtk8NURxZ3IZwD3F6NtxbXZQCnnSi1Lkx+IDohdPlFp222wVALIheZJQSEg=="],
 

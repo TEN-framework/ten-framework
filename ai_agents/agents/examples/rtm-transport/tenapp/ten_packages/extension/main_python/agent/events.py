@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Literal, Union, Dict, Any
+from typing import Literal, Union, Dict, Any, Optional
 from ten_ai_base.types import LLMToolMetadata
 
 
@@ -62,6 +62,18 @@ class LLMResponseEvent(AgentEventBase):
     is_final: bool
 
 
+class RTMMessageEvent(AgentEventBase):
+    """Event triggered when an RTM message is received from a user."""
+
+    type: Literal["data"] = "data"
+    name: Literal["rtm_message_event"] = "rtm_message_event"
+    channelName: str
+    message: dict[str, Any]
+    publisher: str
+    customType: Optional[str] = None
+    timestamp: int = 0
+
+
 # ==== Unified Event Union ====
 
 AgentEvent = Union[
@@ -70,4 +82,5 @@ AgentEvent = Union[
     ToolRegisterEvent,
     ASRResultEvent,
     LLMResponseEvent,
+    RTMMessageEvent,
 ]

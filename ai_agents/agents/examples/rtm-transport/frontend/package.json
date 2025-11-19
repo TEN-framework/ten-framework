@@ -6,8 +6,8 @@
     "node": ">=20"
   },
   "scripts": {
-    "dev": "next dev --turbopack",
-    "build": "next build",
+    "dev": "next dev --webpack",
+    "build": "next build --webpack",
     "start": "next start",
     "lint": "biome check --write",
     "proto": "pbjs -t json-module -w commonjs -o src/protobuf/SttMessage.js src/protobuf/SttMessage.proto"
@@ -29,7 +29,7 @@
     "@reduxjs/toolkit": "^2.9.2",
     "@trulience/react-sdk": "^1.0.98",
     "agora-rtc-sdk-ng": "^4.23.0",
-    "agora-rtm": "^2.2.3",
+    "agora-rtm": "^2.2.3-1",
     "axios": "^1.13.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

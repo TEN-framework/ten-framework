@@ -148,6 +148,23 @@ class Agent:
                         metadata=asr.get("metadata", {}),
                     )
                 )
+            elif data.get_name() == "rtm_message_event":
+                msg_json, _ = data.get_property_to_json(None)
+                msg = json.loads(msg_json)
+
+                # Parse the nested message JSON (RTM message content)
+                message_content = msg.get("message", "")
+                parsed_msg = json.loads(message_content)
+
+                await self._emit_direct(
+                    RTMMessageEvent(
+                        channelName=msg.get("channelName", ""),
+                        message=parsed_msg,
+                        publisher=msg.get("publisher", ""),
+                        customType=msg.get("customType", ""),
+                        timestamp=msg.get("timestamp", 0),
+                    )
+                )
             else:
                 self.ten_env.log_warn(f"Unhandled data: {data.get_name()}")
         except Exception as e:

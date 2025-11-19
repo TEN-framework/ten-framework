@@ -17,6 +17,7 @@ from .agent.agent import Agent
 from .agent.events import (
     ASRResultEvent,
     LLMResponseEvent,
+    RTMMessageEvent,
     ToolRegisterEvent,
     UserJoinedEvent,
     UserLeftEvent,
@@ -65,6 +66,34 @@ class MainControlExtension(AsyncExtension):
                 self.agent.on(event_type, fn)
 
     # === Register handlers with decorators ===
+    @agent_event_handler(RTMMessageEvent)
+    async def _on_rtm_message(self, event: RTMMessageEvent):
+        """Handle incoming RTM messages from other users."""
+        # Filter out messages from the agent itself to avoid feedback loops
+        if self.config.agent_user_id and event.publisher == self.config.agent_user_id:
+            self.ten_env.log_info(
+                f"[MainControlExtension] Ignoring RTM message from self: {event.message}"
+            )
+            return
+
+        if not event.message:
+            return
+
+        self.ten_env.log_info(
+            f"[MainControlExtension] Received RTM message from {event.publisher}: {event.message}"
+        )
+
+        data_type = event.message.get("data_type")
+
+        if data_type == "input_text":
+            # Treat RTM message like a final ASR result - trigger LLM flow
+            asr_result = ASRResultEvent(
+                text=event.message.get("text", ""),
+                final=True,
+                metadata=self._current_metadata(),
+            )
+            await self._on_asr_result(asr_result)
+
     @agent_event_handler(UserJoinedEvent)
     async def _on_user_joined(self, event: UserJoinedEvent):
         self._rtc_user_count += 1
@@ -94,6 +123,7 @@ class MainControlExtension(AsyncExtension):
             self.turn_id += 1
             await self.agent.queue_llm_input(event.text)
         await self._send_transcript("user", event.text, event.final, stream_id)
+
 
     @agent_event_handler(LLMResponseEvent)
     async def _on_llm_response(self, event: LLMResponseEvent):

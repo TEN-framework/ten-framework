@@ -75,7 +75,8 @@
               "addon": "main_python",
               "extension_group": "control",
               "property": {
-                "greeting": "TEN Agent connected. How can I help you today?"
+                "greeting": "TEN Agent connected. How can I help you today?",
+                "agent_user_id": "1234"
               }
             },
             {
@@ -111,9 +112,7 @@
                 "app_id": "${env:AGORA_APP_ID}",
                 "token": "<rtm_token>",
                 "user_id": "1234",
-                "rtm_enabled": true,
-                "rtm_presence_enabled": true,
-                "sdk_log_file_path": "/tmp/rtm_sdk.log"
+                "rtm_enabled": true
               }
             }
           ],
@@ -180,6 +179,19 @@
                   "source": [
                     {
                       "extension": "message_collector"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "agora_rtm",
+              "data": [
+                {
+                  "name": "rtm_message_event",
+                  "dest": [
+                    {
+                      "extension": "main_control"
                     }
                   ]
                 }

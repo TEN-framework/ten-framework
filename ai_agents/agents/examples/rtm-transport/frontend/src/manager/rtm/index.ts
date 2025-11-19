@@ -1,7 +1,6 @@
 "use client";
 
-import AgoraRTM, { type RTMClient, type RTMStreamChannel } from "agora-rtm";
-import { apiGenAgoraData } from "@/common";
+import AgoraRTM, { type RTMClient } from "agora-rtm";
 import { type IRTMTextItem } from "@/types";
 import { AGEventEmitter } from "../events";
 
@@ -56,17 +55,16 @@ export class RtmManager extends AGEventEmitter<IRtmEvents> {
       this.appId = appId;
       this.token = token;
 
-      const rtm = new AgoraRTM.RTM(appId, String(userId));
+      const rtm = new AgoraRTM.RTM(appId, String(userId), {
+        logLevel: "debug",
+      });
+
 
       await rtm.login({ token });
       console.log("[RTM] Login successful");
 
       const subscribeResult = await rtm.subscribe(channel, {
         withMessage: true,
-        withPresence: true,
-        beQuiet: false,
-        withMetadata: true,
-        withLock: true,
       });
       console.log("[RTM] Subscribe successful:", subscribeResult);
 
@@ -115,7 +113,7 @@ export class RtmManager extends AGEventEmitter<IRtmEvents> {
   }
 
   async sendText(text: string) {
-    const msg: IRTMTextItem = {
+    const item: IRTMTextItem = {
       is_final: true,
       text_ts: Date.now(),
       text,
@@ -123,10 +121,12 @@ export class RtmManager extends AGEventEmitter<IRtmEvents> {
       role: "user",
       stream_id: this.userId,
     };
-    await this._client?.publish(this.channel, JSON.stringify(msg), {
-      customType: "PainTxt",
-    });
-    this.emit("rtmMessage", msg);
+    const msg = JSON.stringify(item);
+    try {
+      await this._client?.publish(this.channel, msg);
+    } catch (error) {
+      console.error("[RTM] Send text failed:", error);
+    }
   }
 
   async destroy() {
