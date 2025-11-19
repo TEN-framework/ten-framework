@@ -77,7 +77,6 @@ class MainControlExtension extends Extension {
       const stream_id = Number(this.session_id) || 0;
 
       if (!event.text) return;
-
       if (event.final || event.text.length > 2) {
         await this._interrupt();
       }
@@ -86,9 +85,7 @@ class MainControlExtension extends Extension {
         this.turn_id += 1;
         await this.agent.queueLLMInput(event.text);
       }
-
       await this._send_transcript("user", event.text, event.final, stream_id);
-
     });
 
     this.agent.on(LLMResponseEvent, async (event) => {
