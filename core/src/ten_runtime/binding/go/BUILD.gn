@@ -26,39 +26,39 @@ if (ten_enable_go_binding) {
 
     resources = [ "manifest.json" ]
 
-    interface_files =
-        exec_script("//.gnfiles/build/scripts/glob_file.py",
-                    [
-                      "--dir",
-                      rebase_path(
-                          "//core/src/ten_runtime/binding/go/interface/**/*"),
-                      "--dir-base",
-                      rebase_path("//core/src/ten_runtime/binding/go/interface/"),
-                      "--recursive",
-                      "--only-output-file",
-                    ],
-                    "json")
+    interface_files = exec_script(
+            "//.gnfiles/build/scripts/glob_file.py",
+            [
+              "--dir",
+              rebase_path("//core/src/ten_runtime/binding/go/interface/**/*"),
+              "--dir-base",
+              rebase_path("//core/src/ten_runtime/binding/go/interface/"),
+              "--recursive",
+              "--only-output-file",
+            ],
+            "json")
 
     foreach(interface_file, interface_files) {
       interface_file_rel_path = interface_file.relative_path
       resources += [ "interface/${interface_file_rel_path}=>interface/${interface_file_rel_path}" ]
     }
 
-    tools_files =
-        exec_script("//.gnfiles/build/scripts/glob_file.py",
-                    [
-                      "--dir",
-                      rebase_path("//core/src/ten_runtime/binding/go/tools/**/*"),
-                      "--dir-base",
-                      rebase_path("//core/src/ten_runtime/binding/go/tools/"),
-                      "--recursive",
-                      "--only-output-file",
-                    ],
-                    "json")
+    tools_files = exec_script(
+            "//.gnfiles/build/scripts/glob_file.py",
+            [
+              "--dir",
+              rebase_path("//core/src/ten_runtime/binding/go/tools/**/*"),
+              "--dir-base",
+              rebase_path("//core/src/ten_runtime/binding/go/tools/"),
+              "--recursive",
+              "--only-output-file",
+            ],
+            "json")
 
     foreach(tool_file, tools_files) {
       tool_file_rel_path = tool_file.relative_path
-      resources += [ "tools/${tool_file_rel_path}=>tools/${tool_file_rel_path}" ]
+      resources +=
+          [ "tools/${tool_file_rel_path}=>tools/${tool_file_rel_path}" ]
     }
 
     foreach(lib, ten_runtime_go_output_libs) {
@@ -75,7 +75,8 @@ if (ten_enable_go_binding) {
 
   if (ten_enable_ten_manager) {
     ten_package_publish("upload_ten_go_binding_system_package_to_server") {
-      base_dir = rebase_path("${root_out_dir}/ten_packages/system/ten_runtime_go")
+      base_dir =
+          rebase_path("${root_out_dir}/ten_packages/system/ten_runtime_go")
       deps = [
         ":ten_go_binding_system_package",
         "native:ten_runtime_go",
