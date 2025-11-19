@@ -43,11 +43,10 @@ class InterleavedRequestsTester(AsyncExtensionTester):
         print("=" * 80)
         print("🧪 TEST CASE: Interleaved Requests TTS Test")
         print("=" * 80)
-        print("📋 Test Description: Validate TTS with interleaved requests (request_id 1, 2, 1, 3, 1)")
+        print("📋 Test Description: Validate TTS with interleaved requests (8 request_ids)")
         print("🎯 Test Objectives:")
-        print("   - Verify interleaved requests with different request_ids")
-        print("   - Verify request_id 1 sends multiple messages without text_input_end, then completes")
-        print("   - Verify request_id 2 and 3 send single message with text_input_end")
+        print("   - Verify interleaved requests with 8 different request_ids")
+        print("   - Verify complex message sending sequence across multiple requests")
         print("   - Verify strict event sequence order")
         print("   - Verify dump file generation")
         print("=" * 80)
@@ -55,25 +54,33 @@ class InterleavedRequestsTester(AsyncExtensionTester):
         self.session_id: str = session_id
         self.dump_file_name = f"tts_interleaved_requests_{self.session_id}.pcm"
         
-        # Define request IDs
+        # Define request IDs (1-8)
         self.request_id_1 = "test_interleaved_request_id_1"
         self.request_id_2 = "test_interleaved_request_id_2"
         self.request_id_3 = "test_interleaved_request_id_3"
+        self.request_id_4 = "test_interleaved_request_id_4"
+        self.request_id_5 = "test_interleaved_request_id_5"
+        self.request_id_6 = "test_interleaved_request_id_6"
+        self.request_id_7 = "test_interleaved_request_id_7"
+        self.request_id_8 = "test_interleaved_request_id_8"
         
         # Define messages for each request
-        # Request 1: multiple messages, only last one has text_input_end
+        # Request 1: 6 messages, only last one has text_input_end
         self.request_1_messages = [
             ("Hello world, this is the first message for request 1.", False),
             ("This is the second message for request 1.", False),
             ("This is the third message for request 1.", False),
             ("This is the fourth message for request 1 after request 2.", False),
             ("This is the fifth message for request 1 after request 2.", False),
-            ("This is the final message for request 1 after request 3.", True),  # text_input_end = True
+            ("This is the final message for request 1.", True),  # text_input_end = True
         ]
         
-        # Request 2: single message with text_input_end
+        # Request 2: 4 messages, only last one has text_input_end
         self.request_2_messages = [
-            ("This is the only message for request 2.", True),
+            ("This is the first message for request 2.", False),
+            ("This is the second message for request 2.", False),
+            ("This is the third message for request 2.", False),
+            ("This is the final message for request 2.", True),  # text_input_end = True
         ]
         
         # Request 3: single message with text_input_end
@@ -81,59 +88,104 @@ class InterleavedRequestsTester(AsyncExtensionTester):
             ("This is the only message for request 3.", True),
         ]
         
-        # Define sending sequence: (request_id, message_index)
-        # Sequence: request_1 (first 3) -> request_2 (1) -> request_1 (next 2) -> request_3 (1) -> request_1 (last 1)
-        self.sending_sequence = [
-            (self.request_id_1, 0),  # First message of request 1
-            (self.request_id_1, 1),  # Second message of request 1
-            (self.request_id_1, 2),  # Third message of request 1
-            (self.request_id_2, 0),  # Only message of request 2
-            (self.request_id_1, 3),  # Fourth message of request 1
-            (self.request_id_1, 4),  # Fifth message of request 1
-            (self.request_id_3, 0),  # Only message of request 3
-            (self.request_id_1, 5),  # Final message of request 1
+        # Request 4: 3 messages, only last one has text_input_end
+        self.request_4_messages = [
+            ("This is the first message for request 4.", False),
+            ("This is the second message for request 4.", False),
+            ("This is the final message for request 4.", True),  # text_input_end = True
         ]
         
-        # Expected request IDs that should complete
-        self.expected_request_ids = [self.request_id_1, self.request_id_2, self.request_id_3]
+        # Request 5: 2 messages, only last one has text_input_end
+        self.request_5_messages = [
+            ("This is the first message for request 5.", False),
+            ("This is the final message for request 5.", True),  # text_input_end = True
+        ]
+        
+        # Request 6: 3 messages, only last one has text_input_end
+        self.request_6_messages = [
+            ("This is the first message for request 6.", False),
+            ("This is the second message for request 6.", False),
+            ("This is the final message for request 6.", True),  # text_input_end = True
+        ]
+        
+        # Request 7: single message with text_input_end
+        self.request_7_messages = [
+            ("This is the only message for request 7.", True),
+        ]
+        
+        # Request 8: 3 messages, only last one has text_input_end
+        self.request_8_messages = [
+            ("This is the first message for request 8.", False),
+            ("This is the second message for request 8.", False),
+            ("This is the final message for request 8.", True),  # text_input_end = True
+        ]
+        
+        # Define sending sequence: (request_id, message_index)
+        # Sequence:
+        # 1. Request 1: messages 0, 1, 2 (no text_input_end)
+        # 2. Request 2: messages 0, 1 (no text_input_end)
+        # 3. Request 1: messages 3, 4 (no text_input_end)
+        # 4. Request 3: message 0 (text_input_end)
+        # 5. Request 2: messages 2, 3 (last has text_input_end)
+        # 6. Request 1: message 5 (text_input_end)
+        # 7. Request 4: messages 0, 1 (no text_input_end)
+        # 8. Request 5: message 0 (no text_input_end)
+        # 9. Request 6: messages 0, 1 (no text_input_end)
+        # 10. Request 7: message 0 (text_input_end)
+        # 11. Request 8: messages 0, 1 (no text_input_end)
+        # 12. Request 4: message 2 (text_input_end)
+        # 13. Request 6: message 2 (text_input_end)
+        # 14. Request 5: message 1 (text_input_end)
+        # 15. Request 8: message 2 (text_input_end)
+        self.sending_sequence = [
+            (self.request_id_1, 0),  # Request 1: first message
+            (self.request_id_1, 1),  # Request 1: second message
+            (self.request_id_1, 2),  # Request 1: third message
+            (self.request_id_2, 0),  # Request 2: first message
+            (self.request_id_2, 1),  # Request 2: second message
+            (self.request_id_1, 3),  # Request 1: fourth message
+            (self.request_id_1, 4),  # Request 1: fifth message
+            (self.request_id_3, 0),  # Request 3: only message (text_input_end)
+            (self.request_id_2, 2),  # Request 2: third message
+            (self.request_id_2, 3),  # Request 2: final message (text_input_end)
+            (self.request_id_1, 5),  # Request 1: final message (text_input_end)
+            (self.request_id_4, 0),  # Request 4: first message
+            (self.request_id_4, 1),  # Request 4: second message
+            (self.request_id_5, 0),  # Request 5: first message
+            (self.request_id_6, 0),  # Request 6: first message
+            (self.request_id_6, 1),  # Request 6: second message
+            (self.request_id_7, 0),  # Request 7: only message (text_input_end)
+            (self.request_id_8, 0),  # Request 8: first message
+            (self.request_id_8, 1),  # Request 8: second message
+            (self.request_id_4, 2),  # Request 4: final message (text_input_end)
+            (self.request_id_6, 2),  # Request 6: final message (text_input_end)
+            (self.request_id_5, 1),  # Request 5: final message (text_input_end)
+            (self.request_id_8, 2),  # Request 8: final message (text_input_end)
+        ]
+        
+        # Expected request IDs that should complete (all 8 requests)
+        self.expected_request_ids = [
+            self.request_id_1, self.request_id_2, self.request_id_3, self.request_id_4,
+            self.request_id_5, self.request_id_6, self.request_id_7, self.request_id_8
+        ]
         
         # Request metadata
         self.request_metadata = {
-            self.request_id_1: {
-                "session_id": self.session_id,
-                "turn_id": 1,
-            },
-            self.request_id_2: {
-                "session_id": self.session_id,
-                "turn_id": 2,
-            },
-            self.request_id_3: {
-                "session_id": self.session_id,
-                "turn_id": 3,
-            },
+            self.request_id_1: {"session_id": self.session_id, "turn_id": 1},
+            self.request_id_2: {"session_id": self.session_id, "turn_id": 2},
+            self.request_id_3: {"session_id": self.session_id, "turn_id": 3},
+            self.request_id_4: {"session_id": self.session_id, "turn_id": 4},
+            self.request_id_5: {"session_id": self.session_id, "turn_id": 5},
+            self.request_id_6: {"session_id": self.session_id, "turn_id": 6},
+            self.request_id_7: {"session_id": self.session_id, "turn_id": 7},
+            self.request_id_8: {"session_id": self.session_id, "turn_id": 8},
         }
         
         # Event sequence tracking - track state for each request
-        self.request_states = {
-            self.request_id_1: RequestState.WAITING_AUDIO_START,
-            self.request_id_2: RequestState.WAITING_AUDIO_START,
-            self.request_id_3: RequestState.WAITING_AUDIO_START,
-        }
-        self.audio_start_received = {
-            self.request_id_1: False,
-            self.request_id_2: False,
-            self.request_id_3: False,
-        }
-        self.audio_frames_received = {
-            self.request_id_1: False,
-            self.request_id_2: False,
-            self.request_id_3: False,
-        }
-        self.audio_end_received = {
-            self.request_id_1: False,
-            self.request_id_2: False,
-            self.request_id_3: False,
-        }
+        self.request_states = {rid: RequestState.WAITING_AUDIO_START for rid in self.expected_request_ids}
+        self.audio_start_received = {rid: False for rid in self.expected_request_ids}
+        self.audio_frames_received = {rid: False for rid in self.expected_request_ids}
+        self.audio_end_received = {rid: False for rid in self.expected_request_ids}
         
         # Track which requests are currently active (waiting for audio)
         self.active_requests = []  # List of request_ids that are waiting for audio
@@ -143,11 +195,7 @@ class InterleavedRequestsTester(AsyncExtensionTester):
         self.current_metadata = None
         self.audio_start_time = None
         self.total_audio_bytes = 0
-        self.request_audio_bytes = {
-            self.request_id_1: 0,
-            self.request_id_2: 0,
-            self.request_id_3: 0,
-        }
+        self.request_audio_bytes = {rid: 0 for rid in self.expected_request_ids}
         self.current_request_audio_bytes = 0
         self.sample_rate = 0
 
@@ -175,6 +223,16 @@ class InterleavedRequestsTester(AsyncExtensionTester):
                 text, text_input_end = self.request_2_messages[msg_idx]
             elif request_id == self.request_id_3:
                 text, text_input_end = self.request_3_messages[msg_idx]
+            elif request_id == self.request_id_4:
+                text, text_input_end = self.request_4_messages[msg_idx]
+            elif request_id == self.request_id_5:
+                text, text_input_end = self.request_5_messages[msg_idx]
+            elif request_id == self.request_id_6:
+                text, text_input_end = self.request_6_messages[msg_idx]
+            elif request_id == self.request_id_7:
+                text, text_input_end = self.request_7_messages[msg_idx]
+            elif request_id == self.request_id_8:
+                text, text_input_end = self.request_8_messages[msg_idx]
             else:
                 self._stop_test_with_error(ten_env, f"Unknown request_id: {request_id}")
                 return
@@ -537,4 +595,5 @@ def test_interleaved_requests(extension_name: str, config_dir: str) -> None:
     assert (
         error is None
     ), f"Test failed: {error.error_message() if error else 'Unknown error'}"
+
 
