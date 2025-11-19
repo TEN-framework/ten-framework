@@ -54,7 +54,7 @@ export function SelectorNode(props: NodeProps<TSelectorNode>) {
           className={cn(
             "w-fit min-w-3xs p-0 shadow-md",
             "rounded-md border border-dashed",
-            "bg-slate-100/90"
+            "bg-slate-100/90 dark:bg-slate-900/90"
           )}
         >
           {/* Header section */}
