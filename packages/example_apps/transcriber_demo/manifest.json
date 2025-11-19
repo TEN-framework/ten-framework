@@ -1,7 +1,7 @@
 {
   "type": "app",
   "name": "transcriber_demo",
-  "version": "0.11.30",
+  "version": "0.11.32",
   "display_name": {
     "locales": {
       "en-US": {
@@ -60,11 +60,12 @@
     {
       "type": "addon_loader",
       "name": "nodejs_addon_loader",
-      "version": "0.11.30"
+      "version": "0.11.32"
     }
   ],
   "scripts": {
     "start": "bin/start",
+    "start_with_vad": "bin/start_with_vad",
     "build": "python3 scripts/build.py",
     "install_deps": "python3 scripts/install_deps.py"
   },
@@ -72,6 +73,7 @@
     "include": [
       "manifest.json",
       "property.json",
+      "property-vad.json",
       "*.go",
       "go.mod",
       "go.sum",
@@ -83,6 +85,7 @@
       "scripts/**",
       "docs/**",
       "bin/start",
+      "bin/start_with_vad",
       ".vscode/**"
     ]
   }
