@@ -32,7 +32,7 @@ import { SpinnerLoading } from "@/components/status/loading";
 import { AutoFormDynamicFields } from "@/components/ui/autoform/auto-form-dynamic-fields";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Combobox } from "@/components/ui/combobox";
+import { Combobox, MultiSelectorWithCheckbox } from "@/components/ui/combobox";
 import {
   Form,
   FormControl,
@@ -1195,8 +1195,7 @@ const ExtToExtConnectionWidget = (props: {
 };
 
 // Selector to Extension Connection Widget
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const SelectorToExtConnectionWidget = (_props: {
+const SelectorToExtConnectionWidget = (props: {
   base_dir?: string | null;
   app_uri?: string | null;
   graph_id: string;
@@ -1204,6 +1203,455 @@ const SelectorToExtConnectionWidget = (_props: {
   dest_node?: TCustomNode | null;
   postAddConnectionActions?: () => void | Promise<void>;
 }) => {
-  // TODO: Implement selector to extension connection
-  return null;
+  const { app_uri, graph_id, src_node, dest_node, postAddConnectionActions } =
+    props;
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  // Store selected message keys (format: "msgType:msgName")
+  const [selectedMessageKeys, setSelectedMessageKeys] = React.useState<
+    string[]
+  >([]);
+
+  const { t } = useTranslation();
+  const { nodes } = useFlowStore();
+  const {
+    data: graphs,
+    isLoading: isGraphsLoading,
+    error: graphError,
+    mutate: mutateGraphs,
+  } = useGraphs();
+
+  // Get current graph data
+  const currentGraph = React.useMemo(
+    () => graphs?.find((g) => g.graph_id === graph_id),
+    [graphs, graph_id]
+  );
+
+  // Extract selector messages with direction "in"
+  const selectorInMessages = React.useMemo(() => {
+    if (!src_node || src_node.type !== ECustomNodeType.SELECTOR) {
+      return [];
+    }
+    const messages =
+      (src_node.data.messages as
+        | Array<{
+            msg_type: EConnectionType;
+            msg_name: string;
+            direction: "in" | "out";
+            node_name: string;
+          }>
+        | null
+        | undefined) || [];
+    return messages.filter((msg) => msg.direction === "in");
+  }, [src_node]);
+
+  // Group messages by msg_type and msg_name, collecting all source nodes
+  const messagesByTypeAndName = React.useMemo(() => {
+    const grouped: Record<EConnectionType, Record<string, string[]>> = {
+      [EConnectionType.CMD]: {},
+      [EConnectionType.DATA]: {},
+      [EConnectionType.AUDIO_FRAME]: {},
+      [EConnectionType.VIDEO_FRAME]: {},
+    };
+
+    selectorInMessages.forEach((msg) => {
+      const msgType = msg.msg_type;
+      const msgName = msg.msg_name;
+      const srcNodeName = msg.node_name;
+
+      if (!grouped[msgType][msgName]) {
+        grouped[msgType][msgName] = [];
+      }
+      if (!grouped[msgType][msgName].includes(srcNodeName)) {
+        grouped[msgType][msgName].push(srcNodeName);
+      }
+    });
+
+    return grouped;
+  }, [selectorInMessages]);
+
+  const form = useForm<z.infer<typeof AddConnectionPayloadSchema>>({
+    resolver: zodResolver(AddConnectionPayloadSchema),
+    defaultValues: {
+      graph_id: graph_id ?? "",
+      src: {
+        app: app_uri,
+        selector:
+          src_node?.type === ECustomNodeType.SELECTOR &&
+          typeof src_node?.data.name === "string"
+            ? src_node.data.name
+            : undefined,
+      },
+      dest: {
+        app: app_uri,
+        extension:
+          dest_node?.type === ECustomNodeType.EXTENSION &&
+          typeof dest_node?.data.name === "string"
+            ? dest_node.data.name
+            : undefined,
+      },
+      msg_names: [],
+      msg_type: EConnectionType.CMD,
+    },
+  });
+
+  const currentDestExtension = form.watch("dest.extension");
+  const selectedMsgType = form.watch("msg_type");
+
+  // Get existing connections from selector to dest extension
+  const existingConnections = React.useMemo(() => {
+    if (!currentGraph || !src_node) return new Set<string>();
+
+    const selectorName =
+      typeof src_node.data.name === "string" ? src_node.data.name : "";
+    const destExtensionName =
+      dest_node && typeof dest_node.data.name === "string"
+        ? dest_node.data.name
+        : currentDestExtension;
+    if (!destExtensionName) return new Set<string>();
+
+    const existing = new Set<string>();
+
+    currentGraph.graph.connections?.forEach((conn) => {
+      // Check if connection is from selector to dest extension
+      // For selector -> extension connections, the structure is:
+      // { selector: "...", [msgType]: [{ name: "...", dest: [...] }] }
+      if (conn.selector === selectorName) {
+        // Check all message types
+        Object.values(EConnectionType).forEach((msgType) => {
+          const flows = conn[msgType];
+          if (flows) {
+            flows.forEach((flow) => {
+              // Check if this flow has dest pointing to our target extension
+              const hasDestExtension =
+                flow.dest?.some(
+                  (dest) => dest.extension === destExtensionName
+                ) ?? false;
+
+              if (hasDestExtension) {
+                if (flow.name) {
+                  existing.add(`${msgType}:${flow.name}`);
+                }
+                if (flow.names) {
+                  flow.names.forEach((name) => {
+                    existing.add(`${msgType}:${name}`);
+                  });
+                }
+              }
+            });
+          }
+        });
+      }
+    });
+
+    return existing;
+  }, [currentGraph, src_node, dest_node, currentDestExtension]);
+
+  // Build options list for selected msg_type, showing source nodes
+  const messageOptions = React.useMemo(() => {
+    if (!selectedMsgType) return [];
+
+    const options: Array<{
+      value: string;
+      label: string;
+      selectable?: boolean;
+    }> = [];
+
+    const messagesForType = messagesByTypeAndName[selectedMsgType] || {};
+    Object.entries(messagesForType).forEach(([msgName, sourceNodes]) => {
+      const key = `${selectedMsgType}:${msgName}`;
+      const isExisting = existingConnections.has(key);
+      const sourceNodesLabel =
+        sourceNodes.length > 0 ? ` (from: ${sourceNodes.join(", ")})` : "";
+      options.push({
+        value: key,
+        label: `${msgName}${sourceNodesLabel}`,
+        // Disable if connection already exists
+        selectable: !isExisting,
+      });
+    });
+
+    return options;
+  }, [messagesByTypeAndName, selectedMsgType, existingConnections]);
+
+  // Get default selected values (existing connections)
+  const defaultSelectedKeys = React.useMemo(
+    () => Array.from(existingConnections),
+    [existingConnections]
+  );
+
+  // Initialize selectedMessageKeys with existing connections
+  // when dest and msg_type are selected
+  React.useEffect(() => {
+    if (currentDestExtension && selectedMsgType) {
+      // Filter to only include keys matching selected msg_type
+      const filteredKeys = defaultSelectedKeys.filter((key) => {
+        const [msgType] = key.split(":");
+        return msgType === selectedMsgType;
+      });
+      setSelectedMessageKeys(filteredKeys);
+      // Also update form with msg_names for validation
+      form.setValue(
+        "msg_names",
+        filteredKeys.map((key) => {
+          const [, name] = key.split(":");
+          return name;
+        })
+      );
+    } else {
+      // Reset if dest/msg_type is not selected
+      setSelectedMessageKeys([]);
+      form.setValue("msg_names", []);
+    }
+  }, [currentDestExtension, selectedMsgType, defaultSelectedKeys, form]);
+
+  const onSubmit = async (data: z.infer<typeof AddConnectionPayloadSchema>) => {
+    setIsSubmitting(true);
+    try {
+      // Filter out existing connections - only submit newly selected ones
+      const newMessageKeys = selectedMessageKeys.filter(
+        (key) => !existingConnections.has(key)
+      );
+
+      // Extract msg_names from new keys (all should be same msg_type)
+      const msgNames = newMessageKeys
+        .map((key) => {
+          const [, name] = key.split(":");
+          return name;
+        })
+        .filter((name): name is string => !!name);
+
+      if (msgNames.length === 0) {
+        throw new Error("Please select at least one new message name");
+      }
+
+      const payload = AddConnectionPayloadSchema.parse({
+        ...data,
+        msg_type: selectedMsgType,
+        msg_names: msgNames,
+      });
+      await postAddConnection(payload);
+      await mutateGraphs();
+      postAddConnectionActions?.();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unknown error");
+      console.error(error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Get available dest nodes (extension nodes only)
+  const destNodes = React.useMemo(() => {
+    return nodes.filter(
+      (n) =>
+        n.data.graph.graph_id === graph_id &&
+        n.type === ECustomNodeType.EXTENSION
+    );
+  }, [nodes, graph_id]);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: <ignore>
+  React.useEffect(() => {
+    if (graphError) {
+      toast.error(t("popup.graph.graphError"), {
+        description: graphError.message,
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [graphError]);
+
+  return (
+    <Form {...form}>
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="h-full w-full space-y-4 overflow-y-auto px-2"
+      >
+        <FormField
+          control={form.control}
+          name="graph_id"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{t("popup.graph.graphName")}</FormLabel>
+              <FormControl>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                  disabled={!!graph_id}
+                >
+                  <SelectTrigger className="w-full" disabled={isGraphsLoading}>
+                    <SelectValue placeholder={t("popup.graph.graphName")} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectLabel>{t("popup.graph.graphName")}</SelectLabel>
+                      {isGraphsLoading ? (
+                        <SelectItem value={t("popup.graph.graphName")}>
+                          <SpinnerLoading className="size-4" />
+                        </SelectItem>
+                      ) : (
+                        graphs?.map((graph) => (
+                          <SelectItem
+                            key={graph.graph_id}
+                            value={graph.graph_id}
+                          >
+                            {graph.name}
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex-1 space-y-4 rounded-md bg-muted/50 p-4">
+            <FormItem>
+              <FormLabel>{t("popup.graph.srcLocation")}</FormLabel>
+              <div className="text-muted-foreground text-sm">
+                {typeof src_node?.data.name === "string"
+                  ? `${src_node.data.name} (selector)`
+                  : "selector"}
+              </div>
+            </FormItem>
+          </div>
+          <ArrowBigRightIcon className="mx-auto size-4" />
+          <div className="flex-1 space-y-4 rounded-md bg-muted/50 p-4">
+            <FormField
+              control={form.control}
+              name="dest"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t("popup.graph.destLocation")}</FormLabel>
+                  <FormControl>
+                    <Select
+                      onValueChange={(val) => {
+                        if (!val) return;
+                        field.onChange({
+                          app: app_uri ?? undefined,
+                          extension: val,
+                        });
+                        // Reset messages and msg_type when dest changes
+                        setSelectedMessageKeys([]);
+                        form.setValue("msg_names", []);
+                        form.setValue("msg_type", EConnectionType.CMD);
+                        form.trigger("msg_names");
+                      }}
+                      value={field.value.extension || undefined}
+                      disabled={!!dest_node}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue
+                          placeholder={t("popup.graph.destLocation")}
+                        >
+                          {field.value.extension}
+                          {field.value.extension && " (extension)"}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectLabel>
+                            {t("popup.graph.destLocation")}
+                          </SelectLabel>
+                          {destNodes
+                            .filter((n) => n.id !== src_node?.id)
+                            .map((node) => (
+                              <SelectItem
+                                key={node.id}
+                                value={node.data.name as string}
+                              >
+                                {node.data.name as string}
+                              </SelectItem>
+                            ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            {form.watch("dest.extension") && (
+              <>
+                <FormField
+                  control={form.control}
+                  name="msg_type"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t("popup.graph.messageType")}</FormLabel>
+                      <FormControl>
+                        <Select
+                          onValueChange={(val) => {
+                            field.onChange(val);
+                            // Reset selected messages when msg_type changes
+                            setSelectedMessageKeys([]);
+                            form.setValue("msg_names", []);
+                            form.trigger("msg_names");
+                          }}
+                          value={field.value}
+                        >
+                          <SelectTrigger className="w-full overflow-hidden">
+                            <SelectValue
+                              placeholder={t("popup.graph.messageType")}
+                            />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectGroup>
+                              <SelectLabel>
+                                {t("popup.graph.messageType")}
+                              </SelectLabel>
+                              {Object.values(EConnectionType).map((type) => (
+                                <SelectItem key={type} value={type}>
+                                  {type}
+                                </SelectItem>
+                              ))}
+                            </SelectGroup>
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                {selectedMsgType && (
+                  <FormItem>
+                    <FormLabel>{t("popup.graph.messageName")}</FormLabel>
+                    <FormControl>
+                      <MultiSelectorWithCheckbox
+                        options={messageOptions}
+                        placeholder={t("popup.graph.messageName")}
+                        selected={selectedMessageKeys}
+                        onChange={(items) => {
+                          // Store full keys (msgType:msgName format)
+                          const keys = items.map((item) => item.value);
+                          setSelectedMessageKeys(keys);
+                          // Also update form with just names for validation
+                          form.setValue(
+                            "msg_names",
+                            keys.map((key) => {
+                              const [, name] = key.split(":");
+                              return name;
+                            })
+                          );
+                        }}
+                        selectAllLabel={t("action.selectAll")}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+        <div className="flex w-full">
+          <Button type="submit" disabled={isSubmitting} className="ml-auto">
+            {isSubmitting && <SpinnerLoading className="size-4" />}
+            {t("popup.graph.addConnection")}
+          </Button>
+        </div>
+      </form>
+    </Form>
+  );
 };
