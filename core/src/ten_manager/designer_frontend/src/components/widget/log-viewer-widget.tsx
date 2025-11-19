@@ -451,7 +451,7 @@ function LogViewerLogItemList(props: {
           itemData={filteredLogs}
         >
           {({ data, index, style }) => (
-            <div style={style}>
+            <div style={style as React.CSSProperties}>
               <VirtualListItem
                 data={data}
                 index={index}
