@@ -58,6 +58,11 @@
         "name": "start_play"
       }
     ],
+    "audio_frame_in": [
+      {
+        "name": "pcm_frame"
+      }
+    ],
     "audio_frame_out": [
       {
         "name": "pcm_frame"

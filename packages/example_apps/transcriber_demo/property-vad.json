@@ -35,6 +35,15 @@
               "name": "vtt_nodejs",
               "addon": "vtt_nodejs",
               "extension_group": "vtt"
+            },
+            {
+              "type": "extension",
+              "name": "vad",
+              "addon": "webrtc_vad_cpp",
+              "extension_group": "vad",
+              "property": {
+                "mode": 2
+              }
             }
           ],
           "connections": [
@@ -71,10 +80,26 @@
                   "name": "pcm_frame",
                   "dest": [
                     {
+                      "extension": "vad"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "vad",
+              "audio_frame": [
+                {
+                  "name": "pcm_frame",
+                  "dest": [
+                    {
                       "extension": "azure_asr_python"
                     },
                     {
                       "extension": "vtt_nodejs"
+                    },
+                    {
+                      "extension": "web_audio_control_go"
                     }
                   ]
                 }

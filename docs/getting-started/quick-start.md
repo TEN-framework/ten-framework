@@ -193,6 +193,131 @@ Now you can:
    - Supports Go, Python, TypeScript/JavaScript, C++, and more
    - Check out the [TEN Extension Development Guide](https://theten.ai/docs/ten_framework/development/how_to_develop_with_ext) for details
 
+## Advanced: Developing and Building C++ Extensions
+
+If you want to develop and use C++ extensions, you'll need to install the TEN build toolchain (tgn). Here's the complete process:
+
+### 1. Install tgn Build Tool
+
+tgn is TEN Framework's C/C++ build system, based on Google's GN.
+
+**Option 1: One-line Installation (Recommended)**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/TEN-framework/ten-framework/main/tools/tgn/install_tgn.sh | bash
+```
+
+**Option 2: Install from Cloned Repository**
+
+```bash
+# If you've already cloned the TEN Framework repository
+cd ten-framework
+bash tools/tgn/install_tgn.sh
+```
+
+After installation, ensure tgn is added to PATH:
+
+```bash
+# Temporarily add to current session
+export PATH="/usr/local/ten_gn:$PATH"
+
+# Or permanently add to shell configuration (recommended)
+echo 'export PATH="/usr/local/ten_gn:$PATH"' >> ~/.bashrc  # Linux
+echo 'export PATH="/usr/local/ten_gn:$PATH"' >> ~/.zshrc   # macOS
+source ~/.bashrc  # or source ~/.zshrc
+```
+
+Verify installation:
+
+```bash
+tgn --help
+```
+
+### 2. Install C++ Extension
+
+Using WebRTC VAD (Voice Activity Detection) extension as an example, install a C++ extension from the cloud store:
+
+```bash
+cd transcriber_demo
+tman install extension webrtc_vad_cpp
+```
+
+> 💡 **Note**: `webrtc_vad_cpp` is a voice activity detection extension implemented in C++. It can filter out non-speech segments in real-time speech recognition scenarios.
+
+### 3. Compile C++ Extension
+
+After installing the C++ extension, rebuild the app to compile the C++ code into a dynamic library:
+
+```bash
+tman run build
+```
+
+> ⏱️ **Expected Time**: First-time compilation of C++ extensions may take 1-3 minutes, depending on your machine's performance.
+
+### 4. Run App with VAD Functionality
+
+```bash
+tman run start_with_vad
+```
+
+If everything works correctly, you should see:
+
+```text
+[web_audio_control_go] Web server started on port 8080
+[vad] WebRTC VAD initialized with mode 2
+[audio_file_player_python] AudioFilePlayerExtension on_start
+```
+
+Now open your browser at `http://localhost:8080` and navigate to the microphone real-time transcription page. You'll see the silence state changes after VAD processing. When the silence state is true, it indicates there is no speech in the current audio.
+
+### C++ Development Environment Requirements
+
+Developing and compiling C++ extensions requires installing a C++ compiler (gcc or clang):
+
+**Linux:**
+```bash
+# Ubuntu/Debian
+sudo apt-get install gcc g++
+
+# Or use clang
+sudo apt-get install clang
+```
+
+**macOS:**
+```bash
+# Install Xcode Command Line Tools (includes clang)
+xcode-select --install
+```
+
+Verify compiler installation:
+```bash
+# Check gcc
+gcc --version
+g++ --version
+
+# Or check clang
+clang --version
+```
+
+### Troubleshooting (C++ Extensions)
+
+**1. tgn command not found**
+
+Ensure you've run the installation script and added tgn to PATH:
+
+```bash
+export PATH="/usr/local/ten_gn:$PATH"
+```
+
+**2. Compilation failed: Compiler not found**
+
+Please refer to the "C++ Development Environment Requirements" section above to install the compiler.
+
+### Learn More
+
+- [ten_gn Build System](https://github.com/TEN-framework/ten_gn) - TEN's C/C++ build tool
+- [C++ Extension Development Guide](https://theten.ai/docs/ten_framework/development/how_to_develop_with_ext) - Complete C++ extension development documentation
+
 ## Troubleshooting
 
 ### 1. Python Library Loading Failure on macOS
