@@ -260,7 +260,9 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
             )
             # Only finish request if we've received text_input_end (request is complete)
             if self.current_request_finished:
-                await self._handle_tts_audio_end(reason=TTSAudioEndReason.ERROR)
+                await self._handle_tts_audio_end(
+                    reason=TTSAudioEndReason.ERROR, error=error
+                )
             else:
                 # Just send error, request might continue with more text chunks
                 await self.send_tts_error(
@@ -281,7 +283,9 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
             )
             # Only finish request if we've received text_input_end (request is complete)
             if self.current_request_finished:
-                await self._handle_tts_audio_end(reason=TTSAudioEndReason.ERROR)
+                await self._handle_tts_audio_end(
+                    reason=TTSAudioEndReason.ERROR, error=error
+                )
             else:
                 # Just send error, request might continue with more text chunks
                 await self.send_tts_error(
@@ -370,7 +374,8 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
                         # Only finish request if we've received text_input_end
                         if self.current_request_finished:
                             await self._handle_tts_audio_end(
-                                reason=TTSAudioEndReason.ERROR
+                                reason=TTSAudioEndReason.ERROR,
+                                error=error,
                             )
                         else:
                             # Just send error, request might continue
@@ -413,7 +418,8 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
                             ),
                         )
                         await self._handle_tts_audio_end(
-                            reason=TTSAudioEndReason.ERROR
+                            reason=TTSAudioEndReason.ERROR,
+                            error=error,
                         )
                         self.current_request_finished = True
                     # Break loop on error, will reconnect on next synthesize_audio
@@ -429,7 +435,9 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
                     code=ModuleErrorCode.NON_FATAL_ERROR.value,
                     vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
                 )
-                await self._handle_tts_audio_end(reason=TTSAudioEndReason.ERROR)
+                await self._handle_tts_audio_end(
+                    reason=TTSAudioEndReason.ERROR, error=error
+                )
                 self.current_request_finished = True
 
     def synthesize_audio_sample_rate(self) -> int:
@@ -547,6 +555,7 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
     async def _handle_tts_audio_end(
         self,
         reason: TTSAudioEndReason = TTSAudioEndReason.REQUEST_END,
+        error: ModuleError | None = None,
     ) -> None:
         """
         Handle TTS audio end processing.
@@ -554,8 +563,9 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
         This method:
         1. Calculates total audio duration
         2. Calculates request event interval
-        3. Sends TTS audio end event
-        4. Logs the operation
+        3. Flushes PCMWriter for current request
+        4. Sends TTS audio end event
+        5. Logs the operation
         """
         if self.request_start_ts:
             self.request_total_audio_duration_ms = (
@@ -567,6 +577,21 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
                 (datetime.now() - self.request_start_ts).total_seconds() * 1000
             )
 
+            # Flush PCMWriter for current request to ensure dump file is written
+            if (
+                self.current_request_id
+                and self.current_request_id in self.recorder_map
+            ):
+                try:
+                    await self.recorder_map[self.current_request_id].flush()
+                    self.ten_env.log_info(
+                        f"Flushed PCMWriter for request_id: {self.current_request_id}"
+                    )
+                except Exception as e:
+                    self.ten_env.log_error(
+                        f"Error flushing PCMWriter for request_id {self.current_request_id}: {e}"
+                    )
+
             # Send TTS audio end event
             await self.send_tts_audio_end(
                 request_id=self.current_request_id,
@@ -576,28 +601,11 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
             )
             # Send usage metrics
             await self.send_usage_metrics(self.current_request_id)
-            
-            # Flush PCMWriter for current request before finishing
-            if (
-                self.config
-                and self.config.dump
-                and self.current_request_id
-                and self.current_request_id in self.recorder_map
-            ):
-                try:
-                    await self.recorder_map[self.current_request_id].flush()
-                    self.ten_env.log_info(
-                        f"KEYPOINT Flushed PCMWriter for request_id: {self.current_request_id}"
-                    )
-                except Exception as e:
-                    self.ten_env.log_error(
-                        f"Error flushing PCMWriter for request_id {self.current_request_id}: {e}"
-                    )
-            
             # Finish request to complete state transition
             await self.finish_request(
                 request_id=self.current_request_id,
                 reason=reason,
+                error=error,
             )
 
             self.current_request_id = None
