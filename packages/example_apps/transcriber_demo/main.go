@@ -40,7 +40,13 @@ func (p *defaultApp) OnConfigure(tenEnv ten.TenEnv) {
 	// Using the default property.json if not specified.
 	if len(p.cfg.PropertyFilePath) > 0 {
 		if b, err := os.ReadFile(p.cfg.PropertyFilePath); err != nil {
-			tenEnv.LogError(fmt.Sprintf("Failed to read property file %s, err %v\n", p.cfg.PropertyFilePath, err))
+			tenEnv.LogError(
+				fmt.Sprintf(
+					"Failed to read property file %s, err %v\n",
+					p.cfg.PropertyFilePath,
+					err,
+				),
+			)
 		} else {
 			tenEnv.InitPropertyFromJSONBytes(b)
 		}
@@ -77,7 +83,12 @@ func startAppBlocking(cfg *appConfig) {
 func main() {
 	cfg := &appConfig{}
 
-	flag.StringVar(&cfg.PropertyFilePath, "property", "", "The absolute path of property.json")
+	flag.StringVar(
+		&cfg.PropertyFilePath,
+		"property",
+		"",
+		"The absolute path of property.json",
+	)
 	flag.Parse()
 
 	startAppBlocking(cfg)

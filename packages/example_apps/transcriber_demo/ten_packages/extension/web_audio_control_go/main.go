@@ -27,12 +27,23 @@ func newWebAudioControlExtension(name string) ten.Extension {
 }
 
 func (e *webAudioControlExtension) OnStart(tenEnv ten.TenEnv) {
-	tenEnv.Log(ten.LogLevelInfo, "WebAudioControlExtension OnStart", &logCategoryKeyPoint, nil, nil)
+	tenEnv.Log(
+		ten.LogLevelInfo,
+		"WebAudioControlExtension OnStart",
+		&logCategoryKeyPoint,
+		nil,
+		nil,
+	)
 
 	// Get HTTP port from property
 	port, err := tenEnv.GetPropertyInt64("http_port")
 	if err != nil {
-		tenEnv.LogWarn(fmt.Sprintf("Failed to get http_port property, using default 8080: %v", err))
+		tenEnv.LogWarn(
+			fmt.Sprintf(
+				"Failed to get http_port property, using default 8080: %v",
+				err,
+			),
+		)
 		port = 8080
 	}
 
@@ -40,18 +51,38 @@ func (e *webAudioControlExtension) OnStart(tenEnv ten.TenEnv) {
 	e.server = server.NewWebServer(int(port), tenEnv)
 
 	// Set audio data handler
-	e.server.SetAudioDataHandler(func(audioData []byte, sampleRate int, channels int, samplesPerChannel int) {
-		e.handleAudioData(tenEnv, audioData, sampleRate, channels, samplesPerChannel)
-	})
+	e.server.SetAudioDataHandler(
+		func(audioData []byte, sampleRate int, channels int, samplesPerChannel int) {
+			e.handleAudioData(
+				tenEnv,
+				audioData,
+				sampleRate,
+				channels,
+				samplesPerChannel,
+			)
+		},
+	)
 
 	go e.server.Start()
 
-	tenEnv.Log(ten.LogLevelInfo, fmt.Sprintf("Web server started on port %d", port), &logCategoryKeyPoint, nil, nil)
+	tenEnv.Log(
+		ten.LogLevelInfo,
+		fmt.Sprintf("Web server started on port %d", port),
+		&logCategoryKeyPoint,
+		nil,
+		nil,
+	)
 	tenEnv.OnStartDone()
 }
 
 func (e *webAudioControlExtension) OnStop(tenEnv ten.TenEnv) {
-	tenEnv.Log(ten.LogLevelInfo, "WebAudioControlExtension OnStop", &logCategoryKeyPoint, nil, nil)
+	tenEnv.Log(
+		ten.LogLevelInfo,
+		"WebAudioControlExtension OnStop",
+		&logCategoryKeyPoint,
+		nil,
+		nil,
+	)
 
 	if e.server != nil {
 		e.server.Stop()
@@ -80,13 +111,21 @@ func (e *webAudioControlExtension) OnData(tenEnv ten.TenEnv, data ten.Data) {
 		// Extract final property from data
 		final, err := data.GetPropertyBool("final")
 		if err != nil {
-			tenEnv.LogError(fmt.Sprintf("Failed to get final property: %v", err))
+			tenEnv.LogError(
+				fmt.Sprintf("Failed to get final property: %v", err),
+			)
 			return
 		}
 
 		// Log final results with key_point category
 		if final {
-			tenEnv.Log(ten.LogLevelInfo, fmt.Sprintf("Received final ASR result: text='%s'", text), &logCategoryKeyPoint, nil, nil)
+			tenEnv.Log(
+				ten.LogLevelInfo,
+				fmt.Sprintf("Received final ASR result: text='%s'", text),
+				&logCategoryKeyPoint,
+				nil,
+				nil,
+			)
 		} else {
 			tenEnv.LogInfo(fmt.Sprintf("Received interim ASR result: text='%s'", text))
 		}
@@ -98,7 +137,10 @@ func (e *webAudioControlExtension) OnData(tenEnv ten.TenEnv, data ten.Data) {
 	}
 }
 
-func (e *webAudioControlExtension) OnAudioFrame(tenEnv ten.TenEnv, audioFrame ten.AudioFrame) {
+func (e *webAudioControlExtension) OnAudioFrame(
+	tenEnv ten.TenEnv,
+	audioFrame ten.AudioFrame,
+) {
 	frameName, err := audioFrame.GetName()
 	if err != nil {
 		tenEnv.LogError(fmt.Sprintf("Failed to get audio frame name: %v", err))
@@ -107,12 +149,15 @@ func (e *webAudioControlExtension) OnAudioFrame(tenEnv ten.TenEnv, audioFrame te
 
 	tenEnv.LogDebug(fmt.Sprintf("OnAudioFrame: %s", frameName))
 
-	// VAD outputs audio frames with the original name (pcm_frame) and adds is_speech property
+	// VAD outputs audio frames with the original name (pcm_frame) and adds
+	// is_speech property
 	// Check if this frame has VAD result by looking for is_speech property
 	isSpeech, err := audioFrame.GetPropertyBool("is_speech")
 	if err != nil {
 		// No is_speech property means this frame didn't go through VAD
-		tenEnv.LogDebug(fmt.Sprintf("No is_speech property in audio frame: %v", err))
+		tenEnv.LogDebug(
+			fmt.Sprintf("No is_speech property in audio frame: %v", err),
+		)
 		return
 	}
 
@@ -124,7 +169,13 @@ func (e *webAudioControlExtension) OnAudioFrame(tenEnv ten.TenEnv, audioFrame te
 	}
 }
 
-func (e *webAudioControlExtension) handleAudioData(tenEnv ten.TenEnv, audioData []byte, sampleRate int, channels int, samplesPerChannel int) {
+func (e *webAudioControlExtension) handleAudioData(
+	tenEnv ten.TenEnv,
+	audioData []byte,
+	sampleRate int,
+	channels int,
+	samplesPerChannel int,
+) {
 	// Create audio frame
 	audioFrame, err := ten.NewAudioFrame("pcm_frame")
 	if err != nil {
@@ -142,13 +193,17 @@ func (e *webAudioControlExtension) handleAudioData(tenEnv ten.TenEnv, audioData 
 
 	// Allocate and fill buffer
 	if err := audioFrame.AllocBuf(len(audioData)); err != nil {
-		tenEnv.LogError(fmt.Sprintf("Failed to allocate audio frame buffer: %v", err))
+		tenEnv.LogError(
+			fmt.Sprintf("Failed to allocate audio frame buffer: %v", err),
+		)
 		return
 	}
 
 	buf, err := audioFrame.LockBuf()
 	if err != nil {
-		tenEnv.LogError(fmt.Sprintf("Failed to lock audio frame buffer: %v", err))
+		tenEnv.LogError(
+			fmt.Sprintf("Failed to lock audio frame buffer: %v", err),
+		)
 		return
 	}
 	copy(buf, audioData)

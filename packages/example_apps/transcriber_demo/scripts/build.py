@@ -498,11 +498,13 @@ def build_cxx_extensions(
         # On macOS, use default clang compiler
         # On other platforms, add custom flags
         if os_type != "mac":
-            tgn_gen_cmd.extend([
-                "--",
-                "is_clang=false",
-                "enable_sanitizer=false",
-            ])
+            tgn_gen_cmd.extend(
+                [
+                    "--",
+                    "is_clang=false",
+                    "enable_sanitizer=false",
+                ]
+            )
 
         subprocess.run(
             tgn_gen_cmd,

@@ -10,5 +10,4 @@ export DYLD_LIBRARY_PATH=/usr/local/opt/python@3.10/Frameworks/Python.framework/
 export PYTHONPATH=$(pwd):$(pwd)/ten_packages/system/ten_ai_base/interface
 export NODE_PATH=$(pwd)/ten_packages/system/ten_runtime_nodejs/lib:$NODE_PATH
 
-
 exec bin/main --property property-vad.json

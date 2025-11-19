@@ -275,6 +275,7 @@ tman run start_with_vad
 开发和编译 C++ 扩展需要安装 C++ 编译器（gcc 或 clang）：
 
 **Linux:**
+
 ```bash
 # Ubuntu/Debian
 sudo apt-get install gcc g++
@@ -284,12 +285,14 @@ sudo apt-get install clang
 ```
 
 **macOS:**
+
 ```bash
 # 安装 Xcode Command Line Tools (包含 clang)
 xcode-select --install
 ```
 
 验证编译器安装：
+
 ```bash
 # 检查 gcc
 gcc --version
