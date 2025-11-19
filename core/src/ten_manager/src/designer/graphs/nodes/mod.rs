@@ -221,6 +221,9 @@ pub struct DesignerSelectorMessageInfo {
 
     /// The direction of the message flow (in or out)
     pub direction: MsgDirection,
+
+    /// The name of the node that this message comes from
+    pub node_name: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -376,6 +379,7 @@ impl TryFrom<GraphNode> for DesignerGraphNode {
                             msg_type: msg.msg_type,
                             msg_name: msg.msg_name,
                             direction: msg.direction,
+                            node_name: msg.node_name,
                         })
                         .collect(),
                 }),
