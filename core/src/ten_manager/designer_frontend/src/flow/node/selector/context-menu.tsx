@@ -5,7 +5,7 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 
-import { ArrowUpFromDotIcon, ViewIcon } from "lucide-react";
+import { ArrowUpFromDotIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { GraphPopupTitle } from "@/components/popup/graph";
 import {
@@ -31,16 +31,16 @@ export const ContextMenuItems = (props: { node: TSelectorNode }) => {
   // const { data: graphs, mutate: mutateGraphs } = useGraphs();
 
   const items: RightClickContextMenuItem[] = [
-    {
-      _type: ERightClickContextMenuItemType.MENU_ITEM,
-      _id: "selector-node-view-filters",
-      children: `${t("action.viewDetails")}`,
-      icon: <ViewIcon />,
-      disabled: !node.data.filter,
-      onSelect: () => {
-        alert(JSON.stringify(node.data.filter, null, 2)); // todo
-      },
-    },
+    // {
+    //   _type: ERightClickContextMenuItemType.MENU_ITEM,
+    //   _id: "selector-node-view-filters",
+    //   children: `${t("action.viewDetails")}`,
+    //   icon: <ViewIcon />,
+    //   disabled: !node.data.filter,
+    //   onSelect: () => {
+    //     alert(JSON.stringify(node.data.filter, null, 2)); // todo
+    //   },
+    // },
     {
       _type: ERightClickContextMenuItemType.MENU_ITEM,
       _id: "extension-node-add-connection-from",

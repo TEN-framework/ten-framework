@@ -1361,7 +1361,10 @@ const SelectorToExtConnectionWidget = (props: {
       const key = `${selectedMsgType}:${msgName}`;
       const isExisting = existingConnections.has(key);
       const sourceNodesLabel =
-        sourceNodes.length > 0 ? ` (from: ${sourceNodes.join(", ")})` : "";
+        sourceNodes.length > 0
+          ? // eslint-disable-next-line max-len
+            ` (${t("popup.graph.messagesFrom", { source: sourceNodes.join(", ") })})`
+          : "";
       options.push({
         value: key,
         label: `${msgName}${sourceNodesLabel}`,
@@ -1371,7 +1374,7 @@ const SelectorToExtConnectionWidget = (props: {
     });
 
     return options;
-  }, [messagesByTypeAndName, selectedMsgType, existingConnections]);
+  }, [messagesByTypeAndName, selectedMsgType, existingConnections, t]);
 
   // Get default selected values (existing connections)
   const defaultSelectedKeys = React.useMemo(
