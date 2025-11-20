@@ -39,10 +39,6 @@ def test_cpp_app_multi_process_python():
     my_env["VIRTUAL_ENV"] = venv_dir
     my_env["PATH"] = os.path.join(venv_dir, "bin") + os.pathsep + my_env["PATH"]
 
-    if sys.platform == "win32":
-        print("test_cpp_app_multi_process_python doesn't support win32")
-        assert False
-
     app_dir_name = "cpp_app_multi_process_python_app"
     app_root_path = os.path.join(base_path, "cpp_app_multi_process_python_app")
     app_language = "cpp"
