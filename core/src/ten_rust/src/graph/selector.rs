@@ -351,5 +351,4 @@ impl Graph {
 
         self.get_nodes_by_selector_node(selector_node)
     }
-
 }

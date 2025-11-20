@@ -211,7 +211,6 @@ impl Graph {
     pub fn from_str_and_validate(s: &str) -> Result<Self> {
         let mut graph: Graph = serde_json::from_str(s)?;
         graph.validate_and_complete(None)?;
-
         Ok(graph)
     }
 
