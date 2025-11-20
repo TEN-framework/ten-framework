@@ -18,7 +18,8 @@ mod tests {
     #[tokio::test]
     async fn test_populate_selector_message_info() {
         let graph_str = include_str!(
-            "../../../../test_data/designer/graphs/nodes/selector/graph_for_populate_selector_message_info.json"
+            "../../../../test_data/designer/graphs/nodes/selector/\
+             graph_for_populate_selector_message_info.json"
         );
         let graph = serde_json::from_str::<Graph>(graph_str).unwrap();
 
@@ -56,7 +57,10 @@ mod tests {
             .nodes
             .iter()
             .find(|node| {
-                if let DesignerGraphNode::Selector { content } = node {
+                if let DesignerGraphNode::Selector {
+                    content,
+                } = node
+                {
                     content.name == "selector_1_and_2"
                 } else {
                     false
@@ -64,7 +68,10 @@ mod tests {
             })
             .unwrap();
 
-        if let DesignerGraphNode::Selector { content } = selector_1_node {
+        if let DesignerGraphNode::Selector {
+            content,
+        } = selector_1_node
+        {
             // Check we have 5 messages
             assert_eq!(content.messages.len(), 5, "Expected 5 messages for selector_1_and_2");
 
@@ -115,13 +122,16 @@ mod tests {
         // Verify selector_all (matches ext_1, ext_2, and ext_3)
         // ext_1 has: cmd (command_a, command_b) Out, data (data_x) Out
         // ext_2 has: data (data_y) Out, audio_frame (audio_stream_1) Out
-        // ext_3 has: video_frame (video_stream_1, video_stream_2) Out, data (data_z) Out
-        // Combined: 8 messages all with Out direction
+        // ext_3 has: video_frame (video_stream_1, video_stream_2) Out, data (data_z)
+        // Out Combined: 8 messages all with Out direction
         let selector_all_node = designer_graph
             .nodes
             .iter()
             .find(|node| {
-                if let DesignerGraphNode::Selector { content } = node {
+                if let DesignerGraphNode::Selector {
+                    content,
+                } = node
+                {
                     content.name == "selector_all"
                 } else {
                     false
@@ -129,7 +139,10 @@ mod tests {
             })
             .unwrap();
 
-        if let DesignerGraphNode::Selector { content } = selector_all_node {
+        if let DesignerGraphNode::Selector {
+            content,
+        } = selector_all_node
+        {
             // Check we have 8 messages
             assert_eq!(content.messages.len(), 8, "Expected 8 messages for selector_all");
 
@@ -149,24 +162,15 @@ mod tests {
                 "Missing command_b from ext_1"
             );
             assert!(
-                content
-                    .messages
-                    .iter()
-                    .any(|m| m.msg_name == "data_x" && m.node_name == "ext_1"),
+                content.messages.iter().any(|m| m.msg_name == "data_x" && m.node_name == "ext_1"),
                 "Missing data_x from ext_1"
             );
             assert!(
-                content
-                    .messages
-                    .iter()
-                    .any(|m| m.msg_name == "data_y" && m.node_name == "ext_2"),
+                content.messages.iter().any(|m| m.msg_name == "data_y" && m.node_name == "ext_2"),
                 "Missing data_y from ext_2"
             );
             assert!(
-                content
-                    .messages
-                    .iter()
-                    .any(|m| m.msg_name == "data_z" && m.node_name == "ext_3"),
+                content.messages.iter().any(|m| m.msg_name == "data_z" && m.node_name == "ext_3"),
                 "Missing data_z from ext_3"
             );
             assert!(

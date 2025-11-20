@@ -12,7 +12,7 @@ use crate::{
         ERR_MSG_GRAPH_LOCALHOST_FORBIDDEN_IN_MULTI_APP_MODE,
         ERR_MSG_GRAPH_LOCALHOST_FORBIDDEN_IN_SINGLE_APP_MODE,
     },
-    graph::{is_app_default_loc_or_none, AppUriDeclarationState, connection::GraphLoc},
+    graph::{connection::GraphLoc, is_app_default_loc_or_none, AppUriDeclarationState},
     pkg_info::localhost,
 };
 

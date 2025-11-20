@@ -138,12 +138,13 @@ async fn extract_designer_graph_from_graph_info(
 
     // Populate selector messages information
 
-    // This function will only be triggered when frontend requests the graph. (get_graphs_endpoint)
-    // Because the 'messages' field of selector nodes is only for frontend display purpose,
-    // and frontend ensures that get_graphs_endpoint is always called before displaying.
+    // This function will only be triggered when frontend requests the graph.
+    // (get_graphs_endpoint) Because the 'messages' field of selector nodes is
+    // only for frontend display purpose, and frontend ensures that
+    // get_graphs_endpoint is always called before displaying.
 
-    // So we don't call this function when messages field is supposed to be modified.
-    // (e.g. when creating/updating/deleting a connection, etc.)
+    // So we don't call this function when messages field is supposed to be
+    // modified. (e.g. when creating/updating/deleting a connection, etc.)
     // Instead, 'messages' field of selector nodes are computed lazily.
     populate_selector_messages_info(&mut designer_graph, &graph_info.graph.graph);
 

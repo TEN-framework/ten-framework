@@ -395,8 +395,7 @@ pub fn populate_selector_messages_info(
 
     // Collect all message information from connections
     // Key: node_name, Value: Vec of (msg_type, msg_name, direction)
-    let mut node_messages: HashMap<String, Vec<(MsgType, String, MsgDirection)>> =
-        HashMap::new();
+    let mut node_messages: HashMap<String, Vec<(MsgType, String, MsgDirection)>> = HashMap::new();
 
     if let Some(connections) = &graph.connections {
         for connection in connections {
@@ -404,8 +403,8 @@ pub fn populate_selector_messages_info(
 
             // Helper to process message flows
             let process_flows = |flows: &Vec<GraphMessageFlow>,
-                                msg_type: MsgType,
-                                node_messages: &mut HashMap<
+                                 msg_type: MsgType,
+                                 node_messages: &mut HashMap<
                 String,
                 Vec<(MsgType, String, MsgDirection)>,
             >| {
@@ -466,7 +465,10 @@ pub fn populate_selector_messages_info(
 
     // Now populate messages for each selector node
     for designer_node in &mut designer_graph.nodes {
-        if let DesignerGraphNode::Selector { content } = designer_node {
+        if let DesignerGraphNode::Selector {
+            content,
+        } = designer_node
+        {
             // Find the corresponding SelectorNode in the original graph
             let selector_node = graph.nodes.iter().find_map(|node| {
                 if node.get_name() == content.name {
