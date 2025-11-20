@@ -108,6 +108,9 @@ def test_stress_test_go():
         print(f"Server command '{server_cmd}' does not exist.")
         assert False
 
+    my_env["GOGC"] = "1"
+    my_env["GODEBUG"] = "gctrace=1"
+
     server = subprocess.Popen(
         server_cmd,
         stdout=stdout,

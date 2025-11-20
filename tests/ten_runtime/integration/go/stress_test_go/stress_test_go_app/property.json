@@ -42,7 +42,8 @@
               "addon": "default_extension_go",
               "extension_group": "server1",
               "property": {
-                "return_ok": true
+                "return_ok": true,
+                "response_delay": 0
               }
             },
             {
@@ -51,7 +52,8 @@
               "addon": "default_extension_go",
               "extension_group": "server2",
               "property": {
-                "return_ok": false
+                "return_ok": false,
+                "response_delay": 0
               }
             },
             {
@@ -60,14 +62,23 @@
               "addon": "default_extension_go",
               "extension_group": "server3",
               "property": {
-                "return_ok": true
+                "return_ok": true,
+                "response_delay": 0
               }
             },
             {
               "type": "extension",
               "name": "client",
               "addon": "default_extension_go",
-              "extension_group": "client"
+              "extension_group": "client",
+              "property": {
+                "enable_stress_test": true,
+                "burst_count": 500,
+                "burst_interval_ms": 10,
+                "total_bursts": 200,
+                "force_gc": true,
+                "concurrent_sends": 5
+              }
             }
           ],
           "connections": [
@@ -98,6 +109,14 @@
                     },
                     {
                       "extension": "server3"
+                    }
+                  ]
+                },
+                {
+                  "name": "test_stress",
+                  "dest": [
+                    {
+                      "extension": "server1"
                     }
                   ]
                 }
