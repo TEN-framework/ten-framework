@@ -14,8 +14,9 @@
 
 // Traverse up through the parent folders, searching for a folder containing a
 // manifest.json with the specified type and name.
-ten_string_t *ten_find_base_dir(const char *start_path, const char *addon_type,
-                                const char *addon_name) {
+TEN_RUNTIME_API ten_string_t *ten_find_base_dir(const char *start_path,
+                                                const char *addon_type,
+                                                const char *addon_name) {
   TEN_ASSERT(start_path && addon_type && strlen(addon_type),
              "Invalid argument.");
 
