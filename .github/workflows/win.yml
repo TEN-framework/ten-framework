@@ -156,36 +156,36 @@ jobs:
       - name: Build
         run: |
           $ENV:PATH += ";$PWD/core/ten_gn"
-          tgn gen win x64 ${{ matrix.build_type }} -- vs_version=2022 log_level=1 enable_serialized_actions=true  ten_rust_enable_gen_cargo_config=false ten_enable_cargo_clean=true ten_enable_python_binding=false ten_enable_go_binding=false ten_enable_nodejs_binding=false ten_enable_rust_incremental_build=false ten_manager_enable_frontend=false ten_enable_integration_tests_prebuilt=false
+          tgn gen win x64 ${{ matrix.build_type }} -- vs_version=2022 log_level=1 enable_serialized_actions=true  ten_rust_enable_gen_cargo_config=false ten_enable_cargo_clean=true ten_enable_python_binding=true ten_enable_go_binding=false ten_enable_nodejs_binding=false ten_enable_rust_incremental_build=false ten_manager_enable_frontend=false ten_enable_integration_tests_prebuilt=false
           tgn build win x64 ${{ matrix.build_type }}
 
-      - name: Upload ten_packages
-        uses: actions/upload-artifact@v4
-        with:
-          name: ten_packages-win-${{ matrix.build_type }}-x64
-          path: |
-            out/win/x64/app/default_app_cpp
-            out/win/x64/ten_packages/system/ten_runtime
-            out/win/x64/ten_packages/extension/default_extension_cpp
-
-      - name: Package assets
-        if: github.event_name == 'release' || (github.ref != '' && startsWith(github.ref, 'refs/tags/'))
+      - name: Update supports before upload or publish
+        continue-on-error: true
         shell: pwsh
-        working-directory: out/win/x64
         run: |
-          Write-Host "Current directory: $(Get-Location)"
+          $UPDATE_SUPPORTS_SCRIPT = "$(pwd)/tools/supports/update_supports_in_manifest_json.py"
 
-          Compress-Archive -Path ten_manager -DestinationPath tman-win-${{ matrix.build_type }}-x64.zip -CompressionLevel Optimal
+          cd out/win/x64/ten_packages
+          $ARRAY = @(
+            "system/ten_runtime",
+            "system/ten_runtime_python",
+            "addon_loader/python_addon_loader"
+          )
 
-          Compress-Archive -Path app/default_app_cpp, ten_packages/system/ten_runtime, ten_packages/extension/default_extension_cpp -DestinationPath ten_packages-win-${{ matrix.build_type }}-x64.zip -CompressionLevel Optimal
-
-      - name: Publish to release assets
-        uses: softprops/action-gh-release@v2
-        if: github.event_name == 'release' || (github.ref != '' && startsWith(github.ref, 'refs/tags/'))
-        with:
-          files: |
-            out/win/x64/tman-win-${{ matrix.build_type }}-x64.zip
-            out/win/x64/ten_packages-win-${{ matrix.build_type }}-x64.zip
+          foreach ($item in $ARRAY) {
+            Write-Host "Processing item: $item"
+            if (Test-Path "$item/manifest.json") {
+              $result = python $UPDATE_SUPPORTS_SCRIPT --os-arch-pairs win:x64 --input-file "$item/manifest.json" --output-file "$item/manifest.json" --log-level 1
+              if ($LASTEXITCODE -eq 0) {
+                Write-Host "✓ Successfully updated supports for $item"
+                Get-Content "$item/manifest.json"
+              } else {
+                Write-Host "✗ Failed to update supports for $item, continuing with next item..."
+              }
+            } else {
+              Write-Host "✗ manifest.json not found for $item"
+            }
+          }
 
       - name: Package tests relevant artifacts preserving permissions
         shell: pwsh
@@ -211,6 +211,187 @@ jobs:
           name: tests-artifacts-win-${{ matrix.build_type }}
           path: tests-artifacts.zip
           if-no-files-found: ignore
+
+      - name: Package assets
+        if: github.event_name == 'release' || (github.ref != '' && startsWith(github.ref, 'refs/tags/'))
+        shell: pwsh
+        working-directory: out/win/x64
+        run: |
+          Write-Host "Current directory: $(Get-Location)"
+
+          Compress-Archive -Path ten_manager -DestinationPath tman-win-${{ matrix.build_type }}-x64.zip -CompressionLevel Optimal
+
+          # Define array of files/directories to package
+          $FILES_TO_PACKAGE = @(
+            "app/default_app_cpp",
+            "app/default_app_python",
+            "ten_packages/system/ten_runtime",
+            "ten_packages/system/ten_runtime_python",
+            "ten_packages/extension/default_extension_cpp",
+            "ten_packages/extension/default_extension_python",
+            "ten_packages/extension/default_async_extension_python",
+            "ten_packages/extension/default_asr_extension_python",
+            "ten_packages/extension/default_llm_extension_python",
+            "ten_packages/extension/default_tts_extension_python",
+            "ten_packages/extension/default_mllm_extension_python",
+            "ten_packages/addon_loader/python_addon_loader"
+          )
+
+          # Filter existing files
+          $EXISTING_FILES = @()
+          foreach ($file in $FILES_TO_PACKAGE) {
+            if (Test-Path $file) {
+              $EXISTING_FILES += $file
+              Write-Host "✓ Found: $file"
+            } else {
+              Write-Host "✗ Missing: $file (will be skipped)"
+            }
+          }
+
+          if ($EXISTING_FILES.Count -gt 0) {
+            Write-Host "Creating zip archive with $($EXISTING_FILES.Count) items..."
+            Compress-Archive -Path $EXISTING_FILES -DestinationPath ten_packages-win-${{ matrix.build_type }}-x64.zip -CompressionLevel Optimal
+          } else {
+            Write-Host "Warning: No files found to package"
+          }
+
+      - name: Publish to release assets
+        uses: softprops/action-gh-release@v2
+        if: github.event_name == 'release' || (github.ref != '' && startsWith(github.ref, 'refs/tags/'))
+        with:
+          files: |
+            out/win/x64/tman-win-${{ matrix.build_type }}-x64.zip
+            out/win/x64/ten_packages-win-${{ matrix.build_type }}-x64.zip
+
+      - name: Clean up
+        if: github.event_name == 'release' || (github.ref != '' && startsWith(github.ref, 'refs/tags/'))
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          Remove-Item -Force "out/win/x64/ten_packages-win-${{ matrix.build_type }}-x64.zip" -ErrorAction SilentlyContinue
+
+      - name: Publish release to TEN cloud store
+        if: github.event_name == 'release' || (github.ref != '' && startsWith(github.ref, 'refs/tags/')) && matrix.build_type == 'release'
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          $TMAN_BIN = "$(pwd)/out/win/x64/ten_manager/bin/tman.exe"
+
+          cd out/win/x64
+          $ARRAY = @(
+            "app/default_app_cpp",
+            "app/default_app_python",
+            "ten_packages/system/ten_runtime",
+            "ten_packages/system/ten_runtime_python",
+            "ten_packages/extension/default_extension_cpp",
+            "ten_packages/extension/default_extension_python",
+            "ten_packages/extension/default_async_extension_python",
+            "ten_packages/extension/default_asr_extension_python",
+            "ten_packages/extension/default_llm_extension_python",
+            "ten_packages/extension/default_tts_extension_python",
+            "ten_packages/extension/default_mllm_extension_python",
+            "ten_packages/addon_loader/python_addon_loader"
+          )
+
+          $SUCCESSFUL_PUBLISHES = 0
+          $FAILED_PUBLISHES = 0
+
+          foreach ($item in $ARRAY) {
+            Write-Host "Processing: $item"
+
+            if (!(Test-Path $item -PathType Container)) {
+              Write-Host "✗ Directory not found: $item, skipping..."
+              $FAILED_PUBLISHES++
+              continue
+            }
+
+            Push-Location $item
+
+            try {
+              # Try to get identity
+              $identity = & $TMAN_BIN package --get-identity 2>&1
+              if ($LASTEXITCODE -eq 0) {
+                Write-Host "Identity: $identity"
+
+                # Try to delete existing package (this can fail, it's okay)
+                Write-Host "Attempting to delete existing package..."
+                $identityParts = $identity -split '\s+'
+                if ($identityParts.Count -ge 4) {
+                  & $TMAN_BIN --verbose --admin-token ${{ secrets.TEN_CLOUD_STORE_ADMIN_TOKEN }} delete $identityParts[0] $identityParts[1] $identityParts[2] $identityParts[3] 2>&1 | Write-Host
+                  if ($LASTEXITCODE -ne 0) {
+                    Write-Host "Warning: Failed to delete existing package (this is normal if package doesn't exist)"
+                  }
+                }
+
+                # Try to publish
+                Write-Host "Attempting to publish package..."
+                & $TMAN_BIN --verbose --user-token ${{ secrets.TEN_CLOUD_STORE }} publish 2>&1 | Write-Host
+                if ($LASTEXITCODE -eq 0) {
+                  Write-Host "✓ Successfully published: $item"
+                  $SUCCESSFUL_PUBLISHES++
+                } else {
+                  Write-Host "✗ Failed to publish: $item"
+                  $FAILED_PUBLISHES++
+                }
+              } else {
+                Write-Host "✗ Failed to get identity for: $item"
+                $FAILED_PUBLISHES++
+              }
+            }
+            catch {
+              Write-Host "✗ Error processing $item : $_"
+              $FAILED_PUBLISHES++
+            }
+            finally {
+              Pop-Location
+            }
+          }
+
+          Write-Host "Publication summary: $SUCCESSFUL_PUBLISHES successful, $FAILED_PUBLISHES failed"
+
+      - name: Clean up
+        if: github.event_name == 'release' || (github.ref != '' && startsWith(github.ref, 'refs/tags/')) && matrix.build_type == 'release'
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          cd out/win/x64
+          $ARRAY = @(
+            "app/default_app_cpp",
+            "app/default_app_python",
+            "ten_packages/system/ten_runtime",
+            "ten_packages/system/ten_runtime_python",
+            "ten_packages/extension/default_extension_cpp",
+            "ten_packages/extension/default_extension_python",
+            "ten_packages/extension/default_async_extension_python",
+            "ten_packages/extension/default_asr_extension_python",
+            "ten_packages/extension/default_llm_extension_python",
+            "ten_packages/extension/default_tts_extension_python",
+            "ten_packages/extension/default_mllm_extension_python",
+            "ten_packages/addon_loader/python_addon_loader"
+          )
+
+          $SUCCESSFUL_CLEANUPS = 0
+          $FAILED_CLEANUPS = 0
+
+          foreach ($item in $ARRAY) {
+            Write-Host "Cleaning up: $item"
+            if (Test-Path $item) {
+              try {
+                Remove-Item -Recurse -Force $item
+                Write-Host "✓ Successfully removed: $item"
+                $SUCCESSFUL_CLEANUPS++
+              }
+              catch {
+                Write-Host "✗ Failed to remove: $item"
+                $FAILED_CLEANUPS++
+              }
+            } else {
+              Write-Host "• Already absent: $item"
+              $SUCCESSFUL_CLEANUPS++
+            }
+          }
+
+          Write-Host "Cleanup summary: $SUCCESSFUL_CLEANUPS successful, $FAILED_CLEANUPS failed"
 
   test-standalone:
     needs: build

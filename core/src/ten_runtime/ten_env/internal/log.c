@@ -39,11 +39,10 @@ static void ten_env_log_internal(ten_env_t *self, TEN_LOG_LEVEL level,
 // check thread safety. Once the main thread for the addon is determined in the
 // future, these hacks made specifically for the addon can be completely
 // removed, and comprehensive thread safety checking can be implemented.
-void ten_env_log_without_check_thread(ten_env_t *self, TEN_LOG_LEVEL level,
-                                      const char *func_name,
-                                      const char *file_name, size_t line_no,
-                                      const char *msg, const char *category,
-                                      ten_value_t *fields) {
+TEN_RUNTIME_API void ten_env_log_without_check_thread(
+    ten_env_t *self, TEN_LOG_LEVEL level, const char *func_name,
+    const char *file_name, size_t line_no, const char *msg,
+    const char *category, ten_value_t *fields) {
   ten_env_log_internal(self, level, func_name, file_name, line_no, msg,
                        category, fields, false);
 }

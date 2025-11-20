@@ -193,6 +193,134 @@ http://localhost:8080
    - 支持 Go、Python、TypeScript/JavaScript、C++ 等多种语言
    - 查看 [TEN 扩展开发完整指南](https://theten.ai/cn/docs/ten_framework/development/how_to_develop_with_ext) 了解详情
 
+## 进阶：开发和构建 C++ 插件
+
+如果你想开发和使用 C++ 扩展，推荐安装 TEN 构建工具链（tgn）。以下是完整的步骤：
+
+### 1. 安装 tgn 构建工具
+
+tgn 是 TEN Framework 的 C/C++ 构建系统，基于 Google 的 GN。
+
+**方式一：一键安装（推荐）**
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/TEN-framework/ten-framework/main/tools/tgn/install_tgn.sh | bash
+```
+
+**方式二：从克隆的仓库安装**
+
+```bash
+# 如果你已经克隆了 TEN Framework 仓库
+cd ten-framework
+bash tools/tgn/install_tgn.sh
+```
+
+安装完成后，确认 tgn 已添加到 PATH：
+
+```bash
+# 临时添加到当前会话
+export PATH="/usr/local/ten_gn:$PATH"
+
+# 或永久添加到 shell 配置（推荐）
+echo 'export PATH="/usr/local/ten_gn:$PATH"' >> ~/.bashrc  # Linux
+echo 'export PATH="/usr/local/ten_gn:$PATH"' >> ~/.zshrc   # macOS
+source ~/.bashrc  # 或 source ~/.zshrc
+```
+
+验证安装：
+
+```bash
+tgn --help
+```
+
+### 2. 安装 C++ 扩展
+
+以 WebRTC VAD（语音活动检测）扩展为例，从云商店安装 C++ 扩展：
+
+```bash
+cd transcriber_demo
+tman install extension webrtc_vad_cpp
+```
+
+> 💡 **提示**：`webrtc_vad_cpp` 是一个用 C++ 实现的语音活动检测扩展，可以在实时语音识别场景中筛选出语音部分。
+
+### 3. 编译 C++ 扩展
+
+安装 C++ 扩展后，需要重新构建应用以编译 C++ 代码为动态库：
+
+```bash
+tman run build
+```
+
+> ⏱️ **预计时间**：首次编译 C++ 扩展可能需要 1-3 分钟，具体取决于你的机器性能。
+
+### 4. 运行带有 VAD 功能的应用
+
+```bash
+tman run start_with_vad
+```
+
+如果一切正常，你应该看到：
+
+```text
+[web_audio_control_go] Web server started on port 8080
+[vad] WebRTC VAD initialized with mode 2
+[audio_file_player_python] AudioFilePlayerExtension on_start
+```
+
+现在打开浏览器访问 `http://localhost:8080`，进入麦克风实时转写页面，你会看到经过vad后的silence状态变化，当silence状态为true时，表示当前音频中没有语音。
+
+### C++ 开发环境要求
+
+开发和编译 C++ 扩展需要安装 C++ 编译器（gcc 或 clang）：
+
+**Linux:**
+
+```bash
+# Ubuntu/Debian
+sudo apt-get install gcc g++
+
+# 或使用 clang
+sudo apt-get install clang
+```
+
+**macOS:**
+
+```bash
+# 安装 Xcode Command Line Tools (包含 clang)
+xcode-select --install
+```
+
+验证编译器安装：
+
+```bash
+# 检查 gcc
+gcc --version
+g++ --version
+
+# 或检查 clang
+clang --version
+```
+
+### 常见问题（C++ 扩展）
+
+**1. tgn 命令找不到**
+
+确保已经执行安装脚本并将 tgn 添加到 PATH：
+
+```bash
+export PATH="/usr/local/ten_gn:$PATH"
+```
+
+**2. 编译失败：找不到编译器**
+
+请参考上面的"C++ 开发环境要求"部分安装编译器。
+
+### 了解更多
+
+- [ten_gn 构建系统](https://github.com/TEN-framework/ten_gn) - TEN 的 C/C++ 构建工具
+- [C++ 扩展开发指南](https://theten.ai/cn/docs/ten_framework/development/how_to_develop_with_ext) - 完整的 C++ 扩展开发文档
+
 ## 常见问题
 
 ### 1. macOS 上 Python 库加载失败
