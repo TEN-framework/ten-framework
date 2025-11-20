@@ -136,7 +136,7 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
         return "elevenlabs"
 
     def synthesize_audio_sample_rate(self) -> int:
-        return self.config.sample_rate
+        return self.config.sample_rate if self.config else 16000
 
     def synthesize_audio_channels(self) -> int:
         return 1
