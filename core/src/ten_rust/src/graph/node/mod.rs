@@ -12,11 +12,8 @@ use crate::{
         ERR_MSG_GRAPH_LOCALHOST_FORBIDDEN_IN_MULTI_APP_MODE,
         ERR_MSG_GRAPH_LOCALHOST_FORBIDDEN_IN_SINGLE_APP_MODE,
     },
-    graph::{connection::GraphLoc, is_app_default_loc_or_none, AppUriDeclarationState},
-    pkg_info::{
-        localhost,
-        message::{MsgDirection, MsgType},
-    },
+    graph::{is_app_default_loc_or_none, AppUriDeclarationState, connection::GraphLoc},
+    pkg_info::localhost,
 };
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -112,32 +109,12 @@ impl Filter {
     }
 }
 
-/// Represents message information for a selector node
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct SelectorMessageInfo {
-    /// The type of the message (cmd, data, audio_frame, video_frame)
-    pub msg_type: MsgType,
-
-    /// The name of the message
-    pub msg_name: String,
-
-    /// The direction of the message flow (in or out)
-    pub direction: MsgDirection,
-
-    /// The name of the node that this message comes from
-    pub node_name: String,
-}
-
 /// Represents a selector node in the graph
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SelectorNode {
     pub name: String,
 
     pub filter: Filter,
-
-    /// List of messages with their types, names, and directions
-    #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub messages: Vec<SelectorMessageInfo>,
 }
 
 /// Represents a node in a graph. This enum represents different types of nodes
