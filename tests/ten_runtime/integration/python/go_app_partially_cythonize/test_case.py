@@ -107,10 +107,6 @@ def test_go_app_partially_cythonize():
     my_env["VIRTUAL_ENV"] = venv_dir
     my_env["PATH"] = os.path.join(venv_dir, "bin") + os.pathsep + my_env["PATH"]
 
-    if sys.platform == "win32":
-        print("test_go_app_partially_cythonize doesn't support win32")
-        assert False
-
     app_dir_name = "go_app_partially_cythonize_app"
     app_root_path = os.path.join(base_path, app_dir_name)
     app_language = "go"

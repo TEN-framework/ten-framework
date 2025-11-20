@@ -39,10 +39,7 @@ def test_cpp_app_python():
     my_env["VIRTUAL_ENV"] = venv_dir
     my_env["PATH"] = os.path.join(venv_dir, "bin") + os.pathsep + my_env["PATH"]
 
-    if sys.platform == "win32":
-        print("test_cpp_app_python doesn't support win32")
-        assert False
-    elif sys.platform == "linux":
+    if sys.platform == "linux":
         # Test whether the python runtime enables C locale coercion.
         my_env["LC_CTYPE"] = "POSIX"
 

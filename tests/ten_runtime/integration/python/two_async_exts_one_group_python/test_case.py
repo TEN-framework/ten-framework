@@ -39,10 +39,6 @@ def test_two_async_exts_one_group_python():
     my_env["VIRTUAL_ENV"] = venv_dir
     my_env["PATH"] = os.path.join(venv_dir, "bin") + os.pathsep + my_env["PATH"]
 
-    if sys.platform == "win32":
-        print("test_two_async_exts_one_group_python doesn't support win32")
-        assert False
-
     app_dir_name = "two_async_exts_one_group_python_app"
     app_root_path = os.path.join(base_path, app_dir_name)
     app_language = "python"

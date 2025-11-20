@@ -39,10 +39,6 @@ def test_multiple_results_python_2():
     my_env["VIRTUAL_ENV"] = venv_dir
     my_env["PATH"] = os.path.join(venv_dir, "bin") + os.pathsep + my_env["PATH"]
 
-    if sys.platform == "win32":
-        print("test_multiple_results_python_2 doesn't support win32")
-        assert False
-
     app_dir_name = "multiple_results_python_2_app"
     app_root_path = os.path.join(base_path, app_dir_name)
     app_language = "python"

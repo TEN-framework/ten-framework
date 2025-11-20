@@ -39,10 +39,6 @@ def test_call_api_during_closing_python():
     my_env["VIRTUAL_ENV"] = venv_dir
     my_env["PATH"] = os.path.join(venv_dir, "bin") + os.pathsep + my_env["PATH"]
 
-    if sys.platform == "win32":
-        print("test_call_api_during_closing_python doesn't support win32")
-        assert False
-
     app_dir_name = "call_api_during_closing_python_app"
     app_root_path = os.path.join(
         base_path, "call_api_during_closing_python_app"
