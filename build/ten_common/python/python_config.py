@@ -69,7 +69,7 @@ def get_embed_flags():
         if sys.platform == "win32":
             version_info = sys.version_info
             python_lib = f"python{version_info.major}{version_info.minor}"
-            libs = python_lib
+            libs += f" {python_lib}"
 
     # C Flags.
     cflags = config.get("CFLAGS", "")
@@ -102,13 +102,14 @@ def transform_flags_for_windows(embed_flags):
         # Remove '-l' if present.
         if lib.startswith("-l"):
             lib = lib[2:]
-        # Append .lib extension if not present.
+        # On Windows platform, we need to remove one pair of quotes because of
+        # the MSVC linker feature.
         if sys.platform == "win32":
             if not lib.endswith(".lib"):
                 lib_name = f"{lib}.lib"
             else:
-                lib_name = lib
-            transformed["libs"].append(lib_name)
+                lib = lib
+            transformed["libs"].append(lib)
         else:
             if not lib.endswith(".lib"):
                 lib = f'"{lib}.lib"'
