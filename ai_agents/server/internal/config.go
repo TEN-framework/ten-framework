@@ -7,6 +7,7 @@ import (
 type Prop struct {
 	ExtensionName string
 	Property      string
+	ConvertType   string // Optional: "string" to convert value to string
 }
 
 const (
@@ -39,6 +40,7 @@ var (
 		},
 		"BotStreamId": {
 			{ExtensionName: extensionNameAgoraRTC, Property: "stream_id"},
+			{ExtensionName: extensionNameAgoraRTM, Property: "user_id", ConvertType: "string"},
 		},
 		"Token": {
 			{ExtensionName: extensionNameAgoraRTC, Property: "token"},
