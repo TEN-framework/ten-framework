@@ -96,6 +96,22 @@ jobs:
           echo "Testing basic tman commands:"
           tman --help
 
+      - name: Setup tgn (TEN build system)
+        run: |
+          echo "================================================"
+          echo "Installing tgn build system for C++ extensions"
+          echo "================================================"
+
+          # Install tgn using the install script
+          # The script automatically handles CI environment and skips interactive prompts
+          bash tools/tgn/install_tgn.sh
+
+          # Add tgn to PATH for subsequent steps
+          echo "/usr/local/ten_gn" >> $GITHUB_PATH
+
+          echo ""
+          echo "✓ tgn setup completed"
+
       - name: Create transcriber_demo app using tman
         run: |
           echo "================================================"
@@ -283,4 +299,113 @@ jobs:
           echo ""
           echo "================================================"
           echo "✅ All verifications completed successfully on ${{ matrix.platform_name }}"
+          echo "================================================"
+
+      - name: Install C++ extension webrtc_vad_cpp
+        run: |
+          echo "================================================"
+          echo "Installing C++ extension: webrtc_vad_cpp"
+          echo "================================================"
+
+          cd /tmp/transcriber_demo
+
+          # Install the C++ extension from the cloud store
+          tman install extension webrtc_vad_cpp
+
+          if [ $? -eq 0 ]; then
+            echo "✓ webrtc_vad_cpp extension installed successfully"
+          else
+            echo "❌ ERROR: Failed to install webrtc_vad_cpp extension"
+            exit 1
+          fi
+
+      - name: Build app with C++ extension
+        run: |
+          echo "================================================"
+          echo "Rebuilding app with C++ extension"
+          echo "================================================"
+
+          cd /tmp/transcriber_demo
+
+          # Rebuild the app to compile the C++ extension into a dynamic library
+          tman run build
+
+          if [ $? -ne 0 ]; then
+            echo "❌ ERROR: tman run build failed with C++ extension"
+            exit 1
+          fi
+
+          echo "✓ App with C++ extension built successfully"
+
+      - name: Run app with VAD functionality
+        run: |
+          echo "================================================"
+          echo "Running transcriber_demo app with VAD functionality"
+          echo "================================================"
+
+          cd /tmp/transcriber_demo
+
+          # Start the app with VAD support in the background
+          echo "Starting app with 'tman run start_with_vad'..."
+          tman run start_with_vad &
+          APP_PID=$!
+          echo "App started with PID: $APP_PID"
+
+          # Wait for the app to initialize
+          echo "Waiting for app to initialize..."
+          sleep 10
+
+          # Check if the process is still running (not crashed)
+          if ps -p $APP_PID > /dev/null; then
+            echo "✓ App with VAD is running successfully (PID: $APP_PID)"
+          else
+            echo "❌ ERROR: App with VAD crashed or exited unexpectedly"
+            exit 1
+          fi
+
+          # Let the app run for a bit to ensure stability with C++ extension
+          echo "App is running with VAD, waiting for 5 more seconds..."
+          sleep 5
+
+          # Check again to ensure it's still running
+          if ps -p $APP_PID > /dev/null; then
+            echo "✓ App with VAD is still running stable"
+          else
+            echo "❌ ERROR: App with VAD crashed during runtime"
+            exit 1
+          fi
+
+          # Gracefully stop the app by sending SIGTERM
+          echo ""
+          echo "Stopping app gracefully (sending SIGTERM to PID: $APP_PID)..."
+
+          # Kill the process group to ensure all child processes are terminated
+          kill -TERM -$APP_PID 2>/dev/null || kill -TERM $APP_PID || true
+
+          # Wait for the app to shut down gracefully
+          echo "Waiting for app to shut down..."
+          sleep 3
+
+          # Check if the app has stopped
+          if ps -p $APP_PID > /dev/null 2>&1; then
+            echo "⚠ App did not stop gracefully, sending SIGKILL..."
+            kill -KILL -$APP_PID 2>/dev/null || kill -KILL $APP_PID || true
+            sleep 1
+          fi
+
+          # Final check
+          if ps -p $APP_PID > /dev/null 2>&1; then
+            echo "❌ WARNING: App process still running"
+          else
+            echo "✓ App with VAD stopped successfully"
+          fi
+
+          # Extra cleanup: kill any remaining transcriber_demo processes
+          echo "Cleaning up any remaining processes..."
+          pkill -f "transcriber_demo" || true
+          pkill -f "bin/main" || true
+
+          echo ""
+          echo "================================================"
+          echo "✅ C++ development environment verification completed on ${{ matrix.platform_name }}"
           echo "================================================"

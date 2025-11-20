@@ -9,7 +9,10 @@ group("example_extensions") {
   deps = []
 
   if (ten_enable_example_packages) {
-    deps += [ "vosk_asr_cpp" ]
+    deps += [
+      "vosk_asr_cpp",
+      "webrtc_vad_cpp",
+    ]
 
     if (ten_enable_ffmpeg_extensions) {
       deps += [

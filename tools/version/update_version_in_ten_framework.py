@@ -7,6 +7,7 @@
 import datetime
 import json
 import os
+import re
 from common import (
     get_latest_git_tag,
     update_c_preserved_metadata_version,
@@ -224,6 +225,55 @@ def update_version_of_tman(
         tman_version_src_file_path,
         tman_version_template_file_path,
     )
+
+
+def update_version_in_install_tman_script(
+    log_level: int, repo_base_dir: str, git_version: str
+) -> None:
+    install_script_path = os.path.join(
+        repo_base_dir,
+        "tools",
+        "tman",
+        "install_tman.sh",
+    )
+
+    if not os.path.exists(install_script_path):
+        if log_level > 0:
+            print(f"{install_script_path} not found, skip updating.")
+        return
+
+    with open(install_script_path, "r", encoding="utf-8") as file:
+        content = file.read()
+
+    match = re.search(
+        r"Using default version: ([0-9]+\.[0-9]+\.[0-9]+)", content
+    )
+    if not match:
+        if log_level > 0:
+            print(
+                "No default version string found in "
+                f"{install_script_path}, skip updating."
+            )
+        return
+
+    old_version = match.group(1)
+    if old_version == git_version:
+        if log_level > 0:
+            print(
+                f"No update needed for {install_script_path}; "
+                "versions match."
+            )
+        return
+
+    if log_level > 0:
+        print(
+            f"Updating version in {install_script_path} from "
+            f"{old_version} to {git_version}."
+        )
+
+    updated_content = content.replace(old_version, git_version)
+    with open(install_script_path, "w", encoding="utf-8") as file:
+        file.write(updated_content)
 
 
 def collect_and_update_version_of_system_packages(
@@ -496,6 +546,12 @@ if __name__ == "__main__":
 
     update_version_of_tman(
         log_level, year, year_month, repo_base_dir, git_version
+    )
+
+    update_version_in_install_tman_script(
+        log_level,
+        repo_base_dir,
+        git_version,
     )
 
     system_pkgs = collect_and_update_version_of_system_packages(
