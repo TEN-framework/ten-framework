@@ -105,7 +105,7 @@ class ElevenLabsTTS2Synthesizer:
                         ),
                     )
 
-        self.uri = f"wss://api.elevenlabs.io/v1/text-to-speech/{self.config.params.get('voice_id')}/stream-input{self.query_params}"
+        self.uri = f"{self.config.params.get('url')}/text-to-speech/{self.config.params.get('voice_id')}/stream-input{self.query_params}"
 
     def _process_ws_exception(self, exp) -> None | Exception:
         """Handle websocket connection exceptions and decide whether to reconnect"""
@@ -221,7 +221,7 @@ class ElevenLabsTTS2Synthesizer:
             # Send initialization message
             message_data = {
                 "text": " ",
-                "xi_api_key": self.config.key,
+                "xi_api_key": self.config.params.get("key"),
             }
             text_data = None
             # only add non-None config parameters

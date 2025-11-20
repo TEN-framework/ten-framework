@@ -15,7 +15,7 @@ from ten_ai_base.message import (
     TTSAudioEndReason,
 )
 from ten_ai_base.struct import TTSTextInput
-from ten_ai_base.tts2 import AsyncTTS2BaseExtension
+from ten_ai_base.tts2 import AsyncTTS2BaseExtension, RequestState
 
 from .config import GoogleTTSConfig
 from .google_tts import (
@@ -207,7 +207,13 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
             reason=reason,
         )
         self.ten_env.log_debug(
-            f"Sent tts_audio_end with INTERRUPTED reason for request_id: {self.current_request_id}"
+            f"Sent tts_audio_end with {reason.name} reason for request_id: {self.current_request_id}"
+        )
+
+        # Finish request to complete state transition
+        await self.finish_request(
+            request_id=self.current_request_id or "",
+            reason=reason,
         )
 
     async def request_tts(self, t: TTSTextInput) -> None:
@@ -341,9 +347,15 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                                 if audio_chunk
                                 else "Unknown API key error"
                             )
+                            request_id = self.current_request_id or t.request_id
+                            # Check if we've received text_input_end (state is FINALIZING)
+                            has_received_text_input_end = False
+                            if request_id and request_id in self.request_states:
+                                if self.request_states[request_id] == RequestState.FINALIZING:
+                                    has_received_text_input_end = True
+
                             await self.send_tts_error(
-                                request_id=self.current_request_id
-                                or t.request_id,
+                                request_id=request_id,
                                 error=ModuleError(
                                     message=error_msg,
                                     module=ModuleType.TTS,
@@ -353,7 +365,32 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                                     ),
                                 ),
                             )
-                            return  # Exit early on error, don't send audio_end
+
+                            # If we've received text_input_end, send tts_audio_end and finish request
+                            if has_received_text_input_end:
+                                self.ten_env.log_info(
+                                    f"Error occurred after text_input_end for request {request_id}, sending tts_audio_end with ERROR reason",
+                                    category=LOG_CATEGORY_KEY_POINT,
+                                )
+                                request_event_interval = 0
+                                request_total_audio_duration = 0
+                                if self.total_audio_bytes:
+                                    request_total_audio_duration = int(
+                                        self.total_audio_bytes
+                                        / (self.synthesize_audio_sample_rate() * 2 * 1)
+                                        * 1000
+                                    )
+                                await self.send_tts_audio_end(
+                                    request_id=request_id,
+                                    request_event_interval_ms=request_event_interval,
+                                    request_total_audio_duration_ms=request_total_audio_duration,
+                                    reason=TTSAudioEndReason.ERROR,
+                                )
+                                await self.finish_request(
+                                    request_id=request_id,
+                                    reason=TTSAudioEndReason.ERROR,
+                                )
+                            return  # Exit early on error
 
                         elif event == EVENT_TTS_ERROR:
                             error_msg = (
@@ -367,8 +404,15 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                     self.ten_env.log_error(
                         f"Error in audio processing: {traceback.format_exc()}"
                     )
+                    request_id = self.current_request_id or t.request_id
+                    # Check if we've received text_input_end (state is FINALIZING)
+                    has_received_text_input_end = False
+                    if request_id and request_id in self.request_states:
+                        if self.request_states[request_id] == RequestState.FINALIZING:
+                            has_received_text_input_end = True
+
                     await self.send_tts_error(
-                        request_id=self.current_request_id or t.request_id,
+                        request_id=request_id,
                         error=ModuleError(
                             message=str(e),
                             module=ModuleType.TTS,
@@ -378,6 +422,31 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                             ),
                         ),
                     )
+
+                    # If we've received text_input_end, send tts_audio_end and finish request
+                    if has_received_text_input_end:
+                        self.ten_env.log_info(
+                            f"Error occurred after text_input_end for request {request_id}, sending tts_audio_end with ERROR reason",
+                            category=LOG_CATEGORY_KEY_POINT,
+                        )
+                        request_event_interval = 0
+                        request_total_audio_duration = 0
+                        if self.total_audio_bytes:
+                            request_total_audio_duration = int(
+                                self.total_audio_bytes
+                                / (self.synthesize_audio_sample_rate() * 2 * 1)
+                                * 1000
+                            )
+                        await self.send_tts_audio_end(
+                            request_id=request_id,
+                            request_event_interval_ms=request_event_interval,
+                            request_total_audio_duration_ms=request_total_audio_duration,
+                            reason=TTSAudioEndReason.ERROR,
+                        )
+                        await self.finish_request(
+                            request_id=request_id,
+                            reason=TTSAudioEndReason.ERROR,
+                        )
 
                 finally:
                     # Ensure the async generator is properly closed
@@ -416,8 +485,15 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
             self.ten_env.log_error(
                 f"Error in request_tts: {traceback.format_exc()}"
             )
+            request_id = self.current_request_id or t.request_id
+            # Check if we've received text_input_end (state is FINALIZING)
+            has_received_text_input_end = False
+            if request_id and request_id in self.request_states:
+                if self.request_states[request_id] == RequestState.FINALIZING:
+                    has_received_text_input_end = True
+
             await self.send_tts_error(
-                request_id=self.current_request_id or t.request_id,
+                request_id=request_id,
                 error=ModuleError(
                     message=str(e),
                     module=ModuleType.TTS,
@@ -425,3 +501,28 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                     vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
                 ),
             )
+
+            # If we've received text_input_end, send tts_audio_end and finish request
+            if has_received_text_input_end:
+                self.ten_env.log_info(
+                    f"Error occurred after text_input_end for request {request_id}, sending tts_audio_end with ERROR reason",
+                    category=LOG_CATEGORY_KEY_POINT,
+                )
+                request_event_interval = 0
+                request_total_audio_duration = 0
+                if self.total_audio_bytes:
+                    request_total_audio_duration = int(
+                        self.total_audio_bytes
+                        / (self.synthesize_audio_sample_rate() * 2 * 1)
+                        * 1000
+                    )
+                await self.send_tts_audio_end(
+                    request_id=request_id,
+                    request_event_interval_ms=request_event_interval,
+                    request_total_audio_duration_ms=request_total_audio_duration,
+                    reason=TTSAudioEndReason.ERROR,
+                )
+                await self.finish_request(
+                    request_id=request_id,
+                    reason=TTSAudioEndReason.ERROR,
+                )
