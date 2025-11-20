@@ -137,6 +137,38 @@ func (e *webAudioControlExtension) OnData(tenEnv ten.TenEnv, data ten.Data) {
 	}
 }
 
+func (e *webAudioControlExtension) OnAudioFrame(
+	tenEnv ten.TenEnv,
+	audioFrame ten.AudioFrame,
+) {
+	frameName, err := audioFrame.GetName()
+	if err != nil {
+		tenEnv.LogError(fmt.Sprintf("Failed to get audio frame name: %v", err))
+		return
+	}
+
+	tenEnv.LogDebug(fmt.Sprintf("OnAudioFrame: %s", frameName))
+
+	// VAD outputs audio frames with the original name (pcm_frame) and adds
+	// is_speech property
+	// Check if this frame has VAD result by looking for is_speech property
+	isSpeech, err := audioFrame.GetPropertyBool("is_speech")
+	if err != nil {
+		// No is_speech property means this frame didn't go through VAD
+		tenEnv.LogDebug(
+			fmt.Sprintf("No is_speech property in audio frame: %v", err),
+		)
+		return
+	}
+
+	tenEnv.LogDebug(fmt.Sprintf("Received VAD result: is_speech=%v", isSpeech))
+
+	// Broadcast VAD status to all connected WebSocket clients
+	if e.server != nil {
+		e.server.BroadcastVadStatus(isSpeech)
+	}
+}
+
 func (e *webAudioControlExtension) handleAudioData(
 	tenEnv ten.TenEnv,
 	audioData []byte,
