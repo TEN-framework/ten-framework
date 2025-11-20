@@ -106,7 +106,7 @@ def transform_flags_for_windows(embed_flags):
         # the MSVC linker feature.
         if sys.platform == "win32":
             if not lib.endswith(".lib"):
-                lib_name = f"{lib}.lib"
+                lib = f"{lib}.lib"
             else:
                 lib = lib
             transformed["libs"].append(lib)
