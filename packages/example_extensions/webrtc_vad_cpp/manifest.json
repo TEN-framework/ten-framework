@@ -68,6 +68,18 @@
   "scripts": {
     "test": "bin/webrtc_vad_cpp_test"
   },
+  "package": {
+    "include": [
+      "docs/**",
+      "src/**",
+      "tests/**",
+      "third_party/**",
+      "BUILD.gn",
+      "LICENSE",
+      "manifest.json",
+      "property.json"
+    ]
+  },
   "dependencies": [
     {
       "type": "system",
