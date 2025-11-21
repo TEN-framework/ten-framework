@@ -982,6 +982,13 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
 
                     # Clear the boolean flag - we now rely on timestamp-based checking
                     self.agent_currently_speaking = False
+
+                    # Schedule check for pending announcements after audio finishes playing
+                    # This ensures Hellos gets announced even if Apollo went first
+                    delay_seconds = (duration_ms / 1000.0) + 0.5
+                    asyncio.create_task(
+                        self._delayed_announcement_check(ten_env, delay_seconds)
+                    )
                 elif reason == 2:
                     # Playback interrupted or complete - stop immediately
                     self.agent_speaking_until = 0.0
@@ -991,6 +998,8 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                     ten_env.log_info(
                         f"[THYMIA_TTS_END] Playback ended (reason=2). Agent stopped speaking."
                     )
+                    # Check for pending announcements immediately
+                    await self._check_and_trigger_ready_announcements(ten_env)
 
         except Exception as e:
             ten_env.log_error(
@@ -2233,6 +2242,26 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                 ten_env.log_error(traceback.format_exc())
                 # Continue running despite errors
 
+    async def _delayed_announcement_check(
+        self, ten_env: AsyncTenEnv, delay_seconds: float
+    ):
+        """
+        Wait for delay then check for pending announcements.
+        Used to trigger Hellos after Apollo finishes speaking.
+        """
+        try:
+            await asyncio.sleep(delay_seconds)
+            ten_env.log_debug(
+                f"[THYMIA_DELAYED_CHECK] Checking for pending announcements after {delay_seconds:.1f}s delay"
+            )
+            await self._check_and_trigger_ready_announcements(ten_env)
+        except asyncio.CancelledError:
+            pass  # Task cancelled, ignore
+        except Exception as e:
+            ten_env.log_error(
+                f"[THYMIA_DELAYED_CHECK] Error in delayed check: {e}"
+            )
+
     async def _check_and_trigger_ready_announcements(
         self, ten_env: AsyncTenEnv
     ):
@@ -2323,12 +2352,12 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
 
         # Trigger Apollo if ready and not yet triggered
         # Space it 5+ seconds after Hellos if both ready at same time
-        # IMPORTANT: Wait for Hellos to be announced first before announcing Apollo
+        # Note: Apollo can go first if it completes first - both announcements will happen
         if self.apollo_complete and not self.apollo_trigger_sent:
             time_since_hellos = (
                 time.time() - self.hellos_last_announcement_time
                 if self.hellos_trigger_sent
-                else 0  # Force wait for Hellos to be announced first
+                else 999  # Allow Apollo to go first if Hellos not yet triggered
             )
 
             if time_since_hellos >= 5.0:
