@@ -377,6 +377,7 @@ class VolcengineASRClient:
         self.websocket = None
         self.connected = False
         self.seq = 1
+        self.sent_user_audio_duration_ms_before_last_reset = 0
 
         # Separate callbacks for different error types
         self.connection_error_callback: Optional[
@@ -501,8 +502,15 @@ class VolcengineASRClient:
 
         request = RequestBuilder.new_full_client_request(self.seq, self.config)
         self.seq += 1
-
         await self.websocket.send(request)
+        self.sent_user_audio_duration_ms_before_last_reset += (
+            self.audio_timeline.get_total_user_audio_duration()
+        )
+        self.audio_timeline.reset()
+
+        self.ten_env.log_info(
+            f"sent_user_audio_duration_ms_before_last_reset: {self.sent_user_audio_duration_ms_before_last_reset}"
+        )
 
     async def send_audio(self, audio_data: bytes) -> None:
         """Send audio data to ASR service."""
@@ -652,6 +660,16 @@ class VolcengineASRClient:
 
     async def _handle_response(self, response: ASRResponse) -> None:
         """Handle ASR response."""
+        # Adjust timestamp using audio timeline if available
+        if self.audio_timeline:
+            actual_start_ms = int(
+                self.audio_timeline.get_audio_duration_before_time(
+                    response.start_ms
+                )
+                + self.sent_user_audio_duration_ms_before_last_reset
+            )
+            response.start_ms = actual_start_ms
+
         # Call result callback if set
         if self.result_callback:
             try:
