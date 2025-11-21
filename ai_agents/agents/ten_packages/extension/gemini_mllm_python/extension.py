@@ -1,8 +1,3 @@
-#
-# Agora Real Time Engagement
-# Gemini Realtime MLLM V2  Enhanced version with fixed transcripts and full configurability
-# Created by Claude Code in 2025-01.
-#
 import asyncio
 import json
 import os
