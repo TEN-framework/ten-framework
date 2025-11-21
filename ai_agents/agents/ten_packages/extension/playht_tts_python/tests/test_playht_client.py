@@ -89,7 +89,7 @@ class TestPlayHTParams(unittest.TestCase):
         ten_env = MagicMock()
         ten_env.log_debug = MagicMock()
         ten_env.log_error = MagicMock()
-        ten_env.log_warning = MagicMock()
+        ten_env.log_warn = MagicMock()
 
         client = PlayHTTTSClient(config=config, ten_env=ten_env)
 

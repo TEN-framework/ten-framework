@@ -49,7 +49,7 @@ class TestPollyTTSClient(unittest.TestCase):
         self.mock_ten_env = Mock()
         self.mock_ten_env.log_debug = Mock()
         self.mock_ten_env.log_error = Mock()
-        self.mock_ten_env.log_warning = Mock()
+        self.mock_ten_env.log_warn = Mock()
 
     @patch("boto3.Session")
     def test_init(self, mock_session):

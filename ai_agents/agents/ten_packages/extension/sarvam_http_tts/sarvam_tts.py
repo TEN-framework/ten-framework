@@ -80,7 +80,7 @@ class SarvamTTSClient(AsyncTTS2HttpClient):
             )
 
         if len(text.strip()) == 0:
-            self.ten_env.log_warning(
+            self.ten_env.log_warn(
                 f"SarvamTTS: empty text for request_id: {request_id}.",
                 category=LOG_CATEGORY_VENDOR,
             )
@@ -131,7 +131,7 @@ class SarvamTTSClient(AsyncTTS2HttpClient):
             audios = response_data.get("audios", [])
 
             if not audios or len(audios) == 0:
-                self.ten_env.log_warning(
+                self.ten_env.log_warn(
                     f"SarvamTTS: no audio data in response for request_id: {request_id}.",
                     category=LOG_CATEGORY_VENDOR,
                 )

@@ -43,7 +43,7 @@ class HumeAiTTS(AsyncTTS2HttpClient):
         self._is_cancelled = False
 
         if len(text.strip()) == 0:
-            self.ten_env.log_warning(
+            self.ten_env.log_warn(
                 f"HumeAiTTS: empty text for request_id: {request_id}.",
                 category=LOG_CATEGORY_VENDOR,
             )
