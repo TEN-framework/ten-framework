@@ -4,8 +4,8 @@
     {
       "type": "system",
       "name": "ten_runtime_go",
-      "version": "0.11.32",
-      "hash": "6d74351ece11a384caecd374cb9c1567bdce513c1b6d3088b34f83220710a61d",
+      "version": "0.11.27",
+      "hash": "3cb246f95ec5e22b2c1a44ed6c09d75af07755030172fa6abc97f35822405c77",
       "dependencies": [
         {
           "type": "system",
@@ -256,8 +256,8 @@
     {
       "type": "extension",
       "name": "soniox_asr_python",
-      "version": "0.3.5",
-      "hash": "565ba86275bab78ed785ca554701dbf30d4a8711b07865c835d930c6ad13f681",
+      "version": "0.3.3",
+      "hash": "932bcf076453f1cbd661d50a06b36caab157c91ec63e646d19dfdbe88ad6a5d4",
       "dependencies": [
         {
           "type": "system",
@@ -290,8 +290,8 @@
     {
       "type": "extension",
       "name": "tencent_asr_python",
-      "version": "0.2.9",
-      "hash": "9303c31168a08c5732dfb14c396c25b012da6aefffa6596c444c9251f8d16cc5",
+      "version": "0.2.8",
+      "hash": "be9d19d52c899e82e010733b21d515eb739c5703ac01576c4943ea567087f4fd",
       "dependencies": [
         {
           "type": "system",
@@ -405,23 +405,6 @@
         }
       ],
       "path": "../../../ten_packages/extension/openai_llm2_python"
-    },
-    {
-      "type": "extension",
-      "name": "gemini_llm2_python",
-      "version": "0.1.0",
-      "hash": "63f28b25bd87607da2d83dbd0dece2241b0fe208f6e6cc618525a926fa4869c2",
-      "dependencies": [
-        {
-          "type": "system",
-          "name": "ten_runtime_python"
-        },
-        {
-          "type": "system",
-          "name": "ten_ai_base"
-        }
-      ],
-      "path": "../../../ten_packages/extension/gemini_llm2_python"
     },
     {
       "type": "extension",
@@ -767,8 +750,8 @@
     {
       "type": "system",
       "name": "ten_runtime_python",
-      "version": "0.11.32",
-      "hash": "ac2ee82010c6d536a1a967b98ea1ff367a71a5da854f9c51a64be3e808722759",
+      "version": "0.11.27",
+      "hash": "409c90d00363ff575f7e7d3c6285047c609748490ffb5da52910efc983941c91",
       "dependencies": [
         {
           "type": "system",
@@ -789,8 +772,8 @@
     {
       "type": "system",
       "name": "ten_runtime",
-      "version": "0.11.32",
-      "hash": "a6238fc8c671fd291712740cd3582dbb26f656c5d11e73344ebb8811e259eee2",
+      "version": "0.11.27",
+      "hash": "96129244e41310723b93f2eeef06c41d51eb8086d60a703d3665495af3880050",
       "supports": [
         {
           "os": "linux",
@@ -813,8 +796,8 @@
     {
       "type": "addon_loader",
       "name": "python_addon_loader",
-      "version": "0.11.32",
-      "hash": "022f21cd1f7ae82dedc92962d446f5432eaf1987ca61eeab318e67162fd5a082",
+      "version": "0.11.27",
+      "hash": "a15c56876f5303b0c47d4019a51e9586f449d38a1cf52b5848746174c1bc5838",
       "dependencies": [
         {
           "type": "system",

@@ -32,7 +32,8 @@ from ten_runtime.async_ten_env import AsyncTenEnv
 @dataclass
 class GeminiLLM2Config(BaseModel):
     api_key: str = ""
-    model: str = "gemini-3-pro"
+    model: str = "gemini-3-pro-preview"
+    base_url: str = "https://generativelanguage.googleapis.com/v1beta/openai"
     temperature: float = 0.7
     top_p: float = 0.95
     max_tokens: int = 4096
@@ -50,15 +51,17 @@ class GeminiChatAPI:
         self.config = config
         self.ten_env = ten_env
         ten_env.log_info(
-            f"GeminiChatAPI initialized with model: {config.model}"
+            f"GeminiChatAPI initialized with model: {config.model} (base_url={config.base_url})"
         )
         self.http_client = httpx.AsyncClient(
-            base_url="https://generativelanguage.googleapis.com/v1beta/openai",
-            headers={
-                "Authorization": f"Bearer {config.api_key}",
-            },
+            base_url=self.config.base_url,
             timeout=30.0,
         )
+        self._request_headers = {}
+        self._request_params = {}
+        if self.config.api_key:
+            # OpenAI-compatible endpoint expects Bearer token in Authorization header
+            self._request_headers["Authorization"] = f"Bearer {self.config.api_key}"
 
     def _convert_tools_to_dict(self, tool: LLMToolMetadata):
         """Convert LLMToolMetadata to Gemini function definition format."""
@@ -88,11 +91,19 @@ class GeminiChatAPI:
         return json_dict
 
     def _parse_message_content(self, message: LLMMessageContent):
-        """Parse message content into text and image parts."""
+        """Parse message content into a plain text payload for Gemini."""
+        content = message.content
+        if isinstance(content, str):
+            return content
+
         text_content = ""
-        for part in message.content or []:
-            if isinstance(part, TextContent):
-                text_content += part.text
+        if isinstance(content, list):
+            for part in content:
+                if isinstance(part, TextContent):
+                    text_content += part.text
+                elif isinstance(part, dict):
+                    if part.get("type") == "text":
+                        text_content += part.get("text", "")
         return text_content
 
     async def get_chat_completions(
@@ -174,12 +185,20 @@ class GeminiChatAPI:
             response = await self.http_client.post(
                 "/chat/completions",
                 json=req,
+                params=self._request_params,
+                headers=self._request_headers,
             )
 
             if response.status_code != 200:
                 error_text = response.text
+                extra_hint = ""
+                if response.status_code == 404:
+                    extra_hint = (
+                        " (check that the model exists at the configured base_url; "
+                        "Vertex users may need a project-specific endpoint)"
+                    )
                 self.ten_env.log_error(
-                    f"Gemini API error: {response.status_code} - {error_text}"
+                    f"Gemini API error: {response.status_code} - {error_text}{extra_hint}"
                 )
                 raise RuntimeError(
                     f"Gemini API error: {response.status_code} - {error_text}"

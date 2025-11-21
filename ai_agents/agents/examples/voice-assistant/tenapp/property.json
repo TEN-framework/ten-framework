@@ -39,15 +39,18 @@
             {
               "type": "extension",
               "name": "llm",
-              "addon": "gemini_llm2_python",
-              "extension_group": "gemini",
+              "addon": "openai_llm2_python",
+              "extension_group": "chatgpt",
               "property": {
-                "api_key": "${env:GEMINI_API_KEY}",
-                "model": "gemini-3-pro",
-                "temperature": 0.7,
-                "top_p": 0.95,
-                "max_tokens": 4096,
-                "prompt": "You are a helpful assistant."
+                "base_url": "https://api.openai.com/v1",
+                "api_key": "${env:OPENAI_API_KEY}",
+                "frequency_penalty": 0.9,
+                "model": "${env:OPENAI_MODEL}",
+                "max_tokens": 512,
+                "prompt": "",
+                "proxy_url": "${env:OPENAI_PROXY_URL|}",
+                "greeting": "TEN Agent connected. How can I help you today?",
+                "max_memory_length": 10
               }
             },
             {

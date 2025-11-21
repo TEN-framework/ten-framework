@@ -37,14 +37,17 @@
         "model": {
           "type": "string"
         },
+        "base_url": {
+          "type": "string"
+        },
         "temperature": {
-          "type": "float"
+          "type": "float32"
         },
         "top_p": {
-          "type": "float"
+          "type": "float32"
         },
         "max_tokens": {
-          "type": "int"
+          "type": "int32"
         },
         "prompt": {
           "type": "string"
