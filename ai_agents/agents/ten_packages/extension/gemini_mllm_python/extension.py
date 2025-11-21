@@ -61,11 +61,15 @@ class GeminiRealtimeConfig(BaseModel):
 
     # Core settings
     api_key: str = ""
-    model: str = "gemini-2.0-flash-live-001"
+    model: str = "gemini-2.5-flash-native-audio-preview-09-2025"
     language: str = "en-US"
     prompt: str = ""
-    input_sample_rate: int = 16000  # 16kHz for input audio (microphone to Gemini)
-    output_sample_rate: int = 24000  # 24kHz for output audio (Gemini to speaker)
+    input_sample_rate: int = (
+        16000  # 16kHz for input audio (microphone to Gemini)
+    )
+    output_sample_rate: int = (
+        24000  # 24kHz for output audio (Gemini to speaker)
+    )
     audio_out: bool = True
 
     # Generation config
