@@ -333,20 +333,9 @@ class ResponseParser:
                         if response.utterances:
                             first_utt = response.utterances[0]
                             response.start_ms = first_utt.start_time
-
-                            # Priority: use audio_info.duration if available, otherwise calculate from utterances
-                            if (
-                                "audio_info" in payload_data
-                                and "duration" in payload_data["audio_info"]
-                            ):
-                                response.duration_ms = payload_data[
-                                    "audio_info"
-                                ]["duration"]
-                            else:
-                                # Fallback: calculate from first utterance
-                                response.duration_ms = (
-                                    first_utt.end_time - first_utt.start_time
-                                )
+                            response.duration_ms = (
+                                first_utt.end_time - first_utt.start_time
+                            )
                     else:
                         # Fallback for simple structure
                         response.text = payload_data.get("text", "")
@@ -375,6 +364,7 @@ class VolcengineASRClient:
         auth_method: str,
         config: BytedanceASRLLMConfig,
         ten_env=None,
+        audio_timeline=None,
     ):
         self.url = url
         self.app_key = app_key
@@ -383,6 +373,7 @@ class VolcengineASRClient:
         self.auth_method = auth_method
         self.config = config
         self.ten_env = ten_env
+        self.audio_timeline = audio_timeline
         self.websocket = None
         self.connected = False
         self.seq = 1
@@ -533,7 +524,6 @@ class VolcengineASRClient:
             await self._send_audio_segment(segment, False)
 
     async def finalize(self) -> None:
-        """Finalize ASR session by sending silence for 800ms."""
         if not self.connected:
             return
 
@@ -542,9 +532,8 @@ class VolcengineASRClient:
             await self._send_audio_segment(bytes(self.audio_buffer), False)
             self.audio_buffer.clear()
 
-        # Calculate silence duration: 800ms
         # For 16kHz, 16-bit, mono: 800ms = 0.8 * 16000 * 2 = 25600 bytes
-        silence_duration_ms = 800
+        silence_duration_ms = self.config.silence_duration_ms
         bytes_per_sample = self.config.get_bits() // 8  # bits to bytes
         samples_per_ms = (
             self.config.get_sample_rate() // 1000
@@ -561,8 +550,10 @@ class VolcengineASRClient:
             chunk = silence_data[i : i + chunk_size]
             await self._send_audio_segment(chunk, False)
 
-            # Add small delay to simulate real-time audio
-            await asyncio.sleep(0.02)  # 20ms delay between chunks
+        if self.audio_timeline:
+            self.audio_timeline.add_silence_audio(
+                self.config.silence_duration_ms
+            )
 
     async def _send_audio_segment(self, segment: bytes, is_last: bool) -> None:
         """Send audio segment."""

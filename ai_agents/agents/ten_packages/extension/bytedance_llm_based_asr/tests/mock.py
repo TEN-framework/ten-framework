@@ -18,7 +18,14 @@ def patch_volcengine_ws():
     patch_target = "ten_packages.extension.bytedance_llm_based_asr.extension.VolcengineASRClient"
 
     def _fake_ctor(
-        url, app_key, access_key, api_key, auth_method, config, ten_env=None
+        url,
+        app_key,
+        access_key,
+        api_key,
+        auth_method,
+        config,
+        ten_env=None,
+        audio_timeline=None,
     ):
         class _FakeClient:
             def __init__(
@@ -30,6 +37,7 @@ def patch_volcengine_ws():
                 auth_method,
                 config,
                 ten_env=None,
+                audio_timeline=None,
             ):
                 self.url = url
                 self.app_key = app_key
@@ -38,6 +46,7 @@ def patch_volcengine_ws():
                 self.auth_method = auth_method
                 self.config = config
                 self.ten_env = ten_env
+                self.audio_timeline = audio_timeline
                 self.connected = False
                 self.on_result_callback = None
                 self.on_error_callback = None
