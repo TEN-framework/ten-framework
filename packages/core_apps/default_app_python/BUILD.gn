@@ -11,6 +11,7 @@ ten_package("default_app_python") {
 
   resources = [
     "bin/bootstrap",
+    "bin/bootstrap.py",
     "bin/bootstrap_and_start",
     "bin/start",
     "main.py",

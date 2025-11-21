@@ -88,14 +88,32 @@ def test_async_extension_basic_python():
     if return_code != 0:
         assert False, "Failed to install package."
 
-    bootstrap_cmd = os.path.join(
-        base_path, "async_extension_basic_python_app/bin/bootstrap"
-    )
+    # Run bootstrap script based on platform
+    if sys.platform == "win32":
+        # On Windows, use Python bootstrap script directly
+        print("Running bootstrap script on Windows...")
+        bootstrap_script = os.path.join(
+            app_root_path, "bin/bootstrap.py"
+        )
+        bootstrap_process = subprocess.Popen(
+            [sys.executable, bootstrap_script],
+            stdout=stdout,
+            stderr=subprocess.STDOUT,
+            env=my_env,
+            cwd=app_root_path,
+        )
+    else:
+        # On Unix-like systems, use bash bootstrap script
+        bootstrap_cmd = os.path.join(
+            app_root_path, "bin/bootstrap"
+        )
+        bootstrap_process = subprocess.Popen(
+            bootstrap_cmd, stdout=stdout, stderr=subprocess.STDOUT, env=my_env
+        )
 
-    bootstrap_process = subprocess.Popen(
-        bootstrap_cmd, stdout=stdout, stderr=subprocess.STDOUT, env=my_env
-    )
     bootstrap_process.wait()
+    if bootstrap_process.returncode != 0:
+        assert False, "Failed to run bootstrap script."
 
     if sys.platform == "linux":
         if build_config_args.enable_sanitizer:
@@ -111,13 +129,26 @@ def test_async_extension_basic_python():
                 print("Using AddressSanitizer library.")
                 my_env["LD_PRELOAD"] = libasan_path
 
-    server_cmd = os.path.join(
-        base_path, "async_extension_basic_python_app/bin/start"
-    )
+    # Start server based on platform
+    if sys.platform == "win32":
+        # On Windows, run Python directly with main.py
+        server_cmd = [sys.executable, "main.py"]
 
-    if not os.path.isfile(server_cmd):
-        print(f"Server command '{server_cmd}' does not exist.")
-        assert False
+        # Set PYTHONPATH for Windows
+        pythonpath_parts = [
+            os.path.join(app_root_path, "ten_packages", "system", "ten_runtime_python", "lib"),
+            os.path.join(app_root_path, "ten_packages", "system", "ten_runtime_python", "interface")
+        ]
+        my_env["PYTHONPATH"] = os.pathsep.join(pythonpath_parts)
+    else:
+        # On Unix-like systems, use bash start script
+        server_cmd = os.path.join(
+            base_path, "async_extension_basic_python_app/bin/start"
+        )
+
+        if not os.path.isfile(server_cmd):
+            print(f"Server command '{server_cmd}' does not exist.")
+            assert False
 
     server = subprocess.Popen(
         server_cmd,

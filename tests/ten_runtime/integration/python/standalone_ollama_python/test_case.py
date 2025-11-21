@@ -85,16 +85,32 @@ def test_standalone_ollama_async_python():
         venv_bin_dir = os.path.join(venv_dir, "bin")
     my_env["PATH"] = venv_bin_dir + os.pathsep + my_env["PATH"]
 
-    bootstrap_cmd = os.path.join(extension_root_path, "tests/bin/bootstrap")
+    # Run bootstrap script based on platform
+    if sys.platform == "win32":
+        # On Windows, use Python bootstrap script directly
+        print("Running bootstrap script on Windows...")
+        bootstrap_script = os.path.join(
+            app_root_path, "bin/bootstrap.py"
+        )
+        bootstrap_process = subprocess.Popen(
+            [sys.executable, bootstrap_script],
+            stdout=stdout,
+            stderr=subprocess.STDOUT,
+            env=my_env,
+            cwd=app_root_path,
+        )
+    else:
+        # On Unix-like systems, use bash bootstrap script
+        bootstrap_cmd = os.path.join(
+            app_root_path, "bin/bootstrap"
+        )
+        bootstrap_process = subprocess.Popen(
+            bootstrap_cmd, stdout=stdout, stderr=subprocess.STDOUT, env=my_env
+        )
 
-    bootstrap_process = subprocess.Popen(
-        bootstrap_cmd,
-        stdout=stdout,
-        stderr=subprocess.STDOUT,
-        env=my_env,
-        cwd=extension_root_path,
-    )
     bootstrap_process.wait()
+    if bootstrap_process.returncode != 0:
+        assert False, "Failed to run bootstrap script."
 
     # Step 4:
     #

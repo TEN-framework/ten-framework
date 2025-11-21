@@ -87,14 +87,32 @@ def test_msg_clone_python():
     if return_code != 0:
         assert False, "Failed to install package."
 
-    bootstrap_cmd = os.path.join(
-        base_path, "msg_clone_python_app/bin/bootstrap"
-    )
+    # Run bootstrap script based on platform
+    if sys.platform == "win32":
+        # On Windows, use Python bootstrap script directly
+        print("Running bootstrap script on Windows...")
+        bootstrap_script = os.path.join(
+            app_root_path, "bin/bootstrap.py"
+        )
+        bootstrap_process = subprocess.Popen(
+            [sys.executable, bootstrap_script],
+            stdout=stdout,
+            stderr=subprocess.STDOUT,
+            env=my_env,
+            cwd=app_root_path,
+        )
+    else:
+        # On Unix-like systems, use bash bootstrap script
+        bootstrap_cmd = os.path.join(
+            app_root_path, "bin/bootstrap"
+        )
+        bootstrap_process = subprocess.Popen(
+            bootstrap_cmd, stdout=stdout, stderr=subprocess.STDOUT, env=my_env
+        )
 
-    bootstrap_process = subprocess.Popen(
-        bootstrap_cmd, stdout=stdout, stderr=subprocess.STDOUT, env=my_env
-    )
     bootstrap_process.wait()
+    if bootstrap_process.returncode != 0:
+        assert False, "Failed to run bootstrap script."
 
     if sys.platform == "linux":
         if build_config_args.enable_sanitizer:
