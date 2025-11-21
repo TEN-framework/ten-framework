@@ -44,10 +44,6 @@ def main():
         print("The 'merged_requirements.txt' file is generated successfully.")
         print("Installing dependencies...")
 
-        # Windows platform: filter out uvloop dependency, because uvloop is not supported on Windows
-        if sys.platform == "win32":
-            print("Windows platform detected, filtering incompatible packages...")
-            filter_windows_requirements(merged_requirements)
         try:
             subprocess.run(
                 [sys.executable, "-m", "pip", "install", "-r", str(merged_requirements)],
@@ -61,35 +57,6 @@ def main():
         print("No 'merged_requirements.txt' file is generated, because there are no dependencies.")
 
     return 0
-
-def filter_windows_requirements(requirements_file):
-    """Filter out incompatible packages on Windows"""
-    if not requirements_file.exists():
-        return
-
-    with open(requirements_file, 'r', encoding='utf-8') as f:
-        content = f.read()
-
-    # Check if uvloop is in the requirements file
-    if 'uvloop' not in content.lower():
-        return
-
-    # Filter out uvloop related lines
-    lines = content.split('\n')
-    filtered_lines = []
-
-    for line in lines:
-        if line.strip() and not line.strip().startswith('#'):
-            if 'uvloop' in line.lower():
-                print(f"Filtering Windows-incompatible package: {line.strip()}")
-                continue
-        filtered_lines.append(line)
-
-    # Rewrite the file
-    with open(requirements_file, 'w', encoding='utf-8') as f:
-        f.write('\n'.join(filtered_lines))
-
-    print("Windows requirements filtering completed.")
 
 if __name__ == "__main__":
     sys.exit(main())
