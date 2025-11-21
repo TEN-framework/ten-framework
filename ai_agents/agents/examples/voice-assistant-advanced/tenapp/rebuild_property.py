@@ -146,6 +146,29 @@ cartesia_tts_sonic3 = {
     },
 }
 
+# Cartesia TTS for Anam graphs (different voice)
+cartesia_tts_sonic3_anam = {
+    "type": "extension",
+    "name": "tts",
+    "addon": "cartesia_tts",
+    "extension_group": "tts",
+    "property": {
+        "dump": False,
+        "dump_path": "./",
+        "params": {
+            "api_key": "${env:CARTESIA_TTS_KEY}",
+            "model_id": "sonic-3",
+            "voice": {
+                "mode": "id",
+                "id": "34d923aa-c3b5-4f21-aac7-2c1f12730d4b",
+            },
+            "generation_config": {"speed": 1},
+            "output_format": {"container": "raw", "sample_rate": 44100},
+            "language": "en",
+        },
+    },
+}
+
 llama_llm_no_tools = {
     "type": "extension",
     "name": "llm",
@@ -272,9 +295,9 @@ anam_avatar = {
     "extension_group": "default",
     "property": {
         "anam_api_key": "${env:ANAM_API_KEY}",
-        "anam_base_url": "https://anam-lab-git-feat-agora-anam-20452f3b.vercel.app/v1",
-        "anam_avatar_id": "edf6fdcb-acab-44b8-b974-ded72665ee26",
-        "anam_cluster": "dev-eu",
+        "anam_base_url": "https://api.anam.ai/v1",
+        "anam_avatar_id": "81b70170-2e80-4e4b-a6fb-e04ac110dc4b",
+        "anam_cluster": "",
         "anam_pod": "",
         "agora_appid": "${env:AGORA_APP_ID}",
         "agora_appcert": "${env:AGORA_APP_CERTIFICATE|}",
@@ -412,13 +435,15 @@ def create_basic_voice_assistant(name, has_avatar=False, avatar_type=None):
 
 # Helper function to create apollo graph with tools
 def create_apollo_graph(
-    name, llm_config, stt_config, has_avatar=False, avatar_type=None
+    name, llm_config, stt_config, has_avatar=False, avatar_type=None, tts_config=None
 ):
+    if tts_config is None:
+        tts_config = cartesia_tts_sonic3
     nodes = [
         copy.deepcopy(agora_rtc_base),
         copy.deepcopy(stt_config),
         copy.deepcopy(llm_config),
-        copy.deepcopy(cartesia_tts_sonic3),
+        copy.deepcopy(tts_config),
         copy.deepcopy(thymia_analyzer),
         copy.deepcopy(main_control_apollo),
         copy.deepcopy(message_collector),
@@ -577,6 +602,7 @@ new_graphs.append(
         nova3_stt_300ms,
         has_avatar=True,
         avatar_type="anam",
+        tts_config=cartesia_tts_sonic3_anam,
     )
 )
 
@@ -598,6 +624,7 @@ new_graphs.append(
         nova3_stt_300ms,
         has_avatar=True,
         avatar_type="anam",
+        tts_config=cartesia_tts_sonic3_anam,
     )
 )
 new_graphs.append(
@@ -616,6 +643,7 @@ new_graphs.append(
         flux_stt_300ms,
         has_avatar=True,
         avatar_type="anam",
+        tts_config=cartesia_tts_sonic3_anam,
     )
 )
 

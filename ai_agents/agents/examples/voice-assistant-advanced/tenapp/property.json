@@ -624,9 +624,9 @@
               "extension_group": "default",
               "property": {
                 "anam_api_key": "${env:ANAM_API_KEY}",
-                "anam_base_url": "https://anam-lab-git-feat-agora-anam-20452f3b.vercel.app/v1",
-                "anam_avatar_id": "edf6fdcb-acab-44b8-b974-ded72665ee26",
-                "anam_cluster": "dev-eu",
+                "anam_base_url": "https://api.anam.ai/v1",
+                "anam_avatar_id": "81b70170-2e80-4e4b-a6fb-e04ac110dc4b",
+                "anam_cluster": "",
                 "anam_pod": "",
                 "agora_appid": "${env:AGORA_APP_ID}",
                 "agora_appcert": "${env:AGORA_APP_CERTIFICATE|}",
@@ -1141,7 +1141,7 @@
                   "model_id": "sonic-3",
                   "voice": {
                     "mode": "id",
-                    "id": "71a7ad14-091c-4e8e-a314-022ece01c121"
+                    "id": "34d923aa-c3b5-4f21-aac7-2c1f12730d4b"
                   },
                   "generation_config": {
                     "speed": 1
@@ -1196,9 +1196,9 @@
               "extension_group": "default",
               "property": {
                 "anam_api_key": "${env:ANAM_API_KEY}",
-                "anam_base_url": "https://anam-lab-git-feat-agora-anam-20452f3b.vercel.app/v1",
-                "anam_avatar_id": "edf6fdcb-acab-44b8-b974-ded72665ee26",
-                "anam_cluster": "dev-eu",
+                "anam_base_url": "https://api.anam.ai/v1",
+                "anam_avatar_id": "81b70170-2e80-4e4b-a6fb-e04ac110dc4b",
+                "anam_cluster": "",
                 "anam_pod": "",
                 "agora_appid": "${env:AGORA_APP_ID}",
                 "agora_appcert": "${env:AGORA_APP_CERTIFICATE|}",
@@ -1748,7 +1748,7 @@
                   "model_id": "sonic-3",
                   "voice": {
                     "mode": "id",
-                    "id": "71a7ad14-091c-4e8e-a314-022ece01c121"
+                    "id": "34d923aa-c3b5-4f21-aac7-2c1f12730d4b"
                   },
                   "generation_config": {
                     "speed": 1
@@ -1803,9 +1803,9 @@
               "extension_group": "default",
               "property": {
                 "anam_api_key": "${env:ANAM_API_KEY}",
-                "anam_base_url": "https://anam-lab-git-feat-agora-anam-20452f3b.vercel.app/v1",
-                "anam_avatar_id": "edf6fdcb-acab-44b8-b974-ded72665ee26",
-                "anam_cluster": "dev-eu",
+                "anam_base_url": "https://api.anam.ai/v1",
+                "anam_avatar_id": "81b70170-2e80-4e4b-a6fb-e04ac110dc4b",
+                "anam_cluster": "",
                 "anam_pod": "",
                 "agora_appid": "${env:AGORA_APP_ID}",
                 "agora_appcert": "${env:AGORA_APP_CERTIFICATE|}",
@@ -2355,7 +2355,7 @@
                   "model_id": "sonic-3",
                   "voice": {
                     "mode": "id",
-                    "id": "71a7ad14-091c-4e8e-a314-022ece01c121"
+                    "id": "34d923aa-c3b5-4f21-aac7-2c1f12730d4b"
                   },
                   "generation_config": {
                     "speed": 1
@@ -2410,9 +2410,9 @@
               "extension_group": "default",
               "property": {
                 "anam_api_key": "${env:ANAM_API_KEY}",
-                "anam_base_url": "https://anam-lab-git-feat-agora-anam-20452f3b.vercel.app/v1",
-                "anam_avatar_id": "edf6fdcb-acab-44b8-b974-ded72665ee26",
-                "anam_cluster": "dev-eu",
+                "anam_base_url": "https://api.anam.ai/v1",
+                "anam_avatar_id": "81b70170-2e80-4e4b-a6fb-e04ac110dc4b",
+                "anam_cluster": "",
                 "anam_pod": "",
                 "agora_appid": "${env:AGORA_APP_ID}",
                 "agora_appcert": "${env:AGORA_APP_CERTIFICATE|}",
