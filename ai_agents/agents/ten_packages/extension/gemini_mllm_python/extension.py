@@ -555,21 +555,10 @@ class GeminiRealtime2Extension(AsyncMLLMBaseExtension):
             "default": EndSensitivity.END_SENSITIVITY_UNSPECIFIED,
         }[self.config.vad_end_sensitivity]
 
-        # Turn coverage mapping - NEW FEATURE
-        turn_cov = {
-            "only_activity": TurnCoverage.TURN_INCLUDES_ONLY_ACTIVITY,
-            "all_input": TurnCoverage.TURN_INCLUDES_ALL_INPUT,
-        }[self.config.turn_coverage]
-
+        # Simplified realtime config matching ai_studio_code.py
+        # This simpler config works better for consistent audio detection
         realtime_cfg = RealtimeInputConfig(
-            automatic_activity_detection=AutomaticActivityDetection(
-                disabled=not self.config.server_vad,
-                start_of_speech_sensitivity=start_sens,
-                end_of_speech_sensitivity=end_sens,
-                prefix_padding_ms=self.config.vad_prefix_padding_ms,
-                silence_duration_ms=self.config.vad_silence_duration_ms,
-            ),
-            turn_coverage=turn_cov,  # NEW: Turn coverage configuration
+            turn_coverage="TURN_INCLUDES_ALL_INPUT"
         )
 
         cfg = LiveConnectConfig(
