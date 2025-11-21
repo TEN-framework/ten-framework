@@ -840,7 +840,7 @@
               "property": {
                 "api_key": "${env:GEMINI_API_KEY}",
                 "temperature": 0.9,
-                "model": "gemini-2.0-flash-live-001",
+                "model": "gemini-2.5-flash-native-audio-preview-09-2025",
                 "max_tokens": 2048,
                 "voice": "Puck",
                 "language": "en-US",
@@ -1007,7 +1007,7 @@
               "property": {
                 "api_key": "${env:GEMINI_API_KEY}",
                 "temperature": 0.9,
-                "model": "gemini-2.5-flash-preview-native-audio-dialog",
+                "model": "gemini-2.5-flash-native-audio-preview-09-2025",
                 "max_tokens": 2048,
                 "voice": "Puck",
                 "language": "en-US",

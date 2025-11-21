@@ -63,7 +63,10 @@
         "input_transcript": {
           "type": "bool"
         },
-        "sample_rate": {
+        "input_sample_rate": {
+          "type": "int32"
+        },
+        "output_sample_rate": {
           "type": "int32"
         },
         "transcribe_user": {
@@ -89,6 +92,24 @@
         },
         "silence_duration_ms": {
           "type": "int32"
+        },
+        "turn_coverage": {
+          "type": "string"
+        },
+        "greeting": {
+          "type": "string"
+        },
+        "audio_chunk_bytes": {
+          "type": "int32"
+        },
+        "dump": {
+          "type": "bool"
+        },
+        "dump_path": {
+          "type": "string"
+        },
+        "media_resolution": {
+          "type": "string"
         }
       }
     }
