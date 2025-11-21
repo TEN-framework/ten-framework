@@ -10,7 +10,10 @@ group("example_apps") {
 
   if (ten_enable_example_packages) {
     if (ten_enable_go_binding) {
-      deps += [ "pprof_app_go" ]
+      deps += [
+        "pprof_app_go",
+        "transcriber_demo",
+      ]
     }
   }
 }
