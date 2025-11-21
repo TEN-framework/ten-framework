@@ -64,6 +64,12 @@ if (ten_enable_ten_rust) {
   ten_runtime_common_defines += [ "TEN_ENABLE_TEN_RUST_APIS" ]
 }
 
+# On Windows, when building ten_runtime as shared library, define TEN_RUNTIME_EXPORT
+# to ensure all TEN_RUNTIME_API functions are exported from the DLL
+if (is_win && ten_build_shared) {
+  ten_runtime_common_defines += [ "TEN_RUNTIME_EXPORT" ]
+}
+
 common_deps = []
 common_public_deps = []
 

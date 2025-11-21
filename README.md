@@ -1,14 +1,14 @@
 <div align="center" id="readme-top">
 
-![Image](https://github.com/user-attachments/assets/2a560a74-68f3-4f4a-9ec8-89464c42a9c7)
+![Image](https://github.com/user-attachments/assets/799584b2-61ff-4255-bdd1-2548d0fdba52)
 
 [![TEN Releases]( https://img.shields.io/github/v/release/ten-framework/ten-framework?color=369eff&labelColor=gray&logo=github&style=flat-square )](https://github.com/TEN-framework/ten-framework/releases)
 [![Coverage Status](https://coveralls.io/repos/github/TEN-framework/ten-framework/badge.svg?branch=main)](https://coveralls.io/github/TEN-framework/ten-framework?branch=main)
 [![](https://img.shields.io/github/release-date/ten-framework/ten-framework?labelColor=gray&style=flat-square)](https://github.com/TEN-framework/ten-framework/releases)
-[![Commits](https://img.shields.io/github/commit-activity/m/TEN-framework/ten_framework?labelColor=gray&color=pink)](https://github.com/TEN-framework/ten-framework/graphs/commit-activity)
+[![Commits](https://img.shields.io/github/commit-activity/m/TEN-framework/ten-framework?labelColor=gray&color=pink)](https://github.com/TEN-framework/ten-framework/graphs/commit-activity)
 [![Issues closed](https://img.shields.io/github/issues-search?query=repo%3ATEN-framework%2Ften-framework%20is%3Aclosed&label=issues%20closed&labelColor=gray&color=green)](https://github.com/TEN-framework/ten-framework/issues)
 [![](https://img.shields.io/github/contributors/ten-framework/ten-framework?color=c4f042&labelColor=gray&style=flat-square)](https://github.com/TEN-framework/ten-framework/graphs/contributors)
-[![GitHub license](https://img.shields.io/badge/License-Apache_2.0_with_certain_conditions-blue.svg?labelColor=%20%23155EEF&color=%20%23528bff)](https://github.com/TEN-framework/ten_framework/blob/main/LICENSE)
+[![GitHub license](https://img.shields.io/badge/License-Apache_2.0_with_certain_conditions-blue.svg?labelColor=%20%23155EEF&color=%20%23528bff)](https://github.com/TEN-framework/ten-framework/blob/main/LICENSE)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/TEN-framework/TEN-framework)
 [![ReadmeX](https://raw.githubusercontent.com/CodePhiliaX/resource-trusteeship/main/readmex.svg)](https://readmex.com/TEN-framework/ten-framework)
 
@@ -59,7 +59,7 @@
 
 ## Welcome to TEN
 
-TEN is an open-source framework for conversational voice AI agents.
+TEN is an open-source framework for real-time multimodal conversational AI.
 
 [TEN Ecosystem](#ten-ecosystem) includes [TEN Framework](https://github.com/ten-framework/ten-framework), [Agent Examples](https://github.com/TEN-framework/ten-framework/tree/main/ai_agents/agents/examples), [VAD](https://github.com/ten-framework/ten-vad), [Turn Detection](https://github.com/ten-framework/ten-turn-detection) and [Portal](https://github.com/ten-framework/portal).
 
@@ -79,7 +79,7 @@ TEN is an open-source framework for conversational voice AI agents.
 
 <br>
 
-![Image](https://github.com/user-attachments/assets/6e75e457-0a01-44cf-b203-025ce433460d)
+![Image](https://github.com/user-attachments/assets/dce3db80-fb48-4e2a-8ac7-33f50bcffa32)
 
 <strong>Multi-Purpose Voice Assistant</strong> — This low-latency, high-quality real-time assistant supports both RTC and [WebSocket](ai_agents/agents/examples/websocket-example) connections, and you can extend it with [Memory](ai_agents/agents/examples/voice-assistant-with-memU), [VAD](ai_agents/agents/examples/voice-assistant-with-ten-vad), [Turn Detection](ai_agents/agents/examples/voice-assistant-with-turn-detection), and other extensions.
 
@@ -93,7 +93,8 @@ See the [Example code](ai_agents/agents/examples/voice-assistant) for more detai
 
 ![Image](https://github.com/user-attachments/assets/51ab1504-b67c-49d4-8a7a-5582d9b254da)
 
-<strong>Lip Sync Avatars</strong> — Works with multiple avatar vendors, the main character features Kei, an anime character with Live2D-powered lip sync, and also supports realistic avatars from Trulience, HeyGen, and Tavus (coming soon).
+
+<strong>Lip Sync Avatars</strong> — Works with multiple avatar vendors, the main character features Kei, an anime character with MotionSync-powered lip sync, and also supports realistic avatars from Trulience, HeyGen, and Tavus (coming soon).
 
 See the [Example code](ai_agents/agents/examples/voice-assistant-live2d) for different Live2D characters.
 
@@ -411,7 +412,7 @@ We welcome all forms of open-source collaboration! Whether you're fixing bugs, a
 
 ### Code Contributors
 
-[![TEN](https://contrib.rocks/image?repo=TEN-framework/ten-agent)](https://github.com/TEN-framework/ten-agent/graphs/contributors)
+[![TEN](https://contrib.rocks/image?repo=TEN-framework/ten-framework)](https://github.com/TEN-framework/ten-framework/graphs/contributors)
 
 ### Contribution Guidelines
 
@@ -450,7 +451,7 @@ Contributions are welcome! Please read the [contribution guidelines](./docs/code
 [ten-turn-detection-banner]: https://github.com/user-attachments/assets/c72d82cc-3667-496c-8bd6-3d194a91c452
 
 [ten-agent-example-link]: https://github.com/TEN-framework/ten-framework/tree/main/ai_agents/agents/examples
-[ten-agent-example-banner]:https://github.com/user-attachments/assets/7f735633-c7f6-4432-b6b4-d2a2977ca588
+[ten-agent-example-banner]: https://github.com/user-attachments/assets/7f735633-c7f6-4432-b6b4-d2a2977ca588
 
 [ten-portal-link]: https://github.com/ten-framework/portal
 [ten-portal-shield]: https://img.shields.io/github/stars/ten-framework/portal?color=ffcb47&labelColor=gray&style=flat-square&logo=github

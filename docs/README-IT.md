@@ -6,10 +6,10 @@
 [![Coverage Status](https://coveralls.io/repos/github/TEN-framework/ten-framework/badge.svg?branch=main)](https://coveralls.io/github/TEN-framework/ten-framework?branch=main)
 [![](https://img.shields.io/github/release-date/ten-framework/ten-framework?labelColor=gray&style=flat-square)](https://github.com/TEN-framework/ten-framework/releases)
 [![Discussion posts](https://img.shields.io/github/discussions/TEN-framework/ten_framework?labelColor=gray&color=%20%23f79009)](https://github.com/TEN-framework/ten-framework/discussions/)
-[![Commits](https://img.shields.io/github/commit-activity/m/TEN-framework/ten_framework?labelColor=gray&color=pink)](https://github.com/TEN-framework/ten-framework/graphs/commit-activity)
+[![Commits](https://img.shields.io/github/commit-activity/m/TEN-framework/ten-framework?labelColor=gray&color=pink)](https://github.com/TEN-framework/ten-framework/graphs/commit-activity)
 [![Issues closed](https://img.shields.io/github/issues-search?query=repo%3ATEN-framework%2Ften-framework%20is%3Aclosed&label=issues%20closed&labelColor=gray&color=green)](https://github.com/TEN-framework/ten-framework/issues)
 [![](https://img.shields.io/github/contributors/ten-framework/ten-framework?color=c4f042&labelColor=gray&style=flat-square)](https://github.com/TEN-framework/ten-framework/graphs/contributors)
-[![GitHub license](https://img.shields.io/badge/License-Apache_2.0_with_certain_conditions-blue.svg?labelColor=%20%23155EEF&color=%20%23528bff)](https://github.com/TEN-framework/ten_framework/blob/main/LICENSE)
+[![GitHub license](https://img.shields.io/badge/License-Apache_2.0_with_certain_conditions-blue.svg?labelColor=%20%23155EEF&color=%20%23528bff)](https://github.com/TEN-framework/ten-framework/blob/main/LICENSE)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/TEN-framework/TEN-framework)
 [![ReadmeX](https://raw.githubusercontent.com/CodePhiliaX/resource-trusteeship/main/readmex.svg)](https://readmex.com/TEN-framework/ten-framework)
 
@@ -96,7 +96,7 @@ Consulta il <a href="https://github.com/TEN-framework/ten-framework/tree/main/ai
 
 <br>
 
-![Image](https://github.com/user-attachments/assets/aa3f2c9c-c82e-412f-8400-06378ba75794)
+![Image](https://github.com/user-attachments/assets/51ab1504-b67c-49d4-8a7a-5582d9b254da)
 
 <strong>Avatar con lip sync</strong> — Supporta diversi provider di avatar. La demo mostra Kei, un personaggio anime con sincronizzazione labiale Live2D, e presto includerà avatar realistici di Trulience, HeyGen e Tavus.
 
@@ -381,7 +381,7 @@ Ricevi notifiche immediate su nuove release e aggiornamenti. Il tuo supporto ci 
 | [**️TEN Framework**][ten-framework-link]<br>Framework open source per agenti conversazionali.<br><br>![][ten-framework-shield] | ![][ten-framework-banner] |
 | [**TEN VAD**][ten-vad-link]<br>Rilevatore di attività vocale in streaming, leggero e a bassa latenza.<br><br>![][ten-vad-shield] | ![][ten-vad-banner] |
 | [**️TEN Turn Detection**][ten-turn-detection-link]<br>Abilita dialoghi full-duplex tramite rilevamento dei turni.<br><br>![][ten-turn-detection-shield] | ![][ten-turn-detection-banner] |
-| [**TEN Agent Examples**][ten-agent-link]<br>Casi d’uso costruiti con TEN.<br><br> | ![][ten-agent-banner] |
+| [**TEN Agent Examples**][ten-agent-example-link]<br>Casi d'uso costruiti con TEN.<br><br> | ![][ten-agent-example-banner] |
 | [**TEN Portal**][ten-portal-link]<br>Sito ufficiale con documentazione e blog.<br><br>![][ten-portal-shield] | ![][ten-portal-banner] |
 
 <br>
@@ -435,7 +435,7 @@ Accogliamo qualsiasi forma di collaborazione open source! Bugfix, nuove funziona
 
 ### Contributor del codice
 
-[![TEN](https://contrib.rocks/image?repo=TEN-framework/ten-agent)](https://github.com/TEN-framework/ten-agent/graphs/contributors)
+[![TEN](https://contrib.rocks/image?repo=TEN-framework/ten-framework)](https://github.com/TEN-framework/ten-framework/graphs/contributors)
 
 <a name="contribution-guidelines"></a>
 
@@ -463,9 +463,9 @@ Le contribuzioni sono benvenute! Leggi prima le [linee guida per contribuire](./
 
 [back-to-top]: https://img.shields.io/badge/-Back_to_top-gray?style=flat-square
 
-[ten-framework-shield]: https://img.shields.io/github/stars/ten-framework/ten_framework?color=ffcb47&labelColor=gray&style=flat-square&logo=github
+[ten-framework-shield]: https://img.shields.io/github/stars/ten-framework/ten-framework?color=ffcb47&labelColor=gray&style=flat-square&logo=github
 [ten-framework-banner]: https://github.com/user-attachments/assets/2a560a74-68f3-4f4a-9ec8-89464c42a9c7
-[ten-framework-link]: https://github.com/ten-framework/ten_framework
+[ten-framework-link]: https://github.com/ten-framework/ten-framework
 
 [ten-vad-link]: https://github.com/ten-framework/ten-vad
 [ten-vad-shield]: https://img.shields.io/github/stars/ten-framework/ten-vad?color=ffcb47&labelColor=gray&style=flat-square&logo=github
@@ -475,8 +475,8 @@ Le contribuzioni sono benvenute! Leggi prima le [linee guida per contribuire](./
 [ten-turn-detection-shield]: https://img.shields.io/github/stars/ten-framework/ten-turn-detection?color=ffcb47&labelColor=gray&style=flat-square&logo=github
 [ten-turn-detection-banner]: https://github.com/user-attachments/assets/c72d82cc-3667-496c-8bd6-3d194a91c452
 
-[ten-agent-link]: https://github.com/TEN-framework/ten-framework/tree/main/ai_agents
-[ten-agent-banner]: https://github.com/user-attachments/assets/7f735633-c7f6-4432-b6b4-d2a2977ca588
+[ten-agent-example-link]: https://github.com/TEN-framework/ten-framework/tree/main/ai_agents/agents/examples
+[ten-agent-example-banner]: https://github.com/user-attachments/assets/7f735633-c7f6-4432-b6b4-d2a2977ca588
 
 [ten-portal-link]: https://github.com/ten-framework/portal
 [ten-portal-shield]: https://img.shields.io/github/stars/ten-framework/portal?color=ffcb47&labelColor=gray&style=flat-square&logo=github

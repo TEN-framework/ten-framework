@@ -8,3 +8,4 @@ pub mod add;
 pub mod delete;
 pub mod property;
 pub mod replace;
+pub mod selector;
