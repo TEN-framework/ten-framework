@@ -11,7 +11,6 @@ ten_package("default_app_python") {
 
   resources = [
     "bin/bootstrap",
-    "bin/bootstrap.py",
     "bin/bootstrap_and_start",
     "bin/start",
     "main.py",
@@ -19,6 +18,13 @@ ten_package("default_app_python") {
     "manifest.json.tent",
     "property.json",
   ]
+
+  if(is_win){
+    resources += [
+      "bin/bootstrap.py",
+      "bin/start.py",
+    ]
+  }
 
   docs_files = exec_script("//.gnfiles/build/scripts/glob_file.py",
                            [

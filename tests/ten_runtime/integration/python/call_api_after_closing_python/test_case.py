@@ -128,13 +128,20 @@ def test_call_api_after_closing_python():
                 print("Using AddressSanitizer library.")
                 my_env["LD_PRELOAD"] = libasan_path
 
-    server_cmd = os.path.join(
-        base_path, "call_api_after_closing_python_app/bin/start"
-    )
+    if sys.platform == "win32":
+        start_script = os.path.join(app_root_path, "bin", "start.py")
 
-    if not os.path.isfile(server_cmd):
-        print(f"Server command '{server_cmd}' does not exist.")
-        assert False
+        if not os.path.isfile(start_script):
+            print(f"Server command '{start_script}' does not exist.")
+            assert False
+
+        server_cmd = [sys.executable, start_script]
+    else:
+        server_cmd = os.path.join(app_root_path, "bin/start")
+
+        if not os.path.isfile(server_cmd):
+            print(f"Server command '{server_cmd}' does not exist.")
+            assert False
 
     server = subprocess.Popen(
         server_cmd,

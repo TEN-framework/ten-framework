@@ -129,22 +129,16 @@ def test_async_extension_basic_python():
                 print("Using AddressSanitizer library.")
                 my_env["LD_PRELOAD"] = libasan_path
 
-    # Start server based on platform
     if sys.platform == "win32":
-        # On Windows, run Python directly with main.py
-        server_cmd = [sys.executable, "main.py"]
+        start_script = os.path.join(app_root_path, "bin", "start.py")
 
-        # Set PYTHONPATH for Windows
-        pythonpath_parts = [
-            os.path.join(app_root_path, "ten_packages", "system", "ten_runtime_python", "lib"),
-            os.path.join(app_root_path, "ten_packages", "system", "ten_runtime_python", "interface")
-        ]
-        my_env["PYTHONPATH"] = os.pathsep.join(pythonpath_parts)
+        if not os.path.isfile(start_script):
+            print(f"Server command '{start_script}' does not exist.")
+            assert False
+
+        server_cmd = [sys.executable, start_script]
     else:
-        # On Unix-like systems, use bash start script
-        server_cmd = os.path.join(
-            base_path, "async_extension_basic_python_app/bin/start"
-        )
+        server_cmd = os.path.join(app_root_path, "bin/start")
 
         if not os.path.isfile(server_cmd):
             print(f"Server command '{server_cmd}' does not exist.")
