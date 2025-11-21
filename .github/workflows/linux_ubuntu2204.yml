@@ -234,6 +234,7 @@ jobs:
             "app/default_app_go"
             "app/default_app_python"
             "app/default_app_nodejs"
+            "app/transcriber_demo"
             "ten_packages/system/ten_runtime"
             "ten_packages/system/ten_runtime_go"
             "ten_packages/system/ten_runtime_python"
@@ -247,6 +248,7 @@ jobs:
             "ten_packages/extension/default_tts_extension_python"
             "ten_packages/extension/default_mllm_extension_python"
             "ten_packages/extension/default_extension_nodejs"
+            "ten_packages/extension/webrtc_vad_cpp"
             "ten_packages/addon_loader/python_addon_loader"
             "ten_packages/addon_loader/nodejs_addon_loader"
           )
@@ -301,6 +303,7 @@ jobs:
             "app/default_app_go"
             "app/default_app_python"
             "app/default_app_nodejs"
+            "app/transcriber_demo"
             "ten_packages/system/ten_runtime"
             "ten_packages/system/ten_runtime_go"
             "ten_packages/system/ten_runtime_python"
@@ -314,6 +317,7 @@ jobs:
             "ten_packages/extension/default_tts_extension_python"
             "ten_packages/extension/default_mllm_extension_python"
             "ten_packages/extension/default_extension_nodejs"
+            "ten_packages/extension/webrtc_vad_cpp"
             "ten_packages/addon_loader/python_addon_loader"
             "ten_packages/addon_loader/nodejs_addon_loader"
           )
@@ -379,6 +383,7 @@ jobs:
             "app/default_app_go"
             "app/default_app_python"
             "app/default_app_nodejs"
+            "app/transcriber_demo"
             "ten_packages/system/ten_runtime"
             "ten_packages/system/ten_runtime_go"
             "ten_packages/system/ten_runtime_python"
@@ -392,6 +397,7 @@ jobs:
             "ten_packages/extension/default_tts_extension_python"
             "ten_packages/extension/default_mllm_extension_python"
             "ten_packages/extension/default_extension_nodejs"
+            "ten_packages/extension/webrtc_vad_cpp"
             "ten_packages/addon_loader/python_addon_loader"
             "ten_packages/addon_loader/nodejs_addon_loader"
           )
