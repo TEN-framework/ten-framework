@@ -26,6 +26,13 @@ from ten_runtime.audio_frame import AudioFrame
 from ten_runtime.data import Data
 from .apollo_api import ApolloAPI, ApolloResult
 
+# Minimum time between any announcements (Hellos or Apollo)
+ANNOUNCEMENT_MIN_SPACING_SECONDS = 15.0
+
+# Phase duration settings (actual speech, not including padding/silence)
+MOOD_PHASE_DURATION_SECONDS = 30.0  # Hellos API requires this much actual speech
+READING_PHASE_DURATION_SECONDS = 30.0  # Additional actual speech for Apollo (total = mood + reading)
+
 
 class ThymiaAPIError(Exception):
     """Custom exception for Thymia API errors"""
@@ -565,7 +572,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
 
         # Configuration
         self.api_key: str = ""
-        self.min_speech_duration: float = 30.0
+        self.min_speech_duration: float = MOOD_PHASE_DURATION_SECONDS
         self.silence_threshold: float = 0.02
         self.continuous_analysis: bool = True
         self.min_interval_seconds: int = 60
@@ -576,10 +583,10 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
         # Analysis mode configuration (for backwards compatibility)
         self.analysis_mode: str = "hellos_only"  # "hellos_only" or "demo_dual"
         self.apollo_mood_duration: float = (
-            30.0  # Duration of mood audio for Apollo
+            MOOD_PHASE_DURATION_SECONDS  # Duration of mood audio for Apollo
         )
         self.apollo_read_duration: float = (
-            22.0  # Duration of reading audio for Apollo
+            READING_PHASE_DURATION_SECONDS  # Duration of reading audio for Apollo
         )
 
         # State
@@ -619,7 +626,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
         # Input phase tracking (independent of API state)
         self.mood_phase_complete: bool = False  # 30s mood speech collected
         self.reading_phase_complete: bool = (
-            False  # 22s reading speech collected
+            False  # 60s reading speech collected
         )
 
         # Trigger tracking (whether we've sent async message to LLM)
@@ -980,8 +987,9 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                             time.time() + (duration_ms / 1000.0) + 1.0
                         )
 
-                    # Clear the boolean flag - we now rely on timestamp-based checking
+                    # Clear state and schedule check after audio finishes
                     self.agent_currently_speaking = False
+                    self.response_start_time = 0.0
 
                     # Schedule check for pending announcements after audio finishes playing
                     # This ensures Hellos gets announced even if Apollo went first
@@ -989,6 +997,9 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                     asyncio.create_task(
                         self._delayed_announcement_check(ten_env, delay_seconds)
                     )
+
+                    # Set last speech end time when audio will finish
+                    self.last_agent_speech_end_time = time.time() + (duration_ms / 1000.0)
                 elif reason == 2:
                     # Playback interrupted or complete - stop immediately
                     self.agent_speaking_until = 0.0
@@ -1006,7 +1017,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                 f"[THYMIA_TTS] Error handling data '{data.get_name()}': {e}"
             )
 
-    # Counter for logging
+    # Counter for periodic logging
     _audio_frame_count = 0
 
     async def on_audio_frame(
@@ -2313,8 +2324,8 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
             )
             return
 
-        # Trigger Hellos if ready and READING PHASE COMPLETE (wait for all audio collection)
-        # This ensures we don't announce Hellos until user has provided enough audio for Apollo too
+        # Trigger Hellos if ready and READING PHASE COMPLETE (both phases done)
+        # Hellos API is called at mood phase, but results announced after both phases complete
         if (
             self.hellos_complete
             and self.reading_phase_complete
@@ -2325,9 +2336,9 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                 self.hellos_last_announcement_time,
                 self.apollo_last_announcement_time,
             )
-            if time_since_last < 15.0:
+            if time_since_last < ANNOUNCEMENT_MIN_SPACING_SECONDS:
                 ten_env.log_debug(
-                    f"[THYMIA_PHASE_TRIGGER] Hellos ready but waiting {15.0 - time_since_last:.1f}s after last announcement"
+                    f"[THYMIA_PHASE_TRIGGER] Hellos ready but waiting {ANNOUNCEMENT_MIN_SPACING_SECONDS - time_since_last:.1f}s after last announcement"
                 )
             else:
                 # Check if Apollo is also complete - if so, LLM will get all 7 metrics in one call
@@ -2336,11 +2347,11 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                 ten_env.log_info(
                     f"[THYMIA_PHASE_TRIGGER] Triggering Hellos announcement (API complete, reading phase complete, user silent, apollo_also_ready={apollo_also_ready})"
                 )
+                self.hellos_trigger_sent = (
+                    True  # Mark as processed before trigger to prevent race condition
+                )
                 announcement_sent = await self._trigger_hellos_announcement(
                     ten_env
-                )
-                self.hellos_trigger_sent = (
-                    True  # Mark as processed even if skipped
                 )
                 if announcement_sent:
                     self.hellos_last_announcement_time = (
@@ -2363,24 +2374,24 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
             )
 
         # Trigger Apollo if ready and not yet triggered
-        # Use consistent 15s spacing between any announcements
-        if self.apollo_complete and not self.apollo_trigger_sent:
+        # Use consistent spacing between any announcements
+        if self.apollo_complete and self.reading_phase_complete and not self.apollo_trigger_sent:
             # Check spacing from last announcement (15s minimum between any announcements)
             time_since_last = time.time() - max(
                 self.hellos_last_announcement_time,
                 self.apollo_last_announcement_time,
             )
 
-            if time_since_last >= 15.0:
+            if time_since_last >= ANNOUNCEMENT_MIN_SPACING_SECONDS:
                 ten_env.log_info(
                     "[THYMIA_PHASE_TRIGGER] Triggering Apollo announcement (API complete, user silent)"
                 )
+                self.apollo_trigger_sent = True  # Set before trigger to prevent race condition
                 await self._trigger_apollo_announcement(ten_env)
-                self.apollo_trigger_sent = True
                 self.apollo_last_announcement_time = time.time()
             else:
                 ten_env.log_debug(
-                    f"[THYMIA_PHASE_TRIGGER] Apollo ready but waiting {15.0 - time_since_last:.1f}s after last announcement"
+                    f"[THYMIA_PHASE_TRIGGER] Apollo ready but waiting {ANNOUNCEMENT_MIN_SPACING_SECONDS - time_since_last:.1f}s after last announcement"
                 )
         elif self.apollo_complete and self.apollo_trigger_sent:
             ten_env.log_debug(
@@ -2584,21 +2595,11 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                 response_data = {
                     "status": "available",
                     "metrics": {
-                        "distress": round(
-                            round(self.latest_results.distress, 2) * 100
-                        ),
-                        "stress": round(
-                            round(self.latest_results.stress, 2) * 100
-                        ),
-                        "burnout": round(
-                            round(self.latest_results.burnout, 2) * 100
-                        ),
-                        "fatigue": round(
-                            round(self.latest_results.fatigue, 2) * 100
-                        ),
-                        "low_self_esteem": round(
-                            round(self.latest_results.low_self_esteem, 2) * 100
-                        ),
+                        "distress": round(self.latest_results.distress * 100),
+                        "stress": round(self.latest_results.stress * 100),
+                        "burnout": round(self.latest_results.burnout * 100),
+                        "fatigue": round(self.latest_results.fatigue * 100),
+                        "low_self_esteem": round(self.latest_results.low_self_esteem * 100),
                     },
                     "analyzed_seconds_ago": int(age_seconds),
                     "speech_duration": (
@@ -2685,7 +2686,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                     current_phase = "collection"
                     required_duration = self.min_speech_duration
                     speech_collected = (
-                        self.audio_buffer.speech_duration
+                        self.audio_buffer.actual_speech_duration
                         if self.audio_buffer
                         else 0.0
                     )
@@ -2712,19 +2713,32 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                         current_phase = "mood"
                         required_duration = self.min_speech_duration  # 30s
                         speech_collected = (
-                            self.audio_buffer.speech_duration
+                            self.audio_buffer.actual_speech_duration
                             if self.audio_buffer
                             else 0.0
                         )
                         phase_complete = speech_collected >= required_duration
                         next_action = "Keep asking about mood, feelings, interests, or day"
 
-                        # Update mood phase flag when complete
+                        # Update mood phase flag and trigger Hellos when complete
                         if phase_complete and not self.mood_phase_complete:
                             self.mood_phase_complete = True
                             ten_env.log_info(
                                 "[THYMIA_PHASE] Mood phase marked complete by check_phase_progress tool"
                             )
+
+                            # Trigger Hellos analysis if user info ready
+                            if (
+                                self.user_name
+                                and self.user_dob
+                                and self.user_sex
+                                and not self.hellos_analysis_running
+                            ):
+                                ten_env.log_info(
+                                    f"[THYMIA_ANALYSIS_START] Starting Hellos from check_phase_progress ({speech_collected:.1f}s actual speech)"
+                                )
+                                self.hellos_analysis_running = True
+                                asyncio.create_task(self._run_hellos_phase(ten_env))
 
                     elif not self.reading_phase_complete:
                         current_phase = "reading"
@@ -2733,7 +2747,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                             + self.apollo_read_duration
                         )  # 60s total
                         speech_collected = (
-                            self.audio_buffer.speech_duration
+                            self.audio_buffer.actual_speech_duration
                             if self.audio_buffer
                             else 0.0
                         )
@@ -2773,7 +2787,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                             + self.apollo_read_duration
                         )
                         speech_collected = (
-                            self.audio_buffer.speech_duration
+                            self.audio_buffer.actual_speech_duration
                             if self.audio_buffer
                             else 0.0
                         )
