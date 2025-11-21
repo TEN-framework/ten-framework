@@ -2320,27 +2320,39 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
             and self.reading_phase_complete
             and not self.hellos_trigger_sent
         ):
-            # Check if Apollo is also complete - if so, LLM will get all 7 metrics in one call
-            apollo_also_ready = self.apollo_complete
-
-            ten_env.log_info(
-                f"[THYMIA_PHASE_TRIGGER] Checking Hellos announcement (API complete, reading phase complete, user silent, apollo_also_ready={apollo_also_ready})"
+            # Check spacing from last announcement (15s minimum between any announcements)
+            time_since_last = time.time() - max(
+                self.hellos_last_announcement_time,
+                self.apollo_last_announcement_time,
             )
-            announcement_sent = await self._trigger_hellos_announcement(ten_env)
-            self.hellos_trigger_sent = True  # Mark as processed even if skipped
-            if announcement_sent:
-                self.hellos_last_announcement_time = (
-                    time.time()
-                )  # Only set time if actually sent
+            if time_since_last < 15.0:
+                ten_env.log_debug(
+                    f"[THYMIA_PHASE_TRIGGER] Hellos ready but waiting {15.0 - time_since_last:.1f}s after last announcement"
+                )
+            else:
+                # Check if Apollo is also complete - if so, LLM will get all 7 metrics in one call
+                apollo_also_ready = self.apollo_complete
 
-                # If Apollo was already complete, mark it as triggered too (no need for second announcement)
-                if apollo_also_ready:
-                    ten_env.log_info(
-                        "[THYMIA_PHASE_TRIGGER] Apollo also complete - LLM will receive all 7 metrics from first get_wellness_metrics call. Skipping separate Apollo announcement."
-                    )
-                    self.apollo_trigger_sent = (
-                        True  # Skip Apollo announcement to avoid interrupting
-                    )
+                ten_env.log_info(
+                    f"[THYMIA_PHASE_TRIGGER] Triggering Hellos announcement (API complete, reading phase complete, user silent, apollo_also_ready={apollo_also_ready})"
+                )
+                announcement_sent = await self._trigger_hellos_announcement(
+                    ten_env
+                )
+                self.hellos_trigger_sent = (
+                    True  # Mark as processed even if skipped
+                )
+                if announcement_sent:
+                    self.hellos_last_announcement_time = (
+                        time.time()
+                    )  # Only set time if actually sent
+
+                    # If Apollo was already complete, mark it as triggered too (no need for second announcement)
+                    if apollo_also_ready:
+                        ten_env.log_info(
+                            "[THYMIA_PHASE_TRIGGER] Apollo also complete - LLM will receive all 7 metrics from first get_wellness_metrics call. Skipping separate Apollo announcement."
+                        )
+                        self.apollo_trigger_sent = True  # Skip Apollo announcement to avoid interrupting
         elif self.hellos_complete and self.hellos_trigger_sent:
             ten_env.log_debug(
                 "[THYMIA_TRIGGER_CHECK] Hellos trigger already sent previously"
@@ -2351,16 +2363,15 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
             )
 
         # Trigger Apollo if ready and not yet triggered
-        # Space it 5+ seconds after Hellos if both ready at same time
-        # Note: Apollo can go first if it completes first - both announcements will happen
+        # Use consistent 15s spacing between any announcements
         if self.apollo_complete and not self.apollo_trigger_sent:
-            time_since_hellos = (
-                time.time() - self.hellos_last_announcement_time
-                if self.hellos_trigger_sent
-                else 999  # Allow Apollo to go first if Hellos not yet triggered
+            # Check spacing from last announcement (15s minimum between any announcements)
+            time_since_last = time.time() - max(
+                self.hellos_last_announcement_time,
+                self.apollo_last_announcement_time,
             )
 
-            if time_since_hellos >= 5.0:
+            if time_since_last >= 15.0:
                 ten_env.log_info(
                     "[THYMIA_PHASE_TRIGGER] Triggering Apollo announcement (API complete, user silent)"
                 )
@@ -2369,7 +2380,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                 self.apollo_last_announcement_time = time.time()
             else:
                 ten_env.log_debug(
-                    f"[THYMIA_PHASE_TRIGGER] Apollo ready but waiting {5.0 - time_since_hellos:.1f}s after Hellos announcement"
+                    f"[THYMIA_PHASE_TRIGGER] Apollo ready but waiting {15.0 - time_since_last:.1f}s after last announcement"
                 )
         elif self.apollo_complete and self.apollo_trigger_sent:
             ten_env.log_debug(
