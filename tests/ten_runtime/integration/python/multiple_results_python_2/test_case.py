@@ -37,7 +37,11 @@ def test_multiple_results_python_2():
 
     # Launch virtual environment.
     my_env["VIRTUAL_ENV"] = venv_dir
-    my_env["PATH"] = os.path.join(venv_dir, "bin") + os.pathsep + my_env["PATH"]
+    if sys.platform == "win32":
+        venv_bin_dir = os.path.join(venv_dir, "Scripts")
+    else:
+        venv_bin_dir = os.path.join(venv_dir, "bin")
+    my_env["PATH"] = venv_bin_dir + os.pathsep + my_env["PATH"]
 
     app_dir_name = "multiple_results_python_2_app"
     app_root_path = os.path.join(base_path, app_dir_name)
