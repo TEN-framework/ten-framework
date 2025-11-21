@@ -96,7 +96,7 @@ Consultez le <a href="https://github.com/TEN-framework/ten-framework/tree/main/a
 
 <br>
 
-![Image](https://github.com/user-attachments/assets/aa3f2c9c-c82e-412f-8400-06378ba75794)
+![Image](https://github.com/user-attachments/assets/51ab1504-b67c-49d4-8a7a-5582d9b254da)
 
 <strong>Avatars avec synchronisation labiale</strong> — Compatible avec plusieurs fournisseurs d’avatars. La démo met en scène Kei, un personnage animé avec synchronisation labiale Live2D, et proposera bientôt des avatars réalistes de Trulience, HeyGen et Tavus.
 
