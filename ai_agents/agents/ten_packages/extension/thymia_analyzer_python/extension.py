@@ -2001,7 +2001,8 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                                         )
                                         ten_env.log_info(
                                             f"[THYMIA_UNIFIED_POLLER] Hellos metrics: distress={self.latest_results.distress:.2f}, "
-                                            f"stress={self.latest_results.stress:.2f}, burnout={self.latest_results.burnout:.2f}"
+                                            f"stress={self.latest_results.stress:.2f}, burnout={self.latest_results.burnout:.2f}, "
+                                            f"fatigue={self.latest_results.fatigue:.2f}, low_self_esteem={self.latest_results.low_self_esteem:.2f}"
                                         )
                                 elif status in ("COMPLETE_ERROR", "FAILED"):
                                     # API failed - log error details and notify LLM immediately
@@ -2322,11 +2323,12 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
 
         # Trigger Apollo if ready and not yet triggered
         # Space it 5+ seconds after Hellos if both ready at same time
+        # IMPORTANT: Wait for Hellos to be announced first before announcing Apollo
         if self.apollo_complete and not self.apollo_trigger_sent:
             time_since_hellos = (
                 time.time() - self.hellos_last_announcement_time
                 if self.hellos_trigger_sent
-                else 999
+                else 0  # Force wait for Hellos to be announced first
             )
 
             if time_since_hellos >= 5.0:
