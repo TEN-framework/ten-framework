@@ -12,6 +12,7 @@ _portal_target: getting-started/quick-start.cn.md
 **支持的操作系统**：
 
 - Linux (x64)
+- Linux (arm64)
 - macOS Intel (x64)
 - macOS Apple Silicon (arm64)
 
