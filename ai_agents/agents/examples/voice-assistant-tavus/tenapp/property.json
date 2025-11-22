@@ -1,0 +1,91 @@
+{
+  "ten": {
+    "predefined_graphs": [
+      {
+        "name": "voice_assistant_tavus",
+        "auto_start": true,
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "websocket_server",
+              "addon": "websocket_server",
+              "extension_group": "ws",
+              "property": {
+                "port": 8765,
+                "host": "0.0.0.0",
+                "sample_rate": 16000,
+                "channels": 1,
+                "bytes_per_sample": 2
+              }
+            },
+            {
+              "type": "extension",
+              "name": "tavus_control",
+              "addon": "tavus_python",
+              "extension_group": "tavus",
+              "property": {
+                "tavus_api_key": "${env:TAVUS_API_KEY}",
+                "replica_id": "${env:TAVUS_REPLICA_ID}",
+                "conversation_name": "TEN Voice Assistant with Tavus",
+                "max_call_duration": 3600,
+                "enable_recording": false,
+                "language": "en",
+                "auto_create_persona": true,
+                "auto_start_on_boot": true,
+                "persona_name": "TEN Voice Assistant",
+                "system_prompt": "You are a helpful AI voice assistant powered by the TEN framework and Tavus. You help users with various tasks through natural conversation. Be friendly, concise, and helpful. Respond in a conversational tone suitable for voice interaction.",
+                "context": "You are in a real-time video conversation with a user. The user can see your avatar and hear your voice. Provide clear, concise responses suitable for voice interaction.",
+                "enable_perception": false,
+                "perception_model": "raven-0",
+                "enable_smart_turn_detection": true,
+                "llm_provider": "${env:TAVUS_LLM_PROVIDER}",
+                "llm_model": "${env:TAVUS_LLM_MODEL}",
+                "llm_api_key": "${env:TAVUS_LLM_API_KEY}",
+                "llm_base_url": "${env:TAVUS_LLM_BASE_URL|}",
+                "tts_provider": "${env:TAVUS_TTS_PROVIDER|}",
+                "tts_voice_id": "${env:TAVUS_TTS_VOICE_ID|}"
+              }
+            }
+          ],
+          "connections": [
+            {
+              "extension": "websocket_server",
+              "data": [
+                {
+                  "name": "text_data",
+                  "source": [
+                    {
+                      "extension": "tavus_control"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ],
+    "log": {
+      "handlers": [
+        {
+          "matchers": [
+            {
+              "level": "info"
+            }
+          ],
+          "formatter": {
+            "type": "plain",
+            "colored": true
+          },
+          "emitter": {
+            "type": "console",
+            "config": {
+              "stream": "stdout"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

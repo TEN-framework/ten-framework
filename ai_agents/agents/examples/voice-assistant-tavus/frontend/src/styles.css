@@ -1,0 +1,252 @@
+:root {
+  font-family: "Space Grotesk", "Inter", system-ui, -apple-system, sans-serif;
+  line-height: 1.5;
+  color: #f5f6fb;
+  background: #05060a;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.app-shell {
+  min-height: 100vh;
+  padding: 3rem max(2rem, 6vw) 4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  background: radial-gradient(circle at 20% 20%, rgba(116, 94, 255, 0.25), transparent 40%),
+    radial-gradient(circle at 80% 0%, rgba(0, 195, 255, 0.2), transparent 45%),
+    #05060a;
+}
+
+.hero {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+  align-items: center;
+}
+
+.hero h1 {
+  font-size: clamp(2.4rem, 5vw, 3.6rem);
+  line-height: 1.1;
+  margin: 0.3rem 0 1rem;
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  font-size: 0.75rem;
+  color: #82e0ff;
+}
+
+.muted {
+  color: #b8bdca;
+}
+
+.panel {
+  background: rgba(8, 10, 16, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1.5rem;
+  padding: 1.75rem;
+  box-shadow: 0 30px 60px rgba(5, 6, 10, 0.55);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.field input {
+  background: #0e1018;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: inherit;
+  border-radius: 0.9rem;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+}
+
+.field input:focus {
+  outline: none;
+  border-color: #7c5dff;
+  box-shadow: 0 0 0 2px rgba(124, 93, 255, 0.3);
+}
+
+.status-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.status-pill {
+  font-size: 0.85rem;
+  padding: 0.3rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.status-pill.starting,
+.status-pill.stopping {
+  border-color: #ffc266;
+  color: #ffc266;
+}
+
+.status-pill.running {
+  border-color: #6de091;
+  color: #6de091;
+}
+
+.status-pill.error {
+  border-color: #ff7b8a;
+  color: #ff7b8a;
+}
+
+.actions {
+  display: flex;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+
+button {
+  font-size: 1rem;
+  padding: 0.85rem 1.4rem;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  transition: transform 150ms ease, opacity 150ms ease;
+}
+
+button.primary {
+  background: linear-gradient(120deg, #a26dff, #6ab0ff);
+  color: #fff;
+  font-weight: 600;
+}
+
+button.primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+button.ghost {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+}
+
+.details {
+  font-size: 0.9rem;
+  color: #b7bdd0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.content-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.5rem;
+  flex: 1;
+}
+
+.card {
+  background: rgba(8, 10, 16, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1.5rem;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-height: 320px;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.link {
+  color: #81c9ff;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.tavus-frame {
+  width: 100%;
+  min-height: 520px;
+  border: none;
+  border-radius: 1rem;
+  background: #000;
+}
+
+.empty-state {
+  flex: 1;
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 1rem;
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+  text-align: center;
+}
+
+.event-log {
+  border-radius: 1rem;
+  background: rgba(4, 5, 10, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 1rem;
+  max-height: 520px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.event-log article {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 0.9rem;
+  padding: 0.85rem;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.event-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: #c3c9d9;
+  margin-bottom: 0.4rem;
+}
+
+pre {
+  margin: 0;
+  background: rgba(8, 10, 16, 0.9);
+  border-radius: 0.7rem;
+  padding: 0.7rem;
+  font-size: 0.8rem;
+  overflow-x: auto;
+}
+
+@media (max-width: 720px) {
+  .app-shell {
+    padding: 2.5rem 1.5rem;
+  }
+
+  .tavus-frame {
+    min-height: 360px;
+  }
+}
