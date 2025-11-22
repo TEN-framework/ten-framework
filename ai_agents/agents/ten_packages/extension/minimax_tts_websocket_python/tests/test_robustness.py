@@ -25,6 +25,8 @@ from ten_runtime import (
 from ten_ai_base.struct import TTSTextInput
 from minimax_tts_websocket_python.minimax_tts import (
     MinimaxTTSTaskFailedException,
+    EVENT_TTSSentenceEnd,
+    EVENT_TTSResponse,
 )
 
 

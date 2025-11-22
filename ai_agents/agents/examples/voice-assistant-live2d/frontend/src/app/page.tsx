@@ -601,81 +601,82 @@ const characterOptions: CharacterProfile[] = [
       },
     ],
   },
-  {
-    id: "kevin",
-    name: "Kevin the Marmot",
-    path: buildRemoteModelAssetPath("marmot", "L065.model3.json"),
-    preview: buildRemoteModelAssetPath(
-      "marmot",
-      "a0e01b1556549807c52770f1d517fb9.png"
-    ),
-    headline: "Your Snack-Fueled Hype Marmot",
-    description:
-      "Kevin the Marmot keeps spirits high with cozy chatter, snack recs, and solid productivity nudges. Drop in for grounded advice, quick laughs, and the warmest marmot energy on the planet.",
-    quote: "Yo! Kevin the Marmot here. Ready to hustle, snack, or both?",
-    voiceType: "male",
-    mouthConfig: {
-      type: "open",
-      openId: "ParamMouthOpenY",
-      formId: "ParamMouthForm",
-    },
-    backgroundTheme: {
-      baseColor: "#eefbf0",
-      primaryGradient:
-        "linear-gradient(150deg,#ecffe7 0%,#dcf7e4 40%,#c6f0d5 100%)",
-      radialOverlay: {
-        gradient:
-          "radial-gradient(circle at top,#bdf3c8 0%,transparent 64%),radial-gradient(circle at bottom,#d9ffe9 0%,transparent 70%)",
-        opacity: 0.62,
-      },
-      patternOverlay: {
-        image:
-          "repeating-linear-gradient(130deg, rgba(255, 255, 255, 0.32) 0px, rgba(255, 255, 255, 0.32) 3px, transparent 3px, transparent 18px)",
-        opacity: 0.2,
-      },
-      accentOverlay: {
-        image:
-          "repeating-radial-gradient(circle at 18% 22%, rgba(122, 200, 135, 0.32) 0px, rgba(122, 200, 135, 0.32) 12px, transparent 12px, transparent 46px)",
-        opacity: 0.28,
-      },
-    },
-    connectionGreeting: "My name is Kevin the Marmot.",
-    agentGreeting:
-      "My name is Kevin the Marmot! Ready to hustle, snack, or plan something fun together?",
-    floatingElements: kevinFloatingElements,
-    immersiveStage: true,
-    expressions: [
-      { name: "neutral", label: "Relaxed", default: true },
-      { name: "greet", label: "Big Smile", onSpeaking: true },
-      { name: "cheeky", label: "Cheeky" },
-    ],
-    motions: [
-      {
-        name: "idle",
-        label: "Cheerful Idle",
-        group: "Idle",
-        index: 0,
-        autoPlay: true,
-        loop: true,
-        priority: 1,
-      },
-      {
-        name: "bite_one",
-        label: "Snack Bite",
-        group: "Snack",
-        index: 0,
-        onSpeakingStart: true,
-        priority: 2,
-      },
-      {
-        name: "bite_two",
-        label: "Chomp Again",
-        group: "Snack",
-        index: 1,
-        priority: 2,
-      },
-    ],
-  },
+  // Temporarily hidden - Kevin the Marmot has watermark on PNG
+  // {
+  //   id: "kevin",
+  //   name: "Kevin the Marmot",
+  //   path: buildRemoteModelAssetPath("marmot", "L065.model3.json"),
+  //   preview: buildRemoteModelAssetPath(
+  //     "marmot",
+  //     "a0e01b1556549807c52770f1d517fb9.png"
+  //   ),
+  //   headline: "Your Snack-Fueled Hype Marmot",
+  //   description:
+  //     "Kevin the Marmot keeps spirits high with cozy chatter, snack recs, and solid productivity nudges. Drop in for grounded advice, quick laughs, and the warmest marmot energy on the planet.",
+  //   quote: "Yo! Kevin the Marmot here. Ready to hustle, snack, or both?",
+  //   voiceType: "male",
+  //   mouthConfig: {
+  //     type: "open",
+  //     openId: "ParamMouthOpenY",
+  //     formId: "ParamMouthForm",
+  //   },
+  //   backgroundTheme: {
+  //     baseColor: "#eefbf0",
+  //     primaryGradient:
+  //       "linear-gradient(150deg,#ecffe7 0%,#dcf7e4 40%,#c6f0d5 100%)",
+  //     radialOverlay: {
+  //       gradient:
+  //         "radial-gradient(circle at top,#bdf3c8 0%,transparent 64%),radial-gradient(circle at bottom,#d9ffe9 0%,transparent 70%)",
+  //       opacity: 0.62,
+  //     },
+  //     patternOverlay: {
+  //       image:
+  //         "repeating-linear-gradient(130deg, rgba(255, 255, 255, 0.32) 0px, rgba(255, 255, 255, 0.32) 3px, transparent 3px, transparent 18px)",
+  //       opacity: 0.2,
+  //     },
+  //     accentOverlay: {
+  //       image:
+  //         "repeating-radial-gradient(circle at 18% 22%, rgba(122, 200, 135, 0.32) 0px, rgba(122, 200, 135, 0.32) 12px, transparent 12px, transparent 46px)",
+  //       opacity: 0.28,
+  //     },
+  //   },
+  //   connectionGreeting: "My name is Kevin the Marmot.",
+  //   agentGreeting:
+  //     "My name is Kevin the Marmot! Ready to hustle, snack, or plan something fun together?",
+  //   floatingElements: kevinFloatingElements,
+  //   immersiveStage: true,
+  //   expressions: [
+  //     { name: "neutral", label: "Relaxed", default: true },
+  //     { name: "greet", label: "Big Smile", onSpeaking: true },
+  //     { name: "cheeky", label: "Cheeky" },
+  //   ],
+  //   motions: [
+  //     {
+  //       name: "idle",
+  //       label: "Cheerful Idle",
+  //       group: "Idle",
+  //       index: 0,
+  //       autoPlay: true,
+  //       loop: true,
+  //       priority: 1,
+  //     },
+  //     {
+  //       name: "bite_one",
+  //       label: "Snack Bite",
+  //       group: "Snack",
+  //       index: 0,
+  //       onSpeakingStart: true,
+  //       priority: 2,
+  //     },
+  //     {
+  //       name: "bite_two",
+  //       label: "Chomp Again",
+  //       group: "Snack",
+  //       index: 1,
+  //       priority: 2,
+  //     },
+  //   ],
+  // },
   {
     id: "chubbie",
     name: "Chubbie",
