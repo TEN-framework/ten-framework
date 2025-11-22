@@ -51,7 +51,10 @@ class BytedanceASRLLMConfig(BaseModel):
     # Audio Processing
     segment_duration_ms: int = 100  # Audio segment duration in milliseconds
     end_window_size: int = (
-        200  # End window size in milliseconds for voice activity detection
+        800  # End window size in milliseconds for voice activity detection
+    )
+    silence_duration_ms: int = (
+        800  # Silence duration in milliseconds for finalization
     )
 
     # Extension Configuration

@@ -96,7 +96,7 @@ TEN は音声会話型 AI エージェント向けのオープンソースフレ
 
 <br>
 
-![Image](https://github.com/user-attachments/assets/aa3f2c9c-c82e-412f-8400-06378ba75794)
+![Image](https://github.com/user-attachments/assets/51ab1504-b67c-49d4-8a7a-5582d9b254da)
 
 <strong>リップシンク対応アバター</strong> — 複数のアバタープロバイダーに対応。デモでは Live2D のリップシンクを備えたアニメキャラクター Kei を紹介し、今後 Trulience、HeyGen、Tavus のリアルアバターにも対応予定です。
 

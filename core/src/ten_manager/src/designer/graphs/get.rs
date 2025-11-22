@@ -21,7 +21,7 @@ use ten_rust::{
 use crate::designer::{
     common::{get_designer_api_msg_from_pkg, get_designer_api_property_from_pkg},
     graphs::{
-        nodes::{DesignerApi, DesignerGraphNode},
+        nodes::{populate_selector_messages_info, DesignerApi, DesignerGraphNode},
         DesignerGraph, DesignerGraphExposedMessage, DesignerGraphExposedProperty,
         DesignerGraphInfo,
     },
@@ -135,6 +135,18 @@ async fn extract_designer_graph_from_graph_info(
 
     // Resolve subgraph imports
     designer_graph = resolve_subgraph_imports(designer_graph, &graph_info.app_base_dir);
+
+    // Populate selector messages information
+
+    // This function will only be triggered when frontend requests the graph.
+    // (get_graphs_endpoint) Because the 'messages' field of selector nodes is
+    // only for frontend display purpose, and frontend ensures that
+    // get_graphs_endpoint is always called before displaying.
+
+    // So we don't call this function when messages field is supposed to be
+    // modified. (e.g. when creating/updating/deleting a connection, etc.)
+    // Instead, 'messages' field of selector nodes are computed lazily.
+    populate_selector_messages_info(&mut designer_graph, &graph_info.graph.graph);
 
     // Update the api and installation status of the nodes
     for node in &mut designer_graph.nodes {
