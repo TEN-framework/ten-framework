@@ -91,7 +91,16 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
             )
         except Exception as e:
             ten_env.log_error(f"on_init failed: {traceback.format_exc()}")
-            await self._send_tts_error(str(e))
+            error = ModuleError(
+                message=str(e),
+                module=ModuleType.TTS,
+                code=ModuleErrorCode.FATAL_ERROR.value,
+                vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
+            )
+            await self.send_tts_error(
+                request_id="",
+                error=error,
+            )
 
     async def on_start(self, ten_env: AsyncTenEnv) -> None:
         await super().on_start(ten_env)
@@ -123,7 +132,12 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
     async def cancel_tts(self) -> None:
         """
         Override cancel_tts to implement TTS-specific cancellation logic.
-        This is called when a flush request is received.
+        This is called when a flush request is received for the current request.
+
+        Responsibilities:
+        1. Cancel vendor-specific TTS operations
+        2. Send audio_end event with actual metrics (via _handle_tts_audio_end)
+        3. Call finish_request to complete state transition (via _handle_tts_audio_end)
         """
         self.ten_env.log_info(
             f"cancel_tts called, current_request_id: {self.current_request_id}"
@@ -137,6 +151,7 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
             self.client.cancel()
 
         # Handle audio end if there's an active request
+        # This will send audio_end and call finish_request
         if self.request_start_ts and self.current_request_id:
             await self._handle_tts_audio_end(TTSAudioEndReason.INTERRUPTED)
             self.current_request_finished = True
@@ -189,7 +204,7 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
                 await self._manage_pcm_writers(t.request_id)
 
             elif self.current_request_finished:
-                error_msg = f"Received a message for a finished request_id '{t.request_id}' with text_input_end=False."
+                error_msg = f"Received a message for a finished request_id '{t.request_id}' with text_input_end={t.text_input_end}."
                 self.ten_env.log_error(error_msg)
                 return
 
@@ -208,7 +223,6 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
                     f"KEYPOINT skip empty text, request_id: {t.request_id}"
                 )
                 await self._handle_tts_audio_end()
-                self.current_request_id = None
                 return
 
             # Start audio synthesis (returns immediately)
@@ -238,22 +252,46 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
 
         except WebSocketConnectionClosedException as e:
             self.ten_env.log_error(f"WebSocket connection closed, {e}")
-            await self._send_tts_error(
-                str(e),
+            error = ModuleError(
+                message=str(e),
+                module=ModuleType.TTS,
                 code=ModuleErrorCode.NON_FATAL_ERROR.value,
                 vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
             )
+            # Only finish request if we've received text_input_end (request is complete)
+            if self.current_request_finished:
+                await self._handle_tts_audio_end(
+                    reason=TTSAudioEndReason.ERROR, error=error
+                )
+            else:
+                # Just send error, request might continue with more text chunks
+                await self.send_tts_error(
+                    request_id=self.current_request_id or "",
+                    error=error,
+                )
             self.client.cancel()
 
         except Exception as e:
             self.ten_env.log_error(
                 f"Error in request_tts: {traceback.format_exc()}. text: {t.text}, current_request_id: {self.current_request_id}"
             )
-            await self._send_tts_error(
-                str(e),
+            error = ModuleError(
+                message=str(e),
+                module=ModuleType.TTS,
                 code=ModuleErrorCode.FATAL_ERROR.value,
                 vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
             )
+            # Only finish request if we've received text_input_end (request is complete)
+            if self.current_request_finished:
+                await self._handle_tts_audio_end(
+                    reason=TTSAudioEndReason.ERROR, error=error
+                )
+            else:
+                # Just send error, request might continue with more text chunks
+                await self.send_tts_error(
+                    request_id=self.current_request_id or "",
+                    error=error,
+                )
             self.client.cancel()
 
     async def _process_audio_data(self) -> None:
@@ -325,13 +363,26 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
                             f"vendor_error: {data}",
                             category=LOG_CATEGORY_VENDOR,
                         )
-                        await self._send_tts_error(
-                            str(data),
+                        error = ModuleError(
+                            message=str(data),
+                            module=ModuleType.TTS,
                             code=ModuleErrorCode.NON_FATAL_ERROR.value,
                             vendor_info=ModuleErrorVendorInfo(
                                 vendor=self.vendor()
                             ),
                         )
+                        # Only finish request if we've received text_input_end
+                        if self.current_request_finished:
+                            await self._handle_tts_audio_end(
+                                reason=TTSAudioEndReason.ERROR,
+                                error=error,
+                            )
+                        else:
+                            # Just send error, request might continue
+                            await self.send_tts_error(
+                                request_id=self.current_request_id or "",
+                                error=error,
+                            )
 
                     elif message_type == MESSAGE_TYPE_CMD_CANCEL:
                         self.ten_env.log_info(
@@ -353,22 +404,41 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
                     self.ten_env.log_error(
                         "Audio consumer loop breaking due to exception"
                     )
-                    # Send an error message to notify the system of the failure
-                    await self._send_tts_error(
-                        str(e),
-                        code=ModuleErrorCode.NON_FATAL_ERROR.value,
-                        vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
-                    )
+                    # Finish request with error if there's an active request
+                    if (
+                        self.current_request_id
+                        and not self.current_request_finished
+                    ):
+                        error = ModuleError(
+                            message=str(e),
+                            module=ModuleType.TTS,
+                            code=ModuleErrorCode.NON_FATAL_ERROR.value,
+                            vendor_info=ModuleErrorVendorInfo(
+                                vendor=self.vendor()
+                            ),
+                        )
+                        await self._handle_tts_audio_end(
+                            reason=TTSAudioEndReason.ERROR,
+                            error=error,
+                        )
+                        self.current_request_finished = True
                     # Break loop on error, will reconnect on next synthesize_audio
                     break
 
         except Exception as e:
             self.ten_env.log_error(f"Fatal error in audio consumer: {e}")
-            await self._send_tts_error(
-                str(e),
-                code=ModuleErrorCode.NON_FATAL_ERROR.value,
-                vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
-            )
+            # Finish request with error if there's an active request
+            if self.current_request_id and not self.current_request_finished:
+                error = ModuleError(
+                    message=str(e),
+                    module=ModuleType.TTS,
+                    code=ModuleErrorCode.NON_FATAL_ERROR.value,
+                    vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
+                )
+                await self._handle_tts_audio_end(
+                    reason=TTSAudioEndReason.ERROR, error=error
+                )
+                self.current_request_finished = True
 
     def synthesize_audio_sample_rate(self) -> int:
         """
@@ -485,6 +555,7 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
     async def _handle_tts_audio_end(
         self,
         reason: TTSAudioEndReason = TTSAudioEndReason.REQUEST_END,
+        error: ModuleError | None = None,
     ) -> None:
         """
         Handle TTS audio end processing.
@@ -492,8 +563,9 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
         This method:
         1. Calculates total audio duration
         2. Calculates request event interval
-        3. Sends TTS audio end event
-        4. Logs the operation
+        3. Flushes PCMWriter for current request
+        4. Sends TTS audio end event
+        5. Logs the operation
         """
         if self.request_start_ts:
             self.request_total_audio_duration_ms = (
@@ -505,6 +577,21 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
                 (datetime.now() - self.request_start_ts).total_seconds() * 1000
             )
 
+            # Flush PCMWriter for current request to ensure dump file is written
+            if (
+                self.current_request_id
+                and self.current_request_id in self.recorder_map
+            ):
+                try:
+                    await self.recorder_map[self.current_request_id].flush()
+                    self.ten_env.log_info(
+                        f"Flushed PCMWriter for request_id: {self.current_request_id}"
+                    )
+                except Exception as e:
+                    self.ten_env.log_error(
+                        f"Error flushing PCMWriter for request_id {self.current_request_id}: {e}"
+                    )
+
             # Send TTS audio end event
             await self.send_tts_audio_end(
                 request_id=self.current_request_id,
@@ -514,6 +601,12 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
             )
             # Send usage metrics
             await self.send_usage_metrics(self.current_request_id)
+            # Finish request to complete state transition
+            await self.finish_request(
+                request_id=self.current_request_id,
+                reason=reason,
+                error=error,
+            )
 
             self.current_request_id = None
             self.is_first_message_of_request = False
@@ -557,35 +650,6 @@ class CosyTTSExtension(AsyncTTS2BaseExtension):
             self.ten_env.log_info(
                 f"Created PCMWriter for request_id: {request_id}, file: {dump_file_path}"
             )
-
-    async def _send_tts_error(
-        self,
-        message: str,
-        vendor_code: str | None = None,
-        vendor_message: str | None = None,
-        vendor_info: ModuleErrorVendorInfo | None = None,
-        code: int = ModuleErrorCode.FATAL_ERROR.value,
-        request_id: str | None = None,
-    ) -> None:
-        """
-        Send a TTS error message.
-        """
-        if vendor_code is not None:
-            vendor_info = ModuleErrorVendorInfo(
-                vendor=self.vendor(),
-                code=vendor_code,
-                message=vendor_message or "",
-            )
-
-        await self.send_tts_error(
-            request_id or self.current_request_id,
-            ModuleError(
-                message=message,
-                module=ModuleType.TTS,
-                code=code,
-                vendor_info=vendor_info,
-            ),
-        )
 
     async def _write_audio_to_dump_file(self, audio_chunk: bytes) -> None:
         """
