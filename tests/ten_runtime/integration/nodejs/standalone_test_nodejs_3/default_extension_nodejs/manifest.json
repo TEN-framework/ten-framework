@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "default_extension_nodejs",
-  "version": "0.11.33",
+  "version": "0.11.34",
   "tags": [
     "nodejs"
   ],
@@ -9,7 +9,7 @@
     {
       "type": "system",
       "name": "ten_runtime_nodejs",
-      "version": "0.11.33"
+      "version": "0.11.34"
     }
   ],
   "package": {
