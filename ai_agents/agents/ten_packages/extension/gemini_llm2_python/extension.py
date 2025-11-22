@@ -6,7 +6,7 @@
 #
 #
 import asyncio
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Optional
 
 from ten_ai_base.llm2 import AsyncLLM2BaseExtension
 from ten_ai_base.struct import (
@@ -28,7 +28,7 @@ class GeminiLLM2Extension(AsyncLLM2BaseExtension):
         self.config = None
         self.client = None
         self.sentence_fragment = ""
-        self.tool_task_future: asyncio.Future | None = None
+        self.tool_task_future: Optional[asyncio.Future] = None
         self.users_count = 0
         self.last_reasoning_ts = 0
 
@@ -51,7 +51,8 @@ class GeminiLLM2Extension(AsyncLLM2BaseExtension):
         try:
             self.client = GeminiChatAPI(async_ten_env, self.config)
             async_ten_env.log_info(
-                f"initialized with max_tokens: {self.config.max_tokens}, model: {self.config.model}"
+                f"initialized with max_tokens: {self.config.max_tokens}, "
+                f"model: {self.config.model}"
             )
         except Exception as err:
             async_ten_env.log_info(f"Failed to initialize GeminiChatAPI: {err}")

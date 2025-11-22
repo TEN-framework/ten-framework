@@ -51,7 +51,8 @@ class GeminiChatAPI:
         self.config = config
         self.ten_env = ten_env
         ten_env.log_info(
-            f"GeminiChatAPI initialized with model: {config.model} (base_url={config.base_url})"
+            f"GeminiChatAPI initialized with model: {config.model} "
+            f"(base_url={config.base_url})"
         )
         self.http_client = httpx.AsyncClient(
             base_url=self.config.base_url,
@@ -60,7 +61,8 @@ class GeminiChatAPI:
         self._request_headers = {}
         self._request_params = {}
         if self.config.api_key:
-            # OpenAI-compatible endpoint expects Bearer token in Authorization header
+            # OpenAI-compatible endpoint expects Bearer token in
+            # Authorization header
             self._request_headers["Authorization"] = (
                 f"Bearer {self.config.api_key}"
             )
@@ -81,14 +83,14 @@ class GeminiChatAPI:
         }
 
         for param in tool.parameters:
-            json_dict["function"]["parameters"]["properties"][param.name] = {
+            properties = json_dict["function"]["parameters"]["properties"]
+            properties[param.name] = {
                 "type": param.type,
                 "description": param.description,
             }
             if param.required:
-                json_dict["function"]["parameters"]["required"].append(
-                    param.name
-                )
+                required = json_dict["function"]["parameters"]["required"]
+                required.append(param.name)
 
         return json_dict
 
@@ -198,12 +200,15 @@ class GeminiChatAPI:
                 extra_hint = ""
                 if response.status_code == 404:
                     extra_hint = (
-                        " (check that the model exists at the configured base_url; "
-                        "Vertex users may need a project-specific endpoint)"
+                        " (check that the model exists at the configured "
+                        "base_url; Vertex users may need a project-specific "
+                        "endpoint)"
                     )
-                self.ten_env.log_error(
-                    f"Gemini API error: {response.status_code} - {error_text}{extra_hint}"
+                error_msg = (
+                    f"Gemini API error: {response.status_code} - "
+                    f"{error_text}{extra_hint}"
                 )
+                self.ten_env.log_error(error_msg)
                 raise RuntimeError(
                     f"Gemini API error: {response.status_code} - {error_text}"
                 )
@@ -218,8 +223,9 @@ class GeminiChatAPI:
                             chunk_data = json.loads(line[6:])
                             if chunk_data.get("choices"):
                                 choice = chunk_data["choices"][0]
-                                if choice.get("delta", {}).get("content"):
-                                    content = choice["delta"]["content"]
+                                delta = choice.get("delta", {})
+                                if delta.get("content"):
+                                    content = delta["content"]
                                     yield LLMResponseMessageDelta(
                                         response_id=chunk_data.get("id", ""),
                                         role="assistant",
@@ -227,21 +233,18 @@ class GeminiChatAPI:
                                         created=chunk_data.get("created", 0),
                                     )
                                 # Check for tool calls
-                                if choice.get("delta", {}).get("tool_calls"):
-                                    for tool_call in choice["delta"][
-                                        "tool_calls"
-                                    ]:
+                                if delta.get("tool_calls"):
+                                    for tool_call in delta["tool_calls"]:
+                                        function = tool_call.get("function", {})
                                         yield LLMResponseToolCall(
                                             response_id=chunk_data.get(
                                                 "id", ""
                                             ),
                                             call_id=tool_call.get("id", ""),
-                                            name=tool_call.get(
-                                                "function", {}
-                                            ).get("name", ""),
-                                            arguments=tool_call.get(
-                                                "function", {}
-                                            ).get("arguments", ""),
+                                            name=function.get("name", ""),
+                                            arguments=function.get(
+                                                "arguments", ""
+                                            ),
                                         )
                         except json.JSONDecodeError:
                             self.ten_env.log_debug(
