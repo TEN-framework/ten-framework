@@ -12,7 +12,10 @@ import {
   Position,
 } from "@xyflow/react";
 import * as React from "react";
-import type { TCustomEdge } from "@/types/flow";
+import { ECustomNodeType, type TCustomEdge } from "@/types/flow";
+
+const PARTICLE_COUNT = 6;
+const ANIMATE_DURATION = 6;
 
 export function CustomEdge({
   sourceX,
@@ -37,34 +40,44 @@ export function CustomEdge({
   const isNames = React.useMemo(() => {
     return data?.names?.length && data?.names?.length > 0;
   }, [data?.names?.length]);
+  const is2Selector = React.useMemo(() => {
+    return data?.target?.type === ECustomNodeType.SELECTOR;
+  }, [data?.target?.type]);
 
   return (
     <>
       <BaseEdge
         id={id}
         path={path}
-        style={{ ...style, strokeWidth: isNames ? 3 : 2 }}
+        style={{
+          ...style,
+          strokeWidth: isNames ? 3 : 2,
+          ...(is2Selector && {
+            strokeDasharray: "5,5",
+          }),
+        }}
         markerEnd={markerEnd}
       />
 
-      {selected && (
-        <path
-          id={id}
-          d={path}
-          fill="none"
-          strokeDasharray="5,5"
-          stroke="url(#edge-gradient)"
-          strokeWidth={isNames ? 3 : 2}
-          opacity="0.75"
-        >
-          <animate
-            attributeName="stroke-dashoffset"
-            values="100;0"
-            dur="0.75s"
-            repeatCount="indefinite"
-          />
-        </path>
-      )}
+      {selected &&
+        [...Array(PARTICLE_COUNT)].map((_, i) => (
+          <ellipse
+            key={`particle-${i}-${ANIMATE_DURATION}`}
+            rx="5"
+            ry="1.2"
+            fill="white"
+          >
+            <animateMotion
+              begin={`${i * (ANIMATE_DURATION / PARTICLE_COUNT)}s`}
+              dur={`${ANIMATE_DURATION}s`}
+              repeatCount="indefinite"
+              rotate="auto"
+              path={path}
+              calcMode="spline"
+              keySplines="0.42, 0, 0.58, 1.0"
+            />
+          </ellipse>
+        ))}
     </>
   );
 }
