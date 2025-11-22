@@ -31,9 +31,9 @@ jobs:
           - runs-on: ubuntu-22.04
             platform_name: "Linux x64"
             arch: "x64"
-          # - runs-on: ubuntu-22.04-arm
-          #   platform_name: "Linux ARM64"
-          #   arch: "arm64"
+          - runs-on: ubuntu-22.04-arm
+            platform_name: "Linux ARM64"
+            arch: "arm64"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -227,6 +227,29 @@ jobs:
 
           echo ""
           echo "✓ Build verification completed"
+
+      - name: Check nodejs_addon_loader manifest
+        run: |
+          echo "================================================"
+          echo "Checking nodejs_addon_loader manifest.json"
+          echo "================================================"
+
+          cd /tmp/transcriber_demo
+
+          if [ -f "ten_packages/addon_loader/nodejs_addon_loader/manifest.json" ]; then
+            echo "✓ nodejs_addon_loader manifest.json exists"
+            echo ""
+            echo "Content of manifest.json:"
+            cat ten_packages/addon_loader/nodejs_addon_loader/manifest.json
+          else
+            echo "❌ WARNING: nodejs_addon_loader manifest.json not found"
+            echo "Listing ten_packages directory structure:"
+            ls -la ten_packages/ || echo "ten_packages directory does not exist"
+            if [ -d "ten_packages/addon_loader" ]; then
+              echo "Contents of ten_packages/addon_loader:"
+              ls -la ten_packages/addon_loader/
+            fi
+          fi
 
       - name: Run app with tman
         run: |
