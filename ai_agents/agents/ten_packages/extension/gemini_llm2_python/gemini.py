@@ -61,7 +61,9 @@ class GeminiChatAPI:
         self._request_params = {}
         if self.config.api_key:
             # OpenAI-compatible endpoint expects Bearer token in Authorization header
-            self._request_headers["Authorization"] = f"Bearer {self.config.api_key}"
+            self._request_headers["Authorization"] = (
+                f"Bearer {self.config.api_key}"
+            )
 
     def _convert_tools_to_dict(self, tool: LLMToolMetadata):
         """Convert LLMToolMetadata to Gemini function definition format."""
@@ -179,7 +181,9 @@ class GeminiChatAPI:
                     self.ten_env.log_debug(f"set gemini param: {key} = {value}")
                     req[key] = value
 
-            self.ten_env.log_info(f"Requesting chat completions with model: {self.config.model}")
+            self.ten_env.log_info(
+                f"Requesting chat completions with model: {self.config.model}"
+            )
 
             # Make the API request
             response = await self.http_client.post(
@@ -224,15 +228,25 @@ class GeminiChatAPI:
                                     )
                                 # Check for tool calls
                                 if choice.get("delta", {}).get("tool_calls"):
-                                    for tool_call in choice["delta"]["tool_calls"]:
+                                    for tool_call in choice["delta"][
+                                        "tool_calls"
+                                    ]:
                                         yield LLMResponseToolCall(
-                                            response_id=chunk_data.get("id", ""),
+                                            response_id=chunk_data.get(
+                                                "id", ""
+                                            ),
                                             call_id=tool_call.get("id", ""),
-                                            name=tool_call.get("function", {}).get("name", ""),
-                                            arguments=tool_call.get("function", {}).get("arguments", ""),
+                                            name=tool_call.get(
+                                                "function", {}
+                                            ).get("name", ""),
+                                            arguments=tool_call.get(
+                                                "function", {}
+                                            ).get("arguments", ""),
                                         )
                         except json.JSONDecodeError:
-                            self.ten_env.log_debug(f"Could not parse line: {line}")
+                            self.ten_env.log_debug(
+                                f"Could not parse line: {line}"
+                            )
                             continue
 
                 # Send completion message
