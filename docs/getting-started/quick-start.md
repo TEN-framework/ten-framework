@@ -12,6 +12,7 @@ _portal_target: getting-started/quick-start.md
 **Supported Operating Systems**:
 
 - Linux (x64)
+- Linux (arm64)
 - macOS Intel (x64)
 - macOS Apple Silicon (arm64)
 
