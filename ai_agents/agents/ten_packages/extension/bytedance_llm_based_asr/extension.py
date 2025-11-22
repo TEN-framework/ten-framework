@@ -144,6 +144,7 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
                 auth_method=self.config.auth_method,
                 config=self.config,
                 ten_env=self.ten_env,
+                audio_timeline=self.audio_timeline,
             )
 
             # Set up callbacks
@@ -267,7 +268,6 @@ class BytedanceASRLLMExtension(AsyncASRBaseExtension):
             )
 
             await self.client.finalize()
-            # Don't send finalize end signal here - wait for final result
         except Exception as e:
             self.ten_env.log_error(f"Error finalizing session: {e}")
 

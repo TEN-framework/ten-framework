@@ -82,9 +82,6 @@
       "path": "../../../ten_packages/extension/openai_llm2_python"
     },
     {
-      "path": "../../../ten_packages/extension/gemini_llm2_python"
-    },
-    {
       "path": "../../../ten_packages/extension/azure_tts_python"
     },
     {

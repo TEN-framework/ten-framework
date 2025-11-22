@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "webrtc_vad_cpp",
-  "version": "0.11.32",
+  "version": "0.11.33",
   "display_name": {
     "locales": {
       "en-US": {
@@ -68,11 +68,23 @@
   "scripts": {
     "test": "bin/webrtc_vad_cpp_test"
   },
+  "package": {
+    "include": [
+      "docs/**",
+      "src/**",
+      "tests/**",
+      "third_party/**",
+      "BUILD.gn",
+      "LICENSE",
+      "manifest.json",
+      "property.json"
+    ]
+  },
   "dependencies": [
     {
       "type": "system",
       "name": "ten_runtime",
-      "version": "0.11.32"
+      "version": "0.11.33"
     }
   ],
   "dev_dependencies": [

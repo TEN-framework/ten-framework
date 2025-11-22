@@ -96,7 +96,7 @@ TEN 是一个面向语音对话 AI 代理的开源框架。
 
 <br>
 
-![Image](https://github.com/user-attachments/assets/aa3f2c9c-c82e-412f-8400-06378ba75794)
+![Image](https://github.com/user-attachments/assets/51ab1504-b67c-49d4-8a7a-5582d9b254da)
 
 <strong>唇形同步头像</strong> —— 适配多个头像供应商，演示中包含 Live2D 唇形同步的动漫角色 Kei，并即将支持 Trulience、HeyGen、Tavus 等写实头像。
 
