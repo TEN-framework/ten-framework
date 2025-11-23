@@ -96,7 +96,7 @@ Consulta il <a href="https://github.com/TEN-framework/ten-framework/tree/main/ai
 
 <br>
 
-![Image](https://github.com/user-attachments/assets/aa3f2c9c-c82e-412f-8400-06378ba75794)
+![Image](https://github.com/user-attachments/assets/51ab1504-b67c-49d4-8a7a-5582d9b254da)
 
 <strong>Avatar con lip sync</strong> — Supporta diversi provider di avatar. La demo mostra Kei, un personaggio anime con sincronizzazione labiale Live2D, e presto includerà avatar realistici di Trulience, HeyGen e Tavus.
 

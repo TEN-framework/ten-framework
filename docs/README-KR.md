@@ -96,7 +96,7 @@ TEN은 음성 대화형 AI 에이전트를 위한 오픈소스 프레임워크�
 
 <br>
 
-![Image](https://github.com/user-attachments/assets/aa3f2c9c-c82e-412f-8400-06378ba75794)
+![Image](https://github.com/user-attachments/assets/51ab1504-b67c-49d4-8a7a-5582d9b254da)
 
 <strong>립싱크 아바타</strong> — 다양한 아바타 공급업체를 지원합니다. 데모에서는 Live2D 립싱크를 갖춘 애니메이션 캐릭터 Kei를 소개하며, 곧 Trulience, HeyGen, Tavus의 실사 아바타도 지원할 예정입니다.
 
