@@ -17,8 +17,6 @@
     "audio_out": true,
     "vad_start_sensitivity": "low",
     "vad_end_sensitivity": "low",
-    "vad_prefix_padding_ms": 500,
-    "vad_silence_duration_ms": 800,
     "audio_chunk_bytes": 4096,
     "dump": false,
     "dump_path": "",
