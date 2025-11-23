@@ -168,12 +168,18 @@ class GeminiRealtime2Extension(AsyncMLLMBaseExtension):
 
         if self.config.api_key != "":
             self.client = genai.Client(api_key=self.config.api_key)
-        elif os.environ.get("GEMINI_API_KEY") or (
+        elif os.environ.get("GEMINI_API_KEY"):
+            self.client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
+        elif (
             os.environ.get("GOOGLE_GENAI_USE_VERTEXAI")
             and os.environ.get("GOOGLE_CLOUD_PROJECT")
             and os.environ.get("GOOGLE_CLOUD_LOCATION")
         ):
-            self.client = genai.Client()
+            self.client = genai.Client(
+                vertexai=True,
+                project=os.environ.get("GOOGLE_CLOUD_PROJECT"),
+                location=os.environ.get("GOOGLE_CLOUD_LOCATION"),
+            )
         else:
             ten_env.log_error("api_key is required")
             raise ValueError("api_key is required")
@@ -543,7 +549,9 @@ class GeminiRealtime2Extension(AsyncMLLMBaseExtension):
 
         # Build realtime config to match ai_studio_code.py
         # Simple config with turn_coverage only - no VAD customization
-        realtime_cfg = RealtimeInputConfig(turn_coverage="TURN_INCLUDES_ALL_INPUT")
+        realtime_cfg = RealtimeInputConfig(
+            turn_coverage="TURN_INCLUDES_ALL_INPUT"
+        )
 
         cfg = LiveConnectConfig(
             response_modalities=(
