@@ -5,16 +5,13 @@
 # Copyright (c) 2024 Agora IO. All rights reserved.
 #
 #
-from collections import defaultdict
 from dataclasses import dataclass, field
-from enum import Enum
 import json
 from typing import AsyncGenerator, List
 from pydantic import BaseModel
 import httpx
 
 from ten_ai_base.struct import (
-    ImageContent,
     LLMMessageContent,
     LLMMessageFunctionCall,
     LLMMessageFunctionCallOutput,
