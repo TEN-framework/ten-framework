@@ -110,7 +110,7 @@ class GeminiRealtimeConfig(BaseModel):
     dump_path: str = ""
 
     # Realtime input buffer
-    audio_chunk_bytes: int = 4096
+    audio_chunk_bytes: int = 1024
 
 
 # ------------------------------
@@ -541,55 +541,9 @@ class GeminiRealtime2Extension(AsyncMLLMBaseExtension):
             else []
         )
 
-        # Build realtime config with optional VAD settings
-        # Only include VAD sensitivity if explicitly configured (not "default")
-        realtime_cfg_params = {"turn_coverage": "TURN_INCLUDES_ALL_INPUT"}
-
-        # Only add VAD settings if explicitly configured (not "default")
-        needs_vad = (
-            self.config.vad_start_sensitivity != "default"
-            or self.config.vad_end_sensitivity != "default"
-            or self.config.vad_prefix_padding_ms is not None
-            or self.config.vad_silence_duration_ms is not None
-        )
-
-        if needs_vad:
-            vad_params = {}
-
-            if self.config.vad_start_sensitivity != "default":
-                start_sens_map = {
-                    "low": StartSensitivity.START_SENSITIVITY_LOW,
-                    "high": StartSensitivity.START_SENSITIVITY_HIGH,
-                }
-                vad_params["start_of_speech_sensitivity"] = start_sens_map[
-                    self.config.vad_start_sensitivity
-                ]
-
-            if self.config.vad_end_sensitivity != "default":
-                end_sens_map = {
-                    "low": EndSensitivity.END_SENSITIVITY_LOW,
-                    "high": EndSensitivity.END_SENSITIVITY_HIGH,
-                }
-                vad_params["end_of_speech_sensitivity"] = end_sens_map[
-                    self.config.vad_end_sensitivity
-                ]
-
-            if self.config.vad_prefix_padding_ms is not None:
-                vad_params["prefix_padding_ms"] = (
-                    self.config.vad_prefix_padding_ms
-                )
-
-            if self.config.vad_silence_duration_ms is not None:
-                vad_params["silence_duration_ms"] = (
-                    self.config.vad_silence_duration_ms
-                )
-
-            if vad_params:
-                realtime_cfg_params["automatic_activity_detection"] = (
-                    AutomaticActivityDetection(**vad_params)
-                )
-
-        realtime_cfg = RealtimeInputConfig(**realtime_cfg_params)
+        # Build realtime config to match ai_studio_code.py
+        # Simple config with turn_coverage only - no VAD customization
+        realtime_cfg = RealtimeInputConfig(turn_coverage="TURN_INCLUDES_ALL_INPUT")
 
         cfg = LiveConnectConfig(
             response_modalities=(

@@ -81,18 +81,6 @@
         "proactive_audio": {
           "type": "bool"
         },
-        "start_of_speech_sensitivity": {
-          "type": "string"
-        },
-        "end_of_speech_sensitivity": {
-          "type": "string"
-        },
-        "prefix_padding_ms": {
-          "type": "int32"
-        },
-        "silence_duration_ms": {
-          "type": "int32"
-        },
         "turn_coverage": {
           "type": "string"
         },
