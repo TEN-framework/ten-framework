@@ -254,6 +254,9 @@ class GoogleTTS:
                             yield response.audio_content, EVENT_TTS_RESPONSE, ttfb_ms
                             # Reset ttfb_ms after first chunk
                             ttfb_ms = None
+                        
+                        # Yield control to event loop to allow on_data to process flush messages
+                        await asyncio.sleep(0)
                 except Exception as e:
                     self.ten_env.log_error(
                         f"Error processing streaming responses: {e}"

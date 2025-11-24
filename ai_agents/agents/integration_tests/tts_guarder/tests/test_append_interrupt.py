@@ -242,6 +242,7 @@ class AppendInterruptTester(AsyncExtensionTester):
         self, ten_env: AsyncTenEnvTester, error_message: str
     ) -> None:
         """Stop test with error message."""
+        ten_env.log_error(error_message)
         ten_env.stop_test(
             TenError.create(TenErrorCode.ErrorCodeGeneric, error_message)
         )
