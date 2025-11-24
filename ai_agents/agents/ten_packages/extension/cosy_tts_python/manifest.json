@@ -1,11 +1,7 @@
 {
   "type": "extension",
   "name": "cosy_tts_python",
-<<<<<<< HEAD
   "version": "0.4.0",
-=======
-  "version": "0.3.5",
->>>>>>> edcf491b3 (feat: update base ver)
   "dependencies": [
     {
       "type": "system",
@@ -15,7 +11,7 @@
     {
       "type": "system",
       "name": "ten_ai_base",
-      "version": "0.7.23-rc1"
+      "version": "=0.7.22"
     }
   ],
   "package": {
