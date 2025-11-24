@@ -224,7 +224,12 @@ def test_sequential_requests_state_machine(MockElevenLabsTTS2Client):
                     audio_chunk = (
                         b"mock_audio_data_" + str(self.chunks_sent).encode()
                     )
-                    return audio_chunk, False, self.request_id, 123 if self.chunks_sent == 1 else None
+                    return (
+                        audio_chunk,
+                        False,
+                        self.request_id,
+                        123 if self.chunks_sent == 1 else None,
+                    )
                 else:
                     # Signal request completion
                     return b"", True, self.request_id, None
@@ -238,7 +243,9 @@ def test_sequential_requests_state_machine(MockElevenLabsTTS2Client):
             """Populate response queue with audio data for a specific session."""
             await asyncio.sleep(0.01)  # Small delay to let the extension start
             while True:
-                audio_data, isFinal, request_id, ttfb_ms = await session.get_audio_data()
+                audio_data, isFinal, request_id, ttfb_ms = (
+                    await session.get_audio_data()
+                )
                 await queue.put((audio_data, isFinal, request_id, ttfb_ms))
                 if isFinal:
                     break
@@ -257,11 +264,13 @@ def test_sequential_requests_state_machine(MockElevenLabsTTS2Client):
             # Create new session for this request
             session = StateMachineStreamer.Session(request_id)
             self.current_session = session
-            
+
             # Start populating queue in background for this session
             queue = response_queue_ref["queue"]
             if queue:
-                asyncio.create_task(self.populate_queue_for_session(session, queue))
+                asyncio.create_task(
+                    self.populate_queue_for_session(session, queue)
+                )
 
     streamer = StateMachineStreamer()
     mock_synthesizer.send_text = streamer.send_text
@@ -283,9 +292,11 @@ def test_sequential_requests_state_machine(MockElevenLabsTTS2Client):
         )
         response_queue_ref["queue"] = mock_instance.response_msgs
         mock_instance.synthesizer = mock_synthesizer
+
         # Mock client.send_text to call synthesizer.send_text
         async def mock_client_send_text(text_data):
             await mock_synthesizer.send_text(text_data)
+
         mock_instance.send_text = mock_client_send_text
         return mock_instance
 
@@ -346,7 +357,9 @@ def test_request_state_transitions(MockElevenLabsTTS2Client):
     mock_synthesizer.websocket_task = None
 
     # Simple streamer for single request
-    response_queue_ref_simple = {"queue": None}  # Use dict to allow late binding
+    response_queue_ref_simple = {
+        "queue": None
+    }  # Use dict to allow late binding
 
     class SimpleStreamer:
         class Session:
@@ -372,7 +385,9 @@ def test_request_state_transitions(MockElevenLabsTTS2Client):
             """Populate response queue with audio data for a specific session."""
             await asyncio.sleep(0.01)  # Small delay to let the extension start
             while True:
-                audio_data, isFinal, request_id, ttfb_ms = await session.get_audio_data()
+                audio_data, isFinal, request_id, ttfb_ms = (
+                    await session.get_audio_data()
+                )
                 await queue.put((audio_data, isFinal, request_id, ttfb_ms))
                 if isFinal:
                     break
@@ -383,7 +398,9 @@ def test_request_state_transitions(MockElevenLabsTTS2Client):
             # Start populating queue in background
             queue = response_queue_ref_simple["queue"]
             if queue:
-                asyncio.create_task(self.populate_queue_for_session(session, queue))
+                asyncio.create_task(
+                    self.populate_queue_for_session(session, queue)
+                )
 
     streamer = SimpleStreamer()
     mock_synthesizer.send_text = streamer.send_text
@@ -405,9 +422,11 @@ def test_request_state_transitions(MockElevenLabsTTS2Client):
         )
         response_queue_ref_simple["queue"] = mock_instance.response_msgs
         mock_instance.synthesizer = mock_synthesizer
+
         # Mock client.send_text to call synthesizer.send_text
         async def mock_client_send_text(text_data):
             await mock_synthesizer.send_text(text_data)
+
         mock_instance.send_text = mock_client_send_text
         return mock_instance
 
@@ -461,4 +480,3 @@ if __name__ == "__main__":
     # Run tests
     test_sequential_requests_state_machine()
     test_request_state_transitions()
-
