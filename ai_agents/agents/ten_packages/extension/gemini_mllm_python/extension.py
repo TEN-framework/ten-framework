@@ -1,3 +1,9 @@
+#
+# Agora Real Time Engagement
+# Gemini Realtime MLLM — aligned to OpenAIRealtime2Extension / StepFunRealtime2Extension
+# Created by Wei Hu in 2024-08. Refactor by Roei Bracha in 2025-11
+#
+
 import asyncio
 import json
 import os
