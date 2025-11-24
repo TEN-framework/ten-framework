@@ -465,7 +465,9 @@ class StepFunTTSExtension(AsyncTTS2BaseExtension):
                         and self.current_request_id in self.recorder_map
                     ):
                         try:
-                            await self.recorder_map[self.current_request_id].flush()
+                            await self.recorder_map[
+                                self.current_request_id
+                            ].flush()
                             self.ten_env.log_info(
                                 f"Flushed PCMWriter for request_id: {self.current_request_id}"
                             )
