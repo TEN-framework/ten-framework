@@ -174,13 +174,13 @@ class TencentTTSExtension(AsyncTTS2BaseExtension):
             if self.client:
                 await self.client.stop()
 
-            # Mark request as finished before handling audio end
-            self.current_request_finished = True
 
             # Handle audio end if there's an active request
             # This will send audio_end and call finish_request
             if self.request_start_ts:
                 await self._handle_tts_audio_end(TTSAudioEndReason.INTERRUPTED)
+            # Mark request as finished before handling audio end
+            self.current_request_finished = True
         else:
             self.ten_env.log_warn(
                 "No current request found, skipping TTS cancellation."
