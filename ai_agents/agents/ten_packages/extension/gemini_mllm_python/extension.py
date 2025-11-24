@@ -39,16 +39,12 @@ from google.genai.types import (
     SpeechConfig,
     VoiceConfig,
     PrebuiltVoiceConfig,
-    StartSensitivity,
-    EndSensitivity,
-    AutomaticActivityDetection,
     RealtimeInputConfig,
     AudioTranscriptionConfig,
     ProactivityConfig,
     LiveServerContent,
     Modality,
     MediaResolution,
-    TurnCoverage,
 )
 
 
@@ -322,7 +318,7 @@ class GeminiRealtime2Extension(AsyncMLLMBaseExtension):
         Trigger model response.
         Gemini responds automatically on input; kept for API parity.
         """
-        pass
+        return
 
     async def send_client_register_tool(self, tool: LLMToolMetadata) -> None:
         """Register tools (effective next session connect)."""
