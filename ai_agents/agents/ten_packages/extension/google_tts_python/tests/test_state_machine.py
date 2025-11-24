@@ -218,7 +218,11 @@ def test_sequential_requests_state_machine(MockGoogleTTS):
                     audio_chunk = (
                         b"mock_audio_data_" + str(self.chunks_sent).encode()
                     )
-                    return audio_chunk, EVENT_TTS_RESPONSE, 123 if self.chunks_sent == 1 else None
+                    return (
+                        audio_chunk,
+                        EVENT_TTS_RESPONSE,
+                        123 if self.chunks_sent == 1 else None,
+                    )
                 else:
                     # Signal request completion
                     return None, EVENT_TTS_REQUEST_END, None
@@ -245,7 +249,9 @@ def test_sequential_requests_state_machine(MockGoogleTTS):
 
             # Yield audio chunks
             while True:
-                audio_chunk, event, ttfb_ms = await self.session.get_audio_data()
+                audio_chunk, event, ttfb_ms = (
+                    await self.session.get_audio_data()
+                )
                 yield audio_chunk, event, ttfb_ms
                 if event == EVENT_TTS_REQUEST_END:
                     break
@@ -347,7 +353,9 @@ def test_request_state_transitions(MockGoogleTTS):
             self._new_session_event.set()
 
             while True:
-                audio_chunk, event, ttfb_ms = await self.session.get_audio_data()
+                audio_chunk, event, ttfb_ms = (
+                    await self.session.get_audio_data()
+                )
                 yield audio_chunk, event, ttfb_ms
                 if event == EVENT_TTS_REQUEST_END:
                     break
@@ -423,4 +431,3 @@ if __name__ == "__main__":
     # Run tests
     test_sequential_requests_state_machine()
     test_request_state_transitions()
-

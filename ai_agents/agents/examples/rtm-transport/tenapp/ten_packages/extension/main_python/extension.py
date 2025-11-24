@@ -70,7 +70,10 @@ class MainControlExtension(AsyncExtension):
     async def _on_rtm_message(self, event: RTMMessageEvent):
         """Handle incoming RTM messages from other users."""
         # Filter out messages from the agent itself to avoid feedback loops
-        if self.config.agent_user_id and event.publisher == self.config.agent_user_id:
+        if (
+            self.config.agent_user_id
+            and event.publisher == self.config.agent_user_id
+        ):
             self.ten_env.log_info(
                 f"[MainControlExtension] Ignoring RTM message from self: {event.message}"
             )
@@ -123,7 +126,6 @@ class MainControlExtension(AsyncExtension):
             self.turn_id += 1
             await self.agent.queue_llm_input(event.text)
         await self._send_transcript("user", event.text, event.final, stream_id)
-
 
     @agent_event_handler(LLMResponseEvent)
     async def _on_llm_response(self, event: LLMResponseEvent):

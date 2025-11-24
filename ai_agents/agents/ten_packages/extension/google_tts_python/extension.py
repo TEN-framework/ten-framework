@@ -374,7 +374,10 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                             # Check if we've received text_input_end (state is FINALIZING)
                             has_received_text_input_end = False
                             if request_id and request_id in self.request_states:
-                                if self.request_states[request_id] == RequestState.FINALIZING:
+                                if (
+                                    self.request_states[request_id]
+                                    == RequestState.FINALIZING
+                                ):
                                     has_received_text_input_end = True
 
                             await self.send_tts_error(
@@ -400,7 +403,11 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                                 if self.total_audio_bytes:
                                     request_total_audio_duration = int(
                                         self.total_audio_bytes
-                                        / (self.synthesize_audio_sample_rate() * 2 * 1)
+                                        / (
+                                            self.synthesize_audio_sample_rate()
+                                            * 2
+                                            * 1
+                                        )
                                         * 1000
                                     )
                                 await self.send_tts_audio_end(
@@ -431,7 +438,10 @@ class GoogleTTSExtension(AsyncTTS2BaseExtension):
                     # Check if we've received text_input_end (state is FINALIZING)
                     has_received_text_input_end = False
                     if request_id and request_id in self.request_states:
-                        if self.request_states[request_id] == RequestState.FINALIZING:
+                        if (
+                            self.request_states[request_id]
+                            == RequestState.FINALIZING
+                        ):
                             has_received_text_input_end = True
 
                     await self.send_tts_error(

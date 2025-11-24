@@ -76,8 +76,14 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                 # - If text_input_end has been received (state is FINALIZING), send tts_audio_end and finish request
                 # - If text_input_end has not been received (state is PROCESSING), only send error, don't end request
                 has_received_text_input_end = False
-                if target_request_id and target_request_id in self.request_states:
-                    if self.request_states[target_request_id] == RequestState.FINALIZING:
+                if (
+                    target_request_id
+                    and target_request_id in self.request_states
+                ):
+                    if (
+                        self.request_states[target_request_id]
+                        == RequestState.FINALIZING
+                    ):
                         has_received_text_input_end = True
 
                 # Send error
@@ -97,7 +103,9 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                     request_event_interval = 0
                     request_total_audio_duration = 0
                     if self.request_total_audio_duration:
-                        request_total_audio_duration = int(self.request_total_audio_duration)
+                        request_total_audio_duration = int(
+                            self.request_total_audio_duration
+                        )
                     await self.send_tts_audio_end(
                         request_id=target_request_id,
                         request_event_interval_ms=request_event_interval,
@@ -393,7 +401,9 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                 request_event_interval = 0
                 request_total_audio_duration = 0
                 if self.request_total_audio_duration:
-                    request_total_audio_duration = int(self.request_total_audio_duration)
+                    request_total_audio_duration = int(
+                        self.request_total_audio_duration
+                    )
                 await self.send_tts_audio_end(
                     request_id=request_id,
                     request_event_interval_ms=request_event_interval,
@@ -434,7 +444,9 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                 request_event_interval = 0
                 request_total_audio_duration = 0
                 if self.request_total_audio_duration:
-                    request_total_audio_duration = int(self.request_total_audio_duration)
+                    request_total_audio_duration = int(
+                        self.request_total_audio_duration
+                    )
                 await self.send_tts_audio_end(
                     request_id=request_id,
                     request_event_interval_ms=request_event_interval,
