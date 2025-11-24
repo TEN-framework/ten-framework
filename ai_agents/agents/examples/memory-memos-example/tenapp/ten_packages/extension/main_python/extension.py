@@ -47,7 +47,9 @@ class MainControlExtension(AsyncExtension):
         self.sentence_fragment: str = ""
         self.turn_id: int = 0
         self.session_id: str = "0"
-        self.current_user_query: str = ""  # Track current user query for memory storage
+        self.current_user_query: str = (
+            ""  # Track current user query for memory storage
+        )
 
         # MemOS client
         self.memos_client: MemosClient | None = None
@@ -142,7 +144,7 @@ class MainControlExtension(AsyncExtension):
             if self.config.enable_memorization:
                 await self._memorize_conversation(
                     user_query=self.current_user_query,
-                    assistant_response=event.text
+                    assistant_response=event.text,
                 )
 
         await self._send_transcript(
@@ -253,7 +255,9 @@ class MainControlExtension(AsyncExtension):
 
     # === Memory related methods ===
 
-    async def _retrieve_related_memory(self, query: str, user_id: str = None) -> str:
+    async def _retrieve_related_memory(
+        self, query: str, user_id: str = None
+    ) -> str:
         """Retrieve related memory based on user query using MemOS search"""
         if not self.memos_client:
             return ""
@@ -266,7 +270,9 @@ class MainControlExtension(AsyncExtension):
             )
 
             # Call MemOS search_memory API directly
-            memories = await self.memos_client.search_memory(query, user_id, self.conversation_id)
+            memories = await self.memos_client.search_memory(
+                query, user_id, self.conversation_id
+            )
 
             # Format memories as numbered list (matching MemOS documentation pattern)
             # Pattern from: https://memos-docs.openmem.net/cn/usecase/home_assistant
@@ -301,10 +307,7 @@ class MainControlExtension(AsyncExtension):
 
         # Step 1: Retrieve original prompt from LLM extension
         cmd_result, _ = await _send_cmd(
-            self.ten_env,
-            "retrieve_prompt",
-            "llm",
-            {"request_id": request_id}
+            self.ten_env, "retrieve_prompt", "llm", {"request_id": request_id}
         )
 
         result_json, _ = cmd_result.get_property_to_json(None)
@@ -325,7 +328,6 @@ class MainControlExtension(AsyncExtension):
         else:
             prompt = f"{original_prompt}\n\n## Memory Context:\n{related_memory}\n\nUse this memory context to provide more personalized and relevant responses."
 
-
         return prompt
 
     async def _memorize_conversation(
@@ -344,7 +346,7 @@ class MainControlExtension(AsyncExtension):
             # Store just the current turn (user query + assistant response) as per MemOS pattern
             conversation_for_memory = [
                 {"role": "user", "content": user_query},
-                {"role": "assistant", "content": assistant_response}
+                {"role": "assistant", "content": assistant_response},
             ]
 
             # Use add_message with simplified parameters

@@ -1,0 +1,11 @@
+{
+    "dump": true,
+    "dump_path": "./tests/keep_dump_output/",
+    "params": {
+        "api_subscription_key": "${env:SARVAM_TTS_KEY}",
+        "target_language_code": "en-IN",
+        "speaker": "anushka",
+        "speech_sample_rate": 22050,
+        "model": "bulbul:v2"
+    }
+}

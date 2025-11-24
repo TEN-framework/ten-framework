@@ -16,7 +16,7 @@
     {
       "type": "system",
       "name": "ten_ai_base",
-      "version": "0.7"
+      "version": "=0.7.22"
     },
     {
       "path": "../../../ten_packages/extension/streamid_adapter"
@@ -128,6 +128,9 @@
     },
     {
       "path": "../../../ten_packages/extension/rime_tts"
+    },
+    {
+      "path": "../../../ten_packages/extension/sarvam_http_tts"
     },
     {
       "path": "../../../ten_packages/extension/stepfun_tts_python"

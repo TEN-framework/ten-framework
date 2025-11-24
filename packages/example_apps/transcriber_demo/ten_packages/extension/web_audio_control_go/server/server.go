@@ -46,9 +46,10 @@ type StartPlayRequest struct {
 }
 
 type WebSocketMessage struct {
-	Type              string `json:"type"` // "asr_result", "audio_data" or "error"
+	Type              string `json:"type"` // "asr_result", "audio_data", "vad_status" or "error"
 	Text              string `json:"text"`
 	Final             bool   `json:"final"`
+	IsSpeech          bool   `json:"is_speech"`
 	SampleRate        int    `json:"sample_rate"`
 	Channels          int    `json:"channels"`
 	SamplesPerChannel int    `json:"samples_per_channel"`
@@ -58,7 +59,9 @@ func NewWebServer(port int, tenEnv ten.TenEnv) *WebServer {
 	// Create upload directory
 	uploadDir := filepath.Join(os.TempDir(), "audio_uploads")
 	if err := os.MkdirAll(uploadDir, 0755); err != nil {
-		tenEnv.LogError(fmt.Sprintf("Failed to create upload directory: %v", err))
+		tenEnv.LogError(
+			fmt.Sprintf("Failed to create upload directory: %v", err),
+		)
 	}
 
 	return &WebServer{
@@ -96,7 +99,13 @@ func (s *WebServer) Start() {
 	if _, err := os.Stat(recordingsDir); os.IsNotExist(err) {
 		os.MkdirAll(recordingsDir, 0755)
 	}
-	mux.Handle("/recordings/", http.StripPrefix("/recordings/", http.FileServer(http.Dir(recordingsDir))))
+	mux.Handle(
+		"/recordings/",
+		http.StripPrefix(
+			"/recordings/",
+			http.FileServer(http.Dir(recordingsDir)),
+		),
+	)
 
 	// Root path handler - redirect to index.html
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -114,7 +123,8 @@ func (s *WebServer) Start() {
 	}
 
 	s.tenEnv.LogInfo(fmt.Sprintf("Starting HTTP server on :%d", s.port))
-	if err := s.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+	if err := s.server.ListenAndServe(); err != nil &&
+		err != http.ErrServerClosed {
 		s.tenEnv.LogError(fmt.Sprintf("HTTP server error: %v", err))
 	}
 }
@@ -136,7 +146,9 @@ func (s *WebServer) Stop() {
 	}
 }
 
-func (s *WebServer) SetAudioDataHandler(handler func(audioData []byte, sampleRate int, channels int, samplesPerChannel int)) {
+func (s *WebServer) SetAudioDataHandler(
+	handler func(audioData []byte, sampleRate int, channels int, samplesPerChannel int),
+) {
 	s.audioDataHandler = handler
 }
 
@@ -151,7 +163,13 @@ func (s *WebServer) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	s.clients[conn] = true
 	s.clientsMu.Unlock()
 
-	s.tenEnv.Log(ten.LogLevelInfo, "New WebSocket client connected", &logCategoryKeyPoint, nil, nil)
+	s.tenEnv.Log(
+		ten.LogLevelInfo,
+		"New WebSocket client connected",
+		&logCategoryKeyPoint,
+		nil,
+		nil,
+	)
 
 	// Handle client disconnection
 	defer func() {
@@ -159,7 +177,13 @@ func (s *WebServer) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 		delete(s.clients, conn)
 		s.clientsMu.Unlock()
 		conn.Close()
-		s.tenEnv.Log(ten.LogLevelInfo, "WebSocket client disconnected", &logCategoryKeyPoint, nil, nil)
+		s.tenEnv.Log(
+			ten.LogLevelInfo,
+			"WebSocket client disconnected",
+			&logCategoryKeyPoint,
+			nil,
+			nil,
+		)
 	}()
 
 	var audioMetadata *WebSocketMessage
@@ -175,7 +199,9 @@ func (s *WebServer) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 			// Parse JSON message
 			var msg WebSocketMessage
 			if err := json.Unmarshal(message, &msg); err != nil {
-				s.tenEnv.LogError(fmt.Sprintf("Failed to parse JSON message: %v", err))
+				s.tenEnv.LogError(
+					fmt.Sprintf("Failed to parse JSON message: %v", err),
+				)
 				continue
 			}
 
@@ -198,7 +224,9 @@ func (s *WebServer) handleUpload(w http.ResponseWriter, r *http.Request) {
 	sendJSONError := func(message string, statusCode int) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(statusCode)
-		w.Write([]byte(fmt.Sprintf(`{"status":"error","message":"%s"}`, message)))
+		w.Write(
+			[]byte(fmt.Sprintf(`{"status":"error","message":"%s"}`, message)),
+		)
 	}
 
 	if r.Method != http.MethodPost {
@@ -208,7 +236,9 @@ func (s *WebServer) handleUpload(w http.ResponseWriter, r *http.Request) {
 
 	// Parse multipart form (max 100MB)
 	if err := r.ParseMultipartForm(100 << 20); err != nil {
-		s.tenEnv.LogError(fmt.Sprintf("Failed to parse multipart form: %v", err))
+		s.tenEnv.LogError(
+			fmt.Sprintf("Failed to parse multipart form: %v", err),
+		)
 		sendJSONError("Failed to parse form", http.StatusBadRequest)
 		return
 	}
@@ -230,7 +260,9 @@ func (s *WebServer) handleUpload(w http.ResponseWriter, r *http.Request) {
 	// Create destination file
 	destFile, err := os.Create(destPath)
 	if err != nil {
-		s.tenEnv.LogError(fmt.Sprintf("Failed to create destination file: %v", err))
+		s.tenEnv.LogError(
+			fmt.Sprintf("Failed to create destination file: %v", err),
+		)
 		sendJSONError("Failed to save file", http.StatusInternalServerError)
 		return
 	}
@@ -244,12 +276,25 @@ func (s *WebServer) handleUpload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.tenEnv.LogInfo(fmt.Sprintf("File uploaded successfully: %s (%d bytes)", destPath, written))
+	s.tenEnv.LogInfo(
+		fmt.Sprintf(
+			"File uploaded successfully: %s (%d bytes)",
+			destPath,
+			written,
+		),
+	)
 
 	// Return success response with file path
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(fmt.Sprintf(`{"status":"ok","message":"File uploaded successfully","file_path":"%s"}`, destPath)))
+	w.Write(
+		[]byte(
+			fmt.Sprintf(
+				`{"status":"ok","message":"File uploaded successfully","file_path":"%s"}`,
+				destPath,
+			),
+		),
+	)
 }
 
 func (s *WebServer) handleStartPlay(w http.ResponseWriter, r *http.Request) {
@@ -257,7 +302,9 @@ func (s *WebServer) handleStartPlay(w http.ResponseWriter, r *http.Request) {
 	sendJSONError := func(message string, statusCode int) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(statusCode)
-		w.Write([]byte(fmt.Sprintf(`{"status":"error","message":"%s"}`, message)))
+		w.Write(
+			[]byte(fmt.Sprintf(`{"status":"error","message":"%s"}`, message)),
+		)
 	}
 
 	if r.Method != http.MethodPost {
@@ -265,7 +312,8 @@ func (s *WebServer) handleStartPlay(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Parse multipart form data (supports both multipart/form-data and application/x-www-form-urlencoded)
+	// Parse multipart form data (supports both multipart/form-data and
+	// application/x-www-form-urlencoded)
 	if err := r.ParseMultipartForm(10 << 20); err != nil {
 		// If multipart parsing fails, try regular form parsing
 		if err := r.ParseForm(); err != nil {
@@ -284,26 +332,42 @@ func (s *WebServer) handleStartPlay(w http.ResponseWriter, r *http.Request) {
 
 	loopPlayback := r.FormValue("loop_playback") == "true"
 
-	s.tenEnv.LogInfo(fmt.Sprintf("Received start_play request: file_path=%s, loop=%v", filePath, loopPlayback))
+	s.tenEnv.LogInfo(
+		fmt.Sprintf(
+			"Received start_play request: file_path=%s, loop=%v",
+			filePath,
+			loopPlayback,
+		),
+	)
 
 	// Create TEN command
 	cmd, err := ten.NewCmd("start_play")
 	if err != nil {
 		s.tenEnv.LogError(fmt.Sprintf("Failed to create command: %v", err))
-		sendJSONError("Failed to create command", http.StatusInternalServerError)
+		sendJSONError(
+			"Failed to create command",
+			http.StatusInternalServerError,
+		)
 		return
 	}
 
 	// Set command properties
 	if err := cmd.SetPropertyString("file_path", filePath); err != nil {
-		s.tenEnv.LogError(fmt.Sprintf("Failed to set file_path property: %v", err))
+		s.tenEnv.LogError(
+			fmt.Sprintf("Failed to set file_path property: %v", err),
+		)
 		sendJSONError("Failed to set file_path", http.StatusInternalServerError)
 		return
 	}
 
 	if err := cmd.SetProperty("loop_playback", loopPlayback); err != nil {
-		s.tenEnv.LogError(fmt.Sprintf("Failed to set loop_playback property: %v", err))
-		sendJSONError("Failed to set loop_playback", http.StatusInternalServerError)
+		s.tenEnv.LogError(
+			fmt.Sprintf("Failed to set loop_playback property: %v", err),
+		)
+		sendJSONError(
+			"Failed to set loop_playback",
+			http.StatusInternalServerError,
+		)
 		return
 	}
 
@@ -335,7 +399,30 @@ func (s *WebServer) BroadcastAsrResult(text string, final bool) {
 	for client := range s.clients {
 		err := client.WriteJSON(message)
 		if err != nil {
-			s.tenEnv.LogError(fmt.Sprintf("Failed to send message to client: %v", err))
+			s.tenEnv.LogError(
+				fmt.Sprintf("Failed to send message to client: %v", err),
+			)
+			client.Close()
+			delete(s.clients, client)
+		}
+	}
+}
+
+func (s *WebServer) BroadcastVadStatus(isSpeech bool) {
+	s.clientsMu.RLock()
+	defer s.clientsMu.RUnlock()
+
+	message := WebSocketMessage{
+		Type:     "vad_status",
+		IsSpeech: isSpeech,
+	}
+
+	for client := range s.clients {
+		err := client.WriteJSON(message)
+		if err != nil {
+			s.tenEnv.LogError(
+				fmt.Sprintf("Failed to send VAD status to client: %v", err),
+			)
 			client.Close()
 			delete(s.clients, client)
 		}
@@ -343,7 +430,10 @@ func (s *WebServer) BroadcastAsrResult(text string, final bool) {
 }
 
 // handleStartRecording starts a new recording session
-func (s *WebServer) handleStartRecording(w http.ResponseWriter, r *http.Request) {
+func (s *WebServer) handleStartRecording(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
 	sendJSONError := func(message string, statusCode int) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(statusCode)
@@ -362,7 +452,10 @@ func (s *WebServer) handleStartRecording(w http.ResponseWriter, r *http.Request)
 	cmd, err := ten.NewCmd("start_recording")
 	if err != nil {
 		s.tenEnv.LogError(fmt.Sprintf("Failed to create command: %v", err))
-		sendJSONError("Failed to create command", http.StatusInternalServerError)
+		sendJSONError(
+			"Failed to create command",
+			http.StatusInternalServerError,
+		)
 		return
 	}
 
@@ -384,7 +477,10 @@ func (s *WebServer) handleStartRecording(w http.ResponseWriter, r *http.Request)
 }
 
 // handleStopRecording stops the current recording session
-func (s *WebServer) handleStopRecording(w http.ResponseWriter, r *http.Request) {
+func (s *WebServer) handleStopRecording(
+	w http.ResponseWriter,
+	r *http.Request,
+) {
 	sendJSONError := func(message string, statusCode int) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(statusCode)
@@ -403,7 +499,10 @@ func (s *WebServer) handleStopRecording(w http.ResponseWriter, r *http.Request) 
 	cmd, err := ten.NewCmd("stop_recording")
 	if err != nil {
 		s.tenEnv.LogError(fmt.Sprintf("Failed to create command: %v", err))
-		sendJSONError("Failed to create command", http.StatusInternalServerError)
+		sendJSONError(
+			"Failed to create command",
+			http.StatusInternalServerError,
+		)
 		return
 	}
 
@@ -446,7 +545,9 @@ func (s *WebServer) handleListSessions(w http.ResponseWriter, r *http.Request) {
 
 	entries, err := os.ReadDir(recordingsDir)
 	if err != nil {
-		s.tenEnv.LogError(fmt.Sprintf("Failed to read recordings directory: %v", err))
+		s.tenEnv.LogError(
+			fmt.Sprintf("Failed to read recordings directory: %v", err),
+		)
 	} else {
 		for _, entry := range entries {
 			if entry.IsDir() {
@@ -464,7 +565,9 @@ func (s *WebServer) handleListSessions(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	s.tenEnv.LogInfo(fmt.Sprintf("list_sessions: found %d sessions", len(sessions)))
+	s.tenEnv.LogInfo(
+		fmt.Sprintf("list_sessions: found %d sessions", len(sessions)),
+	)
 
 	// Return sessions list
 	w.Header().Set("Content-Type", "application/json")

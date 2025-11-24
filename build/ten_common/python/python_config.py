@@ -45,6 +45,14 @@ def get_embed_flags():
 
     # Library directories.
     lib_dirs = config.get("LIBDIR", "")
+
+    # On Windows, LIBDIR is often None, so we need to construct it
+    if not lib_dirs and sys.platform == "win32":
+        import os
+
+        python_dir = os.path.dirname(sys.executable)
+        lib_dirs = os.path.join(python_dir, "libs")
+
     # On some builds, you might need to add 'LIBPL' or similar.
     lib_dirs_extra = config.get("LIBPL", "")
     if lib_dirs_extra:
@@ -56,6 +64,12 @@ def get_embed_flags():
     python_lib = config.get("LIBRARY", "").replace("lib", "").replace(".a", "")
     if python_lib:
         libs += f" {python_lib}"
+    else:
+        # On Windows, if LIBRARY is not set, use pythonXY.lib format
+        if sys.platform == "win32":
+            version_info = sys.version_info
+            python_lib = f"python{version_info.major}{version_info.minor}"
+            libs += f" {python_lib}"
 
     # C Flags.
     cflags = config.get("CFLAGS", "")
@@ -77,19 +91,31 @@ def transform_flags_for_windows(embed_flags):
 
     # Transform library directories.
     for lib_dir in embed_flags["lib_dirs"].split():
-        transformed["lib_dirs"].append(f'/LIBPATH:"{lib_dir}"')
+        if sys.platform == "win32":
+            # output without the outer quotes to avoid escaping issues
+            transformed["lib_dirs"].append(f"/LIBPATH:{lib_dir}")
+        else:
+            transformed["lib_dirs"].append(f'/LIBPATH:"{lib_dir}"')
 
     # Transform libraries.
     for lib in embed_flags["libs"].split():
         # Remove '-l' if present.
         if lib.startswith("-l"):
             lib = lib[2:]
-        # Append .lib extension if not present.
-        if not lib.endswith(".lib"):
-            lib = f'"{lib}.lib"'
+        # On Windows platform, we need to remove one pair of quotes because of
+        # the MSVC linker feature.
+        if sys.platform == "win32":
+            if not lib.endswith(".lib"):
+                lib = f"{lib}.lib"
+            else:
+                lib = lib
+            transformed["libs"].append(lib)
         else:
-            lib = f'"{lib}"'
-        transformed["libs"].append(lib)
+            if not lib.endswith(".lib"):
+                lib = f'"{lib}.lib"'
+            else:
+                lib = f'"{lib}"'
+            transformed["libs"].append(lib)
 
     # Transform CFLAGS.
     transformed["cflags"] = embed_flags["cflags"].split()
