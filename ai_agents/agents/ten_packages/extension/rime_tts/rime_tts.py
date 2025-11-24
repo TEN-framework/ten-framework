@@ -25,6 +25,7 @@ RIME_MESSAGE_TYPE_DONE = "done"
 EVENT_TTS_RESPONSE = 1
 EVENT_TTS_END = 2
 EVENT_TTS_TTFB_METRIC = 3
+EVENT_TTS_ERROR = 4
 
 
 class RimeTTSynthesizer:
@@ -131,7 +132,7 @@ class RimeTTSynthesizer:
                         f"RIME TTS websocket connection closed: {e}."
                     )
                     if not self._session_closing:
-                        self.ten_env.log_debug(
+                        self.ten_env.log_warn(
                             "RIME TTS websocket connection closed, will reconnect."
                         )
 
@@ -140,9 +141,23 @@ class RimeTTSynthesizer:
                             task.cancel()
                         await self._await_channel_tasks()
 
+                        # Signal error if there was an active request
+                        if self.latest_context_id and self.response_msgs:
+                            self.ten_env.log_warn(
+                                f"Active request {self.latest_context_id} lost due to connection close, signaling error"
+                            )
+                            await self.response_msgs.put(
+                                (EVENT_TTS_ERROR, f"Connection closed: {e}".encode())
+                            )
+                            self.latest_context_id = None
+
                         # Reset event states
                         self._receive_ready_event.clear()
                         self._connection_ready.clear()
+
+                        # Reset TTFB tracking for next request
+                        self.ttfb_sent = False
+                        self.sent_ts = None
 
                         # Reset connection exception counter
                         self._connect_exp_cnt = 0
@@ -219,6 +234,15 @@ class RimeTTSynthesizer:
 
                 try:
                     await self._handle_server_message(message)
+                except ModuleVendorException as e:
+                    # Vendor errors should be propagated to the extension
+                    self.ten_env.log_error(
+                        f"Vendor error handling RIME TTS server message: {e}"
+                    )
+                    if self.response_msgs:
+                        await self.response_msgs.put(
+                            (EVENT_TTS_ERROR, str(e.error.message).encode())
+                        )
                 except Exception as e:
                     self.ten_env.log_error(
                         f"Error handling RIME TTS server message: {e}"

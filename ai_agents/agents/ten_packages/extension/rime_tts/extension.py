@@ -24,6 +24,7 @@ from .config import RimeTTSConfig
 
 from .rime_tts import (
     EVENT_TTS_END,
+    EVENT_TTS_ERROR,
     EVENT_TTS_RESPONSE,
     EVENT_TTS_TTFB_METRIC,
     RimeTTSClient,
@@ -179,6 +180,29 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                         f"Session finished for request ID: {self.current_request_id}"
                     )
                     await self._handle_tts_audio_end()
+                    if self.stop_event:
+                        self.stop_event.set()
+                        self.stop_event = None
+                elif event == EVENT_TTS_ERROR:
+                    error_msg = data.decode() if isinstance(data, bytes) else str(data)
+                    self.ten_env.log_error(
+                        f"TTS error for request ID {self.current_request_id}: {error_msg}"
+                    )
+                    error = ModuleError(
+                        message=error_msg,
+                        module=ModuleType.TTS,
+                        code=ModuleErrorCode.NON_FATAL_ERROR,
+                        vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
+                    )
+                    if self.current_request_finished:
+                        await self._handle_tts_audio_end(
+                            reason=TTSAudioEndReason.ERROR, error=error
+                        )
+                    else:
+                        await self.send_tts_error(
+                            request_id=self.current_request_id or "",
+                            error=error,
+                        )
                     if self.stop_event:
                         self.stop_event.set()
                         self.stop_event = None
@@ -410,8 +434,8 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                 self.stop_event.set()
                 self.stop_event = None
 
-            self.current_request_finished = True
             await self._handle_tts_audio_end(TTSAudioEndReason.INTERRUPTED)
+            self.current_request_finished = True
         else:
             self.ten_env.log_warn(
                 "No current request found, skipping TTS cancellation."
