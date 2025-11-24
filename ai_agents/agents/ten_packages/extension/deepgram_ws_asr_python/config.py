@@ -27,6 +27,14 @@ class DeepgramWSASRConfig(BaseModel):
     min_interim_confidence: float = (
         0.5  # Minimum confidence to accept interim results (0.0-1.0)
     )
+    # Interrupt settings - send flush on user speech detection
+    interrupt_on_speech: bool = True  # Enable interrupt when user speaks
+    interrupt_min_confidence: float = (
+        0.7  # Min confidence to trigger interrupt (0.0-1.0)
+    )
+    interrupt_min_words: int = 1  # Min word count to trigger interrupt
+    # Echo cancel settling - filter short utterances at session start
+    echo_cancel_duration: float = 5.0  # Duration in seconds
     dump: bool = False
     dump_path: str = "/tmp"
     params: Dict[str, Any] = Field(default_factory=dict)

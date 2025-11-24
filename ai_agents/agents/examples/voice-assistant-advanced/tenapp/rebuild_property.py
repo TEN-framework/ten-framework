@@ -146,7 +146,7 @@ cartesia_tts_sonic3 = {
     },
 }
 
-# Cartesia TTS for Anam graphs (different voice)
+# Cartesia TTS for voice_assistant_anam
 cartesia_tts_sonic3_anam = {
     "type": "extension",
     "name": "tts",
@@ -161,6 +161,29 @@ cartesia_tts_sonic3_anam = {
             "voice": {
                 "mode": "id",
                 "id": "34d923aa-c3b5-4f21-aac7-2c1f12730d4b",
+            },
+            "generation_config": {"speed": 1},
+            "output_format": {"container": "raw", "sample_rate": 44100},
+            "language": "en",
+        },
+    },
+}
+
+# Cartesia TTS for apollo anam graphs
+cartesia_tts_sonic3_apollo_anam = {
+    "type": "extension",
+    "name": "tts",
+    "addon": "cartesia_tts",
+    "extension_group": "tts",
+    "property": {
+        "dump": False,
+        "dump_path": "./",
+        "params": {
+            "api_key": "${env:CARTESIA_TTS_KEY}",
+            "model_id": "sonic-3",
+            "voice": {
+                "mode": "id",
+                "id": "71a7ad14-091c-4e8e-a314-022ece01c121",
             },
             "generation_config": {"speed": 1},
             "output_format": {"container": "raw", "sample_rate": 44100},
@@ -311,6 +334,30 @@ anam_avatar = {
     },
 }
 
+# Anam avatar for apollo graphs
+anam_avatar_apollo = {
+    "type": "extension",
+    "name": "avatar",
+    "addon": "anam_avatar_python",
+    "extension_group": "default",
+    "property": {
+        "anam_api_key": "${env:ANAM_API_KEY}",
+        "anam_base_url": "https://api.anam.ai/v1",
+        "anam_avatar_id": "960f614f-ea88-47c3-9883-f02094f70874",
+        "anam_cluster": "",
+        "anam_pod": "",
+        "agora_appid": "${env:AGORA_APP_ID}",
+        "agora_appcert": "${env:AGORA_APP_CERTIFICATE|}",
+        "channel": "",
+        "agora_video_uid": 123,
+        "input_audio_sample_rate": 44100,
+        "quality": "${env:VIDEO_QUALITY|high}",
+        "video_encoding": "${env:VIDEO_ENCODING|H264}",
+        "enable_string_uid": False,
+        "activity_idle_timeout": 120,
+    },
+}
+
 thymia_analyzer = {
     "type": "extension",
     "name": "thymia_analyzer",
@@ -327,7 +374,15 @@ basic_connections = [
             {
                 "names": ["on_user_joined", "on_user_left"],
                 "source": [{"extension": "agora_rtc"}],
-            }
+            },
+            {
+                "name": "flush",
+                "source": [{"extension": "stt"}],
+            },
+            {
+                "name": "flush",
+                "dest": [{"extension": "avatar"}],
+            },
         ],
         "data": [{"name": "asr_result", "source": [{"extension": "stt"}]}],
     },
@@ -346,6 +401,10 @@ basic_connections = [
         "audio_frame": [{"name": "pcm_frame", "dest": [{"extension": "stt"}]}],
     },
     {
+        "extension": "stt",
+        "cmd": [{"name": "flush", "dest": [{"extension": "main_control"}]}],
+    },
+    {
         "extension": "llm",
         "cmd": [
             {"names": ["flush"], "source": [{"extension": "main_control"}]}
@@ -356,9 +415,6 @@ basic_connections = [
     },
     {
         "extension": "tts",
-        "cmd": [
-            {"names": ["flush"], "source": [{"extension": "main_control"}]}
-        ],
         "data": [{"name": "text_data", "source": [{"extension": "llm"}]}],
         "audio_frame": [
             {"name": "pcm_frame", "dest": [{"extension": "agora_rtc"}]}
@@ -368,13 +424,17 @@ basic_connections = [
 
 
 # Helper function to create basic voice assistant graph (no tools)
-def create_basic_voice_assistant(name, has_avatar=False, avatar_type=None):
+def create_basic_voice_assistant(
+    name, has_avatar=False, avatar_type=None, tts_config=None
+):
+    if tts_config is None:
+        tts_config = cartesia_tts_sonic3
     # Standard architecture with TTS and main_control
     nodes = [
         copy.deepcopy(agora_rtc_base),
         copy.deepcopy(nova3_stt_100ms),
         copy.deepcopy(llama_llm_no_tools),
-        copy.deepcopy(cartesia_tts_sonic3),
+        copy.deepcopy(tts_config),
         copy.deepcopy(main_control_base),
         copy.deepcopy(message_collector),
         copy.deepcopy(streamid_adapter),
@@ -411,11 +471,6 @@ def create_basic_voice_assistant(name, has_avatar=False, avatar_type=None):
                     ]:
                         af["dest"] = [{"extension": "avatar"}]
 
-                # Replace cmd with flush to avatar (no source, only dest)
-                conn["cmd"] = [
-                    {"name": "flush", "dest": [{"extension": "avatar"}]}
-                ]
-
                 # Add tts_audio_end data to avatar
                 conn["data"] = [
                     {"name": "text_data", "source": [{"extension": "llm"}]},
@@ -435,7 +490,13 @@ def create_basic_voice_assistant(name, has_avatar=False, avatar_type=None):
 
 # Helper function to create apollo graph with tools
 def create_apollo_graph(
-    name, llm_config, stt_config, has_avatar=False, avatar_type=None, tts_config=None
+    name,
+    llm_config,
+    stt_config,
+    has_avatar=False,
+    avatar_type=None,
+    tts_config=None,
+    avatar_config=None,
 ):
     if tts_config is None:
         tts_config = cartesia_tts_sonic3
@@ -462,6 +523,14 @@ def create_apollo_graph(
                 {
                     "names": ["tool_register"],
                     "source": [{"extension": "thymia_analyzer"}],
+                },
+                {
+                    "name": "flush",
+                    "source": [{"extension": "stt"}],
+                },
+                {
+                    "name": "flush",
+                    "dest": [{"extension": "avatar"}],
                 },
             ],
             "data": [
@@ -494,6 +563,10 @@ def create_apollo_graph(
                 {"name": "pcm_frame", "dest": [{"extension": "stt"}]}
             ],
         },
+        {
+            "extension": "stt",
+            "cmd": [{"name": "flush", "dest": [{"extension": "main_control"}]}],
+        },
     ]
 
     # Add TTS connection - route tts_audio messages directly to thymia_analyzer
@@ -505,11 +578,15 @@ def create_apollo_graph(
                 {"name": "text_data", "source": [{"extension": "llm"}]},
                 {
                     "name": "tts_audio_start",
-                    "dest": [{"extension": "thymia_analyzer"}],  # Direct to thymia
+                    "dest": [
+                        {"extension": "thymia_analyzer"}
+                    ],  # Direct to thymia
                 },
                 {
                     "name": "tts_audio_end",
-                    "dest": [{"extension": "thymia_analyzer"}],  # Direct to thymia
+                    "dest": [
+                        {"extension": "thymia_analyzer"}
+                    ],  # Direct to thymia
                 },
             ],
             "audio_frame": [
@@ -519,11 +596,12 @@ def create_apollo_graph(
         connections.append(tts_conn)
 
     if has_avatar:
-        nodes.append(
-            copy.deepcopy(heygen_avatar)
-            if avatar_type == "heygen"
-            else copy.deepcopy(anam_avatar)
-        )
+        if avatar_config:
+            nodes.append(copy.deepcopy(avatar_config))
+        elif avatar_type == "heygen":
+            nodes.append(copy.deepcopy(heygen_avatar))
+        else:
+            nodes.append(copy.deepcopy(anam_avatar))
 
         # Modify agora_rtc connection to get audio from avatar instead of tts directly
         for conn in connections:
@@ -580,7 +658,10 @@ new_graphs.append(
 )
 new_graphs.append(
     create_basic_voice_assistant(
-        "voice_assistant_anam", has_avatar=True, avatar_type="anam"
+        "voice_assistant_anam",
+        has_avatar=True,
+        avatar_type="anam",
+        tts_config=cartesia_tts_sonic3_anam,
     )
 )
 
@@ -602,7 +683,8 @@ new_graphs.append(
         nova3_stt_300ms,
         has_avatar=True,
         avatar_type="anam",
-        tts_config=cartesia_tts_sonic3_anam,
+        tts_config=cartesia_tts_sonic3_apollo_anam,
+        avatar_config=anam_avatar_apollo,
     )
 )
 
@@ -624,7 +706,8 @@ new_graphs.append(
         nova3_stt_300ms,
         has_avatar=True,
         avatar_type="anam",
-        tts_config=cartesia_tts_sonic3_anam,
+        tts_config=cartesia_tts_sonic3_apollo_anam,
+        avatar_config=anam_avatar_apollo,
     )
 )
 new_graphs.append(
@@ -643,7 +726,8 @@ new_graphs.append(
         flux_stt_300ms,
         has_avatar=True,
         avatar_type="anam",
-        tts_config=cartesia_tts_sonic3_anam,
+        tts_config=cartesia_tts_sonic3_apollo_anam,
+        avatar_config=anam_avatar_apollo,
     )
 )
 

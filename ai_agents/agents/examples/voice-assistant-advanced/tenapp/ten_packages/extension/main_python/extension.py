@@ -8,7 +8,9 @@ from ten_runtime import (
     AsyncExtension,
     AsyncTenEnv,
     Cmd,
+    CmdResult,
     Data,
+    StatusCode,
 )
 
 from .agent.agent import Agent
@@ -88,8 +90,11 @@ class MainControlExtension(AsyncExtension):
             return
         if event.final:
             import time
+
             stt_final_time = time.time()
-            self.ten_env.log_info(f"[LATENCY_STT_FINAL] t={stt_final_time:.3f} text=\"{event.text}\"")
+            self.ten_env.log_info(
+                f'[LATENCY_STT_FINAL] t={stt_final_time:.3f} text="{event.text}"'
+            )
             await self._interrupt()
             self.turn_id += 1
             await self.agent.queue_llm_input(event.text)
@@ -99,10 +104,15 @@ class MainControlExtension(AsyncExtension):
     async def _on_llm_response(self, event: LLMResponseEvent):
         if not event.is_final and event.type == "message":
             # Log first LLM response chunk
-            if not hasattr(self, '_logged_llm_first_token') or self.turn_id != getattr(self, '_last_logged_turn', -1):
+            if not hasattr(
+                self, "_logged_llm_first_token"
+            ) or self.turn_id != getattr(self, "_last_logged_turn", -1):
                 import time
+
                 llm_first_token_time = time.time()
-                self.ten_env.log_info(f"[LATENCY_LLM_FIRST_TOKEN] t={llm_first_token_time:.3f} turn={self.turn_id}")
+                self.ten_env.log_info(
+                    f"[LATENCY_LLM_FIRST_TOKEN] t={llm_first_token_time:.3f} turn={self.turn_id}"
+                )
                 self._logged_llm_first_token = True
                 self._last_logged_turn = self.turn_id
 
@@ -134,6 +144,12 @@ class MainControlExtension(AsyncExtension):
         await self.agent.stop()
 
     async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd):
+        cmd_name = cmd.get_name()
+        if cmd_name == "flush":
+            ten_env.log_debug("[MainControlExtension] Received flush from STT")
+            await self._interrupt()
+            await ten_env.return_result(CmdResult.create(StatusCode.OK, cmd))
+            return
         await self.agent.on_cmd(cmd)
 
     async def on_data(self, ten_env: AsyncTenEnv, data: Data):
@@ -141,7 +157,9 @@ class MainControlExtension(AsyncExtension):
         if data.get_name() == "text_data":
             await self._interrupt()  # Stop ongoing TTS/LLM, just like ASR does
             self.turn_id += 1
-            ten_env.log_info(f"[MainControlExtension] text_data received, interrupted and turn_id incremented to {self.turn_id}")
+            ten_env.log_info(
+                f"[MainControlExtension] text_data received, interrupted and turn_id incremented to {self.turn_id}"
+            )
 
         await self.agent.on_data(data)
 
@@ -201,10 +219,15 @@ class MainControlExtension(AsyncExtension):
         Sends a sentence to the TTS system.
         """
         # Log first TTS request for latency measurement
-        if not hasattr(self, '_logged_tts_first_request') or self.turn_id != getattr(self, '_last_logged_tts_turn', -1):
+        if not hasattr(
+            self, "_logged_tts_first_request"
+        ) or self.turn_id != getattr(self, "_last_logged_tts_turn", -1):
             import time
+
             tts_request_time = time.time()
-            self.ten_env.log_info(f"[LATENCY_TTS_REQUEST] t={tts_request_time:.3f} turn={self.turn_id} text=\"{text[:50]}\"")
+            self.ten_env.log_info(
+                f'[LATENCY_TTS_REQUEST] t={tts_request_time:.3f} turn={self.turn_id} text="{text[:50]}"'
+            )
             self._logged_tts_first_request = True
             self._last_logged_tts_turn = self.turn_id
 
@@ -234,4 +257,5 @@ class MainControlExtension(AsyncExtension):
             self.ten_env, "tts_flush", "tts", {"flush_id": str(uuid.uuid4())}
         )
         await _send_cmd(self.ten_env, "flush", "agora_rtc")
+        await _send_cmd(self.ten_env, "flush", "avatar")
         self.ten_env.log_info("[MainControlExtension] Interrupt signal sent")

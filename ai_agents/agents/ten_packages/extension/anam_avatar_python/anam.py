@@ -87,7 +87,9 @@ class AgoraAnamRecorder:
 
         self._speak_end_timer_task: asyncio.Task | None = None
         self._speak_end_event = asyncio.Event()
-        self._connected_event = asyncio.Event()  # Signal when WebSocket is connected
+        self._connected_event = (
+            asyncio.Event()
+        )  # Signal when WebSocket is connected
         self._ready_for_audio = False  # Only true after full initialization
 
     def _validate_config(self, app_id: str, api_key: str, avatar_id: str):
@@ -227,7 +229,9 @@ class AgoraAnamRecorder:
 
             # Wait for WebSocket to actually connect before returning
             try:
-                await asyncio.wait_for(self._connected_event.wait(), timeout=10.0)
+                await asyncio.wait_for(
+                    self._connected_event.wait(), timeout=10.0
+                )
                 self.ten_env.log_info("WebSocket connection confirmed ready")
                 # Wait for Anam to process init payload
                 await asyncio.sleep(0.5)
@@ -649,14 +653,18 @@ class AgoraAnamRecorder:
 
     async def send(self, audio_base64: str, sample_rate: int = 24000):
         if not self._ready_for_audio:
-            self.ten_env.log_info("Waiting for avatar to be ready before sending audio...")
+            self.ten_env.log_info(
+                "Waiting for avatar to be ready before sending audio..."
+            )
             # Wait up to 15 seconds for avatar to be ready
             for _ in range(150):
                 await asyncio.sleep(0.1)
                 if self._ready_for_audio:
                     break
             if not self._ready_for_audio:
-                self.ten_env.log_warn("Avatar not ready after 15s, dropping audio")
+                self.ten_env.log_warn(
+                    "Avatar not ready after 15s, dropping audio"
+                )
                 return
         if self.websocket is None:
             await self._handle_error(

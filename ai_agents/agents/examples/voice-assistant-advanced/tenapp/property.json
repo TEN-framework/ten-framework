@@ -141,6 +141,22 @@
                       "extension": "agora_rtc"
                     }
                   ]
+                },
+                {
+                  "name": "flush",
+                  "source": [
+                    {
+                      "extension": "stt"
+                    }
+                  ]
+                },
+                {
+                  "name": "flush",
+                  "dest": [
+                    {
+                      "extension": "avatar"
+                    }
+                  ]
                 }
               ],
               "data": [
@@ -199,6 +215,19 @@
               ]
             },
             {
+              "extension": "stt",
+              "cmd": [
+                {
+                  "name": "flush",
+                  "dest": [
+                    {
+                      "extension": "main_control"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
               "extension": "llm",
               "cmd": [
                 {
@@ -225,18 +254,6 @@
             },
             {
               "extension": "tts",
-              "cmd": [
-                {
-                  "names": [
-                    "flush"
-                  ],
-                  "source": [
-                    {
-                      "extension": "main_control"
-                    }
-                  ]
-                }
-              ],
               "data": [
                 {
                   "name": "text_data",
@@ -395,6 +412,22 @@
                       "extension": "agora_rtc"
                     }
                   ]
+                },
+                {
+                  "name": "flush",
+                  "source": [
+                    {
+                      "extension": "stt"
+                    }
+                  ]
+                },
+                {
+                  "name": "flush",
+                  "dest": [
+                    {
+                      "extension": "avatar"
+                    }
+                  ]
                 }
               ],
               "data": [
@@ -445,6 +478,19 @@
               ]
             },
             {
+              "extension": "stt",
+              "cmd": [
+                {
+                  "name": "flush",
+                  "dest": [
+                    {
+                      "extension": "main_control"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
               "extension": "llm",
               "cmd": [
                 {
@@ -471,16 +517,6 @@
             },
             {
               "extension": "tts",
-              "cmd": [
-                {
-                  "name": "flush",
-                  "dest": [
-                    {
-                      "extension": "avatar"
-                    }
-                  ]
-                }
-              ],
               "data": [
                 {
                   "name": "text_data",
@@ -582,7 +618,7 @@
                   "model_id": "sonic-3",
                   "voice": {
                     "mode": "id",
-                    "id": "71a7ad14-091c-4e8e-a314-022ece01c121"
+                    "id": "34d923aa-c3b5-4f21-aac7-2c1f12730d4b"
                   },
                   "generation_config": {
                     "speed": 1
@@ -654,6 +690,22 @@
                       "extension": "agora_rtc"
                     }
                   ]
+                },
+                {
+                  "name": "flush",
+                  "source": [
+                    {
+                      "extension": "stt"
+                    }
+                  ]
+                },
+                {
+                  "name": "flush",
+                  "dest": [
+                    {
+                      "extension": "avatar"
+                    }
+                  ]
                 }
               ],
               "data": [
@@ -704,6 +756,19 @@
               ]
             },
             {
+              "extension": "stt",
+              "cmd": [
+                {
+                  "name": "flush",
+                  "dest": [
+                    {
+                      "extension": "main_control"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
               "extension": "llm",
               "cmd": [
                 {
@@ -730,16 +795,6 @@
             },
             {
               "extension": "tts",
-              "cmd": [
-                {
-                  "name": "flush",
-                  "dest": [
-                    {
-                      "extension": "avatar"
-                    }
-                  ]
-                }
-              ],
               "data": [
                 {
                   "name": "text_data",
@@ -929,6 +984,22 @@
                       "extension": "thymia_analyzer"
                     }
                   ]
+                },
+                {
+                  "name": "flush",
+                  "source": [
+                    {
+                      "extension": "stt"
+                    }
+                  ]
+                },
+                {
+                  "name": "flush",
+                  "dest": [
+                    {
+                      "extension": "avatar"
+                    }
+                  ]
                 }
               ],
               "data": [
@@ -1002,6 +1073,19 @@
                   "dest": [
                     {
                       "extension": "stt"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "stt",
+              "cmd": [
+                {
+                  "name": "flush",
+                  "dest": [
+                    {
+                      "extension": "main_control"
                     }
                   ]
                 }
@@ -1141,7 +1225,7 @@
                   "model_id": "sonic-3",
                   "voice": {
                     "mode": "id",
-                    "id": "34d923aa-c3b5-4f21-aac7-2c1f12730d4b"
+                    "id": "71a7ad14-091c-4e8e-a314-022ece01c121"
                   },
                   "generation_config": {
                     "speed": 1
@@ -1197,7 +1281,7 @@
               "property": {
                 "anam_api_key": "${env:ANAM_API_KEY}",
                 "anam_base_url": "https://api.anam.ai/v1",
-                "anam_avatar_id": "81b70170-2e80-4e4b-a6fb-e04ac110dc4b",
+                "anam_avatar_id": "960f614f-ea88-47c3-9883-f02094f70874",
                 "anam_cluster": "",
                 "anam_pod": "",
                 "agora_appid": "${env:AGORA_APP_ID}",
@@ -1234,6 +1318,22 @@
                   "source": [
                     {
                       "extension": "thymia_analyzer"
+                    }
+                  ]
+                },
+                {
+                  "name": "flush",
+                  "source": [
+                    {
+                      "extension": "stt"
+                    }
+                  ]
+                },
+                {
+                  "name": "flush",
+                  "dest": [
+                    {
+                      "extension": "avatar"
                     }
                   ]
                 }
@@ -1309,6 +1409,19 @@
                   "dest": [
                     {
                       "extension": "stt"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "stt",
+              "cmd": [
+                {
+                  "name": "flush",
+                  "dest": [
+                    {
+                      "extension": "main_control"
                     }
                   ]
                 }
@@ -1536,6 +1649,22 @@
                       "extension": "thymia_analyzer"
                     }
                   ]
+                },
+                {
+                  "name": "flush",
+                  "source": [
+                    {
+                      "extension": "stt"
+                    }
+                  ]
+                },
+                {
+                  "name": "flush",
+                  "dest": [
+                    {
+                      "extension": "avatar"
+                    }
+                  ]
                 }
               ],
               "data": [
@@ -1609,6 +1738,19 @@
                   "dest": [
                     {
                       "extension": "stt"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "stt",
+              "cmd": [
+                {
+                  "name": "flush",
+                  "dest": [
+                    {
+                      "extension": "main_control"
                     }
                   ]
                 }
@@ -1748,7 +1890,7 @@
                   "model_id": "sonic-3",
                   "voice": {
                     "mode": "id",
-                    "id": "34d923aa-c3b5-4f21-aac7-2c1f12730d4b"
+                    "id": "71a7ad14-091c-4e8e-a314-022ece01c121"
                   },
                   "generation_config": {
                     "speed": 1
@@ -1804,7 +1946,7 @@
               "property": {
                 "anam_api_key": "${env:ANAM_API_KEY}",
                 "anam_base_url": "https://api.anam.ai/v1",
-                "anam_avatar_id": "81b70170-2e80-4e4b-a6fb-e04ac110dc4b",
+                "anam_avatar_id": "960f614f-ea88-47c3-9883-f02094f70874",
                 "anam_cluster": "",
                 "anam_pod": "",
                 "agora_appid": "${env:AGORA_APP_ID}",
@@ -1841,6 +1983,22 @@
                   "source": [
                     {
                       "extension": "thymia_analyzer"
+                    }
+                  ]
+                },
+                {
+                  "name": "flush",
+                  "source": [
+                    {
+                      "extension": "stt"
+                    }
+                  ]
+                },
+                {
+                  "name": "flush",
+                  "dest": [
+                    {
+                      "extension": "avatar"
                     }
                   ]
                 }
@@ -1916,6 +2074,19 @@
                   "dest": [
                     {
                       "extension": "stt"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "stt",
+              "cmd": [
+                {
+                  "name": "flush",
+                  "dest": [
+                    {
+                      "extension": "main_control"
                     }
                   ]
                 }
@@ -2143,6 +2314,22 @@
                       "extension": "thymia_analyzer"
                     }
                   ]
+                },
+                {
+                  "name": "flush",
+                  "source": [
+                    {
+                      "extension": "stt"
+                    }
+                  ]
+                },
+                {
+                  "name": "flush",
+                  "dest": [
+                    {
+                      "extension": "avatar"
+                    }
+                  ]
                 }
               ],
               "data": [
@@ -2216,6 +2403,19 @@
                   "dest": [
                     {
                       "extension": "stt"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "stt",
+              "cmd": [
+                {
+                  "name": "flush",
+                  "dest": [
+                    {
+                      "extension": "main_control"
                     }
                   ]
                 }
@@ -2355,7 +2555,7 @@
                   "model_id": "sonic-3",
                   "voice": {
                     "mode": "id",
-                    "id": "34d923aa-c3b5-4f21-aac7-2c1f12730d4b"
+                    "id": "71a7ad14-091c-4e8e-a314-022ece01c121"
                   },
                   "generation_config": {
                     "speed": 1
@@ -2411,7 +2611,7 @@
               "property": {
                 "anam_api_key": "${env:ANAM_API_KEY}",
                 "anam_base_url": "https://api.anam.ai/v1",
-                "anam_avatar_id": "81b70170-2e80-4e4b-a6fb-e04ac110dc4b",
+                "anam_avatar_id": "960f614f-ea88-47c3-9883-f02094f70874",
                 "anam_cluster": "",
                 "anam_pod": "",
                 "agora_appid": "${env:AGORA_APP_ID}",
@@ -2448,6 +2648,22 @@
                   "source": [
                     {
                       "extension": "thymia_analyzer"
+                    }
+                  ]
+                },
+                {
+                  "name": "flush",
+                  "source": [
+                    {
+                      "extension": "stt"
+                    }
+                  ]
+                },
+                {
+                  "name": "flush",
+                  "dest": [
+                    {
+                      "extension": "avatar"
                     }
                   ]
                 }
@@ -2523,6 +2739,19 @@
                   "dest": [
                     {
                       "extension": "stt"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "extension": "stt",
+              "cmd": [
+                {
+                  "name": "flush",
+                  "dest": [
+                    {
+                      "extension": "main_control"
                     }
                   ]
                 }

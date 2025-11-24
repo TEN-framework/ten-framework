@@ -23,6 +23,7 @@ from ten_ai_base.message import (
 from ten_runtime import (
     AsyncTenEnv,
     AudioFrame,
+    Cmd,
 )
 from ten_ai_base.const import (
     LOG_CATEGORY_VENDOR,
@@ -54,6 +55,8 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
         # Accumulate is_final=True segments until speech_final=True
         self.accumulated_segments: list[str] = []
         self.current_utterance_start_ms: int = 0
+        # Interrupt state - track if we've sent flush for this turn
+        self._interrupt_sent: bool = False
 
     @override
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
@@ -160,9 +163,7 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
             f"(type={type(self.config.endpointing).__name__}) "
             f"config.utterance_end_ms={self.config.utterance_end_ms}"
         )
-        self.ten_env.log_info(
-            f"[DEEPGRAM-PARAMS-DICT] params={params}"
-        )
+        self.ten_env.log_info(f"[DEEPGRAM-PARAMS-DICT] params={params}")
 
         query_string = urlencode(params)
         self.ten_env.log_info(
@@ -323,9 +324,7 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
 
             elif msg_type in ["Error", "Warning", "error", "warning"]:
                 # Log errors/warnings at INFO level with full payload
-                self.ten_env.log_info(
-                    f"[DEEPGRAM-{msg_type.upper()}] {data}"
-                )
+                self.ten_env.log_info(f"[DEEPGRAM-{msg_type.upper()}] {data}")
 
             else:
                 # Log unknown messages with full payload to catch any issues
@@ -378,11 +377,14 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
             # Calculate word count for filtering
             word_count = len(transcript_text.split())
 
-            # Filter single-word transcripts (interims AND finals) during first 5 seconds (echo cancel settling)
+            # Filter single-word transcripts (interims AND finals) during echo cancel settling
             if self.session_start_time > 0:
                 elapsed_time = time.time() - self.session_start_time
 
-                if word_count == 1 and elapsed_time < 5.0:
+                if (
+                    word_count == 1
+                    and elapsed_time < self.config.echo_cancel_duration
+                ):
                     self.ten_env.log_warn(
                         f"[DEEPGRAM-FLUX-FILTER] Dropping single-word {'final' if is_final else 'interim'} during echo cancel settling: "
                         f"text='{transcript_text}', confidence={confidence:.3f}, "
@@ -466,7 +468,9 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
             transcript_text = alternative.get("transcript", "")
             # Log ALL transcripts including empties
             _is_final = data.get("is_final", False)
-            _speech_final = data.get("speech_final", None)  # Check for speech_final field
+            _speech_final = data.get(
+                "speech_final", None
+            )  # Check for speech_final field
             _confidence = alternative.get("confidence", 0.0)
 
             # Log raw Deepgram response fields for debugging
@@ -495,6 +499,9 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
             # Get confidence for filtering
             confidence = alternative.get("confidence", 0.0)
 
+            # Calculate word count for interrupt check
+            word_count = len(transcript_text.split())
+
             # CRITICAL FIX: Accumulate segments until speech_final=True
             # According to Deepgram docs on endpointing + interim_results:
             # - Interim results (is_final=False): Send immediately for streaming UX
@@ -512,10 +519,26 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
                 if confidence < self.config.min_interim_confidence:
                     return  # Filter low-confidence interim
 
+                # Send interrupt flush on first confident interim with enough words
+                if (
+                    self.config.interrupt_on_speech
+                    and not self._interrupt_sent
+                    and confidence >= self.config.interrupt_min_confidence
+                    and word_count >= self.config.interrupt_min_words
+                ):
+                    self._interrupt_sent = True
+                    await self.ten_env.send_cmd(Cmd.create("flush"))
+                    self.ten_env.log_debug(
+                        f"[DEEPGRAM-INTERRUPT] Sent flush: "
+                        f"'{transcript_text}' conf={confidence:.3f}"
+                    )
+
                 # PREPEND accumulated segments for smooth UX
                 # User sees: "One, two, three, four" instead of just "four" when new segment starts
                 if self.accumulated_segments:
-                    display_text = " ".join(self.accumulated_segments + [transcript_text])
+                    display_text = " ".join(
+                        self.accumulated_segments + [transcript_text]
+                    )
                     self.ten_env.log_info(
                         f"[DEEPGRAM-INTERIM-COMBINED] Accumulated: {len(self.accumulated_segments)} segments | "
                         f"Current: '{transcript_text}' | Display: '{display_text}'",
@@ -532,7 +555,11 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
                 asr_result = ASRResult(
                     text=display_text,
                     final=False,
-                    start_ms=self.current_utterance_start_ms if self.accumulated_segments else start_ms,
+                    start_ms=(
+                        self.current_utterance_start_ms
+                        if self.accumulated_segments
+                        else start_ms
+                    ),
                     duration_ms=duration_ms,
                     language=self.config.language,
                     words=[],
@@ -555,7 +582,9 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
                 # Speech ended - combine all accumulated + current and send as final
                 if self.accumulated_segments:
                     # Combine accumulated segments + current
-                    combined_text = " ".join(self.accumulated_segments + [transcript_text])
+                    combined_text = " ".join(
+                        self.accumulated_segments + [transcript_text]
+                    )
                     self.ten_env.log_info(
                         f"[DEEPGRAM-COMBINE] Combined {len(self.accumulated_segments)+1} segments: '{combined_text}'",
                         category=LOG_CATEGORY_VENDOR,
@@ -566,7 +595,9 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
                     self.current_utterance_start_ms = start_ms
 
                 # Calculate total duration from utterance start to now
-                total_duration_ms = (start_ms + duration_ms) - self.current_utterance_start_ms
+                total_duration_ms = (
+                    start_ms + duration_ms
+                ) - self.current_utterance_start_ms
 
                 self.ten_env.log_info(
                     f"[DEEPGRAM-FINAL] Text: '{combined_text}' | "
@@ -591,6 +622,8 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
                 # Clear accumulated segments for next utterance
                 self.accumulated_segments = []
                 self.current_utterance_start_ms = 0
+                # Reset interrupt state for next turn
+                self._interrupt_sent = False
 
         except Exception as e:
             self.ten_env.log_error(
