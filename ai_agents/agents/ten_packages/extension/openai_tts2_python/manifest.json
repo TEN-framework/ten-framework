@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "openai_tts2_python",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "dependencies": [
     {
       "type": "system",
@@ -37,6 +37,9 @@
           "type": "object",
           "properties": {
             "api_key": {
+              "type": "string"
+            },
+            "base_url": {
               "type": "string"
             },
             "model": {

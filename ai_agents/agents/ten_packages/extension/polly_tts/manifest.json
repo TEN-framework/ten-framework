@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "polly_tts",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "dependencies": [
     {
       "type": "system",
@@ -67,6 +67,9 @@
               "type": "string"
             },
             "audio_format": {
+              "type": "string"
+            },
+            "endpoint_url": {
               "type": "string"
             }
           }

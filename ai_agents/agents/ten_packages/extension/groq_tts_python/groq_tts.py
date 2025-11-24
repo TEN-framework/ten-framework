@@ -33,7 +33,11 @@ class GroqTTSClient(AsyncTTS2HttpClient):
         self.retry_delay = 0.1
 
         try:
-            self.client = AsyncGroq(api_key=config.params["api_key"])
+            # Extract base_url from params if provided
+            init_params = {"api_key": config.params["api_key"]}
+            if "base_url" in config.params:
+                init_params["base_url"] = config.params["base_url"]
+            self.client = AsyncGroq(**init_params)
         except Exception as e:
             ten_env.log_error(
                 f"error when initializing GroqTTS: {e}",

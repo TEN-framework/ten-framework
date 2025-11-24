@@ -57,9 +57,12 @@ class PollyTTSClient(AsyncTTS2HttpClient):
 
         try:
             self.session = boto3.Session(**session_params)
-            self.client = self.session.client(
-                "polly", config=Config(tcp_keepalive=True)
-            )
+            client_config = Config(tcp_keepalive=True)
+            client_params = {"service_name": "polly", "config": client_config}
+            # Add endpoint_url if provided
+            if config.params.get("endpoint_url"):
+                client_params["endpoint_url"] = config.params["endpoint_url"]
+            self.client = self.session.client(**client_params)
         except NoCredentialsError as e:
             ten_env.log_error(
                 f"error when initializing PollyTTS: {e}",
