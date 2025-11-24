@@ -106,7 +106,7 @@ nova3_stt_300ms = {
     },
 }
 
-flux_stt_300ms = {
+flux_stt = {
     "type": "extension",
     "name": "stt",
     "addon": "deepgram_ws_asr_python",
@@ -118,8 +118,9 @@ flux_stt_300ms = {
             "model": "flux-general-en",
             "language": "en-US",
             "interim_results": True,
-            "endpointing": 500,
-            "utterance_end_ms": 1000,
+            "eot_threshold": 0.73,      # End-of-turn probability (0.0-1.0) - TEST VALUE
+            "eot_timeout_ms": 2500,     # Max wait for EOT confirmation - TEST VALUE
+            "eager_eot_threshold": 0.0,  # Eager EOT (0 = disabled)
         }
     },
 }
@@ -734,7 +735,7 @@ new_graphs.append(
     create_apollo_graph(
         "flux_apollo_gpt_4o_cartesia_heygen",
         gpt4o_llm_with_tools,
-        flux_stt_300ms,
+        flux_stt,
         has_avatar=True,
         avatar_type="heygen",
     )
@@ -743,7 +744,7 @@ new_graphs.append(
     create_apollo_graph(
         "flux_apollo_gpt_4o_cartesia_anam",
         gpt4o_llm_with_tools,
-        flux_stt_300ms,
+        flux_stt,
         has_avatar=True,
         avatar_type="anam",
         tts_config=cartesia_tts_sonic3_apollo_anam,
@@ -757,7 +758,7 @@ new_graphs.append(
     create_apollo_graph(
         "flux_apollo_gpt_5_1_cartesia_heygen",
         gpt51_llm_with_tools,
-        flux_stt_300ms,
+        flux_stt,
         has_avatar=True,
         avatar_type="heygen",
     )
@@ -766,7 +767,7 @@ new_graphs.append(
     create_apollo_graph(
         "flux_apollo_gpt_5_1_cartesia_anam",
         gpt51_llm_with_tools,
-        flux_stt_300ms,
+        flux_stt,
         has_avatar=True,
         avatar_type="anam",
         tts_config=cartesia_tts_sonic3_apollo_anam,

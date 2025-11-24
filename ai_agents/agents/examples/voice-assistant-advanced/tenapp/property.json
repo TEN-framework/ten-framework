@@ -2191,8 +2191,9 @@
                   "model": "flux-general-en",
                   "language": "en-US",
                   "interim_results": true,
-                  "endpointing": 500,
-                  "utterance_end_ms": 1000
+                  "eot_threshold": 0.73,
+                  "eot_timeout_ms": 2500,
+                  "eager_eot_threshold": 0.0
                 }
               }
             },
@@ -2520,8 +2521,9 @@
                   "model": "flux-general-en",
                   "language": "en-US",
                   "interim_results": true,
-                  "endpointing": 500,
-                  "utterance_end_ms": 1000
+                  "eot_threshold": 0.73,
+                  "eot_timeout_ms": 2500,
+                  "eager_eot_threshold": 0.0
                 }
               }
             },
@@ -2856,8 +2858,9 @@
                   "model": "flux-general-en",
                   "language": "en-US",
                   "interim_results": true,
-                  "endpointing": 500,
-                  "utterance_end_ms": 1000
+                  "eot_threshold": 0.73,
+                  "eot_timeout_ms": 2500,
+                  "eager_eot_threshold": 0.0
                 }
               }
             },
@@ -3187,8 +3190,9 @@
                   "model": "flux-general-en",
                   "language": "en-US",
                   "interim_results": true,
-                  "endpointing": 500,
-                  "utterance_end_ms": 1000
+                  "eot_threshold": 0.73,
+                  "eot_timeout_ms": 2500,
+                  "eager_eot_threshold": 0.0
                 }
               }
             },
