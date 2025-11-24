@@ -9,6 +9,7 @@ from ten_ai_base.tts2_http import AsyncTTS2HttpConfig
 class OpenAITTSConfig(AsyncTTS2HttpConfig):
     """OpenAI TTS Config"""
 
+    base_url: str = ""
     dump: bool = Field(default=False, description="OpenAI TTS dump")
     dump_path: str = Field(
         default_factory=lambda: str(
@@ -30,6 +31,10 @@ class OpenAITTSConfig(AsyncTTS2HttpConfig):
         # OpenAI TTS sample rate is fixed at 24000 Hz
         if "sample_rate" in self.params:
             del self.params["sample_rate"]
+
+        if "base_url" in self.params:
+            self.base_url = self.params["base_url"]
+            del self.params["base_url"]
 
         # Use fixed value
         self.params["response_format"] = "pcm"

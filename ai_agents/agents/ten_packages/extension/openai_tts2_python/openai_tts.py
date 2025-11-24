@@ -26,6 +26,15 @@ class OpenAITTSClient(AsyncTTS2HttpClient):
         self.client: AsyncOpenAI | None = None
 
         try:
+            if self.config.base_url.strip() != "":
+                self.client = AsyncOpenAI(
+                    api_key=config.params["api_key"],
+                    base_url=self.config.base_url,
+                )
+            else:
+                self.client = AsyncOpenAI(
+                    api_key=config.params["api_key"],
+                )
             self.client = AsyncOpenAI(
                 api_key=config.params["api_key"],
             )
