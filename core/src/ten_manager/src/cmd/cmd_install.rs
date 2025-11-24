@@ -743,7 +743,7 @@ pub async fn execute_cmd(
     let mut final_non_usable_models = Vec::new();
     let mut retry_attempt = 0;
 
-    while current_max_latest_versions < command_data.max_latest_versions {
+    while current_max_latest_versions <= command_data.max_latest_versions {
         if retry_attempt > 0 && is_verbose(tman_config.clone()).await {
             out.normal_line(&format!(
                 "{}  Retry attempt {} with max_latest_versions = {}...",
@@ -762,6 +762,7 @@ pub async fn execute_cmd(
             locked_pkgs.as_ref(),
             out.clone(),
             current_max_latest_versions,
+            command_data.max_latest_versions,
         )
         .await
         {
@@ -776,7 +777,7 @@ pub async fn execute_cmd(
                     retry_attempt += 1;
                     current_max_latest_versions += DEFAULT_INIT_LATEST_VERSIONS_WHEN_INSTALL;
 
-                    if current_max_latest_versions < command_data.max_latest_versions
+                    if current_max_latest_versions <= command_data.max_latest_versions
                         && is_verbose(tman_config.clone()).await
                     {
                         out.normal_line(&format!(
@@ -792,7 +793,7 @@ pub async fn execute_cmd(
 
                 current_max_latest_versions += DEFAULT_INIT_LATEST_VERSIONS_WHEN_INSTALL;
 
-                if current_max_latest_versions < command_data.max_latest_versions {
+                if current_max_latest_versions <= command_data.max_latest_versions {
                     if is_verbose(tman_config.clone()).await {
                         out.normal_line(&format!(
                             "{}  Dependency resolution failed, increasing search space and \
