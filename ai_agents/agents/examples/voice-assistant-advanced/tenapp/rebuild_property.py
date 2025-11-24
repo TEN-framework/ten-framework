@@ -246,6 +246,26 @@ gpt4o_llm_with_tools = {
     },
 }
 
+gpt51_llm_with_tools = {
+    "type": "extension",
+    "name": "llm",
+    "addon": "openai_llm2_python",
+    "extension_group": "chatgpt",
+    "property": {
+        "base_url": "https://api.openai.com/v1",
+        "api_key": "${env:OPENAI_API_KEY}",
+        "model": "gpt-5.1",
+        "max_tokens": 1000,
+        "prompt": apollo_prompt,
+        "proxy_url": "${env:OPENAI_PROXY_URL|}",
+        "greeting": apollo_greeting,
+        "max_memory_length": 10,
+        "minimal_parameters": True,
+        "reasoning_effort": "none",
+        "verbosity": "low",
+    },
+}
+
 agora_rtc_base = {
     "type": "extension",
     "name": "agora_rtc",
@@ -723,6 +743,29 @@ new_graphs.append(
     create_apollo_graph(
         "flux_apollo_gpt_4o_cartesia_anam",
         gpt4o_llm_with_tools,
+        flux_stt_300ms,
+        has_avatar=True,
+        avatar_type="anam",
+        tts_config=cartesia_tts_sonic3_apollo_anam,
+        avatar_config=anam_avatar_apollo,
+    )
+)
+
+# Group 4: GPT-5.1 graphs
+print("Creating GPT-5.1 apollo graphs...")
+new_graphs.append(
+    create_apollo_graph(
+        "flux_apollo_gpt_5_1_cartesia_heygen",
+        gpt51_llm_with_tools,
+        flux_stt_300ms,
+        has_avatar=True,
+        avatar_type="heygen",
+    )
+)
+new_graphs.append(
+    create_apollo_graph(
+        "flux_apollo_gpt_5_1_cartesia_anam",
+        gpt51_llm_with_tools,
         flux_stt_300ms,
         has_avatar=True,
         avatar_type="anam",
