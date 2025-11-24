@@ -660,6 +660,64 @@ async fn create_input_str(
     )
     .await?;
 
+    // Collect exact version constraints from root package to filter candidates
+    // early. This optimization prevents wasting time on versions that can never
+    // be part of a valid solution when the root package specifies exact version
+    // constraints (e.g., =0.7.22).
+    let mut exact_version_constraints: HashMap<PkgTypeAndName, Version> = HashMap::new();
+
+    // Get the root package info to extract its dependencies.
+    let root_type_and_name = PkgTypeAndName {
+        pkg_type: *pkg_type,
+        name: pkg_name.clone(),
+    };
+
+    if let Some(root_candidates) = all_candidates.get(&root_type_and_name) {
+        // Get the root package (should be only one version)
+        if let Some(root_pkg) = root_candidates.values().next() {
+            if let Some(dependencies) = &root_pkg.manifest.dependencies {
+                for dep in dependencies {
+                    match dep {
+                        ManifestDependency::RegistryDependency {
+                            pkg_type: dep_type,
+                            name: dep_name,
+                            version_req,
+                        } => {
+                            // Check if this is an exact version constraint (e.g., "=0.7.22")
+                            // by checking if the raw string starts with "="
+                            let raw = version_req.as_raw();
+                            if raw.starts_with('=') {
+                                // Parse the version from the string (remove the '=' prefix)
+                                if let Ok(exact_version) =
+                                    Version::parse(raw.trim_start_matches('='))
+                                {
+                                    let dep_type_and_name = PkgTypeAndName {
+                                        pkg_type: *dep_type,
+                                        name: dep_name.clone(),
+                                    };
+                                    exact_version_constraints
+                                        .insert(dep_type_and_name, exact_version.clone());
+
+                                    if is_verbose(tman_config.clone()).await {
+                                        out.normal_line(&format!(
+                                            "  Detected exact version constraint: [{}]{}@{}",
+                                            dep_type, dep_name, exact_version
+                                        ));
+                                    }
+                                }
+                            }
+                        }
+                        ManifestDependency::LocalDependency {
+                            ..
+                        } => {
+                            // Local dependencies don't need this optimization
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     // First pass: determine which package versions have valid dependencies
     let mut dumped_pkgs_info = HashSet::new();
     let mut skipped_packages = Vec::new();
@@ -667,6 +725,22 @@ async fn create_input_str(
 
     for candidates in all_candidates {
         for candidate in candidates.1 {
+            // Skip versions that violate exact version constraints from root package.
+            // This is a critical optimization: if the root package requires exactly
+            // version X of a dependency, there's no point in considering other versions.
+            if let Some(required_version) = exact_version_constraints.get(candidates.0) {
+                if &candidate.1.manifest.version != required_version {
+                    skipped_packages.push(format!(
+                        "{}:{}@{} (filtered by exact version constraint: {})",
+                        candidate.1.manifest.type_and_name.pkg_type,
+                        candidate.1.manifest.type_and_name.name,
+                        candidate.1.manifest.version,
+                        required_version
+                    ));
+                    continue;
+                }
+            }
+
             let result = create_input_str_for_pkg_info_dependencies(
                 &mut input_str,
                 candidate.1,
