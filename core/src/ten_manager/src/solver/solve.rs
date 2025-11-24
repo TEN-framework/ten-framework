@@ -7,6 +7,7 @@
 use std::{
     collections::{HashMap, HashSet},
     sync::Arc,
+    time::Duration,
 };
 
 use anyhow::{anyhow, Result};
@@ -37,10 +38,18 @@ async fn get_model(
     is_usable: &mut bool,
     out: Arc<Box<dyn TmanOutput>>,
 ) -> Option<Vec<String>> {
-    // Retrieve the symbols in the model.
-    let atoms = model.symbols(ShowType::SHOWN).expect("Failed to retrieve symbols in the model.");
+    let verbose = is_verbose(tman_config.clone()).await;
 
-    if is_verbose(tman_config.clone()).await {
+    // Retrieve the symbols in the model.
+    if verbose {
+        out.normal_line("Retrieving symbols in the model...");
+    }
+    let atoms = model.symbols(ShowType::SHOWN).expect("Failed to retrieve symbols in the model.");
+    if verbose {
+        out.normal_line("Symbols retrieved");
+    }
+
+    if verbose {
         out.normal_line("Model:");
     }
 
@@ -201,13 +210,16 @@ async fn solve(
     tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
     input: &str,
     out: Arc<Box<dyn TmanOutput>>,
+    wait_timeout: Duration,
 ) -> SolveResult {
+    let verbose = is_verbose(tman_config.clone()).await;
+
     // Create a control object.
     // i.e., clingo_control_new
     let mut ctl = control({
         let mut args = vec![];
 
-        if is_verbose(tman_config.clone()).await {
+        if verbose {
             args.push("--verbose".to_string());
         }
 
@@ -268,21 +280,60 @@ async fn solve(
 
     // Solving. Get a solve handle.
     // i.e., clingo_control_solve
-    let mut handle = ctl.solve(SolveMode::YIELD, &[]).expect("Failed retrieving solve handle.");
+    // Use ASYNC mode to enable timed wait() functionality
+    let mut handle = ctl
+        .solve(SolveMode::ASYNC | SolveMode::YIELD, &[])
+        .expect("Failed retrieving solve handle.");
 
     let mut usable_model = None;
     let mut non_usable_models = Vec::new();
 
+    let mut model_count = 0;
+
     // Loop over all models.
     loop {
+        model_count += 1;
+
+        if verbose {
+            out.normal_line(&format!("Solving... (model #{})", model_count));
+        }
+
         // i.e., clingo_solve_handle_resume
         handle.resume().expect("Failed resume on solve handle.");
+
+        // Use wait() with timeout to check if model is ready
+        // This prevents hanging indefinitely on model() call
+        if verbose {
+            out.normal_line(&format!("Waiting for model (timeout: {:?})...", wait_timeout));
+        }
+
+        let model_ready = handle.wait(wait_timeout);
+
+        if !model_ready {
+            // Timeout waiting for model - solver is taking too long
+            // Jump to resource cleanup without retrying
+            if verbose {
+                out.normal_line(&format!(
+                    "Timeout waiting for model #{} after {:?}. Proceeding to cleanup.",
+                    model_count, wait_timeout
+                ));
+            }
+            break;
+        }
+
+        if verbose {
+            out.normal_line("Getting model...");
+        }
 
         // i.e., clingo_solve_handle_model
         match handle.model() {
             // Get the model.
             Ok(Some(model)) => {
                 let mut is_usable = false;
+
+                if verbose {
+                    out.normal_line("get_model...");
+                }
                 if let Some(m) =
                     get_model(tman_config.clone(), model, &mut is_usable, out.clone()).await
                 {
@@ -298,23 +349,32 @@ async fn solve(
                         non_usable_models.push(m); // Collect error models.
                     }
                 }
+
+                if verbose {
+                    out.normal_line("get_model done");
+                }
             }
             // Stop if there are no more models.
             Ok(None) => {
-                if is_verbose(tman_config.clone()).await {
+                if verbose {
                     out.normal_line("No more models");
                 }
                 break;
             }
-            Err(e) => panic!("Error: {e}"),
+            Err(e) => {
+                if verbose {
+                    out.normal_line(&format!("Error getting model: {e:?}"));
+                }
+                break;
+            }
+        }
+
+        if verbose {
+            out.normal_line("Next loop...");
         }
     }
 
     // Close the solve handle.
-    // i.e., clingo_solve_handle_get
-    let _result = handle.get().expect("Failed to get result from solve handle.");
-
-    // Free the solve handle.
     // i.e., clingo_solve_handle_close
     ctl = handle.close().expect("Failed to close solve handle.");
 
@@ -799,8 +859,27 @@ pub async fn solve_all(
     all_candidates: &HashMap<PkgTypeAndName, HashMap<PkgBasicInfo, PkgInfo>>,
     locked_pkgs: Option<&HashMap<PkgTypeAndName, PkgInfo>>,
     out: Arc<Box<dyn TmanOutput>>,
+    current_max_latest_versions: i32,
     max_latest_versions: i32,
 ) -> SolveResult {
+    let verbose = is_verbose(tman_config.clone()).await;
+
+    // Determine wait timeout based on whether we've reached the max_latest_versions
+    // If current >= max, use longer timeout (30s) for the final comprehensive
+    // attempt Otherwise, use shorter timeout (10s) for quicker iterations
+    let wait_timeout = if current_max_latest_versions >= max_latest_versions {
+        Duration::from_secs(30)
+    } else {
+        Duration::from_secs(10)
+    };
+
+    if verbose {
+        out.normal_line(&format!(
+            "Using wait timeout: {:?} (current_max_latest_versions: {}, max_latest_versions: {})",
+            wait_timeout, current_max_latest_versions, max_latest_versions
+        ));
+    }
+
     let input_str = create_input_str(
         tman_config.clone(),
         pkg_type,
@@ -809,8 +888,8 @@ pub async fn solve_all(
         all_candidates,
         locked_pkgs,
         out.clone(),
-        max_latest_versions,
+        current_max_latest_versions,
     )
     .await?;
-    solve(tman_config, &input_str, out).await
+    solve(tman_config, &input_str, out, wait_timeout).await
 }
