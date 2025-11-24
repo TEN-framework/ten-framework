@@ -118,8 +118,8 @@ flux_stt = {
             "model": "flux-general-en",
             "language": "en-US",
             "interim_results": True,
-            "eot_threshold": 0.73,      # End-of-turn probability (0.0-1.0) - TEST VALUE
-            "eot_timeout_ms": 2500,     # Max wait for EOT confirmation - TEST VALUE
+            "eot_threshold": 0.73,  # End-of-turn probability (0.0-1.0) - TEST VALUE
+            "eot_timeout_ms": 2500,  # Max wait for EOT confirmation - TEST VALUE
             "eager_eot_threshold": 0.0,  # Eager EOT (0 = disabled)
         }
     },
