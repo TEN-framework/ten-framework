@@ -184,7 +184,7 @@ class StateMachineExtensionTester(ExtensionTester):
         return True
 
 
-@patch("azure_tts_python.extension.AzureTTS")
+@patch("ten_packages.extension.azure_tts_python.extension.AzureTTS")
 def test_sequential_requests_state_machine(MockAzureTTS):
     """
     Test that two sequential requests with different IDs are processed correctly.
@@ -197,15 +197,17 @@ def test_sequential_requests_state_machine(MockAzureTTS):
     mock_client_instance = MagicMock()
     MockAzureTTS.return_value = mock_client_instance
 
-    # Mock async generator for synthesize_with_retry
+    # Mock async function that returns an async generator for synthesize_with_retry
     async def mock_synthesize_with_retry(text, max_retries=5, retry_delay=1.0):
-        """Mock synthesize method that yields audio chunks."""
-        await asyncio.sleep(0.01)  # Simulate processing delay
-        yield b"mock_audio_chunk_1"
-        await asyncio.sleep(0.01)
-        yield b"mock_audio_chunk_2"
-        await asyncio.sleep(0.01)
-        yield b"mock_audio_chunk_3"
+        """Mock synthesize method that returns an async generator yielding audio chunks."""
+        async def _generator():
+            await asyncio.sleep(0.01)  # Simulate processing delay
+            yield b"mock_audio_chunk_1"
+            await asyncio.sleep(0.01)
+            yield b"mock_audio_chunk_2"
+            await asyncio.sleep(0.01)
+            yield b"mock_audio_chunk_3"
+        return _generator()
 
     mock_client_instance.synthesize_with_retry = mock_synthesize_with_retry
     mock_client_instance.start_connection = AsyncMock()
@@ -248,7 +250,7 @@ def test_sequential_requests_state_machine(MockAzureTTS):
     print("\n✓ Sequential requests state machine test PASSED!")
 
 
-@patch("azure_tts_python.extension.AzureTTS")
+@patch("ten_packages.extension.azure_tts_python.extension.AzureTTS")
 def test_request_state_transitions(MockAzureTTS):
     """
     Test detailed state transitions: QUEUED -> PROCESSING -> FINALIZING -> COMPLETED.
@@ -261,11 +263,13 @@ def test_request_state_transitions(MockAzureTTS):
     mock_client_instance = MagicMock()
     MockAzureTTS.return_value = mock_client_instance
 
-    # Simple async generator for single request
+    # Simple async function returning async generator for single request
     async def simple_synthesize_with_retry(text, max_retries=5, retry_delay=1.0):
-        """Mock synthesize method that yields one audio chunk."""
-        await asyncio.sleep(0.01)
-        yield b"mock_audio_chunk"
+        """Mock synthesize method that returns an async generator yielding one audio chunk."""
+        async def _generator():
+            await asyncio.sleep(0.01)
+            yield b"mock_audio_chunk"
+        return _generator()
 
     mock_client_instance.synthesize_with_retry = simple_synthesize_with_retry
     mock_client_instance.start_connection = AsyncMock()
