@@ -5,16 +5,20 @@ on:
     types: [created]
   pull_request:
     types: [opened, synchronize, reopened]
-    paths-ignore:
-      - "tools/**"
-      - ".vscode/**"
-      - ".devcontainer/**"
-      - ".github/**"
-      - "!.github/workflows/coverage.yml"
-      - "core/src/ten_manager/designer_frontend/**"
-      - "**.md"
-      - "ai_agents/**"
-
+    paths:
+      - "core/**"
+      - "!core/src/ten_manager/designer_frontend/**"
+      - "tests/**"
+      - "build/**"
+      - ".github/workflows/coverage.yml"
+  push:
+    branches: ["main"]
+    paths:
+      - "core/**"
+      - "!core/src/ten_manager/designer_frontend/**"
+      - "tests/**"
+      - "build/**"
+      - ".github/workflows/coverage.yml"
 permissions:
   contents: write
 
@@ -285,15 +289,25 @@ jobs:
 
       - name: Set ulimit and sysctl
         run: |
-          # Because there are concurrent test cases which involves many
-          # concurrent socket connections, we need to enlarge the maximum number
-          # of the opened file descriptor.
-          ulimit -n 102400
+          # Increase max number of open file descriptors as much as allowed.
+          TARGET=102400
+          HARD=$(ulimit -Hn)
 
-          # Because there are concurrent test cases (in 'smoke' and
-          # 'integration') which will create many concurrent connections
-          # simutaneously, we increase the TCP listening backlog value to 8192.
-          sysctl -w net.core.somaxconn=8192
+          echo "Current hard limit for open files: $HARD"
+          if [ "$HARD" != "unlimited" ] && [ "$HARD" -lt "$TARGET" ]; then
+            echo "Target ($TARGET) is greater than hard limit ($HARD), using hard limit instead."
+            TARGET="$HARD"
+          fi
+
+          # Try to set the soft limit; if it fails, just warn and continue.
+          if ! ulimit -n "$TARGET"; then
+            echo "WARNING: failed to increase ulimit -n to $TARGET, continuing with existing limit."
+          fi
+
+          # Adjust somaxconn; ignore failure if not permitted.
+          if ! sysctl -w net.core.somaxconn=8192; then
+            echo "WARNING: failed to set net.core.somaxconn, continuing."
+          fi
         shell: bash
 
       - uses: actions/setup-node@v4
@@ -538,15 +552,25 @@ jobs:
 
       - name: Set ulimit and sysctl
         run: |
-          # Because there are concurrent test cases which involves many
-          # concurrent socket connections, we need to enlarge the maximum number
-          # of the opened file descriptor.
-          ulimit -n 102400
+          # Increase max number of open file descriptors as much as allowed.
+          TARGET=102400
+          HARD=$(ulimit -Hn)
 
-          # Because there are concurrent test cases (in 'smoke' and
-          # 'integration') which will create many concurrent connections
-          # simutaneously, we increase the TCP listening backlog value to 8192.
-          sysctl -w net.core.somaxconn=8192
+          echo "Current hard limit for open files: $HARD"
+          if [ "$HARD" != "unlimited" ] && [ "$HARD" -lt "$TARGET" ]; then
+            echo "Target ($TARGET) is greater than hard limit ($HARD), using hard limit instead."
+            TARGET="$HARD"
+          fi
+
+          # Try to set the soft limit; if it fails, just warn and continue.
+          if ! ulimit -n "$TARGET"; then
+            echo "WARNING: failed to increase ulimit -n to $TARGET, continuing with existing limit."
+          fi
+
+          # Adjust somaxconn; ignore failure if not permitted.
+          if ! sysctl -w net.core.somaxconn=8192; then
+            echo "WARNING: failed to set net.core.somaxconn, continuing."
+          fi
         shell: bash
 
       - uses: actions/setup-node@v4
@@ -688,15 +712,25 @@ jobs:
 
       - name: Set ulimit and sysctl
         run: |
-          # Because there are concurrent test cases which involves many
-          # concurrent socket connections, we need to enlarge the maximum number
-          # of the opened file descriptor.
-          ulimit -n 102400
+          # Increase max number of open file descriptors as much as allowed.
+          TARGET=102400
+          HARD=$(ulimit -Hn)
 
-          # Because there are concurrent test cases (in 'smoke' and
-          # 'integration') which will create many concurrent connections
-          # simutaneously, we increase the TCP listening backlog value to 8192.
-          sysctl -w net.core.somaxconn=8192
+          echo "Current hard limit for open files: $HARD"
+          if [ "$HARD" != "unlimited" ] && [ "$HARD" -lt "$TARGET" ]; then
+            echo "Target ($TARGET) is greater than hard limit ($HARD), using hard limit instead."
+            TARGET="$HARD"
+          fi
+
+          # Try to set the soft limit; if it fails, just warn and continue.
+          if ! ulimit -n "$TARGET"; then
+            echo "WARNING: failed to increase ulimit -n to $TARGET, continuing with existing limit."
+          fi
+
+          # Adjust somaxconn; ignore failure if not permitted.
+          if ! sysctl -w net.core.somaxconn=8192; then
+            echo "WARNING: failed to set net.core.somaxconn, continuing."
+          fi
         shell: bash
 
       - uses: actions/setup-node@v4
@@ -838,15 +872,25 @@ jobs:
 
       - name: Set ulimit and sysctl
         run: |
-          # Because there are concurrent test cases which involves many
-          # concurrent socket connections, we need to enlarge the maximum number
-          # of the opened file descriptor.
-          ulimit -n 102400
+          # Increase max number of open file descriptors as much as allowed.
+          TARGET=102400
+          HARD=$(ulimit -Hn)
 
-          # Because there are concurrent test cases (in 'smoke' and
-          # 'integration') which will create many concurrent connections
-          # simutaneously, we increase the TCP listening backlog value to 8192.
-          sysctl -w net.core.somaxconn=8192
+          echo "Current hard limit for open files: $HARD"
+          if [ "$HARD" != "unlimited" ] && [ "$HARD" -lt "$TARGET" ]; then
+            echo "Target ($TARGET) is greater than hard limit ($HARD), using hard limit instead."
+            TARGET="$HARD"
+          fi
+
+          # Try to set the soft limit; if it fails, just warn and continue.
+          if ! ulimit -n "$TARGET"; then
+            echo "WARNING: failed to increase ulimit -n to $TARGET, continuing with existing limit."
+          fi
+
+          # Adjust somaxconn; ignore failure if not permitted.
+          if ! sysctl -w net.core.somaxconn=8192; then
+            echo "WARNING: failed to set net.core.somaxconn, continuing."
+          fi
         shell: bash
 
       - uses: actions/setup-node@v4
@@ -989,7 +1033,7 @@ jobs:
       - name: Clean profraw files before tests
         run: |
           find . -name "*.profraw" -type f -delete
-          echo "Cleaned all .profraw files"
+          echo "Cleaned all .profraw files."
 
       - name: Download build artifacts (tar archive)
         uses: actions/download-artifact@v4
@@ -1008,15 +1052,25 @@ jobs:
 
       - name: Set ulimit and sysctl
         run: |
-          # Because there are concurrent test cases which involves many
-          # concurrent socket connections, we need to enlarge the maximum number
-          # of the opened file descriptor.
-          ulimit -n 102400
+          # Increase max number of open file descriptors as much as allowed.
+          TARGET=102400
+          HARD=$(ulimit -Hn)
 
-          # Because there are concurrent test cases (in 'smoke' and
-          # 'integration') which will create many concurrent connections
-          # simutaneously, we increase the TCP listening backlog value to 8192.
-          sysctl -w net.core.somaxconn=8192
+          echo "Current hard limit for open files: $HARD"
+          if [ "$HARD" != "unlimited" ] && [ "$HARD" -lt "$TARGET" ]; then
+            echo "Target ($TARGET) is greater than hard limit ($HARD), using hard limit instead."
+            TARGET="$HARD"
+          fi
+
+          # Try to set the soft limit; if it fails, just warn and continue.
+          if ! ulimit -n "$TARGET"; then
+            echo "WARNING: failed to increase ulimit -n to $TARGET, continuing with existing limit."
+          fi
+
+          # Adjust somaxconn; ignore failure if not permitted.
+          if ! sysctl -w net.core.somaxconn=8192; then
+            echo "WARNING: failed to set net.core.somaxconn, continuing."
+          fi
         shell: bash
 
       - uses: actions/setup-node@v4
@@ -1106,7 +1160,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          fetch-depth: 0
           submodules: false
 
       - name: Install LLVM 21 tools
@@ -1206,20 +1260,8 @@ jobs:
           "${OBJECT_ARGS[@]}" \
           > "out/linux/x64/coverage/coverage.lcov"
 
-      - name: Upload coverage report to Coveralls
-        env:
-          COVERALLS_REPO_TOKEN: ${{ secrets.TEN_COVERALLS_REPO_TOKEN }}
+      - name: Filter coverage.lcov for core directory
         run: |
-          pip install --user cpp-coveralls
-          echo "cpp-coveralls installed successfully"
-
-          # Add user bin directory to PATH
-          export PATH="$HOME/.local/bin:$PATH"
-          echo "Updated PATH: $PATH"
-
-          # Verify coveralls command is available
-          which coveralls || echo "coveralls command not found in PATH"
-
           if [ -f "out/linux/x64/coverage/coverage.lcov" ]; then
             echo "Filtering coverage.lcov to include only core directory..."
 
@@ -1231,49 +1273,19 @@ jobs:
 
             echo "Filtered coverage file created"
             ls -lh out/linux/x64/coverage/coverage_filtered.lcov
-
-            echo "Uploading filtered coverage to Coveralls..."
-
-            # Capture coveralls output to extract the job URL
-            COVERALLS_OUTPUT=$(coveralls --lcov-file out/linux/x64/coverage/coverage_filtered.lcov --verbose 2>&1)
-            COVERALLS_EXIT_CODE=$?
-
-            echo "$COVERALLS_OUTPUT"
-
-            if [ $COVERALLS_EXIT_CODE -eq 0 ]; then
-              echo "Coverage uploaded to Coveralls successfully"
-
-              # Extract the URL from coveralls output
-              # The output format is: {'message': 'Job ##125.1', 'url': 'https://coveralls.io/jobs/173760015'}
-              # Use sed as fallback if grep -P is not available
-              if echo "$COVERALLS_OUTPUT" | grep -P "'url'" > /dev/null 2>&1; then
-                COVERALLS_JOB_URL=$(echo "$COVERALLS_OUTPUT" | grep -oP "(?<='url': ')[^']*" | tail -1)
-              else
-                # Fallback to sed for systems without grep -P
-                COVERALLS_JOB_URL=$(echo "$COVERALLS_OUTPUT" | sed -n "s/.*'url': '\([^']*\)'.*/\1/p" | tail -1)
-              fi
-
-              if [ -n "$COVERALLS_JOB_URL" ]; then
-                echo "Coveralls job URL: $COVERALLS_JOB_URL"
-                echo "COVERALLS_JOB_URL=$COVERALLS_JOB_URL" >> "$GITHUB_ENV"
-              else
-                echo "Could not extract Coveralls job URL from output"
-                # Fallback to repository URL
-                COVERALLS_JOB_URL="https://coveralls.io/github/${{ github.repository }}?branch=${{ github.ref_name }}"
-                echo "COVERALLS_JOB_URL=$COVERALLS_JOB_URL" >> "$GITHUB_ENV"
-              fi
-            else
-              echo "Error: Coverage upload to Coveralls failed with exit code $COVERALLS_EXIT_CODE"
-              # Set fallback URL even on failure
-              COVERALLS_JOB_URL="https://coveralls.io/github/${{ github.repository }}?branch=${{ github.ref_name }}"
-              echo "COVERALLS_JOB_URL=$COVERALLS_JOB_URL" >> "$GITHUB_ENV"
-              exit 1
-            fi
           else
-            echo "Warning: coverage.lcov file not found, skipping Coveralls upload"
+            echo "Warning: coverage.lcov file not found, cannot prepare filtered coverage"
             ls -la out/linux/x64/coverage/ || true
             exit 1
           fi
+
+      - name: Upload coverage report to Coveralls
+        uses: coverallsapp/github-action@v2
+        env:
+          COVERALLS_REPO_TOKEN: ${{ secrets.TEN_COVERALLS_REPO_TOKEN }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: out/linux/x64/coverage/coverage_filtered.lcov
 
       - name: Upload filtered coverage report to artifacts
         if: success() || failure()
@@ -1292,14 +1304,9 @@ jobs:
           echo "**Branch/Tag**: ${{ github.ref_name }}" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
 
-          # Use the URL from coveralls output if available
-          if [ -n "${COVERALLS_JOB_URL:-}" ]; then
-            echo "**Coverage Report**: [${COVERALLS_JOB_URL}](${COVERALLS_JOB_URL})" >> "$GITHUB_STEP_SUMMARY"
-          else
-            # Fallback URL
-            COVERALLS_URL="https://coveralls.io/github/${{ github.repository }}?branch=${{ github.ref_name }}"
-            echo "**Coverage Report**: [${COVERALLS_URL}](${COVERALLS_URL})" >> "$GITHUB_STEP_SUMMARY"
-          fi
+          # Coverage report URL (branch overview)
+          COVERALLS_URL="https://coveralls.io/github/${{ github.repository }}?branch=${{ github.ref_name }}"
+          echo "**Coverage Report**: [${COVERALLS_URL}](${COVERALLS_URL})" >> "$GITHUB_STEP_SUMMARY"
 
           echo "**Please refresh the website after several minutes to see the correct coverage data, especially for the tree structure view**" >> "$GITHUB_STEP_SUMMARY"
 

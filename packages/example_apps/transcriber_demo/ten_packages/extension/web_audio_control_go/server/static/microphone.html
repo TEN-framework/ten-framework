@@ -324,6 +324,62 @@
         .nav-links a:hover {
             text-decoration: underline;
         }
+
+        .vad-indicator {
+            display: none;
+            align-items: center;
+            gap: 15px;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            font-weight: 600;
+            font-size: 1.1em;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .vad-indicator.active {
+            display: flex;
+        }
+
+        .vad-indicator.speech {
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            border: 3px solid #28a745;
+            color: #155724;
+            animation: pulseGreen 2s infinite;
+        }
+
+        .vad-indicator.silence {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border: 3px solid #6c757d;
+            color: #495057;
+        }
+
+        .vad-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .vad-indicator.speech .vad-dot {
+            background: #28a745;
+            animation: pulse 1s infinite;
+            box-shadow: 0 0 10px rgba(40, 167, 69, 0.5);
+        }
+
+        .vad-indicator.silence .vad-dot {
+            background: #6c757d;
+        }
+
+        @keyframes pulseGreen {
+            0%, 100% {
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            }
+            50% {
+                box-shadow: 0 4px 16px rgba(40, 167, 69, 0.3);
+            }
+        }
     </style>
 </head>
 
@@ -344,11 +400,17 @@
                 <span><strong>Recording...</strong> Audio is being captured and transcribed</span>
             </div>
 
+            <div class="vad-indicator" id="vadIndicator">
+                <div class="vad-dot"></div>
+                <span id="vadStatus"><strong>Voice Activity:</strong> Silence</span>
+            </div>
+
             <div class="status" id="statusMessage"></div>
 
             <div class="info-box">
                 <p><strong>ℹ️ Info:</strong> This page captures audio from your microphone at 16kHz sample rate.</p>
-                <p>Click "Start Recording" to begin real-time transcription.</p>
+                <p>Click "Start Recording" to begin real-time transcription with Voice Activity Detection (VAD).</p>
+                <p><strong>🎤 VAD Status:</strong> The system will automatically detect when you're speaking vs. silence.</p>
             </div>
 
             <div class="button-group">
@@ -406,6 +468,8 @@
                         const message = JSON.parse(event.data);
                         if (message.type === 'asr_result') {
                             addAsrResult(message.text, message.final);
+                        } else if (message.type === 'vad_status') {
+                            updateVadStatus(message.is_speech);
                         }
                     } catch (e) {
                         console.error('Failed to parse WebSocket message:', e);
@@ -437,6 +501,24 @@
             } else {
                 statusEl.className = 'connection-status disconnected';
                 statusText.textContent = 'Disconnected';
+            }
+        }
+
+        function updateVadStatus(isSpeech) {
+            const vadIndicator = document.getElementById('vadIndicator');
+            const vadStatus = document.getElementById('vadStatus');
+
+            // Always show VAD status when receiving updates
+            if (!vadIndicator.classList.contains('active')) {
+                vadIndicator.classList.add('active');
+            }
+
+            if (isSpeech) {
+                vadIndicator.className = 'vad-indicator active speech';
+                vadStatus.innerHTML = '<strong>🎤 Voice Activity:</strong> 🗣️ <span style="color: #155724; font-weight: bold;">SPEECH DETECTED</span>';
+            } else {
+                vadIndicator.className = 'vad-indicator active silence';
+                vadStatus.innerHTML = '<strong>🎤 Voice Activity:</strong> 🔇 <span style="color: #495057;">Silence</span>';
             }
         }
 
@@ -541,19 +623,29 @@
                         pcmData[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
                     }
 
-                    // Send binary audio data via WebSocket
-                    if (ws.readyState === WebSocket.OPEN) {
-                        const message = JSON.stringify({
-                            type: 'audio_data',
-                            sample_rate: 16000,
-                            channels: 1,
-                            samples_per_channel: pcmData.length
-                        });
+                    // WebRTC VAD requires specific frame sizes for 16kHz: 160 (10ms), 320 (20ms), or 480 (30ms) samples
+                    // Split the 4096 samples buffer into 320-sample (20ms) chunks
+                    const chunkSize = 320;
+                    const numChunks = Math.floor(pcmData.length / chunkSize);
 
-                        // Send metadata as text first
-                        ws.send(message);
-                        // Then send audio data as binary
-                        ws.send(pcmData.buffer);
+                    for (let i = 0; i < numChunks; i++) {
+                        const start = i * chunkSize;
+                        const chunk = pcmData.slice(start, start + chunkSize);
+
+                        // Send binary audio data via WebSocket
+                        if (ws.readyState === WebSocket.OPEN) {
+                            const message = JSON.stringify({
+                                type: 'audio_data',
+                                sample_rate: 16000,
+                                channels: 1,
+                                samples_per_channel: chunk.length
+                            });
+
+                            // Send metadata as text first
+                            ws.send(message);
+                            // Then send audio data as binary
+                            ws.send(chunk.buffer);
+                        }
                     }
                 };
 
@@ -567,6 +659,13 @@
                 document.getElementById('startBtn').disabled = true;
                 document.getElementById('stopBtn').disabled = false;
                 document.getElementById('recordingIndicator').classList.add('active');
+
+                // Initialize VAD indicator as waiting for data
+                const vadIndicator = document.getElementById('vadIndicator');
+                const vadStatus = document.getElementById('vadStatus');
+                vadIndicator.className = 'vad-indicator active silence';
+                vadStatus.innerHTML = '<strong>Voice Activity:</strong> 🔇 Waiting...';
+
                 showStatus('✅ Recording started', 'success');
 
             } catch (error) {
@@ -597,6 +696,7 @@
             document.getElementById('startBtn').disabled = false;
             document.getElementById('stopBtn').disabled = true;
             document.getElementById('recordingIndicator').classList.remove('active');
+            document.getElementById('vadIndicator').classList.remove('active');
             showStatus('⏹️ Recording stopped', 'info');
         }
 

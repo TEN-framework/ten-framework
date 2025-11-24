@@ -21,7 +21,7 @@ from ten_ai_base.asr import (
     ASRResult,
     AsyncASRBaseExtension,
     ASRBufferConfig,
-    ASRBufferConfigModeDiscard,
+    ASRBufferConfigModeKeep,
 )
 
 from ten_ai_base.const import (
@@ -395,4 +395,4 @@ class TencentASRExtension(AsyncASRBaseExtension, AsyncTencentAsrListener):
 
     @override
     def buffer_strategy(self) -> ASRBufferConfig:
-        return ASRBufferConfigModeDiscard()
+        return ASRBufferConfigModeKeep(byte_limit=1024 * 1024 * 10)

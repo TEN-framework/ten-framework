@@ -221,6 +221,9 @@ pub struct DesignerSelectorMessageInfo {
 
     /// The direction of the message flow (in or out)
     pub direction: MsgDirection,
+
+    /// The name of the node that this message comes from
+    pub node_name: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -369,17 +372,135 @@ impl TryFrom<GraphNode> for DesignerGraphNode {
                 content: Box::new(DesignerSelectorNode {
                     name: content.name,
                     filter: DesignerFilter::from(content.filter),
-                    messages: content
-                        .messages
-                        .into_iter()
-                        .map(|msg| DesignerSelectorMessageInfo {
-                            msg_type: msg.msg_type,
-                            msg_name: msg.msg_name,
-                            direction: msg.direction,
-                        })
-                        .collect(),
+                    // Messages will be populated later by populate_selector_messages_info
+                    messages: Vec::new(),
                 }),
             }),
+        }
+    }
+}
+
+/// Populates 'messages' field for all selector nodes in the DesignerGraph
+///
+/// This function analyzes the graph connections to extract message information
+/// (type, name, direction) for each node, then matches selector nodes' filters
+/// to populate their messages field with the relevant information.
+pub fn populate_selector_messages_info(
+    designer_graph: &mut DesignerGraph,
+    graph: &ten_rust::graph::Graph,
+) {
+    use std::collections::HashMap;
+
+    use ten_rust::graph::connection::GraphMessageFlow;
+
+    // Collect all message information from connections
+    // Key: node_name, Value: Vec of (msg_type, msg_name, direction)
+    let mut node_messages: HashMap<String, Vec<(MsgType, String, MsgDirection)>> = HashMap::new();
+
+    if let Some(connections) = &graph.connections {
+        for connection in connections {
+            let node_name = connection.loc.get_node_name().unwrap_or(&String::new()).clone();
+
+            // Helper to process message flows
+            let process_flows = |flows: &Vec<GraphMessageFlow>,
+                                 msg_type: MsgType,
+                                 node_messages: &mut HashMap<
+                String,
+                Vec<(MsgType, String, MsgDirection)>,
+            >| {
+                for flow in flows {
+                    let mut msg_names = Vec::new();
+
+                    if let Some(name) = &flow.name {
+                        msg_names.push(name.clone());
+                    }
+
+                    if let Some(names) = &flow.names {
+                        msg_names.extend(names.clone());
+                    }
+
+                    for msg_name in msg_names {
+                        // Check destinations (Out direction from this node)
+                        if !flow.dest.is_empty() {
+                            node_messages.entry(node_name.clone()).or_default().push((
+                                msg_type.clone(),
+                                msg_name.clone(),
+                                MsgDirection::Out,
+                            ));
+                        }
+
+                        // Check sources (In direction to this node)
+                        if !flow.source.is_empty() {
+                            node_messages.entry(node_name.clone()).or_default().push((
+                                msg_type.clone(),
+                                msg_name.clone(),
+                                MsgDirection::In,
+                            ));
+                        }
+                    }
+                }
+            };
+
+            // Process cmd messages
+            if let Some(cmd_flows) = &connection.cmd {
+                process_flows(cmd_flows, MsgType::Cmd, &mut node_messages);
+            }
+
+            // Process data messages
+            if let Some(data_flows) = &connection.data {
+                process_flows(data_flows, MsgType::Data, &mut node_messages);
+            }
+
+            // Process audio_frame messages
+            if let Some(audio_flows) = &connection.audio_frame {
+                process_flows(audio_flows, MsgType::AudioFrame, &mut node_messages);
+            }
+
+            // Process video_frame messages
+            if let Some(video_flows) = &connection.video_frame {
+                process_flows(video_flows, MsgType::VideoFrame, &mut node_messages);
+            }
+        }
+    }
+
+    // Now populate messages for each selector node
+    for designer_node in &mut designer_graph.nodes {
+        if let DesignerGraphNode::Selector {
+            content,
+        } = designer_node
+        {
+            // Find the corresponding SelectorNode in the original graph
+            let selector_node = graph.nodes.iter().find_map(|node| {
+                if node.get_name() == content.name {
+                    node.as_selector_node()
+                } else {
+                    None
+                }
+            });
+
+            if let Some(selector_node) = selector_node {
+                // Use ten_rust's existing function to get matching nodes
+                if let Some(matching_nodes) = graph.get_nodes_by_selector_node(selector_node) {
+                    let mut all_messages = Vec::new();
+
+                    for matching_node in matching_nodes {
+                        let node_name = matching_node.get_name().to_string();
+                        if let Some(messages) = node_messages.get(&node_name) {
+                            // Collect all messages from this node
+                            for (msg_type, msg_name, direction) in messages {
+                                all_messages.push(DesignerSelectorMessageInfo {
+                                    msg_type: msg_type.clone(),
+                                    msg_name: msg_name.clone(),
+                                    direction: direction.clone(),
+                                    node_name: node_name.clone(),
+                                });
+                            }
+                        }
+                    }
+
+                    content.messages = all_messages;
+                }
+            }
         }
     }
 }

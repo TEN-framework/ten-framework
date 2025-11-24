@@ -28,6 +28,7 @@ jobs:
     timeout-minutes: 60
     runs-on: ubuntu-22.04
     strategy:
+      fail-fast: false
       matrix:
         build_type: [debug, release]
         arch: [x64]

@@ -25,6 +25,7 @@ export interface TranscriptMessage {
     timestamp: Date;
     isUser: boolean;
     confidence?: number;
+    isFinal?: boolean;
 }
 
 export interface VoiceSettings {

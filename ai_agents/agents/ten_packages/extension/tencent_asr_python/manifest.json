@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "tencent_asr_python",
-  "version": "0.2.8",
+  "version": "0.2.9",
   "display_name": {
     "locales": {
       "en-US": {
@@ -73,7 +73,7 @@
     {
       "type": "system",
       "name": "ten_ai_base",
-      "version": "0.7"
+      "version": "=0.7.22"
     }
   ],
   "api": {

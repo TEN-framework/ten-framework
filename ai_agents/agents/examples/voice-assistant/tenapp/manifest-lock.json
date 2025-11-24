@@ -672,6 +672,23 @@
     },
     {
       "type": "extension",
+      "name": "sarvam_http_tts",
+      "version": "0.4.0",
+      "hash": "00bdf423d74cddc1ee0d1e2f33a961bb0591f4158b82f7fa3d964e8b18b2d4db",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime_python"
+        },
+        {
+          "type": "system",
+          "name": "ten_ai_base"
+        }
+      ],
+      "path": "../../../ten_packages/extension/sarvam_http_tts"
+    },
+    {
+      "type": "extension",
       "name": "stepfun_tts_python",
       "version": "0.3.1",
       "hash": "53a078bb7c71e0f6f74013ad516cfed13ffd8ebe1b63e2e8a8a1e78db49c64b1",

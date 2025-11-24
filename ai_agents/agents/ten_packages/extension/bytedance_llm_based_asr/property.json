@@ -12,7 +12,7 @@
         },
         "request": {
             "model_name": "bigmodel",
-            "model_version": "${env:BYTEDANCE_ASR_LLM_MODEL_VERSION|}",
+            "result_type": "single",
             "enable_nonstream": true
         }
     }

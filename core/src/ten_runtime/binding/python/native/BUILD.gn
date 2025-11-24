@@ -11,20 +11,38 @@ config("ten_runtime_python_config") {
 
   python_version = "3"  # "3" by default
 
-  cflags = exec_script("//build/ten_common/python/python_config.py",
-                       [
-                         "--python-version",
-                         python_version,
-                         "--target-os",
-                         target_os,
-                         "--config-type",
-                         "cflags",
-                         "--log-level",
-                         "0",
-                       ],
-                       "list lines")
+  python_cflags = exec_script("//build/ten_common/python/python_config.py",
+                              [
+                                "--python-version",
+                                python_version,
+                                "--target-os",
+                                target_os,
+                                "--config-type",
+                                "cflags",
+                                "--log-level",
+                                "0",
+                              ],
+                              "list lines")
+
+  cflags = []
   if (!is_win) {
-    cflags += [ "-fPIC" ]
+    cflags = python_cflags + [ "-fPIC" ]
+  } else {
+    # For clang-cl on Windows, convert /I"path" to /imsvcpath (without space or quotes)
+    # /imsvc treats the path as a system include directory, which helps clang-cl find Python headers
+    foreach(flag, python_cflags) {
+      processed_flag = string_replace(flag, "/I\"", "/imsvc")
+      processed_flag = string_replace(processed_flag, "\"", "")
+      cflags += [ processed_flag ]
+    }
+
+    # Undefine Py_DEBUG to use release Python library even in debug builds
+    # Standard Python installations on Windows only provide release libraries
+    # Also undefine _DEBUG which Python headers use to determine debug mode
+    cflags += [
+      "/UPy_DEBUG",
+      "/U_DEBUG",
+    ]
   }
 
   ldflags = exec_script("//build/ten_common/python/python_config.py",
@@ -53,6 +71,10 @@ config("ten_runtime_python_config") {
     ldflags += [ "-Wl,-rpath,@loader_path/../../ten_runtime/lib" ]
   } else if (is_linux) {
     ldflags += [ "-Wl,-rpath=\$ORIGIN/../../ten_runtime/lib" ]
+  } else if (is_win) {
+    # On Windows, prevent MSVC from automatically looking for python3XX_d.lib
+    # Standard Python installations only provide release libraries
+    ldflags += [ "/NODEFAULTLIB:python310_d.lib" ]
   }
 
   # Only export "ten" relevant symbols.
