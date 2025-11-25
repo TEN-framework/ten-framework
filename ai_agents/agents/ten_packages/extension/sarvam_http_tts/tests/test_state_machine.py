@@ -175,7 +175,10 @@ async def mock_get_generator(request_id: str, chunks: int = 3):
     """Mock generator for get method that yields audio chunks."""
     for i in range(chunks):
         await asyncio.sleep(0.01)  # Simulate processing delay
-        yield (b"mock_audio_data_" + str(i + 1).encode(), TTS2HttpResponseEventType.RESPONSE)
+        yield (
+            b"mock_audio_data_" + str(i + 1).encode(),
+            TTS2HttpResponseEventType.RESPONSE,
+        )
     yield (None, TTS2HttpResponseEventType.END)
 
 
@@ -203,7 +206,7 @@ def test_sequential_requests_state_machine(MockSarvamTTSClient):
         elif "Second" in text:
             request_order.append("request_2")
             print(f"  → Mock: Starting synthesis for request 2")
-        
+
         async for chunk in mock_get_generator(request_id):
             yield chunk
 
@@ -328,4 +331,3 @@ if __name__ == "__main__":
     # Run tests
     test_sequential_requests_state_machine()
     test_request_state_transitions()
-
