@@ -43,8 +43,6 @@ group("python") {
         "env_var_1_python",
         "get_set_prop_1_python",
         "get_set_prop_2_python",
-        "go_app_async_extension_python",
-        "go_app_log_rotate_python",
         "large_json_python",
         "msg_clone_python",
         "multi_process_python",
@@ -75,7 +73,9 @@ group("python") {
 
       if (ten_enable_python_binding && ten_enable_go_binding) {
         deps += [
+          "go_app_async_extension_python",
           "go_app_cythonize",
+          "go_app_log_rotate_python",
           "go_app_partially_cythonize",
           "go_app_python",
           "unused_addon_python",
