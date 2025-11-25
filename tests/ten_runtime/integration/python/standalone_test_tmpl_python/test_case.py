@@ -94,7 +94,7 @@ def test_standalone_test_tmpl_async_python():
         # On Windows, use Python bootstrap script directly
         print("Running bootstrap script on Windows...")
         bootstrap_script = os.path.join(
-            extension_root_path, "bin/bootstrap.py"
+            extension_root_path, "tests/bin/bootstrap.py"
         )
         bootstrap_process = subprocess.Popen(
             [sys.executable, bootstrap_script],
@@ -106,7 +106,7 @@ def test_standalone_test_tmpl_async_python():
     else:
         # On Unix-like systems, use bash bootstrap script
         bootstrap_cmd = os.path.join(
-            extension_root_path, "bin/bootstrap"
+            extension_root_path, "tests/bin/bootstrap"
         )
         bootstrap_process = subprocess.Popen(
             bootstrap_cmd, stdout=stdout, stderr=subprocess.STDOUT, env=my_env
