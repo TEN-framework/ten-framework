@@ -1,5 +1,5 @@
 from typing import Any, AsyncIterator, Tuple
-from pyht.client import TTSOptions, Language, Format, AdvancedOptions
+from pyht.client import TTSOptions, Language, Format
 from pyht import AsyncClient
 
 from ten_runtime import AsyncTenEnv
@@ -23,16 +23,9 @@ class PlayHTTTSClient(AsyncTTS2HttpClient):
         self.client: AsyncClient | None = None
 
         try:
-            # Build AdvancedOptions if api_url is provided
-            advanced_options = None
-            if "api_url" in config.params:
-                advanced_options = AdvancedOptions(
-                    api_url=config.params["api_url"]
-                )
             self.client = AsyncClient(
                 api_key=config.params["api_key"],
                 user_id=config.params["user_id"],
-                advanced=advanced_options,
             )
         except Exception as e:
             ten_env.log_error(
@@ -112,7 +105,6 @@ class PlayHTTTSClient(AsyncTTS2HttpClient):
                 "language",
                 "format",
                 "sample_rate",
-                "api_url",  # Only used for client initialization via AdvancedOptions
             }
             for key, value in self.config.params.items():
                 if key not in excluded_keys and value is not None:

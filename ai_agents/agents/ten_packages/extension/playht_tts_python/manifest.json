@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "playht_tts_python",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "dependencies": [
     {
       "type": "system",
@@ -74,9 +74,6 @@
             },
             "text_guidance": {
               "type": "float64"
-            },
-            "api_url": {
-              "type": "string"
             }
           }
         }
