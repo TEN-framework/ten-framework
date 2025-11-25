@@ -97,4 +97,3 @@ def global_setup_and_teardown():
     # Teardown part.
     fake_app_ctx.fake_app.close()
     fake_app_thread.join()
-

@@ -110,8 +110,11 @@ def test_azure_tts_extension_success():
         async def mock_start_connection(*args, **kwargs):
             return True
 
-        async def mock_synthesize_with_retry(text, max_retries=5, retry_delay=1.0):
+        async def mock_synthesize_with_retry(
+            text, max_retries=5, retry_delay=1.0
+        ):
             """Mock synthesize_with_retry that returns an async generator."""
+
             async def _generator():
                 # mock audio data stream
                 audio_chunks = [
@@ -121,6 +124,7 @@ def test_azure_tts_extension_success():
                 ]
                 for chunk in audio_chunks:
                     yield chunk
+
             return _generator()
 
         async def mock_stop_connection(*args, **kwargs):
@@ -128,11 +132,17 @@ def test_azure_tts_extension_success():
 
         mock_azure_tts_instance.start_connection = mock_start_connection
         mock_azure_tts_instance.stop_connection = mock_stop_connection
-        mock_azure_tts_instance.synthesize_with_retry = mock_synthesize_with_retry
+        mock_azure_tts_instance.synthesize_with_retry = (
+            mock_synthesize_with_retry
+        )
         # Mock is_connected as a property that always returns True
-        type(mock_azure_tts_instance).is_connected = PropertyMock(return_value=True)
+        type(mock_azure_tts_instance).is_connected = PropertyMock(
+            return_value=True
+        )
         mock_azure_tts_instance.speech_config = MagicMock()
-        mock_azure_tts_instance.speech_config.speech_synthesis_voice_name = "en-US-AriaNeural"
+        mock_azure_tts_instance.speech_config.speech_synthesis_voice_name = (
+            "en-US-AriaNeural"
+        )
 
         property_json = {
             "log_level": "DEBUG",

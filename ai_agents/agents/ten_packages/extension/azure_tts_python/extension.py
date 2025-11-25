@@ -25,11 +25,14 @@ try:
 except ImportError:
     # Older version without RequestState export, create local enum
     from enum import Enum
+
     class RequestState(Enum):
         QUEUED = "queued"
         PROCESSING = "processing"
         FINALIZING = "finalizing"
         COMPLETED = "completed"
+
+
 from ten_runtime import (
     AsyncTenEnv,
 )
@@ -157,7 +160,9 @@ class AzureTTSExtension(AsyncTTS2BaseExtension):
         # Calculate metrics
         request_event_interval = 0
         if self.first_chunk_ts > 0:
-            request_event_interval = int((time.time() - self.first_chunk_ts) * 1000)
+            request_event_interval = int(
+                (time.time() - self.first_chunk_ts) * 1000
+            )
 
         # Send audio_end
         await self.send_tts_audio_end(
