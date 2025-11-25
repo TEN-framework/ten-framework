@@ -8,7 +8,9 @@ from ten_ai_base import utils
 from pydantic import BaseModel, Field
 
 
-def _clamp(value: Optional[float], lower: float, upper: float) -> Optional[float]:
+def _clamp(
+    value: Optional[float], lower: float, upper: float
+) -> Optional[float]:
     if value is None:
         return None
     try:
@@ -109,7 +111,9 @@ class CartesiaTTSConfig(BaseModel):
             # Remove sample_rate from params to avoid parameter error
             del params["sample_rate"]
 
-        output_format = self._ensure_dict(params.setdefault("output_format", {}))
+        output_format = self._ensure_dict(
+            params.setdefault("output_format", {})
+        )
         params["output_format"] = output_format
 
         # Use custom sample rate value
