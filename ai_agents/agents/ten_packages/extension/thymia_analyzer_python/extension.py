@@ -30,8 +30,12 @@ from .apollo_api import ApolloAPI, ApolloResult
 ANNOUNCEMENT_MIN_SPACING_SECONDS = 15.0
 
 # Phase duration settings (actual speech, not including padding/silence)
-MOOD_PHASE_DURATION_SECONDS = 30.0  # Hellos API requires this much actual speech
-READING_PHASE_DURATION_SECONDS = 30.0  # Additional actual speech for Apollo (total = mood + reading)
+MOOD_PHASE_DURATION_SECONDS = (
+    30.0  # Hellos API requires this much actual speech
+)
+READING_PHASE_DURATION_SECONDS = (
+    30.0  # Additional actual speech for Apollo (total = mood + reading)
+)
 
 
 class ThymiaAPIError(Exception):
@@ -999,7 +1003,9 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                     )
 
                     # Set last speech end time when audio will finish
-                    self.last_agent_speech_end_time = time.time() + (duration_ms / 1000.0)
+                    self.last_agent_speech_end_time = time.time() + (
+                        duration_ms / 1000.0
+                    )
                 elif reason == 2:
                     # Playback interrupted or complete - stop immediately
                     self.agent_speaking_until = 0.0
@@ -1776,44 +1782,9 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
     def get_tool_metadata(self, ten_env: AsyncTenEnv) -> list[LLMToolMetadata]:
         """Register wellness analysis tools"""
         ten_env.log_info(
-            "[THYMIA_TOOL_METADATA] get_tool_metadata called - defining set_user_info and get_wellness_metrics tools"
+            "[THYMIA_TOOL_METADATA] get_tool_metadata called - defining wellness analysis tools"
         )
         return [
-            LLMToolMetadata(
-                name="set_user_info",
-                description=(
-                    "Set user information required for mental wellness analysis. "
-                    "This should be called BEFORE analyzing wellness metrics. "
-                    "Ask the user naturally for their name, year of birth, and sex. "
-                    "Example: 'To better understand your wellness, may I ask your name, year of birth, and sex?'"
-                ),
-                parameters=[
-                    {
-                        "name": "name",
-                        "type": "string",
-                        "description": "User's first name or identifier",
-                        "required": True,
-                    },
-                    {
-                        "name": "year_of_birth",
-                        "type": "string",
-                        "description": "User's year of birth (e.g., '1974', '1990')",
-                        "required": True,
-                    },
-                    {
-                        "name": "sex",
-                        "type": "string",
-                        "description": "Biological sex: MALE, FEMALE, or OTHER",
-                        "required": True,
-                    },
-                    {
-                        "name": "locale",
-                        "type": "string",
-                        "description": "Locale/language code (e.g., en-US, en-GB). Defaults to en-US if not provided.",
-                        "required": False,
-                    },
-                ],
-            ),
             LLMToolMetadata(
                 name="get_wellness_metrics",
                 description=(
@@ -1864,9 +1835,35 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                     "1) Moving from mood questions to reading phase "
                     "2) Saying 'I'm processing your responses' or similar "
                     "If phase is NOT complete, keep asking questions to collect more speech. "
-                    "Only proceed when phase_complete=true."
+                    "Only proceed when phase_complete=true. "
+                    "IMPORTANT: When checking before reading phase, include user info parameters (name, year_of_birth, sex) for analysis."
                 ),
-                parameters=[],
+                parameters=[
+                    {
+                        "name": "name",
+                        "type": "string",
+                        "description": "User's first name (optional, provide when available)",
+                        "required": False,
+                    },
+                    {
+                        "name": "year_of_birth",
+                        "type": "string",
+                        "description": "User's year of birth (optional, e.g. '1974', '1990')",
+                        "required": False,
+                    },
+                    {
+                        "name": "sex",
+                        "type": "string",
+                        "description": "Biological sex: MALE, FEMALE, or OTHER (optional)",
+                        "required": False,
+                    },
+                    {
+                        "name": "locale",
+                        "type": "string",
+                        "description": "Locale code (optional, e.g. en-US, en-GB)",
+                        "required": False,
+                    },
+                ],
             ),
             LLMToolMetadata(
                 name="test_announcement_system",
@@ -2341,15 +2338,10 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                     f"[THYMIA_PHASE_TRIGGER] Hellos ready but waiting {ANNOUNCEMENT_MIN_SPACING_SECONDS - time_since_last:.1f}s after last announcement"
                 )
             else:
-                # Check if Apollo is also complete - if so, LLM will get all 7 metrics in one call
-                apollo_also_ready = self.apollo_complete
-
                 ten_env.log_info(
-                    f"[THYMIA_PHASE_TRIGGER] Triggering Hellos announcement (API complete, reading phase complete, user silent, apollo_also_ready={apollo_also_ready})"
+                    f"[THYMIA_PHASE_TRIGGER] Triggering Hellos announcement (API complete, reading phase complete, user silent)"
                 )
-                self.hellos_trigger_sent = (
-                    True  # Mark as processed before trigger to prevent race condition
-                )
+                self.hellos_trigger_sent = True  # Mark as processed before trigger to prevent race condition
                 announcement_sent = await self._trigger_hellos_announcement(
                     ten_env
                 )
@@ -2357,13 +2349,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                     self.hellos_last_announcement_time = (
                         time.time()
                     )  # Only set time if actually sent
-
-                    # If Apollo was already complete, mark it as triggered too (no need for second announcement)
-                    if apollo_also_ready:
-                        ten_env.log_info(
-                            "[THYMIA_PHASE_TRIGGER] Apollo also complete - LLM will receive all 7 metrics from first get_wellness_metrics call. Skipping separate Apollo announcement."
-                        )
-                        self.apollo_trigger_sent = True  # Skip Apollo announcement to avoid interrupting
+                    # Apollo will trigger separately after 15s spacing
         elif self.hellos_complete and self.hellos_trigger_sent:
             ten_env.log_debug(
                 "[THYMIA_TRIGGER_CHECK] Hellos trigger already sent previously"
@@ -2375,7 +2361,11 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
 
         # Trigger Apollo if ready and not yet triggered
         # Use consistent spacing between any announcements
-        if self.apollo_complete and self.reading_phase_complete and not self.apollo_trigger_sent:
+        if (
+            self.apollo_complete
+            and self.reading_phase_complete
+            and not self.apollo_trigger_sent
+        ):
             # Check spacing from last announcement (15s minimum between any announcements)
             time_since_last = time.time() - max(
                 self.hellos_last_announcement_time,
@@ -2386,7 +2376,9 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                 ten_env.log_info(
                     "[THYMIA_PHASE_TRIGGER] Triggering Apollo announcement (API complete, user silent)"
                 )
-                self.apollo_trigger_sent = True  # Set before trigger to prevent race condition
+                self.apollo_trigger_sent = (
+                    True  # Set before trigger to prevent race condition
+                )
                 await self._trigger_apollo_announcement(ten_env)
                 self.apollo_last_announcement_time = time.time()
             else:
@@ -2436,66 +2428,6 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
         ten_env.log_info(f"[THYMIA_TOOL_CALL] {name}")
 
         try:
-            # Handle set_user_info tool
-            if name == "set_user_info":
-                # Extract parameters
-                self.user_name = args.get("name", "").strip()
-                year_of_birth = args.get("year_of_birth", "").strip()
-                self.user_sex = args.get("sex", "").strip().upper()
-                self.user_locale = args.get(
-                    "locale", "en-GB"
-                ).strip()  # Default to en-GB for better Thymia speech detection
-
-                # Convert year to YYYY-01-01 format (using Jan 1st)
-                if year_of_birth:
-                    # Extract just the 4-digit year
-                    import re
-
-                    year_match = re.search(r"(\d{4})", year_of_birth)
-                    if year_match:
-                        year = year_match.group(1)
-                        self.user_dob = f"{year}-01-01"
-                        ten_env.log_info(
-                            f"Converted year '{year_of_birth}' to DOB '{self.user_dob}'"
-                        )
-                    else:
-                        self.user_dob = "1990-01-01"  # Default fallback
-                        ten_env.log_warn(
-                            f"Could not parse year '{year_of_birth}', using default"
-                        )
-                else:
-                    self.user_dob = ""
-
-                # Validate required fields
-                if not self.user_name or not self.user_dob or not self.user_sex:
-                    return LLMToolResultLLMResult(
-                        type="llmresult",
-                        content=json.dumps(
-                            {
-                                "status": "error",
-                                "message": "Missing required fields: name, year_of_birth, and sex are all required",
-                            }
-                        ),
-                    )
-
-                # Validate sex value
-                if self.user_sex not in ["MALE", "FEMALE", "OTHER"]:
-                    self.user_sex = "OTHER"
-
-                ten_env.log_info(
-                    f"User info set: {self.user_name}, {self.user_dob}, {self.user_sex}, {self.user_locale}"
-                )
-
-                return LLMToolResultLLMResult(
-                    type="llmresult",
-                    content=json.dumps(
-                        {
-                            "status": "success",
-                            "message": f"User information saved. Voice analysis will use: {self.user_name}, {self.user_dob}, {self.user_sex}",
-                        }
-                    ),
-                )
-
             # Handle get_wellness_metrics tool
             if name == "get_wellness_metrics":
                 ten_env.log_info(
@@ -2599,7 +2531,9 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                         "stress": round(self.latest_results.stress * 100),
                         "burnout": round(self.latest_results.burnout * 100),
                         "fatigue": round(self.latest_results.fatigue * 100),
-                        "low_self_esteem": round(self.latest_results.low_self_esteem * 100),
+                        "low_self_esteem": round(
+                            self.latest_results.low_self_esteem * 100
+                        ),
                     },
                     "analyzed_seconds_ago": int(age_seconds),
                     "speech_duration": (
@@ -2681,6 +2615,35 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
             if name == "check_phase_progress":
                 ten_env.log_info("[THYMIA_TOOL_CALL] check_phase_progress")
 
+                # Extract and store user info if provided
+                if args.get("name"):
+                    self.user_name = args.get("name", "").strip()
+                    year_of_birth = args.get("year_of_birth", "").strip()
+                    self.user_sex = args.get("sex", "").strip().upper()
+                    self.user_locale = args.get("locale", "en-GB").strip()
+
+                    # Convert year to YYYY-01-01 format
+                    if year_of_birth:
+                        import re
+
+                        year_match = re.search(r"(\d{4})", year_of_birth)
+                        if year_match:
+                            year = year_match.group(1)
+                            self.user_dob = f"{year}-01-01"
+                            ten_env.log_info(
+                                f"[THYMIA_USER_INFO] Captured from check_phase_progress: {self.user_name}, {self.user_dob}, {self.user_sex}"
+                            )
+                        else:
+                            self.user_dob = "1990-01-01"
+
+                    # Validate sex value
+                    if self.user_sex and self.user_sex not in [
+                        "MALE",
+                        "FEMALE",
+                        "OTHER",
+                    ]:
+                        self.user_sex = "OTHER"
+
                 # Determine current phase and requirements
                 if self.analysis_mode == "hellos_only":
                     current_phase = "collection"
@@ -2738,7 +2701,9 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                                     f"[THYMIA_ANALYSIS_START] Starting Hellos from check_phase_progress ({speech_collected:.1f}s actual speech)"
                                 )
                                 self.hellos_analysis_running = True
-                                asyncio.create_task(self._run_hellos_phase(ten_env))
+                                asyncio.create_task(
+                                    self._run_hellos_phase(ten_env)
+                                )
 
                     elif not self.reading_phase_complete:
                         current_phase = "reading"
@@ -2760,7 +2725,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                         if phase_complete and not self.reading_phase_complete:
                             self.reading_phase_complete = True
                             ten_env.log_info(
-                                "[THYMIA_PHASE] Reading phase marked complete by check_phase_progress tool (60s total collected)"
+                                f"[THYMIA_PHASE] Reading phase marked complete by check_phase_progress tool ({speech_collected:.1f}s total collected)"
                             )
 
                             # Trigger Apollo analysis if not already running

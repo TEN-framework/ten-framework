@@ -267,7 +267,14 @@ class OpenAIChatGPT:
 
         # Add additional parameters if they are not in the black list
         # In minimal mode, also exclude unsupported parameters
-        minimal_unsupported_params = {"temperature", "top_p", "presence_penalty", "frequency_penalty", "seed", "max_tokens"}
+        minimal_unsupported_params = {
+            "temperature",
+            "top_p",
+            "presence_penalty",
+            "frequency_penalty",
+            "seed",
+            "max_tokens",
+        }
 
         for key, value in (request_input.parameters or {}).items():
             # Check if it's a valid option and not in black list
@@ -275,8 +282,13 @@ class OpenAIChatGPT:
                 continue
 
             # In minimal mode, skip unsupported parameters
-            if self.config.minimal_parameters and key in minimal_unsupported_params:
-                self.ten_env.log_debug(f"Skipping minimal mode unsupported param: {key} = {value}")
+            if (
+                self.config.minimal_parameters
+                and key in minimal_unsupported_params
+            ):
+                self.ten_env.log_debug(
+                    f"Skipping minimal mode unsupported param: {key} = {value}"
+                )
                 continue
 
             self.ten_env.log_debug(f"set openai param: {key} = {value}")
@@ -285,16 +297,24 @@ class OpenAIChatGPT:
         # REMOVED: Verbose logging - dumps entire prompt (~10KB+) on every LLM call
         # Adds I/O latency and pollutes logs. Enable only for deep debugging.
         # self.ten_env.log_info(f"Requesting chat completions with: {req}")
-        max_tokens_param = "max_completion_tokens" if self.config.minimal_parameters else "max_tokens"
-        max_tokens_value = req.get("max_tokens") or req.get("max_completion_tokens")
+        max_tokens_param = (
+            "max_completion_tokens"
+            if self.config.minimal_parameters
+            else "max_tokens"
+        )
+        max_tokens_value = req.get("max_tokens") or req.get(
+            "max_completion_tokens"
+        )
         param_mode = "minimal" if self.config.minimal_parameters else "standard"
         self.ten_env.log_debug(
             f"Requesting chat completions: model={req.get('model')} ({param_mode}), stream={req.get('stream')}, "
             f"messages={len(req.get('messages', []))} msgs, {max_tokens_param}={max_tokens_value}"
         )
         # Log tools for debugging tool call issues
-        if req.get('tools'):
-            self.ten_env.log_debug(f"Sending {len(req.get('tools'))} tools to LLM: {[t.get('function', {}).get('name') for t in req.get('tools')]}")
+        if req.get("tools"):
+            self.ten_env.log_debug(
+                f"Sending {len(req.get('tools'))} tools to LLM: {[t.get('function', {}).get('name') for t in req.get('tools')]}"
+            )
 
         try:
             response: AsyncStream[ChatCompletionChunk] = (
@@ -458,30 +478,54 @@ class OpenAIChatGPT:
             )
         except Exception as e:
             # Log request details on error for debugging
-            self.ten_env.log_error(f"[TOOL_DEBUG] LLM API call failed with error: {e}")
-            self.ten_env.log_error(f"[TOOL_DEBUG] Error type: {type(e).__name__}")
+            self.ten_env.log_error(
+                f"[TOOL_DEBUG] LLM API call failed with error: {e}"
+            )
+            self.ten_env.log_error(
+                f"[TOOL_DEBUG] Error type: {type(e).__name__}"
+            )
 
             # Try to extract additional error details from Groq/OpenAI response
-            if hasattr(e, 'response'):
-                self.ten_env.log_error(f"[TOOL_DEBUG] Error response: {e.response}")
-            if hasattr(e, 'body'):
+            if hasattr(e, "response"):
+                self.ten_env.log_error(
+                    f"[TOOL_DEBUG] Error response: {e.response}"
+                )
+            if hasattr(e, "body"):
                 self.ten_env.log_error(f"[TOOL_DEBUG] Error body: {e.body}")
-            if hasattr(e, '__dict__'):
-                self.ten_env.log_error(f"[TOOL_DEBUG] Error attributes: {e.__dict__}")
+            if hasattr(e, "__dict__"):
+                self.ten_env.log_error(
+                    f"[TOOL_DEBUG] Error attributes: {e.__dict__}"
+                )
 
             self.ten_env.log_error(f"[TOOL_DEBUG] Model: {req.get('model')}")
-            self.ten_env.log_error(f"[TOOL_DEBUG] Messages count: {len(req.get('messages', []))}")
-            if req.get('tools'):
-                self.ten_env.log_error(f"[TOOL_DEBUG] Tools sent: {json.dumps(req.get('tools'), indent=2)}")
-            self.ten_env.log_error(f"[TOOL_DEBUG] Last 2 messages: {json.dumps(req.get('messages', [])[-2:], indent=2)}")
+            self.ten_env.log_error(
+                f"[TOOL_DEBUG] Messages count: {len(req.get('messages', []))}"
+            )
+            if req.get("tools"):
+                self.ten_env.log_error(
+                    f"[TOOL_DEBUG] Tools sent: {json.dumps(req.get('tools'), indent=2)}"
+                )
+            self.ten_env.log_error(
+                f"[TOOL_DEBUG] Last 2 messages: {json.dumps(req.get('messages', [])[-2:], indent=2)}"
+            )
 
             # Dump full request to temp file for debugging
             try:
                 import tempfile
-                with tempfile.NamedTemporaryFile(mode='w', prefix='llm_request_', suffix='.json', delete=False) as f:
+
+                with tempfile.NamedTemporaryFile(
+                    mode="w",
+                    prefix="llm_request_",
+                    suffix=".json",
+                    delete=False,
+                ) as f:
                     json.dump(req, f, indent=2)
-                    self.ten_env.log_error(f"[TOOL_DEBUG] Full request saved to: {f.name}")
+                    self.ten_env.log_error(
+                        f"[TOOL_DEBUG] Full request saved to: {f.name}"
+                    )
             except Exception as dump_err:
-                self.ten_env.log_error(f"[TOOL_DEBUG] Failed to dump request: {dump_err}")
+                self.ten_env.log_error(
+                    f"[TOOL_DEBUG] Failed to dump request: {dump_err}"
+                )
 
             raise RuntimeError(f"CreateChatCompletion failed, err: {e}") from e

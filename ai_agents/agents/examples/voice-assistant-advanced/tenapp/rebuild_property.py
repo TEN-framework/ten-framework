@@ -23,16 +23,33 @@ for graph in data.get("ten", {}).get("predefined_graphs", []):
                 thymia_analyzer_config = copy.deepcopy(node.get("property", {}))
         break
 
+# Override thymia_analyzer durations to 20s (instead of default 30s)
+if thymia_analyzer_config is None:
+    # Create minimal config if none exists
+    thymia_analyzer_config = {
+        "api_key": "${env:THYMIA_API_KEY}",
+        "analysis_mode": "demo_dual",
+    }
+
+thymia_analyzer_config["min_speech_duration"] = 20.0
+thymia_analyzer_config["apollo_mood_duration"] = 20.0
+thymia_analyzer_config["apollo_read_duration"] = 20.0
+
 # Apollo prompt - simplified to prevent double responses
 apollo_prompt = """You are a mental wellness research assistant conducting a demonstration. Guide the conversation efficiently:
 
-1. When user provides their name, sex, and year of birth, call set_user_info(name, year_of_birth, birth_sex) and respond warmly asking about their day. If they don't provide all three pieces, ask for what's missing before proceeding.
+WORD LIMITS:
+- Steps 1-5 (data gathering): MAX 15 WORDS per response
+- Steps 7-8 (announcing results): MAX 15 WORDS of added context
+- Step 9 (therapeutic conversation): MAX 30 WORDS per response
 
-2. Ask: 'Tell me about your interests and hobbies.' (wait for response - aim for 30+ seconds total speech)
+1. When user provides their name, sex, and year of birth, IMMEDIATELY respond warmly asking about their day. If they don't provide all three pieces, ask for what's missing before proceeding. (MAX 15 WORDS)
 
-3. Before moving to reading phase, MUST call check_phase_progress to verify enough speech has been collected. Based on the result:
-   - If phase_complete=false: Ask another question to gather more speech
-   - If phase_complete=true: Say 'Thank you. Now please read aloud anything you can see around you - a book, article, or text on your screen - for about 30 seconds.'
+2. Ask: 'Tell me about your interests and hobbies.' (wait for response - aim for 20+ seconds total speech) (MAX 15 WORDS)
+
+3. Before moving to reading phase, MUST call check_phase_progress(name, year_of_birth, sex) to verify enough speech has been collected AND register user info. Based on the result:
+   - If phase_complete=false: Ask another question to gather more speech (MAX 15 WORDS)
+   - If phase_complete=true: Say 'Thank you. Now please read aloud anything you can see around you - a book, article, or text on your screen - for about 20 seconds.' (MAX 15 WORDS)
 
 4. CRITICAL - During reading phase:
    - Do NOT respond to the content of what the user is reading
@@ -41,8 +58,8 @@ apollo_prompt = """You are a mental wellness research assistant conducting a dem
    - Periodically call check_phase_progress to check if reading_phase_complete=true
 
 5. After reading phase, you MUST call check_phase_progress and ONLY say the processing message if reading_phase_complete=true:
-   - If reading_phase_complete=false: Ask them to continue reading a bit more
-   - If reading_phase_complete=true: Say 'Perfect. I'm processing your responses now, this should take around 15 seconds.'
+   - If reading_phase_complete=false: Ask them to continue reading a bit more (MAX 15 WORDS)
+   - If reading_phase_complete=true: Say 'Perfect. I'm processing your responses now, this should take around 15 seconds.' (MAX 15 WORDS)
    - NEVER say 'processing your responses' without first confirming reading_phase_complete=true via check_phase_progress
 
 6. You will receive TWO separate [SYSTEM ALERT] messages - one for wellness metrics, then another for clinical indicators.
@@ -53,19 +70,28 @@ apollo_prompt = """You are a mental wellness research assistant conducting a dem
    - Call get_wellness_metrics
    - Announce the 5 wellness metrics (stress, distress, burnout, fatigue, low_self_esteem) as PERCENTAGES 0-100
    - Use plain numbered lists only (NO markdown **, *, _ formatting)
+   - Keep any added context to MAX 15 WORDS
    - After announcing results, silently call confirm_announcement with phase='hellos'
    - Then WAIT - do NOT call get_wellness_metrics again until next alert
 
 8. Later when you receive '[SYSTEM ALERT] Clinical indicators ready':
    - Call get_wellness_metrics again
    - Announce the 2 clinical indicators (depression, anxiety) with their values and severity levels
+   - Keep any added context to MAX 15 WORDS
    - After announcing results, silently call confirm_announcement with phase='apollo'
 
-9. Frame all results as research indicators, not clinical diagnosis
+9. THERAPEUTIC CONVERSATION - After both results announced, engage in supportive counseling:
+   - Help user build resilience to anxiety triggers
+   - Discuss impact of stress on relationships (family, work, personal)
+   - Provide actionable strategies for emotional regulation
+   - Frame as research-based insights, not clinical diagnosis
+   - MAX 30 WORDS per response
+   - Use warm, empathetic tone
+   - Ask open questions to explore their experiences
 
-10. Thank them for participating in the demonstration
+10. When user indicates they want to end, thank them warmly for participating
 
-Note: Keep all responses concise. We need 60 seconds total speech (30s for mood/interests + 30s for reading)."""
+Note: We need 40 seconds total speech (20s for mood/interests + 20s for reading) before analysis."""
 
 apollo_greeting = "Hi there! I would like to talk to you for a couple of minutes and use your voice to predict your mood and energy levels including any depression, anxiety, stress, and fatigue. Nothing will be recorded and this is purely a demonstration of what is possible now that we have trained our models with many hours of professionally labelled data. Please begin by telling me your name, sex and year of birth."
 
@@ -533,27 +559,32 @@ def create_apollo_graph(
     ]
 
     # Base apollo connections (without avatar)
+    main_control_cmd = [
+        {
+            "names": ["on_user_joined", "on_user_left"],
+            "source": [{"extension": "agora_rtc"}],
+        },
+        {
+            "names": ["tool_register"],
+            "source": [{"extension": "thymia_analyzer"}],
+        },
+        {
+            "name": "flush",
+            "source": [{"extension": "stt"}],
+        },
+    ]
+
+    # Only add flush to avatar if avatar exists
+    if has_avatar:
+        main_control_cmd.append({
+            "name": "flush",
+            "dest": [{"extension": "avatar"}],
+        })
+
     connections = [
         {
             "extension": "main_control",
-            "cmd": [
-                {
-                    "names": ["on_user_joined", "on_user_left"],
-                    "source": [{"extension": "agora_rtc"}],
-                },
-                {
-                    "names": ["tool_register"],
-                    "source": [{"extension": "thymia_analyzer"}],
-                },
-                {
-                    "name": "flush",
-                    "source": [{"extension": "stt"}],
-                },
-                {
-                    "name": "flush",
-                    "dest": [{"extension": "avatar"}],
-                },
-            ],
+            "cmd": main_control_cmd,
             "data": [
                 {"name": "asr_result", "source": [{"extension": "stt"}]},
                 {
@@ -615,6 +646,30 @@ def create_apollo_graph(
             ],
         }
         connections.append(tts_conn)
+    else:
+        # No avatar - TTS goes directly to agora_rtc
+        tts_conn = {
+            "extension": "tts",
+            "data": [
+                {"name": "text_data", "source": [{"extension": "llm"}]},
+                {
+                    "name": "tts_audio_start",
+                    "dest": [
+                        {"extension": "thymia_analyzer"}
+                    ],  # Direct to thymia
+                },
+                {
+                    "name": "tts_audio_end",
+                    "dest": [
+                        {"extension": "thymia_analyzer"}
+                    ],  # Direct to thymia
+                },
+            ],
+            "audio_frame": [
+                {"name": "pcm_frame", "dest": [{"extension": "agora_rtc"}]}
+            ],
+        }
+        connections.append(tts_conn)
 
     if has_avatar:
         if avatar_config:
@@ -667,93 +722,103 @@ def create_apollo_graph(
 # Build new graph list
 new_graphs = []
 
-# Group 1: Basic voice assistants (no tools)
-print("Creating basic voice assistant graphs...")
-new_graphs.append(
-    create_basic_voice_assistant("voice_assistant", has_avatar=False)
-)
-new_graphs.append(
-    create_basic_voice_assistant(
-        "voice_assistant_heygen", has_avatar=True, avatar_type="heygen"
-    )
-)
-new_graphs.append(
-    create_basic_voice_assistant(
-        "voice_assistant_anam",
-        has_avatar=True,
-        avatar_type="anam",
-        tts_config=cartesia_tts_sonic3_anam,
-    )
-)
+# COMMENTED OUT - Group 1: Basic voice assistants (no tools)
+# print("Creating basic voice assistant graphs...")
+# new_graphs.append(
+#     create_basic_voice_assistant("voice_assistant", has_avatar=False)
+# )
+# new_graphs.append(
+#     create_basic_voice_assistant(
+#         "voice_assistant_heygen", has_avatar=True, avatar_type="heygen"
+#     )
+# )
+# new_graphs.append(
+#     create_basic_voice_assistant(
+#         "voice_assistant_anam",
+#         has_avatar=True,
+#         avatar_type="anam",
+#         tts_config=cartesia_tts_sonic3_anam,
+#     )
+# )
 
-# Group 2: OSS graphs
-print("Creating OSS apollo graphs...")
-new_graphs.append(
-    create_apollo_graph(
-        "nova3_apollo_oss_cartesia_heygen",
-        groq_oss_llm_with_tools,
-        nova3_stt_300ms,
-        has_avatar=True,
-        avatar_type="heygen",
-    )
-)
-new_graphs.append(
-    create_apollo_graph(
-        "nova3_apollo_oss_cartesia_anam",
-        groq_oss_llm_with_tools,
-        nova3_stt_300ms,
-        has_avatar=True,
-        avatar_type="anam",
-        tts_config=cartesia_tts_sonic3_apollo_anam,
-        avatar_config=anam_avatar_apollo,
-    )
-)
+# COMMENTED OUT - Group 2: OSS graphs
+# print("Creating OSS apollo graphs...")
+# new_graphs.append(
+#     create_apollo_graph(
+#         "nova3_apollo_oss_cartesia_heygen",
+#         groq_oss_llm_with_tools,
+#         nova3_stt_300ms,
+#         has_avatar=True,
+#         avatar_type="heygen",
+#     )
+# )
+# new_graphs.append(
+#     create_apollo_graph(
+#         "nova3_apollo_oss_cartesia_anam",
+#         groq_oss_llm_with_tools,
+#         nova3_stt_300ms,
+#         has_avatar=True,
+#         avatar_type="anam",
+#         tts_config=cartesia_tts_sonic3_apollo_anam,
+#         avatar_config=anam_avatar_apollo,
+#     )
+# )
 
-# Group 3: GPT-4o graphs
-print("Creating GPT-4o apollo graphs...")
-new_graphs.append(
-    create_apollo_graph(
-        "nova3_apollo_gpt_4o_cartesia_heygen",
-        gpt4o_llm_with_tools,
-        nova3_stt_300ms,
-        has_avatar=True,
-        avatar_type="heygen",
-    )
-)
-new_graphs.append(
-    create_apollo_graph(
-        "nova3_apollo_gpt_4o_cartesia_anam",
-        gpt4o_llm_with_tools,
-        nova3_stt_300ms,
-        has_avatar=True,
-        avatar_type="anam",
-        tts_config=cartesia_tts_sonic3_apollo_anam,
-        avatar_config=anam_avatar_apollo,
-    )
-)
-new_graphs.append(
-    create_apollo_graph(
-        "flux_apollo_gpt_4o_cartesia_heygen",
-        gpt4o_llm_with_tools,
-        flux_stt,
-        has_avatar=True,
-        avatar_type="heygen",
-    )
-)
-new_graphs.append(
-    create_apollo_graph(
-        "flux_apollo_gpt_4o_cartesia_anam",
-        gpt4o_llm_with_tools,
-        flux_stt,
-        has_avatar=True,
-        avatar_type="anam",
-        tts_config=cartesia_tts_sonic3_apollo_anam,
-        avatar_config=anam_avatar_apollo,
-    )
-)
+# COMMENTED OUT - Group 3: GPT-4o graphs
+# print("Creating GPT-4o apollo graphs...")
+# new_graphs.append(
+#     create_apollo_graph(
+#         "nova3_apollo_gpt_4o_cartesia_heygen",
+#         gpt4o_llm_with_tools,
+#         nova3_stt_300ms,
+#         has_avatar=True,
+#         avatar_type="heygen",
+#     )
+# )
+# new_graphs.append(
+#     create_apollo_graph(
+#         "nova3_apollo_gpt_4o_cartesia_anam",
+#         gpt4o_llm_with_tools,
+#         nova3_stt_300ms,
+#         has_avatar=True,
+#         avatar_type="anam",
+#         tts_config=cartesia_tts_sonic3_apollo_anam,
+#         avatar_config=anam_avatar_apollo,
+#     )
+# )
+# new_graphs.append(
+#     create_apollo_graph(
+#         "flux_apollo_gpt_4o_cartesia_heygen",
+#         gpt4o_llm_with_tools,
+#         flux_stt,
+#         has_avatar=True,
+#         avatar_type="heygen",
+#     )
+# )
+# new_graphs.append(
+#     create_apollo_graph(
+#         "flux_apollo_gpt_4o_cartesia_anam",
+#         gpt4o_llm_with_tools,
+#         flux_stt,
+#         has_avatar=True,
+#         avatar_type="anam",
+#         tts_config=cartesia_tts_sonic3_apollo_anam,
+#         avatar_config=anam_avatar_apollo,
+#     )
+# )
 
-# Group 4: GPT-5.1 graphs
+# Group 4: GPT-5.1 graphs (ONLY THESE 3 ACTIVE)
 print("Creating GPT-5.1 apollo graphs...")
+# 1. No avatar version
+new_graphs.append(
+    create_apollo_graph(
+        "flux_apollo_gpt_5_1_cartesia",
+        gpt51_llm_with_tools,
+        flux_stt,
+        has_avatar=False,
+    )
+)
+# 2. HeyGen avatar version
 new_graphs.append(
     create_apollo_graph(
         "flux_apollo_gpt_5_1_cartesia_heygen",
@@ -763,6 +828,7 @@ new_graphs.append(
         avatar_type="heygen",
     )
 )
+# 3. Anam avatar version
 new_graphs.append(
     create_apollo_graph(
         "flux_apollo_gpt_5_1_cartesia_anam",
