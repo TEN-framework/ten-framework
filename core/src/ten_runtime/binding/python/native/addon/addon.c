@@ -73,7 +73,7 @@ static void proxy_on_create_instance_async(ten_addon_t *addon,
   }
 
   PyObject *py_res =
-      PyObject_CallMethod((PyObject *)py_addon, "on_create_instance", "Osl",
+      PyObject_CallMethod((PyObject *)py_addon, "on_create_instance", "Osn",
                           py_ten_env->actual_py_ten_env, name, context);
   if (!py_res) {
     ten_py_check_and_clear_py_error();
