@@ -86,9 +86,7 @@ class CartesiaTTSClient:
                     f"Cartesia TTS preheat failed,unexpected error: {e}"
                 )
                 if self.send_non_fatal_tts_error:
-                    await self.send_non_fatal_tts_error(
-                        error_message=error_message
-                    )
+                    await self.send_non_fatal_tts_error(error_message=error_message)
                 raise
 
     async def stop(self):
@@ -102,9 +100,7 @@ class CartesiaTTSClient:
         Cancel the current TTS task by closing the websocket connection.
         This will trigger a ConnectionClosed exception in the processing loop.
         """
-        self.ten_env.log_debug(
-            "Cancelling current TTS task by closing websocket."
-        )
+        self.ten_env.log_debug("Cancelling current TTS task by closing websocket.")
         self._is_cancelled = True
         if self.ws:
             self.reset_ttfb()
@@ -122,9 +118,7 @@ class CartesiaTTSClient:
         try:
             await self._ensure_connection()
             # Send TTS request and yield audio chunks with event status
-            async for audio_chunk, event_status in self._process_single_tts(
-                text
-            ):
+            async for audio_chunk, event_status in self._process_single_tts(text):
                 if event_status == EVENT_TTS_FLUSH:
                     await self.ws.close()
                     self.ws = None
@@ -133,9 +127,7 @@ class CartesiaTTSClient:
                 yield audio_chunk, event_status
 
         except Exception as e:
-            self.ten_env.log_error(
-                f"vendor_error: {e}", category=LOG_CATEGORY_VENDOR
-            )
+            self.ten_env.log_error(f"vendor_error: {e}", category=LOG_CATEGORY_VENDOR)
             raise
 
     async def _ensure_connection(self) -> None:
@@ -156,13 +148,11 @@ class CartesiaTTSClient:
         context_id = uuid.uuid4().hex
         if not self.ttfb_sent:
             self.sent_ts = datetime.now()
-        output_generator: AsyncGenerator[WebSocketTtsOutput, None] = (
-            await self.ws.send(
-                transcript=text,
-                context_id=context_id,
-                stream=True,
-                **self.config.params,
-            )
+        output_generator: AsyncGenerator[WebSocketTtsOutput, None] = await self.ws.send(
+            transcript=text,
+            context_id=context_id,
+            stream=True,
+            **self.config.params,
         )
 
         try:
@@ -184,8 +174,7 @@ class CartesiaTTSClient:
                     # First audio chunk for a session, calculate and send TTFB
                     if self.sent_ts and not self.ttfb_sent:
                         ttfb_ms = int(
-                            (datetime.now() - self.sent_ts).total_seconds()
-                            * 1000
+                            (datetime.now() - self.sent_ts).total_seconds() * 1000
                         )
                         yield ttfb_ms, EVENT_TTS_TTFB_METRIC
                         self.ttfb_sent = True

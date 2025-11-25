@@ -86,18 +86,14 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
 
         return stripped or None
 
-    def _compose_ssml_text(
-        self, text: str, metadata: dict[str, Any] | None
-    ) -> str:
+    def _compose_ssml_text(self, text: str, metadata: dict[str, Any] | None) -> str:
         """Compose SSML directives based on config/metadata overrides."""
         if not self.config:
             return text
 
         overrides: dict[str, Any] = {}
         if metadata:
-            overrides_candidate = metadata.get("ssml") or metadata.get(
-                "ssml_tags"
-            )
+            overrides_candidate = metadata.get("ssml") or metadata.get("ssml_tags")
             if isinstance(overrides_candidate, dict):
                 overrides = overrides_candidate
 
@@ -118,14 +114,10 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
         else:
             emotion = None
 
-        pre_break_time = overrides.get(
-            "pre_break_time", ssml_cfg.pre_break_time
-        )
+        pre_break_time = overrides.get("pre_break_time", ssml_cfg.pre_break_time)
         pre_break_time = self._normalize_time_string(pre_break_time)
 
-        post_break_time = overrides.get(
-            "post_break_time", ssml_cfg.post_break_time
-        )
+        post_break_time = overrides.get("post_break_time", ssml_cfg.post_break_time)
         post_break_time = self._normalize_time_string(post_break_time)
 
         spell_words_override = overrides.get("spell_words")
@@ -150,21 +142,15 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
         if cleaned_spell_words:
             # Replace longest words first for deterministic wrapping.
             for word in sorted(cleaned_spell_words, key=len, reverse=True):
-                mutated_text = mutated_text.replace(
-                    word, f"<spell>{word}</spell>"
-                )
+                mutated_text = mutated_text.replace(word, f"<spell>{word}</spell>")
 
         prefix_tags: list[str] = []
         if pre_break_time:
             prefix_tags.append(f'<break time="{pre_break_time}"/>')
         if speed_ratio is not None and abs(speed_ratio - 1.0) > 1e-3:
-            prefix_tags.append(
-                f'<speed ratio="{self._format_ratio(speed_ratio)}"/>'
-            )
+            prefix_tags.append(f'<speed ratio="{self._format_ratio(speed_ratio)}"/>')
         if volume_ratio is not None and abs(volume_ratio - 1.0) > 1e-3:
-            prefix_tags.append(
-                f'<volume ratio="{self._format_ratio(volume_ratio)}"/>'
-            )
+            prefix_tags.append(f'<volume ratio="{self._format_ratio(volume_ratio)}"/>')
         if emotion:
             prefix_tags.append(f'<emotion value="{emotion}"/>')
 
@@ -177,9 +163,7 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
 
         return mutated_text
 
-    def _apply_ssml_tags_safe(
-        self, text: str, metadata: dict[str, Any] | None
-    ) -> str:
+    def _apply_ssml_tags_safe(self, text: str, metadata: dict[str, Any] | None) -> str:
         """Wrapper that guards SSML composition errors."""
         try:
             mutated = self._compose_ssml_text(text, metadata)
@@ -224,9 +208,7 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                 send_non_fatal_tts_error=self.send_non_fatal_tts_error,
             )
             asyncio.create_task(self.client.start())
-            ten_env.log_debug(
-                "CartesiaTTSWebsocket client initialized successfully"
-            )
+            ten_env.log_debug("CartesiaTTSWebsocket client initialized successfully")
         except Exception as e:
             ten_env.log_error(f"on_init failed: {traceback.format_exc()}")
             await self.send_tts_error(
@@ -253,9 +235,7 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
         for request_id, recorder in list(self.recorder_map.items()):
             try:
                 await recorder.flush()
-                ten_env.log_debug(
-                    f"Flushed PCMWriter for request_id: {request_id}"
-                )
+                ten_env.log_debug(f"Flushed PCMWriter for request_id: {request_id}")
             except Exception as e:
                 ten_env.log_error(
                     f"Error flushing PCMWriter for request_id {request_id}: {e}"
@@ -334,9 +314,7 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
             )
 
             if t.request_id != self.current_request_id:
-                self.ten_env.log_debug(
-                    f"New TTS request with ID: {t.request_id}"
-                )
+                self.ten_env.log_debug(f"New TTS request with ID: {t.request_id}")
                 self.client.reset_ttfb()
                 self.current_request_id = t.request_id
                 self.current_request_finished = False
@@ -349,9 +327,7 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                 if self.config and self.config.dump:
                     # Clean up old PCMWriters (except current request_id)
                     old_request_ids = [
-                        rid
-                        for rid in self.recorder_map.keys()
-                        if rid != t.request_id
+                        rid for rid in self.recorder_map.keys() if rid != t.request_id
                     ]
                     for old_rid in old_request_ids:
                         try:
@@ -371,9 +347,7 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                             self.config.dump_path,
                             f"cartesia_dump_{t.request_id}.pcm",
                         )
-                        self.recorder_map[t.request_id] = PCMWriter(
-                            dump_file_path
-                        )
+                        self.recorder_map[t.request_id] = PCMWriter(dump_file_path)
                         self.ten_env.log_debug(
                             f"Created PCMWriter for request_id: {t.request_id}, file: {dump_file_path}"
                         )
@@ -409,9 +383,7 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                 if self.sent_ts is None:
                     self.sent_ts = datetime.now()
                 async for data_msg, event_status in data:
-                    self.ten_env.log_debug(
-                        f"Received event_status: {event_status}"
-                    )
+                    self.ten_env.log_debug(f"Received event_status: {event_status}")
                     if event_status == EVENT_TTS_RESPONSE:
                         if (
                             data_msg is not None
@@ -434,9 +406,9 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                                     f"Writing audio chunk to dump file, dump url: {self.config.dump_path}"
                                 )
                                 asyncio.create_task(
-                                    self.recorder_map[
-                                        self.current_request_id
-                                    ].write(data_msg)
+                                    self.recorder_map[self.current_request_id].write(
+                                        data_msg
+                                    )
                                 )
 
                             # Send audio data
@@ -446,9 +418,7 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                                 "Received empty payload for TTS response"
                             )
                             if t.text_input_end:
-                                duration_ms = (
-                                    self._calculate_audio_duration_ms()
-                                )
+                                duration_ms = self._calculate_audio_duration_ms()
                                 request_event_interval = (
                                     self._current_request_interval_ms()
                                 )
@@ -477,12 +447,10 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                                 request_id=self.current_request_id,
                             )
                             extra_metadata = {
-                                "model_id": self.config.params.get(
-                                    "model_id", ""
+                                "model_id": self.config.params.get("model_id", ""),
+                                "voice_id": self.config.params.get("voice", {}).get(
+                                    "id", ""
                                 ),
-                                "voice_id": self.config.params.get(
-                                    "voice", {}
-                                ).get("id", ""),
                             }
                             await self.send_tts_ttfb_metrics(
                                 request_id=self.current_request_id,
@@ -499,9 +467,7 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                         )
                         # Send TTS audio end event
                         if t.text_input_end:
-                            request_event_interval = (
-                                self._current_request_interval_ms()
-                            )
+                            request_event_interval = self._current_request_interval_ms()
                             duration_ms = self._calculate_audio_duration_ms()
                             await self.send_tts_audio_end(
                                 request_id=self.current_request_id,
@@ -509,9 +475,7 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                                 request_total_audio_duration_ms=duration_ms,
                             )
                             if self.current_request_id in self.recorder_map:
-                                await self.recorder_map[
-                                    self.current_request_id
-                                ].flush()
+                                await self.recorder_map[self.current_request_id].flush()
                             self.sent_ts = None
                             self.ten_env.log_debug(
                                 f"Sent TTS audio end event, interval: {request_event_interval}ms, duration: {duration_ms}ms"
@@ -527,9 +491,7 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                         )
                         # Send TTS audio end event
                         if t.text_input_end:
-                            request_event_interval = (
-                                self._current_request_interval_ms()
-                            )
+                            request_event_interval = self._current_request_interval_ms()
                             duration_ms = self._calculate_audio_duration_ms()
                             await self.send_tts_audio_end(
                                 request_id=self.current_request_id,
@@ -549,9 +511,7 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                                 ),
                             )
                             if self.current_request_id in self.recorder_map:
-                                await self.recorder_map[
-                                    self.current_request_id
-                                ].flush()
+                                await self.recorder_map[self.current_request_id].flush()
                             self.sent_ts = None
                             self.ten_env.log_debug(
                                 f"Sent TTS audio end event, interval: {request_event_interval}ms, duration: {duration_ms}ms"
