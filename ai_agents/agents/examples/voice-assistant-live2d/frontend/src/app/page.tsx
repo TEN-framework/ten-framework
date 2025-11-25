@@ -1247,7 +1247,16 @@ export default function Home() {
               resetFirst: true,
             },
             {
-              triggers: ["wear your glasses", "put on glasses", "glasses on", "reading glasses"],
+              triggers: [
+                "wear your glasses",
+                "wear glasses",
+                "put on glasses",
+                "put glasses on",
+                "put your glasses",
+                "put your glasses on",
+                "glasses on",
+                "reading glasses"
+              ],
               expressions: ["toggle_glasses_g_1"],
               resetFirst: true,
             },
@@ -1281,6 +1290,37 @@ export default function Home() {
     }
 
     const targetModelId = selectedModel.id;
+
+    const buildDynamicGlassesRule = (haystacks: Set<string>): VoiceCommandRule | null => {
+      const controller = live2dRef.current;
+      if (!controller) {
+        return null;
+      }
+      const expressions = controller.getAvailableExpressions ? controller.getAvailableExpressions() : [];
+      const hasOff = Array.from(haystacks).some((h) =>
+        h.includes("glasses off") || h.includes("remove glasses") || h.includes("take off")
+      );
+      if (hasOff) {
+        return { triggers: [], reset: true };
+      }
+      const keywords = ["glasses", "sunglasses", "shades", "monocle"];
+      const needOn = Array.from(haystacks).some((h) => keywords.some((k) => h.includes(k)));
+      if (!needOn) {
+        return null;
+      }
+      const candidates = expressions
+        .filter((e) => keywords.some((k) => e.name.toLowerCase().includes(k)))
+        .sort((a, b) => {
+          const rank = (name: string) =>
+            name.toLowerCase().includes("glasses") ? 0 : name.toLowerCase().includes("sunglasses") ? 1 : 2;
+          return rank(a.name) - rank(b.name);
+        })
+        .map((e) => e.name);
+      if (candidates.length === 0) {
+        return null;
+      }
+      return { triggers: [], expressions: [candidates[0]], resetFirst: true };
+    };
 
     const cleanup = agoraService.addTranscriptListener((message: TranscriptMessage) => {
       if (selectedModel.id !== targetModelId) {
@@ -1324,6 +1364,23 @@ export default function Home() {
         return;
       }
 
+      const editDistance = (a: string, b: string) => {
+        const dp: number[][] = Array.from({ length: a.length + 1 }, () => Array(b.length + 1).fill(0));
+        for (let i = 0; i <= a.length; i++) dp[i][0] = i;
+        for (let j = 0; j <= b.length; j++) dp[0][j] = j;
+        for (let i = 1; i <= a.length; i++) {
+          for (let j = 1; j <= b.length; j++) {
+            const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+            dp[i][j] = Math.min(
+              dp[i - 1][j] + 1,
+              dp[i][j - 1] + 1,
+              dp[i - 1][j - 1] + cost
+            );
+          }
+        }
+        return dp[a.length][b.length];
+      };
+
       const matchesTrigger = (trigger: string) => {
         const normalizedTrigger = clean(trigger);
         if (!normalizedTrigger) {
@@ -1335,18 +1392,27 @@ export default function Home() {
             return true;
           }
           const hayWords = hay.split(" ");
-          if (triggerWords.every((word) => hayWords.includes(word))) {
+          if (triggerWords.every((word) => hayWords.includes(word) || hayWords.some((hw) => editDistance(hw, word) <= 1))) {
             return true;
           }
         }
         return false;
       };
 
-      const matchedRule = rules.find((rule) =>
+      console.debug("[VoiceCommand] Transcript received", { base, primary, simplified });
+
+      let matchedRule = rules.find((rule) =>
         rule.triggers.some((trigger) => matchesTrigger(trigger))
       );
       if (!matchedRule) {
-        return;
+        const dynamicRule = buildDynamicGlassesRule(haystacks);
+        if (!dynamicRule) {
+          return;
+        }
+        matchedRule = dynamicRule;
+        console.debug("[VoiceCommand] Using dynamic glasses rule");
+      } else {
+        console.debug("[VoiceCommand] Matched static rule", matchedRule);
       }
       const processed = processedVoiceCommandIdsRef.current;
       if (processed.includes(message.id)) {
@@ -1356,6 +1422,7 @@ export default function Home() {
       if (processed.length > 200) {
         processed.shift();
       }
+      console.debug("[VoiceCommand] Applying rule", matchedRule);
       void applyVoiceRule(matchedRule);
     });
 

@@ -63,7 +63,10 @@
         "input_transcript": {
           "type": "bool"
         },
-        "sample_rate": {
+        "input_sample_rate": {
+          "type": "int32"
+        },
+        "output_sample_rate": {
           "type": "int32"
         },
         "transcribe_user": {
@@ -78,17 +81,23 @@
         "proactive_audio": {
           "type": "bool"
         },
-        "start_of_speech_sensitivity": {
+        "turn_coverage": {
           "type": "string"
         },
-        "end_of_speech_sensitivity": {
+        "greeting": {
           "type": "string"
         },
-        "prefix_padding_ms": {
+        "audio_chunk_bytes": {
           "type": "int32"
         },
-        "silence_duration_ms": {
-          "type": "int32"
+        "dump": {
+          "type": "bool"
+        },
+        "dump_path": {
+          "type": "string"
+        },
+        "media_resolution": {
+          "type": "string"
         }
       }
     }

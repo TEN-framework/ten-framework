@@ -7,6 +7,7 @@
 use std::{
     collections::{HashMap, HashSet},
     sync::Arc,
+    time::Duration,
 };
 
 use anyhow::{anyhow, Result};
@@ -37,10 +38,18 @@ async fn get_model(
     is_usable: &mut bool,
     out: Arc<Box<dyn TmanOutput>>,
 ) -> Option<Vec<String>> {
-    // Retrieve the symbols in the model.
-    let atoms = model.symbols(ShowType::SHOWN).expect("Failed to retrieve symbols in the model.");
+    let verbose = is_verbose(tman_config.clone()).await;
 
-    if is_verbose(tman_config.clone()).await {
+    // Retrieve the symbols in the model.
+    if verbose {
+        out.normal_line("Retrieving symbols in the model...");
+    }
+    let atoms = model.symbols(ShowType::SHOWN).expect("Failed to retrieve symbols in the model.");
+    if verbose {
+        out.normal_line("Symbols retrieved");
+    }
+
+    if verbose {
         out.normal_line("Model:");
     }
 
@@ -201,13 +210,16 @@ async fn solve(
     tman_config: Arc<tokio::sync::RwLock<TmanConfig>>,
     input: &str,
     out: Arc<Box<dyn TmanOutput>>,
+    wait_timeout: Duration,
 ) -> SolveResult {
+    let verbose = is_verbose(tman_config.clone()).await;
+
     // Create a control object.
     // i.e., clingo_control_new
     let mut ctl = control({
         let mut args = vec![];
 
-        if is_verbose(tman_config.clone()).await {
+        if verbose {
             args.push("--verbose".to_string());
         }
 
@@ -268,21 +280,60 @@ async fn solve(
 
     // Solving. Get a solve handle.
     // i.e., clingo_control_solve
-    let mut handle = ctl.solve(SolveMode::YIELD, &[]).expect("Failed retrieving solve handle.");
+    // Use ASYNC mode to enable timed wait() functionality
+    let mut handle = ctl
+        .solve(SolveMode::ASYNC | SolveMode::YIELD, &[])
+        .expect("Failed retrieving solve handle.");
 
     let mut usable_model = None;
     let mut non_usable_models = Vec::new();
 
+    let mut model_count = 0;
+
     // Loop over all models.
     loop {
+        model_count += 1;
+
+        if verbose {
+            out.normal_line(&format!("Solving... (model #{})", model_count));
+        }
+
         // i.e., clingo_solve_handle_resume
         handle.resume().expect("Failed resume on solve handle.");
+
+        // Use wait() with timeout to check if model is ready
+        // This prevents hanging indefinitely on model() call
+        if verbose {
+            out.normal_line(&format!("Waiting for model (timeout: {:?})...", wait_timeout));
+        }
+
+        let model_ready = handle.wait(wait_timeout);
+
+        if !model_ready {
+            // Timeout waiting for model - solver is taking too long
+            // Jump to resource cleanup without retrying
+            if verbose {
+                out.normal_line(&format!(
+                    "Timeout waiting for model #{} after {:?}. Proceeding to cleanup.",
+                    model_count, wait_timeout
+                ));
+            }
+            break;
+        }
+
+        if verbose {
+            out.normal_line("Getting model...");
+        }
 
         // i.e., clingo_solve_handle_model
         match handle.model() {
             // Get the model.
             Ok(Some(model)) => {
                 let mut is_usable = false;
+
+                if verbose {
+                    out.normal_line("get_model...");
+                }
                 if let Some(m) =
                     get_model(tman_config.clone(), model, &mut is_usable, out.clone()).await
                 {
@@ -298,23 +349,32 @@ async fn solve(
                         non_usable_models.push(m); // Collect error models.
                     }
                 }
+
+                if verbose {
+                    out.normal_line("get_model done");
+                }
             }
             // Stop if there are no more models.
             Ok(None) => {
-                if is_verbose(tman_config.clone()).await {
+                if verbose {
                     out.normal_line("No more models");
                 }
                 break;
             }
-            Err(e) => panic!("Error: {e}"),
+            Err(e) => {
+                if verbose {
+                    out.normal_line(&format!("Error getting model: {e:?}"));
+                }
+                break;
+            }
+        }
+
+        if verbose {
+            out.normal_line("Next loop...");
         }
     }
 
     // Close the solve handle.
-    // i.e., clingo_solve_handle_get
-    let _result = handle.get().expect("Failed to get result from solve handle.");
-
-    // Free the solve handle.
     // i.e., clingo_solve_handle_close
     ctl = handle.close().expect("Failed to close solve handle.");
 
@@ -660,6 +720,64 @@ async fn create_input_str(
     )
     .await?;
 
+    // Collect exact version constraints from root package to filter candidates
+    // early. This optimization prevents wasting time on versions that can never
+    // be part of a valid solution when the root package specifies exact version
+    // constraints (e.g., =0.7.22).
+    let mut exact_version_constraints: HashMap<PkgTypeAndName, Version> = HashMap::new();
+
+    // Get the root package info to extract its dependencies.
+    let root_type_and_name = PkgTypeAndName {
+        pkg_type: *pkg_type,
+        name: pkg_name.clone(),
+    };
+
+    if let Some(root_candidates) = all_candidates.get(&root_type_and_name) {
+        // Get the root package (should be only one version)
+        if let Some(root_pkg) = root_candidates.values().next() {
+            if let Some(dependencies) = &root_pkg.manifest.dependencies {
+                for dep in dependencies {
+                    match dep {
+                        ManifestDependency::RegistryDependency {
+                            pkg_type: dep_type,
+                            name: dep_name,
+                            version_req,
+                        } => {
+                            // Check if this is an exact version constraint (e.g., "=0.7.22")
+                            // by checking if the raw string starts with "="
+                            let raw = version_req.as_raw();
+                            if raw.starts_with('=') {
+                                // Parse the version from the string (remove the '=' prefix)
+                                if let Ok(exact_version) =
+                                    Version::parse(raw.trim_start_matches('='))
+                                {
+                                    let dep_type_and_name = PkgTypeAndName {
+                                        pkg_type: *dep_type,
+                                        name: dep_name.clone(),
+                                    };
+                                    exact_version_constraints
+                                        .insert(dep_type_and_name, exact_version.clone());
+
+                                    if is_verbose(tman_config.clone()).await {
+                                        out.normal_line(&format!(
+                                            "  Detected exact version constraint: [{}]{}@{}",
+                                            dep_type, dep_name, exact_version
+                                        ));
+                                    }
+                                }
+                            }
+                        }
+                        ManifestDependency::LocalDependency {
+                            ..
+                        } => {
+                            // Local dependencies don't need this optimization
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     // First pass: determine which package versions have valid dependencies
     let mut dumped_pkgs_info = HashSet::new();
     let mut skipped_packages = Vec::new();
@@ -667,6 +785,22 @@ async fn create_input_str(
 
     for candidates in all_candidates {
         for candidate in candidates.1 {
+            // Skip versions that violate exact version constraints from root package.
+            // This is a critical optimization: if the root package requires exactly
+            // version X of a dependency, there's no point in considering other versions.
+            if let Some(required_version) = exact_version_constraints.get(candidates.0) {
+                if &candidate.1.manifest.version != required_version {
+                    skipped_packages.push(format!(
+                        "{}:{}@{} (filtered by exact version constraint: {})",
+                        candidate.1.manifest.type_and_name.pkg_type,
+                        candidate.1.manifest.type_and_name.name,
+                        candidate.1.manifest.version,
+                        required_version
+                    ));
+                    continue;
+                }
+            }
+
             let result = create_input_str_for_pkg_info_dependencies(
                 &mut input_str,
                 candidate.1,
@@ -725,8 +859,27 @@ pub async fn solve_all(
     all_candidates: &HashMap<PkgTypeAndName, HashMap<PkgBasicInfo, PkgInfo>>,
     locked_pkgs: Option<&HashMap<PkgTypeAndName, PkgInfo>>,
     out: Arc<Box<dyn TmanOutput>>,
+    current_max_latest_versions: i32,
     max_latest_versions: i32,
 ) -> SolveResult {
+    let verbose = is_verbose(tman_config.clone()).await;
+
+    // Determine wait timeout based on whether we've reached the max_latest_versions
+    // If current >= max, use longer timeout (30s) for the final comprehensive
+    // attempt Otherwise, use shorter timeout (10s) for quicker iterations
+    let wait_timeout = if current_max_latest_versions >= max_latest_versions {
+        Duration::from_secs(30)
+    } else {
+        Duration::from_secs(10)
+    };
+
+    if verbose {
+        out.normal_line(&format!(
+            "Using wait timeout: {:?} (current_max_latest_versions: {}, max_latest_versions: {})",
+            wait_timeout, current_max_latest_versions, max_latest_versions
+        ));
+    }
+
     let input_str = create_input_str(
         tman_config.clone(),
         pkg_type,
@@ -735,8 +888,8 @@ pub async fn solve_all(
         all_candidates,
         locked_pkgs,
         out.clone(),
-        max_latest_versions,
+        current_max_latest_versions,
     )
     .await?;
-    solve(tman_config, &input_str, out).await
+    solve(tman_config, &input_str, out, wait_timeout).await
 }
