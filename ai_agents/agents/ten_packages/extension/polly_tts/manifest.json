@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "polly_tts",
-  "version": "0.5.3",
+  "version": "0.5.4",
   "dependencies": [
     {
       "type": "system",
@@ -58,9 +58,6 @@
               "type": "string"
             },
             "voice": {
-              "type": "string"
-            },
-            "sample_rate": {
               "type": "string"
             },
             "lang_code": {
