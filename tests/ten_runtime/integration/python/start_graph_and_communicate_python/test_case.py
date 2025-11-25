@@ -32,12 +32,6 @@ def test_start_graph_and_communicate_python():
         venv_bin_dir = os.path.join(venv_dir, "bin")
     my_env["PATH"] = venv_bin_dir + os.pathsep + my_env["PATH"]
 
-    if sys.platform == "win32":
-        print(
-            "test_start_graph_and_communicate_python doesn't support win32"
-        )
-        assert False
-
     app_dir_name = "start_graph_and_communicate_python_app"
     app_root_path = os.path.join(base_path, app_dir_name)
     app_language = "python"
@@ -138,6 +132,15 @@ def test_start_graph_and_communicate_python():
             print(f"Server command '{server_cmd}' does not exist.")
             assert False
 
+    if sys.platform == "win32":
+        client_cmd = os.path.join(
+            base_path, "start_graph_and_communicate_python_app_client.exe"
+        )
+    else:
+        client_cmd = os.path.join(
+            base_path, "start_graph_and_communicate_python_app_client"
+        )
+
     server = subprocess.Popen(
         server_cmd,
         stdout=stdout,
@@ -162,7 +165,17 @@ def test_start_graph_and_communicate_python():
         assert exit_code == 0
         assert False
 
-    if sys.platform == "darwin":
+    if sys.platform == "win32":
+        # client depends on some libraries in the TEN app.
+        my_env["PATH"] = (
+            os.path.join(
+                base_path,
+                "start_graph_and_communicate_python_app/ten_packages/system/ten_runtime/lib",
+            )
+            + ";"
+            + my_env["PATH"]
+        )
+    elif sys.platform == "darwin":
         # client depends on some libraries in the TEN app.
         my_env["DYLD_LIBRARY_PATH"] = os.path.join(
             base_path,
