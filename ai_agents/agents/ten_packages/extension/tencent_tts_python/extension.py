@@ -174,7 +174,6 @@ class TencentTTSExtension(AsyncTTS2BaseExtension):
             if self.client:
                 await self.client.stop()
 
-
             # Handle audio end if there's an active request
             # This will send audio_end and call finish_request
             if self.request_start_ts:
@@ -414,11 +413,12 @@ class TencentTTSExtension(AsyncTTS2BaseExtension):
                         message=str(e),
                         module=ModuleType.TTS,
                         code=ModuleErrorCode.NON_FATAL_ERROR,
-                        vendor_info=ModuleErrorVendorInfo(
-                            vendor=self.vendor()
-                        ),
+                        vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
                     )
-                    if self.current_request_id and self.current_request_finished:
+                    if (
+                        self.current_request_id
+                        and self.current_request_finished
+                    ):
                         await self._handle_tts_audio_end(
                             reason=TTSAudioEndReason.ERROR,
                             error=error,

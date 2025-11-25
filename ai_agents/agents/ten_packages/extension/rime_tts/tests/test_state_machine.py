@@ -234,7 +234,9 @@ def test_sequential_requests_state_machine(MockRimeTTSClient):
                 for i in range(3):
                     await asyncio.sleep(0.01)
                     audio_chunk = b"mock_audio_data_" + str(i).encode()
-                    await self.response_msgs.put((EVENT_TTS_RESPONSE, audio_chunk))
+                    await self.response_msgs.put(
+                        (EVENT_TTS_RESPONSE, audio_chunk)
+                    )
 
                 # Signal completion
                 await self.response_msgs.put((EVENT_TTS_END, b""))
@@ -258,7 +260,9 @@ def test_sequential_requests_state_machine(MockRimeTTSClient):
         streamer.response_msgs = response_msgs
         mock_instance.response_msgs = response_msgs
         mock_instance.send_text = AsyncMock(side_effect=streamer.send_text)
-        mock_instance.reset_synthesizer = MagicMock(side_effect=streamer.reset_synthesizer)
+        mock_instance.reset_synthesizer = MagicMock(
+            side_effect=streamer.reset_synthesizer
+        )
         mock_instance.cancel = MagicMock(side_effect=streamer.cancel)
         mock_instance.close = AsyncMock()
         return mock_instance
@@ -316,12 +320,15 @@ def test_request_state_transitions(MockRimeTTSClient):
 
         async def send_text(self, t: TTSTextInput):
             """Simulate single TTS synthesis."""
+
             async def populate_queue():
                 await asyncio.sleep(0.01)
                 # Send TTFB metric
                 await self.response_msgs.put((EVENT_TTS_TTFB_METRIC, 50))
                 # Return one chunk
-                await self.response_msgs.put((EVENT_TTS_RESPONSE, b"audio_chunk"))
+                await self.response_msgs.put(
+                    (EVENT_TTS_RESPONSE, b"audio_chunk")
+                )
                 # Signal completion
                 await self.response_msgs.put((EVENT_TTS_END, b""))
 

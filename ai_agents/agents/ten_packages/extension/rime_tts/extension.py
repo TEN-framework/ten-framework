@@ -184,7 +184,9 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                         self.stop_event.set()
                         self.stop_event = None
                 elif event == EVENT_TTS_ERROR:
-                    error_msg = data.decode() if isinstance(data, bytes) else str(data)
+                    error_msg = (
+                        data.decode() if isinstance(data, bytes) else str(data)
+                    )
                     self.ten_env.log_error(
                         f"TTS error for request ID {self.current_request_id}: {error_msg}"
                     )
@@ -358,7 +360,11 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                     f"text_input_end received for request ID: {t.request_id}"
                 )
 
-                if self.request_start_ts and t.text.strip() == "" and not self.sent_tts:
+                if (
+                    self.request_start_ts
+                    and t.text.strip() == ""
+                    and not self.sent_tts
+                ):
                     # Empty text with text_input_end - finish immediately
                     await self._handle_tts_audio_end()
                     self.ten_env.log_debug(

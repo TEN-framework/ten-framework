@@ -217,7 +217,9 @@ def test_sequential_requests_state_machine(MockTencentTTSClient):
         def complete(self):
             """Mock complete - signals end of current request."""
             self._complete_called = True
-            print(f"  → Mock: Complete called for request {self._request_count}")
+            print(
+                f"  → Mock: Complete called for request {self._request_count}"
+            )
 
         async def synthesize_audio(self, text: str, text_input_end: bool):
             """Simulate TTS synthesis by populating response queue."""
@@ -237,20 +239,26 @@ def test_sequential_requests_state_machine(MockTencentTTSClient):
                 await asyncio.sleep(0.01)  # Simulate processing delay
 
                 # Send TTFB metric (triggers audio_start)
-                await self._receive_queue.put((False, MESSAGE_TYPE_CMD_METRIC, 50))
+                await self._receive_queue.put(
+                    (False, MESSAGE_TYPE_CMD_METRIC, 50)
+                )
 
                 # Send audio chunks
                 for i in range(3):
                     await asyncio.sleep(0.01)
                     audio_chunk = b"mock_audio_data_" + str(i).encode()
-                    await self._receive_queue.put((False, MESSAGE_TYPE_PCM, audio_chunk))
+                    await self._receive_queue.put(
+                        (False, MESSAGE_TYPE_PCM, audio_chunk)
+                    )
 
                 # Wait for complete() to be called before signaling done
                 while not self._complete_called:
                     await asyncio.sleep(0.01)
 
                 # Signal completion
-                await self._receive_queue.put((True, MESSAGE_TYPE_CMD_COMPLETE, None))
+                await self._receive_queue.put(
+                    (True, MESSAGE_TYPE_CMD_COMPLETE, None)
+                )
                 print(f"  → Mock: Completed {request_name}")
 
             asyncio.create_task(populate_queue())
@@ -267,8 +275,12 @@ def test_sequential_requests_state_machine(MockTencentTTSClient):
         mock_instance.stop = AsyncMock(side_effect=streamer.stop)
         mock_instance.close = MagicMock(side_effect=streamer.close)
         mock_instance.complete = MagicMock(side_effect=streamer.complete)
-        mock_instance.synthesize_audio = AsyncMock(side_effect=streamer.synthesize_audio)
-        mock_instance.get_audio_data = AsyncMock(side_effect=streamer.get_audio_data)
+        mock_instance.synthesize_audio = AsyncMock(
+            side_effect=streamer.synthesize_audio
+        )
+        mock_instance.get_audio_data = AsyncMock(
+            side_effect=streamer.get_audio_data
+        )
         return mock_instance
 
     MockTencentTTSClient.side_effect = mock_client_init
@@ -338,17 +350,24 @@ def test_request_state_transitions(MockTencentTTSClient):
 
         async def synthesize_audio(self, text: str, text_input_end: bool):
             """Simulate single TTS synthesis."""
+
             async def populate_queue():
                 await asyncio.sleep(0.01)
                 # Send TTFB metric
-                await self._receive_queue.put((False, MESSAGE_TYPE_CMD_METRIC, 50))
+                await self._receive_queue.put(
+                    (False, MESSAGE_TYPE_CMD_METRIC, 50)
+                )
                 # Return one chunk
-                await self._receive_queue.put((False, MESSAGE_TYPE_PCM, b"audio_chunk"))
+                await self._receive_queue.put(
+                    (False, MESSAGE_TYPE_PCM, b"audio_chunk")
+                )
                 # Wait for complete
                 while not self._complete_called:
                     await asyncio.sleep(0.01)
                 # Signal completion
-                await self._receive_queue.put((True, MESSAGE_TYPE_CMD_COMPLETE, None))
+                await self._receive_queue.put(
+                    (True, MESSAGE_TYPE_CMD_COMPLETE, None)
+                )
 
             asyncio.create_task(populate_queue())
 
@@ -362,8 +381,12 @@ def test_request_state_transitions(MockTencentTTSClient):
         mock_instance.stop = AsyncMock(side_effect=streamer.stop)
         mock_instance.close = MagicMock(side_effect=streamer.close)
         mock_instance.complete = MagicMock(side_effect=streamer.complete)
-        mock_instance.synthesize_audio = AsyncMock(side_effect=streamer.synthesize_audio)
-        mock_instance.get_audio_data = AsyncMock(side_effect=streamer.get_audio_data)
+        mock_instance.synthesize_audio = AsyncMock(
+            side_effect=streamer.synthesize_audio
+        )
+        mock_instance.get_audio_data = AsyncMock(
+            side_effect=streamer.get_audio_data
+        )
         return mock_instance
 
     MockTencentTTSClient.side_effect = mock_client_init

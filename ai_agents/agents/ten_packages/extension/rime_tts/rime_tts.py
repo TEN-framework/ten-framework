@@ -147,7 +147,10 @@ class RimeTTSynthesizer:
                                 f"Active request {self.latest_context_id} lost due to connection close, signaling error"
                             )
                             await self.response_msgs.put(
-                                (EVENT_TTS_ERROR, f"Connection closed: {e}".encode())
+                                (
+                                    EVENT_TTS_ERROR,
+                                    f"Connection closed: {e}".encode(),
+                                )
                             )
                             self.latest_context_id = None
 
