@@ -38,6 +38,7 @@ class RimeTTSynthesizer:
     ):
         self.config = config
         self.api_key = config.api_key
+        self.base_url = config.base_url
         self.ws: WebSocketClientProtocol | None = None
         self.ten_env: AsyncTenEnv = ten_env
         self.vendor = vendor
@@ -68,12 +69,11 @@ class RimeTTSynthesizer:
 
     def _build_websocket_url(self) -> str:
         """Build RIME TTS WebSocket URL with query parameters"""
-        base_url = "wss://users.rime.ai/ws2"
         params = self.config.params.copy()
 
         # Build query string
         query_string = "&".join([f"{k}={v}" for k, v in params.items()])
-        return f"{base_url}?{query_string}"
+        return f"{self.base_url}?{query_string}"
 
     def get_auth_headers(self) -> dict[str, str]:
         """Get RIME TTS authentication headers"""
