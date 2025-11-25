@@ -43,6 +43,7 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
         self.current_request_finished: bool = False
         self.total_audio_bytes: int = 0
         self.first_chunk: bool = False
+        self._is_stopped: bool = False
         self.recorder_map: dict[str, PCMWriter] = (
             {}
         )  # tore PCMWriter instances for different request_ids
@@ -86,6 +87,10 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
             )
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
+        # Set stopped flag first to prevent new requests
+        self._is_stopped = True
+        ten_env.log_debug("Extension stopping, rejecting new requests")
+
         if self.client:
             self.client.clean()
             self.client = None
@@ -127,6 +132,13 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
                         request_id=self.current_request_id,
                         request_event_interval_ms=request_event_interval,
                         request_total_audio_duration_ms=duration_ms,
+                        reason=TTSAudioEndReason.INTERRUPTED,
+                    )
+                    if self.current_request_id in self.recorder_map:
+                        await self.recorder_map[self.current_request_id].flush()
+
+                    await self.finish_request(
+                        request_id=self.current_request_id,
                         reason=TTSAudioEndReason.INTERRUPTED,
                     )
         else:
@@ -216,6 +228,11 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
                 self.current_request_finished = True
 
             chunk_count = 0
+            if self._is_stopped:
+                self.ten_env.log_debug(
+                    f"TTS is stopped, skipping request_id: {t.request_id}"
+                )
+                return
             async for audio_chunk, event in self.client.get(t.text):
                 if event == EVENT_TTS_RESPONSE:
                     if audio_chunk is not None and len(audio_chunk) > 0:
@@ -293,6 +310,10 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
                                 request_event_interval_ms=request_event_interval,
                                 request_total_audio_duration_ms=duration_ms,
                             )
+                            if self.current_request_id in self.recorder_map:
+                                await self.recorder_map[
+                                    self.current_request_id
+                                ].flush()
                             self.ten_env.log_debug(
                                 f"Sent TTS audio end event, interval: {request_event_interval}ms, duration: {duration_ms}ms"
                             )
@@ -312,8 +333,16 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
                             request_event_interval_ms=request_event_interval,
                             request_total_audio_duration_ms=duration_ms,
                         )
+                        if self.current_request_id in self.recorder_map:
+                            await self.recorder_map[
+                                self.current_request_id
+                            ].flush()
                         self.ten_env.log_debug(
                             f"Sent TTS audio end event, interval: {request_event_interval}ms, duration: {duration_ms}ms",
+                        )
+                        await self.finish_request(
+                            request_id=self.current_request_id,
+                            reason=TTSAudioEndReason.REQUEST_END,
                         )
                     break
 
@@ -325,6 +354,18 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
                     )
                     await self.send_tts_error(
                         request_id=self.current_request_id or t.request_id,
+                        error=ModuleError(
+                            message=error_msg,
+                            module=ModuleType.TTS,
+                            code=ModuleErrorCode.FATAL_ERROR,
+                            vendor_info=ModuleErrorVendorInfo(
+                                vendor=self.vendor()
+                            ),
+                        ),
+                    )
+                    await self.finish_request(
+                        request_id=self.current_request_id,
+                        reason=TTSAudioEndReason.ERROR,
                         error=ModuleError(
                             message=error_msg,
                             module=ModuleType.TTS,
@@ -354,6 +395,16 @@ class FishAudioTTSExtension(AsyncTTS2BaseExtension):
             )
             await self.send_tts_error(
                 request_id=self.current_request_id or t.request_id,
+                error=ModuleError(
+                    message=str(e),
+                    module=ModuleType.TTS,
+                    code=ModuleErrorCode.NON_FATAL_ERROR,
+                    vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
+                ),
+            )
+            await self.finish_request(
+                request_id=self.current_request_id,
+                reason=TTSAudioEndReason.ERROR,
                 error=ModuleError(
                     message=str(e),
                     module=ModuleType.TTS,
