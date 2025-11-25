@@ -94,19 +94,19 @@ def test_standalone_test_tmpl_async_python():
         # On Windows, use Python bootstrap script directly
         print("Running bootstrap script on Windows...")
         bootstrap_script = os.path.join(
-            app_root_path, "bin/bootstrap.py"
+            extension_root_path, "bin/bootstrap.py"
         )
         bootstrap_process = subprocess.Popen(
             [sys.executable, bootstrap_script],
             stdout=stdout,
             stderr=subprocess.STDOUT,
             env=my_env,
-            cwd=app_root_path,
+            cwd=extension_root_path,
         )
     else:
         # On Unix-like systems, use bash bootstrap script
         bootstrap_cmd = os.path.join(
-            app_root_path, "bin/bootstrap"
+            extension_root_path, "bin/bootstrap"
         )
         bootstrap_process = subprocess.Popen(
             bootstrap_cmd, stdout=stdout, stderr=subprocess.STDOUT, env=my_env
@@ -160,17 +160,30 @@ def test_standalone_test_tmpl_async_python():
     # Step 5:
     #
     # Run the test.
-    test_cmd = [
-        "tests/bin/start",
-        "-s",
-    ]
+    if sys.platform == "win32":
+        start_script = os.path.join(
+            extension_root_path, "tests/bin/start.py"
+        )
+        tester_process = subprocess.Popen(
+            [sys.executable, start_script, "-s"],
+            stdout=stdout,
+            stderr=subprocess.STDOUT,
+            env=my_env,
+            cwd=extension_root_path,
+        )
+    else:
+        # On Unix-like systems, use bash start script
+        test_cmd = [
+            "tests/bin/start",
+            "-s",
+        ]
+        tester_process = subprocess.Popen(
+            test_cmd,
+            stdout=stdout,
+            stderr=subprocess.STDOUT,
+            env=my_env,
+            cwd=extension_root_path,
+        )
 
-    tester_process = subprocess.Popen(
-        test_cmd,
-        stdout=stdout,
-        stderr=subprocess.STDOUT,
-        env=my_env,
-        cwd=extension_root_path,
-    )
     tester_rc = tester_process.wait()
     assert tester_rc == 0
