@@ -171,7 +171,11 @@ class PollyTTSClient(AsyncTTS2HttpClient):
                 f"vendor_error: {error_message} of request_id: {request_id}.",
                 category=LOG_CATEGORY_VENDOR,
             )
-            yield error_message.encode("utf-8"), TTS2HttpResponseEventType.ERROR
+            if "validation failed" in error_message.lower():
+                yield error_message.encode("utf-8"), TTS2HttpResponseEventType.INVALID_KEY_ERROR
+            else:
+
+                yield error_message.encode("utf-8"), TTS2HttpResponseEventType.ERROR
 
     def _synthesize_speech(self, synthesize_params: dict) -> Iterator[bytes]:
         """Synchronous synthesis"""
