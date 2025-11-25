@@ -23,7 +23,9 @@ class RimeTTSClient(AsyncTTS2HttpClient):
         self.api_key = config.params.get("api_key", "")
         self.ten_env: AsyncTenEnv = ten_env
         self._is_cancelled = False
-        self.endpoint = "https://users.rime.ai/v1/rime-tts"
+        self.endpoint = config.params.get(
+            "endpoint", "https://users.rime.ai/v1/rime-tts"
+        )
         self.headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",

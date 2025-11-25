@@ -46,7 +46,9 @@ class SarvamTTSClient(AsyncTTS2HttpClient):
         )
         self.ten_env: AsyncTenEnv = ten_env
         self._is_cancelled = False
-        self.endpoint = "https://api.sarvam.ai/text-to-speech"
+        self.endpoint = config.params.get(
+            "endpoint", "https://api.sarvam.ai/text-to-speech"
+        )
         self.headers = {
             "api-subscription-key": self.api_subscription_key,
             "Content-Type": "application/json",

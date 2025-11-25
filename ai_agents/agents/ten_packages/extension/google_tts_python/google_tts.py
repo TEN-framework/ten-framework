@@ -1,6 +1,7 @@
 import asyncio
 from typing import AsyncIterator, Iterator
 from google.cloud import texttospeech
+from google.api_core.client_options import ClientOptions
 from ten_runtime import AsyncTenEnv
 from .config import GoogleTTSConfig
 from google.oauth2 import service_account
@@ -85,10 +86,24 @@ class GoogleTTS:
                 # pylint: disable=raise-missing-from
                 raise ValueError(f"Invalid credentials format: {e}")
 
+            # Check for custom API endpoint in params
+            api_endpoint = self.config.params.get("api_endpoint")
+            client_options = None
+            if api_endpoint:
+                client_options = ClientOptions(api_endpoint=api_endpoint)
+                self.ten_env.log_info(
+                    f"Using custom API endpoint: {api_endpoint}"
+                )
+
             # Create TTS client
-            self.client = texttospeech.TextToSpeechClient(
-                credentials=credentials
-            )
+            if client_options:
+                self.client = texttospeech.TextToSpeechClient(
+                    credentials=credentials, client_options=client_options
+                )
+            else:
+                self.client = texttospeech.TextToSpeechClient(
+                    credentials=credentials
+                )
             self.ten_env.log_debug("Google TTS client initialized successfully")
 
         except Exception as e:

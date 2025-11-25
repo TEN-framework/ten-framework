@@ -1,6 +1,6 @@
 {
     "dump": true,
-    "dump_path": "./tests/dump_output/",
+    "dump_path": "./tests/keep_dump_output/",
     "params": {
         "api_subscription_key": "${env:SARVAM_TTS_KEY}",
         "target_language_code": "en-IN",

@@ -25,7 +25,10 @@ class SarvamTTSConfig(AsyncTTS2HttpConfig):
     def update_params(self) -> None:
         """Update configuration from params dictionary"""
         # Keys to exclude from params after processing (not passthrough params)
-        blacklist_keys = ["text"]
+        blacklist_keys = [
+            "text",
+            "endpoint",
+        ]  # base_url is only used for endpoint
 
         # Normalize sample rate key - convert speech_sample_rate if needed
         if "speech_sample_rate" in self.params:

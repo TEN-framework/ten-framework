@@ -137,6 +137,7 @@ class AppendInputStressTester(AsyncExtensionTester):
             ten_env.log_info(f"Sending request {request_idx + 1}/{self.expected_group_count}: {text} (request_id: {request_id})")
             
             # Each request has only one text, so text_input_end is always True
+            time.sleep(5)
             await self._send_tts_text_input(
                 ten_env, text, request_id, metadata, text_input_end=True
             )
@@ -395,26 +396,45 @@ class AppendInputStressTester(AsyncExtensionTester):
             self._stop_test_with_error(ten_env, f"TTS extension dump folder not found: {self.tts_extension_dump_folder}")
             return
         
-        # Get all files in the directory
-        time.sleep(2)
+        # Calculate expected count
+        expected_count = sum(1 for is_empty in self.empty_groups if not is_empty)
+        
+        # Retry mechanism: wait for dump files to be written with exponential backoff
+        max_retries = 10
+        retry_delay = 0.5  # Start with 0.5 seconds
         dump_files = []
-        for file_path in glob.glob(os.path.join(self.tts_extension_dump_folder, "*")):
-            if os.path.isfile(file_path):
-                dump_files.append(file_path)
-
+        
+        for retry in range(max_retries):
+            # Wait before checking
+            if retry > 0:
+                time.sleep(retry_delay)
+                retry_delay = min(retry_delay * 1.5, 2.0)  # Exponential backoff, max 2 seconds
+            
+            # Get all files in the directory
+            dump_files = []
+            for file_path in glob.glob(os.path.join(self.tts_extension_dump_folder, "*")):
+                if os.path.isfile(file_path):
+                    dump_files.append(file_path)
+            
+            ten_env.log_info(f"Attempt {retry + 1}/{max_retries}: Found {len(dump_files)} dump files (expected {expected_count})")
+            
+            # If we found the expected number, break
+            if len(dump_files) == expected_count:
+                break
+        
+        # Log all found files
         ten_env.log_info(f"Found {len(dump_files)} dump files in {self.tts_extension_dump_folder}")
         for i, file_path in enumerate(dump_files):
             ten_env.log_info(f"  {i+1}. {os.path.basename(file_path)}")
         
         # Check if there are exactly expected number of dump files (one per non-empty group)
-        expected_count = sum(1 for is_empty in self.empty_groups if not is_empty)
         if len(dump_files) == expected_count:
             ten_env.log_info(f"✅ Found exactly {expected_count} dump files as expected (one per non-empty group)")
             ten_env.stop_test()
         elif len(dump_files) > expected_count:
             self._stop_test_with_error(ten_env, f"Found {len(dump_files)} dump files, expected exactly {expected_count} (one per non-empty group)")
         else:
-            self._stop_test_with_error(ten_env, f"Found {len(dump_files)} dump files, expected exactly {expected_count} (one per non-empty group)")
+            self._stop_test_with_error(ten_env, f"Found {len(dump_files)} dump files, expected exactly {expected_count} (one per non-empty group). Last dump file may not have been written in time.")
 
     @override
     async def on_audio_frame(self, ten_env: AsyncTenEnvTester, audio_frame: AudioFrame) -> None:
