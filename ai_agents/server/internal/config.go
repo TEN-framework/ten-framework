@@ -2,6 +2,8 @@ package internal
 
 import (
 	"log/slog"
+	"os"
+	"strconv"
 )
 
 type Prop struct {
@@ -22,12 +24,13 @@ const (
 	tokenExpirationInSeconds = uint32(86400)
 
 	WORKER_TIMEOUT_INFINITY = -1
-
-	MAX_GEMINI_WORKER_COUNT = 3
 )
 
 var (
 	logTag = slog.String("service", "HTTP_SERVER")
+
+	// MAX_GEMINI_WORKER_COUNT can be configured via MAX_GEMINI_WORKER_COUNT env var, defaults to 3
+	MAX_GEMINI_WORKER_COUNT = getMaxGeminiWorkerCount()
 
 	// Retrieve parameters from the request and map them to the property.json file
 	startPropMap = map[string][]Prop{
@@ -51,3 +54,14 @@ var (
 		},
 	}
 )
+
+func getMaxGeminiWorkerCount() int {
+	if val := os.Getenv("MAX_GEMINI_WORKER_COUNT"); val != "" {
+		if count, err := strconv.Atoi(val); err == nil && count > 0 {
+			slog.Info("Using MAX_GEMINI_WORKER_COUNT from environment", "value", count)
+			return count
+		}
+		slog.Warn("Invalid MAX_GEMINI_WORKER_COUNT env var, using default", "value", val, "default", 3)
+	}
+	return 3
+}
