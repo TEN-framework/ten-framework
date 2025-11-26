@@ -1,5 +1,5 @@
 # Memory integration
-memu-py
+powermem
 aiohttp
 
 # Optional: for better error handling

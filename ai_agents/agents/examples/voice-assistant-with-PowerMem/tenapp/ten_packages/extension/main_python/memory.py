@@ -67,12 +67,12 @@ class MemoryStore(ABC):
         ...
 
 
-class MemuSdkMemoryStore(MemoryStore):
-    def __init__(self, env: AsyncTenEnv, base_url: str, api_key: str):
+class PowerMemSdkMemoryStore(MemoryStore):
+    def __init__(self, env: AsyncTenEnv):
         super().__init__(env)
-        from memu.sdk.python import MemuClient
+        from powermem import Memory, auto_config
 
-        self.client = MemuClient(base_url=base_url, api_key=api_key)
+        self.client = Memory(config=auto_config())
 
     async def memorize(
         self,
@@ -82,396 +82,358 @@ class MemuSdkMemoryStore(MemoryStore):
         agent_id: str,
         agent_name: str,
     ) -> None:
-        resp = self.client.memorize_conversation(
-            conversation=conversation,
-            user_id=user_id,
-            user_name=user_name,
-            agent_id=agent_id,
-            agent_name=agent_name,
+        self.env.log_info(
+            f"[PowerMemSdkMemoryStore] memorize called with user_id={user_id}, agent_id={agent_id}, "
+            f"conversation_length={len(conversation)}"
         )
-        # wait until finished
-        while True:
-            status = self.client.get_task_status(resp.task_id)
-            if status.status in ["SUCCESS", "FAILURE", "REVOKED"]:
-                break
-            await asyncio.sleep(2)
+        try:
+            self.env.log_info(
+                f"[PowerMemSdkMemoryStore] Calling client.add with messages={conversation[:2]}... (showing first 2), "
+                f"user_id='{user_id}', agent_id='{agent_id}'"
+            )
+            self.client.add(
+                messages=conversation,
+                user_id=user_id,
+                agent_id=agent_id,
+            )
+            self.env.log_info(
+                f"[PowerMemSdkMemoryStore] Successfully added {len(conversation)} messages to memory"
+            )
+            # Try to verify by querying immediately after (for debugging)
+            try:
+                verify_result = self.client.get_all(user_id=user_id)
+                if isinstance(verify_result, dict):
+                    verify_count = len(verify_result.get("results", []))
+                elif isinstance(verify_result, list):
+                    verify_count = len(verify_result)
+                else:
+                    verify_count = "unknown"
+                self.env.log_info(
+                    f"[PowerMemSdkMemoryStore] Verification: get_all returned {verify_count} records for user_id='{user_id}'"
+                )
+            except Exception as verify_e:
+                self.env.log_warn(
+                    f"[PowerMemSdkMemoryStore] Could not verify saved data: {verify_e}"
+                )
+        except Exception as e:
+            self.env.log_error(
+                f"[PowerMemSdkMemoryStore] Failed to add messages to memory: {e}"
+            )
+            import traceback
+            self.env.log_error(
+                f"[PowerMemSdkMemoryStore] Memorize traceback: {traceback.format_exc()}"
+            )
+            raise
 
     async def retrieve_default_categories(
         self, user_id: str, agent_id: str
     ) -> Any:
-        return self.client.retrieve_default_categories(user_id=user_id)
+        self.env.log_info(
+            f"[PowerMemSdkMemoryStore] retrieve_default_categories called with: "
+            f"user_id='{user_id}', agent_id='{agent_id}'"
+        )
+        try:
+            result = self.client.get_all(user_id=user_id)
+            self.env.log_info(
+                f"[PowerMemSdkMemoryStore] retrieve_default_categories returned: {result}"
+            )
+            # Log detailed result structure
+            if isinstance(result, dict):
+                self.env.log_info(
+                    f"[PowerMemSdkMemoryStore] Result type: dict, keys: {list(result.keys())}"
+                )
+                if "results" in result:
+                    self.env.log_info(
+                        f"[PowerMemSdkMemoryStore] Results count: {len(result['results'])}"
+                    )
+                    for i, item in enumerate(result["results"][:3]):  # Log first 3 items
+                        self.env.log_info(
+                            f"[PowerMemSdkMemoryStore] Result item {i}: {item}"
+                        )
+            elif isinstance(result, list):
+                self.env.log_info(
+                    f"[PowerMemSdkMemoryStore] Result type: list, length: {len(result)}"
+                )
+                for i, item in enumerate(result[:3]):  # Log first 3 items
+                    self.env.log_info(
+                        f"[PowerMemSdkMemoryStore] Result item {i}: {item}"
+                    )
+            else:
+                self.env.log_info(
+                    f"[PowerMemSdkMemoryStore] Result type: {type(result)}"
+                )
+            return result
+        except Exception as e:
+            self.env.log_error(
+                f"[PowerMemSdkMemoryStore] Failed to retrieve default categories: {e}"
+            )
+            import traceback
+            self.env.log_error(
+                f"[PowerMemSdkMemoryStore] Retrieve default categories traceback: {traceback.format_exc()}"
+            )
+            raise
 
     async def retrieve_related_clustered_categories(
         self, user_id: str, agent_id: str, category_query: str
     ) -> Any:
         self.env.log_info(
-            f"[MemuSdkMemoryStore] retrieve_related_clustered_categories called with: "
+            f"[PowerMemSdkMemoryStore] retrieve_related_clustered_categories called with: "
             f"user_id='{user_id}', agent_id='{agent_id}', category_query='{category_query}'"
         )
-        result = self.client.retrieve_related_clustered_categories(
-            user_id=user_id, agent_id=agent_id, category_query=category_query
-        )
-        self.env.log_info(
-            f"[MemuSdkMemoryStore] retrieve_related_clustered_categories returned: {result}"
-        )
+        try:
+            result = self.client.search(
+                user_id=user_id, agent_id=agent_id, query=category_query
+            )
+            self.env.log_info(
+                f"[PowerMemSdkMemoryStore] retrieve_related_clustered_categories returned: {result}"
+            )
+            # Log detailed result structure
+            if isinstance(result, dict):
+                self.env.log_info(
+                    f"[PowerMemSdkMemoryStore] Search result type: dict, keys: {list(result.keys())}"
+                )
+                results_count = len(result.get("results", []))
+                self.env.log_info(
+                    f"[PowerMemSdkMemoryStore] Search found {results_count} results"
+                )
+                for i, item in enumerate(result.get("results", [])[:3]):  # Log first 3 items
+                    self.env.log_info(
+                        f"[PowerMemSdkMemoryStore] Search result item {i}: {item}"
+                    )
+            elif isinstance(result, list):
+                self.env.log_info(
+                    f"[PowerMemSdkMemoryStore] Search result type: list, length: {len(result)}"
+                )
+                for i, item in enumerate(result[:3]):  # Log first 3 items
+                    self.env.log_info(
+                        f"[PowerMemSdkMemoryStore] Search result item {i}: {item}"
+                    )
+            else:
+                self.env.log_info(
+                    f"[PowerMemSdkMemoryStore] Search result type: {type(result)}"
+                )
+            return result
+        except Exception as e:
+            self.env.log_error(
+                f"[PowerMemSdkMemoryStore] Failed to retrieve related clustered categories: {e}"
+            )
+            import traceback
+            self.env.log_error(
+                f"[PowerMemSdkMemoryStore] Retrieve related clustered categories traceback: {traceback.format_exc()}"
+            )
+            raise
+        # PowerMem returns {"results": [...], "relations": [...] (optional)}
+        # Add the query to the result so parse_related_clustered_categories can access it
+        if isinstance(result, dict):
+            result["query"] = category_query
         return result
 
     def parse_default_categories(self, data: Any) -> dict:
-        # Assume SDK already returns a summary-like object with attributes or dict-compatible
+        """
+        Parse PowerMem's get_all response format.
+        PowerMem returns: {"results": [list of memory dicts]}
+        Each memory dict has: {"id", "memory", "user_id", "agent_id", "metadata", "created_at", "updated_at"}
+        """
+        self.env.log_info(
+            f"[PowerMemSdkMemoryStore] parse_default_categories called with data type: {type(data)}"
+        )
+        # Extract results from PowerMem response
         if isinstance(data, dict):
-            return data
-        # Convert SDK object to dict structure
-        categories = getattr(data, "categories", [])
-        summary = {
-            "basic_stats": {
-                "total_categories": len(categories),
-                "total_memories": sum(
-                    getattr(cat, "memory_count", 0) or 0 for cat in categories
-                ),
-                "user_id": (
-                    getattr(categories[0], "user_id", None)
-                    if categories
-                    else None
-                ),
-                "agent_id": (
-                    getattr(categories[0], "agent_id", None)
-                    if categories
-                    else None
-                ),
-            },
-            "categories": [],
-        }
-        for category in categories:
-            cat_summary = {
-                "name": getattr(category, "name", None),
-                "type": getattr(category, "type", None),
-                "memory_count": getattr(category, "memory_count", 0) or 0,
-                "is_active": getattr(category, "is_active", None),
-                "recent_memories": [],
-                "summary": getattr(category, "summary", None),
-            }
-            memories = getattr(category, "memories", None)
-            if memories is None:
-                memories = getattr(category, "recent_memories", [])
-            for memory in memories or []:
-                happened = getattr(memory, "happened_at", None)
-                date_str = None
-                try:
-                    date_str = (
-                        happened.strftime("%Y-%m-%d %H:%M")
-                        if hasattr(happened, "strftime")
-                        else str(happened)
-                    )
-                except Exception:
-                    date_str = str(happened)
-                content = getattr(memory, "content", None)
-                cat_summary["recent_memories"].append(
-                    {"date": date_str, "content": content}
-                )
-            summary["categories"].append(cat_summary)
-        return summary
-
-    def parse_related_clustered_categories(self, data: Any) -> dict:
-        """Parse SDK response for related clustered categories"""
-        if isinstance(data, dict):
-            # Already in dict format
-            categories = data.get("clustered_categories", [])
+            results = data.get("results", [])
         else:
-            # SDK object with clustered_categories attribute
-            categories = getattr(data, "clustered_categories", [])
+            # Try to get results attribute if it's an object
+            results = getattr(data, "results", [])
 
-        out_categories = []
-        for category in categories:
-            # Extract category attributes
-            cat_data = {
-                "name": getattr(category, "name", None),
-                "summary": getattr(category, "summary", None),
-                "description": getattr(category, "description", None),
-                "similarity_score": getattr(category, "similarity_score", None),
-                "memory_count": 0,
-                "recent_memories": [],
-            }
-
-            # Extract memories if available
-            memory_items = getattr(category, "memory_items", None)
-            if memory_items:
-                memories = getattr(memory_items, "memories", [])
-                cat_data["memory_count"] = len(memories)
-
-                for memory in memories or []:
-                    happened = getattr(memory, "happened_at", None)
-                    date_str = None
-                    try:
-                        date_str = (
-                            happened.strftime("%Y-%m-%d %H:%M")
-                            if hasattr(happened, "strftime")
-                            else str(happened)
-                        )
-                    except Exception:
-                        date_str = str(happened)
-                    content = getattr(memory, "content", None)
-                    cat_data["recent_memories"].append(
-                        {"date": date_str, "content": content}
-                    )
-
-            out_categories.append(cat_data)
-
-        return {
-            "query": (
-                getattr(data, "query", "")
-                if not isinstance(data, dict)
-                else data.get("query", "")
-            ),
-            "total_categories": len(out_categories),
-            "categories": out_categories,
-        }
-
-
-class MemuHttpMemoryStore(MemoryStore):
-    def __init__(
-        self, env: AsyncTenEnv, base_url: str, api_key: str | None = ""
-    ):
-        super().__init__(env)
-        import aiohttp
-
-        self.base_url = base_url.rstrip("/")
-        self.api_key = api_key or ""
-
-    async def _headers(self) -> dict[str, str]:
-        headers = {"Content-Type": "application/json"}
-        if self.api_key:
-            headers["Authorization"] = f"Bearer {self.api_key}"
-        return headers
-
-    async def memorize(
-        self,
-        conversation: list[dict],
-        user_id: str,
-        user_name: str,
-        agent_id: str,
-        agent_name: str,
-    ) -> None:
-        import aiohttp
-
-        payload = {
-            "conversation": conversation,
-            "user_id": user_id,
-            "user_name": user_name,
-            "agent_id": agent_id,
-            "agent_name": agent_name,
-        }
-        async with aiohttp.ClientSession() as session:
-            async with session.post(
-                f"{self.base_url}/api/v1/memory/memorize",
-                headers=await self._headers(),
-                data=json.dumps(payload),
-            ) as r:
-                r.raise_for_status()
-                data = await r.json()
-                task_id = data.get("task_id")
-        # poll
-        async with aiohttp.ClientSession() as session:
-            while True:
-                async with session.get(
-                    f"{self.base_url}/api/v1/memory/memorize/status/{task_id}",
-                    headers=await self._headers(),
-                ) as r:
-                    r.raise_for_status()
-                    data = await r.json()
-                    status = data.get("status") or data.get("state")
-                    if status in [
-                        "SUCCESS",
-                        "FAILURE",
-                        "REVOKED",
-                        "DONE",
-                        "ERROR",
-                    ]:
-                        break
-                await asyncio.sleep(2)
-
-    async def retrieve_default_categories(
-        self, user_id: str, agent_id: str
-    ) -> Any:
-        import aiohttp
-
-        payload = {"user_id": user_id, "agent_id": agent_id}
-        async with aiohttp.ClientSession() as session:
-            async with session.post(
-                f"{self.base_url}/api/v1/memory/retrieve/default-categories",
-                headers=await self._headers(),
-                data=json.dumps(payload),
-            ) as r:
-                r.raise_for_status()
-                return await r.json()
-
-    async def retrieve_related_clustered_categories(
-        self, user_id: str, agent_id: str, category_query: str
-    ) -> Any:
-        import aiohttp
-
-        payload = {
-            "user_id": user_id,
-            "agent_id": agent_id,
-            "category_query": category_query,
-        }
-
-        # Redact sensitive fields for logging
-        redacted = {**payload, "user_id": "***", "category_query": "***"}
-        self.env.log_info(
-            f"[MemuHttpMemoryStore] retrieve_related_clustered_categories called with: {redacted}"
-        )
-        self.env.log_info(
-            f"[MemuHttpMemoryStore] API endpoint: {self.base_url}/api/v1/memory/retrieve/related-clustered-categories"
-        )
-
-        try:
-            # Configure timeout: 15 seconds total
-            timeout = aiohttp.ClientTimeout(total=15)
-            async with aiohttp.ClientSession(timeout=timeout) as session:
-                async with session.post(
-                    f"{self.base_url}/api/v1/memory/retrieve/related-clustered-categories",
-                    headers=await self._headers(),
-                    json=payload,
-                ) as r:
-                    r.raise_for_status()
-                    result = await r.json()
-
-                    self.env.log_info(
-                        f"[MemuHttpMemoryStore] retrieve_related_clustered_categories returned successfully"
-                    )
-
-                    return result
-        except asyncio.TimeoutError:
-            self.env.log_error(
-                "[MemuHttpMemoryStore] retrieve_related_clustered_categories timed out after 15 seconds"
-            )
-            raise
-        except aiohttp.ClientError as e:
-            self.env.log_error(
-                f"[MemuHttpMemoryStore] retrieve_related_clustered_categories client error: {type(e).__name__}: {str(e)}"
-            )
-            raise
-        except Exception as e:
-            self.env.log_error(
-                f"[MemuHttpMemoryStore] retrieve_related_clustered_categories unexpected error: {type(e).__name__}: {str(e)}"
-            )
-            raise
-
-    def parse_default_categories(self, data: Any) -> dict:
-        # HTTP returns raw categories with memories. Normalize to summary schema.
-        if not isinstance(data, dict):
+        if not results:
             return {
-                "basic_stats": {"total_categories": 0, "total_memories": 0},
+                "basic_stats": {
+                    "total_categories": 0,
+                    "total_memories": 0,
+                    "user_id": None,
+                    "agent_id": None,
+                },
                 "categories": [],
             }
 
-        self.env.log_info(
-            f"MemuHttpMemoryStore: parse_default_categories: {data}"
-        )
+        # Extract user_id and agent_id from first memory
+        first_memory = results[0] if results else {}
+        user_id = first_memory.get("user_id") if isinstance(
+            first_memory, dict) else getattr(first_memory, "user_id", None)
+        agent_id = first_memory.get("agent_id") if isinstance(
+            first_memory, dict) else getattr(first_memory, "agent_id", None)
 
-        categories = data.get("categories", [])
-        total_memories = 0
-        out_categories = []
-        for cat in categories:
-            memories = cat.get("memories", []) or []
-            total_memories += len(memories)
+        # Group all memories into a single category (or create categories based on metadata if available)
+        # For simplicity, we'll create one category with all memories
+        recent_memories = []
+        for memory in results:
+            if isinstance(memory, dict):
+                memory_content = memory.get("memory", "")
+                created_at = memory.get("created_at")
+            else:
+                memory_content = getattr(memory, "memory", "")
+                created_at = getattr(memory, "created_at", None)
 
-            # Build summary from memories if not explicitly provided
-            summary_text = cat.get("summary")
-            if not summary_text and memories:
-                # Generate summary from memory contents
-                memory_contents = []
-                for m in memories:
-                    content = m.get("content")
-                    if content:
-                        memory_contents.append(content)
-                if memory_contents:
-                    summary_text = "\n".join(memory_contents)
+            if not memory_content:
+                continue
 
-            out_cat = {
-                "name": cat.get("name"),
-                "type": cat.get("type"),
-                "memory_count": cat.get("memory_count") or len(memories),
-                "is_active": cat.get("is_active"),
-                "recent_memories": [],
-                "summary": summary_text,
-            }
-            for m in memories:
-                out_cat["recent_memories"].append(
-                    {
-                        "date": str(m.get("happened_at")),
-                        "content": m.get("content"),
-                    }
-                )
-            out_categories.append(out_cat)
-        return {
-            "basic_stats": {
-                "total_categories": len(categories),
-                "total_memories": total_memories,
-                "user_id": None,
-                "agent_id": None,
-            },
-            "categories": out_categories,
+            # Format date
+            date_str = None
+            if created_at:
+                try:
+                    if isinstance(created_at, str):
+                        # Try to parse ISO format string
+                        from datetime import datetime
+                        dt = datetime.fromisoformat(
+                            created_at.replace('Z', '+00:00'))
+                        date_str = dt.strftime("%Y-%m-%d %H:%M")
+                    elif hasattr(created_at, "strftime"):
+                        date_str = created_at.strftime("%Y-%m-%d %H:%M")
+                    else:
+                        date_str = str(created_at)
+                except Exception:
+                    date_str = str(created_at) if created_at else None
+
+            recent_memories.append({
+                "date": date_str,
+                "content": memory_content
+            })
+
+        # Sort by date (most recent first)
+        recent_memories.sort(key=lambda x: x["date"] or "", reverse=True)
+
+        # Create a single category with all memories
+        category = {
+            "name": "All Memories",
+            "type": None,
+            "memory_count": len(recent_memories),
+            "is_active": True,
+            "recent_memories": recent_memories[:10],  # Limit to 10 most recent
+            "summary": None,
         }
 
+        result = {
+            "basic_stats": {
+                "total_categories": 1,
+                "total_memories": len(recent_memories),
+                "user_id": user_id,
+                "agent_id": agent_id,
+            },
+            "categories": [category],
+        }
+        self.env.log_info(
+            f"[PowerMemSdkMemoryStore] parse_default_categories returned: {result['basic_stats']['total_categories']} category, {result['basic_stats']['total_memories']} memories"
+        )
+        return result
+
     def parse_related_clustered_categories(self, data: Any) -> dict:
-        """Parse HTTP response for related clustered categories"""
+        """
+        Parse PowerMem's search response format.
+        PowerMem returns: {"results": [list of result dicts], "relations": [...] (optional)}
+        Each result dict has: {"memory", "metadata", "score", ...}
+        """
         self.env.log_info(
-            f"[MemuHttpMemoryStore] parse_related_clustered_categories called with data type: {type(data)}"
+            f"[PowerMemSdkMemoryStore] parse_related_clustered_categories called with data type: {type(data)}"
         )
+        # Extract results from PowerMem response
+        if isinstance(data, dict):
+            results = data.get("results", [])
+            # PowerMem search doesn't return query, but we can try to get it
+            query = data.get("query", "")
+        else:
+            results = getattr(data, "results", [])
+            query = getattr(data, "query", "")
 
-        if not isinstance(data, dict):
-            self.env.log_warn(
-                f"[MemuHttpMemoryStore] parse_related_clustered_categories received non-dict data: {data}"
-            )
-            return {"query": "", "total_categories": 0, "categories": []}
-
-        names = [c.get("name") for c in data.get("clustered_categories", [])][
-            :5
-        ]
-        self.env.log_info(
-            f"[MemuHttpMemoryStore] parse_related_clustered_categories received "
-            f"categories={len(data.get('clustered_categories', []))}, sample_names={names}"
-        )
-
-        clustered_categories = data.get("clustered_categories", [])
-        out_categories = []
-
-        for cat in clustered_categories:
-            # Extract memory items
-            memory_items = cat.get("memory_items", {}) or {}
-            memories = memory_items.get("memories", []) or []
-
-            cat_data = {
-                "name": cat.get("name"),
-                "summary": cat.get("summary"),
-                "description": cat.get("description"),
-                "similarity_score": cat.get("similarity_score"),
-                "memory_count": len(memories),
-                "recent_memories": [],
+        if not results:
+            return {
+                "query": query,
+                "total_categories": 0,
+                "categories": [],
             }
 
-            # Extract recent memories
-            for m in memories:
-                cat_data["recent_memories"].append(
-                    {
-                        "date": str(m.get("happened_at")),
-                        "content": m.get("content"),
-                    }
-                )
+        # Group results by similarity score ranges to create categories
+        # Or treat each result as its own category-like item
+        out_categories = []
 
+        # Group results with similar scores together
+        score_groups = {}
+        for result in results:
+            if isinstance(result, dict):
+                score = result.get("score", 0.0)
+                memory_content = result.get("memory", "")
+                created_at = result.get("created_at")
+            else:
+                score = getattr(result, "score", 0.0)
+                memory_content = getattr(result, "memory", "")
+                created_at = getattr(result, "created_at", None)
+
+            if not memory_content:
+                continue
+
+            # Create a category for each result (or group by score ranges)
+            # For simplicity, we'll create one category per result, but group them by score ranges
+            score_range = f"{int(score * 10) * 10}%"
+            if score_range not in score_groups:
+                score_groups[score_range] = []
+
+            # Format date
+            date_str = None
+            if created_at:
+                try:
+                    if isinstance(created_at, str):
+                        from datetime import datetime
+                        dt = datetime.fromisoformat(
+                            created_at.replace('Z', '+00:00'))
+                        date_str = dt.strftime("%Y-%m-%d %H:%M")
+                    elif hasattr(created_at, "strftime"):
+                        date_str = created_at.strftime("%Y-%m-%d %H:%M")
+                    else:
+                        date_str = str(created_at)
+                except Exception:
+                    date_str = str(created_at) if created_at else None
+
+            score_groups[score_range].append({
+                "date": date_str,
+                "content": memory_content,
+                "score": score
+            })
+
+        # Create categories from score groups
+        # Sort by numeric value of score_range (extract number from "XX%" string)
+        # to ensure correct ordering (100% > 90% > 80% ...)
+        for score_range, memories in sorted(
+            score_groups.items(),
+            # Extract numeric value from "XX%" string
+            key=lambda x: int(x[0].rstrip("%")),
+            reverse=True
+        ):
+            # Sort memories in this group by score (highest first)
+            memories.sort(key=lambda x: x.get("score", 0), reverse=True)
+
+            # Create category name from score range
+            cat_name = f"Relevance: {score_range}"
+
+            # Get the highest score in this group for similarity_score
+            max_score = max((m.get("score", 0) for m in memories), default=0)
+
+            cat_data = {
+                "name": cat_name,
+                "summary": None,
+                "description": f"Memories with similarity scores in {score_range} range",
+                "similarity_score": max_score,
+                "memory_count": len(memories),
+                "recent_memories": [
+                    {"date": m.get("date"), "content": m.get("content")}
+                    for m in memories[:5]  # Limit to 5 most relevant
+                ],
+            }
             out_categories.append(cat_data)
 
         result = {
-            "query": data.get("query", ""),
+            "query": query,
             "total_categories": len(out_categories),
             "categories": out_categories,
         }
-
         self.env.log_info(
-            f"[MemuHttpMemoryStore] parse_related_clustered_categories result: "
-            f"query='{result['query']}', total_categories={result['total_categories']}, "
-            f"category_names={[cat['name'] for cat in out_categories]}"
+            f"[PowerMemSdkMemoryStore] parse_related_clustered_categories returned: {result['total_categories']} categories for query='{query}'"
         )
-
         return result

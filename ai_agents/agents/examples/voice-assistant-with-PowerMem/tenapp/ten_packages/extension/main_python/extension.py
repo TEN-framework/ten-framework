@@ -26,7 +26,7 @@ from .config import MainControlConfig  # assume extracted from your base model
 import uuid
 
 # Memory store abstraction
-from .memory import MemoryStore, MemuSdkMemoryStore, MemuHttpMemoryStore
+from .memory import MemoryStore, PowerMemSdkMemoryStore
 
 
 class MainControlExtension(AsyncExtension):
@@ -61,18 +61,7 @@ class MainControlExtension(AsyncExtension):
         self.config = MainControlConfig.model_validate_json(config_json)
 
         # Initialize memory store per config toggle
-        if self.config.self_hosting:
-            self.memu_client = MemuHttpMemoryStore(
-                env=ten_env,
-                base_url=self.config.memu_base_url,
-                api_key=self.config.memu_api_key,
-            )
-        else:
-            self.memu_client = MemuSdkMemoryStore(
-                env=ten_env,
-                base_url=self.config.memu_base_url,
-                api_key=self.config.memu_api_key,
-            )
+        self.memu_client = PowerMemSdkMemoryStore(env=ten_env)
 
         self.agent = Agent(ten_env)
 
