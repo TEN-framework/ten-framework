@@ -54,6 +54,7 @@ class AzureTTSExtension(AsyncTTS2BaseExtension):
         self.audio_dumper: Dumper | dict[str, Dumper] | None = None
         self.flush_request_id: str | None = None
         self.last_end_request_id: str | None = None
+        self.audio_start_sent: set[str] = set()
         self.request_total_audio_duration: int = 0
         self.request_done: asyncio.Event = asyncio.Event()
         self.request_task: asyncio.Task | None = None
@@ -181,6 +182,9 @@ class AzureTTSExtension(AsyncTTS2BaseExtension):
         # Reset timing state
         self.first_chunk_ts = 0
 
+        # Clean up audio_start_sent tracking
+        self.audio_start_sent.discard(self.current_request_id)
+
     async def _async_synthesize(self, text_input: TTSTextInput):
         assert self.client is not None
         text = text_input.text
@@ -214,20 +218,23 @@ class AzureTTSExtension(AsyncTTS2BaseExtension):
 
                 if not received_first_chunk:
                     received_first_chunk = True
-                    await self.send_tts_audio_start(request_id)
-                    if is_new_request:
-                        # send ttfb metrics for new request
-                        self.first_chunk_ts = time.time()
-                        elapsed_time = int(
-                            (self.first_chunk_ts - self.request_start_ts) * 1000
-                        )
-                        await self.send_tts_ttfb_metrics(
-                            request_id=request_id,
-                            ttfb_ms=elapsed_time,
-                            extra_metadata={
-                                "voice_name": self.client.speech_config.speech_synthesis_voice_name,
-                            },
-                        )
+                    # Only send tts_audio_start if not already sent for this request_id
+                    if request_id not in self.audio_start_sent:
+                        await self.send_tts_audio_start(request_id)
+                        self.audio_start_sent.add(request_id)
+                        if is_new_request:
+                            # send ttfb metrics for new request
+                            self.first_chunk_ts = time.time()
+                            elapsed_time = int(
+                                (self.first_chunk_ts - self.request_start_ts) * 1000
+                            )
+                            await self.send_tts_ttfb_metrics(
+                                request_id=request_id,
+                                ttfb_ms=elapsed_time,
+                                extra_metadata={
+                                    "voice_name": self.client.speech_config.speech_synthesis_voice_name,
+                                },
+                            )
 
                 if request_id == self.flush_request_id:
                     # flush request, break current synthesize task
