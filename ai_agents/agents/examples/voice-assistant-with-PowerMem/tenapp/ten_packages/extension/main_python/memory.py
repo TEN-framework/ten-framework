@@ -17,9 +17,7 @@ class MemoryStore(ABC):
         self,
         conversation: list[dict],
         user_id: str,
-        user_name: str,
         agent_id: str,
-        agent_name: str,
     ) -> None: ...
 
     @abstractmethod
@@ -78,9 +76,7 @@ class PowerMemSdkMemoryStore(MemoryStore):
         self,
         conversation: list[dict],
         user_id: str,
-        user_name: str,
         agent_id: str,
-        agent_name: str,
     ) -> None:
         self.env.log_info(
             f"[PowerMemSdkMemoryStore] memorize called with user_id={user_id}, agent_id={agent_id}, "

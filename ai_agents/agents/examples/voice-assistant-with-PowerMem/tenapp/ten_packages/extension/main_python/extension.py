@@ -358,7 +358,7 @@ class MainControlExtension(AsyncExtension):
         return result
 
     async def _memorize_conversation(
-        self, user_id: str = None, user_name: str = None
+        self, user_id: str = None
     ):
         """Memorize the current conversation via configured store"""
         if not self.memu_client:
@@ -366,7 +366,6 @@ class MainControlExtension(AsyncExtension):
 
         try:
             user_id = self.config.user_id
-            user_name = self.config.user_name
 
             # Read context directly from llm_exec
             llm_context = (
@@ -389,9 +388,7 @@ class MainControlExtension(AsyncExtension):
                 self.memu_client.memorize(
                     conversation=conversation_for_memory,
                     user_id=user_id,
-                    user_name=user_name,
                     agent_id=self.config.agent_id,
-                    agent_name=self.config.agent_name,
                 )
             )
 

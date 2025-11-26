@@ -31,13 +31,12 @@
             {
               "type": "extension",
               "name": "stt",
-              "addon": "deepgram_asr_python",
+              "addon": "azure_asr_python",
               "extension_group": "stt",
               "property": {
                 "params": {
-                  "api_key": "${env:DEEPGRAM_API_KEY}",
-                  "language": "en-US",
-                  "model": "nova-3"
+                  "key": "${env:AZURE_STT_KEY}",
+                  "region": "${env:AZURE_STT_REGION}"
                 }
               }
             },
@@ -47,7 +46,7 @@
               "addon": "openai_llm2_python",
               "extension_group": "chatgpt",
               "property": {
-                "base_url": "https://api.openai.com/v1",
+                "base_url": "${env:OPENAI_API_BASE}",
                 "api_key": "${env:OPENAI_API_KEY}",
                 "frequency_penalty": 0.9,
                 "model": "${env:OPENAI_MODEL}",
@@ -61,16 +60,18 @@
             {
               "type": "extension",
               "name": "tts",
-              "addon": "elevenlabs_tts2_python",
+              "addon": "azure_tts_python",
               "extension_group": "tts",
               "property": {
-                "dump": false,
-                "dump_path": "./",
                 "params": {
-                  "key": "${env:ELEVENLABS_TTS_KEY}",
-                  "model_id": "eleven_multilingual_v2",
-                  "voice_id": "pNInz6obpgDQGcFmaJgB",
-                  "output_format": "pcm_16000"
+                  "subscription": "${env:AZURE_TTS_API_KEY}",
+                  "region": "${env:AZURE_TTS_REGION}",
+                  "speech_recognition_language": "en-US",
+                  "output_format": "Raw16Khz16BitMonoPcm",
+                  "propertys": [
+                    ["Speech_LogFilename", "azure_tts_log.txt"],
+                    ["SpeechServiceConnection_SynthVoice", "en-US-AndrewMultilingualNeural"]
+                  ]
                 }
               }
             },
@@ -82,11 +83,6 @@
               "property": {
                 "greeting": "Hello, I am your AI assistant.",
                 "agent_id": "voice_assistant_agent",
-                "memu_base_url": "https://api.memu.so",
-                "memu_api_key": "${env:MEMU_API_KEY}",
-                "agent_name": "voice_assistant_agent",
-                "self_hosting": true,
-                "user_name": "User",
                 "user_id": "user",
                 "enable_memorization": true
               }
