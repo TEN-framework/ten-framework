@@ -50,6 +50,10 @@ class MainControlExtension(AsyncExtension):
         # Memory related attributes (named memory_store by request)
         self.memory_store: MemoryStore | None = None
 
+        # Greeting generation state
+        self._is_generating_greeting: bool = False
+        self._greeting_future: asyncio.Future[str] | None = None
+
     def _current_metadata(self) -> dict:
         return {"session_id": self.session_id, "turn_id": self.turn_id}
 
@@ -83,16 +87,19 @@ class MainControlExtension(AsyncExtension):
             # Generate personalized greeting based on user memories
             personalized_greeting = await self._generate_personalized_greeting()
             if personalized_greeting:
-                await self._send_to_tts(personalized_greeting, True)
-                await self._send_transcript(
-                    "assistant", personalized_greeting, True, 100
+                self.ten_env.log_info(
+                    f"[MainControlExtension] Using personalized greeting: {personalized_greeting[:100]}..."
                 )
-            elif self.config and self.config.greeting:
-                # Fallback to default greeting if no personalized greeting
-                await self._send_to_tts(self.config.greeting, True)
-                await self._send_transcript(
-                    "assistant", self.config.greeting, True, 100
+                self.config.greeting = personalized_greeting
+            else:
+                self.ten_env.log_info(
+                    "[MainControlExtension] No personalized greeting generated, using default greeting"
                 )
+
+            await self._send_to_tts(self.config.greeting, True)
+            await self._send_transcript(
+                "assistant", self.config.greeting, True, 100
+            )
 
     @agent_event_handler(UserLeftEvent)
     async def _on_user_left(self, event: UserLeftEvent):
@@ -124,6 +131,37 @@ class MainControlExtension(AsyncExtension):
 
     @agent_event_handler(LLMResponseEvent)
     async def _on_llm_response(self, event: LLMResponseEvent):
+        # Check if we're generating a personalized greeting
+        if self._is_generating_greeting and event.type == "message":
+            # For greeting generation, only handle final response
+            if event.is_final:
+                # Set the future with the greeting text and reset state
+                if self._greeting_future and not self._greeting_future.done():
+                    self._greeting_future.set_result(event.text)
+                self._is_generating_greeting = False
+                self._greeting_future = None
+                # Don't send greeting to TTS here - it will be sent in _on_user_joined
+                # But still send transcript for logging
+                await self._send_transcript(
+                    "assistant",
+                    event.text,
+                    event.is_final,
+                    100,
+                    data_type="text",
+                )
+            # For non-final events during greeting generation, just log transcript
+            # but don't send to TTS (to avoid duplicate output)
+            else:
+                await self._send_transcript(
+                    "assistant",
+                    event.text,
+                    event.is_final,
+                    100,
+                    data_type="text",
+                )
+            return
+
+        # Normal LLM response handling
         if not event.is_final and event.type == "message":
             sentences, self.sentence_fragment = parse_sentences(
                 self.sentence_fragment, event.delta
