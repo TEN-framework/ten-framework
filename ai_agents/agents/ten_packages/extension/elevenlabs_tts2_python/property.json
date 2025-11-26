@@ -2,7 +2,7 @@
     "dump": false,
     "dump_path": "./",
     "params": {
-        "url": "wss://api.elevenlabs.io/v1",
+        "base_url": "wss://api.elevenlabs.io/v1",
         "auto_mode": true,
         "key": "${env:ELEVENLABS_TTS_KEY|}",
         "model_id": "eleven_multilingual_v2",

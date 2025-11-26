@@ -9,7 +9,7 @@ class ElevenLabsTTS2Config(BaseModel):
     params: Dict[str, Any] = {}
     black_list_keys: List[str] = []
 
-    # url params
+    # query params
     sample_rate: int = 16000
 
     def to_str(self, sensitive_handling: bool = False) -> str:

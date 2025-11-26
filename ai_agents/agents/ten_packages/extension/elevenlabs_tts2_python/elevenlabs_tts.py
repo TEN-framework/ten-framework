@@ -105,7 +105,7 @@ class ElevenLabsTTS2Synthesizer:
                         ),
                     )
 
-        self.uri = f"{self.config.params.get('url')}/text-to-speech/{self.config.params.get('voice_id')}/stream-input{self.query_params}"
+        self.uri = f"{self.config.params.get('base_url')}/text-to-speech/{self.config.params.get('voice_id')}/stream-input{self.query_params}"
 
     def _process_ws_exception(self, exp) -> None | Exception:
         """Handle websocket connection exceptions and decide whether to reconnect"""
