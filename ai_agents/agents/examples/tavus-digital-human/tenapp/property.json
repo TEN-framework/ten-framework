@@ -24,6 +24,24 @@
     ]
   },
   "log": {
-    "level": "info"
+    "handlers": [
+      {
+        "matchers": [
+          {
+            "level": "info"
+          }
+        ],
+        "formatter": {
+          "type": "plain",
+          "colored": true
+        },
+        "emitter": {
+          "type": "console",
+          "config": {
+            "stream": "stdout"
+          }
+        }
+      }
+    ]
   }
 }

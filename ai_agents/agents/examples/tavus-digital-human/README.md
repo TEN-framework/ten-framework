@@ -192,6 +192,36 @@ You can customize the conversation by modifying `tenapp/property.json`:
 - Run `task install` to ensure all dependencies are installed
 - Check that the extension symlink is created correctly
 
+### Library Loading or Thread Lock Errors
+
+**If you see errors like:**
+```
+libten_runtime_go.so: cannot open shared object file
+ten_rwlock_lock Invalid argument
+qemu: uncaught target signal 6 (Aborted)
+```
+
+**For Docker Desktop on macOS**: This is a **QEMU incompatibility issue**. Docker Desktop uses QEMU for Linux emulation, which doesn't properly support TEN Framework's custom spinlock implementation.
+
+**Solution**: Use **Colima** or **OrbStack** instead (native virtualization):
+```bash
+# Install Colima
+brew install colima
+
+# Start Colima
+colima start --arch x86_64 --memory 8
+
+# Configure Docker to use Colima
+export DOCKER_HOST=unix://$HOME/.colima/docker.sock
+```
+
+Or run natively on Linux / WSL2.
+
+**For native LD_LIBRARY_PATH issues**:
+```bash
+export LD_LIBRARY_PATH=$(pwd)/tenapp/ten_packages/system/ten_runtime_go/lib:$LD_LIBRARY_PATH
+```
+
 ## API Reference
 
 ### POST /api/tavus/conversation/create

@@ -26,19 +26,6 @@ tasks:
     cmds:
       - pip install httpx>=0.27.0
 
-  build-tenapp:
-    desc: build tenapp go binary
-    deps: [install-tenapp]
-    internal: true
-    dir: ./tenapp
-    cmds:
-      - |
-        export CGO_ENABLED=1
-        export CGO_LDFLAGS='-L./ten_packages/system/ten_runtime_go/lib -lten_runtime_go'
-        export CGO_CFLAGS='-I./ten_packages/system/ten_runtime_go/interface/ten_runtime'
-        mkdir -p bin
-        go build -o bin/main -v .
-
   build-api-server:
     desc: build api server
     dir: ../../../server
@@ -50,7 +37,6 @@ tasks:
     dir: ./tenapp
     cmds:
       - task: install-tenapp
-      - task: build-tenapp
       - task: install-tenapp-python-deps
       - task: install-frontend
       - task: build-api-server

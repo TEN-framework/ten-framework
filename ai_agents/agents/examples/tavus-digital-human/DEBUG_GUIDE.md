@@ -78,11 +78,61 @@ task run
 
 ## 常见问题排查
 
-### 问题 1: bin/main 不存在
+### 问题 1: libten_runtime_go.so 找不到 或 rwlock 线程锁断言失败
+
+**症状 1 - 库找不到**:
+```
+bin/main: error while loading shared libraries: libten_runtime_go.so: cannot open shared object file: No such file or directory
+Error: Script 'start' exited with non-zero code: Some(127)
+```
+
+**症状 2 - 线程锁断言 (QEMU 特定)**:
+```
+17088(17089) ten_rwlock_lock@rwlock.c:218 Invalid argument.
+qemu: uncaught target signal 6 (Aborted) - core dumped
+```
+
+**根本原因**:
+- **症状 1**: Go 二进制需要在运行时找到 libten_runtime_go.so 库
+- **症状 2**: TEN Framework 使用自定义的 pflock（phase-fair lock）实现，基于自旋锁和原子操作。在 QEMU 模拟环境中，这些低级操作可能导致内存访问错误或竞态条件
+
+**解决方案**:
+
+#### 对于症状 1（库找不到）:
+1. 确保 LD_LIBRARY_PATH 包含库路径：
+```bash
+export LD_LIBRARY_PATH=$(pwd)/ten_packages/system/ten_runtime_go/lib:$LD_LIBRARY_PATH
+```
+
+2. 或在 start.sh 中已配置（最新版本）
+
+#### 对于症状 2（rwlock 断言 - QEMU 环境）:
+
+**使用原生 Linux 而不是 QEMU**:
+Docker Desktop on macOS 使用 QEMU 进行 x86-64 Linux 模拟。TEN Framework 的 pflock 实现不兼容 QEMU。
+
+**推荐**:
+1. 使用 **Colima** 或 **OrbStack** 替代 Docker Desktop（使用原生虚拟化而非 QEMU）
+2. 或在物理 Linux 机器上运行
+3. 或在 WSL2（Windows）上运行，它使用 Hyper-V 而非 QEMU
+
+**Colima 安装** (macOS):
+```bash
+brew install colima
+colima start --arch x86_64 --memory 8 --cpu 4
+# 配置 Docker 使用 Colima
+export DOCKER_HOST=unix://$HOME/.colima/docker.sock
+```
+
+**如果必须使用 QEMU**:
+可以尝试使用 `TEN_RW_NATIVE` 而非 `TEN_RW_PHASE_FAIR` 来切换使用 pthread_rwlock，但这需要重新编译 TEN Framework 核心库
+
+### 问题 2: bin/main 不存在
 
 **症状**:
 ```
 Error: Script 'start' exited with non-zero code: Some(127)
+bash: bin/main: No such file or directory
 ```
 
 **解决方案**:
@@ -95,7 +145,7 @@ mkdir -p bin
 go build -o bin/main -v .
 ```
 
-### 问题 2: TAVUS_API_KEY 未设置
+### 问题 3: TAVUS_API_KEY 未设置
 
 **症状**:
 ```
@@ -111,7 +161,7 @@ cat /app/.env | grep TAVUS_API_KEY
 echo "TAVUS_API_KEY=your_key_here" >> /app/.env
 ```
 
-### 问题 3: Python 依赖缺失
+### 问题 4: Python 依赖缺失
 
 **症状**:
 ```
@@ -124,7 +174,7 @@ cd /app/agents/examples/tavus-digital-human/tenapp
 pip install httpx>=0.27.0
 ```
 
-### 问题 4: Frontend 页面 404
+### 问题 5: Frontend 页面 404
 
 **症状**:
 浏览器访问 http://localhost:3000/tavus 显示 404
@@ -137,7 +187,7 @@ cd /app/playground
 bun run dev
 ```
 
-### 问题 5: Tavus API 调用失败
+### 问题 6: Tavus API 调用失败
 
 **症状**:
 ```
