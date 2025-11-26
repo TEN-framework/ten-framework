@@ -1,0 +1,29 @@
+{
+  "ten": {
+    "predefined_graphs": [
+      {
+        "name": "tavus_digital_human",
+        "auto_start": true,
+        "graph": {
+          "nodes": [
+            {
+              "type": "extension",
+              "name": "tavus_manager",
+              "addon": "tavus_conversation_manager_python",
+              "extension_group": "default",
+              "property": {
+                "tavus_api_key": "${env:TAVUS_API_KEY}",
+                "persona_id": "${env:TAVUS_PERSONA_ID|}",
+                "default_greeting": "Hello! I'm your AI assistant. How can I help you today?"
+              }
+            }
+          ],
+          "connections": []
+        }
+      }
+    ]
+  },
+  "log": {
+    "level": "info"
+  }
+}

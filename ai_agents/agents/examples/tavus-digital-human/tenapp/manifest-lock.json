@@ -1,0 +1,92 @@
+{
+  "version": 1,
+  "packages": [
+    {
+      "type": "system",
+      "name": "ten_runtime_go",
+      "version": "0.11.35",
+      "hash": "5c6c218d2f2242f362449797e9a71db642f0061db104d7eca03e2e8110a04a89",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime"
+        }
+      ],
+      "supports": [
+        {
+          "os": "linux",
+          "arch": "x64"
+        }
+      ]
+    },
+    {
+      "type": "extension",
+      "name": "tavus_conversation_manager_python",
+      "version": "0.1.0",
+      "hash": "c142bc864b525c8ad0ea9847db1816c7c4c96fd79da4de5b298758b9fd624440",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime_python"
+        }
+      ],
+      "path": "../../../ten_packages/extension/tavus_conversation_manager_python"
+    },
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.11.35",
+      "hash": "26d515cfb8bf1d94c7023011a2d9da81dbc93196aa033ed936bbfc6785d79a7a",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime"
+        },
+        {
+          "type": "addon_loader",
+          "name": "python_addon_loader"
+        }
+      ],
+      "supports": [
+        {
+          "os": "linux",
+          "arch": "x64"
+        }
+      ]
+    },
+    {
+      "type": "system",
+      "name": "ten_runtime",
+      "version": "0.11.35",
+      "hash": "6b4a4cf0f0c9044c0a593496079b28cb9737d36fd3cb68fe053835e790c8ba9a",
+      "supports": [
+        {
+          "os": "linux",
+          "arch": "x64"
+        }
+      ]
+    },
+    {
+      "type": "addon_loader",
+      "name": "python_addon_loader",
+      "version": "0.11.35",
+      "hash": "474f8d4ff5f620ce9bda2eb96c887eaa4e30a239053ec2bab172f596a23bdc95",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime"
+        },
+        {
+          "type": "system",
+          "name": "ten_runtime_python"
+        }
+      ],
+      "supports": [
+        {
+          "os": "linux",
+          "arch": "x64"
+        }
+      ]
+    }
+  ]
+}

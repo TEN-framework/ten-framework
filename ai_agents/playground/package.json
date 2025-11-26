@@ -13,6 +13,7 @@
     "proto": "pbjs -t json-module -w commonjs -o src/protobuf/SttMessage.js src/protobuf/SttMessage.proto"
   },
   "dependencies": {
+    "@daily-co/daily-js": "^0.85.0",
     "@hookform/resolvers": "^3.10.0",
     "@radix-ui/react-avatar": "^1.1.10",
     "@radix-ui/react-checkbox": "^1.3.3",

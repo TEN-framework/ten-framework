@@ -1,0 +1,18 @@
+{
+  "type": "app",
+  "name": "tavus_digital_human",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_go",
+      "version": "0.11"
+    },
+    {
+      "path": "../../../ten_packages/extension/tavus_conversation_manager_python"
+    }
+  ],
+  "scripts": {
+    "start": "scripts/start.sh"
+  }
+}
