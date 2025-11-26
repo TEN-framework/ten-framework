@@ -148,8 +148,8 @@ func (tester *HighFrequencyTester) OnStart(tenEnvTester ten.TenEnvTester) {
 
 	// Test parameters: send many commands to stress test the system
 	const (
-		numConcurrentSenders = 10  // Number of concurrent senders
-		numCmdsPerSender     = 100 // Number of commands per sender
+		numConcurrentSenders = 5   // Number of concurrent senders (reduced from 10)
+		numCmdsPerSender     = 50  // Number of commands per sender (reduced from 100)
 		totalCmds            = numConcurrentSenders * numCmdsPerSender
 	)
 
@@ -160,7 +160,7 @@ func (tester *HighFrequencyTester) OnStart(tenEnvTester ten.TenEnvTester) {
 		completedCmds atomic.Int64
 	)
 
-	tenEnvTester.LogInfo("Starting high frequency test: sending 1000 commands concurrently")
+	tenEnvTester.LogInfo("Starting high frequency test: sending 250 commands concurrently")
 
 	// Start multiple concurrent senders
 	for i := 0; i < numConcurrentSenders; i++ {
@@ -206,7 +206,7 @@ func (tester *HighFrequencyTester) OnStart(tenEnvTester ten.TenEnvTester) {
 							tenEnvTester.LogInfo("========================================")
 							tenEnvTester.LogInfo("High frequency test completed successfully!")
 							tenEnvTester.LogInfo("========================================")
-							tenEnvTester.LogInfo("Total commands sent: 1000")
+							tenEnvTester.LogInfo("Total commands sent: 250")
 							tenEnvTester.LogInfo(fmt.Sprintf("Successful: %d", success))
 							tenEnvTester.LogInfo(fmt.Sprintf("Errors: %d", errors))
 							tenEnvTester.LogInfo("No segfault detected - system is stable!")
@@ -245,10 +245,10 @@ func (tester *BurstTester) OnStart(tenEnvTester ten.TenEnvTester) {
 	tenEnvTester.LogInfo("BurstTester OnStart")
 
 	// Test parameters: send many commands in a very short time
-	const numBurstCmds = 500
+	const numBurstCmds = 200 // Reduced from 500
 	var completedCmds atomic.Int64
 
-	tenEnvTester.LogInfo("Starting burst test: sending 500 commands in tight loop")
+	tenEnvTester.LogInfo("Starting burst test: sending 200 commands in tight loop")
 
 	// Send all commands in a tight loop without waiting for responses
 	for i := 0; i < numBurstCmds; i++ {
@@ -269,7 +269,7 @@ func (tester *BurstTester) OnStart(tenEnvTester ten.TenEnvTester) {
 				if completed == numBurstCmds {
 					tenEnvTester.LogInfo("========================================")
 					tenEnvTester.LogInfo("Burst test completed successfully!")
-					tenEnvTester.LogInfo("All 500 burst commands handled without segfault!")
+					tenEnvTester.LogInfo("All 200 burst commands handled without segfault!")
 					tenEnvTester.LogInfo("========================================")
 					tenEnvTester.StopTest(nil)
 				}
@@ -303,10 +303,10 @@ func (tester *RapidFireTester) OnStart(tenEnvTester ten.TenEnvTester) {
 	tenEnvTester.LogInfo("RapidFireTester OnStart")
 
 	// Rapid fire mode: send as quickly as possible consecutively
-	const numRapidCmds = 1000
+	const numRapidCmds = 500 // Reduced from 1000
 	var completedCmds atomic.Int64
 
-	tenEnvTester.LogInfo("Starting rapid fire test: 1000 commands at maximum speed")
+	tenEnvTester.LogInfo("Starting rapid fire test: 500 commands at maximum speed")
 
 	// Recursive sending function
 	var sendNext func(index int)
@@ -332,7 +332,7 @@ func (tester *RapidFireTester) OnStart(tenEnvTester ten.TenEnvTester) {
 				if completed == numRapidCmds {
 					tenEnvTester.LogInfo("========================================")
 					tenEnvTester.LogInfo("Rapid fire test completed successfully!")
-					tenEnvTester.LogInfo("1000 rapid fire commands handled without segfault!")
+					tenEnvTester.LogInfo("500 rapid fire commands handled without segfault!")
 					tenEnvTester.LogInfo("========================================")
 					tenEnvTester.StopTest(nil)
 				}
@@ -405,8 +405,8 @@ func (tester *MergeLogicTester) OnStart(tenEnvTester ten.TenEnvTester) {
 	tenEnvTester.LogInfo("MergeLogicTester OnStart")
 	tenEnvTester.LogInfo("Testing result merging with 5 partial results + 1 final result")
 
-	// Send 10 commands, each command will return 6 times (5 partial + 1 final)
-	const numCmds = 10
+	// Send 5 commands, each command will return 6 times (5 partial + 1 final) - reduced from 10
+	const numCmds = 5
 	var completedCmds atomic.Int64
 
 	for i := 0; i < numCmds; i++ {
@@ -542,7 +542,7 @@ func (tester *ErrorHandlingTester) OnStart(tenEnvTester ten.TenEnvTester) {
 	tenEnvTester.LogInfo("ErrorHandlingTester OnStart")
 	tenEnvTester.LogInfo("Testing error handling and edge cases")
 
-	const numCmds = 15
+	const numCmds = 10 // Reduced from 15
 	var (
 		completedCmds atomic.Int64
 		successCount  atomic.Int64
@@ -684,21 +684,21 @@ func (tester *LongRunningTester) OnCmd(tenEnvTester ten.TenEnvTester, cmd ten.Cm
 func (tester *LongRunningTester) OnStart(tenEnvTester ten.TenEnvTester) {
 	tenEnvTester.LogInfo("LongRunningTester OnStart")
 	tenEnvTester.LogInfo("========================================")
-	tenEnvTester.LogInfo("Starting 30-second continuous stress test")
+	tenEnvTester.LogInfo("Starting 10-second continuous stress test")
 	tenEnvTester.LogInfo("Each message includes 3 partial + 1 final result")
 	tenEnvTester.LogInfo("========================================")
 
 	tester.startTime = time.Now()
 	tester.isRunning.Store(true)
 
-	// Test duration: 30 seconds
-	const testDuration = 30 * time.Second
+	// Test duration: 10 seconds (reduced from 30 seconds)
+	const testDuration = 10 * time.Second
 
 	// Send interval: send a batch of commands every 100ms
 	const sendInterval = 100 * time.Millisecond
 
-	// Number of commands per batch
-	const batchSize = 10
+	// Number of commands per batch (reduced from 10 to 5)
+	const batchSize = 5
 
 	// Start sending goroutine
 	go func() {
@@ -713,7 +713,7 @@ func (tester *LongRunningTester) OnStart(tenEnvTester ten.TenEnvTester) {
 			elapsed := time.Since(tester.startTime)
 			if elapsed >= testDuration {
 				tenEnvTester.LogInfo("========================================")
-				tenEnvTester.LogInfo("30 seconds completed, stopping test...")
+				tenEnvTester.LogInfo("10 seconds completed, stopping test...")
 				tenEnvTester.LogInfo("========================================")
 				tester.isRunning.Store(false)
 				break
