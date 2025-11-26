@@ -47,8 +47,8 @@ class MainControlExtension(AsyncExtension):
         self.turn_id: int = 0
         self.session_id: str = "0"
 
-        # Memory related attributes (named memu_client by request)
-        self.memu_client: MemoryStore | None = None
+        # Memory related attributes (named memory_store by request)
+        self.memory_store: MemoryStore | None = None
 
     def _current_metadata(self) -> dict:
         return {"session_id": self.session_id, "turn_id": self.turn_id}
@@ -61,7 +61,7 @@ class MainControlExtension(AsyncExtension):
         self.config = MainControlConfig.model_validate_json(config_json)
 
         # Initialize memory store per config toggle
-        self.memu_client = PowerMemSdkMemoryStore(env=ten_env)
+        self.memory_store = PowerMemSdkMemoryStore(env=ten_env)
 
         self.agent = Agent(ten_env)
 
@@ -240,16 +240,16 @@ class MainControlExtension(AsyncExtension):
 
     async def _retrieve_memory(self, user_id: str = None) -> str:
         """Retrieve conversation memory from configured store"""
-        if not self.memu_client:
+        if not self.memory_store:
             return ""
 
         try:
             user_id = self.config.user_id
             agent_id = self.config.agent_id
-            resp = await self.memu_client.retrieve_default_categories(
+            resp = await self.memory_store.retrieve_default_categories(
                 user_id=user_id, agent_id=agent_id
             )
-            normalized = self.memu_client.parse_default_categories(resp)
+            normalized = self.memory_store.parse_default_categories(resp)
             return self._extract_summary_text(normalized)
         except Exception as e:
             self.ten_env.log_error(
@@ -261,7 +261,7 @@ class MainControlExtension(AsyncExtension):
         self, query: str, user_id: str = None
     ) -> str:
         """Retrieve related memory based on user query using semantic search"""
-        if not self.memu_client:
+        if not self.memory_store:
             return ""
 
         try:
@@ -273,12 +273,12 @@ class MainControlExtension(AsyncExtension):
             )
 
             # Call semantic search API
-            resp = await self.memu_client.retrieve_related_clustered_categories(
+            resp = await self.memory_store.retrieve_related_clustered_categories(
                 user_id=user_id, agent_id=agent_id, category_query=query
             )
 
             # Parse response
-            parsed = self.memu_client.parse_related_clustered_categories(resp)
+            parsed = self.memory_store.parse_related_clustered_categories(resp)
 
             # Extract memory text
             memory_text = self._extract_related_memory_text(parsed)
@@ -361,7 +361,7 @@ class MainControlExtension(AsyncExtension):
         self, user_id: str = None
     ):
         """Memorize the current conversation via configured store"""
-        if not self.memu_client:
+        if not self.memory_store:
             return
 
         try:
@@ -385,7 +385,7 @@ class MainControlExtension(AsyncExtension):
             if not conversation_for_memory:
                 return
             asyncio.create_task(
-                self.memu_client.memorize(
+                self.memory_store.memorize(
                     conversation=conversation_for_memory,
                     user_id=user_id,
                     agent_id=self.config.agent_id,
@@ -401,7 +401,7 @@ class MainControlExtension(AsyncExtension):
 
     async def _load_memory_to_context(self):
         """Load memory summary into LLM context at startup (as a system message)."""
-        if not self.memu_client:
+        if not self.memory_store:
             return
 
         try:
