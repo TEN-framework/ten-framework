@@ -81,7 +81,7 @@
               "addon": "main_python",
               "extension_group": "control",
               "property": {
-                "greeting": "Hello, I am your AI assistant.",
+                "greeting": "Hello! I'm your AI assistant with memory. I can remember our previous conversations to provide more personalized help.",
                 "agent_id": "voice_assistant_agent",
                 "user_id": "user",
                 "enable_memorization": true

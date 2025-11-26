@@ -79,11 +79,20 @@ class MainControlExtension(AsyncExtension):
     @agent_event_handler(UserJoinedEvent)
     async def _on_user_joined(self, event: UserJoinedEvent):
         self._rtc_user_count += 1
-        if self._rtc_user_count == 1 and self.config and self.config.greeting:
-            await self._send_to_tts(self.config.greeting, True)
-            await self._send_transcript(
-                "assistant", self.config.greeting, True, 100
-            )
+        if self._rtc_user_count == 1:
+            # Generate personalized greeting based on user memories
+            personalized_greeting = await self._generate_personalized_greeting()
+            if personalized_greeting:
+                await self._send_to_tts(personalized_greeting, True)
+                await self._send_transcript(
+                    "assistant", personalized_greeting, True, 100
+                )
+            elif self.config and self.config.greeting:
+                # Fallback to default greeting if no personalized greeting
+                await self._send_to_tts(self.config.greeting, True)
+                await self._send_transcript(
+                    "assistant", self.config.greeting, True, 100
+                )
 
     @agent_event_handler(UserLeftEvent)
     async def _on_user_left(self, event: UserLeftEvent):
@@ -127,8 +136,8 @@ class MainControlExtension(AsyncExtension):
             self.sentence_fragment = ""
             await self._send_to_tts(remaining_text, True)
 
-            # Memorize every two rounds (when turn_id is even) if memorization is enabled
-            if self.turn_id % 2 == 0 and self.config.enable_memorization:
+            # Memorize every five rounds (when turn_id is even) if memorization is enabled
+            if self.turn_id % 5 == 0 and self.config.enable_memorization:
                 await self._memorize_conversation()
 
         await self._send_transcript(
@@ -146,6 +155,7 @@ class MainControlExtension(AsyncExtension):
         ten_env.log_info("[MainControlExtension] on_stop")
         self.stopped = True
         await self.agent.stop()
+        await self._memorize_conversation()
 
     async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd):
         await self.agent.on_cmd(cmd)
@@ -237,6 +247,68 @@ class MainControlExtension(AsyncExtension):
         self.ten_env.log_info("[MainControlExtension] Interrupt signal sent")
 
     # === Memory related methods ===
+
+    async def _generate_personalized_greeting(self) -> str:
+        """
+        Generate a personalized greeting based on user memories.
+        Returns an empty string if no memories are found or if generation fails.
+        """
+        if not self.memory_store or not self.config.enable_memorization:
+            return ""
+
+        try:
+            # Retrieve user memory summary
+            memory_summary = await self._retrieve_related_memory(
+                query="user preferences, past conversations, and personal information",
+                user_id=self.config.user_id,
+            )
+
+            if not memory_summary or not memory_summary.strip():
+                # No memories found, return empty to use default greeting
+                return ""
+
+            # Construct prompt for personalized greeting
+            greeting_prompt = f"""Based on the following memory summary of previous conversations with this user, generate a warm, personalized greeting (2-3 sentences maximum). Reference specific details from the memories naturally, but keep it concise and friendly.
+
+Memory Summary:
+{memory_summary}
+
+Generate a personalized greeting:"""
+
+            # Create a future to wait for the greeting response
+            self._greeting_future = asyncio.Future()
+            self._is_generating_greeting = True
+
+            # Queue the greeting prompt to LLM
+            await self.agent.queue_llm_input(greeting_prompt)
+
+            # Wait for the greeting response (with timeout)
+            try:
+                greeting = await asyncio.wait_for(self._greeting_future, timeout=10.0)
+                self.ten_env.log_info(
+                    f"[MainControlExtension] Generated personalized greeting: {greeting}"
+                )
+                return greeting
+            except asyncio.TimeoutError:
+                # Timeout - cancel the future and reset state
+                self.ten_env.log_warn(
+                    "[MainControlExtension] Greeting generation timed out"
+                )
+                if not self._greeting_future.done():
+                    self._greeting_future.cancel()
+                self._is_generating_greeting = False
+                self._greeting_future = None
+                return ""
+
+        except Exception as e:
+            self.ten_env.log_error(
+                f"[MainControlExtension] Failed to generate personalized greeting: {e}"
+            )
+            self._is_generating_greeting = False
+            if self._greeting_future and not self._greeting_future.done():
+                self._greeting_future.cancel()
+            self._greeting_future = None
+            return ""
 
     async def _retrieve_memory(self, user_id: str = None) -> str:
         """Retrieve conversation memory from configured store"""
