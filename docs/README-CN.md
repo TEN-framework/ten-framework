@@ -555,7 +555,7 @@ TEN Framework 也可通过以下 AI 驱动的问答平台获取信息，它们�
 
 <!-- Primary sites -->
 [official-site]: https://theten.ai
-[documentation]: https://theten.ai/docs/ten_agent/overview
+[documentation]: https://theten.ai/docs
 [blog]: https://theten.ai/blog
 
 <!-- Welcome -->

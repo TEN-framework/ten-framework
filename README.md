@@ -483,7 +483,7 @@ Contributions are welcome! Please read the [contribution guidelines][contributio
 
 <!-- Primary sites -->
 [official-site]: https://theten.ai
-[documentation]: https://theten.ai/docs/ten_agent/overview
+[documentation]: https://theten.ai/docs
 [blog]: https://theten.ai/blog
 
 <!-- Welcome -->

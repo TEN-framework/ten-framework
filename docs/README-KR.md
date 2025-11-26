@@ -522,7 +522,7 @@ TEN Framework는 AI 기반 Q&A 플랫폼에서도 만나볼 수 있습니다. �
 
 <!-- Primary sites -->
 [official-site]: https://theten.ai
-[documentation]: https://theten.ai/docs/ten_agent/overview
+[documentation]: https://theten.ai/docs
 [blog]: https://theten.ai/blog
 
 <!-- Welcome -->
