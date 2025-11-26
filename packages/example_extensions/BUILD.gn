@@ -36,5 +36,9 @@ group("example_extensions") {
         "websocket_server_nodejs",
       ]
     }
+
+    if (ten_enable_go_binding) {
+      deps += [ "event_bus_go" ]
+    }
   }
 }
