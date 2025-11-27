@@ -204,18 +204,24 @@ EOF
     # Configure for non-interactive signing in CI environments
     if [ -n "$GPG_PASSPHRASE" ]; then
         # Create a temporary gpg wrapper script for debsign
+        # Pass passphrase via environment variable to avoid escaping issues
         GPG_WRAPPER=$(mktemp)
-        cat > "$GPG_WRAPPER" << GPGEOF
+        cat > "$GPG_WRAPPER" << 'GPGEOF'
 #!/bin/bash
-echo "$GPG_PASSPHRASE" | /usr/bin/gpg --batch --passphrase-fd 0 --pinentry-mode loopback "\$@"
+# Read passphrase from environment variable
+echo "$DEBSIGN_GPG_PASSPHRASE" | /usr/bin/gpg --batch --passphrase-fd 0 --pinentry-mode loopback "$@"
 GPGEOF
         chmod +x "$GPG_WRAPPER"
+
+        # Export passphrase for the wrapper script
+        export DEBSIGN_GPG_PASSPHRASE="$GPG_PASSPHRASE"
 
         # Use the wrapper for signing
         DEBSIGN_PROGRAM="$GPG_WRAPPER" debuild -S -sa -d -k"$GPG_KEY_ID" 2>&1 | tee "$WORK_DIR/debuild.log"
         DEBUILD_EXIT=$?
 
-        # Clean up wrapper
+        # Clean up
+        unset DEBSIGN_GPG_PASSPHRASE
         rm -f "$GPG_WRAPPER"
     else
         debuild -S -sa -d -k"$GPG_KEY_ID" 2>&1 | tee "$WORK_DIR/debuild.log"
