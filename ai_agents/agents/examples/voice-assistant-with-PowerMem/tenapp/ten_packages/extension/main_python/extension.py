@@ -90,16 +90,22 @@ class MainControlExtension(AsyncExtension):
                 self.ten_env.log_info(
                     f"[MainControlExtension] Using personalized greeting: {personalized_greeting[:100]}..."
                 )
-                self.config.greeting = personalized_greeting
-            else:
+                if self.config:
+                    self.config.greeting = personalized_greeting
+
+                await self._send_to_tts(personalized_greeting, True)
+                await self._send_transcript(
+                    "assistant", personalized_greeting, True, 100
+                )
+            elif self.config and self.config.greeting:
                 self.ten_env.log_info(
                     "[MainControlExtension] No personalized greeting generated, using default greeting"
                 )
 
-            await self._send_to_tts(self.config.greeting, True)
-            await self._send_transcript(
-                "assistant", self.config.greeting, True, 100
-            )
+                await self._send_to_tts(self.config.greeting, True)
+                await self._send_transcript(
+                    "assistant", self.config.greeting, True, 100
+                )
 
     @agent_event_handler(UserLeftEvent)
     async def _on_user_left(self, event: UserLeftEvent):
