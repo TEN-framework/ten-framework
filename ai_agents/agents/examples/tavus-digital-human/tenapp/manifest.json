@@ -7,20 +7,6 @@
       "type": "system",
       "name": "ten_runtime_go",
       "version": "0.11"
-    },
-    {
-      "type": "system",
-      "name": "ten_ai_base",
-      "version": "=0.7.22"
-    },
-    {
-      "path": "../../../ten_packages/extension/main_python"
-    },
-    {
-      "path": "../../../ten_packages/extension/tavus_conversation_manager_python"
-    },
-    {
-      "path": "../../../ten_packages/extension/message_collector2"
     }
   ],
   "scripts": {

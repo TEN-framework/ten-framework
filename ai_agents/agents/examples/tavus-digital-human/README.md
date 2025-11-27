@@ -15,6 +15,8 @@ A digital human conversation interface powered by Tavus AI, integrated with TEN 
 
 1. **Tavus API Key**: Get your API key from [Tavus Dashboard](https://platform.tavus.io/)
    - `TAVUS_API_KEY` - Your Tavus API key (required)
+2. **Tavus Replica ID** (optional): Select a specific digital human persona to use
+   - `TAVUS_REPLICA_ID` - Replica ID for the Tavus digital human (optional; Tavus can use its default if omitted)
 
 ### Optional Environment Variables
 
@@ -33,6 +35,7 @@ A digital human conversation interface powered by Tavus AI, integrated with TEN 
    ```bash
    # Tavus Configuration
    TAVUS_API_KEY=your_tavus_api_key_here
+   TAVUS_REPLICA_ID=your_tavus_replica_id_here  # optional
    TAVUS_PERSONA_ID=  # Optional: leave empty to use default persona
 
    # Required by TEN framework
@@ -96,6 +99,7 @@ docker run -p 8080:8080 -p 3000:3000 \
    ```bash
    # Tavus Configuration
    TAVUS_API_KEY=your_tavus_api_key_here
+   TAVUS_REPLICA_ID=your_tavus_replica_id_here  # optional
    TAVUS_PERSONA_ID=  # Optional
 
    # Required by server
