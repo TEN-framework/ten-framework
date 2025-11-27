@@ -24,7 +24,7 @@ tasks:
     internal: true
     dir: ./tenapp
     cmds:
-      - pip install httpx>=0.27.0
+      - pip3 install 'httpx>=0.27.0'
 
   build-tenapp:
     desc: build tenapp go binary
@@ -33,7 +33,7 @@ tasks:
     dir: ./tenapp
     cmds:
       - mkdir -p bin
-      - CGO_ENABLED=1 CGO_LDFLAGS="-L./ten_packages/system/ten_runtime_go/lib -lten_runtime_go" CGO_CFLAGS="-I./ten_packages/system/ten_runtime_go/interface/ten_runtime" go build -o bin/main .
+      - CGO_ENABLED=1 CGO_LDFLAGS="-L./ten_packages/system/ten_runtime_go/lib -lten_runtime_go" CGO_CFLAGS="-I./ten_packages/system/ten_runtime_go/interface/ten_runtime" go build -ldflags="-extldflags=-Wl,-rpath,./ten_packages/system/ten_runtime_go/lib" -o bin/main .
 
   build-api-server:
     desc: build api server

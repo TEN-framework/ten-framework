@@ -8,6 +8,16 @@
           "nodes": [
             {
               "type": "extension",
+              "name": "main_control",
+              "addon": "main_python",
+              "extension_group": "control",
+              "property": {
+                "tavus_api_key": "${env:TAVUS_API_KEY}",
+                "persona_id": "${env:TAVUS_PERSONA_ID|}"
+              }
+            },
+            {
+              "type": "extension",
               "name": "tavus_manager",
               "addon": "tavus_conversation_manager_python",
               "extension_group": "default",
@@ -16,9 +26,26 @@
                 "persona_id": "${env:TAVUS_PERSONA_ID|}",
                 "default_greeting": "Hello! I'm your AI assistant. How can I help you today?"
               }
+            },
+            {
+              "type": "extension",
+              "name": "message_collector",
+              "addon": "message_collector2",
+              "extension_group": "transcriber",
+              "property": {}
             }
           ],
-          "connections": []
+          "connections": [
+            {
+              "extension": "main_control",
+              "cmd": [
+                {
+                  "names": ["tavus_create_conversation", "tavus_end_conversation"],
+                  "source": []
+                }
+              ]
+            }
+          ]
         }
       }
     ]

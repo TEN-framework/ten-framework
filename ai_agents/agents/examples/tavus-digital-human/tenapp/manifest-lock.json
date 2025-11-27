@@ -20,6 +20,31 @@
       ]
     },
     {
+      "type": "system",
+      "name": "ten_ai_base",
+      "version": "0.7.22",
+      "hash": "27e5467c5dc841757f5a6f52e70b0d2c09903be84ade73b404b45c6cac9888f8",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime_python"
+        }
+      ]
+    },
+    {
+      "type": "extension",
+      "name": "main_python",
+      "version": "0.1.0",
+      "hash": "fa5c9fbf4d5e9221615f2ffffd036b5c640170e2065be3978e49fbfb9eb31650",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime_python"
+        }
+      ],
+      "path": "../../../ten_packages/extension/main_python"
+    },
+    {
       "type": "extension",
       "name": "tavus_conversation_manager_python",
       "version": "0.1.0",
@@ -31,6 +56,19 @@
         }
       ],
       "path": "../../../ten_packages/extension/tavus_conversation_manager_python"
+    },
+    {
+      "type": "extension",
+      "name": "message_collector2",
+      "version": "0.2.0",
+      "hash": "b4cdc75c61ed572952e2f14bdb5c440f993d3a5bf2da6fe5f5cbb1b4d772a837",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime_python"
+        }
+      ],
+      "path": "../../../ten_packages/extension/message_collector2"
     },
     {
       "type": "system",
