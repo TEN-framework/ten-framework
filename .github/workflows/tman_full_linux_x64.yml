@@ -186,14 +186,20 @@ jobs:
         run: |
           # Install required tools
           sudo apt-get update -qq
-          sudo apt-get install -y -qq devscripts debhelper lintian
+          sudo apt-get install -y -qq devscripts debhelper lintian dput
 
           # Import GPG private key
           echo "$PPA_GPG_PRIVATE_KEY" | gpg --batch --import
 
-          # Configure GPG agent to use passphrase automatically
+          # Configure GPG for non-interactive use in CI
           echo "allow-preset-passphrase" >> ~/.gnupg/gpg-agent.conf
+          echo "use-agent" >> ~/.gnupg/gpg.conf
+          echo "pinentry-mode loopback" >> ~/.gnupg/gpg.conf
+          echo "batch" >> ~/.gnupg/gpg.conf
           gpg-connect-agent reloadagent /bye
+
+          # Set GPG_TTY for signing
+          export GPG_TTY=$(tty) || export GPG_TTY=/dev/null
 
           # Get version number from tman binary
           TMAN_BINARY="${GITHUB_WORKSPACE}/out/linux/${{ matrix.arch }}/ten_manager/bin/tman"

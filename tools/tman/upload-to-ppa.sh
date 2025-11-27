@@ -11,6 +11,7 @@ set -e
 MAINTAINER_NAME="${PPA_MAINTAINER_NAME}"
 MAINTAINER_EMAIL="${PPA_MAINTAINER_EMAIL}"
 GPG_KEY_ID="${PPA_GPG_KEY_ID}"
+GPG_PASSPHRASE="${PPA_GPG_PASSPHRASE}"
 LAUNCHPAD_ID="${PPA_LAUNCHPAD_ID}"
 PPA_NAME="${PPA_PPA_NAME}"
 PACKAGE_NAME="${PPA_PACKAGE_NAME:-tman}"
@@ -199,9 +200,29 @@ EOF
 
     # Run debuild
     log_info "Running debuild..."
-    debuild -S -sa -d -k"$GPG_KEY_ID" 2>&1 | tee "$WORK_DIR/debuild.log"
 
-    if [ ${PIPESTATUS[0]} -ne 0 ]; then
+    # Configure for non-interactive signing in CI environments
+    if [ -n "$GPG_PASSPHRASE" ]; then
+        # Create a temporary gpg wrapper script for debsign
+        GPG_WRAPPER=$(mktemp)
+        cat > "$GPG_WRAPPER" << 'GPGEOF'
+#!/bin/bash
+echo "$PPA_GPG_PASSPHRASE" | /usr/bin/gpg --batch --passphrase-fd 0 --pinentry-mode loopback "$@"
+GPGEOF
+        chmod +x "$GPG_WRAPPER"
+
+        # Use the wrapper for signing
+        DEBSIGN_PROGRAM="$GPG_WRAPPER" debuild -S -sa -d -k"$GPG_KEY_ID" 2>&1 | tee "$WORK_DIR/debuild.log"
+        DEBUILD_EXIT=$?
+
+        # Clean up wrapper
+        rm -f "$GPG_WRAPPER"
+    else
+        debuild -S -sa -d -k"$GPG_KEY_ID" 2>&1 | tee "$WORK_DIR/debuild.log"
+        DEBUILD_EXIT=$?
+    fi
+
+    if [ ${PIPESTATUS[0]} -ne 0 ] || [ $DEBUILD_EXIT -ne 0 ]; then
         log_error "Build failed! See log: $WORK_DIR/debuild.log"
         exit 1
     fi
