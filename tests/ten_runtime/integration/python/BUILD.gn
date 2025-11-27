@@ -82,7 +82,9 @@ group("python") {
         ]
       }
 
-      if (is_debug) {
+      if (is_debug && !is_win) {
+        # Leak check Python test is disabled on Windows due to DLL loading
+        # complexity and memory tracking limitations with embedded Python.
         deps += [ "leak_check_python" ]
       }
     }
