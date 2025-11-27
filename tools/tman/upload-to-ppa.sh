@@ -209,30 +209,31 @@ EOF
         chmod 600 "$PASSPHRASE_FILE"
 
         # Create a temporary gpg wrapper script for debsign
+        # Embed the passphrase file path directly in the script
         GPG_WRAPPER=$(mktemp)
-        cat > "$GPG_WRAPPER" << 'GPGEOF'
+        cat > "$GPG_WRAPPER" << GPGEOF
 #!/bin/bash
-/usr/bin/gpg --batch --passphrase-file "$DEBSIGN_PASSPHRASE_FILE" --pinentry-mode loopback "$@"
+/usr/bin/gpg --batch --passphrase-file "$PASSPHRASE_FILE" --pinentry-mode loopback "\$@"
 GPGEOF
         chmod +x "$GPG_WRAPPER"
 
-        # Export passphrase file path for the wrapper script
-        export DEBSIGN_PASSPHRASE_FILE="$PASSPHRASE_FILE"
-
-        # Use the wrapper for signing
-        # Skip lintian checks by setting LINTIAN to a no-op command
-        LINTIAN=: DEBSIGN_PROGRAM="$GPG_WRAPPER" debuild -S -sa -d -k"$GPG_KEY_ID" 2>&1 | tee "$WORK_DIR/debuild.log"
+        # Use the wrapper for signing, skip lintian
+        export LINTIAN=:
+        export DEBSIGN_PROGRAM="$GPG_WRAPPER"
+        debuild -S -sa -d -k"$GPG_KEY_ID" 2>&1 | tee "$WORK_DIR/debuild.log"
 
         # Capture exit code from the pipeline (debuild's exit code)
         DEBUILD_EXIT=${PIPESTATUS[0]}
 
         # Clean up
-        unset DEBSIGN_PASSPHRASE_FILE
+        unset LINTIAN DEBSIGN_PROGRAM
         rm -f "$PASSPHRASE_FILE" "$GPG_WRAPPER"
     else
         # Skip lintian checks by setting LINTIAN to a no-op command
-        LINTIAN=: debuild -S -sa -d -k"$GPG_KEY_ID" 2>&1 | tee "$WORK_DIR/debuild.log"
+        export LINTIAN=:
+        debuild -S -sa -d -k"$GPG_KEY_ID" 2>&1 | tee "$WORK_DIR/debuild.log"
         DEBUILD_EXIT=${PIPESTATUS[0]}
+        unset LINTIAN
     fi
 
     if [ $DEBUILD_EXIT -ne 0 ]; then
