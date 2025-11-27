@@ -203,42 +203,52 @@ EOF
 
     # Configure for non-interactive signing in CI environments
     if [ -n "$GPG_PASSPHRASE" ]; then
-        # Create a passphrase file (more reliable than stdin in debsign)
+        # Create a passphrase file
         PASSPHRASE_FILE=$(mktemp)
         echo "$GPG_PASSPHRASE" > "$PASSPHRASE_FILE"
         chmod 600 "$PASSPHRASE_FILE"
 
-        # Create a temporary gpg wrapper script for debsign
-        # Embed the passphrase file path directly in the script
-        GPG_WRAPPER=$(mktemp)
-        cat > "$GPG_WRAPPER" << GPGEOF
-#!/bin/bash
-/usr/bin/gpg --batch --passphrase-file "$PASSPHRASE_FILE" --pinentry-mode loopback "\$@"
-GPGEOF
-        chmod +x "$GPG_WRAPPER"
-
-        # Use the wrapper for signing, skip lintian
+        # Build unsigned package first (skip lintian and signing)
         export LINTIAN=:
-        export DEBSIGN_PROGRAM="$GPG_WRAPPER"
-        debuild -S -sa -d -k"$GPG_KEY_ID" 2>&1 | tee "$WORK_DIR/debuild.log"
+        cd "$PACKAGE_DIR"
+        dpkg-buildpackage -S -sa -d -us -uc 2>&1 | tee "$WORK_DIR/debuild.log"
+        BUILD_EXIT=${PIPESTATUS[0]}
 
-        # Capture exit code from the pipeline (debuild's exit code)
-        DEBUILD_EXIT=${PIPESTATUS[0]}
+        if [ $BUILD_EXIT -ne 0 ]; then
+            log_error "Build failed! See log: $WORK_DIR/debuild.log"
+            rm -f "$PASSPHRASE_FILE"
+            exit 1
+        fi
 
-        # Clean up
-        unset LINTIAN DEBSIGN_PROGRAM
-        rm -f "$PASSPHRASE_FILE" "$GPG_WRAPPER"
+        # Sign the files manually using debsign
+        cd "$WORK_DIR"
+        log_info "Signing packages..."
+
+        changes_file="${PACKAGE_NAME}_${VERSION}ubuntu${REVISION}~${dist}_source.changes"
+        debsign --no-re-sign -k"$GPG_KEY_ID" \
+                -p"gpg --batch --passphrase-file $PASSPHRASE_FILE --pinentry-mode loopback" \
+                "$changes_file" 2>&1 | tee -a "$WORK_DIR/debuild.log"
+        SIGN_EXIT=${PIPESTATUS[0]}
+
+        # Clean up passphrase file
+        rm -f "$PASSPHRASE_FILE"
+        unset LINTIAN
+
+        if [ $SIGN_EXIT -ne 0 ]; then
+            log_error "Signing failed! See log: $WORK_DIR/debuild.log"
+            exit 1
+        fi
     else
-        # Skip lintian checks by setting LINTIAN to a no-op command
+        # Interactive signing for local use
         export LINTIAN=:
         debuild -S -sa -d -k"$GPG_KEY_ID" 2>&1 | tee "$WORK_DIR/debuild.log"
         DEBUILD_EXIT=${PIPESTATUS[0]}
         unset LINTIAN
-    fi
 
-    if [ $DEBUILD_EXIT -ne 0 ]; then
-        log_error "Build failed! See log: $WORK_DIR/debuild.log"
-        exit 1
+        if [ $DEBUILD_EXIT -ne 0 ]; then
+            log_error "Build failed! See log: $WORK_DIR/debuild.log"
+            exit 1
+        fi
     fi
 
     log_info "Source package built successfully ✓"
