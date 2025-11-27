@@ -8,6 +8,7 @@ on:
     paths:
       - "core/src/ten_manager/**"
       - "core/src/ten_rust/**"
+      - "tools/tman/**"
 
 permissions:
   contents: write
