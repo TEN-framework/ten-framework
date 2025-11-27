@@ -203,29 +203,34 @@ EOF
 
     # Configure for non-interactive signing in CI environments
     if [ -n "$GPG_PASSPHRASE" ]; then
+        # Create a passphrase file (more reliable than stdin in debsign)
+        PASSPHRASE_FILE=$(mktemp)
+        echo "$GPG_PASSPHRASE" > "$PASSPHRASE_FILE"
+        chmod 600 "$PASSPHRASE_FILE"
+
         # Create a temporary gpg wrapper script for debsign
-        # Pass passphrase via environment variable to avoid escaping issues
         GPG_WRAPPER=$(mktemp)
         cat > "$GPG_WRAPPER" << 'GPGEOF'
 #!/bin/bash
-# Read passphrase from environment variable
-echo "$DEBSIGN_GPG_PASSPHRASE" | /usr/bin/gpg --batch --passphrase-fd 0 --pinentry-mode loopback "$@"
+/usr/bin/gpg --batch --passphrase-file "$DEBSIGN_PASSPHRASE_FILE" --pinentry-mode loopback "$@"
 GPGEOF
         chmod +x "$GPG_WRAPPER"
 
-        # Export passphrase for the wrapper script
-        export DEBSIGN_GPG_PASSPHRASE="$GPG_PASSPHRASE"
+        # Export passphrase file path for the wrapper script
+        export DEBSIGN_PASSPHRASE_FILE="$PASSPHRASE_FILE"
 
         # Use the wrapper for signing
-        DEBSIGN_PROGRAM="$GPG_WRAPPER" debuild -S -sa -d -k"$GPG_KEY_ID" 2>&1 | tee "$WORK_DIR/debuild.log"
-        DEBUILD_EXIT=$?
+        DEBSIGN_PROGRAM="$GPG_WRAPPER" debuild -S -sa -d --no-lintian -k"$GPG_KEY_ID" 2>&1 | tee "$WORK_DIR/debuild.log"
+
+        # Capture exit code from the pipeline (debuild's exit code)
+        DEBUILD_EXIT=${PIPESTATUS[0]}
 
         # Clean up
-        unset DEBSIGN_GPG_PASSPHRASE
-        rm -f "$GPG_WRAPPER"
+        unset DEBSIGN_PASSPHRASE_FILE
+        rm -f "$PASSPHRASE_FILE" "$GPG_WRAPPER"
     else
-        debuild -S -sa -d -k"$GPG_KEY_ID" 2>&1 | tee "$WORK_DIR/debuild.log"
-        DEBUILD_EXIT=$?
+        debuild -S -sa -d --no-lintian -k"$GPG_KEY_ID" 2>&1 | tee "$WORK_DIR/debuild.log"
+        DEBUILD_EXIT=${PIPESTATUS[0]}
     fi
 
     if [ $DEBUILD_EXIT -ne 0 ]; then
