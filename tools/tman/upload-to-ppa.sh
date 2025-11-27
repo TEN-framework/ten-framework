@@ -205,9 +205,9 @@ EOF
     if [ -n "$GPG_PASSPHRASE" ]; then
         # Create a temporary gpg wrapper script for debsign
         GPG_WRAPPER=$(mktemp)
-        cat > "$GPG_WRAPPER" << 'GPGEOF'
+        cat > "$GPG_WRAPPER" << GPGEOF
 #!/bin/bash
-echo "$PPA_GPG_PASSPHRASE" | /usr/bin/gpg --batch --passphrase-fd 0 --pinentry-mode loopback "$@"
+echo "$GPG_PASSPHRASE" | /usr/bin/gpg --batch --passphrase-fd 0 --pinentry-mode loopback "\$@"
 GPGEOF
         chmod +x "$GPG_WRAPPER"
 
@@ -222,7 +222,7 @@ GPGEOF
         DEBUILD_EXIT=$?
     fi
 
-    if [ ${PIPESTATUS[0]} -ne 0 ] || [ $DEBUILD_EXIT -ne 0 ]; then
+    if [ $DEBUILD_EXIT -ne 0 ]; then
         log_error "Build failed! See log: $WORK_DIR/debuild.log"
         exit 1
     fi
