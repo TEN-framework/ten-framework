@@ -220,7 +220,8 @@ GPGEOF
         export DEBSIGN_PASSPHRASE_FILE="$PASSPHRASE_FILE"
 
         # Use the wrapper for signing
-        DEBSIGN_PROGRAM="$GPG_WRAPPER" debuild -S -sa -d --no-lintian -k"$GPG_KEY_ID" 2>&1 | tee "$WORK_DIR/debuild.log"
+        # Skip lintian checks by setting LINTIAN to a no-op command
+        LINTIAN=: DEBSIGN_PROGRAM="$GPG_WRAPPER" debuild -S -sa -d -k"$GPG_KEY_ID" 2>&1 | tee "$WORK_DIR/debuild.log"
 
         # Capture exit code from the pipeline (debuild's exit code)
         DEBUILD_EXIT=${PIPESTATUS[0]}
@@ -229,7 +230,8 @@ GPGEOF
         unset DEBSIGN_PASSPHRASE_FILE
         rm -f "$PASSPHRASE_FILE" "$GPG_WRAPPER"
     else
-        debuild -S -sa -d --no-lintian -k"$GPG_KEY_ID" 2>&1 | tee "$WORK_DIR/debuild.log"
+        # Skip lintian checks by setting LINTIAN to a no-op command
+        LINTIAN=: debuild -S -sa -d -k"$GPG_KEY_ID" 2>&1 | tee "$WORK_DIR/debuild.log"
         DEBUILD_EXIT=${PIPESTATUS[0]}
     fi
 
