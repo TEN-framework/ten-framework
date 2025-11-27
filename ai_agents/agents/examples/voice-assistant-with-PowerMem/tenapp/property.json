@@ -36,7 +36,8 @@
               "property": {
                 "params": {
                   "key": "${env:AZURE_STT_KEY}",
-                  "region": "${env:AZURE_STT_REGION}"
+                  "region": "${env:AZURE_STT_REGION}",
+                  "language": "en-US,zh-CN"
                 }
               }
             },
@@ -70,7 +71,8 @@
                   "output_format": "Raw16Khz16BitMonoPcm",
                   "propertys": [
                     ["Speech_LogFilename", "azure_tts_log.txt"],
-                    ["SpeechServiceConnection_SynthVoice", "en-US-AndrewMultilingualNeural"]
+                    ["SpeechServiceConnection_SynthVoice", "en-US-AndrewMultilingualNeural"],
+                    ["SpeechServiceConnection_SynthLanguage", "en-US"]
                   ]
                 }
               }
