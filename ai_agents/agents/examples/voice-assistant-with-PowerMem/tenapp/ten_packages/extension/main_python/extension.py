@@ -1,7 +1,6 @@
 import asyncio
 import json
 import time
-import os
 from typing import Literal
 
 from .agent.decorators import agent_event_handler
@@ -304,7 +303,6 @@ class MainControlExtension(AsyncExtension):
             # Retrieve user memory summary
             memory_summary = await self._retrieve_related_memory(
                 query="user preferences, past conversations, and personal information",
-                user_id=self.config.user_id,
             )
 
             if not memory_summary or not memory_summary.strip():
@@ -354,7 +352,7 @@ Generate a personalized greeting:"""
             self._greeting_future = None
             return ""
 
-    async def _retrieve_memory(self, user_id: str = None) -> str:
+    async def _retrieve_memory(self) -> str:
         """Retrieve conversation memory from configured store"""
         if not self.memory_store:
             return ""
@@ -373,9 +371,7 @@ Generate a personalized greeting:"""
             )
             return ""
 
-    async def _retrieve_related_memory(
-        self, query: str, user_id: str = None
-    ) -> str:
+    async def _retrieve_related_memory(self, query: str) -> str:
         """Retrieve related memory based on user query using semantic search"""
         if not self.memory_store:
             return ""
@@ -473,9 +469,7 @@ Generate a personalized greeting:"""
         )
         return result
 
-    async def _memorize_conversation(
-        self, user_id: str = None
-    ):
+    async def _memorize_conversation(self):
         """Memorize the current conversation via configured store"""
         if not self.memory_store:
             return
@@ -521,7 +515,7 @@ Generate a personalized greeting:"""
             return
 
         try:
-            memory_summary = await self._retrieve_memory(self.config.user_id)
+            memory_summary = await self._retrieve_memory()
             self.ten_env.log_info(
                 f"[MainControlExtension] Memory summary: {memory_summary}"
             )
