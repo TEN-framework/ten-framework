@@ -5,8 +5,15 @@ set -e
 # Check if -race flag is passed
 RACE_FLAG=""
 if [[ "$*" == *"-race"* ]]; then
-  RACE_FLAG="-race"
-  echo "Race detector enabled"
+  # Check if running on macOS
+  if [[ "$(uname)" == "Darwin" ]]; then
+    echo "⚠️  Warning: Race detector is not supported on macOS with CGO due to address space conflicts"
+    echo "    Skipping -race flag on macOS. Use Linux for race detection testing."
+    echo ""
+  else
+    RACE_FLAG="-race"
+    echo "Race detector enabled"
+  fi
 fi
 
 # Check if -sanitize flag is passed
@@ -65,7 +72,12 @@ cd ".ten/app/ten_packages/extension/$extension_name"
 
 # Base CGO flags
 BASE_CGO_CFLAGS=""
-BASE_CGO_LDFLAGS="-L.ten/app/ten_packages/system/ten_runtime/lib -L.ten/app/ten_packages/system/ten_runtime_go/lib -lten_runtime -lten_runtime_go -Wl,-rpath,@loader_path/lib -Wl,-rpath,@loader_path/../lib"
+# Note: On macOS, we use single -rpath and deduplicated library flags to avoid warnings
+if [[ "$(uname)" == "Darwin" ]]; then
+  BASE_CGO_LDFLAGS="-L.ten/app/ten_packages/system/ten_runtime/lib -L.ten/app/ten_packages/system/ten_runtime_go/lib -lten_runtime -lten_runtime_go -Wl,-rpath,@loader_path/lib"
+else
+  BASE_CGO_LDFLAGS="-L.ten/app/ten_packages/system/ten_runtime/lib -L.ten/app/ten_packages/system/ten_runtime_go/lib -lten_runtime -lten_runtime_go -Wl,-rpath,@loader_path/lib -Wl,-rpath,@loader_path/../lib"
+fi
 
 # Add sanitizer flags if requested
 if [ -n "$SANITIZE_FLAG" ]; then

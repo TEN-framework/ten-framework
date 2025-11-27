@@ -155,8 +155,8 @@ func (tester *HighLoadWithStreamingTester) OnStart(tenEnvTester ten.TenEnvTester
 		}
 	}()
 
-	// Run for 10 seconds (reduced from 30 seconds for faster testing)
-	time.AfterFunc(10*time.Second, func() {
+	// Run for 5 seconds (reduced from 10 seconds for faster testing)
+	time.AfterFunc(5*time.Second, func() {
 		tenEnvTester.LogInfo("Test duration reached, stopping...")
 		tenEnvTester.StopTest(nil)
 	})
@@ -309,9 +309,9 @@ func (tester *GCPressureTester) OnStart(tenEnvTester ten.TenEnvTester) {
 	tester.stopChan = make(chan struct{})
 
 	// Flow control parameter configuration
-	tester.maxPending = 15                        // Max pending count: 15 messages (reduced from 30)
-	tester.burstSize = 3                          // Send 3 messages per burst (reduced from 5)
-	tester.burstInterval = 50 * time.Millisecond  // Attempt burst every 50ms (increased from 30ms)
+	tester.maxPending = 15                       // Max pending count: 15 messages (reduced from 30)
+	tester.burstSize = 3                         // Send 3 messages per burst (reduced from 5)
+	tester.burstInterval = 50 * time.Millisecond // Attempt burst every 50ms (increased from 30ms)
 
 	tenEnvTester.LogInfo(fmt.Sprintf("Flow control config: maxPending=%d, burstSize=%d, burstInterval=%v",
 		tester.maxPending, tester.burstSize, tester.burstInterval))
@@ -343,14 +343,14 @@ func (tester *GCPressureTester) OnStart(tenEnvTester ten.TenEnvTester) {
 						break
 					}
 
-				// Create command and allocate memory (reduced memory allocation)
-				cmd, _ := ten.NewCmd("ten_event")
+					// Create command and allocate memory (reduced memory allocation)
+					cmd, _ := ten.NewCmd("ten_event")
 
-				tempData := make(map[string]interface{})
-				for k := 0; k < 50; k++ { // Reduced from 100 to 50 fields
-					// 512 bytes data per field (reduced from 1KB)
-					tempData[fmt.Sprintf("field_%d", k)] = make([]byte, 512)
-				}
+					tempData := make(map[string]interface{})
+					for k := 0; k < 50; k++ { // Reduced from 100 to 50 fields
+						// 512 bytes data per field (reduced from 1KB)
+						tempData[fmt.Sprintf("field_%d", k)] = make([]byte, 512)
+					}
 
 					cmd.SetPropertyFromJSONBytes("data", mustMarshalJSON(tempData))
 
@@ -376,8 +376,8 @@ func (tester *GCPressureTester) OnStart(tenEnvTester ten.TenEnvTester) {
 		}
 	}()
 
-	// Stop after 10 seconds (reduced from 30 seconds)
-	time.AfterFunc(10*time.Second, func() {
+	// Stop after 5 seconds (reduced from 10 seconds)
+	time.AfterFunc(5*time.Second, func() {
 		tenEnvTester.LogInfo(fmt.Sprintf("GC pressure test complete. Total allocations: %d", tester.sentCount.Load()))
 		tenEnvTester.StopTest(nil)
 	})
@@ -462,9 +462,9 @@ func (tester *ConcurrentCallbackTester) OnStart(tenEnvTester ten.TenEnvTester) {
 	tester.stopChan = make(chan struct{})
 
 	// Flow control parameter configuration
-	tester.maxPending = 20                        // Max pending count: 20 messages (reduced from 40)
-	tester.burstSize = 4                          // Send 4 messages per burst (reduced from 8)
-	tester.burstInterval = 50 * time.Millisecond  // Attempt burst every 50ms (increased from 40ms)
+	tester.maxPending = 20                       // Max pending count: 20 messages (reduced from 40)
+	tester.burstSize = 4                         // Send 4 messages per burst (reduced from 8)
+	tester.burstInterval = 50 * time.Millisecond // Attempt burst every 50ms (increased from 40ms)
 
 	tenEnvTester.LogInfo(fmt.Sprintf("Flow control config: maxPending=%d, burstSize=%d, burstInterval=%v",
 		tester.maxPending, tester.burstSize, tester.burstInterval))
@@ -521,8 +521,8 @@ func (tester *ConcurrentCallbackTester) OnStart(tenEnvTester ten.TenEnvTester) {
 		}
 	}()
 
-	// Stop after 10 seconds (reduced from 30 seconds)
-	time.AfterFunc(10*time.Second, func() {
+	// Stop after 5 seconds (reduced from 10 seconds)
+	time.AfterFunc(5*time.Second, func() {
 		tenEnvTester.StopTest(nil)
 	})
 

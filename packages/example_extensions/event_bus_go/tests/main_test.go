@@ -9,8 +9,11 @@ package tests
 import (
 	"fmt"
 	"os"
+	"runtime"
+	"runtime/debug"
 	ten "ten_framework/ten_runtime"
 	"testing"
+	"time"
 
 	// We import the event_bus_go package to ensure its init function is
 	// executed. This is because event_bus_go registers the addon in its
@@ -85,11 +88,28 @@ func setup() {
 func teardown() {
 	globalApp.Close()
 	globalApp.Wait()
+
+	globalApp = nil
+}
+
+func gcAndFreeOSMemory() {
+	for i := 0; i < 10; i++ {
+		// Explicitly trigger GC to increase the likelihood of finalizer
+		// execution.
+		debug.FreeOSMemory()
+		runtime.GC()
+
+		// Wait for a short period to give the GC time to run.
+		runtime.Gosched()
+		time.Sleep(1 * time.Second)
+	}
 }
 
 func TestMain(m *testing.M) {
 	setup()
 	code := m.Run()
 	teardown()
+
+	gcAndFreeOSMemory()
 	os.Exit(code)
 }
