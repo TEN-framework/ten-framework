@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "packages": [
+    {
+      "type": "system",
+      "name": "ten_runtime_go",
+      "version": "0.11.35",
+      "hash": "5c6c218d2f2242f362449797e9a71db642f0061db104d7eca03e2e8110a04a89",
+      "dependencies": [
+        {
+          "type": "system",
+          "name": "ten_runtime"
+        }
+      ],
+      "supports": [
+        {
+          "os": "linux",
+          "arch": "x64"
+        }
+      ]
+    },
+    {
+      "type": "system",
+      "name": "ten_runtime",
+      "version": "0.11.35",
+      "hash": "6b4a4cf0f0c9044c0a593496079b28cb9737d36fd3cb68fe053835e790c8ba9a",
+      "supports": [
+        {
+          "os": "linux",
+          "arch": "x64"
+        }
+      ]
+    }
+  ]
+}

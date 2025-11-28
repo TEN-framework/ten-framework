@@ -1,0 +1,4 @@
+bin
+manifest-lock.json
+ten_packages
+property-*.json

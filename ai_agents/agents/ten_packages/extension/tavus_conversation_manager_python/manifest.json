@@ -1,0 +1,56 @@
+{
+  "type": "extension",
+  "name": "tavus_conversation_manager_python",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.11"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "**.py",
+      "requirements.txt"
+    ]
+  },
+  "api": {
+    "property": {
+      "properties": {
+        "tavus_api_key": {
+          "type": "string"
+        },
+        "persona_id": {
+          "type": "string"
+        },
+        "default_greeting": {
+          "type": "string"
+        }
+      }
+    },
+    "cmd_in": [
+      {
+        "name": "create_conversation"
+      },
+      {
+        "name": "end_conversation"
+      }
+    ],
+    "cmd_out": [
+      {
+        "name": "conversation_created"
+      },
+      {
+        "name": "conversation_ended"
+      }
+    ],
+    "data_out": [
+      {
+        "name": "error"
+      }
+    ]
+  }
+}

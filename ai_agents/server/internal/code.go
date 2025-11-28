@@ -25,6 +25,7 @@ var (
 	codeErrUpdateWorkerFailed    = NewCode("10104", "update worker failed")
 	codeErrReadDirectoryFailed   = NewCode("10105", "read directory failed")
 	codeErrReadFileFailed        = NewCode("10106", "read file failed")
+	codeErrCallTavusApiFailed    = NewCode("10107", "call tavus api failed")
 )
 
 func NewCode(code string, msg string) *Code {

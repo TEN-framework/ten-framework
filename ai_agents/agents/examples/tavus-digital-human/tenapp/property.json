@@ -1,0 +1,34 @@
+{
+  "ten": {
+    "predefined_graphs": [
+      {
+        "name": "tavus_digital_human",
+        "auto_start": true,
+        "graph": {
+          "nodes": []
+        }
+      }
+    ]
+  },
+  "log": {
+    "handlers": [
+      {
+        "matchers": [
+          {
+            "level": "info"
+          }
+        ],
+        "formatter": {
+          "type": "plain",
+          "colored": true
+        },
+        "emitter": {
+          "type": "console",
+          "config": {
+            "stream": "stdout"
+          }
+        }
+      }
+    ]
+  }
+}

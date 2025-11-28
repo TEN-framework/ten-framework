@@ -23,6 +23,7 @@ import (
 	rtctokenbuilder "github.com/AgoraIO/Tools/DynamicKey/AgoraDynamicKey/go/src/rtctokenbuilder2"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
+	"github.com/go-resty/resty/v2"
 	"github.com/gogf/gf/crypto/gmd5"
 )
 
@@ -856,6 +857,96 @@ func (s *HttpServer) processProperty(req *StartReq, tenappDir string) (propertyJ
 	return
 }
 
+type TavusCreateConversationReq struct {
+	RequestId   string `json:"request_id,omitempty"`
+	PersonaId   string `json:"persona_id,omitempty"`
+	Greeting    string `json:"greeting,omitempty"`
+}
+
+type TavusConversationResp struct {
+	ConversationId  string `json:"conversation_id"`
+	ConversationUrl string `json:"conversation_url"`
+}
+
+func (s *HttpServer) handlerTavusCreateConversation(c *gin.Context) {
+	var req TavusCreateConversationReq
+
+	if err := c.ShouldBindBodyWith(&req, binding.JSON); err != nil {
+		slog.Error("handlerTavusCreateConversation params invalid", "err", err, "requestId", req.RequestId, logTag)
+		s.output(c, codeErrParamsInvalid, http.StatusBadRequest)
+		return
+	}
+
+	slog.Info("handlerTavusCreateConversation start", "requestId", req.RequestId, logTag)
+
+	// Get Tavus API key from environment
+	tavusApiKey := os.Getenv("TAVUS_API_KEY")
+	if tavusApiKey == "" {
+		slog.Error("TAVUS_API_KEY not set", "requestId", req.RequestId, logTag)
+		s.output(c, codeErrParamsInvalid, http.StatusInternalServerError)
+		return
+	}
+
+	// Prepare request payload
+	payload := map[string]interface{}{
+		"conversational_context": "You are a helpful AI assistant.",
+	}
+
+	// Add custom greeting if provided
+	if req.Greeting != "" {
+		payload["custom_greeting"] = req.Greeting
+	} else {
+		payload["custom_greeting"] = "Hello! I'm your AI assistant. How can I help you today?"
+	}
+
+	// Add persona_id if provided
+	if req.PersonaId != "" {
+		payload["persona_id"] = req.PersonaId
+	} else if personaId := os.Getenv("TAVUS_PERSONA_ID"); personaId != "" {
+		payload["persona_id"] = personaId
+	}
+
+	// Call Tavus API
+	client := resty.New()
+	resp, err := client.R().
+		SetHeader("x-api-key", tavusApiKey).
+		SetHeader("Content-Type", "application/json").
+		SetBody(payload).
+		Post("https://tavusapi.com/v2/conversations")
+
+	if err != nil {
+		slog.Error("Failed to call Tavus API", "err", err, "requestId", req.RequestId, logTag)
+		s.output(c, codeErrCallTavusApiFailed, http.StatusInternalServerError)
+		return
+	}
+
+	if resp.StatusCode() != 200 {
+		slog.Error("Tavus API returned error", "statusCode", resp.StatusCode(), "body", string(resp.Body()), "requestId", req.RequestId, logTag)
+		s.output(c, codeErrCallTavusApiFailed, resp.StatusCode())
+		return
+	}
+
+	// Parse response
+	var tavusResp map[string]interface{}
+	if err := json.Unmarshal(resp.Body(), &tavusResp); err != nil {
+		slog.Error("Failed to parse Tavus response", "err", err, "requestId", req.RequestId, logTag)
+		s.output(c, codeErrParseJsonFailed, http.StatusInternalServerError)
+		return
+	}
+
+	conversationId, _ := tavusResp["conversation_id"].(string)
+	conversationUrl, _ := tavusResp["conversation_url"].(string)
+
+	slog.Info("handlerTavusCreateConversation success", "conversationId", conversationId, "requestId", req.RequestId, logTag)
+
+	result := TavusConversationResp{
+		ConversationId:  conversationId,
+		ConversationUrl: conversationUrl,
+	}
+
+	s.output(c, codeSuccess, result)
+}
+
 func (s *HttpServer) Start() {
 	r := gin.Default()
 	r.Use(corsMiddleware())
@@ -872,6 +963,9 @@ func (s *HttpServer) Start() {
 	r.GET("/vector/document/preset/list", s.handlerVectorDocumentPresetList)
 	r.POST("/vector/document/update", s.handlerVectorDocumentUpdate)
 	r.POST("/vector/document/upload", s.handlerVectorDocumentUpload)
+
+	// Tavus API endpoints
+	r.POST("/api/tavus/conversation/create", s.handlerTavusCreateConversation)
 
 	slog.Info("server start", "port", s.config.Port, logTag)
 

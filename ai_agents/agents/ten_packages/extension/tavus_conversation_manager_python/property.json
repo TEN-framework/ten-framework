@@ -1,0 +1,5 @@
+{
+  "tavus_api_key": "${env:TAVUS_API_KEY}",
+  "persona_id": "${env:TAVUS_PERSONA_ID|}",
+  "default_greeting": "Hello! I'm your AI assistant."
+}
