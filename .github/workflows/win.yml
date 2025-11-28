@@ -648,7 +648,6 @@ jobs:
           cache: false
 
       - name: Install tools and dependencies
-        shell: bash
         run: |
           pip3 install --use-pep517 python-dotenv jinja2
           go install golang.org/dl/go1.24.3@latest && go1.24.3 download
