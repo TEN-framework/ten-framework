@@ -52,6 +52,7 @@ class MainControlExtension(AsyncExtension):
 
         # Memory related attributes (named memory_store by request)
         self.memory_store: PowerMemSdkMemoryStore | None = None
+        self.last_memory_update_turn_id: int = 0
 
         # Greeting generation state
         self._is_generating_greeting: bool = False
@@ -182,8 +183,8 @@ class MainControlExtension(AsyncExtension):
             self.sentence_fragment = ""
             await self._send_to_tts(remaining_text, True)
 
-            # Memorize every two rounds (when turn_id is even) if memorization is enabled
-            if self.turn_id % 2 == 0 and self.config.enable_memorization:
+            # Memorize every two rounds if memorization is enabled
+            if self.turn_id - self.last_memory_update_turn_id >= 2 and self.config.enable_memorization:
                 await self._memorize_conversation()
 
         await self._send_transcript(
@@ -424,13 +425,13 @@ class MainControlExtension(AsyncExtension):
 
             if not conversation_for_memory:
                 return
-            asyncio.create_task(
-                self.memory_store.add(
-                    conversation=conversation_for_memory,
-                    user_id=user_id,
-                    agent_id=self.config.agent_id,
-                )
+
+            await self.memory_store.add(
+                conversation=conversation_for_memory,
+                user_id=user_id,
+                agent_id=self.config.agent_id,
             )
+            self.last_memory_update_turn_id = self.turn_id
 
         except Exception as e:
             self.ten_env.log_error(
