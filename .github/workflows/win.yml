@@ -697,7 +697,7 @@ jobs:
 
           # Install Ollama silently
           Write-Output "Installing Ollama..."
-          Start-Process -FilePath $installerPath -ArgumentList "/S" -Wait
+          Start-Process -FilePath $installerPath -ArgumentList "/SILENT" -Wait
 
           # Add Ollama to PATH (typically installed to C:\Users\<user>\AppData\Local\Programs\Ollama)
           $ollamaPath = "$env:LOCALAPPDATA\Programs\Ollama"
