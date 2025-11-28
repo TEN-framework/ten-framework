@@ -288,6 +288,19 @@ task run
 
 <br>
 
+#### Docker 없이 TEN Manager에서 전사 앱 실행 (Beta)
+
+TEN은 Docker 없이 TEN Manager에서 바로 실행할 수 있는 전사 앱도 제공합니다.
+
+자세한 내용은 [빠른 시작 가이드][quick-start-guide-ten-manager]를 확인하세요.
+
+<br>
+
+![divider][divider-light]
+![divider][divider-dark]
+
+<br>
+
 <a name="codespaces"></a>
 
 ### Codespaces
@@ -584,6 +597,7 @@ TEN Framework는 AI 기반 Q&A 플랫폼에서도 만나볼 수 있습니다. �
 [docker]: https://www.docker.com/
 [docker-compose]: https://docs.docker.com/compose/
 [nodejs]: https://nodejs.org/en
+[quick-start-guide-ten-manager]: https://theten.ai/docs/ten_framework/getting-started/quick-start
 [localhost-49483-image]: https://github.com/user-attachments/assets/191a7c0a-d8e6-48f9-866f-6a70c58f0118
 [localhost-3000-image]: https://github.com/user-attachments/assets/13e482b6-d907-4449-a779-9454bb24c0b1
 [localhost-49483]: http://localhost:49483

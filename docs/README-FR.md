@@ -288,6 +288,19 @@ Une fois l’exemple démarré, ces interfaces sont disponibles :
 
 <br>
 
+#### Exécuter une application de transcription depuis TEN Manager sans Docker (Beta)
+
+TEN propose aussi une application de transcription que vous pouvez lancer dans TEN Manager sans utiliser Docker.
+
+Consultez le [guide de démarrage rapide][quick-start-guide-ten-manager] pour en savoir plus.
+
+<br>
+
+![divider][divider-light]
+![divider][divider-dark]
+
+<br>
+
 <a name="codespaces"></a>
 
 ### Codespaces
@@ -584,6 +597,7 @@ Les contributions sont les bienvenues ! Lisez d’abord le [guide de contributi
 [docker]: https://www.docker.com/
 [docker-compose]: https://docs.docker.com/compose/
 [nodejs]: https://nodejs.org/en
+[quick-start-guide-ten-manager]: https://theten.ai/docs/ten_framework/getting-started/quick-start
 [localhost-49483-image]: https://github.com/user-attachments/assets/191a7c0a-d8e6-48f9-866f-6a70c58f0118
 [localhost-3000-image]: https://github.com/user-attachments/assets/13e482b6-d907-4449-a779-9454bb24c0b1
 [localhost-49483]: http://localhost:49483
