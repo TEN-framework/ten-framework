@@ -2,5 +2,7 @@
     "greeting": "Hello! I'm your AI assistant with memory. I can remember our previous conversations to provide more personalized help.",
     "agent_id": "voice_assistant_agent",
     "user_id": "user",
-    "enable_memorization": true
+    "enable_memorization": true,
+    "memory_save_interval_turns": 5,
+    "memory_idle_timeout_seconds": 30.0
 }

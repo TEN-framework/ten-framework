@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime
 import json
 import time
 from typing import Literal
@@ -53,6 +54,9 @@ class MainControlExtension(AsyncExtension):
         # Memory related attributes (named memory_store by request)
         self.memory_store: PowerMemSdkMemoryStore | None = None
         self.last_memory_update_turn_id: int = 0
+
+        # Memory idle timer: save memory after 30 seconds of inactivity
+        self._memory_idle_timer_task: asyncio.Task | None = None
 
         # Greeting generation state
         self._is_generating_greeting: bool = False
@@ -126,6 +130,8 @@ class MainControlExtension(AsyncExtension):
             await self._interrupt()
         if event.final:
             self.turn_id += 1
+            # Cancel memory idle timer since user started a new conversation
+            self._cancel_memory_idle_timer()
             # Use user's query to search for related memories and pass to LLM
             related_memory = await self._retrieve_related_memory(event.text)
             if related_memory:
@@ -183,9 +189,22 @@ class MainControlExtension(AsyncExtension):
             self.sentence_fragment = ""
             await self._send_to_tts(remaining_text, True)
 
-            # Memorize every two rounds if memorization is enabled
-            if self.turn_id - self.last_memory_update_turn_id >= 2 and self.config.enable_memorization:
-                await self._memorize_conversation()
+            # Memorize every N rounds if memorization is enabled
+            if (
+                self.turn_id - self.last_memory_update_turn_id >= self.config.memory_save_interval_turns
+                and self.config.enable_memorization
+            ):
+                # Update counter immediately to prevent race condition from concurrent saves
+                # This ensures only one save task is triggered even if multiple responses arrive quickly
+                current_turn_id = self.turn_id
+                self.last_memory_update_turn_id = current_turn_id
+                # Save memory asynchronously without blocking LLM response processing
+                asyncio.create_task(self._memorize_conversation())
+                # Cancel idle timer since we just saved memory
+                self._cancel_memory_idle_timer()
+            elif self.config.enable_memorization:
+                # Start/reset idle timer to save memory if no new conversation
+                self._start_memory_idle_timer()
 
         await self._send_transcript(
             "assistant",
@@ -201,6 +220,8 @@ class MainControlExtension(AsyncExtension):
     async def on_stop(self, ten_env: AsyncTenEnv):
         ten_env.log_info("[MainControlExtension] on_stop")
         self.stopped = True
+        # Cancel idle timer before stopping
+        self._cancel_memory_idle_timer()
         await self.agent.stop()
         await self._memorize_conversation()
 
@@ -294,6 +315,62 @@ class MainControlExtension(AsyncExtension):
         self.ten_env.log_info("[MainControlExtension] Interrupt signal sent")
 
     # === Memory related methods ===
+
+    def _cancel_memory_idle_timer(self):
+        """Cancel the memory idle timer if it exists"""
+        if self._memory_idle_timer_task and not self._memory_idle_timer_task.done():
+            self._memory_idle_timer_task.cancel()
+            self._memory_idle_timer_task = None
+            self.ten_env.log_info(
+                "[MainControlExtension] Cancelled memory idle timer"
+            )
+
+    def _start_memory_idle_timer(self):
+        """Start or reset the 30-second idle timer to save memory"""
+        # Cancel existing timer if any
+        self._cancel_memory_idle_timer()
+
+        async def _memory_idle_timeout():
+            """Wait for configured idle timeout and then save memory if there are unsaved conversations"""
+            # Capture reference to this task to avoid race condition
+            current_task = asyncio.current_task()
+            timeout_seconds = self.config.memory_idle_timeout_seconds
+            try:
+                await asyncio.sleep(timeout_seconds)
+                # Check if there are unsaved conversations
+                if (
+                    self.turn_id > self.last_memory_update_turn_id
+                    and self.config.enable_memorization
+                    and not self.stopped
+                ):
+                    self.ten_env.log_info(
+                        f"[MainControlExtension] {timeout_seconds} seconds idle timeout reached, "
+                        f"saving memory (turn_id={self.turn_id}, "
+                        f"last_saved_turn_id={self.last_memory_update_turn_id})"
+                    )
+                    await self._memorize_conversation()
+                # Only clear if this task is still the current timer task
+                if self._memory_idle_timer_task is current_task:
+                    self._memory_idle_timer_task = None
+            except asyncio.CancelledError:
+                # Timer was cancelled, which is expected
+                # Only clear if this task is still the current timer task
+                if self._memory_idle_timer_task is current_task:
+                    self._memory_idle_timer_task = None
+            except Exception as e:
+                self.ten_env.log_error(
+                    f"[MainControlExtension] Error in memory idle timer: {e}"
+                )
+                # Only clear if this task is still the current timer task
+                if self._memory_idle_timer_task is current_task:
+                    self._memory_idle_timer_task = None
+
+        # Start new timer task
+        self._memory_idle_timer_task = asyncio.create_task(
+            _memory_idle_timeout())
+        self.ten_env.log_info(
+            f"[MainControlExtension] Started {self.config.memory_idle_timeout_seconds}-second memory idle timer"
+        )
 
     async def _generate_personalized_greeting(self) -> str:
         """
@@ -431,7 +508,10 @@ class MainControlExtension(AsyncExtension):
                 user_id=user_id,
                 agent_id=self.config.agent_id,
             )
-            self.last_memory_update_turn_id = self.turn_id
+            # Update counter if not already updated (for on_stop and idle timeout cases)
+            # For LLM response case, counter is updated before creating the task to prevent race conditions
+            if self.turn_id > self.last_memory_update_turn_id:
+                self.last_memory_update_turn_id = self.turn_id
 
         except Exception as e:
             self.ten_env.log_error(
