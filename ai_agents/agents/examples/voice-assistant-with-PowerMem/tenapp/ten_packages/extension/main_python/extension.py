@@ -30,7 +30,11 @@ from .prompt import (
 import uuid
 
 # Memory store abstraction
-from .memory import MemoryStore, PowerMemSdkMemoryStore
+from .memory import (
+    MemoryStore,
+    PowerMemSdkMemoryStore,
+    PowerMemSdkUserMemoryStore,
+)
 
 
 class MainControlExtension(AsyncExtension):
@@ -72,8 +76,12 @@ class MainControlExtension(AsyncExtension):
         config_json, _ = await ten_env.get_property_to_json(None)
         self.config = MainControlConfig.model_validate_json(config_json)
 
-        # Initialize memory store per config toggle
-        self.memory_store = PowerMemSdkMemoryStore(env=ten_env)
+        # Initialize memory store
+        if self.config and self.config.enable_memorization:
+            if self.config.enable_user_memory:
+                self.memory_store = PowerMemSdkMemoryStore(env=ten_env)
+            else:
+                self.memory_store = PowerMemSdkUserMemoryStore(env=ten_env)
 
         self.agent = Agent(ten_env)
 
