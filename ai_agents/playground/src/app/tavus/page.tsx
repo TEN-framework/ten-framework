@@ -1,13 +1,21 @@
 "use client";
 
-import { useState } from "react";
-import DailyIframe from "@daily-co/daily-js";
+import { useState, useEffect } from "react";
 
 export default function TavusPage() {
   const [callFrame, setCallFrame] = useState<any>(null);
   const [conversationUrl, setConversationUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return null;
+  }
 
   const createConversation = async () => {
     setIsLoading(true);
@@ -37,6 +45,7 @@ export default function TavusPage() {
       setConversationUrl(conversation_url);
 
       // Create Daily.co iframe and join the conversation
+      const { default: DailyIframe } = await import("@daily-co/daily-js");
       const daily = DailyIframe.createFrame({
         showLeaveButton: true,
         iframeStyle: {
@@ -77,151 +86,114 @@ export default function TavusPage() {
   return (
     <div style={{
       minHeight: "100vh",
-      backgroundColor: "#0f0f0f",
-      color: "#ffffff",
+      backgroundColor: "#fafafa",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
       padding: "2rem",
-      fontFamily: "system-ui, -apple-system, sans-serif",
+      fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
     }}>
-      <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
+      <div style={{
+        maxWidth: "900px",
+        width: "100%",
+      }}>
         {/* Header */}
-        <div style={{ marginBottom: "3rem" }}>
+        <div style={{
+          textAlign: "center",
+          marginBottom: "3rem"
+        }}>
           <h1 style={{
-            fontSize: "2.5rem",
-            fontWeight: "bold",
-            marginBottom: "0.5rem",
+            fontSize: "2.25rem",
+            fontWeight: "300",
+            color: "#1a1a1a",
+            marginBottom: "0.75rem",
+            letterSpacing: "-0.02em",
           }}>
-            Tavus Digital Human Demo
+            Tavus
           </h1>
           <p style={{
-            fontSize: "1.125rem",
-            color: "#888",
+            fontSize: "0.95rem",
+            color: "#666",
+            fontWeight: "400",
           }}>
-            Interact with an AI-powered digital human using natural conversation
+            Conversational digital human
           </p>
         </div>
 
         {/* Error Message */}
         {error && (
           <div style={{
-            backgroundColor: "#ff4444",
-            padding: "1rem",
-            borderRadius: "8px",
+            backgroundColor: "#fff5f5",
+            border: "1px solid #fed7d7",
+            color: "#c53030",
+            padding: "0.875rem 1.25rem",
+            borderRadius: "6px",
             marginBottom: "2rem",
+            fontSize: "0.9rem",
           }}>
-            <strong>Error:</strong> {error}
+            {error}
           </div>
         )}
 
         {/* Main Content */}
         <div style={{
-          backgroundColor: "#1a1a1a",
+          backgroundColor: "#ffffff",
           borderRadius: "12px",
-          padding: "2rem",
-          boxShadow: "0 4px 6px rgba(0, 0, 0, 0.3)",
+          padding: callFrame ? "1.5rem" : "4rem 2rem",
+          boxShadow: "0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04)",
+          border: "1px solid #e5e5e5",
         }}>
           {!callFrame ? (
-            <div style={{ textAlign: "center", padding: "3rem 0" }}>
-              <p style={{
-                fontSize: "1.125rem",
-                marginBottom: "2rem",
-                color: "#ccc",
-              }}>
-                Click the button below to start a conversation with your AI digital human
-              </p>
+            <div style={{ textAlign: "center" }}>
               <button
                 onClick={createConversation}
                 disabled={isLoading}
                 style={{
-                  backgroundColor: isLoading ? "#555" : "#0066ff",
-                  color: "#ffffff",
-                  padding: "1rem 2rem",
-                  fontSize: "1.125rem",
-                  fontWeight: "600",
+                  backgroundColor: isLoading ? "#e0e0e0" : "#000",
+                  color: isLoading ? "#999" : "#fff",
+                  padding: "0.875rem 2.5rem",
+                  fontSize: "0.95rem",
+                  fontWeight: "500",
                   border: "none",
-                  borderRadius: "8px",
+                  borderRadius: "6px",
                   cursor: isLoading ? "not-allowed" : "pointer",
-                  transition: "background-color 0.2s",
-                }}
-                onMouseEnter={(e) => {
-                  if (!isLoading) {
-                    e.currentTarget.style.backgroundColor = "#0052cc";
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isLoading) {
-                    e.currentTarget.style.backgroundColor = "#0066ff";
-                  }
+                  transition: "all 0.15s ease",
+                  letterSpacing: "0.01em",
                 }}
               >
-                {isLoading ? "Creating Conversation..." : "Start Conversation"}
+                {isLoading ? "Starting..." : "Start Conversation"}
               </button>
             </div>
           ) : (
             <div>
-              <div style={{ marginBottom: "1rem", textAlign: "right" }}>
+              <div style={{
+                marginBottom: "1rem",
+                display: "flex",
+                justifyContent: "flex-end",
+              }}>
                 <button
                   onClick={endConversation}
                   style={{
-                    backgroundColor: "#ff4444",
-                    color: "#ffffff",
-                    padding: "0.75rem 1.5rem",
-                    fontSize: "1rem",
-                    fontWeight: "600",
-                    border: "none",
-                    borderRadius: "8px",
+                    backgroundColor: "#fff",
+                    color: "#666",
+                    padding: "0.5rem 1.25rem",
+                    fontSize: "0.875rem",
+                    fontWeight: "500",
+                    border: "1px solid #d0d0d0",
+                    borderRadius: "6px",
                     cursor: "pointer",
-                    transition: "background-color 0.2s",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = "#cc0000";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = "#ff4444";
+                    transition: "all 0.15s ease",
                   }}
                 >
-                  End Conversation
+                  End
                 </button>
               </div>
-              <div id="daily-container" />
+              <div id="daily-container" style={{
+                borderRadius: "8px",
+                overflow: "hidden",
+              }} />
             </div>
           )}
-        </div>
-
-        {/* Instructions */}
-        <div style={{
-          marginTop: "3rem",
-          padding: "2rem",
-          backgroundColor: "#1a1a1a",
-          borderRadius: "12px",
-        }}>
-          <h2 style={{
-            fontSize: "1.5rem",
-            fontWeight: "600",
-            marginBottom: "1rem",
-          }}>
-            How to Use
-          </h2>
-          <ol style={{
-            lineHeight: "1.8",
-            color: "#ccc",
-            paddingLeft: "1.5rem",
-          }}>
-            <li>Click "Start Conversation" to create a new session with the AI digital human</li>
-            <li>Allow microphone and camera access when prompted</li>
-            <li>Speak naturally - the AI will listen and respond in real-time</li>
-            <li>Click "End Conversation" when you're done</li>
-          </ol>
-
-          <div style={{ marginTop: "2rem", paddingTop: "2rem", borderTop: "1px solid #333" }}>
-            <h3 style={{ fontSize: "1.125rem", fontWeight: "600", marginBottom: "0.5rem" }}>
-              Requirements
-            </h3>
-            <ul style={{ lineHeight: "1.8", color: "#ccc", paddingLeft: "1.5rem" }}>
-              <li>TAVUS_API_KEY must be set in your .env file</li>
-              <li>Supported browsers: Chrome, Firefox, Safari (latest versions)</li>
-              <li>Stable internet connection required for best experience</li>
-            </ul>
-          </div>
         </div>
       </div>
     </div>
