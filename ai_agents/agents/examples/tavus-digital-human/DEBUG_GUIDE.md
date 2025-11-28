@@ -1,141 +1,141 @@
-# Tavus Digital Human - 调试指南
+# Tavus Digital Human - Debug Guide
 
-## 快速测试步骤
+## Quick Testing Steps
 
-### 1. 在容器中重新安装和构建
+### 1. Reinstall and Rebuild in Container
 
 ```bash
-# 进入容器
+# Enter container
 docker exec -it ten_agent_dev bash
 
-# 进入项目目录
+# Navigate to project directory
 cd /app/agents/examples/tavus-digital-human
 
-# 清理旧的构建
+# Clean old build
 rm -rf tenapp/bin tenapp/manifest-lock.json
 
-# 重新安装（现在包含显式构建步骤）
+# Reinstall (now includes explicit build step)
 task install
 ```
 
-**期望输出**:
-- 看到 "Build GO app" 或 go build 成功信息
-- `tenapp/bin/main` 文件存在且大小约 2.4M
+**Expected Output**:
+- See "Build GO app" or go build success message
+- `tenapp/bin/main` file exists with size ~2.4M
 
-**验证**:
+**Verification**:
 ```bash
 ls -lh tenapp/bin/main
-# 应该看到: -rwxr-xr-x 1 root root 2.4M ... tenapp/bin/main
+# Should see: -rwxr-xr-x 1 root root 2.4M ... tenapp/bin/main
 ```
 
-### 2. 启动服务
+### 2. Start Services
 
 ```bash
 cd /app/agents/examples/tavus-digital-human
 task run
 ```
 
-**期望输出**:
-- API server 启动在 8080 端口
-- Frontend 启动在 3000 端口
-- Graph Designer 启动在 49483 端口
+**Expected Output**:
+- API server starts on port 8080
+- Frontend starts on port 3000
+- Graph Designer starts on port 49483
 
-**不应该看到的错误**:
+**Should NOT see these errors**:
 - ❌ `Error: Script 'start' exited with non-zero code: Some(127)`
 - ❌ `bash: bin/main: No such file or directory`
 
-### 3. 测试前端
+### 3. Test Frontend
 
-打开浏览器访问: http://localhost:3000/tavus
+Open browser and visit: http://localhost:3000
 
-**检查清单**:
-- [ ] 页面加载成功
-- [ ] 看到 "Tavus Digital Human" 标题
-- [ ] 看到 "Start Conversation" 按钮
-- [ ] 打开开发者工具，Console 没有错误
+**Checklist**:
+- [ ] Page loads successfully
+- [ ] See "Tavus Digital Human" title
+- [ ] See "Start Conversation" button
+- [ ] Open developer tools, no errors in Console
 
-### 4. 测试创建 Conversation
+### 4. Test Creating Conversation
 
-点击 "Start Conversation" 按钮
+Click "Start Conversation" button
 
-**在浏览器 Network 面板中检查**:
-- [ ] 看到 POST 请求到 `/api/tavus/conversation/create`
-- [ ] 响应状态码 200
-- [ ] 响应包含 `conversation_url` 字段
+**Check in Browser Network Panel**:
+- [ ] See POST request to `/api/tavus/conversation/create`
+- [ ] Response status 200
+- [ ] Response contains `conversation_url` field
 
-**在浏览器 Console 中检查**:
-- [ ] 看到 "Conversation created:" 日志
-- [ ] Daily iframe 开始加载
-- [ ] 没有 WebRTC 或 Daily.co 错误
+**Check in Browser Console**:
+- [ ] See "Conversation created:" log
+- [ ] Daily iframe starts loading
+- [ ] No WebRTC or Daily.co errors
 
-### 5. 测试视频显示
+### 5. Test Video Display
 
-**检查清单**:
-- [ ] 看到 Daily.co 视频界面
-- [ ] 可以看到 Tavus 数字人视频
-- [ ] 可以听到音频
-- [ ] 可以说话并与数字人交互
+**Checklist**:
+- [ ] See Daily.co video interface
+- [ ] Can see Tavus digital human video
+- [ ] Can hear audio
+- [ ] Can speak and interact with digital human
 
-## 常见问题排查
+## Common Issues Troubleshooting
 
-### 问题 1: libten_runtime_go.so 找不到 或 rwlock 线程锁断言失败
+### Issue 1: libten_runtime_go.so not found OR rwlock thread lock assertion failed
 
-**症状 1 - 库找不到**:
+**Symptom 1 - Library not found**:
 ```
 bin/main: error while loading shared libraries: libten_runtime_go.so: cannot open shared object file: No such file or directory
 Error: Script 'start' exited with non-zero code: Some(127)
 ```
 
-**症状 2 - 线程锁断言 (QEMU 特定)**:
+**Symptom 2 - Thread lock assertion (QEMU specific)**:
 ```
 17088(17089) ten_rwlock_lock@rwlock.c:218 Invalid argument.
 qemu: uncaught target signal 6 (Aborted) - core dumped
 ```
 
-**根本原因**:
-- **症状 1**: Go 二进制需要在运行时找到 libten_runtime_go.so 库
-- **症状 2**: TEN Framework 使用自定义的 pflock（phase-fair lock）实现，基于自旋锁和原子操作。在 QEMU 模拟环境中，这些低级操作可能导致内存访问错误或竞态条件
+**Root Cause**:
+- **Symptom 1**: Go binary needs to find libten_runtime_go.so library at runtime
+- **Symptom 2**: TEN Framework uses custom pflock (phase-fair lock) implementation based on spinlocks and atomic operations. In QEMU emulation environment, these low-level operations may cause memory access errors or race conditions
 
-**解决方案**:
+**Solution**:
 
-#### 对于症状 1（库找不到）:
-1. 确保 LD_LIBRARY_PATH 包含库路径：
+#### For Symptom 1 (library not found):
+1. Ensure LD_LIBRARY_PATH includes library path:
 ```bash
 export LD_LIBRARY_PATH=$(pwd)/ten_packages/system/ten_runtime_go/lib:$LD_LIBRARY_PATH
 ```
 
-2. 或在 start.sh 中已配置（最新版本）
+2. Or it's already configured in start.sh (latest version)
 
-#### 对于症状 2（rwlock 断言 - QEMU 环境）:
+#### For Symptom 2 (rwlock assertion - QEMU environment):
 
-**使用原生 Linux 而不是 QEMU**:
-Docker Desktop on macOS 使用 QEMU 进行 x86-64 Linux 模拟。TEN Framework 的 pflock 实现不兼容 QEMU。
+**Use native Linux instead of QEMU**:
+Docker Desktop on macOS uses QEMU for x86-64 Linux emulation. TEN Framework's pflock implementation is incompatible with QEMU.
 
-**推荐**:
-1. 使用 **Colima** 或 **OrbStack** 替代 Docker Desktop（使用原生虚拟化而非 QEMU）
-2. 或在物理 Linux 机器上运行
-3. 或在 WSL2（Windows）上运行，它使用 Hyper-V 而非 QEMU
+**Recommended**:
+1. Use **Colima** or **OrbStack** instead of Docker Desktop (uses native virtualization instead of QEMU)
+2. Or run on physical Linux machine
+3. Or run on WSL2 (Windows), which uses Hyper-V instead of QEMU
 
-**Colima 安装** (macOS):
+**Colima Installation** (macOS):
 ```bash
 brew install colima
 colima start --arch x86_64 --memory 8 --cpu 4
-# 配置 Docker 使用 Colima
+# Configure Docker to use Colima
 export DOCKER_HOST=unix://$HOME/.colima/docker.sock
 ```
 
-**如果必须使用 QEMU**:
-可以尝试使用 `TEN_RW_NATIVE` 而非 `TEN_RW_PHASE_FAIR` 来切换使用 pthread_rwlock，但这需要重新编译 TEN Framework 核心库
+**If you must use QEMU**:
+You can try using `TEN_RW_NATIVE` instead of `TEN_RW_PHASE_FAIR` to switch to using pthread_rwlock, but this requires recompiling the TEN Framework core library
 
-### 问题 2: bin/main 不存在
+### Issue 2: bin/main does not exist
 
-**症状**:
+**Symptom**:
 ```
 Error: Script 'start' exited with non-zero code: Some(127)
 bash: bin/main: No such file or directory
 ```
 
-**解决方案**:
+**Solution**:
 ```bash
 cd /app/agents/examples/tavus-digital-human/tenapp
 export CGO_ENABLED=1
@@ -145,63 +145,63 @@ mkdir -p bin
 go build -o bin/main -v .
 ```
 
-### 问题 3: TAVUS_API_KEY 未设置
+### Issue 3: TAVUS_API_KEY not set
 
-**症状**:
+**Symptom**:
 ```
 call tavus api failed: missing API key
 ```
 
-**解决方案**:
+**Solution**:
 ```bash
-# 检查 .env 文件
+# Check .env file
 cat /app/.env | grep TAVUS_API_KEY
 
-# 如果没有，添加:
+# If not found, add:
 echo "TAVUS_API_KEY=your_key_here" >> /app/.env
 ```
 
-### 问题 4: Python 依赖缺失
+### Issue 4: Python dependencies missing
 
-**症状**:
+**Symptom**:
 ```
 ModuleNotFoundError: No module named 'httpx'
 ```
 
-**解决方案**:
+**Solution**:
 ```bash
 cd /app/agents/examples/tavus-digital-human/tenapp
 pip install httpx>=0.27.0
 ```
 
-### 问题 5: Frontend 页面 404
+### Issue 5: Frontend page 404
 
-**症状**:
-浏览器访问 http://localhost:3000/tavus 显示 404
+**Symptom**:
+Browser accessing http://localhost:3000 shows 404
 
-**解决方案**:
-检查 playground 是否在运行:
+**Solution**:
+Check if playground is running:
 ```bash
-# 在容器中
+# In container
 cd /app/playground
 bun run dev
 ```
 
-### 问题 6: Tavus API 调用失败
+### Issue 6: Tavus API call failed
 
-**症状**:
+**Symptom**:
 ```
 call tavus api failed: status 401
 ```
 
-**可能原因**:
-1. TAVUS_API_KEY 无效
-2. TAVUS_API_KEY 过期
-3. Tavus 账号余额不足
+**Possible Causes**:
+1. TAVUS_API_KEY is invalid
+2. TAVUS_API_KEY has expired
+3. Tavus account has insufficient balance
 
-**调试**:
+**Debug**:
 ```bash
-# 直接测试 Tavus API
+# Test Tavus API directly
 curl -X POST https://tavusapi.com/v2/conversations \
   -H "x-api-key: $TAVUS_API_KEY" \
   -H "Content-Type: application/json" \
@@ -211,24 +211,24 @@ curl -X POST https://tavusapi.com/v2/conversations \
   }'
 ```
 
-## 查看日志
+## View Logs
 
-### TEN App 日志
+### TEN App Logs
 ```bash
-# 在容器中
+# In container
 tail -f /tmp/ten_agent/app-*.log
 ```
 
-### API Server 日志
-API server 的日志直接输出到终端（在运行 `task run` 的窗口）
+### API Server Logs
+API server logs output directly to terminal (in the window running `task run`)
 
-### Frontend 日志
-- 浏览器开发者工具 Console 面板
-- 终端中 bun run dev 的输出
+### Frontend Logs
+- Browser developer tools Console panel
+- Terminal output from bun run dev
 
-## 手动测试 API 端点
+## Manual API Endpoint Testing
 
-### 测试创建 Conversation
+### Test Create Conversation
 ```bash
 curl -X POST http://localhost:8080/api/tavus/conversation/create \
   -H "Content-Type: application/json" \
@@ -237,7 +237,7 @@ curl -X POST http://localhost:8080/api/tavus/conversation/create \
   }'
 ```
 
-**期望响应**:
+**Expected Response**:
 ```json
 {
   "code": "0",
@@ -249,13 +249,13 @@ curl -X POST http://localhost:8080/api/tavus/conversation/create \
 }
 ```
 
-## 验证 Extension 加载
+## Verify Extension Loading
 
 ```bash
-# 在容器中
+# In container
 cd /app/agents/examples/tavus-digital-human/tenapp
 
-# 测试 Python import
+# Test Python import
 python3 -c "
 import sys
 sys.path.insert(0, './ten_packages/extension/tavus_conversation_manager_python')
@@ -264,97 +264,97 @@ print('✅ Extension import successful')
 "
 ```
 
-## 检查文件权限
+## Check File Permissions
 
 ```bash
-# 在容器中
+# In container
 cd /app/agents/examples/tavus-digital-human/tenapp
 
-# 检查 start.sh 可执行权限
+# Check start.sh executable permission
 ls -l scripts/start.sh
-# 应该显示: -rwxr-xr-x
+# Should show: -rwxr-xr-x
 
-# 如果没有执行权限，添加:
+# If no execute permission, add:
 chmod +x scripts/start.sh
 
-# 检查 bin/main 可执行权限
+# Check bin/main executable permission
 ls -l bin/main
-# 应该显示: -rwxr-xr-x
+# Should show: -rwxr-xr-x
 
-# 如果没有执行权限，添加:
+# If no execute permission, add:
 chmod +x bin/main
 ```
 
-## 完整的清理和重建
+## Complete Clean and Rebuild
 
-如果遇到各种奇怪的问题，尝试完全清理并重建:
+If you encounter various strange issues, try complete cleanup and rebuild:
 
 ```bash
-# 在容器中
+# In container
 cd /app/agents/examples/tavus-digital-human
 
-# 清理所有构建产物
+# Clean all build artifacts
 rm -rf tenapp/bin
 rm -rf tenapp/manifest-lock.json
 rm -rf tenapp/ten_packages
 rm -rf tenapp/.release
 
-# 清理 API server
+# Clean API server
 rm -rf ../../../server/bin
 
-# 清理 frontend node_modules (可选，慢)
+# Clean frontend node_modules (optional, slow)
 # rm -rf ../../../playground/node_modules
 
-# 重新安装
+# Reinstall
 task install
 
-# 重新运行
+# Rerun
 task run
 ```
 
-## 与 voice-assistant 对比测试
+## Compare with voice-assistant
 
-如果 tavus 不工作，可以先确认 voice-assistant 是否工作:
+If tavus doesn't work, first confirm if voice-assistant works:
 
 ```bash
-# 在容器中
+# In container
 cd /app/agents/examples/voice-assistant
 
 task install
 task run
 ```
 
-访问 http://localhost:3000
+Visit http://localhost:3000
 
-如果 voice-assistant 工作但 tavus 不工作，说明是 tavus 特定的问题。
-如果两者都不工作，说明是环境配置问题。
+If voice-assistant works but tavus doesn't, it's a tavus-specific issue.
+If neither works, it's an environment configuration issue.
 
-## 下一步调试
+## Next Debugging Steps
 
-如果按照以上步骤仍然无法工作，请提供:
+If following the above steps still doesn't work, please provide:
 
-1. **完整的错误日志**:
+1. **Complete error logs**:
    ```bash
-   # 保存日志到文件
+   # Save logs to file
    cd /app/agents/examples/tavus-digital-human
    task run > /tmp/tavus-debug.log 2>&1
    ```
 
-2. **TEN app 日志**:
+2. **TEN app logs**:
    ```bash
    cat /tmp/ten_agent/app-*.log
    ```
 
-3. **文件存在性检查**:
+3. **File existence check**:
    ```bash
    ls -laR /app/agents/examples/tavus-digital-human/tenapp/ | grep -E '(main.go|bin/main|start.sh)'
    ```
 
-4. **环境变量检查**:
+4. **Environment variables check**:
    ```bash
    env | grep -E '(TAVUS|TEN|GO)'
    ```
 
-5. **浏览器 Console 错误**:
-   - F12 打开开发者工具
-   - 截图或复制所有红色错误信息
+5. **Browser Console errors**:
+   - Press F12 to open developer tools
+   - Screenshot or copy all red error messages
