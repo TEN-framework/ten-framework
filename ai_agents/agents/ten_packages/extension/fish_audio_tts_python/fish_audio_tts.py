@@ -19,6 +19,12 @@ class FishAudioTTSClient:
     def __init__(self, config: FishAudioTTSConfig, ten_env: AsyncTenEnv):
         self.config = config
         self.ten_env = ten_env
+        if self.config.base_url.strip() != "":
+            self.client = AsyncWebSocketSession(
+                config.api_key, base_url=self.config.base_url
+            )
+        else:
+            self.client = AsyncWebSocketSession(config.api_key)
         self.client = AsyncWebSocketSession(config.api_key)
         self._is_cancelled = False
 

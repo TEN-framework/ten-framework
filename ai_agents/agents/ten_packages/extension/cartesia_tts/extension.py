@@ -43,6 +43,7 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
         self.sent_ts: datetime | None = None
         self.current_request_finished: bool = False
         self.total_audio_bytes: int = 0
+        self._is_stopped: bool = False
         self.recorder_map: dict[str, PCMWriter] = (
             {}
         )  # Store PCMWriter instances for different request_ids
@@ -239,12 +240,17 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
             )
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
+        # Set stopped flag first to prevent new requests
+        self._is_stopped = True
+        ten_env.log_debug("Extension stopping, rejecting new requests")
+
         if self.client:
             await self.client.stop()
             self.client = None
 
         # Clean up all PCMWriters
-        for request_id, recorder in self.recorder_map.items():
+        # Create a list copy to avoid "dictionary changed size during iteration" error
+        for request_id, recorder in list(self.recorder_map.items()):
             try:
                 await recorder.flush()
                 ten_env.log_debug(
@@ -280,6 +286,12 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                         request_id=self.current_request_id,
                         request_event_interval_ms=request_event_interval,
                         request_total_audio_duration_ms=duration_ms,
+                        reason=TTSAudioEndReason.INTERRUPTED,
+                    )
+                    if self.current_request_id in self.recorder_map:
+                        await self.recorder_map[self.current_request_id].flush()
+                    await self.finish_request(
+                        request_id=self.current_request_id,
                         reason=TTSAudioEndReason.INTERRUPTED,
                     )
         else:
@@ -379,6 +391,12 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
 
             prepared_text = self._apply_ssml_tags_safe(t.text, t.metadata)
 
+            if self._is_stopped:
+                self.ten_env.log_debug(
+                    f"TTS is stopped, skipping request_id: {t.request_id}"
+                )
+                return
+
             if prepared_text.strip() != "":
                 # Get audio stream from Cartesia TTS
                 self.ten_env.log_debug(
@@ -439,6 +457,14 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                                     request_event_interval_ms=request_event_interval,
                                     request_total_audio_duration_ms=duration_ms,
                                 )
+                                if self.current_request_id in self.recorder_map:
+                                    await self.recorder_map[
+                                        self.current_request_id
+                                    ].flush()
+                                await self.finish_request(
+                                    request_id=self.current_request_id,
+                                    reason=TTSAudioEndReason.REQUEST_END,
+                                )
                                 self.sent_ts = None
                                 self.ten_env.log_debug(
                                     f"Sent TTS audio end event, interval: {request_event_interval}ms, duration: {duration_ms}ms"
@@ -482,9 +508,17 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                                 request_event_interval_ms=request_event_interval,
                                 request_total_audio_duration_ms=duration_ms,
                             )
+                            if self.current_request_id in self.recorder_map:
+                                await self.recorder_map[
+                                    self.current_request_id
+                                ].flush()
                             self.sent_ts = None
                             self.ten_env.log_debug(
                                 f"Sent TTS audio end event, interval: {request_event_interval}ms, duration: {duration_ms}ms"
+                            )
+                            await self.finish_request(
+                                request_id=self.current_request_id,
+                                reason=TTSAudioEndReason.REQUEST_END,
                             )
                         break
                     elif event_status == EVENT_TTS_ERROR:
@@ -502,6 +536,22 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                                 request_event_interval_ms=request_event_interval,
                                 request_total_audio_duration_ms=duration_ms,
                             )
+                            await self.finish_request(
+                                request_id=self.current_request_id,
+                                reason=TTSAudioEndReason.ERROR,
+                                error=ModuleError(
+                                    message=data_msg,
+                                    module=ModuleType.TTS,
+                                    code=ModuleErrorCode.NON_FATAL_ERROR,
+                                    vendor_info=ModuleErrorVendorInfo(
+                                        vendor=self.vendor()
+                                    ),
+                                ),
+                            )
+                            if self.current_request_id in self.recorder_map:
+                                await self.recorder_map[
+                                    self.current_request_id
+                                ].flush()
                             self.sent_ts = None
                             self.ten_env.log_debug(
                                 f"Sent TTS audio end event, interval: {request_event_interval}ms, duration: {duration_ms}ms"
@@ -518,6 +568,12 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                     request_id=self.current_request_id,
                     request_event_interval_ms=request_event_interval,
                     request_total_audio_duration_ms=duration_ms,
+                )
+                if self.current_request_id in self.recorder_map:
+                    await self.recorder_map[self.current_request_id].flush()
+                await self.finish_request(
+                    request_id=self.current_request_id,
+                    reason=TTSAudioEndReason.REQUEST_END,
                 )
                 self.sent_ts = None
                 self.ten_env.log_debug(
@@ -543,9 +599,37 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
                         ),
                     ),
                 )
+                await self.finish_request(
+                    request_id=self.current_request_id,
+                    reason=TTSAudioEndReason.ERROR,
+                    error=ModuleError(
+                        message=e.body,
+                        module=ModuleType.TTS,
+                        code=ModuleErrorCode.FATAL_ERROR,
+                        vendor_info=ModuleErrorVendorInfo(
+                            vendor=self.vendor(),
+                            code=str(e.status_code),
+                            message=e.body,
+                        ),
+                    ),
+                )
             else:
                 await self.send_tts_error(
                     request_id=self.current_request_id,
+                    error=ModuleError(
+                        message=e.body,
+                        module=ModuleType.TTS,
+                        code=ModuleErrorCode.NON_FATAL_ERROR,
+                        vendor_info=ModuleErrorVendorInfo(
+                            vendor=self.vendor(),
+                            code=str(e.status_code),
+                            message=e.body,
+                        ),
+                    ),
+                )
+                await self.finish_request(
+                    request_id=self.current_request_id,
+                    reason=TTSAudioEndReason.ERROR,
                     error=ModuleError(
                         message=e.body,
                         module=ModuleType.TTS,
@@ -564,6 +648,16 @@ class CartesiaTTSExtension(AsyncTTS2BaseExtension):
             )
             await self.send_tts_error(
                 request_id=self.current_request_id,
+                error=ModuleError(
+                    message=str(e),
+                    module=ModuleType.TTS,
+                    code=ModuleErrorCode.NON_FATAL_ERROR,
+                    vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
+                ),
+            )
+            await self.finish_request(
+                request_id=self.current_request_id,
+                reason=TTSAudioEndReason.ERROR,
                 error=ModuleError(
                     message=str(e),
                     module=ModuleType.TTS,

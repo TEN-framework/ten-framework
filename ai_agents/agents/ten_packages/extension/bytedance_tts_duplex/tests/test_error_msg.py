@@ -115,6 +115,7 @@ class ExtensionTesterInvalidParams(ExtensionTester):
         tts_input = TTSTextInput(
             request_id="test-request-for-invalid-params",
             text="This text will trigger the mocked error.",
+            text_input_end=True,
         )
         data = Data.create("tts_text_input")
         data.set_property_from_json(None, tts_input.model_dump_json())
@@ -172,7 +173,15 @@ def test_invalid_params_fatal_error(MockBytedanceV3Client):
     mock_instance.send_text.side_effect = mock_send_text_with_error
 
     # Mock the client constructor to properly handle the response_msgs queue
-    def mock_client_init(config, ten_env, vendor, response_msgs):
+    def mock_client_init(
+        config,
+        ten_env,
+        vendor,
+        response_msgs,
+        on_error=None,
+        on_usage_characters=None,
+        on_fatal_failure=None,
+    ):
         # Store the real queue passed by the extension
         mock_instance.response_msgs = response_msgs
         return mock_instance

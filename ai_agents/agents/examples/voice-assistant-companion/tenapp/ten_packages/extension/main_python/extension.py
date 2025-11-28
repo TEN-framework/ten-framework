@@ -93,7 +93,9 @@ class MainControlExtension(AsyncExtension):
 
         # Save conversation to Memu before stopping (insurance in case UserLeftEvent is missed)
         if self.conversation_history and self.memu_api_key:
-            ten_env.log_info("[MainControlExtension] on_stop: Saving conversation to Memu")
+            ten_env.log_info(
+                "[MainControlExtension] on_stop: Saving conversation to Memu"
+            )
             await self._save_memory_to_memu()
 
         if self.agent:
@@ -121,50 +123,88 @@ class MainControlExtension(AsyncExtension):
 
                     case UserLeftEvent():
                         self._rtc_user_count -= 1
-                        self.ten_env.log_info(f"[MainControlExtension] User left, rtc_user_count={self._rtc_user_count}")
-                        self.ten_env.log_info(f"[MainControlExtension] Conversation history length: {len(self.conversation_history)}")
-                        self.ten_env.log_info(f"[MainControlExtension] Memu API key set: {bool(self.memu_api_key)}")
+                        self.ten_env.log_info(
+                            f"[MainControlExtension] User left, rtc_user_count={self._rtc_user_count}"
+                        )
+                        self.ten_env.log_info(
+                            f"[MainControlExtension] Conversation history length: {len(self.conversation_history)}"
+                        )
+                        self.ten_env.log_info(
+                            f"[MainControlExtension] Memu API key set: {bool(self.memu_api_key)}"
+                        )
 
                         # Save conversation to Memu when user leaves
                         if self.conversation_history and self.memu_api_key:
-                            self.ten_env.log_info("[MainControlExtension] Triggering Memu save...")
+                            self.ten_env.log_info(
+                                "[MainControlExtension] Triggering Memu save..."
+                            )
                             await self._save_memory_to_memu()
                         else:
                             if not self.conversation_history:
-                                self.ten_env.log_warn("[MainControlExtension] No conversation history to save")
+                                self.ten_env.log_warn(
+                                    "[MainControlExtension] No conversation history to save"
+                                )
                             if not self.memu_api_key:
-                                self.ten_env.log_warn("[MainControlExtension] Memu API key not set")
+                                self.ten_env.log_warn(
+                                    "[MainControlExtension] Memu API key not set"
+                                )
 
                     case SaveMemoryEvent():
-                        self.ten_env.log_info("[MainControlExtension] Received save_memory command")
+                        self.ten_env.log_info(
+                            "[MainControlExtension] Received save_memory command"
+                        )
                         if self.conversation_history and self.memu_api_key:
-                            self.ten_env.log_info("[MainControlExtension] Saving conversation to Memu...")
+                            self.ten_env.log_info(
+                                "[MainControlExtension] Saving conversation to Memu..."
+                            )
                             await self._save_memory_to_memu()
                         else:
                             if not self.conversation_history:
-                                self.ten_env.log_info("[MainControlExtension] No conversation history to save")
+                                self.ten_env.log_info(
+                                    "[MainControlExtension] No conversation history to save"
+                                )
                             if not self.memu_api_key:
-                                self.ten_env.log_warn("[MainControlExtension] Memu API key not set")
+                                self.ten_env.log_warn(
+                                    "[MainControlExtension] Memu API key not set"
+                                )
 
                     case HTTPRequestEvent():
-                        self.ten_env.log_info(f"[MainControlExtension] Received HTTP request: {event.body}")
+                        self.ten_env.log_info(
+                            f"[MainControlExtension] Received HTTP request: {event.body}"
+                        )
                         # Handle different HTTP commands based on body content
                         if "name" in event.body:
                             cmd_name = event.body.get("name")
                             if cmd_name == "save_memory":
-                                self.ten_env.log_info("[MainControlExtension] HTTP request to save memory")
-                                if self.conversation_history and self.memu_api_key:
+                                self.ten_env.log_info(
+                                    "[MainControlExtension] HTTP request to save memory"
+                                )
+                                if (
+                                    self.conversation_history
+                                    and self.memu_api_key
+                                ):
                                     await self._save_memory_to_memu()
                                 else:
                                     if not self.conversation_history:
-                                        self.ten_env.log_info("[MainControlExtension] No conversation history to save")
+                                        self.ten_env.log_info(
+                                            "[MainControlExtension] No conversation history to save"
+                                        )
                                     if not self.memu_api_key:
-                                        self.ten_env.log_warn("[MainControlExtension] Memu API key not set")
-                            elif cmd_name == "message" and "payload" in event.body:
+                                        self.ten_env.log_warn(
+                                            "[MainControlExtension] Memu API key not set"
+                                        )
+                            elif (
+                                cmd_name == "message"
+                                and "payload" in event.body
+                            ):
                                 # Handle text message from HTTP
-                                text = event.body.get("payload", {}).get("text", "")
+                                text = event.body.get("payload", {}).get(
+                                    "text", ""
+                                )
                                 if text:
-                                    self.ten_env.log_info(f"[MainControlExtension] HTTP message: {text}")
+                                    self.ten_env.log_info(
+                                        f"[MainControlExtension] HTTP message: {text}"
+                                    )
                                     # You can process the text message here if needed
 
                     case ToolRegisterEvent():
@@ -188,15 +228,18 @@ class MainControlExtension(AsyncExtension):
                             continue
 
                         # Print user input
-                        self.ten_env.log_info(f"[USER] {event.content} (final={event.final})")
+                        self.ten_env.log_info(
+                            f"[USER] {event.content} (final={event.final})"
+                        )
 
                         # Record user message in conversation history
                         if event.final:
-                            self.ten_env.log_info(f"[MainControlExtension] Recording user message: {event.content}")
-                            self.conversation_history.append({
-                                "role": "user",
-                                "content": event.content
-                            })
+                            self.ten_env.log_info(
+                                f"[MainControlExtension] Recording user message: {event.content}"
+                            )
+                            self.conversation_history.append(
+                                {"role": "user", "content": event.content}
+                            )
 
                         await self._send_transcript(
                             role="user",
@@ -208,15 +251,18 @@ class MainControlExtension(AsyncExtension):
                     case OutputTranscriptEvent():
                         # Handle LLM response events
                         # Print assistant response
-                        self.ten_env.log_info(f"[ASSISTANT] {event.content} (final={event.is_final})")
+                        self.ten_env.log_info(
+                            f"[ASSISTANT] {event.content} (final={event.is_final})"
+                        )
 
                         # Record assistant message in conversation history
                         if event.is_final:
-                            self.ten_env.log_info(f"[MainControlExtension] Recording assistant message: {event.content}")
-                            self.conversation_history.append({
-                                "role": "assistant",
-                                "content": event.content
-                            })
+                            self.ten_env.log_info(
+                                f"[MainControlExtension] Recording assistant message: {event.content}"
+                            )
+                            self.conversation_history.append(
+                                {"role": "assistant", "content": event.content}
+                            )
 
                         await self._send_transcript(
                             role="assistant",
@@ -257,19 +303,29 @@ class MainControlExtension(AsyncExtension):
         ):
             # Retrieve memories from Memu
             memory_context = await self._retrieve_memories_from_memu()
-            self.ten_env.log_info(f"[MainControlExtension] Memory context retrieved: {memory_context[:200] if memory_context else 'None'}...")
+            self.ten_env.log_info(
+                f"[MainControlExtension] Memory context retrieved: {memory_context[:200] if memory_context else 'None'}..."
+            )
 
             # Prepare greeting message with memory context if available
             greeting_message = f"say {self.config.greeting} to me"
 
             if memory_context:
-                self.ten_env.log_info("[MainControlExtension] Including memory context in greeting")
+                self.ten_env.log_info(
+                    "[MainControlExtension] Including memory context in greeting"
+                )
                 # Prepend memory context to the greeting message
                 # This ensures the AI sees the context before responding
-                greeting_message = f"{memory_context}\n\nNow, {greeting_message}"
-                self.ten_env.log_info(f"[MainControlExtension] Full greeting with context: {greeting_message[:300]}...")
+                greeting_message = (
+                    f"{memory_context}\n\nNow, {greeting_message}"
+                )
+                self.ten_env.log_info(
+                    f"[MainControlExtension] Full greeting with context: {greeting_message[:300]}..."
+                )
             else:
-                self.ten_env.log_info("[MainControlExtension] No memory context available from Memu")
+                self.ten_env.log_info(
+                    "[MainControlExtension] No memory context available from Memu"
+                )
 
             # Send greeting with memory context embedded
             await self._send_message_item(
@@ -364,22 +420,28 @@ class MainControlExtension(AsyncExtension):
         Called when user leaves the conversation.
         """
         if not self.memu_api_key:
-            self.ten_env.log_info("[MainControlExtension] Memu API key not set, skipping memory save")
+            self.ten_env.log_info(
+                "[MainControlExtension] Memu API key not set, skipping memory save"
+            )
             return
 
         if not self.conversation_history:
-            self.ten_env.log_info("[MainControlExtension] No conversation history to save")
+            self.ten_env.log_info(
+                "[MainControlExtension] No conversation history to save"
+            )
             return
 
         try:
-            self.ten_env.log_info(f"[MainControlExtension] Saving {len(self.conversation_history)} messages to Memu")
+            self.ten_env.log_info(
+                f"[MainControlExtension] Saving {len(self.conversation_history)} messages to Memu"
+            )
 
             async with aiohttp.ClientSession() as session:
                 # Correct Memu API endpoint based on official documentation
                 url = f"{self.memu_base_url}/api/v1/memory/memorize"
                 headers = {
                     "Authorization": f"Bearer {self.memu_api_key}",
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
                 }
 
                 # Format according to Memu API documentation
@@ -388,66 +450,94 @@ class MainControlExtension(AsyncExtension):
                     "user_id": self.user_id,
                     "user_name": "User",
                     "agent_id": self.agent_id,
-                    "agent_name": "AI Companion"
+                    "agent_name": "AI Companion",
                 }
 
-                self.ten_env.log_info(f"[MainControlExtension] Calling Memu API: {url}")
+                self.ten_env.log_info(
+                    f"[MainControlExtension] Calling Memu API: {url}"
+                )
 
-                async with session.post(url, json=payload, headers=headers) as response:
+                async with session.post(
+                    url, json=payload, headers=headers
+                ) as response:
                     response_text = await response.text()
                     if response.status == 200:
                         result = await response.json() if response_text else {}
-                        task_id = result.get('task_id', 'N/A')
-                        status = result.get('status', 'N/A')
-                        self.ten_env.log_info(f"[MainControlExtension] Successfully submitted to Memu - Task ID: {task_id}, Status: {status}")
+                        task_id = result.get("task_id", "N/A")
+                        status = result.get("status", "N/A")
+                        self.ten_env.log_info(
+                            f"[MainControlExtension] Successfully submitted to Memu - Task ID: {task_id}, Status: {status}"
+                        )
                         # Clear conversation history after successful save
                         self.conversation_history = []
                     else:
-                        self.ten_env.log_error(f"[MainControlExtension] Failed to save to Memu: {response.status} - {response_text}")
+                        self.ten_env.log_error(
+                            f"[MainControlExtension] Failed to save to Memu: {response.status} - {response_text}"
+                        )
 
         except Exception as e:
-            self.ten_env.log_error(f"[MainControlExtension] Error saving to Memu: {str(e)}")
+            self.ten_env.log_error(
+                f"[MainControlExtension] Error saving to Memu: {str(e)}"
+            )
 
     async def _retrieve_memories_from_memu(self):
         """
         Retrieve user memories from Memu to provide context.
         Returns a formatted string of user memories.
         """
-        self.ten_env.log_info("[MainControlExtension] Starting memory retrieval from Memu")
+        self.ten_env.log_info(
+            "[MainControlExtension] Starting memory retrieval from Memu"
+        )
 
         if not self.memu_api_key:
-            self.ten_env.log_warn("[MainControlExtension] Memu API key not set, skipping retrieval")
+            self.ten_env.log_warn(
+                "[MainControlExtension] Memu API key not set, skipping retrieval"
+            )
             return ""
 
         try:
-            self.ten_env.log_info(f"[MainControlExtension] Calling Memu API for user_id={self.user_id}, agent_id={self.agent_id}")
+            self.ten_env.log_info(
+                f"[MainControlExtension] Calling Memu API for user_id={self.user_id}, agent_id={self.agent_id}"
+            )
 
             async with aiohttp.ClientSession() as session:
                 url = f"{self.memu_base_url}/api/v1/memory/retrieve/default-categories"
                 headers = {
                     "Authorization": f"Bearer {self.memu_api_key}",
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
                 }
                 payload = {
                     "user_id": self.user_id,
                     "agent_id": self.agent_id,
-                    "want_memory_items": False  # Get summaries
+                    "want_memory_items": False,  # Get summaries
                 }
 
-                self.ten_env.log_info(f"[MainControlExtension] Memu API URL: {url}")
-                self.ten_env.log_info(f"[MainControlExtension] Memu API payload: {payload}")
+                self.ten_env.log_info(
+                    f"[MainControlExtension] Memu API URL: {url}"
+                )
+                self.ten_env.log_info(
+                    f"[MainControlExtension] Memu API payload: {payload}"
+                )
 
-                async with session.post(url, json=payload, headers=headers) as response:
-                    self.ten_env.log_info(f"[MainControlExtension] Memu API response status: {response.status}")
+                async with session.post(
+                    url, json=payload, headers=headers
+                ) as response:
+                    self.ten_env.log_info(
+                        f"[MainControlExtension] Memu API response status: {response.status}"
+                    )
 
                     if response.status == 200:
                         result = await response.json()
-                        self.ten_env.log_info(f"[MainControlExtension] Memu API response: {result}")
+                        self.ten_env.log_info(
+                            f"[MainControlExtension] Memu API response: {result}"
+                        )
 
                         categories = result.get("categories", [])
 
                         if not categories:
-                            self.ten_env.log_info("[MainControlExtension] No memories found in Memu")
+                            self.ten_env.log_info(
+                                "[MainControlExtension] No memories found in Memu"
+                            )
                             return ""
 
                         # Format memories as context for the AI
@@ -458,32 +548,57 @@ class MainControlExtension(AsyncExtension):
                         for category in categories:
                             summary = category.get("summary", "").strip()
                             if summary:
-                                category_name = category.get("name", "").replace("_", " ").title()
-                                memory_context += f"- **{category_name}**: {summary}\n"
+                                category_name = (
+                                    category.get("name", "")
+                                    .replace("_", " ")
+                                    .title()
+                                )
+                                memory_context += (
+                                    f"- **{category_name}**: {summary}\n"
+                                )
                                 memory_count += 1
-                                self.ten_env.log_info(f"[MainControlExtension] Found memory: {category_name} = {summary}")
+                                self.ten_env.log_info(
+                                    f"[MainControlExtension] Found memory: {category_name} = {summary}"
+                                )
 
                         if memory_count == 0:
-                            self.ten_env.log_info("[MainControlExtension] No summaries found in categories")
+                            self.ten_env.log_info(
+                                "[MainControlExtension] No summaries found in categories"
+                            )
                             return ""
 
                         memory_context += "\n## Important Instructions\n"
                         memory_context += "- Use this information naturally in your conversation\n"
-                        memory_context += "- Reference past conversations when relevant\n"
+                        memory_context += (
+                            "- Reference past conversations when relevant\n"
+                        )
                         memory_context += "- Show that you remember the user\n"
-                        memory_context += "- Don't explicitly say \"I'm retrieving memories\" or \"according to my records\"\n"
-                        memory_context += "- Act as if you naturally recall these details\n"
+                        memory_context += '- Don\'t explicitly say "I\'m retrieving memories" or "according to my records"\n'
+                        memory_context += (
+                            "- Act as if you naturally recall these details\n"
+                        )
 
-                        self.ten_env.log_info(f"[MainControlExtension] Successfully retrieved {memory_count} memory categories from Memu")
-                        self.ten_env.log_info(f"[MainControlExtension] Full memory context:\n{memory_context}")
+                        self.ten_env.log_info(
+                            f"[MainControlExtension] Successfully retrieved {memory_count} memory categories from Memu"
+                        )
+                        self.ten_env.log_info(
+                            f"[MainControlExtension] Full memory context:\n{memory_context}"
+                        )
                         return memory_context
                     else:
                         response_text = await response.text()
-                        self.ten_env.log_warn(f"[MainControlExtension] Failed to retrieve from Memu: {response.status} - {response_text}")
+                        self.ten_env.log_warn(
+                            f"[MainControlExtension] Failed to retrieve from Memu: {response.status} - {response_text}"
+                        )
                         return ""
 
         except Exception as e:
-            self.ten_env.log_error(f"[MainControlExtension] Error retrieving from Memu: {str(e)}")
+            self.ten_env.log_error(
+                f"[MainControlExtension] Error retrieving from Memu: {str(e)}"
+            )
             import traceback
-            self.ten_env.log_error(f"[MainControlExtension] Traceback: {traceback.format_exc()}")
+
+            self.ten_env.log_error(
+                f"[MainControlExtension] Traceback: {traceback.format_exc()}"
+            )
             return ""

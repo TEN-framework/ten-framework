@@ -1,6 +1,6 @@
 {
     "params": {
-        "api_key": "${env:MINIMAX_TTS_API_KEY|}",
+        "key": "${env:MINIMAX_TTS_API_KEY|}",
         "group_id": "${env:MINIMAX_TTS_GROUP_ID|}",
         "model": "speech-02-turbo",
         "audio_setting": {

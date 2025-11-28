@@ -129,9 +129,7 @@ class Agent:
                 if err:
                     raise RuntimeError(f"Invalid body: {err}")
                 body = json.loads(body_json)
-                await self._emit_direct(
-                    HTTPRequestEvent(type="cmd", body=body)
-                )
+                await self._emit_direct(HTTPRequestEvent(type="cmd", body=body))
             else:
                 self.ten_env.log_warn(f"Unhandled cmd: {name}")
 

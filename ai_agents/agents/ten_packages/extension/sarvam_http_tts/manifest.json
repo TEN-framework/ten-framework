@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "sarvam_http_tts",
-  "version": "0.4.0",
+  "version": "0.5.1",
   "dependencies": [
     {
       "type": "system",
@@ -11,7 +11,7 @@
     {
       "type": "system",
       "name": "ten_ai_base",
-      "version": "=0.7.22"
+      "version": "0.7"
     }
   ],
   "package": {
@@ -63,6 +63,9 @@
               "type": "string"
             },
             "output_audio_codec": {
+              "type": "string"
+            },
+            "endpoint": {
               "type": "string"
             }
           }

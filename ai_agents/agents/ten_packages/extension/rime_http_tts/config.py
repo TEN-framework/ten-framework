@@ -23,7 +23,10 @@ class RimeTTSConfig(AsyncTTS2HttpConfig):
     def update_params(self) -> None:
         """Update configuration from params dictionary"""
         # Keys to exclude from params after processing (not passthrough params)
-        blacklist_keys = ["text"]
+        blacklist_keys = [
+            "text",
+            "endpoint",
+        ]  # endpoint is only used for endpoint
 
         self.params["audioFormat"] = "pcm"
 
