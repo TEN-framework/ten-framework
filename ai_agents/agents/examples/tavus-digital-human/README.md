@@ -70,7 +70,7 @@ A digital human conversation interface powered by Tavus AI, integrated with TEN 
 4. **Access the Demo**
 
    Open your browser:
-   - Frontend: http://localhost:3000/tavus
+   - Frontend: http://localhost:3000
    - API Server: http://localhost:8080
 
 #### Production Build
@@ -129,7 +129,7 @@ docker run -p 8080:8080 -p 3000:3000 \
 
    Open your browser and navigate to:
    ```
-   http://localhost:3000/tavus
+   http://localhost:3000
    ```
 
 Click "Start Conversation" to begin interacting with the AI digital human!
