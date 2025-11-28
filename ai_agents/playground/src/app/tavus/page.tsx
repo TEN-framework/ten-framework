@@ -22,7 +22,6 @@ export default function TavusPage() {
     setError("");
 
     try {
-      // Call TEN API to create Tavus conversation
       const response = await fetch("http://localhost:8080/api/tavus/conversation/create", {
         method: "POST",
         headers: {
@@ -44,7 +43,6 @@ export default function TavusPage() {
       const { conversation_url } = data.data;
       setConversationUrl(conversation_url);
 
-      // Create Daily.co iframe and join the conversation
       const { default: DailyIframe } = await import("@daily-co/daily-js");
       const daily = DailyIframe.createFrame({
         showLeaveButton: true,
@@ -60,7 +58,6 @@ export default function TavusPage() {
       await daily.join({ url: conversation_url });
       setCallFrame(daily);
 
-      // Listen for left-meeting event
       daily.on("left-meeting", () => {
         daily.destroy();
         setCallFrame(null);
@@ -97,7 +94,6 @@ export default function TavusPage() {
         maxWidth: "900px",
         width: "100%",
       }}>
-        {/* Header */}
         <div style={{
           textAlign: "center",
           marginBottom: "3rem"
@@ -120,7 +116,6 @@ export default function TavusPage() {
           </p>
         </div>
 
-        {/* Error Message */}
         {error && (
           <div style={{
             backgroundColor: "#fff5f5",
@@ -135,7 +130,6 @@ export default function TavusPage() {
           </div>
         )}
 
-        {/* Main Content */}
         <div style={{
           backgroundColor: "#ffffff",
           borderRadius: "12px",
