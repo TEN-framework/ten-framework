@@ -5,23 +5,16 @@ name: Update Homebrew Formula
 # then automatically updates the Homebrew formula with new version and checksums
 
 on:
-    # TODO: Uncomment this after testing
-    # workflow_run:
-    #     workflows:
-    #         - "Tman Mac x64 (Including Designer UI)"
-    #         - "Tman Mac Arm64 (Including Designer UI)"
-    #         - "Tman Linux x64 (Including Designer UI)"
-    #         - "Tman Linux ARM64 (Including Designer UI)"
-    #     types:
-    #         - completed
-    #     branches:
-    #         - main
-
-    # Temporary: For testing only
-    pull_request:
-        types: [opened, synchronize, reopened]
-        paths:
-            - ".github/workflows/update_homebrew.yml"
+    workflow_run:
+        workflows:
+            - "Tman Mac x64 (Including Designer UI)"
+            - "Tman Mac Arm64 (Including Designer UI)"
+            - "Tman Linux x64 (Including Designer UI)"
+            - "Tman Linux ARM64 (Including Designer UI)"
+        types:
+            - completed
+        branches:
+            - main
 
     # Allow manual trigger for testing or emergency updates
     workflow_dispatch:
@@ -36,15 +29,9 @@ permissions:
 
 jobs:
     update-formula:
-        # Temporary: Allow PR and manual trigger for testing
-        # TODO: Restore original condition after testing:
-        # if: >
-        #     github.event_name == 'workflow_dispatch' ||
-        #     (github.event.workflow_run.conclusion == 'success' &&
-        #      github.event.workflow_run.event == 'release')
+        # Only run on successful workflow completion or manual trigger
         if: >
             github.event_name == 'workflow_dispatch' ||
-            github.event_name == 'pull_request' ||
             (github.event.workflow_run.conclusion == 'success' &&
              github.event.workflow_run.event == 'release')
         runs-on: ubuntu-latest
@@ -54,14 +41,6 @@ jobs:
               run: |
                   if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
                     VERSION="${{ inputs.version }}"
-                  elif [ "${{ github.event_name }}" = "pull_request" ]; then
-                    # For PR testing, use the latest release or a default version
-                    VERSION=$(curl -s https://api.github.com/repos/${{ github.repository }}/releases/latest | jq -r '.tag_name')
-                    if [ "$VERSION" = "null" ] || [ -z "$VERSION" ]; then
-                      # Fallback to a test version if no release exists
-                      VERSION="0.11.35"
-                    fi
-                    echo "🧪 Testing with version: $VERSION"
                   else
                     # Extract version from the release event
                     # The workflow_run event doesn't directly provide tag info,
