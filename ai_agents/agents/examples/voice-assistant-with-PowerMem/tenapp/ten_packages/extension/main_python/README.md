@@ -6,7 +6,7 @@ This extension integrates PowerMem memory functionality, enabling the voice assi
 
 1. **Conversation Memory**: Automatically records user and assistant conversation content
 2. **Semantic Search**: Retrieves relevant memories based on user queries using semantic search
-3. **Smart Memory**: Automatically saves to PowerMem every 5 conversation rounds
+3. **Smart Memory**: Automatically saves to PowerMem every 2 conversation rounds
 4. **Personalized Greeting**: Generates personalized greetings based on user memories when user joins
 5. **Configurable**: Supports enabling/disabling memory functionality through configuration
 
@@ -71,13 +71,13 @@ The following parameters can be set in the configuration file:
 2. **User Joins**: Generate personalized greeting based on user memories (if enabled)
 3. **Conversation Processing**: Real-time recording of user input and assistant responses
 4. **Memory Retrieval**: When user sends a query, search for related memories and add to LLM context
-5. **Memory Saving**: Automatically save conversation to PowerMem every 5 rounds (if enabled)
+5. **Memory Saving**: Automatically save conversation to PowerMem every 2 rounds (if enabled)
 6. **Shutdown**: Save final conversation state when agent stops
 
 ## Memory Management
 
 ### Memory Storage
-- Conversation is saved every 5 rounds (`turn_id % 5 == 0`) when `enable_memorization` is `true`
+- Conversation is saved every 2 rounds (when turn_id is even) when `enable_memorization` is `true`
 - Only saves user and assistant messages (filters out system messages)
 - Memory is saved asynchronously and won't block real-time interaction
 - Also saves on agent shutdown to preserve final conversation state
@@ -122,7 +122,7 @@ The extension uses `PowerMemSdkMemoryStore` class which wraps the PowerMem SDK:
 2. Memory functionality requires network connection if using remote LLM/embedding services
 3. Conversation memory is saved asynchronously and won't block real-time interaction
 4. Recommend setting different `user_id` for different users to isolate memory
-5. Memory is saved every 5 rounds to balance freshness and performance
+5. Memory is saved every 2 rounds to balance freshness and performance
 6. PowerMem uses `auto_config()` which reads configuration from environment variables
 
 ## Troubleshooting

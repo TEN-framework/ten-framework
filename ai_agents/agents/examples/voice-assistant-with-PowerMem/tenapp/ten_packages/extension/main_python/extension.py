@@ -182,8 +182,8 @@ Please respond naturally, as if you're continuing our conversation. Reference th
             self.sentence_fragment = ""
             await self._send_to_tts(remaining_text, True)
 
-            # Memorize every five rounds if memorization is enabled
-            if self.turn_id % 5 == 0 and self.config.enable_memorization:
+            # Memorize every two rounds (when turn_id is even) if memorization is enabled
+            if self.turn_id % 2 == 0 and self.config.enable_memorization:
                 await self._memorize_conversation()
 
         await self._send_transcript(
