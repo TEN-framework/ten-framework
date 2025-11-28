@@ -203,6 +203,7 @@ jobs:
           export PPA_VERSION="$VERSION"
           export PPA_PACKAGE_NAME="tman"
           export PPA_SOURCE_BINARY="${GITHUB_WORKSPACE}/out/linux/${{ matrix.arch }}/ten_manager/bin/tman"
+          export PPA_ARCH="amd64"
 
           # Run upload script
           bash tools/tman/upload-to-ppa.sh

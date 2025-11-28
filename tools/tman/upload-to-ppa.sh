@@ -19,6 +19,7 @@ VERSION="${PPA_VERSION}"
 REVISION="${PPA_REVISION:-1}"
 DISTRIBUTIONS="${PPA_DISTRIBUTIONS:-jammy noble oracular plucky questing}"
 SOURCE_BINARY="${PPA_SOURCE_BINARY}"
+ARCH="${PPA_ARCH:-amd64}"
 
 # ============ Validate required environment variables ============
 
@@ -33,6 +34,7 @@ if [ -z "$MAINTAINER_NAME" ] || [ -z "$MAINTAINER_EMAIL" ] || [ -z "$GPG_KEY_ID"
     echo "  PPA_PPA_NAME: ${PPA_NAME:-not set}"
     echo "  PPA_VERSION: ${VERSION:-not set}"
     echo "  PPA_SOURCE_BINARY: ${SOURCE_BINARY:-not set}"
+    echo "  PPA_ARCH: ${ARCH:-not set}"
     exit 1
 fi
 
@@ -53,6 +55,7 @@ log_info "   PPA Build and Upload"
 log_info "=========================================="
 log_info "Package: $PACKAGE_NAME"
 log_info "Version: $VERSION"
+log_info "Architecture: $ARCH"
 log_info "Distributions: $DISTRIBUTIONS"
 log_info "PPA: ppa:${LAUNCHPAD_ID}/${PPA_NAME}"
 log_info "=========================================="
@@ -125,7 +128,7 @@ Standards-Version: 4.6.0
 Homepage: https://github.com/TEN-framework/ten-framework
 
 Package: ${PACKAGE_NAME}
-Architecture: amd64
+Architecture: ${ARCH}
 Depends: \${shlibs:Depends}, \${misc:Depends}
 Description: TEN Framework Package Manager
  tman is a package management tool for the TEN framework.
