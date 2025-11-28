@@ -293,6 +293,7 @@ Please respond naturally, as if you're continuing our conversation. Reference th
             self.ten_env, "tts_flush", "tts", {"flush_id": str(uuid.uuid4())}
         )
         await _send_cmd(self.ten_env, "flush", "agora_rtc")
+        await self._memorize_conversation()
         self.ten_env.log_info("[MainControlExtension] Interrupt signal sent")
 
     # === Memory related methods ===
@@ -372,7 +373,7 @@ Generate a personalized greeting:"""
             )
 
             # Call semantic search API
-            resp = await self.memory_store.retrieve_related_clustered_categories(
+            resp = await self.memory_store.search(
                 user_id=user_id, agent_id=agent_id, category_query=query
             )
 
@@ -405,69 +406,6 @@ Generate a personalized greeting:"""
             )
             return ""
 
-    def _parse_memory_summary(self, data) -> dict:
-        """Parse memory data and create summary"""
-        summary = {
-            "basic_stats": {
-                "total_categories": len(data.categories),
-                "total_memories": sum(
-                    cat.memory_count or 0 for cat in data.categories
-                ),
-                "user_id": (
-                    data.categories[0].user_id if data.categories else None
-                ),
-                "agent_id": (
-                    data.categories[0].agent_id if data.categories else None
-                ),
-            },
-            "categories": [],
-        }
-
-        for category in data.categories:
-            cat_summary = {
-                "name": category.name,
-                "type": category.type,
-                "memory_count": category.memory_count,
-                "is_active": category.is_active,
-                "recent_memories": [],
-                "summary": category.summary,
-            }
-
-            if category.memories:
-                recent = sorted(
-                    category.memories, key=lambda x: x.happened_at, reverse=True
-                )
-                for memory in recent:
-                    cat_summary["recent_memories"].append(
-                        {
-                            "date": memory.happened_at.strftime(
-                                "%Y-%m-%d %H:%M"
-                            ),
-                            "content": memory.content,
-                        }
-                    )
-
-            summary["categories"].append(cat_summary)
-
-        return summary
-
-    def _extract_summary_text(self, summary: dict) -> str:
-        """Extract summary text from parsed memory data"""
-        summary_text = ""
-        for category in summary["categories"]:
-            if category.get("summary"):
-                summary_text += category["summary"] + "\n"
-            elif category.get("recent_memories"):
-                # If no summary, extract content from recent memories
-                for memory in category["recent_memories"]:
-                    if memory.get("content"):
-                        summary_text += f"- {memory['content']}\n"
-        result = summary_text.strip()
-        self.ten_env.log_info(
-            f"[MainControlExtension] _extract_summary_text result: '{result}'"
-        )
-        return result
-
     async def _memorize_conversation(self):
         """Memorize the current conversation via configured store"""
         if not self.memory_store:
@@ -494,7 +432,7 @@ Generate a personalized greeting:"""
             if not conversation_for_memory:
                 return
             asyncio.create_task(
-                self.memory_store.memorize(
+                self.memory_store.add(
                     conversation=conversation_for_memory,
                     user_id=user_id,
                     agent_id=self.config.agent_id,
@@ -505,48 +443,3 @@ Generate a personalized greeting:"""
             self.ten_env.log_error(
                 f"[MainControlExtension] Failed to memorize conversation: {e}"
             )
-
-    def _extract_related_memory_text(self, parsed_data: dict) -> str:
-        """Extract and format text from related clustered categories search results"""
-        if not parsed_data or "categories" not in parsed_data:
-            return ""
-
-        parts = []
-        query = parsed_data.get("query", "")
-        total = parsed_data.get("total_categories", 0)
-
-        if total == 0:
-            return ""
-
-        # Add search result header information
-        parts.append(
-            f"Found {total} related memory categories based on query '{query}':\n"
-        )
-
-        # Iterate through each related category
-        for cat in parsed_data["categories"]:
-            cat_name = cat.get("name", "Unknown Category")
-            similarity = cat.get("similarity_score", 0)
-            memory_count = cat.get("memory_count", 0)
-
-            # Add category information
-            parts.append(
-                f"\n【{cat_name}】(Similarity: {similarity:.2f}, Memory Count: {memory_count})"
-            )
-
-            # Add category summary
-            if cat.get("summary"):
-                parts.append(f"  Summary: {cat['summary']}")
-
-            # Add recent memory content
-            if cat.get("recent_memories"):
-                parts.append("  Recent Memories:")
-                for mem in cat["recent_memories"][:3]:  # Only take the first 3
-                    date = mem.get("date", "")
-                    content = mem.get("content", "")
-                    if date and content:
-                        parts.append(f"    - [{date}] {content}")
-                    elif content:
-                        parts.append(f"    - {content}")
-
-        return "\n".join(parts)

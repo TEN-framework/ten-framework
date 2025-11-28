@@ -10,12 +10,12 @@ from ten_runtime import AsyncTenEnv
 
 class PowerMemSdkMemoryStore:
     def __init__(self, env: AsyncTenEnv):
-        super().__init__(env)
         from powermem import Memory, auto_config
 
-        self.client = Memory(config=auto_config())
+        self.env: AsyncTenEnv = env
+        self.client: Memory = Memory(config=auto_config())
 
-    async def memorize(
+    async def add(
         self,
         conversation: list[dict],
         user_id: str,
@@ -48,7 +48,7 @@ class PowerMemSdkMemoryStore:
             )
             raise
 
-    async def retrieve_related_clustered_categories(
+    async def search(
         self, user_id: str, agent_id: str, category_query: str
     ) -> Any:
         self.env.log_info(
