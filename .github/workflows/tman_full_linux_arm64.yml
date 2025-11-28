@@ -176,7 +176,7 @@ jobs:
             out/linux/${{ matrix.arch }}/tman-linux-${{ matrix.build_type }}-${{ matrix.arch }}.zip
 
       - name: Upload to PPA (Official Release)
-        if: matrix.arch == 'arm64' && matrix.build_type == 'release' && github.event_name == 'pull_request'
+        if: matrix.arch == 'arm64' && matrix.build_type == 'release' && (github.event_name == 'release' || (github.ref != '' && startsWith(github.ref, 'refs/tags/')))
         env:
           PPA_GPG_PRIVATE_KEY: ${{ secrets.PPA_GPG_PRIVATE_KEY }}
           PPA_GPG_PASSPHRASE: ${{ secrets.PPA_GPG_PASSPHRASE }}
@@ -196,28 +196,26 @@ jobs:
           echo "$PPA_GPG_KEY_ID:6:" | gpg --import-ownertrust
           gpg --list-secret-keys "$PPA_GPG_KEY_ID"
 
-          # Get version number from tman binary
-          TMAN_BINARY="${GITHUB_WORKSPACE}/out/linux/${{ matrix.arch }}/ten_manager/bin/tman"
-          # We cannot execute arm64 binary on x64 host directly unless using qemu,
-          # but qemu is already set up in previous steps.
-          # However, to be safer and simpler, we can try to run it if binfmt_misc works,
-          # otherwise fallback to reading version from source or tags.
+          # Get version number from git tag (primary) or fallback to other methods
+          # We cannot execute arm64 binary on x64 host reliably without complex QEMU setup,
+          # so we rely on the git tag which should be present for releases.
 
-          # Try to execute binary (should work with QEMU)
-          if [ -x "$TMAN_BINARY" ]; then
-             VERSION=$($TMAN_BINARY --version 2>&1 | head -1 | grep -oP '\d+\.\d+\.\d+' || true)
+          VERSION=""
+          if [[ $GITHUB_REF == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/}
+          elif [ -f "VERSION" ]; then
+             VERSION=$(cat VERSION | tr -d '\n')
+          elif [ "$GITHUB_REF_TYPE" = "tag" ]; then
+             VERSION=$GITHUB_REF_NAME
           fi
 
-          # Fallback if execution failed (e.g. qemu issue)
+          # If still no version, and we are forcing a build/upload (e.g. manual dispatch or test), default to 0.0.0 or error out
           if [ -z "$VERSION" ]; then
-             echo "Could not execute arm64 binary to get version, falling back to git tag..."
-             if [ -f "VERSION" ]; then
-               VERSION=$(cat VERSION | tr -d '\n')
-             elif [ "$GITHUB_REF_TYPE" = "tag" ]; then
-               VERSION=$(echo $GITHUB_REF_NAME | sed 's/^v//')
-             else
-               VERSION="0.0.0"
-             fi
+             echo "Error: Could not determine version from git tag or VERSION file."
+             # For safety in non-release contexts, we might exit or set a dummy.
+             # But since this step only runs on release-like events (checked in 'if'), we expect a tag.
+             echo "GITHUB_REF: $GITHUB_REF"
+             exit 1
           fi
 
           echo "Version: $VERSION"
