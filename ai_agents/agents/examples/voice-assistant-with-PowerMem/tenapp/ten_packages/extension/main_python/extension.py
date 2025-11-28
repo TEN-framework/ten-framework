@@ -69,7 +69,7 @@ class MainControlExtension(AsyncExtension):
         self.agent = Agent(ten_env)
 
         # Load memory summary and write into LLM context
-        await self._load_memory_to_context()
+        # await self._load_memory_to_context()
 
         # Now auto-register decorated methods
         for attr_name in dir(self):
