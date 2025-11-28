@@ -2,11 +2,13 @@
 
 A digital human conversation interface powered by Tavus AI, integrated with TEN framework.
 
+> **Note on RTC**: This example uses Daily.co WebRTC due to Tavus platform limitations. Tavus only supports Daily.co and LiveKit as RTC transports and does not currently support Agora RTC. See [ARCHITECTURE_ANALYSIS.md](ARCHITECTURE_ANALYSIS.md) for detailed technical analysis and potential future integration paths.
+
 ## Features
 
 - **AI Digital Human**: Realistic video avatar with voice interaction
 - **Real-time Conversation**: Powered by Tavus Conversational Video Interface
-- **WebRTC Integration**: Uses Daily.co for low-latency video streaming
+- **WebRTC Integration**: Uses Daily.co (Tavus platform requirement)
 - **Simple Setup**: Easy-to-use API for creating and managing conversations
 
 ## Prerequisites
