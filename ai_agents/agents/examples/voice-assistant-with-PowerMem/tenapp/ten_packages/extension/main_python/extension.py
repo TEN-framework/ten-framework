@@ -25,7 +25,7 @@ from .config import MainControlConfig  # assume extracted from your base model
 import uuid
 
 # Memory store abstraction
-from .memory import MemoryStore, PowerMemSdkMemoryStore
+from .memory import PowerMemSdkMemoryStore
 
 
 class MainControlExtension(AsyncExtension):
@@ -47,7 +47,7 @@ class MainControlExtension(AsyncExtension):
         self.session_id: str = "0"
 
         # Memory related attributes (named memory_store by request)
-        self.memory_store: MemoryStore | None = None
+        self.memory_store: PowerMemSdkMemoryStore | None = None
 
         # Greeting generation state
         self._is_generating_greeting: bool = False
@@ -128,7 +128,13 @@ class MainControlExtension(AsyncExtension):
             related_memory = await self._retrieve_related_memory(event.text)
             if related_memory:
                 # Add related memory as context to LLM input
-                context_message = f"[Related Memory Context]\n{related_memory}\n\n[Current User Question]\n{event.text}"
+                context_message = f"""Here's what I remember from our past conversations that might be relevant:
+
+{related_memory}
+
+Now the user is asking: {event.text}
+
+Please respond naturally, as if you're continuing our conversation. Reference the memories when relevant, but keep it conversational and helpful."""
                 await self.agent.queue_llm_input(context_message)
             else:
                 await self.agent.queue_llm_input(event.text)
@@ -352,25 +358,6 @@ Generate a personalized greeting:"""
             self._greeting_future = None
             return ""
 
-    async def _retrieve_memory(self) -> str:
-        """Retrieve conversation memory from configured store"""
-        if not self.memory_store:
-            return ""
-
-        try:
-            user_id = self.config.user_id
-            agent_id = self.config.agent_id
-            resp = await self.memory_store.retrieve_default_categories(
-                user_id=user_id, agent_id=agent_id
-            )
-            normalized = self.memory_store.parse_default_categories(resp)
-            return self._extract_summary_text(normalized)
-        except Exception as e:
-            self.ten_env.log_error(
-                f"[MainControlExtension] Failed to retrieve memory: {e}"
-            )
-            return ""
-
     async def _retrieve_related_memory(self, query: str) -> str:
         """Retrieve related memory based on user query using semantic search"""
         if not self.memory_store:
@@ -389,11 +376,23 @@ Generate a personalized greeting:"""
                 user_id=user_id, agent_id=agent_id, category_query=query
             )
 
-            # Parse response
-            parsed = self.memory_store.parse_related_clustered_categories(resp)
+            if not resp or not isinstance(resp, dict):
+                return ""
 
-            # Extract memory text
-            memory_text = self._extract_related_memory_text(parsed)
+            # Extract memory content from results using list comprehension
+            results = resp.get("results", [])
+            memorise = [
+                result["memory"]
+                for result in results
+                if isinstance(result, dict) and result.get("memory")
+            ]
+
+            # Format memory text using join for better performance
+            if memorise:
+                memory_text = "Memorise:\n" + \
+                    "\n".join(f"- {memory}" for memory in memorise) + "\n"
+            else:
+                memory_text = ""
 
             self.ten_env.log_info(
                 f"[MainControlExtension] Retrieved related memory (length: {len(memory_text)})"
@@ -506,37 +505,6 @@ Generate a personalized greeting:"""
             self.ten_env.log_error(
                 f"[MainControlExtension] Failed to memorize conversation: {e}"
             )
-
-    # Removed: _build_conversation_context (no longer keeping a separate context)
-
-    async def _load_memory_to_context(self):
-        """Load memory summary into LLM context at startup (as a system message)."""
-        if not self.memory_store:
-            return
-
-        try:
-            memory_summary = await self._retrieve_memory()
-            self.ten_env.log_info(
-                f"[MainControlExtension] Memory summary: {memory_summary}"
-            )
-            if memory_summary and self.agent and self.agent.llm_exec:
-                # Reset and write memory summary into context as a normal message (no system role handling)
-                self.agent.llm_exec.clear_context()
-                await self.agent.llm_exec.write_context(
-                    self.ten_env,
-                    "assistant",
-                    "Memory summary of previous conversations:\n\n"
-                    + memory_summary,
-                )
-                self.ten_env.log_info(
-                    "[MainControlExtension] Memory summary written into LLM context"
-                )
-        except Exception as e:
-            self.ten_env.log_error(
-                f"[MainControlExtension] Failed to load memory to context: {e}"
-            )
-
-    # Removed: _update_llm_context and _sync_context_from_llM (no separate context to sync)
 
     def _extract_related_memory_text(self, parsed_data: dict) -> str:
         """Extract and format text from related clustered categories search results"""
