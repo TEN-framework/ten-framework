@@ -108,7 +108,7 @@
     "viewDetails": "查看详情",
     "reset": "重置",
     "chooseBaseDir": "选择基础目录",
-    "deleteNodeConfirmationWithName": "确定要删除节点 {{name}} 吗？",
+    "deleteNodeConfirmationWithName": "确定要删除{{type}}: {{name}} 吗？",
     "update": "更新",
     "create": "创建",
     "deleteConnectionConfirmation": "确定要删除此连接吗？",
@@ -116,7 +116,8 @@
     "deleteConnectionFailed": "连接删除失败",
     "replaceNode": "替换节点...",
     "manageApps": "管理应用",
-    "runApp": "运行"
+    "runApp": "运行",
+    "selectAll": "全选"
   },
   "toast": {
     "saveFileSuccess": "文件保存成功",
@@ -229,7 +230,8 @@
       "titleReplaceNode": "替换节点[{{name}}]...",
       "replaceNode": "替换节点",
       "replaceNodeSuccess": "节点替换成功",
-      "replaceNodeFailed": "节点替换失败"
+      "replaceNodeFailed": "节点替换失败",
+      "messagesFrom": "来自: {{source}}"
     },
     "doc": {
       "title": "{{name}}"
