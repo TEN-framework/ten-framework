@@ -2,6 +2,33 @@
   "type": "extension",
   "name": "minimax_tts_websocket_python",
   "version": "0.2.0",
+  "display_name": {
+    "locales": {
+      "en-US": {
+        "content": "Minimax TTS (WebSocket) Python"
+      }
+    }
+  },
+  "description": {
+    "locales": {
+      "en-US": {
+        "content": "Minimax TTS over WebSocket with voice, model, and audio controls."
+      }
+    }
+  },
+  "readme": {
+    "locales": {
+      "en-US": {
+        "import_uri": "README.md"
+      }
+    }
+  },
+  "tags": [
+    "python",
+    "tts",
+    "minimax",
+    "websocket"
+  ],
   "dependencies": [
     {
       "type": "system",
@@ -18,12 +45,16 @@
     "include": [
       "manifest.json",
       "property.json",
+      "BUILD.gn",
       "**.tent",
       "**.py",
       "README.md",
       "tests/**",
       "requirements.txt"
     ]
+  },
+  "scripts": {
+    "test": "tests/bin/start"
   },
   "api": {
     "interface": [
@@ -41,9 +72,29 @@
             },
             "group_id": {
               "type": "string"
-            }
+            },
+            "model": { "type": "string" },
+            "voice": { "type": "string" },
+            "lang_code": { "type": "string" },
+            "speed": { "type": "float64" },
+            "pitch": { "type": "float64" },
+            "volume": { "type": "float64" },
+            "sample_rate": { "type": "int64" },
+            "audio_format": { "type": "string" },
+            "encoding": { "type": "string" },
+            "instructions": { "type": "string" },
+            "model_id": { "type": "string" },
+            "voice_id": { "type": "string" },
+            "request_timeout_seconds": { "type": "int64" },
+            "optimize_streaming_latency": { "type": "int64" },
+            "stability": { "type": "float64" },
+            "style": { "type": "float64" },
+            "similarity_boost": { "type": "float64" },
+            "speaker_boost": { "type": "bool" }
           }
-        }
+        },
+        "dump": { "type": "bool" },
+        "dump_path": { "type": "string" }
       }
     }
   }
