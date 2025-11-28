@@ -244,6 +244,7 @@ jobs:
               uses: stefanzweifel/git-auto-commit-action@v5
               with:
                   repository: homebrew-ten-framework
+                  branch: main
                   commit_message: |
                       Update tman to ${{ steps.version.outputs.version }}
 
