@@ -22,7 +22,7 @@ class PowerMemSdkMemoryStore:
         agent_id: str,
     ) -> None:
         self.env.log_info(
-            f"[PowerMemSdkMemoryStore] memorize called with user_id={user_id}, agent_id={agent_id}, "
+            f"[PowerMemSdkMemoryStore] add called with user_id={user_id}, agent_id={agent_id}, "
             f"conversation_length={len(conversation)}"
         )
         try:

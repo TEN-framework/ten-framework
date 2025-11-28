@@ -68,9 +68,6 @@ class MainControlExtension(AsyncExtension):
 
         self.agent = Agent(ten_env)
 
-        # Load memory summary and write into LLM context
-        # await self._load_memory_to_context()
-
         # Now auto-register decorated methods
         for attr_name in dir(self):
             fn = getattr(self, attr_name)
@@ -293,7 +290,6 @@ Please respond naturally, as if you're continuing our conversation. Reference th
             self.ten_env, "tts_flush", "tts", {"flush_id": str(uuid.uuid4())}
         )
         await _send_cmd(self.ten_env, "flush", "agora_rtc")
-        await self._memorize_conversation()
         self.ten_env.log_info("[MainControlExtension] Interrupt signal sent")
 
     # === Memory related methods ===
