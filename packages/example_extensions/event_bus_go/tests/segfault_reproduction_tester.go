@@ -1,10 +1,13 @@
 //
-// Segfault Reproduction Test - Targeted tests designed based on actual scenarios in logs
+// Segfault Reproduction Test - Targeted tests designed based on actual
+// scenarios in logs
 // Key findings from logs:
 // 1. Segfault occurred in runtime.mbitmap.go (during Go GC process)
-// 2. message_collector was sending large amounts of data when it occurred (buffer send in last 9.5s 67435)
+// 2. message_collector was sending large amounts of data when it occurred
+// (buffer send in last 9.5s 67435)
 // 3. event_bus_go was forwarding ten_event commands at high frequency
-// 4. Multiple threads accessing simultaneously (thread 0x77a1a67fc640, thread 0x77a1a6ffd640)
+// 4. Multiple threads accessing simultaneously (thread 0x77a1a67fc640, thread
+// 0x77a1a6ffd640)
 //
 
 package tests
@@ -24,7 +27,8 @@ import (
 // This test is most similar to the segfault scenario in the logs
 // =====================================================
 
-// HighLoadWithStreamingTester - Simulates production environment high-load scenario
+// HighLoadWithStreamingTester - Simulates production environment high-load
+// scenario
 type HighLoadWithStreamingTester struct {
 	ten.DefaultExtensionTester
 	sentCount     atomic.Int64
@@ -39,10 +43,16 @@ type HighLoadWithStreamingTester struct {
 	burstInterval time.Duration // New: Burst interval
 }
 
-func (tester *HighLoadWithStreamingTester) OnStart(tenEnvTester ten.TenEnvTester) {
+func (tester *HighLoadWithStreamingTester) OnStart(
+	tenEnvTester ten.TenEnvTester,
+) {
 	tenEnvTester.LogInfo("=== HighLoadWithStreamingTester Start ===")
-	tenEnvTester.LogInfo("Scenario: High-concurrency burst + flow control + large data streaming return")
-	tenEnvTester.LogInfo("Goal: Maintain stable pending message count under high concurrency to reproduce cmdResultMerged concurrency bug")
+	tenEnvTester.LogInfo(
+		"Scenario: High-concurrency burst + flow control + large data streaming return",
+	)
+	tenEnvTester.LogInfo(
+		"Goal: Maintain stable pending message count under high concurrency to reproduce cmdResultMerged concurrency bug",
+	)
 
 	tester.start = time.Now()
 	tester.stopChan = make(chan struct{})
@@ -52,11 +62,26 @@ func (tester *HighLoadWithStreamingTester) OnStart(tenEnvTester ten.TenEnvTester
 	tester.burstSize = 5                          // Send 5 messages per burst (reduced from 10)
 	tester.burstInterval = 100 * time.Millisecond // Attempt burst every 100ms (increased from 50ms)
 
-	tenEnvTester.LogInfo(fmt.Sprintf("Flow control config: maxPending=%d, burstSize=%d, burstInterval=%v",
-		tester.maxPending, tester.burstSize, tester.burstInterval))
-	tenEnvTester.LogInfo(fmt.Sprintf("Theoretical peak rate: %d msg/burst * %.1f burst/s = %.1f msg/s",
-		tester.burstSize, 1000.0/float64(tester.burstInterval.Milliseconds()),
-		float64(tester.burstSize)*1000.0/float64(tester.burstInterval.Milliseconds())))
+	tenEnvTester.LogInfo(
+		fmt.Sprintf(
+			"Flow control config: maxPending=%d, burstSize=%d, burstInterval=%v",
+			tester.maxPending,
+			tester.burstSize,
+			tester.burstInterval,
+		),
+	)
+	tenEnvTester.LogInfo(
+		fmt.Sprintf(
+			"Theoretical peak rate: %d msg/burst * %.1f burst/s = %.1f msg/s",
+			tester.burstSize,
+			1000.0/float64(tester.burstInterval.Milliseconds()),
+			float64(
+				tester.burstSize,
+			)*1000.0/float64(
+				tester.burstInterval.Milliseconds(),
+			),
+		),
+	)
 
 	// Sender goroutine: Use flow control mechanism
 	tester.wg.Add(1)
@@ -90,7 +115,9 @@ func (tester *HighLoadWithStreamingTester) OnStart(tenEnvTester ten.TenEnvTester
 
 					cmd, err := ten.NewCmd("ten_event")
 					if err != nil {
-						tenEnvTester.LogError(fmt.Sprintf("Failed to create cmd: %v", err))
+						tenEnvTester.LogError(
+							fmt.Sprintf("Failed to create cmd: %v", err),
+						)
 						continue
 					}
 
@@ -106,22 +133,36 @@ func (tester *HighLoadWithStreamingTester) OnStart(tenEnvTester ten.TenEnvTester
 						elapsed := time.Since(tester.start).Seconds()
 						rate := float64(count) / elapsed
 						pending := tester.pendingCount.Load()
-						tenEnvTester.LogInfo(fmt.Sprintf("[Burst] Sent: %d, Rate: %.1f msg/s, Pending: %d/%d",
-							count, rate, pending, tester.maxPending))
+						tenEnvTester.LogInfo(
+							fmt.Sprintf(
+								"[Burst] Sent: %d, Rate: %.1f msg/s, Pending: %d/%d",
+								count,
+								rate,
+								pending,
+								tester.maxPending,
+							),
+						)
 					}
 
 					// Send command
-					err = tenEnvTester.SendCmd(cmd, func(tet ten.TenEnvTester, cr ten.CmdResult, err error) {
-						tester.callbackCount.Add(1)
-						// Decrease pending count (any callback counts)
-						tester.pendingCount.Add(-1)
-						if err != nil {
-							tenEnvTester.LogError(fmt.Sprintf("Callback error: %v", err))
-						}
-					})
+					err = tenEnvTester.SendCmd(
+						cmd,
+						func(tet ten.TenEnvTester, cr ten.CmdResult, err error) {
+							tester.callbackCount.Add(1)
+							// Decrease pending count (any callback counts)
+							tester.pendingCount.Add(-1)
+							if err != nil {
+								tenEnvTester.LogError(
+									fmt.Sprintf("Callback error: %v", err),
+								)
+							}
+						},
+					)
 
 					if err != nil {
-						tenEnvTester.LogError(fmt.Sprintf("SendCmd failed: %v", err))
+						tenEnvTester.LogError(
+							fmt.Sprintf("SendCmd failed: %v", err),
+						)
 						// Sending failed also needs to decrease pending
 						tester.pendingCount.Add(-1)
 					}
@@ -149,8 +190,15 @@ func (tester *HighLoadWithStreamingTester) OnStart(tenEnvTester ten.TenEnvTester
 				pending := tester.pendingCount.Load()
 				tenEnvTester.LogInfo(fmt.Sprintf(
 					"[MONITOR] Elapsed: %.1fs | Sent: %d | Received: %d | Callbacks: %d | Rate: %.1f/s | Pending: %d/%d (%.1f%%)",
-					elapsed, sent, received, callbacks, float64(sent)/elapsed, pending, tester.maxPending,
-					float64(pending)*100.0/float64(tester.maxPending)))
+					elapsed,
+					sent,
+					received,
+					callbacks,
+					float64(sent)/elapsed,
+					pending,
+					tester.maxPending,
+					float64(pending)*100.0/float64(tester.maxPending),
+				))
 			}
 		}
 	}()
@@ -164,7 +212,9 @@ func (tester *HighLoadWithStreamingTester) OnStart(tenEnvTester ten.TenEnvTester
 	tenEnvTester.OnStartDone()
 }
 
-func (tester *HighLoadWithStreamingTester) OnStop(tenEnvTester ten.TenEnvTester) {
+func (tester *HighLoadWithStreamingTester) OnStop(
+	tenEnvTester ten.TenEnvTester,
+) {
 	tenEnvTester.LogInfo("=== HighLoadWithStreamingTester Stop ===")
 
 	// Stop all workers first
@@ -185,10 +235,20 @@ func (tester *HighLoadWithStreamingTester) OnStop(tenEnvTester ten.TenEnvTester)
 				break
 			}
 			if time.Since(startWait) > maxWaitTime {
-				tenEnvTester.LogWarn(fmt.Sprintf("Timeout waiting for pending commands, %d still pending", pending))
+				tenEnvTester.LogWarn(
+					fmt.Sprintf(
+						"Timeout waiting for pending commands, %d still pending",
+						pending,
+					),
+				)
 				break
 			}
-			tenEnvTester.LogDebug(fmt.Sprintf("Still waiting for %d pending commands...", pending))
+			tenEnvTester.LogDebug(
+				fmt.Sprintf(
+					"Still waiting for %d pending commands...",
+					pending,
+				),
+			)
 			time.Sleep(50 * time.Millisecond)
 		}
 
@@ -200,12 +260,27 @@ func (tester *HighLoadWithStreamingTester) OnStop(tenEnvTester ten.TenEnvTester)
 
 		tenEnvTester.LogInfo(fmt.Sprintf("=== Final Statistics ==="))
 		tenEnvTester.LogInfo(fmt.Sprintf("Total Time: %.2f seconds", elapsed))
-		tenEnvTester.LogInfo(fmt.Sprintf("Sent: %d, Received: %d, Callbacks: %d", sent, received, callbacks))
-		tenEnvTester.LogInfo(fmt.Sprintf("Average Rate: %.1f msg/s", float64(sent)/elapsed))
+		tenEnvTester.LogInfo(
+			fmt.Sprintf(
+				"Sent: %d, Received: %d, Callbacks: %d",
+				sent,
+				received,
+				callbacks,
+			),
+		)
+		tenEnvTester.LogInfo(
+			fmt.Sprintf("Average Rate: %.1f msg/s", float64(sent)/elapsed),
+		)
 		tenEnvTester.LogInfo(fmt.Sprintf("All commands completed successfully"))
 
 		if sent != callbacks {
-			tenEnvTester.LogError(fmt.Sprintf("Callback mismatch! Sent: %d != Callbacks: %d", sent, callbacks))
+			tenEnvTester.LogError(
+				fmt.Sprintf(
+					"Callback mismatch! Sent: %d != Callbacks: %d",
+					sent,
+					callbacks,
+				),
+			)
 		}
 
 		// Call OnStopDone after everything is cleaned up
@@ -213,21 +288,27 @@ func (tester *HighLoadWithStreamingTester) OnStop(tenEnvTester ten.TenEnvTester)
 	}()
 }
 
-// OnCmd - Key: Simulate message_collector returning large amounts of streaming data
-// From logs, segfault occurred when message_collector was sending large amounts of fragmented data
-// Important: All streaming results set the same key to trigger concurrent read-write race in cmdResultMerged
-func (tester *HighLoadWithStreamingTester) OnCmd(tenEnvTester ten.TenEnvTester, cmd ten.Cmd) {
+// OnCmd - Key: Simulate message_collector returning large amounts of streaming
+// data From logs, segfault occurred when message_collector was sending large
+// amounts of fragmented data Important: All streaming results set the same key
+// to trigger concurrent read-write race in cmdResultMerged
+func (tester *HighLoadWithStreamingTester) OnCmd(
+	tenEnvTester ten.TenEnvTester,
+	cmd ten.Cmd,
+) {
 	count := tester.receivedCount.Add(1)
 
 	if count%500 == 0 {
 		tenEnvTester.LogDebug(fmt.Sprintf("Received command #%d", count))
 	}
 
-	// Scenario: Return 2-3 streaming results (greatly reduced) to lower processing pressure
+	// Scenario: Return 2-3 streaming results (greatly reduced) to lower
+	// processing pressure
 	numChunks := rand.Intn(2) + 2 // 2-3 chunks (was 5-10 before)
 
-	// Key: Define a set of common keys, all streaming results will update these keys
-	// This will trigger concurrent read-write race in event_bus_go's cmdResultMerged map!
+	// Key: Define a set of common keys, all streaming results will update these
+	// keys This will trigger concurrent read-write race in event_bus_go's
+	// cmdResultMerged map!
 	commonKeys := []string{"words", "text", "timestamp", "confidence", "status"}
 
 	var wg sync.WaitGroup
@@ -236,14 +317,16 @@ func (tester *HighLoadWithStreamingTester) OnCmd(tenEnvTester ten.TenEnvTester, 
 		go func(chunkID int) {
 			defer wg.Done()
 
-			// Random delay, simulating async processing (reduce delay for faster results)
+			// Random delay, simulating async processing (reduce delay for
+			// faster results)
 			time.Sleep(time.Duration(rand.Intn(5)) * time.Millisecond)
 
 			cmdResult, _ := ten.NewCmdResult(ten.StatusCodeOk, cmd)
 			cmdResult.SetFinal(false)
 
 			// Key: Each chunk uses the same key but different values
-			// This triggers concurrent write conflicts in the cmdResultMerged map
+			// This triggers concurrent write conflicts in the cmdResultMerged
+			// map
 			chunkData := make(map[string]interface{})
 			for _, key := range commonKeys {
 				// Each chunk sets different value for the same key
@@ -284,7 +367,8 @@ func (tester *HighLoadWithStreamingTester) OnCmd(tenEnvTester ten.TenEnvTester, 
 
 // =====================================================
 // Test 2: GC pressure test
-// Specifically trigger frequent Go GC since segfault occurred in runtime.mbitmap.go
+// Specifically trigger frequent Go GC since segfault occurred in
+// runtime.mbitmap.go
 // =====================================================
 
 // GCPressureTester - Trigger frequent GC to reproduce segfault
@@ -302,8 +386,12 @@ type GCPressureTester struct {
 
 func (tester *GCPressureTester) OnStart(tenEnvTester ten.TenEnvTester) {
 	tenEnvTester.LogInfo("=== GCPressureTester Start ===")
-	tenEnvTester.LogInfo("Scenario: GC pressure + flow control + large memory allocation")
-	tenEnvTester.LogInfo("Goal: Reproduce segfault in runtime.mbitmap.go under high GC pressure")
+	tenEnvTester.LogInfo(
+		"Scenario: GC pressure + flow control + large memory allocation",
+	)
+	tenEnvTester.LogInfo(
+		"Goal: Reproduce segfault in runtime.mbitmap.go under high GC pressure",
+	)
 
 	tester.start = time.Now()
 	tester.stopChan = make(chan struct{})
@@ -313,11 +401,26 @@ func (tester *GCPressureTester) OnStart(tenEnvTester ten.TenEnvTester) {
 	tester.burstSize = 3                         // Send 3 messages per burst (reduced from 5)
 	tester.burstInterval = 50 * time.Millisecond // Attempt burst every 50ms (increased from 30ms)
 
-	tenEnvTester.LogInfo(fmt.Sprintf("Flow control config: maxPending=%d, burstSize=%d, burstInterval=%v",
-		tester.maxPending, tester.burstSize, tester.burstInterval))
-	tenEnvTester.LogInfo(fmt.Sprintf("Theoretical peak rate: %d msg/burst * %.1f burst/s = %.1f msg/s",
-		tester.burstSize, 1000.0/float64(tester.burstInterval.Milliseconds()),
-		float64(tester.burstSize)*1000.0/float64(tester.burstInterval.Milliseconds())))
+	tenEnvTester.LogInfo(
+		fmt.Sprintf(
+			"Flow control config: maxPending=%d, burstSize=%d, burstInterval=%v",
+			tester.maxPending,
+			tester.burstSize,
+			tester.burstInterval,
+		),
+	)
+	tenEnvTester.LogInfo(
+		fmt.Sprintf(
+			"Theoretical peak rate: %d msg/burst * %.1f burst/s = %.1f msg/s",
+			tester.burstSize,
+			1000.0/float64(tester.burstInterval.Milliseconds()),
+			float64(
+				tester.burstSize,
+			)*1000.0/float64(
+				tester.burstInterval.Milliseconds(),
+			),
+		),
+	)
 
 	go func() {
 		ticker := time.NewTicker(tester.burstInterval)
@@ -343,7 +446,8 @@ func (tester *GCPressureTester) OnStart(tenEnvTester ten.TenEnvTester) {
 						break
 					}
 
-					// Create command and allocate memory (reduced memory allocation)
+					// Create command and allocate memory (reduced memory
+					// allocation)
 					cmd, _ := ten.NewCmd("ten_event")
 
 					tempData := make(map[string]interface{})
@@ -352,7 +456,10 @@ func (tester *GCPressureTester) OnStart(tenEnvTester ten.TenEnvTester) {
 						tempData[fmt.Sprintf("field_%d", k)] = make([]byte, 512)
 					}
 
-					cmd.SetPropertyFromJSONBytes("data", mustMarshalJSON(tempData))
+					cmd.SetPropertyFromJSONBytes(
+						"data",
+						mustMarshalJSON(tempData),
+					)
 
 					// Increase pending count
 					tester.pendingCount.Add(1)
@@ -362,15 +469,25 @@ func (tester *GCPressureTester) OnStart(tenEnvTester ten.TenEnvTester) {
 						elapsed := time.Since(tester.start).Seconds()
 						rate := float64(count) / elapsed
 						pending := tester.pendingCount.Load()
-						tenEnvTester.LogInfo(fmt.Sprintf("[GC] Allocated: %d, Rate: %.1f msg/s, Pending: %d/%d",
-							count, rate, pending, tester.maxPending))
+						tenEnvTester.LogInfo(
+							fmt.Sprintf(
+								"[GC] Allocated: %d, Rate: %.1f msg/s, Pending: %d/%d",
+								count,
+								rate,
+								pending,
+								tester.maxPending,
+							),
+						)
 					}
 
 					// Send command (trigger CGO call and memory operations)
-					tenEnvTester.SendCmd(cmd, func(tet ten.TenEnvTester, cr ten.CmdResult, err error) {
-						tester.callbackCount.Add(1)
-						tester.pendingCount.Add(-1)
-					})
+					tenEnvTester.SendCmd(
+						cmd,
+						func(tet ten.TenEnvTester, cr ten.CmdResult, err error) {
+							tester.callbackCount.Add(1)
+							tester.pendingCount.Add(-1)
+						},
+					)
 				}
 			}
 		}
@@ -378,7 +495,12 @@ func (tester *GCPressureTester) OnStart(tenEnvTester ten.TenEnvTester) {
 
 	// Stop after 5 seconds (reduced from 10 seconds)
 	time.AfterFunc(5*time.Second, func() {
-		tenEnvTester.LogInfo(fmt.Sprintf("GC pressure test complete. Total allocations: %d", tester.sentCount.Load()))
+		tenEnvTester.LogInfo(
+			fmt.Sprintf(
+				"GC pressure test complete. Total allocations: %d",
+				tester.sentCount.Load(),
+			),
+		)
 		tenEnvTester.StopTest(nil)
 	})
 
@@ -386,8 +508,14 @@ func (tester *GCPressureTester) OnStart(tenEnvTester ten.TenEnvTester) {
 }
 
 func (tester *GCPressureTester) OnStop(tenEnvTester ten.TenEnvTester) {
-	tenEnvTester.LogInfo(fmt.Sprintf("=== GCPressureTester Stop === Total Sent: %d, Callbacks: %d, Pending: %d",
-		tester.sentCount.Load(), tester.callbackCount.Load(), tester.pendingCount.Load()))
+	tenEnvTester.LogInfo(
+		fmt.Sprintf(
+			"=== GCPressureTester Stop === Total Sent: %d, Callbacks: %d, Pending: %d",
+			tester.sentCount.Load(),
+			tester.callbackCount.Load(),
+			tester.pendingCount.Load(),
+		),
+	)
 
 	// Stop the sending goroutine
 	close(tester.stopChan)
@@ -404,10 +532,20 @@ func (tester *GCPressureTester) OnStop(tenEnvTester ten.TenEnvTester) {
 				break
 			}
 			if time.Since(startWait) > maxWaitTime {
-				tenEnvTester.LogWarn(fmt.Sprintf("Timeout waiting for pending commands, %d still pending", pending))
+				tenEnvTester.LogWarn(
+					fmt.Sprintf(
+						"Timeout waiting for pending commands, %d still pending",
+						pending,
+					),
+				)
 				break
 			}
-			tenEnvTester.LogDebug(fmt.Sprintf("Still waiting for %d pending commands...", pending))
+			tenEnvTester.LogDebug(
+				fmt.Sprintf(
+					"Still waiting for %d pending commands...",
+					pending,
+				),
+			)
 			time.Sleep(50 * time.Millisecond)
 		}
 
@@ -418,7 +556,10 @@ func (tester *GCPressureTester) OnStop(tenEnvTester ten.TenEnvTester) {
 	}()
 }
 
-func (tester *GCPressureTester) OnCmd(tenEnvTester ten.TenEnvTester, cmd ten.Cmd) {
+func (tester *GCPressureTester) OnCmd(
+	tenEnvTester ten.TenEnvTester,
+	cmd ten.Cmd,
+) {
 	// Quickly return 3 results
 	for i := 0; i < 3; i++ {
 		cmdResult, _ := ten.NewCmdResult(ten.StatusCodeOk, cmd)
@@ -427,7 +568,10 @@ func (tester *GCPressureTester) OnCmd(tenEnvTester ten.TenEnvTester, cmd ten.Cmd
 		// Each result allocates less memory (reduced from 20 to 10 fields)
 		resultData := make(map[string]interface{})
 		for j := 0; j < 10; j++ {
-			resultData[fmt.Sprintf("r_%d", j)] = make([]byte, 256) // Reduced from 512 bytes
+			resultData[fmt.Sprintf("r_%d", j)] = make(
+				[]byte,
+				256,
+			) // Reduced from 512 bytes
 		}
 		cmdResult.SetPropertyFromJSONBytes("", mustMarshalJSON(resultData))
 
@@ -455,8 +599,12 @@ type ConcurrentCallbackTester struct {
 
 func (tester *ConcurrentCallbackTester) OnStart(tenEnvTester ten.TenEnvTester) {
 	tenEnvTester.LogInfo("=== ConcurrentCallbackTester Start ===")
-	tenEnvTester.LogInfo("Scenario: Concurrent callback + flow control + cmdResultMerged race")
-	tenEnvTester.LogInfo("Goal: Trigger concurrent read-write bug in cmdResultMerged under high concurrent callbacks")
+	tenEnvTester.LogInfo(
+		"Scenario: Concurrent callback + flow control + cmdResultMerged race",
+	)
+	tenEnvTester.LogInfo(
+		"Goal: Trigger concurrent read-write bug in cmdResultMerged under high concurrent callbacks",
+	)
 
 	tester.start = time.Now()
 	tester.stopChan = make(chan struct{})
@@ -466,11 +614,26 @@ func (tester *ConcurrentCallbackTester) OnStart(tenEnvTester ten.TenEnvTester) {
 	tester.burstSize = 4                         // Send 4 messages per burst (reduced from 8)
 	tester.burstInterval = 50 * time.Millisecond // Attempt burst every 50ms (increased from 40ms)
 
-	tenEnvTester.LogInfo(fmt.Sprintf("Flow control config: maxPending=%d, burstSize=%d, burstInterval=%v",
-		tester.maxPending, tester.burstSize, tester.burstInterval))
-	tenEnvTester.LogInfo(fmt.Sprintf("Theoretical peak rate: %d msg/burst * %.1f burst/s = %.1f msg/s",
-		tester.burstSize, 1000.0/float64(tester.burstInterval.Milliseconds()),
-		float64(tester.burstSize)*1000.0/float64(tester.burstInterval.Milliseconds())))
+	tenEnvTester.LogInfo(
+		fmt.Sprintf(
+			"Flow control config: maxPending=%d, burstSize=%d, burstInterval=%v",
+			tester.maxPending,
+			tester.burstSize,
+			tester.burstInterval,
+		),
+	)
+	tenEnvTester.LogInfo(
+		fmt.Sprintf(
+			"Theoretical peak rate: %d msg/burst * %.1f burst/s = %.1f msg/s",
+			tester.burstSize,
+			1000.0/float64(tester.burstInterval.Milliseconds()),
+			float64(
+				tester.burstSize,
+			)*1000.0/float64(
+				tester.burstInterval.Milliseconds(),
+			),
+		),
+	)
 
 	// Start sending goroutine
 	go func() {
@@ -508,14 +671,24 @@ func (tester *ConcurrentCallbackTester) OnStart(tenEnvTester ten.TenEnvTester) {
 						elapsed := time.Since(tester.start).Seconds()
 						rate := float64(count) / elapsed
 						pending := tester.pendingCount.Load()
-						tenEnvTester.LogInfo(fmt.Sprintf("[Callback] Sent: %d, Rate: %.1f msg/s, Pending: %d/%d",
-							count, rate, pending, tester.maxPending))
+						tenEnvTester.LogInfo(
+							fmt.Sprintf(
+								"[Callback] Sent: %d, Rate: %.1f msg/s, Pending: %d/%d",
+								count,
+								rate,
+								pending,
+								tester.maxPending,
+							),
+						)
 					}
 
-					tenEnvTester.SendCmd(cmd, func(tet ten.TenEnvTester, cr ten.CmdResult, err error) {
-						tester.callbackCount.Add(1)
-						tester.pendingCount.Add(-1)
-					})
+					tenEnvTester.SendCmd(
+						cmd,
+						func(tet ten.TenEnvTester, cr ten.CmdResult, err error) {
+							tester.callbackCount.Add(1)
+							tester.pendingCount.Add(-1)
+						},
+					)
 				}
 			}
 		}
@@ -530,8 +703,14 @@ func (tester *ConcurrentCallbackTester) OnStart(tenEnvTester ten.TenEnvTester) {
 }
 
 func (tester *ConcurrentCallbackTester) OnStop(tenEnvTester ten.TenEnvTester) {
-	tenEnvTester.LogInfo(fmt.Sprintf("=== ConcurrentCallbackTester Stop === Sent: %d, Callbacks: %d, Pending: %d",
-		tester.sentCount.Load(), tester.callbackCount.Load(), tester.pendingCount.Load()))
+	tenEnvTester.LogInfo(
+		fmt.Sprintf(
+			"=== ConcurrentCallbackTester Stop === Sent: %d, Callbacks: %d, Pending: %d",
+			tester.sentCount.Load(),
+			tester.callbackCount.Load(),
+			tester.pendingCount.Load(),
+		),
+	)
 
 	// Stop the sending goroutine
 	close(tester.stopChan)
@@ -548,10 +727,20 @@ func (tester *ConcurrentCallbackTester) OnStop(tenEnvTester ten.TenEnvTester) {
 				break
 			}
 			if time.Since(startWait) > maxWaitTime {
-				tenEnvTester.LogWarn(fmt.Sprintf("Timeout waiting for pending commands, %d still pending", pending))
+				tenEnvTester.LogWarn(
+					fmt.Sprintf(
+						"Timeout waiting for pending commands, %d still pending",
+						pending,
+					),
+				)
 				break
 			}
-			tenEnvTester.LogDebug(fmt.Sprintf("Still waiting for %d pending commands...", pending))
+			tenEnvTester.LogDebug(
+				fmt.Sprintf(
+					"Still waiting for %d pending commands...",
+					pending,
+				),
+			)
 			time.Sleep(50 * time.Millisecond)
 		}
 
@@ -562,8 +751,12 @@ func (tester *ConcurrentCallbackTester) OnStop(tenEnvTester ten.TenEnvTester) {
 	}()
 }
 
-func (tester *ConcurrentCallbackTester) OnCmd(tenEnvTester ten.TenEnvTester, cmd ten.Cmd) {
-	// Key scenario: Multiple goroutines return results simultaneously, and all modify the same key
+func (tester *ConcurrentCallbackTester) OnCmd(
+	tenEnvTester ten.TenEnvTester,
+	cmd ten.Cmd,
+) {
+	// Key scenario: Multiple goroutines return results simultaneously, and all
+	// modify the same key
 	// This tests concurrent safety of the cmdResultMerged map in event_bus_go
 
 	// Define common keys, all results will update these keys
@@ -576,7 +769,8 @@ func (tester *ConcurrentCallbackTester) OnCmd(tenEnvTester ten.TenEnvTester, cmd
 			cmdResult, _ := ten.NewCmdResult(ten.StatusCodeOk, cmd)
 			cmdResult.SetFinal(stage == 2) // Last one is final
 
-			// Key: All results use the same key, triggering concurrent writes to map
+			// Key: All results use the same key, triggering concurrent writes
+			// to map
 			resultData := make(map[string]interface{})
 			for _, key := range commonKeys {
 				resultData[key] = fmt.Sprintf("stage_%d_%s", stage, key)
@@ -610,8 +804,12 @@ func generateLargeChunk(chunkID int, numFields int) map[string]interface{} {
 
 	// Large amount of data fields
 	for i := 0; i < numFields; i++ {
-		data[fmt.Sprintf("field_%d_%d", chunkID, i)] = fmt.Sprintf("data_%d_%d_%s",
-			chunkID, i, string(make([]byte, 50)))
+		data[fmt.Sprintf("field_%d_%d", chunkID, i)] = fmt.Sprintf(
+			"data_%d_%d_%s",
+			chunkID,
+			i,
+			string(make([]byte, 50)),
+		)
 	}
 
 	// Simulate words array (similar to message_collector transcription results)

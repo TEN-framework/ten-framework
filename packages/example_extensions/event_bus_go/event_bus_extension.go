@@ -37,7 +37,9 @@ func (p *eventBusExtension) OnCmd(
 		cmdResult, _ := ten.NewCmdResult(ten.StatusCodeError, cmd)
 		tenEnv.ReturnResult(cmdResult, func(tenEnv ten.TenEnv, err error) {
 			if err != nil {
-				tenEnv.LogError(fmt.Sprintf("ReturnResult failed, err: %v", err))
+				tenEnv.LogError(
+					fmt.Sprintf("ReturnResult failed, err: %v", err),
+				)
 			}
 		})
 		return
@@ -182,11 +184,15 @@ func (p *eventBusExtension) OnCmd(
 				}
 			}
 		}); err != nil {
-			tenEnv.LogError(fmt.Sprintf("send cmd %s failed, err: %v", cmdName, err))
+			tenEnv.LogError(
+				fmt.Sprintf("send cmd %s failed, err: %v", cmdName, err),
+			)
 			cmdResult, _ := ten.NewCmdResult(ten.StatusCodeError, cmd)
 			tenEnv.ReturnResult(cmdResult, func(tenEnv ten.TenEnv, err error) {
 				if err != nil {
-					tenEnv.LogError(fmt.Sprintf("ReturnResult failed, err: %v", err))
+					tenEnv.LogError(
+						fmt.Sprintf("ReturnResult failed, err: %v", err),
+					)
 				}
 			})
 			hasReturnedResult = true
@@ -198,7 +204,9 @@ func (p *eventBusExtension) OnCmd(
 		cmdResult, _ := ten.NewCmdResult(ten.StatusCodeError, cmd)
 		tenEnv.ReturnResult(cmdResult, func(tenEnv ten.TenEnv, err error) {
 			if err != nil {
-				tenEnv.LogError(fmt.Sprintf("ReturnResult failed, err: %v", err))
+				tenEnv.LogError(
+					fmt.Sprintf("ReturnResult failed, err: %v", err),
+				)
 			}
 		})
 	}

@@ -23,7 +23,8 @@ func TestBasicExtensionTester(t *testing.T) {
 	tester.Run()
 }
 
-// TestHighFrequencyTester tests high frequency command sending to detect potential segfaults.
+// TestHighFrequencyTester tests high frequency command sending to detect
+// potential segfaults.
 func TestHighFrequencyTester(t *testing.T) {
 	myTester := &HighFrequencyTester{}
 
@@ -49,7 +50,8 @@ func TestBurstTester(t *testing.T) {
 	tester.Run()
 }
 
-// TestRapidFireTester tests rapid fire sending with immediate callback processing.
+// TestRapidFireTester tests rapid fire sending with immediate callback
+// processing.
 func TestRapidFireTester(t *testing.T) {
 	myTester := &RapidFireTester{}
 
@@ -88,8 +90,9 @@ func TestErrorHandlingTester(t *testing.T) {
 	tester.Run()
 }
 
-// TestLongRunningTester tests continuous message sending for 5 minutes with result merging.
-// This is a long-running test, use -timeout flag to extend test timeout if needed.
+// TestLongRunningTester tests continuous message sending for 5 minutes with
+// result merging. This is a long-running test, use -timeout flag to extend test
+// timeout if needed.
 func TestLongRunningTester(t *testing.T) {
 	myTester := &LongRunningTester{}
 

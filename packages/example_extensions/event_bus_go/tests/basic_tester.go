@@ -21,8 +21,12 @@ type BasicExtensionTester struct {
 }
 
 // OnCmd handles commands sent from the extension being tested.
-// Since event_bus_go forwards commands back to tester, we need to handle them here.
-func (tester *BasicExtensionTester) OnCmd(tenEnvTester ten.TenEnvTester, cmd ten.Cmd) {
+// Since event_bus_go forwards commands back to tester, we need to handle them
+// here.
+func (tester *BasicExtensionTester) OnCmd(
+	tenEnvTester ten.TenEnvTester,
+	cmd ten.Cmd,
+) {
 	cmdName, _ := cmd.GetName()
 	tenEnvTester.LogInfo("BasicExtensionTester received cmd: " + cmdName)
 
@@ -72,7 +76,8 @@ func (tester *BasicExtensionTester) OnCmd(tenEnvTester ten.TenEnvTester, cmd ten
 func (tester *BasicExtensionTester) OnStart(tenEnvTester ten.TenEnvTester) {
 	tenEnvTester.LogInfo("OnStart")
 
-	// Use ten_event command, which is the actual command supported by event_bus_go
+	// Use ten_event command, which is the actual command supported by
+	// event_bus_go
 	cmdTest, _ := ten.NewCmd("ten_event")
 	cmdTest.SetProperty("test_data", "basic_test")
 
@@ -80,7 +85,9 @@ func (tester *BasicExtensionTester) OnStart(tenEnvTester ten.TenEnvTester) {
 		cmdTest,
 		func(tet ten.TenEnvTester, cr ten.CmdResult, err error) {
 			if err != nil {
-				tenEnvTester.LogError("Command returned with error: " + err.Error())
+				tenEnvTester.LogError(
+					"Command returned with error: " + err.Error(),
+				)
 				panic(err)
 			}
 
@@ -105,17 +112,22 @@ func (tester *BasicExtensionTester) OnStop(tenEnvTester ten.TenEnvTester) {
 	tenEnvTester.OnStopDone()
 }
 
-// HighFrequencyTester tests high frequency command sending to detect potential segfaults.
+// HighFrequencyTester tests high frequency command sending to detect potential
+// segfaults.
 type HighFrequencyTester struct {
 	ten.DefaultExtensionTester
 }
 
 // OnCmd handles commands sent from the extension being tested.
-func (tester *HighFrequencyTester) OnCmd(tenEnvTester ten.TenEnvTester, cmd ten.Cmd) {
+func (tester *HighFrequencyTester) OnCmd(
+	tenEnvTester ten.TenEnvTester,
+	cmd ten.Cmd,
+) {
 	cmdName, _ := cmd.GetName()
 	tenEnvTester.LogDebug("HighFrequencyTester received cmd: " + cmdName)
 
-	// Test async multiple returns in high-frequency scenarios to verify concurrency safety
+	// Test async multiple returns in high-frequency scenarios to verify
+	// concurrency safety
 	var wg sync.WaitGroup
 
 	// First return: partial result (async)
@@ -160,7 +172,9 @@ func (tester *HighFrequencyTester) OnStart(tenEnvTester ten.TenEnvTester) {
 		completedCmds atomic.Int64
 	)
 
-	tenEnvTester.LogInfo("Starting high frequency test: sending 60 commands concurrently")
+	tenEnvTester.LogInfo(
+		"Starting high frequency test: sending 60 commands concurrently",
+	)
 
 	// Start multiple concurrent senders
 	for i := 0; i < numConcurrentSenders; i++ {
@@ -172,7 +186,8 @@ func (tester *HighFrequencyTester) OnStart(tenEnvTester ten.TenEnvTester) {
 
 			// Each sender sends multiple commands
 			for j := 0; j < numCmdsPerSender; j++ {
-				// Create ten_event command (the actual command type handled by event_bus)
+				// Create ten_event command (the actual command type handled by
+				// event_bus)
 				cmd, err := ten.NewCmd("ten_event")
 				if err != nil {
 					tenEnvTester.LogError("Failed to create command")
@@ -192,7 +207,8 @@ func (tester *HighFrequencyTester) OnStart(tenEnvTester ten.TenEnvTester) {
 						completed := completedCmds.Add(1)
 
 						if err != nil {
-							// In unit test mode, commands may fail due to no connection
+							// In unit test mode, commands may fail due to no
+							// connection
 							// This is expected and should not cause a segfault
 							errorCount.Add(1)
 						} else {
@@ -203,14 +219,28 @@ func (tester *HighFrequencyTester) OnStart(tenEnvTester ten.TenEnvTester) {
 						if completed == totalCmds {
 							success := successCount.Load()
 							errors := errorCount.Load()
-							tenEnvTester.LogInfo("========================================")
-							tenEnvTester.LogInfo("High frequency test completed successfully!")
-							tenEnvTester.LogInfo("========================================")
+							tenEnvTester.LogInfo(
+								"========================================",
+							)
+							tenEnvTester.LogInfo(
+								"High frequency test completed successfully!",
+							)
+							tenEnvTester.LogInfo(
+								"========================================",
+							)
 							tenEnvTester.LogInfo("Total commands sent: 60")
-							tenEnvTester.LogInfo(fmt.Sprintf("Successful: %d", success))
-							tenEnvTester.LogInfo(fmt.Sprintf("Errors: %d", errors))
-							tenEnvTester.LogInfo("No segfault detected - system is stable!")
-							tenEnvTester.LogInfo("========================================")
+							tenEnvTester.LogInfo(
+								fmt.Sprintf("Successful: %d", success),
+							)
+							tenEnvTester.LogInfo(
+								fmt.Sprintf("Errors: %d", errors),
+							)
+							tenEnvTester.LogInfo(
+								"No segfault detected - system is stable!",
+							)
+							tenEnvTester.LogInfo(
+								"========================================",
+							)
 							tenEnvTester.StopTest(nil)
 						}
 					},
@@ -248,7 +278,9 @@ func (tester *BurstTester) OnStart(tenEnvTester ten.TenEnvTester) {
 	const numBurstCmds = 100 // Reduced from 200
 	var completedCmds atomic.Int64
 
-	tenEnvTester.LogInfo("Starting burst test: sending 100 commands in tight loop")
+	tenEnvTester.LogInfo(
+		"Starting burst test: sending 100 commands in tight loop",
+	)
 
 	// Send all commands in a tight loop without waiting for responses
 	for i := 0; i < numBurstCmds; i++ {
@@ -267,10 +299,16 @@ func (tester *BurstTester) OnStart(tenEnvTester ten.TenEnvTester) {
 
 				// When all commands are completed, stop the test
 				if completed == numBurstCmds {
-					tenEnvTester.LogInfo("========================================")
+					tenEnvTester.LogInfo(
+						"========================================",
+					)
 					tenEnvTester.LogInfo("Burst test completed successfully!")
-					tenEnvTester.LogInfo("All 100 burst commands handled without segfault!")
-					tenEnvTester.LogInfo("========================================")
+					tenEnvTester.LogInfo(
+						"All 100 burst commands handled without segfault!",
+					)
+					tenEnvTester.LogInfo(
+						"========================================",
+					)
 					tenEnvTester.StopTest(nil)
 				}
 			},
@@ -292,7 +330,10 @@ type RapidFireTester struct {
 }
 
 // OnCmd handles commands sent from the extension being tested.
-func (tester *RapidFireTester) OnCmd(tenEnvTester ten.TenEnvTester, cmd ten.Cmd) {
+func (tester *RapidFireTester) OnCmd(
+	tenEnvTester ten.TenEnvTester,
+	cmd ten.Cmd,
+) {
 	// Quickly return to test stability of continuous sending
 	cmdResult, _ := ten.NewCmdResult(ten.StatusCodeOk, cmd)
 	tenEnvTester.ReturnResult(cmdResult, nil)
@@ -306,7 +347,9 @@ func (tester *RapidFireTester) OnStart(tenEnvTester ten.TenEnvTester) {
 	const numRapidCmds = 200 // Reduced from 500
 	var completedCmds atomic.Int64
 
-	tenEnvTester.LogInfo("Starting rapid fire test: 200 commands at maximum speed")
+	tenEnvTester.LogInfo(
+		"Starting rapid fire test: 200 commands at maximum speed",
+	)
 
 	// Recursive sending function
 	var sendNext func(index int)
@@ -330,10 +373,18 @@ func (tester *RapidFireTester) OnStart(tenEnvTester ten.TenEnvTester) {
 				completed := completedCmds.Add(1)
 
 				if completed == numRapidCmds {
-					tenEnvTester.LogInfo("========================================")
-					tenEnvTester.LogInfo("Rapid fire test completed successfully!")
-					tenEnvTester.LogInfo("200 rapid fire commands handled without segfault!")
-					tenEnvTester.LogInfo("========================================")
+					tenEnvTester.LogInfo(
+						"========================================",
+					)
+					tenEnvTester.LogInfo(
+						"Rapid fire test completed successfully!",
+					)
+					tenEnvTester.LogInfo(
+						"200 rapid fire commands handled without segfault!",
+					)
+					tenEnvTester.LogInfo(
+						"========================================",
+					)
 					tenEnvTester.StopTest(nil)
 				}
 			},
@@ -355,19 +406,30 @@ func (tester *RapidFireTester) OnStop(tenEnvTester ten.TenEnvTester) {
 	tenEnvTester.OnStopDone()
 }
 
-// MergeLogicTester tests the result merging logic with multiple partial results.
+// MergeLogicTester tests the result merging logic with multiple partial
+// results.
 type MergeLogicTester struct {
 	ten.DefaultExtensionTester
 	resultCount int
 }
 
 // OnCmd handles commands sent from the extension being tested.
-func (tester *MergeLogicTester) OnCmd(tenEnvTester ten.TenEnvTester, cmd ten.Cmd) {
+func (tester *MergeLogicTester) OnCmd(
+	tenEnvTester ten.TenEnvTester,
+	cmd ten.Cmd,
+) {
 	tester.resultCount++
 	cmdName, _ := cmd.GetName()
-	tenEnvTester.LogInfo(fmt.Sprintf("MergeLogicTester received cmd #%d: %s", tester.resultCount, cmdName))
+	tenEnvTester.LogInfo(
+		fmt.Sprintf(
+			"MergeLogicTester received cmd #%d: %s",
+			tester.resultCount,
+			cmdName,
+		),
+	)
 
-	// Asynchronously return 5 partial results to test merge logic correctness in concurrent scenarios
+	// Asynchronously return 5 partial results to test merge logic correctness
+	// in concurrent scenarios
 	var wg sync.WaitGroup
 
 	for i := 1; i <= 5; i++ {
@@ -381,7 +443,10 @@ func (tester *MergeLogicTester) OnCmd(tenEnvTester ten.TenEnvTester, cmd ten.Cmd
 
 			cmdResult, _ := ten.NewCmdResult(ten.StatusCodeOk, cmd)
 			cmdResult.SetFinal(false)
-			cmdResult.SetProperty(fmt.Sprintf("field_%d", index), fmt.Sprintf("value_%d", index))
+			cmdResult.SetProperty(
+				fmt.Sprintf("field_%d", index),
+				fmt.Sprintf("value_%d", index),
+			)
 			cmdResult.SetProperty("counter", index)
 			tenEnvTester.ReturnResult(cmdResult, nil)
 		}()
@@ -403,9 +468,12 @@ func (tester *MergeLogicTester) OnCmd(tenEnvTester ten.TenEnvTester, cmd ten.Cmd
 // OnStart is called when the test starts.
 func (tester *MergeLogicTester) OnStart(tenEnvTester ten.TenEnvTester) {
 	tenEnvTester.LogInfo("MergeLogicTester OnStart")
-	tenEnvTester.LogInfo("Testing result merging with 5 partial results + 1 final result")
+	tenEnvTester.LogInfo(
+		"Testing result merging with 5 partial results + 1 final result",
+	)
 
-	// Send 3 commands, each command will return 6 times (5 partial + 1 final) - reduced from 5
+	// Send 3 commands, each command will return 6 times (5 partial + 1 final) -
+	// reduced from 5
 	const numCmds = 3
 	var completedCmds atomic.Int64
 
@@ -426,19 +494,31 @@ func (tester *MergeLogicTester) OnStart(tenEnvTester ten.TenEnvTester) {
 
 				statusCode, _ := cr.GetStatusCode()
 				if statusCode != ten.StatusCodeOk {
-					tenEnvTester.LogError(fmt.Sprintf("Unexpected status code: %d", statusCode))
+					tenEnvTester.LogError(
+						fmt.Sprintf("Unexpected status code: %d", statusCode),
+					)
 					panic(statusCode)
 				}
 
 				// Verify the merged result
 				result, _ := cr.GetPropertyToJSONBytes("")
-				tenEnvTester.LogInfo(fmt.Sprintf("Merged result: %s", string(result)))
+				tenEnvTester.LogInfo(
+					fmt.Sprintf("Merged result: %s", string(result)),
+				)
 
 				if completed == numCmds {
-					tenEnvTester.LogInfo("========================================")
-					tenEnvTester.LogInfo("Merge logic test completed successfully!")
-					tenEnvTester.LogInfo("All commands returned merged results correctly!")
-					tenEnvTester.LogInfo("========================================")
+					tenEnvTester.LogInfo(
+						"========================================",
+					)
+					tenEnvTester.LogInfo(
+						"Merge logic test completed successfully!",
+					)
+					tenEnvTester.LogInfo(
+						"All commands returned merged results correctly!",
+					)
+					tenEnvTester.LogInfo(
+						"========================================",
+					)
 					tenEnvTester.StopTest(nil)
 				}
 			},
@@ -461,15 +541,25 @@ type ErrorHandlingTester struct {
 }
 
 // OnCmd handles commands sent from the extension being tested.
-func (tester *ErrorHandlingTester) OnCmd(tenEnvTester ten.TenEnvTester, cmd ten.Cmd) {
+func (tester *ErrorHandlingTester) OnCmd(
+	tenEnvTester ten.TenEnvTester,
+	cmd ten.Cmd,
+) {
 	counter := tester.cmdCounter.Add(1)
 	cmdName, _ := cmd.GetName()
-	tenEnvTester.LogInfo(fmt.Sprintf("ErrorHandlingTester received cmd #%d: %s", counter, cmdName))
+	tenEnvTester.LogInfo(
+		fmt.Sprintf(
+			"ErrorHandlingTester received cmd #%d: %s",
+			counter,
+			cmdName,
+		),
+	)
 
 	// Test different error scenarios (async return)
 	switch counter % 3 {
 	case 1:
-		// Scenario 1: Asynchronously return multiple OK partial results + finally return Error status
+		// Scenario 1: Asynchronously return multiple OK partial results +
+		// finally return Error status
 		var wg sync.WaitGroup
 
 		wg.Add(1)
@@ -492,7 +582,8 @@ func (tester *ErrorHandlingTester) OnCmd(tenEnvTester ten.TenEnvTester, cmd ten.
 			tenEnvTester.ReturnResult(cmdResult2, nil)
 		}()
 
-		// Asynchronously return error status code - event_bus should return immediately
+		// Asynchronously return error status code - event_bus should return
+		// immediately
 		go func() {
 			wg.Wait()
 			time.Sleep(time.Duration(rand.Intn(3)) * time.Millisecond)
@@ -561,7 +652,12 @@ func (tester *ErrorHandlingTester) OnStart(tenEnvTester ten.TenEnvTester) {
 
 				if err != nil {
 					errorCount.Add(1)
-					tenEnvTester.LogDebug(fmt.Sprintf("Command returned error (expected): %v", err))
+					tenEnvTester.LogDebug(
+						fmt.Sprintf(
+							"Command returned error (expected): %v",
+							err,
+						),
+					)
 				} else {
 					statusCode, _ := cr.GetStatusCode()
 					if statusCode != ten.StatusCodeOk {
@@ -575,11 +671,25 @@ func (tester *ErrorHandlingTester) OnStart(tenEnvTester ten.TenEnvTester) {
 				if completed == numCmds {
 					success := successCount.Load()
 					errors := errorCount.Load()
-					tenEnvTester.LogInfo("========================================")
-					tenEnvTester.LogInfo("Error handling test completed successfully!")
-					tenEnvTester.LogInfo(fmt.Sprintf("Successful: %d, Errors: %d", success, errors))
-					tenEnvTester.LogInfo("Verified: non-OK status codes handled correctly!")
-					tenEnvTester.LogInfo("========================================")
+					tenEnvTester.LogInfo(
+						"========================================",
+					)
+					tenEnvTester.LogInfo(
+						"Error handling test completed successfully!",
+					)
+					tenEnvTester.LogInfo(
+						fmt.Sprintf(
+							"Successful: %d, Errors: %d",
+							success,
+							errors,
+						),
+					)
+					tenEnvTester.LogInfo(
+						"Verified: non-OK status codes handled correctly!",
+					)
+					tenEnvTester.LogInfo(
+						"========================================",
+					)
 					tenEnvTester.StopTest(nil)
 				}
 			},
@@ -595,7 +705,8 @@ func (tester *ErrorHandlingTester) OnStop(tenEnvTester ten.TenEnvTester) {
 	tenEnvTester.OnStopDone()
 }
 
-// LongRunningTester tests continuous message sending for 5 minutes with result merging.
+// LongRunningTester tests continuous message sending for 5 minutes with result
+// merging.
 type LongRunningTester struct {
 	ten.DefaultExtensionTester
 
@@ -608,15 +719,20 @@ type LongRunningTester struct {
 }
 
 // OnCmd handles commands sent from the extension being tested.
-func (tester *LongRunningTester) OnCmd(tenEnvTester ten.TenEnvTester, cmd ten.Cmd) {
+func (tester *LongRunningTester) OnCmd(
+	tenEnvTester ten.TenEnvTester,
+	cmd ten.Cmd,
+) {
 	cmdName, _ := cmd.GetName()
 	tenEnvTester.LogDebug("LongRunningTester received cmd: " + cmdName)
 
-	// Use WaitGroup to ensure all partial results are sent before sending the final result
+	// Use WaitGroup to ensure all partial results are sent before sending the
+	// final result
 	var wg sync.WaitGroup
 
 	// Each command returns 3 partial results + 1 final result
-	// Returned asynchronously in different goroutines, simulating multi-stage async processing in real business
+	// Returned asynchronously in different goroutines, simulating multi-stage
+	// async processing in real business
 
 	// Stage 1: Data validation (async, random delay 0-10ms)
 	wg.Add(1)
@@ -663,7 +779,8 @@ func (tester *LongRunningTester) OnCmd(tenEnvTester ten.TenEnvTester, cmd ten.Cm
 		tenEnvTester.ReturnResult(cmdResult3, nil)
 	}()
 
-	// Stage 4: After all partial results are completed, asynchronously return the final result
+	// Stage 4: After all partial results are completed, asynchronously return
+	// the final result
 	go func() {
 		// Wait for all partial results to be sent
 		wg.Wait()
@@ -761,11 +878,25 @@ func (tester *LongRunningTester) OnStart(tenEnvTester ten.TenEnvTester) {
 				errors := tester.totalErrors.Load()
 
 				tenEnvTester.LogInfo("========================================")
-				tenEnvTester.LogInfo(fmt.Sprintf("Progress: %.0f seconds elapsed", elapsed.Seconds()))
-				tenEnvTester.LogInfo(fmt.Sprintf("Sent: %d, Completed: %d", sent, completed))
-				tenEnvTester.LogInfo(fmt.Sprintf("Success: %d, Errors: %d", success, errors))
+				tenEnvTester.LogInfo(
+					fmt.Sprintf(
+						"Progress: %.0f seconds elapsed",
+						elapsed.Seconds(),
+					),
+				)
+				tenEnvTester.LogInfo(
+					fmt.Sprintf("Sent: %d, Completed: %d", sent, completed),
+				)
+				tenEnvTester.LogInfo(
+					fmt.Sprintf("Success: %d, Errors: %d", success, errors),
+				)
 				if completed > 0 {
-					tenEnvTester.LogInfo(fmt.Sprintf("Success rate: %.2f%%", float64(success)/float64(completed)*100))
+					tenEnvTester.LogInfo(
+						fmt.Sprintf(
+							"Success rate: %.2f%%",
+							float64(success)/float64(completed)*100,
+						),
+					)
 				}
 				tenEnvTester.LogInfo("========================================")
 			default:
@@ -803,14 +934,22 @@ func (tester *LongRunningTester) sendCommand(tenEnvTester ten.TenEnvTester) {
 
 			if err != nil {
 				tester.totalErrors.Add(1)
-				tenEnvTester.LogDebug(fmt.Sprintf("Command #%d error: %v", cmdIndex, err))
+				tenEnvTester.LogDebug(
+					fmt.Sprintf("Command #%d error: %v", cmdIndex, err),
+				)
 				return
 			}
 
 			statusCode, _ := cr.GetStatusCode()
 			if statusCode != ten.StatusCodeOk {
 				tester.totalErrors.Add(1)
-				tenEnvTester.LogDebug(fmt.Sprintf("Command #%d non-OK status: %d", cmdIndex, statusCode))
+				tenEnvTester.LogDebug(
+					fmt.Sprintf(
+						"Command #%d non-OK status: %d",
+						cmdIndex,
+						statusCode,
+					),
+				)
 				return
 			}
 
@@ -818,14 +957,21 @@ func (tester *LongRunningTester) sendCommand(tenEnvTester ten.TenEnvTester) {
 
 			// Log every 1000 successful commands
 			if tester.totalSuccess.Load()%1000 == 0 {
-				tenEnvTester.LogInfo(fmt.Sprintf("Milestone: %d commands completed successfully", tester.totalSuccess.Load()))
+				tenEnvTester.LogInfo(
+					fmt.Sprintf(
+						"Milestone: %d commands completed successfully",
+						tester.totalSuccess.Load(),
+					),
+				)
 			}
 		},
 	)
 }
 
 // printStatistics prints the final test statistics.
-func (tester *LongRunningTester) printStatistics(tenEnvTester ten.TenEnvTester) {
+func (tester *LongRunningTester) printStatistics(
+	tenEnvTester ten.TenEnvTester,
+) {
 	duration := time.Since(tester.startTime)
 	sent := tester.totalSent.Load()
 	completed := tester.totalCompleted.Load()
@@ -835,7 +981,9 @@ func (tester *LongRunningTester) printStatistics(tenEnvTester ten.TenEnvTester) 
 	tenEnvTester.LogInfo("========================================")
 	tenEnvTester.LogInfo("Long Running Test Completed Successfully!")
 	tenEnvTester.LogInfo("========================================")
-	tenEnvTester.LogInfo(fmt.Sprintf("Total duration: %.2f seconds", duration.Seconds()))
+	tenEnvTester.LogInfo(
+		fmt.Sprintf("Total duration: %.2f seconds", duration.Seconds()),
+	)
 	tenEnvTester.LogInfo(fmt.Sprintf("Total commands sent: %d", sent))
 	tenEnvTester.LogInfo(fmt.Sprintf("Total commands completed: %d", completed))
 	tenEnvTester.LogInfo(fmt.Sprintf("Successful: %d", success))
@@ -848,10 +996,13 @@ func (tester *LongRunningTester) printStatistics(tenEnvTester ten.TenEnvTester) 
 
 	if duration.Seconds() > 0 {
 		throughput := float64(completed) / duration.Seconds()
-		tenEnvTester.LogInfo(fmt.Sprintf("Average throughput: %.2f commands/second", throughput))
+		tenEnvTester.LogInfo(
+			fmt.Sprintf("Average throughput: %.2f commands/second", throughput),
+		)
 	}
 
-	// Each command has 4 returns (3 partial + 1 final), calculate total result count
+	// Each command has 4 returns (3 partial + 1 final), calculate total result
+	// count
 	totalResults := success * 4
 	tenEnvTester.LogInfo(fmt.Sprintf("Total results merged: %d", totalResults))
 	tenEnvTester.LogInfo("========================================")
@@ -880,10 +1031,20 @@ func (tester *LongRunningTester) OnStop(tenEnvTester ten.TenEnvTester) {
 				break
 			}
 			if time.Since(startWait) > maxWaitTime {
-				tenEnvTester.LogWarn(fmt.Sprintf("Timeout waiting for pending commands, %d still pending", sent-completed))
+				tenEnvTester.LogWarn(
+					fmt.Sprintf(
+						"Timeout waiting for pending commands, %d still pending",
+						sent-completed,
+					),
+				)
 				break
 			}
-			tenEnvTester.LogDebug(fmt.Sprintf("Still waiting for %d pending commands...", sent-completed))
+			tenEnvTester.LogDebug(
+				fmt.Sprintf(
+					"Still waiting for %d pending commands...",
+					sent-completed,
+				),
+			)
 			time.Sleep(50 * time.Millisecond)
 		}
 
