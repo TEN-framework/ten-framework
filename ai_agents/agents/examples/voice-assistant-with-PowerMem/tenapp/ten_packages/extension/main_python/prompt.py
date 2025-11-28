@@ -15,6 +15,8 @@ Please respond naturally, as if you're continuing our conversation. Reference th
 # Template for personalized greeting generation
 PERSONALIZED_GREETING_TEMPLATE = """Based on the following memory summary of previous conversations with this user, generate a warm, personalized greeting (2-3 sentences maximum). Reference specific details from the memories naturally, but keep it concise and friendly.
 
+If the memory summary contains information about the user's location/region, please respond in the most commonly used language of that region.
+
 Memory Summary:
 {memory_summary}
 
