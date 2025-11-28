@@ -21,6 +21,10 @@ from .agent.events import (
 )
 from .helper import _send_cmd, _send_data, parse_sentences
 from .config import MainControlConfig  # assume extracted from your base model
+from .prompt import (
+    CONTEXT_MESSAGE_WITH_MEMORY_TEMPLATE,
+    PERSONALIZED_GREETING_TEMPLATE,
+)
 
 import uuid
 
@@ -125,13 +129,9 @@ class MainControlExtension(AsyncExtension):
             related_memory = await self._retrieve_related_memory(event.text)
             if related_memory:
                 # Add related memory as context to LLM input
-                context_message = f"""Here's what I remember from our past conversations that might be relevant:
-
-{related_memory}
-
-Now the user is asking: {event.text}
-
-Please respond naturally, as if you're continuing our conversation. Reference the memories when relevant, but keep it conversational and helpful."""
+                context_message = CONTEXT_MESSAGE_WITH_MEMORY_TEMPLATE.format(
+                    related_memory=related_memory, user_query=event.text
+                )
                 await self.agent.queue_llm_input(context_message)
             else:
                 await self.agent.queue_llm_input(event.text)
@@ -313,12 +313,9 @@ Please respond naturally, as if you're continuing our conversation. Reference th
                 return ""
 
             # Construct prompt for personalized greeting
-            greeting_prompt = f"""Based on the following memory summary of previous conversations with this user, generate a warm, personalized greeting (2-3 sentences maximum). Reference specific details from the memories naturally, but keep it concise and friendly.
-
-Memory Summary:
-{memory_summary}
-
-Generate a personalized greeting:"""
+            greeting_prompt = PERSONALIZED_GREETING_TEMPLATE.format(
+                memory_summary=memory_summary
+            )
 
             # Create a future to wait for the greeting response
             self._greeting_future = asyncio.Future()
