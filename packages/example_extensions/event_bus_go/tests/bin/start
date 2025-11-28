@@ -1,0 +1,141 @@
+#!/bin/bash
+
+set -e
+
+# Check if -race flag is passed
+RACE_FLAG=""
+if [[ "$*" == *"-race"* ]]; then
+  # Check if running on macOS
+  if [[ "$(uname)" == "Darwin" ]]; then
+    echo "⚠️  Warning: Race detector is not supported on macOS with CGO due to address space conflicts"
+    echo "    Skipping -race flag on macOS. Use Linux for race detection testing."
+    echo ""
+  else
+    RACE_FLAG="-race"
+    echo "Race detector enabled"
+  fi
+fi
+
+# Check if -sanitize flag is passed
+SANITIZE_FLAG=""
+if [[ "$*" == *"-sanitize"* ]]; then
+  SANITIZE_FLAG="-sanitize"
+  echo "AddressSanitizer and UndefinedBehaviorSanitizer enabled"
+fi
+
+# Check for conflict: -race and -sanitize cannot be used together
+if [ -n "$RACE_FLAG" ] && [ -n "$SANITIZE_FLAG" ]; then
+  echo ""
+  echo "❌ Error: -race and -sanitize cannot be used together!"
+  echo ""
+  echo "Reason: Both race detector and AddressSanitizer need to intercept memory operations,"
+  echo "        which causes conflicts in address space layout."
+  echo ""
+  echo "Suggestions:"
+  echo "  1. First use -race to detect Go-level concurrency issues:"
+  echo "     ./tests/bin/start -race"
+  echo ""
+  echo "  2. Then use -sanitize to detect C/C++ memory issues:"
+  echo "     ./tests/bin/start -sanitize"
+  echo ""
+  echo "  3. Or use all GODEBUG checks without parameters:"
+  echo "     ./tests/bin/start"
+  echo ""
+  exit 1
+fi
+
+# Jump to the extension root directory.
+cd "$(dirname "${BASH_SOURCE[0]}")/../.."
+
+# Check if the ./ten/app directory exists.
+if [ ! -d ".ten/app" ]; then
+  echo "The ./ten/app directory does not exist. Please install it first."
+  exit 1
+fi
+
+# Get the extension name according to pwd.
+extension_name=$(basename "$(pwd)")
+
+# Check if the ./ten/app/ten_packages/extension/$extension_name directory exists.
+if [ ! -d ".ten/app/ten_packages/extension/$extension_name" ]; then
+  echo "The ./ten/app/ten_packages/extension/$extension_name directory does not exist. Please install with standalone mode."
+  exit 1
+fi
+
+# Get the .ten/app/ten_packages/system absolute path.
+app_base_dir=$(realpath .ten/app)
+ten_runtime_lib_path=$(realpath "$app_base_dir"/ten_packages/system/ten_runtime/lib)
+ten_runtime_go_lib_path=$(realpath "$app_base_dir"/ten_packages/system/ten_runtime_go/lib)
+
+# Jump to the extension directory.
+cd ".ten/app/ten_packages/extension/$extension_name"
+
+# Base CGO flags
+BASE_CGO_CFLAGS=""
+# Note: On macOS, we use single -rpath and deduplicated library flags to avoid warnings
+if [[ "$(uname)" == "Darwin" ]]; then
+  BASE_CGO_LDFLAGS="-L.ten/app/ten_packages/system/ten_runtime/lib -L.ten/app/ten_packages/system/ten_runtime_go/lib -lten_runtime -lten_runtime_go -Wl,-rpath,@loader_path/lib"
+else
+  BASE_CGO_LDFLAGS="-L.ten/app/ten_packages/system/ten_runtime/lib -L.ten/app/ten_packages/system/ten_runtime_go/lib -lten_runtime -lten_runtime_go -Wl,-rpath,@loader_path/lib -Wl,-rpath,@loader_path/../lib"
+fi
+
+# Add sanitizer flags if requested
+if [ -n "$SANITIZE_FLAG" ]; then
+  SANITIZER_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer -g"
+  export CGO_CFLAGS="$BASE_CGO_CFLAGS $SANITIZER_FLAGS"
+  export CGO_CXXFLAGS="$BASE_CGO_CFLAGS $SANITIZER_FLAGS"
+  export CGO_LDFLAGS="$BASE_CGO_LDFLAGS $SANITIZER_FLAGS"
+  echo "CGO_CFLAGS=$CGO_CFLAGS"
+  echo "CGO_LDFLAGS=$CGO_LDFLAGS"
+else
+  export CGO_CFLAGS="$BASE_CGO_CFLAGS"
+  export CGO_LDFLAGS="$BASE_CGO_LDFLAGS"
+fi
+
+export CGOCHECK=2
+
+# Print the current directory.
+echo "Current directory: $(pwd)"
+
+# Compile test with optional -race flag and GOEXPERIMENT for cgocheck2
+# Note: Go 1.24+ requires GOEXPERIMENT=cgocheck2 at build time instead of runtime GODEBUG
+export GOEXPERIMENT=cgocheck2
+echo "GOEXPERIMENT=$GOEXPERIMENT"
+
+go mod tidy
+go test -c $RACE_FLAG -gcflags=all=-d=checkptr=1 ./tests/... -o ./.ten/app/bin/"${extension_name}"_test
+
+export LD_LIBRARY_PATH=$ten_runtime_lib_path:$ten_runtime_go_lib_path
+export DYLD_LIBRARY_PATH=$ten_runtime_lib_path:$ten_runtime_go_lib_path
+
+export GOGC=1
+
+# CPU limit settings - simulate slow CPU processing
+# Limit Go to use 1 CPU core, force serialization, increase probability of race conditions
+# export GOMAXPROCS=1
+# echo "GOMAXPROCS=$GOMAXPROCS (limited to 1 CPU core to simulate slow CPU processing)"
+
+# GODEBUG options to catch potential segfaults and memory issues
+# See: https://pkg.go.dev/runtime
+GODEBUG_OPTIONS=(
+  "clobberfree=1"           # Overwrite freed memory with 0xde to help detect use-after-free
+  "invalidptr=1"            # Crash on invalid pointers (enabled by default, but set explicitly)
+  "gccheckmark=1"           # Verify correctness of GC mark phase
+)
+
+# Merge array into comma-separated string
+export GODEBUG=$(IFS=,; echo "${GODEBUG_OPTIONS[*]}")
+echo "GODEBUG=$GODEBUG"
+
+# AddressSanitizer options
+if [ -n "$SANITIZE_FLAG" ]; then
+  # Configure ASan options
+  export ASAN_OPTIONS="detect_leaks=1:halt_on_error=1:abort_on_error=1:symbolize=1:print_stacktrace=1:check_initialization_order=1"
+  export UBSAN_OPTIONS="print_stacktrace=1:halt_on_error=1"
+  echo "ASAN_OPTIONS=$ASAN_OPTIONS"
+  echo "UBSAN_OPTIONS=$UBSAN_OPTIONS"
+fi
+
+
+# Run the test case
+./.ten/app/bin/"${extension_name}"_test -test.v
