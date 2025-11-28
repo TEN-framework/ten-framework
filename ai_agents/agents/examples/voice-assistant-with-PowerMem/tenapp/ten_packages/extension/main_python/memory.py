@@ -1,23 +1,39 @@
 from __future__ import annotations
 
-import asyncio
-import json
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, List
 
 from ten_runtime import AsyncTenEnv
 
 
-class PowerMemSdkMemoryStore:
+class MemoryStore(ABC):
     def __init__(self, env: AsyncTenEnv):
+        self.env: AsyncTenEnv = env
+
+    @abstractmethod
+    async def add(
+        self,
+        conversation: List[dict],
+        user_id: str,
+        agent_id: str,
+    ) -> None: ...
+
+    @abstractmethod
+    async def search(
+        self, user_id: str, agent_id: str, query: str
+    ) -> Any: ...
+
+
+class PowerMemSdkMemoryStore(MemoryStore):
+    def __init__(self, env: AsyncTenEnv):
+        super().__init__(env)
         from powermem import Memory, auto_config
 
-        self.env: AsyncTenEnv = env
         self.client: Memory = Memory(config=auto_config())
 
     async def add(
         self,
-        conversation: list[dict],
+        conversation: List[dict],
         user_id: str,
         agent_id: str,
     ) -> None:
@@ -49,15 +65,15 @@ class PowerMemSdkMemoryStore:
             raise
 
     async def search(
-        self, user_id: str, agent_id: str, category_query: str
+        self, user_id: str, agent_id: str, query: str
     ) -> Any:
         self.env.log_info(
             f"[PowerMemSdkMemoryStore] retrieve_related_clustered_categories called with: "
-            f"user_id='{user_id}', agent_id='{agent_id}', category_query='{category_query}'"
+            f"user_id='{user_id}', agent_id='{agent_id}', query='{query}'"
         )
         try:
             result = self.client.search(
-                user_id=user_id, agent_id=agent_id, query=category_query
+                user_id=user_id, agent_id=agent_id, query=query
             )
             self.env.log_info(
                 f"[PowerMemSdkMemoryStore] retrieve_related_clustered_categories returned: {result}"

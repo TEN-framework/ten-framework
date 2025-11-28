@@ -93,7 +93,7 @@ The following parameters can be set in the configuration file:
 
 ### Memory Retrieval
 - Uses semantic search to find relevant memories based on user queries
-- Searches using `category_query` parameter for flexible query matching
+- Searches using `query` parameter for flexible query matching
 - Retrieved memories are formatted and added to LLM context before processing user input
 - Helps assistant provide more personalized and relevant responses
 
@@ -110,7 +110,7 @@ The following parameters can be set in the configuration file:
 The extension uses `PowerMemSdkMemoryStore` class which wraps the PowerMem SDK:
 
 - `add(conversation, user_id, agent_id)`: Save conversation to memory
-- `search(user_id, agent_id, category_query)`: Search for related memories using semantic search
+- `search(user_id, agent_id, query)`: Search for related memories using semantic search
 
 ### Memory-related Methods
 

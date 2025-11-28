@@ -30,7 +30,7 @@ from .prompt import (
 import uuid
 
 # Memory store abstraction
-from .memory import PowerMemSdkMemoryStore
+from .memory import MemoryStore, PowerMemSdkMemoryStore
 
 
 class MainControlExtension(AsyncExtension):
@@ -52,7 +52,7 @@ class MainControlExtension(AsyncExtension):
         self.session_id: str = "0"
 
         # Memory related attributes (named memory_store by request)
-        self.memory_store: PowerMemSdkMemoryStore | None = None
+        self.memory_store: MemoryStore | None = None
         self.last_memory_update_turn_id: int = 0
 
         # Memory idle timer: save memory after 30 seconds of inactivity
@@ -445,7 +445,7 @@ class MainControlExtension(AsyncExtension):
 
             # Call semantic search API
             resp = await self.memory_store.search(
-                user_id=user_id, agent_id=agent_id, category_query=query
+                user_id=user_id, agent_id=agent_id, query=query
             )
 
             if not resp or not isinstance(resp, dict):
