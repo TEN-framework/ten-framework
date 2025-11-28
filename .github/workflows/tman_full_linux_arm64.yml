@@ -181,11 +181,11 @@ jobs:
           PPA_GPG_PRIVATE_KEY: ${{ secrets.PPA_GPG_PRIVATE_KEY }}
           PPA_GPG_PASSPHRASE: ${{ secrets.PPA_GPG_PASSPHRASE }}
           PPA_GPG_KEY_ID: ${{ secrets.PPA_GPG_KEY_ID }}
-          PPA_LAUNCHPAD_ID: ${{ secrets.PPA_LAUNCHPAD_ID }}
-          PPA_PPA_NAME: ${{ secrets.PPA_NAME }}
-          PPA_MAINTAINER_NAME: ${{ secrets.PPA_MAINTAINER_NAME }}
-          PPA_MAINTAINER_EMAIL: ${{ secrets.PPA_MAINTAINER_EMAIL }}
-          PPA_DISTRIBUTIONS: ${{ secrets.PPA_UBUNTU_DISTRIBUTIONS || 'jammy noble oracular plucky questing' }}
+          PPA_LAUNCHPAD_ID: 'ten-framework'
+          PPA_PPA_NAME: 'ten-framework'
+          PPA_MAINTAINER_NAME: 'TEN Framework Team'
+          PPA_MAINTAINER_EMAIL: 'ten.framework@gmail.com'
+          PPA_DISTRIBUTIONS: 'jammy noble plucky questing'
         run: |
           # Install required tools
           sudo apt-get update -qq
