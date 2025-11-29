@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, List
+from typing import Any
 
 from ten_runtime import AsyncTenEnv
 
@@ -13,7 +13,7 @@ class MemoryStore(ABC):
     @abstractmethod
     async def add(
         self,
-        conversation: List[dict],
+        conversation: list[dict],
         user_id: str,
         agent_id: str,
     ) -> None: ...
@@ -33,7 +33,7 @@ class PowerMemSdkMemoryStore(MemoryStore):
 
     async def add(
         self,
-        conversation: List[dict],
+        conversation: list[dict],
         user_id: str,
         agent_id: str,
     ) -> None:
@@ -99,7 +99,7 @@ class PowerMemSdkUserMemoryStore(MemoryStore):
 
     async def add(
         self,
-        conversation: List[dict],
+        conversation: list[dict],
         user_id: str,
         agent_id: str,
     ) -> None:
