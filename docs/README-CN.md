@@ -322,6 +322,19 @@ task run
 
 <br>
 
+#### 在不使用 Docker 的情况下从 TEN Manager 运行转录应用（Beta）
+
+TEN 还提供了一个转录应用，无需 Docker 即可直接在 TEN Manager 中运行。
+
+详情请查看[快速入门指南][quick-start-guide-ten-manager]。
+
+<br>
+
+![divider][divider-light]
+![divider][divider-dark]
+
+<br>
+
 <a name="codespaces"></a>
 
 ### Codespaces
@@ -618,6 +631,7 @@ TEN Framework 也可通过以下 AI 驱动的问答平台获取信息，它们�
 [docker]: https://www.docker.com/
 [docker-compose]: https://docs.docker.com/compose/
 [nodejs]: https://nodejs.org/en
+[quick-start-guide-ten-manager]: https://theten.ai/docs/ten_framework/getting-started/quick-start
 [localhost-49483-image]: https://github.com/user-attachments/assets/191a7c0a-d8e6-48f9-866f-6a70c58f0118
 [localhost-3000-image]: https://github.com/user-attachments/assets/13e482b6-d907-4449-a779-9454bb24c0b1
 [localhost-49483]: http://localhost:49483

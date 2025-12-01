@@ -203,7 +203,7 @@ export default function Action(props: { className?: string }) {
         <div className="hidden md:block">
           <span className="text-sm font-bold">Description</span>
           <span className="ml-2 text-xs text-muted-foreground">
-            A Realtime Conversational AI Agent powered by TEN
+            Multi-Purpose Voice Assistant Agent Example Powered by TEN
           </span>
         </div>
 
