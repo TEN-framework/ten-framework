@@ -694,9 +694,25 @@ jobs:
           $installerPath = "$env:TEMP\OllamaSetup.exe"
           Invoke-WebRequest -Uri $ollamaUrl -OutFile $installerPath
 
+          #debug purpose, remove later
+          if (-not (Test-Path $installerPath) -or (Get-Item $installerPath).Length -lt 700MB) {
+            Write-Error "Ollama installer download failed or file is abnormally small"
+            exit 1
+          }
+          whoami
+
           # Install Ollama silently
+          Write-Output "Unblocking Ollama installer..."
+          Unblock-File -Path $installerPath
+          $installArgs = @(
+            "/VERYSILENT",
+            "/SUPPRESSMSGBOXES",
+            "/NORESTART",            # don't restart system
+            "/NOSTART"              # don't start ollama service
+          ) -join " "
           Write-Output "Installing Ollama..."
-          Start-Process -FilePath $installerPath -ArgumentList "/SILENT" -Wait
+          Start-Process -FilePath $installerPath -ArgumentList $installArgs -Wait
+          Write-Output "Ollama installed successfully"
 
           # Add Ollama to PATH (typically installed to C:\Users\<user>\AppData\Local\Programs\Ollama)
           $ollamaPath = "$env:LOCALAPPDATA\Programs\Ollama"
