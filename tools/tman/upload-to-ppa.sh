@@ -14,12 +14,14 @@ GPG_KEY_ID="${PPA_GPG_KEY_ID}"
 GPG_PASSPHRASE="${PPA_GPG_PASSPHRASE}"
 LAUNCHPAD_ID="${PPA_LAUNCHPAD_ID}"
 PPA_NAME="${PPA_PPA_NAME}"
-PACKAGE_NAME="${PPA_PACKAGE_NAME:-tman}"
+ARCH="${PPA_ARCH:-amd64}"
+# Use architecture-specific package name to avoid conflicts
+BASE_PACKAGE_NAME="${PPA_PACKAGE_NAME:-tman}"
+PACKAGE_NAME="${BASE_PACKAGE_NAME}-${ARCH}"
 VERSION="${PPA_VERSION}"
 REVISION="${PPA_REVISION:-1}"
 DISTRIBUTIONS="${PPA_DISTRIBUTIONS:-jammy noble oracular plucky questing}"
 SOURCE_BINARY="${PPA_SOURCE_BINARY}"
-ARCH="${PPA_ARCH:-amd64}"
 
 # ============ Validate required environment variables ============
 
@@ -129,11 +131,16 @@ Homepage: https://github.com/TEN-framework/ten-framework
 
 Package: ${PACKAGE_NAME}
 Architecture: ${ARCH}
-Depends: \${shlibs:Depends}, \${misc:Depends}
-Description: TEN Framework Package Manager
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Provides: ${BASE_PACKAGE_NAME}
+Conflicts: ${BASE_PACKAGE_NAME}
+Replaces: ${BASE_PACKAGE_NAME}
+Description: TEN Framework Package Manager (${ARCH})
  tman is a package management tool for the TEN framework.
  It helps developers manage extensions, protocols, and other
  TEN framework components.
+ .
+ This is the ${ARCH} architecture version.
  .
  Features:
   - Install and manage TEN packages
