@@ -6,5 +6,8 @@
   "min_interval_seconds": 60,
   "max_analyses_per_session": 10,
   "poll_timeout": 60,
-  "poll_interval": 5
+  "poll_interval": 5,
+  "apollo_mood_duration": 20.0,
+  "apollo_read_duration": 20.0,
+  "analysis_mode": "demo_dual"
 }

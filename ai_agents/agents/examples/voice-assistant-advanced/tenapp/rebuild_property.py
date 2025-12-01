@@ -51,16 +51,17 @@ WORD LIMITS:
    - If phase_complete=false: Ask another question to gather more speech (MAX 15 WORDS)
    - If phase_complete=true: Say 'Thank you. Now please read aloud anything you can see around you - a book, article, or text on your screen - for about 20 seconds.' (MAX 15 WORDS)
 
-4. CRITICAL - During reading phase:
-   - Do NOT respond to the content of what the user is reading
-   - Do NOT comment on or discuss the text they are reading
-   - Simply listen silently while they read
-   - Periodically call check_phase_progress to check if reading_phase_complete=true
+4. During reading phase:
+   a) When user speaks, SILENTLY call check_phase_progress (no text output, just the tool call)
+   b) AFTER receiving the tool result, then speak:
+      - If reading_phase_complete=false: Say EXACTLY "Please keep reading." (these exact 3 words, nothing more)
+      - If reading_phase_complete=true: Go to step 5 immediately
+   c) NEVER call check_phase_progress more than once per user message
+   d) IGNORE the content of what the user says - treat everything as reading material
 
-5. After reading phase, you MUST call check_phase_progress and ONLY say the processing message if reading_phase_complete=true:
-   - If reading_phase_complete=false: Ask them to continue reading a bit more (MAX 15 WORDS)
-   - If reading_phase_complete=true: Say 'Perfect. I'm processing your responses now, this should take around 15 seconds.' (MAX 15 WORDS)
-   - NEVER say 'processing your responses' without first confirming reading_phase_complete=true via check_phase_progress
+5. When reading_phase_complete=true (confirmed via check_phase_progress):
+   - Say 'Perfect. I'm processing your responses now, this should take around 15 seconds.' (MAX 15 WORDS)
+   - NEVER say 'processing your responses' without first confirming reading_phase_complete=true
 
 6. You will receive TWO separate [SYSTEM ALERT] messages - one for wellness metrics, then another for clinical indicators.
    - CRITICAL: Only respond to [SYSTEM ALERT] messages that are actually sent to you
@@ -80,10 +81,12 @@ WORD LIMITS:
    - Keep any added context to MAX 15 WORDS
    - After announcing results, silently call confirm_announcement with phase='apollo'
 
-9. THERAPEUTIC CONVERSATION - After both results announced, engage in supportive counseling:
-   - Help user build resilience to anxiety triggers
-   - Discuss impact of stress on relationships (family, work, personal)
-   - Provide actionable strategies for emotional regulation
+9. THERAPEUTIC CONVERSATION - After both results announced:
+   - First, let user know: "Feel free to chat as long as you like, or say goodbye whenever you're ready to end."
+   - Focus on building resilience and reducing stress/anxiety with these evidence-based strategies:
+     a) Reframe setbacks as information - get curious about what you can learn, focus on what's in your control
+     b) Build tolerance for discomfort - small challenges (difficult conversations, sitting with boredom) build evidence you can handle hard things
+     c) Invest in your foundation - sleep, movement, and genuine connection with trusted people
    - Frame as research-based insights, not clinical diagnosis
    - MAX 30 WORDS per response
    - Use warm, empathetic tone
@@ -439,9 +442,7 @@ basic_connections = [
             {"name": "pcm_frame", "dest": [{"extension": "streamid_adapter"}]},
             {"name": "pcm_frame", "source": [{"extension": "tts"}]},
         ],
-        "data": [
-            {"name": "data", "source": [{"extension": "message_collector"}]}
-        ],
+        "data": [{"name": "data", "source": [{"extension": "message_collector"}]}],
     },
     {
         "extension": "streamid_adapter",
@@ -453,19 +454,13 @@ basic_connections = [
     },
     {
         "extension": "llm",
-        "cmd": [
-            {"names": ["flush"], "source": [{"extension": "main_control"}]}
-        ],
-        "data": [
-            {"name": "text_data", "source": [{"extension": "main_control"}]}
-        ],
+        "cmd": [{"names": ["flush"], "source": [{"extension": "main_control"}]}],
+        "data": [{"name": "text_data", "source": [{"extension": "main_control"}]}],
     },
     {
         "extension": "tts",
         "data": [{"name": "text_data", "source": [{"extension": "llm"}]}],
-        "audio_frame": [
-            {"name": "pcm_frame", "dest": [{"extension": "agora_rtc"}]}
-        ],
+        "audio_frame": [{"name": "pcm_frame", "dest": [{"extension": "agora_rtc"}]}],
     },
 ]
 
@@ -503,8 +498,7 @@ def create_basic_voice_assistant(
                 conn["audio_frame"] = [
                     af
                     for af in conn.get("audio_frame", [])
-                    if "source" not in af
-                    or af["source"] != [{"extension": "tts"}]
+                    if "source" not in af or af["source"] != [{"extension": "tts"}]
                 ]
                 break
 
@@ -513,9 +507,7 @@ def create_basic_voice_assistant(
             if conn.get("extension") == "tts":
                 # Change audio destination to avatar
                 for af in conn.get("audio_frame", []):
-                    if "dest" in af and af["dest"] == [
-                        {"extension": "agora_rtc"}
-                    ]:
+                    if "dest" in af and af["dest"] == [{"extension": "agora_rtc"}]:
                         af["dest"] = [{"extension": "avatar"}]
 
                 # Add tts_audio_end data to avatar
@@ -576,10 +568,12 @@ def create_apollo_graph(
 
     # Only add flush to avatar if avatar exists
     if has_avatar:
-        main_control_cmd.append({
-            "name": "flush",
-            "dest": [{"extension": "avatar"}],
-        })
+        main_control_cmd.append(
+            {
+                "name": "flush",
+                "dest": [{"extension": "avatar"}],
+            }
+        )
 
     connections = [
         {
@@ -605,15 +599,11 @@ def create_apollo_graph(
                     ],
                 },
             ],
-            "data": [
-                {"name": "data", "source": [{"extension": "message_collector"}]}
-            ],
+            "data": [{"name": "data", "source": [{"extension": "message_collector"}]}],
         },
         {
             "extension": "streamid_adapter",
-            "audio_frame": [
-                {"name": "pcm_frame", "dest": [{"extension": "stt"}]}
-            ],
+            "audio_frame": [{"name": "pcm_frame", "dest": [{"extension": "stt"}]}],
         },
         {
             "extension": "stt",
@@ -630,20 +620,14 @@ def create_apollo_graph(
                 {"name": "text_data", "source": [{"extension": "llm"}]},
                 {
                     "name": "tts_audio_start",
-                    "dest": [
-                        {"extension": "thymia_analyzer"}
-                    ],  # Direct to thymia
+                    "dest": [{"extension": "thymia_analyzer"}],  # Direct to thymia
                 },
                 {
                     "name": "tts_audio_end",
-                    "dest": [
-                        {"extension": "thymia_analyzer"}
-                    ],  # Direct to thymia
+                    "dest": [{"extension": "thymia_analyzer"}],  # Direct to thymia
                 },
             ],
-            "audio_frame": [
-                {"name": "pcm_frame", "dest": [{"extension": "avatar"}]}
-            ],
+            "audio_frame": [{"name": "pcm_frame", "dest": [{"extension": "avatar"}]}],
         }
         connections.append(tts_conn)
     else:
@@ -654,15 +638,11 @@ def create_apollo_graph(
                 {"name": "text_data", "source": [{"extension": "llm"}]},
                 {
                     "name": "tts_audio_start",
-                    "dest": [
-                        {"extension": "thymia_analyzer"}
-                    ],  # Direct to thymia
+                    "dest": [{"extension": "thymia_analyzer"}],  # Direct to thymia
                 },
                 {
                     "name": "tts_audio_end",
-                    "dest": [
-                        {"extension": "thymia_analyzer"}
-                    ],  # Direct to thymia
+                    "dest": [{"extension": "thymia_analyzer"}],  # Direct to thymia
                 },
             ],
             "audio_frame": [
@@ -684,9 +664,7 @@ def create_apollo_graph(
             if conn.get("extension") == "agora_rtc":
                 # Change audio source from tts to avatar
                 for af in conn.get("audio_frame", []):
-                    if "source" in af and af["source"] == [
-                        {"extension": "tts"}
-                    ]:
+                    if "source" in af and af["source"] == [{"extension": "tts"}]:
                         af["source"] = [{"extension": "avatar"}]
 
                 # Add video frame from avatar
@@ -700,9 +678,7 @@ def create_apollo_graph(
         # Avatar only receives tts_text_input and audio frames
         avatar_conn = {
             "extension": "avatar",
-            "audio_frame": [
-                {"name": "pcm_frame", "source": [{"extension": "tts"}]}
-            ],
+            "audio_frame": [{"name": "pcm_frame", "source": [{"extension": "tts"}]}],
             "data": [
                 {
                     "name": "tts_text_input",

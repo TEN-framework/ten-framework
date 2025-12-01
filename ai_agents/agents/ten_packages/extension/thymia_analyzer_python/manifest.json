@@ -45,6 +45,15 @@
         },
         "poll_interval": {
           "type": "int64"
+        },
+        "apollo_mood_duration": {
+          "type": "float64"
+        },
+        "apollo_read_duration": {
+          "type": "float64"
+        },
+        "analysis_mode": {
+          "type": "string"
         }
       }
     },

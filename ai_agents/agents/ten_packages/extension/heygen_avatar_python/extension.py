@@ -172,12 +172,6 @@ class HeygenAvatarExtension(AsyncExtension):
                 self.ten_env.log_error(f"Error processing audio frame: {e}")
                 continue
 
-    def _dump_audio_if_need(self, buf: bytearray) -> None:
-        with open(
-            "{}_{}.pcm".format("tts", self.config.agora_channel_name), "ab"
-        ) as dump_file:
-            dump_file.write(buf)
-
     async def _handle_interrupt(self) -> None:
         """Handle audio interrupt by clearing the audio queue and interrupting the client."""
         self.ten_env.log_debug("Handling interrupt")

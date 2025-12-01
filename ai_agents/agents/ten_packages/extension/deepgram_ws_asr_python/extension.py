@@ -157,27 +157,7 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
                 "utterance_end_ms": self.config.utterance_end_ms,  # Pass as integer
             }
 
-        # Log raw config values and params dict BEFORE URL encoding
-        if self.config.is_v2_endpoint():
-            self.ten_env.log_info(
-                f"[DEEPGRAM-V2-PARAMS-RAW] "
-                f"eot_threshold={self.config.eot_threshold} "
-                f"eot_timeout_ms={self.config.eot_timeout_ms} "
-                f"eager_eot_threshold={self.config.eager_eot_threshold}"
-            )
-        else:
-            self.ten_env.log_info(
-                f"[DEEPGRAM-V1-PARAMS-RAW] "
-                f"endpointing={self.config.endpointing} "
-                f"utterance_end_ms={self.config.utterance_end_ms}"
-            )
-
-        self.ten_env.log_info(f"[DEEPGRAM-PARAMS-DICT] params={params}")
-
         query_string = urlencode(params)
-        self.ten_env.log_info(
-            f"[DEEPGRAM-PARAMS-ENCODED] query_string={query_string}"
-        )
         return f"{self.config.url}?{query_string}"
 
     @override

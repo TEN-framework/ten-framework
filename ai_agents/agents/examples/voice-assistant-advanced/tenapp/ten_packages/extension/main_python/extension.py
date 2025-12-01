@@ -44,6 +44,13 @@ class MainControlExtension(AsyncExtension):
         self.sentence_fragment: str = ""
         self.turn_id: int = 0
         self.session_id: str = "0"
+        # Track recently sent TTS content to prevent duplicates (text -> timestamp)
+        self._recent_tts_content: dict[str, float] = {}
+        # Separate cache for transcript deduplication
+        self._recent_transcript_content: dict[str, float] = {}
+        self._tts_dedup_window_seconds: float = (
+            3.0  # Skip duplicates within this window
+        )
 
     def _current_metadata(self) -> dict:
         return {"session_id": self.session_id, "turn_id": self.turn_id}
@@ -88,9 +95,15 @@ class MainControlExtension(AsyncExtension):
         stream_id = int(self.session_id)
         if not event.text:
             return
-        if event.final:
-            import time
 
+        # Interrupt on INTERIM results too (when user starts speaking)
+        if not event.final and len(event.text) >= 2:
+            self.ten_env.log_info(
+                f'[INTERIM_INTERRUPT] User speaking, interrupting avatar: "{event.text[:30]}..."'
+            )
+            await self._interrupt()
+
+        if event.final:
             stt_final_time = time.time()
             self.ten_env.log_info(
                 f'[LATENCY_STT_FINAL] t={stt_final_time:.3f} text="{event.text}"'
@@ -107,8 +120,6 @@ class MainControlExtension(AsyncExtension):
             if not hasattr(
                 self, "_logged_llm_first_token"
             ) or self.turn_id != getattr(self, "_last_logged_turn", -1):
-                import time
-
                 llm_first_token_time = time.time()
                 self.ten_env.log_info(
                     f"[LATENCY_LLM_FIRST_TOKEN] t={llm_first_token_time:.3f} turn={self.turn_id}"
@@ -175,6 +186,26 @@ class MainControlExtension(AsyncExtension):
         """
         Sends the transcript (ASR or LLM output) to the message collector.
         """
+        # Deduplicate final assistant transcripts using separate cache from TTS
+        if role == "assistant" and final and data_type == "text" and text:
+            current_time = time.time()
+            normalized = text.strip().lower()
+            if normalized in self._recent_transcript_content:
+                last_sent = self._recent_transcript_content[normalized]
+                if current_time - last_sent < self._tts_dedup_window_seconds:
+                    self.ten_env.log_info(
+                        f'[TRANSCRIPT_DEDUP] Skipping duplicate final transcript: "{text}"'
+                    )
+                    return
+            # Track this transcript
+            self._recent_transcript_content[normalized] = current_time
+            # Clean up old entries
+            self._recent_transcript_content = {
+                k: v
+                for k, v in self._recent_transcript_content.items()
+                if current_time - v < self._tts_dedup_window_seconds * 2
+            }
+
         if data_type == "text":
             await _send_data(
                 self.ten_env,
@@ -218,15 +249,38 @@ class MainControlExtension(AsyncExtension):
         """
         Sends a sentence to the TTS system.
         """
+        current_time = time.time()
+
+        # Skip empty text
+        if not text or not text.strip():
+            return
+
+        # Deduplicate: skip if same text was sent recently
+        normalized_text = text.strip().lower()
+        if normalized_text in self._recent_tts_content:
+            last_sent = self._recent_tts_content[normalized_text]
+            if current_time - last_sent < self._tts_dedup_window_seconds:
+                self.ten_env.log_info(
+                    f'[TTS_DEDUP] Skipping duplicate: "{text}" (sent {current_time - last_sent:.2f}s ago)'
+                )
+                return
+
+        # Clean up old entries from tracking dict
+        self._recent_tts_content = {
+            k: v
+            for k, v in self._recent_tts_content.items()
+            if current_time - v < self._tts_dedup_window_seconds * 2
+        }
+
+        # Track this content
+        self._recent_tts_content[normalized_text] = current_time
+
         # Log first TTS request for latency measurement
         if not hasattr(
             self, "_logged_tts_first_request"
         ) or self.turn_id != getattr(self, "_last_logged_tts_turn", -1):
-            import time
-
-            tts_request_time = time.time()
             self.ten_env.log_info(
-                f'[LATENCY_TTS_REQUEST] t={tts_request_time:.3f} turn={self.turn_id} text="{text[:50]}"'
+                f'[LATENCY_TTS_REQUEST] t={current_time:.3f} turn={self.turn_id} text="{text[:50]}"'
             )
             self._logged_tts_first_request = True
             self._last_logged_tts_turn = self.turn_id
@@ -252,6 +306,8 @@ class MainControlExtension(AsyncExtension):
         Interrupts ongoing LLM and TTS generation. Typically called when user speech is detected.
         """
         self.sentence_fragment = ""
+        self._recent_tts_content.clear()  # Clear dedup caches on interrupt
+        self._recent_transcript_content.clear()
         await self.agent.flush_llm()
         await _send_data(
             self.ten_env, "tts_flush", "tts", {"flush_id": str(uuid.uuid4())}

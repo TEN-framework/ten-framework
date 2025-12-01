@@ -846,6 +846,12 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                 f"silence_threshold={self.silence_threshold}, "
                 f"min_speech_duration={self.min_speech_duration}"
             )
+            # Explicitly log durations to verify property loading
+            ten_env.log_info(
+                f"[THYMIA_DURATION_CHECK] apollo_mood_duration={self.apollo_mood_duration}s, "
+                f"apollo_read_duration={self.apollo_read_duration}s, "
+                f"total_required={self.apollo_mood_duration + self.apollo_read_duration}s"
+            )
         except Exception as e:
             ten_env.log_warn(
                 f"[THYMIA_CONFIG] Failed to load some properties, using defaults: {e}"
@@ -1138,9 +1144,9 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                         f"mood_phase={self.mood_phase_complete}, reading_phase={self.reading_phase_complete}"
                     )
 
-                # Check Hellos phase (30s mood speech)
+                # Check Hellos phase (uses min_speech_duration from config)
                 if not self.hellos_complete:
-                    required_duration = self.min_speech_duration  # 30s
+                    required_duration = self.min_speech_duration
 
                     if (
                         self.audio_buffer.has_enough_speech(required_duration)
@@ -1170,7 +1176,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                                 )
                         else:
                             ten_env.log_info(
-                                f"[THYMIA_ANALYSIS_START] Starting Hellos analysis (30s mood) "
+                                f"[THYMIA_ANALYSIS_START] Starting Hellos analysis ({self.apollo_mood_duration}s mood threshold) "
                                 f"({actual_speech_duration:.1f}s actual speech collected, {speech_duration:.1f}s total with padding)"
                             )
                             self.hellos_analysis_running = True
@@ -1184,11 +1190,11 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                                 )
                             )
 
-                # Check Apollo phase (60s total speech) - INDEPENDENT of Hellos
+                # Check Apollo phase - INDEPENDENT of Hellos
                 if not self.apollo_complete:
                     required_duration = (
                         self.apollo_mood_duration + self.apollo_read_duration
-                    )  # 60s total
+                    )  # mood + read durations
 
                     if (
                         self.audio_buffer.has_enough_speech(required_duration)
@@ -1466,15 +1472,15 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                 )
                 return
 
-            # Use hardcoded split duration (matches property.json config)
-            MOOD_DURATION = 30.0
+            # Use config-based split duration
+            mood_duration = self.apollo_mood_duration
             full_pcm_data = b"".join(self.audio_buffer.speech_buffer)
             mood_pcm, read_pcm = self._split_pcm_by_duration(
-                full_pcm_data, MOOD_DURATION
+                full_pcm_data, mood_duration
             )
 
             ten_env.log_info(
-                f"[THYMIA_APOLLO_PHASE_2] Split at {MOOD_DURATION}s: "
+                f"[THYMIA_APOLLO_PHASE_2] Split at {mood_duration}s (config): "
                 f"mood={len(mood_pcm)} bytes, read={len(read_pcm)} bytes (in-memory, no disk I/O)"
             )
 
@@ -1902,13 +1908,16 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
             text_data = Data.create("text_data")
             text_data.set_property_string("text", hint_text)
             text_data.set_property_bool("end_of_segment", True)
+            text_data.set_property_string(
+                "role", "system"
+            )  # Send as system message for better LLM compliance
             ten_env.log_info(
-                f"[THYMIA-ANNOUNCEMENT] Sending: {hint_text[:100]}..."
+                f"[THYMIA-ANNOUNCEMENT] Sending (role=system): {hint_text[:100]}..."
             )
             await ten_env.send_data(text_data)
 
             ten_env.log_info(
-                "[THYMIA_TRIGGER_OK] Hellos announcement sent to LLM via text_data"
+                "[THYMIA_TRIGGER_OK] Hellos announcement sent to LLM via text_data (role=system)"
             )
             return True  # Announcement sent
         except Exception as e:
@@ -1928,13 +1937,16 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
             text_data = Data.create("text_data")
             text_data.set_property_string("text", hint_text)
             text_data.set_property_bool("end_of_segment", True)
+            text_data.set_property_string(
+                "role", "system"
+            )  # Send as system message for better LLM compliance
             ten_env.log_info(
-                f"[THYMIA-ANNOUNCEMENT] Sending: {hint_text[:100]}..."
+                f"[THYMIA-ANNOUNCEMENT] Sending (role=system): {hint_text[:100]}..."
             )
             await ten_env.send_data(text_data)
 
             ten_env.log_info(
-                "[THYMIA_TRIGGER_OK] Apollo announcement sent to LLM via text_data"
+                "[THYMIA_TRIGGER_OK] Apollo announcement sent to LLM via text_data (role=system)"
             )
         except Exception as e:
             ten_env.log_error(f"[THYMIA_TRIGGER_FAIL] Apollo: {e}")
@@ -2195,16 +2207,27 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                         and not self.user_currently_speaking
                         and not agent_still_speaking
                     ):
-                        # Check if mood phase is incomplete (need 30s, haven't started analysis yet)
+                        # Check if mood phase is incomplete
+                        total_required = (
+                            self.apollo_mood_duration
+                            + self.apollo_read_duration
+                        )
+                        current_speech = (
+                            self.audio_buffer.speech_duration
+                            if self.audio_buffer
+                            else 0
+                        )
                         if (
                             not self.mood_phase_complete
-                            and self.speech_duration < 30.0
+                            and current_speech < self.apollo_mood_duration
                         ):
-                            speech_remaining = 30.0 - self.speech_duration
-                            hint_text = f"[PROGRESS CHECK] User has provided {self.speech_duration:.0f}s of speech. Need {speech_remaining:.0f}s more for mood analysis. User has been silent for {time_since_last_speech:.0f}s. Ask them to continue sharing about their day, feelings, or interests."
+                            speech_remaining = (
+                                self.apollo_mood_duration - current_speech
+                            )
+                            hint_text = f"[PROGRESS CHECK] User has provided {current_speech:.0f}s of speech. Need {speech_remaining:.0f}s more for mood analysis. User has been silent for {time_since_last_speech:.0f}s. Ask them to continue sharing about their day, feelings, or interests."
 
                             ten_env.log_info(
-                                f"[THYMIA_PROGRESS_CHECK] Sending mood phase progress reminder: {self.speech_duration:.0f}s/{30.0:.0f}s collected"
+                                f"[THYMIA_PROGRESS_CHECK] Sending mood phase progress reminder: {current_speech:.0f}s/{self.apollo_mood_duration:.0f}s collected"
                             )
 
                             text_data = Data.create("text_data")
@@ -2215,17 +2238,17 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                             )
                             await ten_env.send_data(text_data)
 
-                        # Check if reading phase is incomplete (need 60s total, mood phase done)
+                        # Check if reading phase is incomplete (mood phase done)
                         elif (
                             self.mood_phase_complete
                             and not self.reading_phase_complete
-                            and self.speech_duration < 60.0
+                            and current_speech < total_required
                         ):
-                            speech_remaining = 60.0 - self.speech_duration
-                            hint_text = f"[PROGRESS CHECK] User has provided {self.speech_duration:.0f}s of speech. Need {speech_remaining:.0f}s more for reading analysis. User has been silent for {time_since_last_speech:.0f}s. Ask them to continue reading aloud from text on their screen."
+                            speech_remaining = total_required - current_speech
+                            hint_text = f"[PROGRESS CHECK] User has provided {current_speech:.0f}s of speech. Need {speech_remaining:.0f}s more for reading analysis. User has been silent for {time_since_last_speech:.0f}s. Ask them to continue reading aloud from text on their screen."
 
                             ten_env.log_info(
-                                f"[THYMIA_PROGRESS_CHECK] Sending reading phase progress reminder: {self.speech_duration:.0f}s/{60.0:.0f}s collected"
+                                f"[THYMIA_PROGRESS_CHECK] Sending reading phase progress reminder: {current_speech:.0f}s/{total_required:.0f}s collected"
                             )
 
                             text_data = Data.create("text_data")
@@ -2674,7 +2697,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                 elif self.analysis_mode == "demo_dual":
                     if not self.mood_phase_complete:
                         current_phase = "mood"
-                        required_duration = self.min_speech_duration  # 30s
+                        required_duration = self.min_speech_duration
                         speech_collected = (
                             self.audio_buffer.actual_speech_duration
                             if self.audio_buffer

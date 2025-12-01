@@ -157,15 +157,19 @@ class Agent:
                 # Handle hints from extensions (e.g., Thymia analysis ready)
                 text, _ = data.get_property_string("text")
                 is_final, _ = data.get_property_bool("end_of_segment")
+                role, _ = data.get_property_string("role")
+                # Default to "user" if role not specified
+                if not role:
+                    role = "user"
 
                 if text and is_final:
                     self.ten_env.log_info(
-                        f"[AGENT-TEXT-DATA-TRIGGER] Received text_data (thymia announcement): {text[:80]}..."
+                        f"[AGENT-TEXT-DATA-TRIGGER] Received text_data (role={role}): {text[:80]}..."
                     )
-                    # Queue as user input to trigger LLM tool calls
-                    await self.queue_llm_input(text)
+                    # Queue with specified role to trigger LLM tool calls
+                    await self.queue_llm_input(text, role)
                     self.ten_env.log_info(
-                        f"[AGENT-QUEUED-TO-LLM] Queued text_data to LLM input queue"
+                        f"[AGENT-QUEUED-TO-LLM] Queued text_data to LLM input queue (role={role})"
                     )
             elif data.get_name() in ["tts_audio_start", "tts_audio_end"]:
                 # TTS events route directly to thymia_analyzer via graph (not through agent)
@@ -205,12 +209,12 @@ class Agent:
         """
         await self.llm_exec.register_tool(tool, source)
 
-    async def queue_llm_input(self, text: str):
+    async def queue_llm_input(self, text: str, role: str = "user"):
         """
         Queue a new message to the LLM context.
         This method sends the text input to the LLM for processing.
         """
-        await self.llm_exec.queue_input(text)
+        await self.llm_exec.queue_input(text, role)
 
     async def flush_llm(self):
         """

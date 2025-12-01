@@ -58,6 +58,11 @@ class LLMExec:
         self.contexts: list[LLMMessage] = []
         self.current_request_id: Optional[str] = None
         self.current_text = None
+        # Track response_ids that have tool calls - content from these should be suppressed
+        self._tool_call_response_ids: set[str] = set()
+        self._pending_content: dict[str, str] = (
+            {}
+        )  # Buffer content by response_id
 
     def start(self) -> None:
         """Start the input processor task - call this after __init__"""
@@ -66,8 +71,8 @@ class LLMExec:
                 self._process_input_queue()
             )
 
-    async def queue_input(self, item: str) -> None:
-        await self.input_queue.put(item)
+    async def queue_input(self, item: str, role: str = "user") -> None:
+        await self.input_queue.put((item, role))
 
     async def flush(self) -> None:
         """
@@ -110,11 +115,16 @@ class LLMExec:
         """
         while not self.stopped:
             try:
-                text = await self.input_queue.get()
+                item = await self.input_queue.get()
+                # Unpack tuple (text, role) - supports both old format (str) and new format (tuple)
+                if isinstance(item, tuple):
+                    text, role = item
+                else:
+                    text, role = item, "user"
                 self.ten_env.log_info(
-                    f"[LLMExec] Processing queued input (len={len(text)} chars): '{text[:100]}...'"
+                    f"[LLMExec] Processing queued input (role={role}, len={len(text)} chars): '{text[:100]}...'"
                 )
-                new_message = LLMMessageContent(role="user", content=text)
+                new_message = LLMMessageContent(role=role, content=text)
                 self.current_task = asyncio.create_task(
                     self._send_to_llm(self.ten_env, new_message)
                 )
