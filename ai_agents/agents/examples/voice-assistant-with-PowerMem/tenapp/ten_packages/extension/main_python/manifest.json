@@ -38,6 +38,15 @@
         },
         "enable_memorization": {
           "type": "bool"
+        },
+        "enable_user_memory": {
+          "type": "bool"
+        },
+        "memory_save_interval_turns": {
+          "type": "int32"
+        },
+        "memory_idle_timeout_seconds": {
+          "type": "float64"
         }
       }
     }
