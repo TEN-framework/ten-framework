@@ -1,6 +1,6 @@
 # Voice Assistant (with PowerMem)
 
-A voice assistant enhanced with PowerMem memory management capabilities for persistent conversation context.
+A voice assistant enhanced with [PowerMem](https://github.com/oceanbase/powermem/) memory management capabilities for persistent conversation context.
 
 ## PowerMem Configuration
 

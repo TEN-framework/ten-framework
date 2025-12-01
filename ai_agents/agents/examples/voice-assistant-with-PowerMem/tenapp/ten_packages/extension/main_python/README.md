@@ -1,6 +1,6 @@
 # Voice Assistant with PowerMem Integration
 
-This extension integrates PowerMem memory functionality, enabling the voice assistant to remember previous conversation content and provide more personalized and coherent interaction experiences.
+This extension integrates [PowerMem](https://github.com/oceanbase/powermem/) memory functionality, enabling the voice assistant to remember previous conversation content and provide more personalized and coherent interaction experiences.
 
 ## Features
 
