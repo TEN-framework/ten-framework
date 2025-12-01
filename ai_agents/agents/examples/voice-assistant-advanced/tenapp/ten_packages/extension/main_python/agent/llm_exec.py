@@ -52,17 +52,13 @@ class LLMExec:
         self._input_processor_task: Optional[asyncio.Task] = None
         self.available_tools: list[LLMToolMetadata] = []
         self.tool_registry: dict[str, str] = {}
-        self.available_tools_lock = (
-            asyncio.Lock()
-        )  # Lock to ensure thread-safe access
+        self.available_tools_lock = asyncio.Lock()  # Lock to ensure thread-safe access
         self.contexts: list[LLMMessage] = []
         self.current_request_id: Optional[str] = None
         self.current_text = None
         # Track response_ids that have tool calls - content from these should be suppressed
         self._tool_call_response_ids: set[str] = set()
-        self._pending_content: dict[str, str] = (
-            {}
-        )  # Buffer content by response_id
+        self._pending_content: dict[str, str] = {}  # Buffer content by response_id
 
     def start(self) -> None:
         """Start the input processor task - call this after __init__"""
@@ -83,9 +79,7 @@ class LLMExec:
         if self.current_request_id:
             request_id = self.current_request_id
             self.current_request_id = None
-            await _send_cmd(
-                self.ten_env, "abort", "llm", {"request_id": request_id}
-            )
+            await _send_cmd(self.ten_env, "abort", "llm", {"request_id": request_id})
         if self.current_task:
             self.current_task.cancel()
 
@@ -129,9 +123,7 @@ class LLMExec:
                     self._send_to_llm(self.ten_env, new_message)
                 )
                 await self.current_task
-                self.ten_env.log_info(
-                    "[LLMExec] Finished sending queued input to LLM"
-                )
+                self.ten_env.log_info("[LLMExec] Finished sending queued input to LLM")
             except asyncio.CancelledError:
                 self.ten_env.log_info("LLMExec processing cancelled.")
                 text = self.current_text
@@ -170,15 +162,11 @@ class LLMExec:
             new_message = LLMMessageContent(role=role, content=content)
             await self._queue_context(ten_env, new_message)
 
-    async def _send_to_llm(
-        self, ten_env: AsyncTenEnv, new_message: LLMMessage
-    ) -> None:
+    async def _send_to_llm(self, ten_env: AsyncTenEnv, new_message: LLMMessage) -> None:
         # Log EVERY call to _send_to_llm to track loop
         import traceback
 
-        stack_trace = "".join(
-            traceback.format_stack()[-4:-1]
-        )  # Get last 3 frames
+        stack_trace = "".join(traceback.format_stack()[-4:-1])  # Get last 3 frames
         ten_env.log_info(
             f"[LLM-SEND-CALLED] message_type={type(new_message).__name__} stack:\n{stack_trace}"
         )
@@ -205,9 +193,7 @@ class LLMExec:
             if cmd_result and cmd_result.is_final() is False:
                 if cmd_result.get_status_code() == StatusCode.OK:
                     response_json, _ = cmd_result.get_property_to_json(None)
-                    ten_env.log_info(
-                        f"_send_to_llm: response_json {response_json}"
-                    )
+                    ten_env.log_info(f"_send_to_llm: response_json {response_json}")
                     completion = parse_llm_response(response_json)
                     await self._handle_llm_response(completion)
 
@@ -232,15 +218,11 @@ class LLMExec:
                 delta = llm_output.delta
                 text = llm_output.content
                 if delta and self.on_reasoning_response:
-                    await self.on_reasoning_response(
-                        self.ten_env, delta, text, False
-                    )
+                    await self.on_reasoning_response(self.ten_env, delta, text, False)
             case LLMResponseReasoningDone():
                 text = llm_output.content
                 if self.on_reasoning_response and text:
-                    await self.on_reasoning_response(
-                        self.ten_env, "", text, True
-                    )
+                    await self.on_reasoning_response(self.ten_env, "", text, True)
             case LLMResponseToolCall():
                 self.ten_env.log_info(
                     f"_handle_llm_response: invoking tool call {llm_output.name}"
@@ -266,9 +248,7 @@ class LLMExec:
                     )
 
                     if error:
-                        self.ten_env.log_error(
-                            f"Tool call failed with error: {error}"
-                        )
+                        self.ten_env.log_error(f"Tool call failed with error: {error}")
                         return
                 except Exception as e:
                     self.ten_env.log_error(
@@ -310,24 +290,7 @@ class LLMExec:
                                 f"Unknown tool result content: {result_content}"
                             )
                     elif tool_result["type"] == "requery":
+                        # Requery type - not implemented yet
                         pass
-                        # self.memory_cache = []
-                        # self.memory_cache.pop()
-                        # result_content = tool_result["content"]
-                        # nonlocal message
-                        # new_message = {
-                        #     "role": "user",
-                        #     "content": self._convert_to_content_parts(
-                        #         message["content"]
-                        #     ),
-                        # }
-                        # new_message["content"] = new_message[
-                        #     "content"
-                        # ] + self._convert_to_content_parts(
-                        #     result_content
-                        # )
-                        # await self.queue_input_item(
-                        #     True, messages=[new_message], no_tool=True
-                        # )
                 else:
                     self.ten_env.log_error("Tool call failed")

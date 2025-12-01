@@ -46,9 +46,7 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
         self._connection_lock: asyncio.Lock = asyncio.Lock()
         self.turn_max_confidence: float = 0.0  # Track max confidence per turn
         self.last_interim_text: str = ""  # Track last interim text
-        self.last_interim_confidence: float = (
-            0.0  # Track last interim confidence
-        )
+        self.last_interim_confidence: float = 0.0  # Track last interim confidence
         self.session_start_time: float = (
             0.0  # Track when ASR session started for echo cancel settling
         )
@@ -77,41 +75,17 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
             self.config = DeepgramWSASRConfig.model_validate_json(config_json)
             self.config.update(self.config.params)
 
-            ten_env.log_info("=" * 60)
+            # Log configuration summary
+            api_version = "v2 (Flux)" if self.config.is_v2_endpoint() else "v1 (Nova)"
             ten_env.log_info(
-                "[DEEPGRAM-WS] Deepgram WebSocket ASR Configuration"
+                f"[DEEPGRAM-WS] Config: model={self.config.model} lang={self.config.language} "
+                f"api={api_version} sample_rate={self.config.sample_rate}"
             )
-            ten_env.log_info("=" * 60)
-            ten_env.log_info(f"[DEEPGRAM-WS] Model: {self.config.model}")
-            ten_env.log_info(f"[DEEPGRAM-WS] Language: {self.config.language}")
-            ten_env.log_info(f"[DEEPGRAM-WS] URL: {self.config.url}")
-            ten_env.log_info(
-                f"[DEEPGRAM-WS] Sample Rate: {self.config.sample_rate}"
-            )
-            ten_env.log_info(f"[DEEPGRAM-WS] Encoding: {self.config.encoding}")
-            ten_env.log_info(
-                f"[DEEPGRAM-WS] Interim Results: {self.config.interim_results}"
-            )
-            ten_env.log_info(
-                f"[DEEPGRAM-WS] Punctuate: {self.config.punctuate}"
-            )
-
             if self.config.is_v2_endpoint():
-                ten_env.log_info("[DEEPGRAM-WS] API Version: v2 (Flux)")
                 ten_env.log_info(
-                    f"[DEEPGRAM-WS] EOT Threshold: {self.config.eot_threshold}"
+                    f"[DEEPGRAM-WS] v2 params: eot_threshold={self.config.eot_threshold} "
+                    f"eot_timeout={self.config.eot_timeout_ms}ms"
                 )
-                ten_env.log_info(
-                    f"[DEEPGRAM-WS] EOT Timeout: {self.config.eot_timeout_ms}ms"
-                )
-                if self.config.eager_eot_threshold > 0:
-                    ten_env.log_info(
-                        f"[DEEPGRAM-WS] Eager EOT Threshold: {self.config.eager_eot_threshold}"
-                    )
-            else:
-                ten_env.log_info("[DEEPGRAM-WS] API Version: v1 (Nova)")
-
-            ten_env.log_info("=" * 60)
 
         except Exception as e:
             ten_env.log_error(f"Invalid property: {e}")
@@ -139,9 +113,7 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
             if self.config.eot_timeout_ms > 0:
                 params["eot_timeout_ms"] = str(self.config.eot_timeout_ms)
             if self.config.eager_eot_threshold > 0:
-                params["eager_eot_threshold"] = str(
-                    self.config.eager_eot_threshold
-                )
+                params["eager_eot_threshold"] = str(self.config.eager_eot_threshold)
         else:
             params = {
                 "model": self.config.model,
@@ -149,9 +121,7 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
                 "encoding": self.config.encoding,
                 "sample_rate": self.config.sample_rate,
                 "channels": 1,
-                "interim_results": (
-                    "true" if self.config.interim_results else "false"
-                ),
+                "interim_results": ("true" if self.config.interim_results else "false"),
                 "punctuate": "true" if self.config.punctuate else "false",
                 "endpointing": self.config.endpointing,  # Pass as integer, not string
                 "utterance_end_ms": self.config.utterance_end_ms,  # Pass as integer
@@ -186,9 +156,7 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
                 self.session_start_time = (
                     time.time()
                 )  # Track session start for echo cancel settling
-                self.ten_env.log_info(
-                    "[DEEPGRAM-WS] WebSocket connected successfully"
-                )
+                self.ten_env.log_info("[DEEPGRAM-WS] WebSocket connected successfully")
                 self.receive_task = asyncio.create_task(self._receive_loop())
 
             except Exception as e:
@@ -214,19 +182,13 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
                         data = json.loads(msg.data)
                         await self._handle_message(data)
                     except json.JSONDecodeError as e:
-                        self.ten_env.log_error(
-                            f"[DEEPGRAM-WS] JSON decode error: {e}"
-                        )
+                        self.ten_env.log_error(f"[DEEPGRAM-WS] JSON decode error: {e}")
 
                 elif msg.type == aiohttp.WSMsgType.ERROR:
-                    self.ten_env.log_error(
-                        f"[DEEPGRAM-WS] WebSocket error: {msg}"
-                    )
+                    self.ten_env.log_error(f"[DEEPGRAM-WS] WebSocket error: {msg}")
 
                 elif msg.type == aiohttp.WSMsgType.CLOSED:
-                    self.ten_env.log_info(
-                        "[DEEPGRAM-WS] WebSocket closed by server"
-                    )
+                    self.ten_env.log_info("[DEEPGRAM-WS] WebSocket closed by server")
                     break
 
         except Exception as e:
@@ -355,9 +317,7 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
 
             # Track interim results
             if not is_final:
-                self.turn_max_confidence = max(
-                    self.turn_max_confidence, confidence
-                )
+                self.turn_max_confidence = max(self.turn_max_confidence, confidence)
                 # Update last interim if it passed the confidence filter
                 if confidence >= self.config.min_interim_confidence:
                     self.last_interim_text = transcript_text
@@ -370,10 +330,7 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
             if self.session_start_time > 0:
                 elapsed_time = time.time() - self.session_start_time
 
-                if (
-                    word_count == 1
-                    and elapsed_time < self.config.echo_cancel_duration
-                ):
+                if word_count == 1 and elapsed_time < self.config.echo_cancel_duration:
                     self.ten_env.log_warn(
                         f"[DEEPGRAM-FLUX-FILTER] Dropping single-word {'final' if is_final else 'interim'} during echo cancel settling: "
                         f"text='{transcript_text}', confidence={confidence:.3f}, "
@@ -389,10 +346,7 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
             # Single words are more likely to be false positives from echo/noise
             if word_count == 1:
                 # Filter out low-confidence interim results to avoid false positives from noise
-                if (
-                    not is_final
-                    and confidence < self.config.min_interim_confidence
-                ):
+                if not is_final and confidence < self.config.min_interim_confidence:
                     self.ten_env.log_warn(
                         f"[DEEPGRAM-FLUX-FILTER] Dropping low-confidence single-word interim: "
                         f"text='{transcript_text}', confidence={confidence:.3f}, "
@@ -440,9 +394,7 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
                 self.last_interim_confidence = 0.0
 
         except Exception as e:
-            self.ten_env.log_error(
-                f"[DEEPGRAM-FLUX] Error processing TurnInfo: {e}"
-            )
+            self.ten_env.log_error(f"[DEEPGRAM-FLUX] Error processing TurnInfo: {e}")
 
     async def _handle_transcript(self, data: dict):
         try:
@@ -462,13 +414,10 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
             )  # Check for speech_final field
             _confidence = alternative.get("confidence", 0.0)
 
-            # Log raw Deepgram response fields for debugging
+            # Log Deepgram response
             self.ten_env.log_info(
-                f"[DEEPGRAM-RAW-RESPONSE] is_final={_is_final} speech_final={_speech_final} "
-                f"text={transcript_text!r} conf={_confidence:.3f}"
-            )
-            self.ten_env.log_info(
-                f"[DEEPGRAM-TRANSCRIPT-ALL] text={transcript_text!r} final={_is_final} conf={_confidence:.3f}"
+                f"[DEEPGRAM-TRANSCRIPT] text={transcript_text!r} is_final={_is_final} "
+                f"speech_final={_speech_final} conf={_confidence:.3f}"
             )
 
             # Skip empty transcripts
@@ -615,9 +564,7 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
                 self._interrupt_sent = False
 
         except Exception as e:
-            self.ten_env.log_error(
-                f"[DEEPGRAM-WS] Error processing transcript: {e}"
-            )
+            self.ten_env.log_error(f"[DEEPGRAM-WS] Error processing transcript: {e}")
 
     async def stop_connection(self) -> None:
         try:
@@ -638,9 +585,7 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
                     await asyncio.wait_for(self.session.close(), timeout=5.0)
                 except asyncio.TimeoutError:
                     if self.ten_env:
-                        self.ten_env.log_warn(
-                            "[DEEPGRAM-WS] Session close timed out"
-                        )
+                        self.ten_env.log_warn("[DEEPGRAM-WS] Session close timed out")
                 self.session = None
 
             self.connected = False
@@ -668,16 +613,12 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
         return self.config.sample_rate
 
     @override
-    async def send_audio(
-        self, frame: AudioFrame, session_id: str | None
-    ) -> bool:
+    async def send_audio(self, frame: AudioFrame, session_id: str | None) -> bool:
         if self.config is None:
             raise RuntimeError("Configuration not initialized")
 
         if not self.is_connected():
-            self.ten_env.log_warn(
-                "[DEEPGRAM-WS] Cannot send audio, not connected"
-            )
+            self.ten_env.log_warn("[DEEPGRAM-WS] Cannot send audio, not connected")
             return False
 
         if self.ws is None:
@@ -708,6 +649,4 @@ class DeepgramWSASRExtension(AsyncASRBaseExtension):
                 await self.ws.send_text('{"type":"FinalizeSpeech"}')
                 self.ten_env.log_info("[DEEPGRAM-WS] Finalization sent")
             except Exception as e:
-                self.ten_env.log_error(
-                    f"[DEEPGRAM-WS] Error during finalize: {e}"
-                )
+                self.ten_env.log_error(f"[DEEPGRAM-WS] Error during finalize: {e}")

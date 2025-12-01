@@ -54,9 +54,7 @@ class GenericVideoConfig(BaseConfig):
 
         for field_name, value in required_fields.items():
             if not value or (isinstance(value, str) and value.strip() == ""):
-                raise ValueError(
-                    f"Required field is missing or empty: {field_name}"
-                )
+                raise ValueError(f"Required field is missing or empty: {field_name}")
 
 
 class GenericVideoExtension(AsyncExtension):
@@ -86,23 +84,10 @@ class GenericVideoExtension(AsyncExtension):
             self.config.validate_params()
             self._config_valid = True
 
-            # Log key configuration values
+            # Log configuration summary
             ten_env.log_info(
-                f"API Key configured: {bool(self.config.generic_video_api_key)}"
-            )
-            ten_env.log_info(f"Start Endpoint: {self.config.start_endpoint}")
-            ten_env.log_info(
-                f"Input audio sample rate: {self.config.input_audio_sample_rate}"
-            )
-            ten_env.log_info(f"Avatar ID: {self.config.avatar_id}")
-            ten_env.log_info(
-                f"Activity idle timeout: {self.config.activity_idle_timeout}"
-            )
-            ten_env.log_info(f"Quality: {self.config.quality}")
-            ten_env.log_info(f"Version: {self.config.version}")
-            ten_env.log_info(f"Video encoding: {self.config.video_encoding}")
-            ten_env.log_info(
-                f"Enable string UID: {self.config.enable_string_uid}"
+                f"[GENERIC-VIDEO] Config: avatar={self.config.avatar_id} "
+                f"quality={self.config.quality} sample_rate={self.config.input_audio_sample_rate}"
             )
 
             recorder = AgoraGenericRecorder(
@@ -152,9 +137,7 @@ class GenericVideoExtension(AsyncExtension):
                         continue
 
                     # Send audio at original sample rate - let server handle any resampling
-                    base64_audio_data = base64.b64encode(audio_frame).decode(
-                        "utf-8"
-                    )
+                    base64_audio_data = base64.b64encode(audio_frame).decode("utf-8")
 
                     # Update the recorder to send with actual sample rate
                     await self.recorder.send(
@@ -196,9 +179,7 @@ class GenericVideoExtension(AsyncExtension):
         if self.recorder and self.recorder.ws_connected():
             success = await self.recorder.interrupt()
             if success:
-                self.ten_env.log_info(
-                    "Successfully sent voice_interrupt command"
-                )
+                self.ten_env.log_info("Successfully sent voice_interrupt command")
             else:
                 self.ten_env.log_error("Failed to send voice_interrupt command")
 
