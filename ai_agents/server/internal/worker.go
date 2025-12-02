@@ -62,16 +62,27 @@ var (
 )
 
 func newWorker(channelName string, logFile string, log2Stdout bool, propertyJsonFile string, tenappDir string) *Worker {
-	return &Worker{
+	nowTs := time.Now().Unix()
+	worker := &Worker{
 		ChannelName:        channelName,
 		LogFile:            logFile,
 		Log2Stdout:         log2Stdout,
 		PropertyJsonFile:   propertyJsonFile,
 		TenappDir:          tenappDir,
 		QuitTimeoutSeconds: 60,
-		CreateTs:           time.Now().Unix(),
-		UpdateTs:           time.Now().Unix(),
+		CreateTs:           nowTs,
+		UpdateTs:           nowTs,
 	}
+
+	slog.Info("Worker created",
+		"channelName", channelName,
+		"createTs", nowTs,
+		"updateTs", nowTs,
+		"quitTimeoutSeconds", 60,
+		"timeoutAt", nowTs+60,
+		logTag)
+
+	return worker
 }
 
 func getHttpServerPort() int32 {
@@ -225,17 +236,48 @@ func (w *Worker) start(req *StartReq) (err error) {
 func (w *Worker) stop(requestId string, channelName string) (err error) {
 	slog.Info("Worker stop start", "channelName", channelName, "requestId", requestId, "pid", w.Pid, logTag)
 
-	// TODO: SIGTERM is somehow ignored by subprocess before agent is fully initialized
-	// use SIGKILL for now
+	// First try graceful shutdown with SIGTERM
+	slog.Info("Worker sending SIGTERM", "channelName", channelName, "requestId", requestId, "pid", w.Pid, logTag)
+	err = syscall.Kill(-w.Pid, syscall.SIGTERM)
+	if err != nil {
+		slog.Error("Worker SIGTERM failed", "err", err, "channelName", channelName, "worker", w, "requestId", requestId, logTag)
+		// If SIGTERM fails, try SIGKILL immediately
+		err = syscall.Kill(-w.Pid, syscall.SIGKILL)
+		if err != nil {
+			slog.Error("Worker SIGKILL failed", "err", err, "channelName", channelName, "worker", w, "requestId", requestId, logTag)
+			return
+		}
+		workers.Remove(channelName)
+		slog.Info("Worker stop end (SIGKILL after SIGTERM failure)", "channelName", channelName, "worker", w, "requestId", requestId, logTag)
+		return
+	}
+
+	// Wait up to 2 seconds for graceful shutdown
+	gracefulTimeout := 2
+	for i := 0; i < gracefulTimeout*10; i++ {
+		// Check if process still exists by sending signal 0
+		err = syscall.Kill(-w.Pid, 0)
+		if err != nil {
+			// Process is gone, graceful shutdown succeeded
+			slog.Info("Worker graceful shutdown succeeded", "channelName", channelName, "requestId", requestId, "pid", w.Pid, "waitTime", float64(i)*0.1, logTag)
+			workers.Remove(channelName)
+			slog.Info("Worker stop end (graceful)", "channelName", channelName, "worker", w, "requestId", requestId, logTag)
+			return nil
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+
+	// Process still running after timeout, force kill with SIGKILL
+	slog.Warn("Worker graceful shutdown timeout, sending SIGKILL", "channelName", channelName, "requestId", requestId, "pid", w.Pid, logTag)
 	err = syscall.Kill(-w.Pid, syscall.SIGKILL)
 	if err != nil {
-		slog.Error("Worker kill failed", "err", err, "channelName", channelName, "worker", w, "requestId", requestId, logTag)
+		slog.Error("Worker SIGKILL failed", "err", err, "channelName", channelName, "worker", w, "requestId", requestId, logTag)
 		return
 	}
 
 	workers.Remove(channelName)
 
-	slog.Info("Worker stop end", "channelName", channelName, "worker", w, "requestId", requestId, logTag)
+	slog.Info("Worker stop end (forced SIGKILL)", "channelName", channelName, "worker", w, "requestId", requestId, logTag)
 	return
 }
 
@@ -306,17 +348,51 @@ func killProcess(pid int) {
 }
 
 func timeoutWorkers() {
+	slog.Info("Worker timeout monitor started", "checkIntervalSeconds", workerCleanSleepSeconds, logTag)
+
 	for {
+		nowTs := time.Now().Unix()
+		workerCount := len(workers.Keys())
+
+		slog.Info("Worker timeout check starting",
+			"nowTs", nowTs,
+			"workerCount", workerCount,
+			logTag)
+
 		for _, channelName := range workers.Keys() {
 			worker := workers.Get(channelName).(*Worker)
 
 			// Skip workers with infinite timeout
 			if worker.QuitTimeoutSeconds == WORKER_TIMEOUT_INFINITY {
+				slog.Info("Worker has infinite timeout, skipping",
+					"channelName", channelName,
+					logTag)
 				continue
 			}
 
-			nowTs := time.Now().Unix()
-			if worker.UpdateTs+int64(worker.QuitTimeoutSeconds) < nowTs {
+			timeoutAt := worker.UpdateTs + int64(worker.QuitTimeoutSeconds)
+			ageSeconds := nowTs - worker.UpdateTs
+			secondsUntilTimeout := timeoutAt - nowTs
+
+			slog.Info("Worker timeout check",
+				"channelName", channelName,
+				"pid", worker.Pid,
+				"ageSeconds", ageSeconds,
+				"quitTimeoutSeconds", worker.QuitTimeoutSeconds,
+				"updateTs", worker.UpdateTs,
+				"timeoutAt", timeoutAt,
+				"nowTs", nowTs,
+				"secondsUntilTimeout", secondsUntilTimeout,
+				logTag)
+
+			if timeoutAt < nowTs {
+				slog.Warn("Worker TIMEOUT EXCEEDED - stopping worker",
+					"channelName", channelName,
+					"pid", worker.Pid,
+					"ageSeconds", ageSeconds,
+					"exceededBySeconds", nowTs - timeoutAt,
+					logTag)
+
 				if err := worker.stop(uuid.New().String(), channelName.(string)); err != nil {
 					slog.Error("Timeout worker stop failed", "err", err, "channelName", channelName, logTag)
 					continue
@@ -326,7 +402,9 @@ func timeoutWorkers() {
 			}
 		}
 
-		slog.Debug("Worker timeout check", "sleep", workerCleanSleepSeconds, logTag)
+		slog.Info("Worker timeout check complete",
+			"nextCheckInSeconds", workerCleanSleepSeconds,
+			logTag)
 		time.Sleep(workerCleanSleepSeconds * time.Second)
 	}
 }
