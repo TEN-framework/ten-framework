@@ -34,17 +34,17 @@ void foo() {}
 // Function pointer types for ten_py_* APIs from libten_runtime_python.so
 // These must match the signatures in
 // include_internal/ten_runtime/binding/python/common.h
-typedef int (*ten_py_is_initialized_func_t)(void);
-typedef void (*ten_py_initialize_func_t)(void);
-typedef int (*ten_py_finalize_func_t)(void);
+typedef int (*ten_py_is_initialized_func_t)();
+typedef void (*ten_py_initialize_func_t)();
+typedef int (*ten_py_finalize_func_t)();
 typedef void (*ten_py_add_paths_to_sys_func_t)(ten_list_t *paths);
 typedef void (*ten_py_run_simple_string_func_t)(const char *code);
-typedef const char *(*ten_py_get_path_func_t)(void);
+typedef const char *(*ten_py_get_path_func_t)();
 typedef void (*ten_py_mem_free_func_t)(void *ptr);
 typedef bool (*ten_py_import_module_func_t)(const char *module_name);
-typedef void *(*ten_py_eval_save_thread_func_t)(void);
+typedef void *(*ten_py_eval_save_thread_func_t)();
 typedef void (*ten_py_eval_restore_thread_func_t)(void *state);
-typedef void *(*ten_py_gil_state_ensure_func_t)(void);
+typedef void *(*ten_py_gil_state_ensure_func_t)();
 typedef void (*ten_py_gil_state_release_func_t)(void *state);
 
 // Global function pointers to be initialized once libten_runtime_python.so is
@@ -466,27 +466,27 @@ class python_addon_loader_t : public ten::addon_loader_t {
   // libpython (for cross-version compatibility), so we need to explicitly load
   // libpython to provide the Python symbols at runtime.
   static bool load_system_lib_python() {
-    const char *libpython_path = nullptr;
+    const char *python_lib_path = nullptr;
     ten_string_t *path_to_load = nullptr;
     void *handle = nullptr;
 
     // Priority 1: Check environment variable (explicit user specification).
-    libpython_path = getenv("TEN_PY_LIBPYTHON_PATH");
-    if (libpython_path != nullptr && strlen(libpython_path) > 0) {
+    python_lib_path = getenv("TEN_PYTHON_LIB_PATH");
+    if (python_lib_path != nullptr && strlen(python_lib_path) > 0) {
       TEN_LOGI(
           "[Python addon loader] Using libpython from "
-          "TEN_PY_LIBPYTHON_PATH: %s",
-          libpython_path);
-      path_to_load = ten_string_create_formatted("%s", libpython_path);
+          "TEN_PYTHON_LIB_PATH: %s",
+          python_lib_path);
+      path_to_load = ten_string_create_formatted("%s", python_lib_path);
       handle = ten_module_load(path_to_load, 0);  // RTLD_GLOBAL
       if (handle != nullptr) {
         TEN_LOGI("[Python addon loader] Successfully loaded libpython from %s",
-                 libpython_path);
+                 python_lib_path);
         ten_string_destroy(path_to_load);
         return true;
       } else {
         TEN_LOGW("[Python addon loader] Failed to load libpython from %s",
-                 libpython_path);
+                 python_lib_path);
         ten_string_destroy(path_to_load);
         // Don't fallback if user explicitly specified a path
         return false;
@@ -497,7 +497,7 @@ class python_addon_loader_t : public ten::addon_loader_t {
     // TODO(xilin): Note this is just a compatibility solution; it is
     // recommended to specify the libpython path via environment variable.
     TEN_LOGI(
-        "[Python addon loader] TEN_PY_LIBPYTHON_PATH not set, trying default "
+        "[Python addon loader] TEN_PYTHON_LIB_PATH not set, trying default "
         "Python 3.10...");
 
     const char *default_libs[] = {
@@ -533,17 +533,17 @@ class python_addon_loader_t : public ten::addon_loader_t {
     // Failed to load, report error with clear instructions.
     TEN_LOGE(
         "[Python addon loader] Failed to load libpython. "
-        "Please set the TEN_PY_LIBPYTHON_PATH environment variable to specify "
+        "Please set the TEN_PYTHON_LIB_PATH environment variable to specify "
         "the path to your Python library:\n"
 #if defined(_WIN32)
-        "  Example: set TEN_PY_LIBPYTHON_PATH=C:\\Python310\\python310.dll\n"
+        "  Example: set TEN_PYTHON_LIB_PATH=C:\\Python310\\python310.dll\n"
 #elif defined(__APPLE__)
         "  Example: export "
-        "TEN_PY_LIBPYTHON_PATH=/Library/Frameworks/Python.framework/Versions/"
+        "TEN_PYTHON_LIB_PATH=/Library/Frameworks/Python.framework/Versions/"
         "3.X/Python\n"
 #else
         "  Example: export "
-        "TEN_PY_LIBPYTHON_PATH=/usr/lib/x86_64-linux-gnu/libpython3.X.so\n"
+        "TEN_PYTHON_LIB_PATH=/usr/lib/x86_64-linux-gnu/libpython3.X.so\n"
 #endif
     );
     return false;
