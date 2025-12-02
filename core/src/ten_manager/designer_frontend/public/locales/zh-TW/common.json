@@ -108,7 +108,7 @@
     "viewDetails": "查看詳情",
     "reset": "重置",
     "chooseBaseDir": "選擇基礎目錄",
-    "deleteNodeConfirmationWithName": "確定要刪除節點 {{name}} 嗎？",
+    "deleteNodeConfirmationWithName": "確定要刪除{{type}}: {{name}} 嗎？",
     "update": "更新",
     "create": "建立",
     "deleteConnectionConfirmation": "確定要刪除此連線嗎？",
@@ -116,7 +116,8 @@
     "deleteConnectionFailed": "連線刪除失敗",
     "replaceNode": "替換節點...",
     "manageApps": "管理應用程式",
-    "runApp": "執行"
+    "runApp": "執行",
+    "selectAll": "全選"
   },
   "toast": {
     "saveFileSuccess": "檔案儲存成功",
@@ -229,7 +230,8 @@
       "titleReplaceNode": "替換節點[{{name}}]...",
       "replaceNode": "替換節點",
       "replaceNodeSuccess": "節點替換成功",
-      "replaceNodeFailed": "節點替換失敗"
+      "replaceNodeFailed": "節點替換失敗",
+      "messagesFrom": "來自: {{source}}"
     },
     "doc": {
       "title": "{{name}}"

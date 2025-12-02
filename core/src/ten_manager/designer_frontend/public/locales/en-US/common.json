@@ -107,7 +107,7 @@
     "viewDetails": "View Details",
     "reset": "Reset",
     "chooseBaseDir": "Choose Base Dir",
-    "deleteNodeConfirmationWithName": "Are you sure you want to delete the node {{name}}?",
+    "deleteNodeConfirmationWithName": "Are you sure you want to delete the {{type}}: {{name}}?",
     "update": "Update",
     "create": "Create",
     "deleteConnectionConfirmation": "Are you sure you want to delete the connection?",
@@ -115,7 +115,8 @@
     "deleteConnectionFailed": "Failed to delete connection",
     "replaceNode": "Replace Node with ...",
     "manageApps": "Manage Apps",
-    "runApp": "Run"
+    "runApp": "Run",
+    "selectAll": "Select All"
   },
   "toast": {
     "saveFileSuccess": "File saved successfully",
@@ -228,7 +229,8 @@
       "titleReplaceNode": "Replace Node[{{name}}] with ...",
       "replaceNode": "Replace Node",
       "replaceNodeSuccess": "Node replaced successfully",
-      "replaceNodeFailed": "Failed to replace node"
+      "replaceNodeFailed": "Failed to replace node",
+      "messagesFrom": "Messages from: {{source}}"
     },
     "doc": {
       "title": "{{name}}"

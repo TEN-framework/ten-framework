@@ -9,7 +9,7 @@ from .const import (
 )
 from ten_ai_base.asr import (
     ASRBufferConfig,
-    ASRBufferConfigModeDiscard,
+    ASRBufferConfigModeKeep,
     ASRResult,
     AsyncASRBaseExtension,
 )
@@ -200,7 +200,8 @@ class AliyunASRBigmodelExtension(AsyncASRBaseExtension):
                 return
 
             # Stop existing connection
-            await self.stop_connection()
+            if self.is_connected():
+                await self.stop_connection()
 
             # Start audio dumper
             if self.audio_dumper:
@@ -245,7 +246,11 @@ class AliyunASRBigmodelExtension(AsyncASRBaseExtension):
     async def on_asr_open(self) -> None:
         """Handle callback when connection is established"""
         self.ten_env.log_info("Aliyun ASR connection opened")
+
         self.connected = True
+        # Notify reconnect manager of successful connection
+        if self.reconnect_manager and self.connected:
+            self.reconnect_manager.mark_connection_successful()
         # Reset timeline and audio duration
         self.sent_user_audio_duration_ms_before_last_reset += (
             self.audio_timeline.get_total_user_audio_duration()
@@ -255,6 +260,7 @@ class AliyunASRBigmodelExtension(AsyncASRBaseExtension):
     async def on_asr_complete(self) -> None:
         """Handle callback when recognition is completed"""
         self.ten_env.log_info("Aliyun ASR recognition completed")
+        await self.on_asr_reconnection()
 
     async def on_asr_error(self, result: RecognitionResult) -> None:
         """Handle error callback"""
@@ -280,10 +286,6 @@ class AliyunASRBigmodelExtension(AsyncASRBaseExtension):
     async def on_asr_event(self, result: RecognitionResult) -> None:
         """Handle recognition result event callback"""
         try:
-            # Notify reconnect manager of successful connection
-            if self.reconnect_manager and self.connected:
-                self.reconnect_manager.mark_connection_successful()
-
             self.ten_env.log_debug(
                 f"vendor_result: on_event: {result}",
                 category=LOG_CATEGORY_VENDOR,
@@ -346,6 +348,12 @@ class AliyunASRBigmodelExtension(AsyncASRBaseExtension):
     async def on_asr_close(self) -> None:
         """Handle callback when connection is closed"""
         self.ten_env.log_debug("Aliyun ASR connection closed")
+        await self.on_asr_reconnection()
+
+    async def on_asr_reconnection(self) -> None:
+        if self.connected == False:
+            return
+
         self.connected = False
 
         if not self.stopped:
@@ -398,24 +406,43 @@ class AliyunASRBigmodelExtension(AsyncASRBaseExtension):
     async def _handle_finalize_disconnect(self):
         """Handle disconnect mode finalization"""
         if self.recognition:
-            if self.is_connected():
-                self.recognition.stop()
-            else:
-                self.ten_env.log_debug(
-                    "Aliyun ASR finalize disconnect completed, but not connected"
-                )
+            try:
+                if self.is_connected():
+                    self.recognition.stop()
+                    self.ten_env.log_debug(
+                        "Aliyun ASR finalize disconnect completed"
+                    )
+                else:
+                    self.ten_env.log_debug(
+                        "Aliyun ASR finalize disconnect completed, but not connected"
+                    )
+            except Exception as e:
+                self.ten_env.log_error(f"Error during finalize disconnect: {e}")
+                # Don't propagate the error, just log it
 
     async def _handle_finalize_mute_pkg(self):
         """Handle mute package mode finalization"""
         # Send silence package
-        if self.recognition and self.config:
-            mute_pkg_duration_ms = self.config.mute_pkg_duration_ms
-            silence_duration = mute_pkg_duration_ms / 1000.0
-            silence_samples = int(self.config.sample_rate * silence_duration)
-            silence_data = b"\x00" * (silence_samples * 2)  # 16-bit samples
-            self.audio_timeline.add_silence_audio(mute_pkg_duration_ms)
-            self.recognition.send_audio_frame(silence_data)
-            self.ten_env.log_debug("Aliyun ASR finalize mute package sent")
+        if self.recognition and self.config and self.is_connected():
+            try:
+                mute_pkg_duration_ms = self.config.mute_pkg_duration_ms
+                silence_duration = mute_pkg_duration_ms / 1000.0
+                silence_samples = int(
+                    self.config.sample_rate * silence_duration
+                )
+                silence_data = b"\x00" * (silence_samples * 2)  # 16-bit samples
+                self.audio_timeline.add_silence_audio(mute_pkg_duration_ms)
+                self.recognition.send_audio_frame(silence_data)
+                self.ten_env.log_debug("Aliyun ASR finalize mute package sent")
+            except Exception as e:
+                self.ten_env.log_error(
+                    f"Error sending mute package during finalize: {e}"
+                )
+                # Don't propagate the error, just log it
+        else:
+            self.ten_env.log_debug(
+                "Aliyun ASR finalize mute package skipped - not connected"
+            )
 
     async def _handle_reconnect(self):
         """Handle reconnection"""
@@ -486,7 +513,7 @@ class AliyunASRBigmodelExtension(AsyncASRBaseExtension):
     @override
     def buffer_strategy(self) -> ASRBufferConfig:
         """Buffer strategy configuration"""
-        return ASRBufferConfigModeDiscard()
+        return ASRBufferConfigModeKeep(byte_limit=1024 * 1024 * 10)
 
     @override
     def input_audio_sample_rate(self) -> int:

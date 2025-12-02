@@ -14,14 +14,12 @@ GPG_KEY_ID="${PPA_GPG_KEY_ID}"
 GPG_PASSPHRASE="${PPA_GPG_PASSPHRASE}"
 LAUNCHPAD_ID="${PPA_LAUNCHPAD_ID}"
 PPA_NAME="${PPA_PPA_NAME}"
-ARCH="${PPA_ARCH:-amd64}"
-# Use architecture-specific package name to avoid conflicts
-BASE_PACKAGE_NAME="${PPA_PACKAGE_NAME:-tman}"
-PACKAGE_NAME="${BASE_PACKAGE_NAME}-${ARCH}"
+PACKAGE_NAME="${PPA_PACKAGE_NAME:-tman}"
 VERSION="${PPA_VERSION}"
 REVISION="${PPA_REVISION:-1}"
 DISTRIBUTIONS="${PPA_DISTRIBUTIONS:-jammy noble oracular plucky questing}"
 SOURCE_BINARY="${PPA_SOURCE_BINARY}"
+ARCH="${PPA_ARCH:-amd64}"
 
 # ============ Validate required environment variables ============
 
@@ -76,6 +74,10 @@ for dist in $DISTRIBUTIONS; do
     log_info "Processing distribution: $dist"
     log_info "=========================================="
 
+    # Use architecture-specific revision to avoid version conflicts
+    # This allows uploading different architectures of the same version
+    ARCH_REVISION="${REVISION}${ARCH}"
+
     WORK_DIR="/tmp/ppa-build-${PACKAGE_NAME}-${dist}"
     PACKAGE_DIR="${WORK_DIR}/${PACKAGE_NAME}-${VERSION}"
 
@@ -110,9 +112,9 @@ EOF
     # Create debian/changelog
     log_info "Creating debian/changelog..."
     cat > "$PACKAGE_DIR/debian/changelog" << EOF
-${PACKAGE_NAME} (${VERSION}ubuntu${REVISION}~${dist}) ${dist}; urgency=medium
+${PACKAGE_NAME} (${VERSION}ubuntu${ARCH_REVISION}~${dist}) ${dist}; urgency=medium
 
-  * Release version ${VERSION}
+  * Release version ${VERSION} for ${ARCH}
   * TEN Framework Package Manager
 
  -- ${MAINTAINER_NAME} <${MAINTAINER_EMAIL}>  $(date -R)
@@ -131,16 +133,11 @@ Homepage: https://github.com/TEN-framework/ten-framework
 
 Package: ${PACKAGE_NAME}
 Architecture: ${ARCH}
-Depends: ${shlibs:Depends}, ${misc:Depends}
-Provides: ${BASE_PACKAGE_NAME}
-Conflicts: ${BASE_PACKAGE_NAME}
-Replaces: ${BASE_PACKAGE_NAME}
-Description: TEN Framework Package Manager (${ARCH})
+Depends: \${shlibs:Depends}, \${misc:Depends}
+Description: TEN Framework Package Manager
  tman is a package management tool for the TEN framework.
  It helps developers manage extensions, protocols, and other
  TEN framework components.
- .
- This is the ${ARCH} architecture version.
  .
  Features:
   - Install and manage TEN packages
@@ -234,7 +231,7 @@ EOF
         cd "$WORK_DIR"
         log_info "Signing packages..."
 
-        changes_file="${PACKAGE_NAME}_${VERSION}ubuntu${REVISION}~${dist}_source.changes"
+        changes_file="${PACKAGE_NAME}_${VERSION}ubuntu${ARCH_REVISION}~${dist}_source.changes"
         debsign --no-re-sign -k"$GPG_KEY_ID" \
                 -p"gpg --batch --passphrase-file $PASSPHRASE_FILE --pinentry-mode loopback" \
                 "$changes_file" 2>&1 | tee -a "$WORK_DIR/debuild.log"
@@ -267,7 +264,7 @@ EOF
     log_info "Uploading to PPA: ppa:${LAUNCHPAD_ID}/${PPA_NAME} for $dist..."
     cd "$WORK_DIR"
 
-    changes_file="${PACKAGE_NAME}_${VERSION}ubuntu${REVISION}~${dist}_source.changes"
+    changes_file="${PACKAGE_NAME}_${VERSION}ubuntu${ARCH_REVISION}~${dist}_source.changes"
 
     if [ ! -f "$changes_file" ]; then
         log_error "Changes file not found: $changes_file"

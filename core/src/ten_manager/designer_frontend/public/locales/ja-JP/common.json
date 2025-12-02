@@ -108,7 +108,7 @@
     "viewDetails": "詳細を表示",
     "reset": "リセット",
     "chooseBaseDir": "ベースディレクトリを選択",
-    "deleteNodeConfirmationWithName": "ノード {{name}} を削除してもよろしいですか？",
+    "deleteNodeConfirmationWithName": "{{type}}: {{name}} を削除してもよろしいですか？",
     "update": "更新",
     "create": "作成",
     "deleteConnectionConfirmation": "接続を削除してもよろしいですか？",
@@ -116,7 +116,8 @@
     "deleteConnectionFailed": "接続の削除に失敗しました",
     "replaceNode": "ノードを置き換え...",
     "manageApps": "アプリを管理",
-    "runApp": "実行"
+    "runApp": "実行",
+    "selectAll": "すべて選択"
   },
   "toast": {
     "saveFileSuccess": "ファイルの保存に成功しました",
@@ -231,7 +232,8 @@
       "titleReplaceNode": "ノード[{{name}}]を置き換え...",
       "replaceNode": "ノードを置き換え",
       "replaceNodeSuccess": "ノードの置き換えに成功しました",
-      "replaceNodeFailed": "ノードの置き換えに失敗しました"
+      "replaceNodeFailed": "ノードの置き換えに失敗しました",
+      "messagesFrom": "メッセージ: {{source}}"
     },
     "doc": {
       "title": "{{name}}"
