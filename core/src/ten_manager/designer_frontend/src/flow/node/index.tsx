@@ -6,3 +6,5 @@
 //
 
 export { ExtensionNode } from "@/flow/node/extension";
+export { SelectorNode } from "@/flow/node/selector";
+export { SubgraphNode } from "@/flow/node/sub-graph";

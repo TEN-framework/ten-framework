@@ -87,11 +87,12 @@ export const ContextItem = (props: IContextMenuItem) => {
     return (
       <Button
         variant="ghost"
+        {...props}
         className={cn(
           "flex w-full justify-start whitespace-nowrap px-2.5 py-1.5",
-          "h-auto cursor-pointer font-normal"
+          "h-auto cursor-pointer font-normal",
+          props.className
         )}
-        {...props}
       >
         <span
           className={cn(

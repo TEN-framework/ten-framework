@@ -130,6 +130,10 @@ export const ActionDropdownMenu = (props: { edge: TCustomEdge }) => {
 
   const { mutate: mutateGraphs } = useGraphs();
 
+  const disableDelete = React.useMemo(() => {
+    return edge.data?.target?.type === ECustomNodeType.SELECTOR;
+  }, [edge.data?.target?.type]);
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -167,10 +171,8 @@ export const ActionDropdownMenu = (props: { edge: TCustomEdge }) => {
     </DropdownMenuItem>
     <DropdownMenuSeparator /> */}
         <DropdownMenuItem
-          disabled={
-            edge.data?.source?.type === ECustomNodeType.SELECTOR ||
-            edge.data?.target?.type === ECustomNodeType.SELECTOR
-          }
+          disabled={disableDelete}
+          className="bg-destructive/10 text-destructive"
           onClick={() => {
             const dialogId =
               edge.source +
@@ -183,6 +185,7 @@ export const ActionDropdownMenu = (props: { edge: TCustomEdge }) => {
             }
             appendDialog({
               id: dialogId,
+              variant: "destructive",
               title: t("action.confirm"),
               content: t("action.deleteConnectionConfirmation"),
               confirmLabel: t("action.delete"),

@@ -364,7 +364,6 @@ class VolcengineASRClient:
         auth_method: str,
         config: BytedanceASRLLMConfig,
         ten_env=None,
-        audio_timeline=None,
     ):
         self.url = url
         self.app_key = app_key
@@ -373,12 +372,9 @@ class VolcengineASRClient:
         self.auth_method = auth_method
         self.config = config
         self.ten_env = ten_env
-        self.audio_timeline = audio_timeline
         self.websocket = None
         self.connected = False
         self.seq = 1
-        self.sent_user_audio_duration_ms_before_last_reset = 0
-
         # Separate callbacks for different error types
         self.connection_error_callback: Optional[
             Callable[[Exception], None]
@@ -503,14 +499,6 @@ class VolcengineASRClient:
         request = RequestBuilder.new_full_client_request(self.seq, self.config)
         self.seq += 1
         await self.websocket.send(request)
-        self.sent_user_audio_duration_ms_before_last_reset += (
-            self.audio_timeline.get_total_user_audio_duration()
-        )
-        self.audio_timeline.reset()
-
-        self.ten_env.log_info(
-            f"sent_user_audio_duration_ms_before_last_reset: {self.sent_user_audio_duration_ms_before_last_reset}"
-        )
 
     async def send_audio(self, audio_data: bytes) -> None:
         """Send audio data to ASR service."""
@@ -557,11 +545,6 @@ class VolcengineASRClient:
         for i in range(0, len(silence_data), chunk_size):
             chunk = silence_data[i : i + chunk_size]
             await self._send_audio_segment(chunk, False)
-
-        if self.audio_timeline:
-            self.audio_timeline.add_silence_audio(
-                self.config.silence_duration_ms
-            )
 
     async def _send_audio_segment(self, segment: bytes, is_last: bool) -> None:
         """Send audio segment."""
@@ -660,16 +643,6 @@ class VolcengineASRClient:
 
     async def _handle_response(self, response: ASRResponse) -> None:
         """Handle ASR response."""
-        # Adjust timestamp using audio timeline if available
-        if self.audio_timeline:
-            actual_start_ms = int(
-                self.audio_timeline.get_audio_duration_before_time(
-                    response.start_ms
-                )
-                + self.sent_user_audio_duration_ms_before_last_reset
-            )
-            response.start_ms = actual_start_ms
-
         # Call result callback if set
         if self.result_callback:
             try:

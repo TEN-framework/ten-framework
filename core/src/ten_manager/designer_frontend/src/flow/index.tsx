@@ -21,9 +21,8 @@ import { ThemeProviderContext } from "@/components/theme-context";
 import EdgeContextMenu from "@/flow/context-menu/edge-context-menu";
 import { CustomEdge } from "@/flow/edge";
 import { syncGraphNodeGeometry } from "@/flow/graph";
-import { ExtensionNode } from "@/flow/node";
+import { ExtensionNode, SelectorNode, SubgraphNode } from "@/flow/node";
 import { GraphNode } from "@/flow/node/graph";
-import { SelectorNode } from "@/flow/node/selector";
 import { cn } from "@/lib/utils";
 import { useFlowStore } from "@/store";
 import {
@@ -39,6 +38,7 @@ const nodeTypes = {
   [ECustomNodeType.EXTENSION]: ExtensionNode,
   [ECustomNodeType.GRAPH]: GraphNode,
   [ECustomNodeType.SELECTOR]: SelectorNode,
+  [ECustomNodeType.SUB_GRAPH]: SubgraphNode,
 };
 
 export const FlowCanvas = (props: { className?: string }) => {

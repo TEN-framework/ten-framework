@@ -92,7 +92,8 @@ TEN 是一个面向语音对话 AI 代理的开源框架。
 
 <br>
 
-![divider][divider]
+![divider][divider-light]
+![divider][divider-dark]
 
 <br>
 
@@ -104,7 +105,8 @@ TEN 是一个面向语音对话 AI 代理的开源框架。
 
 <br>
 
-![divider][divider]
+![divider][divider-light]
+![divider][divider-dark]
 
 <br>
 
@@ -116,7 +118,8 @@ TEN 是一个面向语音对话 AI 代理的开源框架。
 
 <br>
 
-![divider][divider]
+![divider][divider-light]
+![divider][divider-dark]
 
 <br>
 
@@ -128,7 +131,8 @@ TEN 是一个面向语音对话 AI 代理的开源框架。
 
 <br>
 
-![divider][divider]
+![divider][divider-light]
+![divider][divider-dark]
 
 <br>
 
@@ -140,7 +144,8 @@ TEN 是一个面向语音对话 AI 代理的开源框架。
 
 <br>
 
-![divider][divider]
+![divider][divider-light]
+![divider][divider-dark]
 
 <br>
 
@@ -175,7 +180,8 @@ TEN 是一个面向语音对话 AI 代理的开源框架。
 
 <br>
 
-![divider][divider]
+![divider][divider-light]
+![divider][divider-dark]
 
 如果在国内，我们强烈建议在 SSH 中把代理打开，下载和安装的依赖的时候会更加丝滑。
 
@@ -208,7 +214,8 @@ pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
 export UV_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
 ```
 
-![divider][divider]
+![divider][divider-light]
+![divider][divider-dark]
 
 <!-- > [!NOTE]
 > **macOS：Apple Silicon 上的 Docker 设置**
@@ -298,7 +305,8 @@ task run
 
 <br>
 
-![divider][divider]
+![divider][divider-light]
+![divider][divider-dark]
 
 #### 步骤 ⓷ - 自定义代理示例
 
@@ -309,7 +317,21 @@ task run
 
 <br>
 
-![divider][divider]
+![divider][divider-light]
+![divider][divider-dark]
+
+<br>
+
+#### 在不使用 Docker 的情况下从 TEN Manager 运行转录应用（Beta）
+
+TEN 还提供了一个转录应用，无需 Docker 即可直接在 TEN Manager 中运行。
+
+详情请查看[快速入门指南][quick-start-guide-ten-manager]。
+
+<br>
+
+![divider][divider-light]
+![divider][divider-dark]
 
 <br>
 
@@ -361,7 +383,8 @@ docker run --rm -it --env-file .env -p 3000:3000 example-app
 
 <br>
 
-![divider][divider]
+![divider][divider-light]
+![divider][divider-dark]
 
 <a name="deploying-with-other-cloud-services"></a>
 
@@ -462,7 +485,8 @@ TEN Framework 也可通过以下 AI 驱动的问答平台获取信息，它们�
 
 <br>
 
-![divider][divider]
+![divider][divider-light]
+![divider][divider-dark]
 
 <a name="code-contributors"></a>
 
@@ -478,7 +502,8 @@ TEN Framework 也可通过以下 AI 驱动的问答平台获取信息，它们�
 
 <br>
 
-![divider][divider]
+![divider][divider-light]
+![divider][divider-dark]
 
 <a name="license"></a>
 
@@ -555,7 +580,7 @@ TEN Framework 也可通过以下 AI 驱动的问答平台获取信息，它们�
 
 <!-- Primary sites -->
 [official-site]: https://theten.ai
-[documentation]: https://theten.ai/docs/ten_agent/overview
+[documentation]: https://theten.ai/docs
 [blog]: https://theten.ai/blog
 
 <!-- Welcome -->
@@ -584,7 +609,8 @@ TEN Framework 也可通过以下 AI 驱动的问答平台获取信息，它们�
 [voice-assistant-vad-example]: ../ai_agents/agents/examples/voice-assistant-with-ten-vad
 [voice-assistant-turn-detection-example]: ../ai_agents/agents/examples/voice-assistant-with-turn-detection
 [voice-assistant-example]: ../ai_agents/agents/examples/voice-assistant
-[divider]: https://github.com/user-attachments/assets/aec54c94-ced9-4683-ae58-0a5a7ed803bd
+[divider-light]: https://github.com/user-attachments/assets/aec54c94-ced9-4683-ae58-0a5a7ed803bd#gh-light-mode-only
+[divider-dark]: https://github.com/user-attachments/assets/d57fad08-4f49-4a1c-bdfc-f659a5d86150#gh-dark-mode-only
 [lip-sync-image]: https://github.com/user-attachments/assets/51ab1504-b67c-49d4-8a7a-5582d9b254da
 [voice-assistant-live2d-example]: ../ai_agents/agents/examples/voice-assistant-live2d
 [speech-diarization-image]: https://github.com/user-attachments/assets/f94b21b8-9dda-4efc-9274-b028cc01296a
@@ -605,6 +631,7 @@ TEN Framework 也可通过以下 AI 驱动的问答平台获取信息，它们�
 [docker]: https://www.docker.com/
 [docker-compose]: https://docs.docker.com/compose/
 [nodejs]: https://nodejs.org/en
+[quick-start-guide-ten-manager]: https://theten.ai/docs/ten_framework/getting-started/quick-start
 [localhost-49483-image]: https://github.com/user-attachments/assets/191a7c0a-d8e6-48f9-866f-6a70c58f0118
 [localhost-3000-image]: https://github.com/user-attachments/assets/13e482b6-d907-4449-a779-9454bb24c0b1
 [localhost-49483]: http://localhost:49483
@@ -613,7 +640,7 @@ TEN Framework 也可通过以下 AI 驱动的问答平台获取信息，它们�
 <!-- Codespaces -->
 [codespaces-shield]: https://github.com/codespaces/badge.svg
 [codespaces-new]: https://codespaces.new/ten-framework/ten-agent
-[codespaces-guide]: https://theten.ai/docs/ten_agent/setup_development_env/setting_up_development_inside_codespace
+[codespaces-guide]: https://theten.ai/docs/ten_agent_examples/setup_development_env/setting_up_development_inside_codespace
 
 <!-- Deployment -->
 [vercel]: https://vercel.com

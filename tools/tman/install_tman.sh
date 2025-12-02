@@ -141,8 +141,8 @@ get_latest_version() {
         print_info "This may be due to:" >&2
         print_info "  - Network timeout (GitHub API is slow or unreachable)" >&2
         print_info "  - GitHub API rate limit exceeded" >&2
-        print_info "Using default version: 0.11.35" >&2
-        latest_version="0.11.35"
+        print_info "Using default version: 0.11.38" >&2
+        latest_version="0.11.38"
     else
         print_info "✓ Latest version found: $latest_version" >&2
     fi
@@ -217,20 +217,43 @@ install_tman() {
     # Add execute permission
     chmod +x "$tman_bin"
 
+    # Determine if we need to use sudo
+    # Check if running as root (compatible with both Linux and macOS)
+    current_uid=$(id -u)
+    if [ "$current_uid" -eq 0 ]; then
+        # Running as root, no need for sudo
+        USE_SUDO=""
+        print_info "Running as root user"
+    else
+        # Not running as root, need sudo
+        USE_SUDO="sudo"
+        print_info "Running as non-root user, will use sudo"
+    fi
+
     # Ensure target directory exists
     if [ ! -d "/usr/local/bin" ]; then
         print_info "Creating /usr/local/bin directory..."
-        sudo mkdir -p /usr/local/bin
+        $USE_SUDO mkdir -p /usr/local/bin
     fi
 
     # Install to /usr/local/bin
-    print_info "Installing tman to /usr/local/bin (requires sudo)..."
-    if ! sudo cp "$tman_bin" /usr/local/bin/tman; then
+    if [ -n "$USE_SUDO" ]; then
+        print_info "Installing tman to /usr/local/bin (requires sudo)..."
+    else
+        print_info "Installing tman to /usr/local/bin..."
+    fi
+
+    if ! $USE_SUDO cp "$tman_bin" /usr/local/bin/tman; then
         print_error "Installation failed"
         exit 1
     fi
 
     print_info "✓ Installation completed"
+
+    # Change to a safe directory before cleaning up temp files
+    # to avoid "getcwd() failed: No such file or directory" error
+    cd /tmp
+
     print_info "Cleaning up temporary files..."
     rm -rf "$TMAN_TMP_DIR"
 }
@@ -274,12 +297,12 @@ Usage: $0 [VERSION]
 Install TEN Framework TMAN tool with automatic OS and architecture detection.
 
 Arguments:
-  VERSION    Optional. Specify a version to install (e.g., 0.11.35)
+  VERSION    Optional. Specify a version to install (e.g., 0.11.38)
              If not provided, the latest version will be downloaded.
 
 Examples:
   $0              # Install latest version
-  $0 0.11.35      # Install specific version
+  $0 0.11.38      # Install specific version
 
 Supported Platforms:
   - Linux x64 (x86_64)

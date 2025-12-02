@@ -69,7 +69,7 @@ TEN Manager (tman) is the command-line tool for TEN Framework, used to create pr
 **One-line Installation**:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/TEN-framework/ten-framework/main/tools/tman/install_tman.sh | bash
+bash <(curl -fsSL https://raw.githubusercontent.com/TEN-framework/ten-framework/main/tools/tman/install_tman.sh)
 ```
 
 Or, if you've already cloned the repository:
@@ -78,6 +78,18 @@ Or, if you've already cloned the repository:
 cd ten-framework
 bash tools/tman/install_tman.sh
 ```
+
+> 💡 **Note**: If tman is already installed on your system, the installation script will ask whether you want to reinstall/upgrade it. Press `y` to continue or `n` to cancel.
+>
+> **Non-interactive Installation** (for automation scripts or CI environments):
+>
+> ```bash
+> # Remote installation
+> yes y | bash <(curl -fsSL https://raw.githubusercontent.com/TEN-framework/ten-framework/main/tools/tman/install_tman.sh)
+>
+> # Local installation
+> yes y | bash tools/tman/install_tman.sh
+> ```
 
 **Verify Installation**:
 

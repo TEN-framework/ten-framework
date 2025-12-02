@@ -92,7 +92,8 @@ Consulta el [código de ejemplo][voice-assistant-example] para obtener más deta
 
 <br>
 
-![divider][divider]
+![divider][divider-light]
+![divider][divider-dark]
 
 <br>
 
@@ -104,7 +105,8 @@ Revisa el [código de ejemplo][voice-assistant-live2d-example] para Live2D.
 
 <br>
 
-![divider][divider]
+![divider][divider-light]
+![divider][divider-dark]
 
 <br>
 
@@ -116,7 +118,8 @@ Revisa el [código de ejemplo][voice-assistant-live2d-example] para Live2D.
 
 <br>
 
-![divider][divider]
+![divider][divider-light]
+![divider][divider-dark]
 
 <br>
 
@@ -128,7 +131,8 @@ Revisa el [código de ejemplo][voice-assistant-live2d-example] para Live2D.
 
 <br>
 
-![divider][divider]
+![divider][divider-light]
+![divider][divider-dark]
 
 <br>
 
@@ -140,7 +144,8 @@ Revisa el [código de ejemplo][voice-assistant-live2d-example] para Live2D.
 
 <br>
 
-![divider][divider]
+![divider][divider-light]
+![divider][divider-dark]
 
 <br>
 
@@ -175,7 +180,8 @@ Consulta la [guía de integración][esp32-guide] para conocer más.
 
 <br>
 
-![divider][divider]
+![divider][divider-light]
+![divider][divider-dark]
 
 <!-- > [!NOTE]
 > **macOS: configuración de Docker en Apple Silicon**
@@ -265,7 +271,8 @@ Cuando el ejemplo esté en marcha podrás usar estas interfaces:
 
 <br>
 
-![divider][divider]
+![divider][divider-light]
+![divider][divider-dark]
 
 #### Paso ⓷ - Personaliza tu ejemplo de agente
 
@@ -276,7 +283,21 @@ Cuando el ejemplo esté en marcha podrás usar estas interfaces:
 
 <br>
 
-![divider][divider]
+![divider][divider-light]
+![divider][divider-dark]
+
+<br>
+
+#### Ejecuta una app de transcripción desde TEN Manager sin Docker (Beta)
+
+TEN también ofrece una app de transcripción que puedes ejecutar en TEN Manager sin usar Docker.
+
+Consulta la [guía de inicio rápido][quick-start-guide-ten-manager] para más detalles.
+
+<br>
+
+![divider][divider-light]
+![divider][divider-dark]
 
 <br>
 
@@ -328,7 +349,8 @@ docker run --rm -it --env-file .env -p 3000:3000 example-app
 
 <br>
 
-![divider][divider]
+![divider][divider-light]
+![divider][divider-dark]
 
 <a name="deploying-with-other-cloud-services"></a>
 
@@ -429,7 +451,8 @@ TEN Framework también está disponible en plataformas de preguntas y respuestas
 
 <br>
 
-![divider][divider]
+![divider][divider-light]
+![divider][divider-dark]
 
 <a name="code-contributors"></a>
 
@@ -445,7 +468,8 @@ TEN Framework también está disponible en plataformas de preguntas y respuestas
 
 <br>
 
-![divider][divider]
+![divider][divider-light]
+![divider][divider-dark]
 
 <a name="license"></a>
 
@@ -522,7 +546,7 @@ TEN Framework también está disponible en plataformas de preguntas y respuestas
 
 <!-- Primary sites -->
 [official-site]: https://theten.ai
-[documentation]: https://theten.ai/docs/ten_agent/overview
+[documentation]: https://theten.ai/docs
 [blog]: https://theten.ai/blog
 
 <!-- Welcome -->
@@ -551,7 +575,8 @@ TEN Framework también está disponible en plataformas de preguntas y respuestas
 [voice-assistant-vad-example]: ../ai_agents/agents/examples/voice-assistant-with-ten-vad
 [voice-assistant-turn-detection-example]: ../ai_agents/agents/examples/voice-assistant-with-turn-detection
 [voice-assistant-example]: ../ai_agents/agents/examples/voice-assistant
-[divider]: https://github.com/user-attachments/assets/aec54c94-ced9-4683-ae58-0a5a7ed803bd
+[divider-light]: https://github.com/user-attachments/assets/aec54c94-ced9-4683-ae58-0a5a7ed803bd#gh-light-mode-only
+[divider-dark]: https://github.com/user-attachments/assets/d57fad08-4f49-4a1c-bdfc-f659a5d86150#gh-dark-mode-only
 [lip-sync-image]: https://github.com/user-attachments/assets/51ab1504-b67c-49d4-8a7a-5582d9b254da
 [voice-assistant-live2d-example]: ../ai_agents/agents/examples/voice-assistant-live2d
 [speech-diarization-image]: https://github.com/user-attachments/assets/f94b21b8-9dda-4efc-9274-b028cc01296a
@@ -572,6 +597,7 @@ TEN Framework también está disponible en plataformas de preguntas y respuestas
 [docker]: https://www.docker.com/
 [docker-compose]: https://docs.docker.com/compose/
 [nodejs]: https://nodejs.org/en
+[quick-start-guide-ten-manager]: https://theten.ai/docs/ten_framework/getting-started/quick-start
 [localhost-49483-image]: https://github.com/user-attachments/assets/191a7c0a-d8e6-48f9-866f-6a70c58f0118
 [localhost-3000-image]: https://github.com/user-attachments/assets/13e482b6-d907-4449-a779-9454bb24c0b1
 [localhost-49483]: http://localhost:49483
@@ -580,7 +606,7 @@ TEN Framework también está disponible en plataformas de preguntas y respuestas
 <!-- Codespaces -->
 [codespaces-shield]: https://github.com/codespaces/badge.svg
 [codespaces-new]: https://codespaces.new/ten-framework/ten-agent
-[codespaces-guide]: https://theten.ai/docs/ten_agent/setup_development_env/setting_up_development_inside_codespace
+[codespaces-guide]: https://theten.ai/docs/ten_agent_examples/setup_development_env/setting_up_development_inside_codespace
 
 <!-- Deployment -->
 [vercel]: https://vercel.com

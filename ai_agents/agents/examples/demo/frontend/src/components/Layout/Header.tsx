@@ -18,7 +18,7 @@ export default function Header(props: { className?: string }) {
           <TenLogo className="h-3 md:h-5" />
           {/* <LogoIcon className="hidden h-5 md:block" />
           <SmallLogoIcon className="block h-4 md:hidden" /> */}
-          <h1 className="text-sm font-bold md:text-xl">TEN Agent</h1>
+          <h1 className="text-sm font-bold md:text-xl">TEN Agent Example</h1>
         </div>
         <HeaderActions />
       </header>

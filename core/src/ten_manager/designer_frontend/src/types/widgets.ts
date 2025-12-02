@@ -108,7 +108,7 @@ export interface IEditorWidgetData {
   url: string; // The url (path) of the editor to display.
   content: string; // The content of the editor to display.
   isContentChanged?: boolean;
-  refs?: Record<string, React.RefObject<IEditorWidgetRef>>;
+  refs?: Record<string, React.RefObject<IEditorWidgetRef | null>>;
 }
 
 export interface IEditorWidget extends IWidgetBase<IEditorWidgetData> {

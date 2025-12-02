@@ -90,7 +90,7 @@ export default function LoginCard() {
               TEN Agent
             </CardTitle>
             <CardDescription className="text-md text-center text-inherit md:text-lg">
-              A Realtime Conversational AI Agent powered by TEN
+              Multi-Purpose Voice Assistant Agent Example Powered by TEN
             </CardDescription>
           </CardHeader>
           <CardContent className="">

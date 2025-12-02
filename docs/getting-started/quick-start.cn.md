@@ -69,7 +69,7 @@ TEN Manager (tman) 是 TEN Framework 的命令行工具，用于创建项目、�
 **一键安装**：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/TEN-framework/ten-framework/main/tools/tman/install_tman.sh | bash
+bash <(curl -fsSL https://raw.githubusercontent.com/TEN-framework/ten-framework/main/tools/tman/install_tman.sh)
 ```
 
 或者，如果你已经克隆了仓库：
@@ -78,6 +78,18 @@ curl -fsSL https://raw.githubusercontent.com/TEN-framework/ten-framework/main/to
 cd ten-framework
 bash tools/tman/install_tman.sh
 ```
+
+> 💡 **提示**：如果系统中已经安装了 tman，安装脚本会询问是否重新安装/升级，输入 `y` 继续安装，输入 `n` 取消。
+>
+> **非交互式安装**（适用于自动化脚本或 CI 环境）：
+>
+> ```bash
+> # 远程安装
+> yes y | bash <(curl -fsSL https://raw.githubusercontent.com/TEN-framework/ten-framework/main/tools/tman/install_tman.sh)
+>
+> # 本地安装
+> yes y | bash tools/tman/install_tman.sh
+> ```
 
 **验证安装**：
 
