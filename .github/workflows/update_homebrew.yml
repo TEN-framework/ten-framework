@@ -13,8 +13,7 @@ on:
       - "Tman Linux ARM64 (Including Designer UI)"
     types:
       - completed
-    branches:
-      - main
+    # Note: We don't filter by branches here because release events run on tags, not branches
 
   # Allow manual trigger for testing or emergency updates
   workflow_dispatch:
@@ -36,6 +35,27 @@ jobs:
        github.event.workflow_run.event == 'release')
     runs-on: ubuntu-latest
     steps:
+      - name: Debug workflow_run event
+        if: github.event_name != 'workflow_dispatch'
+        run: |
+          echo "🔍 Debugging workflow_run event:"
+          echo "  Event name: ${{ github.event_name }}"
+          echo "  Workflow name: ${{ github.event.workflow_run.name }}"
+          echo "  Workflow event: ${{ github.event.workflow_run.event }}"
+          echo "  Workflow conclusion: ${{ github.event.workflow_run.conclusion }}"
+          echo "  Head branch: ${{ github.event.workflow_run.head_branch }}"
+          echo "  Head sha: ${{ github.event.workflow_run.head_sha }}"
+          echo ""
+          if [ "${{ github.event.workflow_run.event }}" != "release" ]; then
+            echo "⏭️ This workflow was triggered by '${{ github.event.workflow_run.event }}' event, not 'release'."
+            echo "   Job will be skipped (only release events trigger Homebrew updates)."
+          elif [ "${{ github.event.workflow_run.conclusion }}" != "success" ]; then
+            echo "⏭️ Triggering workflow conclusion was '${{ github.event.workflow_run.conclusion }}', not 'success'."
+            echo "   Job will be skipped (only successful workflows trigger Homebrew updates)."
+          else
+            echo "✅ All conditions met. Proceeding with Homebrew update..."
+          fi
+
       - name: Get version from workflow or input
         id: version
         run: |

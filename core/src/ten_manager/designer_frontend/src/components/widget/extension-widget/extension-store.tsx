@@ -322,9 +322,10 @@ export const ExtensionStoreWidget = (props: {
                     itemCount={displayedItems.length}
                     itemSize={96}
                   >
-                    {(virtualProps) => (
+                    {({ style, ...virtualProps }) => (
                       <VirtualListItem
                         {...virtualProps}
+                        style={style as React.CSSProperties}
                         key={`VirtualListItem-${
                           displayedItems[virtualProps.index]?.hash ||
                           virtualProps.index

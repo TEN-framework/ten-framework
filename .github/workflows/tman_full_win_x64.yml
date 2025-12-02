@@ -169,6 +169,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: github.event_name == 'release' || (github.ref != '' && startsWith(github.ref, 'refs/tags/'))
         with:
+          tag_name: ${{ github.event_name == 'release' && github.event.release.tag_name || github.ref_name }}
           files: |
             out/win/x64/tman-win-${{ matrix.build_type }}-x64.zip
 

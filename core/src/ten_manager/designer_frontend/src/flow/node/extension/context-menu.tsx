@@ -385,19 +385,21 @@ export const ContextMenuItems = (props: {
       disabled: !baseDir || !graphId,
       icon: <Trash2Icon />,
       onClick: () => {
+        const id = `delete-${node.data._type}-dialog-${node.data.name}`;
         appendDialog({
-          id: `delete-node-dialog-${node.data.name}`,
+          id,
           title: t("action.delete"),
           content: t("action.deleteNodeConfirmationWithName", {
+            type: node.data._type,
             name: node.data.name,
           }),
           variant: "destructive",
           onCancel: async () => {
-            removeDialog(`delete-node-dialog-${node.data.name}`);
+            removeDialog(id);
           },
           onConfirm: async () => {
             if (!baseDir || !graphId) {
-              removeDialog(`delete-node-dialog-${node.data.name}`);
+              removeDialog(id);
               return;
             }
             try {
@@ -422,7 +424,7 @@ export const ContextMenuItems = (props: {
               });
               console.error(error);
             } finally {
-              removeDialog(`delete-node-dialog-${node.data.name}`);
+              removeDialog(id);
             }
           },
         });
