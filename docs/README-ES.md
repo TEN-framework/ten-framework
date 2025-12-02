@@ -288,6 +288,19 @@ Cuando el ejemplo esté en marcha podrás usar estas interfaces:
 
 <br>
 
+#### Ejecuta una app de transcripción desde TEN Manager sin Docker (Beta)
+
+TEN también ofrece una app de transcripción que puedes ejecutar en TEN Manager sin usar Docker.
+
+Consulta la [guía de inicio rápido][quick-start-guide-ten-manager] para más detalles.
+
+<br>
+
+![divider][divider-light]
+![divider][divider-dark]
+
+<br>
+
 <a name="codespaces"></a>
 
 ### Codespaces
@@ -584,6 +597,7 @@ TEN Framework también está disponible en plataformas de preguntas y respuestas
 [docker]: https://www.docker.com/
 [docker-compose]: https://docs.docker.com/compose/
 [nodejs]: https://nodejs.org/en
+[quick-start-guide-ten-manager]: https://theten.ai/docs/ten_framework/getting-started/quick-start
 [localhost-49483-image]: https://github.com/user-attachments/assets/191a7c0a-d8e6-48f9-866f-6a70c58f0118
 [localhost-3000-image]: https://github.com/user-attachments/assets/13e482b6-d907-4449-a779-9454bb24c0b1
 [localhost-49483]: http://localhost:49483
