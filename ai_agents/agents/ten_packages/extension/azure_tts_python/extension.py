@@ -226,7 +226,8 @@ class AzureTTSExtension(AsyncTTS2BaseExtension):
                             # send ttfb metrics for new request
                             self.first_chunk_ts = time.time()
                             elapsed_time = int(
-                                (self.first_chunk_ts - self.request_start_ts) * 1000
+                                (self.first_chunk_ts - self.request_start_ts)
+                                * 1000
                             )
                             await self.send_tts_ttfb_metrics(
                                 request_id=request_id,
