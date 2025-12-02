@@ -8,18 +8,13 @@ import asyncio
 import traceback
 from typing import Callable, Any, AsyncGenerator
 
-from ten_runtime import (
-    AsyncExtensionTester,
-    AsyncTenEnvTester,
-    TenError,
-    TenErrorCode,
-    Cmd,
-    Data,
-    AudioFrame,
-    VideoFrame,
-    CmdResult,
-    StatusCode,
-)
+from .data import Data
+from .cmd import Cmd
+from .audio_frame import AudioFrame
+from .video_frame import VideoFrame
+from .error import TenError, TenErrorCode
+from .async_test import AsyncExtensionTester, AsyncTenEnvTester
+from .cmd_result import CmdResult, StatusCode
 
 
 class TenTestContext:
