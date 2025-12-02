@@ -101,6 +101,7 @@ fn create_cmd() -> clap::ArgMatches {
         .subcommand(crate::cmd::cmd_publish::create_sub_cmd(&args_cfg))
         .subcommand(crate::cmd::cmd_designer::create_sub_cmd(&args_cfg))
         .subcommand(crate::cmd::cmd_check::create_sub_cmd(&args_cfg))
+        .subcommand(crate::cmd::cmd_check_env::create_sub_cmd(&args_cfg))
         .subcommand(crate::cmd::cmd_modify::create_sub_cmd(&args_cfg))
         .subcommand(crate::cmd::cmd_run::create_sub_cmd(&args_cfg))
         .subcommand(crate::cmd::cmd_completion::create_sub_cmd(&args_cfg))
@@ -197,6 +198,9 @@ pub fn parse_cmd() -> Result<ParsedCmd> {
             "check" => {
                 crate::cmd::CommandData::Check(crate::cmd::cmd_check::parse_sub_cmd(sub_cmd_args)?)
             }
+            "check_env" => crate::cmd::CommandData::CheckEnv(
+                crate::cmd::cmd_check_env::parse_sub_cmd(sub_cmd_args)?,
+            ),
             "modify" => crate::cmd::CommandData::Modify(crate::cmd::cmd_modify::parse_sub_cmd(
                 sub_cmd_args,
             )?),
