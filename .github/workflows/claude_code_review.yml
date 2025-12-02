@@ -51,6 +51,7 @@ jobs:
           settings: |
             {
               "env": {
+                "ANTHROPIC_API_KEY": "${{ secrets.ANTHROPIC_API_KEY }}",
                 "ANTHROPIC_BASE_URL": "${{ secrets.ANTHROPIC_BASE_URL }}",
                 "ANTHROPIC_AUTH_TOKEN": "${{ secrets.ANTHROPIC_AUTH_TOKEN }}"
               }
