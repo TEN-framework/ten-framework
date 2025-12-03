@@ -18,7 +18,7 @@ _portal_target: getting-started/quick-start.md
 
 **Required Software**:
 
-- Python 3.10
+- Python >= 3.8
 - Go 1.20+
 - Node.js / npm (for managing JavaScript dependencies)
 
@@ -26,18 +26,18 @@ _portal_target: getting-started/quick-start.md
 
 Before you begin, make sure the following software is installed on your system:
 
-### Python 3.10
+### Python >= 3.8
 
 ```bash
 python3 --version
-# Should display: Python 3.10.x
+# Should display: Python 3.8.x or higher
 ```
 
-> 💡 **Recommendation**: It's recommended to use `pyenv` or `venv` to create a Python 3.10 virtual environment to avoid conflicts with your system Python version:
+> 💡 **Recommendation**: It's recommended to use `pyenv` or `venv` to create a Python virtual environment to avoid conflicts with your system Python version:
 >
 > ```bash
 > # Create virtual environment using venv (example)
-> python3.10 -m venv ~/ten-venv
+> python3 -m venv ~/ten-venv
 > source ~/ten-venv/bin/activate
 >
 > # Or use pyenv to manage multiple Python versions (example)
@@ -66,7 +66,23 @@ npm --version
 
 TEN Manager (tman) is the command-line tool for TEN Framework, used to create projects, manage dependencies, and run applications.
 
-**One-line Installation**:
+**Option 1: Install via Package Manager (Recommended)**
+
+**Linux (Ubuntu/Debian):**
+
+```bash
+sudo add-apt-repository ppa:ten-framework/ten-framework
+sudo apt update
+sudo apt install tman
+```
+
+**macOS:**
+
+```bash
+brew install TEN-framework/ten-framework/tman
+```
+
+**Option 2: Install via Script**
 
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/TEN-framework/ten-framework/main/tools/tman/install_tman.sh)
