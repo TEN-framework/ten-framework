@@ -358,11 +358,18 @@ def collect_and_update_version_of_core_packages(
         "core_addon_loaders",
     )
 
+    core_system_dir_path = os.path.join(
+        repo_base_dir,
+        "packages",
+        "core_system",
+    )
+
     manifest_files = (
         __collect_manifest_files(core_apps_dir_path)
         + __collect_manifest_files(core_extensions_dir_path)
         + __collect_manifest_files(core_protocols_dir_path)
         + __collect_manifest_files(core_addon_loaders_dir_path)
+        + __collect_manifest_files(core_system_dir_path)
     )
 
     manifest_template_files = (
@@ -370,6 +377,7 @@ def collect_and_update_version_of_core_packages(
         + __collect_manifest_tent_files(core_extensions_dir_path)
         + __collect_manifest_tent_files(core_protocols_dir_path)
         + __collect_manifest_tent_files(core_addon_loaders_dir_path)
+        + __collect_manifest_tent_files(core_system_dir_path)
     )
 
     pkg_infos = []
