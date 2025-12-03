@@ -12,10 +12,6 @@
 #include "include_internal/ten_runtime/binding/cpp/detail/addon_loader.h"
 #include "include_internal/ten_runtime/binding/cpp/detail/addon_manager.h"
 #include "include_internal/ten_runtime/binding/cpp/ten.h"
-// NOTE: We do NOT include
-// "include_internal/ten_runtime/binding/python/common.h" because we will
-// dynamically load libten_runtime_python.so and access its functions via
-// function pointers.
 #include "include_internal/ten_runtime/common/base_dir.h"
 #include "include_internal/ten_runtime/common/constant_str.h"
 #include "include_internal/ten_runtime/metadata/manifest.h"
@@ -26,13 +22,17 @@
 #include "ten_utils/lib/string.h"
 #include "ten_utils/log/log.h"
 #include "ten_utils/macro/check.h"
+// NOTE: We do NOT include the following header file because we will dynamically
+// load libten_runtime_python.so and access its functions via function pointers.
+//
+// "include_internal/ten_runtime/binding/python/common.h"
 
 namespace {
 
 void foo() {}
 
 // Function pointer types for ten_py_* APIs from libten_runtime_python.so
-// These must match the signatures in
+// These must match the signatures in the following header file:
 // include_internal/ten_runtime/binding/python/common.h
 typedef int (*ten_py_is_initialized_func_t)();
 typedef void (*ten_py_initialize_func_t)();

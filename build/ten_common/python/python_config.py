@@ -149,7 +149,7 @@ def python_config_for_win(args: ArgumentInfo) -> None:
 
 
 def python_config_for_mac(args: ArgumentInfo) -> None:
-    is_x86_64 = platform.machine().lower() == "x86_64"
+    # is_x86_64 = platform.machine().lower() == "x86_64"
 
     if args.config_type == "cflags":
         # Run python-config --cflags (without --embed for extension modules)
@@ -218,6 +218,7 @@ def python_config_for_mac(args: ArgumentInfo) -> None:
         # Note: We no longer add -L<LIBDIR> for libpython since we're building
         # extension modules (not embedding Python), which don't need to link
         # against libpython.
+        #
         # if is_x86_64:
         #     libdir = sysconfig.get_config_var("LIBDIR")
         #     if libdir:
