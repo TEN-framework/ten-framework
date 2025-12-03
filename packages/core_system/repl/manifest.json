@@ -1,0 +1,60 @@
+{
+  "type": "system",
+  "name": "repl",
+  "version": "0.11.38",
+  "display_name": {
+    "locales": {
+      "en-US": {
+        "content": "REPL"
+      },
+      "zh-CN": {
+        "content": "REPL"
+      },
+      "zh-TW": {
+        "content": "REPL"
+      },
+      "ja-JP": {
+        "content": "REPL"
+      },
+      "ko-KR": {
+        "content": "REPL"
+      }
+    }
+  },
+  "description": {
+    "locales": {
+      "en-US": {
+        "content": "REPL for TEN Extension"
+      },
+      "zh-CN": {
+        "content": "TEN Extension 的 REPL"
+      },
+      "zh-TW": {
+        "content": "TEN Extension 的 REPL"
+      },
+      "ja-JP": {
+        "content": "TEN Extension の REPL"
+      },
+      "ko-KR": {
+        "content": "TEN Extension 의 REPL"
+      }
+    }
+  },
+  "readme": {
+    "locales": {
+      "en-US": {
+        "import_uri": "docs/README.en-US.md"
+      },
+      "zh-CN": {
+        "import_uri": "docs/README.zh-CN.md"
+      }
+    }
+  },
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.11.38"
+    }
+  ]
+}
