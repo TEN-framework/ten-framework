@@ -200,8 +200,6 @@ class python_addon_loader_t : public ten::addon_loader_t {
 
     ten_py_initialize();
 
-    find_app_base_dir();
-
     // Before loading the ten python modules (extensions), we have to complete
     // sys.path first.
     complete_sys_path();
@@ -610,11 +608,14 @@ class python_addon_loader_t : public ten::addon_loader_t {
     TEN_LOGI("[Python addon loader] Attempting to load: %s",
              ten_string_get_raw_str(python_lib_path));
 
-    // The libten_runtime_python.so must be loaded globally using dlopen, and
-    // cannot be a regular shared library dependency. Note that the 2nd
-    // parameter must be 0 (as_local = false).
+    // The libten_runtime_python library must be loaded with global symbol
+    // visibility to ensure Python C extension modules can find its symbols,
+    // and cannot be a regular shared library dependency.
     //
-    // Refer to
+    // On Unix-like systems (Linux, macOS):
+    //   - Uses dlopen() with RTLD_GLOBAL flag (as_local = 0)
+    //   - This makes symbols globally visible to subsequently loaded libraries
+    // Refer to:
     // https://mail.python.org/pipermail/new-bugs-announce/2008-November/003322.html
     void *handle = ten_module_load(python_lib_path, 0);
     if (handle == nullptr) {
