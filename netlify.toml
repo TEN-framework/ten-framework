@@ -1,0 +1,10 @@
+[build]
+  base = "ai_agents/playground"
+  command = "npm run build"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
