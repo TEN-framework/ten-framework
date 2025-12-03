@@ -20,21 +20,24 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.10"]
         include:
           - runs-on: macos-15-intel
             platform_name: "macOS x64"
             arch: "x64"
+            python-version: "3.10"
           - runs-on: macos-latest
             platform_name: "macOS ARM64"
             arch: "arm64"
+            python-version: "3.10"
           - runs-on: ubuntu-22.04
             platform_name: "Linux x64"
             arch: "x64"
+            python-version: "3.10"
           # TODO: Temporarily disabled, will be re-enabled later
           # - runs-on: ubuntu-22.04-arm
           #   platform_name: "Linux ARM64"
           #   arch: "arm64"
+          #   python-version: "3.10"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
