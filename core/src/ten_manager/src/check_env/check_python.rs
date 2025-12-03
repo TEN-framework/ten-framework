@@ -10,8 +10,8 @@ use anyhow::Result;
 
 use crate::output::TmanOutput;
 
-/// Check Python development environment (python3 command, version >= 3.8).
-/// Returns true if Python >= 3.8 is installed.
+/// Check Python development environment (python3 command, version == 3.10).
+/// Returns true if Python 3.10 is installed.
 pub fn check(out: Arc<Box<dyn TmanOutput>>) -> Result<bool> {
     // Check if python3 command exists
     let python_check = std::process::Command::new("python3").arg("--version").output();
@@ -30,8 +30,8 @@ pub fn check(out: Arc<Box<dyn TmanOutput>>) -> Result<bool> {
                     if let (Ok(major), Ok(minor)) =
                         (version_parts[0].parse::<u32>(), version_parts[1].parse::<u32>())
                     {
-                        // Check if version >= 3.8
-                        if major > 3 || (major == 3 && minor >= 8) {
+                        // Check if version == 3.10
+                        if major == 3 && minor == 10 {
                             // Find python3 path
                             let which_output =
                                 std::process::Command::new("which").arg("python3").output().ok();
@@ -45,10 +45,6 @@ pub fn check(out: Arc<Box<dyn TmanOutput>>) -> Result<bool> {
                                 "✅ Python {} installed ({})",
                                 version_part, path
                             ));
-
-                            if major == 3 && minor < 10 {
-                                out.normal_line("   💡 Python 3.10 is recommended");
-                            }
 
                             // Check pip3
                             let pip_check =
@@ -70,10 +66,10 @@ pub fn check(out: Arc<Box<dyn TmanOutput>>) -> Result<bool> {
                             return Ok(true);
                         } else {
                             out.normal_line(&format!("⚠️  Python {} installed", version_part));
-                            out.normal_line("   ❌ Python version too old, requires >= 3.8");
-                            out.normal_line(
-                                "   💡 Please upgrade Python or use pyenv to install Python 3.10",
-                            );
+                            out.normal_line("   ❌ TEN Framework only supports Python 3.10");
+                            out.normal_line("   💡 Please use pyenv to install Python 3.10:");
+                            out.normal_line("      pyenv install 3.10.18");
+                            out.normal_line("      pyenv local 3.10.18");
                             return Ok(false);
                         }
                     }
@@ -82,13 +78,15 @@ pub fn check(out: Arc<Box<dyn TmanOutput>>) -> Result<bool> {
 
             // If we can't parse the version, still report it
             out.normal_line(&format!("⚠️  Python installed: {}", version_str));
-            out.normal_line("   Unable to parse version, please ensure Python >= 3.8");
+            out.normal_line("   Unable to parse version, please ensure Python 3.10 is installed");
             Ok(false)
         }
         _ => {
             out.normal_line("❌ Python not found");
-            out.normal_line("   💡 Please install Python 3.8 or higher");
-            out.normal_line("      Recommended: Python 3.10");
+            out.normal_line("   💡 Please install Python 3.10");
+            out.normal_line("      Using pyenv (recommended):");
+            out.normal_line("      pyenv install 3.10.18");
+            out.normal_line("      pyenv local 3.10.18");
             Ok(false)
         }
     }

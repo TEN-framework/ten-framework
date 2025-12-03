@@ -18,7 +18,7 @@ _portal_target: getting-started/quick-start.md
 
 **Required Software**:
 
-- Python >= 3.8
+- Python 3.10
 - Go 1.20+
 - Node.js / npm (for managing JavaScript dependencies)
 
@@ -26,23 +26,23 @@ _portal_target: getting-started/quick-start.md
 
 Before you begin, make sure the following software is installed on your system:
 
-### Python >= 3.8
+### Python 3.10
 
 ```bash
 python3 --version
-# Should display: Python 3.8.x or higher
+# Should display: Python 3.10.x
 ```
 
-> 💡 **Recommendation**: It's recommended to use `pyenv` or `venv` to create a Python virtual environment to avoid conflicts with your system Python version:
+> 💡 **Important**: TEN Framework currently only supports Python 3.10. It's recommended to use `pyenv` or `venv` to manage your Python environment:
 >
 > ```bash
-> # Create virtual environment using venv (example)
-> python3 -m venv ~/ten-venv
-> source ~/ten-venv/bin/activate
->
-> # Or use pyenv to manage multiple Python versions (example)
+> # Install and manage Python 3.10 using pyenv (recommended)
 > pyenv install 3.10.14
 > pyenv local 3.10.14
+>
+> # Or create virtual environment using venv
+> python3.10 -m venv ~/ten-venv
+> source ~/ten-venv/bin/activate
 > ```
 
 ### Go 1.20+

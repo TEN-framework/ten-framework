@@ -18,7 +18,7 @@ _portal_target: getting-started/quick-start.cn.md
 
 **必需的软件环境**：
 
-- Python >= 3.8
+- Python 3.10
 - Go 1.20+
 - Node.js / npm（用于安装和管理 JavaScript 依赖）
 
@@ -26,23 +26,23 @@ _portal_target: getting-started/quick-start.cn.md
 
 在开始之前，请确保你的系统已安装以下软件：
 
-### Python >= 3.8
+### Python 3.10
 
 ```bash
 python3 --version
-# 应显示: Python 3.8.x 或更高版本
+# 应显示: Python 3.10.x
 ```
 
-> 💡 **建议**：推荐使用 `pyenv` 或 `venv` 创建 Python 虚拟环境，以避免与系统 Python 版本冲突：
+> 💡 **重要**：TEN Framework 目前仅支持 Python 3.10。推荐使用 `pyenv` 或 `venv` 创建 Python 虚拟环境：
 >
 > ```bash
-> # 使用 venv 创建虚拟环境（示例）
-> python3 -m venv ~/ten-venv
-> source ~/ten-venv/bin/activate
->
-> # 或使用 pyenv 管理多个 Python 版本（示例）
+> # 使用 pyenv 安装和管理 Python 3.10（推荐）
 > pyenv install 3.10.18
 > pyenv local 3.10.18
+>
+> # 或使用 venv 创建虚拟环境
+> python3.10 -m venv ~/ten-venv
+> source ~/ten-venv/bin/activate
 > ```
 
 ### Go 1.20+
