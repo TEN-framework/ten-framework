@@ -188,6 +188,7 @@ class python_addon_loader_t : public ten::addon_loader_t {
     // another component.
     TEN_ASSERT(ten_py_is_initialized != nullptr,
                "ten_py_is_initialized should not be nullptr");
+
     int py_initialized = ten_py_is_initialized();
     if (py_initialized != 0) {
       TEN_LOGI("[Python addon loader] Python runtime has been initialized");
