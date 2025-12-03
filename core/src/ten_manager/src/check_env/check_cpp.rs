@@ -157,7 +157,15 @@ pub fn check(out: Arc<Box<dyn TmanOutput>>) -> Result<(bool, bool)> {
                         first_line.split_whitespace().nth(2).unwrap_or("unknown").to_string()
                     };
 
-                    out.normal_line(&format!("✅ clang++ {} installed", version_info));
+                    let which_output =
+                        std::process::Command::new("which").arg("clang++").output().ok();
+                    let path = if let Some(output) = which_output {
+                        String::from_utf8_lossy(&output.stdout).trim().to_string()
+                    } else {
+                        "unknown".to_string()
+                    };
+
+                    out.normal_line(&format!("✅ clang++ {} installed ({})", version_info, path));
                     has_compiler = true;
                 }
             }
