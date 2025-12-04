@@ -200,6 +200,8 @@ class python_addon_loader_t : public ten::addon_loader_t {
 
     ten_py_initialize();
 
+    find_app_base_dir();
+
     // Before loading the ten python modules (extensions), we have to complete
     // sys.path first.
     complete_sys_path();
@@ -594,16 +596,34 @@ class python_addon_loader_t : public ten::addon_loader_t {
     ten_string_destroy(addon_loader_path);
 
     // Normalize the path (resolve .. and .)
-    if (ten_path_to_system_flavor(python_lib_dir) != 0) {
-      TEN_LOGE("[Python addon loader] Failed to normalize path: %s",
-               ten_string_get_raw_str(python_lib_dir));
-      ten_string_destroy(python_lib_dir);
+    ten_string_t *normalized_python_lib_dir = ten_path_realpath(python_lib_dir);
+    ten_string_destroy(python_lib_dir);
+    if (!normalized_python_lib_dir) {
+      TEN_LOGE("[Python addon loader] Failed to normalize path");
       return false;
     }
 
+    // Convert to system flavor (e.g., convert '/' to '\' on Windows)
+    if (ten_path_to_system_flavor(normalized_python_lib_dir) != 0) {
+      TEN_LOGE(
+          "[Python addon loader] Failed to convert path to system flavor: %s",
+          ten_string_get_raw_str(normalized_python_lib_dir));
+      ten_string_destroy(normalized_python_lib_dir);
+      return false;
+    }
+
+    // According to https://docs.python.org/3/whatsnew/2.5.html, on Windows,
+    // .dll is no longer supported as a filename extension for extension
+    // modules. .pyd is now the only filename extension that will be searched
+    // for.
     ten_string_t *python_lib_path = ten_string_create_formatted(
-        "%s/libten_runtime_python.so", ten_string_get_raw_str(python_lib_dir));
-    ten_string_destroy(python_lib_dir);
+#if defined(_WIN32)
+        "%s\\libten_runtime_python.pyd",
+#else
+        "%s/libten_runtime_python.so",
+#endif
+        ten_string_get_raw_str(normalized_python_lib_dir));
+    ten_string_destroy(normalized_python_lib_dir);
 
     TEN_LOGI("[Python addon loader] Attempting to load: %s",
              ten_string_get_raw_str(python_lib_path));
