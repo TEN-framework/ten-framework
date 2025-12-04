@@ -55,79 +55,6 @@ static PVOID add_dll_directory_helper(const char *dir_path) {
   }
 }
 
-// Helper function to find Python 3.10 installation directory by searching for
-// python310.dll in the PATH environment variable and common installation paths.
-static int find_python_dll_directory(char *output_path, size_t output_size) {
-  if (!output_path || output_size == 0) {
-    return 0;
-  }
-
-  // TEN Framework officially supports Python 3.10.
-  // See: .github/workflows/*.yml files where python-version is set to "3.10"
-
-  // Method 1: Search in PATH environment variable (fastest if Python is in
-  // PATH)
-  // This is the quickest way to find Python if the user installed it with
-  // "Add Python to PATH" option checked.
-  char path_env[TEN_MAX_PATH * 4];  // PATH can be very long
-  DWORD path_len = GetEnvironmentVariableA("PATH", path_env, sizeof(path_env));
-  if (path_len > 0 && path_len < sizeof(path_env)) {
-    char *next_token = NULL;
-    char *token = strtok_s(path_env, ";", &next_token);
-    while (token != NULL) {
-      char test_path[TEN_MAX_PATH];
-      (void)snprintf(test_path, TEN_MAX_PATH, "%s\\python310.dll", token);
-
-      // Check if python310.dll exists in this directory
-      DWORD attrib = GetFileAttributesA(test_path);
-      if (attrib != INVALID_FILE_ATTRIBUTES &&
-          !(attrib & FILE_ATTRIBUTE_DIRECTORY)) {
-        // Found python310.dll
-        (void)snprintf(output_path, output_size, "%s", token);
-        TEN_LOGI("Found Python 3.10 directory in PATH: %s", output_path);
-        return 1;
-      }
-      token = strtok_s(NULL, ";", &next_token);
-    }
-  }
-
-  // Method 2: Check user's local Python 3.10 installation
-  // This is the default installation path when using the official Python
-  // installer with "Install for current user only" option (which is the
-  // default). Example: C:\Users\XXX\AppData\Local\Programs\Python\Python310
-  //
-  // According to Python's official installer behavior, this covers 95%+ of
-  // user installations. We deliberately skip checking Program Files because:
-  // - Python installer defaults to per-user installation (LOCALAPPDATA)
-  // - System-wide installation requires admin privileges and is rarely used
-  // - Keeps the search fast and focused on the most common scenario
-  char local_appdata[TEN_MAX_PATH];
-  DWORD local_len =
-      GetEnvironmentVariableA("LOCALAPPDATA", local_appdata, TEN_MAX_PATH);
-  if (local_len > 0) {
-    char test_path[TEN_MAX_PATH];
-    (void)snprintf(test_path, TEN_MAX_PATH,
-                   "%s\\Programs\\Python\\Python310\\python310.dll",
-                   local_appdata);
-
-    DWORD attrib = GetFileAttributesA(test_path);
-    if (attrib != INVALID_FILE_ATTRIBUTES &&
-        !(attrib & FILE_ATTRIBUTE_DIRECTORY)) {
-      // Found python310.dll in user's local Python installation
-      (void)snprintf(output_path, output_size,
-                     "%s\\Programs\\Python\\Python310", local_appdata);
-      TEN_LOGI("Found Python 3.10 directory: %s", output_path);
-      return 1;
-    }
-  }
-
-  TEN_LOGE(
-      "Could not find Python 3.10 installation. Please ensure Python 3.10 is "
-      "installed and either added to PATH or installed in the default "
-      "location.");
-  return 0;
-}
-
 void *ten_module_load(const ten_string_t *name, int as_local) {
   (void)as_local;
   if (!name || ten_string_is_empty(name)) {
@@ -135,17 +62,14 @@ void *ten_module_load(const ten_string_t *name, int as_local) {
   }
 
   const char *dll_path = ten_string_get_raw_str(name);
-  TEN_LOGI("ten_module_load: attempting to load '%s'", dll_path);
+  TEN_LOGI("Attempting to load '%s'", dll_path);
 
   // ==============================================================================
-  // Add dependency DLL directories to the search path for
-  // python_addon_loader.dll
+  // For python_addon_loader.dll, add dependency DLL directories to enable it to
+  // to find ten_runtime.dll and ten_utils.dll.
   // ==============================================================================
-  // For python_addon_loader.dll, add dependency DLL directories to enable it
-  // to find ten_runtime.dll, ten_utils.dll, ten_runtime_python.dll and
-  // python310.dll.
-
-  // This is only needed when a cpp app with Python extensions is running on
+  //
+  // This is only needed when a C++ app with Python extensions is running on
   // Windows platform:
   // 1. Unix-like platforms (Linux, macOS) use rpath to embed dependency search
   //    paths in the shared library itself at build time:
@@ -159,9 +83,8 @@ void *ten_module_load(const ten_string_t *name, int as_local) {
   //    - The current working directory
   //    - Directories in PATH environment variable
   //    Since python_addon_loader.dll's dependencies (ten_runtime.dll,
-  //    ten_utils.dll, ten_runtime_python.dll, python310.dll) are NOT in these
-  //    default search paths, we must explicitly add their directories using
-  //    AddDllDirectory.
+  //    ten_utils.dll) are NOT in these default search paths, we must
+  //    explicitly add their directories using AddDllDirectory.
   // 3. For Python applications on Windows:
   //    - Python apps load libten_runtime_python.pyd when executing
   //      "from ten_runtime import ..." in their main.py
@@ -169,9 +92,7 @@ void *ten_module_load(const ten_string_t *name, int as_local) {
   //    - For python apps, DLL search paths are configured in
   //      ten_runtime/__init__.py (see binding/python/interface/)
   //    - For C++ apps with Python extensions, we handle it here instead
-  PVOID ten_runtime_cookie = NULL;
-  PVOID ten_runtime_python_cookie = NULL;
-  PVOID python_installation_cookie = NULL;
+  PVOID cookie = NULL;
   if (strstr(dll_path, "python_addon_loader") != NULL) {
     // Calculate directory path length (up to the last path separator)
     const char *sep = strrchr(dll_path, '\\');
@@ -191,30 +112,12 @@ void *ten_module_load(const ten_string_t *name, int as_local) {
                        NULL);
 
       // Because python_addon_loader.dll depends on ten_runtime.dll and
-      // ten_runtime_python.dll in
-      // app_base_dir/ten_packages/system/ten_runtime/lib.
+      // ten_utils.dll in app_base_dir/ten_packages/system/ten_runtime/lib.
       char ten_runtime_lib[TEN_MAX_PATH];
       (void)snprintf(ten_runtime_lib, TEN_MAX_PATH,
                      "%s\\ten_packages\\system\\ten_runtime\\lib",
                      normalized_app_base_dir);
-      ten_runtime_cookie = add_dll_directory_helper(ten_runtime_lib);
-
-      // Because python_addon_loader.dll depends on ten_runtime_python.dll
-      // in app_base_dir/ten_packages/system/ten_runtime_python/lib.
-      char ten_runtime_python_lib[TEN_MAX_PATH];
-      (void)snprintf(ten_runtime_python_lib, TEN_MAX_PATH,
-                     "%s\\ten_packages\\system\\ten_runtime_python\\lib",
-                     normalized_app_base_dir);
-      ten_runtime_python_cookie =
-          add_dll_directory_helper(ten_runtime_python_lib);
-
-      // Because python_addon_loader.dll depends on python310.dll from the
-      // Python 3.10 installation directory. We need to find and add it to the
-      // search path.
-      char python_dir[TEN_MAX_PATH];
-      if (find_python_dll_directory(python_dir, TEN_MAX_PATH)) {
-        python_installation_cookie = add_dll_directory_helper(python_dir);
-      }
+      cookie = add_dll_directory_helper(ten_runtime_lib);
     } else {
       TEN_LOGE("Failed to get separator from DLL path: %s", dll_path);
     }
@@ -244,18 +147,11 @@ void *ten_module_load(const ten_string_t *name, int as_local) {
              (void *)loaded_module);
   }
 
-  // Remove the temporary directories to prevent memory leak
-  if (python_installation_cookie) {
-    RemoveDllDirectory(python_installation_cookie);
-    TEN_LOGI("Removed Python installation DLL directory from search path");
-  }
-  if (ten_runtime_python_cookie) {
-    RemoveDllDirectory(ten_runtime_python_cookie);
-    TEN_LOGI("Removed ten_runtime_python DLL directory from search path");
-  }
-  if (ten_runtime_cookie) {
-    RemoveDllDirectory(ten_runtime_cookie);
-    TEN_LOGI("Removed ten_runtime DLL directory from search path");
+  // Now that the DLLs have been loaded by LoadLibraryExA recursively, remove
+  // the temporary directories to prevent memory leak.
+  if (cookie) {
+    RemoveDllDirectory(cookie);
+    TEN_LOGI("Removed dependency DLL directory from search path");
   }
 
   return (void *)loaded_module;
