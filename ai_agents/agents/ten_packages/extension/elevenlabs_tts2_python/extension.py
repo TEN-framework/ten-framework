@@ -22,9 +22,6 @@ from ten_ai_base.tts2 import AsyncTTS2BaseExtension
 from .elevenlabs_tts import ElevenLabsTTS2Client, ElevenLabsTTS2Config
 from ten_runtime import (
     AsyncTenEnv,
-    Cmd,
-    CmdResult,
-    StatusCode,
 )
 from ten_ai_base.const import LOG_CATEGORY_KEY_POINT
 from ten_ai_base.const import LOG_CATEGORY_VENDOR
@@ -134,23 +131,6 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
     async def on_deinit(self, ten_env: AsyncTenEnv) -> None:
         await super().on_deinit(ten_env)
         ten_env.log_debug("on_deinit")
-
-    async def on_cmd(self, ten_env: AsyncTenEnv, cmd: Cmd) -> None:
-        cmd_name = cmd.get_name()
-        ten_env.log_debug(f"Received command: {cmd_name}")
-
-        if cmd_name == "flush":
-            ten_env.log_debug("Forwarding flush command to avatar")
-            # Forward the flush command downstream to avatar
-            await ten_env.send_cmd(cmd)
-
-            # Return success
-            cmd_result = CmdResult.create(StatusCode.OK, cmd)
-            await ten_env.return_result(cmd_result)
-        else:
-            # Unknown command
-            cmd_result = CmdResult.create(StatusCode.ERROR, cmd)
-            await ten_env.return_result(cmd_result)
 
     def vendor(self) -> str:
         return "elevenlabs"
