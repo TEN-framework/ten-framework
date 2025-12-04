@@ -10,3 +10,5 @@ pub mod check_go;
 pub mod check_nodejs;
 pub mod check_os;
 pub mod check_python;
+pub mod formatter;
+pub mod types;

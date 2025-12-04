@@ -4,15 +4,13 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-use std::sync::Arc;
-
 use anyhow::Result;
 
-use crate::output::TmanOutput;
+use super::types::{CheckStatus, OsCheckResult, Suggestion};
 
 /// Check operating system and architecture.
-/// Returns true if the OS is supported.
-pub fn check(out: Arc<Box<dyn TmanOutput>>) -> Result<bool> {
+/// Returns structured result about OS support.
+pub fn check() -> Result<OsCheckResult> {
     let os = std::env::consts::OS;
     let arch = std::env::consts::ARCH;
 
@@ -37,19 +35,35 @@ pub fn check(out: Arc<Box<dyn TmanOutput>>) -> Result<bool> {
         ("linux", "x86_64") | ("linux", "aarch64") | ("macos", "x86_64") | ("macos", "aarch64")
     );
 
-    if is_supported {
-        out.normal_line(&format!("✅ {} {} (Supported)", os_name, arch_name));
+    let (status, suggestions) = if is_supported {
+        (CheckStatus::Ok, vec![])
     } else if os == "windows" {
-        out.normal_line(&format!("⚠️  {} {} (Not supported yet, coming soon)", os_name, arch_name));
-        out.normal_line("   💡 Windows support is under development");
+        (
+            CheckStatus::Warning,
+            vec![Suggestion {
+                issue: "Windows support is under development".to_string(),
+                command: None,
+                help_text: Some("Coming soon".to_string()),
+            }],
+        )
     } else {
-        out.normal_line(&format!("❌ {} {} (Not supported)", os_name, arch_name));
-        out.normal_line("   Supported platforms:");
-        out.normal_line("     - Linux x64");
-        out.normal_line("     - Linux arm64");
-        out.normal_line("     - macOS x64 (Intel)");
-        out.normal_line("     - macOS arm64 (Apple Silicon)");
-    }
+        (
+            CheckStatus::Error,
+            vec![Suggestion {
+                issue: format!("Platform {} {} is not supported", os_name, arch_name),
+                command: None,
+                help_text: Some(
+                    "Supported platforms: Linux x64/arm64, macOS x64/arm64".to_string(),
+                ),
+            }],
+        )
+    };
 
-    Ok(is_supported)
+    Ok(OsCheckResult {
+        os_name: os_name.to_string(),
+        arch: arch_name.to_string(),
+        is_supported,
+        status,
+        suggestions,
+    })
 }

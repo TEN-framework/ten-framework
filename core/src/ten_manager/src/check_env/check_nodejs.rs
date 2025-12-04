@@ -4,23 +4,21 @@
 // Licensed under the Apache License, Version 2.0, with certain conditions.
 // Refer to the "LICENSE" file in the root directory for more information.
 //
-use std::sync::Arc;
-
 use anyhow::Result;
 
-use crate::output::TmanOutput;
+use super::types::{CheckStatus, NodeJsCheckResult, Suggestion, ToolInfo};
 
 /// Check Node.js development environment (node and npm commands).
-/// Returns (has_nodejs, has_npm).
-pub fn check(out: Arc<Box<dyn TmanOutput>>) -> Result<(bool, bool)> {
-    let mut has_issues = false;
+/// Returns structured result about Node.js and npm installation.
+pub fn check() -> Result<NodeJsCheckResult> {
     let mut has_nodejs = false;
     let mut has_npm = false;
+    let mut suggestions = Vec::new();
 
     // Check Node.js
     let node_check = std::process::Command::new("node").arg("--version").output();
 
-    match node_check {
+    let node_info = match node_check {
         Ok(output) if output.status.success() => {
             let version_str = String::from_utf8_lossy(&output.stdout);
             let version_str = version_str.trim();
@@ -31,43 +29,67 @@ pub fn check(out: Arc<Box<dyn TmanOutput>>) -> Result<(bool, bool)> {
             // Find node path
             let which_output = std::process::Command::new("which").arg("node").output().ok();
             let path = if let Some(output) = which_output {
-                String::from_utf8_lossy(&output.stdout).trim().to_string()
+                Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
             } else {
-                "unknown".to_string()
+                None
             };
-
-            out.normal_line(&format!("✅ Node.js {} installed ({})", version_str, path));
 
             has_nodejs = true;
 
-            // Check if version is older than v16
-            if let Some(major_str) = version_num.split('.').next() {
+            // Check version and set status
+            let mut notes = vec![];
+            let status = if let Some(major_str) = version_num.split('.').next() {
                 if let Ok(major) = major_str.parse::<u32>() {
                     if major < 16 {
-                        out.normal_line(&format!(
-                            "   ⚠️  Node.js version is outdated ({}), may affect some features",
-                            version_str
-                        ));
-                        out.normal_line("   💡 Recommend upgrading to Node.js 16 or higher");
-                        has_issues = true;
+                        notes.push("Version is outdated, may affect some features".to_string());
+                        suggestions.push(Suggestion {
+                            issue: format!("Node.js version {} is outdated", version_str),
+                            command: None,
+                            help_text: Some("Recommend upgrading to Node.js 16 or higher".to_string()),
+                        });
+                        CheckStatus::Warning
                     } else if major < 18 {
-                        out.normal_line("   💡 Consider upgrading to Node.js v18 LTS or higher");
+                        notes.push("Consider upgrading to Node.js v18 LTS or higher".to_string());
+                        CheckStatus::Warning
+                    } else {
+                        CheckStatus::Ok
                     }
+                } else {
+                    CheckStatus::Ok
                 }
-            }
+            } else {
+                CheckStatus::Ok
+            };
+
+            Some(ToolInfo {
+                name: "node".to_string(),
+                version: Some(version_str.to_string()),
+                path,
+                status,
+                notes,
+            })
         }
         _ => {
-            out.normal_line("❌ Node.js not found");
-            out.normal_line("   💡 Please install Node.js (v18 LTS or higher recommended)");
-            out.normal_line("      https://nodejs.org/");
-            has_issues = true;
+            suggestions.push(Suggestion {
+                issue: "Node.js not found".to_string(),
+                command: None,
+                help_text: Some("Please install Node.js (v18 LTS or higher recommended) from https://nodejs.org/".to_string()),
+            });
+
+            Some(ToolInfo {
+                name: "node".to_string(),
+                version: None,
+                path: None,
+                status: CheckStatus::Error,
+                notes: vec!["Not found".to_string()],
+            })
         }
-    }
+    };
 
     // Check npm
     let npm_check = std::process::Command::new("npm").arg("--version").output();
 
-    match npm_check {
+    let npm_info = match npm_check {
         Ok(output) if output.status.success() => {
             let version_str = String::from_utf8_lossy(&output.stdout);
             let version_str = version_str.trim();
@@ -75,23 +97,63 @@ pub fn check(out: Arc<Box<dyn TmanOutput>>) -> Result<(bool, bool)> {
             // Find npm path
             let which_output = std::process::Command::new("which").arg("npm").output().ok();
             let path = if let Some(output) = which_output {
-                String::from_utf8_lossy(&output.stdout).trim().to_string()
+                Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
             } else {
-                "unknown".to_string()
+                None
             };
 
-            out.normal_line(&format!("✅ npm {} installed ({})", version_str, path));
             has_npm = true;
+            Some(ToolInfo {
+                name: "npm".to_string(),
+                version: Some(version_str.to_string()),
+                path,
+                status: CheckStatus::Ok,
+                notes: vec![],
+            })
         }
         _ => {
-            out.normal_line("❌ npm not found");
-            if !has_issues {
-                out.normal_line(
-                    "   ⚠️  npm should be installed with Node.js, please check installation",
-                );
+            if has_nodejs {
+                suggestions.push(Suggestion {
+                    issue: "npm not found".to_string(),
+                    command: None,
+                    help_text: Some("npm should be installed with Node.js, please check installation".to_string()),
+                });
             }
-        }
-    }
 
-    Ok((has_nodejs, has_npm))
+            Some(ToolInfo {
+                name: "npm".to_string(),
+                version: None,
+                path: None,
+                status: CheckStatus::Error,
+                notes: vec!["Not found".to_string()],
+            })
+        }
+    };
+
+    // Determine overall status
+    let status = if has_nodejs && has_npm {
+        // Check if node has warnings
+        if let Some(ref node) = node_info {
+            if node.status == CheckStatus::Warning {
+                CheckStatus::Warning
+            } else {
+                CheckStatus::Ok
+            }
+        } else {
+            CheckStatus::Ok
+        }
+    } else if has_nodejs || has_npm {
+        CheckStatus::Warning
+    } else {
+        CheckStatus::Error
+    };
+
+    Ok(NodeJsCheckResult {
+        node: node_info,
+        npm: npm_info,
+        has_nodejs,
+        has_npm,
+        status,
+        suggestions,
+    })
 }

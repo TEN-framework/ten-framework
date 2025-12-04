@@ -10,7 +10,11 @@ use anyhow::Result;
 use clap::{ArgMatches, Command};
 
 use crate::{
-    check_env::{check_cpp, check_go, check_nodejs, check_os, check_python},
+    check_env::{
+        check_cpp, check_go, check_nodejs, check_os, check_python,
+        formatter::{CheckResultFormatter, CliFormatter},
+        types::{CheckStatus, EnvCheckResult},
+    },
     designer::storage::in_memory::TmanStorageInMemory,
     home::config::TmanConfig,
     output::TmanOutput,
@@ -22,7 +26,7 @@ pub struct CheckEnvCommand {}
 pub fn create_sub_cmd(_args_cfg: &crate::cmd_line::ArgsCfg) -> Command {
     Command::new("check_env").about("Check development environment for TEN Framework").after_help(
         "Check if your system has the required development environments:\n\n  - Operating System \
-         (Linux/macOS x64/arm64)\n  - Python 3.8+\n  - Go 1.20+\n  - Node.js and npm\n  - C++ \
+         (Linux/macOS x64/arm64)\n  - Python 3.10\n  - Go 1.20+\n  - Node.js and npm\n  - C++ \
          toolchain (tgn, gcc/clang)",
     )
 }
@@ -42,29 +46,56 @@ pub async fn execute_cmd(
     out.normal_line("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
     out.normal_line("");
 
-    // Check Operating System
+    // Perform all checks and collect structured results
     out.normal_line("[Operating System]");
-    let os_supported = check_os::check(out.clone())?;
-    out.normal_line("");
+    let os_result = check_os::check()?;
 
-    // Check Python Development Environment
     out.normal_line("[Python Development Environment]");
-    let python_ok = check_python::check(out.clone())?;
-    out.normal_line("");
+    let python_result = check_python::check()?;
 
-    // Check Go Development Environment
     out.normal_line("[Go Development Environment]");
-    let go_ok = check_go::check(out.clone())?;
-    out.normal_line("");
+    let go_result = check_go::check()?;
 
-    // Check Node.js Development Environment
     out.normal_line("[Node.js Development Environment]");
-    let (nodejs_ok, npm_ok) = check_nodejs::check(out.clone())?;
+    let nodejs_result = check_nodejs::check()?;
+
+    out.normal_line("[C++ Development Environment]");
+    let cpp_result = check_cpp::check()?;
+
+    // Create combined result
+    let env_result = EnvCheckResult {
+        os: os_result,
+        cpp: cpp_result,
+        python: python_result,
+        go: go_result,
+        nodejs: nodejs_result,
+    };
+
+    // Format output using the CLI formatter
+    let formatter = CliFormatter;
+
+    // Re-print with proper formatting
+    out.normal_line("");
+    out.normal_line("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    out.normal_line("");
+    out.normal_line("[Operating System]");
+    formatter.format_os_check(&env_result.os, out.clone());
     out.normal_line("");
 
-    // Check C++ Development Environment
+    out.normal_line("[Python Development Environment]");
+    formatter.format_python_check(&env_result.python, out.clone());
+    out.normal_line("");
+
+    out.normal_line("[Go Development Environment]");
+    formatter.format_go_check(&env_result.go, out.clone());
+    out.normal_line("");
+
+    out.normal_line("[Node.js Development Environment]");
+    formatter.format_nodejs_check(&env_result.nodejs, out.clone());
+    out.normal_line("");
+
     out.normal_line("[C++ Development Environment]");
-    let (tgn_ok, cpp_compiler_ok) = check_cpp::check(out.clone())?;
+    formatter.format_cpp_check(&env_result.cpp, out.clone());
     out.normal_line("");
 
     out.normal_line("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
@@ -74,42 +105,72 @@ pub async fn execute_cmd(
     out.normal_line("📊 Environment Check Summary:");
 
     // OS
-    if os_supported {
-        out.normal_line("   ✅ Operating System: Supported");
-    } else {
-        out.normal_line("   ❌ Operating System: Not supported");
+    match env_result.os.status {
+        CheckStatus::Ok => {
+            out.normal_line("   ✅ Operating System: Supported");
+        }
+        CheckStatus::Warning => {
+            out.normal_line("   ⚠️  Operating System: Not fully supported");
+        }
+        _ => {
+            out.normal_line("   ❌ Operating System: Not supported");
+        }
     }
 
     // Python
-    if python_ok {
-        out.normal_line("   ✅ Python:   Ready");
-    } else {
-        out.normal_line("   ❌ Python:   Not ready");
+    match env_result.python.status {
+        CheckStatus::Ok => {
+            out.normal_line("   ✅ Python:   Ready");
+        }
+        CheckStatus::Warning => {
+            out.normal_line("   ⚠️  Python:   Version mismatch");
+        }
+        _ => {
+            out.normal_line("   ❌ Python:   Not ready");
+        }
     }
 
     // Go
-    if go_ok {
-        out.normal_line("   ✅ Go:       Ready");
-    } else {
-        out.normal_line("   ❌ Go:       Not ready");
+    match env_result.go.status {
+        CheckStatus::Ok => {
+            out.normal_line("   ✅ Go:       Ready");
+        }
+        CheckStatus::Warning => {
+            out.normal_line("   ⚠️  Go:       Version too old");
+        }
+        _ => {
+            out.normal_line("   ❌ Go:       Not ready");
+        }
     }
 
     // Node.js
-    if nodejs_ok && npm_ok {
-        out.normal_line("   ✅ Node.js:  Ready");
-    } else if nodejs_ok {
-        out.normal_line("   ⚠️  Node.js:  Partially ready (npm missing)");
-    } else {
-        out.normal_line("   ❌ Node.js:  Not ready");
+    match env_result.nodejs.status {
+        CheckStatus::Ok => {
+            out.normal_line("   ✅ Node.js:  Ready");
+        }
+        CheckStatus::Warning => {
+            if env_result.nodejs.has_nodejs && !env_result.nodejs.has_npm {
+                out.normal_line("   ⚠️  Node.js:  Partially ready (npm missing)");
+            } else {
+                out.normal_line("   ⚠️  Node.js:  Outdated version");
+            }
+        }
+        _ => {
+            out.normal_line("   ❌ Node.js:  Not ready");
+        }
     }
 
     // C++
-    if tgn_ok && cpp_compiler_ok {
-        out.normal_line("   ✅ C++:      Ready");
-    } else if tgn_ok || cpp_compiler_ok {
-        out.normal_line("   ⚠️  C++:      Partially ready");
-    } else {
-        out.normal_line("   ❌ C++:      Not ready");
+    match env_result.cpp.status {
+        CheckStatus::Ok => {
+            out.normal_line("   ✅ C++:      Ready");
+        }
+        CheckStatus::Warning => {
+            out.normal_line("   ⚠️  C++:      Partially ready");
+        }
+        _ => {
+            out.normal_line("   ❌ C++:      Not ready");
+        }
     }
 
     out.normal_line("");
@@ -117,8 +178,14 @@ pub async fn execute_cmd(
     out.normal_line("");
 
     // Final message
-    let all_core_ready = os_supported && python_ok && go_ok && nodejs_ok && npm_ok;
-    let cpp_ready = tgn_ok && cpp_compiler_ok;
+    let os_ok = env_result.os.status == CheckStatus::Ok;
+    let python_ok = env_result.python.status == CheckStatus::Ok;
+    let go_ok = env_result.go.status == CheckStatus::Ok;
+    let nodejs_ok = env_result.nodejs.status == CheckStatus::Ok;
+    let cpp_ok = env_result.cpp.status == CheckStatus::Ok;
+
+    let all_core_ready = os_ok && python_ok && go_ok && nodejs_ok;
+    let cpp_ready = cpp_ok;
 
     if all_core_ready && cpp_ready {
         out.normal_line("✨ All development environments are ready!");
