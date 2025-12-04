@@ -16,7 +16,7 @@ import shutil
 app_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 os.chdir(app_root)
 
-# On Windows, prepare Python runtime dependencies
+# On Windows, python extension module is a .pyd file, not a .dll file.
 if sys.platform == "win32":
     # Create .pyd file from .dll for Python import
     dll_path = os.path.join(app_root, 'ten_packages', 'system', 'ten_runtime_python', 'lib', 'ten_runtime_python.dll')
@@ -26,17 +26,31 @@ if sys.platform == "win32":
         print(f"Creating Python extension module: {pyd_path}")
         shutil.copy2(dll_path, pyd_path)
 
-# Set environment variables and run the C++ application
 env = os.environ.copy()
+
+# Find libpython using find_libpython.py and set TEN_PYTHON_LIB_PATH
+# This is needed to specify the version of the embedded Python interpreter
+find_libpython_script = os.path.join(
+    app_root, 'ten_packages', 'system', 'ten_runtime_python', 'tools', 'find_libpython.py'
+)
+if os.path.exists(find_libpython_script):
+    try:
+        result = subprocess.run(
+            [sys.executable, find_libpython_script],
+            capture_output=True,
+            text=True,
+            check=False
+        )
+        libpython_path = result.stdout.strip()
+        if libpython_path:
+            env['TEN_PYTHON_LIB_PATH'] = libpython_path
+    except Exception:
+        pass  # Ignore errors if find_libpython.py fails
 
 # On Windows, add DLL directories to PATH
 # Required for main process (cpp_app_python_app.exe) to load ten_runtime.dll and ten_utils.dll
 # at startup.(listed in its PE import table)
 # This action is the same as the pure Cpp apps (tests/ten_runtime/integration/cpp/xxx/test_case.py)
-
-# Note: This is different from the DLL copy above:
-# - PATH: For main EXE loading (uses standard LoadLibrary)
-# - DLL copy: For python_addon_loader in child processes (uses LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR)
 if sys.platform == "win32":
     env['PATH'] = (
         os.path.join(app_root, 'ten_packages', 'system', 'ten_runtime', 'lib')
