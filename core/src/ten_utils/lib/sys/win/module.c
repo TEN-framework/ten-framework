@@ -65,18 +65,23 @@ void *ten_module_load(const ten_string_t *name, int as_local) {
   TEN_LOGI("Attempting to load '%s'", dll_path);
 
   // ==============================================================================
-  // For python_addon_loader.dll, add dependency DLL directories to enable it to
-  // to find ten_runtime.dll and ten_utils.dll.
+  // BEGIN: C code block - Add dependency DLL directories for
+  // python_addon_loader.dll
   // ==============================================================================
   //
-  // This is only needed when a C++ app with Python extensions is running on
-  // Windows platform:
+  // Purpose: For python_addon_loader.dll, add dependency DLL directories to
+  //          enable it to find ten_runtime.dll and ten_utils.dll.
+  //
+  // Context: This is only needed when a C++ app with Python extensions is
+  //          running on Windows platform:
+  //
   // 1. Unix-like platforms (Linux, macOS) use rpath to embed dependency search
   //    paths in the shared library itself at build time:
   //    - Linux uses: -Wl,-rpath=$ORIGIN and ch=$ORIGIN/../lib/
   //    - macOS uses: -Wl,-rpath,@loader_path and
   //    -Wl,-rpath,@loader_path/../lib/ This allows the dynamic linker to
   //    automatically find dependencies.
+  //
   // 2. Windows does not support rpath. Instead, it uses DLL search order:
   //    - The directory containing the executable
   //    - System directories (System32, etc.)
@@ -85,6 +90,7 @@ void *ten_module_load(const ten_string_t *name, int as_local) {
   //    Since python_addon_loader.dll's dependencies (ten_runtime.dll,
   //    ten_utils.dll) are NOT in these default search paths, we must
   //    explicitly add their directories using AddDllDirectory.
+  //
   // 3. For Python applications on Windows:
   //    - Python apps load libten_runtime_python.pyd when executing
   //      "from ten_runtime import ..." in their main.py
@@ -92,6 +98,8 @@ void *ten_module_load(const ten_string_t *name, int as_local) {
   //    - For python apps, DLL search paths are configured in
   //      ten_runtime/__init__.py (see binding/python/interface/)
   //    - For C++ apps with Python extensions, we handle it here instead
+  //
+  // ==============================================================================
   PVOID cookie = NULL;
   if (strstr(dll_path, "python_addon_loader") != NULL) {
     // Calculate directory path length (up to the last path separator)
@@ -122,7 +130,10 @@ void *ten_module_load(const ten_string_t *name, int as_local) {
       TEN_LOGE("Failed to get separator from DLL path: %s", dll_path);
     }
   }
-  // =============================================================================
+  // ==============================================================================
+  // END: C code block - Add dependency DLL directories for
+  // python_addon_loader.dll
+  // ==============================================================================
 
   // LOAD_LIBRARY_SEARCH_DEFAULT_DIRS:
   // represents the recommended maximum number of directories an application
