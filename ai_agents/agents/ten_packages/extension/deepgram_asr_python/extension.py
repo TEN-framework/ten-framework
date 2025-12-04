@@ -287,13 +287,7 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
             )
 
         try:
-            alternative = result.channel.alternatives[0]
-            sentence = alternative.transcript
-            confidence = (
-                alternative.confidence
-                if hasattr(alternative, "confidence")
-                else None
-            )
+            sentence = result.channel.alternatives[0].transcript
 
             if not sentence:
                 return
@@ -311,14 +305,8 @@ class DeepgramASRExtension(AsyncASRBaseExtension):
             is_final = result.is_final
             language = self.config.language
 
-            # Log with confidence for debugging phantom words (low confidence = false positive)
-            confidence_str = (
-                f", confidence={confidence:.3f}"
-                if confidence is not None
-                else ""
-            )
-            self.ten_env.log_info(
-                f"[STT_{'FINAL' if is_final else 'INTERIM'}] text=\"{sentence}\"{confidence_str}, is_final={is_final}"
+            self.ten_env.log_debug(
+                f"deepgram event callback on_transcript: {sentence}, language: {language}, is_final: {is_final}"
             )
 
             await self._handle_asr_result(
