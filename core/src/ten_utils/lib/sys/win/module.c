@@ -135,20 +135,35 @@ void *ten_module_load(const ten_string_t *name, int as_local) {
   // python_addon_loader.dll
   // ==============================================================================
 
-  // LOAD_LIBRARY_SEARCH_DEFAULT_DIRS:
-  // represents the recommended maximum number of directories an application
-  // should include in its DLL search path. (a combination of application dir,
-  // system32 dir, and user dir which is affected by AddDllDirectory function)
+  // Check if the name is a full path (contains path separator) or just a
+  // filename. If it's just a filename (like "python310.dll"), we need to search
+  // PATH environment variable, so we should use standard LoadLibrary instead of
+  // LoadLibraryEx with restrictive search flags.
+  const char *dll_name = ten_string_get_raw_str(name);
 
-  // LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR: the directory that contains the DLL is
-  // temporarily added to the beginning of the list of directories that are
-  // searched for the DLL's dependencies.
+  HMODULE loaded_module;
+  if ((strchr(dll_name, '\\') != NULL) || (strchr(dll_name, '/') != NULL)) {
+    // For full paths, use LoadLibraryEx with search flags to restrict search:
 
-  // Each argument will cause directories in the standard search paths not to be
-  // searched.
-  HMODULE loaded_module = LoadLibraryExA(
-      ten_string_get_raw_str(name), NULL,
-      LOAD_LIBRARY_SEARCH_DEFAULT_DIRS | LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR);
+    // LOAD_LIBRARY_SEARCH_DEFAULT_DIRS:
+    // represents the recommended maximum number of directories an application
+    // should include in its DLL search path. (a combination of application dir,
+    // system32 dir, and user dir which is affected by AddDllDirectory function)
+
+    // LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR: the directory that contains the DLL is
+    // temporarily added to the beginning of the list of directories that are
+    // searched for the DLL's dependencies.
+
+    // Each argument will cause directories in the standard search paths not to
+    // be searched, in order to prevent DLL hijacking attacks.
+    loaded_module = LoadLibraryExA(
+        dll_name, NULL,
+        LOAD_LIBRARY_SEARCH_DEFAULT_DIRS | LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR);
+  } else {
+    // For filenames only (like "python310.dll"), use standard LoadLibrary
+    // which will search PATH environment variable.
+    loaded_module = LoadLibraryA(dll_name);
+  }
 
   if (!loaded_module) {
     DWORD error_code = GetLastError();
