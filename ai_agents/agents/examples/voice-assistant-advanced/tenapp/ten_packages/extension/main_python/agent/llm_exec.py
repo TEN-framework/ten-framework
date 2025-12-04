@@ -212,8 +212,10 @@ class LLMExec:
             case LLMResponseMessageDone():
                 text = llm_output.content
                 self.current_text = None
-                if self.on_response and text:
-                    await self.on_response(self.ten_env, "", text, True)
+                # Always send is_final=True to signal LLM completion,
+                # even if text is empty (content may have been streamed via deltas)
+                if self.on_response:
+                    await self.on_response(self.ten_env, "", text or "", True)
             case LLMResponseReasoningDelta():
                 delta = llm_output.delta
                 text = llm_output.content

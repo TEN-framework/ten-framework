@@ -251,8 +251,25 @@ class MainControlExtension(AsyncExtension):
         """
         current_time = time.time()
 
-        # Skip empty text
+        # Skip empty text, but still send end signal if is_final
         if not text or not text.strip():
+            if is_final:
+                # Send empty text with end signal to properly close TTS stream
+                request_id = f"tts-request-{self.turn_id}"
+                await _send_data(
+                    self.ten_env,
+                    "tts_text_input",
+                    "tts",
+                    {
+                        "request_id": request_id,
+                        "text": "",
+                        "text_input_end": True,
+                        "metadata": self._current_metadata(),
+                    },
+                )
+                self.ten_env.log_info(
+                    f"[MainControlExtension] Sent TTS end signal (empty text)"
+                )
             return
 
         # Deduplicate: skip if same text was sent recently
