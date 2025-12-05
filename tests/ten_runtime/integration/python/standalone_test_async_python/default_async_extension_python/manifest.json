@@ -9,6 +9,13 @@
       "version": "0.11.38"
     }
   ],
+  "dev_dependencies": [
+    {
+      "type": "system",
+      "name": "repl",
+      "version": "0.11.38"
+    }
+  ],
   "package": {
     "include": [
       "manifest.json",

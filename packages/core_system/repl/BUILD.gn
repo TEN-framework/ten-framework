@@ -15,8 +15,10 @@ ten_package("repl") {
   resources = [
     "LICENSE",
     "__init__.py",
+    "aaa.py",
     "manifest.json",
     "property.json",
+    "requirements.txt",
   ]
 
   docs_files = exec_script("//.gnfiles/build/scripts/glob_file.py",

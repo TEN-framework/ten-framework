@@ -1,0 +1,2 @@
+def aaa():
+    print("aaa")
