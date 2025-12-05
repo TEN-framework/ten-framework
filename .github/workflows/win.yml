@@ -93,6 +93,13 @@ jobs:
           fetch-depth: 0
           submodules: false
 
+      - name: Enable Windows long path support
+        shell: pwsh
+        run: |
+          Write-Output "Enabling Windows long path support..."
+          New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
+          Write-Output "Long path support enabled"
+
       - name: Trust working directory
         run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
 
@@ -408,6 +415,13 @@ jobs:
           fetch-depth: 0
           submodules: false
 
+      - name: Enable Windows long path support
+        shell: pwsh
+        run: |
+          Write-Output "Enabling Windows long path support..."
+          New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
+          Write-Output "Long path support enabled"
+
       - name: Trust working directory
         run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
 
@@ -533,6 +547,13 @@ jobs:
           fetch-depth: 0
           submodules: false
 
+      - name: Enable Windows long path support
+        shell: pwsh
+        run: |
+          Write-Output "Enabling Windows long path support..."
+          New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
+          Write-Output "Long path support enabled"
+
       - name: Trust working directory
         run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
 
@@ -617,6 +638,13 @@ jobs:
         with:
           fetch-depth: 0
           submodules: false
+
+      - name: Enable Windows long path support
+        shell: pwsh
+        run: |
+          Write-Output "Enabling Windows long path support..."
+          New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
+          Write-Output "Long path support enabled"
 
       - name: Trust working directory
         shell: bash
@@ -814,6 +842,13 @@ jobs:
         with:
           fetch-depth: 0
           submodules: false
+
+      - name: Enable Windows long path support
+        shell: pwsh
+        run: |
+          Write-Output "Enabling Windows long path support..."
+          New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
+          Write-Output "Long path support enabled"
 
       - name: Trust working directory
         run: git config --global --add safe.directory "${GITHUB_WORKSPACE}"
