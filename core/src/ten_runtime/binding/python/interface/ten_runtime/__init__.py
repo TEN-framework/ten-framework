@@ -20,6 +20,7 @@ from .log_option import LogOption, DefaultLogOption
 from .error import TenError, TenErrorCode
 from .value import Value, ValueType
 from .test import ExtensionTester, TenEnvTester
+from .test_wrapper import TenTestContext, ten_test
 from .async_test import AsyncExtensionTester, AsyncTenEnvTester
 from .loc import Loc
 from .cmd import Cmd
@@ -61,6 +62,8 @@ __all__ = [
     "ExtensionTester",
     "TenEnvTester",
     "TenError",
+    "TenTestContext",
+    "ten_test",
     "Value",
     "ValueType",
     "AsyncExtensionTester",
