@@ -80,7 +80,12 @@ jobs:
             gnupg \
             lsb-release \
             libunwind-dev \
-            libasound2
+            libasound2 \
+            libavformat-dev \
+            libavfilter-dev \
+            libx264-dev \
+            nasm \
+            yasm
 
           # Clean up apt cache
           sudo apt-get clean
