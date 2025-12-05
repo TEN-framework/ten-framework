@@ -1372,7 +1372,7 @@ jobs:
 
           llvm-profdata merge -sparse $PROFDATA_FILES -o out/linux/x64/coverage/merged.profdata
 
-          echo "😎Intermediate .profdata file:"
+          echo "Intermediate .profdata file:"
           llvm-profdata show out/linux/x64/coverage/merged.profdata
 
           # Use --object flag to ensure all binaries and libraries are processed correctly
@@ -1416,7 +1416,13 @@ jobs:
           COVERALLS_REPO_TOKEN: ${{ secrets.TEN_COVERALLS_REPO_TOKEN }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          path-to-lcov: out/linux/x64/coverage/coverage_filtered.lcov
+          file: out/linux/x64/coverage/coverage_filtered.lcov
+          format: lcov
+          #Path to the root folder of the project the coverage was collected in.
+          #Should be used in monorepos so that coveralls can process filenames from your coverage reports correctly (e.g. packages/my-subproject).
+          base-path: ${{ github.workspace }}
+          debug: true    #enable debug logging.
+          measure: true  #enable time measurement logging.
 
       - name: Upload filtered coverage report to artifacts
         if: success() || failure()
