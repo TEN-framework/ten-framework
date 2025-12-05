@@ -12,7 +12,6 @@
 #include "include_internal/ten_runtime/binding/cpp/detail/addon_loader.h"
 #include "include_internal/ten_runtime/binding/cpp/detail/addon_manager.h"
 #include "include_internal/ten_runtime/binding/cpp/ten.h"
-#include "include_internal/ten_runtime/binding/python/common.h"
 #include "include_internal/ten_runtime/common/base_dir.h"
 #include "include_internal/ten_runtime/common/constant_str.h"
 #include "include_internal/ten_runtime/metadata/manifest.h"
@@ -23,8 +22,60 @@
 #include "ten_utils/lib/string.h"
 #include "ten_utils/log/log.h"
 #include "ten_utils/macro/check.h"
+// NOTE: We do NOT include the following header file because we will dynamically
+// load libten_runtime_python.so and access its functions via function pointers.
+//
+// "include_internal/ten_runtime/binding/python/common.h"
 
-static void foo() {}
+namespace {
+
+void foo() {}
+
+// Function pointer types for ten_py_* APIs from libten_runtime_python.so
+// These must match the signatures in the following header file:
+// include_internal/ten_runtime/binding/python/common.h
+typedef int (*ten_py_is_initialized_func_t)();
+typedef void (*ten_py_initialize_func_t)();
+typedef int (*ten_py_finalize_func_t)();
+typedef void (*ten_py_add_paths_to_sys_func_t)(ten_list_t *paths);
+typedef void (*ten_py_run_simple_string_func_t)(const char *code);
+typedef const char *(*ten_py_get_path_func_t)();
+typedef void (*ten_py_mem_free_func_t)(void *ptr);
+typedef bool (*ten_py_import_module_func_t)(const char *module_name);
+typedef void *(*ten_py_eval_save_thread_func_t)();
+typedef void (*ten_py_eval_restore_thread_func_t)(void *state);
+typedef void *(*ten_py_gil_state_ensure_func_t)();
+typedef void (*ten_py_gil_state_release_func_t)(void *state);
+
+// Global function pointers to be initialized once libten_runtime_python.so is
+// loaded
+ten_py_is_initialized_func_t g_ten_py_is_initialized_ptr = nullptr;
+ten_py_initialize_func_t g_ten_py_initialize_ptr = nullptr;
+ten_py_finalize_func_t g_ten_py_finalize_ptr = nullptr;
+ten_py_add_paths_to_sys_func_t g_ten_py_add_paths_to_sys_ptr = nullptr;
+ten_py_run_simple_string_func_t g_ten_py_run_simple_string_ptr = nullptr;
+ten_py_get_path_func_t g_ten_py_get_path_ptr = nullptr;
+ten_py_mem_free_func_t g_ten_py_mem_free_ptr = nullptr;
+ten_py_import_module_func_t g_ten_py_import_module_ptr = nullptr;
+ten_py_eval_save_thread_func_t g_ten_py_eval_save_thread_ptr = nullptr;
+ten_py_eval_restore_thread_func_t g_ten_py_eval_restore_thread_ptr = nullptr;
+ten_py_gil_state_ensure_func_t g_ten_py_gil_state_ensure_ptr = nullptr;
+ten_py_gil_state_release_func_t g_ten_py_gil_state_release_ptr = nullptr;
+
+// Macros to simplify calling the function pointers, making the code look like
+// direct function calls
+#define ten_py_is_initialized g_ten_py_is_initialized_ptr
+#define ten_py_initialize g_ten_py_initialize_ptr
+#define ten_py_finalize g_ten_py_finalize_ptr
+#define ten_py_add_paths_to_sys g_ten_py_add_paths_to_sys_ptr
+#define ten_py_run_simple_string g_ten_py_run_simple_string_ptr
+#define ten_py_get_path g_ten_py_get_path_ptr
+#define ten_py_mem_free g_ten_py_mem_free_ptr
+#define ten_py_import_module g_ten_py_import_module_ptr
+#define ten_py_eval_save_thread g_ten_py_eval_save_thread_ptr
+#define ten_py_eval_restore_thread g_ten_py_eval_restore_thread_ptr
+#define ten_py_gil_state_ensure g_ten_py_gil_state_ensure_ptr
+#define ten_py_gil_state_release g_ten_py_gil_state_release_ptr
 
 /**
  * This addon is used for those ten app whose "main" function is not written in
@@ -104,6 +155,8 @@ static void foo() {}
  * 'ten_py_is_initialized'.
  */
 
+}  // namespace
+
 namespace {
 
 class python_addon_loader_t : public ten::addon_loader_t {
@@ -113,6 +166,29 @@ class python_addon_loader_t : public ten::addon_loader_t {
   void on_init(ten::ten_env_t &ten_env) override {
     // Do some initializations.
 
+    // We met 'symbols not found' error when loading python modules while the
+    // symbols are expected to be found in the python lib. We need to load the
+    // python lib first.
+    //
+    // Refer to
+    // https://mail.python.org/pipermail/new-bugs-announce/2008-November/003322.html?from_wecom=1
+    //
+    // NOTE: We must load libpython and libten_runtime_python.so FIRST before
+    // calling any ten_py_* functions, because the function pointers are
+    // initialized inside load_python_lib().
+    if (!load_python_lib()) {
+      TEN_LOGE(
+          "[Python addon loader] Failed to load Python libraries. Cannot "
+          "continue.");
+      ten_env.on_init_done();
+      return;
+    }
+
+    // Now we can safely check if Python has already been initialized by
+    // another component.
+    TEN_ASSERT(ten_py_is_initialized != nullptr,
+               "ten_py_is_initialized should not be nullptr");
+
     int py_initialized = ten_py_is_initialized();
     if (py_initialized != 0) {
       TEN_LOGI("[Python addon loader] Python runtime has been initialized");
@@ -121,14 +197,6 @@ class python_addon_loader_t : public ten::addon_loader_t {
     }
 
     py_init_by_self_ = true;
-
-    // We met 'symbols not found' error when loading python modules while the
-    // symbols are expected to be found in the python lib. We need to load the
-    // python lib first.
-    //
-    // Refer to
-    // https://mail.python.org/pipermail/new-bugs-announce/2008-November/003322.html?from_wecom=1
-    load_python_lib();
 
     ten_py_initialize();
 
@@ -394,12 +462,153 @@ class python_addon_loader_t : public ten::addon_loader_t {
         "_AddonManager.register_all_addons(None)\n");
   }
 
-  static void load_python_lib() {
+  // Helper function to find and load the system libpython library.
+  // This is necessary because libten_runtime_python.so does not link against
+  // libpython (for cross-version compatibility), so we need to explicitly load
+  // libpython to provide the Python symbols at runtime.
+  static bool load_system_lib_python() {
+    const char *python_lib_path = nullptr;
+    ten_string_t *path_to_load = nullptr;
+    void *handle = nullptr;
+
+    // Priority 1: Check environment variable (explicit user specification).
+    python_lib_path = getenv("TEN_PYTHON_LIB_PATH");
+    if (python_lib_path != nullptr && strlen(python_lib_path) > 0) {
+      TEN_LOGI(
+          "[Python addon loader] Using libpython from "
+          "TEN_PYTHON_LIB_PATH: %s",
+          python_lib_path);
+      path_to_load = ten_string_create_formatted("%s", python_lib_path);
+      handle = ten_module_load(path_to_load, 0);  // RTLD_GLOBAL
+      if (handle != nullptr) {
+        TEN_LOGI("[Python addon loader] Successfully loaded libpython from %s",
+                 python_lib_path);
+        ten_string_destroy(path_to_load);
+        return true;
+      } else {
+        TEN_LOGW("[Python addon loader] Failed to load libpython from %s",
+                 python_lib_path);
+        ten_string_destroy(path_to_load);
+        // Don't fallback if user explicitly specified a path
+        return false;
+      }
+    }
+
+    // Priority 2: Try default Python 3.10 library (current requirement).
+    // TODO(xilin): Note this is just a compatibility solution; it is
+    // recommended to specify the libpython path via environment variable.
+    TEN_LOGI(
+        "[Python addon loader] TEN_PYTHON_LIB_PATH not set, trying default "
+        "Python 3.10...");
+
+    const char *default_libs[] = {
+#if defined(_WIN32)
+        "python310.dll",
+#elif defined(__APPLE__)
+        "/Library/Frameworks/Python.framework/Versions/3.10/Python",
+        "/usr/local/opt/python@3.10/Frameworks/Python.framework/Versions/3.10/"
+        "Python",
+        "/opt/homebrew/opt/python@3.10/Frameworks/Python.framework/Versions/"
+        "3.10/Python",
+#else
+        "libpython3.10.so", "/usr/lib/x86_64-linux-gnu/libpython3.10.so",
+        "/usr/lib/aarch64-linux-gnu/libpython3.10.so",
+        "/usr/lib/libpython3.10.so",
+#endif
+        nullptr};
+
+    for (int i = 0; default_libs[i] != nullptr; i++) {
+      path_to_load = ten_string_create_formatted("%s", default_libs[i]);
+      handle = ten_module_load(path_to_load, 0);  // RTLD_GLOBAL
+      if (handle != nullptr) {
+        TEN_LOGI(
+            "[Python addon loader] Successfully loaded libpython from %s "
+            "(default Python 3.10)",
+            default_libs[i]);
+        ten_string_destroy(path_to_load);
+        return true;
+      }
+      ten_string_destroy(path_to_load);
+    }
+
+    // Failed to load, report error with clear instructions.
+    TEN_LOGE(
+        "[Python addon loader] Failed to load libpython. "
+        "Please set the TEN_PYTHON_LIB_PATH environment variable to specify "
+        "the path to your Python library:\n"
+#if defined(_WIN32)
+        "  Example: set TEN_PYTHON_LIB_PATH=C:\\Python310\\python310.dll\n"
+#elif defined(__APPLE__)
+        "  Example: export "
+        "TEN_PYTHON_LIB_PATH=/Library/Frameworks/Python.framework/Versions/"
+        "3.X/Python\n"
+#else
+        "  Example: export "
+        "TEN_PYTHON_LIB_PATH=/usr/lib/x86_64-linux-gnu/libpython3.X.so\n"
+#endif
+    );
+    return false;
+  }
+
+  static bool load_python_lib() {
+    TEN_LOGI("[Python addon loader] Starting to load Python libraries...");
+
+    // Step 1: Try to load the system libpython library to provide Python
+    // symbols. This is required because libten_runtime_python.so does not link
+    // against libpython for cross-version compatibility.
+    bool rc = load_system_lib_python();
+    if (!rc) {
+      TEN_LOGE("[Python addon loader] Failed to load system libpython.");
+      return false;
+    }
+
+    // Step 2: Load libten_runtime_python.so (our Python binding).
     // According to the explanation in https://bugs.python.org/issue43898, even
     // on macOS, when Python imports a Python C extension, the file extension
     // must be `.so` and cannot be `.dylib`.
-    ten_string_t *python_lib_path =
-        ten_string_create_formatted("libten_runtime_python.so");
+    //
+    // Since we removed the link-time dependency on libten_runtime_python, the
+    // rpath settings in BUILD.gn no longer help dlopen find it. We need to
+    // construct the full path ourselves.
+    //
+    // The path relative to python_addon_loader.so is:
+    // ../../../system/ten_runtime_python/lib/libten_runtime_python.so
+
+    // Get the path of the current module (python_addon_loader.so)
+    ten_string_t *addon_loader_path =
+        ten_path_get_module_path(reinterpret_cast<const void *>(foo));
+    if (addon_loader_path == nullptr) {
+      TEN_LOGE(
+          "[Python addon loader] Failed to get python_addon_loader module "
+          "path.");
+      return false;
+    }
+
+    TEN_LOGD("[Python addon loader] python_addon_loader path: %s",
+             ten_string_get_raw_str(addon_loader_path));
+
+    // Construct the path to libten_runtime_python.so
+    // From: .../ten_packages/addon_loader/python_addon_loader/lib/
+    // To:   .../ten_packages/system/ten_runtime_python/lib/
+    ten_string_t *python_lib_dir =
+        ten_string_create_formatted("%s/../../../system/ten_runtime_python/lib",
+                                    ten_string_get_raw_str(addon_loader_path));
+    ten_string_destroy(addon_loader_path);
+
+    // Normalize the path (resolve .. and .)
+    if (ten_path_to_system_flavor(python_lib_dir) != 0) {
+      TEN_LOGE("[Python addon loader] Failed to normalize path: %s",
+               ten_string_get_raw_str(python_lib_dir));
+      ten_string_destroy(python_lib_dir);
+      return false;
+    }
+
+    ten_string_t *python_lib_path = ten_string_create_formatted(
+        "%s/libten_runtime_python.so", ten_string_get_raw_str(python_lib_dir));
+    ten_string_destroy(python_lib_dir);
+
+    TEN_LOGI("[Python addon loader] Attempting to load: %s",
+             ten_string_get_raw_str(python_lib_path));
 
     // The libten_runtime_python.so must be loaded globally using dlopen, and
     // cannot be a regular shared library dependency. Note that the 2nd
@@ -407,9 +616,73 @@ class python_addon_loader_t : public ten::addon_loader_t {
     //
     // Refer to
     // https://mail.python.org/pipermail/new-bugs-announce/2008-November/003322.html
-    ten_module_load(python_lib_path, 0);
+    void *handle = ten_module_load(python_lib_path, 0);
+    if (handle == nullptr) {
+      TEN_LOGE(
+          "[Python addon loader] Failed to load libten_runtime_python.so from "
+          "%s. This is a critical error.",
+          ten_string_get_raw_str(python_lib_path));
+      ten_string_destroy(python_lib_path);
+      return false;
+    } else {
+      TEN_LOGI(
+          "[Python addon loader] Successfully loaded libten_runtime_python.so "
+          "from %s",
+          ten_string_get_raw_str(python_lib_path));
+    }
 
     ten_string_destroy(python_lib_path);
+
+    // Step 3: Load all function pointers from libten_runtime_python.so
+    bool load_success = load_ten_py_api_functions(handle);
+    if (!load_success) {
+      TEN_LOGE(
+          "[Python addon loader] Failed to load ten_py API functions from "
+          "libten_runtime_python.so");
+      return false;
+    }
+
+    TEN_LOGI(
+        "[Python addon loader] Successfully loaded all Python libraries and "
+        "API functions");
+    return true;
+  }
+
+  // Helper function to load all ten_py_* API function pointers from
+  // libten_runtime_python.so
+  static bool load_ten_py_api_functions(void *handle) {
+    if (handle == nullptr) {
+      return false;
+    }
+
+#define LOAD_SYMBOL(var, name)                                             \
+  do {                                                                     \
+    (var) = reinterpret_cast<decltype(var)>(                               \
+        ten_module_get_symbol(handle, (name)));                            \
+    if ((var) == nullptr) {                                                \
+      TEN_LOGE("[Python addon loader] Failed to load symbol: %s", (name)); \
+      return false;                                                        \
+    }                                                                      \
+  } while (0)
+
+    LOAD_SYMBOL(g_ten_py_is_initialized_ptr, "ten_py_is_initialized");
+    LOAD_SYMBOL(g_ten_py_initialize_ptr, "ten_py_initialize");
+    LOAD_SYMBOL(g_ten_py_finalize_ptr, "ten_py_finalize");
+    LOAD_SYMBOL(g_ten_py_add_paths_to_sys_ptr, "ten_py_add_paths_to_sys");
+    LOAD_SYMBOL(g_ten_py_run_simple_string_ptr, "ten_py_run_simple_string");
+    LOAD_SYMBOL(g_ten_py_get_path_ptr, "ten_py_get_path");
+    LOAD_SYMBOL(g_ten_py_mem_free_ptr, "ten_py_mem_free");
+    LOAD_SYMBOL(g_ten_py_import_module_ptr, "ten_py_import_module");
+    LOAD_SYMBOL(g_ten_py_eval_save_thread_ptr, "ten_py_eval_save_thread");
+    LOAD_SYMBOL(g_ten_py_eval_restore_thread_ptr, "ten_py_eval_restore_thread");
+    LOAD_SYMBOL(g_ten_py_gil_state_ensure_ptr, "ten_py_gil_state_ensure");
+    LOAD_SYMBOL(g_ten_py_gil_state_release_ptr, "ten_py_gil_state_release");
+
+#undef LOAD_SYMBOL
+
+    TEN_LOGI(
+        "[Python addon loader] Successfully loaded all ten_py API functions");
+    return true;
   }
 };
 

@@ -51,7 +51,11 @@ ten_package("python_addon_loader") {
 
   deps = [
     "//core/src/ten_runtime",
-    "//core/src/ten_runtime/binding/python",
+    # NOTE: We intentionally do NOT link against ten_runtime_python here.
+    # Instead, we dynamically load it at runtime after loading libpython.
+    # This allows libten_runtime_python.so to use Python LIMITED API without
+    # linking against a specific libpython version.
+    # "//core/src/ten_runtime/binding/python",
   ]
 }
 

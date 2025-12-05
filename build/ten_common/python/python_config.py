@@ -149,13 +149,12 @@ def python_config_for_win(args: ArgumentInfo) -> None:
 
 
 def python_config_for_mac(args: ArgumentInfo) -> None:
-    is_x86_64 = platform.machine().lower() == "x86_64"
+    # is_x86_64 = platform.machine().lower() == "x86_64"
 
     if args.config_type == "cflags":
-        # Run python-config --embed --cflags
+        # Run python-config --cflags (without --embed for extension modules)
         cmd = [
             f"python{args.python_version}-config",
-            "--embed",
             "--cflags",
         ]
 
@@ -170,10 +169,9 @@ def python_config_for_mac(args: ArgumentInfo) -> None:
             print(output)
 
     elif args.config_type == "ldflags":
-        # Run python-config --embed --ldflags
+        # Run python-config --ldflags (without --embed for extension modules)
         cmd_ldflags = [
             f"python{args.python_version}-config",
-            "--embed",
             "--ldflags",
         ]
 
@@ -189,7 +187,6 @@ def python_config_for_mac(args: ArgumentInfo) -> None:
         # portion needs to be included in the `ldflags` variable in GN.
         cmd_libs = [
             f"python{args.python_version}-config",
-            "--embed",
             "--libs",
         ]
         returncode, libs_output = cmd_exec.run_cmd(cmd_libs, args.log_level)
@@ -218,23 +215,22 @@ def python_config_for_mac(args: ArgumentInfo) -> None:
             ldflags_outputs.append(pair[0])
             ldflags_outputs.append(pair[1])
 
-        # Add -L<LIBDIR> for x86_64.
+        # Note: We no longer add -L<LIBDIR> for libpython since we're building
+        # extension modules (not embedding Python), which don't need to link
+        # against libpython.
         #
-        # In the macOS x64 CI environment, the library path for `libpython` can
-        # only be obtained using the following method.
-        if is_x86_64:
-            libdir = sysconfig.get_config_var("LIBDIR")
-            if libdir:
-                ldflags_outputs.insert(0, f"-L{libdir}")
+        # if is_x86_64:
+        #     libdir = sysconfig.get_config_var("LIBDIR")
+        #     if libdir:
+        #         ldflags_outputs.insert(0, f"-L{libdir}")
 
         for out in ldflags_outputs:
             print(out)
 
     elif args.config_type == "libs":
-        # Run python-config --embed --libs
+        # Run python-config --libs (without --embed for extension modules)
         cmd = [
             f"python{args.python_version}-config",
-            "--embed",
             "--libs",
         ]
 
@@ -266,10 +262,9 @@ def python_config_for_mac(args: ArgumentInfo) -> None:
 
 def python_config_for_linux(args: ArgumentInfo) -> None:
     if args.config_type == "cflags":
-        # Run python-config --embed --cflags
+        # Run python-config --cflags (without --embed for extension modules)
         cmd = [
             f"python{args.python_version}-config",
-            "--embed",
             "--cflags",
         ]
 
@@ -284,10 +279,9 @@ def python_config_for_linux(args: ArgumentInfo) -> None:
             print(output)
 
     elif args.config_type == "ldflags":
-        # Run python-config --embed --ldflags
+        # Run python-config --ldflags (without --embed for extension modules)
         cmd_ld = [
             f"python{args.python_version}-config",
-            "--embed",
             "--ldflags",
         ]
 
@@ -301,10 +295,9 @@ def python_config_for_linux(args: ArgumentInfo) -> None:
             print(out)
 
     elif args.config_type == "libs":
-        # Run python-config --embed --libs
+        # Run python-config --libs (without --embed for extension modules)
         cmd = [
             f"python{args.python_version}-config",
-            "--embed",
             "--libs",
         ]
 
