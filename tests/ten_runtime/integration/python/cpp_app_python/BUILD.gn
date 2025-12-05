@@ -24,6 +24,13 @@ ten_package_test_prepare_app("cpp_app_python_app") {
     "cpp_app_python_app/bin/start",
   ]
 
+  if (is_win) {
+    replace_paths_after_install_all += [
+      "cpp_app_python_app/bin/bootstrap.py",
+      "cpp_app_python_app/bin/start.py",
+    ]
+  }
+
   if (ten_enable_ten_manager) {
     deps = [
       "//core/src/ten_manager",

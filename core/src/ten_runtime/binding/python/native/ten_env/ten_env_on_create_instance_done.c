@@ -60,7 +60,7 @@ PyObject *ten_py_ten_env_on_create_instance_done(PyObject *self,
   ten_py_extension_t *extension = NULL;
   void *context = NULL;
 
-  if (!PyArg_ParseTuple(args, "O!l", ten_py_extension_py_type(), &extension,
+  if (!PyArg_ParseTuple(args, "O!n", ten_py_extension_py_type(), &extension,
                         &context)) {
     ten_py_raise_py_value_error_exception(
         "Invalid argument count when ten_env.on_create_instance_done.");
