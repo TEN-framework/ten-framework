@@ -113,8 +113,10 @@ export default function RTCCard(props: { className?: string }) {
       // trulience SDK will play audio in synch with mouth
       user.audioTrack?.stop();
     }
-    if (user.audioTrack) {
+    if (user.audioTrack || user.videoTrack) {
       setRemoteUser(user);
+    } else {
+      setRemoteUser(undefined);
     }
   };
 
@@ -144,8 +146,8 @@ export default function RTCCard(props: { className?: string }) {
 
   return (
     <div className={cn("flex h-full min-h-0 flex-col", className)}>
-      {/* Scrollable top region (Avatar or ChatCard) */}
-      <div className="z-10 min-h-0 overflow-y-auto">
+      {/* Top region (Avatar or ChatCard) */}
+      <div className="z-10 min-h-0 flex-1 overflow-y-auto" style={{ minHeight: '240px' }}>
         {useTrulienceAvatar ? (
           !avatarInLargeWindow ? (
             <div className="h-60 w-full p-1">
@@ -160,12 +162,12 @@ export default function RTCCard(props: { className?: string }) {
             )
           )
         ) : (
-          <AgentView audioTrack={remoteuser?.audioTrack} />
+          <AgentView audioTrack={remoteuser?.audioTrack} videoTrack={remoteuser?.videoTrack} />
         )}
       </div>
 
-      {/* Bottom region for microphone and video blocks */}
-      <div className="w-full space-y-2 px-2 py-2">
+      {/* Bottom region for microphone and video blocks - always visible */}
+      <div className="w-full flex-shrink-0 space-y-2 px-2 py-2">
         <MicrophoneBlock audioTrack={audioTrack} />
         <VideoBlock
           cameraTrack={videoTrack}

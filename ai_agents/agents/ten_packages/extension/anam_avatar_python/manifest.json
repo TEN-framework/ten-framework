@@ -1,0 +1,72 @@
+{
+  "type": "extension",
+  "name": "anam_avatar_python",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.11"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "**.py",
+      "README.md",
+      "requirements.txt"
+    ]
+  },
+  "api": {
+    "property": {
+      "properties": {
+        "anam_api_key": {
+          "type": "string"
+        },
+        "anam_base_url": {
+          "type": "string"
+        },
+        "anam_avatar_id": {
+          "type": "string"
+        },
+        "anam_cluster": {
+          "type": "string"
+        },
+        "anam_pod": {
+          "type": "string"
+        },
+        "quality": {
+          "type": "string"
+        },
+        "video_encoding": {
+          "type": "string"
+        },
+        "agora_appid": {
+          "type": "string"
+        },
+        "agora_appcert": {
+          "type": "string"
+        },
+        "agora_channel_name": {
+          "type": "string"
+        },
+        "agora_video_uid": {
+          "type": "int64"
+        },
+        "enable_string_uid": {
+          "type": "bool"
+        },
+        "activity_idle_timeout": {
+          "type": "int64"
+        },
+        "input_audio_sample_rate": {
+          "type": "int64"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "test": "tests/bin/start"
+  }
+}

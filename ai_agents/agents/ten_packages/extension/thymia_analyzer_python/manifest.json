@@ -1,0 +1,125 @@
+{
+  "type": "extension",
+  "name": "thymia_analyzer_python",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.11"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "BUILD.gn",
+      "**.tent",
+      "**.py",
+      "README.md"
+    ]
+  },
+  "api": {
+    "property": {
+      "properties": {
+        "api_key": {
+          "type": "string"
+        },
+        "min_speech_duration": {
+          "type": "float64"
+        },
+        "silence_threshold": {
+          "type": "float64"
+        },
+        "continuous_analysis": {
+          "type": "bool"
+        },
+        "min_interval_seconds": {
+          "type": "int64"
+        },
+        "max_analyses_per_session": {
+          "type": "int64"
+        },
+        "poll_timeout": {
+          "type": "int64"
+        },
+        "poll_interval": {
+          "type": "int64"
+        },
+        "apollo_mood_duration": {
+          "type": "float64"
+        },
+        "apollo_read_duration": {
+          "type": "float64"
+        },
+        "analysis_mode": {
+          "type": "string"
+        }
+      }
+    },
+    "audio_frame_in": [
+      {
+        "name": "pcm_frame"
+      }
+    ],
+    "cmd_in": [
+      {
+        "name": "tool_call",
+        "property": {
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "args": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name"
+          ]
+        }
+      }
+    ],
+    "cmd_out": [
+      {
+        "name": "tool_register",
+        "property": {
+          "properties": {
+            "tool": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "parameters": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {}
+                  }
+                }
+              },
+              "required": [
+                "name",
+                "description",
+                "parameters"
+              ]
+            }
+          }
+        },
+        "result": {
+          "property": {
+            "properties": {
+              "response": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    ]
+  }
+}

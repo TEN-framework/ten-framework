@@ -4,13 +4,18 @@ import {
   type ICameraVideoTrack,
   type ILocalVideoTrack,
   type IMicrophoneAudioTrack,
+  type IRemoteAudioTrack,
+  type IRemoteVideoTrack,
   type NetworkQuality,
   type UID,
 } from "agora-rtc-sdk-ng";
 import { type IChatItem, ITextItem } from "@/types";
 
-export interface IRtcUser extends IUserTracks {
+export interface IRtcUser {
   userId: UID;
+  videoTrack?: IRemoteVideoTrack;
+  screenTrack?: ILocalVideoTrack;
+  audioTrack?: IRemoteAudioTrack;
 }
 
 export interface RtcEvents {

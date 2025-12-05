@@ -1,0 +1,16 @@
+{
+    "agora_appid": "${env:AGORA_APP_ID}",
+    "agora_appcert": "${env:AGORA_APP_CERTIFICATE}",
+    "channel": "",
+    "agora_video_uid": 123,
+    "anam_api_key": "${env:ANAM_API_KEY}",
+    "anam_base_url": "https://anam-lab-git-feat-agora-anam-20452f3b.vercel.app/v1",
+    "anam_avatar_id": "edf6fdcb-acab-44b8-b974-ded72665ee26",
+    "anam_cluster": "dev-eu",
+    "anam_pod": "",
+    "quality": "${env:VIDEO_QUALITY|high}",
+    "video_encoding": "${env:VIDEO_ENCODING|H264}",
+    "enable_string_uid": false,
+    "activity_idle_timeout": 120,
+    "input_audio_sample_rate": 48000
+}

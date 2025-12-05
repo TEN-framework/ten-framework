@@ -1,0 +1,47 @@
+{
+  "type": "extension",
+  "name": "heygen_avatar_python",
+  "version": "0.1.0",
+  "dependencies": [
+    {
+      "type": "system",
+      "name": "ten_runtime_python",
+      "version": "0.11"
+    }
+  ],
+  "package": {
+    "include": [
+      "manifest.json",
+      "property.json",
+      "**.py",
+      "README.md"
+    ]
+  },
+  "api": {
+    "property": {
+      "properties": {
+        "heygen_api_key": {
+          "type": "string"
+        },
+        "agora_appid": {
+          "type": "string"
+        },
+        "agora_appcert": {
+          "type": "string"
+        },
+        "agora_channel_name": {
+          "type": "string"
+        },
+        "agora_avatar_uid": {
+          "type": "int64"
+        },
+        "input_audio_sample_rate": {
+          "type": "int64"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "test": "tests/bin/start"
+  }
+}
