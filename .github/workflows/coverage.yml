@@ -40,6 +40,25 @@ jobs:
       run:
         shell: bash
     steps:
+      - name: Clean up disk space before build
+        run: |
+          echo "=== Disk space before cleanup ==="
+          df -h .
+
+          # Remove unnecessary packages and caches
+          apt-get clean
+          rm -rf /var/lib/apt/lists/*
+          rm -rf /tmp/*
+          rm -rf /var/tmp/*
+
+          # Remove unnecessary system files
+          rm -rf /usr/share/doc/*
+          rm -rf /usr/share/man/*
+          rm -rf /usr/share/locale/*
+
+          echo "=== Disk space after cleanup ==="
+          df -h .
+
       - name: Debug context
         run: |
           echo "event_name=${{ github.event_name }}"
@@ -68,6 +87,9 @@ jobs:
             git submodule update --init --recursive --depth 1 "$submodule"
           done
 
+          echo "=== Disk space after submodule initialization ==="
+          df -h .
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -89,6 +111,10 @@ jobs:
 
           apt-get update
           apt-get install -y llvm-21 clang-21
+
+          # Clean up apt caches to save space
+          apt-get clean
+          rm -rf /var/lib/apt/lists/*
 
           # CRITICAL: GN build system hardcodes "clang"/"clang++" (without version suffix)
           # We must override these to point to clang-21 to ensure profraw format version 10
@@ -113,6 +139,9 @@ jobs:
           llvm-cov --version | head -3
           llvm-profdata merge --version 2>&1 | head -3 || echo "llvm-profdata installed"
 
+          echo "=== Disk space after LLVM installation ==="
+          df -h .
+
       - name: Build (clang + debug + x64) with coverage instrumentation enabled
         run: |
           # Ensure /usr/local/bin is at the front of PATH so our clang-21 symlinks are used
@@ -131,6 +160,10 @@ jobs:
           export PATH=$PATH:$(go env GOPATH)/bin
           go1.24.3 download
           go1.24.3 version
+
+          echo "=== Disk space after Go installation ==="
+          df -h .
+
           rustup default nightly-2025-09-18
 
           # print rustc and llvm-cov's llvm version, make sure they are compatible
@@ -144,6 +177,7 @@ jobs:
           echo "llvm-profdata path: $(which llvm-profdata)"
           llvm-profdata merge --version 2>&1 | head -3 || echo "(llvm-profdata --version not supported)"
 
+          echo "=== Disk space before build ==="
           df -h .
 
           # enable_coverage=true: generate instrumented test executables and dynamic libraries
@@ -169,12 +203,44 @@ jobs:
           echo $EXTRA_ARGS
 
           tgn gen linux x64 release -- $EXTRA_ARGS
+
+          echo "=== Disk space after tgn gen ==="
+          df -h .
+
           tgn build linux x64 release
 
+          echo "=== Disk space after build ==="
+          df -h .
+
+          # Clean up intermediate build files to save space
+          echo "=== Cleaning up intermediate build files ==="
+          rm -rf out/linux/x64/obj
+
+          echo "=== Disk space after cleanup ==="
           df -h .
           tree -I 'gen|obj' out
 
         # Package CORE_BINARIES_AND_LIBS for coverage analysis
+      - name: Clean up unnecessary files before packaging
+        run: |
+          echo "=== Disk space before cleanup ==="
+          df -h .
+
+          # Remove gen directory except libten_rust.a (which is needed for coverage)
+          find out/linux/x64/gen -type f ! -name "libten_rust.a" -delete
+          find out/linux/x64/gen -type d -empty -delete
+
+          # Remove Rust build artifacts
+          rm -rf core/src/ten_manager/target
+          rm -rf core/src/ten_rust/target
+
+          # Clean cargo cache
+          rm -rf /root/.cargo/registry
+          rm -rf /root/.cargo/git
+
+          echo "=== Disk space after cleanup ==="
+          df -h .
+
       - name: Package binaries and libraries for coverage analysis
         run: |
           mkdir -p binaries_and_libs
