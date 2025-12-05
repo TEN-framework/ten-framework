@@ -66,7 +66,7 @@ npm --version
 
 TEN Manager (tman) is the command-line tool for TEN Framework, used to create projects, manage dependencies, and run applications.
 
-**Option 1: Install via Package Manager (Recommended)**
+Option 1: Install via Package Manager (Recommended)
 
 **Linux (Ubuntu/Debian):**
 
@@ -82,7 +82,7 @@ sudo apt install tman
 brew install TEN-framework/ten-framework/tman
 ```
 
-**Option 2: Install via Script**
+Option 2: Install via Script
 
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/TEN-framework/ten-framework/main/tools/tman/install_tman.sh)
@@ -230,13 +230,13 @@ If you want to develop and use C++ extensions, you'll need to install the TEN bu
 
 tgn is TEN Framework's C/C++ build system, based on Google's GN.
 
-**Option 1: One-line Installation (Recommended)**
+Option 1: One-line Installation (Recommended)
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/TEN-framework/ten-framework/main/tools/tgn/install_tgn.sh | bash
 ```
 
-**Option 2: Install from Cloned Repository**
+Option 2: Install from Cloned Repository
 
 ```bash
 # If you've already cloned the TEN Framework repository
@@ -304,6 +304,7 @@ Now open your browser at `http://localhost:8080` and navigate to the microphone 
 Developing and compiling C++ extensions requires installing a C++ compiler (gcc or clang):
 
 **Linux:**
+
 ```bash
 # Ubuntu/Debian
 sudo apt-get install gcc g++
@@ -313,12 +314,14 @@ sudo apt-get install clang
 ```
 
 **macOS:**
+
 ```bash
 # Install Xcode Command Line Tools (includes clang)
 xcode-select --install
 ```
 
 Verify compiler installation:
+
 ```bash
 # Check gcc
 gcc --version
@@ -330,17 +333,17 @@ clang --version
 
 ### Troubleshooting (C++ Extensions)
 
-**1. tgn command not found**
+1. tgn command not found
 
-Ensure you've run the installation script and added tgn to PATH:
+   Ensure you've run the installation script and added tgn to PATH:
 
-```bash
-export PATH="/usr/local/ten_gn:$PATH"
-```
+   ```bash
+   export PATH="/usr/local/ten_gn:$PATH"
+   ```
 
-**2. Compilation failed: Compiler not found**
+2. Compilation failed: Compiler not found
 
-Please refer to the "C++ Development Environment Requirements" section above to install the compiler.
+   Please refer to the "C++ Development Environment Requirements" section above to install the compiler.
 
 ### Learn More
 
