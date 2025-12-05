@@ -1,0 +1,2 @@
+pytest==8.3.4
+websockets~=14.0
