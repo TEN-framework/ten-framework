@@ -6,7 +6,7 @@
 #
 import("//build/feature/ten_package.gni")
 
-ten_package("cpp_app_multi_process_python_app") {
+ten_package("cpp_app_mproc_python_app") {
   package_kind = "app"
   enable_build = true
 
