@@ -5,7 +5,6 @@
 // Refer to the "LICENSE" file in the root directory for more information.
 //
 pub mod cmd_check;
-pub mod cmd_check_env;
 pub mod cmd_completion;
 pub mod cmd_create;
 pub mod cmd_delete;
@@ -35,7 +34,6 @@ pub enum CommandData {
     Delete(self::cmd_delete::DeleteCommand),
     Designer(self::cmd_designer::DesignerCommand),
     Check(self::cmd_check::CheckCommandData),
-    CheckEnv(self::cmd_check_env::CheckEnvCommand),
     Modify(self::cmd_modify::ModifyCommandData),
     Run(self::cmd_run::RunCommand),
     Completion(self::cmd_completion::CompletionCommand),
@@ -79,10 +77,6 @@ pub async fn execute_cmd(
         }
         CommandData::Check(cmd) => {
             crate::cmd::cmd_check::execute_cmd(tman_config, tman_storage_in_memory, cmd, out).await
-        }
-        CommandData::CheckEnv(cmd) => {
-            crate::cmd::cmd_check_env::execute_cmd(tman_config, tman_storage_in_memory, cmd, out)
-                .await
         }
         CommandData::Modify(cmd) => {
             crate::cmd::cmd_modify::execute_cmd(tman_config, tman_storage_in_memory, cmd, out).await

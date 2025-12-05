@@ -24,7 +24,7 @@ use crate::{
 pub struct CheckEnvCommand {}
 
 pub fn create_sub_cmd(_args_cfg: &crate::cmd_line::ArgsCfg) -> Command {
-    Command::new("check_env").about("Check development environment for TEN Framework").after_help(
+    Command::new("env").about("Check development environment for TEN Framework").after_help(
         "Check if your system has the required development environments:\n\n  - Operating System \
          (Linux/macOS x64/arm64)\n  - Python 3.10\n  - Go 1.20+\n  - Node.js and npm\n  - C++ \
          toolchain (tgn, gcc/clang)",

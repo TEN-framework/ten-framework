@@ -128,7 +128,6 @@ fn create_command_for_completion() -> Command {
         .subcommand(crate::cmd::cmd_publish::create_sub_cmd(&args_cfg))
         .subcommand(crate::cmd::cmd_designer::create_sub_cmd(&args_cfg))
         .subcommand(crate::cmd::cmd_check::create_sub_cmd(&args_cfg))
-        .subcommand(crate::cmd::cmd_check_env::create_sub_cmd(&args_cfg))
         .subcommand(crate::cmd::cmd_modify::create_sub_cmd(&args_cfg))
         .subcommand(crate::cmd::cmd_run::create_sub_cmd(&args_cfg))
         .subcommand(create_sub_cmd(&args_cfg))
