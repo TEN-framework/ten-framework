@@ -145,7 +145,13 @@ jobs:
           sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main"
 
           sudo apt-get update
-          sudo apt-get install -y llvm-21 clang-21
+          sudo apt-get install -y \
+            llvm-21 \
+            clang-21 \
+            libc++-21-dev \
+            libc++1-21 \
+            libc++abi-21-dev \
+            libc++abi1-21
 
           # Clean up apt caches to save space
           sudo apt-get clean
@@ -236,8 +242,7 @@ jobs:
           ten_enable_rust_incremental_build=false \
           ten_manager_enable_frontend=false \
           ten_enable_integration_tests_prebuilt=false \
-          ten_enable_ffmpeg_extensions=true \
-          symbol_level=1"
+          ten_enable_ffmpeg_extensions=true"
 
           echo $EXTRA_ARGS
 
