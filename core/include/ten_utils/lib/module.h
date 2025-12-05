@@ -21,6 +21,21 @@
  */
 TEN_UTILS_API void *ten_module_load(const ten_string_t *name, int as_local);
 
+#if defined(_WIN32)
+/**
+ * @brief Dynamicly load a module, will search PATH environment variable but
+ *        using a less safe method (LoadLibraryA instead of LoadLibraryExA).
+ * @param name The name of the module to load.
+ * @param as_local useless on windows platform.
+ * @return The handle of the loaded module, or NULL on failure.
+ *
+ * @note Windows-only function. This function is designed for loading system
+ *       libraries (e.g., python310.dll) that reside in PATH directories.
+ */
+TEN_UTILS_API void *ten_module_load_with_path_search(const ten_string_t *name,
+                                                     int as_local);
+#endif
+
 /**
  * @brief Unload a module.
  * @param handle The handle of the module to unload.

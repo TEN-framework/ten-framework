@@ -519,7 +519,13 @@ class python_addon_loader_t : public ten::addon_loader_t {
 
     for (int i = 0; default_libs[i] != nullptr; i++) {
       path_to_load = ten_string_create_formatted("%s", default_libs[i]);
+#if defined(_WIN32)
+      // Fallback to LoadLibraryA instead of the safer LoadLibraryExA because
+      // on Windows we need to search PATH to find "python310.dll".
+      handle = ten_module_load_with_path_search(path_to_load, 0);
+#else
       handle = ten_module_load(path_to_load, 0);  // RTLD_GLOBAL
+#endif
       if (handle != nullptr) {
         TEN_LOGI(
             "[Python addon loader] Successfully loaded libpython from %s "

@@ -7,6 +7,7 @@
 #include "ten_utils/lib/module.h"
 
 #include <Windows.h>
+#include <string.h>
 
 #include "ten_utils/log/log.h"
 
@@ -16,10 +17,19 @@ void *ten_module_load(const ten_string_t *name, int as_local) {
     return NULL;
   }
 
+  // Use LoadLibraryEx with search flags to restrict search.
+
+  // LOAD_LIBRARY_SEARCH_DEFAULT_DIRS:
+  // represents the recommended maximum number of directories an application
+  // should include in its DLL search path. (a combination of application dir,
+  // system32 dir, and user dir which is affected by AddDllDirectory function)
+
   // LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR: the directory that contains the DLL is
   // temporarily added to the beginning of the list of directories that are
-  // searched for the DLL's dependencies. Directories in the standard search
-  // path are not searched.
+  // searched for the DLL's dependencies.
+
+  // Each argument will cause directories in the standard search paths not to
+  // be searched, in order to prevent DLL hijacking attacks.
   return (void *)LoadLibraryExA(
       ten_string_get_raw_str(name), NULL,
       LOAD_LIBRARY_SEARCH_DEFAULT_DIRS | LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR);
@@ -63,4 +73,20 @@ void *ten_module_get_symbol(void *handle, const char *symbol_name) {
   }
 
   return (void *)symbol;
+}
+
+void *ten_module_load_with_path_search(const ten_string_t *name, int as_local) {
+  (void)as_local;
+  if (!name || ten_string_is_empty(name)) {
+    return NULL;
+  }
+
+  const char *dll_name = ten_string_get_raw_str(name);
+
+  // Use standard LoadLibrary which will search PATH environment variable.
+  HMODULE loaded_module = LoadLibraryA(dll_name);
+  TEN_LOGI("Use LoadLibraryA() to load module: %s, result=%p", dll_name,
+           loaded_module);
+
+  return (void *)loaded_module;
 }
