@@ -33,7 +33,7 @@ jobs:
   build:
     needs: call-check-pr-status
     if: ${{ needs.call-check-pr-status.outputs.should_continue == 'true' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     # Remove container to get more disk space (runner has ~70GB free vs ~12GB with container)
     # container:
     #   image: ghcr.io/ten-framework/ten_building_ubuntu2204
