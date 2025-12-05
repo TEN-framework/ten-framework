@@ -60,8 +60,8 @@ if sys.platform == "win32":
 
 # Run the C++ executable
 if sys.platform == "win32":
-    cpp_app_path = os.path.join(app_root, 'bin', 'cpp_app_multi_process_python_app.exe')
+    cpp_app_path = os.path.join(app_root, 'bin', 'cpp_app_mproc_python_app.exe')
 else:
-    cpp_app_path = os.path.join(app_root, 'bin', 'cpp_app_multi_process_python_app')
+    cpp_app_path = os.path.join(app_root, 'bin', 'cpp_app_mproc_python_app')
 
 sys.exit(subprocess.run([cpp_app_path], env=env).returncode)
