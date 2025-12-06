@@ -227,7 +227,7 @@ def test_sequential_requests_state_machine(MockAzureTTS):
     # Create test configuration (avoid environment variable issues)
     config = {
         "params": {
-            "api_key": "mock_azure_api_key_for_testing",
+            "subscription": "mock_azure_api_key_for_testing",
             "region": "eastus",
             "voice_name": "en-US-AriaNeural",
         },
@@ -316,7 +316,7 @@ def test_request_state_transitions(MockAzureTTS):
     # Create test configuration (avoid environment variable issues)
     config = {
         "params": {
-            "api_key": "mock_azure_api_key_for_testing",
+            "subscription": "mock_azure_api_key_for_testing",
             "region": "eastus",
             "voice_name": "en-US-AriaNeural",
         },
