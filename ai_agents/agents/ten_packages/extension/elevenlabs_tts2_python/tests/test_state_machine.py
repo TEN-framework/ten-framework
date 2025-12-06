@@ -308,7 +308,7 @@ def test_sequential_requests_state_machine(MockElevenLabsTTS2Client):
     # Create test configuration (avoid environment variable issues)
     config = {
         "params": {
-            "api_key": "test_api_key_for_state_machine",
+            "key": "test_api_key_for_state_machine",
             "model_id": "eleven_turbo_v2_5",
             "sample_rate": 16000,
         },
@@ -459,7 +459,7 @@ def test_request_state_transitions(MockElevenLabsTTS2Client):
     # Create test configuration (avoid environment variable issues)
     config = {
         "params": {
-            "api_key": "test_api_key_for_state_transitions",
+            "key": "test_api_key_for_state_transitions",
             "model_id": "eleven_turbo_v2_5",
             "sample_rate": 16000,
         },
