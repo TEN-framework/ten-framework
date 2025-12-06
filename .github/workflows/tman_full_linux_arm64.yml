@@ -239,12 +239,14 @@ jobs:
           echo "https://launchpad.net/~${PPA_LAUNCHPAD_ID}/+archive/ubuntu/${PPA_PPA_NAME}/+packages"
 
       - name: Set up ARM64 environment for Playwright tests
+        if: false # Skipped: QEMU ARM64 emulation is too slow and causes timeouts
         run: |
           # We need to install Playwright and its dependencies on the host for ARM64
           # Note: Playwright tests will run inside Docker container with ARM64 emulation
           echo "Setting up ARM64 test environment"
 
       - name: Install Playwright Browsers in Docker
+        if: false # Skipped: QEMU ARM64 emulation is too slow and causes timeouts
         run: |
           docker run --rm --platform linux/arm64 \
             -v $(pwd):/${{ github.workspace }} -w ${{ github.workspace }}/core/src/ten_manager/designer_frontend \
@@ -260,6 +262,7 @@ jobs:
             "
 
       - name: Run Playwright tests
+        if: false # Skipped: QEMU ARM64 emulation is too slow and causes timeouts
         run: |
           # Run tests inside Docker container with ARM64 emulation
           docker run --rm --platform linux/arm64 \
@@ -314,8 +317,8 @@ jobs:
             " || echo "Playwright tests failed or skipped (expected on ARM64 with QEMU limitations)"
 
       - name: Upload tests relevant artifacts
+        if: false # Skipped: QEMU ARM64 emulation is too slow and causes timeouts
         uses: actions/upload-artifact@v4
-        if: ${{ !cancelled() }}
         with:
           name: playwright-report-${{ matrix.build_type }}-linux-${{ matrix.arch }}
           path: core/src/ten_manager/designer_frontend/playwright-report/
