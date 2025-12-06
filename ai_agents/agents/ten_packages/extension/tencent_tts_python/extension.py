@@ -226,6 +226,7 @@ class TencentTTSExtension(AsyncTTS2BaseExtension):
                 if t.metadata is not None:
                     self.current_turn_id = t.metadata.get("turn_id", -1)
                 self.request_total_audio_duration = 0
+                self.request_start_ts = datetime.now()
                 self.request_first_received = True
 
                 if self.config.dump:
@@ -287,7 +288,7 @@ class TencentTTSExtension(AsyncTTS2BaseExtension):
                 vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
             )
             # Only finish request if we've received text_input_end (request is complete)
-            if self.current_request_finished:
+            if self.current_request_finished or t.text_input_end:
                 await self._handle_tts_audio_end(
                     reason=TTSAudioEndReason.ERROR, error=error
                 )
@@ -327,7 +328,6 @@ class TencentTTSExtension(AsyncTTS2BaseExtension):
                             and len(audio_data) > 0
                         ):
                             if self.request_first_received:
-                                self.request_start_ts = datetime.now()
                                 self.request_first_received = False
                             self.ten_env.log_debug(
                                 f"Received audio data for request ID: {self.current_request_id}, audio_data_len: {len(audio_data)}"

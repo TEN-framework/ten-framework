@@ -290,10 +290,12 @@ def test_sequential_requests_state_machine(MockTencentTTSClient):
 
     # Create test configuration
     config = {
-        "secret_id": "test_secret_id",
-        "secret_key": "test_secret_key",
-        "app_id": "test_app_id",
-        "voice_type": 1001,
+        "params": {
+            "secret_id": "test_secret_id",
+            "secret_key": "test_secret_key",
+            "app_id": "1234567890",
+            "voice_type": 1001,
+        },
     }
 
     print(f"  → Using test config with mock client")
@@ -417,10 +419,12 @@ def test_request_state_transitions(MockTencentTTSClient):
 
     # Create test configuration
     config = {
-        "secret_id": "test_secret_id",
-        "secret_key": "test_secret_key",
-        "app_id": "test_app_id",
-        "voice_type": 1001,
+        "params": {
+            "secret_id": "test_secret_id",
+            "secret_key": "test_secret_key",
+            "app_id": "1234567890",
+            "voice_type": 1001,
+        },
     }
 
     # Set test mode and run
