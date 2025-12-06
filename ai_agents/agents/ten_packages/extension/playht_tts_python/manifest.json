@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "playht_tts_python",
-  "version": "0.4.0",
+  "version": "0.5.3",
   "dependencies": [
     {
       "type": "system",
@@ -11,7 +11,7 @@
     {
       "type": "system",
       "name": "ten_ai_base",
-      "version": "=0.7.22"
+      "version": "0.7"
     }
   ],
   "package": {
@@ -42,37 +42,13 @@
             "user_id": {
               "type": "string"
             },
-            "voice_engine": {
-              "type": "string"
-            },
-            "protocol": {
-              "type": "string"
-            },
             "voice": {
-              "type": "string"
-            },
-            "language": {
               "type": "string"
             },
             "sample_rate": {
               "type": "int64"
             },
             "speed": {
-              "type": "float64"
-            },
-            "seed": {
-              "type": "int64"
-            },
-            "temperature": {
-              "type": "float64"
-            },
-            "voice_guidance": {
-              "type": "float64"
-            },
-            "style_guidance": {
-              "type": "float64"
-            },
-            "text_guidance": {
               "type": "float64"
             }
           }

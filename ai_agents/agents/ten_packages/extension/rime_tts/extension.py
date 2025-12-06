@@ -24,6 +24,7 @@ from .config import RimeTTSConfig
 
 from .rime_tts import (
     EVENT_TTS_END,
+    EVENT_TTS_ERROR,
     EVENT_TTS_RESPONSE,
     EVENT_TTS_TTFB_METRIC,
     RimeTTSClient,
@@ -48,6 +49,7 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
         self.recorder_map: dict[str, PCMWriter] = {}
         self.last_completed_request_id: str | None = None
         self.last_completed_has_reset_synthesizer = True
+        self.current_request_finished: bool = True
 
     async def on_init(self, ten_env: AsyncTenEnv) -> None:
         try:
@@ -177,21 +179,31 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                     self.ten_env.log_debug(
                         f"Session finished for request ID: {self.current_request_id}"
                     )
-                    if self.request_start_ts is not None:
-                        request_event_interval = int(
-                            (
-                                datetime.now() - self.request_start_ts
-                            ).total_seconds()
-                            * 1000
+                    await self._handle_tts_audio_end()
+                    if self.stop_event:
+                        self.stop_event.set()
+                        self.stop_event = None
+                elif event == EVENT_TTS_ERROR:
+                    error_msg = (
+                        data.decode() if isinstance(data, bytes) else str(data)
+                    )
+                    self.ten_env.log_error(
+                        f"TTS error for request ID {self.current_request_id}: {error_msg}"
+                    )
+                    error = ModuleError(
+                        message=error_msg,
+                        module=ModuleType.TTS,
+                        code=ModuleErrorCode.NON_FATAL_ERROR,
+                        vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
+                    )
+                    if self.current_request_finished:
+                        await self._handle_tts_audio_end(
+                            reason=TTSAudioEndReason.ERROR, error=error
                         )
-                        await self.send_tts_audio_end(
-                            request_id=self.current_request_id,
-                            request_event_interval_ms=request_event_interval,
-                            request_total_audio_duration_ms=self.request_total_audio_duration,
-                        )
-
-                        self.ten_env.log_debug(
-                            f"request time stamped for request ID: {self.current_request_id}, request_event_interval: {request_event_interval}ms, total_audio_duration: {self.request_total_audio_duration}ms"
+                    else:
+                        await self.send_tts_error(
+                            request_id=self.current_request_id or "",
+                            error=error,
                         )
                     if self.stop_event:
                         self.stop_event.set()
@@ -204,6 +216,57 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                 if self.stop_event:
                     self.stop_event.set()
                     self.stop_event = None
+
+    async def _handle_tts_audio_end(
+        self,
+        reason: TTSAudioEndReason = TTSAudioEndReason.REQUEST_END,
+        error: ModuleError | None = None,
+    ) -> None:
+        """Centralized method for properly ending a TTS request."""
+        if self.request_start_ts is not None:
+            request_event_interval = int(
+                (datetime.now() - self.request_start_ts).total_seconds() * 1000
+            )
+
+            # Flush PCMWriter for current request to ensure dump file is written
+            if (
+                self.config.dump
+                and self.current_request_id
+                and self.current_request_id in self.recorder_map
+            ):
+                try:
+                    await self.recorder_map[self.current_request_id].flush()
+                    self.ten_env.log_debug(
+                        f"Flushed PCMWriter for request_id: {self.current_request_id}"
+                    )
+                except Exception as e:
+                    self.ten_env.log_error(
+                        f"Error flushing PCMWriter for request_id {self.current_request_id}: {e}"
+                    )
+
+            # Send TTS audio end event
+            await self.send_tts_audio_end(
+                request_id=self.current_request_id,
+                request_event_interval_ms=request_event_interval,
+                request_total_audio_duration_ms=self.request_total_audio_duration,
+                reason=reason,
+            )
+
+            self.ten_env.log_debug(
+                f"Sent TTS audio end for request ID: {self.current_request_id}, "
+                f"interval: {request_event_interval}ms, duration: {self.request_total_audio_duration}ms, "
+                f"reason: {reason}"
+            )
+
+            # Finish request to complete state transition
+            await self.finish_request(
+                request_id=self.current_request_id,
+                reason=reason,
+                error=error,
+            )
+
+            # Clear current request
+            self.current_request_id = None
 
     async def request_tts(self, t: TTSTextInput) -> None:
         """
@@ -249,6 +312,7 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                 self.last_completed_has_reset_synthesizer = False
 
                 self.current_request_id = t.request_id
+                self.current_request_finished = False
                 if t.metadata is not None:
                     self.session_id = t.metadata.get("session_id", "")
                     self.current_turn_id = t.metadata.get("turn_id", -1)
@@ -290,23 +354,22 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
             if t.text.strip() != "":
                 self.sent_tts = True
                 await self.client.send_text(t)
-            if self.request_start_ts and t.text_input_end:
-                if t.text.strip() == "" and not self.sent_tts:
-                    request_event_interval = int(
-                        (datetime.now() - self.request_start_ts).total_seconds()
-                        * 1000
-                    )
-                    await self.send_tts_audio_end(
-                        request_id=self.current_request_id,
-                        request_event_interval_ms=request_event_interval,
-                        request_total_audio_duration_ms=self.request_total_audio_duration,
-                    )
-                    self.ten_env.log_debug(
-                        f"Sent TTS audio end event,text is empty, interval: {request_event_interval}ms, duration: {self.request_total_audio_duration}ms"
-                    )
+            if t.text_input_end:
+                self.current_request_finished = True
                 self.ten_env.log_debug(
-                    f"finish session for request ID: {t.request_id}"
+                    f"text_input_end received for request ID: {t.request_id}"
                 )
+
+                if (
+                    self.request_start_ts
+                    and t.text.strip() == ""
+                    and not self.sent_tts
+                ):
+                    # Empty text with text_input_end - finish immediately
+                    await self._handle_tts_audio_end()
+                    self.ten_env.log_debug(
+                        f"Sent TTS audio end event, text is empty for request ID: {t.request_id}"
+                    )
 
                 self.last_completed_request_id = t.request_id
                 self.ten_env.log_info(
@@ -328,28 +391,40 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
             self.ten_env.log_error(
                 f"ModuleVendorException in request_tts: {traceback.format_exc()}. text: {t.text}"
             )
-            await self.send_tts_error(
-                request_id=self.current_request_id,
-                error=ModuleError(
-                    message=str(e),
-                    module=ModuleType.TTS,
-                    code=ModuleErrorCode.NON_FATAL_ERROR,
-                    vendor_info=e.error,
-                ),
+            error = ModuleError(
+                message=str(e),
+                module=ModuleType.TTS,
+                code=ModuleErrorCode.NON_FATAL_ERROR,
+                vendor_info=e.error,
             )
+            if self.current_request_finished or t.text_input_end:
+                await self._handle_tts_audio_end(
+                    reason=TTSAudioEndReason.ERROR, error=error
+                )
+            else:
+                await self.send_tts_error(
+                    request_id=self.current_request_id or "",
+                    error=error,
+                )
         except Exception as e:
             self.ten_env.log_error(
                 f"Error in request_tts: {traceback.format_exc()}. text: {t.text}"
             )
-            await self.send_tts_error(
-                request_id=self.current_request_id,
-                error=ModuleError(
-                    message=str(e),
-                    module=ModuleType.TTS,
-                    code=ModuleErrorCode.NON_FATAL_ERROR,
-                    vendor_info={},
-                ),
+            error = ModuleError(
+                message=str(e),
+                module=ModuleType.TTS,
+                code=ModuleErrorCode.NON_FATAL_ERROR,
+                vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
             )
+            if self.current_request_finished or t.text_input_end:
+                await self._handle_tts_audio_end(
+                    reason=TTSAudioEndReason.ERROR, error=error
+                )
+            else:
+                await self.send_tts_error(
+                    request_id=self.current_request_id or "",
+                    error=error,
+                )
 
     async def cancel_tts(self) -> None:
         if self.current_request_id:
@@ -365,17 +440,8 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                 self.stop_event.set()
                 self.stop_event = None
 
-            if self.request_start_ts is not None:
-                request_event_interval = int(
-                    (datetime.now() - self.request_start_ts).total_seconds()
-                    * 1000
-                )
-                await self.send_tts_audio_end(
-                    request_id=self.current_request_id,
-                    request_event_interval_ms=request_event_interval,
-                    request_total_audio_duration_ms=self.request_total_audio_duration,
-                    reason=TTSAudioEndReason.INTERRUPTED,
-                )
+            await self._handle_tts_audio_end(TTSAudioEndReason.INTERRUPTED)
+            self.current_request_finished = True
         else:
             self.ten_env.log_warn(
                 "No current request found, skipping TTS cancellation."

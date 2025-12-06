@@ -72,7 +72,7 @@ def test_empty_params_fatal_error():
     # Empty params configuration
     empty_params_config = {
         "params": {
-            "api_key": "",
+            "key": "",
             "group_id": "",
         }
     }
@@ -166,12 +166,8 @@ def test_invalid_params_fatal_error(MockMinimaxTTSWebsocket):
     # Define an async generator that raises the exception we want to test
     async def mock_get_with_error(text: str):
         raise MinimaxTTSTaskFailedException(
-            error_msg="Voice ID not found or invalid", error_code=2054
+            error_msg="Voice ID not found or invalid", error_code=2049
         )
-        yield (
-            b"",
-            0,
-        )  # Unreachable, but makes this an async generator function
 
     # When extension calls self.client.get(), it will receive our faulty generator
     mock_instance.get.side_effect = mock_get_with_error
@@ -181,7 +177,7 @@ def test_invalid_params_fatal_error(MockMinimaxTTSWebsocket):
     # to the request_tts call where the mock will be triggered.
     invalid_params_config = {
         "params": {
-            "api_key": "valid_key_for_test",
+            "key": "valid_key_for_test",
             "group_id": "valid_group_for_test",
             "voice_id": "any_voice_id_will_be_mocked",
         }

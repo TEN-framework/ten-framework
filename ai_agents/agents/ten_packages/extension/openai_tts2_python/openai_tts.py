@@ -26,9 +26,14 @@ class OpenAITTSClient(AsyncTTS2HttpClient):
         self.client: AsyncOpenAI | None = None
 
         try:
-            self.client = AsyncOpenAI(
-                api_key=config.params["api_key"],
-            )
+            # Check for custom base_url in params
+            base_url = config.params.get("base_url")
+            client_kwargs = {"api_key": config.params["api_key"]}
+            if base_url:
+                client_kwargs["base_url"] = base_url
+                ten_env.log_info(f"Using custom base_url: {base_url}")
+
+            self.client = AsyncOpenAI(**client_kwargs)
         except Exception as e:
             ten_env.log_error(
                 f"error when initializing OpenAITTS: {e}",
@@ -55,7 +60,7 @@ class OpenAITTSClient(AsyncTTS2HttpClient):
             )
 
         if len(text.strip()) == 0:
-            self.ten_env.log_warning(
+            self.ten_env.log_warn(
                 f"OpenAITTS: empty text for request_id: {request_id}.",
                 category=LOG_CATEGORY_VENDOR,
             )
@@ -63,8 +68,14 @@ class OpenAITTSClient(AsyncTTS2HttpClient):
             return
 
         try:
+            # Create a copy of params and remove client config fields
+            # (api_key and base_url are for client initialization, not API requests)
+            request_params = {**self.config.params}
+            request_params.pop("api_key", None)
+            request_params.pop("base_url", None)
+
             async with self.client.audio.speech.with_streaming_response.create(
-                input=text, **self.config.params
+                input=text, **request_params
             ) as response:
                 cache_audio_bytes = bytearray()
                 async for chunk in response.iter_bytes():

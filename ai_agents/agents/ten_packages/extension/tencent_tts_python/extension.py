@@ -87,6 +87,62 @@ class TencentTTSExtension(AsyncTTS2BaseExtension):
         await super().on_start(ten_env)
         ten_env.log_debug("on_start")
 
+    async def _handle_tts_audio_end(
+        self,
+        reason: TTSAudioEndReason = TTSAudioEndReason.REQUEST_END,
+        error: ModuleError | None = None,
+    ) -> None:
+        """
+        Centralized method for properly ending a TTS request.
+        Flushes PCMWriter, sends audio_end event, and calls finish_request.
+        """
+        if self.request_start_ts is not None:
+            request_event_interval = int(
+                (datetime.now() - self.request_start_ts).total_seconds() * 1000
+            )
+
+            # Flush PCMWriter for current request to ensure dump file is written
+            if (
+                self.config
+                and self.config.dump
+                and self.current_request_id
+                and self.current_request_id in self.recorder_map
+            ):
+                try:
+                    await self.recorder_map[self.current_request_id].flush()
+                    self.ten_env.log_debug(
+                        f"Flushed PCMWriter for request_id: {self.current_request_id}"
+                    )
+                except Exception as e:
+                    self.ten_env.log_error(
+                        f"Error flushing PCMWriter for request_id {self.current_request_id}: {e}"
+                    )
+
+            # Send TTS audio end event
+            await self.send_tts_audio_end(
+                request_id=self.current_request_id,
+                request_event_interval_ms=request_event_interval,
+                request_total_audio_duration_ms=self.request_total_audio_duration,
+                reason=reason,
+            )
+
+            self.ten_env.log_debug(
+                f"Sent audio_end for request ID: {self.current_request_id}, "
+                f"request_event_interval: {request_event_interval}ms, "
+                f"total_audio_duration: {self.request_total_audio_duration}ms, "
+                f"reason: {reason}"
+            )
+
+            # Finish request to complete state transition
+            await self.finish_request(
+                request_id=self.current_request_id,
+                reason=reason,
+                error=error,
+            )
+
+            # Clear current request
+            self.current_request_id = None
+
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
         if self.audio_processor_task:
             self.audio_processor_task.cancel()
@@ -117,18 +173,13 @@ class TencentTTSExtension(AsyncTTS2BaseExtension):
             )
             if self.client:
                 await self.client.stop()
-                if self.request_start_ts:
-                    request_event_interval = int(
-                        (datetime.now() - self.request_start_ts).total_seconds()
-                        * 1000
-                    )
-                    await self.send_tts_audio_end(
-                        request_id=self.current_request_id,
-                        request_event_interval_ms=request_event_interval,
-                        request_total_audio_duration_ms=self.request_total_audio_duration,
-                        reason=TTSAudioEndReason.INTERRUPTED,
-                    )
 
+            # Handle audio end if there's an active request
+            # This will send audio_end and call finish_request
+            if self.request_start_ts:
+                await self._handle_tts_audio_end(TTSAudioEndReason.INTERRUPTED)
+            # Mark request as finished before handling audio end
+            self.current_request_finished = True
         else:
             self.ten_env.log_warn(
                 "No current request found, skipping TTS cancellation."
@@ -171,9 +222,11 @@ class TencentTTSExtension(AsyncTTS2BaseExtension):
                     f"New TTS request with ID: {t.request_id}"
                 )
                 self.current_request_id = t.request_id
+                self.current_request_finished = False
                 if t.metadata is not None:
                     self.current_turn_id = t.metadata.get("turn_id", -1)
                 self.request_total_audio_duration = 0
+                self.request_start_ts = datetime.now()
                 self.request_first_received = True
 
                 if self.config.dump:
@@ -218,6 +271,7 @@ class TencentTTSExtension(AsyncTTS2BaseExtension):
                 )
 
                 self.last_completed_request_id = t.request_id
+                self.current_request_finished = True
                 self.ten_env.log_debug(
                     f"Updated last completed request_id to: {t.request_id}"
                 )
@@ -227,15 +281,23 @@ class TencentTTSExtension(AsyncTTS2BaseExtension):
             self.ten_env.log_error(
                 f"Error in request_tts: {traceback.format_exc()}. text: {t.text}"
             )
-            await self.send_tts_error(
-                request_id=self.current_request_id,
-                error=ModuleError(
-                    message=str(e),
-                    module=ModuleType.TTS,
-                    code=ModuleErrorCode.NON_FATAL_ERROR,
-                    vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
-                ),
+            error = ModuleError(
+                message=str(e),
+                module=ModuleType.TTS,
+                code=ModuleErrorCode.NON_FATAL_ERROR,
+                vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
             )
+            # Only finish request if we've received text_input_end (request is complete)
+            if self.current_request_finished or t.text_input_end:
+                await self._handle_tts_audio_end(
+                    reason=TTSAudioEndReason.ERROR, error=error
+                )
+            else:
+                # Just send error, request might continue with more text chunks
+                await self.send_tts_error(
+                    request_id=self.current_request_id or "",
+                    error=error,
+                )
 
     async def _process_audio_data(self) -> None:
         """
@@ -266,7 +328,6 @@ class TencentTTSExtension(AsyncTTS2BaseExtension):
                             and len(audio_data) > 0
                         ):
                             if self.request_first_received:
-                                self.request_start_ts = datetime.now()
                                 self.request_first_received = False
                             self.ten_env.log_debug(
                                 f"Received audio data for request ID: {self.current_request_id}, audio_data_len: {len(audio_data)}"
@@ -336,23 +397,8 @@ class TencentTTSExtension(AsyncTTS2BaseExtension):
                         self.ten_env.log_debug(
                             f"Session finished for request ID: {self.current_request_id}"
                         )
-                        if self.request_start_ts is not None:
-                            request_event_interval = int(
-                                (
-                                    datetime.now() - self.request_start_ts
-                                ).total_seconds()
-                                * 1000
-                            )
-                            await self.send_tts_audio_end(
-                                request_id=self.current_request_id,
-                                request_event_interval_ms=request_event_interval,
-                                request_total_audio_duration_ms=self.request_total_audio_duration,
-                            )
-
-                            self.ten_env.log_debug(
-                                f"request time stamped for request ID: {self.current_request_id}, request_event_interval: {request_event_interval}ms, total_audio_duration: {self.request_total_audio_duration}ms"
-                            )
-                            await self.client.stop()
+                        await self._handle_tts_audio_end()
+                        await self.client.stop()
 
                 except asyncio.CancelledError:
                     self.ten_env.log_info("Audio consumer task was cancelled.")
@@ -362,30 +408,45 @@ class TencentTTSExtension(AsyncTTS2BaseExtension):
                     self.ten_env.log_error(
                         "Audio consumer loop breaking due to exception"
                     )
-                    # Send an error message to notify the system of the failure
-                    await self.send_tts_error(
-                        request_id=self.current_request_id,
-                        error=ModuleError(
-                            message=str(e),
-                            module=ModuleType.TTS,
-                            code=ModuleErrorCode.NON_FATAL_ERROR,
-                            vendor_info=ModuleErrorVendorInfo(
-                                vendor=self.vendor()
-                            ),
-                        ),
+                    # Finish request with error if there's an active request
+                    error = ModuleError(
+                        message=str(e),
+                        module=ModuleType.TTS,
+                        code=ModuleErrorCode.NON_FATAL_ERROR,
+                        vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
                     )
+                    if (
+                        self.current_request_id
+                        and self.current_request_finished
+                    ):
+                        await self._handle_tts_audio_end(
+                            reason=TTSAudioEndReason.ERROR,
+                            error=error,
+                        )
+                    else:
+                        await self.send_tts_error(
+                            request_id=self.current_request_id or "",
+                            error=error,
+                        )
 
         except Exception as e:
             self.ten_env.log_error(f"error in audio consumer: {e}")
-            await self.send_tts_error(
-                request_id=self.current_request_id,
-                error=ModuleError(
-                    message=str(e),
-                    module=ModuleType.TTS,
-                    code=ModuleErrorCode.NON_FATAL_ERROR,
-                    vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
-                ),
+            error = ModuleError(
+                message=str(e),
+                module=ModuleType.TTS,
+                code=ModuleErrorCode.NON_FATAL_ERROR,
+                vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
             )
+            if self.current_request_id and self.current_request_finished:
+                await self._handle_tts_audio_end(
+                    reason=TTSAudioEndReason.ERROR,
+                    error=error,
+                )
+            else:
+                await self.send_tts_error(
+                    request_id=self.current_request_id or "",
+                    error=error,
+                )
 
     def synthesize_audio_sample_rate(self) -> int:
         """

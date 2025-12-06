@@ -18,6 +18,21 @@ from ten_ai_base.message import (
 from ten_ai_base.struct import TTSTextInput
 from ten_ai_base.tts2 import AsyncTTS2BaseExtension
 from ten_ai_base.const import LOG_CATEGORY_KEY_POINT, LOG_CATEGORY_VENDOR
+
+# Try to import RequestState for state checking, fallback if not available
+try:
+    from ten_ai_base.tts2 import RequestState
+except ImportError:
+    # Older version without RequestState export, create local enum
+    from enum import Enum
+
+    class RequestState(Enum):
+        QUEUED = "queued"
+        PROCESSING = "processing"
+        FINALIZING = "finalizing"
+        COMPLETED = "completed"
+
+
 from ten_runtime import (
     AsyncTenEnv,
 )
@@ -39,6 +54,7 @@ class AzureTTSExtension(AsyncTTS2BaseExtension):
         self.audio_dumper: Dumper | dict[str, Dumper] | None = None
         self.flush_request_id: str | None = None
         self.last_end_request_id: str | None = None
+        self.audio_start_sent: set[str] = set()
         self.request_total_audio_duration: int = 0
         self.request_done: asyncio.Event = asyncio.Event()
         self.request_task: asyncio.Task | None = None
@@ -121,6 +137,54 @@ class AzureTTSExtension(AsyncTTS2BaseExtension):
             self.request_task.cancel()
         await self.request_done.wait()
 
+        # Send audio_end and finish request
+        if self.current_request_id and self.first_chunk_ts > 0:
+            await self.handle_completed_request(TTSAudioEndReason.INTERRUPTED)
+
+    async def handle_completed_request(self, reason: TTSAudioEndReason):
+        """
+        Handle completion of a request with proper cleanup.
+        Sends audio_end and calls finish_request to complete state transition.
+        """
+        if self.current_request_id is None:
+            return
+
+        # Update completion tracking
+        self.last_end_request_id = self.current_request_id
+
+        # Flush audio dumper if enabled
+        if self.config.dump and isinstance(self.audio_dumper, dict):
+            dumper = self.audio_dumper.get(self.current_request_id)
+            if dumper:
+                await dumper.stop()
+
+        # Calculate metrics
+        request_event_interval = 0
+        if self.first_chunk_ts > 0:
+            request_event_interval = int(
+                (time.time() - self.first_chunk_ts) * 1000
+            )
+
+        # Send audio_end
+        await self.send_tts_audio_end(
+            request_id=self.current_request_id,
+            request_event_interval_ms=request_event_interval,
+            request_total_audio_duration_ms=self.request_total_audio_duration,
+            reason=reason,
+        )
+
+        # Complete state transition
+        await self.finish_request(
+            request_id=self.current_request_id,
+            reason=reason,
+        )
+
+        # Reset timing state
+        self.first_chunk_ts = 0
+
+        # Clean up audio_start_sent tracking
+        self.audio_start_sent.discard(self.current_request_id)
+
     async def _async_synthesize(self, text_input: TTSTextInput):
         assert self.client is not None
         text = text_input.text
@@ -154,20 +218,24 @@ class AzureTTSExtension(AsyncTTS2BaseExtension):
 
                 if not received_first_chunk:
                     received_first_chunk = True
-                    await self.send_tts_audio_start(request_id)
-                    if is_new_request:
-                        # send ttfb metrics for new request
-                        self.first_chunk_ts = time.time()
-                        elapsed_time = int(
-                            (self.first_chunk_ts - self.request_start_ts) * 1000
-                        )
-                        await self.send_tts_ttfb_metrics(
-                            request_id=request_id,
-                            ttfb_ms=elapsed_time,
-                            extra_metadata={
-                                "voice_name": self.client.speech_config.speech_synthesis_voice_name,
-                            },
-                        )
+                    # Only send tts_audio_start if not already sent for this request_id
+                    if request_id not in self.audio_start_sent:
+                        await self.send_tts_audio_start(request_id)
+                        self.audio_start_sent.add(request_id)
+                        if is_new_request:
+                            # send ttfb metrics for new request
+                            self.first_chunk_ts = time.time()
+                            elapsed_time = int(
+                                (self.first_chunk_ts - self.request_start_ts)
+                                * 1000
+                            )
+                            await self.send_tts_ttfb_metrics(
+                                request_id=request_id,
+                                ttfb_ms=elapsed_time,
+                                extra_metadata={
+                                    "voice_name": self.client.speech_config.speech_synthesis_voice_name,
+                                },
+                            )
 
                 if request_id == self.flush_request_id:
                     # flush request, break current synthesize task
@@ -217,22 +285,24 @@ class AzureTTSExtension(AsyncTTS2BaseExtension):
                 ),
             )
 
+            # Check if we've received text_input_end (state is FINALIZING)
+            has_received_text_input_end = False
+            if request_id and request_id in self.request_states:
+                if self.request_states[request_id] == RequestState.FINALIZING:
+                    has_received_text_input_end = True
+
+            # If text_input_end was received, send audio_end and finish request
+            if has_received_text_input_end:
+                await self.handle_completed_request(TTSAudioEndReason.ERROR)
+
         if (
             text_input_end or request_id == self.flush_request_id
         ) and self.first_chunk_ts > 0:
-            self.last_end_request_id = request_id
             reason = TTSAudioEndReason.REQUEST_END
             if request_id == self.flush_request_id:
                 reason = TTSAudioEndReason.INTERRUPTED
-            request_event_interval = int(
-                (time.time() - self.first_chunk_ts) * 1000
-            )
-            await self.send_tts_audio_end(
-                request_id=request_id,
-                request_event_interval_ms=request_event_interval,
-                request_total_audio_duration_ms=self.request_total_audio_duration,
-                reason=reason,
-            )
+
+            await self.handle_completed_request(reason)
 
     @override
     async def request_tts(self, t: TTSTextInput) -> None:

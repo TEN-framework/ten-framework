@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 
 class FishAudioTTSConfig(BaseModel):
     api_key: str = ""
+    base_url: str = ""
     sample_rate: int = 16000
     dump: bool = False
     dump_path: str = "/tmp"
@@ -17,6 +18,10 @@ class FishAudioTTSConfig(BaseModel):
         if "api_key" in self.params:
             self.api_key = self.params["api_key"]
             del self.params["api_key"]
+
+        if "base_url" in self.params:
+            self.base_url = self.params["base_url"]
+            del self.params["base_url"]
 
         if "sample_rate" in self.params:
             self.sample_rate = int(self.params["sample_rate"])

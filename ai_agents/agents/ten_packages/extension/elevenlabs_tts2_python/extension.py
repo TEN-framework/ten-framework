@@ -18,7 +18,7 @@ from ten_ai_base.message import (
     TTSAudioEndReason,
 )
 from ten_ai_base.struct import TTSTextInput
-from ten_ai_base.tts2 import AsyncTTS2BaseExtension
+from ten_ai_base.tts2 import AsyncTTS2BaseExtension, RequestState
 from .elevenlabs_tts import ElevenLabsTTS2Client, ElevenLabsTTS2Config
 from ten_runtime import (
     AsyncTenEnv,
@@ -56,16 +56,13 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                 self.config = ElevenLabsTTS2Config.model_validate_json(
                     config_json
                 )
-
+                if not self.config.params.get("key", None):
+                    raise ValueError("key is required")
                 self.config.update_params()
                 self.ten_env.log_info(
                     f"config: {self.config.to_str(sensitive_handling=True)}",
                     category=LOG_CATEGORY_KEY_POINT,
                 )
-
-                if not self.config.key:
-                    self.ten_env.log_error("get property key")
-                    raise ValueError("key is required")
 
             # Create error callback function
             async def error_callback(request_id: str, error: ModuleError):
@@ -73,16 +70,64 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                 target_request_id = (
                     request_id if request_id else self.current_request_id or ""
                 )
+
+                # Check if we've received text_input_end (state is FINALIZING)
+                # According to Python version logic:
+                # - If text_input_end has been received (state is FINALIZING), send tts_audio_end and finish request
+                # - If text_input_end has not been received (state is PROCESSING), only send error, don't end request
+                has_received_text_input_end = False
+                if (
+                    target_request_id
+                    and target_request_id in self.request_states
+                ):
+                    if (
+                        self.request_states[target_request_id]
+                        == RequestState.FINALIZING
+                    ):
+                        has_received_text_input_end = True
+
+                # Send error
                 await self.send_tts_error(
                     request_id=target_request_id,
                     error=error,
                 )
+
+                # If we've received text_input_end, send tts_audio_end and finish request
+                if has_received_text_input_end:
+                    self.ten_env.log_info(
+                        f"Error occurred after text_input_end for request {target_request_id}, sending tts_audio_end with ERROR reason",
+                        category=LOG_CATEGORY_KEY_POINT,
+                    )
+                    # Send tts_audio_end with ERROR reason
+                    # Calculate duration if available
+                    request_event_interval = 0
+                    request_total_audio_duration = 0
+                    if self.request_total_audio_duration:
+                        request_total_audio_duration = int(
+                            self.request_total_audio_duration
+                        )
+                    await self.send_tts_audio_end(
+                        request_id=target_request_id,
+                        request_event_interval_ms=request_event_interval,
+                        request_total_audio_duration_ms=request_total_audio_duration,
+                        reason=TTSAudioEndReason.ERROR,
+                    )
+                    # Finish request to complete state transition
+                    await self.finish_request(
+                        request_id=target_request_id,
+                        reason=TTSAudioEndReason.ERROR,
+                    )
+                else:
+                    self.ten_env.log_debug(
+                        f"Error occurred before text_input_end for request {target_request_id}, only sending error (request may continue)"
+                    )
+
                 if error.code == ModuleErrorCode.FATAL_ERROR:
                     self.ten_env.log_error(
                         f"Fatal error occurred: {error.message}"
                     )
                     await self.client.close()
-                    self.on_stop(self.ten_env)
+                    await self.on_stop(self.ten_env)
 
             # Create client (connection management will be handled automatically)
             self.client = ElevenLabsTTS2Client(
@@ -209,6 +254,7 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                     await self.send_tts_audio_data(audio_data)
 
                 if isFinal and self.current_request_id:
+                    self.client.synthesizer.send_text_in_connection = False
                     await self.handle_completed_request(
                         TTSAudioEndReason.REQUEST_END
                     )
@@ -329,8 +375,15 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
             self.ten_env.log_error(
                 f"ModuleVendorException in request_tts: {traceback.format_exc()}. text: {t.text}"
             )
+            # Check if we've received text_input_end (state is FINALIZING)
+            has_received_text_input_end = False
+            request_id = self.current_request_id or t.request_id
+            if request_id and request_id in self.request_states:
+                if self.request_states[request_id] == RequestState.FINALIZING:
+                    has_received_text_input_end = True
+
             await self.send_tts_error(
-                request_id=self.current_request_id,
+                request_id=request_id,
                 error=ModuleError(
                     message=str(e),
                     module=ModuleType.TTS,
@@ -338,12 +391,42 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                     vendor_info=e.error,
                 ),
             )
+
+            # If we've received text_input_end, send tts_audio_end and finish request
+            if has_received_text_input_end:
+                self.ten_env.log_info(
+                    f"Error occurred after text_input_end for request {request_id}, sending tts_audio_end with ERROR reason",
+                    category=LOG_CATEGORY_KEY_POINT,
+                )
+                request_event_interval = 0
+                request_total_audio_duration = 0
+                if self.request_total_audio_duration:
+                    request_total_audio_duration = int(
+                        self.request_total_audio_duration
+                    )
+                await self.send_tts_audio_end(
+                    request_id=request_id,
+                    request_event_interval_ms=request_event_interval,
+                    request_total_audio_duration_ms=request_total_audio_duration,
+                    reason=TTSAudioEndReason.ERROR,
+                )
+                await self.finish_request(
+                    request_id=request_id,
+                    reason=TTSAudioEndReason.ERROR,
+                )
         except Exception as e:
             self.ten_env.log_error(
                 f"Error in request_tts: {traceback.format_exc()}. text: {t.text}"
             )
+            # Check if we've received text_input_end (state is FINALIZING)
+            has_received_text_input_end = False
+            request_id = self.current_request_id or t.request_id
+            if request_id and request_id in self.request_states:
+                if self.request_states[request_id] == RequestState.FINALIZING:
+                    has_received_text_input_end = True
+
             await self.send_tts_error(
-                request_id=self.current_request_id,
+                request_id=request_id,
                 error=ModuleError(
                     message=str(e),
                     module=ModuleType.TTS,
@@ -351,6 +434,29 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                     vendor_info={"vendor": "elevenlabs"},
                 ),
             )
+
+            # If we've received text_input_end, send tts_audio_end and finish request
+            if has_received_text_input_end:
+                self.ten_env.log_info(
+                    f"Error occurred after text_input_end for request {request_id}, sending tts_audio_end with ERROR reason",
+                    category=LOG_CATEGORY_KEY_POINT,
+                )
+                request_event_interval = 0
+                request_total_audio_duration = 0
+                if self.request_total_audio_duration:
+                    request_total_audio_duration = int(
+                        self.request_total_audio_duration
+                    )
+                await self.send_tts_audio_end(
+                    request_id=request_id,
+                    request_event_interval_ms=request_event_interval,
+                    request_total_audio_duration_ms=request_total_audio_duration,
+                    reason=TTSAudioEndReason.ERROR,
+                )
+                await self.finish_request(
+                    request_id=request_id,
+                    reason=TTSAudioEndReason.ERROR,
+                )
 
     async def cancel_tts(self) -> None:
         if self.client is None:
@@ -430,6 +536,13 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
         )
         self.request_start_ts = None
         self.request_total_audio_duration = None
+
+        # Finish request to complete state transition
+        await self.finish_request(
+            request_id=self.current_request_id,
+            reason=reason,
+        )
+        self.current_request_id = None
 
     def calculate_audio_duration(
         self,
