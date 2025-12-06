@@ -397,7 +397,7 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                 code=ModuleErrorCode.NON_FATAL_ERROR,
                 vendor_info=e.error,
             )
-            if self.current_request_finished:
+            if self.current_request_finished or t.text_input_end:
                 await self._handle_tts_audio_end(
                     reason=TTSAudioEndReason.ERROR, error=error
                 )
@@ -416,7 +416,7 @@ class RimeTTSExtension(AsyncTTS2BaseExtension):
                 code=ModuleErrorCode.NON_FATAL_ERROR,
                 vendor_info=ModuleErrorVendorInfo(vendor=self.vendor()),
             )
-            if self.current_request_finished:
+            if self.current_request_finished or t.text_input_end:
                 await self._handle_tts_audio_end(
                     reason=TTSAudioEndReason.ERROR, error=error
                 )
