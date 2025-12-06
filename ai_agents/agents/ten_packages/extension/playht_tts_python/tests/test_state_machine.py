@@ -186,7 +186,9 @@ def test_sequential_requests_state_machine(MockAsyncClient):
     # Track request order
     request_order = []
 
-    async def mock_tts(text: str, tts_options, voice_engine=None, protocol=None):
+    async def mock_tts(
+        text: str, tts_options, voice_engine=None, protocol=None
+    ):
         """Mock tts method that tracks request order and yields audio chunks."""
         if "First" in text:
             request_order.append("request_1")
@@ -251,7 +253,9 @@ def test_request_state_transitions(MockAsyncClient):
     # Create mock pyht AsyncClient instance
     mock_pyht_client = MagicMock()
 
-    async def mock_tts(text: str, tts_options, voice_engine=None, protocol=None):
+    async def mock_tts(
+        text: str, tts_options, voice_engine=None, protocol=None
+    ):
         """Mock tts method for single request."""
         await asyncio.sleep(0.01)
         yield b"audio_chunk"
