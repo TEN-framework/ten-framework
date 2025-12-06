@@ -1282,9 +1282,20 @@ jobs:
         test-integration-python,
         test-integration-nodejs,
       ]
-    runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/ten-framework/ten_building_ubuntu2204
+    runs-on: ubuntu-22.04
+    # Remove container to match build job's environment.
+    #
+    # Path consistency chain:
+    #   Build (no container, to save disk space) → binaries embed /home/runner/work/... paths
+    #   → llvm-cov → all paths in .lcov file are /home/runner/work/...
+    #   → Coveralls looks for files at these paths!
+    #
+    # Using container here would mount workspace at /__w/.../
+    # → Coveralls error: "Nothing to report" ❌ because coveralls app can't find any
+    # code files under /home/runner/work/... as it reads lcov file.
+    #
+    # container:
+    #   image: ghcr.io/ten-framework/ten_building_ubuntu2204
     defaults:
       run:
         shell: bash
@@ -1294,23 +1305,38 @@ jobs:
           fetch-depth: 0
           submodules: false
 
+      - name: Install basic dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential \
+            wget \
+            curl \
+            software-properties-common \
+            gnupg \
+            ca-certificates
+
+          # Clean up apt cache
+          sudo apt-get clean
+          sudo rm -rf /var/lib/apt/lists/*
+
       - name: Install LLVM 21 tools
         run: |
           # Add LLVM official repository for LLVM 21
-          apt-get update
-          apt-get install -y wget software-properties-common gnupg
+          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
+          sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main"
 
-          # Add LLVM repository
-          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
-          add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main"
+          sudo apt-get update
+          sudo apt-get install -y llvm-21 clang-21 lcov
 
-          apt-get update
-          apt-get install -y llvm-21 clang-21 lcov
+          # Clean up apt cache
+          sudo apt-get clean
+          sudo rm -rf /var/lib/apt/lists/*
 
           # Create symlinks to make llvm-cov and llvm-profdata available without version suffix
-          ln -sf /usr/bin/llvm-cov-21 /usr/local/bin/llvm-cov
-          ln -sf /usr/bin/llvm-profdata-21 /usr/local/bin/llvm-profdata
-          ln -sf /usr/bin/llvm-objdump-21 /usr/local/bin/llvm-objdump
+          sudo ln -sf /usr/bin/llvm-cov-21 /usr/local/bin/llvm-cov
+          sudo ln -sf /usr/bin/llvm-profdata-21 /usr/local/bin/llvm-profdata
+          sudo ln -sf /usr/bin/llvm-objdump-21 /usr/local/bin/llvm-objdump
 
           # Verify installation
           llvm-cov --version
@@ -1418,9 +1444,6 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           file: out/linux/x64/coverage/coverage_filtered.lcov
           format: lcov
-          #Path to the root folder of the project the coverage was collected in.
-          #Should be used in monorepos so that coveralls can process filenames from your coverage reports correctly (e.g. packages/my-subproject).
-          base-path: ${{ github.workspace }}
           debug: true    #enable debug logging.
           measure: true  #enable time measurement logging.
 
