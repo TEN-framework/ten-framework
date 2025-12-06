@@ -93,7 +93,7 @@ class ExtensionTesterDump(ExtensionTester):
         if not os.path.exists(self.dump_dir):
             return None
         for filename in os.listdir(self.dump_dir):
-            if filename.endswith(".pcm") and filename != os.path.basename(
+            if filename.endswith(".pcm") and filename == os.path.basename(
                 self.test_dump_file_path
             ):
                 return os.path.join(self.dump_dir, filename)
