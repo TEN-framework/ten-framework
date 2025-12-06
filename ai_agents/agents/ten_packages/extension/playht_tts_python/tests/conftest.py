@@ -6,7 +6,7 @@
 import json
 import threading
 from typing_extensions import override
-
+import pytest
 from ten_runtime import (
     App,
     TenEnv,
@@ -74,3 +74,26 @@ def run_fake_app(fake_app_ctx: FakeAppCtx):
     app.event = fake_app_ctx.event
     fake_app_ctx.fake_app = app
     app.run(False)
+
+
+@pytest.fixture(scope="session", autouse=True)
+def global_setup_and_teardown():
+    event = threading.Event()
+    fake_app_ctx = FakeAppCtx(event)
+
+    fake_app_thread = threading.Thread(
+        target=run_fake_app, args=(fake_app_ctx,)
+    )
+    fake_app_thread.start()
+
+    event.wait()
+
+    assert fake_app_ctx.fake_app is not None
+
+    # Yield control to the test; after the test execution is complete, continue
+    # with the teardown process.
+    yield
+
+    # Teardown part.
+    fake_app_ctx.fake_app.close()
+    fake_app_thread.join()

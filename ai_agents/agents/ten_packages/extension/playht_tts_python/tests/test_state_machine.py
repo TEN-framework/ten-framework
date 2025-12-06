@@ -171,19 +171,8 @@ class StateMachineExtensionTester(ExtensionTester):
         return True
 
 
-async def mock_get_generator(request_id: str, chunks: int = 3):
-    """Mock generator for get method that yields audio chunks."""
-    for i in range(chunks):
-        await asyncio.sleep(0.01)  # Simulate processing delay
-        yield (
-            b"mock_audio_data_" + str(i + 1).encode(),
-            TTS2HttpResponseEventType.RESPONSE,
-        )
-    yield (None, TTS2HttpResponseEventType.END)
-
-
-@patch("playht_tts_python.extension.PlayHTTTSClient")
-def test_sequential_requests_state_machine(MockPlayHTTTSClient):
+@patch("ten_packages.extension.playht_tts_python.playht_tts.AsyncClient")
+def test_sequential_requests_state_machine(MockAsyncClient):
     """
     Test that two sequential requests with different IDs are processed correctly.
 
@@ -191,15 +180,14 @@ def test_sequential_requests_state_machine(MockPlayHTTTSClient):
     """
     print("\n=== Starting Sequential Requests State Machine Test ===")
 
-    # Create mock client instance - use return_value directly like sarvam_http_tts
-    mock_instance = MockPlayHTTTSClient.return_value
-    mock_instance.clean = AsyncMock()
+    # Create mock pyht AsyncClient instance
+    mock_pyht_client = MagicMock()
 
     # Track request order
     request_order = []
 
-    async def mock_get(text: str, request_id: str):
-        """Mock get method that tracks request order."""
+    async def mock_tts(text: str, tts_options, voice_engine=None, protocol=None):
+        """Mock tts method that tracks request order and yields audio chunks."""
         if "First" in text:
             request_order.append("request_1")
             print(f"  → Mock: Starting synthesis for request 1")
@@ -207,12 +195,13 @@ def test_sequential_requests_state_machine(MockPlayHTTTSClient):
             request_order.append("request_2")
             print(f"  → Mock: Starting synthesis for request 2")
 
-        async for chunk in mock_get_generator(request_id):
-            yield chunk
+        # Simulate TTS response with chunks
+        for i in range(3):
+            await asyncio.sleep(0.01)  # Simulate processing delay
+            yield b"mock_audio_data_" + str(i + 1).encode()
 
-    mock_instance.get.side_effect = mock_get
-    mock_instance.cancel = AsyncMock()
-    mock_instance.get_extra_metadata = MagicMock(return_value={})
+    mock_pyht_client.tts = mock_tts
+    MockAsyncClient.return_value = mock_pyht_client
 
     # Create tester
     tester = StateMachineExtensionTester()
@@ -225,6 +214,7 @@ def test_sequential_requests_state_machine(MockPlayHTTTSClient):
             "voice_engine": "PlayDialog",
             "protocol": "ws",
             "sample_rate": 16000,
+            "voice": "s3://voice-cloning-zero-shot/d9ff78ba-d016-47f6-b0ef-dd630f59414e/female-cs/manifest.json",
         },
     }
 
@@ -249,8 +239,8 @@ def test_sequential_requests_state_machine(MockPlayHTTTSClient):
     print("\n✓ Sequential requests state machine test PASSED!")
 
 
-@patch("playht_tts_python.extension.PlayHTTTSClient")
-def test_request_state_transitions(MockPlayHTTTSClient):
+@patch("ten_packages.extension.playht_tts_python.playht_tts.AsyncClient")
+def test_request_state_transitions(MockAsyncClient):
     """
     Test detailed state transitions: QUEUED -> PROCESSING -> FINALIZING -> COMPLETED.
 
@@ -258,21 +248,16 @@ def test_request_state_transitions(MockPlayHTTTSClient):
     """
     print("\n=== Starting Request State Transitions Test ===")
 
-    # Create mock client - use return_value directly like sarvam_http_tts
-    mock_instance = MockPlayHTTTSClient.return_value
-    mock_instance.clean = AsyncMock()
+    # Create mock pyht AsyncClient instance
+    mock_pyht_client = MagicMock()
 
-    async def mock_get(text: str, request_id: str):
-        """Mock get method for single request."""
+    async def mock_tts(text: str, tts_options, voice_engine=None, protocol=None):
+        """Mock tts method for single request."""
         await asyncio.sleep(0.01)
-        yield (b"audio_chunk", TTS2HttpResponseEventType.RESPONSE)
-        yield (None, TTS2HttpResponseEventType.END)
+        yield b"audio_chunk"
 
-    mock_instance.get.side_effect = mock_get
-    mock_instance.cancel = AsyncMock()
-    mock_instance.get_extra_metadata = MagicMock(return_value={})
-
-    MockPlayHTTTSClient.return_value = mock_instance
+    mock_pyht_client.tts = mock_tts
+    MockAsyncClient.return_value = mock_pyht_client
 
     # Create simple tester
     class StateTransitionTester(ExtensionTester):
@@ -306,6 +291,7 @@ def test_request_state_transitions(MockPlayHTTTSClient):
             "voice_engine": "PlayDialog",
             "protocol": "ws",
             "sample_rate": 16000,
+            "voice": "s3://voice-cloning-zero-shot/d9ff78ba-d016-47f6-b0ef-dd630f59414e/female-cs/manifest.json",
         },
     }
 
