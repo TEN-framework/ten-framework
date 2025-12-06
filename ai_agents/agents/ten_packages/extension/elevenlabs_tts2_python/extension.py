@@ -56,7 +56,7 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                 self.config = ElevenLabsTTS2Config.model_validate_json(
                     config_json
                 )
-                if self.config.params.get("key", None) is None:
+                if not self.config.params.get("key", None):
                     raise ValueError("key is required")
                 self.config.update_params()
                 self.ten_env.log_info(
@@ -127,7 +127,7 @@ class ElevenLabsTTS2Extension(AsyncTTS2BaseExtension):
                         f"Fatal error occurred: {error.message}"
                     )
                     await self.client.close()
-                    self.on_stop(self.ten_env)
+                    await self.on_stop(self.ten_env)
 
             # Create client (connection management will be handled automatically)
             self.client = ElevenLabsTTS2Client(
