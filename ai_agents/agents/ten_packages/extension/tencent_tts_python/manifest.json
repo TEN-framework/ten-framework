@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "tencent_tts_python",
-  "version": "0.3.3",
+  "version": "0.4.2",
   "dependencies": [
     {
       "name": "ten_runtime_python",
@@ -11,7 +11,7 @@
     {
       "type": "system",
       "name": "ten_ai_base",
-      "version": "=0.7.22"
+      "version": "0.7"
     }
   ],
   "package": {

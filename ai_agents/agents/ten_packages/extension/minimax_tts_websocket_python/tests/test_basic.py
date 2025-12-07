@@ -34,7 +34,6 @@ from minimax_tts_websocket_python.minimax_tts import (
     EVENT_TTSSentenceEnd,
     EVENT_TTSResponse,
     EVENT_TTSFlush,
-    EVENT_TTS_TTFB_METRIC,
 )
 
 
@@ -126,17 +125,42 @@ def test_dump_functionality(MockMinimaxTTSWebsocket):
     mock_instance.start = AsyncMock()
     mock_instance.stop = AsyncMock()
 
+    def mock_client_ctor(
+        config,
+        ten_env,
+        vendor,
+        on_transcription=None,
+        on_error=None,
+        on_audio_data=None,
+        on_usage_characters=None,
+    ):
+        mock_instance.on_transcription = on_transcription
+        mock_instance.on_error = on_error
+        mock_instance.on_audio_data = on_audio_data
+        mock_instance.on_usage_characters = on_usage_characters
+        return mock_instance
+
+    MockMinimaxTTSWebsocket.side_effect = mock_client_ctor
+
     # Create some fake audio data to be streamed
     fake_audio_chunk_1 = b"\x11\x22\x33\x44" * 20
     fake_audio_chunk_2 = b"\xaa\xbb\xcc\xdd" * 20
 
     # This async generator simulates the TTS client's get() method
     async def mock_get_audio_stream(text: str):
-        yield (fake_audio_chunk_1, EVENT_TTSResponse)
-        await asyncio.sleep(0.01)
-        yield (fake_audio_chunk_2, EVENT_TTSResponse)
-        await asyncio.sleep(0.01)
-        yield (None, EVENT_TTSSentenceEnd)
+        if (
+            hasattr(mock_instance, "on_audio_data")
+            and mock_instance.on_audio_data
+        ):
+            await mock_instance.on_audio_data(
+                fake_audio_chunk_1, EVENT_TTSResponse, 0
+            )
+            await asyncio.sleep(0.01)
+            await mock_instance.on_audio_data(
+                fake_audio_chunk_2, EVENT_TTSResponse, 100
+            )
+            await asyncio.sleep(0.01)
+            await mock_instance.on_audio_data(None, EVENT_TTSSentenceEnd, 0)
 
     mock_instance.get.side_effect = mock_get_audio_stream
 
@@ -145,7 +169,7 @@ def test_dump_functionality(MockMinimaxTTSWebsocket):
 
     dump_config = {
         "params": {
-            "api_key": "valid_key_for_test",
+            "key": "valid_key_for_test",
             "group_id": "valid_group_for_test",
         },
         "dump": True,
@@ -301,23 +325,54 @@ def test_flush_logic(MockMinimaxTTSWebsocket):
     mock_instance.stop = AsyncMock()
     mock_instance.cancel = AsyncMock()
 
+    def mock_client_ctor(
+        config,
+        ten_env,
+        vendor,
+        on_transcription=None,
+        on_error=None,
+        on_audio_data=None,
+        on_usage_characters=None,
+    ):
+        mock_instance.on_transcription = on_transcription
+        mock_instance.on_error = on_error
+        mock_instance.on_audio_data = on_audio_data
+        mock_instance.on_usage_characters = on_usage_characters
+        return mock_instance
+
+    MockMinimaxTTSWebsocket.side_effect = mock_client_ctor
+
     async def mock_get_long_audio_stream(text: str):
         for _ in range(20):
             if mock_instance.cancel.called:
                 print(
-                    "Mock detected cancel call, stopping stream and yielding EVENT_TTSFlush."
+                    "Mock detected cancel call, stopping stream and ending with sentence end."
                 )
-                yield (None, EVENT_TTSFlush)
-                return  # Stop the generator immediately
-            yield (255, EVENT_TTS_TTFB_METRIC)
-            yield (b"\x11\x22\x33" * 100, EVENT_TTSResponse)
+                if (
+                    hasattr(mock_instance, "on_audio_data")
+                    and mock_instance.on_audio_data
+                ):
+                    await mock_instance.on_audio_data(
+                        None, EVENT_TTSSentenceEnd, 0
+                    )
+                return
+            if (
+                hasattr(mock_instance, "on_audio_data")
+                and mock_instance.on_audio_data
+            ):
+                await mock_instance.on_audio_data(
+                    b"\x11\x22\33" * 100, EVENT_TTSResponse, 0
+                )
             await asyncio.sleep(0.1)
-        # This part is only reached if not cancelled
-        yield (None, EVENT_TTSSentenceEnd)
+        if (
+            hasattr(mock_instance, "on_audio_data")
+            and mock_instance.on_audio_data
+        ):
+            await mock_instance.on_audio_data(None, EVENT_TTSSentenceEnd, 0)
 
     mock_instance.get.side_effect = mock_get_long_audio_stream
 
-    config = {"api_key": "a_valid_key", "group_id": "a_valid_group"}
+    config = {"params": {"key": "a_valid_key", "group_id": "a_valid_group"}}
     tester = ExtensionTesterFlush()
     tester.set_test_mode_single(
         "minimax_tts_websocket_python", json.dumps(config)

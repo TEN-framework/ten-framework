@@ -41,6 +41,12 @@ class CartesiaTTSClient:
         self.config = config
         self.ten_env: AsyncTenEnv = ten_env
         self._is_cancelled = False
+        if self.config.base_url.strip() != "":
+            self.client = AsyncCartesia(
+                api_key=self.config.api_key, base_url=self.config.base_url
+            )
+        else:
+            self.client = AsyncCartesia(api_key=self.config.api_key)
         self.client = AsyncCartesia(api_key=self.config.api_key)
         self.ws: AsyncTtsWebsocket | None = None
         self.send_fatal_tts_error = send_fatal_tts_error
