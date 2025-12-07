@@ -1,20 +1,20 @@
-#
-# Copyright © 2025 Agora
-# This file is part of TEN Framework, an open source project.
-# Licensed under the Apache License, Version 2.0, with certain conditions.
-# Refer to the "LICENSE" file in the root directory for more information.
-#
 import asyncio
-import traceback
 from typing import Callable, Any, AsyncGenerator
+import inspect
+import traceback
 
-from .data import Data
-from .cmd import Cmd
-from .audio_frame import AudioFrame
-from .video_frame import VideoFrame
-from .error import TenError, TenErrorCode
-from .async_test import AsyncExtensionTester, AsyncTenEnvTester
-from .cmd_result import CmdResult, StatusCode
+from ten_runtime import (
+    AsyncTenEnvTester,
+    AsyncExtensionTester,
+    Cmd,
+    Data,
+    AudioFrame,
+    VideoFrame,
+    CmdResult,
+    TenError,
+    TenErrorCode,
+    StatusCode,
+)
 
 
 class TenTestContext:
@@ -403,6 +403,7 @@ class _TenTestRunner(AsyncExtensionTester):
         self._mock_cmd_response = mock_cmd_response
         self._mock_cmd_stream_response = mock_cmd_stream_response
         self._mock_data_response = mock_data_response
+        self._pytest_fixtures: dict[str, Any] = {}  # Store fixtures from pytest
 
     async def on_init(self, ten_env: AsyncTenEnvTester) -> None:
         self._ctx = TenTestContext(ten_env, timeout=self._test_timeout)
@@ -421,7 +422,8 @@ class _TenTestRunner(AsyncExtensionTester):
     async def _run_test(self, ten_env: AsyncTenEnvTester) -> None:
         try:
             assert self._ctx is not None
-            await self._test_func(self._ctx)
+            # Call test function with ctx as first arg, then pytest fixtures
+            await self._test_func(self._ctx, **self._pytest_fixtures)
 
             ten_env.stop_test()
 
@@ -504,7 +506,11 @@ def ten_test(
     Decorator for AAA(Arrange, Act, Assert)-style TEN extension tests.
 
     Creates a test runner that executes the test scenario with proper error
-    handling and message collection.
+    handling and message collection. Auto-runs when used with pytest.
+
+    Test Function Signature:
+        The first parameter MUST be 'ctx: TenTestContext' (injected by TEN runtime).
+        Subsequent parameters can be pytest fixtures.
 
     Args:
         addon_name: Name of the extension to test
@@ -522,66 +528,63 @@ def ten_test(
             the lambda is called to generate Data to send back to SUT.
 
     Returns:
-        Configured test runner ready to run()
+        Wrapper function that pytest can discover and execute
 
-    Example:
-        def test_my_extension():
-            config = {"some_param": "value"}
+    Example - Basic test:
+        @ten_test("my_extension", json.dumps(config), timeout=10.0)
+        async def test_my_extension(ctx: TenTestContext):
+            # Arrange
+            input_data = Data.create("input")
+            input_data.set_property_string("text", "Hello")
 
-            @ten_test("my_extension", json.dumps(config), timeout=10.0)
-            async def scenario(ctx: TenTestContext):
-                # Arrange
-                input_data = Data.create("input")
-                input_data.set_property_string("text", "Hello")
+            # Act
+            await ctx.send_data(input_data)
 
-                # Act
-                await ctx.send_data(input_data)
+            # Assert
+            output = await ctx.expect_data("output", timeout=2.0)
+            text, _ = output.get_property_string("text")
+            assert text == "Hello World"
 
-                # Assert
-                output = await ctx.expect_data("output", timeout=2.0)
-                text, _ = output.get_property_string("text")
-                assert text == "Hello World"
+    Example - With pytest fixtures:
+        @pytest.fixture
+        def sample_text():
+            return "Hello from fixture"
 
-            error = scenario.run()
-            assert error is None
+        @ten_test("my_extension", timeout=10.0)
+        async def test_with_fixture(ctx: TenTestContext, sample_text):
+            # ctx is injected by TEN runtime (first parameter)
+            # sample_text is a pytest fixture (subsequent parameters)
+            data = Data.create("input")
+            data.set_property_string("text", sample_text)
+            await ctx.send_data(data)
 
-    Example with mocks:
-        def test_with_mocks():
-            # Mock responses from tester to SUT
-            def mock_query_cmd(cmd: Cmd) -> CmdResult:
-                # SUT sends "query" cmd to tester, tester returns this result
-                result = CmdResult.create(StatusCode.OK, cmd)
-                result.set_property_string("answer", "42")
-                return result
+            output = await ctx.expect_data("output")
+            text, _ = output.get_property_string("text")
+            assert text == "Hello from fixture"
 
-            def mock_request_data(data: Data) -> Data:
-                # SUT sends "request" data to tester, tester sends this back
-                response = Data.create("response")
-                value, _ = data.get_property_int("value")
-                response.set_property_int("doubled", value * 2)
-                return response
+    Example - With mocks:
+        def mock_query_cmd(cmd: Cmd) -> CmdResult:
+            result = CmdResult.create(StatusCode.OK, cmd)
+            result.set_property_string("answer", "42")
+            return result
 
-            @ten_test(
-                "my_extension",
-                timeout=10.0,
-                mock_cmd_response={"query": mock_query_cmd},
-                mock_data_response={"request": mock_request_data}
-            )
-            async def scenario(ctx: TenTestContext):
-                # Trigger SUT to send "query" cmd to tester
-                trigger = Data.create("trigger_query")
-                await ctx.send_data(trigger)
+        @ten_test(
+            "my_extension",
+            timeout=10.0,
+            mock_cmd_response={"query": mock_query_cmd}
+        )
+        async def test_with_mocks(ctx: TenTestContext):
+            # Trigger SUT to send "query" cmd to tester
+            trigger = Data.create("trigger_query")
+            await ctx.send_data(trigger)
 
-                # SUT should receive mocked response and send result back
-                result = await ctx.expect_data("query_result")
-                answer, _ = result.get_property_string("answer")
-                assert answer == "42"
-
-            error = scenario.run()
-            assert error is None
+            # SUT should receive mocked response and send result back
+            result = await ctx.expect_data("query_result")
+            answer, _ = result.get_property_string("answer")
+            assert answer == "42"
     """
 
-    def decorator(test_func: Callable[[TenTestContext], Any]) -> _TenTestRunner:
+    def decorator(test_func: Callable[[TenTestContext], Any]):
         tester = _TenTestRunner(
             test_func,
             timeout=timeout,
@@ -590,6 +593,23 @@ def ten_test(
             mock_data_response=mock_data_response,
         )
         tester.set_test_mode_single(addon_name, property_json_str)
-        return tester
+
+        # Get the original signature and extract fixture parameters (skip first 'ctx' param)
+        sig = inspect.signature(test_func)
+        params = list(sig.parameters.values())[1:]  # Skip 'ctx' parameter
+
+        # Create wrapper function that accepts pytest fixtures
+        def wrapper(**kwargs) -> None:
+            # Store fixtures for the test runner to pass to test_func
+            tester._pytest_fixtures = kwargs
+            err = tester.run()
+            assert err is None, f"Test failed: {err.error_message()}"
+
+        # Preserve metadata and signature for pytest
+        wrapper.__name__ = test_func.__name__
+        wrapper.__doc__ = test_func.__doc__
+        wrapper.__signature__ = inspect.Signature(parameters=params)
+
+        return wrapper
 
     return decorator
