@@ -105,9 +105,7 @@ def test_standalone_test_async_tmpl_async_python():
         )
     else:
         # On Unix-like systems, use bash bootstrap script
-        bootstrap_cmd = os.path.join(
-            extension_root_path, "tests/bin/bootstrap"
-        )
+        bootstrap_cmd = os.path.join(extension_root_path, "tests/bin/bootstrap")
         bootstrap_process = subprocess.Popen(
             bootstrap_cmd, stdout=stdout, stderr=subprocess.STDOUT, env=my_env
         )
@@ -161,9 +159,7 @@ def test_standalone_test_async_tmpl_async_python():
     #
     # Run the test.
     if sys.platform == "win32":
-        start_script = os.path.join(
-            extension_root_path, "tests/bin/start.py"
-        )
+        start_script = os.path.join(extension_root_path, "tests/bin/start.py")
         tester_process = subprocess.Popen(
             [sys.executable, start_script, "-s"],
             stdout=stdout,

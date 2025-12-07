@@ -19,8 +19,26 @@ os.chdir(extension_root)
 
 # On Windows, create .pyd file from .dll for Python import
 if sys.platform == "win32":
-    dll_path = os.path.join(extension_root, '.ten', 'app', 'ten_packages', 'system', 'ten_runtime_python', 'lib', 'ten_runtime_python.dll')
-    pyd_path = os.path.join(extension_root, '.ten', 'app', 'ten_packages', 'system', 'ten_runtime_python', 'lib', 'libten_runtime_python.pyd')
+    dll_path = os.path.join(
+        extension_root,
+        ".ten",
+        "app",
+        "ten_packages",
+        "system",
+        "ten_runtime_python",
+        "lib",
+        "ten_runtime_python.dll",
+    )
+    pyd_path = os.path.join(
+        extension_root,
+        ".ten",
+        "app",
+        "ten_packages",
+        "system",
+        "ten_runtime_python",
+        "lib",
+        "libten_runtime_python.pyd",
+    )
 
     if os.path.exists(dll_path) and not os.path.exists(pyd_path):
         print(f"Creating Python extension module: {pyd_path}")
@@ -35,7 +53,9 @@ pythonpath_parts = [
 
 # If running in a virtual environment, add its site-packages to PYTHONPATH
 # This allows pytest to find packages installed in the venv
-if hasattr(sys, 'real_prefix') or (hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix):
+if hasattr(sys, "real_prefix") or (
+    hasattr(sys, "base_prefix") and sys.base_prefix != sys.prefix
+):
     # We're in a virtual environment
     # Get the venv's site-packages directory
     venv_site_packages = site.getsitepackages()
@@ -43,7 +63,10 @@ if hasattr(sys, 'real_prefix') or (hasattr(sys, 'base_prefix') and sys.base_pref
         pythonpath_parts.extend(venv_site_packages)
 
 pythonpath = os.pathsep.join(
-    [os.path.join(extension_root, p) if not os.path.isabs(p) else p for p in pythonpath_parts]
+    [
+        os.path.join(extension_root, p) if not os.path.isabs(p) else p
+        for p in pythonpath_parts
+    ]
 )
 env = os.environ.copy()
 if "PYTHONPATH" in env:

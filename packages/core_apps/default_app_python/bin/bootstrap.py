@@ -19,7 +19,14 @@ def main():
     print(f"Working directory: {os.getcwd()}")
 
     # Path to deps_resolver.py
-    deps_resolver = app_root / "ten_packages" / "system" / "ten_runtime_python" / "tools" / "deps_resolver.py"
+    deps_resolver = (
+        app_root
+        / "ten_packages"
+        / "system"
+        / "ten_runtime_python"
+        / "tools"
+        / "deps_resolver.py"
+    )
 
     if not deps_resolver.exists():
         print(f"Error: deps_resolver.py not found at {deps_resolver}")
@@ -31,7 +38,7 @@ def main():
         result = subprocess.run(
             [sys.executable, str(deps_resolver)],
             check=True,
-            capture_output=False
+            capture_output=False,
         )
     except subprocess.CalledProcessError as e:
         print(f"Error: Failed to resolve the dependencies of the Python app.")
@@ -46,17 +53,27 @@ def main():
 
         try:
             subprocess.run(
-                [sys.executable, "-m", "pip", "install", "-r", str(merged_requirements)],
-                check=True
+                [
+                    sys.executable,
+                    "-m",
+                    "pip",
+                    "install",
+                    "-r",
+                    str(merged_requirements),
+                ],
+                check=True,
             )
             print("Dependencies installed successfully.")
         except subprocess.CalledProcessError as e:
             print(f"Error: Failed to install dependencies.")
             return e.returncode
     else:
-        print("No 'merged_requirements.txt' file is generated, because there are no dependencies.")
+        print(
+            "No 'merged_requirements.txt' file is generated, because there are no dependencies."
+        )
 
     return 0
+
 
 if __name__ == "__main__":
     sys.exit(main())

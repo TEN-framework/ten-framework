@@ -91,9 +91,7 @@ def test_cpp_app_mproc_python():
     if sys.platform == "win32":
         # On Windows, use Python bootstrap script directly
         print("Running bootstrap script on Windows...")
-        bootstrap_script = os.path.join(
-            app_root_path, "bin/bootstrap.py"
-        )
+        bootstrap_script = os.path.join(app_root_path, "bin/bootstrap.py")
         bootstrap_process = subprocess.Popen(
             [sys.executable, bootstrap_script],
             stdout=stdout,
@@ -103,9 +101,7 @@ def test_cpp_app_mproc_python():
         )
     else:
         # On Unix-like systems, use bash bootstrap script
-        bootstrap_cmd = os.path.join(
-            app_root_path, "bin/bootstrap"
-        )
+        bootstrap_cmd = os.path.join(app_root_path, "bin/bootstrap")
         bootstrap_process = subprocess.Popen(
             bootstrap_cmd, stdout=stdout, stderr=subprocess.STDOUT, env=my_env
         )
@@ -156,9 +152,7 @@ def test_cpp_app_mproc_python():
 
     is_started = http.is_app_started("127.0.0.1", 8002, 30)
     if not is_started:
-        print(
-            "The cpp_app_mproc_python is not started after 30 seconds."
-        )
+        print("The cpp_app_mproc_python is not started after 30 seconds.")
 
         server.kill()
         exit_code = server.wait()
@@ -177,9 +171,7 @@ def test_cpp_app_mproc_python():
     finally:
         is_stopped = http.stop_app("127.0.0.1", 8002, 30)
         if not is_stopped:
-            print(
-                "The cpp_app_mproc_python can not stop after 30 seconds."
-            )
+            print("The cpp_app_mproc_python can not stop after 30 seconds.")
             server.kill()
 
         exit_code = server.wait()

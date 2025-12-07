@@ -19,7 +19,7 @@ ten_package("default_app_python") {
     "property.json",
   ]
 
-  if(is_win){
+  if (is_win) {
     resources += [
       "bin/bootstrap.py",
       "bin/start.py",

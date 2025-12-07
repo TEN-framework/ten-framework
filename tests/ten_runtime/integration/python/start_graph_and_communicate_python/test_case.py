@@ -80,9 +80,7 @@ def test_start_graph_and_communicate_python():
     if sys.platform == "win32":
         # On Windows, use Python bootstrap script directly
         print("Running bootstrap script on Windows...")
-        bootstrap_script = os.path.join(
-            app_root_path, "bin/bootstrap.py"
-        )
+        bootstrap_script = os.path.join(app_root_path, "bin/bootstrap.py")
         bootstrap_process = subprocess.Popen(
             [sys.executable, bootstrap_script],
             stdout=stdout,
@@ -92,9 +90,7 @@ def test_start_graph_and_communicate_python():
         )
     else:
         # On Unix-like systems, use bash bootstrap script
-        bootstrap_cmd = os.path.join(
-            app_root_path, "bin/bootstrap"
-        )
+        bootstrap_cmd = os.path.join(app_root_path, "bin/bootstrap")
         bootstrap_process = subprocess.Popen(
             bootstrap_cmd, stdout=stdout, stderr=subprocess.STDOUT, env=my_env
         )

@@ -87,9 +87,7 @@ def test_standalone_test_python():
 
     # Run start script based on platform
     if sys.platform == "win32":
-        start_script = os.path.join(
-            extension_root_path, "tests/bin/start.py"
-        )
+        start_script = os.path.join(extension_root_path, "tests/bin/start.py")
         tester_process = subprocess.Popen(
             [sys.executable, start_script],
             stdout=stdout,

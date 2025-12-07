@@ -8,14 +8,30 @@ import sys
 
 # On Windows, add DLL search directories before importing ten_runtime
 # This is required because Windows does not use PATH for DLL search by default
-if sys.platform == "win32" and hasattr(os, 'add_dll_directory'):
+if sys.platform == "win32" and hasattr(os, "add_dll_directory"):
     # Get the extension root directory (two levels up from tests/)
     script_dir = os.path.dirname(os.path.abspath(__file__))
     extension_root = os.path.abspath(os.path.join(script_dir, ".."))
 
     dll_search_dirs = [
-        os.path.join(extension_root, '.ten', 'app', 'ten_packages', 'system', 'ten_runtime', 'lib'),
-        os.path.join(extension_root, '.ten', 'app', 'ten_packages', 'system', 'ten_runtime_python', 'lib'),
+        os.path.join(
+            extension_root,
+            ".ten",
+            "app",
+            "ten_packages",
+            "system",
+            "ten_runtime",
+            "lib",
+        ),
+        os.path.join(
+            extension_root,
+            ".ten",
+            "app",
+            "ten_packages",
+            "system",
+            "ten_runtime_python",
+            "lib",
+        ),
     ]
 
     for dll_dir in dll_search_dirs:
@@ -50,7 +66,10 @@ class FakeApp(App):
                             "handlers": [
                                 {
                                     "matchers": [{"level": "debug"}],
-                                    "formatter": {"type": "plain", "colored": True},
+                                    "formatter": {
+                                        "type": "plain",
+                                        "colored": True,
+                                    },
                                     "emitter": {
                                         "type": "console",
                                         "config": {"stream": "stdout"},
@@ -100,7 +119,9 @@ def global_setup_and_teardown():
     event = threading.Event()
     fake_app_ctx = FakeAppCtx(event)
 
-    fake_app_thread = threading.Thread(target=run_fake_app, args=(fake_app_ctx,))
+    fake_app_thread = threading.Thread(
+        target=run_fake_app, args=(fake_app_ctx,)
+    )
     fake_app_thread.start()
 
     event.wait()

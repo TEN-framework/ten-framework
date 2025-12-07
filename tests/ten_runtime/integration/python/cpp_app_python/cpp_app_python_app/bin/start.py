@@ -19,8 +19,22 @@ os.chdir(app_root)
 # On Windows, python extension module is a .pyd file, not a .dll file.
 if sys.platform == "win32":
     # Create .pyd file from .dll for Python import
-    dll_path = os.path.join(app_root, 'ten_packages', 'system', 'ten_runtime_python', 'lib', 'ten_runtime_python.dll')
-    pyd_path = os.path.join(app_root, 'ten_packages', 'system', 'ten_runtime_python', 'lib', 'libten_runtime_python.pyd')
+    dll_path = os.path.join(
+        app_root,
+        "ten_packages",
+        "system",
+        "ten_runtime_python",
+        "lib",
+        "ten_runtime_python.dll",
+    )
+    pyd_path = os.path.join(
+        app_root,
+        "ten_packages",
+        "system",
+        "ten_runtime_python",
+        "lib",
+        "libten_runtime_python.pyd",
+    )
 
     if os.path.exists(dll_path) and not os.path.exists(pyd_path):
         print(f"Creating Python extension module: {pyd_path}")
@@ -31,7 +45,12 @@ env = os.environ.copy()
 # Find libpython using find_libpython.py and set TEN_PYTHON_LIB_PATH
 # This is needed to specify the version of the embedded Python interpreter
 find_libpython_script = os.path.join(
-    app_root, 'ten_packages', 'system', 'ten_runtime_python', 'tools', 'find_libpython.py'
+    app_root,
+    "ten_packages",
+    "system",
+    "ten_runtime_python",
+    "tools",
+    "find_libpython.py",
 )
 if os.path.exists(find_libpython_script):
     try:
@@ -39,11 +58,11 @@ if os.path.exists(find_libpython_script):
             [sys.executable, find_libpython_script],
             capture_output=True,
             text=True,
-            check=False
+            check=False,
         )
         libpython_path = result.stdout.strip()
         if libpython_path:
-            env['TEN_PYTHON_LIB_PATH'] = libpython_path
+            env["TEN_PYTHON_LIB_PATH"] = libpython_path
     except Exception:
         pass  # Ignore errors if find_libpython.py fails
 
@@ -52,16 +71,16 @@ if os.path.exists(find_libpython_script):
 # at startup.(listed in its PE import table)
 # This action is the same as the pure Cpp apps (tests/ten_runtime/integration/cpp/xxx/test_case.py)
 if sys.platform == "win32":
-    env['PATH'] = (
-        os.path.join(app_root, 'ten_packages', 'system', 'ten_runtime', 'lib')
+    env["PATH"] = (
+        os.path.join(app_root, "ten_packages", "system", "ten_runtime", "lib")
         + os.pathsep
-        + env.get('PATH', '')
+        + env.get("PATH", "")
     )
 
 # Run the C++ executable
 if sys.platform == "win32":
-    cpp_app_path = os.path.join(app_root, 'bin', 'cpp_app_python_app.exe')
+    cpp_app_path = os.path.join(app_root, "bin", "cpp_app_python_app.exe")
 else:
-    cpp_app_path = os.path.join(app_root, 'bin', 'cpp_app_python_app')
+    cpp_app_path = os.path.join(app_root, "bin", "cpp_app_python_app")
 
 sys.exit(subprocess.run([cpp_app_path], env=env).returncode)
