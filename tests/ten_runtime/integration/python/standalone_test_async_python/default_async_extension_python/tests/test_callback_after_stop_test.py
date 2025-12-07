@@ -14,6 +14,7 @@ from ten_runtime import (
     StatusCode,
     LogLevel,
 )
+from pytest_ten import TenTestContext, ten_test
 
 
 class AsyncExtensionTesterBasic(AsyncExtensionTester):
@@ -56,6 +57,15 @@ def test_basic():
         "default_async_extension_python", json.dumps(properties)
     )
     tester.run()
+
+
+@ten_test("default_async_extension_python", json.dumps({"send_goodbye_cmd": True}))
+async def test_basic_echo(ctx: TenTestContext):
+    flush_cmd = Cmd.create("flush")
+    asyncio.create_task(ctx.send_cmd(flush_cmd))
+
+    # Expect the extension's echo
+    await ctx.expect_cmd("flush")
 
 
 if __name__ == "__main__":
