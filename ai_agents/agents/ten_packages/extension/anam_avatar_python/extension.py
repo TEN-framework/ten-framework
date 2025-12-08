@@ -54,7 +54,9 @@ class AnamAvatarConfig(BaseConfig):
 
         for field_name, value in required_fields.items():
             if not value or (isinstance(value, str) and value.strip() == ""):
-                raise ValueError(f"Required field is missing or empty: {field_name}")
+                raise ValueError(
+                    f"Required field is missing or empty: {field_name}"
+                )
 
 
 class AnamAvatarExtension(AsyncExtension):
@@ -85,7 +87,9 @@ class AnamAvatarExtension(AsyncExtension):
             self._config_valid = True
 
             # Log key configuration values
-            ten_env.log_info(f"API Key configured: {bool(self.config.anam_api_key)}")
+            ten_env.log_info(
+                f"API Key configured: {bool(self.config.anam_api_key)}"
+            )
             ten_env.log_info(f"Base URL: {self.config.anam_base_url}")
             ten_env.log_info(
                 f"Input audio sample rate: {self.config.input_audio_sample_rate}"
@@ -96,7 +100,9 @@ class AnamAvatarExtension(AsyncExtension):
             )
             ten_env.log_info(f"Quality: {self.config.quality}")
             ten_env.log_info(f"Video encoding: {self.config.video_encoding}")
-            ten_env.log_info(f"Enable string UID: {self.config.enable_string_uid}")
+            ten_env.log_info(
+                f"Enable string UID: {self.config.enable_string_uid}"
+            )
             if self.config.anam_cluster:
                 ten_env.log_info(f"Cluster: {self.config.anam_cluster}")
             if self.config.anam_pod:
@@ -180,11 +186,13 @@ class AnamAvatarExtension(AsyncExtension):
                         resampled_frame = resampled_audio.tobytes()
 
                     # Encode and send with target sample rate
-                    base64_audio_data = base64.b64encode(resampled_frame).decode(
-                        "utf-8"
-                    )
+                    base64_audio_data = base64.b64encode(
+                        resampled_frame
+                    ).decode("utf-8")
 
-                    await self.recorder.send(base64_audio_data, sample_rate=target_rate)
+                    await self.recorder.send(
+                        base64_audio_data, sample_rate=target_rate
+                    )
 
                 except Exception as e:
                     self.ten_env.log_error(f"Error processing audio frame: {e}")
@@ -221,7 +229,9 @@ class AnamAvatarExtension(AsyncExtension):
         if self.recorder and self.recorder.ws_connected():
             success = await self.recorder.interrupt()
             if success:
-                self.ten_env.log_info("Successfully sent voice_interrupt command")
+                self.ten_env.log_info(
+                    "Successfully sent voice_interrupt command"
+                )
             else:
                 self.ten_env.log_error("Failed to send voice_interrupt command")
 

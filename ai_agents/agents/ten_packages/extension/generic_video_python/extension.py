@@ -54,7 +54,9 @@ class GenericVideoConfig(BaseConfig):
 
         for field_name, value in required_fields.items():
             if not value or (isinstance(value, str) and value.strip() == ""):
-                raise ValueError(f"Required field is missing or empty: {field_name}")
+                raise ValueError(
+                    f"Required field is missing or empty: {field_name}"
+                )
 
 
 class GenericVideoExtension(AsyncExtension):
@@ -137,7 +139,9 @@ class GenericVideoExtension(AsyncExtension):
                         continue
 
                     # Send audio at original sample rate - let server handle any resampling
-                    base64_audio_data = base64.b64encode(audio_frame).decode("utf-8")
+                    base64_audio_data = base64.b64encode(audio_frame).decode(
+                        "utf-8"
+                    )
 
                     # Update the recorder to send with actual sample rate
                     await self.recorder.send(
@@ -179,7 +183,9 @@ class GenericVideoExtension(AsyncExtension):
         if self.recorder and self.recorder.ws_connected():
             success = await self.recorder.interrupt()
             if success:
-                self.ten_env.log_info("Successfully sent voice_interrupt command")
+                self.ten_env.log_info(
+                    "Successfully sent voice_interrupt command"
+                )
             else:
                 self.ten_env.log_error("Failed to send voice_interrupt command")
 

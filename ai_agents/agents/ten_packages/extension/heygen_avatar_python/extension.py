@@ -136,21 +136,27 @@ class HeygenAvatarExtension(AsyncExtension):
                     if resample_ratio > 1:
                         # Upsampling: create more samples
                         new_length = int(len(audio_data) * resample_ratio)
-                        old_indices = np.linspace(0, len(audio_data) - 1, new_length)
-                        resampled_audio = audio_data[np.round(old_indices).astype(int)]
+                        old_indices = np.linspace(
+                            0, len(audio_data) - 1, new_length
+                        )
+                        resampled_audio = audio_data[
+                            np.round(old_indices).astype(int)
+                        ]
                     else:
                         # Downsampling: select fewer samples
                         step = 1 / resample_ratio
-                        indices = np.round(np.arange(0, len(audio_data), step)).astype(
-                            int
-                        )
+                        indices = np.round(
+                            np.arange(0, len(audio_data), step)
+                        ).astype(int)
                         indices = indices[indices < len(audio_data)]
                         resampled_audio = audio_data[indices]
 
                     resampled_frame = resampled_audio.tobytes()
 
                 # Encode and send
-                base64_audio_data = base64.b64encode(resampled_frame).decode("utf-8")
+                base64_audio_data = base64.b64encode(resampled_frame).decode(
+                    "utf-8"
+                )
                 await self.recorder.send(base64_audio_data)
 
                 # Set up task to reset is_speaking after 1 second of no audio
@@ -186,7 +192,9 @@ class HeygenAvatarExtension(AsyncExtension):
             except asyncio.QueueEmpty:
                 break
         if cleared_count > 0:
-            self.ten_env.log_debug(f"Cleared {cleared_count} audio frames from queue")
+            self.ten_env.log_debug(
+                f"Cleared {cleared_count} audio frames from queue"
+            )
 
     async def on_stop(self, ten_env: AsyncTenEnv) -> None:
         if self.recorder:
