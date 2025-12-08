@@ -6,5 +6,9 @@
 import("//build/ten_runtime/options.gni")
 
 group("core_system") {
-  deps = [ "pytest_ten" ]
+  deps = []
+
+  if (ten_enable_python_binding) {
+    deps += [ "pytest_ten" ]
+  }
 }

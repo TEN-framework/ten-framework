@@ -18,9 +18,11 @@ from pytest_ten import TenTestContext, ten_test
 
 
 class AsyncExtensionTesterBasic(AsyncExtensionTester):
-    async def on_start(self, ten_env: AsyncTenEnvTester) -> None:
-        self.receive_goodbye_cmd_event = asyncio.Event()
+    def __init__(self):
+        super().__init__()
+        self.receive_goodbye_cmd_event: asyncio.Event = asyncio.Event()
 
+    async def on_start(self, ten_env: AsyncTenEnvTester) -> None:
         flush_cmd = Cmd.create("flush")
         asyncio.create_task(ten_env.send_cmd(flush_cmd))
 

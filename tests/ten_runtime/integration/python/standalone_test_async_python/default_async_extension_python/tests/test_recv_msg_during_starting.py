@@ -19,6 +19,10 @@ from pytest_ten import (
 
 
 class AsyncExtensionTesterBasic(AsyncExtensionTester):
+    def __init__(self):
+        super().__init__()
+        self.recv_flush_cmd: bool = False
+
     async def on_start(self, ten_env: AsyncTenEnvTester) -> None:
         flush_cmd = Cmd.create("flush")
 
