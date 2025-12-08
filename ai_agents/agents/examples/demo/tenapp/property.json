@@ -2419,13 +2419,12 @@
             {
               "type": "extension",
               "name": "stt",
-              "addon": "deepgram_asr_python",
+              "addon": "azure_asr_python",
               "extension_group": "stt",
               "property": {
                 "params": {
-                  "api_key": "${env:DEEPGRAM_API_KEY}",
-                  "language": "en-US",
-                  "model": "nova-3"
+                  "key": "${env:AZURE_STT_KEY}",
+                  "region": "${env:AZURE_STT_REGION}"
                 }
               }
             },
