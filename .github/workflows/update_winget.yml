@@ -79,27 +79,56 @@ jobs:
           INPUT_VERSION: ${{ inputs.version }}
           EVENT_NAME: ${{ github.event_name }}
           REPO: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if ($env:EVENT_NAME -eq "workflow_dispatch") {
-            # Manual trigger - use input version
-            $VERSION = $env:INPUT_VERSION
-          } elseif ($env:EVENT_NAME -eq "push") {
-            # File change trigger - use latest release for testing
-            $response = Invoke-RestMethod -Uri "https://api.github.com/repos/$env:REPO/releases/latest"
-            $VERSION = $response.tag_name
-            Write-Host "📋 Testing mode: using latest release version"
-          } else {
-            # Workflow completion - fetch latest release
-            $response = Invoke-RestMethod -Uri "https://api.github.com/repos/$env:REPO/releases/latest"
-            $VERSION = $response.tag_name
-          }
+          try {
+            if ($env:EVENT_NAME -eq "workflow_dispatch") {
+              # Manual trigger - use input version
+              $VERSION = $env:INPUT_VERSION
+            } elseif ($env:EVENT_NAME -eq "push") {
+              # File change trigger - use latest release for testing
+              Write-Host "📡 Fetching latest release from GitHub API..."
 
-          # Output version for next steps
-          echo "version=$VERSION" >> $env:GITHUB_OUTPUT
-          Write-Host "📦 Version to update: $VERSION"
+              # Use authenticated request to avoid rate limiting
+              $headers = @{
+                Authorization = "Bearer $env:GITHUB_TOKEN"
+                Accept = "application/vnd.github+json"
+              }
+              $response = Invoke-RestMethod -Uri "https://api.github.com/repos/$env:REPO/releases/latest" -Headers $headers
+              $VERSION = $response.tag_name
+              Write-Host "📋 Testing mode: using latest release version"
+            } else {
+              # Workflow completion - fetch latest release
+              Write-Host "📡 Fetching latest release from GitHub API..."
+
+              # Use authenticated request to avoid rate limiting
+              $headers = @{
+                Authorization = "Bearer $env:GITHUB_TOKEN"
+                Accept = "application/vnd.github+json"
+              }
+              $response = Invoke-RestMethod -Uri "https://api.github.com/repos/$env:REPO/releases/latest" -Headers $headers
+              $VERSION = $response.tag_name
+            }
+
+            # Validate version
+            if ([string]::IsNullOrEmpty($VERSION)) {
+              Write-Host "❌ Failed to get version"
+              exit 1
+            }
+
+            # Output version for next steps
+            echo "version=$VERSION" >> $env:GITHUB_OUTPUT
+            Write-Host "📦 Version to update: $VERSION"
+          } catch {
+            Write-Host "❌ Error getting version: $_"
+            Write-Host "Response: $($_.Exception.Response)"
+            exit 1
+          }
         shell: pwsh
 
       - name: Wait and verify Windows release asset is uploaded
+        # Only run if version was successfully retrieved
+        if: success() && steps.version.outputs.version != ''
         id: verify_assets
         uses: actions/github-script@v7
         env:
@@ -357,21 +386,34 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const version = '${{ steps.version.outputs.version }}';
+            const version = '${{ steps.version.outputs.version }}' || 'unknown';
             const workflow = '${{ github.workflow }}';
             const runUrl = '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}';
             const repo = '${{ github.repository }}';
             const actor = context.actor;  // Safe: using context object
 
+            // Build issue body with conditional version info
+            let versionInfo = '';
+            let manualStepsVersion = '';
+
+            if (version && version !== 'unknown') {
+              versionInfo = `The automatic Winget package update failed for release \`${version}\`.`;
+              manualStepsVersion = `1. Download release asset from: https://github.com/${repo}/releases/tag/${version}`;
+            } else {
+              versionInfo = `The automatic Winget package update failed (unable to determine version).`;
+              manualStepsVersion = `1. Check the latest release at: https://github.com/${repo}/releases/latest`;
+            }
+
             const issue_body = `## ⚠️ Winget Package Update Failed
 
-            The automatic Winget package update failed for release \`${version}\`.
+            ${versionInfo}
 
             **Workflow**: ${workflow}
             **Run**: ${runUrl}
 
             ### Possible Issues:
 
+            0. Failed to fetch version information from GitHub API
             1. Windows release asset (tman-win-release-x64.zip) was not uploaded within the timeout period
             2. Network issues downloading release asset
             3. Permission issues with WINGET_SUBMIT_TOKEN
@@ -380,7 +422,7 @@ jobs:
 
             ### Manual Update Steps:
 
-            1. Download release asset from: https://github.com/${repo}/releases/tag/${version}
+            ${manualStepsVersion}
             2. Calculate SHA256 checksum: \`Get-FileHash -Path tman-win-release-x64.zip -Algorithm SHA256\`
             3. Fork microsoft/winget-pkgs repository
             4. Create manifests in \`manifests/t/TENFramework/tman/<version>/\`
