@@ -1444,8 +1444,8 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           file: out/linux/x64/coverage/coverage_filtered.lcov
           format: lcov
-          debug: true #enable debug logging.
-          measure: true #enable time measurement logging.
+          debug: false #enable debug logging.
+          measure: false #enable time measurement logging.
 
       - name: Upload filtered coverage report to artifacts
         if: success() || failure()
