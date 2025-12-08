@@ -33,7 +33,9 @@ class TenTestContext:
         self.received_audio: asyncio.Queue[AudioFrame] = asyncio.Queue()
         self.received_video: asyncio.Queue[VideoFrame] = asyncio.Queue()
 
-    async def send_cmd(self, cmd: Cmd) -> tuple[CmdResult | None, TenError | None]:
+    async def send_cmd(
+        self, cmd: Cmd
+    ) -> tuple[CmdResult | None, TenError | None]:
         """Send command and wait for result"""
         return await self.ten_env.send_cmd(cmd)
 
@@ -89,7 +91,9 @@ class TenTestContext:
                     if put_back:
                         # Put back and wait before retrying
                         await self.received_data.put(data)
-                        await asyncio.sleep(0.05)  # Small delay to avoid busy loop
+                        await asyncio.sleep(
+                            0.05
+                        )  # Small delay to avoid busy loop
                     # Otherwise drop the message
                     continue
                 return data
@@ -137,14 +141,18 @@ class TenTestContext:
                     if put_back:
                         # Put back and wait before retrying
                         await self.received_cmds.put(cmd)
-                        await asyncio.sleep(0.05)  # Small delay to avoid busy loop
+                        await asyncio.sleep(
+                            0.05
+                        )  # Small delay to avoid busy loop
                     # Otherwise drop the message
                     continue
                 return cmd
             except asyncio.TimeoutError:
                 continue
 
-    async def expect_audio_frame(self, timeout: float | None = None) -> AudioFrame:
+    async def expect_audio_frame(
+        self, timeout: float | None = None
+    ) -> AudioFrame:
         """
         Wait for and return an audio frame.
 
@@ -159,11 +167,15 @@ class TenTestContext:
         """
         timeout = timeout or self.timeout
         try:
-            return await asyncio.wait_for(self.received_audio.get(), timeout=timeout)
+            return await asyncio.wait_for(
+                self.received_audio.get(), timeout=timeout
+            )
         except asyncio.TimeoutError as e:
             raise TimeoutError("Timeout waiting for audio frame") from e
 
-    async def expect_video_frame(self, timeout: float | None = None) -> VideoFrame:
+    async def expect_video_frame(
+        self, timeout: float | None = None
+    ) -> VideoFrame:
         """
         Wait for and return a video frame.
 
@@ -178,7 +190,9 @@ class TenTestContext:
         """
         timeout = timeout or self.timeout
         try:
-            return await asyncio.wait_for(self.received_video.get(), timeout=timeout)
+            return await asyncio.wait_for(
+                self.received_video.get(), timeout=timeout
+            )
         except asyncio.TimeoutError as e:
             raise TimeoutError("Timeout waiting for video frame") from e
 
@@ -240,7 +254,9 @@ class TenTestContext:
                 break
         return collected
 
-    async def collect_all_audio_frames(self, timeout: float = 1.0) -> list[AudioFrame]:
+    async def collect_all_audio_frames(
+        self, timeout: float = 1.0
+    ) -> list[AudioFrame]:
         """
         Collect all audio frames until timeout.
 
@@ -265,7 +281,9 @@ class TenTestContext:
                 break
         return collected
 
-    async def collect_all_video_frames(self, timeout: float = 1.0) -> list[VideoFrame]:
+    async def collect_all_video_frames(
+        self, timeout: float = 1.0
+    ) -> list[VideoFrame]:
         """
         Collect all video frames until timeout.
 
@@ -585,14 +603,6 @@ def ten_test(
     """
 
     def decorator(test_func: Callable[[TenTestContext], Any]):
-        tester = _TenTestRunner(
-            test_func,
-            timeout=timeout,
-            mock_cmd_response=mock_cmd_response,
-            mock_cmd_stream_response=mock_cmd_stream_response,
-            mock_data_response=mock_data_response,
-        )
-        tester.set_test_mode_single(addon_name, property_json_str)
 
         # Get the original signature and extract fixture parameters (skip first 'ctx' param)
         sig = inspect.signature(test_func)
@@ -600,6 +610,15 @@ def ten_test(
 
         # Create wrapper function that accepts pytest fixtures
         def wrapper(**kwargs) -> None:
+            tester = _TenTestRunner(
+                test_func,
+                timeout=timeout,
+                mock_cmd_response=mock_cmd_response,
+                mock_cmd_stream_response=mock_cmd_stream_response,
+                mock_data_response=mock_data_response,
+            )
+            tester.set_test_mode_single(addon_name, property_json_str)
+
             # Store fixtures for the test runner to pass to test_func
             tester._pytest_fixtures = kwargs
             err = tester.run()
