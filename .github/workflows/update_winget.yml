@@ -47,20 +47,26 @@ jobs:
     steps:
       - name: Debug workflow_run event
         if: github.event_name == 'workflow_run'
+        env:
+          WORKFLOW_NAME: ${{ github.event.workflow_run.name }}
+          WORKFLOW_EVENT: ${{ github.event.workflow_run.event }}
+          WORKFLOW_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           Write-Host "🔍 Debugging workflow_run event:"
           Write-Host "  Event name: ${{ github.event_name }}"
-          Write-Host "  Workflow name: ${{ github.event.workflow_run.name }}"
-          Write-Host "  Workflow event: ${{ github.event.workflow_run.event }}"
-          Write-Host "  Workflow conclusion: ${{ github.event.workflow_run.conclusion }}"
-          Write-Host "  Head branch: ${{ github.event.workflow_run.head_branch }}"
-          Write-Host "  Head sha: ${{ github.event.workflow_run.head_sha }}"
+          Write-Host "  Workflow name: $env:WORKFLOW_NAME"
+          Write-Host "  Workflow event: $env:WORKFLOW_EVENT"
+          Write-Host "  Workflow conclusion: $env:WORKFLOW_CONCLUSION"
+          Write-Host "  Head branch: $env:HEAD_BRANCH"
+          Write-Host "  Head sha: $env:HEAD_SHA"
           Write-Host ""
-          if ("${{ github.event.workflow_run.event }}" -ne "release") {
-            Write-Host "⏭️ This workflow was triggered by '${{ github.event.workflow_run.event }}' event, not 'release'."
+          if ($env:WORKFLOW_EVENT -ne "release") {
+            Write-Host "⏭️ This workflow was triggered by '$env:WORKFLOW_EVENT' event, not 'release'."
             Write-Host "   Job will be skipped (only release events trigger Winget updates)."
-          } elseif ("${{ github.event.workflow_run.conclusion }}" -ne "success") {
-            Write-Host "⏭️ Triggering workflow conclusion was '${{ github.event.workflow_run.conclusion }}', not 'success'."
+          } elseif ($env:WORKFLOW_CONCLUSION -ne "success") {
+            Write-Host "⏭️ Triggering workflow conclusion was '$env:WORKFLOW_CONCLUSION', not 'success'."
             Write-Host "   Job will be skipped (only successful workflows trigger Winget updates)."
           } else {
             Write-Host "✅ All conditions met. Proceeding with Winget update..."
@@ -69,18 +75,22 @@ jobs:
 
       - name: Get version from workflow or input
         id: version
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+          EVENT_NAME: ${{ github.event_name }}
+          REPO: ${{ github.repository }}
         run: |
-          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
+          if ($env:EVENT_NAME -eq "workflow_dispatch") {
             # Manual trigger - use input version
-            $VERSION = "${{ inputs.version }}"
-          } elseif ("${{ github.event_name }}" -eq "push") {
+            $VERSION = $env:INPUT_VERSION
+          } elseif ($env:EVENT_NAME -eq "push") {
             # File change trigger - use latest release for testing
-            $response = Invoke-RestMethod -Uri "https://api.github.com/repos/${{ github.repository }}/releases/latest"
+            $response = Invoke-RestMethod -Uri "https://api.github.com/repos/$env:REPO/releases/latest"
             $VERSION = $response.tag_name
             Write-Host "📋 Testing mode: using latest release version"
           } else {
             # Workflow completion - fetch latest release
-            $response = Invoke-RestMethod -Uri "https://api.github.com/repos/${{ github.repository }}/releases/latest"
+            $response = Invoke-RestMethod -Uri "https://api.github.com/repos/$env:REPO/releases/latest"
             $VERSION = $response.tag_name
           }
 
@@ -202,11 +212,13 @@ jobs:
         if: steps.verify_assets.outputs.all_ready == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.WINGET_SUBMIT_TOKEN }}
+          EVENT_NAME: ${{ github.event_name }}
+          REPO: ${{ github.repository }}
         run: |
           $VERSION = "${{ steps.version.outputs.version }}"
 
           # Determine if this is a test run (push event = dry run)
-          $IS_DRY_RUN = "${{ github.event_name }}" -eq "push"
+          $IS_DRY_RUN = $env:EVENT_NAME -eq "push"
 
           if ($IS_DRY_RUN) {
             Write-Host "🧪 TEST MODE: Running in DRY RUN (will not create PR to winget-pkgs)"
@@ -220,7 +232,7 @@ jobs:
           $scriptArgs = @(
             "-Version", $VERSION,
             "-GitHubToken", "${{ secrets.WINGET_SUBMIT_TOKEN }}",
-            "-Repository", "${{ github.repository }}"
+            "-Repository", $env:REPO
           )
 
           if ($IS_DRY_RUN) {
@@ -245,10 +257,14 @@ jobs:
 
       - name: Create summary
         if: steps.verify_assets.outputs.all_ready == 'true'
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REPO: ${{ github.repository }}
+          ASSET_URL: ${{ steps.verify_assets.outputs.asset_url }}
         run: |
           $VERSION = "${{ steps.version.outputs.version }}"
           $VERSION_CLEAN = $VERSION -replace '^v', ''
-          $IS_DRY_RUN = "${{ github.event_name }}" -eq "push"
+          $IS_DRY_RUN = $env:EVENT_NAME -eq "push"
 
           if ($IS_DRY_RUN) {
             $summary = @"
@@ -283,7 +299,7 @@ jobs:
 
           ### 🔗 Links
 
-          - [Release $VERSION](https://github.com/${{ github.repository }}/releases/tag/$VERSION)
+          - [Release $VERSION](https://github.com/$env:REPO/releases/tag/$VERSION)
           "@
           } else {
             $summary = @"
@@ -300,7 +316,7 @@ jobs:
           - ``TENFramework.tman.locale.zh-CN.yaml`` (简体中文)
           - ``TENFramework.tman.locale.zh-TW.yaml`` (繁體中文)
           - ``TENFramework.tman.locale.ja-JP.yaml`` (日本語)
-          - ``TENFramework.tman.locale.ko-KR.yaml`` (한국어)
+          - ``TENFramework.tman.locale.ko-KR.yaml`` (한国어)
 
           ### 📦 What happens next?
 
@@ -321,9 +337,9 @@ jobs:
 
           ### 🔗 Links
 
-          - [Release $VERSION](https://github.com/${{ github.repository }}/releases/tag/$VERSION)
+          - [Release $VERSION](https://github.com/$env:REPO/releases/tag/$VERSION)
           - [Winget-pkgs Repository](https://github.com/microsoft/winget-pkgs)
-          - [Asset URL](${{ steps.verify_assets.outputs.asset_url }})
+          - [Asset URL]($env:ASSET_URL)
 
           ### ⏱️ Timeline
 
@@ -339,12 +355,18 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
+            const version = '${{ steps.version.outputs.version }}';
+            const workflow = '${{ github.workflow }}';
+            const runUrl = '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}';
+            const repo = '${{ github.repository }}';
+            const actor = context.actor;  // Safe: using context object
+
             const issue_body = `## ⚠️ Winget Package Update Failed
 
-            The automatic Winget package update failed for release \`${{ steps.version.outputs.version }}\`.
+            The automatic Winget package update failed for release \`${version}\`.
 
-            **Workflow**: ${{ github.workflow }}
-            **Run**: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            **Workflow**: ${workflow}
+            **Run**: ${runUrl}
 
             ### Possible Issues:
 
@@ -356,7 +378,7 @@ jobs:
 
             ### Manual Update Steps:
 
-            1. Download release asset from: https://github.com/${{ github.repository }}/releases/tag/${{ steps.version.outputs.version }}
+            1. Download release asset from: https://github.com/${repo}/releases/tag/${version}
             2. Calculate SHA256 checksum: \`Get-FileHash -Path tman-win-release-x64.zip -Algorithm SHA256\`
             3. Fork microsoft/winget-pkgs repository
             4. Create manifests in \`manifests/t/TENFramework/tman/<version>/\`
@@ -367,7 +389,7 @@ jobs:
             - [Winget Package Submission Guide](https://github.com/microsoft/winget-pkgs/blob/master/AUTHORING_MANIFESTS.md)
             - [Winget Manifest Schema](https://github.com/microsoft/winget-cli/tree/master/schemas/JSON/manifests)
 
-            cc: @${{ github.actor }}
+            cc: @${actor}
             `;
 
             console.log(issue_body);
