@@ -78,7 +78,7 @@ class MainControlExtension(AsyncExtension):
 
         # Initialize memory store
         if self.config and self.config.enable_memorization:
-            if self.config.enable_user_memory:
+            if not self.config.enable_user_memory:
                 self.memory_store = PowerMemSdkMemoryStore(env=ten_env)
             else:
                 self.memory_store = PowerMemSdkUserMemoryStore(env=ten_env)
