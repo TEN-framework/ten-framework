@@ -60,6 +60,7 @@ class StepFunTTSConfig(BaseModel):
 
         if "model" in self.params:
             self.model = self.params["model"]
+            del self.params["model"]
 
         if "voice_id" in self.params:
             self.voice_id = self.params["voice_id"]

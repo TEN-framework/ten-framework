@@ -1,5 +1,5 @@
 """
-Test cpp_app_multi_process_python.
+Test cpp_app_mproc_python.
 """
 
 import subprocess
@@ -20,7 +20,7 @@ def http_request():
     )
 
 
-def test_cpp_app_multi_process_python():
+def test_cpp_app_mproc_python():
     """Test client and app server."""
     base_path = os.path.dirname(os.path.abspath(__file__))
     root_dir = os.path.join(base_path, "../../../../../")
@@ -37,14 +37,14 @@ def test_cpp_app_multi_process_python():
 
     # Launch virtual environment.
     my_env["VIRTUAL_ENV"] = venv_dir
-    my_env["PATH"] = os.path.join(venv_dir, "bin") + os.pathsep + my_env["PATH"]
-
     if sys.platform == "win32":
-        print("test_cpp_app_multi_process_python doesn't support win32")
-        assert False
+        venv_bin_dir = os.path.join(venv_dir, "Scripts")
+    else:
+        venv_bin_dir = os.path.join(venv_dir, "bin")
+    my_env["PATH"] = venv_bin_dir + os.pathsep + my_env["PATH"]
 
-    app_dir_name = "cpp_app_multi_process_python_app"
-    app_root_path = os.path.join(base_path, "cpp_app_multi_process_python_app")
+    app_dir_name = "cpp_app_mproc_python_app"
+    app_root_path = os.path.join(base_path, "cpp_app_mproc_python_app")
     app_language = "cpp"
 
     build_config_args = build_config.parse_build_config(
@@ -87,14 +87,28 @@ def test_cpp_app_multi_process_python():
     if return_code != 0:
         assert False, "Failed to install package."
 
-    bootstrap_cmd = os.path.join(
-        base_path, "cpp_app_multi_process_python_app/bin/bootstrap"
-    )
+    # Run bootstrap script based on platform
+    if sys.platform == "win32":
+        # On Windows, use Python bootstrap script directly
+        print("Running bootstrap script on Windows...")
+        bootstrap_script = os.path.join(app_root_path, "bin/bootstrap.py")
+        bootstrap_process = subprocess.Popen(
+            [sys.executable, bootstrap_script],
+            stdout=stdout,
+            stderr=subprocess.STDOUT,
+            env=my_env,
+            cwd=app_root_path,
+        )
+    else:
+        # On Unix-like systems, use bash bootstrap script
+        bootstrap_cmd = os.path.join(app_root_path, "bin/bootstrap")
+        bootstrap_process = subprocess.Popen(
+            bootstrap_cmd, stdout=stdout, stderr=subprocess.STDOUT, env=my_env
+        )
 
-    bootstrap_process = subprocess.Popen(
-        bootstrap_cmd, stdout=stdout, stderr=subprocess.STDOUT, env=my_env
-    )
     bootstrap_process.wait()
+    if bootstrap_process.returncode != 0:
+        assert False, "Failed to run bootstrap script."
 
     if sys.platform == "linux":
         if (
@@ -104,7 +118,7 @@ def test_cpp_app_multi_process_python():
             libasan_path = os.path.join(
                 base_path,
                 (
-                    "cpp_app_multi_process_python_app/ten_packages/system/"
+                    "cpp_app_mproc_python_app/ten_packages/system/"
                     "ten_runtime/lib/libasan.so"
                 ),
             )
@@ -113,13 +127,20 @@ def test_cpp_app_multi_process_python():
                 print("Using AddressSanitizer library.")
                 my_env["LD_PRELOAD"] = libasan_path
 
-    server_cmd = os.path.join(
-        base_path, "cpp_app_multi_process_python_app/bin/start"
-    )
+    if sys.platform == "win32":
+        start_script = os.path.join(app_root_path, "bin", "start.py")
 
-    if not os.path.isfile(server_cmd):
-        print(f"Server command '{server_cmd}' does not exist.")
-        assert False
+        if not os.path.isfile(start_script):
+            print(f"Server command '{start_script}' does not exist.")
+            assert False
+
+        server_cmd = [sys.executable, start_script]
+    else:
+        server_cmd = os.path.join(app_root_path, "bin/start")
+
+        if not os.path.isfile(server_cmd):
+            print(f"Server command '{server_cmd}' does not exist.")
+            assert False
 
     server = subprocess.Popen(
         server_cmd,
@@ -131,13 +152,11 @@ def test_cpp_app_multi_process_python():
 
     is_started = http.is_app_started("127.0.0.1", 8002, 30)
     if not is_started:
-        print(
-            "The cpp_app_multi_process_python is not started after 30 seconds."
-        )
+        print("The cpp_app_mproc_python is not started after 30 seconds.")
 
         server.kill()
         exit_code = server.wait()
-        print("The exit code of cpp_app_multi_process_python: ", exit_code)
+        print("The exit code of cpp_app_mproc_python: ", exit_code)
 
         assert exit_code == 0
         assert False
@@ -152,13 +171,11 @@ def test_cpp_app_multi_process_python():
     finally:
         is_stopped = http.stop_app("127.0.0.1", 8002, 30)
         if not is_stopped:
-            print(
-                "The cpp_app_multi_process_python can not stop after 30 seconds."
-            )
+            print("The cpp_app_mproc_python can not stop after 30 seconds.")
             server.kill()
 
         exit_code = server.wait()
-        print("The exit code of cpp_app_multi_process_python: ", exit_code)
+        print("The exit code of cpp_app_mproc_python: ", exit_code)
 
         assert exit_code == 0
 

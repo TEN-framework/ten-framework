@@ -4,4 +4,4 @@ set -e
 
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
-./bin/cpp_app_multi_process_python_app
+./bin/cpp_app_mproc_python_app

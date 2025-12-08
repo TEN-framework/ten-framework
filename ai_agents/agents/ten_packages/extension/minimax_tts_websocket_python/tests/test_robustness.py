@@ -111,6 +111,23 @@ def test_reconnect_after_connection_drop(MockMinimaxTTSWebsocket):
     mock_instance.start = AsyncMock()
     mock_instance.stop = AsyncMock()
 
+    def mock_client_ctor(
+        config,
+        ten_env,
+        vendor,
+        on_transcription=None,
+        on_error=None,
+        on_audio_data=None,
+        on_usage_characters=None,
+    ):
+        mock_instance.on_transcription = on_transcription
+        mock_instance.on_error = on_error
+        mock_instance.on_audio_data = on_audio_data
+        mock_instance.on_usage_characters = on_usage_characters
+        return mock_instance
+
+    MockMinimaxTTSWebsocket.side_effect = mock_client_ctor
+
     # This async generator simulates different behaviors on subsequent calls
     async def mock_get_stateful(text: str):
         nonlocal get_call_count
@@ -120,16 +137,22 @@ def test_reconnect_after_connection_drop(MockMinimaxTTSWebsocket):
             # On the first call, simulate a connection drop
             raise ConnectionRefusedError("Simulated connection drop from test")
         else:
-            # On the second call, simulate a successful audio stream
-            yield (b"\x44\x55\x66", EVENT_TTSResponse)
-            yield (None, EVENT_TTSSentenceEnd)
+            # On the second call, simulate a successful audio stream via callback
+            if (
+                hasattr(mock_instance, "on_audio_data")
+                and mock_instance.on_audio_data
+            ):
+                await mock_instance.on_audio_data(
+                    b"\x44\x55\x66", EVENT_TTSResponse, 0
+                )
+                await mock_instance.on_audio_data(None, EVENT_TTSSentenceEnd, 0)
 
     mock_instance.get.side_effect = mock_get_stateful
 
     # --- Test Setup ---
     config = {
         "params": {
-            "api_key": "a_valid_key",
+            "key": "a_valid_key",
             "group_id": "a_valid_group",
         }
     }

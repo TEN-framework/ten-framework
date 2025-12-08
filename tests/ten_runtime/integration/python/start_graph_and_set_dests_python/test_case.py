@@ -26,13 +26,11 @@ def test_start_graph_and_set_dests_python():
 
     # Launch virtual environment.
     my_env["VIRTUAL_ENV"] = venv_dir
-    my_env["PATH"] = os.path.join(venv_dir, "bin") + os.pathsep + my_env["PATH"]
-
     if sys.platform == "win32":
-        print(
-            "test_start_graph_and_set_dests_python doesn't support win32"
-        )
-        assert False
+        venv_bin_dir = os.path.join(venv_dir, "Scripts")
+    else:
+        venv_bin_dir = os.path.join(venv_dir, "bin")
+    my_env["PATH"] = venv_bin_dir + os.pathsep + my_env["PATH"]
 
     app_dir_name = "start_graph_and_set_dests_python_app"
     app_root_path = os.path.join(base_path, app_dir_name)
@@ -78,15 +76,28 @@ def test_start_graph_and_set_dests_python():
     if return_code != 0:
         assert False, "Failed to install package."
 
-    bootstrap_cmd = os.path.join(
-        base_path,
-        "start_graph_and_set_dests_python_app/bin/bootstrap",
-    )
+    # Run bootstrap script based on platform
+    if sys.platform == "win32":
+        # On Windows, use Python bootstrap script directly
+        print("Running bootstrap script on Windows...")
+        bootstrap_script = os.path.join(app_root_path, "bin/bootstrap.py")
+        bootstrap_process = subprocess.Popen(
+            [sys.executable, bootstrap_script],
+            stdout=stdout,
+            stderr=subprocess.STDOUT,
+            env=my_env,
+            cwd=app_root_path,
+        )
+    else:
+        # On Unix-like systems, use bash bootstrap script
+        bootstrap_cmd = os.path.join(app_root_path, "bin/bootstrap")
+        bootstrap_process = subprocess.Popen(
+            bootstrap_cmd, stdout=stdout, stderr=subprocess.STDOUT, env=my_env
+        )
 
-    bootstrap_process = subprocess.Popen(
-        bootstrap_cmd, stdout=stdout, stderr=subprocess.STDOUT, env=my_env
-    )
     bootstrap_process.wait()
+    if bootstrap_process.returncode != 0:
+        assert False, "Failed to run bootstrap script."
 
     if sys.platform == "linux":
         if build_config_args.enable_sanitizer:
@@ -102,18 +113,29 @@ def test_start_graph_and_set_dests_python():
                 print("Using AddressSanitizer library.")
                 my_env["LD_PRELOAD"] = libasan_path
 
-    server_cmd = os.path.join(
-        base_path,
-        "start_graph_and_set_dests_python_app/bin/start",
-    )
+    if sys.platform == "win32":
+        start_script = os.path.join(app_root_path, "bin", "start.py")
 
-    client_cmd = os.path.join(
-        base_path, "start_graph_and_set_dests_python_app_client"
-    )
+        if not os.path.isfile(start_script):
+            print(f"Server command '{start_script}' does not exist.")
+            assert False
 
-    if not os.path.isfile(server_cmd):
-        print(f"Server command '{server_cmd}' does not exist.")
-        assert False
+        server_cmd = [sys.executable, start_script]
+    else:
+        server_cmd = os.path.join(app_root_path, "bin/start")
+
+        if not os.path.isfile(server_cmd):
+            print(f"Server command '{server_cmd}' does not exist.")
+            assert False
+
+    if sys.platform == "win32":
+        client_cmd = os.path.join(
+            base_path, "start_graph_and_set_dests_python_app_client.exe"
+        )
+    else:
+        client_cmd = os.path.join(
+            base_path, "start_graph_and_set_dests_python_app_client"
+        )
 
     server = subprocess.Popen(
         server_cmd,
@@ -139,7 +161,17 @@ def test_start_graph_and_set_dests_python():
         assert exit_code == 0
         assert False
 
-    if sys.platform == "darwin":
+    if sys.platform == "win32":
+        # client depends on some libraries in the TEN app.
+        my_env["PATH"] = (
+            os.path.join(
+                base_path,
+                "start_graph_and_set_dests_python_app/ten_packages/system/ten_runtime/lib",
+            )
+            + ";"
+            + my_env["PATH"]
+        )
+    elif sys.platform == "darwin":
         # client depends on some libraries in the TEN app.
         my_env["DYLD_LIBRARY_PATH"] = os.path.join(
             base_path,

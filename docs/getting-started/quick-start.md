@@ -33,16 +33,16 @@ python3 --version
 # Should display: Python 3.10.x
 ```
 
-> 💡 **Recommendation**: It's recommended to use `pyenv` or `venv` to create a Python 3.10 virtual environment to avoid conflicts with your system Python version:
+> 💡 **Important**: TEN Framework currently only supports Python 3.10. It's recommended to use `pyenv` or `venv` to manage your Python environment:
 >
 > ```bash
-> # Create virtual environment using venv (example)
-> python3.10 -m venv ~/ten-venv
-> source ~/ten-venv/bin/activate
->
-> # Or use pyenv to manage multiple Python versions (example)
+> # Install and manage Python 3.10 using pyenv (recommended)
 > pyenv install 3.10.14
 > pyenv local 3.10.14
+>
+> # Or create virtual environment using venv
+> python3.10 -m venv ~/ten-venv
+> source ~/ten-venv/bin/activate
 > ```
 
 ### Go 1.20+
@@ -66,7 +66,23 @@ npm --version
 
 TEN Manager (tman) is the command-line tool for TEN Framework, used to create projects, manage dependencies, and run applications.
 
-**One-line Installation**:
+Option 1: Install via Package Manager (Recommended)
+
+**Linux (Ubuntu/Debian):**
+
+```bash
+sudo add-apt-repository ppa:ten-framework/ten-framework
+sudo apt update
+sudo apt install tman
+```
+
+**macOS:**
+
+```bash
+brew install TEN-framework/ten-framework/tman
+```
+
+Option 2: Install via Script
 
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/TEN-framework/ten-framework/main/tools/tman/install_tman.sh)
@@ -214,13 +230,13 @@ If you want to develop and use C++ extensions, you'll need to install the TEN bu
 
 tgn is TEN Framework's C/C++ build system, based on Google's GN.
 
-**Option 1: One-line Installation (Recommended)**
+Option 1: One-line Installation (Recommended)
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/TEN-framework/ten-framework/main/tools/tgn/install_tgn.sh | bash
 ```
 
-**Option 2: Install from Cloned Repository**
+Option 2: Install from Cloned Repository
 
 ```bash
 # If you've already cloned the TEN Framework repository
@@ -288,6 +304,7 @@ Now open your browser at `http://localhost:8080` and navigate to the microphone 
 Developing and compiling C++ extensions requires installing a C++ compiler (gcc or clang):
 
 **Linux:**
+
 ```bash
 # Ubuntu/Debian
 sudo apt-get install gcc g++
@@ -297,12 +314,14 @@ sudo apt-get install clang
 ```
 
 **macOS:**
+
 ```bash
 # Install Xcode Command Line Tools (includes clang)
 xcode-select --install
 ```
 
 Verify compiler installation:
+
 ```bash
 # Check gcc
 gcc --version
@@ -314,17 +333,17 @@ clang --version
 
 ### Troubleshooting (C++ Extensions)
 
-**1. tgn command not found**
+1. tgn command not found
 
-Ensure you've run the installation script and added tgn to PATH:
+   Ensure you've run the installation script and added tgn to PATH:
 
-```bash
-export PATH="/usr/local/ten_gn:$PATH"
-```
+   ```bash
+   export PATH="/usr/local/ten_gn:$PATH"
+   ```
 
-**2. Compilation failed: Compiler not found**
+2. Compilation failed: Compiler not found
 
-Please refer to the "C++ Development Environment Requirements" section above to install the compiler.
+   Please refer to the "C++ Development Environment Requirements" section above to install the compiler.
 
 ### Learn More
 

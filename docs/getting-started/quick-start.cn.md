@@ -33,16 +33,16 @@ python3 --version
 # 应显示: Python 3.10.x
 ```
 
-> 💡 **建议**：推荐使用 `pyenv` 或 `venv` 创建 Python 3.10 虚拟环境，以避免与系统 Python 版本冲突：
+> 💡 **重要**：TEN Framework 目前仅支持 Python 3.10。推荐使用 `pyenv` 或 `venv` 创建 Python 虚拟环境：
 >
 > ```bash
-> # 使用 venv 创建虚拟环境（示例）
-> python3.10 -m venv ~/ten-venv
-> source ~/ten-venv/bin/activate
->
-> # 或使用 pyenv 管理多个 Python 版本（示例）
+> # 使用 pyenv 安装和管理 Python 3.10（推荐）
 > pyenv install 3.10.18
 > pyenv local 3.10.18
+>
+> # 或使用 venv 创建虚拟环境
+> python3.10 -m venv ~/ten-venv
+> source ~/ten-venv/bin/activate
 > ```
 
 ### Go 1.20+
@@ -66,7 +66,23 @@ npm --version
 
 TEN Manager (tman) 是 TEN Framework 的命令行工具，用于创建项目、管理依赖和运行应用。
 
-**一键安装**：
+方式一：通过包管理器安装（推荐）
+
+**Linux (Ubuntu/Debian):**
+
+```bash
+sudo add-apt-repository ppa:ten-framework/ten-framework
+sudo apt update
+sudo apt install tman
+```
+
+**macOS:**
+
+```bash
+brew install TEN-framework/ten-framework/tman
+```
+
+方式二：通过安装脚本
 
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/TEN-framework/ten-framework/main/tools/tman/install_tman.sh)
@@ -214,13 +230,13 @@ http://localhost:8080
 
 tgn 是 TEN Framework 的 C/C++ 构建系统，基于 Google 的 GN。
 
-**方式一：一键安装（推荐）**
+方式一：一键安装（推荐）
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/TEN-framework/ten-framework/main/tools/tgn/install_tgn.sh | bash
 ```
 
-**方式二：从克隆的仓库安装**
+方式二：从克隆的仓库安装
 
 ```bash
 # 如果你已经克隆了 TEN Framework 仓库
@@ -317,17 +333,17 @@ clang --version
 
 ### 常见问题（C++ 扩展）
 
-**1. tgn 命令找不到**
+1. tgn 命令找不到
 
-确保已经执行安装脚本并将 tgn 添加到 PATH：
+   确保已经执行安装脚本并将 tgn 添加到 PATH：
 
-```bash
-export PATH="/usr/local/ten_gn:$PATH"
-```
+   ```bash
+   export PATH="/usr/local/ten_gn:$PATH"
+   ```
 
-**2. 编译失败：找不到编译器**
+2. 编译失败：找不到编译器
 
-请参考上面的"C++ 开发环境要求"部分安装编译器。
+   请参考上面的"C++ 开发环境要求"部分安装编译器。
 
 ### 了解更多
 

@@ -1,7 +1,7 @@
 {
   "type": "extension",
   "name": "google_tts_python",
-  "version": "0.3.2",
+  "version": "0.4.1",
   "display_name": {
     "locales": {
       "en-US": {
@@ -31,7 +31,7 @@
     {
       "type": "system",
       "name": "ten_ai_base",
-      "version": "=0.7.22"
+      "version": "0.7"
     }
   ],
   "package": {
@@ -57,6 +57,9 @@
           "type": "object",
           "properties": {
             "credentials": {
+              "type": "string"
+            },
+            "api_endpoint": {
               "type": "string"
             },
             "language_code": {

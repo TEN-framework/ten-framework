@@ -85,12 +85,25 @@ def test_standalone_test_python():
                 print("Using AddressSanitizer library.")
                 my_env["DYLD_INSERT_LIBRARIES"] = libasan_path
 
-    tester_process = subprocess.Popen(
-        "tests/bin/start",
-        stdout=stdout,
-        stderr=subprocess.STDOUT,
-        env=my_env,
-        cwd=extension_root_path,
-    )
+    # Run start script based on platform
+    if sys.platform == "win32":
+        start_script = os.path.join(extension_root_path, "tests/bin/start.py")
+        tester_process = subprocess.Popen(
+            [sys.executable, start_script],
+            stdout=stdout,
+            stderr=subprocess.STDOUT,
+            env=my_env,
+            cwd=extension_root_path,
+        )
+    else:
+        # On Unix-like systems, use bash start script
+        tester_process = subprocess.Popen(
+            "tests/bin/start",
+            stdout=stdout,
+            stderr=subprocess.STDOUT,
+            env=my_env,
+            cwd=extension_root_path,
+        )
+
     tester_rc = tester_process.wait()
     assert tester_rc == 0
