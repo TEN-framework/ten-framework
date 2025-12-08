@@ -13,7 +13,7 @@
     {
       "type": "system",
       "name": "pytest_ten",
-      "version": "0.11"
+      "version": "0.11.41"
     }
   ],
   "package": {
