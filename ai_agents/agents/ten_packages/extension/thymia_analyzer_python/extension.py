@@ -960,7 +960,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                     else:
                         # Fallback if response_start_time wasn't set
                         ten_env.log_warn(
-                            f"[THYMIA_TTS_END] response_start_time not set, using fallback calculation"
+                            "[THYMIA_TTS_END] response_start_time not set, using fallback calculation"
                         )
                         self.agent_speaking_until = (
                             time.time() + (duration_ms / 1000.0) + 1.0
@@ -988,7 +988,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                     self.response_start_time = 0.0
                     self.last_agent_speech_end_time = time.time()
                     ten_env.log_info(
-                        f"[THYMIA_TTS_END] Playback ended (reason=2). Agent stopped speaking."
+                        "[THYMIA_TTS_END] Playback ended (reason=2). Agent stopped speaking."
                     )
                     # Check for pending announcements immediately
                     await self._check_and_trigger_ready_announcements(ten_env)
@@ -2331,7 +2331,7 @@ class ThymiaAnalyzerExtension(AsyncLLMToolBaseExtension):
                 )
             else:
                 ten_env.log_info(
-                    f"[THYMIA_PHASE_TRIGGER] Triggering Hellos announcement (API complete, reading phase complete, user silent)"
+                    "[THYMIA_PHASE_TRIGGER] Triggering Hellos announcement (API complete, reading phase complete, user silent)"
                 )
                 self.hellos_trigger_sent = True  # Mark as processed before trigger to prevent race condition
                 announcement_sent = await self._trigger_hellos_announcement(

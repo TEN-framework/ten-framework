@@ -137,9 +137,10 @@ func isInProcessGroup(pid, pgid int) bool {
 }
 
 func (w *Worker) start(req *StartReq) (err error) {
-	shell := fmt.Sprintf("tman run start -- --property %s", w.PropertyJsonFile)
-	slog.Info("Worker start", "requestId", req.RequestId, "shell", shell, "tenappDir", w.TenappDir, logTag)
-	cmd := exec.Command("sh", "-c", shell)
+	// Use exec.Command with separate arguments to avoid shell injection vulnerabilities
+	// PropertyJsonFile could contain shell metacharacters if user-controlled
+	cmd := exec.Command("tman", "run", "start", "--", "--property", w.PropertyJsonFile)
+	slog.Info("Worker start", "requestId", req.RequestId, "command", "tman run start", "property", w.PropertyJsonFile, "tenappDir", w.TenappDir, logTag)
 	cmd.SysProcAttr = &syscall.SysProcAttr{
 		Setpgid: true, // Start a new process group
 	}
@@ -191,12 +192,13 @@ func (w *Worker) start(req *StartReq) (err error) {
 	pid := cmd.Process.Pid
 
 	// Ensure the process has fully started
-	shell = fmt.Sprintf("pgrep -P %d", pid)
-	slog.Info("Worker get pid", "requestId", req.RequestId, "shell", shell, logTag)
+	// Note: pgrep with pid is safe (pid is an integer, not user input)
+	pgrepCmd := fmt.Sprintf("pgrep -P %d", pid)
+	slog.Info("Worker get pid", "requestId", req.RequestId, "command", pgrepCmd, logTag)
 
 	var subprocessPid int
 	for i := 0; i < 10; i++ { // retry for 3 times
-		output, err := exec.Command("sh", "-c", shell).CombinedOutput()
+		output, err := exec.Command("sh", "-c", pgrepCmd).CombinedOutput()
 		if err == nil {
 			subprocessPid, err = strconv.Atoi(strings.TrimSpace(string(output)))
 			if err == nil && subprocessPid > 0 && isInProcessGroup(subprocessPid, cmd.Process.Pid) {

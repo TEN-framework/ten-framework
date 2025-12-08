@@ -236,12 +236,12 @@ class AgoraAnamRecorder:
                 # Wait for Anam to process init payload
                 await asyncio.sleep(0.5)
                 self._ready_for_audio = True
-            except asyncio.TimeoutError:
+            except asyncio.TimeoutError as exc:
                 await self._handle_error(
                     "WebSocket connection timeout after 10 seconds",
                     code=ERROR_CODE_FAILED_TO_CONNECT_TO_SERVICE,
                 )
-                raise RuntimeError("WebSocket connection timeout")
+                raise RuntimeError("WebSocket connection timeout") from exc
 
             # Start heartbeat task
             self.heartbeat_task = asyncio.create_task(self._start_heartbeat())
@@ -363,8 +363,8 @@ class AgoraAnamRecorder:
             raise
 
     async def _stop_session(self, session_id: str):
+        """Stop Anam session using POST /engine/session/{sessionId}/kill"""
         try:
-            """Stop Anam session using POST /engine/session/{sessionId}/kill"""
             endpoint = f"{self.base_url}/engine/session/{session_id}/kill"
 
             # Payload contains sessionId
@@ -431,7 +431,10 @@ class AgoraAnamRecorder:
                 # WebSocket connection without auth headers (auth is in the URL)
                 # Reference: https://github.com/anam-org/agora_convoai_to_video
                 async with websockets.connect(
-                    self.realtime_endpoint, additional_headers={}
+                    self.realtime_endpoint,
+                    additional_headers={},
+                    open_timeout=30,  # Timeout for connection establishment
+                    close_timeout=10,  # Timeout for graceful close
                 ) as websocket:
                     self.websocket = websocket
                     self._connection_broken = False  # Reset broken flag
