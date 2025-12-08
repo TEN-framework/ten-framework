@@ -440,7 +440,7 @@ try {
         --repo microsoft/winget-pkgs `
         --title "Update TENFramework.tman to $VersionClean" `
         --body $prBody `
-        --head "${forkOwner}:$branchName" `
+        --head "${forkOwner}:${branchName}" `
         --base master
 
     Write-Success "Pull Request created successfully!"
@@ -451,7 +451,7 @@ try {
 } catch {
     Write-Error "Failed to create Pull Request: $_"
     Write-Info "You may need to create the PR manually at:"
-    Write-Info "https://github.com/microsoft/winget-pkgs/compare/master...$forkOwner:$branchName"
+    Write-Info "https://github.com/microsoft/winget-pkgs/compare/master...${forkOwner}:${branchName}"
     exit 1
 }
 
