@@ -217,8 +217,10 @@ jobs:
         run: |
           $VERSION = "${{ steps.version.outputs.version }}"
 
+          # TODO: TEMPORARY - Remove this comment before merging to main
           # Determine if this is a test run (push event = dry run)
-          $IS_DRY_RUN = $env:EVENT_NAME -eq "push"
+          # $IS_DRY_RUN = $env:EVENT_NAME -eq "push"
+          $IS_DRY_RUN = $false  # TEMPORARY: Force production mode for testing
 
           if ($IS_DRY_RUN) {
             Write-Host "🧪 TEST MODE: Running in DRY RUN (will not create PR to winget-pkgs)"
