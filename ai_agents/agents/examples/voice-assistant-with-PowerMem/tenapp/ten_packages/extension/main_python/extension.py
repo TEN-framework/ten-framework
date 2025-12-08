@@ -390,7 +390,7 @@ class MainControlExtension(AsyncExtension):
 
         try:
             # Retrieve user memory summary
-            memory_summary = await self._retrieve_related_memory(
+            memory_summary = await self.memory_store.get_user_profile(
                 query="user preferences, past conversations, and personal information",
             )
 
