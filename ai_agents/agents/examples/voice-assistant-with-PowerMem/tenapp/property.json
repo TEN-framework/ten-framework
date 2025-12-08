@@ -31,13 +31,13 @@
             {
               "type": "extension",
               "name": "stt",
-              "addon": "azure_asr_python",
+              "addon": "deepgram_asr_python",
               "extension_group": "stt",
               "property": {
                 "params": {
-                  "key": "${env:AZURE_STT_KEY}",
-                  "region": "${env:AZURE_STT_REGION}",
-                  "language": "en-US"
+                  "api_key": "${env:DEEPGRAM_API_KEY}",
+                  "language": "en-US",
+                  "model": "nova-3"
                 }
               }
             },
@@ -47,7 +47,7 @@
               "addon": "openai_llm2_python",
               "extension_group": "chatgpt",
               "property": {
-                "base_url": "${env:OPENAI_API_BASE}",
+                "base_url": "https://api.openai.com/v1",
                 "api_key": "${env:OPENAI_API_KEY}",
                 "frequency_penalty": 0.9,
                 "model": "${env:OPENAI_MODEL}",
@@ -61,19 +61,16 @@
             {
               "type": "extension",
               "name": "tts",
-              "addon": "azure_tts_python",
+              "addon": "elevenlabs_tts2_python",
               "extension_group": "tts",
               "property": {
+                "dump": false,
+                "dump_path": "./",
                 "params": {
-                  "subscription": "${env:AZURE_TTS_API_KEY}",
-                  "region": "${env:AZURE_TTS_REGION}",
-                  "speech_recognition_language": "en-US",
-                  "output_format": "Raw16Khz16BitMonoPcm",
-                  "propertys": [
-                    ["Speech_LogFilename", "azure_tts_log.txt"],
-                    ["SpeechServiceConnection_SynthVoice", "en-US-AndrewMultilingualNeural"],
-                    ["SpeechServiceConnection_SynthLanguage", "en-US"]
-                  ]
+                  "key": "${env:ELEVENLABS_TTS_KEY}",
+                  "model_id": "eleven_multilingual_v2",
+                  "voice_id": "pNInz6obpgDQGcFmaJgB",
+                  "output_format": "pcm_16000"
                 }
               }
             },

@@ -4,8 +4,8 @@
     {
       "type": "system",
       "name": "ten_runtime_go",
-      "version": "0.11.35",
-      "hash": "5c6c218d2f2242f362449797e9a71db642f0061db104d7eca03e2e8110a04a89",
+      "version": "0.11.27",
+      "hash": "3cb246f95ec5e22b2c1a44ed6c09d75af07755030172fa6abc97f35822405c77",
       "dependencies": [
         {
           "type": "system",
@@ -171,8 +171,8 @@
     {
       "type": "extension",
       "name": "bytedance_llm_based_asr",
-      "version": "0.2.6",
-      "hash": "3a88cc40a0753c35ef331e62fd4963b6f84cf44af13638e14905f20d5a3bc829",
+      "version": "0.2.5",
+      "hash": "5d8b7f8c57055648b5ac52e1928c4290fcf84a563f75da118eba4a9dd3549554",
       "dependencies": [
         {
           "type": "system",
@@ -256,8 +256,8 @@
     {
       "type": "extension",
       "name": "soniox_asr_python",
-      "version": "0.3.5",
-      "hash": "565ba86275bab78ed785ca554701dbf30d4a8711b07865c835d930c6ad13f681",
+      "version": "0.3.3",
+      "hash": "932bcf076453f1cbd661d50a06b36caab157c91ec63e646d19dfdbe88ad6a5d4",
       "dependencies": [
         {
           "type": "system",
@@ -290,8 +290,8 @@
     {
       "type": "extension",
       "name": "tencent_asr_python",
-      "version": "0.2.9",
-      "hash": "9303c31168a08c5732dfb14c396c25b012da6aefffa6596c444c9251f8d16cc5",
+      "version": "0.2.8",
+      "hash": "be9d19d52c899e82e010733b21d515eb739c5703ac01576c4943ea567087f4fd",
       "dependencies": [
         {
           "type": "system",
@@ -733,8 +733,8 @@
     {
       "type": "system",
       "name": "ten_runtime_python",
-      "version": "0.11.35",
-      "hash": "26d515cfb8bf1d94c7023011a2d9da81dbc93196aa033ed936bbfc6785d79a7a",
+      "version": "0.11.27",
+      "hash": "409c90d00363ff575f7e7d3c6285047c609748490ffb5da52910efc983941c91",
       "dependencies": [
         {
           "type": "system",
@@ -755,8 +755,8 @@
     {
       "type": "system",
       "name": "ten_runtime",
-      "version": "0.11.35",
-      "hash": "6b4a4cf0f0c9044c0a593496079b28cb9737d36fd3cb68fe053835e790c8ba9a",
+      "version": "0.11.27",
+      "hash": "96129244e41310723b93f2eeef06c41d51eb8086d60a703d3665495af3880050",
       "supports": [
         {
           "os": "linux",
@@ -779,8 +779,8 @@
     {
       "type": "addon_loader",
       "name": "python_addon_loader",
-      "version": "0.11.35",
-      "hash": "474f8d4ff5f620ce9bda2eb96c887eaa4e30a239053ec2bab172f596a23bdc95",
+      "version": "0.11.27",
+      "hash": "a15c56876f5303b0c47d4019a51e9586f449d38a1cf52b5848746174c1bc5838",
       "dependencies": [
         {
           "type": "system",
