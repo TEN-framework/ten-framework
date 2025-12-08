@@ -37,7 +37,7 @@
                 "params": {
                   "key": "${env:AZURE_STT_KEY}",
                   "region": "${env:AZURE_STT_REGION}",
-                  "language": "en-US,zh-CN"
+                  "language": "en-US"
                 }
               }
             },
