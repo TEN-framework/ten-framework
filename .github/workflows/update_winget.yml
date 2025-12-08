@@ -205,9 +205,9 @@ jobs:
       # - Download Windows release asset
       # - Calculate SHA256 checksum
       # - Generate manifest files
-      # - Fork and clone winget-pkgs
-      # - Create branch and commit
-      # - Submit PR to microsoft/winget-pkgs
+      # - Fork and clone winget-pkgs (production mode only)
+      # - Create branch and commit (production mode only)
+      # - Submit PR to microsoft/winget-pkgs (production mode only)
       - name: Submit to winget-pkgs using PowerShell script
         if: steps.verify_assets.outputs.all_ready == 'true'
         env:
@@ -228,19 +228,19 @@ jobs:
           Write-Host "📦 Version: $VERSION"
           Write-Host ""
 
-          # Build command with conditional -DryRun flag
-          $scriptArgs = @(
-            "-Version", $VERSION,
-            "-GitHubToken", "${{ secrets.WINGET_SUBMIT_TOKEN }}",
-            "-Repository", $env:REPO
-          )
-
-          if ($IS_DRY_RUN) {
-            $scriptArgs += "-DryRun"
+          # Build command arguments using hashtable for proper splatting
+          # Note: GitHubToken is automatically read from $env:GITHUB_TOKEN by the script
+          $scriptParams = @{
+            Version = $VERSION
+            Repository = $env:REPO
           }
 
-          # Run the submission script
-          & ten-framework\tools\winget\submit-to-winget.ps1 @scriptArgs
+          if ($IS_DRY_RUN) {
+            $scriptParams['DryRun'] = $true
+          }
+
+          # Run the submission script with splatting
+          & ten-framework\tools\winget\submit-to-winget.ps1 @scriptParams
 
           if ($LASTEXITCODE -ne 0) {
             Write-Host "❌ Script failed with exit code: $LASTEXITCODE"
