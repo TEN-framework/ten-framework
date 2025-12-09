@@ -2461,7 +2461,7 @@
                   "voice_setting": {
                     "voice_id": ""
                   },
-                  "url": "wss://api.minimaxi.com/ws/v1/t2a_v2"
+                  "url": "wss://api.minimaxi.io/ws/v1/t2a_v2"
                 },
                 "dump": false,
                 "dump_path": "./"
