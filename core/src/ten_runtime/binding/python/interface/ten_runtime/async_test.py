@@ -93,7 +93,9 @@ class AsyncTenEnvTester(TenEnvTesterBase):
     ) -> AsyncGenerator[CmdResultTuple, None]:
         q = asyncio.Queue[tuple[CmdResult | None, TenError | None]](maxsize=10)
 
-        def cmd_ex_callback(_: TenEnvTester, result: CmdResult | None, error: TenError | None) -> None:
+        def cmd_ex_callback(
+            _: TenEnvTester, result: CmdResult | None, error: TenError | None
+        ) -> None:
             self._result_handler(result, error, q)
 
         err = self._internal.send_cmd(
@@ -152,7 +154,9 @@ class AsyncTenEnvTester(TenEnvTesterBase):
         # If wait for result, use the original async waiting mode.
         q = asyncio.Queue[TenError | None](maxsize=1)
 
-        def audio_frame_callback(_: TenEnvTester, error: TenError | None) -> None:
+        def audio_frame_callback(
+            _: TenEnvTester, error: TenError | None
+        ) -> None:
             self._error_handler(error, q)
 
         err = self._internal.send_audio_frame(
@@ -177,7 +181,9 @@ class AsyncTenEnvTester(TenEnvTesterBase):
         # If wait for result, use the original async waiting mode.
         q = asyncio.Queue[TenError | None](maxsize=1)
 
-        def video_frame_callback(_: TenEnvTester, error: TenError | None) -> None:
+        def video_frame_callback(
+            _: TenEnvTester, error: TenError | None
+        ) -> None:
             self._error_handler(error, q)
 
         err = self._internal.send_video_frame(
@@ -204,7 +210,9 @@ class AsyncTenEnvTester(TenEnvTesterBase):
         # If wait for result, use the original async waiting mode.
         q = asyncio.Queue[TenError | None](maxsize=1)
 
-        def return_result_callback(_: TenEnvTester, error: TenError | None) -> None:
+        def return_result_callback(
+            _: TenEnvTester, error: TenError | None
+        ) -> None:
             self._error_handler(error, q)
 
         err = self._internal.return_result(

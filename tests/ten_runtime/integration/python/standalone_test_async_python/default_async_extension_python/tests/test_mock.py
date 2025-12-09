@@ -46,13 +46,17 @@ class ExtensionTesterMock(ExtensionTester):
 
         ten_env.send_cmd(
             cmd,
-            lambda ten_env, result, error: self.check_weather(ten_env, result, error),
+            lambda ten_env, result, error: self.check_weather(
+                ten_env, result, error
+            ),
         )
 
         ten_env.on_start_done()
 
     def on_cmd(self, ten_env: TenEnvTester, cmd: Cmd) -> None:
-        ten_env.log(LogLevel.INFO, "ExtensionTesterMock on_cmd: " + cmd.get_name())
+        ten_env.log(
+            LogLevel.INFO, "ExtensionTesterMock on_cmd: " + cmd.get_name()
+        )
 
         if cmd.get_name() == "query_weather":
             cmd_result = CmdResult.create(StatusCode.OK, cmd)
@@ -81,13 +85,16 @@ async def test_mock_cmd_result_with_pytest_ten(ctx: TenTestContext):
 
     result, err = await ctx.send_cmd(cmd)
     assert (
-        err is None and result is not None and result.get_status_code() == StatusCode.OK
+        err is None
+        and result is not None
+        and result.get_status_code() == StatusCode.OK
     ), "send_cmd failed"
 
     detail, _ = result.get_property_string("detail")
     assert detail == "sunny"
 
-    # Although we've mocked the response of this cmd, we can still call expect_cmd to consume it.
+    # Although we've mocked the response of this cmd, we can still call
+    # expect_cmd to consume it.
     await ctx.expect_cmd("query_weather")
 
 

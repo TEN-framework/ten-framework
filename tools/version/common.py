@@ -170,7 +170,9 @@ def update_dependency_version_in_manifest_json_file(
             updated = True
 
     for dev_dependency in data.get("dev_dependencies", []):
-        dependent_pkg = PkgInfo(dev_dependency.get("type"), dev_dependency.get("name"))
+        dependent_pkg = PkgInfo(
+            dev_dependency.get("type"), dev_dependency.get("name")
+        )
 
         if dependent_pkg in pkgs and dev_dependency.get("version") != version:
             dev_dependency["version"] = version

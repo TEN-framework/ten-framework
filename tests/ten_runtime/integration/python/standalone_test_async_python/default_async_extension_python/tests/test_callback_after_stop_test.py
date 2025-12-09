@@ -61,7 +61,9 @@ def test_basic():
     tester.run()
 
 
-@ten_test("default_async_extension_python", json.dumps({"send_goodbye_cmd": True}))
+@ten_test(
+    "default_async_extension_python", json.dumps({"send_goodbye_cmd": True})
+)
 async def test_basic_echo(ctx: TenTestContext):
     flush_cmd = Cmd.create("flush")
     asyncio.create_task(ctx.send_cmd(flush_cmd))
