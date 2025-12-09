@@ -1,7 +1,7 @@
 {
     "type": "extension",
     "name": "aliyun_asr_bigmodel_python",
-    "version": "0.2.4",
+    "version": "0.2.5",
     "dependencies": [
         {
             "type": "system",
@@ -11,7 +11,7 @@
         {
             "type": "system",
             "name": "ten_ai_base",
-            "version": "=0.7.22"
+            "version": "0.7"
         }
     ],
     "api": {

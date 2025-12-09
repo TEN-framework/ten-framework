@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 
 class RimeTTSConfig(BaseModel):
     # RIME TTS API credentials
+    base_url: str = "wss://users.rime.ai/ws2"
     api_key: str = ""
     # Debug and logging
     dump: bool = False
@@ -21,6 +22,10 @@ class RimeTTSConfig(BaseModel):
         if "api_key" in self.params:
             self.api_key = self.params["api_key"]
             del self.params["api_key"]
+
+        if "base_url" in self.params:
+            self.base_url = self.params["base_url"]
+            del self.params["base_url"]
 
         self.params["audioFormat"] = "pcm"
 

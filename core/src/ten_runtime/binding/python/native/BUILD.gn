@@ -45,6 +45,10 @@ config("ten_runtime_python_config") {
     ]
   }
 
+  # Note: python_config.py now uses python-config without --embed flag
+  # for building extension modules (not embedding Python interpreter).
+  # This ensures we don't link against libpython, making the extension
+  # compatible with different Python 3.8+ versions.
   ldflags = exec_script("//build/ten_common/python/python_config.py",
                         [
                           "--python-version",
@@ -90,6 +94,8 @@ config("ten_runtime_python_config") {
                      "//build/ten_runtime/ld_script/linux_for_python_binding") ]
   }
 
+  # Note: python_config.py now uses python-config without --embed flag,
+  # so libs won't include libpython for extension modules.
   libs = exec_script("//build/ten_common/python/python_config.py",
                      [
                        "--python-version",

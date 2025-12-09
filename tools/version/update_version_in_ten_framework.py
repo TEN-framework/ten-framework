@@ -320,6 +320,14 @@ def collect_and_update_version_of_system_packages(
             "nodejs",
             MANIFEST_JSON_FILE,
         ),
+        # pytest_ten
+        os.path.join(
+            repo_base_dir,
+            "packages",
+            "core_systems",
+            "pytest_ten",
+            MANIFEST_JSON_FILE,
+        ),
     ]
 
     pkgInfos = []

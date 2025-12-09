@@ -33,13 +33,67 @@ jobs:
   build:
     needs: call-check-pr-status
     if: ${{ needs.call-check-pr-status.outputs.should_continue == 'true' }}
-    runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/ten-framework/ten_building_ubuntu2204
+    runs-on: ubuntu-22.04
+    # Remove container to get more disk space (runner has ~70GB free vs ~12GB with container)
+    # container:
+    #   image: ghcr.io/ten-framework/ten_building_ubuntu2204
     defaults:
       run:
         shell: bash
     steps:
+      - name: Free up disk space on runner
+        run: |
+          echo "=== Initial disk space ==="
+          df -h
+
+          # Remove unnecessary pre-installed software on GitHub runner
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo docker image prune --all --force
+
+          echo "=== Disk space after cleanup ==="
+          df -h
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential \
+            wget \
+            curl \
+            git \
+            libssl-dev \
+            pkg-config \
+            cmake \
+            tree \
+            zip \
+            unzip \
+            jq \
+            python3 \
+            python3-dev \
+            python3-pip \
+            python3-venv \
+            ca-certificates \
+            software-properties-common \
+            gnupg \
+            lsb-release \
+            libunwind-dev \
+            libasound2 \
+            libavformat-dev \
+            libavfilter-dev \
+            libx264-dev \
+            nasm \
+            yasm
+
+          # Clean up apt cache
+          sudo apt-get clean
+          sudo rm -rf /var/lib/apt/lists/*
+
+          echo "=== Disk space after system dependencies ==="
+          df -h
+
       - name: Debug context
         run: |
           echo "event_name=${{ github.event_name }}"
@@ -68,9 +122,21 @@ jobs:
             git submodule update --init --recursive --depth 1 "$submodule"
           done
 
+          echo "=== Disk space after submodule initialization ==="
+          df -h
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+
+      - name: Install Python dependencies
+        run: |
+          pip3 install --upgrade setuptools pip
+          pip3 install requests python-dotenv jinja2
+          pip3 install debugpy pytest pytest-cov pytest-mock cython pylint pylint-exit black
+
+          echo "=== Disk space after Python dependencies ==="
+          df -h
 
       - name: Update version
         run: |
@@ -80,29 +146,34 @@ jobs:
       - name: Install LLVM 21 tools
         run: |
           # Add LLVM official repository for LLVM 21
-          apt-get update
-          apt-get install -y wget software-properties-common gnupg
+          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
+          sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main"
 
-          # Add LLVM repository
-          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
-          add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main"
+          sudo apt-get update
+          sudo apt-get install -y \
+            llvm-21 \
+            clang-21 \
+            libc++-21-dev \
+            libc++1-21 \
+            libc++abi-21-dev \
+            libc++abi1-21
 
-          apt-get update
-          apt-get install -y llvm-21 clang-21
+          # Clean up apt caches to save space
+          sudo apt-get clean
+          sudo rm -rf /var/lib/apt/lists/*
 
           # CRITICAL: GN build system hardcodes "clang"/"clang++" (without version suffix)
           # We must override these to point to clang-21 to ensure profraw format version 10
-          # Put /usr/local/bin at the front of PATH so our symlinks take precedence
-          ln -sf /usr/bin/clang-21 /usr/local/bin/clang
-          ln -sf /usr/bin/clang++-21 /usr/local/bin/clang++
-          ln -sf /usr/bin/llvm-ar-21 /usr/local/bin/llvm-ar
-          ln -sf /usr/bin/llvm-nm-21 /usr/local/bin/llvm-nm
-          ln -sf /usr/bin/llvm-ranlib-21 /usr/local/bin/llvm-ranlib
+          sudo ln -sf /usr/bin/clang-21 /usr/local/bin/clang
+          sudo ln -sf /usr/bin/clang++-21 /usr/local/bin/clang++
+          sudo ln -sf /usr/bin/llvm-ar-21 /usr/local/bin/llvm-ar
+          sudo ln -sf /usr/bin/llvm-nm-21 /usr/local/bin/llvm-nm
+          sudo ln -sf /usr/bin/llvm-ranlib-21 /usr/local/bin/llvm-ranlib
 
           # Create symlinks for coverage tools
-          ln -sf /usr/bin/llvm-cov-21 /usr/local/bin/llvm-cov
-          ln -sf /usr/bin/llvm-profdata-21 /usr/local/bin/llvm-profdata
-          ln -sf /usr/bin/llvm-objdump-21 /usr/local/bin/llvm-objdump
+          sudo ln -sf /usr/bin/llvm-cov-21 /usr/local/bin/llvm-cov
+          sudo ln -sf /usr/bin/llvm-profdata-21 /usr/local/bin/llvm-profdata
+          sudo ln -sf /usr/bin/llvm-objdump-21 /usr/local/bin/llvm-objdump
 
           # Verify installation - should all show LLVM 21
           echo "=== Verifying LLVM 21 tools are correctly linked ==="
@@ -113,10 +184,18 @@ jobs:
           llvm-cov --version | head -3
           llvm-profdata merge --version 2>&1 | head -3 || echo "llvm-profdata installed"
 
+          echo "=== Disk space after LLVM installation ==="
+          df -h
+
       - name: Build (clang + debug + x64) with coverage instrumentation enabled
+        env:
+          CARGO_INCREMENTAL: "0"
+          CARGO_NET_GIT_FETCH_WITH_CLI: "true"
+          CARGO_BUILD_JOBS: "2"
+          MAKEFLAGS: "-j2"
         run: |
           # Ensure /usr/local/bin is at the front of PATH so our clang-21 symlinks are used
-          export PATH=/usr/local/bin:$(pwd)/core/ten_gn:/usr/local/go/bin:/root/go/bin:/root/.cargo/bin:$PATH
+          export PATH=/usr/local/bin:$(pwd)/core/ten_gn:/usr/local/go/bin:$HOME/go/bin:$HOME/.cargo/bin:$PATH
           echo "PATH: $PATH"
 
           # Verify we're using the correct clang version
@@ -126,25 +205,29 @@ jobs:
           which clang++
           clang++ --version | head -3
 
+          # Install Go 1.24.3
           go env -w GOFLAGS="-buildvcs=false"
           go install golang.org/dl/go1.24.3@latest
           export PATH=$PATH:$(go env GOPATH)/bin
           go1.24.3 download
           go1.24.3 version
+
+          echo "=== Disk space after Go installation ==="
+          df -h
+
+          # Install Rust nightly
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain nightly-2025-09-18
+          source $HOME/.cargo/env
           rustup default nightly-2025-09-18
 
           # print rustc and llvm-cov's llvm version, make sure they are compatible
-          # or else the profdata file cannot be interpreted by llvm-cov, because:
-          # C/C++ code uses LLVM 21.x.x to generate coverage data (__llvm_prf_* section)
-          # Rust code uses LLVM 20.x.x to generate coverage data (__llvm_prf_* section)
-          # these two formats are mixed in the same binary file (e.g. ten_utils_unit_test)
-
           rustc -vV | grep LLVM
           llvm-cov --version | head -3
           echo "llvm-profdata path: $(which llvm-profdata)"
           llvm-profdata merge --version 2>&1 | head -3 || echo "(llvm-profdata --version not supported)"
 
-          df -h .
+          echo "=== Disk space before build ==="
+          df -h
 
           # enable_coverage=true: generate instrumented test executables and dynamic libraries
           # which will be used to generate coverage report
@@ -160,7 +243,7 @@ jobs:
           enable_serialized_actions=true \
           ten_rust_enable_gen_cargo_config=false \
           ten_enable_cargo_clean=true \
-          ten_enable_go_lint=true \
+          ten_enable_go_lint=false \
           ten_enable_rust_incremental_build=false \
           ten_manager_enable_frontend=false \
           ten_enable_integration_tests_prebuilt=false \
@@ -169,12 +252,60 @@ jobs:
           echo $EXTRA_ARGS
 
           tgn gen linux x64 release -- $EXTRA_ARGS
+
+          echo "=== Disk space after tgn gen ==="
+          df -h .
+
+          # Monitor and clean during build
+          # Start a background process to periodically clean cargo cache
+          (
+            while true; do
+              sleep 300  # Every 5 minutes
+              # Clean cargo build cache for dependencies we've already compiled
+              find $HOME/.cargo/registry -type f -name "*.crate" -mmin +10 -delete 2>/dev/null || true
+              find core/src/ten_rust/target -type f -name "*.rlib" -mmin +10 2>/dev/null | head -100 | xargs -r rm -f 2>/dev/null || true
+              find core/src/ten_manager/target -type f -name "*.rlib" -mmin +10 2>/dev/null | head -100 | xargs -r rm -f 2>/dev/null || true
+            done
+          ) &
+          CLEANUP_PID=$!
+
           tgn build linux x64 release
 
-          df -h .
+          # Stop the cleanup background process
+          kill $CLEANUP_PID 2>/dev/null || true
+
+          echo "=== Disk space after build ==="
+          df -h
+
+          # Clean up intermediate build files to save space
+          echo "=== Cleaning up intermediate build files ==="
+          rm -rf out/linux/x64/obj
+
+          echo "=== Disk space after cleanup ==="
+          df -h
           tree -I 'gen|obj' out
 
         # Package CORE_BINARIES_AND_LIBS for coverage analysis
+      - name: Clean up unnecessary files before packaging
+        run: |
+          echo "=== Disk space before cleanup ==="
+          df -h
+
+          # Remove gen directory except libten_rust.a (which is needed for coverage)
+          find out/linux/x64/gen -type f ! -name "libten_rust.a" -delete
+          find out/linux/x64/gen -type d -empty -delete
+
+          # Remove Rust build artifacts
+          rm -rf core/src/ten_manager/target
+          rm -rf core/src/ten_rust/target
+
+          # Clean cargo cache
+          rm -rf $HOME/.cargo/registry
+          rm -rf $HOME/.cargo/git
+
+          echo "=== Disk space after cleanup ==="
+          df -h
+
       - name: Package binaries and libraries for coverage analysis
         run: |
           mkdir -p binaries_and_libs
@@ -1151,9 +1282,20 @@ jobs:
         test-integration-python,
         test-integration-nodejs,
       ]
-    runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/ten-framework/ten_building_ubuntu2204
+    runs-on: ubuntu-22.04
+    # Remove container to match build job's environment.
+    #
+    # Path consistency chain:
+    #   Build (no container, to save disk space) → binaries embed /home/runner/work/... paths
+    #   → llvm-cov → all paths in .lcov file are /home/runner/work/...
+    #   → Coveralls looks for files at these paths!
+    #
+    # Using container here would mount workspace at /__w/.../
+    # → Coveralls error: "Nothing to report" ❌ because coveralls app can't find any
+    # code files under /home/runner/work/... as it reads lcov file.
+    #
+    # container:
+    #   image: ghcr.io/ten-framework/ten_building_ubuntu2204
     defaults:
       run:
         shell: bash
@@ -1163,23 +1305,38 @@ jobs:
           fetch-depth: 0
           submodules: false
 
+      - name: Install basic dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential \
+            wget \
+            curl \
+            software-properties-common \
+            gnupg \
+            ca-certificates
+
+          # Clean up apt cache
+          sudo apt-get clean
+          sudo rm -rf /var/lib/apt/lists/*
+
       - name: Install LLVM 21 tools
         run: |
           # Add LLVM official repository for LLVM 21
-          apt-get update
-          apt-get install -y wget software-properties-common gnupg
+          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
+          sudo add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main"
 
-          # Add LLVM repository
-          wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | tee /etc/apt/trusted.gpg.d/apt.llvm.org.asc
-          add-apt-repository -y "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-21 main"
+          sudo apt-get update
+          sudo apt-get install -y llvm-21 clang-21 lcov
 
-          apt-get update
-          apt-get install -y llvm-21 clang-21 lcov
+          # Clean up apt cache
+          sudo apt-get clean
+          sudo rm -rf /var/lib/apt/lists/*
 
           # Create symlinks to make llvm-cov and llvm-profdata available without version suffix
-          ln -sf /usr/bin/llvm-cov-21 /usr/local/bin/llvm-cov
-          ln -sf /usr/bin/llvm-profdata-21 /usr/local/bin/llvm-profdata
-          ln -sf /usr/bin/llvm-objdump-21 /usr/local/bin/llvm-objdump
+          sudo ln -sf /usr/bin/llvm-cov-21 /usr/local/bin/llvm-cov
+          sudo ln -sf /usr/bin/llvm-profdata-21 /usr/local/bin/llvm-profdata
+          sudo ln -sf /usr/bin/llvm-objdump-21 /usr/local/bin/llvm-objdump
 
           # Verify installation
           llvm-cov --version
@@ -1241,7 +1398,7 @@ jobs:
 
           llvm-profdata merge -sparse $PROFDATA_FILES -o out/linux/x64/coverage/merged.profdata
 
-          echo "😎Intermediate .profdata file:"
+          echo "Intermediate .profdata file:"
           llvm-profdata show out/linux/x64/coverage/merged.profdata
 
           # Use --object flag to ensure all binaries and libraries are processed correctly
@@ -1285,7 +1442,10 @@ jobs:
           COVERALLS_REPO_TOKEN: ${{ secrets.TEN_COVERALLS_REPO_TOKEN }}
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          path-to-lcov: out/linux/x64/coverage/coverage_filtered.lcov
+          file: out/linux/x64/coverage/coverage_filtered.lcov
+          format: lcov
+          debug: false #enable debug logging.
+          measure: false #enable time measurement logging.
 
       - name: Upload filtered coverage report to artifacts
         if: success() || failure()

@@ -27,7 +27,6 @@ from ten_ai_base.struct import TTSTextInput
 from minimax_tts_websocket_python.minimax_tts import (
     EVENT_TTSSentenceEnd,
     EVENT_TTSResponse,
-    EVENT_TTS_TTFB_METRIC,
 )
 
 
@@ -98,15 +97,35 @@ def test_ttfb_metric_is_sent(MockMinimaxTTSWebsocket):
     mock_instance.start = AsyncMock()
     mock_instance.stop = AsyncMock()
 
+    def mock_client_ctor(
+        config,
+        ten_env,
+        vendor,
+        on_transcription=None,
+        on_error=None,
+        on_audio_data=None,
+        on_usage_characters=None,
+    ):
+        mock_instance.on_transcription = on_transcription
+        mock_instance.on_error = on_error
+        mock_instance.on_audio_data = on_audio_data
+        mock_instance.on_usage_characters = on_usage_characters
+        return mock_instance
+
+    MockMinimaxTTSWebsocket.side_effect = mock_client_ctor
+
     # This async generator simulates the TTS client's get() method with a delay
     # to produce a measurable TTFB.
     async def mock_get_audio_with_delay(text: str):
-        # Simulate network latency or processing time before the first byte
         await asyncio.sleep(0.2)
-        yield (255, EVENT_TTS_TTFB_METRIC)
-        yield (b"\x11\x22\x33", EVENT_TTSResponse)
-        # Simulate the end of the stream
-        yield (None, EVENT_TTSSentenceEnd)
+        if (
+            hasattr(mock_instance, "on_audio_data")
+            and mock_instance.on_audio_data
+        ):
+            await mock_instance.on_audio_data(
+                b"\x11\x22\x33", EVENT_TTSResponse, 0
+            )
+            await mock_instance.on_audio_data(None, EVENT_TTSSentenceEnd, 0)
 
     mock_instance.get.side_effect = mock_get_audio_with_delay
 
@@ -114,7 +133,7 @@ def test_ttfb_metric_is_sent(MockMinimaxTTSWebsocket):
     # A minimal config is needed for the extension to initialize correctly.
     metrics_config = {
         "params": {
-            "api_key": "a_valid_key",
+            "key": "a_valid_key",
             "group_id": "a_valid_group",
         },
     }
@@ -132,10 +151,9 @@ def test_ttfb_metric_is_sent(MockMinimaxTTSWebsocket):
     assert tester.audio_end_received, "Did not receive the tts_audio_end event."
     assert tester.ttfb_received, "TTFB metric was not received."
 
-    # Check if the TTFB value is reasonable. It should be slightly more than
-    # the 0.2s delay we introduced. We check for >= 200ms.
+    # Check if the TTFB value is reasonable around 200ms delay
     assert (
-        tester.ttfb_value == 255
-    ), f"Expected TTFB to be 255ms, but got {tester.ttfb_value}ms."
+        180 <= tester.ttfb_value <= 300
+    ), f"Expected TTFB to be within [180, 300] ms, but got {tester.ttfb_value}ms."
 
     print(f"✅ TTFB metric test passed. Received TTFB: {tester.ttfb_value}ms.")

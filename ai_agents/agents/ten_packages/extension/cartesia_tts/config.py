@@ -80,6 +80,7 @@ class CartesiaSSMLConfig(BaseModel):
 
 class CartesiaTTSConfig(BaseModel):
     api_key: str = ""
+    base_url: str = ""
 
     sample_rate: int = 16000
     dump: bool = False
@@ -99,6 +100,10 @@ class CartesiaTTSConfig(BaseModel):
         if "api_key" in params:
             self.api_key = params["api_key"]
             del params["api_key"]
+
+        if "base_url" in params:
+            self.base_url = params["base_url"]
+            del params["base_url"]
 
         # Use default sample rate value
         if "sample_rate" in params:
