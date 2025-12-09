@@ -34,6 +34,7 @@ jobs:
       (github.event.workflow_run.conclusion == 'success' &&
        github.event.workflow_run.event == 'release')
     runs-on: ubuntu-latest
+    timeout-minutes: 360  # 6 hours timeout (Tman Linux ARM64 workflow can take more than 30 minutes)
     steps:
       - name: Debug workflow_run event
         if: github.event_name != 'workflow_dispatch'
