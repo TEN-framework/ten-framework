@@ -4,11 +4,9 @@
 
 .DESCRIPTION
     This script automates the process of submitting tman to the microsoft/winget-pkgs
-    repository. It can be used for manual submissions or debugging the automated workflow.
-
-    The script performs the following steps:
+    repository, performing the following steps:
     1. Downloads the Windows release asset from GitHub
-    2. Calculates SHA256 checksum
+    2. Calculates or verifies SHA256 checksum
     3. Generates winget manifest files
     4. Forks and clones microsoft/winget-pkgs (if needed)
     5. Creates a new branch with the manifests
@@ -27,6 +25,10 @@
     The GitHub repository in "owner/repo" format.
     Default: "TEN-framework/ten-framework"
 
+.PARAMETER Sha256
+    The SHA256 checksum of the release asset.
+    If not provided, will calculate it from the downloaded file.
+
 .PARAMETER DryRun
     If specified, will prepare manifests but not submit the PR.
     Useful for testing and verification.
@@ -35,6 +37,11 @@
     .\submit-to-winget.ps1 -Version "0.11.35" -GitHubToken "ghp_xxxxx"
 
     Submit version 0.11.35 to winget-pkgs.
+
+.EXAMPLE
+    .\submit-to-winget.ps1
+
+    Submit the latest version to winget-pkgs.
 
 .EXAMPLE
     .\submit-to-winget.ps1 -DryRun
@@ -56,6 +63,9 @@ param(
 
     [Parameter(Mandatory=$false)]
     [string]$Repository = "TEN-framework/ten-framework",
+
+    [Parameter(Mandatory=$false)]
+    [string]$Sha256,
 
     [Parameter(Mandatory=$false)]
     [switch]$DryRun
@@ -175,16 +185,33 @@ try {
 }
 
 # ==============================================================================
-# Step 3: Calculate SHA256 Checksum
+# Step 3: Get or Calculate SHA256 Checksum
 # ==============================================================================
 
-Write-Info "Calculating SHA256 checksum..."
+if ([string]::IsNullOrEmpty($Sha256)) {
+    # SHA256 not provided, calculate it from downloaded file
+    Write-Info "Calculating SHA256 checksum..."
+    $sha256 = (Get-FileHash -Path $assetFileName -Algorithm SHA256).Hash.ToLower()
+    Write-Success "SHA256 calculated: $sha256"
+} else {
+    # SHA256 provided (from GitHub API or elsewhere)
+    $sha256 = $Sha256.ToLower()
+    Write-Success "SHA256 provided: $sha256"
 
-$sha256 = (Get-FileHash -Path $assetFileName -Algorithm SHA256).Hash.ToLower()
-Write-Success "SHA256: $sha256"
+    # Optional: Verify the provided SHA256 matches the file
+    Write-Info "Verifying provided SHA256..."
+    $calculatedSha256 = (Get-FileHash -Path $assetFileName -Algorithm SHA256).Hash.ToLower()
+    if ($sha256 -ne $calculatedSha256) {
+        Write-Error "SHA256 mismatch!"
+        Write-Info "Provided:   $sha256"
+        Write-Info "Calculated: $calculatedSha256"
+        exit 1
+    }
+    Write-Success "SHA256 verified ✓"
+}
 
 # ==============================================================================
-# Step 4: Generate Manifest Files (from templates if available)
+# Step 4: Generate Manifest Files from Templates
 # ==============================================================================
 
 Write-Info "Generating winget manifest files..."
@@ -192,112 +219,64 @@ Write-Info "Generating winget manifest files..."
 $manifestDir = "winget-manifests"
 New-Item -ItemType Directory -Force -Path $manifestDir | Out-Null
 
-# Check if we're running from within the repo (templates available)
+# Check if templates are available
 $scriptDir = Split-Path -Parent $PSCommandPath
-$templatesAvailable = Test-Path "$scriptDir\manifest.version.yaml.template"
+$requiredTemplates = @(
+    "manifest.version.yaml.template",
+    "manifest.installer.yaml.template",
+    "manifest.locale.en-US.yaml.template"
+)
 
-if ($templatesAvailable) {
-    Write-Info "Using templates from: $scriptDir"
-
-    # ========================================================================
-    # Generate from templates (workflow mode)
-    # ========================================================================
-
-    # Version Manifest
-    $versionTemplate = Get-Content "$scriptDir\manifest.version.yaml.template" -Raw
-    $versionContent = ($versionTemplate -split "`n" | Where-Object {
-        $_.Trim() -notmatch '^#' -and $_.Trim() -ne ''
-    }) -join "`n"
-    $versionContent = $versionContent -replace '__VERSION__', $VersionClean
-    $versionContent | Out-File -FilePath "$manifestDir\ten-framework.tman.yaml" -Encoding utf8 -NoNewline
-
-    # Installer Manifest
-    $installerTemplate = Get-Content "$scriptDir\manifest.installer.yaml.template" -Raw
-    $installerContent = ($installerTemplate -split "`n" | Where-Object {
-        $_.Trim() -notmatch '^#' -and $_.Trim() -ne ''
-    }) -join "`n"
-    $installerContent = $installerContent -replace '__VERSION__', $Version
-    $installerContent = $installerContent -replace '__WIN_X64_SHA256__', $sha256
-    $installerContent | Out-File -FilePath "$manifestDir\ten-framework.tman.installer.yaml" -Encoding utf8 -NoNewline
-
-    # Locale Manifests (multiple languages)
-    $locales = @("en-US", "zh-CN", "zh-TW", "ja-JP", "ko-KR")
-    foreach ($locale in $locales) {
-        $localeTemplateFile = "$scriptDir\manifest.locale.$locale.yaml.template"
-        if (Test-Path $localeTemplateFile) {
-            Write-Info "  - Generating $locale locale from template..."
-            $localeTemplate = Get-Content $localeTemplateFile -Raw
-            $localeContent = ($localeTemplate -split "`n" | Where-Object {
-                $_.Trim() -notmatch '^#' -and $_.Trim() -ne ''
-            }) -join "`n"
-            $localeContent = $localeContent -replace '__VERSION__', $VersionClean
-            $localeContent | Out-File -FilePath "$manifestDir\ten-framework.tman.locale.$locale.yaml" -Encoding utf8 -NoNewline
-        }
+$missingTemplates = @()
+foreach ($template in $requiredTemplates) {
+    if (-not (Test-Path "$scriptDir\$template")) {
+        $missingTemplates += $template
     }
-} else {
-    Write-Info "Templates not found, generating inline (standalone mode)"
+}
 
-    # ========================================================================
-    # Generate inline (standalone mode - backwards compatibility)
-    # ========================================================================
+if ($missingTemplates.Count -gt 0) {
+    Write-Error "Required manifest templates not found in: $scriptDir"
+    Write-Info "Missing files:"
+    foreach ($template in $missingTemplates) {
+        Write-Info "  - $template"
+    }
+    Write-Info ""
+    Write-Info "Please ensure all template files are present in the tools/winget directory."
+    exit 1
+}
 
-    # Version Manifest
-    $versionManifest = @"
-PackageIdentifier: ten-framework.tman
-PackageVersion: $VersionClean
-DefaultLocale: en-US
-ManifestType: version
-ManifestVersion: 1.6.0
-"@
+Write-Info "Using templates from: $scriptDir"
 
-    $versionManifest | Out-File -FilePath "$manifestDir\ten-framework.tman.yaml" -Encoding utf8 -NoNewline
+# Version Manifest
+$versionTemplate = Get-Content "$scriptDir\manifest.version.yaml.template" -Raw
+$versionContent = ($versionTemplate -split "`n" | Where-Object {
+    $_.Trim() -notmatch '^#' -and $_.Trim() -ne ''
+}) -join "`n"
+$versionContent = $versionContent -replace '__VERSION__', $VersionClean
+$versionContent | Out-File -FilePath "$manifestDir\ten-framework.tman.yaml" -Encoding utf8 -NoNewline
 
-    # Installer Manifest
-    $installerManifest = @"
-PackageIdentifier: ten-framework.tman
-PackageVersion: $VersionClean
-InstallerType: zip
-Installers:
-- Architecture: x64
-  InstallerUrl: $assetUrl
-  InstallerSha256: $sha256
-  NestedInstallerType: portable
-  NestedInstallerFiles:
-  - RelativeFilePath: ten_manager\bin\tman.exe
-    PortableCommandAlias: tman
-ManifestType: installer
-ManifestVersion: 1.6.0
-"@
+# Installer Manifest
+$installerTemplate = Get-Content "$scriptDir\manifest.installer.yaml.template" -Raw
+$installerContent = ($installerTemplate -split "`n" | Where-Object {
+    $_.Trim() -notmatch '^#' -and $_.Trim() -ne ''
+}) -join "`n"
+$installerContent = $installerContent -replace '__VERSION__', $Version
+$installerContent = $installerContent -replace '__WIN_X64_SHA256__', $sha256
+$installerContent | Out-File -FilePath "$manifestDir\ten-framework.tman.installer.yaml" -Encoding utf8 -NoNewline
 
-    $installerManifest | Out-File -FilePath "$manifestDir\ten-framework.tman.installer.yaml" -Encoding utf8 -NoNewline
-
-    # Locale Manifest (en-US only in standalone mode)
-    $localeManifest = @"
-PackageIdentifier: ten-framework.tman
-PackageVersion: $VersionClean
-PackageLocale: en-US
-Publisher: TEN Framework Team
-PublisherUrl: https://github.com/TEN-framework
-PublisherSupportUrl: https://github.com/TEN-framework/ten-framework/issues
-PackageName: tman
-PackageUrl: https://github.com/TEN-framework/ten-framework
-License: Apache-2.0
-LicenseUrl: https://github.com/TEN-framework/ten-framework/blob/main/LICENSE
-ShortDescription: TEN Framework Package Manager
-Description: |-
-  tman is the official package manager for the TEN Framework.
-  It helps developers manage extensions, protocols, and other TEN framework components.
-  Features include package installation, dependency resolution, version control, and support for multiple package types.
-Tags:
-- package-manager
-- ten-framework
-- extension-manager
-- developer-tools
-ManifestType: defaultLocale
-ManifestVersion: 1.6.0
-"@
-
-    $localeManifest | Out-File -FilePath "$manifestDir\ten-framework.tman.locale.en-US.yaml" -Encoding utf8 -NoNewline
+# Locale Manifests (multiple languages)
+$locales = @("en-US", "zh-CN", "zh-TW", "ja-JP", "ko-KR")
+foreach ($locale in $locales) {
+    $localeTemplateFile = "$scriptDir\manifest.locale.$locale.yaml.template"
+    if (Test-Path $localeTemplateFile) {
+        Write-Info "  - Generating $locale locale from template..."
+        $localeTemplate = Get-Content $localeTemplateFile -Raw
+        $localeContent = ($localeTemplate -split "`n" | Where-Object {
+            $_.Trim() -notmatch '^#' -and $_.Trim() -ne ''
+        }) -join "`n"
+        $localeContent = $localeContent -replace '__VERSION__', $VersionClean
+        $localeContent | Out-File -FilePath "$manifestDir\ten-framework.tman.locale.$locale.yaml" -Encoding utf8 -NoNewline
+    }
 }
 
 Write-Success "Generated manifest files:"
@@ -354,8 +333,8 @@ git clone "https://x-access-token:$($GitHubToken)@github.com/$forkOwner/winget-p
 Set-Location $wingetPkgsDir
 
 # Configure git
-git config user.name "tman-bot"
-git config user.email "tman-bot@ten-framework.org"
+git config user.name "ten-framework-bot"
+git config user.email "ten-framework-bot@users.noreply.github.com"
 
 # Add upstream remote
 git remote add upstream https://github.com/microsoft/winget-pkgs.git 2>&1 | Out-Null

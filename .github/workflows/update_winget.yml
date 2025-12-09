@@ -231,7 +231,7 @@ jobs:
       # Run submit-to-winget.ps1 script
       # This script handles:
       # - Download Windows release asset
-      # - Calculate SHA256 checksum
+      # - Verify/calculate SHA256 checksum
       # - Generate manifest files
       # - Fork and clone winget-pkgs (production mode only)
       # - Create branch and commit (production mode only)
@@ -244,6 +244,7 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           $VERSION = "${{ steps.version.outputs.version }}"
+          $SHA256_FROM_GITHUB = "${{ steps.verify_assets.outputs.asset_sha256 }}"
 
           # Determine if this is a test run (push event = dry run)
           $IS_DRY_RUN = $env:EVENT_NAME -eq "push"
@@ -254,6 +255,10 @@ jobs:
             Write-Host "🚀 PRODUCTION MODE: Will create actual PR to microsoft/winget-pkgs"
           }
           Write-Host "📦 Version: $VERSION"
+
+          if (-not [string]::IsNullOrEmpty($SHA256_FROM_GITHUB)) {
+            Write-Host "🔐 SHA256 from GitHub: $SHA256_FROM_GITHUB"
+          }
           Write-Host ""
 
           # Build command arguments using hashtable for proper splatting
@@ -261,6 +266,11 @@ jobs:
           $scriptParams = @{
             Version = $VERSION
             Repository = $env:REPO
+          }
+
+          # Pass SHA256 if available from GitHub API
+          if (-not [string]::IsNullOrEmpty($SHA256_FROM_GITHUB)) {
+            $scriptParams['Sha256'] = $SHA256_FROM_GITHUB
           }
 
           if ($IS_DRY_RUN) {
